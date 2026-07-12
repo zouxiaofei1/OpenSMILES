@@ -17,11 +17,12 @@
 [#633ade7][IUPAC P-22.1.1 / P-14.3.4] 单取代环烷 monoalkyl-cycloalkane：L2侧链+L5省略位次 [+15 tests, dual 2.6%(105)→2.7%(109), fails 3957→3953]
 [#490d44b][IUPAC P-63.1.1 / P-22.1.1] 未取代单环一元醇 cycloalkanol：L2环母体+L4省略位次+L5 cyclo…ol/环…醇 [+14 tests, dual 2.7%(109)→2.7%(111), fails 3953→3951]
 [#7f8238a][IUPAC P-64.2.1 / P-22.1.1] 未取代单环一元酮 cycloalkanone：L2环母体+L4酮碳定向+L5 cyclo…one/环…酮 [+12 tests, dual 2.7%(111)→2.8%(113), fails 3951→3949]
+[#5f87dd6][IUPAC P-61.3.1 / P-14.3.4 / P-22.1.1] 单卤代环烷 monohalo-cycloalkane：L2允许环上卤素+L3/L5省略位次 [+15 tests, dual 2.8%(113)→2.8%(114), fails 3949→3948]
 
 ## 其他
-- 基线(本轮前): en=2.7%(111/4062) zh=12.3%(93/756) dual=2.7%(111/4062)
-- 本次: en=2.8%(113/4062) zh=12.6%(95/756) dual=2.8%(113/4062) fails=3949
-- 改动: L2 未取代单碳环+单酮羰基→cycloketone；L4 酮碳定向；L5 cyclo…one/环…酮
-- 验证: O=C1CCCCC1→cyclohexanone/环己酮；O=C1CCCC1→cyclopentanone；O=C1CCC1→cyclobutanone；CC(=O)C仍propan-2-one；OC1CCCCC1仍cyclohexanol
-- 已知缺口: 卤代环烷/环胺；多取代环烷；仲/叔胺；N-取代酰胺；支化烷基isopropyl
-- 下一步候选: 卤代环烷；或环胺；或仲胺；或支化烷基
+- 基线(本轮前): en=2.8%(113/4062) zh=12.6%(95/756) dual=2.8%(113/4062)
+- 本次: en=2.8%(114/4062) zh=12.7%(96/756) dual=2.8%(114/4062) fails=3948
+- 改动: L2 `_no_hetero_outside` 允许环上直接连接 F/Cl/Br/I，复用 cycloalkane 母体与单取代省略位次
+- 验证: ClC1CCCCC1→chlorocyclohexane/氯环己烷；Br/F/I 同；ClC1CCCC1→chlorocyclopentane；链卤/环醇/环酮负例保持
+- 已知缺口: 环胺；多取代环烷；仲/叔胺；N-取代酰胺；支化烷基isopropyl
+- 下一步候选: 环胺；或仲胺；或支化烷基；或多取代环烷
