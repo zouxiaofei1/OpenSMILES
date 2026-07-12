@@ -81,37 +81,50 @@ def _mult_zh(n: int) -> str:
     return MULT_ZH.get(n, "")
 
 
-def _prefix_one_en(stem: str, subs: list) -> str:
-    locs = _locant_str(subs)
+def _omit_sub_locants(n_carbons: int, substituents: list) -> bool:
+    if n_carbons <= 1:
+        return True
+    return n_carbons == 2 and len(substituents) == 1
+
+
+def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
     mult = _mult_en(len(subs))
-    return f"{locs}-{mult}{stem}"
+    if omit:
+        return f"{mult}{stem}"
+    return f"{_locant_str(subs)}-{mult}{stem}"
 
 
-def _prefix_one_zh(zh_stem: str, subs: list) -> str:
-    locs = _locant_str(subs)
+def _prefix_one_zh(zh_stem: str, subs: list, omit: bool) -> str:
     mult = _mult_zh(len(subs))
-    return f"{locs}-{mult}{zh_stem}"
+    if omit:
+        return f"{mult}{zh_stem}"
+    return f"{_locant_str(subs)}-{mult}{zh_stem}"
 
 
 def _sorted_stems(groups: dict[str, list]) -> list[str]:
     return sorted(k for k in groups if k)
 
 
-def _parts_for_stem(stem: str, subs: list) -> tuple[str, str]:
+def _parts_for_stem(stem: str, subs: list, omit: bool) -> tuple[str, str]:
     zh_stem = subs[0].get("zh") or ""
-    return _prefix_one_en(stem, subs), _prefix_one_zh(zh_stem, subs)
+    return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit)
 
 
-def _build_prefix(substituents: list) -> tuple[str, str]:
-    if not substituents:
-        return "", ""
-    groups = _group_by_stem(substituents)
+def _collect_parts(groups: dict[str, list], omit: bool) -> tuple[list[str], list[str]]:
     en_parts: list[str] = []
     zh_parts: list[str] = []
     for stem in _sorted_stems(groups):
-        en_p, zh_p = _parts_for_stem(stem, groups[stem])
+        en_p, zh_p = _parts_for_stem(stem, groups[stem], omit)
         en_parts.append(en_p)
         zh_parts.append(zh_p)
+    return en_parts, zh_parts
+
+
+def _build_prefix(substituents: list, n_carbons: int) -> tuple[str, str]:
+    if not substituents:
+        return "", ""
+    omit = _omit_sub_locants(n_carbons, substituents)
+    en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit)
     return "-".join(en_parts), "-".join(zh_parts)
 
 
@@ -124,7 +137,7 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     names = _names_for(kind, n, numbered)
     if not names:
         return _unsupported(n, kind)
-    pre_en, pre_zh = _build_prefix(numbered.get("substituents") or [])
+    pre_en, pre_zh = _build_prefix(numbered.get("substituents") or [], n)
     en = _join_name(pre_en, names[0])
     zh = _join_name(pre_zh, names[1])
     return _ok(en, zh, time_ms, source)

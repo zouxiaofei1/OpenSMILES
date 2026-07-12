@@ -30,11 +30,32 @@ def _all_carbons(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
 
 
+def _side_count(mol: Mol, chain: list[int]) -> int:
+    chain_set = set(chain)
+    n = 0
+    for c in chain:
+        atom = mol.GetAtomWithIdx(c)
+        for nb in atom.GetNeighbors():
+            if nb.GetAtomicNum() != 1 and nb.GetIdx() not in chain_set:
+                n += 1
+    return n
+
+
+def _chain_key(mol: Mol, path: list[int]) -> tuple:
+    return (len(path), _side_count(mol, path))
+
+
+def _better(mol: Mol, cand: list[int], best: list[int]) -> bool:
+    if not best:
+        return True
+    return _chain_key(mol, cand) > _chain_key(mol, best)
+
+
 def _best_among(mol: Mol, seeds: list[int]) -> list[int]:
     best: list[int] = []
     for c in seeds:
         path = _longest_from(mol, c)
-        if len(path) > len(best):
+        if _better(mol, path, best):
             best = path
     return best
 

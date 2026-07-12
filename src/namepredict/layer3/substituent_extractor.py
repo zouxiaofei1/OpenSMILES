@@ -4,6 +4,8 @@ from rdkit.Chem import Mol
 
 ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
 ALKYL_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
+HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
+HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}
 
 
 def _c_neighbors(mol: Mol, idx: int) -> list[int]:
@@ -95,13 +97,44 @@ def _make_alkyl(attach: int, path: list[int]) -> dict:
     }
 
 
-def extract_substituents(info: dict, parent: dict) -> list:
-    mol: Mol = info["mol"]
-    chain = parent.get("chain") or []
+def _make_halo(attach: int, halo_idx: int, z: int) -> dict:
+    return {
+        "kind": "halo",
+        "attach_idx": attach,
+        "atoms": [halo_idx],
+        "en": HALO_EN[z],
+        "zh": HALO_ZH[z],
+    }
+
+
+def _halo_on_carbon(mol: Mol, c_idx: int) -> list[dict]:
+    atom = mol.GetAtomWithIdx(c_idx)
+    out: list[dict] = []
+    for n in atom.GetNeighbors():
+        z = n.GetAtomicNum()
+        if z in HALO_EN:
+            out.append(_make_halo(c_idx, n.GetIdx(), z))
+    return out
+
+
+def _extract_halos(mol: Mol, chain: list[int]) -> list[dict]:
+    out: list[dict] = []
+    for c in chain:
+        out.extend(_halo_on_carbon(mol, c))
+    return out
+
+
+def _extract_alkyls(mol: Mol, chain: list[int]) -> list[dict]:
     chain_set = set(chain)
-    out: list = []
+    out: list[dict] = []
     for attach, start in _side_starts(mol, chain):
         path = _walk_linear(mol, start, chain_set)
         if path:
             out.append(_make_alkyl(attach, path))
     return out
+
+
+def extract_substituents(info: dict, parent: dict) -> list:
+    mol: Mol = info["mol"]
+    chain = parent.get("chain") or []
+    return _extract_alkyls(mol, chain) + _extract_halos(mol, chain)
