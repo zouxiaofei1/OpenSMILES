@@ -279,8 +279,8 @@ def _hetero_orienters() -> dict:
         "thiol": _orient_thiol,
         "diol": _orient_polyol, "triol": _orient_polyol,
         "diamine": _orient_diamine,
-        "cycloalcohol": _orient_cycloalcohol,
-        "cycloamine": _orient_cycloamine,
+        "cycloalcohol": _orient_cycloalcohol, "phenol": _orient_cycloalcohol,
+        "cycloamine": _orient_cycloamine, "aniline": _orient_cycloamine,
         "amine": _orient_amine, "sec_amine": _orient_amine, "tert_amine": _orient_amine,
     }
 

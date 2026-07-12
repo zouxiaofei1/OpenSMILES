@@ -4,12 +4,14 @@ from rdkit.Chem import Mol
 
 from namepredict.layer2.ring_parent import (
     _endocyclic_double,
+    _is_simple_aniline,
     _is_simple_benzene,
     _is_simple_cycloalcohol,
     _is_simple_cycloalkane,
     _is_simple_cycloalkene,
     _is_simple_cycloamine,
     _is_simple_cycloketone,
+    _is_simple_phenol,
 )
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
     atom = mol.GetAtomWithIdx(idx)
@@ -148,8 +150,9 @@ def _dione_parent(info: dict) -> dict:
 def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
     return {"chain": chain, "n_carbons": len(chain), "kind": kind, **kw}
 def _alcohol_parent(info: dict) -> dict:
-    if _is_simple_cycloalcohol(info):
-        return _cyclo_fg_parent(info, "cycloalcohol", "hydroxyls", "oh_c_idx")
+    for pred, kind in ((_is_simple_phenol, "phenol"), (_is_simple_cycloalcohol, "cycloalcohol")):
+        if pred(info):
+            return _cyclo_fg_parent(info, kind, "hydroxyls", "oh_c_idx")
     if _is_simple_alkanetriol(info):
         return _triol_parent(info)
     if _is_simple_alkanediol(info):
@@ -203,8 +206,9 @@ def _primary_amine_parent(info: dict) -> dict:
     c = prim["c_idx"]
     return _parent_dict(_chain_through(info, c), "amine", amine_c_idx=c)
 def _amine_parent(info: dict) -> dict:
-    if _is_simple_cycloamine(info):
-        return _cyclo_fg_parent(info, "cycloamine", "amines", "amine_c_idx")
+    for pred, kind in ((_is_simple_aniline, "aniline"), (_is_simple_cycloamine, "cycloamine")):
+        if pred(info):
+            return _cyclo_fg_parent(info, kind, "amines", "amine_c_idx")
     if _is_simple_alkanediamine(info):
         return _diamine_parent(info)
     tert = _tert_amine_parent(info)

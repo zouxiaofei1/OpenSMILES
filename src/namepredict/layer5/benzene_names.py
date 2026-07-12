@@ -34,3 +34,11 @@ def benzene_prefix(numbered: dict, build_prefix) -> tuple[str, str]:
         locs = _xylene_locants(numbered)
         return f"{locs}-", f"{locs}-二甲基"
     return build_prefix(numbered.get("substituents") or [], 6, "benzene")
+
+
+def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
+    if kind == "phenol":
+        return "phenol", "苯酚"
+    if kind == "aniline":
+        return "aniline", "苯胺"
+    return None

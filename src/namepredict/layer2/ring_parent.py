@@ -181,7 +181,8 @@ def _mono_amine_on_ring(info: dict, ring_set: set[int]) -> dict | None:
     if len(amines) != 1:
         return None
     am = amines[0]
-    if am["c_idx"] not in ring_set:
+    c_idx = am.get("c_idx")
+    if c_idx is None or c_idx not in ring_set:
         return None
     return am
 
@@ -289,3 +290,45 @@ def _is_simple_benzene(info: dict) -> bool:
     if not _outside_ok(mol, ring_set):
         return False
     return _benzene_subs_ok(mol, ring_set)
+
+
+def _hetero_or_ring_halo(mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
+    for atom in mol.GetAtoms():
+        z = atom.GetAtomicNum()
+        if z in (1, 6) or atom.GetIdx() in ring_set:
+            continue
+        if atom.GetIdx() in allowed or _is_ring_halo(atom, ring_set):
+            continue
+        return False
+    return True
+
+
+def _arene_fg_subs_ok(mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
+    if not _hetero_or_ring_halo(mol, ring_set, allowed):
+        return False
+    starts = _ring_side_starts(mol, ring_set)
+    if len(_benzene_alkyl_ns(mol, ring_set, starts)) != len(starts):
+        return False
+    return _ring_halo_n(mol, ring_set) + len(starts) <= 2
+
+
+def _is_simple_phenol(info: dict) -> bool:
+    if not _is_benzene_core(info) or info.get("amines"):
+        return False
+    mol: Mol = info["mol"]
+    ring_set = set(info["rings"][0]["atom_ids"])
+    oh = _mono_oh_on_ring(info, ring_set)
+    if oh is None:
+        return False
+    return _arene_fg_subs_ok(mol, ring_set, {oh["o_idx"]})
+
+
+def _is_simple_aniline(info: dict) -> bool:
+    if not _is_benzene_core(info) or info.get("hydroxyls"):
+        return False
+    mol: Mol = info["mol"]
+    ring_set = set(info["rings"][0]["atom_ids"])
+    am = _mono_amine_on_ring(info, ring_set)
+    if am is None or am.get("degree") != 1:
+        return False
+    return _arene_fg_subs_ok(mol, ring_set, {am["n_idx"]})
