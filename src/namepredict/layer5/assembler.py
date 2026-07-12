@@ -9,6 +9,9 @@ from namepredict.layer5.stems import (
     ALDEHYDE_ZH,
     ALKANE_EN,
     ALKANE_ZH,
+    ESTER_ACYL_EN,
+    ESTER_ALKYL_EN,
+    ESTER_ALKYL_ZH,
 )
 from namepredict.types import NameResult
 
@@ -83,6 +86,26 @@ def _aldehyde_names(n: int) -> tuple[str, str] | None:
     return _pair(ALDEHYDE_EN, ALDEHYDE_ZH, n)
 
 
+def _ester_acyl_en(n: int) -> str | None:
+    return ESTER_ACYL_EN.get(n)
+
+
+def _ester_alkyl_pair(alkoxy_n: int) -> tuple[str, str] | None:
+    en, zh = ESTER_ALKYL_EN.get(alkoxy_n), ESTER_ALKYL_ZH.get(alkoxy_n)
+    return (en, zh) if en and zh else None
+
+
+def _ester_names(acyl_n: int, alkoxy_n: int | None) -> tuple[str, str] | None:
+    if alkoxy_n is None:
+        return None
+    alkyl = _ester_alkyl_pair(alkoxy_n)
+    acyl = _ester_acyl_en(acyl_n)
+    acid_zh = ACID_ZH.get(acyl_n)
+    if not alkyl or not acyl or not acid_zh:
+        return None
+    return f"{alkyl[0]} {acyl}", f"{acid_zh}{alkyl[1]}酯"
+
+
 def _ketone_from_alkane(n: int, locant: int) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain:
@@ -144,15 +167,25 @@ def _alkyne_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | N
     return _alkyne_with_locant(n, locant)
 
 
-def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    if kind == "alcohol":
-        return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
+def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "acid":
         return _acid_names(n)
     if kind == "aldehyde":
         return _aldehyde_names(n)
+    if kind == "ester":
+        parent = numbered.get("parent") or {}
+        return _ester_names(n, parent.get("alkoxy_n"))
     if kind == "ketone":
         return _ketone_names(n, numbered.get("ketone_locant"))
+    return None
+
+
+def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    if kind == "alcohol":
+        return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
+    carb = _carbonyl_names(kind, n, numbered)
+    if carb is not None:
+        return carb
     return _unsat_or_alkane(kind, n, numbered)
 
 

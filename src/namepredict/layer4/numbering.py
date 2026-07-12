@@ -84,6 +84,21 @@ def _orient_aldehyde(chain: list[int], parent: dict) -> list[int]:
     return list(reversed(chain))
 
 
+def _ester_pos_on(chain: list[int], ester_c: int | None) -> int | None:
+    if ester_c is None or ester_c not in chain:
+        return None
+    return chain.index(ester_c) + 1
+
+
+def _orient_ester(chain: list[int], parent: dict) -> list[int]:
+    pos = _ester_pos_on(chain, parent.get("ester_c_idx"))
+    if pos is None:
+        return chain
+    if pos == 1:
+        return chain
+    return list(reversed(chain))
+
+
 def _ketone_pos_on(chain: list[int], ket_c: int | None) -> int | None:
     if ket_c is None or ket_c not in chain:
         return None
@@ -155,6 +170,7 @@ def _kind_orienters() -> dict:
         "ketone": _orient_ketone,
         "acid": lambda c, p, s: _orient_acid(c, p),
         "aldehyde": lambda c, p, s: _orient_aldehyde(c, p),
+        "ester": lambda c, p, s: _orient_ester(c, p),
         "alkene": _orient_alkene,
         "alkyne": _orient_alkyne,
     }

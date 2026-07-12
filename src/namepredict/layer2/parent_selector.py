@@ -83,30 +83,12 @@ def _chain_through(info: dict, c_idx: int) -> list[int]:
     return _join_through(c_idx, _arms_from(mol, c_idx))
 
 
-def _parent_fields(
-    oh_c_idx=None,
-    cooh_c_idx=None,
-    ketone_c_idx=None,
-    aldehyde_c_idx=None,
-    double_bond=None,
-    triple_bond=None,
-) -> dict:
-    return {
-        "oh_c_idx": oh_c_idx,
-        "cooh_c_idx": cooh_c_idx,
-        "ketone_c_idx": ketone_c_idx,
-        "aldehyde_c_idx": aldehyde_c_idx,
-        "double_bond": double_bond,
-        "triple_bond": triple_bond,
-    }
-
-
 def _parent_core(chain: list[int], kind: str) -> dict:
     return {"chain": chain, "n_carbons": len(chain), "kind": kind}
 
 
 def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
-    return {**_parent_core(chain, kind), **_parent_fields(**kw)}
+    return {**_parent_core(chain, kind), **kw}
 
 
 def _alcohol_parent(info: dict) -> dict:
@@ -127,6 +109,22 @@ def _ketone_parent(info: dict) -> dict:
 def _aldehyde_parent(info: dict) -> dict:
     ald_c = info["aldehydes"][0]["c_idx"]
     return _parent_dict(_chain_through(info, ald_c), "aldehyde", aldehyde_c_idx=ald_c)
+
+
+def _ester_parent(info: dict) -> dict:
+    e = info["esters"][0]
+    chain = _chain_through(info, e["c_idx"])
+    alkoxy_n = len(_longest_from(info["mol"], e["alkoxy_c_idx"]))
+    return _parent_dict(
+        chain, "ester",
+        ester_c_idx=e["c_idx"], o_idx=e["o_idx"], alkoxy_c_idx=e["alkoxy_c_idx"],
+        alkoxy_n=alkoxy_n,
+    )
+
+
+def _is_mono_ester(info: dict) -> bool:
+    esters = info.get("esters") or []
+    return bool(info.get("has_ester")) and len(esters) == 1
 
 
 def _best_arm_away(mol: Mol, from_c: int, forbid: set[int]) -> list[int]:
@@ -171,13 +169,22 @@ def _is_mono_alkyne(info: dict) -> bool:
     return len(triples) == 1 and len(doubles) == 0
 
 
-def _fg_parent(info: dict) -> dict | None:
+def _carbonyl_parent(info: dict) -> dict | None:
     if info.get("has_acid") and info.get("carboxyls"):
         return _acid_parent(info)
+    if _is_mono_ester(info):
+        return _ester_parent(info)
     if info.get("has_aldehyde") and info.get("aldehydes"):
         return _aldehyde_parent(info)
     if info.get("has_ketone") and info.get("ketones"):
         return _ketone_parent(info)
+    return None
+
+
+def _fg_parent(info: dict) -> dict | None:
+    carb = _carbonyl_parent(info)
+    if carb is not None:
+        return carb
     if info.get("has_alcohol") and info.get("hydroxyls"):
         return _alcohol_parent(info)
     return None

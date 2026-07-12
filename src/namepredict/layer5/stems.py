@@ -100,3 +100,19 @@ ALDEHYDE_ZH = {
     9: "壬醛",
     10: "癸醛",
 }
+# P-65.6 functional class: alkyl alkanoate (retained formate/acetate)
+ESTER_ACYL_EN = {
+    1: "formate",
+    2: "acetate",
+    3: "propanoate",
+    4: "butanoate",
+    5: "pentanoate",
+    6: "hexanoate",
+    7: "heptanoate",
+    8: "octanoate",
+    9: "nonanoate",
+    10: "decanoate",
+}
+# Alkyl stem for ester (no 基): methyl→甲, ethyl→乙, ...
+ESTER_ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
+ESTER_ALKYL_ZH = {1: "甲", 2: "乙", 3: "丙", 4: "丁"}
