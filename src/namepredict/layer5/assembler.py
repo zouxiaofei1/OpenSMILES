@@ -77,11 +77,27 @@ def _acid_names(n: int) -> tuple[str, str] | None:
     return _pair(ACID_EN, ACID_ZH, n)
 
 
+def _ketone_from_alkane(n: int, locant: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    return f"{en[:-1]}-{locant}-one", f"{zh[0]}-{locant}-酮"
+
+
+def _ketone_names(n: int, locant: int | None) -> tuple[str, str] | None:
+    if locant is None:
+        return None
+    return _ketone_from_alkane(n, locant)
+
+
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
     if kind == "acid":
         return _acid_names(n)
+    if kind == "ketone":
+        return _ketone_names(n, numbered.get("ketone_locant"))
     return _alkane_names(n)
 
 

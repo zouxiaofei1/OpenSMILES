@@ -69,12 +69,37 @@ def _orient_acid(chain: list[int], parent: dict) -> list[int]:
     return list(reversed(chain))
 
 
+def _ketone_pos_on(chain: list[int], ket_c: int | None) -> int | None:
+    if ket_c is None or ket_c not in chain:
+        return None
+    return chain.index(ket_c) + 1
+
+
+def _ketone_position(parent: dict) -> int | None:
+    return _ketone_pos_on(parent.get("chain") or [], parent.get("ketone_c_idx"))
+
+
+def _orient_ketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    pos = _ketone_position(parent)
+    if pos is None:
+        return chain
+    base = _maybe_reverse(chain, pos)
+    rev = list(reversed(base))
+    k_b = _ketone_pos_on(base, parent.get("ketone_c_idx"))
+    k_r = _ketone_pos_on(rev, parent.get("ketone_c_idx"))
+    if k_b is not None and k_r is not None and k_b == k_r:
+        return _prefer_chain(base, rev, substituents)
+    return base
+
+
 def _orient_chain(parent: dict, substituents: list) -> list[int]:
     chain = list(parent.get("chain") or [])
     if not chain:
         return chain
     if parent.get("kind") == "alcohol":
         return _orient_alcohol(chain, parent, substituents)
+    if parent.get("kind") == "ketone":
+        return _orient_ketone(chain, parent, substituents)
     if parent.get("kind") == "acid":
         return _orient_acid(chain, parent)
     return _orient_alkane(chain, substituents)
@@ -86,6 +111,14 @@ def _oh_locant(oriented: dict) -> int | None:
     if oriented.get("kind") != "alcohol" or oh_c not in chain:
         return None
     return chain.index(oh_c) + 1
+
+
+def _ketone_locant(oriented: dict) -> int | None:
+    chain = oriented.get("chain") or []
+    ket_c = oriented.get("ketone_c_idx")
+    if oriented.get("kind") != "ketone" or ket_c not in chain:
+        return None
+    return chain.index(ket_c) + 1
 
 
 def _omit_oh(oh_pos: int | None, n_carbons: int) -> bool:
@@ -100,12 +133,13 @@ def _with_locants(chain: list[int], substituents: list) -> list:
     return out
 
 
-def _pack(oriented: dict, substituents: list, oh_pos: int | None) -> dict:
+def _pack(oriented: dict, substituents: list, oh_pos: int | None, ket_pos: int | None) -> dict:
     return {
         "parent": oriented,
         "substituents": substituents,
         "oh_locant": oh_pos,
         "omit_oh_locant": _omit_oh(oh_pos, oriented.get("n_carbons", 0)),
+        "ketone_locant": ket_pos,
     }
 
 
@@ -113,4 +147,4 @@ def number(parent: dict, substituents: list) -> dict:
     chain = _orient_chain(parent, substituents)
     oriented = {**parent, "chain": chain}
     numbered = _with_locants(chain, substituents)
-    return _pack(oriented, numbered, _oh_locant(oriented))
+    return _pack(oriented, numbered, _oh_locant(oriented), _ketone_locant(oriented))

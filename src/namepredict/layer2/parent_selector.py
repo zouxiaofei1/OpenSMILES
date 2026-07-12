@@ -88,6 +88,7 @@ def _parent_dict(
     kind: str,
     oh_c_idx: int | None = None,
     cooh_c_idx: int | None = None,
+    ketone_c_idx: int | None = None,
 ) -> dict:
     return {
         "chain": chain,
@@ -95,6 +96,7 @@ def _parent_dict(
         "kind": kind,
         "oh_c_idx": oh_c_idx,
         "cooh_c_idx": cooh_c_idx,
+        "ketone_c_idx": ketone_c_idx,
     }
 
 
@@ -108,9 +110,16 @@ def _acid_parent(info: dict) -> dict:
     return _parent_dict(_chain_through(info, cooh_c), "acid", cooh_c_idx=cooh_c)
 
 
+def _ketone_parent(info: dict) -> dict:
+    ket_c = info["ketones"][0]["c_idx"]
+    return _parent_dict(_chain_through(info, ket_c), "ketone", ketone_c_idx=ket_c)
+
+
 def select_parent(info: dict) -> dict:
     if info.get("has_acid") and info.get("carboxyls"):
         return _acid_parent(info)
+    if info.get("has_ketone") and info.get("ketones"):
+        return _ketone_parent(info)
     if info.get("has_alcohol") and info.get("hydroxyls"):
         return _alcohol_parent(info)
     return _parent_dict(_longest_chain(info["mol"]), "alkane")
