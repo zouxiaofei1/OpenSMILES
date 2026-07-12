@@ -34,8 +34,8 @@ def get_store() -> StateStore:
 
 
 def get_namer() -> SMILESNNamer:
-    """Return process-wide SMILESNNamer."""
-    return _NAMER
+    """Return a fresh SMILESNNamer (no stale process-wide singleton)."""
+    return SMILESNNamer()
 
 
 def get_controller() -> "LoopController":
@@ -207,7 +207,6 @@ class LoopController:
 
 _BUS = EventBus()
 _STORE = StateStore(MEMORY_ROOT)
-_NAMER = SMILESNNamer()
 _CONTROLLER = LoopController(_STORE, _BUS, MEMORY_ROOT)
 
 

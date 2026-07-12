@@ -41,7 +41,7 @@ def test_snapshot_returns_sha(tmp_path: Path):
     assert sha == _run_git(repo, "rev-parse", "HEAD")
 
 
-def test_commit_allowed_path_and_revert(tmp_path: Path):
+def test_commit_allowed_path(tmp_path: Path):
     repo = _init_repo(tmp_path)
     gate = GitGate(repo)
     base = gate.snapshot()
@@ -56,10 +56,33 @@ def test_commit_allowed_path_and_revert(tmp_path: Path):
     assert target.read_text(encoding="utf-8") == "x = 1\n"
     assert _run_git(repo, "rev-parse", "HEAD") == sha
 
-    target.write_text("x = 2\n", encoding="utf-8")
+
+def test_revert_restores_allowlist_keeps_other_dirty(tmp_path: Path):
+    """Allowlist dirty is restored; non-allowlist dirty tracked files survive."""
+    repo = _init_repo(tmp_path)
+    gate = GitGate(repo)
+    base = gate.snapshot()
+
+    # Tracked allowlist file at base
+    tracked = repo / "src" / "namepredict" / "tracked.py"
+    tracked.parent.mkdir(parents=True, exist_ok=True)
+    tracked.write_text("v1\n", encoding="utf-8")
+    _run_git(repo, "add", "src/namepredict/tracked.py")
+    _run_git(repo, "commit", "-m", "add tracked")
+    base = gate.snapshot()
+
+    tracked.write_text("v2 dirty\n", encoding="utf-8")
+    (repo / "README.md").write_text("readme dirty\n", encoding="utf-8")
+    untracked = repo / "src" / "namepredict" / "new_rule.py"
+    untracked.write_text("new\n", encoding="utf-8")
+
     gate.revert(base)
+
     assert _run_git(repo, "rev-parse", "HEAD") == base
-    assert not target.exists()
+    assert tracked.read_text(encoding="utf-8") == "v1\n"
+    assert not untracked.exists()
+    # Non-allowlist dirty must survive (no hard reset)
+    assert (repo / "README.md").read_text(encoding="utf-8") == "readme dirty\n"
 
 
 def test_commit_rejects_disallowed_path(tmp_path: Path):

@@ -1,4 +1,4 @@
-"""Git snapshot / commit / revert gate with path allowlist."""
+"""Git snapshot / commit / allowlist-only revert gate."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ DEFAULT_ALLOWED = (
     "skills/chem-tdd-skill/",
 )
 
-# Untracked clean on revert — production only; never wipe memory sessions.
+# Production paths restored + untracked-cleaned on revert (never wipe memory).
 CLEAN_ON_REVERT = (
     "src/namepredict/",
     "tests/unit/",
@@ -26,7 +26,7 @@ CLEAN_ON_REVERT = (
 
 
 class GitGate:
-    """Restrict commits to allowed paths; snapshot and hard-reset via git."""
+    """Restrict commits to allowed paths; restore only allowlisted paths on revert."""
 
     def __init__(
         self,
@@ -49,9 +49,20 @@ class GitGate:
         return self.snapshot()
 
     def revert(self, sha: str) -> None:
-        """Hard-reset to sha and remove untracked production allowlist files."""
-        self._git("reset", "--hard", sha)
+        """Restore allowlist paths to sha; clean untracked under CLEAN_ON_REVERT.
+
+        Does not ``git reset --hard`` the whole tree, so dirty tracked files
+        outside the allowlist survive.
+        """
+        for prefix in CLEAN_ON_REVERT:
+            self._try_checkout(sha, prefix)
         self._git("clean", "-fd", "--", *CLEAN_ON_REVERT)
+
+    def _try_checkout(self, sha: str, path: str) -> None:
+        try:
+            self._git("checkout", sha, "--", path)
+        except GitGateError:
+            pass  # path may not exist at sha (untracked-only; clean handles it)
 
     def _assert_allowed(self, rels: list[str]) -> None:
         for rel in rels:

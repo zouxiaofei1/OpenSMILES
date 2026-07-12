@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,7 +16,6 @@ from agent_loop.events import EventBus
 from agent_loop.git_gate import DEFAULT_ALLOWED, GitGate
 from agent_loop.pi_runner import MockPiRunner, PiResult, PiRunner
 from agent_loop.state import StateStore
-from benchmarks.benchmark import run_benchmark
 from tools.fail_cluster import Cluster, cluster_failures
 from tools.structure_lint import lint_tree
 
@@ -46,14 +46,26 @@ class CycleResult:
     session_path: Path
 
 
-def _default_namer() -> Any:
-    from namepredict.namer import SMILESNNamer
-
-    return SMILESNNamer()
-
-
 def _default_pi(cfg: LoopConfig) -> PiRunner | MockPiRunner:
     return MockPiRunner() if cfg.mock_pi else PiRunner()
+
+
+def _bench_argv(cfg: LoopConfig) -> list[str]:
+    cmd = [sys.executable, "-m", "benchmarks.benchmark", "--data", str(cfg.data_path), "--json"]
+    if cfg.bench_limit is not None:
+        cmd.extend(["--limit", str(cfg.bench_limit)])
+    return cmd
+
+
+def _bench_subprocess(cfg: LoopConfig, cwd: Path) -> dict[str, Any]:
+    """Cold-import namepredict via fresh process so post-edit scores are live."""
+    r = subprocess.run(
+        _bench_argv(cfg), cwd=cwd, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", check=False,
+    )
+    if r.returncode != 0:
+        raise RuntimeError(f"bench subprocess failed: {r.stderr or r.stdout}")
+    return json.loads(r.stdout)
 
 
 def _ensure_paths(cfg: LoopConfig) -> LoopConfig:
@@ -300,7 +312,7 @@ class AgentLoop:
         bus: EventBus | None,
     ) -> None:
         self.config = _ensure_paths(config)
-        self.namer_factory = namer_factory or _default_namer
+        self.namer_factory = namer_factory  # unused when bench_fn / subprocess used
         self.pi_runner = pi_runner or _default_pi(self.config)
         self.bus = bus or EventBus()
         self.cwd = Path(self.config.cwd)
@@ -396,8 +408,8 @@ class AgentLoop:
     def _bench(self) -> dict[str, Any]:
         if self.bench_fn is not None:
             return self.bench_fn()
-        namer = self.namer_factory()
-        return run_benchmark(namer, self.config.data_path, limit=self.config.bench_limit)
+        # Fresh process so post-pi / post-revert namepredict code is scored.
+        return _bench_subprocess(self.config, self.cwd)
 
     def _resolve_tmpl(self) -> Path:
         tmpl = self.cwd / _PROMPT_TMPL

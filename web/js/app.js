@@ -426,6 +426,14 @@
   /* ---------- Controls ---------- */
 
   async function onStart() {
+    const ok = window.confirm(
+      "确认启动 Agent 循环？\n\n" +
+        "将在当前工作树运行真实 benchmark / lint / pytest，\n" +
+        "并对 allowlist 路径（src/namepredict、tests/unit、skills/…）执行 git commit 或 allowlist-only revert。\n" +
+        "非 allowlist 的本地修改不会被 hard-reset，但 allowlist 内未提交改动可能被还原。\n\n" +
+        "确定继续？"
+    );
+    if (!ok) return;
     setBusy(true);
     try {
       const r = await api(API.start, { method: "POST" });

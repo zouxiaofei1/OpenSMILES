@@ -162,6 +162,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Bilingual SMILES namer benchmark")
     p.add_argument("--data", type=Path, required=True, help="Path to merged_benchmark.json")
     p.add_argument("--limit", type=int, default=None, help="Optional row limit")
+    p.add_argument("--json", action="store_true", help="Print full report as JSON")
     return p
 
 
@@ -172,6 +173,9 @@ def main(argv: list[str] | None = None) -> None:
     except FileNotFoundError as exc:
         print(f"error: {exc}", file=sys.stderr)
         sys.exit(2)
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False))
+        return
     _print_summary(report)
 
 

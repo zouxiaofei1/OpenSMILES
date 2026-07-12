@@ -51,7 +51,7 @@ Optional flags (aligned with `LoopConfig`):
 
 Without `--mock-pi`, the loop uses the real `PiRunner` (requires a working local `pi`).
 
-**Important:** even with `--mock-pi`, each cycle still runs **real** benchmark + git gate on the current working tree (lint, pytest, commit/revert of allowlisted paths). Prefer a clean tracked tree; untracked `data/` / docs are usually fine. Do not run against a dirty tree of production code you care about.
+**Important:** even with `--mock-pi`, each cycle still runs **real** benchmark + git gate on the current working tree (lint, pytest, commit of allowlisted paths). Revert is **allowlist-only**: it restores `src/namepredict/`, `tests/unit/`, and `skills/chem-tdd-skill/` to the cycle base SHA and cleans untracked files under those prefixes — it does **not** `git reset --hard` the whole repo, so dirty tracked files outside the allowlist survive. Prefer a clean allowlist tree; untracked `data/` / docs are usually fine. Console **Start** shows the same warning before launching.
 
 ## Tests
 
