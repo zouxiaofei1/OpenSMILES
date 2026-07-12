@@ -154,6 +154,13 @@ def _unsat_stem_names(n: int, locant: int | None, en_sfx: str, zh_sfx: str) -> t
 def _alkenoic_acid_names(n: int, locant: int | None) -> tuple[str, str] | None:
     return _unsat_stem_names(n, locant, "enoic acid", "烯酸")
 
+def _alkenoate_names(n, locant, alkoxy_n) -> tuple[str, str] | None:
+    alkyl = _ester_alkyl_pair(alkoxy_n) if alkoxy_n is not None else None
+    stem = _unsat_stem_names(n, locant, "enoate", "烯酸")
+    if not alkyl or not stem:
+        return None
+    return f"{alkyl[0]} {stem[0]}", f"{stem[1]}{alkyl[1]}酯"
+
 def _alkenal_names(n: int, locant: int | None) -> tuple[str, str] | None:
     return _unsat_stem_names(n, locant, "enal", "烯醛")
 
@@ -310,17 +317,23 @@ def _nitrile_or_none(kind: str, n: int, numbered: dict | None = None) -> tuple[s
         return _anhydride_from_acid(n)
     return None
 
-def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+def _ester_or_alkenoate(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    parent = numbered.get("parent") or {}
     if kind == "ester":
-        parent = numbered.get("parent") or {}
         return _ester_names(n, parent.get("alkoxy_n"))
+    if kind == "alkenoate":
+        return _alkenoate_names(n, numbered.get("ene_locant"), parent.get("alkoxy_n"))
+    return None
+
+def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    top = _ester_or_alkenoate(kind, n, numbered)
+    if top is not None:
+        return top
     if kind == "dione":
         return _dione_names(n, numbered.get("ketone_locants"))
     if kind == "ketone":
         return _ketone_names(n, numbered.get("ketone_locant"))
-    if kind == "cycloketone":
-        return _cycloketone_names(n)
-    return None
+    return _cycloketone_names(n) if kind == "cycloketone" else None
 
 def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _acid_ald_amide(kind, n, numbered) or _nitrile_or_none(kind, n, numbered)
@@ -329,21 +342,14 @@ def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None
 def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
     if kind == "cycloalcohol":
         return _cycloalcohol_names(n)
-    if kind == "cycloamine":
-        return _cycloamine_names(n)
-    return None
+    return _cycloamine_names(n) if kind == "cycloamine" else None
 
-def _alkenol_names(
-    n: int, ene_loc: int | None, oh_loc: int | None
-) -> tuple[str, str] | None:
+def _alkenol_names(n, ene_loc, oh_loc) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain or ene_loc is None or oh_loc is None:
         return None
     en, zh = plain
-    return (
-        f"{en[:-3]}-{ene_loc}-en-{oh_loc}-ol",
-        f"{zh[0]}-{ene_loc}-烯-{oh_loc}-醇",
-    )
+    return f"{en[:-3]}-{ene_loc}-en-{oh_loc}-ol", f"{zh[0]}-{ene_loc}-烯-{oh_loc}-醇"
 
 def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alkenol":
@@ -437,7 +443,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     if n_carbons <= 1:
         return True
     # Carboxylic acids number COOH as 1; keep substituent locants (e.g. 2-aminoacetic acid).
-    if kind in ("acid", "alkenoic_acid", "alkenal", "alkenenitrile"):
+    if kind in ("acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate"):
         return False
     if n_carbons == 2 and len(substituents) == 1:
         return True

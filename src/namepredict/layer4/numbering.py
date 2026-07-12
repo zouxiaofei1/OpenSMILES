@@ -200,8 +200,9 @@ def _terminal_orienters() -> dict:
     return {
         "acid": _term_fn(_orient_acid), "alkenoic_acid": _term_fn(_orient_acid),
         "alkenal": _term_fn(_orient_aldehyde), "aldehyde": _term_fn(_orient_aldehyde),
-        "ester": _term_fn(_orient_ester), "amide": _term_fn(_orient_amide),
-        "nitrile": _term_fn(_orient_nitrile), "alkenenitrile": _term_fn(_orient_nitrile),
+        "ester": _term_fn(_orient_ester), "alkenoate": _term_fn(_orient_ester),
+        "amide": _term_fn(_orient_amide), "nitrile": _term_fn(_orient_nitrile),
+        "alkenenitrile": _term_fn(_orient_nitrile),
         "acyl_chloride": _term_fn(_orient_acyl_chloride),
     }
 
@@ -372,7 +373,8 @@ def _bond_locant(oriented: dict, kind: str, key: str) -> int | None:
 def _ene_locant(oriented: dict) -> int | None:
     kind = oriented.get("kind")
     if kind in (
-        "alkene", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenol", "cycloalkene",
+        "alkene", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenol",
+        "alkenoate", "cycloalkene",
     ):
         return _bond_locant(oriented, kind, "double_bond")
     return None
@@ -403,7 +405,7 @@ def _omit_amine(am_pos: int | None, n_carbons: int, kind: str | None = None) -> 
 def _omit_unsat(n_carbons: int, kind: str | None = None) -> bool:
     if kind == "cycloalkene":
         return True
-    if kind in ("alkenoic_acid", "alkenal", "alkenenitrile", "alkenol"):
+    if kind in ("alkenoic_acid", "alkenal", "alkenenitrile", "alkenol", "alkenoate"):
         return False
     return n_carbons <= 3
 

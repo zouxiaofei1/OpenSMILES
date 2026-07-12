@@ -221,27 +221,29 @@ _UNSAT_FG_CORE = _UNSAT_FG_BASE + ("has_alcohol",)
 _ALKENAL_BAD = _UNSAT_FG_CORE + ("has_nitrile",)
 _ALKENENITRILE_BAD = _UNSAT_FG_CORE + ("has_aldehyde",)
 _ALKENOL_BAD = _UNSAT_FG_BASE + ("has_aldehyde", "has_nitrile")
+_ALKENOATE_BAD = tuple(k for k in _UNSAT_FG_CORE + ("has_nitrile",) if k != "has_ester")
 
 def _ok_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple) -> bool:
     if info.get("has_ring") or info.get("has_alkyne"):
         return False
     return _is_mono_fg(info, flag, ekey) and _is_mono_alkene(info) and _no_fgs(info, bad)
 
-def _try_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple, kind: str, ckey: str) -> dict | None:
+def _try_unsat_fg(info, flag, ekey, bad, kind, ckey, **extra) -> dict | None:
     if not _ok_unsat_fg(info, flag, ekey, bad):
         return None
     c_idx, db = info[ekey][0]["c_idx"], info["double_bonds"][0]
     chain = _best_cover_pair(info["mol"], [c_idx, db["c1"], db["c2"]])
     if not chain or c_idx not in chain:
         return None
-    return _parent_dict(chain, kind, **{ckey: c_idx, "double_bond": (db["c1"], db["c2"])})
+    return _parent_dict(chain, kind, **{ckey: c_idx, "double_bond": (db["c1"], db["c2"]), **extra})
 
-def _fg_chain(info: dict, ekey: str, kind: str, ckey: str) -> dict:
+def _fg_chain(info: dict, ekey: str, kind: str, ckey: str, **extra) -> dict:
     c = info[ekey][0]["c_idx"]
-    return _parent_dict(_chain_through(info, c), kind, **{ckey: c})
+    return _parent_dict(_chain_through(info, c), kind, **{ckey: c, **extra})
 
-def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey):
-    return _try_unsat_fg(info, flag, ekey, bad, ukind, ckey) or _fg_chain(info, ekey, skind, ckey)
+def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
+    u = _try_unsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
+    return u or _fg_chain(info, ekey, skind, ckey, **extra)
 
 def _acid_parent(info: dict) -> dict:
     if _is_simple_alkanedioic(info):
@@ -302,14 +304,17 @@ def _nitrile_parent(info: dict) -> dict:
         "alkenenitrile", "nitrile", "nitrile_c_idx",
     )
 
-def _ester_parent(info: dict) -> dict:
+def _ester_meta(info: dict) -> dict:
     e = info["esters"][0]
-    chain = _chain_through(info, e["c_idx"])
-    alkoxy_n = len(_longest_from(info["mol"], e["alkoxy_c_idx"]))
-    return _parent_dict(
-        chain, "ester",
-        ester_c_idx=e["c_idx"], o_idx=e["o_idx"], alkoxy_c_idx=e["alkoxy_c_idx"],
-        alkoxy_n=alkoxy_n,
+    return dict(
+        o_idx=e["o_idx"], alkoxy_c_idx=e["alkoxy_c_idx"],
+        alkoxy_n=len(_longest_from(info["mol"], e["alkoxy_c_idx"])),
+    )
+
+def _ester_parent(info: dict) -> dict:
+    return _unsat_or_sat(
+        info, "has_ester", "esters", _ALKENOATE_BAD, "alkenoate", "ester",
+        "ester_c_idx", **_ester_meta(info),
     )
 
 def _best_arm_away(mol: Mol, from_c: int, forbid: set[int]) -> list[int]:
