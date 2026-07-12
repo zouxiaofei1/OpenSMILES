@@ -103,7 +103,14 @@ def _is_cc_double(bond) -> bool:
     return a.GetAtomicNum() == 6 and b.GetAtomicNum() == 6
 
 
-def _double_bond_entry(bond) -> dict:
+def _is_cc_triple(bond) -> bool:
+    if bond.GetBondType() != BondType.TRIPLE:
+        return False
+    a, b = bond.GetBeginAtom(), bond.GetEndAtom()
+    return a.GetAtomicNum() == 6 and b.GetAtomicNum() == 6
+
+
+def _bond_entry(bond) -> dict:
     a, b = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
     return {"c1": min(a, b), "c2": max(a, b)}
 
@@ -112,7 +119,15 @@ def _double_bond_entries(mol: Mol) -> list[dict]:
     out: list[dict] = []
     for bond in mol.GetBonds():
         if _is_cc_double(bond):
-            out.append(_double_bond_entry(bond))
+            out.append(_bond_entry(bond))
+    return out
+
+
+def _triple_bond_entries(mol: Mol) -> list[dict]:
+    out: list[dict] = []
+    for bond in mol.GetBonds():
+        if _is_cc_triple(bond):
+            out.append(_bond_entry(bond))
     return out
 
 
@@ -126,6 +141,7 @@ def _fg_lists(
     ketones: list[dict],
     aldehydes: list[dict],
     double_bonds: list[dict],
+    triple_bonds: list[dict],
 ) -> dict:
     return {
         "hydroxyls": hydroxyls,
@@ -133,6 +149,7 @@ def _fg_lists(
         "ketones": ketones,
         "aldehydes": aldehydes,
         "double_bonds": double_bonds,
+        "triple_bonds": triple_bonds,
     }
 
 
@@ -143,6 +160,7 @@ def _fg_bools(lists: dict) -> dict:
         "has_ketone": bool(lists["ketones"]),
         "has_aldehyde": bool(lists["aldehydes"]),
         "has_alkene": bool(lists["double_bonds"]),
+        "has_alkyne": bool(lists["triple_bonds"]),
     }
 
 
@@ -152,8 +170,11 @@ def _fg_flags(
     ketones: list[dict],
     aldehydes: list[dict],
     double_bonds: list[dict],
+    triple_bonds: list[dict],
 ) -> dict:
-    lists = _fg_lists(hydroxyls, carboxyls, ketones, aldehydes, double_bonds)
+    lists = _fg_lists(
+        hydroxyls, carboxyls, ketones, aldehydes, double_bonds, triple_bonds
+    )
     return {**lists, **_fg_bools(lists)}
 
 
@@ -170,5 +191,6 @@ def analyze(mol: Mol) -> dict:
         _ketone_entries(mol),
         _aldehyde_entries(mol),
         _double_bond_entries(mol),
+        _triple_bond_entries(mol),
     )
     return _info(mol, carbons, fgs)

@@ -119,16 +119,34 @@ def _ene_locant_of(ends: tuple[int, int] | None) -> int | None:
     return min(ends)
 
 
-def _orient_alkene(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    db = parent.get("double_bond")
-    ends = _ene_ends_on(chain, db)
+def _tie_break_orient(
+    base: list[int], ends0: tuple[int, int] | None, substituents: list
+) -> list[int]:
+    rev = list(reversed(base))
+    if _ene_locant_of(_ene_ends_on(base, ends0)) == _ene_locant_of(
+        _ene_ends_on(rev, ends0)
+    ):
+        return _prefer_chain(base, rev, substituents)
+    return base
+
+
+def _orient_by_bond(
+    chain: list[int], parent: dict, substituents: list, key: str
+) -> list[int]:
+    ends0 = parent.get(key)
+    ends = _ene_ends_on(chain, ends0)
     if ends is None:
         return chain
     base = _maybe_reverse(chain, _ene_locant_of(ends) or 1)
-    rev = list(reversed(base))
-    if _ene_locant_of(_ene_ends_on(base, db)) == _ene_locant_of(_ene_ends_on(rev, db)):
-        return _prefer_chain(base, rev, substituents)
-    return base
+    return _tie_break_orient(base, ends0, substituents)
+
+
+def _orient_alkene(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_by_bond(chain, parent, substituents, "double_bond")
+
+
+def _orient_alkyne(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_by_bond(chain, parent, substituents, "triple_bond")
 
 
 def _kind_orienters() -> dict:
@@ -138,6 +156,7 @@ def _kind_orienters() -> dict:
         "acid": lambda c, p, s: _orient_acid(c, p),
         "aldehyde": lambda c, p, s: _orient_aldehyde(c, p),
         "alkene": _orient_alkene,
+        "alkyne": _orient_alkyne,
     }
 
 
@@ -171,17 +190,27 @@ def _ketone_locant(oriented: dict) -> int | None:
     return chain.index(ket_c) + 1
 
 
-def _ene_locant(oriented: dict) -> int | None:
-    if oriented.get("kind") != "alkene":
+def _bond_locant(oriented: dict, kind: str, key: str) -> int | None:
+    if oriented.get("kind") != kind:
         return None
-    return _ene_locant_of(_ene_ends_on(oriented.get("chain") or [], oriented.get("double_bond")))
+    return _ene_locant_of(
+        _ene_ends_on(oriented.get("chain") or [], oriented.get(key))
+    )
+
+
+def _ene_locant(oriented: dict) -> int | None:
+    return _bond_locant(oriented, "alkene", "double_bond")
+
+
+def _yne_locant(oriented: dict) -> int | None:
+    return _bond_locant(oriented, "alkyne", "triple_bond")
 
 
 def _omit_oh(oh_pos: int | None, n_carbons: int) -> bool:
     return oh_pos == 1 and n_carbons <= 2
 
 
-def _omit_ene(ene_pos: int | None, n_carbons: int) -> bool:
+def _omit_unsat(n_carbons: int) -> bool:
     return n_carbons <= 3
 
 
@@ -193,32 +222,32 @@ def _with_locants(chain: list[int], substituents: list) -> list:
     return out
 
 
-def _pack(
-    oriented: dict,
-    substituents: list,
-    oh_pos: int | None,
-    ket_pos: int | None,
-    ene_pos: int | None,
-) -> dict:
+def _unsat_locants(oriented: dict, n: int) -> dict:
     return {
-        "parent": oriented,
-        "substituents": substituents,
-        "oh_locant": oh_pos,
-        "omit_oh_locant": _omit_oh(oh_pos, oriented.get("n_carbons", 0)),
-        "ketone_locant": ket_pos,
-        "ene_locant": ene_pos,
-        "omit_ene_locant": _omit_ene(ene_pos, oriented.get("n_carbons", 0)),
+        "ene_locant": _ene_locant(oriented),
+        "omit_ene_locant": _omit_unsat(n),
+        "yne_locant": _yne_locant(oriented),
+        "omit_yne_locant": _omit_unsat(n),
     }
+
+
+def _fg_locants(oriented: dict) -> dict:
+    n = oriented.get("n_carbons", 0)
+    oh = _oh_locant(oriented)
+    base = {
+        "oh_locant": oh,
+        "omit_oh_locant": _omit_oh(oh, n),
+        "ketone_locant": _ketone_locant(oriented),
+    }
+    return {**base, **_unsat_locants(oriented, n)}
+
+
+def _pack(oriented: dict, substituents: list) -> dict:
+    base = {"parent": oriented, "substituents": substituents}
+    return {**base, **_fg_locants(oriented)}
 
 
 def number(parent: dict, substituents: list) -> dict:
     chain = _orient_chain(parent, substituents)
     oriented = {**parent, "chain": chain}
-    numbered = _with_locants(chain, substituents)
-    return _pack(
-        oriented,
-        numbered,
-        _oh_locant(oriented),
-        _ketone_locant(oriented),
-        _ene_locant(oriented),
-    )
+    return _pack(oriented, _with_locants(chain, substituents))

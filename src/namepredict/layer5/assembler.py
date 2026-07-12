@@ -119,6 +119,31 @@ def _alkene_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | N
     return _alkene_with_locant(n, locant)
 
 
+def _alkyne_retained(n: int) -> tuple[str, str] | None:
+    if n == 2:
+        return "acetylene", "乙炔"
+    if n == 3:
+        return "propyne", "丙炔"
+    return None
+
+
+def _alkyne_with_locant(n: int, locant: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    return f"{en[:-3]}-{locant}-yne", f"{zh[0]}-{locant}-炔"
+
+
+def _alkyne_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | None:
+    retained = _alkyne_retained(n)
+    if retained is not None:
+        return retained
+    if locant is None:
+        return None
+    return _alkyne_with_locant(n, locant)
+
+
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
@@ -128,13 +153,16 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return _aldehyde_names(n)
     if kind == "ketone":
         return _ketone_names(n, numbered.get("ketone_locant"))
-    return _alkene_or_alkane(kind, n, numbered)
+    return _unsat_or_alkane(kind, n, numbered)
 
 
-def _alkene_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alkene":
         omit = numbered.get("omit_ene_locant", False)
         return _alkene_names(n, numbered.get("ene_locant"), omit)
+    if kind == "alkyne":
+        omit = numbered.get("omit_yne_locant", False)
+        return _alkyne_names(n, numbered.get("yne_locant"), omit)
     return _alkane_names(n)
 
 

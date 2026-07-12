@@ -83,25 +83,30 @@ def _chain_through(info: dict, c_idx: int) -> list[int]:
     return _join_through(c_idx, _arms_from(mol, c_idx))
 
 
-def _parent_dict(
-    chain: list[int],
-    kind: str,
-    oh_c_idx: int | None = None,
-    cooh_c_idx: int | None = None,
-    ketone_c_idx: int | None = None,
-    aldehyde_c_idx: int | None = None,
-    double_bond: tuple[int, int] | None = None,
+def _parent_fields(
+    oh_c_idx=None,
+    cooh_c_idx=None,
+    ketone_c_idx=None,
+    aldehyde_c_idx=None,
+    double_bond=None,
+    triple_bond=None,
 ) -> dict:
     return {
-        "chain": chain,
-        "n_carbons": len(chain),
-        "kind": kind,
         "oh_c_idx": oh_c_idx,
         "cooh_c_idx": cooh_c_idx,
         "ketone_c_idx": ketone_c_idx,
         "aldehyde_c_idx": aldehyde_c_idx,
         "double_bond": double_bond,
+        "triple_bond": triple_bond,
     }
+
+
+def _parent_core(chain: list[int], kind: str) -> dict:
+    return {"chain": chain, "n_carbons": len(chain), "kind": kind}
+
+
+def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
+    return {**_parent_core(chain, kind), **_parent_fields(**kw)}
 
 
 def _alcohol_parent(info: dict) -> dict:
@@ -148,9 +153,22 @@ def _alkene_parent(info: dict) -> dict:
     return _parent_dict(chain, "alkene", double_bond=(c1, c2))
 
 
+def _alkyne_parent(info: dict) -> dict:
+    tb = info["triple_bonds"][0]
+    c1, c2 = tb["c1"], tb["c2"]
+    chain = _chain_through_bond(info["mol"], c1, c2)
+    return _parent_dict(chain, "alkyne", triple_bond=(c1, c2))
+
+
 def _is_mono_alkene(info: dict) -> bool:
     bonds = info.get("double_bonds") or []
     return bool(info.get("has_alkene")) and len(bonds) == 1
+
+
+def _is_mono_alkyne(info: dict) -> bool:
+    triples = info.get("triple_bonds") or []
+    doubles = info.get("double_bonds") or []
+    return len(triples) == 1 and len(doubles) == 0
 
 
 def _fg_parent(info: dict) -> dict | None:
@@ -169,6 +187,8 @@ def select_parent(info: dict) -> dict:
     fg = _fg_parent(info)
     if fg is not None:
         return fg
+    if _is_mono_alkyne(info):
+        return _alkyne_parent(info)
     if _is_mono_alkene(info):
         return _alkene_parent(info)
     return _parent_dict(_longest_chain(info["mol"]), "alkane")
