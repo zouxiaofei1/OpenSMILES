@@ -143,6 +143,7 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
 
 _PARENT_OH_KINDS = frozenset({"alcohol", "diol", "triol", "cycloalcohol"})
 _PARENT_NH2_KINDS = frozenset({"amine", "diamine", "cycloamine"})
+_PARENT_OXO_KINDS = frozenset({"ketone", "dione", "cycloketone"})
 
 
 def _make_hydroxy(attach: int, o_idx: int) -> dict:
@@ -162,6 +163,16 @@ def _make_amino(attach: int, n_idx: int) -> dict:
         "atoms": [n_idx],
         "en": "amino",
         "zh": "氨基",
+    }
+
+
+def _make_oxo(attach: int) -> dict:
+    return {
+        "kind": "oxo",
+        "attach_idx": attach,
+        "atoms": [attach],
+        "en": "oxo",
+        "zh": "氧代",
     }
 
 
@@ -187,10 +198,22 @@ def _extract_aminos(info: dict, parent: dict) -> list[dict]:
     return out
 
 
+def _extract_oxos(info: dict, parent: dict) -> list[dict]:
+    if parent.get("kind") in _PARENT_OXO_KINDS:
+        return []
+    chain_set = set(parent.get("chain") or [])
+    out: list[dict] = []
+    for k in info.get("ketones") or []:
+        if k["c_idx"] in chain_set:
+            out.append(_make_oxo(k["c_idx"]))
+    return out
+
+
 def extract_substituents(info: dict, parent: dict) -> list:
     mol: Mol = info["mol"]
     chain = parent.get("chain") or []
     halo = _filter_fg_halos(_extract_halos(mol, chain), parent)
     oh = _extract_hydroxys(info, parent)
     nh2 = _extract_aminos(info, parent)
-    return _extract_alkyls(mol, chain) + halo + oh + nh2
+    oxo = _extract_oxos(info, parent)
+    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo
