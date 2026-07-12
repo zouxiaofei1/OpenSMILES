@@ -18,7 +18,7 @@ class PiResult:
 
 
 class PiRunner:
-    """Invoke `pi -p` with prompt file content as the initial message."""
+    """Invoke `pi -p`; prompt content goes on stdin (merged into message)."""
 
     def run(self, prompt_path: Path, cwd: Path, timeout_s: int) -> PiResult:
         """Run pi in print mode; never raise on process failure."""
@@ -53,15 +53,21 @@ class PiRunner:
     def _run_pi(
         self, prompt: str, cwd: Path, timeout_s: int
     ) -> subprocess.CompletedProcess[str]:
-        # pi -p: print response and exit (non-interactive).
+        # pi -p: print mode; stdin merges prompt (Windows argv-safe).
         return subprocess.run(
-            ["pi", "-p", prompt],
-            cwd=cwd,
-            capture_output=True,
-            text=True,
-            timeout=timeout_s,
-            check=False,
+            ["pi", "-p"], input=prompt, cwd=cwd, **self._pi_run_kwargs(timeout_s)
         )
+
+    @staticmethod
+    def _pi_run_kwargs(timeout_s: int) -> dict:
+        return {
+            "capture_output": True,
+            "text": True,
+            "encoding": "utf-8",
+            "errors": "replace",
+            "timeout": timeout_s,
+            "check": False,
+        }
 
     def _from_proc(self, proc: subprocess.CompletedProcess[str]) -> PiResult:
         log = self._combine(proc.stdout, proc.stderr)
@@ -75,12 +81,18 @@ class PiRunner:
 
     @staticmethod
     def _timeout_result(exc: subprocess.TimeoutExpired) -> PiResult:
-        partial = ""
-        if exc.stdout:
-            partial = exc.stdout if isinstance(exc.stdout, str) else exc.stdout.decode()
+        partial = _partial_out(exc.stdout)
         msg = f"timeout after {exc.timeout}s"
         log = f"{partial}\n{msg}".strip() if partial else msg
         return PiResult(False, log, 124)
+
+
+def _partial_out(stdout: str | bytes | None) -> str:
+    if not stdout:
+        return ""
+    if isinstance(stdout, str):
+        return stdout
+    return stdout.decode("utf-8", errors="replace")
 
 
 class MockPiRunner:

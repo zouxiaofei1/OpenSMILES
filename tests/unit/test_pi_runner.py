@@ -33,13 +33,13 @@ def test_mock_runner_fails_when_env_set(tmp_path: Path, monkeypatch: pytest.Monk
 def test_pi_runner_success(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     prompt = tmp_path / "prompt.md"
     prompt.write_text("do work", encoding="utf-8")
+    seen: dict = {}
 
-    def fake_run(*_a, **_k):
+    def fake_run(args, **kwargs):
+        seen["args"] = list(args)
+        seen["kwargs"] = kwargs
         return subprocess.CompletedProcess(
-            args=["pi", "-p"],
-            returncode=0,
-            stdout="ok\n",
-            stderr="",
+            args=args, returncode=0, stdout="ok\n", stderr=""
         )
 
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -47,6 +47,11 @@ def test_pi_runner_success(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert result.success is True
     assert result.exit_code == 0
     assert "ok" in result.log
+    assert seen["args"] == ["pi", "-p"]
+    assert seen["kwargs"]["input"] == "do work"
+    assert seen["kwargs"]["encoding"] == "utf-8"
+    assert seen["kwargs"]["errors"] == "replace"
+    assert "do work" not in seen["args"]
 
 
 def test_pi_runner_nonzero_exit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
