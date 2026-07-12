@@ -21,10 +21,10 @@ CASES = [
     ("CCCS", "propane-1-thiol", "丙-1-硫醇"),
     ("CC(C)S", "propane-2-thiol", "丙-2-硫醇"),
     ("CCCCS", "butane-1-thiol", "丁-1-硫醇"),
-    # negative: alcohol / amine / thioether (keep current or non-thiol)
+    # negative: alcohol / amine / thioether (not thiol)
     ("CCO", "ethanol", "乙醇"),
     ("CCN", "ethanamine", "乙胺"),
-    ("CCSC", "ethane", "乙烷"),
+    ("CCSC", "ethyl methyl sulfide", "乙基甲基硫醚"),
 ]
 
 

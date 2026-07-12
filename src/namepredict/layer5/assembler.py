@@ -21,6 +21,10 @@ from namepredict.layer5.stems import (
     ETHER_SYM_ZH,
     NITRILE_EN,
     NITRILE_ZH,
+    SULFIDE_ALKYL_EN,
+    SULFIDE_ALKYL_ZH,
+    SULFIDE_SYM_EN,
+    SULFIDE_SYM_ZH,
 )
 from namepredict.types import NameResult
 MULT_EN = {
@@ -336,9 +340,32 @@ def _ether_names(n: int, numbered: dict) -> tuple[str, str] | None:
     if alkoxy_n == n:
         return _sym_ether_names(n)
     return _asym_ether_names(n, alkoxy_n)
-def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+def _sym_sulfide_names(n: int) -> tuple[str, str] | None:
+    return _pair(SULFIDE_SYM_EN, SULFIDE_SYM_ZH, n)
+def _asym_sulfide_names(n1: int, n2: int) -> tuple[str, str] | None:
+    en1, en2 = SULFIDE_ALKYL_EN.get(n1), SULFIDE_ALKYL_EN.get(n2)
+    zh1, zh2 = SULFIDE_ALKYL_ZH.get(n1), SULFIDE_ALKYL_ZH.get(n2)
+    if not en1 or not en2 or not zh1 or not zh2:
+        return None
+    a, b = sorted([(en1, zh1), (en2, zh2)], key=lambda x: x[0])
+    return f"{a[0]} {b[0]} sulfide", f"{a[1]}{b[1]}硫醚"
+def _sulfide_names(numbered: dict) -> tuple[str, str] | None:
+    parent = numbered.get("parent") or {}
+    ns = parent.get("alkyl_ns")
+    if not ns or len(ns) != 2:
+        return None
+    n1, n2 = int(ns[0]), int(ns[1])
+    if n1 == n2:
+        return _sym_sulfide_names(n1)
+    return _asym_sulfide_names(n1, n2)
+def _ether_or_sulfide(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "ether":
         return _ether_names(n, numbered)
+    return _sulfide_names(numbered) if kind == "sulfide" else None
+def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    top = _ether_or_sulfide(kind, n, numbered)
+    if top is not None:
+        return top
     top = _oh_kind_names(kind, n, numbered)
     if top is not None:
         return top

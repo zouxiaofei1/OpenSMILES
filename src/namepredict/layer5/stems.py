@@ -201,4 +201,15 @@ ETHER_SYM_ZH = {
 # Asymmetric alkoxy prefix (alkoxyalkane)
 ALKOXY_EN = {1: "methoxy", 2: "ethoxy", 3: "propoxy", 4: "butoxy"}
 ALKOXY_ZH = {1: "甲氧基", 2: "乙氧基", 3: "丙氧基", 4: "丁氧基"}
+# P-63.2.1 dialkyl sulfide: dimethyl…dibutyl sulfide / 二…硫醚
+SULFIDE_SYM_EN = {
+    1: "dimethyl sulfide", 2: "diethyl sulfide",
+    3: "dipropyl sulfide", 4: "dibutyl sulfide",
+}
+SULFIDE_SYM_ZH = {
+    1: "二甲硫醚", 2: "二乙硫醚", 3: "二丙硫醚", 4: "二丁硫醚",
+}
+# Alkyl radical for asymmetric alkyl alkyl sulfide (alphabetical EN)
+SULFIDE_ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
+SULFIDE_ALKYL_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
 

@@ -211,7 +211,8 @@ def _amine_parent(info: dict) -> dict:
         return tert
     sec = _sec_amine_parent(info)
     return sec if sec is not None else _primary_amine_parent(info)
-_ETHER_BAD = _CORE_BAD + ("has_amine", "has_alcohol", "has_thiol")
+_ETHER_BAD = _CORE_BAD + ("has_amine", "has_alcohol", "has_thiol", "has_sulfide")
+_SULFIDE_BAD = _CORE_BAD + ("has_amine", "has_alcohol", "has_thiol", "has_ether")
 def _ether_arms(info: dict) -> tuple[list[int], list[int], dict] | None:
     ets = info.get("ethers") or []
     if len(ets) != 1:
@@ -230,6 +231,25 @@ def _ether_parent(info: dict) -> dict | None:
     parent, short = (a1, a2) if len(a1) >= len(a2) else (a2, a1)
     return _parent_dict(
         parent, "ether", ether_c_idx=parent[0], o_idx=e["o_idx"], alkoxy_n=len(short),
+    )
+def _sulfide_arms(info: dict) -> tuple[list[int], list[int], dict] | None:
+    sfs = info.get("sulfides") or []
+    if len(sfs) != 1:
+        return None
+    e, mol = sfs[0], info["mol"]
+    s_idx, cs = e["s_idx"], [e["c1"], e["c2"]]
+    arms = [_longest_from(mol, c, set()) for c in cs]
+    return (arms[0], arms[1], e) if all(_arm_ok(mol, a, s_idx) for a in arms) else None
+def _sulfide_parent(info: dict) -> dict | None:
+    if not _is_open_sat(info) or not _no_fgs(info, _SULFIDE_BAD):
+        return None
+    got = _sulfide_arms(info)
+    if got is None:
+        return None
+    a1, a2, e = got
+    parent = a1 if len(a1) >= len(a2) else a2
+    return _parent_dict(
+        parent, "sulfide", s_idx=e["s_idx"], alkyl_ns=(len(a1), len(a2)),
     )
 _ALKENOIC_BAD = _DIACID_BAD + ("has_thiol",)
 _UNSAT_FG_BASE = (
@@ -431,7 +451,8 @@ def _hetero_parent(info: dict) -> dict | None:
         return _thiol_parent(info)
     if info.get("has_amine") and info.get("amines"):
         return _amine_parent(info)
-    return _ether_parent(info)
+    eth = _ether_parent(info)
+    return eth if eth is not None else _sulfide_parent(info)
 def _fg_parent(info: dict) -> dict | None:
     carb = _carbonyl_parent(info)
     return carb if carb is not None else _hetero_parent(info)

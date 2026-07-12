@@ -112,6 +112,24 @@ def _ether_entry(atom) -> dict:
 def _ether_entries(mol: Mol) -> list[dict]:
     return [_ether_entry(a) for a in mol.GetAtoms() if _is_ether_oxygen(a)]
 
+def _sulfide_cs(sulfur) -> list:
+    return [n for n in sulfur.GetNeighbors() if n.GetAtomicNum() == 6]
+
+def _is_sulfide_sulfur(atom) -> bool:
+    if atom.GetAtomicNum() != 16 or atom.GetTotalNumHs() != 0:
+        return False
+    if atom.GetTotalDegree() != 2:
+        return False
+    cs = _sulfide_cs(atom)
+    return len(cs) == 2 and not any(_has_double_bonded_o(c) for c in cs)
+
+def _sulfide_entry(atom) -> dict:
+    cs = _sulfide_cs(atom)
+    return {"s_idx": atom.GetIdx(), "c1": cs[0].GetIdx(), "c2": cs[1].GetIdx()}
+
+def _sulfide_entries(mol: Mol) -> list[dict]:
+    return [_sulfide_entry(a) for a in mol.GetAtoms() if _is_sulfide_sulfur(a)]
+
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     if oxygen.GetAtomicNum() != 8 or oxygen.GetTotalNumHs() != 0:
         return False
@@ -365,7 +383,7 @@ def _fg_core_lists(
 def _fg_more_lists(parts: dict) -> dict:
     keys = (
         "aldehydes", "amines", "nitriles", "double_bonds", "triple_bonds",
-        "acyl_chlorides", "anhydrides", "thiols", "ethers",
+        "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
     )
     return {k: parts[k] for k in keys}
 
@@ -391,7 +409,7 @@ def _fg_bools_more(lists: dict) -> dict:
         ("has_nitrile", "nitriles"), ("has_alkene", "double_bonds"),
         ("has_alkyne", "triple_bonds"), ("has_acyl_chloride", "acyl_chlorides"),
         ("has_anhydride", "anhydrides"), ("has_thiol", "thiols"),
-        ("has_ether", "ethers"),
+        ("has_ether", "ethers"), ("has_sulfide", "sulfides"),
     )
     return {hk: bool(lists[lk]) for hk, lk in keys}
 
@@ -414,7 +432,7 @@ def _fg_parts_b(mol: Mol) -> dict:
         "triple_bonds": _triple_bond_entries(mol),
         "acyl_chlorides": _acyl_chloride_entries(mol),
         "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
-        "ethers": _ether_entries(mol),
+        "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
     }
 
 def _fg_parts(mol: Mol) -> dict:
