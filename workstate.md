@@ -38,11 +38,12 @@
 [#5b42bd7][IUPAC P-66.5.1 / P-31.1] 开链一元不饱和腈 alkenenitrile：L2链穿腈碳+C=C+L4 ene位次+L5 …-n-enenitrile/…-n-烯腈（无E/Z） [+9 tests, dual 4.2%(170)→4.2%(171), fails 3892→3891]
 [#5950cc9][IUPAC P-63.1.1 / P-31.1] 开链一元不饱和醇 alkenol：L2链穿OH碳+C=C+L4 OH优先+ene位次+L5 …-n-en-m-ol/…-n-烯-m-醇（无E/Z） [+9 tests, dual 4.2%(171)→4.2%(172), fails 3891→3890]
 [#a9359dc][IUPAC P-65.6 / P-31.1] 开链一元不饱和酯 alkenoate：L2链穿酯羰基+C=C+L4 ene位次+L5 methyl …-n-enoate/…-n-烯酸甲酯（无E/Z） [+10 tests, dual 4.2%(172)→4.3%(173), fails 3890→3889]
+[#4b9e12f][IUPAC P-62.2.2.1] 开链简单仲胺 N-alkylalkanamine：L1仲胺检测+L2较长侧母体+L3 N-烷基+L5 N-ethylethanamine/N-乙基乙胺 [+10 tests, dual 4.3%(173)→4.3%(174), fails 3889→3888]
 
 ## 其他
-- 基线(本轮前): en=4.2%(172/4062) zh=17.3%(131/756) dual=4.2%(172/4062)
-- 本次: en=4.3%(173/4062) zh=17.5%(132/756) dual=4.3%(173/4062) fails=3889
-- 改动: L2 一元酯+酰基单C=C→alkenoate 母体链穿酯羰基与双键；L4 羰基为1算ene位次；L5 methyl prop-2-enoate/丙-2-烯酸甲酯
-- 验证: C=CC(=O)OC→methyl prop-2-enoate/丙-2-烯酸甲酯；CCOC(=O)C仍ethyl acetate；C=CC(=O)O仍alkenoic
-- 已知缺口: 不饱和二酸(E/Z)；仲/叔胺；N-取代酰胺；支化烷基前缀；硫醚；复杂烷氧基酯
-- 下一步候选: 不饱和二酸；或仲胺；或支化烷基前缀；或硫醚
+- 基线(本轮前): en=4.3%(173/4062) zh=17.5%(132/756) dual=4.3%(173/4062)
+- 本次: en=4.3%(174/4062) zh=17.6%(133/756) dual=4.3%(174/4062) fails=3888
+- 改动: L1 检测仲胺N（两C+一H）；L2 较长烷基侧为alkanamine母体；L3 另一侧N-烷基前缀；L5 N-ethylethanamine/N-乙基乙胺；并压缩L2
+- 验证: CCNCC→N-ethylethanamine/N-乙基乙胺；CCNC→N-methylethanamine；CCN仍ethanamine；NCCN仍diamine；叔胺本轮不做
+- 已知缺口: 叔胺；N-取代酰胺；不饱和二酸(E/Z)；支化烷基前缀；硫醚；醚
+- 下一步候选: 叔胺；或不饱和二酸；或支化烷基前缀；或硫醚/醚
