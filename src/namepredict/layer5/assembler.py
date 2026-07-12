@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from namepredict.layer5.stems import ALCOHOL_EN, ALCOHOL_ZH, ALKANE_EN, ALKANE_ZH
+from namepredict.layer5.stems import (
+    ACID_EN,
+    ACID_ZH,
+    ALCOHOL_EN,
+    ALCOHOL_ZH,
+    ALKANE_EN,
+    ALKANE_ZH,
+)
 from namepredict.types import NameResult
 
 MULT_EN = {
@@ -66,9 +73,15 @@ def _alcohol_names(n: int, oh_locant: int | None, omit: bool) -> tuple[str, str]
     return _alcohol_with_locant(n, oh_locant)
 
 
+def _acid_names(n: int) -> tuple[str, str] | None:
+    return _pair(ACID_EN, ACID_ZH, n)
+
+
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
+    if kind == "acid":
+        return _acid_names(n)
     return _alkane_names(n)
 
 

@@ -1,4 +1,4 @@
-"""Carbon-count stem tables for C1–C10 alkanes and monoalcohols."""
+"""Carbon-count stem tables for C1–C10 alkanes, monoalcohols, monoacids."""
 
 from __future__ import annotations
 
@@ -49,4 +49,29 @@ ALCOHOL_ZH = {
     8: "辛醇",
     9: "壬醇",
     10: "癸醇",
+}
+# P-65.1.1 retained: formic/acetic; else systematic …oic acid / …酸
+ACID_EN = {
+    1: "formic acid",
+    2: "acetic acid",
+    3: "propanoic acid",
+    4: "butanoic acid",
+    5: "pentanoic acid",
+    6: "hexanoic acid",
+    7: "heptanoic acid",
+    8: "octanoic acid",
+    9: "nonanoic acid",
+    10: "decanoic acid",
+}
+ACID_ZH = {
+    1: "甲酸",
+    2: "乙酸",
+    3: "丙酸",
+    4: "丁酸",
+    5: "戊酸",
+    6: "己酸",
+    7: "庚酸",
+    8: "辛酸",
+    9: "壬酸",
+    10: "癸酸",
 }

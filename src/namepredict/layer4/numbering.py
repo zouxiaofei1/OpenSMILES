@@ -54,12 +54,29 @@ def _orient_alcohol(chain: list[int], parent: dict, substituents: list) -> list[
     return base
 
 
+def _cooh_pos_on(chain: list[int], cooh_c: int | None) -> int | None:
+    if cooh_c is None or cooh_c not in chain:
+        return None
+    return chain.index(cooh_c) + 1
+
+
+def _orient_acid(chain: list[int], parent: dict) -> list[int]:
+    pos = _cooh_pos_on(chain, parent.get("cooh_c_idx"))
+    if pos is None:
+        return chain
+    if pos == 1:
+        return chain
+    return list(reversed(chain))
+
+
 def _orient_chain(parent: dict, substituents: list) -> list[int]:
     chain = list(parent.get("chain") or [])
     if not chain:
         return chain
     if parent.get("kind") == "alcohol":
         return _orient_alcohol(chain, parent, substituents)
+    if parent.get("kind") == "acid":
+        return _orient_acid(chain, parent)
     return _orient_alkane(chain, substituents)
 
 

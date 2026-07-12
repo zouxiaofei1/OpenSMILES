@@ -78,22 +78,39 @@ def _join_through(center: int, arms: list[list[int]]) -> list[int]:
     return list(reversed(arms[0])) + [center] + arms[1]
 
 
-def _chain_with_oh(info: dict) -> list[int]:
+def _chain_through(info: dict, c_idx: int) -> list[int]:
     mol: Mol = info["mol"]
-    oh_c = info["hydroxyls"][0]["c_idx"]
-    return _join_through(oh_c, _arms_from(mol, oh_c))
+    return _join_through(c_idx, _arms_from(mol, c_idx))
 
 
-def _parent_dict(chain: list[int], kind: str, oh_c_idx: int | None) -> dict:
-    return {"chain": chain, "n_carbons": len(chain), "kind": kind, "oh_c_idx": oh_c_idx}
+def _parent_dict(
+    chain: list[int],
+    kind: str,
+    oh_c_idx: int | None = None,
+    cooh_c_idx: int | None = None,
+) -> dict:
+    return {
+        "chain": chain,
+        "n_carbons": len(chain),
+        "kind": kind,
+        "oh_c_idx": oh_c_idx,
+        "cooh_c_idx": cooh_c_idx,
+    }
 
 
 def _alcohol_parent(info: dict) -> dict:
     oh_c = info["hydroxyls"][0]["c_idx"]
-    return _parent_dict(_chain_with_oh(info), "alcohol", oh_c)
+    return _parent_dict(_chain_through(info, oh_c), "alcohol", oh_c_idx=oh_c)
+
+
+def _acid_parent(info: dict) -> dict:
+    cooh_c = info["carboxyls"][0]["c_idx"]
+    return _parent_dict(_chain_through(info, cooh_c), "acid", cooh_c_idx=cooh_c)
 
 
 def select_parent(info: dict) -> dict:
+    if info.get("has_acid") and info.get("carboxyls"):
+        return _acid_parent(info)
     if info.get("has_alcohol") and info.get("hydroxyls"):
         return _alcohol_parent(info)
-    return _parent_dict(_longest_chain(info["mol"]), "alkane", None)
+    return _parent_dict(_longest_chain(info["mol"]), "alkane")

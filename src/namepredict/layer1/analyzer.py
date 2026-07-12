@@ -1,15 +1,38 @@
 from __future__ import annotations
 
-from rdkit.Chem import Mol
+from rdkit.Chem import BondType, Mol
+
+
+def _is_single_c_oh(atom) -> bool:
+    if atom.GetAtomicNum() != 8 or atom.GetTotalNumHs() < 1:
+        return False
+    return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) == 1
+
+
+def _dbl_o_on(bond, carbon) -> bool:
+    if bond.GetBondType() != BondType.DOUBLE:
+        return False
+    return bond.GetOtherAtom(carbon).GetAtomicNum() == 8
+
+
+def _has_double_bonded_o(carbon) -> bool:
+    return any(_dbl_o_on(b, carbon) for b in carbon.GetBonds())
+
+
+def _has_oh_neighbor(carbon) -> bool:
+    return any(_is_single_c_oh(n) for n in carbon.GetNeighbors())
+
+
+def _is_carboxyl_carbon(atom) -> bool:
+    if atom.GetAtomicNum() != 6:
+        return False
+    return _has_double_bonded_o(atom) and _has_oh_neighbor(atom)
 
 
 def _is_hydroxyl_oxygen(atom) -> bool:
-    if atom.GetAtomicNum() != 8:
+    if not _is_single_c_oh(atom):
         return False
-    if atom.GetTotalNumHs() < 1:
-        return False
-    carbons = [n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
-    return len(carbons) == 1
+    return not _is_carboxyl_carbon(_carbon_neighbor(atom))
 
 
 def _carbon_neighbor(atom):
@@ -29,21 +52,32 @@ def _hydroxyl_entries(mol: Mol) -> list[dict]:
     return out
 
 
+def _carboxyl_entries(mol: Mol) -> list[dict]:
+    out: list[dict] = []
+    for atom in mol.GetAtoms():
+        if _is_carboxyl_carbon(atom):
+            out.append({"c_idx": atom.GetIdx()})
+    return out
+
+
 def _carbon_ids(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
 
 
-def _info(mol: Mol, carbons: list[int], hydroxyls: list[dict]) -> dict:
+def _info(mol: Mol, carbons: list[int], hydroxyls: list[dict], carboxyls: list[dict]) -> dict:
     return {
         "mol": mol,
         "carbon_ids": carbons,
         "n_carbons": len(carbons),
         "hydroxyls": hydroxyls,
+        "carboxyls": carboxyls,
         "has_alcohol": bool(hydroxyls),
+        "has_acid": bool(carboxyls),
     }
 
 
 def analyze(mol: Mol) -> dict:
     carbons = _carbon_ids(mol)
+    carboxyls = _carboxyl_entries(mol)
     hydroxyls = _hydroxyl_entries(mol)
-    return _info(mol, carbons, hydroxyls)
+    return _info(mol, carbons, hydroxyls, carboxyls)
