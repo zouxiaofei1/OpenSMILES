@@ -365,7 +365,7 @@ def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
 def _amine_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "diamine":
         return _diamine_names(n, numbered.get("amine_locants"))
-    if kind != "amine":
+    if kind not in ("amine", "sec_amine"):
         return None
     return _amine_names(
         n, numbered.get("amine_locant"), numbered.get("omit_amine_locant", False)
@@ -440,7 +440,7 @@ def _mult_zh(n: int) -> str:
     return MULT_ZH.get(n, "")
 
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
-    if n_carbons <= 1:
+    if n_carbons <= 1 or kind == "sec_amine":
         return True
     # Carboxylic acids number COOH as 1; keep substituent locants (e.g. 2-aminoacetic acid).
     if kind in ("acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate"):

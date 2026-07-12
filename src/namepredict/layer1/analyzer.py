@@ -182,24 +182,27 @@ def _is_amide_n(atom) -> bool:
     return False
 
 
-def _is_primary_amine_n(atom) -> bool:
-    if atom.GetAtomicNum() != 7 or atom.GetTotalNumHs() < 2:
-        return False
-    if _carbon_neighbor_count(atom) != 1 or _is_amide_n(atom):
-        return False
-    return True
+def _amine_degree(atom) -> int | None:
+    if atom.GetAtomicNum() != 7 or _is_amide_n(atom):
+        return None
+    n_c, n_h = _carbon_neighbor_count(atom), atom.GetTotalNumHs()
+    if n_c == 1 and n_h >= 2:
+        return 1
+    return 2 if n_c == 2 and n_h == 1 else None
 
 
-def _amine_entry(atom) -> dict:
-    carbon = _carbon_neighbor(atom)
-    return {"n_idx": atom.GetIdx(), "c_idx": carbon.GetIdx()}
+def _amine_entry(atom, deg: int) -> dict:
+    cs = [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
+    base = {"n_idx": atom.GetIdx(), "degree": deg}
+    return {**base, "c_idxs": cs} if deg == 2 else {**base, "c_idx": cs[0]}
 
 
 def _amine_entries(mol: Mol) -> list[dict]:
     out: list[dict] = []
     for atom in mol.GetAtoms():
-        if _is_primary_amine_n(atom):
-            out.append(_amine_entry(atom))
+        deg = _amine_degree(atom)
+        if deg is not None:
+            out.append(_amine_entry(atom, deg))
     return out
 
 

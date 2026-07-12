@@ -142,7 +142,7 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
 
 
 _PARENT_OH_KINDS = frozenset({"alcohol", "alkenol", "diol", "triol", "cycloalcohol"})
-_PARENT_NH2_KINDS = frozenset({"amine", "diamine", "cycloamine"})
+_PARENT_NH2_KINDS = frozenset({"amine", "diamine", "cycloamine", "sec_amine"})
 _PARENT_OXO_KINDS = frozenset({"ketone", "dione", "cycloketone"})
 
 
@@ -193,7 +193,7 @@ def _extract_aminos(info: dict, parent: dict) -> list[dict]:
     chain_set = set(parent.get("chain") or [])
     out: list[dict] = []
     for a in info.get("amines") or []:
-        if a["c_idx"] in chain_set:
+        if "c_idx" in a and a["c_idx"] in chain_set:
             out.append(_make_amino(a["c_idx"], a["n_idx"]))
     return out
 
@@ -209,6 +209,20 @@ def _extract_oxos(info: dict, parent: dict) -> list[dict]:
     return out
 
 
+_N_ALKYL_EN = {1: "N-methyl", 2: "N-ethyl", 3: "N-propyl", 4: "N-butyl"}
+_N_ALKYL_ZH = {1: "N-甲基", 2: "N-乙基", 3: "N-丙基", 4: "N-丁基"}
+
+def _extract_n_alkyl(parent: dict) -> list[dict]:
+    if parent.get("kind") != "sec_amine":
+        return []
+    n = parent.get("n_alkyl_n")
+    if n not in _N_ALKYL_EN:
+        return []
+    return [{
+        "kind": "n_alkyl", "n_carbons": n, "attach_idx": parent["amine_c_idx"],
+        "atoms": [], "en": _N_ALKYL_EN[n], "zh": _N_ALKYL_ZH[n],
+    }]
+
 def extract_substituents(info: dict, parent: dict) -> list:
     mol: Mol = info["mol"]
     chain = parent.get("chain") or []
@@ -216,4 +230,5 @@ def extract_substituents(info: dict, parent: dict) -> list:
     oh = _extract_hydroxys(info, parent)
     nh2 = _extract_aminos(info, parent)
     oxo = _extract_oxos(info, parent)
-    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo
+    nalk = _extract_n_alkyl(parent)
+    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo + nalk
