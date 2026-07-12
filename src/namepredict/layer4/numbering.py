@@ -9,6 +9,14 @@ def _oh_position(parent: dict) -> int | None:
     return chain.index(oh_c) + 1
 
 
+def _amine_position(parent: dict) -> int | None:
+    chain = parent.get("chain") or []
+    am_c = parent.get("amine_c_idx")
+    if am_c is None or am_c not in chain:
+        return None
+    return chain.index(am_c) + 1
+
+
 def _maybe_reverse(chain: list[int], pos: int) -> list[int]:
     if pos > (len(chain) + 1) // 2:
         return list(reversed(chain))
@@ -50,6 +58,25 @@ def _orient_alcohol(chain: list[int], parent: dict, substituents: list) -> list[
     oh_b = _oh_pos_on(base, parent.get("oh_c_idx"))
     oh_r = _oh_pos_on(rev, parent.get("oh_c_idx"))
     if oh_b is not None and oh_r is not None and oh_b == oh_r:
+        return _prefer_chain(base, rev, substituents)
+    return base
+
+
+def _amine_pos_on(chain: list[int], am_c: int | None) -> int | None:
+    if am_c is None or am_c not in chain:
+        return None
+    return chain.index(am_c) + 1
+
+
+def _orient_amine(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    pos = _amine_position(parent)
+    if pos is None:
+        return chain
+    base = _maybe_reverse(chain, pos)
+    rev = list(reversed(base))
+    am_b = _amine_pos_on(base, parent.get("amine_c_idx"))
+    am_r = _amine_pos_on(rev, parent.get("amine_c_idx"))
+    if am_b is not None and am_r is not None and am_b == am_r:
         return _prefer_chain(base, rev, substituents)
     return base
 
@@ -167,6 +194,7 @@ def _orient_alkyne(chain: list[int], parent: dict, substituents: list) -> list[i
 def _kind_orienters() -> dict:
     return {
         "alcohol": _orient_alcohol,
+        "amine": _orient_amine,
         "ketone": _orient_ketone,
         "acid": lambda c, p, s: _orient_acid(c, p),
         "aldehyde": lambda c, p, s: _orient_aldehyde(c, p),
@@ -198,6 +226,14 @@ def _oh_locant(oriented: dict) -> int | None:
     return chain.index(oh_c) + 1
 
 
+def _amine_locant(oriented: dict) -> int | None:
+    chain = oriented.get("chain") or []
+    am_c = oriented.get("amine_c_idx")
+    if oriented.get("kind") != "amine" or am_c not in chain:
+        return None
+    return chain.index(am_c) + 1
+
+
 def _ketone_locant(oriented: dict) -> int | None:
     chain = oriented.get("chain") or []
     ket_c = oriented.get("ketone_c_idx")
@@ -226,6 +262,10 @@ def _omit_oh(oh_pos: int | None, n_carbons: int) -> bool:
     return oh_pos == 1 and n_carbons <= 2
 
 
+def _omit_amine(am_pos: int | None, n_carbons: int) -> bool:
+    return am_pos == 1 and n_carbons <= 2
+
+
 def _omit_unsat(n_carbons: int) -> bool:
     return n_carbons <= 3
 
@@ -247,14 +287,19 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
     }
 
 
-def _fg_locants(oriented: dict) -> dict:
-    n = oriented.get("n_carbons", 0)
-    oh = _oh_locant(oriented)
-    base = {
+def _oh_am_locants(oriented: dict, n: int) -> dict:
+    oh, am = _oh_locant(oriented), _amine_locant(oriented)
+    return {
         "oh_locant": oh,
         "omit_oh_locant": _omit_oh(oh, n),
-        "ketone_locant": _ketone_locant(oriented),
+        "amine_locant": am,
+        "omit_amine_locant": _omit_amine(am, n),
     }
+
+
+def _fg_locants(oriented: dict) -> dict:
+    n = oriented.get("n_carbons", 0)
+    base = {**_oh_am_locants(oriented, n), "ketone_locant": _ketone_locant(oriented)}
     return {**base, **_unsat_locants(oriented, n)}
 
 

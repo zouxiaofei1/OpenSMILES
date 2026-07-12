@@ -103,6 +103,34 @@ def _hydroxyl_entries(mol: Mol) -> list[dict]:
     return out
 
 
+def _is_amide_n(atom) -> bool:
+    for n in atom.GetNeighbors():
+        if n.GetAtomicNum() == 6 and _has_double_bonded_o(n):
+            return True
+    return False
+
+
+def _is_primary_amine_n(atom) -> bool:
+    if atom.GetAtomicNum() != 7 or atom.GetTotalNumHs() < 2:
+        return False
+    if _carbon_neighbor_count(atom) != 1 or _is_amide_n(atom):
+        return False
+    return True
+
+
+def _amine_entry(atom) -> dict:
+    carbon = _carbon_neighbor(atom)
+    return {"n_idx": atom.GetIdx(), "c_idx": carbon.GetIdx()}
+
+
+def _amine_entries(mol: Mol) -> list[dict]:
+    out: list[dict] = []
+    for atom in mol.GetAtoms():
+        if _is_primary_amine_n(atom):
+            out.append(_amine_entry(atom))
+    return out
+
+
 def _carboxyl_entries(mol: Mol) -> list[dict]:
     out: list[dict] = []
     for atom in mol.GetAtoms():
@@ -185,6 +213,7 @@ def _fg_lists(
     esters: list[dict],
     ketones: list[dict],
     aldehydes: list[dict],
+    amines: list[dict],
     double_bonds: list[dict],
     triple_bonds: list[dict],
 ) -> dict:
@@ -194,6 +223,7 @@ def _fg_lists(
         "esters": esters,
         "ketones": ketones,
         "aldehydes": aldehydes,
+        "amines": amines,
         "double_bonds": double_bonds,
         "triple_bonds": triple_bonds,
     }
@@ -206,6 +236,7 @@ def _fg_bools(lists: dict) -> dict:
         "has_ester": bool(lists["esters"]),
         "has_ketone": bool(lists["ketones"]),
         "has_aldehyde": bool(lists["aldehydes"]),
+        "has_amine": bool(lists["amines"]),
         "has_alkene": bool(lists["double_bonds"]),
         "has_alkyne": bool(lists["triple_bonds"]),
     }
@@ -217,11 +248,13 @@ def _fg_flags(
     esters: list[dict],
     ketones: list[dict],
     aldehydes: list[dict],
+    amines: list[dict],
     double_bonds: list[dict],
     triple_bonds: list[dict],
 ) -> dict:
     lists = _fg_lists(
-        hydroxyls, carboxyls, esters, ketones, aldehydes, double_bonds, triple_bonds
+        hydroxyls, carboxyls, esters, ketones, aldehydes,
+        amines, double_bonds, triple_bonds,
     )
     return {**lists, **_fg_bools(lists)}
 
@@ -238,6 +271,7 @@ def _collect_fgs(mol: Mol) -> dict:
         _ester_entries(mol),
         _ketone_entries(mol),
         _aldehyde_entries(mol),
+        _amine_entries(mol),
         _double_bond_entries(mol),
         _triple_bond_entries(mol),
     )

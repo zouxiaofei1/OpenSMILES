@@ -78,6 +78,32 @@ def _alcohol_names(n: int, oh_locant: int | None, omit: bool) -> tuple[str, str]
     return _alcohol_with_locant(n, oh_locant)
 
 
+def _amine_plain(n: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    return f"{en[:-1]}amine", f"{zh[0]}胺"
+
+
+def _amine_with_locant(n: int, locant: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    return f"{en[:-1]}-{locant}-amine", f"{zh[0]}-{locant}-胺"
+
+
+def _omit_amine_locant(n: int, am_locant: int | None, omit: bool) -> bool:
+    return omit or am_locant is None or (am_locant == 1 and n <= 2)
+
+
+def _amine_names(n: int, am_locant: int | None, omit: bool) -> tuple[str, str] | None:
+    if _omit_amine_locant(n, am_locant, omit):
+        return _amine_plain(n)
+    return _amine_with_locant(n, am_locant)
+
+
 def _acid_names(n: int) -> tuple[str, str] | None:
     return _pair(ACID_EN, ACID_ZH, n)
 
@@ -183,6 +209,10 @@ def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
+    if kind == "amine":
+        return _amine_names(
+            n, numbered.get("amine_locant"), numbered.get("omit_amine_locant", False)
+        )
     carb = _carbonyl_names(kind, n, numbered)
     if carb is not None:
         return carb

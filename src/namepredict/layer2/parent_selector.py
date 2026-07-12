@@ -96,6 +96,11 @@ def _alcohol_parent(info: dict) -> dict:
     return _parent_dict(_chain_through(info, oh_c), "alcohol", oh_c_idx=oh_c)
 
 
+def _amine_parent(info: dict) -> dict:
+    am_c = info["amines"][0]["c_idx"]
+    return _parent_dict(_chain_through(info, am_c), "amine", amine_c_idx=am_c)
+
+
 def _acid_parent(info: dict) -> dict:
     cooh_c = info["carboxyls"][0]["c_idx"]
     return _parent_dict(_chain_through(info, cooh_c), "acid", cooh_c_idx=cooh_c)
@@ -187,6 +192,8 @@ def _fg_parent(info: dict) -> dict | None:
         return carb
     if info.get("has_alcohol") and info.get("hydroxyls"):
         return _alcohol_parent(info)
+    if info.get("has_amine") and info.get("amines"):
+        return _amine_parent(info)
     return None
 
 
