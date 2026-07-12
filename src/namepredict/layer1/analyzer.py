@@ -23,6 +23,23 @@ def _has_oh_neighbor(carbon) -> bool:
     return any(_is_single_c_oh(n) for n in carbon.GetNeighbors())
 
 
+def _acyl_cl_of(carbon) -> int | None:
+    for n in carbon.GetNeighbors():
+        if n.GetAtomicNum() == 17:
+            return n.GetIdx()
+    return None
+
+
+def _is_acyl_chloride_carbon(atom) -> bool:
+    if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
+        return False
+    if _has_oh_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
+        return False
+    if _primary_amide_n_of(atom) is not None:
+        return False
+    return _acyl_cl_of(atom) is not None
+
+
 def _is_carboxyl_carbon(atom) -> bool:
     if atom.GetAtomicNum() != 6:
         return False
@@ -97,7 +114,7 @@ def _is_aldehyde_carbon(atom) -> bool:
         return False
     if _has_oh_neighbor(atom) or _carbon_neighbor_count(atom) > 1:
         return False
-    if _ester_alkoxy_of(atom) is not None:
+    if _ester_alkoxy_of(atom) is not None or _acyl_cl_of(atom) is not None:
         return False
     return _primary_amide_n_of(atom) is None
 
@@ -187,6 +204,14 @@ def _aldehyde_entries(mol: Mol) -> list[dict]:
     for atom in mol.GetAtoms():
         if _is_aldehyde_carbon(atom):
             out.append({"c_idx": atom.GetIdx()})
+    return out
+
+
+def _acyl_chloride_entries(mol: Mol) -> list[dict]:
+    out: list[dict] = []
+    for atom in mol.GetAtoms():
+        if _is_acyl_chloride_carbon(atom):
+            out.append({"c_idx": atom.GetIdx(), "cl_idx": _acyl_cl_of(atom)})
     return out
 
 
@@ -299,6 +324,7 @@ def _fg_more_lists(
     nitriles: list[dict],
     double_bonds: list[dict],
     triple_bonds: list[dict],
+    acyl_chlorides: list[dict],
 ) -> dict:
     return {
         "aldehydes": aldehydes,
@@ -306,20 +332,20 @@ def _fg_more_lists(
         "nitriles": nitriles,
         "double_bonds": double_bonds,
         "triple_bonds": triple_bonds,
+        "acyl_chlorides": acyl_chlorides,
     }
 
 
 def _fg_lists(parts: dict) -> dict:
-    return {
-        **_fg_core_lists(
-            parts["hydroxyls"], parts["carboxyls"], parts["esters"],
-            parts["amides"], parts["ketones"],
-        ),
-        **_fg_more_lists(
-            parts["aldehydes"], parts["amines"], parts["nitriles"],
-            parts["double_bonds"], parts["triple_bonds"],
-        ),
-    }
+    core = _fg_core_lists(
+        parts["hydroxyls"], parts["carboxyls"], parts["esters"],
+        parts["amides"], parts["ketones"],
+    )
+    more = _fg_more_lists(
+        parts["aldehydes"], parts["amines"], parts["nitriles"],
+        parts["double_bonds"], parts["triple_bonds"], parts["acyl_chlorides"],
+    )
+    return {**core, **more}
 
 
 def _fg_bools_core(lists: dict) -> dict:
@@ -339,6 +365,7 @@ def _fg_bools_more(lists: dict) -> dict:
         "has_nitrile": bool(lists["nitriles"]),
         "has_alkene": bool(lists["double_bonds"]),
         "has_alkyne": bool(lists["triple_bonds"]),
+        "has_acyl_chloride": bool(lists["acyl_chlorides"]),
     }
 
 
@@ -363,6 +390,7 @@ def _fg_parts_b(mol: Mol) -> dict:
         "nitriles": _nitrile_entries(mol),
         "double_bonds": _double_bond_entries(mol),
         "triple_bonds": _triple_bond_entries(mol),
+        "acyl_chlorides": _acyl_chloride_entries(mol),
     }
 
 

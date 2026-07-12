@@ -134,7 +134,16 @@ def _extract_alkyls(mol: Mol, chain: list[int]) -> list[dict]:
     return out
 
 
+def _filter_fg_halos(halos: list, parent: dict) -> list:
+    if parent.get("kind") != "acyl_chloride":
+        return halos
+    cl = parent.get("cl_idx")
+    return [h for h in halos if cl not in (h.get("atoms") or [])]
+
+
 def extract_substituents(info: dict, parent: dict) -> list:
     mol: Mol = info["mol"]
     chain = parent.get("chain") or []
-    return _extract_alkyls(mol, chain) + _extract_halos(mol, chain)
+    return _extract_alkyls(mol, chain) + _filter_fg_halos(
+        _extract_halos(mol, chain), parent
+    )

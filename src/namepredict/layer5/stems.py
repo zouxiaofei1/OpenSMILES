@@ -166,3 +166,28 @@ ESTER_ACYL_EN = {
 # Alkyl stem for ester (no 基): methyl→甲, ethyl→乙, ...
 ESTER_ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
 ESTER_ALKYL_ZH = {1: "甲", 2: "乙", 3: "丙", 4: "丁"}
+
+# P-65.5.1 retained acetyl; C>=3 alkane stem -e + oyl chloride / …酰氯
+ACYL_CHLORIDE_EN = {
+    2: "acetyl chloride",
+    3: "propanoyl chloride",
+    4: "butanoyl chloride",
+    5: "pentanoyl chloride",
+    6: "hexanoyl chloride",
+    7: "heptanoyl chloride",
+    8: "octanoyl chloride",
+    9: "nonanoyl chloride",
+    10: "decanoyl chloride",
+}
+ACYL_CHLORIDE_ZH = {
+    2: "乙酰氯",
+    3: "丙酰氯",
+    4: "丁酰氯",
+    5: "戊酰氯",
+    6: "己酰氯",
+    7: "庚酰氯",
+    8: "辛酰氯",
+    9: "壬酰氯",
+    10: "癸酰氯",
+}
+

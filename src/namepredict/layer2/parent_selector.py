@@ -11,11 +11,9 @@ from namepredict.layer2.ring_parent import (
     _is_simple_cycloketone,
 )
 
-
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
     atom = mol.GetAtomWithIdx(idx)
     return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
-
 
 def _extend_best(mol: Mol, node: int, path: list[int], forbid: set[int], best: list[int]) -> list[int]:
     for nb in _carbon_neighbors(mol, node):
@@ -26,18 +24,14 @@ def _extend_best(mol: Mol, node: int, path: list[int], forbid: set[int], best: l
             best = cand
     return best
 
-
 def _dfs_path(mol: Mol, node: int, path: list[int], forbid: set[int]) -> list[int]:
     return _extend_best(mol, node, path, forbid, path)
-
 
 def _longest_from(mol: Mol, start: int, forbidden: set[int] | None = None) -> list[int]:
     return _dfs_path(mol, start, [start], forbidden or set())
 
-
 def _all_carbons(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
-
 
 def _side_count(mol: Mol, chain: list[int]) -> int:
     chain_set = set(chain)
@@ -49,16 +43,13 @@ def _side_count(mol: Mol, chain: list[int]) -> int:
                 n += 1
     return n
 
-
 def _chain_key(mol: Mol, path: list[int]) -> tuple:
     return (len(path), _side_count(mol, path))
-
 
 def _better(mol: Mol, cand: list[int], best: list[int]) -> bool:
     if not best:
         return True
     return _chain_key(mol, cand) > _chain_key(mol, best)
-
 
 def _best_among(mol: Mol, seeds: list[int]) -> list[int]:
     best: list[int] = []
@@ -68,15 +59,12 @@ def _best_among(mol: Mol, seeds: list[int]) -> list[int]:
             best = path
     return best
 
-
 def _longest_chain(mol: Mol, seeds: list[int] | None = None) -> list[int]:
     return _best_among(mol, seeds or _all_carbons(mol))
-
 
 def _arms_from(mol: Mol, center: int) -> list[list[int]]:
     forbid = {center}
     return [_longest_from(mol, nb, forbid) for nb in _carbon_neighbors(mol, center)]
-
 
 def _join_through(center: int, arms: list[list[int]]) -> list[int]:
     arms = sorted(arms, key=len, reverse=True)
@@ -86,18 +74,15 @@ def _join_through(center: int, arms: list[list[int]]) -> list[int]:
         return list(reversed(arms[0])) + [center]
     return list(reversed(arms[0])) + [center] + arms[1]
 
-
 def _chain_through(info: dict, c_idx: int) -> list[int]:
     mol: Mol = info["mol"]
     return _join_through(c_idx, _arms_from(mol, c_idx))
-
 
 def _bfs_expand(mol: Mol, cur: int, prev: dict, q: list) -> None:
     for nb in _carbon_neighbors(mol, cur):
         if nb not in prev:
             prev[nb] = cur
             q.append(nb)
-
 
 def _bfs_prev(mol: Mol, start: int, goal: int) -> dict | None:
     prev: dict = {start: None}
@@ -109,13 +94,11 @@ def _bfs_prev(mol: Mol, start: int, goal: int) -> dict | None:
         _bfs_expand(mol, cur, prev, q)
     return None
 
-
 def _rebuild_path(prev: dict, end: int) -> list[int]:
     path = [end]
     while prev[path[-1]] is not None:
         path.append(prev[path[-1]])
     return list(reversed(path))
-
 
 def _path_between(mol: Mol, a: int, b: int) -> list[int]:
     if a == b:
@@ -123,13 +106,11 @@ def _path_between(mol: Mol, a: int, b: int) -> list[int]:
     prev = _bfs_prev(mol, a, b)
     return _rebuild_path(prev, b) if prev else [a]
 
-
 def _chain_through_two(mol: Mol, c1: int, c2: int) -> list[int]:
     path = _path_between(mol, c1, c2)
     left = _best_arm_away(mol, path[0], set(path[1:]))
     right = _best_arm_away(mol, path[-1], set(path[:-1]))
     return list(reversed(left)) + path + right
-
 
 def _c_idxs(entries, n: int) -> list[int] | None:
     if not entries or len(entries) != n:
@@ -137,90 +118,72 @@ def _c_idxs(entries, n: int) -> list[int] | None:
     xs = [e["c_idx"] for e in entries]
     return xs if len(set(xs)) == n else None
 
-
 def _no_fgs(info: dict, keys: tuple) -> bool:
     return not any(info.get(k) for k in keys)
 
-
 _DIOL_BAD = (
     "has_acid", "has_ester", "has_amide", "has_nitrile",
-    "has_aldehyde", "has_ketone", "has_amine",
+    "has_aldehyde", "has_ketone", "has_amine", "has_acyl_chloride",
 )
 _DIACID_BAD = (
-    "has_ester", "has_amide", "has_nitrile",
+    "has_ester", "has_amide", "has_nitrile", "has_acyl_chloride",
     "has_aldehyde", "has_ketone", "has_amine", "has_alcohol",
 )
 _DIAMINE_BAD = (
     "has_acid", "has_ester", "has_amide", "has_nitrile",
-    "has_aldehyde", "has_ketone", "has_alcohol",
+    "has_aldehyde", "has_ketone", "has_alcohol", "has_acyl_chloride",
 )
 _DIONE_BAD = (
     "has_acid", "has_ester", "has_amide", "has_nitrile",
-    "has_aldehyde", "has_amine", "has_alcohol",
+    "has_aldehyde", "has_amine", "has_alcohol", "has_acyl_chloride",
 )
-
 
 def _is_open_sat(info: dict) -> bool:
     return not (info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"))
 
-
 def _is_simple_n(info: dict, bad: tuple, ekey: str, n: int) -> bool:
     return _is_open_sat(info) and _no_fgs(info, bad) and _c_idxs(info.get(ekey) or [], n) is not None
-
 
 def _cover_parent(info: dict, ekey: str, n: int, kind: str, key: str) -> dict:
     atoms = _c_idxs(info.get(ekey) or [], n) or []
     chain = _best_cover_pair(info["mol"], atoms) or _longest_chain(info["mol"])
     return _parent_dict(chain, kind, **{key: atoms})
 
-
 def _is_simple_alkanediol(info: dict) -> bool:
     return _is_simple_n(info, _DIOL_BAD, "hydroxyls", 2)
-
 
 def _diol_parent(info: dict) -> dict:
     return _cover_parent(info, "hydroxyls", 2, "diol", "oh_c_idxs")
 
-
 def _is_simple_alkanetriol(info: dict) -> bool:
     return _is_simple_n(info, _DIOL_BAD, "hydroxyls", 3)
-
 
 def _triol_parent(info: dict) -> dict:
     return _cover_parent(info, "hydroxyls", 3, "triol", "oh_c_idxs")
 
-
 def _is_simple_alkanedioic(info: dict) -> bool:
     return _is_simple_n(info, _DIACID_BAD, "carboxyls", 2)
-
 
 def _diacid_parent(info: dict) -> dict:
     return _cover_parent(info, "carboxyls", 2, "diacid", "cooh_c_idxs")
 
-
 def _is_simple_alkanediamine(info: dict) -> bool:
     return _is_simple_n(info, _DIAMINE_BAD, "amines", 2)
-
 
 def _diamine_parent(info: dict) -> dict:
     return _cover_parent(info, "amines", 2, "diamine", "amine_c_idxs")
 
-
 def _is_simple_alkanedione(info: dict) -> bool:
     return _is_simple_n(info, _DIONE_BAD, "ketones", 2)
-
 
 def _dione_parent(info: dict) -> dict:
     return _cover_parent(info, "ketones", 2, "dione", "ketone_c_idxs")
 
-
 def _parent_core(chain: list[int], kind: str) -> dict:
     return {"chain": chain, "n_carbons": len(chain), "kind": kind}
 
-
 def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
     return {**_parent_core(chain, kind), **kw}
-
 
 def _alcohol_parent(info: dict) -> dict:
     if _is_simple_cycloalcohol(info):
@@ -232,7 +195,6 @@ def _alcohol_parent(info: dict) -> dict:
     oh_c = info["hydroxyls"][0]["c_idx"]
     return _parent_dict(_chain_through(info, oh_c), "alcohol", oh_c_idx=oh_c)
 
-
 def _amine_parent(info: dict) -> dict:
     if _is_simple_cycloamine(info):
         return _cycloamine_parent(info)
@@ -241,13 +203,11 @@ def _amine_parent(info: dict) -> dict:
     am_c = info["amines"][0]["c_idx"]
     return _parent_dict(_chain_through(info, am_c), "amine", amine_c_idx=am_c)
 
-
 def _acid_parent(info: dict) -> dict:
     if _is_simple_alkanedioic(info):
         return _diacid_parent(info)
     cooh_c = info["carboxyls"][0]["c_idx"]
     return _parent_dict(_chain_through(info, cooh_c), "acid", cooh_c_idx=cooh_c)
-
 
 def _ketone_parent(info: dict) -> dict:
     if _is_simple_cycloketone(info):
@@ -257,31 +217,28 @@ def _ketone_parent(info: dict) -> dict:
     ket_c = info["ketones"][0]["c_idx"]
     return _parent_dict(_chain_through(info, ket_c), "ketone", ketone_c_idx=ket_c)
 
-
 def _aldehyde_parent(info: dict) -> dict:
     ald_c = info["aldehydes"][0]["c_idx"]
     return _parent_dict(_chain_through(info, ald_c), "aldehyde", aldehyde_c_idx=ald_c)
-
 
 def _amide_parent(info: dict) -> dict:
     am_c = info["amides"][0]["c_idx"]
     return _parent_dict(_chain_through(info, am_c), "amide", amide_c_idx=am_c)
 
+def _is_mono_fg(info: dict, flag: str, key: str) -> bool:
+    xs = info.get(key) or []
+    return bool(info.get(flag)) and len(xs) == 1
 
-def _is_mono_amide(info: dict) -> bool:
-    amides = info.get("amides") or []
-    return bool(info.get("has_amide")) and len(amides) == 1
-
+def _acyl_chloride_parent(info: dict) -> dict:
+    e = info["acyl_chlorides"][0]
+    return _parent_dict(
+        _chain_through(info, e["c_idx"]), "acyl_chloride",
+        acyl_c_idx=e["c_idx"], cl_idx=e["cl_idx"],
+    )
 
 def _nitrile_parent(info: dict) -> dict:
     c_idx = info["nitriles"][0]["c_idx"]
     return _parent_dict(_chain_through(info, c_idx), "nitrile", nitrile_c_idx=c_idx)
-
-
-def _is_mono_nitrile(info: dict) -> bool:
-    ns = info.get("nitriles") or []
-    return bool(info.get("has_nitrile")) and len(ns) == 1
-
 
 def _ester_parent(info: dict) -> dict:
     e = info["esters"][0]
@@ -293,12 +250,6 @@ def _ester_parent(info: dict) -> dict:
         alkoxy_n=alkoxy_n,
     )
 
-
-def _is_mono_ester(info: dict) -> bool:
-    esters = info.get("esters") or []
-    return bool(info.get("has_ester")) and len(esters) == 1
-
-
 def _best_arm_away(mol: Mol, from_c: int, forbid: set[int]) -> list[int]:
     best: list[int] = []
     for nb in _carbon_neighbors(mol, from_c):
@@ -309,12 +260,10 @@ def _best_arm_away(mol: Mol, from_c: int, forbid: set[int]) -> list[int]:
             best = path
     return best
 
-
 def _chain_through_bond(mol: Mol, c1: int, c2: int) -> list[int]:
     left = _best_arm_away(mol, c1, {c2})
     right = _best_arm_away(mol, c2, {c1})
     return list(reversed(left)) + [c1, c2] + right
-
 
 def _alkene_parent(info: dict) -> dict:
     if _is_simple_cycloalkene(info):
@@ -324,32 +273,28 @@ def _alkene_parent(info: dict) -> dict:
     chain = _chain_through_bond(info["mol"], c1, c2)
     return _parent_dict(chain, "alkene", double_bond=(c1, c2))
 
-
 def _alkyne_parent(info: dict) -> dict:
     tb = info["triple_bonds"][0]
     c1, c2 = tb["c1"], tb["c2"]
     chain = _chain_through_bond(info["mol"], c1, c2)
     return _parent_dict(chain, "alkyne", triple_bond=(c1, c2))
 
-
 def _is_mono_alkene(info: dict) -> bool:
     bonds = info.get("double_bonds") or []
     return bool(info.get("has_alkene")) and len(bonds) == 1
-
 
 def _is_mono_alkyne(info: dict) -> bool:
     triples = info.get("triple_bonds") or []
     doubles = info.get("double_bonds") or []
     return len(triples) == 1 and len(doubles) == 0
 
-
 def _no_main_fg(info: dict) -> bool:
     bad = (
         "has_acid", "has_ester", "has_amide", "has_nitrile",
         "has_aldehyde", "has_ketone", "has_amine", "has_alcohol",
+        "has_acyl_chloride",
     )
     return not any(info.get(k) for k in bad)
-
 
 def _is_polyene(info: dict) -> bool:
     bonds = info.get("double_bonds") or []
@@ -359,7 +304,6 @@ def _is_polyene(info: dict) -> bool:
         return False
     return _no_main_fg(info)
 
-
 def _db_atoms(info: dict) -> list[int]:
     atoms: set[int] = set()
     for db in info.get("double_bonds") or []:
@@ -367,11 +311,9 @@ def _db_atoms(info: dict) -> list[int]:
         atoms.add(db["c2"])
     return list(atoms)
 
-
 def _covers(chain: list[int], atoms: list[int]) -> bool:
     s = set(chain)
     return all(a in s for a in atoms)
-
 
 def _best_cover_pair(mol: Mol, atoms: list[int]) -> list[int]:
     best: list[int] = []
@@ -382,7 +324,6 @@ def _best_cover_pair(mol: Mol, atoms: list[int]) -> list[int]:
                 best = chain
     return best
 
-
 def _polyene_chain(info: dict) -> list[int]:
     mol, atoms = info["mol"], _db_atoms(info)
     chain = _longest_chain(mol)
@@ -390,56 +331,57 @@ def _polyene_chain(info: dict) -> list[int]:
         return chain
     return _best_cover_pair(mol, atoms) or chain
 
-
 def _db_pairs(info: dict) -> list[tuple[int, int]]:
     return [(db["c1"], db["c2"]) for db in info.get("double_bonds") or []]
-
 
 def _polyene_parent(info: dict) -> dict:
     chain = _polyene_chain(info)
     return _parent_dict(chain, "polyene", double_bonds=_db_pairs(info))
 
-
 def _cycloalkane_parent(info: dict) -> dict:
     chain = list(info["rings"][0]["atom_ids"])
     return _parent_dict(chain, "cycloalkane")
-
 
 def _cycloalkene_parent(info: dict) -> dict:
     chain = list(info["rings"][0]["atom_ids"])
     db = _endocyclic_double(info, set(chain))
     return _parent_dict(chain, "cycloalkene", double_bond=db)
 
-
 def _cycloalcohol_parent(info: dict) -> dict:
     chain = list(info["rings"][0]["atom_ids"])
     oh_c = info["hydroxyls"][0]["c_idx"]
     return _parent_dict(chain, "cycloalcohol", oh_c_idx=oh_c)
-
 
 def _cycloamine_parent(info: dict) -> dict:
     chain = list(info["rings"][0]["atom_ids"])
     am_c = info["amines"][0]["c_idx"]
     return _parent_dict(chain, "cycloamine", amine_c_idx=am_c)
 
-
 def _cycloketone_parent(info: dict) -> dict:
     chain = list(info["rings"][0]["atom_ids"])
     ket_c = info["ketones"][0]["c_idx"]
     return _parent_dict(chain, "cycloketone", ketone_c_idx=ket_c)
 
+def _mono_acyl_or_ester(info: dict) -> dict | None:
+    if _is_mono_fg(info, "has_acyl_chloride", "acyl_chlorides"):
+        return _acyl_chloride_parent(info)
+    if _is_mono_fg(info, "has_ester", "esters"):
+        return _ester_parent(info)
+    return None
+
+
+def _mono_amide_or_nitrile(info: dict) -> dict | None:
+    if _is_mono_fg(info, "has_amide", "amides"):
+        return _amide_parent(info)
+    if _is_mono_fg(info, "has_nitrile", "nitriles"):
+        return _nitrile_parent(info)
+    return None
+
 
 def _acid_ester_amide(info: dict) -> dict | None:
     if info.get("has_acid") and info.get("carboxyls"):
         return _acid_parent(info)
-    if _is_mono_ester(info):
-        return _ester_parent(info)
-    if _is_mono_amide(info):
-        return _amide_parent(info)
-    if _is_mono_nitrile(info):
-        return _nitrile_parent(info)
-    return None
-
+    return _mono_acyl_or_ester(info) or _mono_amide_or_nitrile(info)
 
 def _aldehyde_ketone(info: dict) -> dict | None:
     if info.get("has_aldehyde") and info.get("aldehydes"):
@@ -448,11 +390,9 @@ def _aldehyde_ketone(info: dict) -> dict | None:
         return _ketone_parent(info)
     return None
 
-
 def _carbonyl_parent(info: dict) -> dict | None:
     top = _acid_ester_amide(info)
     return top if top is not None else _aldehyde_ketone(info)
-
 
 def _hetero_parent(info: dict) -> dict | None:
     if info.get("has_alcohol") and info.get("hydroxyls"):
@@ -461,11 +401,9 @@ def _hetero_parent(info: dict) -> dict | None:
         return _amine_parent(info)
     return None
 
-
 def _fg_parent(info: dict) -> dict | None:
     carb = _carbonyl_parent(info)
     return carb if carb is not None else _hetero_parent(info)
-
 
 def _unsat_parent(info: dict) -> dict | None:
     if _is_mono_alkyne(info):
@@ -475,7 +413,6 @@ def _unsat_parent(info: dict) -> dict | None:
     if _is_mono_alkene(info):
         return _alkene_parent(info)
     return None
-
 
 def select_parent(info: dict) -> dict:
     fg = _fg_parent(info)
