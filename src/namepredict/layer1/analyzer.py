@@ -35,7 +35,7 @@ def _is_acyl_chloride_carbon(atom) -> bool:
         return False
     if _has_oh_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
         return False
-    if _primary_amide_n_of(atom) is not None:
+    if _amide_n_of(atom) is not None:
         return False
     return _acyl_cl_of(atom) is not None
 
@@ -50,22 +50,28 @@ def _carbon_neighbor_count(atom) -> int:
     return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6])
 
 
-def _primary_amide_n_of(carbon) -> int | None:
+def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
     for n in carbon.GetNeighbors():
         if n.GetAtomicNum() != 7:
             continue
-        heavies = [x for x in n.GetNeighbors() if x.GetAtomicNum() != 1]
-        if len(heavies) == 1 and heavies[0].GetIdx() == carbon.GetIdx():
-            return n.GetIdx()
+        o = [x for x in n.GetNeighbors()
+             if x.GetAtomicNum() != 1 and x.GetIdx() != carbon.GetIdx()]
+        if len(o) <= 2 and all(x.GetAtomicNum() == 6 for x in o):
+            return n.GetIdx(), [x.GetIdx() for x in o]
     return None
 
 
-def _is_primary_amide_carbon(atom) -> bool:
+def _amide_n_of(carbon) -> int | None:
+    info = _amide_n_info(carbon)
+    return info[0] if info else None
+
+
+def _is_amide_carbon(atom) -> bool:
     if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
         return False
     if _has_oh_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
         return False
-    return _primary_amide_n_of(atom) is not None
+    return _amide_n_info(atom) is not None
 
 
 def _is_ketone_carbon(atom) -> bool:
@@ -73,7 +79,7 @@ def _is_ketone_carbon(atom) -> bool:
         return False
     if _has_oh_neighbor(atom) or _carbon_neighbor_count(atom) != 2:
         return False
-    if _primary_amide_n_of(atom) is not None:
+    if _amide_n_of(atom) is not None:
         return False
     if _anhydride_o_of(atom) is not None:
         return False
@@ -138,7 +144,7 @@ def _is_aldehyde_carbon(atom) -> bool:
         return False
     if _anhydride_o_of(atom) is not None:
         return False
-    return _primary_amide_n_of(atom) is None
+    return _amide_n_of(atom) is None
 
 
 def _is_hydroxyl_oxygen(atom) -> bool:
@@ -223,16 +229,14 @@ def _ketone_entries(mol: Mol) -> list[dict]:
 
 
 def _amide_entry(atom) -> dict:
-    n_idx = _primary_amide_n_of(atom)
-    return {"c_idx": atom.GetIdx(), "n_idx": n_idx}
+    n_idx, n_cs = _amide_n_info(atom)
+    return {"c_idx": atom.GetIdx(), "n_idx": n_idx, "n_c_idxs": n_cs}
 
 
 def _amide_entries(mol: Mol) -> list[dict]:
-    out: list[dict] = []
-    for atom in mol.GetAtoms():
-        if _is_primary_amide_carbon(atom):
-            out.append(_amide_entry(atom))
-    return out
+    return [
+        _amide_entry(a) for a in mol.GetAtoms() if _is_amide_carbon(a)
+    ]
 
 
 def _aldehyde_entries(mol: Mol) -> list[dict]:

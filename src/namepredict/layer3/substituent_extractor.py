@@ -220,8 +220,6 @@ def _n_alkyl_sub(en: str, zh: str, attach: int, n: int) -> dict:
         "kind": "n_alkyl", "n_carbons": n, "attach_idx": attach,
         "atoms": [], "en": en, "zh": zh,
     }
-
-
 def _tert_n_prefix(ns: list[int]) -> tuple[str, str] | None:
     if len(ns) != 2 or any(n not in _N_STEM_EN for n in ns):
         return None
@@ -230,25 +228,18 @@ def _tert_n_prefix(ns: list[int]) -> tuple[str, str] | None:
         return f"N,N-di{_N_STEM_EN[a]}", f"N,N-二{_N_STEM_ZH[a]}"
     x, y = sorted(ns, key=lambda n: _N_STEM_EN[n])
     return f"N-{_N_STEM_EN[x]}-N-{_N_STEM_EN[y]}", f"N-{_N_STEM_ZH[x]}-N-{_N_STEM_ZH[y]}"
-
-
 def _n_alkyl_prefix(parent: dict) -> tuple[str, str, int] | None:
-    kind = parent.get("kind")
-    if kind == "sec_amine":
-        n = parent.get("n_alkyl_n")
-        return (_N_ALKYL_EN[n], _N_ALKYL_ZH[n], n) if n in _N_ALKYL_EN else None
-    if kind == "tert_amine":
+    kind, n = parent.get("kind"), parent.get("n_alkyl_n")
+    if kind in ("sec_amine", "amide") and n in _N_ALKYL_EN:
+        return _N_ALKYL_EN[n], _N_ALKYL_ZH[n], n
+    if kind in ("tert_amine", "amide"):
         pref = _tert_n_prefix(list(parent.get("n_alkyl_ns") or []))
         return (*pref, 0) if pref else None
     return None
-
-
 def _extract_n_alkyl(parent: dict) -> list[dict]:
-    attach, pref = parent.get("amine_c_idx"), _n_alkyl_prefix(parent)
-    if attach is None or pref is None:
-        return []
-    return [_n_alkyl_sub(pref[0], pref[1], attach, pref[2])]
-
+    key = "amide_c_idx" if parent.get("kind") == "amide" else "amine_c_idx"
+    attach, pref = parent.get(key), _n_alkyl_prefix(parent)
+    return [_n_alkyl_sub(*pref[:2], attach, pref[2])] if attach is not None and pref else []
 def extract_substituents(info: dict, parent: dict) -> list:
     mol: Mol = info["mol"]
     chain = parent.get("chain") or []
@@ -256,5 +247,4 @@ def extract_substituents(info: dict, parent: dict) -> list:
     oh = _extract_hydroxys(info, parent)
     nh2 = _extract_aminos(info, parent)
     oxo = _extract_oxos(info, parent)
-    nalk = _extract_n_alkyl(parent)
-    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo + nalk
+    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo + _extract_n_alkyl(parent)

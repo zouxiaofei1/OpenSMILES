@@ -290,8 +290,16 @@ def _aldehyde_parent(info: dict) -> dict:
         info, "has_aldehyde", "aldehydes", _ALKENAL_BAD, "alkenal", "aldehyde", "aldehyde_c_idx",
     )
 
+def _amide_n_meta(info: dict) -> dict:
+    ams = info.get("amides") or []
+    if len(ams) != 1: return {}
+    mol, am, cs = info["mol"], ams[0], ams[0].get("n_c_idxs") or []
+    arms = [_longest_from(mol, c, set()) for c in cs]
+    if not all(_arm_ok(mol, a, am["n_idx"]) for a in arms): return {}
+    if len(arms) == 1: return {"n_alkyl_n": len(arms[0])}
+    return {"n_alkyl_ns": [len(a) for a in arms]} if arms else {}
 def _amide_parent(info: dict) -> dict:
-    return _fg_chain(info, "amides", "amide", "amide_c_idx")
+    return _fg_chain(info, "amides", "amide", "amide_c_idx", **_amide_n_meta(info))
 def _is_mono_fg(info: dict, flag: str, key: str) -> bool:
     xs = info.get(key) or []
     return bool(info.get(flag)) and len(xs) == 1

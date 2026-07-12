@@ -440,7 +440,7 @@ def _mult_zh(n: int) -> str:
     return MULT_ZH.get(n, "")
 
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
-    if n_carbons <= 1 or kind in ("sec_amine", "tert_amine"):
+    if n_carbons <= 1 or kind in ("sec_amine", "tert_amine", "amide"):
         return True
     # Carboxylic acids number COOH as 1; keep substituent locants (e.g. 2-aminoacetic acid).
     if kind in ("acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate"):
