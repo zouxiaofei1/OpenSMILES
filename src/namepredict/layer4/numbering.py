@@ -100,6 +100,10 @@ def _orient_diamine(chain: list[int], parent: dict, substituents: list) -> list[
     return _orient_pair(chain, parent, "amine_c_idxs", substituents)
 
 
+def _orient_dione(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_pair(chain, parent, "ketone_c_idxs", substituents)
+
+
 def _orient_to_terminal(chain: list[int], c_idx: int | None) -> list[int]:
     pos = _pos_on(chain, c_idx)
     if pos is None or pos == 1:
@@ -191,7 +195,11 @@ def _terminal_orienters() -> dict:
 
 
 def _carbonyl_orienters() -> dict:
-    return {**_terminal_orienters(), "ketone": _orient_ketone}
+    return {
+        **_terminal_orienters(),
+        "ketone": _orient_ketone,
+        "dione": _orient_dione,
+    }
 
 
 def _rotate_to_front(chain: list[int], atom: int) -> list[int]:
@@ -329,6 +337,10 @@ def _ketone_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("ketone", "cycloketone"), "ketone_c_idx")
 
 
+def _ketone_pair_locants(oriented: dict) -> list[int] | None:
+    return _pair_locants(oriented, "dione", "ketone_c_idxs")
+
+
 def _bond_locant(oriented: dict, kind: str, key: str) -> int | None:
     if oriented.get("kind") != kind:
         return None
@@ -400,7 +412,11 @@ def _oh_am_locants(oriented: dict, n: int) -> dict:
 
 def _fg_locants(oriented: dict) -> dict:
     n = oriented.get("n_carbons", 0)
-    base = {**_oh_am_locants(oriented, n), "ketone_locant": _ketone_locant(oriented)}
+    base = {
+        **_oh_am_locants(oriented, n),
+        "ketone_locant": _ketone_locant(oriented),
+        "ketone_locants": _ketone_pair_locants(oriented),
+    }
     return {**base, **_unsat_locants(oriented, n)}
 
 

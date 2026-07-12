@@ -209,6 +209,15 @@ def _ketone_names(n: int, locant: int | None) -> tuple[str, str] | None:
     return _ketone_from_alkane(n, locant)
 
 
+def _dione_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain or not locs or len(locs) != 2:
+        return None
+    en, zh = plain
+    loc = _pair_loc_str(locs)
+    return f"{en}-{loc}-dione", f"{zh[0]}-{loc}-二酮"
+
+
 def _alkene_plain(n: int) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain:
@@ -303,6 +312,8 @@ def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "ester":
         parent = numbered.get("parent") or {}
         return _ester_names(n, parent.get("alkoxy_n"))
+    if kind == "dione":
+        return _dione_names(n, numbered.get("ketone_locants"))
     if kind == "ketone":
         return _ketone_names(n, numbered.get("ketone_locant"))
     if kind == "cycloketone":

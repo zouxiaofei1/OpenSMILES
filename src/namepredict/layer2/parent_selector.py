@@ -146,6 +146,10 @@ def _am_c_pair(info: dict) -> tuple[int, int] | None:
     return _c_pair(info.get("amines") or [])
 
 
+def _ket_c_pair(info: dict) -> tuple[int, int] | None:
+    return _c_pair(info.get("ketones") or [])
+
+
 def _cooh_c_pair(info: dict) -> tuple[int, int] | None:
     return _c_pair(info.get("carboxyls") or [])
 
@@ -166,46 +170,56 @@ _DIAMINE_BAD = (
     "has_acid", "has_ester", "has_amide", "has_nitrile",
     "has_aldehyde", "has_ketone", "has_alcohol",
 )
+_DIONE_BAD = (
+    "has_acid", "has_ester", "has_amide", "has_nitrile",
+    "has_aldehyde", "has_amine", "has_alcohol",
+)
 
 
 def _is_open_sat(info: dict) -> bool:
     return not (info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"))
 
 
+def _is_simple_di(info: dict, bad: tuple, pair_fn) -> bool:
+    return _is_open_sat(info) and _no_fgs(info, bad) and pair_fn(info) is not None
+
+
+def _pair_parent(info: dict, pair_fn, kind: str, key: str) -> dict:
+    pair = pair_fn(info) or (0, 0)
+    chain = _chain_through_two(info["mol"], pair[0], pair[1])
+    return _parent_dict(chain, kind, **{key: pair})
+
+
 def _is_simple_alkanediol(info: dict) -> bool:
-    return _is_open_sat(info) and _no_fgs(info, _DIOL_BAD) and _oh_c_pair(info) is not None
+    return _is_simple_di(info, _DIOL_BAD, _oh_c_pair)
 
 
 def _diol_parent(info: dict) -> dict:
-    pair = _oh_c_pair(info) or (0, 0)
-    chain = _chain_through_two(info["mol"], pair[0], pair[1])
-    return _parent_dict(chain, "diol", oh_c_idxs=pair)
+    return _pair_parent(info, _oh_c_pair, "diol", "oh_c_idxs")
 
 
 def _is_simple_alkanedioic(info: dict) -> bool:
-    return (
-        _is_open_sat(info) and _no_fgs(info, _DIACID_BAD)
-        and _cooh_c_pair(info) is not None
-    )
+    return _is_simple_di(info, _DIACID_BAD, _cooh_c_pair)
 
 
 def _diacid_parent(info: dict) -> dict:
-    pair = _cooh_c_pair(info) or (0, 0)
-    chain = _chain_through_two(info["mol"], pair[0], pair[1])
-    return _parent_dict(chain, "diacid", cooh_c_idxs=pair)
+    return _pair_parent(info, _cooh_c_pair, "diacid", "cooh_c_idxs")
 
 
 def _is_simple_alkanediamine(info: dict) -> bool:
-    return (
-        _is_open_sat(info) and _no_fgs(info, _DIAMINE_BAD)
-        and _am_c_pair(info) is not None
-    )
+    return _is_simple_di(info, _DIAMINE_BAD, _am_c_pair)
 
 
 def _diamine_parent(info: dict) -> dict:
-    pair = _am_c_pair(info) or (0, 0)
-    chain = _chain_through_two(info["mol"], pair[0], pair[1])
-    return _parent_dict(chain, "diamine", amine_c_idxs=pair)
+    return _pair_parent(info, _am_c_pair, "diamine", "amine_c_idxs")
+
+
+def _is_simple_alkanedione(info: dict) -> bool:
+    return _is_simple_di(info, _DIONE_BAD, _ket_c_pair)
+
+
+def _dione_parent(info: dict) -> dict:
+    return _pair_parent(info, _ket_c_pair, "dione", "ketone_c_idxs")
 
 
 def _parent_core(chain: list[int], kind: str) -> dict:
@@ -244,6 +258,8 @@ def _acid_parent(info: dict) -> dict:
 def _ketone_parent(info: dict) -> dict:
     if _is_simple_cycloketone(info):
         return _cycloketone_parent(info)
+    if _is_simple_alkanedione(info):
+        return _dione_parent(info)
     ket_c = info["ketones"][0]["c_idx"]
     return _parent_dict(_chain_through(info, ket_c), "ketone", ketone_c_idx=ket_c)
 
