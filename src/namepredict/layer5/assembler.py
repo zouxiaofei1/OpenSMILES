@@ -247,6 +247,31 @@ def _alkene_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | N
     return _alkene_with_locant(n, locant)
 
 
+def _ene_mult(k: int) -> tuple[str, str]:
+    en = {2: "diene", 3: "triene", 4: "tetraene", 5: "pentaene"}.get(k, "")
+    zh = {2: "二烯", 3: "三烯", 4: "四烯", 5: "五烯"}.get(k, "")
+    return en, zh
+
+
+def _polyene_stem(n: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    return f"{en[:-3]}a", zh[0]
+
+
+def _polyene_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
+    stem = _polyene_stem(n)
+    if not stem or not locs or len(locs) < 2:
+        return None
+    me, mz = _ene_mult(len(locs))
+    if not me or not mz:
+        return None
+    loc = _diol_loc_str(locs)
+    return f"{stem[0]}-{loc}-{me}", f"{stem[1]}-{loc}-{mz}"
+
+
 def _alkyne_retained(n: int) -> tuple[str, str] | None:
     if n == 2:
         return "acetylene", "乙炔"
@@ -350,10 +375,19 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     return _unsat_or_alkane(kind, n, numbered)
 
 
-def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+def _alkene_or_poly(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alkene":
         omit = numbered.get("omit_ene_locant", False)
         return _alkene_names(n, numbered.get("ene_locant"), omit)
+    if kind == "polyene":
+        return _polyene_names(n, numbered.get("ene_locants"))
+    return None
+
+
+def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    top = _alkene_or_poly(kind, n, numbered)
+    if top is not None:
+        return top
     if kind == "cycloalkene":
         return _cycloalkene_names(n)
     if kind == "alkyne":

@@ -310,6 +310,63 @@ def _is_mono_alkyne(info: dict) -> bool:
     return len(triples) == 1 and len(doubles) == 0
 
 
+def _no_main_fg(info: dict) -> bool:
+    bad = (
+        "has_acid", "has_ester", "has_amide", "has_nitrile",
+        "has_aldehyde", "has_ketone", "has_amine", "has_alcohol",
+    )
+    return not any(info.get(k) for k in bad)
+
+
+def _is_polyene(info: dict) -> bool:
+    bonds = info.get("double_bonds") or []
+    if len(bonds) < 2 or info.get("has_ring"):
+        return False
+    if info.get("triple_bonds"):
+        return False
+    return _no_main_fg(info)
+
+
+def _db_atoms(info: dict) -> list[int]:
+    atoms: set[int] = set()
+    for db in info.get("double_bonds") or []:
+        atoms.add(db["c1"])
+        atoms.add(db["c2"])
+    return list(atoms)
+
+
+def _covers(chain: list[int], atoms: list[int]) -> bool:
+    s = set(chain)
+    return all(a in s for a in atoms)
+
+
+def _best_cover_pair(mol: Mol, atoms: list[int]) -> list[int]:
+    best: list[int] = []
+    for i, a in enumerate(atoms):
+        for b in atoms[i:]:
+            chain = _chain_through_two(mol, a, b)
+            if _covers(chain, atoms) and _better(mol, chain, best):
+                best = chain
+    return best
+
+
+def _polyene_chain(info: dict) -> list[int]:
+    mol, atoms = info["mol"], _db_atoms(info)
+    chain = _longest_chain(mol)
+    if _covers(chain, atoms):
+        return chain
+    return _best_cover_pair(mol, atoms) or chain
+
+
+def _db_pairs(info: dict) -> list[tuple[int, int]]:
+    return [(db["c1"], db["c2"]) for db in info.get("double_bonds") or []]
+
+
+def _polyene_parent(info: dict) -> dict:
+    chain = _polyene_chain(info)
+    return _parent_dict(chain, "polyene", double_bonds=_db_pairs(info))
+
+
 def _cycloalkane_parent(info: dict) -> dict:
     chain = list(info["rings"][0]["atom_ids"])
     return _parent_dict(chain, "cycloalkane")
@@ -377,14 +434,23 @@ def _fg_parent(info: dict) -> dict | None:
     return carb if carb is not None else _hetero_parent(info)
 
 
+def _unsat_parent(info: dict) -> dict | None:
+    if _is_mono_alkyne(info):
+        return _alkyne_parent(info)
+    if _is_polyene(info):
+        return _polyene_parent(info)
+    if _is_mono_alkene(info):
+        return _alkene_parent(info)
+    return None
+
+
 def select_parent(info: dict) -> dict:
     fg = _fg_parent(info)
     if fg is not None:
         return fg
     if _is_simple_cycloalkane(info):
         return _cycloalkane_parent(info)
-    if _is_mono_alkyne(info):
-        return _alkyne_parent(info)
-    if _is_mono_alkene(info):
-        return _alkene_parent(info)
+    unsat = _unsat_parent(info)
+    if unsat is not None:
+        return unsat
     return _parent_dict(_longest_chain(info["mol"]), "alkane")

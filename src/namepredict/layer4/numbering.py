@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from namepredict.layer4.polyene import ene_locants, orient_polyene
+
 
 def _oh_position(parent: dict) -> int | None:
     chain = parent.get("chain") or []
@@ -345,10 +347,15 @@ def _hetero_orienters() -> dict:
     }
 
 
+def _orient_polyene(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return orient_polyene(chain, parent, substituents, _prefer_chain)
+
+
 def _unsat_orienters() -> dict:
     return {
         "cycloketone": _orient_cycloketone,
         "alkene": _orient_alkene,
+        "polyene": _orient_polyene,
         "cycloalkene": _orient_cycloalkene,
         "alkyne": _orient_alkyne,
         "cycloalkane": _orient_cycloalkane,
@@ -453,6 +460,7 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
     kind = oriented.get("kind")
     return {
         "ene_locant": _ene_locant(oriented),
+        "ene_locants": ene_locants(oriented),
         "omit_ene_locant": _omit_unsat(n, kind),
         "yne_locant": _yne_locant(oriented),
         "omit_yne_locant": _omit_unsat(n),
