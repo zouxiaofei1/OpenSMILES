@@ -30,11 +30,12 @@
 [#333dde2][IUPAC P-65.5.1] 开链烷酰氯 alkanoyl chloride：L1酰氯检测+L2母体+L5 acetyl/…oyl chloride与乙酰氯/…酰氯 [+10 tests, dual 3.3%(136)→3.4%(139), fails 3926→3923]
 [#71c7c92][IUPAC P-65.7.1] 对称开链酸酐 alkanoic anhydride：L1酐桥检测+L2母体+L5 acetic/… anhydride与乙酸酐/…酸酐 [+9 tests, dual 3.4%(139)→3.5%(141), fails 3923→3921]
 [#a1193a0][IUPAC P-63.1.5] 开链一元硫醇 alkanethiol：L1 –SH检测+L2母体+L4位次+L5 methanethiol/ethanethiol与甲硫醇/乙硫醇 [+8 tests, dual 3.5%(141)→3.5%(142), fails 3921→3920]
+[#f4eec31][IUPAC P-65.1.2] 开链饱和羟基酸 hydroxyalkanoic acid：L3 提取 hydroxy 前缀+酸母体 [+8 tests, dual 3.5%(142)→3.7%(150), fails 3920→3912]
 
 ## 其他
-- 基线(本轮前): en=3.5%(141/4062) zh=15.3%(116/756) dual=3.5%(141/4062)
-- 本次: en=3.5%(142/4062) zh=15.5%(117/756) dual=3.5%(142/4062) fails=3920
-- 改动: L1 检测 –SH（排除硫醚）；L2 thiol 母体穿硫连碳；L4 位次类似醇；L5 methanethiol/ethanethiol 与 甲硫醇/乙硫醇
-- 验证: CCS→ethanethiol/乙硫醇；CS→methanethiol/甲硫醇；CCO仍ethanol；CCSC 硫醚不误判为 thiol
-- 已知缺口: 仲/叔胺；N-取代酰胺；不饱和二酸(E/Z)；支化烷基前缀；硫醚；环硫醇
+- 基线(本轮前): en=3.5%(142/4062) zh=15.5%(117/756) dual=3.5%(142/4062)
+- 本次: en=3.7%(150/4062) zh=16.1%(122/756) dual=3.7%(150/4062) fails=3912
+- 改动: L3 在羧酸母体上提取 hydroxy 取代基（en=hydroxy/zh=羟基）；酸优先于醇已有
+- 验证: OC(=O)C(O)C→2-hydroxypropanoic acid/2-羟基丙酸；OC(=O)CCO→3-hydroxypropanoic acid；CC(=O)O仍acetic acid；OCCO仍diol
+- 已知缺口: 仲/叔胺；N-取代酰胺；不饱和二酸(E/Z)；支化烷基前缀；硫醚；多羟基酸
 - 下一步候选: 仲胺；或不饱和二酸；或支化烷基前缀；或硫醚
