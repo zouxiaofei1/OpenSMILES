@@ -13,11 +13,12 @@
 [#4146028][IUPAC P-62.2.1] 一元伯胺alkanamine：L1伯胺N(排除酰胺)；L2 alcohol>amine；L4胺位次；L5 methanamine/…-n-amine与甲胺/…-n-胺 [+15 tests, dual 2.2%(90)→2.3%(95), fails 3972→3967]
 [#acbcef4][IUPAC P-22.1.1] 单环烷烃cycloalkane：L1环信息；L2无取代单碳环母体；L5 cyclo+alkane/环+烷 [+18 tests, dual 2.3%(95)→2.4%(99), fails 3967→3963]
 [#66f7f22][IUPAC P-66.1.1] 一元伯酰胺alkanamide：L1 –CONH2+排除醛；L2 acid>ester>amide>…；L5 formamide/acetamide/…amide [+16 tests, dual 2.4%(99)→2.5%(102), fails 3963→3960]
+[#682a7d6][IUPAC P-66.5.1] 一元腈alkanenitrile：L1 C≡N；L2穿氰基碳；L4端基定向；L5 formonitrile/acetonitrile/…nitrile与…腈 [+15 tests, dual 2.5%(102)→2.6%(105), fails 3960→3957]
 
 ## 其他
-- 基线(本轮前): en=2.4%(99/4062) zh=10.8%(82/756) dual=2.4%(99/4062)
-- 本次: en=2.5%(102/4062) zh=11.2%(85/756) dual=2.5%(102/4062) fails=3960
-- 改动: L1 amides/has_amide+醛排除酰胺羰基；L2 酰基链穿羰基；L4 定向1；L5 甲/乙酰胺与propanamide…
-- 验证: CC(=O)N→acetamide/乙酰胺；C(=O)N→formamide；CCC(=O)N→propanamide；N-取代≠acetamide；酸/酯/醛/胺/环烷不回退
-- 已知缺口: N-取代酰胺；仲/叔胺；取代环烷；环醇/环酮；支化烷基isopropyl；腈
-- 下一步候选: 腈(nitrile)；或取代环烷；或仲胺；或支化烷基
+- 基线(本轮前): en=2.5%(102/4062) zh=11.2%(85/756) dual=2.5%(102/4062)
+- 本次: en=2.6%(105/4062) zh=11.5%(87/756) dual=2.6%(105/4062) fails=3957
+- 改动: L1 nitriles/has_nitrile；L2 acid>ester>amide>nitrile>…；L5 甲/乙腈与propanenitrile…
+- 验证: CC#N→acetonitrile/乙腈；CCCCC#N→pentanenitrile/戊腈；C#C仍为acetylene；胺/酰胺不回退
+- 已知缺口: 不饱和腈；N-取代酰胺；仲/叔胺；取代环烷；环醇/环酮；支化烷基isopropyl
+- 下一步候选: 取代环烷(甲基环己烷)；或仲胺；或支化烷基；或环醇
