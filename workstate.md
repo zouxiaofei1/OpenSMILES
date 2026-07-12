@@ -24,11 +24,12 @@
 [#e4efd5d][IUPAC P-63.1.1 / P-14.3.3] 开链饱和二元醇 alkanediol：L2穿双OH碳+L4最低位次集+L5 …-a,b-diol/…-a,b-二醇 [+9 tests, dual 2.9%(118)→3.0%(122), fails 3944→3940]
 [#63ee025][IUPAC P-65.1.1 / P-14.3.3] 开链饱和二元羧酸 alkanedioic acid：L2穿双COOH碳+L5 oxalic/…dioic acid与草酸/X二酸 [+8 tests, dual 3.0%(122)→3.2%(129), fails 3940→3933]
 [#1e91bc2][IUPAC P-31.1 / P-14.3.3] 开链多烯烃 polyene：L2穿全部C=C+L4多ene位次+L5 buta-1,3-diene/丁-1,3-二烯 [+10 tests, dual 3.2%(129)→3.2%(131), fails 3933→3931]
+[#b95686a][IUPAC P-62.2.1 / P-14.3.3] 开链饱和二元伯胺 alkanediamine：L2穿双胺碳+L4多胺位次+L5 …-a,b-diamine/…-a,b-二胺 [+9 tests, dual 3.2%(131)→3.3%(133), fails 3931→3929]
 
 ## 其他
-- 基线(本轮前): en=3.2%(129/4062) zh=14.0%(106/756) dual=3.2%(129/4062)
-- 本次: en=3.2%(131/4062) zh=14.3%(108/756) dual=3.2%(131/4062) fails=3931
-- 改动: L2 ≥2双键无FG无环→polyene母体穿全部双键碳；L4 多ene位次最低集；L5 diene/triene 与 二烯/三烯
-- 验证: C=CC=C→buta-1,3-diene/丁-1,3-二烯；C=CC=CC=C→hexa-1,3,5-triene；C=C仍ethene；CC=CC仍but-2-ene
-- 已知缺口: 仲/叔胺；N-取代酰胺；triol；diamine；不饱和二酸(E/Z)；支化烷基前缀；取代多烯
-- 下一步候选: diamine；或 triol；或仲胺；或不饱和二酸
+- 基线(本轮前): en=3.2%(131/4062) zh=14.3%(108/756) dual=3.2%(131/4062)
+- 本次: en=3.3%(133/4062) zh=14.4%(109/756) dual=3.3%(133/4062) fails=3929
+- 改动: L2 恰2伯胺无更高FG无环无不饱和→diamine母体穿两胺碳；L4 双胺位次最低集；L5 alkane-a,b-diamine/烷-a,b-二胺；并重构L4/L5压行数
+- 验证: NCCN→ethane-1,2-diamine/乙烷-1,2-二胺；NCCCCN→butane-1,4-diamine；CCN仍ethanamine；环胺不误判
+- 已知缺口: triol；仲/叔胺；N-取代酰胺；不饱和二酸(E/Z)；支化烷基前缀；二酮
+- 下一步候选: triol；或二酮 alkanedione；或仲胺；或不饱和二酸
