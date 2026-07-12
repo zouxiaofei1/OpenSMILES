@@ -4,12 +4,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
+
+_MISSING_DATA_HINT = (
+    "Generate with: python tools/merge_datasets.py "
+    "--tiers smiles_tiers.json --chebi chebi20_test_1k.json "
+    "--out data/merged_benchmark.json"
+)
 
 
 def _check_en(pred: str, gold: str) -> bool:
@@ -30,6 +37,8 @@ def score_record(pred_en: str, pred_zh: str, row: dict[str, Any]) -> dict[str, A
 
 
 def _load_rows(data_path: Path, limit: int | None) -> list[dict[str, Any]]:
+    if not data_path.is_file():
+        raise FileNotFoundError(f"Benchmark data not found: {data_path}\n{_MISSING_DATA_HINT}")
     with data_path.open(encoding="utf-8") as f:
         rows = json.load(f)
     if not isinstance(rows, list):
@@ -51,6 +60,7 @@ def _bucket_report(b: dict[str, int]) -> dict[str, float | int]:
         "acc_zh": _acc(b["ok_zh"], b["n_zh"]),
         "acc_dual": _acc(b["ok_dual"], b["n_dual"]),
         "n_en": b["n_en"], "n_zh": b["n_zh"], "n_dual": b["n_dual"],
+        "ok_en": b["ok_en"], "ok_zh": b["ok_zh"], "ok_dual": b["ok_dual"],
     }
 
 
@@ -137,13 +147,9 @@ def _fmt_pct(acc: float, ok: int, n: int) -> str:
 
 
 def _print_summary(report: dict[str, Any]) -> None:
-    n_en, n_zh, n_dual = report["n_en"], report["n_zh"], report["n_dual"]
-    ok_en = int(round(report["acc_en"] * n_en))
-    ok_zh = int(round(report["acc_zh"] * n_zh))
-    ok_dual = int(round(report["acc_dual"] * n_dual))
-    en_s = _fmt_pct(report["acc_en"], ok_en, n_en)
-    zh_s = _fmt_pct(report["acc_zh"], ok_zh, n_zh)
-    dual_s = _fmt_pct(report["acc_dual"], ok_dual, n_dual)
+    en_s = _fmt_pct(report["acc_en"], report["ok_en"], report["n_en"])
+    zh_s = _fmt_pct(report["acc_zh"], report["ok_zh"], report["n_zh"])
+    dual_s = _fmt_pct(report["acc_dual"], report["ok_dual"], report["n_dual"])
     print(f"en={en_s} zh={zh_s} dual={dual_s} fails={len(report['fails'])}")
 
 
@@ -156,7 +162,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> None:
     args = _build_parser().parse_args(argv)
-    report = run_benchmark(SMILESNNamer(), args.data, limit=args.limit)
+    try:
+        report = run_benchmark(SMILESNNamer(), args.data, limit=args.limit)
+    except FileNotFoundError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        sys.exit(2)
     _print_summary(report)
 
 
