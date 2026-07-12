@@ -297,10 +297,12 @@ def _mult_zh(n: int) -> str:
     return MULT_ZH.get(n, "")
 
 
-def _omit_sub_locants(n_carbons: int, substituents: list) -> bool:
+def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
     if n_carbons <= 1:
         return True
-    return n_carbons == 2 and len(substituents) == 1
+    if n_carbons == 2 and len(substituents) == 1:
+        return True
+    return kind == "cycloalkane" and len(substituents) == 1
 
 
 def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
@@ -336,10 +338,10 @@ def _collect_parts(groups: dict[str, list], omit: bool) -> tuple[list[str], list
     return en_parts, zh_parts
 
 
-def _build_prefix(substituents: list, n_carbons: int) -> tuple[str, str]:
+def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -> tuple[str, str]:
     if not substituents:
         return "", ""
-    omit = _omit_sub_locants(n_carbons, substituents)
+    omit = _omit_sub_locants(n_carbons, substituents, kind)
     en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit)
     return "-".join(en_parts), "-".join(zh_parts)
 
@@ -353,7 +355,7 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     names = _names_for(kind, n, numbered)
     if not names:
         return _unsupported(n, kind)
-    pre_en, pre_zh = _build_prefix(numbered.get("substituents") or [], n)
+    pre_en, pre_zh = _build_prefix(numbered.get("substituents") or [], n, kind)
     en = _join_name(pre_en, names[0])
     zh = _join_name(pre_zh, names[1])
     return _ok(en, zh, time_ms, source)

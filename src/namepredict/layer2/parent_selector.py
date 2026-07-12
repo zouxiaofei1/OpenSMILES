@@ -213,16 +213,47 @@ def _ring_bonds_single(mol: Mol, atom_ids: tuple) -> bool:
     return True
 
 
-def _no_nonh_outside(mol: Mol, ring_set: set[int]) -> bool:
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 1:
-            continue
-        if atom.GetIdx() not in ring_set:
+def _outside_carbons(mol: Mol, ring_set: set[int]) -> list[int]:
+    return [
+        a.GetIdx()
+        for a in mol.GetAtoms()
+        if a.GetAtomicNum() == 6 and a.GetIdx() not in ring_set
+    ]
+
+
+def _pure_alkyl_outside(mol: Mol, outside: list[int]) -> bool:
+    for idx in outside:
+        atom = mol.GetAtomWithIdx(idx)
+        if any(n.GetAtomicNum() not in (1, 6) for n in atom.GetNeighbors()):
             return False
     return True
 
 
-def _is_simple_cycloalkane(info: dict) -> bool:
+def _ring_side_starts(mol: Mol, ring_set: set[int]) -> list[int]:
+    starts: list[int] = []
+    for r in ring_set:
+        for n in mol.GetAtomWithIdx(r).GetNeighbors():
+            if n.GetAtomicNum() == 6 and n.GetIdx() not in ring_set:
+                starts.append(n.GetIdx())
+    return starts
+
+
+def _no_hetero_outside(mol: Mol, ring_set: set[int]) -> bool:
+    for atom in mol.GetAtoms():
+        z = atom.GetAtomicNum()
+        if z in (1, 6) or atom.GetIdx() in ring_set:
+            continue
+        return False
+    return True
+
+
+def _outside_ok(mol: Mol, ring_set: set[int]) -> bool:
+    if not _no_hetero_outside(mol, ring_set):
+        return False
+    return _pure_alkyl_outside(mol, _outside_carbons(mol, ring_set))
+
+
+def _is_cycloalkane_core(info: dict) -> bool:
     rings = info.get("rings") or []
     if len(rings) != 1:
         return False
@@ -230,9 +261,17 @@ def _is_simple_cycloalkane(info: dict) -> bool:
     atom_ids = rings[0]["atom_ids"]
     if not _all_carbons_are_c(mol, atom_ids):
         return False
-    if not _ring_bonds_single(mol, atom_ids):
+    return _ring_bonds_single(mol, atom_ids)
+
+
+def _is_simple_cycloalkane(info: dict) -> bool:
+    if not _is_cycloalkane_core(info):
         return False
-    return _no_nonh_outside(mol, set(atom_ids))
+    mol: Mol = info["mol"]
+    ring_set = set(info["rings"][0]["atom_ids"])
+    if not _outside_ok(mol, ring_set):
+        return False
+    return len(_ring_side_starts(mol, ring_set)) <= 1
 
 
 def _cycloalkane_parent(info: dict) -> dict:
