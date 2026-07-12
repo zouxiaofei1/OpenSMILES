@@ -238,6 +238,27 @@ def _triple_bond_entries(mol: Mol) -> list[dict]:
     return out
 
 
+def _is_cn_triple(bond) -> bool:
+    if bond.GetBondType() != BondType.TRIPLE:
+        return False
+    z = {bond.GetBeginAtom().GetAtomicNum(), bond.GetEndAtom().GetAtomicNum()}
+    return z == {6, 7}
+
+
+def _nitrile_entry(bond) -> dict:
+    a, b = bond.GetBeginAtom(), bond.GetEndAtom()
+    c = a if a.GetAtomicNum() == 6 else b
+    n = b if a.GetAtomicNum() == 6 else a
+    return {"c_idx": c.GetIdx(), "n_idx": n.GetIdx()}
+
+
+def _nitrile_entries(mol: Mol) -> list[dict]:
+    out: list[dict] = []
+    for bond in mol.GetBonds():
+        if _is_cn_triple(bond):
+            out.append(_nitrile_entry(bond))
+    return out
+
 
 def _ring_entry(atom_ids: tuple) -> dict:
     return {"atom_ids": atom_ids}
@@ -275,12 +296,14 @@ def _fg_core_lists(
 def _fg_more_lists(
     aldehydes: list[dict],
     amines: list[dict],
+    nitriles: list[dict],
     double_bonds: list[dict],
     triple_bonds: list[dict],
 ) -> dict:
     return {
         "aldehydes": aldehydes,
         "amines": amines,
+        "nitriles": nitriles,
         "double_bonds": double_bonds,
         "triple_bonds": triple_bonds,
     }
@@ -293,7 +316,7 @@ def _fg_lists(parts: dict) -> dict:
             parts["amides"], parts["ketones"],
         ),
         **_fg_more_lists(
-            parts["aldehydes"], parts["amines"],
+            parts["aldehydes"], parts["amines"], parts["nitriles"],
             parts["double_bonds"], parts["triple_bonds"],
         ),
     }
@@ -313,6 +336,7 @@ def _fg_bools_more(lists: dict) -> dict:
     return {
         "has_aldehyde": bool(lists["aldehydes"]),
         "has_amine": bool(lists["amines"]),
+        "has_nitrile": bool(lists["nitriles"]),
         "has_alkene": bool(lists["double_bonds"]),
         "has_alkyne": bool(lists["triple_bonds"]),
     }
@@ -336,6 +360,7 @@ def _fg_parts_b(mol: Mol) -> dict:
     return {
         "aldehydes": _aldehyde_entries(mol),
         "amines": _amine_entries(mol),
+        "nitriles": _nitrile_entries(mol),
         "double_bonds": _double_bond_entries(mol),
         "triple_bonds": _triple_bond_entries(mol),
     }

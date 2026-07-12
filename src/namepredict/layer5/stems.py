@@ -125,6 +125,31 @@ AMIDE_ZH = {
     9: "壬酰胺",
     10: "癸酰胺",
 }
+# P-66.5.1 retained acetonitrile; C1 formonitrile; else …nitrile / …腈
+NITRILE_EN = {
+    1: "formonitrile",
+    2: "acetonitrile",
+    3: "propanenitrile",
+    4: "butanenitrile",
+    5: "pentanenitrile",
+    6: "hexanenitrile",
+    7: "heptanenitrile",
+    8: "octanenitrile",
+    9: "nonanenitrile",
+    10: "decanenitrile",
+}
+NITRILE_ZH = {
+    1: "甲腈",
+    2: "乙腈",
+    3: "丙腈",
+    4: "丁腈",
+    5: "戊腈",
+    6: "己腈",
+    7: "庚腈",
+    8: "辛腈",
+    9: "壬腈",
+    10: "癸腈",
+}
 # P-65.6 functional class: alkyl alkanoate (retained formate/acetate)
 ESTER_ACYL_EN = {
     1: "formate",

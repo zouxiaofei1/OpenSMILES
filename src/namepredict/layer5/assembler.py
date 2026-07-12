@@ -14,6 +14,8 @@ from namepredict.layer5.stems import (
     ESTER_ACYL_EN,
     ESTER_ALKYL_EN,
     ESTER_ALKYL_ZH,
+    NITRILE_EN,
+    NITRILE_ZH,
 )
 from namepredict.types import NameResult
 
@@ -126,6 +128,10 @@ def _amide_names(n: int) -> tuple[str, str] | None:
     return _pair(AMIDE_EN, AMIDE_ZH, n)
 
 
+def _nitrile_names(n: int) -> tuple[str, str] | None:
+    return _pair(NITRILE_EN, NITRILE_ZH, n)
+
+
 def _ester_acyl_en(n: int) -> str | None:
     return ESTER_ACYL_EN.get(n)
 
@@ -217,6 +223,12 @@ def _acid_ald_amide(kind: str, n: int) -> tuple[str, str] | None:
     return None
 
 
+def _nitrile_or_none(kind: str, n: int) -> tuple[str, str] | None:
+    if kind == "nitrile":
+        return _nitrile_names(n)
+    return None
+
+
 def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "ester":
         parent = numbered.get("parent") or {}
@@ -227,7 +239,7 @@ def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
 
 
 def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    top = _acid_ald_amide(kind, n)
+    top = _acid_ald_amide(kind, n) or _nitrile_or_none(kind, n)
     return top if top is not None else _ester_ketone(kind, n, numbered)
 
 

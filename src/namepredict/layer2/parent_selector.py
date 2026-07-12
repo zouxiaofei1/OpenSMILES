@@ -126,6 +126,16 @@ def _is_mono_amide(info: dict) -> bool:
     return bool(info.get("has_amide")) and len(amides) == 1
 
 
+def _nitrile_parent(info: dict) -> dict:
+    c_idx = info["nitriles"][0]["c_idx"]
+    return _parent_dict(_chain_through(info, c_idx), "nitrile", nitrile_c_idx=c_idx)
+
+
+def _is_mono_nitrile(info: dict) -> bool:
+    ns = info.get("nitriles") or []
+    return bool(info.get("has_nitrile")) and len(ns) == 1
+
+
 def _ester_parent(info: dict) -> dict:
     e = info["esters"][0]
     chain = _chain_through(info, e["c_idx"])
@@ -237,6 +247,8 @@ def _acid_ester_amide(info: dict) -> dict | None:
         return _ester_parent(info)
     if _is_mono_amide(info):
         return _amide_parent(info)
+    if _is_mono_nitrile(info):
+        return _nitrile_parent(info)
     return None
 
 
