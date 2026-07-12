@@ -32,8 +32,11 @@ def _outside_carbons(mol: Mol, ring_set: set[int]) -> list[int]:
 def _pure_alkyl_outside(mol: Mol, outside: list[int]) -> bool:
     for idx in outside:
         atom = mol.GetAtomWithIdx(idx)
-        if any(n.GetAtomicNum() not in (1, 6) for n in atom.GetNeighbors()):
-            return False
+        for bond in atom.GetBonds():
+            other = bond.GetOtherAtom(atom)
+            z = other.GetAtomicNum()
+            if z not in (1, 6) or (z != 1 and bond.GetBondType().name != "SINGLE"):
+                return False
     return True
 
 
@@ -233,3 +236,35 @@ def _is_simple_cycloketone(info: dict) -> bool:
     if ket is None or not _ketone_o_allowed(mol, ring_set, ket):
         return False
     return not _outside_carbons(mol, ring_set)
+
+
+def _is_benzene_core(info: dict) -> bool:
+    atom_ids = _is_carbocycle_ring(info)
+    if atom_ids is None or len(atom_ids) != 6:
+        return False
+    mol: Mol = info["mol"]
+    return all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atom_ids)
+
+
+def _ring_halo_n(mol: Mol, ring_set: set[int]) -> int:
+    return sum(1 for a in mol.GetAtoms() if _is_ring_halo(a, ring_set))
+
+
+def _benzene_subs_ok(mol: Mol, ring_set: set[int]) -> bool:
+    h = _ring_halo_n(mol, ring_set)
+    starts = _ring_side_starts(mol, ring_set)
+    if h + len(starts) > 1:
+        return False
+    if not starts:
+        return True
+    return len(_outside_carbons(mol, ring_set)) in (1, 2)
+
+
+def _is_simple_benzene(info: dict) -> bool:
+    if not _is_benzene_core(info):
+        return False
+    mol: Mol = info["mol"]
+    ring_set = set(info["rings"][0]["atom_ids"])
+    if not _outside_ok(mol, ring_set):
+        return False
+    return _benzene_subs_ok(mol, ring_set)

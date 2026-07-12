@@ -398,12 +398,21 @@ def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         omit = numbered.get("omit_yne_locant", False)
         return _alkyne_names(n, numbered.get("yne_locant"), omit)
     return None
+def _is_toluene(numbered: dict) -> bool:
+    subs = numbered.get("substituents") or []
+    return len(subs) == 1 and subs[0].get("kind") == "alkyl" and subs[0].get("n_carbons") == 1
+
+
+def _benzene_names(numbered: dict) -> tuple[str, str] | None:
+    return ("toluene", "甲苯") if _is_toluene(numbered) else ("benzene", "苯")
 def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     unsat = _unsat_names(kind, n, numbered)
     if unsat is not None:
         return unsat
     if kind == "cycloalkane":
         return _cycloalkane_names(n)
+    if kind == "benzene":
+        return _benzene_names(numbered)
     return _alkane_names(n)
 def _parent_n(numbered: dict) -> tuple[str | None, int]:
     parent = numbered.get("parent") or {}
@@ -430,7 +439,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return False
     if n_carbons == 2 and len(substituents) == 1:
         return True
-    return kind == "cycloalkane" and len(substituents) == 1
+    return kind in ("cycloalkane", "benzene") and len(substituents) == 1
 def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
     mult = _mult_en(len(subs))
     if omit:
@@ -462,12 +471,18 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -
     return "-".join(en_parts), "-".join(zh_parts)
 def _join_name(prefix: str, parent: str) -> str:
     return f"{prefix}{parent}" if prefix else parent
+def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
+    if kind == "benzene" and _is_toluene(numbered):
+        return "", ""
+    return _build_prefix(numbered.get("substituents") or [], n, kind)
+
+
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     kind, n = _parent_n(numbered)
     names = _names_for(kind, n, numbered)
     if not names:
         return _unsupported(n, kind)
-    pre_en, pre_zh = _build_prefix(numbered.get("substituents") or [], n, kind)
+    pre_en, pre_zh = _prefix_for(numbered, kind, n)
     en = _join_name(pre_en, names[0])
     zh = _join_name(pre_zh, names[1])
     return _ok(en, zh, time_ms, source)

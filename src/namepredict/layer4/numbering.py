@@ -297,6 +297,7 @@ def _unsat_orienters() -> dict:
         "cycloalkene": _orient_cycloalkene,
         "alkyne": _orient_alkyne,
         "cycloalkane": _orient_cycloalkane,
+        "benzene": _orient_cycloalkane,
     }
 
 

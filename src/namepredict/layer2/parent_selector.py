@@ -4,6 +4,7 @@ from rdkit.Chem import Mol
 
 from namepredict.layer2.ring_parent import (
     _endocyclic_double,
+    _is_simple_benzene,
     _is_simple_cycloalcohol,
     _is_simple_cycloalkane,
     _is_simple_cycloalkene,
@@ -415,6 +416,8 @@ def _ring_atoms(info: dict) -> list[int]:
     return list(info["rings"][0]["atom_ids"])
 def _cycloalkane_parent(info: dict) -> dict:
     return _parent_dict(_ring_atoms(info), "cycloalkane")
+def _benzene_parent(info: dict) -> dict:
+    return _parent_dict(_ring_atoms(info), "benzene")
 def _cycloalkene_parent(info: dict) -> dict:
     chain = _ring_atoms(info)
     return _parent_dict(chain, "cycloalkene", double_bond=_endocyclic_double(info, set(chain)))
@@ -464,12 +467,19 @@ def _unsat_parent(info: dict) -> dict | None:
     if _is_mono_alkene(info):
         return _alkene_parent(info)
     return None
+def _ring_parent(info: dict) -> dict | None:
+    if _is_simple_benzene(info):
+        return _benzene_parent(info)
+    if _is_simple_cycloalkane(info):
+        return _cycloalkane_parent(info)
+    return None
 def select_parent(info: dict) -> dict:
     fg = _fg_parent(info)
     if fg is not None:
         return fg
-    if _is_simple_cycloalkane(info):
-        return _cycloalkane_parent(info)
+    ring = _ring_parent(info)
+    if ring is not None:
+        return ring
     unsat = _unsat_parent(info)
     if unsat is not None:
         return unsat
