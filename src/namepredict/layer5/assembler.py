@@ -144,6 +144,13 @@ def _amine_names(n: int, am_locant: int | None, omit: bool) -> tuple[str, str] |
 def _acid_names(n: int) -> tuple[str, str] | None:
     return _pair(ACID_EN, ACID_ZH, n)
 
+def _alkenoic_acid_names(n: int, locant: int | None) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain or locant is None:
+        return None
+    en, zh = plain
+    return f"{en[:-3]}-{locant}-enoic acid", f"{zh[0]}-{locant}-烯酸"
+
 def _anhydride_from_acid(n: int) -> tuple[str, str] | None:
     plain = _acid_names(n)
     if not plain:
@@ -272,16 +279,16 @@ def _alkyne_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | N
         return None
     return _alkyne_with_locant(n, locant)
 
-def _acid_ald_amide(kind: str, n: int) -> tuple[str, str] | None:
+def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
     if kind == "acid":
         return _acid_names(n)
+    if kind == "alkenoic_acid":
+        return _alkenoic_acid_names(n, (numbered or {}).get("ene_locant"))
     if kind == "diacid":
         return _diacid_names(n)
-    if kind == "aldehyde":
-        return _aldehyde_names(n)
-    if kind == "amide":
-        return _amide_names(n)
-    return None
+    return _aldehyde_names(n) if kind == "aldehyde" else (
+        _amide_names(n) if kind == "amide" else None
+    )
 
 def _nitrile_or_none(kind: str, n: int) -> tuple[str, str] | None:
     if kind == "nitrile":
@@ -305,7 +312,7 @@ def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     return None
 
 def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    top = _acid_ald_amide(kind, n) or _nitrile_or_none(kind, n)
+    top = _acid_ald_amide(kind, n, numbered) or _nitrile_or_none(kind, n)
     return top if top is not None else _ester_ketone(kind, n, numbered)
 
 def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
@@ -405,7 +412,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     if n_carbons <= 1:
         return True
     # Carboxylic acids number COOH as 1; keep substituent locants (e.g. 2-aminoacetic acid).
-    if kind == "acid":
+    if kind in ("acid", "alkenoic_acid"):
         return False
     if n_carbons == 2 and len(substituents) == 1:
         return True

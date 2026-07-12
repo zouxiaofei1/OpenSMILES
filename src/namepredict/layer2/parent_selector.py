@@ -216,9 +216,28 @@ def _amine_parent(info: dict) -> dict:
     am_c = info["amines"][0]["c_idx"]
     return _parent_dict(_chain_through(info, am_c), "amine", amine_c_idx=am_c)
 
+def _is_simple_alkenoic(info: dict) -> bool:
+    if info.get("has_ring") or info.get("has_alkyne"):
+        return False
+    ok = _is_mono_fg(info, "has_acid", "carboxyls") and _is_mono_alkene(info)
+    return ok and _no_fgs(info, _DIACID_BAD + ("has_thiol",))
+
+def _alkenoic_parent(info: dict) -> dict | None:
+    cooh, db = info["carboxyls"][0]["c_idx"], info["double_bonds"][0]
+    chain = _best_cover_pair(info["mol"], [cooh, db["c1"], db["c2"]])
+    if not chain or cooh not in chain:
+        return None
+    return _parent_dict(
+        chain, "alkenoic_acid", cooh_c_idx=cooh, double_bond=(db["c1"], db["c2"]),
+    )
+
 def _acid_parent(info: dict) -> dict:
     if _is_simple_alkanedioic(info):
         return _diacid_parent(info)
+    if _is_simple_alkenoic(info):
+        p = _alkenoic_parent(info)
+        if p is not None:
+            return p
     cooh_c = info["carboxyls"][0]["c_idx"]
     return _parent_dict(_chain_through(info, cooh_c), "acid", cooh_c_idx=cooh_c)
 
