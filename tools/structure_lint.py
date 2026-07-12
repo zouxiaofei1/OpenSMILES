@@ -36,12 +36,19 @@ def _check_file_lines(path: Path, root: Path) -> list[str]:
     return []
 
 
+def _is_code_line(ln: str) -> bool:
+    s = ln.strip()
+    return bool(s) and not s.startswith("#")
+
+
 def _body_nonempty_lines(source: str, node: ast.AST) -> int:
+    body = getattr(node, "body", None) or []
+    if not body:
+        return 0
     lines = source.splitlines()
-    start = getattr(node, "lineno", 1)
-    end = getattr(node, "end_lineno", start)
-    body = lines[start:end]
-    return sum(1 for ln in body if ln.strip())
+    start = body[0].lineno
+    end = getattr(body[-1], "end_lineno", None) or body[-1].lineno
+    return sum(1 for ln in lines[start - 1 : end] if _is_code_line(ln))
 
 
 def _func_nodes(tree: ast.AST) -> list[ast.AST]:
