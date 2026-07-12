@@ -10,11 +10,12 @@
 [#2b2c412][IUPAC P-31.1 / P-15.1.7.2.2] 一元烯烃alkene：L1非芳香C=C；L2穿双键母体；L4最低ene位次；L5 ane→ene/…-n-烯 [+12 tests, dual 1.8%(74)→1.9%(78), fails 3988→3984]
 [#bd8354d][IUPAC P-31.1] 一元炔烃alkyne：L1 C≡C；L2穿三键且无C=C；L4最低yne位次；L5 acetylene/propyne与…-n-yne/…-n-炔 [+14 tests, dual 1.9%(78)→2.0%(82), fails 3984→3980]
 [#2e8c0dd][IUPAC P-65.6] 一元酯alkyl alkanoate：L1酯检测+排除醛；L2 acid>ester>…；L5 alkyl+alkanoate/酸名+烷词干+酯 [+14 tests, dual 2.0%(82)→2.2%(90), fails 3980→3972]
+[#4146028][IUPAC P-62.2.1] 一元伯胺alkanamine：L1伯胺N(排除酰胺)；L2 alcohol>amine；L4胺位次；L5 methanamine/…-n-amine与甲胺/…-n-胺 [+15 tests, dual 2.2%(90)→2.3%(95), fails 3972→3967]
 
 ## 其他
-- 基线(本轮前): en=2.0%(82/4062) zh=9.1%(69/756) dual=2.0%(82/4062)
-- 本次: en=2.2%(90/4062) zh=9.8%(74/756) dual=2.2%(90/4062) fails=3972
-- 改动: L1 esters/has_ester+醛排除酯羰基；L2 酰基链穿羰基+alkoxy_n；L4 酯羰基定向1；L5 formate/acetate/…oate 与 乙酸乙酯等
-- 验证: CC(=O)OCC→ethyl acetate/乙酸乙酯；COC(C)=O→methyl acetate；酸/醛/酮/醇/烯/炔不回退
-- 已知缺口: 不饱和酯/芳酯/二酯；支化烷基；胺；酰胺；环烷
-- 下一步候选: 一元伯胺；或环烷烃；或支化烷基isopropyl；或酰胺
+- 基线(本轮前): en=2.2%(90/4062) zh=9.8%(74/756) dual=2.2%(90/4062)
+- 本次: en=2.3%(95/4062) zh=10.3%(78/756) dual=2.3%(95/4062) fails=3967
+- 改动: L1 amines/has_amine+排除酰胺N；L2 链穿胺碳；L4 amine_locant+C1/C2省略；L5 甲/乙胺与propan-n-amine
+- 验证: CN→methanamine/甲胺；CCN→ethanamine/乙胺；CCCN→propan-1-amine；CC(C)N→propan-2-amine；酸/酯/醛/酮/醇/烯/炔不回退；CC(=O)N仍非amine
+- 已知缺口: 仲/叔胺/二胺/苯胺；酰胺；环烷；支化烷基isopropyl；不饱和酯
+- 下一步候选: 环烷烃；或酰胺；或仲胺；或支化烷基
