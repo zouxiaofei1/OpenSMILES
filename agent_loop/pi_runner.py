@@ -20,6 +20,9 @@ class PiResult:
 class PiRunner:
     """Invoke `pi -p`; prompt content goes on stdin (merged into message)."""
 
+    def __init__(self, api_key: str | None = None) -> None:
+        self.api_key = api_key
+
     def run(self, prompt_path: Path, cwd: Path, timeout_s: int) -> PiResult:
         """Run pi in print mode; never raise on process failure."""
         try:
@@ -50,12 +53,22 @@ class PiRunner:
             return PiResult(False, msg, 1)
         return PiResult(False, f"pi not found: {exc}", 127)
 
+    def _env(self) -> dict[str, str]:
+        env = dict(os.environ)
+        if self.api_key:
+            env["ANTHROPIC_API_KEY"] = self.api_key
+        return env
+
     def _run_pi(
         self, prompt: str, cwd: Path, timeout_s: int
     ) -> subprocess.CompletedProcess[str]:
         # pi -p: print mode; stdin merges prompt (Windows argv-safe).
         return subprocess.run(
-            ["pi", "-p"], input=prompt, cwd=cwd, **self._pi_run_kwargs(timeout_s)
+            ["pi", "-p"],
+            input=prompt,
+            cwd=cwd,
+            env=self._env(),
+            **self._pi_run_kwargs(timeout_s),
         )
 
     @staticmethod

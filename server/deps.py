@@ -13,6 +13,8 @@ from typing import Any
 from agent_loop.config import LoopConfig
 from agent_loop.events import EventBus
 from agent_loop.loop import AgentLoop
+from agent_loop.pi_runner import PiRunner
+from agent_loop.secrets import SecretsStore
 from agent_loop.state import StateStore
 from namepredict.namer import SMILESNNamer
 from namepredict.types import NameResult
@@ -31,6 +33,11 @@ def get_bus() -> EventBus:
 def get_store() -> StateStore:
     """Return process-wide StateStore."""
     return _STORE
+
+
+def get_secrets() -> SecretsStore:
+    """Return process-wide SecretsStore."""
+    return _SECRETS
 
 
 def get_namer() -> SMILESNNamer:
@@ -104,6 +111,12 @@ class LoopController:
             return self._after_join_locked()
 
     def _start_locked(self) -> dict[str, str]:
+        if not get_secrets().is_configured():
+            return {
+                "status": self._status,
+                "error": "missing_api_key",
+                "message": "请先配置 Anthropic API Key",
+            }
         if self._thread is not None and self._thread.is_alive():
             return self._resume_or_refuse()
         self._begin_thread()
@@ -159,8 +172,10 @@ class LoopController:
                 self._thread = None
 
     def _make_agent(self) -> AgentLoop:
-        cfg = LoopConfig(cwd=Path(".").resolve(), mock_pi=True)
-        return AgentLoop(cfg, bus=self.bus, store=self.store)
+        key = get_secrets().get_key()
+        cfg = LoopConfig(cwd=Path(".").resolve(), mock_pi=False)
+        runner = PiRunner(api_key=key)
+        return AgentLoop(cfg, pi_runner=runner, bus=self.bus, store=self.store)
 
     def _should_halt(self, agent: AgentLoop) -> bool:
         if self._stop.is_set():
@@ -207,6 +222,7 @@ class LoopController:
 
 _BUS = EventBus()
 _STORE = StateStore(MEMORY_ROOT)
+_SECRETS = SecretsStore()
 _CONTROLLER = LoopController(_STORE, _BUS, MEMORY_ROOT)
 
 

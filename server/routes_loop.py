@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Body
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from server.deps import get_controller
@@ -24,10 +25,13 @@ def loop_state() -> dict[str, Any]:
     return get_controller().state_payload()
 
 
-@router.post("/start")
-def loop_start() -> dict[str, str]:
+@router.post("/start", response_model=None)
+def loop_start():
     """Start or resume the agent loop in a background thread."""
-    return get_controller().start()
+    result = get_controller().start()
+    if result.get("error") == "missing_api_key":
+        return JSONResponse(status_code=400, content=result)
+    return result
 
 
 @router.post("/pause")

@@ -43,7 +43,7 @@ def test_pi_runner_success(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         )
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    result = PiRunner().run(prompt, tmp_path, timeout_s=10)
+    result = PiRunner(api_key="sk-test-key").run(prompt, tmp_path, timeout_s=10)
     assert result.success is True
     assert result.exit_code == 0
     assert "ok" in result.log
@@ -52,6 +52,7 @@ def test_pi_runner_success(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert seen["kwargs"]["encoding"] == "utf-8"
     assert seen["kwargs"]["errors"] == "replace"
     assert "do work" not in seen["args"]
+    assert seen["kwargs"]["env"]["ANTHROPIC_API_KEY"] == "sk-test-key"
 
 
 def test_pi_runner_nonzero_exit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
