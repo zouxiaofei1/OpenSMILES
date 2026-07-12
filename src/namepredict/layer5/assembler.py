@@ -404,6 +404,9 @@ def _mult_zh(n: int) -> str:
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
     if n_carbons <= 1:
         return True
+    # Carboxylic acids number COOH as 1; keep substituent locants (e.g. 2-aminoacetic acid).
+    if kind == "acid":
+        return False
     if n_carbons == 2 and len(substituents) == 1:
         return True
     return kind == "cycloalkane" and len(substituents) == 1
