@@ -8,11 +8,12 @@
 [#1bbe283][IUPAC P-64.2.1] 一元酮alkanone：L1酮羰基+L2/L4/L5 …-n-one/…-n-酮 [+11 tests, dual 1.5%(60)→1.7%(68), fails 4002→3994]
 [#0a577d7][IUPAC P-66.6.1] 一元醛alkanal：L1醛羰基+L2/L4/L5 保留formaldehyde/acetaldehyde与…anal/…醛 [+10 tests, dual 1.7%(68)→1.8%(74), fails 3994→3988]
 [#2b2c412][IUPAC P-31.1 / P-15.1.7.2.2] 一元烯烃alkene：L1非芳香C=C；L2穿双键母体；L4最低ene位次；L5 ane→ene/…-n-烯 [+12 tests, dual 1.8%(74)→1.9%(78), fails 3988→3984]
+[#bd8354d][IUPAC P-31.1] 一元炔烃alkyne：L1 C≡C；L2穿三键且无C=C；L4最低yne位次；L5 acetylene/propyne与…-n-yne/…-n-炔 [+14 tests, dual 1.9%(78)→2.0%(82), fails 3984→3980]
 
 ## 其他
-- 基线(本轮前): en=1.8%(74/4062) zh=8.1%(61/756) dual=1.8%(74/4062)
-- 本次: en=1.9%(78/4062) zh=8.6%(65/756) dual=1.9%(78/4062) fails=3984
-- 改动: L1 double_bonds/has_alkene；L2 无更高FG且恰1个C=C时alkene母体；L4 ene_locant+C2/C3省略；L5 ethene/propene与but-n-ene
-- 验证: C=C→ethene/乙烯；C=CC→propene/丙烯；CC=CC→but-2-ene/丁-2-烯；C=CCC→but-1-ene；CC(C)C=C→3-methylbut-1-ene；酸/醛/酮/醇/二烯/炔不回退
-- 已知缺口: 二烯/炔/环烯；酯；支化烷基isopropyl；胺；羟基醛前缀
-- 下一步候选: 一元炔烃；或酯；或支化烷基；或胺
+- 基线(本轮前): en=1.9%(78/4062) zh=8.6%(65/756) dual=1.9%(78/4062)
+- 本次: en=2.0%(82/4062) zh=9.1%(69/756) dual=2.0%(82/4062) fails=3980
+- 改动: L1 triple_bonds/has_alkyne；L2 无更高FG且恰1个C≡C且0个C=C时alkyne母体；L4 yne_locant；L5 acetylene/乙炔、propyne/丙炔与but-n-yne
+- 验证: C#C→acetylene/乙炔；C#CC→propyne/丙炔；C#CCC→but-1-yne；CC#CC→but-2-yne；烯/烷/酸/醛/酮/醇不回退
+- 已知缺口: 二烯/烯炔/环烯环炔；酯；支化烷基isopropyl；胺；羟基醛前缀
+- 下一步候选: 酯；或支化烷基；或胺；或二烯
