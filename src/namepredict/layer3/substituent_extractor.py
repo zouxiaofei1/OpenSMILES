@@ -142,7 +142,7 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
 
 
 _PARENT_OH_KINDS = frozenset({"alcohol", "alkenol", "diol", "triol", "cycloalcohol"})
-_PARENT_NH2_KINDS = frozenset({"amine", "diamine", "cycloamine", "sec_amine"})
+_PARENT_NH2_KINDS = frozenset({"amine", "diamine", "cycloamine", "sec_amine", "tert_amine"})
 _PARENT_OXO_KINDS = frozenset({"ketone", "dione", "cycloketone"})
 
 
@@ -211,17 +211,43 @@ def _extract_oxos(info: dict, parent: dict) -> list[dict]:
 
 _N_ALKYL_EN = {1: "N-methyl", 2: "N-ethyl", 3: "N-propyl", 4: "N-butyl"}
 _N_ALKYL_ZH = {1: "N-甲基", 2: "N-乙基", 3: "N-丙基", 4: "N-丁基"}
+_N_STEM_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
+_N_STEM_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
+
+
+def _n_alkyl_sub(en: str, zh: str, attach: int, n: int) -> dict:
+    return {
+        "kind": "n_alkyl", "n_carbons": n, "attach_idx": attach,
+        "atoms": [], "en": en, "zh": zh,
+    }
+
+
+def _tert_n_prefix(ns: list[int]) -> tuple[str, str] | None:
+    if len(ns) != 2 or any(n not in _N_STEM_EN for n in ns):
+        return None
+    a, b = ns
+    if a == b:
+        return f"N,N-di{_N_STEM_EN[a]}", f"N,N-二{_N_STEM_ZH[a]}"
+    x, y = sorted(ns, key=lambda n: _N_STEM_EN[n])
+    return f"N-{_N_STEM_EN[x]}-N-{_N_STEM_EN[y]}", f"N-{_N_STEM_ZH[x]}-N-{_N_STEM_ZH[y]}"
+
+
+def _n_alkyl_prefix(parent: dict) -> tuple[str, str, int] | None:
+    kind = parent.get("kind")
+    if kind == "sec_amine":
+        n = parent.get("n_alkyl_n")
+        return (_N_ALKYL_EN[n], _N_ALKYL_ZH[n], n) if n in _N_ALKYL_EN else None
+    if kind == "tert_amine":
+        pref = _tert_n_prefix(list(parent.get("n_alkyl_ns") or []))
+        return (*pref, 0) if pref else None
+    return None
+
 
 def _extract_n_alkyl(parent: dict) -> list[dict]:
-    if parent.get("kind") != "sec_amine":
+    attach, pref = parent.get("amine_c_idx"), _n_alkyl_prefix(parent)
+    if attach is None or pref is None:
         return []
-    n = parent.get("n_alkyl_n")
-    if n not in _N_ALKYL_EN:
-        return []
-    return [{
-        "kind": "n_alkyl", "n_carbons": n, "attach_idx": parent["amine_c_idx"],
-        "atoms": [], "en": _N_ALKYL_EN[n], "zh": _N_ALKYL_ZH[n],
-    }]
+    return [_n_alkyl_sub(pref[0], pref[1], attach, pref[2])]
 
 def extract_substituents(info: dict, parent: dict) -> list:
     mol: Mol = info["mol"]

@@ -188,13 +188,13 @@ def _amine_degree(atom) -> int | None:
     n_c, n_h = _carbon_neighbor_count(atom), atom.GetTotalNumHs()
     if n_c == 1 and n_h >= 2:
         return 1
-    return 2 if n_c == 2 and n_h == 1 else None
+    return 2 if n_c == 2 and n_h == 1 else (3 if n_c == 3 and n_h == 0 else None)
 
 
 def _amine_entry(atom, deg: int) -> dict:
     cs = [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
     base = {"n_idx": atom.GetIdx(), "degree": deg}
-    return {**base, "c_idxs": cs} if deg == 2 else {**base, "c_idx": cs[0]}
+    return {**base, "c_idxs": cs} if deg >= 2 else {**base, "c_idx": cs[0]}
 
 
 def _amine_entries(mol: Mol) -> list[dict]:

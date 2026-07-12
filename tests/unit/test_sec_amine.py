@@ -26,7 +26,7 @@ CASES = [
     # negative: primary monoamine / diamine / tertiary must not break
     ("CCN", "ethanamine", "乙胺"),
     ("NCCN", "ethane-1,2-diamine", "乙烷-1,2-二胺"),
-    ("CCN(CC)CC", "ethane", "乙烷"),
+    ("CCN(CC)CC", "N,N-diethylethanamine", "N,N-二乙基乙胺"),
 ]
 
 

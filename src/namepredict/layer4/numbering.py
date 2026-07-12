@@ -281,7 +281,7 @@ def _hetero_orienters() -> dict:
         "diamine": _orient_diamine,
         "cycloalcohol": _orient_cycloalcohol,
         "cycloamine": _orient_cycloamine,
-        "amine": _orient_amine, "sec_amine": _orient_amine,
+        "amine": _orient_amine, "sec_amine": _orient_amine, "tert_amine": _orient_amine,
     }
 
 
@@ -352,7 +352,7 @@ def _amine_pair_locants(oriented: dict) -> list[int] | None:
 
 
 def _amine_locant(oriented: dict) -> int | None:
-    return _fg_locant(oriented, ("amine", "cycloamine", "sec_amine"), "amine_c_idx")
+    return _fg_locant(oriented, ("amine", "cycloamine", "sec_amine", "tert_amine"), "amine_c_idx")
 
 
 def _ketone_locant(oriented: dict) -> int | None:

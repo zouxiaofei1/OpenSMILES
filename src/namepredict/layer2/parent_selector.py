@@ -189,22 +189,36 @@ def _side_carbons(mol: Mol, start: int, forbid: set[int]) -> set[int]:
 def _arm_ok(mol: Mol, arm: list[int], n_idx: int) -> bool:
     return bool(arm) and len(arm) <= 4 and len(_side_carbons(mol, arm[0], {n_idx})) == len(arm)
 
-def _sec_arms(info: dict) -> tuple[list[int], list[int]] | None:
-    ams = [a for a in info.get("amines") or [] if a.get("degree") == 2]
-    if len(ams) != 1 or len(info.get("amines") or []) != 1:
+def _amine_of_deg(info: dict, deg: int) -> dict | None:
+    ams = [a for a in info.get("amines") or [] if a.get("degree") == deg]
+    return ams[0] if len(ams) == 1 and len(info.get("amines") or []) == 1 else None
+
+def _n_arms(info: dict, deg: int) -> list[list[int]] | None:
+    am = _amine_of_deg(info, deg)
+    if am is None:
         return None
-    mol, n_idx, cs = info["mol"], ams[0]["n_idx"], ams[0]["c_idxs"]
-    a0, a1 = _longest_from(mol, cs[0], {cs[1]}), _longest_from(mol, cs[1], {cs[0]})
-    return (a0, a1) if _arm_ok(mol, a0, n_idx) and _arm_ok(mol, a1, n_idx) else None
+    mol, n_idx, cs = info["mol"], am["n_idx"], am["c_idxs"]
+    arms = [_longest_from(mol, c, set()) for c in cs]
+    return arms if all(_arm_ok(mol, a, n_idx) for a in arms) else None
 
 def _sec_amine_parent(info: dict) -> dict | None:
     if not _is_open_sat(info) or not _no_fgs(info, _DIAMINE_BAD):
         return None
-    arms = _sec_arms(info)
+    arms = _n_arms(info, 2)
     if arms is None:
         return None
     parent, n_arm = (arms[0], arms[1]) if len(arms[0]) >= len(arms[1]) else (arms[1], arms[0])
     return _parent_dict(parent, "sec_amine", amine_c_idx=parent[0], n_alkyl_n=len(n_arm))
+
+def _tert_amine_parent(info: dict) -> dict | None:
+    if not _is_open_sat(info) or not _no_fgs(info, _DIAMINE_BAD):
+        return None
+    arms = _n_arms(info, 3)
+    if arms is None:
+        return None
+    arms = sorted(arms, key=len, reverse=True)
+    parent, ns = arms[0], [len(a) for a in arms[1:]]
+    return _parent_dict(parent, "tert_amine", amine_c_idx=parent[0], n_alkyl_ns=ns)
 
 def _primary_amine_parent(info: dict) -> dict:
     prim = next((a for a in info.get("amines") or [] if "c_idx" in a), None)
@@ -218,6 +232,9 @@ def _amine_parent(info: dict) -> dict:
         return _cyclo_fg_parent(info, "cycloamine", "amines", "amine_c_idx")
     if _is_simple_alkanediamine(info):
         return _diamine_parent(info)
+    tert = _tert_amine_parent(info)
+    if tert is not None:
+        return tert
     sec = _sec_amine_parent(info)
     return sec if sec is not None else _primary_amine_parent(info)
 
