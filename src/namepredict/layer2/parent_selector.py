@@ -131,26 +131,49 @@ def _chain_through_two(mol: Mol, c1: int, c2: int) -> list[int]:
     return list(reversed(left)) + path + right
 
 
-def _oh_c_pair(info: dict) -> tuple[int, int] | None:
-    ohs = info.get("hydroxyls") or []
-    if len(ohs) != 2:
+def _c_pair(entries) -> tuple[int, int] | None:
+    if not entries or len(entries) != 2:
         return None
-    a, b = ohs[0]["c_idx"], ohs[1]["c_idx"]
+    a, b = entries[0]["c_idx"], entries[1]["c_idx"]
     return None if a == b else (a, b)
 
 
-def _no_higher_fg(info: dict) -> bool:
-    bad = (
-        "has_acid", "has_ester", "has_amide", "has_nitrile",
-        "has_aldehyde", "has_ketone", "has_amine",
-    )
-    return not any(info.get(k) for k in bad)
+def _oh_c_pair(info: dict) -> tuple[int, int] | None:
+    return _c_pair(info.get("hydroxyls") or [])
+
+
+def _am_c_pair(info: dict) -> tuple[int, int] | None:
+    return _c_pair(info.get("amines") or [])
+
+
+def _cooh_c_pair(info: dict) -> tuple[int, int] | None:
+    return _c_pair(info.get("carboxyls") or [])
+
+
+def _no_fgs(info: dict, keys: tuple) -> bool:
+    return not any(info.get(k) for k in keys)
+
+
+_DIOL_BAD = (
+    "has_acid", "has_ester", "has_amide", "has_nitrile",
+    "has_aldehyde", "has_ketone", "has_amine",
+)
+_DIACID_BAD = (
+    "has_ester", "has_amide", "has_nitrile",
+    "has_aldehyde", "has_ketone", "has_amine", "has_alcohol",
+)
+_DIAMINE_BAD = (
+    "has_acid", "has_ester", "has_amide", "has_nitrile",
+    "has_aldehyde", "has_ketone", "has_alcohol",
+)
+
+
+def _is_open_sat(info: dict) -> bool:
+    return not (info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"))
 
 
 def _is_simple_alkanediol(info: dict) -> bool:
-    if info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"):
-        return False
-    return _no_higher_fg(info) and _oh_c_pair(info) is not None
+    return _is_open_sat(info) and _no_fgs(info, _DIOL_BAD) and _oh_c_pair(info) is not None
 
 
 def _diol_parent(info: dict) -> dict:
@@ -159,32 +182,30 @@ def _diol_parent(info: dict) -> dict:
     return _parent_dict(chain, "diol", oh_c_idxs=pair)
 
 
-def _cooh_c_pair(info: dict) -> tuple[int, int] | None:
-    cs = info.get("carboxyls") or []
-    if len(cs) != 2:
-        return None
-    a, b = cs[0]["c_idx"], cs[1]["c_idx"]
-    return None if a == b else (a, b)
-
-
-def _no_side_fg_diacid(info: dict) -> bool:
-    bad = (
-        "has_ester", "has_amide", "has_nitrile",
-        "has_aldehyde", "has_ketone", "has_amine", "has_alcohol",
-    )
-    return not any(info.get(k) for k in bad)
-
-
 def _is_simple_alkanedioic(info: dict) -> bool:
-    if info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"):
-        return False
-    return _no_side_fg_diacid(info) and _cooh_c_pair(info) is not None
+    return (
+        _is_open_sat(info) and _no_fgs(info, _DIACID_BAD)
+        and _cooh_c_pair(info) is not None
+    )
 
 
 def _diacid_parent(info: dict) -> dict:
     pair = _cooh_c_pair(info) or (0, 0)
     chain = _chain_through_two(info["mol"], pair[0], pair[1])
     return _parent_dict(chain, "diacid", cooh_c_idxs=pair)
+
+
+def _is_simple_alkanediamine(info: dict) -> bool:
+    return (
+        _is_open_sat(info) and _no_fgs(info, _DIAMINE_BAD)
+        and _am_c_pair(info) is not None
+    )
+
+
+def _diamine_parent(info: dict) -> dict:
+    pair = _am_c_pair(info) or (0, 0)
+    chain = _chain_through_two(info["mol"], pair[0], pair[1])
+    return _parent_dict(chain, "diamine", amine_c_idxs=pair)
 
 
 def _parent_core(chain: list[int], kind: str) -> dict:
@@ -207,6 +228,8 @@ def _alcohol_parent(info: dict) -> dict:
 def _amine_parent(info: dict) -> dict:
     if _is_simple_cycloamine(info):
         return _cycloamine_parent(info)
+    if _is_simple_alkanediamine(info):
+        return _diamine_parent(info)
     am_c = info["amines"][0]["c_idx"]
     return _parent_dict(_chain_through(info, am_c), "amine", amine_c_idx=am_c)
 

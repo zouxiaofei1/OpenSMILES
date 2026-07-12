@@ -3,20 +3,10 @@ from __future__ import annotations
 from namepredict.layer4.polyene import ene_locants, orient_polyene
 
 
-def _oh_position(parent: dict) -> int | None:
-    chain = parent.get("chain") or []
-    oh_c = parent.get("oh_c_idx")
-    if oh_c is None or oh_c not in chain:
+def _pos_on(chain: list[int], c: int | None) -> int | None:
+    if c is None or c not in chain:
         return None
-    return chain.index(oh_c) + 1
-
-
-def _amine_position(parent: dict) -> int | None:
-    chain = parent.get("chain") or []
-    am_c = parent.get("amine_c_idx")
-    if am_c is None or am_c not in chain:
-        return None
-    return chain.index(am_c) + 1
+    return chain.index(c) + 1
 
 
 def _maybe_reverse(chain: list[int], pos: int) -> list[int]:
@@ -51,34 +41,41 @@ def _orient_alkane(chain: list[int], substituents: list) -> list[int]:
     return _prefer_chain(chain, list(reversed(chain)), substituents)
 
 
-def _oh_pos_on(chain: list[int], oh_c: int | None) -> int | None:
-    if oh_c is None or oh_c not in chain:
-        return None
-    return chain.index(oh_c) + 1
-
-
-def _orient_alcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    pos = _oh_position(parent)
+def _orient_by_single_fg(
+    chain: list[int], parent: dict, substituents: list, key: str
+) -> list[int]:
+    pos = _pos_on(chain, parent.get(key))
     if pos is None:
         return chain
     base = _maybe_reverse(chain, pos)
     rev = list(reversed(base))
-    oh_b = _oh_pos_on(base, parent.get("oh_c_idx"))
-    oh_r = _oh_pos_on(rev, parent.get("oh_c_idx"))
-    if oh_b is not None and oh_r is not None and oh_b == oh_r:
+    b, r = _pos_on(base, parent.get(key)), _pos_on(rev, parent.get(key))
+    if b is not None and r is not None and b == r:
         return _prefer_chain(base, rev, substituents)
     return base
 
 
-def _oh_locs_on(chain: list[int], oh_cs) -> tuple[int, ...] | None:
-    if not oh_cs:
+def _orient_alcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_by_single_fg(chain, parent, substituents, "oh_c_idx")
+
+
+def _orient_amine(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_by_single_fg(chain, parent, substituents, "amine_c_idx")
+
+
+def _orient_ketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_by_single_fg(chain, parent, substituents, "ketone_c_idx")
+
+
+def _pair_locs_on(chain: list[int], cs) -> tuple[int, ...] | None:
+    if not cs:
         return None
-    locs = sorted(chain.index(c) + 1 for c in oh_cs if c in chain)
+    locs = sorted(chain.index(c) + 1 for c in cs if c in chain)
     return tuple(locs) if len(locs) == 2 else None
 
 
-def _better_oh_orient(a: list[int], b: list[int], oh_cs, subs: list) -> list[int]:
-    la, lb = _oh_locs_on(a, oh_cs), _oh_locs_on(b, oh_cs)
+def _better_pair_orient(a: list[int], b: list[int], cs, subs: list) -> list[int]:
+    la, lb = _pair_locs_on(a, cs), _pair_locs_on(b, cs)
     if la is None:
         return b
     if lb is None or la < lb:
@@ -88,128 +85,46 @@ def _better_oh_orient(a: list[int], b: list[int], oh_cs, subs: list) -> list[int
     return _prefer_chain(a, b, subs)
 
 
+def _orient_pair(chain: list[int], parent: dict, key: str, subs: list) -> list[int]:
+    cs = parent.get(key)
+    if not cs:
+        return chain
+    return _better_pair_orient(chain, list(reversed(chain)), cs, subs)
+
+
 def _orient_diol(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    oh_cs = parent.get("oh_c_idxs")
-    if not oh_cs:
+    return _orient_pair(chain, parent, "oh_c_idxs", substituents)
+
+
+def _orient_diamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_pair(chain, parent, "amine_c_idxs", substituents)
+
+
+def _orient_to_terminal(chain: list[int], c_idx: int | None) -> list[int]:
+    pos = _pos_on(chain, c_idx)
+    if pos is None or pos == 1:
         return chain
-    return _better_oh_orient(chain, list(reversed(chain)), oh_cs, substituents)
-
-
-def _amine_pos_on(chain: list[int], am_c: int | None) -> int | None:
-    if am_c is None or am_c not in chain:
-        return None
-    return chain.index(am_c) + 1
-
-
-def _orient_amine(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    pos = _amine_position(parent)
-    if pos is None:
-        return chain
-    base = _maybe_reverse(chain, pos)
-    rev = list(reversed(base))
-    am_b = _amine_pos_on(base, parent.get("amine_c_idx"))
-    am_r = _amine_pos_on(rev, parent.get("amine_c_idx"))
-    if am_b is not None and am_r is not None and am_b == am_r:
-        return _prefer_chain(base, rev, substituents)
-    return base
-
-
-def _cooh_pos_on(chain: list[int], cooh_c: int | None) -> int | None:
-    if cooh_c is None or cooh_c not in chain:
-        return None
-    return chain.index(cooh_c) + 1
+    return list(reversed(chain))
 
 
 def _orient_acid(chain: list[int], parent: dict) -> list[int]:
-    pos = _cooh_pos_on(chain, parent.get("cooh_c_idx"))
-    if pos is None:
-        return chain
-    if pos == 1:
-        return chain
-    return list(reversed(chain))
-
-
-def _ald_pos_on(chain: list[int], ald_c: int | None) -> int | None:
-    if ald_c is None or ald_c not in chain:
-        return None
-    return chain.index(ald_c) + 1
+    return _orient_to_terminal(chain, parent.get("cooh_c_idx"))
 
 
 def _orient_aldehyde(chain: list[int], parent: dict) -> list[int]:
-    pos = _ald_pos_on(chain, parent.get("aldehyde_c_idx"))
-    if pos is None:
-        return chain
-    if pos == 1:
-        return chain
-    return list(reversed(chain))
-
-
-def _ester_pos_on(chain: list[int], ester_c: int | None) -> int | None:
-    if ester_c is None or ester_c not in chain:
-        return None
-    return chain.index(ester_c) + 1
+    return _orient_to_terminal(chain, parent.get("aldehyde_c_idx"))
 
 
 def _orient_ester(chain: list[int], parent: dict) -> list[int]:
-    pos = _ester_pos_on(chain, parent.get("ester_c_idx"))
-    if pos is None:
-        return chain
-    if pos == 1:
-        return chain
-    return list(reversed(chain))
-
-
-def _amide_pos_on(chain: list[int], amide_c: int | None) -> int | None:
-    if amide_c is None or amide_c not in chain:
-        return None
-    return chain.index(amide_c) + 1
+    return _orient_to_terminal(chain, parent.get("ester_c_idx"))
 
 
 def _orient_amide(chain: list[int], parent: dict) -> list[int]:
-    pos = _amide_pos_on(chain, parent.get("amide_c_idx"))
-    if pos is None:
-        return chain
-    if pos == 1:
-        return chain
-    return list(reversed(chain))
-
-
-def _nitrile_pos_on(chain: list[int], nit_c: int | None) -> int | None:
-    if nit_c is None or nit_c not in chain:
-        return None
-    return chain.index(nit_c) + 1
+    return _orient_to_terminal(chain, parent.get("amide_c_idx"))
 
 
 def _orient_nitrile(chain: list[int], parent: dict) -> list[int]:
-    pos = _nitrile_pos_on(chain, parent.get("nitrile_c_idx"))
-    if pos is None:
-        return chain
-    if pos == 1:
-        return chain
-    return list(reversed(chain))
-
-
-def _ketone_pos_on(chain: list[int], ket_c: int | None) -> int | None:
-    if ket_c is None or ket_c not in chain:
-        return None
-    return chain.index(ket_c) + 1
-
-
-def _ketone_position(parent: dict) -> int | None:
-    return _ketone_pos_on(parent.get("chain") or [], parent.get("ketone_c_idx"))
-
-
-def _orient_ketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    pos = _ketone_position(parent)
-    if pos is None:
-        return chain
-    base = _maybe_reverse(chain, pos)
-    rev = list(reversed(base))
-    k_b = _ketone_pos_on(base, parent.get("ketone_c_idx"))
-    k_r = _ketone_pos_on(rev, parent.get("ketone_c_idx"))
-    if k_b is not None and k_r is not None and k_b == k_r:
-        return _prefer_chain(base, rev, substituents)
-    return base
+    return _orient_to_terminal(chain, parent.get("nitrile_c_idx"))
 
 
 def _ene_ends_on(chain: list[int], ends: tuple[int, int] | None) -> tuple[int, int] | None:
@@ -341,6 +256,7 @@ def _hetero_orienters() -> dict:
     return {
         "alcohol": _orient_alcohol,
         "diol": _orient_diol,
+        "diamine": _orient_diamine,
         "cycloalcohol": _orient_cycloalcohol,
         "cycloamine": _orient_cycloamine,
         "amine": _orient_amine,
@@ -380,35 +296,37 @@ def _orient_chain(parent: dict, substituents: list) -> list[int]:
     return _orient_by_kind(parent.get("kind"), chain, parent, substituents)
 
 
+def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
+    if oriented.get("kind") not in kinds:
+        return None
+    return _pos_on(oriented.get("chain") or [], oriented.get(key))
+
+
 def _oh_locant(oriented: dict) -> int | None:
-    chain = oriented.get("chain") or []
-    oh_c = oriented.get("oh_c_idx")
-    if oriented.get("kind") not in ("alcohol", "cycloalcohol") or oh_c not in chain:
-        return None
-    return chain.index(oh_c) + 1
+    return _fg_locant(oriented, ("alcohol", "cycloalcohol"), "oh_c_idx")
 
 
-def _oh_locants(oriented: dict) -> list[int] | None:
-    if oriented.get("kind") != "diol":
+def _pair_locants(oriented: dict, kind: str, key: str) -> list[int] | None:
+    if oriented.get("kind") != kind:
         return None
-    locs = _oh_locs_on(oriented.get("chain") or [], oriented.get("oh_c_idxs"))
+    locs = _pair_locs_on(oriented.get("chain") or [], oriented.get(key))
     return list(locs) if locs else None
 
 
+def _oh_locants(oriented: dict) -> list[int] | None:
+    return _pair_locants(oriented, "diol", "oh_c_idxs")
+
+
+def _amine_pair_locants(oriented: dict) -> list[int] | None:
+    return _pair_locants(oriented, "diamine", "amine_c_idxs")
+
+
 def _amine_locant(oriented: dict) -> int | None:
-    chain = oriented.get("chain") or []
-    am_c = oriented.get("amine_c_idx")
-    if oriented.get("kind") not in ("amine", "cycloamine") or am_c not in chain:
-        return None
-    return chain.index(am_c) + 1
+    return _fg_locant(oriented, ("amine", "cycloamine"), "amine_c_idx")
 
 
 def _ketone_locant(oriented: dict) -> int | None:
-    chain = oriented.get("chain") or []
-    ket_c = oriented.get("ketone_c_idx")
-    if oriented.get("kind") not in ("ketone", "cycloketone") or ket_c not in chain:
-        return None
-    return chain.index(ket_c) + 1
+    return _fg_locant(oriented, ("ketone", "cycloketone"), "ketone_c_idx")
 
 
 def _bond_locant(oriented: dict, kind: str, key: str) -> int | None:
@@ -473,6 +391,7 @@ def _oh_am_locants(oriented: dict, n: int) -> dict:
     return {
         "oh_locant": oh,
         "oh_locants": _oh_locants(oriented),
+        "amine_locants": _amine_pair_locants(oriented),
         "omit_oh_locant": _omit_oh(oh, n, kind),
         "amine_locant": am,
         "omit_amine_locant": _omit_amine(am, n, kind),

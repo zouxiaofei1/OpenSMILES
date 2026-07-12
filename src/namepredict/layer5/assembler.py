@@ -60,105 +60,89 @@ def _alkane_names(n: int) -> tuple[str, str] | None:
     return _pair(ALKANE_EN, ALKANE_ZH, n)
 
 
-def _cycloalkane_names(n: int) -> tuple[str, str] | None:
+def _cyclo_from_alkane(
+    n: int, en_fn, zh_fn
+) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain or n < 3:
         return None
     en, zh = plain
-    return f"cyclo{en}", f"环{zh}"
+    return en_fn(en), zh_fn(zh)
+
+
+def _cycloalkane_names(n: int) -> tuple[str, str] | None:
+    return _cyclo_from_alkane(n, lambda e: f"cyclo{e}", lambda z: f"环{z}")
 
 
 def _cycloalkene_names(n: int) -> tuple[str, str] | None:
-    plain = _alkane_names(n)
-    if not plain or n < 3:
-        return None
-    en, zh = plain
-    return f"cyclo{en[:-3]}ene", f"环{zh[0]}烯"
+    return _cyclo_from_alkane(
+        n, lambda e: f"cyclo{e[:-3]}ene", lambda z: f"环{z[0]}烯"
+    )
 
 
 def _cycloalcohol_names(n: int) -> tuple[str, str] | None:
-    plain = _alkane_names(n)
-    if not plain or n < 3:
-        return None
-    en, zh = plain
-    return f"cyclo{en[:-1]}ol", f"环{zh[0]}醇"
+    return _cyclo_from_alkane(
+        n, lambda e: f"cyclo{e[:-1]}ol", lambda z: f"环{z[0]}醇"
+    )
 
 
 def _cycloketone_names(n: int) -> tuple[str, str] | None:
-    plain = _alkane_names(n)
-    if not plain or n < 3:
-        return None
-    en, zh = plain
-    return f"cyclo{en[:-1]}one", f"环{zh[0]}酮"
+    return _cyclo_from_alkane(
+        n, lambda e: f"cyclo{e[:-1]}one", lambda z: f"环{z[0]}酮"
+    )
 
 
 def _cycloamine_names(n: int) -> tuple[str, str] | None:
-    plain = _alkane_names(n)
-    if not plain or n < 3:
-        return None
-    en, zh = plain
-    return f"cyclo{en[:-1]}amine", f"环{zh[0]}胺"
+    return _cyclo_from_alkane(
+        n, lambda e: f"cyclo{e[:-1]}amine", lambda z: f"环{z[0]}胺"
+    )
 
 
-def _alcohol_plain(n: int) -> tuple[str, str] | None:
-    return _pair(ALCOHOL_EN, ALCOHOL_ZH, n)
-
-
-def _alcohol_with_locant(n: int, locant: int) -> tuple[str, str] | None:
-    plain = _alcohol_plain(n)
-    if not plain:
-        return None
-    en, zh = plain
-    return f"{en[:-2]}-{locant}-ol", f"{zh[0]}-{locant}-醇"
-
-
-def _omit_oh_locant(n: int, oh_locant: int | None, omit: bool) -> bool:
-    return omit or oh_locant is None or (oh_locant == 1 and n <= 2)
+def _omit_term_locant(n: int, loc: int | None, omit: bool) -> bool:
+    return omit or loc is None or (loc == 1 and n <= 2)
 
 
 def _alcohol_names(n: int, oh_locant: int | None, omit: bool) -> tuple[str, str] | None:
-    if _omit_oh_locant(n, oh_locant, omit):
-        return _alcohol_plain(n)
-    return _alcohol_with_locant(n, oh_locant)
+    if _omit_term_locant(n, oh_locant, omit):
+        return _pair(ALCOHOL_EN, ALCOHOL_ZH, n)
+    plain = _pair(ALCOHOL_EN, ALCOHOL_ZH, n)
+    if not plain:
+        return None
+    en, zh = plain
+    return f"{en[:-2]}-{oh_locant}-ol", f"{zh[0]}-{oh_locant}-醇"
 
 
-def _diol_loc_str(locs: list[int]) -> str:
+def _pair_loc_str(locs: list[int]) -> str:
     return ",".join(str(x) for x in locs)
 
 
-def _diol_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
+def _di_fg_names(
+    n: int, locs: list[int] | None, en_suf: str, zh_suf: str
+) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain or not locs or len(locs) != 2:
         return None
     en, zh = plain
-    loc = _diol_loc_str(locs)
-    return f"{en}-{loc}-diol", f"{zh}-{loc}-二醇"
+    loc = _pair_loc_str(locs)
+    return f"{en}-{loc}-{en_suf}", f"{zh}-{loc}-{zh_suf}"
 
 
-def _amine_plain(n: int) -> tuple[str, str] | None:
-    plain = _alkane_names(n)
-    if not plain:
-        return None
-    en, zh = plain
-    return f"{en[:-1]}amine", f"{zh[0]}胺"
+def _diol_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
+    return _di_fg_names(n, locs, "diol", "二醇")
 
 
-def _amine_with_locant(n: int, locant: int) -> tuple[str, str] | None:
-    plain = _alkane_names(n)
-    if not plain:
-        return None
-    en, zh = plain
-    return f"{en[:-1]}-{locant}-amine", f"{zh[0]}-{locant}-胺"
-
-
-def _omit_amine_locant(n: int, am_locant: int | None, omit: bool) -> bool:
-    return omit or am_locant is None or (am_locant == 1 and n <= 2)
+def _diamine_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
+    return _di_fg_names(n, locs, "diamine", "二胺")
 
 
 def _amine_names(n: int, am_locant: int | None, omit: bool) -> tuple[str, str] | None:
-    if _omit_amine_locant(n, am_locant, omit):
-        return _amine_plain(n)
-    return _amine_with_locant(n, am_locant)
+    plain = _alkane_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    if _omit_term_locant(n, am_locant, omit):
+        return f"{en[:-1]}amine", f"{zh[0]}胺"
+    return f"{en[:-1]}-{am_locant}-amine", f"{zh[0]}-{am_locant}-胺"
 
 
 def _acid_names(n: int) -> tuple[str, str] | None:
@@ -268,7 +252,7 @@ def _polyene_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
     me, mz = _ene_mult(len(locs))
     if not me or not mz:
         return None
-    loc = _diol_loc_str(locs)
+    loc = _pair_loc_str(locs)
     return f"{stem[0]}-{loc}-{me}", f"{stem[1]}-{loc}-{mz}"
 
 
@@ -348,6 +332,8 @@ def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
 
 
 def _amine_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    if kind == "diamine":
+        return _diamine_names(n, numbered.get("amine_locants"))
     if kind != "amine":
         return None
     return _amine_names(
