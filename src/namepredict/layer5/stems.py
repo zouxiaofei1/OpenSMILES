@@ -190,4 +190,15 @@ ACYL_CHLORIDE_ZH = {
     9: "壬酰氯",
     10: "癸酰氯",
 }
+# P-63.2.2 symmetric dialkyl ether retained: dimethyl…dibutyl ether / 二…基醚
+ETHER_SYM_EN = {
+    1: "dimethyl ether", 2: "diethyl ether",
+    3: "dipropyl ether", 4: "dibutyl ether",
+}
+ETHER_SYM_ZH = {
+    1: "二甲基醚", 2: "二乙基醚", 3: "二丙基醚", 4: "二丁基醚",
+}
+# Asymmetric alkoxy prefix (alkoxyalkane)
+ALKOXY_EN = {1: "methoxy", 2: "ethoxy", 3: "propoxy", 4: "butoxy"}
+ALKOXY_ZH = {1: "甲氧基", 2: "乙氧基", 3: "丙氧基", 4: "丁氧基"}
 
