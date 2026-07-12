@@ -131,27 +131,11 @@ def _chain_through_two(mol: Mol, c1: int, c2: int) -> list[int]:
     return list(reversed(left)) + path + right
 
 
-def _c_pair(entries) -> tuple[int, int] | None:
-    if not entries or len(entries) != 2:
+def _c_idxs(entries, n: int) -> list[int] | None:
+    if not entries or len(entries) != n:
         return None
-    a, b = entries[0]["c_idx"], entries[1]["c_idx"]
-    return None if a == b else (a, b)
-
-
-def _oh_c_pair(info: dict) -> tuple[int, int] | None:
-    return _c_pair(info.get("hydroxyls") or [])
-
-
-def _am_c_pair(info: dict) -> tuple[int, int] | None:
-    return _c_pair(info.get("amines") or [])
-
-
-def _ket_c_pair(info: dict) -> tuple[int, int] | None:
-    return _c_pair(info.get("ketones") or [])
-
-
-def _cooh_c_pair(info: dict) -> tuple[int, int] | None:
-    return _c_pair(info.get("carboxyls") or [])
+    xs = [e["c_idx"] for e in entries]
+    return xs if len(set(xs)) == n else None
 
 
 def _no_fgs(info: dict, keys: tuple) -> bool:
@@ -180,46 +164,54 @@ def _is_open_sat(info: dict) -> bool:
     return not (info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"))
 
 
-def _is_simple_di(info: dict, bad: tuple, pair_fn) -> bool:
-    return _is_open_sat(info) and _no_fgs(info, bad) and pair_fn(info) is not None
+def _is_simple_n(info: dict, bad: tuple, ekey: str, n: int) -> bool:
+    return _is_open_sat(info) and _no_fgs(info, bad) and _c_idxs(info.get(ekey) or [], n) is not None
 
 
-def _pair_parent(info: dict, pair_fn, kind: str, key: str) -> dict:
-    pair = pair_fn(info) or (0, 0)
-    chain = _chain_through_two(info["mol"], pair[0], pair[1])
-    return _parent_dict(chain, kind, **{key: pair})
+def _cover_parent(info: dict, ekey: str, n: int, kind: str, key: str) -> dict:
+    atoms = _c_idxs(info.get(ekey) or [], n) or []
+    chain = _best_cover_pair(info["mol"], atoms) or _longest_chain(info["mol"])
+    return _parent_dict(chain, kind, **{key: atoms})
 
 
 def _is_simple_alkanediol(info: dict) -> bool:
-    return _is_simple_di(info, _DIOL_BAD, _oh_c_pair)
+    return _is_simple_n(info, _DIOL_BAD, "hydroxyls", 2)
 
 
 def _diol_parent(info: dict) -> dict:
-    return _pair_parent(info, _oh_c_pair, "diol", "oh_c_idxs")
+    return _cover_parent(info, "hydroxyls", 2, "diol", "oh_c_idxs")
+
+
+def _is_simple_alkanetriol(info: dict) -> bool:
+    return _is_simple_n(info, _DIOL_BAD, "hydroxyls", 3)
+
+
+def _triol_parent(info: dict) -> dict:
+    return _cover_parent(info, "hydroxyls", 3, "triol", "oh_c_idxs")
 
 
 def _is_simple_alkanedioic(info: dict) -> bool:
-    return _is_simple_di(info, _DIACID_BAD, _cooh_c_pair)
+    return _is_simple_n(info, _DIACID_BAD, "carboxyls", 2)
 
 
 def _diacid_parent(info: dict) -> dict:
-    return _pair_parent(info, _cooh_c_pair, "diacid", "cooh_c_idxs")
+    return _cover_parent(info, "carboxyls", 2, "diacid", "cooh_c_idxs")
 
 
 def _is_simple_alkanediamine(info: dict) -> bool:
-    return _is_simple_di(info, _DIAMINE_BAD, _am_c_pair)
+    return _is_simple_n(info, _DIAMINE_BAD, "amines", 2)
 
 
 def _diamine_parent(info: dict) -> dict:
-    return _pair_parent(info, _am_c_pair, "diamine", "amine_c_idxs")
+    return _cover_parent(info, "amines", 2, "diamine", "amine_c_idxs")
 
 
 def _is_simple_alkanedione(info: dict) -> bool:
-    return _is_simple_di(info, _DIONE_BAD, _ket_c_pair)
+    return _is_simple_n(info, _DIONE_BAD, "ketones", 2)
 
 
 def _dione_parent(info: dict) -> dict:
-    return _pair_parent(info, _ket_c_pair, "dione", "ketone_c_idxs")
+    return _cover_parent(info, "ketones", 2, "dione", "ketone_c_idxs")
 
 
 def _parent_core(chain: list[int], kind: str) -> dict:
@@ -233,6 +225,8 @@ def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
 def _alcohol_parent(info: dict) -> dict:
     if _is_simple_cycloalcohol(info):
         return _cycloalcohol_parent(info)
+    if _is_simple_alkanetriol(info):
+        return _triol_parent(info)
     if _is_simple_alkanediol(info):
         return _diol_parent(info)
     oh_c = info["hydroxyls"][0]["c_idx"]
@@ -382,7 +376,7 @@ def _covers(chain: list[int], atoms: list[int]) -> bool:
 def _best_cover_pair(mol: Mol, atoms: list[int]) -> list[int]:
     best: list[int] = []
     for i, a in enumerate(atoms):
-        for b in atoms[i:]:
+        for b in atoms[i + 1 :]:
             chain = _chain_through_two(mol, a, b)
             if _covers(chain, atoms) and _better(mol, chain, best):
                 best = chain

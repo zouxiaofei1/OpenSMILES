@@ -71,7 +71,7 @@ def _pair_locs_on(chain: list[int], cs) -> tuple[int, ...] | None:
     if not cs:
         return None
     locs = sorted(chain.index(c) + 1 for c in cs if c in chain)
-    return tuple(locs) if len(locs) == 2 else None
+    return tuple(locs) if len(locs) == len(cs) else None
 
 
 def _better_pair_orient(a: list[int], b: list[int], cs, subs: list) -> list[int]:
@@ -92,7 +92,7 @@ def _orient_pair(chain: list[int], parent: dict, key: str, subs: list) -> list[i
     return _better_pair_orient(chain, list(reversed(chain)), cs, subs)
 
 
-def _orient_diol(chain: list[int], parent: dict, substituents: list) -> list[int]:
+def _orient_polyol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_pair(chain, parent, "oh_c_idxs", substituents)
 
 
@@ -263,7 +263,8 @@ def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> li
 def _hetero_orienters() -> dict:
     return {
         "alcohol": _orient_alcohol,
-        "diol": _orient_diol,
+        "diol": _orient_polyol,
+        "triol": _orient_polyol,
         "diamine": _orient_diamine,
         "cycloalcohol": _orient_cycloalcohol,
         "cycloamine": _orient_cycloamine,
@@ -322,7 +323,11 @@ def _pair_locants(oriented: dict, kind: str, key: str) -> list[int] | None:
 
 
 def _oh_locants(oriented: dict) -> list[int] | None:
-    return _pair_locants(oriented, "diol", "oh_c_idxs")
+    kind = oriented.get("kind")
+    if kind not in ("diol", "triol"):
+        return None
+    locs = _pair_locs_on(oriented.get("chain") or [], oriented.get("oh_c_idxs"))
+    return list(locs) if locs else None
 
 
 def _amine_pair_locants(oriented: dict) -> list[int] | None:

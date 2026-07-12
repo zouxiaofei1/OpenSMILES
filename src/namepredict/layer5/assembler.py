@@ -116,23 +116,24 @@ def _pair_loc_str(locs: list[int]) -> str:
     return ",".join(str(x) for x in locs)
 
 
-def _di_fg_names(
-    n: int, locs: list[int] | None, en_suf: str, zh_suf: str
+def _poly_fg_names(
+    n: int, locs: list[int] | None, en_suf: str, zh_suf: str, need: int
 ) -> tuple[str, str] | None:
     plain = _alkane_names(n)
-    if not plain or not locs or len(locs) != 2:
+    if not plain or not locs or len(locs) != need:
         return None
     en, zh = plain
     loc = _pair_loc_str(locs)
     return f"{en}-{loc}-{en_suf}", f"{zh}-{loc}-{zh_suf}"
 
 
-def _diol_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
-    return _di_fg_names(n, locs, "diol", "二醇")
-
-
 def _diamine_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
-    return _di_fg_names(n, locs, "diamine", "二胺")
+    return _poly_fg_names(n, locs, "diamine", "二胺", 2)
+
+
+def _polyol_names(n: int, locs: list[int] | None, kind: str) -> tuple[str, str] | None:
+    m = {"diol": ("diol", "二醇", 2), "triol": ("triol", "三醇", 3)}.get(kind)
+    return _poly_fg_names(n, locs, *m) if m else None
 
 
 def _amine_names(n: int, am_locant: int | None, omit: bool) -> tuple[str, str] | None:
@@ -337,8 +338,8 @@ def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
 def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
-    if kind == "diol":
-        return _diol_names(n, numbered.get("oh_locants"))
+    if kind in ("diol", "triol"):
+        return _polyol_names(n, numbered.get("oh_locants"), kind)
     return None
 
 
