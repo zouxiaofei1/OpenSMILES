@@ -20,11 +20,12 @@
 [#5f87dd6][IUPAC P-61.3.1 / P-14.3.4 / P-22.1.1] 单卤代环烷 monohalo-cycloalkane：L2允许环上卤素+L3/L5省略位次 [+15 tests, dual 2.8%(113)→2.8%(114), fails 3949→3948]
 [#7f436cb][IUPAC P-62.2.1 / P-22.1.1] 未取代单环一元伯胺 cycloalkanamine：L2环母体+L4胺碳定向+L5 cyclo…amine/环…胺 [+13 tests, dual 2.8%(114)→2.8%(115), fails 3948→3947]
 [#35efadf][IUPAC P-31.1 / P-22.1.1] 未取代单环一元烯烃 cycloalkene：L2环母体(拆ring_parent)+L4省略ene位次+L5 cyclo…ene/环…烯 [+13 tests, dual 2.8%(115)→2.9%(117), fails 3947→3945]
+[#5a56ce2][IUPAC P-14.3.4 / P-22.1.1] 多取代单环烷 polyalkyl-cycloalkane：L2放宽侧链数+L4环旋转最低位次集 [+15 tests, dual 2.9%(117)→2.9%(118), fails 3945→3944]
 
 ## 其他
-- 基线(本轮前): en=2.8%(115/4062) zh=12.8%(97/756) dual=2.8%(115/4062)
-- 本次: en=2.9%(117/4062) zh=13.1%(99/756) dual=2.9%(117/4062) fails=3945
-- 改动: L2 未取代单碳环+一环内C=C→cycloalkene；环判定抽至 ring_parent.py；L4 省略ene位次；L5 cyclo…ene/环…烯
-- 验证: C1=CCCCC1→cyclohexene/环己烯；C1=CCCC1→cyclopentene；C=C仍ethene；C1CCCCC1仍cyclohexane
-- 已知缺口: 多取代环烷；仲/叔胺；N-取代酰胺；支化烷基isopropyl(前缀)；取代环烯烃
-- 下一步候选: 仲胺；或多取代环烷；或支化烷基前缀
+- 基线(本轮前): en=2.9%(117/4062) zh=13.1%(99/756) dual=2.9%(117/4062)
+- 本次: en=2.9%(118/4062) zh=13.2%(100/756) dual=2.9%(118/4062) fails=3944
+- 改动: L2 `_is_simple_cycloalkane` 允许多 pure alkyl 侧链；L4 环旋转+方向选最低位次集（含字母序次级）；L5 已有「仅单取代省略位次」无需改
+- 验证: CC1CCCCC1C→1,2-dimethylcyclohexane；CC1CCC(C)CC1→1,4-dimethylcyclohexane；CC1CCCCC1仍methylcyclohexane；C1CCCCC1仍cyclohexane
+- 已知缺口: 支化烷基前缀(isopropyl)；仲/叔胺；N-取代酰胺；取代环烯烃；多羟基(diol)
+- 下一步候选: 支化烷基前缀；或仲胺；或 diol
