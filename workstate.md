@@ -37,11 +37,12 @@
 [#6fe9404][IUPAC P-66.6.1 / P-31.1] 开链一元不饱和醛 alkenal：L2链穿醛碳+C=C+L4 ene位次+L5 …-n-enal/…-n-烯醛（无E/Z） [+8 tests, dual 4.2%(169)→4.2%(170), fails 3893→3892]
 [#5b42bd7][IUPAC P-66.5.1 / P-31.1] 开链一元不饱和腈 alkenenitrile：L2链穿腈碳+C=C+L4 ene位次+L5 …-n-enenitrile/…-n-烯腈（无E/Z） [+9 tests, dual 4.2%(170)→4.2%(171), fails 3892→3891]
 [#5950cc9][IUPAC P-63.1.1 / P-31.1] 开链一元不饱和醇 alkenol：L2链穿OH碳+C=C+L4 OH优先+ene位次+L5 …-n-en-m-ol/…-n-烯-m-醇（无E/Z） [+9 tests, dual 4.2%(171)→4.2%(172), fails 3891→3890]
+[#a9359dc][IUPAC P-65.6 / P-31.1] 开链一元不饱和酯 alkenoate：L2链穿酯羰基+C=C+L4 ene位次+L5 methyl …-n-enoate/…-n-烯酸甲酯（无E/Z） [+10 tests, dual 4.2%(172)→4.3%(173), fails 3890→3889]
 
 ## 其他
-- 基线(本轮前): en=4.2%(171/4062) zh=17.2%(130/756) dual=4.2%(171/4062)
-- 本次: en=4.2%(172/4062) zh=17.3%(131/756) dual=4.2%(172/4062) fails=3890
-- 改动: L2 一元醇+单C=C→alkenol 母体链穿OH碳与双键；L4 OH优先编号+ene位次；L5 but-3-en-1-ol/丁-3-烯-1-醇
-- 验证: C=CCCO→but-3-en-1-ol/丁-3-烯-1-醇；C=CCO→prop-2-en-1-ol；CCO仍ethanol；C=CC(=O)O仍alkenoic
-- 已知缺口: 不饱和酯；不饱和二酸(E/Z)；仲/叔胺；N-取代酰胺；支化烷基前缀；硫醚
-- 下一步候选: 不饱和酯；或不饱和二酸；或仲胺；或支化烷基前缀
+- 基线(本轮前): en=4.2%(172/4062) zh=17.3%(131/756) dual=4.2%(172/4062)
+- 本次: en=4.3%(173/4062) zh=17.5%(132/756) dual=4.3%(173/4062) fails=3889
+- 改动: L2 一元酯+酰基单C=C→alkenoate 母体链穿酯羰基与双键；L4 羰基为1算ene位次；L5 methyl prop-2-enoate/丙-2-烯酸甲酯
+- 验证: C=CC(=O)OC→methyl prop-2-enoate/丙-2-烯酸甲酯；CCOC(=O)C仍ethyl acetate；C=CC(=O)O仍alkenoic
+- 已知缺口: 不饱和二酸(E/Z)；仲/叔胺；N-取代酰胺；支化烷基前缀；硫醚；复杂烷氧基酯
+- 下一步候选: 不饱和二酸；或仲胺；或支化烷基前缀；或硫醚
