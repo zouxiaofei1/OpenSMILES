@@ -30,7 +30,7 @@ def _alcohol_with_locant(n: int, locant: int) -> tuple[str, str] | None:
     if not plain:
         return None
     en, zh = plain
-    return f"{en[:-2]}-{locant}-ol", f"{zh[0]}{locant}醇"
+    return f"{en[:-2]}-{locant}-ol", f"{zh[0]}-{locant}-醇"
 
 
 def _omit_oh_locant(n: int, oh_locant: int | None, omit: bool) -> bool:
