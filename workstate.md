@@ -25,11 +25,12 @@
 [#63ee025][IUPAC P-65.1.1 / P-14.3.3] 开链饱和二元羧酸 alkanedioic acid：L2穿双COOH碳+L5 oxalic/…dioic acid与草酸/X二酸 [+8 tests, dual 3.0%(122)→3.2%(129), fails 3940→3933]
 [#1e91bc2][IUPAC P-31.1 / P-14.3.3] 开链多烯烃 polyene：L2穿全部C=C+L4多ene位次+L5 buta-1,3-diene/丁-1,3-二烯 [+10 tests, dual 3.2%(129)→3.2%(131), fails 3933→3931]
 [#b95686a][IUPAC P-62.2.1 / P-14.3.3] 开链饱和二元伯胺 alkanediamine：L2穿双胺碳+L4多胺位次+L5 …-a,b-diamine/…-a,b-二胺 [+9 tests, dual 3.2%(131)→3.3%(133), fails 3931→3929]
+[#e7f3c3d][IUPAC P-64.2.1 / P-14.3.3] 开链饱和二元酮 alkanedione：L2穿双酮碳+L4多酮位次+L5 …-a,b-dione/…-a,b-二酮 [+9 tests, dual 3.3%(133)→3.3%(135), fails 3929→3927]
 
 ## 其他
-- 基线(本轮前): en=3.2%(131/4062) zh=14.3%(108/756) dual=3.2%(131/4062)
-- 本次: en=3.3%(133/4062) zh=14.4%(109/756) dual=3.3%(133/4062) fails=3929
-- 改动: L2 恰2伯胺无更高FG无环无不饱和→diamine母体穿两胺碳；L4 双胺位次最低集；L5 alkane-a,b-diamine/烷-a,b-二胺；并重构L4/L5压行数
-- 验证: NCCN→ethane-1,2-diamine/乙烷-1,2-二胺；NCCCCN→butane-1,4-diamine；CCN仍ethanamine；环胺不误判
-- 已知缺口: triol；仲/叔胺；N-取代酰胺；不饱和二酸(E/Z)；支化烷基前缀；二酮
-- 下一步候选: triol；或二酮 alkanedione；或仲胺；或不饱和二酸
+- 基线(本轮前): en=3.3%(133/4062) zh=14.4%(109/756) dual=3.3%(133/4062)
+- 本次: en=3.3%(135/4062) zh=14.6%(110/756) dual=3.3%(135/4062) fails=3927
+- 改动: L2 恰2酮无更高FG无环无不饱和→dione母体穿两酮碳；L4 双酮位次最低集；L5 alkane-a,b-dione/首字-a,b-二酮
+- 验证: CC(=O)CC(=O)C→pentane-2,4-dione/戊-2,4-二酮；CC(=O)C(C)=O→butane-2,3-dione；CC(=O)C仍propan-2-one；环酮不误判
+- 已知缺口: triol；仲/叔胺；N-取代酰胺；不饱和二酸(E/Z)；支化烷基前缀；硫醇
+- 下一步候选: triol；或仲胺；或不饱和二酸；或硫醇
