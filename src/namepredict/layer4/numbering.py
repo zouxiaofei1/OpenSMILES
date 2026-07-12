@@ -15,18 +15,52 @@ def _maybe_reverse(chain: list[int], pos: int) -> list[int]:
     return chain
 
 
-def _orient_alcohol(chain: list[int], parent: dict) -> list[int]:
+def _locants_on(chain: list[int], substituents: list) -> list[int]:
+    return sorted(chain.index(s["attach_idx"]) + 1 for s in substituents)
+
+
+def _locant_key(locs: list[int]) -> tuple:
+    return (locs, len(locs))
+
+
+def _prefer_chain(a: list[int], b: list[int], substituents: list) -> list[int]:
+    ka = _locant_key(_locants_on(a, substituents))
+    kb = _locant_key(_locants_on(b, substituents))
+    return a if ka <= kb else b
+
+
+def _orient_alkane(chain: list[int], substituents: list) -> list[int]:
+    if not substituents or not chain:
+        return chain
+    return _prefer_chain(chain, list(reversed(chain)), substituents)
+
+
+def _oh_pos_on(chain: list[int], oh_c: int | None) -> int | None:
+    if oh_c is None or oh_c not in chain:
+        return None
+    return chain.index(oh_c) + 1
+
+
+def _orient_alcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     pos = _oh_position(parent)
     if pos is None:
         return chain
-    return _maybe_reverse(chain, pos)
+    base = _maybe_reverse(chain, pos)
+    rev = list(reversed(base))
+    oh_b = _oh_pos_on(base, parent.get("oh_c_idx"))
+    oh_r = _oh_pos_on(rev, parent.get("oh_c_idx"))
+    if oh_b is not None and oh_r is not None and oh_b == oh_r:
+        return _prefer_chain(base, rev, substituents)
+    return base
 
 
-def _orient_chain(parent: dict) -> list[int]:
+def _orient_chain(parent: dict, substituents: list) -> list[int]:
     chain = list(parent.get("chain") or [])
-    if parent.get("kind") != "alcohol" or not chain:
+    if not chain:
         return chain
-    return _orient_alcohol(chain, parent)
+    if parent.get("kind") == "alcohol":
+        return _orient_alcohol(chain, parent, substituents)
+    return _orient_alkane(chain, substituents)
 
 
 def _oh_locant(oriented: dict) -> int | None:
@@ -41,6 +75,14 @@ def _omit_oh(oh_pos: int | None, n_carbons: int) -> bool:
     return oh_pos == 1 and n_carbons <= 2
 
 
+def _with_locants(chain: list[int], substituents: list) -> list:
+    out: list = []
+    for s in substituents:
+        loc = chain.index(s["attach_idx"]) + 1
+        out.append({**s, "locant": loc})
+    return out
+
+
 def _pack(oriented: dict, substituents: list, oh_pos: int | None) -> dict:
     return {
         "parent": oriented,
@@ -51,6 +93,7 @@ def _pack(oriented: dict, substituents: list, oh_pos: int | None) -> dict:
 
 
 def number(parent: dict, substituents: list) -> dict:
-    chain = _orient_chain(parent)
+    chain = _orient_chain(parent, substituents)
     oriented = {**parent, "chain": chain}
-    return _pack(oriented, substituents, _oh_locant(oriented))
+    numbered = _with_locants(chain, substituents)
+    return _pack(oriented, numbered, _oh_locant(oriented))
