@@ -43,10 +43,24 @@ def _longest_chain(mol: Mol, seeds: list[int] | None = None) -> list[int]:
     return _best_among(mol, seeds or _all_carbons(mol))
 
 
+def _arms_from(mol: Mol, center: int) -> list[list[int]]:
+    forbid = {center}
+    return [_longest_from(mol, nb, forbid) for nb in _carbon_neighbors(mol, center)]
+
+
+def _join_through(center: int, arms: list[list[int]]) -> list[int]:
+    arms = sorted(arms, key=len, reverse=True)
+    if not arms:
+        return [center]
+    if len(arms) == 1:
+        return list(reversed(arms[0])) + [center]
+    return list(reversed(arms[0])) + [center] + arms[1]
+
+
 def _chain_with_oh(info: dict) -> list[int]:
     mol: Mol = info["mol"]
     oh_c = info["hydroxyls"][0]["c_idx"]
-    return _longest_from(mol, oh_c)
+    return _join_through(oh_c, _arms_from(mol, oh_c))
 
 
 def _parent_dict(chain: list[int], kind: str, oh_c_idx: int | None) -> dict:
