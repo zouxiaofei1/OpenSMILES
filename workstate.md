@@ -45,11 +45,12 @@
 [#6429c09][IUPAC P-63.2.1] 开链简单二烷基硫醚：L1二配位S(排亚砜/硫酯)+L2对称/不对称双臂母体+L5 dimethyl/ethyl methyl sulfide与二…硫醚/…基…基硫醚 [+11 tests, dual 4.4%(179)→4.4%(180), fails 3883→3882]
 [#8285645][IUPAC P-22.1.3] 简单苯母体：未取代/单卤/单C1–C2正烷基；toluene保留；`_pure_alkyl_outside`拒不饱和侧链 [+14 tests, dual 4.4%(180)→4.6%(187), fails 3882→3875]
 [#6b63d73][IUPAC P-14.3.4 / P-22.1.3] 简单多取代苯：2–3环上卤/甲基；en xylene保留+位次；zh系统二甲基苯 [+multi_benzene tests, dual 4.6%(187)→4.8%(196), fails 3875→3866]
+[#ee5881d][IUPAC P-63.1.4 / P-62.2.1.1.1] 保留母体 phenol/aniline：环上≤2卤/甲基，FG=1；仲胺 c_idx 防 KeyError [+phenol_aniline tests, dual 4.8%(196)→5.0%(205), fails 3866→3857]
 
 ## 其他
-- 基线(本轮前): en=4.6%(187/4062) zh=19.3%(146/756) dual=4.6%(187/4062)
-- 本次: en=4.8%(196/4062) zh=20.5%(155/756) dual=4.8%(196/4062) fails=3866
-- 改动: L2 放宽 benzene 至 2–3 取代(多取代仅甲基)；L5 抽 benzene_names（xylene/甲苯/前缀）；编号复用环最低位次集
-- 验证: Clc1ccc(Cl)cc1→1,4-dichlorobenzene；Cc1ccc(C)cc1→1,4-xylene/1,4-二甲基苯；Cc1ccc(Cl)cc1→1-chloro-4-methylbenzene；甲苯/氯苯不回归
-- 已知缺口: C3+烷基苯；异丙苯；酚/硝基苯；不饱和二酸(E/Z)；支化烷基前缀；multi-ethyl
-- 下一步候选: 不饱和二酸(E/Z)；或支化烷基前缀；或酚/苯胺
+- 基线(本轮前): en=4.8%(196/4062) zh=20.5%(155/756) dual=4.8%(196/4062)
+- 本次: en=5.0%(205/4062) zh=21.4%(162/756) dual=5.0%(205/4062) fails=3857
+- 改动: L2 简单酚/苯胺母体；L3 父FG过滤；L4 OH/NH2 定向为1；L5 保留名；`_mono_amine_on_ring` 安全取 c_idx
+- 验证: Oc1ccccc1→phenol；Nc1ccccc1→aniline；Oc1ccc(Cl)cc1→4-chlorophenol；Cc1ccccc1O→2-methylphenol；cyclohexanol/benzene 不回归
+- 已知缺口: 氨基酚；N-烷基苯胺；苯二酚；硝基酚；不饱和二酸(E/Z)；支化烷基前缀；C3+烷基苯
+- 下一步候选: 不饱和二酸(E/Z)；或支化烷基前缀；或氨基酚/苯二酚
