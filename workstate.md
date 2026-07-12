@@ -23,11 +23,12 @@
 [#5a56ce2][IUPAC P-14.3.4 / P-22.1.1] 多取代单环烷 polyalkyl-cycloalkane：L2放宽侧链数+L4环旋转最低位次集 [+15 tests, dual 2.9%(117)→2.9%(118), fails 3945→3944]
 [#e4efd5d][IUPAC P-63.1.1 / P-14.3.3] 开链饱和二元醇 alkanediol：L2穿双OH碳+L4最低位次集+L5 …-a,b-diol/…-a,b-二醇 [+9 tests, dual 2.9%(118)→3.0%(122), fails 3944→3940]
 [#63ee025][IUPAC P-65.1.1 / P-14.3.3] 开链饱和二元羧酸 alkanedioic acid：L2穿双COOH碳+L5 oxalic/…dioic acid与草酸/X二酸 [+8 tests, dual 3.0%(122)→3.2%(129), fails 3940→3933]
+[#1e91bc2][IUPAC P-31.1 / P-14.3.3] 开链多烯烃 polyene：L2穿全部C=C+L4多ene位次+L5 buta-1,3-diene/丁-1,3-二烯 [+10 tests, dual 3.2%(129)→3.2%(131), fails 3933→3931]
 
 ## 其他
-- 基线(本轮前): en=3.0%(122/4062) zh=13.5%(102/756) dual=3.0%(122/4062)
-- 本次: en=3.2%(129/4062) zh=14.0%(106/756) dual=3.2%(129/4062) fails=3933
-- 改动: L2 恰2羧基无侧FG无环无不饱和→diacid母体穿两COOH；L5 oxalic acid/草酸与 alkanedioic acid/X二酸；L4未改
-- 验证: OC(=O)C(=O)O→oxalic acid/草酸；OC(=O)CC(=O)O→propanedioic acid/丙二酸；butanedioic/pentanedioic；CC(=O)O仍acetic；不饱和二酸本轮不做
-- 已知缺口: 不饱和二酸(E/Z)；羟基酸；仲/叔胺；N-取代酰胺；共轭二烯；triol；支化烷基前缀
-- 下一步候选: 共轭二烯；或仲胺；或 triol；或 diamine
+- 基线(本轮前): en=3.2%(129/4062) zh=14.0%(106/756) dual=3.2%(129/4062)
+- 本次: en=3.2%(131/4062) zh=14.3%(108/756) dual=3.2%(131/4062) fails=3931
+- 改动: L2 ≥2双键无FG无环→polyene母体穿全部双键碳；L4 多ene位次最低集；L5 diene/triene 与 二烯/三烯
+- 验证: C=CC=C→buta-1,3-diene/丁-1,3-二烯；C=CC=CC=C→hexa-1,3,5-triene；C=C仍ethene；CC=CC仍but-2-ene
+- 已知缺口: 仲/叔胺；N-取代酰胺；triol；diamine；不饱和二酸(E/Z)；支化烷基前缀；取代多烯
+- 下一步候选: diamine；或 triol；或仲胺；或不饱和二酸
