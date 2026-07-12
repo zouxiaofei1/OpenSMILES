@@ -6,11 +6,12 @@
 [#4359897][IUPAC P-14.2.1 / P-16.3] 倍数词头扩至penta–deca(五–十) [+9 tests, dual 1.2%(48)→1.2%(49), fails 4014→4013]
 [#9b6c9b5][IUPAC P-65.1.1] 一元羧酸：L1羧基检测+排除羧基OH；L2/L4/L5 acid母体与词干 [+8 tests, dual 1.2%(49)→1.5%(60), fails 4013→4002]
 [#1bbe283][IUPAC P-64.2.1] 一元酮alkanone：L1酮羰基+L2/L4/L5 …-n-one/…-n-酮 [+11 tests, dual 1.5%(60)→1.7%(68), fails 4002→3994]
+[#pending][IUPAC P-66.6.1] 一元醛alkanal：L1醛羰基+L2/L4/L5 保留formaldehyde/acetaldehyde与…anal/…醛 [+10 tests, dual 1.7%(68)→1.8%(74), fails 3994→3988]
 
 ## 其他
-- 基线(本轮前): en=1.5%(60/4062) zh=6.5%(49/756) dual=1.5%(60/4062)
-- 本次: en=1.7%(68/4062) zh=7.3%(55/756) dual=1.7%(68/4062) fails=3994
-- 改动: L1 ketones/has_ketone（=O且恰2碳邻、非羧基）；L2 acid>ketone>alcohol>alkane；L4酮位次；L5 stem-loc-one/酮
-- 验证: CC(C)=O→propan-2-one/丙-2-酮；CCC(CC)=O→pentan-3-one；酸/醇/烷不回退
-- 已知缺口: 醛/二酮/烯酮/环酮；酯/酸酐；支化烷基isopropyl；胺
-- 下一步候选: 一元醛(alkanal)；或酯；或支化烷基；或胺
+- 基线(本轮前): en=1.7%(68/4062) zh=7.3%(55/756) dual=1.7%(68/4062)
+- 本次: en=1.8%(74/4062) zh=8.1%(61/756) dual=1.8%(74/4062) fails=3988
+- 改动: L1 aldehydes/has_aldehyde（=O且恰1碳邻、非羧基）；L2 acid>aldehyde>ketone>alcohol>alkane；L4醛碳=1；L5 ALDEHYDE stems
+- 验证: C=O→formaldehyde/甲醛；CC=O→acetaldehyde/乙醛；CCC=O→propanal/丙醛；酮/酸/醇不回退
+- 已知缺口: 羟基醛前缀；烯醛/二醛；酯/酸酐；支化烷基isopropyl；胺
+- 下一步候选: 酯；或支化烷基；或胺；或羟基醛前缀

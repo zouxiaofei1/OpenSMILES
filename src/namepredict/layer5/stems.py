@@ -75,3 +75,28 @@ ACID_ZH = {
     9: "壬酸",
     10: "癸酸",
 }
+# P-66.6.1 retained: formaldehyde/acetaldehyde; else systematic …anal / …醛
+ALDEHYDE_EN = {
+    1: "formaldehyde",
+    2: "acetaldehyde",
+    3: "propanal",
+    4: "butanal",
+    5: "pentanal",
+    6: "hexanal",
+    7: "heptanal",
+    8: "octanal",
+    9: "nonanal",
+    10: "decanal",
+}
+ALDEHYDE_ZH = {
+    1: "甲醛",
+    2: "乙醛",
+    3: "丙醛",
+    4: "丁醛",
+    5: "戊醛",
+    6: "己醛",
+    7: "庚醛",
+    8: "辛醛",
+    9: "壬醛",
+    10: "癸醛",
+}

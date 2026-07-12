@@ -41,6 +41,14 @@ def _is_ketone_carbon(atom) -> bool:
     return True
 
 
+def _is_aldehyde_carbon(atom) -> bool:
+    if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
+        return False
+    if _has_oh_neighbor(atom) or _carbon_neighbor_count(atom) > 1:
+        return False
+    return True
+
+
 def _is_hydroxyl_oxygen(atom) -> bool:
     if not _is_single_c_oh(atom):
         return False
@@ -80,18 +88,33 @@ def _ketone_entries(mol: Mol) -> list[dict]:
     return out
 
 
+def _aldehyde_entries(mol: Mol) -> list[dict]:
+    out: list[dict] = []
+    for atom in mol.GetAtoms():
+        if _is_aldehyde_carbon(atom):
+            out.append({"c_idx": atom.GetIdx()})
+    return out
+
+
 def _carbon_ids(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
 
 
-def _fg_flags(hydroxyls: list[dict], carboxyls: list[dict], ketones: list[dict]) -> dict:
+def _fg_flags(
+    hydroxyls: list[dict],
+    carboxyls: list[dict],
+    ketones: list[dict],
+    aldehydes: list[dict],
+) -> dict:
     return {
         "hydroxyls": hydroxyls,
         "carboxyls": carboxyls,
         "ketones": ketones,
+        "aldehydes": aldehydes,
         "has_alcohol": bool(hydroxyls),
         "has_acid": bool(carboxyls),
         "has_ketone": bool(ketones),
+        "has_aldehyde": bool(aldehydes),
     }
 
 
@@ -102,5 +125,10 @@ def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
 
 def analyze(mol: Mol) -> dict:
     carbons = _carbon_ids(mol)
-    fgs = _fg_flags(_hydroxyl_entries(mol), _carboxyl_entries(mol), _ketone_entries(mol))
+    fgs = _fg_flags(
+        _hydroxyl_entries(mol),
+        _carboxyl_entries(mol),
+        _ketone_entries(mol),
+        _aldehyde_entries(mol),
+    )
     return _info(mol, carbons, fgs)

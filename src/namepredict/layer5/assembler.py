@@ -5,6 +5,8 @@ from namepredict.layer5.stems import (
     ACID_ZH,
     ALCOHOL_EN,
     ALCOHOL_ZH,
+    ALDEHYDE_EN,
+    ALDEHYDE_ZH,
     ALKANE_EN,
     ALKANE_ZH,
 )
@@ -77,6 +79,10 @@ def _acid_names(n: int) -> tuple[str, str] | None:
     return _pair(ACID_EN, ACID_ZH, n)
 
 
+def _aldehyde_names(n: int) -> tuple[str, str] | None:
+    return _pair(ALDEHYDE_EN, ALDEHYDE_ZH, n)
+
+
 def _ketone_from_alkane(n: int, locant: int) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain:
@@ -96,6 +102,8 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
     if kind == "acid":
         return _acid_names(n)
+    if kind == "aldehyde":
+        return _aldehyde_names(n)
     if kind == "ketone":
         return _ketone_names(n, numbered.get("ketone_locant"))
     return _alkane_names(n)

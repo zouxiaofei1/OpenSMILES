@@ -69,6 +69,21 @@ def _orient_acid(chain: list[int], parent: dict) -> list[int]:
     return list(reversed(chain))
 
 
+def _ald_pos_on(chain: list[int], ald_c: int | None) -> int | None:
+    if ald_c is None or ald_c not in chain:
+        return None
+    return chain.index(ald_c) + 1
+
+
+def _orient_aldehyde(chain: list[int], parent: dict) -> list[int]:
+    pos = _ald_pos_on(chain, parent.get("aldehyde_c_idx"))
+    if pos is None:
+        return chain
+    if pos == 1:
+        return chain
+    return list(reversed(chain))
+
+
 def _ketone_pos_on(chain: list[int], ket_c: int | None) -> int | None:
     if ket_c is None or ket_c not in chain:
         return None
@@ -92,17 +107,23 @@ def _orient_ketone(chain: list[int], parent: dict, substituents: list) -> list[i
     return base
 
 
+def _orient_by_kind(kind: str, chain: list[int], parent: dict, subs: list) -> list[int]:
+    if kind == "alcohol":
+        return _orient_alcohol(chain, parent, subs)
+    if kind == "ketone":
+        return _orient_ketone(chain, parent, subs)
+    if kind == "acid":
+        return _orient_acid(chain, parent)
+    if kind == "aldehyde":
+        return _orient_aldehyde(chain, parent)
+    return _orient_alkane(chain, subs)
+
+
 def _orient_chain(parent: dict, substituents: list) -> list[int]:
     chain = list(parent.get("chain") or [])
     if not chain:
         return chain
-    if parent.get("kind") == "alcohol":
-        return _orient_alcohol(chain, parent, substituents)
-    if parent.get("kind") == "ketone":
-        return _orient_ketone(chain, parent, substituents)
-    if parent.get("kind") == "acid":
-        return _orient_acid(chain, parent)
-    return _orient_alkane(chain, substituents)
+    return _orient_by_kind(parent.get("kind"), chain, parent, substituents)
 
 
 def _oh_locant(oriented: dict) -> int | None:
