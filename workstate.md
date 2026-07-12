@@ -36,11 +36,12 @@
 [#a598fd4][IUPAC P-65.1.1 / P-31.1] 开链一元不饱和酸 alkenoic acid：L2链穿COOH+C=C+L4 ene位次+L5 …-n-enoic acid/…-n-烯酸（无E/Z） [+9 tests, dual 4.1%(167)→4.2%(169), fails 3895→3893]
 [#6fe9404][IUPAC P-66.6.1 / P-31.1] 开链一元不饱和醛 alkenal：L2链穿醛碳+C=C+L4 ene位次+L5 …-n-enal/…-n-烯醛（无E/Z） [+8 tests, dual 4.2%(169)→4.2%(170), fails 3893→3892]
 [#5b42bd7][IUPAC P-66.5.1 / P-31.1] 开链一元不饱和腈 alkenenitrile：L2链穿腈碳+C=C+L4 ene位次+L5 …-n-enenitrile/…-n-烯腈（无E/Z） [+9 tests, dual 4.2%(170)→4.2%(171), fails 3892→3891]
+[#5950cc9][IUPAC P-63.1.1 / P-31.1] 开链一元不饱和醇 alkenol：L2链穿OH碳+C=C+L4 OH优先+ene位次+L5 …-n-en-m-ol/…-n-烯-m-醇（无E/Z） [+9 tests, dual 4.2%(171)→4.2%(172), fails 3891→3890]
 
 ## 其他
-- 基线(本轮前): en=4.2%(170/4062) zh=17.1%(129/756) dual=4.2%(170/4062)
-- 本次: en=4.2%(171/4062) zh=17.2%(130/756) dual=4.2%(171/4062) fails=3891
-- 改动: L2 一元腈+单C=C→alkenenitrile 母体链穿腈碳与双键；L4 腈碳为1算ene位次；L5 prop-2-enenitrile/丙-2-烯腈
-- 验证: C=CC#N→prop-2-enenitrile/丙-2-烯腈；CC#N仍acetonitrile；C=CC(=O)O仍alkenoic；CC=CC=O仍alkenal
-- 已知缺口: 不饱和酯/醇；不饱和二酸(E/Z)；仲/叔胺；N-取代酰胺；支化烷基前缀；硫醚
-- 下一步候选: 不饱和酯；或不饱和醇；或不饱和二酸；或仲胺
+- 基线(本轮前): en=4.2%(171/4062) zh=17.2%(130/756) dual=4.2%(171/4062)
+- 本次: en=4.2%(172/4062) zh=17.3%(131/756) dual=4.2%(172/4062) fails=3890
+- 改动: L2 一元醇+单C=C→alkenol 母体链穿OH碳与双键；L4 OH优先编号+ene位次；L5 but-3-en-1-ol/丁-3-烯-1-醇
+- 验证: C=CCCO→but-3-en-1-ol/丁-3-烯-1-醇；C=CCO→prop-2-en-1-ol；CCO仍ethanol；C=CC(=O)O仍alkenoic
+- 已知缺口: 不饱和酯；不饱和二酸(E/Z)；仲/叔胺；N-取代酰胺；支化烷基前缀；硫醚
+- 下一步候选: 不饱和酯；或不饱和二酸；或仲胺；或支化烷基前缀
