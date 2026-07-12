@@ -21,11 +21,12 @@
 [#7f436cb][IUPAC P-62.2.1 / P-22.1.1] 未取代单环一元伯胺 cycloalkanamine：L2环母体+L4胺碳定向+L5 cyclo…amine/环…胺 [+13 tests, dual 2.8%(114)→2.8%(115), fails 3948→3947]
 [#35efadf][IUPAC P-31.1 / P-22.1.1] 未取代单环一元烯烃 cycloalkene：L2环母体(拆ring_parent)+L4省略ene位次+L5 cyclo…ene/环…烯 [+13 tests, dual 2.8%(115)→2.9%(117), fails 3947→3945]
 [#5a56ce2][IUPAC P-14.3.4 / P-22.1.1] 多取代单环烷 polyalkyl-cycloalkane：L2放宽侧链数+L4环旋转最低位次集 [+15 tests, dual 2.9%(117)→2.9%(118), fails 3945→3944]
+[#e4efd5d][IUPAC P-63.1.1 / P-14.3.3] 开链饱和二元醇 alkanediol：L2穿双OH碳+L4最低位次集+L5 …-a,b-diol/…-a,b-二醇 [+9 tests, dual 2.9%(118)→3.0%(122), fails 3944→3940]
 
 ## 其他
-- 基线(本轮前): en=2.9%(117/4062) zh=13.1%(99/756) dual=2.9%(117/4062)
-- 本次: en=2.9%(118/4062) zh=13.2%(100/756) dual=2.9%(118/4062) fails=3944
-- 改动: L2 `_is_simple_cycloalkane` 允许多 pure alkyl 侧链；L4 环旋转+方向选最低位次集（含字母序次级）；L5 已有「仅单取代省略位次」无需改
-- 验证: CC1CCCCC1C→1,2-dimethylcyclohexane；CC1CCC(C)CC1→1,4-dimethylcyclohexane；CC1CCCCC1仍methylcyclohexane；C1CCCCC1仍cyclohexane
-- 已知缺口: 支化烷基前缀(isopropyl)；仲/叔胺；N-取代酰胺；取代环烯烃；多羟基(diol)
-- 下一步候选: 支化烷基前缀；或仲胺；或 diol
+- 基线(本轮前): en=2.9%(118/4062) zh=13.2%(100/756) dual=2.9%(118/4062)
+- 本次: en=3.0%(122/4062) zh=13.5%(102/756) dual=3.0%(122/4062) fails=3940
+- 改动: L2 恰2羟基无更高FG无环无不饱和→diol母体链穿两OH碳；L4 双OH位次最低集；L5 alkane-a,b-diol/烷-a,b-二醇
+- 验证: OCCO→ethane-1,2-diol；OCCCO→propane-1,3-diol；CC(O)C(C)O→butane-2,3-diol；CCO仍ethanol；OCC(O)CO三醇仍mono（未做triol）
+- 已知缺口: triol；仲/叔胺；N-取代酰胺；支化烷基前缀(isopropyl)；共轭二烯；取代环烯烃
+- 下一步候选: 仲胺；或共轭二烯；或 triol；或支化烷基前缀
