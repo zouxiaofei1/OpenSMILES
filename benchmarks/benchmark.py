@@ -9,6 +9,11 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+_SRC = Path(__file__).resolve().parents[1] / "src"
+_src_str = str(_SRC)
+if _src_str not in sys.path:
+    sys.path.insert(0, _src_str)
+
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
