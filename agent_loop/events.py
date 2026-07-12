@@ -18,6 +18,10 @@ class EventBus:
         """Register a handler(type, payload)."""
         self._handlers.append(fn)
 
+    def unsubscribe(self, fn: Handler) -> None:
+        """Remove handler by identity if present."""
+        self._handlers = [h for h in self._handlers if h is not fn]
+
     def publish(self, event_type: str, payload: dict[str, Any]) -> None:
         """Deliver event to all subscribers."""
         for fn in list(self._handlers):

@@ -5,6 +5,7 @@ from __future__ import annotations
 import queue
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -18,7 +19,8 @@ from namepredict.types import NameResult
 
 MEMORY_ROOT = Path("agent_loop/memory")
 SESSIONS_DIR = MEMORY_ROOT / "sessions"
-STOP_FILE = MEMORY_ROOT / "STOP"
+
+Handler = Callable[[str, dict[str, Any]], None]
 
 
 def get_bus() -> EventBus:
@@ -65,8 +67,9 @@ class LoopController:
         self._status = "stopped"
 
     def status(self) -> str:
-        """Return running | paused | stopped."""
+        """Return running | paused | stopping | stopped."""
         with self._lock:
+            self._reap_locked()
             return self._status
 
     def state_payload(self) -> dict[str, Any]:
@@ -76,14 +79,10 @@ class LoopController:
         return data
 
     def start(self) -> dict[str, str]:
-        """Start background loop if not already running."""
+        """Start loop, resume pause, or refuse if worker still alive."""
         with self._lock:
-            if self._thread is not None and self._thread.is_alive():
-                self._paused = False
-                self._status = "running"
-                return {"status": self._status}
-            self._begin_thread()
-            return {"status": self._status}
+            self._reap_locked()
+            return self._start_locked()
 
     def pause(self) -> dict[str, str]:
         """Soft-pause between cycles."""
@@ -94,17 +93,40 @@ class LoopController:
             return {"status": self._status}
 
     def stop(self, force: bool = False) -> dict[str, str]:
-        """Write STOP file, signal thread, optional join."""
+        """Write STOP, signal thread, join; keep live thread ref."""
         self._write_stop()
         with self._lock:
             self._stop.set()
             self._paused = False
-            self._status = "stopped"
             thread = self._thread
         self._join_thread(thread, force)
         with self._lock:
-            self._thread = None
+            return self._after_join_locked()
+
+    def _start_locked(self) -> dict[str, str]:
+        if self._thread is not None and self._thread.is_alive():
+            return self._resume_or_refuse()
+        self._begin_thread()
+        return {"status": self._status}
+
+    def _resume_or_refuse(self) -> dict[str, str]:
+        if self._status == "paused":
+            self._paused = False
+            self._status = "running"
             return {"status": self._status}
+        return {
+            "status": self._status,
+            "error": "prior thread still alive",
+        }
+
+    def _after_join_locked(self) -> dict[str, str]:
+        if self._thread is not None and self._thread.is_alive():
+            self._status = "stopping"
+            self._spawn_reaper()
+            return {"status": self._status}
+        self._thread = None
+        self._status = "stopped"
+        return {"status": self._status}
 
     def _begin_thread(self) -> None:
         self._stop.clear()
@@ -133,7 +155,8 @@ class LoopController:
     def _mark_stopped(self) -> None:
         with self._lock:
             self._status = "stopped"
-            self._thread = None
+            if self._thread is threading.current_thread():
+                self._thread = None
 
     def _make_agent(self) -> AgentLoop:
         cfg = LoopConfig(cwd=Path(".").resolve(), mock_pi=True)
@@ -142,23 +165,44 @@ class LoopController:
     def _should_halt(self, agent: AgentLoop) -> bool:
         if self._stop.is_set():
             return True
-        from agent_loop.loop import _should_stop
+        return AgentLoop.should_stop(self.store.load(), agent.config, self.memory)
 
-        return _should_stop(self.store.load(), agent.config, self.memory)
+    def _stop_path(self) -> Path:
+        return self.memory / "STOP"
 
     def _write_stop(self) -> None:
         self.memory.mkdir(parents=True, exist_ok=True)
-        STOP_FILE.write_text("1\n", encoding="utf-8")
+        self._stop_path().write_text("1\n", encoding="utf-8")
 
     def _clear_stop(self) -> None:
-        if STOP_FILE.is_file():
-            STOP_FILE.unlink()
+        path = self._stop_path()
+        if path.is_file():
+            path.unlink()
 
     def _join_thread(self, thread: threading.Thread | None, force: bool) -> None:
         if thread is None or not thread.is_alive():
             return
-        timeout = 0.5 if force else 5.0
-        thread.join(timeout=timeout)
+        thread.join(timeout=0.5 if force else 5.0)
+
+    def _reap_locked(self) -> None:
+        if self._thread is not None and not self._thread.is_alive():
+            self._thread = None
+            if self._status == "stopping":
+                self._status = "stopped"
+
+    def _spawn_reaper(self) -> None:
+        thread = self._thread
+        if thread is None:
+            return
+        reaper = threading.Thread(target=self._reap_when_dead, args=(thread,), daemon=True)
+        reaper.start()
+
+    def _reap_when_dead(self, thread: threading.Thread) -> None:
+        thread.join()
+        with self._lock:
+            if self._thread is thread:
+                self._thread = None
+                self._status = "stopped"
 
 
 _BUS = EventBus()
@@ -167,8 +211,8 @@ _NAMER = SMILESNNamer()
 _CONTROLLER = LoopController(_STORE, _BUS, MEMORY_ROOT)
 
 
-def event_queue() -> queue.Queue:
-    """Subscribe bus to a new queue for SSE consumers."""
+def event_queue() -> tuple[queue.Queue, Handler]:
+    """Subscribe bus to a new queue; return (queue, handler) for unsubscribe."""
     q: queue.Queue = queue.Queue(maxsize=256)
 
     def _handler(event_type: str, payload: dict[str, Any]) -> None:
@@ -178,4 +222,4 @@ def event_queue() -> queue.Queue:
             pass
 
     _BUS.subscribe(_handler)
-    return q
+    return q, _handler

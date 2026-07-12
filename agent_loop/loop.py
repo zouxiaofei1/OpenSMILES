@@ -182,6 +182,7 @@ def _progress_line(
 
 
 def _should_stop(state: dict[str, Any], cfg: LoopConfig, memory_root: Path) -> bool:
+    """Internal stop policy; prefer AgentLoop.should_stop for public callers."""
     if (memory_root / "STOP").is_file():
         return True
     if int(state.get("no_improve") or 0) >= int(cfg.k):
@@ -318,13 +319,20 @@ class AgentLoop:
         self.pytest_fn = pytest_fn
         self.lint_fn = lint_fn
 
+    @staticmethod
+    def should_stop(
+        state: dict[str, Any], config: LoopConfig, memory: Path
+    ) -> bool:
+        """True if STOP file, no_improve>=K, dual target, or max iters."""
+        return _should_stop(state, config, memory)
+
     def run(self) -> None:
         """Run cycles until a stop condition holds."""
         while True:
-            if _should_stop(self.store.load(), self.config, self.memory):
+            if self.should_stop(self.store.load(), self.config, self.memory):
                 return
             self.run_once()
-            if _should_stop(self.store.load(), self.config, self.memory):
+            if self.should_stop(self.store.load(), self.config, self.memory):
                 return
 
     def run_once(self) -> CycleResult:
