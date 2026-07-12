@@ -235,9 +235,26 @@ def _carbonyl_orienters() -> dict:
     return {**_terminal_orienters(), "ketone": _orient_ketone}
 
 
+def _rotate_to_front(chain: list[int], atom: int) -> list[int]:
+    if atom not in chain:
+        return chain
+    i = chain.index(atom)
+    return chain[i:] + chain[:i]
+
+
+def _orient_cycloalcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    oh_c = parent.get("oh_c_idx")
+    if oh_c is None or oh_c not in chain:
+        return chain
+    base = _rotate_to_front(chain, oh_c)
+    rev = _rotate_to_front(list(reversed(chain)), oh_c)
+    return _prefer_chain(base, rev, substituents)
+
+
 def _kind_orienters() -> dict:
     base = {
         "alcohol": _orient_alcohol,
+        "cycloalcohol": _orient_cycloalcohol,
         "amine": _orient_amine,
         "alkene": _orient_alkene,
         "alkyne": _orient_alkyne,
@@ -262,7 +279,7 @@ def _orient_chain(parent: dict, substituents: list) -> list[int]:
 def _oh_locant(oriented: dict) -> int | None:
     chain = oriented.get("chain") or []
     oh_c = oriented.get("oh_c_idx")
-    if oriented.get("kind") != "alcohol" or oh_c not in chain:
+    if oriented.get("kind") not in ("alcohol", "cycloalcohol") or oh_c not in chain:
         return None
     return chain.index(oh_c) + 1
 
@@ -299,7 +316,9 @@ def _yne_locant(oriented: dict) -> int | None:
     return _bond_locant(oriented, "alkyne", "triple_bond")
 
 
-def _omit_oh(oh_pos: int | None, n_carbons: int) -> bool:
+def _omit_oh(oh_pos: int | None, n_carbons: int, kind: str | None = None) -> bool:
+    if kind == "cycloalcohol":
+        return True
     return oh_pos == 1 and n_carbons <= 2
 
 
@@ -330,9 +349,10 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
 
 def _oh_am_locants(oriented: dict, n: int) -> dict:
     oh, am = _oh_locant(oriented), _amine_locant(oriented)
+    kind = oriented.get("kind")
     return {
         "oh_locant": oh,
-        "omit_oh_locant": _omit_oh(oh, n),
+        "omit_oh_locant": _omit_oh(oh, n, kind),
         "amine_locant": am,
         "omit_amine_locant": _omit_amine(am, n),
     }

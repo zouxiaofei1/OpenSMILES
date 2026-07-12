@@ -68,6 +68,14 @@ def _cycloalkane_names(n: int) -> tuple[str, str] | None:
     return f"cyclo{en}", f"环{zh}"
 
 
+def _cycloalcohol_names(n: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain or n < 3:
+        return None
+    en, zh = plain
+    return f"cyclo{en[:-1]}ol", f"环{zh[0]}醇"
+
+
 def _alcohol_plain(n: int) -> tuple[str, str] | None:
     return _pair(ALCOHOL_EN, ALCOHOL_ZH, n)
 
@@ -243,13 +251,22 @@ def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None
     return top if top is not None else _ester_ketone(kind, n, numbered)
 
 
-def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
+    if kind == "cycloalcohol":
+        return _cycloalcohol_names(n)
     if kind == "amine":
         return _amine_names(
             n, numbered.get("amine_locant"), numbered.get("omit_amine_locant", False)
         )
+    return None
+
+
+def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    top = _hetero_names(kind, n, numbered)
+    if top is not None:
+        return top
     carb = _carbonyl_names(kind, n, numbered)
     if carb is not None:
         return carb

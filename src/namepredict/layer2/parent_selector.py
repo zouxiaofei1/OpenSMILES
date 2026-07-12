@@ -92,6 +92,8 @@ def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
 
 
 def _alcohol_parent(info: dict) -> dict:
+    if _is_simple_cycloalcohol(info):
+        return _cycloalcohol_parent(info)
     oh_c = info["hydroxyls"][0]["c_idx"]
     return _parent_dict(_chain_through(info, oh_c), "alcohol", oh_c_idx=oh_c)
 
@@ -277,6 +279,45 @@ def _is_simple_cycloalkane(info: dict) -> bool:
 def _cycloalkane_parent(info: dict) -> dict:
     chain = list(info["rings"][0]["atom_ids"])
     return _parent_dict(chain, "cycloalkane")
+
+
+def _hetero_allowed(mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
+    for atom in mol.GetAtoms():
+        z = atom.GetAtomicNum()
+        if z in (1, 6) or atom.GetIdx() in ring_set:
+            continue
+        if atom.GetIdx() not in allowed:
+            return False
+    return True
+
+
+def _mono_oh_on_ring(info: dict, ring_set: set[int]) -> dict | None:
+    hydroxyls = info.get("hydroxyls") or []
+    if len(hydroxyls) != 1:
+        return None
+    oh = hydroxyls[0]
+    if oh["c_idx"] not in ring_set:
+        return None
+    return oh
+
+
+def _is_simple_cycloalcohol(info: dict) -> bool:
+    if not _is_cycloalkane_core(info):
+        return False
+    mol: Mol = info["mol"]
+    ring_set = set(info["rings"][0]["atom_ids"])
+    oh = _mono_oh_on_ring(info, ring_set)
+    if oh is None:
+        return False
+    if not _hetero_allowed(mol, ring_set, {oh["o_idx"]}):
+        return False
+    return not _outside_carbons(mol, ring_set)
+
+
+def _cycloalcohol_parent(info: dict) -> dict:
+    chain = list(info["rings"][0]["atom_ids"])
+    oh_c = info["hydroxyls"][0]["c_idx"]
+    return _parent_dict(chain, "cycloalcohol", oh_c_idx=oh_c)
 
 
 def _acid_ester_amide(info: dict) -> dict | None:
