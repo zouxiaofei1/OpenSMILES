@@ -26,6 +26,7 @@ from namepredict.layer5.stems import (
     SULFIDE_SYM_EN,
     SULFIDE_SYM_ZH,
 )
+from namepredict.layer5.benzene_names import benzene_parent_names, benzene_prefix
 from namepredict.types import NameResult
 MULT_EN = {
     2: "di",
@@ -398,13 +399,6 @@ def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         omit = numbered.get("omit_yne_locant", False)
         return _alkyne_names(n, numbered.get("yne_locant"), omit)
     return None
-def _is_toluene(numbered: dict) -> bool:
-    subs = numbered.get("substituents") or []
-    return len(subs) == 1 and subs[0].get("kind") == "alkyl" and subs[0].get("n_carbons") == 1
-
-
-def _benzene_names(numbered: dict) -> tuple[str, str] | None:
-    return ("toluene", "甲苯") if _is_toluene(numbered) else ("benzene", "苯")
 def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     unsat = _unsat_names(kind, n, numbered)
     if unsat is not None:
@@ -412,7 +406,7 @@ def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | Non
     if kind == "cycloalkane":
         return _cycloalkane_names(n)
     if kind == "benzene":
-        return _benzene_names(numbered)
+        return benzene_parent_names(numbered)
     return _alkane_names(n)
 def _parent_n(numbered: dict) -> tuple[str | None, int]:
     parent = numbered.get("parent") or {}
@@ -472,8 +466,8 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -
 def _join_name(prefix: str, parent: str) -> str:
     return f"{prefix}{parent}" if prefix else parent
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
-    if kind == "benzene" and _is_toluene(numbered):
-        return "", ""
+    if kind == "benzene":
+        return benzene_prefix(numbered, _build_prefix)
     return _build_prefix(numbered.get("substituents") or [], n, kind)
 
 

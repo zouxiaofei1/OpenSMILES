@@ -250,14 +250,35 @@ def _ring_halo_n(mol: Mol, ring_set: set[int]) -> int:
     return sum(1 for a in mol.GetAtoms() if _is_ring_halo(a, ring_set))
 
 
-def _benzene_subs_ok(mol: Mol, ring_set: set[int]) -> bool:
-    h = _ring_halo_n(mol, ring_set)
-    starts = _ring_side_starts(mol, ring_set)
-    if h + len(starts) > 1:
-        return False
+def _benzene_alkyl_ns(mol: Mol, ring_set: set[int], starts: list[int]) -> list[int]:
+    outside = set(_outside_carbons(mol, ring_set))
+    if len(outside) != len(starts):
+        return []
+    if any(s not in outside for s in starts):
+        return []
+    return [1] * len(starts)
+
+
+def _mono_benzene_ok(mol: Mol, ring_set: set[int], starts: list[int]) -> bool:
     if not starts:
         return True
     return len(_outside_carbons(mol, ring_set)) in (1, 2)
+
+
+def _multi_benzene_ok(mol: Mol, ring_set: set[int], starts: list[int]) -> bool:
+    ns = _benzene_alkyl_ns(mol, ring_set, starts)
+    return len(ns) == len(starts) and all(n == 1 for n in ns)
+
+
+def _benzene_subs_ok(mol: Mol, ring_set: set[int]) -> bool:
+    h = _ring_halo_n(mol, ring_set)
+    starts = _ring_side_starts(mol, ring_set)
+    n_sub = h + len(starts)
+    if n_sub > 3:
+        return False
+    if n_sub <= 1:
+        return _mono_benzene_ok(mol, ring_set, starts)
+    return _multi_benzene_ok(mol, ring_set, starts)
 
 
 def _is_simple_benzene(info: dict) -> bool:
