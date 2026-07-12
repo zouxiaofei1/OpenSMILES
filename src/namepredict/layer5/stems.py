@@ -100,6 +100,31 @@ ALDEHYDE_ZH = {
     9: "壬醛",
     10: "癸醛",
 }
+# P-66.1.1 retained: formamide/acetamide; else systematic …amide / …酰胺
+AMIDE_EN = {
+    1: "formamide",
+    2: "acetamide",
+    3: "propanamide",
+    4: "butanamide",
+    5: "pentanamide",
+    6: "hexanamide",
+    7: "heptanamide",
+    8: "octanamide",
+    9: "nonanamide",
+    10: "decanamide",
+}
+AMIDE_ZH = {
+    1: "甲酰胺",
+    2: "乙酰胺",
+    3: "丙酰胺",
+    4: "丁酰胺",
+    5: "戊酰胺",
+    6: "己酰胺",
+    7: "庚酰胺",
+    8: "辛酰胺",
+    9: "壬酰胺",
+    10: "癸酰胺",
+}
 # P-65.6 functional class: alkyl alkanoate (retained formate/acetate)
 ESTER_ACYL_EN = {
     1: "formate",

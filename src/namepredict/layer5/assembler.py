@@ -9,6 +9,8 @@ from namepredict.layer5.stems import (
     ALDEHYDE_ZH,
     ALKANE_EN,
     ALKANE_ZH,
+    AMIDE_EN,
+    AMIDE_ZH,
     ESTER_ACYL_EN,
     ESTER_ALKYL_EN,
     ESTER_ALKYL_ZH,
@@ -120,6 +122,10 @@ def _aldehyde_names(n: int) -> tuple[str, str] | None:
     return _pair(ALDEHYDE_EN, ALDEHYDE_ZH, n)
 
 
+def _amide_names(n: int) -> tuple[str, str] | None:
+    return _pair(AMIDE_EN, AMIDE_ZH, n)
+
+
 def _ester_acyl_en(n: int) -> str | None:
     return ESTER_ACYL_EN.get(n)
 
@@ -201,17 +207,28 @@ def _alkyne_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | N
     return _alkyne_with_locant(n, locant)
 
 
-def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+def _acid_ald_amide(kind: str, n: int) -> tuple[str, str] | None:
     if kind == "acid":
         return _acid_names(n)
     if kind == "aldehyde":
         return _aldehyde_names(n)
+    if kind == "amide":
+        return _amide_names(n)
+    return None
+
+
+def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "ester":
         parent = numbered.get("parent") or {}
         return _ester_names(n, parent.get("alkoxy_n"))
     if kind == "ketone":
         return _ketone_names(n, numbered.get("ketone_locant"))
     return None
+
+
+def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    top = _acid_ald_amide(kind, n)
+    return top if top is not None else _ester_ketone(kind, n, numbered)
 
 
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:

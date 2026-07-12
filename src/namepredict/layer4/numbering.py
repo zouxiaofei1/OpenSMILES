@@ -126,6 +126,21 @@ def _orient_ester(chain: list[int], parent: dict) -> list[int]:
     return list(reversed(chain))
 
 
+def _amide_pos_on(chain: list[int], amide_c: int | None) -> int | None:
+    if amide_c is None or amide_c not in chain:
+        return None
+    return chain.index(amide_c) + 1
+
+
+def _orient_amide(chain: list[int], parent: dict) -> list[int]:
+    pos = _amide_pos_on(chain, parent.get("amide_c_idx"))
+    if pos is None:
+        return chain
+    if pos == 1:
+        return chain
+    return list(reversed(chain))
+
+
 def _ketone_pos_on(chain: list[int], ket_c: int | None) -> int | None:
     if ket_c is None or ket_c not in chain:
         return None
@@ -191,17 +206,24 @@ def _orient_alkyne(chain: list[int], parent: dict, substituents: list) -> list[i
     return _orient_by_bond(chain, parent, substituents, "triple_bond")
 
 
-def _kind_orienters() -> dict:
+def _carbonyl_orienters() -> dict:
     return {
-        "alcohol": _orient_alcohol,
-        "amine": _orient_amine,
-        "ketone": _orient_ketone,
         "acid": lambda c, p, s: _orient_acid(c, p),
         "aldehyde": lambda c, p, s: _orient_aldehyde(c, p),
         "ester": lambda c, p, s: _orient_ester(c, p),
+        "amide": lambda c, p, s: _orient_amide(c, p),
+        "ketone": _orient_ketone,
+    }
+
+
+def _kind_orienters() -> dict:
+    base = {
+        "alcohol": _orient_alcohol,
+        "amine": _orient_amine,
         "alkene": _orient_alkene,
         "alkyne": _orient_alkyne,
     }
+    return {**base, **_carbonyl_orienters()}
 
 
 def _orient_by_kind(kind: str, chain: list[int], parent: dict, subs: list) -> list[int]:

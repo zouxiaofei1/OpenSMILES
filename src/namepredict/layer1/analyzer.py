@@ -33,10 +33,30 @@ def _carbon_neighbor_count(atom) -> int:
     return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6])
 
 
+def _primary_amide_n_of(carbon) -> int | None:
+    for n in carbon.GetNeighbors():
+        if n.GetAtomicNum() != 7:
+            continue
+        heavies = [x for x in n.GetNeighbors() if x.GetAtomicNum() != 1]
+        if len(heavies) == 1 and heavies[0].GetIdx() == carbon.GetIdx():
+            return n.GetIdx()
+    return None
+
+
+def _is_primary_amide_carbon(atom) -> bool:
+    if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
+        return False
+    if _has_oh_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
+        return False
+    return _primary_amide_n_of(atom) is not None
+
+
 def _is_ketone_carbon(atom) -> bool:
     if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
         return False
     if _has_oh_neighbor(atom) or _carbon_neighbor_count(atom) != 2:
+        return False
+    if _primary_amide_n_of(atom) is not None:
         return False
     return True
 
@@ -77,7 +97,9 @@ def _is_aldehyde_carbon(atom) -> bool:
         return False
     if _has_oh_neighbor(atom) or _carbon_neighbor_count(atom) > 1:
         return False
-    return _ester_alkoxy_of(atom) is None
+    if _ester_alkoxy_of(atom) is not None:
+        return False
+    return _primary_amide_n_of(atom) is None
 
 
 def _is_hydroxyl_oxygen(atom) -> bool:
@@ -144,6 +166,19 @@ def _ketone_entries(mol: Mol) -> list[dict]:
     for atom in mol.GetAtoms():
         if _is_ketone_carbon(atom):
             out.append({"c_idx": atom.GetIdx()})
+    return out
+
+
+def _amide_entry(atom) -> dict:
+    n_idx = _primary_amide_n_of(atom)
+    return {"c_idx": atom.GetIdx(), "n_idx": n_idx}
+
+
+def _amide_entries(mol: Mol) -> list[dict]:
+    out: list[dict] = []
+    for atom in mol.GetAtoms():
+        if _is_primary_amide_carbon(atom):
+            out.append(_amide_entry(atom))
     return out
 
 
@@ -221,21 +256,29 @@ def _carbon_ids(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
 
 
-def _fg_lists(
+def _fg_core_lists(
     hydroxyls: list[dict],
     carboxyls: list[dict],
     esters: list[dict],
+    amides: list[dict],
     ketones: list[dict],
+) -> dict:
+    return {
+        "hydroxyls": hydroxyls,
+        "carboxyls": carboxyls,
+        "esters": esters,
+        "amides": amides,
+        "ketones": ketones,
+    }
+
+
+def _fg_more_lists(
     aldehydes: list[dict],
     amines: list[dict],
     double_bonds: list[dict],
     triple_bonds: list[dict],
 ) -> dict:
     return {
-        "hydroxyls": hydroxyls,
-        "carboxyls": carboxyls,
-        "esters": esters,
-        "ketones": ketones,
         "aldehydes": aldehydes,
         "amines": amines,
         "double_bonds": double_bonds,
@@ -243,12 +286,31 @@ def _fg_lists(
     }
 
 
-def _fg_bools(lists: dict) -> dict:
+def _fg_lists(parts: dict) -> dict:
+    return {
+        **_fg_core_lists(
+            parts["hydroxyls"], parts["carboxyls"], parts["esters"],
+            parts["amides"], parts["ketones"],
+        ),
+        **_fg_more_lists(
+            parts["aldehydes"], parts["amines"],
+            parts["double_bonds"], parts["triple_bonds"],
+        ),
+    }
+
+
+def _fg_bools_core(lists: dict) -> dict:
     return {
         "has_alcohol": bool(lists["hydroxyls"]),
         "has_acid": bool(lists["carboxyls"]),
         "has_ester": bool(lists["esters"]),
+        "has_amide": bool(lists["amides"]),
         "has_ketone": bool(lists["ketones"]),
+    }
+
+
+def _fg_bools_more(lists: dict) -> dict:
+    return {
         "has_aldehyde": bool(lists["aldehydes"]),
         "has_amine": bool(lists["amines"]),
         "has_alkene": bool(lists["double_bonds"]),
@@ -256,39 +318,41 @@ def _fg_bools(lists: dict) -> dict:
     }
 
 
-def _fg_flags(
-    hydroxyls: list[dict],
-    carboxyls: list[dict],
-    esters: list[dict],
-    ketones: list[dict],
-    aldehydes: list[dict],
-    amines: list[dict],
-    double_bonds: list[dict],
-    triple_bonds: list[dict],
-) -> dict:
-    lists = _fg_lists(
-        hydroxyls, carboxyls, esters, ketones, aldehydes,
-        amines, double_bonds, triple_bonds,
-    )
+def _fg_bools(lists: dict) -> dict:
+    return {**_fg_bools_core(lists), **_fg_bools_more(lists)}
+
+
+def _fg_parts_a(mol: Mol) -> dict:
+    return {
+        "hydroxyls": _hydroxyl_entries(mol),
+        "carboxyls": _carboxyl_entries(mol),
+        "esters": _ester_entries(mol),
+        "amides": _amide_entries(mol),
+        "ketones": _ketone_entries(mol),
+    }
+
+
+def _fg_parts_b(mol: Mol) -> dict:
+    return {
+        "aldehydes": _aldehyde_entries(mol),
+        "amines": _amine_entries(mol),
+        "double_bonds": _double_bond_entries(mol),
+        "triple_bonds": _triple_bond_entries(mol),
+    }
+
+
+def _fg_parts(mol: Mol) -> dict:
+    return {**_fg_parts_a(mol), **_fg_parts_b(mol)}
+
+
+def _collect_fgs(mol: Mol) -> dict:
+    lists = _fg_lists(_fg_parts(mol))
     return {**lists, **_fg_bools(lists)}
 
 
 def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
     base = {"mol": mol, "carbon_ids": carbons, "n_carbons": len(carbons)}
     return {**base, **fgs, **_ring_meta(mol)}
-
-
-def _collect_fgs(mol: Mol) -> dict:
-    return _fg_flags(
-        _hydroxyl_entries(mol),
-        _carboxyl_entries(mol),
-        _ester_entries(mol),
-        _ketone_entries(mol),
-        _aldehyde_entries(mol),
-        _amine_entries(mol),
-        _double_bond_entries(mol),
-        _triple_bond_entries(mol),
-    )
 
 
 def analyze(mol: Mol) -> dict:

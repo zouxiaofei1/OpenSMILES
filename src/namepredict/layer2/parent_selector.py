@@ -116,6 +116,16 @@ def _aldehyde_parent(info: dict) -> dict:
     return _parent_dict(_chain_through(info, ald_c), "aldehyde", aldehyde_c_idx=ald_c)
 
 
+def _amide_parent(info: dict) -> dict:
+    am_c = info["amides"][0]["c_idx"]
+    return _parent_dict(_chain_through(info, am_c), "amide", amide_c_idx=am_c)
+
+
+def _is_mono_amide(info: dict) -> bool:
+    amides = info.get("amides") or []
+    return bool(info.get("has_amide")) and len(amides) == 1
+
+
 def _ester_parent(info: dict) -> dict:
     e = info["esters"][0]
     chain = _chain_through(info, e["c_idx"])
@@ -220,11 +230,17 @@ def _cycloalkane_parent(info: dict) -> dict:
     return _parent_dict(chain, "cycloalkane")
 
 
-def _carbonyl_parent(info: dict) -> dict | None:
+def _acid_ester_amide(info: dict) -> dict | None:
     if info.get("has_acid") and info.get("carboxyls"):
         return _acid_parent(info)
     if _is_mono_ester(info):
         return _ester_parent(info)
+    if _is_mono_amide(info):
+        return _amide_parent(info)
+    return None
+
+
+def _aldehyde_ketone(info: dict) -> dict | None:
     if info.get("has_aldehyde") and info.get("aldehydes"):
         return _aldehyde_parent(info)
     if info.get("has_ketone") and info.get("ketones"):
@@ -232,15 +248,22 @@ def _carbonyl_parent(info: dict) -> dict | None:
     return None
 
 
-def _fg_parent(info: dict) -> dict | None:
-    carb = _carbonyl_parent(info)
-    if carb is not None:
-        return carb
+def _carbonyl_parent(info: dict) -> dict | None:
+    top = _acid_ester_amide(info)
+    return top if top is not None else _aldehyde_ketone(info)
+
+
+def _hetero_parent(info: dict) -> dict | None:
     if info.get("has_alcohol") and info.get("hydroxyls"):
         return _alcohol_parent(info)
     if info.get("has_amine") and info.get("amines"):
         return _amine_parent(info)
     return None
+
+
+def _fg_parent(info: dict) -> dict | None:
+    carb = _carbonyl_parent(info)
+    return carb if carb is not None else _hetero_parent(info)
 
 
 def select_parent(info: dict) -> dict:
