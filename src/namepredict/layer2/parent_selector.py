@@ -2,6 +2,15 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.layer2.ring_parent import (
+    _endocyclic_double,
+    _is_simple_cycloalcohol,
+    _is_simple_cycloalkane,
+    _is_simple_cycloalkene,
+    _is_simple_cycloamine,
+    _is_simple_cycloketone,
+)
+
 
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
     atom = mol.GetAtomWithIdx(idx)
@@ -176,6 +185,8 @@ def _chain_through_bond(mol: Mol, c1: int, c2: int) -> list[int]:
 
 
 def _alkene_parent(info: dict) -> dict:
+    if _is_simple_cycloalkene(info):
+        return _cycloalkene_parent(info)
     db = info["double_bonds"][0]
     c1, c2 = db["c1"], db["c2"]
     chain = _chain_through_bond(info["mol"], c1, c2)
@@ -200,131 +211,15 @@ def _is_mono_alkyne(info: dict) -> bool:
     return len(triples) == 1 and len(doubles) == 0
 
 
-
-def _all_carbons_are_c(mol: Mol, atom_ids: tuple) -> bool:
-    return all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atom_ids)
-
-
-def _bond_between(mol: Mol, a: int, b: int):
-    return mol.GetBondBetweenAtoms(a, b)
-
-
-def _ring_bonds_single(mol: Mol, atom_ids: tuple) -> bool:
-    ids = list(atom_ids)
-    for i, a in enumerate(ids):
-        b = ids[(i + 1) % len(ids)]
-        bond = _bond_between(mol, a, b)
-        if bond is None or bond.GetBondType().name != "SINGLE":
-            return False
-    return True
-
-
-def _outside_carbons(mol: Mol, ring_set: set[int]) -> list[int]:
-    return [
-        a.GetIdx()
-        for a in mol.GetAtoms()
-        if a.GetAtomicNum() == 6 and a.GetIdx() not in ring_set
-    ]
-
-
-def _pure_alkyl_outside(mol: Mol, outside: list[int]) -> bool:
-    for idx in outside:
-        atom = mol.GetAtomWithIdx(idx)
-        if any(n.GetAtomicNum() not in (1, 6) for n in atom.GetNeighbors()):
-            return False
-    return True
-
-
-def _ring_side_starts(mol: Mol, ring_set: set[int]) -> list[int]:
-    starts: list[int] = []
-    for r in ring_set:
-        for n in mol.GetAtomWithIdx(r).GetNeighbors():
-            if n.GetAtomicNum() == 6 and n.GetIdx() not in ring_set:
-                starts.append(n.GetIdx())
-    return starts
-
-
-def _is_ring_halo(atom, ring_set: set[int]) -> bool:
-    if atom.GetAtomicNum() not in (9, 17, 35, 53):
-        return False
-    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
-    return len(heavies) == 1 and heavies[0].GetIdx() in ring_set
-
-
-def _no_hetero_outside(mol: Mol, ring_set: set[int]) -> bool:
-    for atom in mol.GetAtoms():
-        z = atom.GetAtomicNum()
-        if z in (1, 6) or atom.GetIdx() in ring_set:
-            continue
-        if _is_ring_halo(atom, ring_set):
-            continue
-        return False
-    return True
-
-
-def _outside_ok(mol: Mol, ring_set: set[int]) -> bool:
-    if not _no_hetero_outside(mol, ring_set):
-        return False
-    return _pure_alkyl_outside(mol, _outside_carbons(mol, ring_set))
-
-
-def _is_cycloalkane_core(info: dict) -> bool:
-    rings = info.get("rings") or []
-    if len(rings) != 1:
-        return False
-    mol: Mol = info["mol"]
-    atom_ids = rings[0]["atom_ids"]
-    if not _all_carbons_are_c(mol, atom_ids):
-        return False
-    return _ring_bonds_single(mol, atom_ids)
-
-
-def _is_simple_cycloalkane(info: dict) -> bool:
-    if not _is_cycloalkane_core(info):
-        return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
-    if not _outside_ok(mol, ring_set):
-        return False
-    return len(_ring_side_starts(mol, ring_set)) <= 1
-
-
 def _cycloalkane_parent(info: dict) -> dict:
     chain = list(info["rings"][0]["atom_ids"])
     return _parent_dict(chain, "cycloalkane")
 
 
-def _hetero_allowed(mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
-    for atom in mol.GetAtoms():
-        z = atom.GetAtomicNum()
-        if z in (1, 6) or atom.GetIdx() in ring_set:
-            continue
-        if atom.GetIdx() not in allowed:
-            return False
-    return True
-
-
-def _mono_oh_on_ring(info: dict, ring_set: set[int]) -> dict | None:
-    hydroxyls = info.get("hydroxyls") or []
-    if len(hydroxyls) != 1:
-        return None
-    oh = hydroxyls[0]
-    if oh["c_idx"] not in ring_set:
-        return None
-    return oh
-
-
-def _is_simple_cycloalcohol(info: dict) -> bool:
-    if not _is_cycloalkane_core(info):
-        return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
-    oh = _mono_oh_on_ring(info, ring_set)
-    if oh is None:
-        return False
-    if not _hetero_allowed(mol, ring_set, {oh["o_idx"]}):
-        return False
-    return not _outside_carbons(mol, ring_set)
+def _cycloalkene_parent(info: dict) -> dict:
+    chain = list(info["rings"][0]["atom_ids"])
+    db = _endocyclic_double(info, set(chain))
+    return _parent_dict(chain, "cycloalkene", double_bond=db)
 
 
 def _cycloalcohol_parent(info: dict) -> dict:
@@ -333,72 +228,10 @@ def _cycloalcohol_parent(info: dict) -> dict:
     return _parent_dict(chain, "cycloalcohol", oh_c_idx=oh_c)
 
 
-def _mono_amine_on_ring(info: dict, ring_set: set[int]) -> dict | None:
-    amines = info.get("amines") or []
-    if len(amines) != 1:
-        return None
-    am = amines[0]
-    if am["c_idx"] not in ring_set:
-        return None
-    return am
-
-
-def _is_simple_cycloamine(info: dict) -> bool:
-    if not _is_cycloalkane_core(info):
-        return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
-    am = _mono_amine_on_ring(info, ring_set)
-    if am is None:
-        return False
-    if not _hetero_allowed(mol, ring_set, {am["n_idx"]}):
-        return False
-    return not _outside_carbons(mol, ring_set)
-
-
 def _cycloamine_parent(info: dict) -> dict:
     chain = list(info["rings"][0]["atom_ids"])
     am_c = info["amines"][0]["c_idx"]
     return _parent_dict(chain, "cycloamine", amine_c_idx=am_c)
-
-
-def _dbl_o_idx(mol: Mol, c_idx: int) -> int | None:
-    carbon = mol.GetAtomWithIdx(c_idx)
-    for bond in carbon.GetBonds():
-        if bond.GetBondType().name != "DOUBLE":
-            continue
-        other = bond.GetOtherAtom(carbon)
-        if other.GetAtomicNum() == 8:
-            return other.GetIdx()
-    return None
-
-
-def _mono_ketone_on_ring(info: dict, ring_set: set[int]) -> dict | None:
-    ketones = info.get("ketones") or []
-    if len(ketones) != 1:
-        return None
-    ket = ketones[0]
-    if ket["c_idx"] not in ring_set:
-        return None
-    return ket
-
-
-def _ketone_o_allowed(mol: Mol, ring_set: set[int], ket: dict) -> bool:
-    o_idx = _dbl_o_idx(mol, ket["c_idx"])
-    if o_idx is None:
-        return False
-    return _hetero_allowed(mol, ring_set, {o_idx})
-
-
-def _is_simple_cycloketone(info: dict) -> bool:
-    if not _is_cycloalkane_core(info):
-        return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
-    ket = _mono_ketone_on_ring(info, ring_set)
-    if ket is None or not _ketone_o_allowed(mol, ring_set, ket):
-        return False
-    return not _outside_carbons(mol, ring_set)
 
 
 def _cycloketone_parent(info: dict) -> dict:
@@ -456,4 +289,3 @@ def select_parent(info: dict) -> dict:
     if _is_mono_alkene(info):
         return _alkene_parent(info)
     return _parent_dict(_longest_chain(info["mol"]), "alkane")
-

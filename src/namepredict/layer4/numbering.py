@@ -217,6 +217,17 @@ def _orient_alkene(chain: list[int], parent: dict, substituents: list) -> list[i
     return _orient_by_bond(chain, parent, substituents, "double_bond")
 
 
+def _orient_cycloalkene(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    ends = parent.get("double_bond")
+    if not ends or ends[0] not in chain:
+        return chain
+    base = _rotate_to_front(chain, ends[0])
+    # prefer orientation with second double-bond atom at locant 2
+    if len(base) > 1 and base[1] != ends[1]:
+        base = _rotate_to_front(list(reversed(chain)), ends[0])
+    return base
+
+
 def _orient_alkyne(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_by_bond(chain, parent, substituents, "triple_bond")
 
@@ -269,17 +280,26 @@ def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> li
     return _prefer_chain(base, rev, substituents)
 
 
-def _kind_orienters() -> dict:
-    base = {
+def _hetero_orienters() -> dict:
+    return {
         "alcohol": _orient_alcohol,
         "cycloalcohol": _orient_cycloalcohol,
-        "cycloketone": _orient_cycloketone,
         "cycloamine": _orient_cycloamine,
         "amine": _orient_amine,
+    }
+
+
+def _unsat_orienters() -> dict:
+    return {
+        "cycloketone": _orient_cycloketone,
         "alkene": _orient_alkene,
+        "cycloalkene": _orient_cycloalkene,
         "alkyne": _orient_alkyne,
     }
-    return {**base, **_carbonyl_orienters()}
+
+
+def _kind_orienters() -> dict:
+    return {**_hetero_orienters(), **_unsat_orienters(), **_carbonyl_orienters()}
 
 
 def _orient_by_kind(kind: str, chain: list[int], parent: dict, subs: list) -> list[int]:
@@ -329,6 +349,9 @@ def _bond_locant(oriented: dict, kind: str, key: str) -> int | None:
 
 
 def _ene_locant(oriented: dict) -> int | None:
+    kind = oriented.get("kind")
+    if kind == "cycloalkene":
+        return _bond_locant(oriented, "cycloalkene", "double_bond")
     return _bond_locant(oriented, "alkene", "double_bond")
 
 
@@ -348,7 +371,9 @@ def _omit_amine(am_pos: int | None, n_carbons: int, kind: str | None = None) -> 
     return am_pos == 1 and n_carbons <= 2
 
 
-def _omit_unsat(n_carbons: int) -> bool:
+def _omit_unsat(n_carbons: int, kind: str | None = None) -> bool:
+    if kind == "cycloalkene":
+        return True
     return n_carbons <= 3
 
 
@@ -361,9 +386,10 @@ def _with_locants(chain: list[int], substituents: list) -> list:
 
 
 def _unsat_locants(oriented: dict, n: int) -> dict:
+    kind = oriented.get("kind")
     return {
         "ene_locant": _ene_locant(oriented),
-        "omit_ene_locant": _omit_unsat(n),
+        "omit_ene_locant": _omit_unsat(n, kind),
         "yne_locant": _yne_locant(oriented),
         "omit_yne_locant": _omit_unsat(n),
     }

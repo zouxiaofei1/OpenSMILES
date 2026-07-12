@@ -68,6 +68,14 @@ def _cycloalkane_names(n: int) -> tuple[str, str] | None:
     return f"cyclo{en}", f"环{zh}"
 
 
+def _cycloalkene_names(n: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain or n < 3:
+        return None
+    en, zh = plain
+    return f"cyclo{en[:-3]}ene", f"环{zh[0]}烯"
+
+
 def _cycloalcohol_names(n: int) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain or n < 3:
@@ -300,13 +308,22 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     return _unsat_or_alkane(kind, n, numbered)
 
 
-def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alkene":
         omit = numbered.get("omit_ene_locant", False)
         return _alkene_names(n, numbered.get("ene_locant"), omit)
+    if kind == "cycloalkene":
+        return _cycloalkene_names(n)
     if kind == "alkyne":
         omit = numbered.get("omit_yne_locant", False)
         return _alkyne_names(n, numbered.get("yne_locant"), omit)
+    return None
+
+
+def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    unsat = _unsat_names(kind, n, numbered)
+    if unsat is not None:
+        return unsat
     if kind == "cycloalkane":
         return _cycloalkane_names(n)
     return _alkane_names(n)
