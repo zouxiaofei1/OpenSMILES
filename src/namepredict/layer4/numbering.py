@@ -274,14 +274,12 @@ def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> li
 
 def _hetero_orienters() -> dict:
     return {
-        "alcohol": _orient_alcohol,
+        "alcohol": _orient_alcohol, "alkenol": _orient_alcohol,
         "thiol": _orient_thiol,
-        "diol": _orient_polyol,
-        "triol": _orient_polyol,
+        "diol": _orient_polyol, "triol": _orient_polyol,
         "diamine": _orient_diamine,
         "cycloalcohol": _orient_cycloalcohol,
-        "cycloamine": _orient_cycloamine,
-        "amine": _orient_amine,
+        "cycloamine": _orient_cycloamine, "amine": _orient_amine,
     }
 
 
@@ -325,7 +323,7 @@ def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
 
 
 def _oh_locant(oriented: dict) -> int | None:
-    return _fg_locant(oriented, ("alcohol", "cycloalcohol"), "oh_c_idx")
+    return _fg_locant(oriented, ("alcohol", "alkenol", "cycloalcohol"), "oh_c_idx")
 
 
 def _sh_locant(oriented: dict) -> int | None:
@@ -373,7 +371,9 @@ def _bond_locant(oriented: dict, kind: str, key: str) -> int | None:
 
 def _ene_locant(oriented: dict) -> int | None:
     kind = oriented.get("kind")
-    if kind in ("alkene", "alkenoic_acid", "alkenal", "alkenenitrile", "cycloalkene"):
+    if kind in (
+        "alkene", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenol", "cycloalkene",
+    ):
         return _bond_locant(oriented, kind, "double_bond")
     return None
 
@@ -385,6 +385,8 @@ def _yne_locant(oriented: dict) -> int | None:
 def _omit_oh(oh_pos: int | None, n_carbons: int, kind: str | None = None) -> bool:
     if kind == "cycloalcohol":
         return True
+    if kind == "alkenol":
+        return False
     return oh_pos == 1 and n_carbons <= 2
 
 
@@ -401,7 +403,7 @@ def _omit_amine(am_pos: int | None, n_carbons: int, kind: str | None = None) -> 
 def _omit_unsat(n_carbons: int, kind: str | None = None) -> bool:
     if kind == "cycloalkene":
         return True
-    if kind in ("alkenoic_acid", "alkenal", "alkenenitrile"):
+    if kind in ("alkenoic_acid", "alkenal", "alkenenitrile", "alkenol"):
         return False
     return n_carbons <= 3
 

@@ -188,11 +188,8 @@ def _is_simple_alkanedione(info: dict) -> bool:
 def _dione_parent(info: dict) -> dict:
     return _cover_parent(info, "ketones", 2, "dione", "ketone_c_idxs")
 
-def _parent_core(chain: list[int], kind: str) -> dict:
-    return {"chain": chain, "n_carbons": len(chain), "kind": kind}
-
 def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
-    return {**_parent_core(chain, kind), **kw}
+    return {"chain": chain, "n_carbons": len(chain), "kind": kind, **kw}
 
 def _alcohol_parent(info: dict) -> dict:
     if _is_simple_cycloalcohol(info):
@@ -201,28 +198,29 @@ def _alcohol_parent(info: dict) -> dict:
         return _triol_parent(info)
     if _is_simple_alkanediol(info):
         return _diol_parent(info)
-    oh_c = info["hydroxyls"][0]["c_idx"]
-    return _parent_dict(_chain_through(info, oh_c), "alcohol", oh_c_idx=oh_c)
+    return _unsat_or_sat(
+        info, "has_alcohol", "hydroxyls", _ALKENOL_BAD, "alkenol", "alcohol", "oh_c_idx",
+    )
 
 def _thiol_parent(info: dict) -> dict:
-    sh_c = info["thiols"][0]["c_idx"]
-    return _parent_dict(_chain_through(info, sh_c), "thiol", sh_c_idx=sh_c)
+    return _fg_chain(info, "thiols", "thiol", "sh_c_idx")
 
 def _amine_parent(info: dict) -> dict:
     if _is_simple_cycloamine(info):
         return _cycloamine_parent(info)
     if _is_simple_alkanediamine(info):
         return _diamine_parent(info)
-    am_c = info["amines"][0]["c_idx"]
-    return _parent_dict(_chain_through(info, am_c), "amine", amine_c_idx=am_c)
+    return _fg_chain(info, "amines", "amine", "amine_c_idx")
 
 _ALKENOIC_BAD = _DIACID_BAD + ("has_thiol",)
-_UNSAT_FG_CORE = (
+_UNSAT_FG_BASE = (
     "has_acid", "has_ester", "has_amide", "has_ketone", "has_amine",
-    "has_alcohol", "has_acyl_chloride", "has_anhydride", "has_thiol",
+    "has_acyl_chloride", "has_anhydride", "has_thiol",
 )
+_UNSAT_FG_CORE = _UNSAT_FG_BASE + ("has_alcohol",)
 _ALKENAL_BAD = _UNSAT_FG_CORE + ("has_nitrile",)
 _ALKENENITRILE_BAD = _UNSAT_FG_CORE + ("has_aldehyde",)
+_ALKENOL_BAD = _UNSAT_FG_BASE + ("has_aldehyde", "has_nitrile")
 
 def _ok_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple) -> bool:
     if info.get("has_ring") or info.get("has_alkyne"):
@@ -402,29 +400,27 @@ def _polyene_parent(info: dict) -> dict:
     chain = _polyene_chain(info)
     return _parent_dict(chain, "polyene", double_bonds=_db_pairs(info))
 
+def _ring_atoms(info: dict) -> list[int]:
+    return list(info["rings"][0]["atom_ids"])
+
 def _cycloalkane_parent(info: dict) -> dict:
-    chain = list(info["rings"][0]["atom_ids"])
-    return _parent_dict(chain, "cycloalkane")
+    return _parent_dict(_ring_atoms(info), "cycloalkane")
 
 def _cycloalkene_parent(info: dict) -> dict:
-    chain = list(info["rings"][0]["atom_ids"])
-    db = _endocyclic_double(info, set(chain))
-    return _parent_dict(chain, "cycloalkene", double_bond=db)
+    chain = _ring_atoms(info)
+    return _parent_dict(chain, "cycloalkene", double_bond=_endocyclic_double(info, set(chain)))
+
+def _cyclo_fg_parent(info: dict, kind: str, ekey: str, ckey: str) -> dict:
+    return _parent_dict(_ring_atoms(info), kind, **{ckey: info[ekey][0]["c_idx"]})
 
 def _cycloalcohol_parent(info: dict) -> dict:
-    chain = list(info["rings"][0]["atom_ids"])
-    oh_c = info["hydroxyls"][0]["c_idx"]
-    return _parent_dict(chain, "cycloalcohol", oh_c_idx=oh_c)
+    return _cyclo_fg_parent(info, "cycloalcohol", "hydroxyls", "oh_c_idx")
 
 def _cycloamine_parent(info: dict) -> dict:
-    chain = list(info["rings"][0]["atom_ids"])
-    am_c = info["amines"][0]["c_idx"]
-    return _parent_dict(chain, "cycloamine", amine_c_idx=am_c)
+    return _cyclo_fg_parent(info, "cycloamine", "amines", "amine_c_idx")
 
 def _cycloketone_parent(info: dict) -> dict:
-    chain = list(info["rings"][0]["atom_ids"])
-    ket_c = info["ketones"][0]["c_idx"]
-    return _parent_dict(chain, "cycloketone", ketone_c_idx=ket_c)
+    return _cyclo_fg_parent(info, "cycloketone", "ketones", "ketone_c_idx")
 
 def _mono_acyl_or_ester(info: dict) -> dict | None:
     if _is_mono_fg(info, "has_acyl_chloride", "acyl_chlorides"):

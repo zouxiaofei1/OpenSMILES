@@ -333,7 +333,21 @@ def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
         return _cycloamine_names(n)
     return None
 
+def _alkenol_names(
+    n: int, ene_loc: int | None, oh_loc: int | None
+) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain or ene_loc is None or oh_loc is None:
+        return None
+    en, zh = plain
+    return (
+        f"{en[:-3]}-{ene_loc}-en-{oh_loc}-ol",
+        f"{zh[0]}-{ene_loc}-烯-{oh_loc}-醇",
+    )
+
 def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    if kind == "alkenol":
+        return _alkenol_names(n, numbered.get("ene_locant"), numbered.get("oh_locant"))
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
     if kind == "thiol":
