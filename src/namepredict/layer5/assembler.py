@@ -133,6 +133,13 @@ def _amine_names(n: int, am_locant: int | None, omit: bool) -> tuple[str, str] |
 def _acid_names(n: int) -> tuple[str, str] | None:
     return _pair(ACID_EN, ACID_ZH, n)
 
+def _anhydride_from_acid(n: int) -> tuple[str, str] | None:
+    plain = _acid_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    return en.replace(" acid", " anhydride"), f"{zh}酐"
+
 def _diacid_from_alkane(n: int) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain or n < 3:
@@ -270,6 +277,8 @@ def _nitrile_or_none(kind: str, n: int) -> tuple[str, str] | None:
         return _nitrile_names(n)
     if kind == "acyl_chloride":
         return _pair(ACYL_CHLORIDE_EN, ACYL_CHLORIDE_ZH, n)
+    if kind == "anhydride":
+        return _anhydride_from_acid(n)
     return None
 
 def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:

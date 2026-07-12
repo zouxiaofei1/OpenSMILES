@@ -75,6 +75,8 @@ def _is_ketone_carbon(atom) -> bool:
         return False
     if _primary_amide_n_of(atom) is not None:
         return False
+    if _anhydride_o_of(atom) is not None:
+        return False
     return True
 
 
@@ -85,8 +87,26 @@ def _alkoxy_c_of(oxygen, carbonyl) -> int | None:
     return None
 
 
+def _is_anhydride_bridge_o(oxygen) -> bool:
+    if oxygen.GetAtomicNum() != 8 or oxygen.GetTotalNumHs() != 0:
+        return False
+    cs = [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() == 6]
+    if len(cs) != 2:
+        return False
+    return all(_has_double_bonded_o(c) and not _has_oh_neighbor(c) for c in cs)
+
+
+def _anhydride_o_of(carbon) -> int | None:
+    for n in carbon.GetNeighbors():
+        if _is_anhydride_bridge_o(n):
+            return n.GetIdx()
+    return None
+
+
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     if oxygen.GetAtomicNum() != 8 or oxygen.GetTotalNumHs() != 0:
+        return False
+    if _is_anhydride_bridge_o(oxygen):
         return False
     return _alkoxy_c_of(oxygen, carbonyl) is not None
 
@@ -115,6 +135,8 @@ def _is_aldehyde_carbon(atom) -> bool:
     if _has_oh_neighbor(atom) or _carbon_neighbor_count(atom) > 1:
         return False
     if _ester_alkoxy_of(atom) is not None or _acyl_cl_of(atom) is not None:
+        return False
+    if _anhydride_o_of(atom) is not None:
         return False
     return _primary_amide_n_of(atom) is None
 
@@ -228,6 +250,46 @@ def _ester_entries(mol: Mol) -> list[dict]:
     return out
 
 
+def _anhydride_other_c(oxygen, carbon) -> int:
+    for n in oxygen.GetNeighbors():
+        if n.GetAtomicNum() == 6 and n.GetIdx() != carbon.GetIdx():
+            return n.GetIdx()
+    return carbon.GetIdx()
+
+
+def _anhydride_entry(atom) -> dict:
+    o_idx = _anhydride_o_of(atom)
+    o_atom = atom.GetOwningMol().GetAtomWithIdx(o_idx)
+    other = _anhydride_other_c(o_atom, atom)
+    c1, c2 = sorted((atom.GetIdx(), other))
+    return {"o_idx": o_idx, "c1_idx": c1, "c2_idx": c2}
+
+
+def _is_anhydride_carbon(atom) -> bool:
+    if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
+        return False
+    if _has_oh_neighbor(atom):
+        return False
+    return _anhydride_o_of(atom) is not None
+
+
+def _anhydride_key(e: dict) -> tuple[int, int, int]:
+    return e["o_idx"], e["c1_idx"], e["c2_idx"]
+
+
+def _anhydride_entries(mol: Mol) -> list[dict]:
+    seen: set[tuple[int, int, int]] = set()
+    out: list[dict] = []
+    for atom in mol.GetAtoms():
+        if not _is_anhydride_carbon(atom):
+            continue
+        e = _anhydride_entry(atom)
+        if _anhydride_key(e) not in seen:
+            seen.add(_anhydride_key(e))
+            out.append(e)
+    return out
+
+
 def _is_cc_double(bond) -> bool:
     if bond.GetBondType() != BondType.DOUBLE or bond.GetIsAromatic():
         return False
@@ -325,6 +387,7 @@ def _fg_more_lists(
     double_bonds: list[dict],
     triple_bonds: list[dict],
     acyl_chlorides: list[dict],
+    anhydrides: list[dict],
 ) -> dict:
     return {
         "aldehydes": aldehydes,
@@ -333,6 +396,7 @@ def _fg_more_lists(
         "double_bonds": double_bonds,
         "triple_bonds": triple_bonds,
         "acyl_chlorides": acyl_chlorides,
+        "anhydrides": anhydrides,
     }
 
 
@@ -344,6 +408,7 @@ def _fg_lists(parts: dict) -> dict:
     more = _fg_more_lists(
         parts["aldehydes"], parts["amines"], parts["nitriles"],
         parts["double_bonds"], parts["triple_bonds"], parts["acyl_chlorides"],
+        parts["anhydrides"],
     )
     return {**core, **more}
 
@@ -366,6 +431,7 @@ def _fg_bools_more(lists: dict) -> dict:
         "has_alkene": bool(lists["double_bonds"]),
         "has_alkyne": bool(lists["triple_bonds"]),
         "has_acyl_chloride": bool(lists["acyl_chlorides"]),
+        "has_anhydride": bool(lists["anhydrides"]),
     }
 
 
@@ -391,6 +457,7 @@ def _fg_parts_b(mol: Mol) -> dict:
         "double_bonds": _double_bond_entries(mol),
         "triple_bonds": _triple_bond_entries(mol),
         "acyl_chlorides": _acyl_chloride_entries(mol),
+        "anhydrides": _anhydride_entries(mol),
     }
 
 

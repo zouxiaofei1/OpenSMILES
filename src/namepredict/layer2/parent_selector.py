@@ -124,18 +124,27 @@ def _no_fgs(info: dict, keys: tuple) -> bool:
 _DIOL_BAD = (
     "has_acid", "has_ester", "has_amide", "has_nitrile",
     "has_aldehyde", "has_ketone", "has_amine", "has_acyl_chloride",
+    "has_anhydride",
 )
 _DIACID_BAD = (
     "has_ester", "has_amide", "has_nitrile", "has_acyl_chloride",
     "has_aldehyde", "has_ketone", "has_amine", "has_alcohol",
+    "has_anhydride",
 )
 _DIAMINE_BAD = (
     "has_acid", "has_ester", "has_amide", "has_nitrile",
     "has_aldehyde", "has_ketone", "has_alcohol", "has_acyl_chloride",
+    "has_anhydride",
 )
 _DIONE_BAD = (
     "has_acid", "has_ester", "has_amide", "has_nitrile",
     "has_aldehyde", "has_amine", "has_alcohol", "has_acyl_chloride",
+    "has_anhydride",
+)
+_ANHYDRIDE_BAD = (
+    "has_acid", "has_ester", "has_amide", "has_nitrile",
+    "has_aldehyde", "has_ketone", "has_amine", "has_alcohol",
+    "has_acyl_chloride",
 )
 
 def _is_open_sat(info: dict) -> bool:
@@ -236,6 +245,26 @@ def _acyl_chloride_parent(info: dict) -> dict:
         acyl_c_idx=e["c_idx"], cl_idx=e["cl_idx"],
     )
 
+def _acyl_chain_len(info: dict, c_idx: int) -> int:
+    return len(_chain_through(info, c_idx))
+
+def _is_sym_anhydride(info: dict) -> bool:
+    if not _is_open_sat(info) or not _no_fgs(info, _ANHYDRIDE_BAD):
+        return False
+    anhs = info.get("anhydrides") or []
+    if len(anhs) != 1:
+        return False
+    e = anhs[0]
+    return _acyl_chain_len(info, e["c1_idx"]) == _acyl_chain_len(info, e["c2_idx"])
+
+def _anhydride_parent(info: dict) -> dict:
+    e = info["anhydrides"][0]
+    chain = _chain_through(info, e["c1_idx"])
+    return _parent_dict(
+        chain, "anhydride",
+        acyl_c_idx=e["c1_idx"], o_idx=e["o_idx"], other_acyl_c_idx=e["c2_idx"],
+    )
+
 def _nitrile_parent(info: dict) -> dict:
     c_idx = info["nitriles"][0]["c_idx"]
     return _parent_dict(_chain_through(info, c_idx), "nitrile", nitrile_c_idx=c_idx)
@@ -292,7 +321,7 @@ def _no_main_fg(info: dict) -> bool:
     bad = (
         "has_acid", "has_ester", "has_amide", "has_nitrile",
         "has_aldehyde", "has_ketone", "has_amine", "has_alcohol",
-        "has_acyl_chloride",
+        "has_acyl_chloride", "has_anhydride",
     )
     return not any(info.get(k) for k in bad)
 
@@ -378,10 +407,17 @@ def _mono_amide_or_nitrile(info: dict) -> dict | None:
     return None
 
 
+def _mono_anhydride(info: dict) -> dict | None:
+    if _is_sym_anhydride(info):
+        return _anhydride_parent(info)
+    return None
+
+
 def _acid_ester_amide(info: dict) -> dict | None:
     if info.get("has_acid") and info.get("carboxyls"):
         return _acid_parent(info)
-    return _mono_acyl_or_ester(info) or _mono_amide_or_nitrile(info)
+    top = _mono_anhydride(info) or _mono_acyl_or_ester(info)
+    return top or _mono_amide_or_nitrile(info)
 
 def _aldehyde_ketone(info: dict) -> dict | None:
     if info.get("has_aldehyde") and info.get("aldehydes"):
