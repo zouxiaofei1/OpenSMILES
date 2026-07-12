@@ -40,11 +40,12 @@
 [#a9359dc][IUPAC P-65.6 / P-31.1] 开链一元不饱和酯 alkenoate：L2链穿酯羰基+C=C+L4 ene位次+L5 methyl …-n-enoate/…-n-烯酸甲酯（无E/Z） [+10 tests, dual 4.2%(172)→4.3%(173), fails 3890→3889]
 [#4b9e12f][IUPAC P-62.2.2.1] 开链简单仲胺 N-alkylalkanamine：L1仲胺检测+L2较长侧母体+L3 N-烷基+L5 N-ethylethanamine/N-乙基乙胺 [+10 tests, dual 4.3%(173)→4.3%(174), fails 3889→3888]
 [#7dd2c64][IUPAC P-62.2.2.1] 开链简单叔胺 N,N-dialkylalkanamine：L1叔胺检测+L2最长臂母体+L3两侧N-烷基+L5 N,N-diethylethanamine/N,N-二乙基乙胺 [+10 tests, dual 4.3%(174)→4.3%(175), fails 3888→3887]
+[#7fee636][IUPAC P-66.1.1.1.3] 开链简单N-取代酰胺：L1仲/叔酰胺检测(勿当醛)+L3 N-烷基+L5 N-methylacetamide/N-甲基乙酰胺 [+10 tests, dual 4.3%(175)→4.4%(178), fails 3887→3884]
 
 ## 其他
-- 基线(本轮前): en=4.3%(174/4062) zh=17.6%(133/756) dual=4.3%(174/4062)
-- 本次: en=4.3%(175/4062) zh=17.7%(134/756) dual=4.3%(175/4062) fails=3887
-- 改动: L1 检测叔胺N（三C无H）；L2 三臂最长为alkanamine母体；L3 另两侧N-烷基（同则N,N-di；异则N-a-N-b字母序）；L5 N,N-diethylethanamine/N,N-二乙基乙胺
-- 验证: CCN(CC)CC→N,N-diethylethanamine/N,N-二乙基乙胺；CN(C)C→N,N-dimethylmethanamine；CCNCC仍仲胺；CCN仍伯胺
-- 已知缺口: N-取代酰胺；不饱和二酸(E/Z)；支化烷基前缀；硫醚；醚
-- 下一步候选: N-取代酰胺；或不饱和二酸；或支化烷基前缀；或硫醚/醚
+- 基线(本轮前): en=4.3%(175/4062) zh=17.7%(134/756) dual=4.3%(175/4062)
+- 本次: en=4.4%(178/4062) zh=18.1%(137/756) dual=4.4%(178/4062) fails=3884
+- 改动: L1 扩展酰胺检测覆盖仲/叔酰胺N（修复误判为醛）；L3 提取N-烷基；L5 N-methylacetamide/N,N-dimethylacetamide 与中文
+- 验证: CC(=O)NC→N-methylacetamide/N-甲基乙酰胺；CC(=O)N(C)C→N,N-dimethylacetamide；CC(=O)N仍acetamide；CC=O仍acetaldehyde
+- 已知缺口: 不饱和二酸(E/Z)；支化烷基前缀；硫醚；醚；芳酰胺
+- 下一步候选: 醚/硫醚；或不饱和二酸；或支化烷基前缀
