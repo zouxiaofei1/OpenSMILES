@@ -242,10 +242,19 @@ def _ring_side_starts(mol: Mol, ring_set: set[int]) -> list[int]:
     return starts
 
 
+def _is_ring_halo(atom, ring_set: set[int]) -> bool:
+    if atom.GetAtomicNum() not in (9, 17, 35, 53):
+        return False
+    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    return len(heavies) == 1 and heavies[0].GetIdx() in ring_set
+
+
 def _no_hetero_outside(mol: Mol, ring_set: set[int]) -> bool:
     for atom in mol.GetAtoms():
         z = atom.GetAtomicNum()
         if z in (1, 6) or atom.GetIdx() in ring_set:
+            continue
+        if _is_ring_halo(atom, ring_set):
             continue
         return False
     return True
