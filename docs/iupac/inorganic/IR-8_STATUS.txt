@@ -1,0 +1,65 @@
+IR-8 多核配位化合物命名 - 状态跟踪
+
+## 已完成
+- IR-8.3 双核桥联配位化合物命名
+  - 检测多个金属中心
+  - 识别桥联配体（连接≥2个金属的原子）
+  - 使用 µ 前缀命名桥联配体
+  - 区分多核配合物和简单二元化合物
+
+- IR-8.4 多核配位盐命名（已完成）
+  - 扩展 _detect_coordination_salt 方法支持多核配阴离子
+  - 识别 polynuclear_coordination_anion 类型
+  - 正确组合阳离子名 + 多核配阴离子名
+
+- IR-8.6 过氧酸盐命名（已完成）[2026-03-19]
+  - 添加过硫酸根 S2O8(2-) 到 OXYANIONS 映射
+  - 支持过硫酸钠/钾/铵等盐类命名
+  - 使用 "persulfate" 作为首选名称
+
+- IR-8 含氧酸命名（部分完成）[2026-03-19]
+  - 磷酸 (phosphoric acid) / 磷酸
+  - 焦磷酸 (pyrophosphoric acid) / 焦磷酸
+  - 磷酰氯 (phosphoryl chloride) / 磷酰氯
+
+- IR-8 氟硼酸命名（已完成）[2026-03-19]
+  - 四氟硼酸根 BF4- (tetrafluoroborate) / 四氟硼酸根
+  - 氟硼酸 HBF4 (fluoroboric acid) / 氟硼酸
+  - BF3·HF 组合检测与命名
+
+- IR-8 次卤酸命名（已完成）[2026-03-19]
+  - 次氯酸 HClO (hypochlorous acid) / 次氯酸
+  - 次溴酸 HBrO (hypobromous acid) / 次溴酸
+  - 次碘酸 HIO (hypoiodous acid) / 次碘酸
+  - 次卤酸盐：NaClO, KClO, Ca(ClO)2 等
+
+- IR-8 多金属含氧酸盐命名（已完成）[2026-03-19]
+  - 三钒酸根 V3O9 (trivanadate) / 三钒酸根离子
+  - 六钨酸根 W6O19²- (hexatungstate) / 六钨酸根离子
+  - 六钼酸根 Mo6O19²- (hexamolybdate) / 六钼酸根离子
+  - 多金属含氧酸盐（带阳离子）命名
+  - 检测规则：分子只含金属(V,Mo,W,Nb,Ta,Cr)和氧，金属数≥2
+
+## 测试
+- test_polynuclear_coordination.py: 9 tests
+  - 双核铜桥联配合物
+  - 单核 vs 多核区分
+  - µ 前缀格式验证
+- test_polynuclear_coordination_salt.py: 7 tests
+  - 双核铜/铁配合物盐
+  - 多桥联配体盐
+  - 阳离子倍数前缀验证
+- test_persulfate_naming.py: 6 tests [2026-03-19]
+  - 过硫酸钠/钾/铵命名
+  - 过硫酸根与硫酸根区分
+- test_phosphorus_oxoacids.py: 5 tests [2026-03-19]
+  - 磷酸/焦磷酸/磷酰氯命名
+  - 有机/无机分离验证
+- test_borate_fluoroborate.py: 7 tests [2026-03-19]
+  - 四氟硼酸根离子命名
+  - 四氟硼酸盐命名
+  - 氟硼酸命名
+  - BF3·HF 组合命名
+- test_hypohalous_acids.py: 7 tests [2026-03-19]
+  - 次氯酸/次溴酸/次碘酸命名
+  - 次卤酸盐命名（钠/钾/钙）

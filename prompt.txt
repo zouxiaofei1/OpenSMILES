@@ -1,17 +1,16 @@
-**任务**: 按照文中架构和计划写NamePredictv4 API，其最终目标: 高准确率，10ms以下的SMILES转中英文API
+**任务**: 按照文中架构和计划写NamePredict API，其最终目标: 高准确率，10ms以下的SMILES转中英文API
 **重要教训**: 不要写基团取代型预测代码，需要系统性实现命名逻辑
 
 **方法约束**: 不得使用深度学习模型，不得全部使用缓存系统，只能缓存俗名和例外，目前最多缓存**100**个
 
 ##特别注意
-1.namepredict-v4\data\chebi20_test_1k.json.json 是**Benchmark数据库**
-2.namepredict-v4\benchmarks\benchmark.py 是Benchmark脚本
-3.严格按照IUPAC规则编写，IUPAC原文完整文档 workspace\namepredict-v4\docs\iupac\
-4.临时文件写在namepredict-v4\debug
+1.data\merged_benchmark.json 是**Benchmark数据库**
+2.Benchmark脚本运行方式:python -m benchmarks.benchmark --data data/merged_benchmark.json
+3.严格按照IUPAC规则编写，IUPAC原文完整文档 docs\iupac\
+4.临时文件写在chem\tools
 5.每一次工作都必须运行**benchmark**
 7.禁止修改 benchmark和其数据库
 12.benchmark使用english_name和chinese_name字段
-14. 中文原文完整文档   workspace\namepredict-v4\docs\iupac\cn
 15.**文件必须**存在src\namepredict\layer0-layer5某个文件夹里，且代码长度不超过500行
 Layer 0: Molecule Preprocessor
 Layer 1: Structural Analyzer
@@ -24,31 +23,25 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 - 函数式编程:每个方法不得超过10行，方法输入输出尽量只有一个，复用已有的方法
 
 
-#工作步骤(**严格按照完成**)：
-0. 读取 workspace\v4_completed.md，了解当前进度和计划。如果看到## 其他里有建议则考虑采纳，
-完成后将其删除
+#工作步骤：
+0. 读取 workstate.md，了解当前进度和计划。
 1. 运行**benchmark**,记录并报告当前分数，格式**中英文双重准确:[ ]%**
-2. 选择一个点
+2. 选择一个改进点
 3. 进行编写代码
-4. **重要**：检查修改的代码，每个方法不得超过10行，如果你的改动导致超过了则拆分它
+4. 检查修改的代码，每个方法不得超过10行，如果你的改动导致超过了则拆分它
 5. 运行**benchmark**，分数回退不得>0.5%,否则回滚
 6. git提交
-7. 在开发日志(workspace\v4_completed.md)中按照格式记录更改
+7. 在开发日志(workspace\v4_completed.md)中按照格式记录更改。
 8. 暂停，报告更改，每次只处理一个问题
 
-# 开发格式(**严格按照此格式填写，不可变动**)
+# 开发格式(**按照此格式填写**)
 ##日志
 [#commit_hash][IUPAC P-31.1.2.1, p367] 取代基按字母序排列(title) [+2 tests, benchmark 82%→84%](例)
-	[IUPAC规则的详细介绍，200字以内]
-	[修改过程方法的详细介绍，100-200字]
 ...(按照此格式)
-
-##进行中
-
 
 
 ## 其他
-(此区域不超过20行)
+(内容不限制，但此区域不超过20行)
 
 ┌──────────────────────────────────────────────────────────┐
 │                   SMILESNNamerv4 (对外接口)                 │
