@@ -141,9 +141,32 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
     return [h for h in halos if cl not in (h.get("atoms") or [])]
 
 
+_PARENT_OH_KINDS = frozenset({"alcohol", "diol", "triol", "cycloalcohol"})
+
+
+def _make_hydroxy(attach: int, o_idx: int) -> dict:
+    return {
+        "kind": "hydroxy",
+        "attach_idx": attach,
+        "atoms": [o_idx],
+        "en": "hydroxy",
+        "zh": "羟基",
+    }
+
+
+def _extract_hydroxys(info: dict, parent: dict) -> list[dict]:
+    if parent.get("kind") in _PARENT_OH_KINDS:
+        return []
+    chain_set = set(parent.get("chain") or [])
+    out: list[dict] = []
+    for h in info.get("hydroxyls") or []:
+        if h["c_idx"] in chain_set:
+            out.append(_make_hydroxy(h["c_idx"], h["o_idx"]))
+    return out
+
+
 def extract_substituents(info: dict, parent: dict) -> list:
     mol: Mol = info["mol"]
     chain = parent.get("chain") or []
-    return _extract_alkyls(mol, chain) + _filter_fg_halos(
-        _extract_halos(mol, chain), parent
-    )
+    halo = _filter_fg_halos(_extract_halos(mol, chain), parent)
+    return _extract_alkyls(mol, chain) + halo + _extract_hydroxys(info, parent)
