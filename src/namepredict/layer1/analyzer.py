@@ -96,8 +96,54 @@ def _aldehyde_entries(mol: Mol) -> list[dict]:
     return out
 
 
+def _is_cc_double(bond) -> bool:
+    if bond.GetBondType() != BondType.DOUBLE or bond.GetIsAromatic():
+        return False
+    a, b = bond.GetBeginAtom(), bond.GetEndAtom()
+    return a.GetAtomicNum() == 6 and b.GetAtomicNum() == 6
+
+
+def _double_bond_entry(bond) -> dict:
+    a, b = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+    return {"c1": min(a, b), "c2": max(a, b)}
+
+
+def _double_bond_entries(mol: Mol) -> list[dict]:
+    out: list[dict] = []
+    for bond in mol.GetBonds():
+        if _is_cc_double(bond):
+            out.append(_double_bond_entry(bond))
+    return out
+
+
 def _carbon_ids(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
+
+
+def _fg_lists(
+    hydroxyls: list[dict],
+    carboxyls: list[dict],
+    ketones: list[dict],
+    aldehydes: list[dict],
+    double_bonds: list[dict],
+) -> dict:
+    return {
+        "hydroxyls": hydroxyls,
+        "carboxyls": carboxyls,
+        "ketones": ketones,
+        "aldehydes": aldehydes,
+        "double_bonds": double_bonds,
+    }
+
+
+def _fg_bools(lists: dict) -> dict:
+    return {
+        "has_alcohol": bool(lists["hydroxyls"]),
+        "has_acid": bool(lists["carboxyls"]),
+        "has_ketone": bool(lists["ketones"]),
+        "has_aldehyde": bool(lists["aldehydes"]),
+        "has_alkene": bool(lists["double_bonds"]),
+    }
 
 
 def _fg_flags(
@@ -105,17 +151,10 @@ def _fg_flags(
     carboxyls: list[dict],
     ketones: list[dict],
     aldehydes: list[dict],
+    double_bonds: list[dict],
 ) -> dict:
-    return {
-        "hydroxyls": hydroxyls,
-        "carboxyls": carboxyls,
-        "ketones": ketones,
-        "aldehydes": aldehydes,
-        "has_alcohol": bool(hydroxyls),
-        "has_acid": bool(carboxyls),
-        "has_ketone": bool(ketones),
-        "has_aldehyde": bool(aldehydes),
-    }
+    lists = _fg_lists(hydroxyls, carboxyls, ketones, aldehydes, double_bonds)
+    return {**lists, **_fg_bools(lists)}
 
 
 def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
@@ -130,5 +169,6 @@ def analyze(mol: Mol) -> dict:
         _carboxyl_entries(mol),
         _ketone_entries(mol),
         _aldehyde_entries(mol),
+        _double_bond_entries(mol),
     )
     return _info(mol, carbons, fgs)

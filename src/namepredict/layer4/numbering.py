@@ -107,16 +107,45 @@ def _orient_ketone(chain: list[int], parent: dict, substituents: list) -> list[i
     return base
 
 
+def _ene_ends_on(chain: list[int], ends: tuple[int, int] | None) -> tuple[int, int] | None:
+    if not ends or ends[0] not in chain or ends[1] not in chain:
+        return None
+    return chain.index(ends[0]) + 1, chain.index(ends[1]) + 1
+
+
+def _ene_locant_of(ends: tuple[int, int] | None) -> int | None:
+    if ends is None:
+        return None
+    return min(ends)
+
+
+def _orient_alkene(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    db = parent.get("double_bond")
+    ends = _ene_ends_on(chain, db)
+    if ends is None:
+        return chain
+    base = _maybe_reverse(chain, _ene_locant_of(ends) or 1)
+    rev = list(reversed(base))
+    if _ene_locant_of(_ene_ends_on(base, db)) == _ene_locant_of(_ene_ends_on(rev, db)):
+        return _prefer_chain(base, rev, substituents)
+    return base
+
+
+def _kind_orienters() -> dict:
+    return {
+        "alcohol": _orient_alcohol,
+        "ketone": _orient_ketone,
+        "acid": lambda c, p, s: _orient_acid(c, p),
+        "aldehyde": lambda c, p, s: _orient_aldehyde(c, p),
+        "alkene": _orient_alkene,
+    }
+
+
 def _orient_by_kind(kind: str, chain: list[int], parent: dict, subs: list) -> list[int]:
-    if kind == "alcohol":
-        return _orient_alcohol(chain, parent, subs)
-    if kind == "ketone":
-        return _orient_ketone(chain, parent, subs)
-    if kind == "acid":
-        return _orient_acid(chain, parent)
-    if kind == "aldehyde":
-        return _orient_aldehyde(chain, parent)
-    return _orient_alkane(chain, subs)
+    fn = _kind_orienters().get(kind)
+    if fn is None:
+        return _orient_alkane(chain, subs)
+    return fn(chain, parent, subs)
 
 
 def _orient_chain(parent: dict, substituents: list) -> list[int]:
@@ -142,8 +171,18 @@ def _ketone_locant(oriented: dict) -> int | None:
     return chain.index(ket_c) + 1
 
 
+def _ene_locant(oriented: dict) -> int | None:
+    if oriented.get("kind") != "alkene":
+        return None
+    return _ene_locant_of(_ene_ends_on(oriented.get("chain") or [], oriented.get("double_bond")))
+
+
 def _omit_oh(oh_pos: int | None, n_carbons: int) -> bool:
     return oh_pos == 1 and n_carbons <= 2
+
+
+def _omit_ene(ene_pos: int | None, n_carbons: int) -> bool:
+    return n_carbons <= 3
 
 
 def _with_locants(chain: list[int], substituents: list) -> list:
@@ -154,13 +193,21 @@ def _with_locants(chain: list[int], substituents: list) -> list:
     return out
 
 
-def _pack(oriented: dict, substituents: list, oh_pos: int | None, ket_pos: int | None) -> dict:
+def _pack(
+    oriented: dict,
+    substituents: list,
+    oh_pos: int | None,
+    ket_pos: int | None,
+    ene_pos: int | None,
+) -> dict:
     return {
         "parent": oriented,
         "substituents": substituents,
         "oh_locant": oh_pos,
         "omit_oh_locant": _omit_oh(oh_pos, oriented.get("n_carbons", 0)),
         "ketone_locant": ket_pos,
+        "ene_locant": ene_pos,
+        "omit_ene_locant": _omit_ene(ene_pos, oriented.get("n_carbons", 0)),
     }
 
 
@@ -168,4 +215,10 @@ def number(parent: dict, substituents: list) -> dict:
     chain = _orient_chain(parent, substituents)
     oriented = {**parent, "chain": chain}
     numbered = _with_locants(chain, substituents)
-    return _pack(oriented, numbered, _oh_locant(oriented), _ketone_locant(oriented))
+    return _pack(
+        oriented,
+        numbered,
+        _oh_locant(oriented),
+        _ketone_locant(oriented),
+        _ene_locant(oriented),
+    )

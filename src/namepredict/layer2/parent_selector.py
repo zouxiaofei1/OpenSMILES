@@ -90,6 +90,7 @@ def _parent_dict(
     cooh_c_idx: int | None = None,
     ketone_c_idx: int | None = None,
     aldehyde_c_idx: int | None = None,
+    double_bond: tuple[int, int] | None = None,
 ) -> dict:
     return {
         "chain": chain,
@@ -99,6 +100,7 @@ def _parent_dict(
         "cooh_c_idx": cooh_c_idx,
         "ketone_c_idx": ketone_c_idx,
         "aldehyde_c_idx": aldehyde_c_idx,
+        "double_bond": double_bond,
     }
 
 
@@ -122,7 +124,36 @@ def _aldehyde_parent(info: dict) -> dict:
     return _parent_dict(_chain_through(info, ald_c), "aldehyde", aldehyde_c_idx=ald_c)
 
 
-def select_parent(info: dict) -> dict:
+def _best_arm_away(mol: Mol, from_c: int, forbid: set[int]) -> list[int]:
+    best: list[int] = []
+    for nb in _carbon_neighbors(mol, from_c):
+        if nb in forbid:
+            continue
+        path = _longest_from(mol, nb, forbid | {from_c})
+        if len(path) > len(best):
+            best = path
+    return best
+
+
+def _chain_through_bond(mol: Mol, c1: int, c2: int) -> list[int]:
+    left = _best_arm_away(mol, c1, {c2})
+    right = _best_arm_away(mol, c2, {c1})
+    return list(reversed(left)) + [c1, c2] + right
+
+
+def _alkene_parent(info: dict) -> dict:
+    db = info["double_bonds"][0]
+    c1, c2 = db["c1"], db["c2"]
+    chain = _chain_through_bond(info["mol"], c1, c2)
+    return _parent_dict(chain, "alkene", double_bond=(c1, c2))
+
+
+def _is_mono_alkene(info: dict) -> bool:
+    bonds = info.get("double_bonds") or []
+    return bool(info.get("has_alkene")) and len(bonds) == 1
+
+
+def _fg_parent(info: dict) -> dict | None:
     if info.get("has_acid") and info.get("carboxyls"):
         return _acid_parent(info)
     if info.get("has_aldehyde") and info.get("aldehydes"):
@@ -131,5 +162,14 @@ def select_parent(info: dict) -> dict:
         return _ketone_parent(info)
     if info.get("has_alcohol") and info.get("hydroxyls"):
         return _alcohol_parent(info)
+    return None
+
+
+def select_parent(info: dict) -> dict:
+    fg = _fg_parent(info)
+    if fg is not None:
+        return fg
+    if _is_mono_alkene(info):
+        return _alkene_parent(info)
     return _parent_dict(_longest_chain(info["mol"]), "alkane")
 

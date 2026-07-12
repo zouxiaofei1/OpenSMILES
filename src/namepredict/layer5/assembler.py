@@ -97,6 +97,28 @@ def _ketone_names(n: int, locant: int | None) -> tuple[str, str] | None:
     return _ketone_from_alkane(n, locant)
 
 
+def _alkene_plain(n: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    return f"{en[:-3]}ene", f"{zh[0]}烯"
+
+
+def _alkene_with_locant(n: int, locant: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    return f"{en[:-3]}-{locant}-ene", f"{zh[0]}-{locant}-烯"
+
+
+def _alkene_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | None:
+    if omit or locant is None or n <= 3:
+        return _alkene_plain(n)
+    return _alkene_with_locant(n, locant)
+
+
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
@@ -106,6 +128,13 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return _aldehyde_names(n)
     if kind == "ketone":
         return _ketone_names(n, numbered.get("ketone_locant"))
+    return _alkene_or_alkane(kind, n, numbered)
+
+
+def _alkene_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    if kind == "alkene":
+        omit = numbered.get("omit_ene_locant", False)
+        return _alkene_names(n, numbered.get("ene_locant"), omit)
     return _alkane_names(n)
 
 
