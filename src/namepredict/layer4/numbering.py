@@ -31,10 +31,16 @@ def _locant_key(locs: list[int]) -> tuple:
     return (locs, len(locs))
 
 
+def _stem_loc_pairs(chain: list[int], substituents: list) -> list[tuple]:
+    return sorted((s.get("en") or "", chain.index(s["attach_idx"]) + 1) for s in substituents)
+
+
+def _orient_key(chain: list[int], substituents: list) -> tuple:
+    return (_locant_key(_locants_on(chain, substituents)), _stem_loc_pairs(chain, substituents))
+
+
 def _prefer_chain(a: list[int], b: list[int], substituents: list) -> list[int]:
-    ka = _locant_key(_locants_on(a, substituents))
-    kb = _locant_key(_locants_on(b, substituents))
-    return a if ka <= kb else b
+    return a if _orient_key(a, substituents) <= _orient_key(b, substituents) else b
 
 
 def _orient_alkane(chain: list[int], substituents: list) -> list[int]:
@@ -253,6 +259,30 @@ def _rotate_to_front(chain: list[int], atom: int) -> list[int]:
     return chain[i:] + chain[:i]
 
 
+def _rotations(chain: list[int]) -> list[list[int]]:
+    return [chain[i:] + chain[:i] for i in range(len(chain))]
+
+
+def _ring_candidates(chain: list[int]) -> list[list[int]]:
+    out: list[list[int]] = []
+    for base in (chain, list(reversed(chain))):
+        out.extend(_rotations(base))
+    return out
+
+
+def _best_ring(chain: list[int], substituents: list) -> list[int]:
+    best = chain
+    for cand in _ring_candidates(chain):
+        best = _prefer_chain(best, cand, substituents)
+    return best
+
+
+def _orient_cycloalkane(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    if not chain or not substituents:
+        return chain
+    return _best_ring(chain, substituents)
+
+
 def _orient_cycloalcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     oh_c = parent.get("oh_c_idx")
     if oh_c is None or oh_c not in chain:
@@ -295,6 +325,7 @@ def _unsat_orienters() -> dict:
         "alkene": _orient_alkene,
         "cycloalkene": _orient_cycloalkene,
         "alkyne": _orient_alkyne,
+        "cycloalkane": _orient_cycloalkane,
     }
 
 

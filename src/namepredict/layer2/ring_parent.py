@@ -86,9 +86,7 @@ def _is_simple_cycloalkane(info: dict) -> bool:
         return False
     mol: Mol = info["mol"]
     ring_set = set(info["rings"][0]["atom_ids"])
-    if not _outside_ok(mol, ring_set):
-        return False
-    return len(_ring_side_starts(mol, ring_set)) <= 1
+    return _outside_ok(mol, ring_set)
 
 
 def _ring_double_count(mol: Mol, atom_ids: tuple) -> int:
