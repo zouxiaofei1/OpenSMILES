@@ -92,6 +92,73 @@ def _chain_through(info: dict, c_idx: int) -> list[int]:
     return _join_through(c_idx, _arms_from(mol, c_idx))
 
 
+def _bfs_expand(mol: Mol, cur: int, prev: dict, q: list) -> None:
+    for nb in _carbon_neighbors(mol, cur):
+        if nb not in prev:
+            prev[nb] = cur
+            q.append(nb)
+
+
+def _bfs_prev(mol: Mol, start: int, goal: int) -> dict | None:
+    prev: dict = {start: None}
+    q = [start]
+    while q:
+        cur = q.pop(0)
+        if cur == goal:
+            return prev
+        _bfs_expand(mol, cur, prev, q)
+    return None
+
+
+def _rebuild_path(prev: dict, end: int) -> list[int]:
+    path = [end]
+    while prev[path[-1]] is not None:
+        path.append(prev[path[-1]])
+    return list(reversed(path))
+
+
+def _path_between(mol: Mol, a: int, b: int) -> list[int]:
+    if a == b:
+        return [a]
+    prev = _bfs_prev(mol, a, b)
+    return _rebuild_path(prev, b) if prev else [a]
+
+
+def _chain_through_two(mol: Mol, c1: int, c2: int) -> list[int]:
+    path = _path_between(mol, c1, c2)
+    left = _best_arm_away(mol, path[0], set(path[1:]))
+    right = _best_arm_away(mol, path[-1], set(path[:-1]))
+    return list(reversed(left)) + path + right
+
+
+def _oh_c_pair(info: dict) -> tuple[int, int] | None:
+    ohs = info.get("hydroxyls") or []
+    if len(ohs) != 2:
+        return None
+    a, b = ohs[0]["c_idx"], ohs[1]["c_idx"]
+    return None if a == b else (a, b)
+
+
+def _no_higher_fg(info: dict) -> bool:
+    bad = (
+        "has_acid", "has_ester", "has_amide", "has_nitrile",
+        "has_aldehyde", "has_ketone", "has_amine",
+    )
+    return not any(info.get(k) for k in bad)
+
+
+def _is_simple_alkanediol(info: dict) -> bool:
+    if info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"):
+        return False
+    return _no_higher_fg(info) and _oh_c_pair(info) is not None
+
+
+def _diol_parent(info: dict) -> dict:
+    pair = _oh_c_pair(info) or (0, 0)
+    chain = _chain_through_two(info["mol"], pair[0], pair[1])
+    return _parent_dict(chain, "diol", oh_c_idxs=pair)
+
+
 def _parent_core(chain: list[int], kind: str) -> dict:
     return {"chain": chain, "n_carbons": len(chain), "kind": kind}
 
@@ -103,6 +170,8 @@ def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
 def _alcohol_parent(info: dict) -> dict:
     if _is_simple_cycloalcohol(info):
         return _cycloalcohol_parent(info)
+    if _is_simple_alkanediol(info):
+        return _diol_parent(info)
     oh_c = info["hydroxyls"][0]["c_idx"]
     return _parent_dict(_chain_through(info, oh_c), "alcohol", oh_c_idx=oh_c)
 

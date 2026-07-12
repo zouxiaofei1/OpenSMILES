@@ -68,6 +68,31 @@ def _orient_alcohol(chain: list[int], parent: dict, substituents: list) -> list[
     return base
 
 
+def _oh_locs_on(chain: list[int], oh_cs) -> tuple[int, ...] | None:
+    if not oh_cs:
+        return None
+    locs = sorted(chain.index(c) + 1 for c in oh_cs if c in chain)
+    return tuple(locs) if len(locs) == 2 else None
+
+
+def _better_oh_orient(a: list[int], b: list[int], oh_cs, subs: list) -> list[int]:
+    la, lb = _oh_locs_on(a, oh_cs), _oh_locs_on(b, oh_cs)
+    if la is None:
+        return b
+    if lb is None or la < lb:
+        return a
+    if lb < la:
+        return b
+    return _prefer_chain(a, b, subs)
+
+
+def _orient_diol(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    oh_cs = parent.get("oh_c_idxs")
+    if not oh_cs:
+        return chain
+    return _better_oh_orient(chain, list(reversed(chain)), oh_cs, substituents)
+
+
 def _amine_pos_on(chain: list[int], am_c: int | None) -> int | None:
     if am_c is None or am_c not in chain:
         return None
@@ -313,6 +338,7 @@ def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> li
 def _hetero_orienters() -> dict:
     return {
         "alcohol": _orient_alcohol,
+        "diol": _orient_diol,
         "cycloalcohol": _orient_cycloalcohol,
         "cycloamine": _orient_cycloamine,
         "amine": _orient_amine,
@@ -353,6 +379,13 @@ def _oh_locant(oriented: dict) -> int | None:
     if oriented.get("kind") not in ("alcohol", "cycloalcohol") or oh_c not in chain:
         return None
     return chain.index(oh_c) + 1
+
+
+def _oh_locants(oriented: dict) -> list[int] | None:
+    if oriented.get("kind") != "diol":
+        return None
+    locs = _oh_locs_on(oriented.get("chain") or [], oriented.get("oh_c_idxs"))
+    return list(locs) if locs else None
 
 
 def _amine_locant(oriented: dict) -> int | None:
@@ -431,6 +464,7 @@ def _oh_am_locants(oriented: dict, n: int) -> dict:
     kind = oriented.get("kind")
     return {
         "oh_locant": oh,
+        "oh_locants": _oh_locants(oriented),
         "omit_oh_locant": _omit_oh(oh, n, kind),
         "amine_locant": am,
         "omit_amine_locant": _omit_amine(am, n, kind),

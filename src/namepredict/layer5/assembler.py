@@ -122,6 +122,19 @@ def _alcohol_names(n: int, oh_locant: int | None, omit: bool) -> tuple[str, str]
     return _alcohol_with_locant(n, oh_locant)
 
 
+def _diol_loc_str(locs: list[int]) -> str:
+    return ",".join(str(x) for x in locs)
+
+
+def _diol_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain or not locs or len(locs) != 2:
+        return None
+    en, zh = plain
+    loc = _diol_loc_str(locs)
+    return f"{en}-{loc}-diol", f"{zh}-{loc}-二醇"
+
+
 def _amine_plain(n: int) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain:
@@ -285,17 +298,30 @@ def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
     return None
 
 
-def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
+    if kind == "diol":
+        return _diol_names(n, numbered.get("oh_locants"))
+    return None
+
+
+def _amine_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    if kind != "amine":
+        return None
+    return _amine_names(
+        n, numbered.get("amine_locant"), numbered.get("omit_amine_locant", False)
+    )
+
+
+def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    top = _oh_kind_names(kind, n, numbered)
+    if top is not None:
+        return top
     cyc = _cyclo_hetero_names(kind, n)
     if cyc is not None:
         return cyc
-    if kind == "amine":
-        return _amine_names(
-            n, numbered.get("amine_locant"), numbered.get("omit_amine_locant", False)
-        )
-    return None
+    return _amine_kind_names(kind, n, numbered)
 
 
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
