@@ -7,11 +7,12 @@
 [#9b6c9b5][IUPAC P-65.1.1] 一元羧酸：L1羧基检测+排除羧基OH；L2/L4/L5 acid母体与词干 [+8 tests, dual 1.2%(49)→1.5%(60), fails 4013→4002]
 [#1bbe283][IUPAC P-64.2.1] 一元酮alkanone：L1酮羰基+L2/L4/L5 …-n-one/…-n-酮 [+11 tests, dual 1.5%(60)→1.7%(68), fails 4002→3994]
 [#0a577d7][IUPAC P-66.6.1] 一元醛alkanal：L1醛羰基+L2/L4/L5 保留formaldehyde/acetaldehyde与…anal/…醛 [+10 tests, dual 1.7%(68)→1.8%(74), fails 3994→3988]
+[#2b2c412][IUPAC P-31.1 / P-15.1.7.2.2] 一元烯烃alkene：L1非芳香C=C；L2穿双键母体；L4最低ene位次；L5 ane→ene/…-n-烯 [+12 tests, dual 1.8%(74)→1.9%(78), fails 3988→3984]
 
 ## 其他
-- 基线(本轮前): en=1.7%(68/4062) zh=7.3%(55/756) dual=1.7%(68/4062)
-- 本次: en=1.8%(74/4062) zh=8.1%(61/756) dual=1.8%(74/4062) fails=3988
-- 改动: L1 aldehydes/has_aldehyde（=O且恰1碳邻、非羧基）；L2 acid>aldehyde>ketone>alcohol>alkane；L4醛碳=1；L5 ALDEHYDE stems
-- 验证: C=O→formaldehyde/甲醛；CC=O→acetaldehyde/乙醛；CCC=O→propanal/丙醛；酮/酸/醇不回退
-- 已知缺口: 羟基醛前缀；烯醛/二醛；酯/酸酐；支化烷基isopropyl；胺
-- 下一步候选: 酯；或支化烷基；或胺；或羟基醛前缀
+- 基线(本轮前): en=1.8%(74/4062) zh=8.1%(61/756) dual=1.8%(74/4062)
+- 本次: en=1.9%(78/4062) zh=8.6%(65/756) dual=1.9%(78/4062) fails=3984
+- 改动: L1 double_bonds/has_alkene；L2 无更高FG且恰1个C=C时alkene母体；L4 ene_locant+C2/C3省略；L5 ethene/propene与but-n-ene
+- 验证: C=C→ethene/乙烯；C=CC→propene/丙烯；CC=CC→but-2-ene/丁-2-烯；C=CCC→but-1-ene；CC(C)C=C→3-methylbut-1-ene；酸/醛/酮/醇/二烯/炔不回退
+- 已知缺口: 二烯/炔/环烯；酯；支化烷基isopropyl；胺；羟基醛前缀
+- 下一步候选: 一元炔烃；或酯；或支化烷基；或胺
