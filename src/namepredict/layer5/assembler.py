@@ -3,8 +3,28 @@ from __future__ import annotations
 from namepredict.layer5.stems import ALCOHOL_EN, ALCOHOL_ZH, ALKANE_EN, ALKANE_ZH
 from namepredict.types import NameResult
 
-MULT_EN = {2: "di", 3: "tri", 4: "tetra"}
-MULT_ZH = {2: "二", 3: "三", 4: "四"}
+MULT_EN = {
+    2: "di",
+    3: "tri",
+    4: "tetra",
+    5: "penta",
+    6: "hexa",
+    7: "hepta",
+    8: "octa",
+    9: "nona",
+    10: "deca",
+}
+MULT_ZH = {
+    2: "二",
+    3: "三",
+    4: "四",
+    5: "五",
+    6: "六",
+    7: "七",
+    8: "八",
+    9: "九",
+    10: "十",
+}
 
 
 def _fail(meta: dict | None = None) -> NameResult:
