@@ -27,11 +27,12 @@
 [#b95686a][IUPAC P-62.2.1 / P-14.3.3] 开链饱和二元伯胺 alkanediamine：L2穿双胺碳+L4多胺位次+L5 …-a,b-diamine/…-a,b-二胺 [+9 tests, dual 3.2%(131)→3.3%(133), fails 3931→3929]
 [#e7f3c3d][IUPAC P-64.2.1 / P-14.3.3] 开链饱和二元酮 alkanedione：L2穿双酮碳+L4多酮位次+L5 …-a,b-dione/…-a,b-二酮 [+9 tests, dual 3.3%(133)→3.3%(135), fails 3929→3927]
 [#10f356b][IUPAC P-63.1.1 / P-14.3.3] 开链饱和三元醇 alkanetriol：L2穿三OH碳+L4多OH位次+L5 …-a,b,c-triol/…-a,b,c-三醇 [+10 tests, dual 3.3%(135)→3.3%(136), fails 3927→3926]
+[#333dde2][IUPAC P-65.5.1] 开链烷酰氯 alkanoyl chloride：L1酰氯检测+L2母体+L5 acetyl/…oyl chloride与乙酰氯/…酰氯 [+10 tests, dual 3.3%(136)→3.4%(139), fails 3926→3923]
 
 ## 其他
-- 基线(本轮前): en=3.3%(135/4062) zh=14.6%(110/756) dual=3.3%(135/4062)
-- 本次: en=3.3%(136/4062) zh=14.7%(111/756) dual=3.3%(136/4062) fails=3926
-- 改动: L2 恰3羟基无更高FG无环无不饱和→triol母体穿三OH碳（polyol泛化）；L4 多OH位次最低集；L5 alkane-a,b,c-triol/烷-a,b,c-三醇
-- 验证: OCC(O)CO→propane-1,2,3-triol/丙烷-1,2,3-三醇；OCCO仍ethane-1,2-diol；CCO仍ethanol
-- 已知缺口: 仲/叔胺；N-取代酰胺；不饱和二酸(E/Z)；支化烷基前缀；硫醇
-- 下一步候选: 仲胺；或不饱和二酸；或硫醇；或支化烷基前缀
+- 基线(本轮前): en=3.3%(136/4062) zh=14.7%(111/756) dual=3.3%(136/4062)
+- 本次: en=3.4%(139/4062) zh=15.1%(114/756) dual=3.4%(139/4062) fails=3923
+- 改动: L1 检测 –C(=O)Cl；L2 选 acyl_chloride 母体穿羰基碳；L5 acetyl chloride/乙酰氯与 propanoyl…；并压缩 L2/L5 行数
+- 验证: ClC(=O)C→acetyl chloride/乙酰氯；ClC(=O)CC→propanoyl chloride/丙酰氯；CC(=O)O仍acetic acid；ClCCCl仍1,2-dichloroethane
+- 已知缺口: 仲/叔胺；N-取代酰胺；不饱和二酸(E/Z)；硫醇；支化烷基前缀；芳酰氯
+- 下一步候选: 硫醇；或仲胺；或不饱和二酸；或支化烷基前缀
