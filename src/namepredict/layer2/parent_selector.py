@@ -216,28 +216,34 @@ def _amine_parent(info: dict) -> dict:
     am_c = info["amines"][0]["c_idx"]
     return _parent_dict(_chain_through(info, am_c), "amine", amine_c_idx=am_c)
 
-def _is_simple_alkenoic(info: dict) -> bool:
+_ALKENOIC_BAD = _DIACID_BAD + ("has_thiol",)
+_ALKENAL_BAD = (
+    "has_acid", "has_ester", "has_amide", "has_nitrile", "has_ketone",
+    "has_amine", "has_alcohol", "has_acyl_chloride", "has_anhydride", "has_thiol",
+)
+
+def _ok_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple) -> bool:
     if info.get("has_ring") or info.get("has_alkyne"):
         return False
-    ok = _is_mono_fg(info, "has_acid", "carboxyls") and _is_mono_alkene(info)
-    return ok and _no_fgs(info, _DIACID_BAD + ("has_thiol",))
+    return _is_mono_fg(info, flag, ekey) and _is_mono_alkene(info) and _no_fgs(info, bad)
 
-def _alkenoic_parent(info: dict) -> dict | None:
-    cooh, db = info["carboxyls"][0]["c_idx"], info["double_bonds"][0]
-    chain = _best_cover_pair(info["mol"], [cooh, db["c1"], db["c2"]])
-    if not chain or cooh not in chain:
+def _try_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple, kind: str, ckey: str) -> dict | None:
+    if not _ok_unsat_fg(info, flag, ekey, bad):
         return None
-    return _parent_dict(
-        chain, "alkenoic_acid", cooh_c_idx=cooh, double_bond=(db["c1"], db["c2"]),
-    )
+    c_idx, db = info[ekey][0]["c_idx"], info["double_bonds"][0]
+    chain = _best_cover_pair(info["mol"], [c_idx, db["c1"], db["c2"]])
+    if not chain or c_idx not in chain:
+        return None
+    return _parent_dict(chain, kind, **{ckey: c_idx, "double_bond": (db["c1"], db["c2"])})
 
 def _acid_parent(info: dict) -> dict:
     if _is_simple_alkanedioic(info):
         return _diacid_parent(info)
-    if _is_simple_alkenoic(info):
-        p = _alkenoic_parent(info)
-        if p is not None:
-            return p
+    p = _try_unsat_fg(
+        info, "has_acid", "carboxyls", _ALKENOIC_BAD, "alkenoic_acid", "cooh_c_idx",
+    )
+    if p is not None:
+        return p
     cooh_c = info["carboxyls"][0]["c_idx"]
     return _parent_dict(_chain_through(info, cooh_c), "acid", cooh_c_idx=cooh_c)
 
@@ -250,6 +256,11 @@ def _ketone_parent(info: dict) -> dict:
     return _parent_dict(_chain_through(info, ket_c), "ketone", ketone_c_idx=ket_c)
 
 def _aldehyde_parent(info: dict) -> dict:
+    p = _try_unsat_fg(
+        info, "has_aldehyde", "aldehydes", _ALKENAL_BAD, "alkenal", "aldehyde_c_idx",
+    )
+    if p is not None:
+        return p
     ald_c = info["aldehydes"][0]["c_idx"]
     return _parent_dict(_chain_through(info, ald_c), "aldehyde", aldehyde_c_idx=ald_c)
 

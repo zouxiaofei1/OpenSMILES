@@ -144,12 +144,18 @@ def _amine_names(n: int, am_locant: int | None, omit: bool) -> tuple[str, str] |
 def _acid_names(n: int) -> tuple[str, str] | None:
     return _pair(ACID_EN, ACID_ZH, n)
 
-def _alkenoic_acid_names(n: int, locant: int | None) -> tuple[str, str] | None:
+def _unsat_stem_names(n: int, locant: int | None, en_sfx: str, zh_sfx: str) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain or locant is None:
         return None
     en, zh = plain
-    return f"{en[:-3]}-{locant}-enoic acid", f"{zh[0]}-{locant}-烯酸"
+    return f"{en[:-3]}-{locant}-{en_sfx}", f"{zh[0]}-{locant}-{zh_sfx}"
+
+def _alkenoic_acid_names(n: int, locant: int | None) -> tuple[str, str] | None:
+    return _unsat_stem_names(n, locant, "enoic acid", "烯酸")
+
+def _alkenal_names(n: int, locant: int | None) -> tuple[str, str] | None:
+    return _unsat_stem_names(n, locant, "enal", "烯醛")
 
 def _anhydride_from_acid(n: int) -> tuple[str, str] | None:
     plain = _acid_names(n)
@@ -280,15 +286,15 @@ def _alkyne_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | N
     return _alkyne_with_locant(n, locant)
 
 def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
-    if kind == "acid":
-        return _acid_names(n)
-    if kind == "alkenoic_acid":
-        return _alkenoic_acid_names(n, (numbered or {}).get("ene_locant"))
-    if kind == "diacid":
-        return _diacid_names(n)
-    return _aldehyde_names(n) if kind == "aldehyde" else (
-        _amide_names(n) if kind == "amide" else None
-    )
+    loc = (numbered or {}).get("ene_locant")
+    table = {
+        "acid": lambda: _acid_names(n), "diacid": lambda: _diacid_names(n),
+        "alkenoic_acid": lambda: _alkenoic_acid_names(n, loc),
+        "alkenal": lambda: _alkenal_names(n, loc),
+        "aldehyde": lambda: _aldehyde_names(n), "amide": lambda: _amide_names(n),
+    }
+    fn = table.get(kind)
+    return fn() if fn else None
 
 def _nitrile_or_none(kind: str, n: int) -> tuple[str, str] | None:
     if kind == "nitrile":
@@ -412,7 +418,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     if n_carbons <= 1:
         return True
     # Carboxylic acids number COOH as 1; keep substituent locants (e.g. 2-aminoacetic acid).
-    if kind in ("acid", "alkenoic_acid"):
+    if kind in ("acid", "alkenoic_acid", "alkenal"):
         return False
     if n_carbons == 2 and len(substituents) == 1:
         return True
