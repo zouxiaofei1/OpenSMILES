@@ -42,11 +42,12 @@
 [#7dd2c64][IUPAC P-62.2.2.1] 开链简单叔胺 N,N-dialkylalkanamine：L1叔胺检测+L2最长臂母体+L3两侧N-烷基+L5 N,N-diethylethanamine/N,N-二乙基乙胺 [+10 tests, dual 4.3%(174)→4.3%(175), fails 3888→3887]
 [#7fee636][IUPAC P-66.1.1.1.3] 开链简单N-取代酰胺：L1仲/叔酰胺检测(勿当醛)+L3 N-烷基+L5 N-methylacetamide/N-甲基乙酰胺 [+10 tests, dual 4.3%(175)→4.4%(178), fails 3887→3884]
 [#3df1d6b][IUPAC P-63.2.2] 开链简单二烷基醚：L1醚氧检测+L2对称/不对称母体+L5 diethyl ether/二乙醚与methoxyethane/甲氧基乙烷 [+12 tests, dual 4.4%(178)→4.4%(179), fails 3884→3883]
+[#6429c09][IUPAC P-63.2.1] 开链简单二烷基硫醚：L1二配位S(排亚砜/硫酯)+L2对称/不对称双臂母体+L5 dimethyl/ethyl methyl sulfide与二…硫醚/…基…基硫醚 [+11 tests, dual 4.4%(179)→4.4%(180), fails 3883→3882]
 
 ## 其他
-- 基线(本轮前): en=4.4%(178/4062) zh=18.1%(137/756) dual=4.4%(178/4062)
-- 本次: en=4.4%(179/4062) zh=18.3%(138/756) dual=4.4%(179/4062) fails=3883
-- 改动: L1 检测醚氧（O两碳、非羰基）；L2 对称ether/不对称alkoxy+alkane；L5 对称保留diethyl ether/二乙醚，不对称methoxyethane；并压缩L1/L2/L5
-- 验证: CCOCC→diethyl ether/二乙醚；COC→dimethyl ether；CCOC→methoxyethane；CCO仍ethanol；CC(=O)OC仍methyl acetate
-- 已知缺口: 硫醚；不饱和二酸(E/Z)；支化烷基前缀；芳醚；多醚
-- 下一步候选: 硫醚；或不饱和二酸；或支化烷基前缀
+- 基线(本轮前): en=4.4%(179/4062) zh=18.3%(138/756) dual=4.4%(179/4062)
+- 本次: en=4.4%(180/4062) zh=18.4%(139/756) dual=4.4%(180/4062) fails=3882
+- 改动: L1 检测二配位硫（排 C=O 邻/degree≠2）；L2 对称sulfide/不对称双臂；L5 对称dimethyl sulfide/二甲硫醚，不对称ethyl methyl sulfide/乙基甲基硫醚
+- 验证: CSC→dimethyl sulfide；CCSC→ethyl methyl sulfide；CCSCC→diethyl sulfide；CS(C)=O/CC(=O)SC 不误报 sulfide；CCS仍ethanethiol
+- 已知缺口: 不饱和二酸(E/Z)；支化烷基前缀；芳醚/芳硫醚；多醚；亚砜/砜系统命名
+- 下一步候选: 不饱和二酸；或支化烷基前缀；或芳环单取代
