@@ -260,11 +260,21 @@ def _orient_cycloketone(chain: list[int], parent: dict, substituents: list) -> l
     return _prefer_chain(base, rev, substituents)
 
 
+def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    am_c = parent.get("amine_c_idx")
+    if am_c is None or am_c not in chain:
+        return chain
+    base = _rotate_to_front(chain, am_c)
+    rev = _rotate_to_front(list(reversed(chain)), am_c)
+    return _prefer_chain(base, rev, substituents)
+
+
 def _kind_orienters() -> dict:
     base = {
         "alcohol": _orient_alcohol,
         "cycloalcohol": _orient_cycloalcohol,
         "cycloketone": _orient_cycloketone,
+        "cycloamine": _orient_cycloamine,
         "amine": _orient_amine,
         "alkene": _orient_alkene,
         "alkyne": _orient_alkyne,
@@ -297,7 +307,7 @@ def _oh_locant(oriented: dict) -> int | None:
 def _amine_locant(oriented: dict) -> int | None:
     chain = oriented.get("chain") or []
     am_c = oriented.get("amine_c_idx")
-    if oriented.get("kind") != "amine" or am_c not in chain:
+    if oriented.get("kind") not in ("amine", "cycloamine") or am_c not in chain:
         return None
     return chain.index(am_c) + 1
 
@@ -332,7 +342,9 @@ def _omit_oh(oh_pos: int | None, n_carbons: int, kind: str | None = None) -> boo
     return oh_pos == 1 and n_carbons <= 2
 
 
-def _omit_amine(am_pos: int | None, n_carbons: int) -> bool:
+def _omit_amine(am_pos: int | None, n_carbons: int, kind: str | None = None) -> bool:
+    if kind == "cycloamine":
+        return True
     return am_pos == 1 and n_carbons <= 2
 
 
@@ -364,7 +376,7 @@ def _oh_am_locants(oriented: dict, n: int) -> dict:
         "oh_locant": oh,
         "omit_oh_locant": _omit_oh(oh, n, kind),
         "amine_locant": am,
-        "omit_amine_locant": _omit_amine(am, n),
+        "omit_amine_locant": _omit_amine(am, n, kind),
     }
 
 

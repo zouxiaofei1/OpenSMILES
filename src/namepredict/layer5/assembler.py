@@ -84,6 +84,14 @@ def _cycloketone_names(n: int) -> tuple[str, str] | None:
     return f"cyclo{en[:-1]}one", f"环{zh[0]}酮"
 
 
+def _cycloamine_names(n: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain or n < 3:
+        return None
+    en, zh = plain
+    return f"cyclo{en[:-1]}amine", f"环{zh[0]}胺"
+
+
 def _alcohol_plain(n: int) -> tuple[str, str] | None:
     return _pair(ALCOHOL_EN, ALCOHOL_ZH, n)
 
@@ -261,11 +269,20 @@ def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None
     return top if top is not None else _ester_ketone(kind, n, numbered)
 
 
+def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
+    if kind == "cycloalcohol":
+        return _cycloalcohol_names(n)
+    if kind == "cycloamine":
+        return _cycloamine_names(n)
+    return None
+
+
 def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
-    if kind == "cycloalcohol":
-        return _cycloalcohol_names(n)
+    cyc = _cyclo_hetero_names(kind, n)
+    if cyc is not None:
+        return cyc
     if kind == "amine":
         return _amine_names(
             n, numbered.get("amine_locant"), numbered.get("omit_amine_locant", False)

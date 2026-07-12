@@ -99,6 +99,8 @@ def _alcohol_parent(info: dict) -> dict:
 
 
 def _amine_parent(info: dict) -> dict:
+    if _is_simple_cycloamine(info):
+        return _cycloamine_parent(info)
     am_c = info["amines"][0]["c_idx"]
     return _parent_dict(_chain_through(info, am_c), "amine", amine_c_idx=am_c)
 
@@ -329,6 +331,35 @@ def _cycloalcohol_parent(info: dict) -> dict:
     chain = list(info["rings"][0]["atom_ids"])
     oh_c = info["hydroxyls"][0]["c_idx"]
     return _parent_dict(chain, "cycloalcohol", oh_c_idx=oh_c)
+
+
+def _mono_amine_on_ring(info: dict, ring_set: set[int]) -> dict | None:
+    amines = info.get("amines") or []
+    if len(amines) != 1:
+        return None
+    am = amines[0]
+    if am["c_idx"] not in ring_set:
+        return None
+    return am
+
+
+def _is_simple_cycloamine(info: dict) -> bool:
+    if not _is_cycloalkane_core(info):
+        return False
+    mol: Mol = info["mol"]
+    ring_set = set(info["rings"][0]["atom_ids"])
+    am = _mono_amine_on_ring(info, ring_set)
+    if am is None:
+        return False
+    if not _hetero_allowed(mol, ring_set, {am["n_idx"]}):
+        return False
+    return not _outside_carbons(mol, ring_set)
+
+
+def _cycloamine_parent(info: dict) -> dict:
+    chain = list(info["rings"][0]["atom_ids"])
+    am_c = info["amines"][0]["c_idx"]
+    return _parent_dict(chain, "cycloamine", amine_c_idx=am_c)
 
 
 def _dbl_o_idx(mol: Mol, c_idx: int) -> int | None:
