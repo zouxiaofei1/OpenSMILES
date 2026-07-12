@@ -959,3 +959,24 @@ git commit -m "docs: wire up quickstart for namer, loop, and console"
 ---
 
 **Plan complete.** 保存于 `docs/superpowers/plans/2026-07-12-smiles-iupac-agent-loop.md`。
+
+---
+
+## 验收 (2026-07-12)
+
+Tasks **1–14** delivered end-to-end:
+
+| Area | Status |
+|------|--------|
+| Layer0–5 namer + cache ≤100 | done |
+| EN normalize / ZH strict scoring | done |
+| merge_datasets + bilingual bench | done |
+| structure_lint hard constraints | done |
+| fail clustering + TDD skill S3 | done |
+| pi runner + mock path | done |
+| git commit/revert gate + stop policy | done |
+| session snapshots + EventBus | done |
+| FastAPI Console + dark OLED UI | done |
+| README quickstart + `python -m agent_loop.loop` CLI | done (Task 14) |
+
+Regression baseline for packaging: `pytest -q`, `structure_lint` on `src/namepredict`, `benchmarks.benchmark --limit 50`, and `python -m agent_loop.loop --help`.

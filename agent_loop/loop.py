@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import subprocess
 from collections.abc import Callable
@@ -489,3 +490,45 @@ class AgentLoop:
 
     def _publish(self, event_type: str, payload: dict[str, Any]) -> None:
         self.bus.publish(event_type, payload)
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(description="Self-improving SMILES→IUPAC agent loop")
+    p.add_argument("--max-iters", type=int, default=None, help="Max cycles (default: 100)")
+    p.add_argument("--mock-pi", action="store_true", help="Use MockPiRunner (no real pi)")
+    p.add_argument("--bench-limit", type=int, default=None, help="Benchmark row limit")
+    p.add_argument("--data", type=Path, default=None, help="Benchmark JSON path")
+    p.add_argument("--k", type=int, default=None, help="Stop after K no-improve cycles")
+    p.add_argument("--target-dual", type=float, default=None, help="Stop when dual ≥ target")
+    return p
+
+
+def _set_if(cfg: LoopConfig, attr: str, value: Any) -> None:
+    if value is not None:
+        setattr(cfg, attr, value)
+
+
+def _apply_cli(cfg: LoopConfig, ns: argparse.Namespace) -> LoopConfig:
+    _set_if(cfg, "max_iters", ns.max_iters)
+    _set_if(cfg, "bench_limit", ns.bench_limit)
+    _set_if(cfg, "data_path", Path(ns.data) if ns.data is not None else None)
+    _set_if(cfg, "k", ns.k)
+    _set_if(cfg, "target_dual", ns.target_dual)
+    if ns.mock_pi:
+        cfg.mock_pi = True
+    return cfg
+
+
+def config_from_args(argv: list[str] | None = None) -> LoopConfig:
+    """Parse CLI flags into LoopConfig (defaults when flags omitted)."""
+    return _apply_cli(LoopConfig(), _build_parser().parse_args(argv))
+
+
+def main(argv: list[str] | None = None) -> None:
+    """CLI entry: build config and run AgentLoop until stop conditions."""
+    cfg = config_from_args(argv)
+    AgentLoop(cfg).run()
+
+
+if __name__ == "__main__":
+    main()
