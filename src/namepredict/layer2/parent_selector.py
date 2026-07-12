@@ -217,10 +217,12 @@ def _amine_parent(info: dict) -> dict:
     return _parent_dict(_chain_through(info, am_c), "amine", amine_c_idx=am_c)
 
 _ALKENOIC_BAD = _DIACID_BAD + ("has_thiol",)
-_ALKENAL_BAD = (
-    "has_acid", "has_ester", "has_amide", "has_nitrile", "has_ketone",
-    "has_amine", "has_alcohol", "has_acyl_chloride", "has_anhydride", "has_thiol",
+_UNSAT_FG_CORE = (
+    "has_acid", "has_ester", "has_amide", "has_ketone", "has_amine",
+    "has_alcohol", "has_acyl_chloride", "has_anhydride", "has_thiol",
 )
+_ALKENAL_BAD = _UNSAT_FG_CORE + ("has_nitrile",)
+_ALKENENITRILE_BAD = _UNSAT_FG_CORE + ("has_aldehyde",)
 
 def _ok_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple) -> bool:
     if info.get("has_ring") or info.get("has_alkyne"):
@@ -236,37 +238,34 @@ def _try_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple, kind: str, ckey:
         return None
     return _parent_dict(chain, kind, **{ckey: c_idx, "double_bond": (db["c1"], db["c2"])})
 
+def _fg_chain(info: dict, ekey: str, kind: str, ckey: str) -> dict:
+    c = info[ekey][0]["c_idx"]
+    return _parent_dict(_chain_through(info, c), kind, **{ckey: c})
+
+def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey):
+    return _try_unsat_fg(info, flag, ekey, bad, ukind, ckey) or _fg_chain(info, ekey, skind, ckey)
+
 def _acid_parent(info: dict) -> dict:
     if _is_simple_alkanedioic(info):
         return _diacid_parent(info)
-    p = _try_unsat_fg(
-        info, "has_acid", "carboxyls", _ALKENOIC_BAD, "alkenoic_acid", "cooh_c_idx",
+    return _unsat_or_sat(
+        info, "has_acid", "carboxyls", _ALKENOIC_BAD, "alkenoic_acid", "acid", "cooh_c_idx",
     )
-    if p is not None:
-        return p
-    cooh_c = info["carboxyls"][0]["c_idx"]
-    return _parent_dict(_chain_through(info, cooh_c), "acid", cooh_c_idx=cooh_c)
 
 def _ketone_parent(info: dict) -> dict:
     if _is_simple_cycloketone(info):
         return _cycloketone_parent(info)
     if _is_simple_alkanedione(info):
         return _dione_parent(info)
-    ket_c = info["ketones"][0]["c_idx"]
-    return _parent_dict(_chain_through(info, ket_c), "ketone", ketone_c_idx=ket_c)
+    return _fg_chain(info, "ketones", "ketone", "ketone_c_idx")
 
 def _aldehyde_parent(info: dict) -> dict:
-    p = _try_unsat_fg(
-        info, "has_aldehyde", "aldehydes", _ALKENAL_BAD, "alkenal", "aldehyde_c_idx",
+    return _unsat_or_sat(
+        info, "has_aldehyde", "aldehydes", _ALKENAL_BAD, "alkenal", "aldehyde", "aldehyde_c_idx",
     )
-    if p is not None:
-        return p
-    ald_c = info["aldehydes"][0]["c_idx"]
-    return _parent_dict(_chain_through(info, ald_c), "aldehyde", aldehyde_c_idx=ald_c)
 
 def _amide_parent(info: dict) -> dict:
-    am_c = info["amides"][0]["c_idx"]
-    return _parent_dict(_chain_through(info, am_c), "amide", amide_c_idx=am_c)
+    return _fg_chain(info, "amides", "amide", "amide_c_idx")
 
 def _is_mono_fg(info: dict, flag: str, key: str) -> bool:
     xs = info.get(key) or []
@@ -300,8 +299,10 @@ def _anhydride_parent(info: dict) -> dict:
     )
 
 def _nitrile_parent(info: dict) -> dict:
-    c_idx = info["nitriles"][0]["c_idx"]
-    return _parent_dict(_chain_through(info, c_idx), "nitrile", nitrile_c_idx=c_idx)
+    return _unsat_or_sat(
+        info, "has_nitrile", "nitriles", _ALKENENITRILE_BAD,
+        "alkenenitrile", "nitrile", "nitrile_c_idx",
+    )
 
 def _ester_parent(info: dict) -> dict:
     e = info["esters"][0]

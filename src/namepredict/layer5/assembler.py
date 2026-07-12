@@ -157,6 +157,9 @@ def _alkenoic_acid_names(n: int, locant: int | None) -> tuple[str, str] | None:
 def _alkenal_names(n: int, locant: int | None) -> tuple[str, str] | None:
     return _unsat_stem_names(n, locant, "enal", "烯醛")
 
+def _alkenenitrile_names(n: int, locant: int | None) -> tuple[str, str] | None:
+    return _unsat_stem_names(n, locant, "enenitrile", "烯腈")
+
 def _anhydride_from_acid(n: int) -> tuple[str, str] | None:
     plain = _acid_names(n)
     if not plain:
@@ -296,9 +299,11 @@ def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[st
     fn = table.get(kind)
     return fn() if fn else None
 
-def _nitrile_or_none(kind: str, n: int) -> tuple[str, str] | None:
+def _nitrile_or_none(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
     if kind == "nitrile":
         return _nitrile_names(n)
+    if kind == "alkenenitrile":
+        return _alkenenitrile_names(n, (numbered or {}).get("ene_locant"))
     if kind == "acyl_chloride":
         return _pair(ACYL_CHLORIDE_EN, ACYL_CHLORIDE_ZH, n)
     if kind == "anhydride":
@@ -318,7 +323,7 @@ def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     return None
 
 def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    top = _acid_ald_amide(kind, n, numbered) or _nitrile_or_none(kind, n)
+    top = _acid_ald_amide(kind, n, numbered) or _nitrile_or_none(kind, n, numbered)
     return top if top is not None else _ester_ketone(kind, n, numbered)
 
 def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
@@ -418,7 +423,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     if n_carbons <= 1:
         return True
     # Carboxylic acids number COOH as 1; keep substituent locants (e.g. 2-aminoacetic acid).
-    if kind in ("acid", "alkenoic_acid", "alkenal"):
+    if kind in ("acid", "alkenoic_acid", "alkenal", "alkenenitrile"):
         return False
     if n_carbons == 2 and len(substituents) == 1:
         return True
