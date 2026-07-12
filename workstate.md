@@ -34,11 +34,12 @@
 [#877dc54][IUPAC P-65.1.2] 开链饱和氨基酸 aminoalkanoic acid：L3 提取 amino 前缀+L5 酸保留取代基位次 [+8 tests, dual 3.7%(150)→3.9%(159), fails 3912→3903]
 [#a3cd4b6][IUPAC P-65.1.2 / P-64.2] 开链饱和酮酸 oxoalkanoic acid：L3 提取 oxo 前缀+酸母体 [+8 tests, dual 3.9%(159)→4.1%(167), fails 3903→3895]
 [#a598fd4][IUPAC P-65.1.1 / P-31.1] 开链一元不饱和酸 alkenoic acid：L2链穿COOH+C=C+L4 ene位次+L5 …-n-enoic acid/…-n-烯酸（无E/Z） [+9 tests, dual 4.1%(167)→4.2%(169), fails 3895→3893]
+[#6fe9404][IUPAC P-66.6.1 / P-31.1] 开链一元不饱和醛 alkenal：L2链穿醛碳+C=C+L4 ene位次+L5 …-n-enal/…-n-烯醛（无E/Z） [+8 tests, dual 4.2%(169)→4.2%(170), fails 3893→3892]
 
 ## 其他
-- 基线(本轮前): en=4.1%(167/4062) zh=16.8%(127/756) dual=4.1%(167/4062)
-- 本次: en=4.2%(169/4062) zh=16.9%(128/756) dual=4.2%(169/4062) fails=3893
-- 改动: L2 一元酸+单C=C→alkenoic_acid 母体链穿COOH与双键；L4 羧基为1算ene位次；L5 prop-2-enoic acid/丙-2-烯酸
-- 验证: C=CC(=O)O→prop-2-enoic acid/丙-2-烯酸；C=CCC(=O)O→but-3-enoic acid；CC(=O)O仍acetic；C=C仍ethene；不饱和二酸本轮未做
-- 已知缺口: 不饱和二酸(E/Z)；仲/叔胺；N-取代酰胺；支化烷基前缀；硫醚；E/Z立体
-- 下一步候选: 不饱和二酸；或仲胺；或支化烷基前缀；或硫醚
+- 基线(本轮前): en=4.2%(169/4062) zh=16.9%(128/756) dual=4.2%(169/4062)
+- 本次: en=4.2%(170/4062) zh=17.1%(129/756) dual=4.2%(170/4062) fails=3892
+- 改动: L2 一元醛+单C=C→alkenal 母体链穿醛碳与双键；L4 醛碳为1算ene位次；L5 but-2-enal/丁-2-烯醛
+- 验证: CC=CC=O→but-2-enal/丁-2-烯醛；C=CC=O→prop-2-enal；CC=O仍acetaldehyde；C=CC(=O)O仍alkenoic acid
+- 已知缺口: 不饱和二酸(E/Z)；不饱和腈/酯/醇；仲/叔胺；N-取代酰胺；支化烷基前缀；硫醚
+- 下一步候选: 不饱和腈/酯；或不饱和二酸；或仲胺；或支化烷基前缀
