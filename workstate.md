@@ -32,11 +32,12 @@
 [#a1193a0][IUPAC P-63.1.5] 开链一元硫醇 alkanethiol：L1 –SH检测+L2母体+L4位次+L5 methanethiol/ethanethiol与甲硫醇/乙硫醇 [+8 tests, dual 3.5%(141)→3.5%(142), fails 3921→3920]
 [#f4eec31][IUPAC P-65.1.2] 开链饱和羟基酸 hydroxyalkanoic acid：L3 提取 hydroxy 前缀+酸母体 [+8 tests, dual 3.5%(142)→3.7%(150), fails 3920→3912]
 [#877dc54][IUPAC P-65.1.2] 开链饱和氨基酸 aminoalkanoic acid：L3 提取 amino 前缀+L5 酸保留取代基位次 [+8 tests, dual 3.7%(150)→3.9%(159), fails 3912→3903]
+[#a3cd4b6][IUPAC P-65.1.2 / P-64.2] 开链饱和酮酸 oxoalkanoic acid：L3 提取 oxo 前缀+酸母体 [+8 tests, dual 3.9%(159)→4.1%(167), fails 3903→3895]
 
 ## 其他
-- 基线(本轮前): en=3.7%(150/4062) zh=16.1%(122/756) dual=3.7%(150/4062)
-- 本次: en=3.9%(159/4062) zh=16.4%(124/756) dual=3.9%(159/4062) fails=3903
-- 改动: L3 在羧酸母体上提取 amino 取代基（en=amino/zh=氨基）；L5 acid 不省略取代基位次（2-aminoacetic acid）
-- 验证: NCC(=O)O→2-aminoacetic acid/2-氨基乙酸；OC(=O)C(N)C→2-aminopropanoic acid；OC(=O)C(O)C仍hydroxy；NCCN仍diamine
-- 已知缺口: 仲/叔胺；N-取代酰胺；不饱和二酸(E/Z)；支化烷基前缀；硫醚；酮酸(oxo)
-- 下一步候选: 酮酸(oxo acid)；或不饱和二酸；或仲胺；或支化烷基前缀
+- 基线(本轮前): en=3.9%(159/4062) zh=16.4%(124/756) dual=3.9%(159/4062)
+- 本次: en=4.1%(167/4062) zh=16.8%(127/756) dual=4.1%(167/4062) fails=3895
+- 改动: L3 在羧酸母体上提取 oxo 取代基（en=oxo/zh=氧代）；酸优先于酮已有
+- 验证: OC(=O)C(=O)C→2-oxopropanoic acid/2-氧代丙酸；OC(=O)CCC(=O)C→4-oxopentanoic acid；CC(=O)CC(=O)C仍dione；NCC(=O)O仍amino
+- 已知缺口: 仲/叔胺；N-取代酰胺；不饱和二酸(E/Z)；支化烷基前缀；硫醚；不饱和一元酸
+- 下一步候选: 不饱和二酸；或不饱和一元酸；或仲胺；或支化烷基前缀
