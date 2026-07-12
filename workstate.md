@@ -11,11 +11,12 @@
 [#bd8354d][IUPAC P-31.1] 一元炔烃alkyne：L1 C≡C；L2穿三键且无C=C；L4最低yne位次；L5 acetylene/propyne与…-n-yne/…-n-炔 [+14 tests, dual 1.9%(78)→2.0%(82), fails 3984→3980]
 [#2e8c0dd][IUPAC P-65.6] 一元酯alkyl alkanoate：L1酯检测+排除醛；L2 acid>ester>…；L5 alkyl+alkanoate/酸名+烷词干+酯 [+14 tests, dual 2.0%(82)→2.2%(90), fails 3980→3972]
 [#4146028][IUPAC P-62.2.1] 一元伯胺alkanamine：L1伯胺N(排除酰胺)；L2 alcohol>amine；L4胺位次；L5 methanamine/…-n-amine与甲胺/…-n-胺 [+15 tests, dual 2.2%(90)→2.3%(95), fails 3972→3967]
+[#acbcef4][IUPAC P-22.1.1] 单环烷烃cycloalkane：L1环信息；L2无取代单碳环母体；L5 cyclo+alkane/环+烷 [+18 tests, dual 2.3%(95)→2.4%(99), fails 3967→3963]
 
 ## 其他
-- 基线(本轮前): en=2.2%(90/4062) zh=9.8%(74/756) dual=2.2%(90/4062)
-- 本次: en=2.3%(95/4062) zh=10.3%(78/756) dual=2.3%(95/4062) fails=3967
-- 改动: L1 amines/has_amine+排除酰胺N；L2 链穿胺碳；L4 amine_locant+C1/C2省略；L5 甲/乙胺与propan-n-amine
-- 验证: CN→methanamine/甲胺；CCN→ethanamine/乙胺；CCCN→propan-1-amine；CC(C)N→propan-2-amine；酸/酯/醛/酮/醇/烯/炔不回退；CC(=O)N仍非amine
-- 已知缺口: 仲/叔胺/二胺/苯胺；酰胺；环烷；支化烷基isopropyl；不饱和酯
-- 下一步候选: 环烷烃；或酰胺；或仲胺；或支化烷基
+- 基线(本轮前): en=2.3%(95/4062) zh=10.3%(78/756) dual=2.3%(95/4062)
+- 本次: en=2.4%(99/4062) zh=10.8%(82/756) dual=2.4%(99/4062) fails=3963
+- 改动: L1 rings/n_rings/has_ring；L2 恰1环全碳单键无侧链→cycloalkane；L5 cyclopropane…cyclodecane
+- 验证: C1CC1→cyclopropane/环丙烷；C1CCCCC1→cyclohexane/环己烷；CC1CCCCC1≠cyclohexane；开链/FG不回退
+- 已知缺口: 取代环烷；环醇/环酮/环烯；酰胺；仲/叔胺；支化烷基isopropyl
+- 下一步候选: 酰胺；或取代环烷(甲基环己烷)；或仲胺；或支化烷基
