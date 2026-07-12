@@ -174,6 +174,52 @@ def _is_mono_alkyne(info: dict) -> bool:
     return len(triples) == 1 and len(doubles) == 0
 
 
+
+def _all_carbons_are_c(mol: Mol, atom_ids: tuple) -> bool:
+    return all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atom_ids)
+
+
+def _bond_between(mol: Mol, a: int, b: int):
+    return mol.GetBondBetweenAtoms(a, b)
+
+
+def _ring_bonds_single(mol: Mol, atom_ids: tuple) -> bool:
+    ids = list(atom_ids)
+    for i, a in enumerate(ids):
+        b = ids[(i + 1) % len(ids)]
+        bond = _bond_between(mol, a, b)
+        if bond is None or bond.GetBondType().name != "SINGLE":
+            return False
+    return True
+
+
+def _no_nonh_outside(mol: Mol, ring_set: set[int]) -> bool:
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 1:
+            continue
+        if atom.GetIdx() not in ring_set:
+            return False
+    return True
+
+
+def _is_simple_cycloalkane(info: dict) -> bool:
+    rings = info.get("rings") or []
+    if len(rings) != 1:
+        return False
+    mol: Mol = info["mol"]
+    atom_ids = rings[0]["atom_ids"]
+    if not _all_carbons_are_c(mol, atom_ids):
+        return False
+    if not _ring_bonds_single(mol, atom_ids):
+        return False
+    return _no_nonh_outside(mol, set(atom_ids))
+
+
+def _cycloalkane_parent(info: dict) -> dict:
+    chain = list(info["rings"][0]["atom_ids"])
+    return _parent_dict(chain, "cycloalkane")
+
+
 def _carbonyl_parent(info: dict) -> dict | None:
     if info.get("has_acid") and info.get("carboxyls"):
         return _acid_parent(info)
@@ -201,6 +247,8 @@ def select_parent(info: dict) -> dict:
     fg = _fg_parent(info)
     if fg is not None:
         return fg
+    if _is_simple_cycloalkane(info):
+        return _cycloalkane_parent(info)
     if _is_mono_alkyne(info):
         return _alkyne_parent(info)
     if _is_mono_alkene(info):

@@ -203,6 +203,20 @@ def _triple_bond_entries(mol: Mol) -> list[dict]:
     return out
 
 
+
+def _ring_entry(atom_ids: tuple) -> dict:
+    return {"atom_ids": atom_ids}
+
+
+def _ring_entries(mol: Mol) -> list[dict]:
+    return [_ring_entry(r) for r in mol.GetRingInfo().AtomRings()]
+
+
+def _ring_meta(mol: Mol) -> dict:
+    rings = _ring_entries(mol)
+    return {"rings": rings, "n_rings": len(rings), "has_ring": bool(rings)}
+
+
 def _carbon_ids(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
 
@@ -261,7 +275,7 @@ def _fg_flags(
 
 def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
     base = {"mol": mol, "carbon_ids": carbons, "n_carbons": len(carbons)}
-    return {**base, **fgs}
+    return {**base, **fgs, **_ring_meta(mol)}
 
 
 def _collect_fgs(mol: Mol) -> dict:

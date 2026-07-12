@@ -56,6 +56,14 @@ def _alkane_names(n: int) -> tuple[str, str] | None:
     return _pair(ALKANE_EN, ALKANE_ZH, n)
 
 
+def _cycloalkane_names(n: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain or n < 3:
+        return None
+    en, zh = plain
+    return f"cyclo{en}", f"环{zh}"
+
+
 def _alcohol_plain(n: int) -> tuple[str, str] | None:
     return _pair(ALCOHOL_EN, ALCOHOL_ZH, n)
 
@@ -226,6 +234,8 @@ def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | Non
     if kind == "alkyne":
         omit = numbered.get("omit_yne_locant", False)
         return _alkyne_names(n, numbered.get("yne_locant"), omit)
+    if kind == "cycloalkane":
+        return _cycloalkane_names(n)
     return _alkane_names(n)
 
 
