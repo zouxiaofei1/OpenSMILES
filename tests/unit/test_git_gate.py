@@ -79,3 +79,24 @@ def test_allowed_paths_includes_safe_prefixes(tmp_path: Path):
     assert any(p.replace("\\", "/").startswith("src/namepredict") for p in allowed)
     assert any("tests/unit" in p.replace("\\", "/") for p in allowed)
     assert any("agent_loop" in p.replace("\\", "/") for p in allowed)
+
+
+def test_revert_cleans_untracked_allowlisted_keeps_memory(tmp_path: Path):
+    repo = _init_repo(tmp_path)
+    gate = GitGate(repo)
+    base = gate.snapshot()
+
+    prod = repo / "src" / "namepredict" / "new_rule.py"
+    prod.parent.mkdir(parents=True, exist_ok=True)
+    prod.write_text("x = 1\n", encoding="utf-8")
+    unit = repo / "tests" / "unit" / "test_new.py"
+    unit.parent.mkdir(parents=True, exist_ok=True)
+    unit.write_text("def test_x():\n    assert True\n", encoding="utf-8")
+    mem = repo / "agent_loop" / "memory" / "sessions" / "keep.json"
+    mem.parent.mkdir(parents=True, exist_ok=True)
+    mem.write_text("{}\n", encoding="utf-8")
+
+    gate.revert(base)
+    assert not prod.exists()
+    assert not unit.exists()
+    assert mem.is_file()

@@ -11,7 +11,7 @@ from typing import Any
 
 from agent_loop.config import LoopConfig
 from agent_loop.events import EventBus
-from agent_loop.git_gate import GitGate
+from agent_loop.git_gate import DEFAULT_ALLOWED, GitGate
 from agent_loop.pi_runner import MockPiRunner, PiResult, PiRunner
 from agent_loop.state import StateStore
 from benchmarks.benchmark import run_benchmark
@@ -28,12 +28,6 @@ _PROMPT_TMPL = Path("agent_loop/prompts/cycle.md")
 _PROMPT_OUT = Path("agent_loop/prompts/.cycle_current.md")
 _SKILL = "skills/chem-tdd-skill/"
 _NAMEPREDICT = Path("src/namepredict")
-_ALLOWED = (
-    "src/namepredict/",
-    "tests/unit/",
-    "agent_loop/memory/",
-    "skills/chem-tdd-skill/",
-)
 _CONSTRAINTS = (
     "no ML/LLM naming; no SMILES special-case; no gold/scoring edits; "
     "file<=500 lines; func body<=10; allowlist paths only; S3 N=3"
@@ -80,12 +74,6 @@ def _is_improve(before: dict[str, Any], after: dict[str, Any]) -> bool:
     if d1 > d0:
         return True
     return d1 == d0 and _n_fails(after) < _n_fails(before)
-
-
-def _should_revert_drop(
-    before: dict[str, Any], after: dict[str, Any], drop_tol: float
-) -> bool:
-    return _dual(after) < _dual(before) - drop_tol
 
 
 def _one_cluster_line(c: Cluster) -> str:
@@ -153,7 +141,7 @@ def _parse_status_line(line: str) -> str | None:
 
 def _changed_paths(cwd: Path) -> list[str]:
     r = subprocess.run(
-        ["git", "status", "--porcelain"],
+        ["git", "status", "--porcelain", "-uall"],
         cwd=cwd,
         capture_output=True,
         text=True,
@@ -164,7 +152,7 @@ def _changed_paths(cwd: Path) -> list[str]:
 
 def _is_allowed(path: str) -> bool:
     posix = path.replace("\\", "/")
-    return any(posix == a.rstrip("/") or posix.startswith(a) for a in _ALLOWED)
+    return any(posix == a.rstrip("/") or posix.startswith(a) for a in DEFAULT_ALLOWED)
 
 
 def _filter_allowed(paths: list[str]) -> list[str]:
@@ -193,12 +181,8 @@ def _progress_line(
     )
 
 
-def _stop_path(memory_root: Path) -> Path:
-    return memory_root / "STOP"
-
-
 def _should_stop(state: dict[str, Any], cfg: LoopConfig, memory_root: Path) -> bool:
-    if _stop_path(memory_root).is_file():
+    if (memory_root / "STOP").is_file():
         return True
     if int(state.get("no_improve") or 0) >= int(cfg.k):
         return True
@@ -249,11 +233,18 @@ def _session_bench_bits(ctx: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _session_from_ctx(iter_n: int, ctx: dict[str, Any]) -> dict[str, Any]:
+def _session_payload(iter_n: int, ctx: dict[str, Any]) -> dict[str, Any]:
     p = _session_head(iter_n, ctx["decision"], ctx["base_sha"], ctx["commit_sha"])
     p.update(_session_cluster_bits(ctx["clusters"]))
     p.update(_session_bench_bits(ctx))
     return p
+
+
+def _capability_dual(ctx: dict[str, Any]) -> float:
+    """Restored dual after revert/noop; observed after only on real commit."""
+    if ctx["decision"] == "commit":
+        return _dual(ctx["after"])
+    return _dual(ctx["before"])
 
 
 def _pack_gate(
@@ -381,9 +372,7 @@ class AgentLoop:
         ctx: dict[str, Any],
         cluster_key: str | None,
     ) -> None:
-        state = self._update_state(
-            state, iter_n, ctx["after"], ctx["decision"], cluster_key
-        )
+        state = self._update_state(state, iter_n, ctx, cluster_key)
         self.store.save(state)
         self._log_progress(iter_n, ctx, cluster_key)
 
@@ -435,8 +424,6 @@ class AgentLoop:
     ) -> tuple[str, str | None]:
         if not pi_res.success or not lint_ok or not pytest_ok:
             return self._do_revert(base_sha)
-        if _should_revert_drop(before, after, self.config.drop_tol):
-            return self._do_revert(base_sha)
         if not _is_improve(before, after):
             return self._do_revert(base_sha)
         return self._commit_if_any(base_sha, before, after)
@@ -450,7 +437,7 @@ class AgentLoop:
     ) -> tuple[str, str | None]:
         paths = _filter_allowed(_changed_paths(self.cwd))
         if not paths:
-            return "commit", base_sha
+            return "noop", None
         msg = (
             f"agent cycle dual {_dual(before):.4f}->{_dual(after):.4f} "
             f"fails {_n_fails(before)}->{_n_fails(after)}"
@@ -461,13 +448,12 @@ class AgentLoop:
         self,
         state: dict[str, Any],
         iter_n: int,
-        after: dict[str, Any],
-        decision: str,
+        ctx: dict[str, Any],
         cluster_key: str | None,
     ) -> dict[str, Any]:
-        dual = _dual(after)
+        dual = _capability_dual(ctx)
         self._fill_state_common(state, iter_n, dual, cluster_key)
-        self._fill_state_gate(state, dual, decision)
+        self._fill_state_gate(state, dual, ctx["decision"])
         return state
 
     def _fill_state_common(
@@ -490,7 +476,7 @@ class AgentLoop:
 
     def _write_session(self, iter_n: int, ctx: dict[str, Any]) -> Path:
         path = _session_path(self.memory, iter_n)
-        _write_json(path, _session_from_ctx(iter_n, ctx))
+        _write_json(path, _session_payload(iter_n, ctx))
         return path
 
     def _publish(self, event_type: str, payload: dict[str, Any]) -> None:

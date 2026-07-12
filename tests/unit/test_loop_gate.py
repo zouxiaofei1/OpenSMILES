@@ -10,7 +10,7 @@ from typing import Any
 from agent_loop.config import LoopConfig
 from agent_loop.events import EventBus
 from agent_loop.git_gate import GitGate
-from agent_loop.loop import AgentLoop, CycleResult
+from agent_loop.loop import AgentLoop, CycleResult, _should_stop
 from agent_loop.pi_runner import MockPiRunner
 from agent_loop.state import StateStore
 
@@ -66,6 +66,10 @@ def _make_loop(
     *,
     drop_tol: float = 0.005,
     max_iters: int = 1,
+    target_dual: float = 0.99,
+    lint_fn=None,
+    pytest_fn=None,
+    k: int = 5,
 ) -> AgentLoop:
     mem = repo / "agent_loop" / "memory"
     mem.mkdir(parents=True, exist_ok=True)
@@ -87,8 +91,8 @@ def _make_loop(
         drop_tol=drop_tol,
         mock_pi=True,
         bench_limit=5,
-        k=5,
-        target_dual=0.99,
+        k=k,
+        target_dual=target_dual,
     )
     scores_iter = iter(scores)
 
@@ -101,8 +105,8 @@ def _make_loop(
         pi_runner=MockPiRunner(),
         bus=EventBus(),
         bench_fn=bench_fn,
-        pytest_fn=lambda: True,
-        lint_fn=lambda: [],
+        pytest_fn=pytest_fn or (lambda: True),
+        lint_fn=lint_fn or (lambda: []),
         git=GitGate(repo),
         store=StateStore(mem),
     )
@@ -123,7 +127,6 @@ def test_gate_reverts_on_dual_drop(tmp_path: Path):
 
 def test_gate_commits_on_dual_up(tmp_path: Path):
     repo = _init_repo(tmp_path)
-    # Simulate an allowlisted change so GitGate has something to commit.
     target = repo / "src" / "namepredict" / "layer5" / "note.py"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("x = 1\n", encoding="utf-8")
@@ -137,3 +140,66 @@ def test_gate_commits_on_dual_up(tmp_path: Path):
     session = json.loads(result.session_path.read_text(encoding="utf-8"))
     assert session["decision"] == "commit"
     assert session["status"] == "gate_pass"
+
+
+def test_lint_fail_reverts_last_dual_stays_before(tmp_path: Path):
+    repo = _init_repo(tmp_path)
+    junk = repo / "src" / "namepredict" / "broken.py"
+    junk.parent.mkdir(parents=True, exist_ok=True)
+    junk.write_text("broken = True\n", encoding="utf-8")
+
+    loop = _make_loop(
+        repo,
+        [_report(0.4, 10), _report(0.99, 1)],
+        lint_fn=lambda: ["lint error"],
+    )
+    result = loop.run_once()
+    assert result.decision == "revert"
+    assert result.dual_before == 0.4
+    assert result.dual_after == 0.99
+    state = loop.store.load()
+    assert state["last_dual"] == 0.4
+    assert not junk.exists()
+    session = json.loads(result.session_path.read_text(encoding="utf-8"))
+    assert session["bench_after"]["dual"] == 0.99
+
+
+def test_same_dual_fails_down_commits(tmp_path: Path):
+    repo = _init_repo(tmp_path)
+    target = repo / "src" / "namepredict" / "layer1" / "fix.py"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("x = 1\n", encoding="utf-8")
+
+    loop = _make_loop(repo, [_report(0.5, 10), _report(0.5, 7)])
+    result = loop.run_once()
+    assert result.decision == "commit"
+    assert result.dual_before == 0.5
+    assert result.dual_after == 0.5
+    state = loop.store.load()
+    assert state["last_dual"] == 0.5
+    assert state["no_improve"] == 0
+
+
+def test_empty_dirty_dual_up_is_noop_increments_no_improve(tmp_path: Path):
+    repo = _init_repo(tmp_path)
+    loop = _make_loop(repo, [_report(0.5, 10), _report(0.7, 5)])
+    result = loop.run_once()
+    assert result.decision == "noop"
+    state = loop.store.load()
+    assert state["last_dual"] == 0.5
+    assert state["no_improve"] == 1
+
+
+def test_stop_uses_capability_last_dual_not_false_after_revert(tmp_path: Path):
+    repo = _init_repo(tmp_path)
+    loop = _make_loop(
+        repo,
+        [_report(0.4, 10), _report(0.99, 1)],
+        lint_fn=lambda: ["bad"],
+        target_dual=0.99,
+        max_iters=10,
+    )
+    loop.run_once()
+    state = loop.store.load()
+    assert state["last_dual"] == 0.4
+    assert not _should_stop(state, loop.config, loop.memory)

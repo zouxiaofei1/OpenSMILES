@@ -5,16 +5,22 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path, PurePosixPath
 
-
 class GitGateError(Exception):
     """Raised when git gate rejects a path or git fails."""
 
 
 # Safe prefixes the agent loop may commit (posix-style, relative).
-_DEFAULT_ALLOWED = (
+DEFAULT_ALLOWED = (
     "src/namepredict/",
     "tests/unit/",
     "agent_loop/memory/",
+    "skills/chem-tdd-skill/",
+)
+
+# Untracked clean on revert — production only; never wipe memory sessions.
+CLEAN_ON_REVERT = (
+    "src/namepredict/",
+    "tests/unit/",
     "skills/chem-tdd-skill/",
 )
 
@@ -28,7 +34,7 @@ class GitGate:
         allowed_paths: tuple[str, ...] | None = None,
     ) -> None:
         self.cwd = Path(cwd)
-        self.allowed_paths = tuple(allowed_paths or _DEFAULT_ALLOWED)
+        self.allowed_paths = tuple(allowed_paths or DEFAULT_ALLOWED)
 
     def snapshot(self) -> str:
         """Return current HEAD sha."""
@@ -43,8 +49,9 @@ class GitGate:
         return self.snapshot()
 
     def revert(self, sha: str) -> None:
-        """Hard-reset working tree to sha (drop failed cycle)."""
+        """Hard-reset to sha and remove untracked production allowlist files."""
         self._git("reset", "--hard", sha)
+        self._git("clean", "-fd", "--", *CLEAN_ON_REVERT)
 
     def _assert_allowed(self, rels: list[str]) -> None:
         for rel in rels:
