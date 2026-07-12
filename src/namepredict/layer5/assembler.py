@@ -165,6 +165,20 @@ def _acid_names(n: int) -> tuple[str, str] | None:
     return _pair(ACID_EN, ACID_ZH, n)
 
 
+def _diacid_from_alkane(n: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain or n < 3:
+        return None
+    en, zh = plain
+    return f"{en}dioic acid", f"{zh[0]}二酸"
+
+
+def _diacid_names(n: int) -> tuple[str, str] | None:
+    if n == 2:
+        return "oxalic acid", "草酸"
+    return _diacid_from_alkane(n)
+
+
 def _aldehyde_names(n: int) -> tuple[str, str] | None:
     return _pair(ALDEHYDE_EN, ALDEHYDE_ZH, n)
 
@@ -261,6 +275,8 @@ def _alkyne_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | N
 def _acid_ald_amide(kind: str, n: int) -> tuple[str, str] | None:
     if kind == "acid":
         return _acid_names(n)
+    if kind == "diacid":
+        return _diacid_names(n)
     if kind == "aldehyde":
         return _aldehyde_names(n)
     if kind == "amide":

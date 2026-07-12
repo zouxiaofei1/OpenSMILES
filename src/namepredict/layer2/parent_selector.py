@@ -159,6 +159,34 @@ def _diol_parent(info: dict) -> dict:
     return _parent_dict(chain, "diol", oh_c_idxs=pair)
 
 
+def _cooh_c_pair(info: dict) -> tuple[int, int] | None:
+    cs = info.get("carboxyls") or []
+    if len(cs) != 2:
+        return None
+    a, b = cs[0]["c_idx"], cs[1]["c_idx"]
+    return None if a == b else (a, b)
+
+
+def _no_side_fg_diacid(info: dict) -> bool:
+    bad = (
+        "has_ester", "has_amide", "has_nitrile",
+        "has_aldehyde", "has_ketone", "has_amine", "has_alcohol",
+    )
+    return not any(info.get(k) for k in bad)
+
+
+def _is_simple_alkanedioic(info: dict) -> bool:
+    if info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"):
+        return False
+    return _no_side_fg_diacid(info) and _cooh_c_pair(info) is not None
+
+
+def _diacid_parent(info: dict) -> dict:
+    pair = _cooh_c_pair(info) or (0, 0)
+    chain = _chain_through_two(info["mol"], pair[0], pair[1])
+    return _parent_dict(chain, "diacid", cooh_c_idxs=pair)
+
+
 def _parent_core(chain: list[int], kind: str) -> dict:
     return {"chain": chain, "n_carbons": len(chain), "kind": kind}
 
@@ -184,6 +212,8 @@ def _amine_parent(info: dict) -> dict:
 
 
 def _acid_parent(info: dict) -> dict:
+    if _is_simple_alkanedioic(info):
+        return _diacid_parent(info)
     cooh_c = info["carboxyls"][0]["c_idx"]
     return _parent_dict(_chain_through(info, cooh_c), "acid", cooh_c_idx=cooh_c)
 
