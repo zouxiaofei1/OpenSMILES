@@ -109,6 +109,8 @@ def _acid_parent(info: dict) -> dict:
 
 
 def _ketone_parent(info: dict) -> dict:
+    if _is_simple_cycloketone(info):
+        return _cycloketone_parent(info)
     ket_c = info["ketones"][0]["c_idx"]
     return _parent_dict(_chain_through(info, ket_c), "ketone", ketone_c_idx=ket_c)
 
@@ -318,6 +320,51 @@ def _cycloalcohol_parent(info: dict) -> dict:
     chain = list(info["rings"][0]["atom_ids"])
     oh_c = info["hydroxyls"][0]["c_idx"]
     return _parent_dict(chain, "cycloalcohol", oh_c_idx=oh_c)
+
+
+def _dbl_o_idx(mol: Mol, c_idx: int) -> int | None:
+    carbon = mol.GetAtomWithIdx(c_idx)
+    for bond in carbon.GetBonds():
+        if bond.GetBondType().name != "DOUBLE":
+            continue
+        other = bond.GetOtherAtom(carbon)
+        if other.GetAtomicNum() == 8:
+            return other.GetIdx()
+    return None
+
+
+def _mono_ketone_on_ring(info: dict, ring_set: set[int]) -> dict | None:
+    ketones = info.get("ketones") or []
+    if len(ketones) != 1:
+        return None
+    ket = ketones[0]
+    if ket["c_idx"] not in ring_set:
+        return None
+    return ket
+
+
+def _ketone_o_allowed(mol: Mol, ring_set: set[int], ket: dict) -> bool:
+    o_idx = _dbl_o_idx(mol, ket["c_idx"])
+    if o_idx is None:
+        return False
+    return _hetero_allowed(mol, ring_set, {o_idx})
+
+
+def _is_simple_cycloketone(info: dict) -> bool:
+    if not _is_cycloalkane_core(info):
+        return False
+    mol: Mol = info["mol"]
+    ring_set = set(info["rings"][0]["atom_ids"])
+    ket = _mono_ketone_on_ring(info, ring_set)
+    if ket is None or not _ketone_o_allowed(mol, ring_set, ket):
+        return False
+    return not _outside_carbons(mol, ring_set)
+
+
+def _cycloketone_parent(info: dict) -> dict:
+    chain = list(info["rings"][0]["atom_ids"])
+    ket_c = info["ketones"][0]["c_idx"]
+    return _parent_dict(chain, "cycloketone", ketone_c_idx=ket_c)
 
 
 def _acid_ester_amide(info: dict) -> dict | None:

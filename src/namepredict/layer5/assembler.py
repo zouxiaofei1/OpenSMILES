@@ -76,6 +76,14 @@ def _cycloalcohol_names(n: int) -> tuple[str, str] | None:
     return f"cyclo{en[:-1]}ol", f"环{zh[0]}醇"
 
 
+def _cycloketone_names(n: int) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain or n < 3:
+        return None
+    en, zh = plain
+    return f"cyclo{en[:-1]}one", f"环{zh[0]}酮"
+
+
 def _alcohol_plain(n: int) -> tuple[str, str] | None:
     return _pair(ALCOHOL_EN, ALCOHOL_ZH, n)
 
@@ -243,6 +251,8 @@ def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return _ester_names(n, parent.get("alkoxy_n"))
     if kind == "ketone":
         return _ketone_names(n, numbered.get("ketone_locant"))
+    if kind == "cycloketone":
+        return _cycloketone_names(n)
     return None
 
 

@@ -251,10 +251,20 @@ def _orient_cycloalcohol(chain: list[int], parent: dict, substituents: list) -> 
     return _prefer_chain(base, rev, substituents)
 
 
+def _orient_cycloketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    ket_c = parent.get("ketone_c_idx")
+    if ket_c is None or ket_c not in chain:
+        return chain
+    base = _rotate_to_front(chain, ket_c)
+    rev = _rotate_to_front(list(reversed(chain)), ket_c)
+    return _prefer_chain(base, rev, substituents)
+
+
 def _kind_orienters() -> dict:
     base = {
         "alcohol": _orient_alcohol,
         "cycloalcohol": _orient_cycloalcohol,
+        "cycloketone": _orient_cycloketone,
         "amine": _orient_amine,
         "alkene": _orient_alkene,
         "alkyne": _orient_alkyne,
@@ -295,7 +305,7 @@ def _amine_locant(oriented: dict) -> int | None:
 def _ketone_locant(oriented: dict) -> int | None:
     chain = oriented.get("chain") or []
     ket_c = oriented.get("ketone_c_idx")
-    if oriented.get("kind") != "ketone" or ket_c not in chain:
+    if oriented.get("kind") not in ("ketone", "cycloketone") or ket_c not in chain:
         return None
     return chain.index(ket_c) + 1
 
