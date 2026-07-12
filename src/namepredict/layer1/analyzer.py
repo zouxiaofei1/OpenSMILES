@@ -164,6 +164,17 @@ def _hydroxyl_entries(mol: Mol) -> list[dict]:
     return out
 
 
+def _thiol_entries(mol: Mol) -> list[dict]:
+    out: list[dict] = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() != 16 or atom.GetTotalNumHs() < 1:
+            continue
+        if _carbon_neighbor_count(atom) != 1:
+            continue
+        out.append({"s_idx": atom.GetIdx(), "c_idx": _carbon_neighbor(atom).GetIdx()})
+    return out
+
+
 def _is_amide_n(atom) -> bool:
     for n in atom.GetNeighbors():
         if n.GetAtomicNum() == 6 and _has_double_bonded_o(n):
@@ -388,15 +399,13 @@ def _fg_more_lists(
     triple_bonds: list[dict],
     acyl_chlorides: list[dict],
     anhydrides: list[dict],
+    thiols: list[dict],
 ) -> dict:
     return {
-        "aldehydes": aldehydes,
-        "amines": amines,
-        "nitriles": nitriles,
-        "double_bonds": double_bonds,
-        "triple_bonds": triple_bonds,
-        "acyl_chlorides": acyl_chlorides,
-        "anhydrides": anhydrides,
+        "aldehydes": aldehydes, "amines": amines, "nitriles": nitriles,
+        "double_bonds": double_bonds, "triple_bonds": triple_bonds,
+        "acyl_chlorides": acyl_chlorides, "anhydrides": anhydrides,
+        "thiols": thiols,
     }
 
 
@@ -408,7 +417,7 @@ def _fg_lists(parts: dict) -> dict:
     more = _fg_more_lists(
         parts["aldehydes"], parts["amines"], parts["nitriles"],
         parts["double_bonds"], parts["triple_bonds"], parts["acyl_chlorides"],
-        parts["anhydrides"],
+        parts["anhydrides"], parts["thiols"],
     )
     return {**core, **more}
 
@@ -432,6 +441,7 @@ def _fg_bools_more(lists: dict) -> dict:
         "has_alkyne": bool(lists["triple_bonds"]),
         "has_acyl_chloride": bool(lists["acyl_chlorides"]),
         "has_anhydride": bool(lists["anhydrides"]),
+        "has_thiol": bool(lists["thiols"]),
     }
 
 
@@ -458,6 +468,7 @@ def _fg_parts_b(mol: Mol) -> dict:
         "triple_bonds": _triple_bond_entries(mol),
         "acyl_chlorides": _acyl_chloride_entries(mol),
         "anhydrides": _anhydride_entries(mol),
+        "thiols": _thiol_entries(mol),
     }
 
 

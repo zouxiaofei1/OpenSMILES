@@ -59,6 +59,10 @@ def _orient_alcohol(chain: list[int], parent: dict, substituents: list) -> list[
     return _orient_by_single_fg(chain, parent, substituents, "oh_c_idx")
 
 
+def _orient_thiol(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_by_single_fg(chain, parent, substituents, "sh_c_idx")
+
+
 def _orient_amine(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_by_single_fg(chain, parent, substituents, "amine_c_idx")
 
@@ -268,6 +272,7 @@ def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> li
 def _hetero_orienters() -> dict:
     return {
         "alcohol": _orient_alcohol,
+        "thiol": _orient_thiol,
         "diol": _orient_polyol,
         "triol": _orient_polyol,
         "diamine": _orient_diamine,
@@ -318,6 +323,10 @@ def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
 
 def _oh_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("alcohol", "cycloalcohol"), "oh_c_idx")
+
+
+def _sh_locant(oriented: dict) -> int | None:
+    return _fg_locant(oriented, ("thiol",), "sh_c_idx")
 
 
 def _pair_locants(oriented: dict, kind: str, key: str) -> list[int] | None:
@@ -376,6 +385,10 @@ def _omit_oh(oh_pos: int | None, n_carbons: int, kind: str | None = None) -> boo
     return oh_pos == 1 and n_carbons <= 2
 
 
+def _omit_sh(sh_pos: int | None, n_carbons: int) -> bool:
+    return sh_pos == 1 and n_carbons <= 2
+
+
 def _omit_amine(am_pos: int | None, n_carbons: int, kind: str | None = None) -> bool:
     if kind == "cycloamine":
         return True
@@ -411,19 +424,22 @@ def _oh_am_locants(oriented: dict, n: int) -> dict:
     oh, am = _oh_locant(oriented), _amine_locant(oriented)
     kind = oriented.get("kind")
     return {
-        "oh_locant": oh,
-        "oh_locants": _oh_locants(oriented),
-        "amine_locants": _amine_pair_locants(oriented),
+        "oh_locant": oh, "oh_locants": _oh_locants(oriented),
         "omit_oh_locant": _omit_oh(oh, n, kind),
-        "amine_locant": am,
+        "amine_locant": am, "amine_locants": _amine_pair_locants(oriented),
         "omit_amine_locant": _omit_amine(am, n, kind),
     }
+
+
+def _sh_locants(oriented: dict, n: int) -> dict:
+    sh = _sh_locant(oriented)
+    return {"sh_locant": sh, "omit_sh_locant": _omit_sh(sh, n)}
 
 
 def _fg_locants(oriented: dict) -> dict:
     n = oriented.get("n_carbons", 0)
     base = {
-        **_oh_am_locants(oriented, n),
+        **_oh_am_locants(oriented, n), **_sh_locants(oriented, n),
         "ketone_locant": _ketone_locant(oriented),
         "ketone_locants": _ketone_pair_locants(oriented),
     }

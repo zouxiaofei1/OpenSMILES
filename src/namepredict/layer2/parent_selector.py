@@ -204,6 +204,10 @@ def _alcohol_parent(info: dict) -> dict:
     oh_c = info["hydroxyls"][0]["c_idx"]
     return _parent_dict(_chain_through(info, oh_c), "alcohol", oh_c_idx=oh_c)
 
+def _thiol_parent(info: dict) -> dict:
+    sh_c = info["thiols"][0]["c_idx"]
+    return _parent_dict(_chain_through(info, sh_c), "thiol", sh_c_idx=sh_c)
+
 def _amine_parent(info: dict) -> dict:
     if _is_simple_cycloamine(info):
         return _cycloamine_parent(info)
@@ -433,6 +437,8 @@ def _carbonyl_parent(info: dict) -> dict | None:
 def _hetero_parent(info: dict) -> dict | None:
     if info.get("has_alcohol") and info.get("hydroxyls"):
         return _alcohol_parent(info)
+    if info.get("has_thiol") and info.get("thiols"):
+        return _thiol_parent(info)
     if info.get("has_amine") and info.get("amines"):
         return _amine_parent(info)
     return None

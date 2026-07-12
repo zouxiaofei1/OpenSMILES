@@ -101,6 +101,17 @@ def _alcohol_names(n: int, oh_locant: int | None, omit: bool) -> tuple[str, str]
     en, zh = plain
     return f"{en[:-2]}-{oh_locant}-ol", f"{zh[0]}-{oh_locant}-醇"
 
+
+def _thiol_names(n: int, sh_locant: int | None, omit: bool) -> tuple[str, str] | None:
+    plain = _alkane_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    if _omit_term_locant(n, sh_locant, omit):
+        return f"{en}thiol", f"{zh[0]}硫醇"
+    return f"{en}-{sh_locant}-thiol", f"{zh[0]}-{sh_locant}-硫醇"
+
+
 def _pair_loc_str(locs: list[int]) -> str:
     return ",".join(str(x) for x in locs)
 
@@ -307,6 +318,8 @@ def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
 def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
+    if kind == "thiol":
+        return _thiol_names(n, numbered.get("sh_locant"), numbered.get("omit_sh_locant", False))
     if kind in ("diol", "triol"):
         return _polyol_names(n, numbered.get("oh_locants"), kind)
     return None
