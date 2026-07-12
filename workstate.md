@@ -43,11 +43,12 @@
 [#7fee636][IUPAC P-66.1.1.1.3] 开链简单N-取代酰胺：L1仲/叔酰胺检测(勿当醛)+L3 N-烷基+L5 N-methylacetamide/N-甲基乙酰胺 [+10 tests, dual 4.3%(175)→4.4%(178), fails 3887→3884]
 [#3df1d6b][IUPAC P-63.2.2] 开链简单二烷基醚：L1醚氧检测+L2对称/不对称母体+L5 diethyl ether/二乙醚与methoxyethane/甲氧基乙烷 [+12 tests, dual 4.4%(178)→4.4%(179), fails 3884→3883]
 [#6429c09][IUPAC P-63.2.1] 开链简单二烷基硫醚：L1二配位S(排亚砜/硫酯)+L2对称/不对称双臂母体+L5 dimethyl/ethyl methyl sulfide与二…硫醚/…基…基硫醚 [+11 tests, dual 4.4%(179)→4.4%(180), fails 3883→3882]
+[#8285645][IUPAC P-22.1.3] 简单苯母体：未取代/单卤/单C1–C2正烷基；toluene保留；`_pure_alkyl_outside`拒不饱和侧链 [+14 tests, dual 4.4%(180)→4.6%(187), fails 3882→3875]
 
 ## 其他
-- 基线(本轮前): en=4.4%(179/4062) zh=18.3%(138/756) dual=4.4%(179/4062)
-- 本次: en=4.4%(180/4062) zh=18.4%(139/756) dual=4.4%(180/4062) fails=3882
-- 改动: L1 检测二配位硫（排 C=O 邻/degree≠2）；L2 对称sulfide/不对称双臂；L5 对称dimethyl sulfide/二甲硫醚，不对称ethyl methyl sulfide/乙基甲基硫醚
-- 验证: CSC→dimethyl sulfide；CCSC→ethyl methyl sulfide；CCSCC→diethyl sulfide；CS(C)=O/CC(=O)SC 不误报 sulfide；CCS仍ethanethiol
-- 已知缺口: 不饱和二酸(E/Z)；支化烷基前缀；芳醚/芳硫醚；多醚；亚砜/砜系统命名
-- 下一步候选: 不饱和二酸；或支化烷基前缀；或芳环单取代
+- 基线(本轮前): en=4.4%(180/4062) zh=18.4%(139/756) dual=4.4%(180/4062)
+- 本次: en=4.6%(187/4062) zh=19.3%(146/756) dual=4.6%(187/4062) fails=3875
+- 改动: L2 芳环 benzene 母体(单环六碳芳香)+单卤/C1–C2饱和烷基；L4 环定向省单取代位次；L5 benzene/卤苯/toluene/ethylbenzene；饱和侧链键级校验
+- 验证: c1ccccc1→benzene；Clc1ccccc1→chlorobenzene；Cc1ccccc1→toluene；CCc1ccccc1→ethylbenzene；C=Cc1ccccc1≠ethylbenzene；C1CCCCC1仍cyclohexane
+- 已知缺口: 多取代苯；C3+烷基苯；异丙苯；酚/硝基苯；不饱和二酸(E/Z)；支化烷基前缀
+- 下一步候选: 多取代苯(二卤/二烷基位次)；或不饱和二酸；或支化烷基前缀
