@@ -15,14 +15,18 @@ def _maybe_reverse(chain: list[int], pos: int) -> list[int]:
     return chain
 
 
-def _orient_chain(parent: dict) -> list[int]:
-    chain = list(parent.get("chain") or [])
-    if parent.get("kind") != "alcohol" or not chain:
-        return chain
+def _orient_alcohol(chain: list[int], parent: dict) -> list[int]:
     pos = _oh_position(parent)
     if pos is None:
         return chain
     return _maybe_reverse(chain, pos)
+
+
+def _orient_chain(parent: dict) -> list[int]:
+    chain = list(parent.get("chain") or [])
+    if parent.get("kind") != "alcohol" or not chain:
+        return chain
+    return _orient_alcohol(chain, parent)
 
 
 def _oh_locant(oriented: dict) -> int | None:
@@ -33,14 +37,20 @@ def _oh_locant(oriented: dict) -> int | None:
     return chain.index(oh_c) + 1
 
 
-def number(parent: dict, substituents: list) -> dict:
-    chain = _orient_chain(parent)
-    oriented = {**parent, "chain": chain}
-    oh_pos = _oh_locant(oriented)
-    omit = oh_pos == 1 and oriented.get("n_carbons", 0) <= 2
+def _omit_oh(oh_pos: int | None, n_carbons: int) -> bool:
+    return oh_pos == 1 and n_carbons <= 2
+
+
+def _pack(oriented: dict, substituents: list, oh_pos: int | None) -> dict:
     return {
         "parent": oriented,
         "substituents": substituents,
         "oh_locant": oh_pos,
-        "omit_oh_locant": omit,
+        "omit_oh_locant": _omit_oh(oh_pos, oriented.get("n_carbons", 0)),
     }
+
+
+def number(parent: dict, substituents: list) -> dict:
+    chain = _orient_chain(parent)
+    oriented = {**parent, "chain": chain}
+    return _pack(oriented, substituents, _oh_locant(oriented))

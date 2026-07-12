@@ -23,14 +23,18 @@ def _elapsed_ms(t0: float) -> float:
     return (time.perf_counter() - t0) * 1000.0
 
 
+def _run_layers(mol) -> dict:
+    info = analyze(mol)
+    parent = select_parent(info)
+    subst = extract_substituents(info, parent)
+    return number(parent, subst)
+
+
 def _pipeline(smiles: str, t0: float) -> NameResult:
     mol = preprocess(smiles)
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
-    info = analyze(mol)
-    parent = select_parent(info)
-    subst = extract_substituents(info, parent)
-    numbered = number(parent, subst)
+    numbered = _run_layers(mol)
     return assemble(numbered, time_ms=_elapsed_ms(t0))
 
 
@@ -39,6 +43,11 @@ def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
         cache.put(smiles, result)
     except ValueError:
         pass
+
+
+def _name_uncached(smiles: str, t0: float) -> NameResult:
+    result = _pipeline(smiles, t0)
+    return result
 
 
 class SMILESNNamer:
@@ -50,7 +59,7 @@ class SMILESNNamer:
         hit = self.cache.get(smiles)
         if hit is not None:
             return hit
-        result = _pipeline(smiles, t0)
+        result = _name_uncached(smiles, t0)
         if result.success:
             _cache_put(self.cache, smiles, result)
         return result
