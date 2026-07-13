@@ -82,5 +82,6 @@
 [#2e8d793][IUPAC P-22.2.1 / P-25] 保留母体 benzofuran（苯并呋喃；O=1；单甲基/单卤+2-胺） [+tests, dual 7.3%(298)→7.4%(299), fails 3764→3763]
 [#5f85fcc][IUPAC P-65.1.1 / P-22.2.2] 饱和单杂环羧酸母体(piperidine/pyrrolidine/piperazine等) [+tests, dual 7.4%(299)→7.4%(301), fails 3763→3761]
 [#46a9f90][IUPAC P-22.2.1 / P-25] 保留母体 1-benzothiophene（+ol）及 anisole 中文→甲氧基苯 [+tests, dual 7.4%(301)→7.5%(304), fails 3761→3758]
+[#c20d51b][IUPAC P-22.2.1 / P-25] 保留母体 quinoline/isoquinoline（+ol/+carboxylic） [+tests, dual 7.5%(304)→7.6%(307), fails 3758→3755]
 
 ## 其他
