@@ -49,6 +49,12 @@ _ARENE_FG = {
     "benzaldehyde": ("benzaldehyde", "苯甲醛"),
     "acetophenone": ("acetophenone", "苯乙酮"),
     "pyridine": ("pyridine", "吡啶"),
+    "furan": ("furan", "呋喃"),
+    "thiophene": ("thiophene", "噻吩"),
+    "pyrrole": ("1H-pyrrole", "吡咯"),
+    "pyrimidine": ("pyrimidine", "嘧啶"),
+    "pyrazine": ("pyrazine", "吡嗪"),
+    "pyridazine": ("pyridazine", "哒嗪"),
 }
 
 

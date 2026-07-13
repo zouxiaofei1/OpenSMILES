@@ -5,6 +5,7 @@ from namepredict.layer2.alkenedioic import _alkenedioic_parent, _is_simple_alken
 from namepredict.layer2.arene_carbonyl import (
     _try_acetophenone_parent, _try_benzaldehyde_parent, _try_benzoic_parent,
 )
+from namepredict.layer2.heteroarene5 import _try_diazine_parent, _try_hetero5_parent
 from namepredict.layer2.pyridine import (
     _try_pyridine_parent, _try_pyridinecarboxylic_parent,
 )
@@ -477,8 +478,9 @@ def _unsat_parent(info: dict) -> dict | None:
     if _is_polyene(info): return _polyene_parent(info)
     return _alkene_parent(info) if _is_mono_alkene(info) else None
 def _ring_parent(info: dict) -> dict | None:
-    p = _try_pyridine_parent(info)
-    if p is not None: return p
+    for try_fn in (_try_pyridine_parent, _try_diazine_parent, _try_hetero5_parent):
+        p = try_fn(info)
+        if p is not None: return p
     if _is_simple_benzene(info): return _benzene_parent(info)
     return _cycloalkane_parent(info) if _is_simple_cycloalkane(info) else None
 def select_parent(info: dict) -> dict:

@@ -272,33 +272,40 @@ def _better_ring_pair(best, best_locs, cand, cs, subs):
     return best, best_locs
 
 
-def _orient_benzenediol(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    cs = parent.get("oh_c_idxs")
+def _orient_ring_pair(chain: list[int], parent: dict, key: str, subs: list) -> list[int]:
+    cs = parent.get(key)
     if not cs or not chain:
         return chain
     best, best_locs = chain, _pair_locs_on(chain, cs)
     for cand in _ring_candidates(chain):
-        best, best_locs = _better_ring_pair(best, best_locs, cand, cs, substituents)
+        best, best_locs = _better_ring_pair(best, best_locs, cand, cs, subs)
     return best
-
-
+def _orient_benzenediol(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_ring_pair(chain, parent, "oh_c_idxs", substituents)
+def _orient_diazine(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_ring_pair(chain, parent, "n_idxs", substituents)
 def _orient_cycloketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fixed(chain, parent, substituents, "ketone_c_idx")
-
-
 def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fixed(chain, parent, substituents, "amine_c_idx")
-
-
 def _orient_benzoic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fixed(chain, parent, substituents, "ring_attach_idx")
 def _orient_pyridine(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fixed(chain, parent, substituents, "n_idx")
+def _orient_hetero5(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_ring_fixed(chain, parent, substituents, "hetero_idx")
 def _orient_pyridinecarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     attach, virtual = parent.get("ring_attach_idx"), list(substituents)
     if attach is not None:
         virtual = virtual + [{"attach_idx": attach, "en": ""}]
     return _orient_pyridine(chain, parent, virtual)
+def _arene_orienters() -> dict:
+    return {
+        "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
+        "furan": _orient_hetero5, "thiophene": _orient_hetero5, "pyrrole": _orient_hetero5,
+        "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
+        "pyridazine": _orient_diazine,
+    }
 def _hetero_orienters() -> dict:
     return {
         "alcohol": _orient_alcohol, "alkenol": _orient_alcohol, "thiol": _orient_thiol,
@@ -307,7 +314,7 @@ def _hetero_orienters() -> dict:
         "benzenediol": _orient_benzenediol,
         "cycloamine": _orient_cycloamine, "aniline": _orient_cycloamine,
         "amine": _orient_amine, "sec_amine": _orient_amine, "tert_amine": _orient_amine,
-        "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
+        **_arene_orienters(),
     }
 def _orient_polyene(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return orient_polyene(chain, parent, substituents, _prefer_chain)

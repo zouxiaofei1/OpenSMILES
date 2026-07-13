@@ -217,7 +217,7 @@ def _is_amide_n(atom) -> bool:
     return False
 
 def _amine_degree(atom) -> int | None:
-    if atom.GetAtomicNum() != 7 or _is_amide_n(atom):
+    if atom.GetAtomicNum() != 7 or _is_amide_n(atom) or atom.GetIsAromatic():
         return None
     n_c, n_h = _carbon_neighbor_count(atom), atom.GetTotalNumHs()
     if n_c == 1 and n_h >= 2:
