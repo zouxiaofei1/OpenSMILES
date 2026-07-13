@@ -309,6 +309,8 @@ def _aza_orienters() -> dict:
 def _fused_orienters() -> dict:
     return {
         "naphthalene": _orient_naphthalene, "indole": _orient_indole,
+        "indazole": _orient_indole, "indazolecarbonitrile": _orient_indole,
+        "indazolecarbaldehyde": _orient_indole,
         "benzofuran": _orient_indole, "benzofuranamine": _orient_indole,
         "benzothiophene": _orient_indole, "benzothiophenol": _orient_indole,
         "quinoline": _orient_indole, "isoquinoline": _orient_indole,
@@ -444,7 +446,8 @@ def _indole_sub_locant(chain: list[int], attach: int) -> int:
     loc = _INDOLE_LOCANTS[chain.index(attach)]
     return loc if loc is not None else chain.index(attach) + 1
 _FUSED56_KINDS = frozenset({
-    "indole", "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol",
+    "indole", "indazole", "indazolecarbonitrile", "indazolecarbaldehyde",
+    "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol",
 })
 _Q_KINDS = frozenset({
     "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",

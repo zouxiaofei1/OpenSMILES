@@ -9,19 +9,21 @@ from namepredict.layer2.hetero5_carboxylic import _try_hetero5carboxylic_parent 
 from namepredict.layer2.sat_hetero_carboxylic import _try_sat_hetero_carboxylic_parent as _try_shcooh
 from namepredict.layer2.benzofuran import _try_benzofuranamine_parent as _try_bfam
 from namepredict.layer2.benzothiophene import _try_benzothiophenol_parent as _try_btol
+from namepredict.layer2.indazole import (
+    _try_indazolecarbaldehyde_parent as _try_izald, _try_indazolecarbonitrile_parent as _try_izcn,
+)
 from namepredict.layer2.quinoline import (
     _try_quinolinecarboxylic_parent as _try_qcooh, _try_quinolinol_parent as _try_qol,
 )
 from namepredict.layer2.heteroarene5 import _try_pyrimidinamine_parent
 from namepredict.layer2.pyridine import (
-    _try_pyridinecarbonitrile_parent as _try_pycn, _try_pyridinecarboxylic_parent,
-    _try_pyridin_fg_parent,
+    _try_pyridinecarbonitrile_parent as _try_pycn, _try_pyridinecarboxylic_parent, _try_pyridin_fg_parent,
 )
 from namepredict.layer2.ring_parent import (
-    _benzenediol_parent, _endocyclic_double, _is_simple_aniline,
-    _is_simple_benzene, _is_simple_benzenediol, _is_simple_cycloalcohol,
-    _is_simple_cycloalkane, _is_simple_cycloalkene, _is_simple_cycloamine,
-    _is_simple_cycloketone, _is_simple_phenol, _unsub_phenyl_at,
+    _benzenediol_parent, _endocyclic_double, _is_simple_aniline, _is_simple_benzene,
+    _is_simple_benzenediol, _is_simple_cycloalcohol, _is_simple_cycloalkane,
+    _is_simple_cycloalkene, _is_simple_cycloamine, _is_simple_cycloketone,
+    _is_simple_phenol, _unsub_phenyl_at,
 )
 from namepredict.layer2.scoring import _pick_best
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
@@ -317,7 +319,7 @@ def _ketone_parent(info: dict) -> dict:
         return _dione_parent(info)
     return _fg_chain(info, "ketones", "ketone", "ketone_c_idx")
 def _aldehyde_parent(info: dict) -> dict:
-    return _try_benzaldehyde_parent(info) or _unsat_or_sat(
+    return _try_izald(info) or _try_benzaldehyde_parent(info) or _unsat_or_sat(
         info, "has_aldehyde", "aldehydes", _ALKENAL_BAD, "alkenal", "aldehyde", "aldehyde_c_idx",
     )
 def _amide_n_alkyl(mol: Mol, am: dict, cs: list[int]) -> dict:
@@ -362,7 +364,7 @@ def _anhydride_parent(info: dict) -> dict:
         acyl_c_idx=e["c1_idx"], o_idx=e["o_idx"], other_acyl_c_idx=e["c2_idx"],
     )
 def _nitrile_parent(info: dict) -> dict:
-    return _try_pycn(info) or _unsat_or_sat(
+    return _try_izcn(info) or _try_pycn(info) or _unsat_or_sat(
         info, "has_nitrile", "nitriles", _ALKENENITRILE_BAD,
         "alkenenitrile", "nitrile", "nitrile_c_idx",
     )
@@ -483,7 +485,6 @@ def _hetero_parent(info: dict) -> dict | None:
     eth = _ether_parent(info)
     return eth if eth is not None else _sulfide_parent(info)
 def _fg_parent(info: dict) -> dict | None:
-    """Compat wrapper: multi-class FG tries + score (no short-circuit)."""
     from namepredict.layer2.candidates import _fg_parent as _fg_best
     return _fg_best(info)
 def _unsat_parent(info: dict) -> dict | None:
@@ -491,7 +492,6 @@ def _unsat_parent(info: dict) -> dict | None:
     if _is_polyene(info): return _polyene_parent(info)
     return _alkene_parent(info) if _is_mono_alkene(info) else None
 def _ring_parent(info: dict) -> dict | None:
-    """Compat wrapper: multi-class ring tries + score (no short-circuit)."""
     from namepredict.layer2.candidates import _ring_parent as _ring_best
     return _ring_best(info)
 def select_parent(info: dict) -> dict:

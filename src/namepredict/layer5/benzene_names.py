@@ -61,6 +61,7 @@ _ARENE_FG = {
     "pyridazine": ("pyridazine", "哒嗪"),
     "naphthalene": ("naphthalene", "萘"),
     "indole": ("1H-indole", "吲哚"),
+    "indazole": ("1H-indazole", "1H-吲唑"),
     "benzofuran": ("benzofuran", "苯并呋喃"),
     "benzothiophene": ("1-benzothiophene", "苯并[b]噻吩"),
     "quinoline": ("quinoline", "喹啉"),
@@ -288,15 +289,49 @@ def quinolinol_names(numbered: dict) -> tuple[str, str] | None:
     return f"quinolin-{loc}-ol", f"喹啉-{loc}-醇"
 
 
+_IZ_LOCANTS = (1, 2, 3, None, 4, 5, 6, 7, None)
+
+
+def _iz_fg_loc(numbered: dict) -> int | None:
+    """Indazole ring FG attach with indole-style locants (skip 3a/7a)."""
+    parent = numbered.get("parent") or {}
+    chain, attach = parent.get("chain") or [], parent.get("ring_attach_idx")
+    if attach is None or attach not in chain or len(chain) != 9:
+        return None
+    return _IZ_LOCANTS[chain.index(attach)]
+
+
+def indazolecarbonitrile_names(numbered: dict) -> tuple[str, str] | None:
+    loc = _iz_fg_loc(numbered)
+    if loc is None:
+        return None
+    return f"1H-indazole-{loc}-carbonitrile", f"1H-吲唑-{loc}-甲腈"
+
+
+def indazolecarbaldehyde_names(numbered: dict) -> tuple[str, str] | None:
+    loc = _iz_fg_loc(numbered)
+    if loc is None:
+        return None
+    return f"1H-indazole-{loc}-carbaldehyde", f"1H-吲唑-{loc}-甲醛"
+
+
+_PYRIDINE_KIND_FN = {
+    "pyridinecarboxylic": pyridinecarboxylic_names,
+    "pyridinecarbonitrile": pyridinecarbonitrile_names,
+    "pyridinamine": pyridinamine_names,
+    "pyridinol": pyridinol_names,
+    "benzofuranamine": benzofuranamine_names,
+    "benzothiophenol": benzothiophenol_names,
+    "quinolinol": quinolinol_names,
+    "quinolinecarboxylic": quinolinecarboxylic_names,
+    "indazolecarbonitrile": indazolecarbonitrile_names,
+    "indazolecarbaldehyde": indazolecarbaldehyde_names,
+}
+
+
 def pyridine_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, str] | None:
-    if kind == "pyridinecarboxylic": return pyridinecarboxylic_names(numbered)
-    if kind == "pyridinecarbonitrile": return pyridinecarbonitrile_names(numbered)
-    if kind == "pyridinamine": return pyridinamine_names(numbered)
-    if kind == "pyrimidinamine": return pyrimidinamine_names(numbered, build_prefix)
-    if kind == "pyridinol": return pyridinol_names(numbered)
-    if kind == "benzofuranamine": return benzofuranamine_names(numbered)
-    if kind == "benzothiophenol": return benzothiophenol_names(numbered)
-    if kind == "quinolinol": return quinolinol_names(numbered)
-    if kind == "quinolinecarboxylic": return quinolinecarboxylic_names(numbered)
-    return None
+    if kind == "pyrimidinamine":
+        return pyrimidinamine_names(numbered, build_prefix)
+    fn = _PYRIDINE_KIND_FN.get(kind)
+    return fn(numbered) if fn is not None else None
 

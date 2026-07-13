@@ -25,7 +25,8 @@ _FG_RANK = {
     "acyl_chloride": 10, "benzoyl_chloride": 10,
     "amide": 9,
     "nitrile": 8, "alkenenitrile": 8, "benzonitrile": 8, "pyridinecarbonitrile": 8,
-    "aldehyde": 7, "alkenal": 7, "benzaldehyde": 7,
+    "indazolecarbonitrile": 8,
+    "aldehyde": 7, "alkenal": 7, "benzaldehyde": 7, "indazolecarbaldehyde": 7,
     "ketone": 6, "dione": 6, "cycloketone": 6, "acetophenone": 6,
     "alcohol": 5, "alkenol": 5, "diol": 5, "triol": 5,
     "cycloalcohol": 5, "phenol": 5, "benzenediol": 5, "pyridinol": 5,
@@ -38,7 +39,7 @@ _FG_RANK = {
 }
 _HETERO_RING = frozenset(
     {"pyridine", "furan", "thiophene", "pyrrole", "imidazole", "pyrazole",
-     "pyrimidine", "pyrazine", "pyridazine", "indole", "benzofuran",
+     "pyrimidine", "pyrazine", "pyridazine", "indole", "indazole", "benzofuran",
      "benzothiophene", "quinoline", "isoquinoline",
      "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
      "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane"}
@@ -54,7 +55,8 @@ _RETAINED = frozenset(
      "benzoate", "benzonitrile", "benzoyl_chloride", "benzene", "naphthalene",
      "furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic",
      "imidazolecarboxylic", "pyrazolecarboxylic", "pyridinecarboxylic",
-     "quinolinecarboxylic", "pyridinecarbonitrile"}
+     "quinolinecarboxylic", "pyridinecarbonitrile",
+     "indazolecarbonitrile", "indazolecarbaldehyde"}
     | set(_HETERO_RING) | _SHCOOH
 )
 
@@ -85,7 +87,8 @@ def _is_carbo_ring(kind: str) -> int:
 
 def _n_rings(kind: str) -> int:
     if kind in (
-        "naphthalene", "indole", "benzofuran", "benzofuranamine",
+        "naphthalene", "indole", "indazole", "indazolecarbonitrile",
+        "indazolecarbaldehyde", "benzofuran", "benzofuranamine",
         "benzothiophene", "benzothiophenol",
         "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
     ):
