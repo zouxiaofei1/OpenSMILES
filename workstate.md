@@ -74,5 +74,6 @@
 [#e0c6e7f][IUPAC P-22.2.1 / P-25] 保留母体 1H-indole（苯并[b]吡咯；N=1…7a；单甲基/单卤） [+14 tests, dual 6.9%(279)→6.9%(280), fails 3783→3782]
 [#b5287d8][IUPAC P-14.3.4 / P-22.2.1] 五元杂芳简单取代上限1→2（halo/methyl；含2-iodo-4-methyl-imidazole） [+7 tests, dual 6.9%(280)→6.9%(281), fails 3782→3781]
 [#5ea08e4][IUPAC P-65.1.1 / 中文] pyridinecarboxylic 中文羧酸→甲酸（对齐 benzoic/cyclo/金标） [+5 tests, dual 6.9%(281)→7.0%(283), fails 3781→3779]
+[#68195de][IUPAC P-22.2.1 / P-14.3.4 / P-62.2.1] diazine 简单取代(halo/methyl/methoxy) + pyrimidinamine 母体 [+17 tests, dual 7.0%(283)→7.0%(285), fails 3779→3777]
 
 ## 其他
