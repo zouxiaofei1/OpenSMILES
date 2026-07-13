@@ -64,11 +64,12 @@
 [#c6c56d6][IUPAC P-44.1 / P-29.3.1 / P-14.5.2] 架构升级：L2 候选收集+可组合 tuple 评分；tert-butyl 侧链+多烷基苯放宽+tert- 字母序贯通 L3/L4/L5 [+12 tests, dual 6.3%(257)→6.4%(258), fails 3805→3804]
 [#c1980a2][IUPAC P-44.1 / P-41] FG/ring 多候选生产者：类间独立 try + scoring 仲裁；retained_bonus 前移防 arene 酯回归 [+13 tests, dual 6.4%(258) 持平, fails 3804]
 [#1933556][IUPAC P-22.2.1] 保留母体 1H-imidazole（未取代+单甲基/单卤；NH=1、N=3）+ 1H- 组装连字符 [+test_imidazole, dual 6.4%(258)→6.4%(259), fails 3804→3803]
+[#50ee52f][IUPAC P-14.3.4 / P-63.1.4 / P-65.1.1.1] 芳环保留 FG 母体环上简单取代上限 2→3 对齐 benzene [+8 tests, dual 6.4%(259)→6.6%(269), fails 3803→3793]
 
 ## 其他
-- 基线(本轮前): en=6.4%(261/4062) zh=26.1%(197/756) dual=6.4%(258/4062)
-- 本次: en=6.5%(262/4062) zh=26.2%(198/756) dual=6.4%(259/4062) fails=3803
-- 改动: L2 imidazole 核心/门控；L4 NH=1 定向；L5 词表+1H-连字符；_RING_TRY 挂接
-- 验证: c1cnc[nH]1→1H-imidazole/咪唑；2-/4-甲基/氯咪唑；pyrrole/furan/benzene 不回归
-- 已知缺口: 1H/3H 互变 4↔5 PIN；pyrazole；naphthalene；assembler 499 行
+- 基线(本轮前): en=6.5%(262/4062) zh=26.2%(198/756) dual=6.4%(259/4062)
+- 本次: en=6.7%(272/4062) zh=27.1%(205/756) dual=6.6%(269/4062) fails=3793
+- 改动: `_arene_fg_subs_ok` / `_arene_subs_ok` 上限 2→3（phenol/aniline/benzoic 等）
+- 验证: 2,4,5-trimethylphenol；3,4-dichloro-2-methylaniline；5-bromo-4-chloro-2-fluorobenzoic acid；2-sub/benzene 不回归
+- 已知缺口: naphthalene；pyrazole；通用支化烷基；assembler 499 行；ring_parent 491 行
 - 下一步候选: naphthalene 保留母体；或 pyrazole(1,2-diazole)；或通用支化烷基
