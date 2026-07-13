@@ -73,11 +73,12 @@
 [#8964095][IUPAC P-22.2.1] 保留母体 1H-pyrazole（1,2-diazole；NH=1/N=2；单甲基/单卤） [+11 tests, dual 6.8%(278)→6.9%(279), fails 3784→3783]
 [#e0c6e7f][IUPAC P-22.2.1 / P-25] 保留母体 1H-indole（苯并[b]吡咯；N=1…7a；单甲基/单卤） [+14 tests, dual 6.9%(279)→6.9%(280), fails 3783→3782]
 [#b5287d8][IUPAC P-14.3.4 / P-22.2.1] 五元杂芳简单取代上限1→2（halo/methyl；含2-iodo-4-methyl-imidazole） [+7 tests, dual 6.9%(280)→6.9%(281), fails 3782→3781]
+[#5ea08e4][IUPAC P-65.1.1 / 中文] pyridinecarboxylic 中文羧酸→甲酸（对齐 benzoic/cyclo/金标） [+5 tests, dual 6.9%(281)→7.0%(283), fails 3781→3779]
 
 ## 其他
-- 基线(本轮前): en=7.0%(283/4062) zh=28.2%(213/756) dual=6.9%(280/4062)
-- 本次: en=7.0%(284/4062) zh=28.3%(214/756) dual=6.9%(281/4062) fails=3781
-- 改动: L2 `_hetero5_subs_ok` 上限2；L5 取代时中文补 `1H-`；测试期望对齐
-- 验证: 2-iodo-4-methyl-1H-imidazole 双语；mono/未取代/FG 负例；structure_lint+pytest 绿；review PASS
-- 已知缺口: diazine 简单取代；indole 多取代/N-取代；quinoline；pyridinecarboxylic 中文甲酸；arene FG 支化侧链
-- 下一步候选: diazine 简单单/多烷基(卤)取代；或 pyridinecarboxylic 中文甲酸对齐；或 indole 双简单取代对齐
+- 基线(本轮前): en=7.0%(284/4062) zh=28.3%(214/756) dual=6.9%(281/4062)
+- 本次: en=7.0%(284/4062) zh=28.6%(216/756) dual=7.0%(283/4062) fails=3779
+- 改动: L5 `pyridinecarboxylic_names` 羧酸→甲酸；相关单测期望同步
+- 验证: 吡啶-2/3/4-甲酸；benzoic/cyclohexanecarboxylic 不回归；review 共识环 CHALLENGE→PASS
+- 已知缺口: diazine 简单取代（金标多复杂/俗名川芎嗪）；indole 多取代/N-取代；quinoline；arene FG 支化侧链
+- 下一步候选: diazine 简单 Me/halo 取代（系统名；俗名策略另议）；或 indole 双简单取代；或 quinoline 保留母体
