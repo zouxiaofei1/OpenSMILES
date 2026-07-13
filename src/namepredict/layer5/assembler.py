@@ -452,10 +452,10 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return True
     return kind in ("cycloalkane", "benzene") and len(substituents) == 1
 def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
-    mult = _mult_en(len(subs))
+    mult, s = _mult_en(len(subs)), f"({stem})" if stem == "trifluoromethyl" else stem
     if omit:
         return f"{mult}{stem}"
-    return f"{_locant_str(subs)}-{mult}{stem}"
+    return f"{_locant_str(subs)}-{mult}{s}"
 def _prefix_one_zh(zh_stem: str, subs: list, omit: bool) -> str:
     mult = _mult_zh(len(subs))
     if omit:

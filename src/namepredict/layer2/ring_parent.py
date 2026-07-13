@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.side_alkyl import _disjoint_cover, _side_covers, _side_sets
+from namepredict.layer2.side_alkyl import (
+    _disjoint_cover, _is_cf3_carbon, _is_cf3_fluoro, _side_covers, _side_sets,
+)
 
 
 def _all_carbons_are_c(mol: Mol, atom_ids: tuple) -> bool:
@@ -36,15 +38,18 @@ def _outside_carbons(
     ]
 
 
-def _pure_alkyl_outside(mol: Mol, outside: list[int]) -> bool:
-    for idx in outside:
-        atom = mol.GetAtomWithIdx(idx)
-        for bond in atom.GetBonds():
-            other = bond.GetOtherAtom(atom)
-            z = other.GetAtomicNum()
-            if z not in (1, 6) or (z != 1 and bond.GetBondType().name != "SINGLE"):
-                return False
+def _pure_c_bonds(mol: Mol, idx: int) -> bool:
+    atom = mol.GetAtomWithIdx(idx)
+    for bond in atom.GetBonds():
+        other = bond.GetOtherAtom(atom)
+        z = other.GetAtomicNum()
+        if z not in (1, 6) or (z != 1 and bond.GetBondType().name != "SINGLE"):
+            return False
     return True
+
+
+def _pure_alkyl_outside(mol: Mol, outside: list[int]) -> bool:
+    return all(_is_cf3_carbon(mol, i) or _pure_c_bonds(mol, i) for i in outside)
 
 
 def _ring_side_starts(
@@ -140,34 +145,29 @@ def _ring_alkoxy_n(info: dict, ring_set: set[int]) -> int:
     return len(_ring_alkoxy_ethers(info, ring_set))
 
 
+def _outside_hetero_ok(atom, ring_set: set[int], allow: set[int]) -> bool:
+    if atom.GetAtomicNum() in (1, 6) or atom.GetIdx() in ring_set:
+        return True
+    return atom.GetIdx() in allow or _is_ring_halo(atom, ring_set) or _is_cf3_fluoro(atom)
+
+
 def _no_hetero_outside(mol: Mol, ring_set: set[int], allowed: set[int] | None = None) -> bool:
     allow = allowed or set()
-    for atom in mol.GetAtoms():
-        z = atom.GetAtomicNum()
-        if z in (1, 6) or atom.GetIdx() in ring_set:
-            continue
-        if atom.GetIdx() in allow or _is_ring_halo(atom, ring_set):
-            continue
-        return False
-    return True
+    return all(_outside_hetero_ok(a, ring_set, allow) for a in mol.GetAtoms())
 
 
 def _outside_ok(mol: Mol, ring_set: set[int], allowed: set[int] | None = None) -> bool:
     if not _no_hetero_outside(mol, ring_set, allowed):
         return False
-    allow = allowed or set()
-    return _pure_alkyl_outside(mol, _outside_carbons(mol, ring_set, allow))
+    return _pure_alkyl_outside(mol, _outside_carbons(mol, ring_set, allowed or set()))
 
 
 def _is_cycloalkane_core(info: dict) -> bool:
     rings = info.get("rings") or []
     if len(rings) != 1:
         return False
-    mol: Mol = info["mol"]
     atom_ids = rings[0]["atom_ids"]
-    if not _all_carbons_are_c(mol, atom_ids):
-        return False
-    return _ring_bonds_single(mol, atom_ids)
+    return _all_carbons_are_c(info["mol"], atom_ids) and _ring_bonds_single(info["mol"], atom_ids)
 
 
 def _is_simple_cycloalkane(info: dict) -> bool:
@@ -397,14 +397,7 @@ def _is_simple_benzene(info: dict) -> bool:
     return _benzene_subs_ok(mol, ring_set, _ring_nitro_n(info, ring_set), n_alk, alk)
 
 def _hetero_or_ring_halo(mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
-    for atom in mol.GetAtoms():
-        z = atom.GetAtomicNum()
-        if z in (1, 6) or atom.GetIdx() in ring_set:
-            continue
-        if atom.GetIdx() in allowed or _is_ring_halo(atom, ring_set):
-            continue
-        return False
-    return True
+    return all(_outside_hetero_ok(a, ring_set, allowed) for a in mol.GetAtoms())
 
 def _arene_fg_subs_ok(
     mol: Mol, ring_set: set[int], allowed: set[int], n_nitro: int = 0,
@@ -482,6 +475,8 @@ def _is_simple_aniline(info: dict) -> bool:
     return _arene_fg_subs_ok(mol, ring_set, allowed, _ring_nitro_n(info, ring_set), 0, n_alk, alk)
 
 def _is_methyl_on_ring(mol: Mol, s: int, ring_set: set[int]) -> bool:
+    if _is_cf3_carbon(mol, s):
+        return True
     atom = mol.GetAtomWithIdx(s)
     for n in atom.GetNeighbors():
         z = n.GetAtomicNum()

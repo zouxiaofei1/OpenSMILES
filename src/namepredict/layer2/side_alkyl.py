@@ -9,11 +9,44 @@ def _c_neighbors(mol: Mol, idx: int) -> list[int]:
     return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
 
 
+def _f_neighbors(mol: Mol, idx: int) -> list[int]:
+    atom = mol.GetAtomWithIdx(idx)
+    return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 9]
+
+
 def _is_pure_alkyl_c(mol: Mol, idx: int) -> bool:
     atom = mol.GetAtomWithIdx(idx)
     if atom.GetAtomicNum() != 6 or atom.IsInRing():
         return False
     return all(n.GetAtomicNum() in (1, 6) for n in atom.GetNeighbors())
+
+
+def _is_cf3_carbon(mol: Mol, idx: int) -> bool:
+    atom = mol.GetAtomWithIdx(idx)
+    if atom.GetAtomicNum() != 6 or atom.IsInRing():
+        return False
+    nbs = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    return len(nbs) == 4 and sum(n.GetAtomicNum() == 9 for n in nbs) == 3
+
+
+def _is_cf3_fluoro(atom) -> bool:
+    if atom.GetAtomicNum() != 9:
+        return False
+    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    if len(heavies) != 1 or heavies[0].GetAtomicNum() != 6:
+        return False
+    c = heavies[0]
+    if c.IsInRing():
+        return False
+    nbs = [n for n in c.GetNeighbors() if n.GetAtomicNum() != 1]
+    return len(nbs) == 4 and sum(n.GetAtomicNum() == 9 for n in nbs) == 3
+
+
+def _is_trifluoromethyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    free = [n for n in _c_neighbors(mol, start) if n not in chain]
+    if free or not _is_cf3_carbon(mol, start):
+        return None
+    return [start] if len(_f_neighbors(mol, start)) == 3 else None
 
 
 def _nb_kind(n: int, prev: int | None, chain: set[int], start: int, cur: int) -> str:
@@ -103,6 +136,7 @@ def _side_atoms(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
         _walk_linear(mol, start, chain)
         or _is_isopropyl(mol, start, chain)
         or _is_tert_butyl(mol, start, chain)
+        or _is_trifluoromethyl(mol, start, chain)
     )
 
 

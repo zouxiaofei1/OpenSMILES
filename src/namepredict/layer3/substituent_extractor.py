@@ -6,6 +6,7 @@ from namepredict.layer2.side_alkyl import (
     _c_neighbors,
     _is_isopropyl,
     _is_tert_butyl,
+    _is_trifluoromethyl,
     _walk_linear,
 )
 
@@ -64,15 +65,33 @@ def _make_tert_butyl(attach: int, atoms: list[int]) -> dict:
     }
 
 
+def _make_cf3(attach: int, atoms: list[int]) -> dict:
+    return {
+        "kind": "trifluoromethyl",
+        "n_carbons": 1,
+        "attach_idx": attach,
+        "atoms": atoms,
+        "en": "trifluoromethyl",
+        "zh": "三氟甲基",
+    }
+
+
 def _one_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict | None:
     path = _walk_linear(mol, start, chain_set)
     if path:
         return _make_alkyl(attach, path)
+    return _one_branched(mol, attach, start, chain_set)
+
+
+def _one_branched(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict | None:
     atoms = _is_isopropyl(mol, start, chain_set)
     if atoms:
         return _make_isopropyl(attach, atoms)
     tb = _is_tert_butyl(mol, start, chain_set)
-    return _make_tert_butyl(attach, tb) if tb else None
+    if tb:
+        return _make_tert_butyl(attach, tb)
+    cf3 = _is_trifluoromethyl(mol, start, chain_set)
+    return _make_cf3(attach, cf3) if cf3 else None
 
 
 def _make_halo(attach: int, halo_idx: int, z: int) -> dict:
