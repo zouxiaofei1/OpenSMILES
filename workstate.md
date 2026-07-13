@@ -77,5 +77,6 @@
 [#68195de][IUPAC P-22.2.1 / P-14.3.4 / P-62.2.1] diazine 简单取代(halo/methyl/methoxy) + pyrimidinamine 母体 [+17 tests, dual 7.0%(283)→7.0%(285), fails 3779→3777]
 [#6ca596e][IUPAC P-22.2.2 / P-22.2.3 / P-25] 饱和单环杂环母体(oxolane/aziridine/piperidine/morpholine等) [+20 tests, dual 7.0%(285)→7.1%(288), fails 3777→3774]
 [#e2f8d2a][IUPAC P-65.1.1.1 / P-14.3.4 / P-61.5 / P-63.2.2] 芳环酸/醛/酮允许 amino/alkoxy/nitro 前缀 [+11 tests, dual 7.1%(288)→7.3%(296), fails 3774→3766]
+[#33a70e9][IUPAC P-65.1.1 / P-22.2.1] 五元杂芳羧酸母体(furan/thiophene/pyrrole/imidazole/pyrazole) [+15 tests, dual 7.3%(296)→7.3%(297), fails 3766→3765]
 
 ## 其他
