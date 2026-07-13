@@ -89,7 +89,7 @@ def _arene_subs_ok(
         return False
     if not _arene_alkyl_ok(mol, ring_set, exclude):
         return False
-    return _arene_extra_n(info, mol, ring_set, exclude) <= 2
+    return _arene_extra_n(info, mol, ring_set, exclude) <= 3
 
 
 def _is_simple_benzoic(info: dict) -> bool:

@@ -415,7 +415,7 @@ def _arene_fg_subs_ok(
     starts = _ring_side_starts(mol, ring_set, exclude)
     if len(_benzene_alkyl_ns(mol, ring_set, starts, exclude)) != len(starts):
         return False
-    return _ring_halo_n(mol, ring_set) + len(starts) + n_nitro + n_amino + n_alkoxy <= 2
+    return _ring_halo_n(mol, ring_set) + len(starts) + n_nitro + n_amino + n_alkoxy <= 3
 
 def _ring_primary_amines(info: dict, ring_set: set[int]) -> list:
     return [
