@@ -31,10 +31,10 @@ _HETERO_RING = frozenset(
     {"pyridine", "furan", "thiophene", "pyrrole", "imidazole",
      "pyrimidine", "pyrazine", "pyridazine"}
 )
-_CARBO_RING = frozenset({"benzene", "cycloalkane", "cycloalkene"})
+_CARBO_RING = frozenset({"benzene", "cycloalkane", "cycloalkene", "naphthalene"})
 _RETAINED = frozenset(
     {"phenol", "aniline", "benzoic", "benzaldehyde", "acetophenone",
-     "benzoate", "benzonitrile", "benzoyl_chloride", "benzene"}
+     "benzoate", "benzonitrile", "benzoyl_chloride", "benzene", "naphthalene"}
     | set(_HETERO_RING)
 )
 
@@ -64,6 +64,8 @@ def _is_carbo_ring(kind: str) -> int:
 
 
 def _n_rings(kind: str) -> int:
+    if kind == "naphthalene":
+        return 2
     return 1 if kind in _HETERO_RING or kind in _CARBO_RING else 0
 
 

@@ -38,6 +38,7 @@ from namepredict.layer2.parent_selector import (
     _thiol_parent,
 )
 from namepredict.layer2.pyridine import _try_pyridine_parent
+from namepredict.layer2.naphthalene import _try_naphthalene_parent
 from namepredict.layer2.ring_parent import (
     _is_benzene_core,
     _is_simple_benzene,
@@ -143,8 +144,9 @@ def _try_simple_cycloalkane(info: dict) -> dict | None:
 
 
 _RING_TRY = (
-    _try_pyridine_parent, _try_diazine_parent, _try_imidazole_parent,
-    _try_hetero5_parent, _try_simple_benzene, _try_simple_cycloalkane,
+    _try_naphthalene_parent, _try_pyridine_parent, _try_diazine_parent,
+    _try_imidazole_parent, _try_hetero5_parent, _try_simple_benzene,
+    _try_simple_cycloalkane,
 )
 
 

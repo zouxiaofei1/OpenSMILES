@@ -232,6 +232,33 @@ def _orient_pyridinamine(chain: list[int], parent: dict, substituents: list) -> 
     return _orient_pyridin_fg(chain, parent, substituents, "amine_c_idx")
 def _orient_pyridinol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_pyridin_fg(chain, parent, substituents, "oh_c_idx")
+
+_NAPH_LOCANTS = (1, 2, 3, 4, None, 5, 6, 7, 8, None)
+
+
+def _naph_loc_on(chain: list[int], attach: int) -> int:
+    if attach not in chain:
+        return 99
+    loc = _NAPH_LOCANTS[chain.index(attach)]
+    return 99 if loc is None else loc
+
+
+def _naph_loc_key(chain: list[int], substituents: list) -> tuple:
+    locs = sorted(_naph_loc_on(chain, s["attach_idx"]) for s in substituents)
+    return tuple(locs) if locs else ()
+
+
+def _orient_naphthalene(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    cands = parent.get("naph_chains") or [chain]
+    if not substituents:
+        return cands[0] if cands else chain
+    best = cands[0]
+    for cand in cands[1:]:
+        if _naph_loc_key(cand, substituents) < _naph_loc_key(best, substituents):
+            best = cand
+    return best
+
+
 def _arene_orienters() -> dict:
     return {
         "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
@@ -239,7 +266,7 @@ def _arene_orienters() -> dict:
         "furan": _orient_hetero5, "thiophene": _orient_hetero5, "pyrrole": _orient_hetero5,
         "imidazole": _orient_imidazole,
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
-        "pyridazine": _orient_diazine,
+        "pyridazine": _orient_diazine, "naphthalene": _orient_naphthalene,
     }
 def _hetero_orienters() -> dict:
     return {
@@ -344,10 +371,20 @@ def _omit_unsat(n_carbons: int, kind: str | None = None) -> bool:
     ):
         return False
     return n_carbons <= 3
-def _with_locants(chain: list[int], substituents: list) -> list:
+def _naph_sub_locant(chain: list[int], attach: int) -> int:
+    if attach not in chain or len(chain) != 10:
+        return chain.index(attach) + 1 if attach in chain else 0
+    loc = _NAPH_LOCANTS[chain.index(attach)]
+    return loc if loc is not None else chain.index(attach) + 1
+
+
+def _with_locants(chain: list[int], substituents: list, kind: str | None = None) -> list:
     out: list = []
     for s in substituents:
-        loc = chain.index(s["attach_idx"]) + 1
+        if kind == "naphthalene":
+            loc = _naph_sub_locant(chain, s["attach_idx"])
+        else:
+            loc = chain.index(s["attach_idx"]) + 1
         out.append({**s, "locant": loc})
     return out
 def _unsat_locants(oriented: dict, n: int) -> dict:
@@ -385,4 +422,5 @@ def _pack(oriented: dict, substituents: list) -> dict:
 def number(parent: dict, substituents: list) -> dict:
     chain = _orient_chain(parent, substituents)
     oriented = {**parent, "chain": chain}
-    return _pack(oriented, _with_locants(chain, substituents))
+    kind = parent.get("kind")
+    return _pack(oriented, _with_locants(chain, substituents, kind))
