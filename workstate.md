@@ -84,5 +84,6 @@
 [#46a9f90][IUPAC P-22.2.1 / P-25] 保留母体 1-benzothiophene（+ol）及 anisole 中文→甲氧基苯 [+tests, dual 7.4%(301)→7.5%(304), fails 3761→3758]
 [#c20d51b][IUPAC P-22.2.1 / P-25] 保留母体 quinoline/isoquinoline（+ol/+carboxylic） [+tests, dual 7.5%(304)→7.6%(307), fails 3758→3755]
 [#12aba3c][IUPAC P-22.2.1 / P-25] 保留母体 1H-indazole（+carbonitrile/+carbaldehyde） [+tests, dual 7.6%(307)→7.6%(310), fails 3755→3752]
+[#eba07a4][IUPAC P-22.2.1 / P-14.3.4] 保留母体 1,3-oxazole/1,3-thiazole（+hetero5 侧链放宽 n-alkyl C1–C2） [+16 tests, dual 7.6%(310)→7.7%(312), fails 3752→3750]
 
 ## 其他
