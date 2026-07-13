@@ -130,6 +130,23 @@ def _sulfide_entry(atom) -> dict:
 def _sulfide_entries(mol: Mol) -> list[dict]:
     return [_sulfide_entry(a) for a in mol.GetAtoms() if _is_sulfide_sulfur(a)]
 
+def _is_nitro_nitrogen(atom) -> bool:
+    if atom.GetAtomicNum() != 7 or atom.GetFormalCharge() != 1:
+        return False
+    nbs = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    os_ = [n for n in nbs if n.GetAtomicNum() == 8]
+    cs = [n for n in nbs if n.GetAtomicNum() == 6]
+    return len(nbs) == 3 and len(os_) == 2 and len(cs) == 1
+
+def _nitro_entry(atom) -> dict:
+    nbs = list(atom.GetNeighbors())
+    o_idxs = [n.GetIdx() for n in nbs if n.GetAtomicNum() == 8]
+    c_idx = next(n.GetIdx() for n in nbs if n.GetAtomicNum() == 6)
+    return {"n_idx": atom.GetIdx(), "c_idx": c_idx, "o_idxs": o_idxs}
+
+def _nitro_entries(mol: Mol) -> list[dict]:
+    return [_nitro_entry(a) for a in mol.GetAtoms() if _is_nitro_nitrogen(a)]
+
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     if oxygen.GetAtomicNum() != 8 or oxygen.GetTotalNumHs() != 0:
         return False
@@ -384,6 +401,7 @@ def _fg_more_lists(parts: dict) -> dict:
     keys = (
         "aldehydes", "amines", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
+        "nitros",
     )
     return {k: parts[k] for k in keys}
 
@@ -410,6 +428,7 @@ def _fg_bools_more(lists: dict) -> dict:
         ("has_alkyne", "triple_bonds"), ("has_acyl_chloride", "acyl_chlorides"),
         ("has_anhydride", "anhydrides"), ("has_thiol", "thiols"),
         ("has_ether", "ethers"), ("has_sulfide", "sulfides"),
+        ("has_nitro", "nitros"),
     )
     return {hk: bool(lists[lk]) for hk, lk in keys}
 
@@ -433,6 +452,7 @@ def _fg_parts_b(mol: Mol) -> dict:
         "acyl_chlorides": _acyl_chloride_entries(mol),
         "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
         "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
+        "nitros": _nitro_entries(mol),
     }
 
 def _fg_parts(mol: Mol) -> dict:

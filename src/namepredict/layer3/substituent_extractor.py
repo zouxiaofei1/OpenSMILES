@@ -180,6 +180,25 @@ def _make_oxo(attach: int) -> dict:
     }
 
 
+def _make_nitro(attach: int, n_idx: int, o_idxs: list[int]) -> dict:
+    return {
+        "kind": "nitro",
+        "attach_idx": attach,
+        "atoms": [n_idx] + list(o_idxs),
+        "en": "nitro",
+        "zh": "硝基",
+    }
+
+
+def _extract_nitros(info: dict, parent: dict) -> list[dict]:
+    chain_set = set(parent.get("chain") or [])
+    out: list[dict] = []
+    for n in info.get("nitros") or []:
+        if n["c_idx"] in chain_set:
+            out.append(_make_nitro(n["c_idx"], n["n_idx"], n.get("o_idxs") or []))
+    return out
+
+
 def _extract_hydroxys(info: dict, parent: dict) -> list[dict]:
     if parent.get("kind") in _PARENT_OH_KINDS:
         return []
@@ -251,4 +270,5 @@ def extract_substituents(info: dict, parent: dict) -> list:
     oh = _extract_hydroxys(info, parent)
     nh2 = _extract_aminos(info, parent)
     oxo = _extract_oxos(info, parent)
-    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo + _extract_n_alkyl(parent)
+    nitro = _extract_nitros(info, parent)
+    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo + nitro + _extract_n_alkyl(parent)
