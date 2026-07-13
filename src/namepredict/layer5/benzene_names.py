@@ -63,6 +63,8 @@ _ARENE_FG = {
     "indole": ("1H-indole", "吲哚"),
     "benzofuran": ("benzofuran", "苯并呋喃"),
     "benzothiophene": ("1-benzothiophene", "苯并[b]噻吩"),
+    "quinoline": ("quinoline", "喹啉"),
+    "isoquinoline": ("isoquinoline", "异喹啉"),
     "aziridine": ("aziridine", "氮杂环丙烷"),
     "oxirane": ("oxirane", "环氧乙烷"),
     "oxolane": ("oxolane", "氧杂环戊烷"),
@@ -255,6 +257,37 @@ def benzothiophenol_names(numbered: dict) -> tuple[str, str] | None:
     return f"1-benzothiophen-{loc}-ol", f"苯并[b]噻吩-{loc}-醇"
 
 
+_Q_LOCANTS = (1, 2, 3, 4, None, 5, 6, 7, 8, None)
+
+
+def _q_sub_loc(chain: list[int], attach: int) -> int | None:
+    if attach not in chain or len(chain) != 10:
+        return None
+    loc = _Q_LOCANTS[chain.index(attach)]
+    return loc
+
+
+def _q_cooh_loc(numbered: dict) -> int | None:
+    """COOH ring attach with naphthalene-style locants (skip 4a/8a)."""
+    parent = numbered.get("parent") or {}
+    chain, attach = parent.get("chain") or [], parent.get("ring_attach_idx")
+    return None if attach is None else _q_sub_loc(chain, attach)
+
+
+def quinolinecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
+    loc = _q_cooh_loc(numbered)
+    if loc is None:
+        return None
+    return f"quinoline-{loc}-carboxylic acid", f"喹啉-{loc}-甲酸"
+
+
+def quinolinol_names(numbered: dict) -> tuple[str, str] | None:
+    loc = numbered.get("oh_locant")
+    if loc is None:
+        return None
+    return f"quinolin-{loc}-ol", f"喹啉-{loc}-醇"
+
+
 def pyridine_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, str] | None:
     if kind == "pyridinecarboxylic": return pyridinecarboxylic_names(numbered)
     if kind == "pyridinecarbonitrile": return pyridinecarbonitrile_names(numbered)
@@ -263,5 +296,7 @@ def pyridine_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, s
     if kind == "pyridinol": return pyridinol_names(numbered)
     if kind == "benzofuranamine": return benzofuranamine_names(numbered)
     if kind == "benzothiophenol": return benzothiophenol_names(numbered)
+    if kind == "quinolinol": return quinolinol_names(numbered)
+    if kind == "quinolinecarboxylic": return quinolinecarboxylic_names(numbered)
     return None
 

@@ -270,8 +270,6 @@ def _naph_loc_on(chain: list[int], attach: int) -> int:
 def _naph_loc_key(chain: list[int], substituents: list) -> tuple:
     locs = sorted(_naph_loc_on(chain, s["attach_idx"]) for s in substituents)
     return tuple(locs) if locs else ()
-
-
 def _orient_naphthalene(chain: list[int], parent: dict, substituents: list) -> list[int]:
     cands = parent.get("naph_chains") or [chain]
     if not substituents:
@@ -281,13 +279,9 @@ def _orient_naphthalene(chain: list[int], parent: dict, substituents: list) -> l
         if _naph_loc_key(cand, substituents) < _naph_loc_key(best, substituents):
             best = cand
     return best
-
-
 def _orient_indole(chain: list[int], parent: dict, substituents: list) -> list[int]:
     """Hetero fixed as locant 1; chain already built in standard order."""
     return chain
-
-
 _SAT_HETERO_PLAIN = (
     "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
     "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane",
@@ -301,8 +295,6 @@ def _sat_hetero_orienters() -> dict:
     d = {k: _orient_sat_hetero for k in _SAT_HETERO_PLAIN}
     d.update({k: _orient_sat_hetero_carboxylic for k in _SAT_HETERO_COOH})
     return d
-
-
 def _aza_orienters() -> dict:
     return {
         "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
@@ -314,18 +306,21 @@ def _aza_orienters() -> dict:
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
         "pyridazine": _orient_diazine, "pyrimidinamine": _orient_pyrimidinamine,
     }
-
-
+def _fused_orienters() -> dict:
+    return {
+        "naphthalene": _orient_naphthalene, "indole": _orient_indole,
+        "benzofuran": _orient_indole, "benzofuranamine": _orient_indole,
+        "benzothiophene": _orient_indole, "benzothiophenol": _orient_indole,
+        "quinoline": _orient_indole, "isoquinoline": _orient_indole,
+        "quinolinol": _orient_indole, "quinolinecarboxylic": _orient_indole,
+    }
 def _arene_orienters() -> dict:
     return {
         "furan": _orient_hetero5, "thiophene": _orient_hetero5, "pyrrole": _orient_hetero5,
         "furancarboxylic": _orient_hetero5carboxylic,
         "thiophenecarboxylic": _orient_hetero5carboxylic,
         "pyrrolecarboxylic": _orient_hetero5carboxylic,
-        "naphthalene": _orient_naphthalene, "indole": _orient_indole,
-        "benzofuran": _orient_indole, "benzofuranamine": _orient_indole,
-        "benzothiophene": _orient_indole, "benzothiophenol": _orient_indole,
-        **_aza_orienters(), **_sat_hetero_orienters(),
+        **_fused_orienters(), **_aza_orienters(), **_sat_hetero_orienters(),
     }
 def _hetero_orienters() -> dict:
     return {
@@ -365,9 +360,11 @@ def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
         return None
     return _pos_on(oriented.get("chain") or [], oriented.get(key))
 def _oh_locant(oriented: dict) -> int | None:
-    if oriented.get("kind") == "benzothiophenol":
-        chain, a = oriented.get("chain") or [], oriented.get("oh_c_idx")
-        return _indole_sub_locant(chain, a) if a is not None else None
+    kind, chain, a = oriented.get("kind"), oriented.get("chain") or [], oriented.get("oh_c_idx")
+    if kind == "quinolinol" and a is not None:
+        return _naph_sub_locant(chain, a)
+    if kind == "benzothiophenol" and a is not None:
+        return _indole_sub_locant(chain, a)
     return _fg_locant(
         oriented, ("alcohol", "alkenol", "cycloalcohol", "pyridinol"), "oh_c_idx",
     )
@@ -441,8 +438,6 @@ def _naph_sub_locant(chain: list[int], attach: int) -> int:
         return chain.index(attach) + 1 if attach in chain else 0
     loc = _NAPH_LOCANTS[chain.index(attach)]
     return loc if loc is not None else chain.index(attach) + 1
-
-
 def _indole_sub_locant(chain: list[int], attach: int) -> int:
     if attach not in chain or len(chain) != 9:
         return chain.index(attach) + 1 if attach in chain else 0
@@ -451,8 +446,11 @@ def _indole_sub_locant(chain: list[int], attach: int) -> int:
 _FUSED56_KINDS = frozenset({
     "indole", "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol",
 })
+_Q_KINDS = frozenset({
+    "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
+})
 def _sub_locant(chain: list[int], attach: int, kind: str | None) -> int:
-    if kind == "naphthalene":
+    if kind == "naphthalene" or kind in _Q_KINDS:
         return _naph_sub_locant(chain, attach)
     if kind in _FUSED56_KINDS:
         return _indole_sub_locant(chain, attach)

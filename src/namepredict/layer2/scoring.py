@@ -12,7 +12,8 @@ from __future__ import annotations
 
 _FG_RANK = {
     "acid": 13, "diacid": 13, "alkenoic_acid": 13, "alkenedioic": 13,
-    "benzoic": 13, "pyridinecarboxylic": 13, "cycloalkanecarboxylic": 13,
+    "benzoic": 13, "pyridinecarboxylic": 13, "quinolinecarboxylic": 13,
+    "cycloalkanecarboxylic": 13,
     "furancarboxylic": 13, "thiophenecarboxylic": 13, "pyrrolecarboxylic": 13,
     "imidazolecarboxylic": 13, "pyrazolecarboxylic": 13,
     "piperidinecarboxylic": 13, "pyrrolidinecarboxylic": 13,
@@ -28,7 +29,7 @@ _FG_RANK = {
     "ketone": 6, "dione": 6, "cycloketone": 6, "acetophenone": 6,
     "alcohol": 5, "alkenol": 5, "diol": 5, "triol": 5,
     "cycloalcohol": 5, "phenol": 5, "benzenediol": 5, "pyridinol": 5,
-    "benzothiophenol": 5,
+    "benzothiophenol": 5, "quinolinol": 5,
     "thiol": 4,
     "amine": 3, "diamine": 3, "sec_amine": 3, "tert_amine": 3,
     "cycloamine": 3, "aniline": 3, "pyridinamine": 3, "pyrimidinamine": 3,
@@ -38,7 +39,7 @@ _FG_RANK = {
 _HETERO_RING = frozenset(
     {"pyridine", "furan", "thiophene", "pyrrole", "imidazole", "pyrazole",
      "pyrimidine", "pyrazine", "pyridazine", "indole", "benzofuran",
-     "benzothiophene",
+     "benzothiophene", "quinoline", "isoquinoline",
      "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
      "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane"}
 )
@@ -53,7 +54,7 @@ _RETAINED = frozenset(
      "benzoate", "benzonitrile", "benzoyl_chloride", "benzene", "naphthalene",
      "furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic",
      "imidazolecarboxylic", "pyrazolecarboxylic", "pyridinecarboxylic",
-     "pyridinecarbonitrile"}
+     "quinolinecarboxylic", "pyridinecarbonitrile"}
     | set(_HETERO_RING) | _SHCOOH
 )
 
@@ -86,6 +87,7 @@ def _n_rings(kind: str) -> int:
     if kind in (
         "naphthalene", "indole", "benzofuran", "benzofuranamine",
         "benzothiophene", "benzothiophenol",
+        "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
     ):
         return 2
     return 1 if kind in _HETERO_RING or kind in _CARBO_RING else 0

@@ -9,6 +9,9 @@ from namepredict.layer2.hetero5_carboxylic import _try_hetero5carboxylic_parent 
 from namepredict.layer2.sat_hetero_carboxylic import _try_sat_hetero_carboxylic_parent as _try_shcooh
 from namepredict.layer2.benzofuran import _try_benzofuranamine_parent as _try_bfam
 from namepredict.layer2.benzothiophene import _try_benzothiophenol_parent as _try_btol
+from namepredict.layer2.quinoline import (
+    _try_quinolinecarboxylic_parent as _try_qcooh, _try_quinolinol_parent as _try_qol,
+)
 from namepredict.layer2.heteroarene5 import _try_pyrimidinamine_parent
 from namepredict.layer2.pyridine import (
     _try_pyridinecarbonitrile_parent as _try_pycn, _try_pyridinecarboxylic_parent,
@@ -163,12 +166,12 @@ def _ring_fg_try(info: dict, pairs, ekey: str, ckey: str) -> dict | None:
             return _cyclo_fg_parent(info, kind, ekey, ckey)
     return None
 def _ring_alcohol_parent(info: dict) -> dict | None:
-    if _is_simple_benzenediol(info):
-        return _benzenediol_parent(info)
-    return (_try_btol(info) or _try_pyridin_fg_parent(info) or _ring_fg_try(
+    if _is_simple_benzenediol(info): return _benzenediol_parent(info)
+    top = _try_qol(info) or _try_btol(info) or _try_pyridin_fg_parent(info)
+    return top or _ring_fg_try(
         info, ((_is_simple_phenol, "phenol"), (_is_simple_cycloalcohol, "cycloalcohol")),
         "hydroxyls", "oh_c_idx",
-    ))
+    )
 def _alcohol_parent(info: dict) -> dict:
     ring = _ring_alcohol_parent(info)
     if ring is not None: return ring
@@ -297,10 +300,8 @@ def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
     u = _try_unsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
     return u or _fg_chain(info, ekey, skind, ckey, **extra)
 def _acid_parent(info: dict) -> dict:
-    for fn in (
-        _try_shcooh, _try_h5cooh, _try_pyridinecarboxylic_parent,
-        _try_benzoic_parent, _try_cycloalkanecarboxylic_parent,
-    ):
+    for fn in (_try_shcooh, _try_h5cooh, _try_qcooh, _try_pyridinecarboxylic_parent,
+               _try_benzoic_parent, _try_cycloalkanecarboxylic_parent):
         if (b := fn(info)) is not None: return b
     if _is_simple_alkanedioic(info): return _diacid_parent(info)
     if _is_simple_alkenedioic(info): return _alkenedioic_parent(info)
@@ -309,8 +310,7 @@ def _acid_parent(info: dict) -> dict:
     )
 def _ketone_parent(info: dict) -> dict:
     a = _try_acetophenone_parent(info)
-    if a is not None:
-        return a
+    if a is not None: return a
     if _is_simple_cycloketone(info):
         return _cyclo_fg_parent(info, "cycloketone", "ketones", "ketone_c_idx")
     if _is_simple_alkanedione(info):
