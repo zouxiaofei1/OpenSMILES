@@ -436,7 +436,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     if n_carbons <= 1 or kind in ("sec_amine", "tert_amine", "amide"):
         return True
     # Carboxylic acids number COOH as 1; keep substituent locants (e.g. 2-aminoacetic acid).
-    if kind in ("acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate"):
+    if kind in ("acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate", "benzoic"):
         return False
     if n_carbons == 2 and len(substituents) == 1:
         return True

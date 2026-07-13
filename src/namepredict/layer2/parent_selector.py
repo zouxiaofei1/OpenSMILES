@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from rdkit.Chem import Mol
 
 from namepredict.layer2.ring_parent import (
@@ -14,6 +13,7 @@ from namepredict.layer2.ring_parent import (
     _is_simple_cycloamine,
     _is_simple_cycloketone,
     _is_simple_phenol,
+    _try_benzoic_parent,
 )
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
     atom = mol.GetAtomWithIdx(idx)
@@ -294,8 +294,9 @@ def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
     u = _try_unsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
     return u or _fg_chain(info, ekey, skind, ckey, **extra)
 def _acid_parent(info: dict) -> dict:
-    if _is_simple_alkanedioic(info):
-        return _diacid_parent(info)
+    b = _try_benzoic_parent(info)
+    if b is not None: return b
+    if _is_simple_alkanedioic(info): return _diacid_parent(info)
     return _unsat_or_sat(
         info, "has_acid", "carboxyls", _ALKENOIC_BAD, "alkenoic_acid", "acid", "cooh_c_idx",
     )

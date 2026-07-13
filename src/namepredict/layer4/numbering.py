@@ -246,13 +246,19 @@ def _orient_cycloalkane(chain: list[int], parent: dict, substituents: list) -> l
     return _best_ring(chain, substituents)
 
 
-def _orient_cycloalcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    oh_c = parent.get("oh_c_idx")
-    if oh_c is None or oh_c not in chain:
+def _orient_ring_fixed(
+    chain: list[int], parent: dict, substituents: list, key: str
+) -> list[int]:
+    c = parent.get(key)
+    if c is None or c not in chain:
         return chain
-    base = _rotate_to_front(chain, oh_c)
-    rev = _rotate_to_front(list(reversed(chain)), oh_c)
+    base = _rotate_to_front(chain, c)
+    rev = _rotate_to_front(list(reversed(chain)), c)
     return _prefer_chain(base, rev, substituents)
+
+
+def _orient_cycloalcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_ring_fixed(chain, parent, substituents, "oh_c_idx")
 
 
 def _better_ring_pair(best, best_locs, cand, cs, subs):
@@ -277,21 +283,16 @@ def _orient_benzenediol(chain: list[int], parent: dict, substituents: list) -> l
 
 
 def _orient_cycloketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    ket_c = parent.get("ketone_c_idx")
-    if ket_c is None or ket_c not in chain:
-        return chain
-    base = _rotate_to_front(chain, ket_c)
-    rev = _rotate_to_front(list(reversed(chain)), ket_c)
-    return _prefer_chain(base, rev, substituents)
+    return _orient_ring_fixed(chain, parent, substituents, "ketone_c_idx")
 
 
 def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    am_c = parent.get("amine_c_idx")
-    if am_c is None or am_c not in chain:
-        return chain
-    base = _rotate_to_front(chain, am_c)
-    rev = _rotate_to_front(list(reversed(chain)), am_c)
-    return _prefer_chain(base, rev, substituents)
+    return _orient_ring_fixed(chain, parent, substituents, "amine_c_idx")
+
+
+def _orient_benzoic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_ring_fixed(chain, parent, substituents, "ring_attach_idx")
+
 
 
 def _hetero_orienters() -> dict:
@@ -320,6 +321,7 @@ def _unsat_orienters() -> dict:
         "alkyne": _orient_alkyne,
         "cycloalkane": _orient_cycloalkane,
         "benzene": _orient_cycloalkane,
+        "benzoic": _orient_benzoic,
     }
 
 
