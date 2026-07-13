@@ -17,6 +17,7 @@ from namepredict.layer2.ring_parent import (
     _ring_nitro_n,
     _ring_side_starts,
 )
+from namepredict.layer2.side_alkyl import _linear_n_alkyl_sides_ok
 
 # Z of ring hetero → parent kind (5-membered mono)
 _HETERO5_KIND = {8: "furan", 16: "thiophene", 7: "pyrrole"}
@@ -86,11 +87,11 @@ def _mono_methyl_only(mol: Mol, ring: set[int], starts: list[int]) -> bool:
 
 
 def _hetero5_subs_ok(mol: Mol, ring: set[int]) -> bool:
-    """Allow ≤2 ring simple subs: monohalo and/or monomethyl (P-14.3.4)."""
+    """Allow ≤2 ring simple subs: monohalo and/or n-alkyl C1–C2 (P-14.3.4)."""
     h, starts = _ring_halo_n(mol, ring), _ring_side_starts(mol, ring)
     if h + len(starts) > 2:
         return False
-    return _mono_methyl_only(mol, ring, starts)
+    return _linear_n_alkyl_sides_ok(mol, ring, starts, 2)
 
 
 def _is_simple_hetero5(info: dict) -> bool:

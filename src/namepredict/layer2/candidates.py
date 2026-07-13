@@ -7,6 +7,7 @@ actually arbitrates acid vs alcohol vs amine, etc.
 from __future__ import annotations
 
 from namepredict.layer2.arene_carbonyl import _try_arene_other_fg
+from namepredict.layer2.azole13 import _try_azole13_parent
 from namepredict.layer2.heteroarene5 import (
     _try_diazine_parent, _try_hetero5_parent,
     _try_imidazole_parent, _try_pyrazole_parent,
@@ -158,8 +159,9 @@ _RING_TRY = (
     _try_benzofuran_parent, _try_benzothiophene_parent,
     _try_quinoline_parent, _try_isoquinoline_parent,
     _try_pyridine_parent, _try_diazine_parent,
-    _try_imidazole_parent, _try_pyrazole_parent, _try_hetero5_parent,
-    _try_sat_hetero_parent, _try_simple_benzene, _try_simple_cycloalkane,
+    _try_imidazole_parent, _try_pyrazole_parent, _try_azole13_parent,
+    _try_hetero5_parent, _try_sat_hetero_parent,
+    _try_simple_benzene, _try_simple_cycloalkane,
 )
 
 

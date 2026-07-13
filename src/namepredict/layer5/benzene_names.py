@@ -56,6 +56,8 @@ _ARENE_FG = {
     "pyrrole": ("1H-pyrrole", "吡咯"),
     "imidazole": ("1H-imidazole", "咪唑"),
     "pyrazole": ("1H-pyrazole", "吡唑"),
+    "oxazole": ("1,3-oxazole", "恶唑"),
+    "thiazole": ("1,3-thiazole", "噻唑"),
     "pyrimidine": ("pyrimidine", "嘧啶"),
     "pyrazine": ("pyrazine", "吡嗪"),
     "pyridazine": ("pyridazine", "哒嗪"),
@@ -87,7 +89,7 @@ def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
 def join_parent_name(prefix: str, parent: str) -> str:
     if not prefix:
         return parent
-    if parent.startswith("1H-") or parent.startswith("1-"):
+    if parent[:1].isdigit() or parent.startswith("1H-"):
         return f"{prefix}-{parent}"
     return f"{prefix}{parent}"
 

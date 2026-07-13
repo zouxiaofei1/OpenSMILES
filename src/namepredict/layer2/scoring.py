@@ -39,6 +39,7 @@ _FG_RANK = {
 }
 _HETERO_RING = frozenset(
     {"pyridine", "furan", "thiophene", "pyrrole", "imidazole", "pyrazole",
+     "oxazole", "thiazole",
      "pyrimidine", "pyrazine", "pyridazine", "indole", "indazole", "benzofuran",
      "benzothiophene", "quinoline", "isoquinoline",
      "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",

@@ -250,3 +250,33 @@ def _disjoint_cover(sets: list[set[int]], outside: set[int]) -> bool:
             return False
         seen |= s
     return seen == outside
+
+
+def _outside_c_atoms(mol: Mol, ring: set[int]) -> set[int]:
+    return {
+        a.GetIdx() for a in mol.GetAtoms()
+        if a.GetAtomicNum() == 6 and a.GetIdx() not in ring
+    }
+
+
+def _linear_path_ok(mol: Mol, start: int, ring: set[int], max_n: int) -> list[int] | None:
+    """Linear n-alkyl path from start of length 1..max_n, or None."""
+    path = _walk_linear(mol, start, ring)
+    if path is None or len(path) > max_n:
+        return None
+    return path
+
+
+def _linear_n_alkyl_sides_ok(
+    mol: Mol, ring: set[int], starts: list[int], max_n: int,
+) -> bool:
+    """True when every ring side start is linear n-alkyl C1–max_n covering outside C."""
+    if not starts:
+        return not _outside_c_atoms(mol, ring)
+    paths: list[set[int]] = []
+    for s in starts:
+        path = _linear_path_ok(mol, s, ring, max_n)
+        if path is None:
+            return False
+        paths.append(set(path))
+    return _disjoint_cover(paths, _outside_c_atoms(mol, ring))
