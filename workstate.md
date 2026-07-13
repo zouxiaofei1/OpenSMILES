@@ -52,11 +52,12 @@
 [#2ce5ae1][IUPAC P-64.1.1] 保留母体 acetophenone/苯乙酮：环上≤2卤/甲基/羟基；乙酰连接碳=1；抽 arene_carbonyl [+acetophenone tests, dual 5.4%(218)→5.4%(219), fails 3844→3843]
 [#974452a][IUPAC P-61.5.1] 硝基前缀 nitro：L1 检测 + 苯/酚/苯胺环上允许 + L3 前缀；nitromethane 顺带 [+nitrobenzene tests, dual 5.4%(219)→5.5%(224), fails 3843→3838]
 [#15b936a][IUPAC P-63.1.4 / P-62.5] 氨基酚：phenol 母体 + 环上伯胺 amino 前缀（OH 优先） [+aminophenol tests, dual 5.5%(224)→5.6%(226), fails 3838→3836]
+[#686780c][IUPAC P-63.2.2] 芳环烷氧基 methoxy/ethoxy + anisole/苯甲醚 [+test_anisole, dual 5.6%(226)→5.7%(230), fails 3836→3832]
 
 ## 其他
-- 基线(本轮前): en=5.5%(224/4062) zh=22.8%(172/756) dual=5.5%(224/4062)
-- 本次: en=5.6%(226/4062) zh=23.0%(174/756) dual=5.6%(226/4062) fails=3836
-- 改动: L2 酚路径允许环上伯胺（计入额外取代）；OH=1；L3 既有 amino 前缀；aniline 仍拒 OH
-- 验证: Nc1ccc(O)cc1→4-aminophenol；2/3-aminophenol；phenol/aniline/4-nitrophenol 不回归
-- 已知缺口: 硝基苯甲酸等 arene 羰基+nitro；烷氧基苯；不饱和二酸(E/Z)；支化烷基前缀；C3+烷基苯；二氨基酚
-- 下一步候选: 不饱和二酸(E/Z)；或 arene 羰基+nitro 贯通；或烷氧基苯/anisole
+- 基线(本轮前): en=5.6%(226/4062) zh=23.0%(174/756) dual=5.6%(226/4062)
+- 本次: en=5.7%(231/4062) zh=23.3%(176/756) dual=5.7%(230/4062) fails=3832
+- 改动: L2 环上 C1–C2 烷氧放行(exclude 外侧C/O)；L3 alkoxy 前缀；L5 单甲氧基→anisole；酚 4-methoxyphenol
+- 验证: COc1ccccc1→anisole；COc1ccc(O)cc1→4-methoxyphenol；COc1ccccc1I→1-iodo-2-methoxybenzene；CCOCC/CCOC 开链醚不回归
+- 已知缺口: 硝基苯甲酸等 arene 羰基+nitro；不饱和二酸(E/Z)；支化烷基前缀；C3+烷基苯；propoxy+；二甲氧基苯
+- 下一步候选: 不饱和二酸(E/Z)；或 arene 羰基+nitro 贯通；或 C3+烷基苯
