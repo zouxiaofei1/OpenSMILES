@@ -4,13 +4,15 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from namepredict.layer2.ring_parent import (
+    _arene_alkoxy,
+    _arene_fg_subs_ok,
     _dbl_o_idx,
-    _hetero_or_ring_halo,
     _is_benzene_core,
-    _is_methyl_on_ring,
-    _outside_carbons,
-    _ring_halo_n,
-    _ring_side_starts,
+    _phenol_amines_ok,
+    _ring_alkoxy_ethers,
+    _ring_nitro_atoms,
+    _ring_nitro_n,
+    _ring_primary_amines,
 )
 
 
@@ -60,36 +62,44 @@ def _arene_fg_conflict(
     )
     if any(info.get(k) for k in bad if k not in allow):
         return True
-    return bool(info.get("amines") or info.get("thiols") or info.get("ethers"))
+    return bool(info.get("thiols"))
 
 
-def _arene_alkyl_ok(mol: Mol, ring_set: set[int], exclude: set[int]) -> bool:
-    starts = [s for s in _ring_side_starts(mol, ring_set) if s not in exclude]
-    outside = [i for i in _outside_carbons(mol, ring_set) if i not in exclude]
-    if set(outside) != set(starts):
+def _arene_ethers_ok(info: dict, ring_set: set[int]) -> bool:
+    return len(info.get("ethers") or []) == len(_ring_alkoxy_ethers(info, ring_set))
+
+
+def _arene_ring_prefix_ok(info: dict, ring_set: set[int]) -> bool:
+    if _phenol_amines_ok(info, ring_set) is None:
         return False
-    return all(_is_methyl_on_ring(mol, s, ring_set) for s in starts)
+    return _arene_ethers_ok(info, ring_set)
 
 
-def _arene_extra_n(info: dict, mol: Mol, ring_set: set[int], exclude: set[int]) -> int:
-    starts = [s for s in _ring_side_starts(mol, ring_set) if s not in exclude]
+def _arene_prefix_atoms(info: dict, ring_set: set[int]) -> set[int]:
+    ams = _ring_primary_amines(info, ring_set)
     ohs = _ring_phenol_ohs(info, ring_set)
-    return _ring_halo_n(mol, ring_set) + len(starts) + len(ohs)
-
-
-def _arene_hetero_ok(info: dict, mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
-    ohs = _ring_phenol_ohs(info, ring_set)
-    return _hetero_or_ring_halo(mol, ring_set, allowed | {h["o_idx"] for h in ohs})
+    alk, _ = _arene_alkoxy(info, ring_set)
+    return (
+        {a["n_idx"] for a in ams}
+        | {h["o_idx"] for h in ohs}
+        | _ring_nitro_atoms(info, ring_set)
+        | alk
+    )
 
 
 def _arene_subs_ok(
     info: dict, mol: Mol, ring_set: set[int], exclude: set[int], allowed: set[int],
 ) -> bool:
-    if not _arene_hetero_ok(info, mol, ring_set, allowed):
+    if not _arene_ring_prefix_ok(info, ring_set):
         return False
-    if not _arene_alkyl_ok(mol, ring_set, exclude):
-        return False
-    return _arene_extra_n(info, mol, ring_set, exclude) <= 3
+    alk, n_alk = _arene_alkoxy(info, ring_set)
+    ams = _ring_primary_amines(info, ring_set)
+    n_oh = len(_ring_phenol_ohs(info, ring_set))
+    full = allowed | _arene_prefix_atoms(info, ring_set)
+    return _arene_fg_subs_ok(
+        mol, ring_set, full,
+        _ring_nitro_n(info, ring_set), len(ams) + n_oh, n_alk, exclude | alk,
+    )
 
 
 def _is_simple_benzoic(info: dict) -> bool:
