@@ -85,5 +85,6 @@
 [#c20d51b][IUPAC P-22.2.1 / P-25] 保留母体 quinoline/isoquinoline（+ol/+carboxylic） [+tests, dual 7.5%(304)→7.6%(307), fails 3758→3755]
 [#12aba3c][IUPAC P-22.2.1 / P-25] 保留母体 1H-indazole（+carbonitrile/+carbaldehyde） [+tests, dual 7.6%(307)→7.6%(310), fails 3755→3752]
 [#eba07a4][IUPAC P-22.2.1 / P-14.3.4] 保留母体 1,3-oxazole/1,3-thiazole（+hetero5 侧链放宽 n-alkyl C1–C2） [+16 tests, dual 7.6%(310)→7.7%(312), fails 3752→3750]
+[#19609db][IUPAC P-14.3.4 / P-62.2.1 / P-61.5] 多取代苯上限3→4 + 苯二胺母体 + 多取代苯甲醚中文 [+13 tests, dual 7.7%(312)→7.8%(317), fails 3750→3745]
 
 ## 其他
