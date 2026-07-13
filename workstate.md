@@ -67,11 +67,12 @@
 [#50ee52f][IUPAC P-14.3.4 / P-63.1.4 / P-65.1.1.1] 芳环保留 FG 母体环上简单取代上限 2→3 对齐 benzene [+8 tests, dual 6.4%(259)→6.6%(269), fails 3803→3793]
 [#766dd7e][IUPAC P-29.3.2.2 / P-14.3.4] 芳环 –CF₃ 前缀 trifluoromethyl/三氟甲基（L2 拓扑+L3 提取+L5 en 括号） [+8 tests, dual 6.6%(269)→6.7%(273), fails 3793→3789]
 [#f64c0d6][IUPAC P-22.2.1] simple pyridine 环上取代对齐 benzene（alkoxy/nitro 门控） [+9 tests, dual 6.7%(273)→6.8%(276), fails 3789→3786]
+[#5652b1a][IUPAC P-22.1.1 / P-25] 保留母体 naphthalene（未取代+单甲基/单卤；1–8 位次） [+14 tests, dual 6.8%(276)→6.8%(277), fails 3786→3785]
 
 ## 其他
-- 基线(本轮前): en=6.8%(276/4062) zh=27.5%(208/756) dual=6.7%(273/4062)
-- 本次: en=6.9%(279/4062) zh=27.9%(211/756) dual=6.8%(276/4062) fails=3786
-- 改动: `_is_simple_pyridine` 复用 `_arene_alkoxy`/`_ring_nitro_*` + `_benzene_subs_ok` 传参
-- 验证: 2-chloro-3-methoxypyridine；2,6-dibromo-3-ethoxypyridine；2-methoxy-3-methyl-5-nitropyridine；4-chloro/4-methylpyridine 不回归
-- 已知缺口: naphthalene；pyrazole；通用支化烷基；assembler 499 行
-- 下一步候选: naphthalene 保留母体；或 pyrazole(1,2-diazole)；或通用支化烷基
+- 基线(本轮前): en=6.9%(279/4062) zh=27.9%(211/756) dual=6.8%(276/4062)
+- 本次: en=6.9%(280/4062) zh=28.0%(212/756) dual=6.8%(277/4062) fails=3785
+- 改动: 新 L2 `naphthalene.py`；L4 标准 1–8 位次+多 orientation；scoring n_rings=2；L5 词干
+- 验证: naphthalene/萘；1-/2-methylnaphthalene；1-/2-chloronaphthalene；benzene/pyridine/indole 不误收
+- 已知缺口: pyrazole；萘多取代/萘酚；通用支化烷基；assembler 499 行；indole 仍回落链名
+- 下一步候选: pyrazole(1,2-diazole)；或 diazine 简单取代；或通用支化烷基
