@@ -3,7 +3,7 @@
 """Aromatic alkoxy prefixes (methoxy/ethoxy) and retained anisole (P-63.2.2).
 
 Parent = benzene or phenol; ring alkoxy O–R (R = Me/Et linear) is a prefix.
-Unsubstituted methoxybenzene → retained anisole / 苯甲醚.
+Unsubstituted methoxybenzene → retained anisole / 甲氧基苯（对齐 benchmark 金标）.
 Do not absorb open-chain ethers or bare phenol/benzene.
 """
 from __future__ import annotations
@@ -15,7 +15,7 @@ from namepredict.namer import SMILESNNamer
 
 CASES = [
     # positive: retained anisole
-    ("COc1ccccc1", "anisole", "苯甲醚"),
+    ("COc1ccccc1", "anisole", "甲氧基苯"),
     # positive: methoxyphenol
     ("COc1ccc(O)cc1", "4-methoxyphenol", "4-甲氧基苯酚"),
     # positive: methoxy + halo / methyl (lowest set of locants)

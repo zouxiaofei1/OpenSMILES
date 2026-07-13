@@ -142,7 +142,7 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
 _PARENT_OH_KINDS = frozenset(
     {
         "alcohol", "alkenol", "diol", "triol", "cycloalcohol",
-        "phenol", "benzenediol", "pyridinol",
+        "phenol", "benzenediol", "pyridinol", "benzothiophenol",
     }
 )
 _PARENT_NH2_KINDS = frozenset(

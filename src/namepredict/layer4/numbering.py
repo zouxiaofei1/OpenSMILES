@@ -284,13 +284,9 @@ def _orient_naphthalene(chain: list[int], parent: dict, substituents: list) -> l
 
 
 def _orient_indole(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    """NH fixed as locant 1; chain already built in standard order."""
+    """Hetero fixed as locant 1; chain already built in standard order."""
     return chain
 
-
-def _orient_benzofuranamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    """O fixed as 1; amine is principal FG (locant via amine_c_idx)."""
-    return chain
 
 _SAT_HETERO_PLAIN = (
     "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
@@ -327,7 +323,8 @@ def _arene_orienters() -> dict:
         "thiophenecarboxylic": _orient_hetero5carboxylic,
         "pyrrolecarboxylic": _orient_hetero5carboxylic,
         "naphthalene": _orient_naphthalene, "indole": _orient_indole,
-        "benzofuran": _orient_indole, "benzofuranamine": _orient_benzofuranamine,
+        "benzofuran": _orient_indole, "benzofuranamine": _orient_indole,
+        "benzothiophene": _orient_indole, "benzothiophenol": _orient_indole,
         **_aza_orienters(), **_sat_hetero_orienters(),
     }
 def _hetero_orienters() -> dict:
@@ -368,6 +365,9 @@ def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
         return None
     return _pos_on(oriented.get("chain") or [], oriented.get(key))
 def _oh_locant(oriented: dict) -> int | None:
+    if oriented.get("kind") == "benzothiophenol":
+        chain, a = oriented.get("chain") or [], oriented.get("oh_c_idx")
+        return _indole_sub_locant(chain, a) if a is not None else None
     return _fg_locant(
         oriented, ("alcohol", "alkenol", "cycloalcohol", "pyridinol"), "oh_c_idx",
     )
@@ -448,19 +448,17 @@ def _indole_sub_locant(chain: list[int], attach: int) -> int:
         return chain.index(attach) + 1 if attach in chain else 0
     loc = _INDOLE_LOCANTS[chain.index(attach)]
     return loc if loc is not None else chain.index(attach) + 1
-
-
+_FUSED56_KINDS = frozenset({
+    "indole", "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol",
+})
+def _sub_locant(chain: list[int], attach: int, kind: str | None) -> int:
+    if kind == "naphthalene":
+        return _naph_sub_locant(chain, attach)
+    if kind in _FUSED56_KINDS:
+        return _indole_sub_locant(chain, attach)
+    return chain.index(attach) + 1
 def _with_locants(chain: list[int], substituents: list, kind: str | None = None) -> list:
-    out: list = []
-    for s in substituents:
-        if kind == "naphthalene":
-            loc = _naph_sub_locant(chain, s["attach_idx"])
-        elif kind in ("indole", "benzofuran", "benzofuranamine"):
-            loc = _indole_sub_locant(chain, s["attach_idx"])
-        else:
-            loc = chain.index(s["attach_idx"]) + 1
-        out.append({**s, "locant": loc})
-    return out
+    return [{**s, "locant": _sub_locant(chain, s["attach_idx"], kind)} for s in substituents]
 def _unsat_locants(oriented: dict, n: int) -> dict:
     kind = oriented.get("kind")
     return {

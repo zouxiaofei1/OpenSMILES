@@ -28,7 +28,7 @@ def benzene_parent_names(numbered: dict) -> tuple[str, str]:
     if _is_toluene(numbered):
         return "toluene", "甲苯"
     if _is_anisole(numbered):
-        return "anisole", "苯甲醚"
+        return "anisole", "甲氧基苯"
     if _is_xylene(numbered):
         return "xylene", "苯"
     return "benzene", "苯"
@@ -62,6 +62,7 @@ _ARENE_FG = {
     "naphthalene": ("naphthalene", "萘"),
     "indole": ("1H-indole", "吲哚"),
     "benzofuran": ("benzofuran", "苯并呋喃"),
+    "benzothiophene": ("1-benzothiophene", "苯并[b]噻吩"),
     "aziridine": ("aziridine", "氮杂环丙烷"),
     "oxirane": ("oxirane", "环氧乙烷"),
     "oxolane": ("oxolane", "氧杂环戊烷"),
@@ -83,7 +84,9 @@ def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
 def join_parent_name(prefix: str, parent: str) -> str:
     if not prefix:
         return parent
-    return f"{prefix}-{parent}" if parent.startswith("1H-") else f"{prefix}{parent}"
+    if parent.startswith("1H-") or parent.startswith("1-"):
+        return f"{prefix}-{parent}"
+    return f"{prefix}{parent}"
 
 
 def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
@@ -245,6 +248,13 @@ def benzofuranamine_names(numbered: dict) -> tuple[str, str] | None:
     return f"benzofuran-{loc}-amine", f"苯并呋喃-{loc}-胺"
 
 
+def benzothiophenol_names(numbered: dict) -> tuple[str, str] | None:
+    loc = numbered.get("oh_locant")
+    if loc is None:
+        return None
+    return f"1-benzothiophen-{loc}-ol", f"苯并[b]噻吩-{loc}-醇"
+
+
 def pyridine_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, str] | None:
     if kind == "pyridinecarboxylic": return pyridinecarboxylic_names(numbered)
     if kind == "pyridinecarbonitrile": return pyridinecarbonitrile_names(numbered)
@@ -252,5 +262,6 @@ def pyridine_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, s
     if kind == "pyrimidinamine": return pyrimidinamine_names(numbered, build_prefix)
     if kind == "pyridinol": return pyridinol_names(numbered)
     if kind == "benzofuranamine": return benzofuranamine_names(numbered)
+    if kind == "benzothiophenol": return benzothiophenol_names(numbered)
     return None
 

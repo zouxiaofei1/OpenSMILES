@@ -8,6 +8,7 @@ from namepredict.layer2.cyclo_carboxylic import _try_cycloalkanecarboxylic_paren
 from namepredict.layer2.hetero5_carboxylic import _try_hetero5carboxylic_parent as _try_h5cooh
 from namepredict.layer2.sat_hetero_carboxylic import _try_sat_hetero_carboxylic_parent as _try_shcooh
 from namepredict.layer2.benzofuran import _try_benzofuranamine_parent as _try_bfam
+from namepredict.layer2.benzothiophene import _try_benzothiophenol_parent as _try_btol
 from namepredict.layer2.heteroarene5 import _try_pyrimidinamine_parent
 from namepredict.layer2.pyridine import (
     _try_pyridinecarbonitrile_parent as _try_pycn, _try_pyridinecarboxylic_parent,
@@ -164,10 +165,10 @@ def _ring_fg_try(info: dict, pairs, ekey: str, ckey: str) -> dict | None:
 def _ring_alcohol_parent(info: dict) -> dict | None:
     if _is_simple_benzenediol(info):
         return _benzenediol_parent(info)
-    return _try_pyridin_fg_parent(info) or _ring_fg_try(
+    return (_try_btol(info) or _try_pyridin_fg_parent(info) or _ring_fg_try(
         info, ((_is_simple_phenol, "phenol"), (_is_simple_cycloalcohol, "cycloalcohol")),
         "hydroxyls", "oh_c_idx",
-    )
+    ))
 def _alcohol_parent(info: dict) -> dict:
     ring = _ring_alcohol_parent(info)
     if ring is not None: return ring
@@ -494,7 +495,6 @@ def _ring_parent(info: dict) -> dict | None:
     from namepredict.layer2.candidates import _ring_parent as _ring_best
     return _ring_best(info)
 def select_parent(info: dict) -> dict:
-    # lazy import: candidates.py multi-producer collection
     from namepredict.layer2.candidates import _alkane_fallback, _collect_candidates
     best = _pick_best(info, _collect_candidates(info))
     return best if best is not None else _alkane_fallback(info)
