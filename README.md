@@ -75,6 +75,14 @@ uvicorn server.app:app --host 127.0.0.1 --port 8765
 
 Open [http://127.0.0.1:8765/](http://127.0.0.1:8765/) for the ChemAgent Console (sessions, namer probe, loop control, SSE logs). API binds to localhost by default.
 
+Namer tab supports drawing structures via self-hosted Ketcher (`web/vendor/ketcher/`, version in `VERSION`). Rebuild vendor:
+
+```bash
+bash tools/build_ketcher_vendor.sh
+```
+
+Requires Node 18+. Text SMILES naming works even if vendor is missing.
+
 ## Package layout
 
 ```
