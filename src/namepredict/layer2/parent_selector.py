@@ -10,7 +10,8 @@ from namepredict.layer2.cyclo_carboxylic import _try_cycloalkanecarboxylic_paren
 from namepredict.layer2.hetero5_carboxylic import _try_hetero5carboxylic_parent as _try_h5cooh
 from namepredict.layer2.heteroarene5 import _try_pyrimidinamine_parent
 from namepredict.layer2.pyridine import (
-    _try_pyridinecarboxylic_parent, _try_pyridin_fg_parent,
+    _try_pyridinecarbonitrile_parent as _try_pycn, _try_pyridinecarboxylic_parent,
+    _try_pyridin_fg_parent,
 )
 from namepredict.layer2.ring_parent import (
     _benzenediol_parent, _endocyclic_double, _is_simple_aniline,
@@ -360,7 +361,7 @@ def _anhydride_parent(info: dict) -> dict:
         acyl_c_idx=e["c1_idx"], o_idx=e["o_idx"], other_acyl_c_idx=e["c2_idx"],
     )
 def _nitrile_parent(info: dict) -> dict:
-    return _unsat_or_sat(
+    return _try_pycn(info) or _unsat_or_sat(
         info, "has_nitrile", "nitriles", _ALKENENITRILE_BAD,
         "alkenenitrile", "nitrile", "nitrile_c_idx",
     )

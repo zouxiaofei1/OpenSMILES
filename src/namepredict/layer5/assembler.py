@@ -444,8 +444,8 @@ def _mult_zh(n: int) -> str:
 _KEEP_LOCANT_KINDS = frozenset({
     "acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate",
     "benzoic", "benzaldehyde", "acetophenone", "pyridinecarboxylic",
-    "benzoate", "benzonitrile", "benzoyl_chloride", "cycloalkanecarboxylic",
-}) | _H5COOH_KINDS
+    "pyridinecarbonitrile", "benzoate", "benzonitrile", "benzoyl_chloride",
+    "cycloalkanecarboxylic"}) | _H5COOH_KINDS
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
     if n_carbons <= 1 or kind in ("sec_amine", "tert_amine", "amide"):
         return True

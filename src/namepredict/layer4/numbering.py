@@ -296,6 +296,7 @@ def _sat_hetero_orienters() -> dict:
 def _aza_orienters() -> dict:
     return {
         "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
+        "pyridinecarbonitrile": _orient_pyridinecarboxylic,
         "pyridinamine": _orient_pyridinamine, "pyridinol": _orient_pyridinol,
         "imidazole": _orient_imidazole, "pyrazole": _orient_imidazole,
         "imidazolecarboxylic": _orient_diazolecarboxylic,

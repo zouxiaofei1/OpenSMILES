@@ -1,4 +1,4 @@
-"""Retained pyridine / pyridinecarboxylic / pyridinamine / pyridinol parents."""
+"""Retained pyridine / pyridinecarboxylic / pyridinamine / pyridinol / carbonitrile."""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
@@ -8,6 +8,8 @@ from namepredict.layer2.arene_carbonyl import (
     _arene_subs_ok,
     _carboxyl_ring_c,
     _cooh_oxygen_idxs,
+    _fg_ring_c,
+    _nitrile_n_idx,
 )
 from namepredict.layer2.ring_parent import (
     _arene_alkoxy,
@@ -176,3 +178,41 @@ def _try_pyridinol_parent(info: dict) -> dict | None:
 def _try_pyridin_fg_parent(info: dict) -> dict | None:
     """Prefer pyridinamine, else pyridinol (FG-priority parents)."""
     return _try_pyridinamine_parent(info) or _try_pyridinol_parent(info)
+
+
+def _pyridine_cn_ctx(info: dict) -> tuple | None:
+    if not _is_pyridine_core(info):
+        return None
+    allow = frozenset({"has_nitrile"})
+    if _arene_fg_conflict(info, "has_acid", "has_aldehyde", "has_ketone", allow=allow):
+        return None
+    mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
+    if _fg_ring_c(info, ring, "nitriles") is None:
+        return None
+    fg_c, n_idx = info["nitriles"][0]["c_idx"], _nitrile_n_idx(info["mol"], info["nitriles"][0]["c_idx"])
+    return (mol, ring, fg_c, n_idx) if n_idx is not None else None
+
+
+def _is_simple_pyridinecarbonitrile(info: dict) -> bool:
+    got = _pyridine_cn_ctx(info)
+    if got is None:
+        return False
+    mol, ring, fg_c, n_idx = got
+    return _arene_subs_ok(info, mol, ring, {fg_c}, {n_idx})
+
+
+def _pyridinecarbonitrile_parent(info: dict) -> dict:
+    ring = list(info["rings"][0]["atom_ids"])
+    c = info["nitriles"][0]["c_idx"]
+    return {
+        "chain": ring, "n_carbons": 6, "kind": "pyridinecarbonitrile",
+        "n_idx": _pyridine_n_idx(info), "nitrile_c_idx": c,
+        "ring_attach_idx": _fg_ring_c(info, set(ring), "nitriles"),
+    }
+
+
+def _try_pyridinecarbonitrile_parent(info: dict) -> dict | None:
+    return (
+        _pyridinecarbonitrile_parent(info)
+        if _is_simple_pyridinecarbonitrile(info) else None
+    )

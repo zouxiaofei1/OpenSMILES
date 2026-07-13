@@ -19,7 +19,7 @@ _FG_RANK = {
     "ester": 11, "alkenoate": 11, "benzoate": 11,
     "acyl_chloride": 10, "benzoyl_chloride": 10,
     "amide": 9,
-    "nitrile": 8, "alkenenitrile": 8, "benzonitrile": 8,
+    "nitrile": 8, "alkenenitrile": 8, "benzonitrile": 8, "pyridinecarbonitrile": 8,
     "aldehyde": 7, "alkenal": 7, "benzaldehyde": 7,
     "ketone": 6, "dione": 6, "cycloketone": 6, "acetophenone": 6,
     "alcohol": 5, "alkenol": 5, "diol": 5, "triol": 5,
@@ -40,7 +40,8 @@ _RETAINED = frozenset(
     {"phenol", "aniline", "benzoic", "benzaldehyde", "acetophenone",
      "benzoate", "benzonitrile", "benzoyl_chloride", "benzene", "naphthalene",
      "furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic",
-     "imidazolecarboxylic", "pyrazolecarboxylic", "pyridinecarboxylic"}
+     "imidazolecarboxylic", "pyrazolecarboxylic", "pyridinecarboxylic",
+     "pyridinecarbonitrile"}
     | set(_HETERO_RING)
 )
 

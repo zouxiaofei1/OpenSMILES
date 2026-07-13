@@ -133,6 +133,13 @@ def pyridinecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
     return f"pyridine-{loc}-carboxylic acid", f"吡啶-{loc}-甲酸"
 
 
+def pyridinecarbonitrile_names(numbered: dict) -> tuple[str, str] | None:
+    loc = _pyridine_cooh_loc(numbered)
+    if loc is None:
+        return None
+    return f"pyridine-{loc}-carbonitrile", f"吡啶-{loc}-甲腈"
+
+
 # base_kind → (en stem, zh stem, needs_1h)
 _H5COOH_STEM = {
     "furan": ("furan", "呋喃", False),
@@ -208,6 +215,7 @@ def pyridinol_names(numbered: dict) -> tuple[str, str] | None:
 
 def pyridine_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, str] | None:
     if kind == "pyridinecarboxylic": return pyridinecarboxylic_names(numbered)
+    if kind == "pyridinecarbonitrile": return pyridinecarbonitrile_names(numbered)
     if kind == "pyridinamine": return pyridinamine_names(numbered)
     if kind == "pyrimidinamine": return pyrimidinamine_names(numbered, build_prefix)
     if kind == "pyridinol": return pyridinol_names(numbered)
