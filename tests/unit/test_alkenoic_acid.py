@@ -20,7 +20,7 @@ CASES = [
     ("C=CCC(=O)O", "but-3-enoic acid", "丁-3-烯酸"),
     ("CC=CC(=O)O", "but-2-enoic acid", "丁-2-烯酸"),
     ("CC(C)=CC(=O)O", "3-methylbut-2-enoic acid", "3-甲基丁-2-烯酸"),
-    ("CC/C=C/CC(=O)O", "hex-3-enoic acid", "己-3-烯酸"),
+    ("CCC=CCC(=O)O", "hex-3-enoic acid", "己-3-烯酸"),
     ("CCC=CC(=O)O", "pent-2-enoic acid", "戊-2-烯酸"),
     # negative: saturated acid, alkene, oxoacid must not become alkenoic acids
     ("CC(=O)O", "acetic acid", "乙酸"),

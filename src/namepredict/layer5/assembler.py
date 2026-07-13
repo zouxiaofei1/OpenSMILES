@@ -140,8 +140,6 @@ def _unsat_stem_names(n: int, locant: int | None, en_sfx: str, zh_sfx: str) -> t
         return None
     en, zh = plain
     return f"{en[:-3]}-{locant}-{en_sfx}", f"{zh[0]}-{locant}-{zh_sfx}"
-def _alkenoic_acid_names(n: int, locant: int | None) -> tuple[str, str] | None:
-    return _unsat_stem_names(n, locant, "enoic acid", "烯酸")
 def _alkenoate_names(n, locant, alkoxy_n) -> tuple[str, str] | None:
     alkyl = _ester_alkyl_pair(alkoxy_n) if alkoxy_n is not None else None
     stem = _unsat_stem_names(n, locant, "enoate", "烯酸")
@@ -262,16 +260,17 @@ def _alkyne_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | N
 def _acid_table(n: int, loc) -> dict:
     return {
         "acid": lambda: _acid_names(n), "diacid": lambda: _diacid_names(n),
-        "alkenoic_acid": lambda: _alkenoic_acid_names(n, loc),
         "alkenal": lambda: _alkenal_names(n, loc),
         "aldehyde": lambda: _aldehyde_names(n), "amide": lambda: _amide_names(n),
     }
 
 
 def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
-    from namepredict.layer5.unsat_acid import alkenedioic_names
+    from namepredict.layer5.unsat_acid import alkenoic_acid_names, alkenedioic_names
     if kind == "alkenedioic":
         return alkenedioic_names(n, numbered or {})
+    if kind == "alkenoic_acid":
+        return alkenoic_acid_names(n, numbered or {})
     fn = _acid_table(n, (numbered or {}).get("ene_locant")).get(kind)
     return fn() if fn else None
 def _nitrile_or_none(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:

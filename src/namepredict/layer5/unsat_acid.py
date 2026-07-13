@@ -1,4 +1,4 @@
-"""Alkenedioic acid name assembly and E/Z stereo prefix."""
+"""Alkenoic / alkenedioic acid name assembly and E/Z stereo prefix."""
 from __future__ import annotations
 
 from rdkit.Chem import BondStereo, Mol
@@ -27,17 +27,24 @@ def _ez_prefix(numbered: dict) -> str:
     return _bond_stereo(parent.get("mol"), parent.get("double_bond"))
 
 
-def _alkenedioic_names(n: int, locant: int | None, ez: str) -> tuple[str, str] | None:
-    en = ALKANE_EN.get(n)
-    zh = ALKANE_ZH.get(n)
-    if not en or not zh or locant is None or n < 3:
+def _unsat_acid_pair(n, locant, ez, en_sfx, zh_sfx, min_n=2) -> tuple[str, str] | None:
+    en, zh = ALKANE_EN.get(n), ALKANE_ZH.get(n)
+    if not en or not zh or locant is None or n < min_n:
         return None
-    stem_en = en[:-3]  # butane -> but
-    return (
-        f"{ez}{stem_en}-{locant}-enedioic acid",
-        f"{ez}{zh[0]}-{locant}-烯二酸",
-    )
+    return f"{ez}{en[:-3]}-{locant}-{en_sfx}", f"{ez}{zh[0]}-{locant}-{zh_sfx}"
+
+
+def _alkenedioic_names(n: int, locant: int | None, ez: str) -> tuple[str, str] | None:
+    return _unsat_acid_pair(n, locant, ez, "enedioic acid", "烯二酸", 3)
 
 
 def alkenedioic_names(n: int, numbered: dict) -> tuple[str, str] | None:
     return _alkenedioic_names(n, numbered.get("ene_locant"), _ez_prefix(numbered))
+
+
+def _alkenoic_acid_names(n: int, locant: int | None, ez: str) -> tuple[str, str] | None:
+    return _unsat_acid_pair(n, locant, ez, "enoic acid", "烯酸")
+
+
+def alkenoic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    return _alkenoic_acid_names(n, numbered.get("ene_locant"), _ez_prefix(numbered))

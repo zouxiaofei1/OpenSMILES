@@ -282,7 +282,7 @@ def _try_unsat_fg(info, flag, ekey, bad, kind, ckey, **extra) -> dict | None:
     chain = _best_cover_pair(info["mol"], [c_idx, db["c1"], db["c2"]])
     if not chain or c_idx not in chain:
         return None
-    return _parent_dict(chain, kind, **{ckey: c_idx, "double_bond": (db["c1"], db["c2"]), **extra})
+    return _parent_dict(chain, kind, **{ckey: c_idx, "double_bond": (db["c1"], db["c2"]), "mol": info["mol"], **extra})
 def _fg_chain(info: dict, ekey: str, kind: str, ckey: str, **extra) -> dict:
     c = info[ekey][0]["c_idx"]
     return _parent_dict(_chain_through(info, c), kind, **{ckey: c, **extra})
