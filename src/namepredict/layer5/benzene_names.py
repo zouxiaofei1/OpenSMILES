@@ -48,6 +48,7 @@ _ARENE_FG = {
     "benzoic": ("benzoic acid", "苯甲酸"),
     "benzaldehyde": ("benzaldehyde", "苯甲醛"),
     "acetophenone": ("acetophenone", "苯乙酮"),
+    "pyridine": ("pyridine", "吡啶"),
 }
 
 
@@ -60,4 +61,20 @@ def benzenediol_names(locs: list[int] | None) -> tuple[str, str] | None:
         return None
     loc = ",".join(str(x) for x in locs)
     return f"benzene-{loc}-diol", f"苯-{loc}-二酚"
+
+
+def _pyridine_cooh_loc(numbered: dict) -> int | None:
+    parent = numbered.get("parent") or {}
+    chain = parent.get("chain") or []
+    attach = parent.get("ring_attach_idx")
+    if attach is None or attach not in chain:
+        return None
+    return chain.index(attach) + 1
+
+
+def pyridinecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
+    loc = _pyridine_cooh_loc(numbered)
+    if loc is None:
+        return None
+    return f"pyridine-{loc}-carboxylic acid", f"吡啶-{loc}-羧酸"
 

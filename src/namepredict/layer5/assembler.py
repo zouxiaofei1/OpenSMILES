@@ -27,10 +27,8 @@ from namepredict.layer5.stems import (
     SULFIDE_SYM_ZH,
 )
 from namepredict.layer5.benzene_names import (
-    arene_fg_parent_names,
-    benzene_parent_names,
-    benzene_prefix,
-    benzenediol_names,
+    arene_fg_parent_names, benzene_parent_names, benzene_prefix,
+    benzenediol_names, pyridinecarboxylic_names,
 )
 from namepredict.types import NameResult
 MULT_EN = {
@@ -409,13 +407,10 @@ def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return _alkyne_names(n, numbered.get("yne_locant"), omit)
     return None
 def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    if kind == "cycloalkane":
-        return _cycloalkane_names(n)
-    if kind == "benzene":
-        return benzene_parent_names(numbered)
+    if kind == "cycloalkane": return _cycloalkane_names(n)
+    if kind == "benzene": return benzene_parent_names(numbered)
+    if kind == "pyridinecarboxylic": return pyridinecarboxylic_names(numbered)
     return arene_fg_parent_names(kind) or _alkane_names(n)
-
-
 def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     unsat = _unsat_names(kind, n, numbered)
     return unsat if unsat is not None else _ring_or_alkane(kind, n, numbered)
@@ -442,7 +437,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     # Carboxylic acids number COOH as 1; keep substituent locants (e.g. 2-aminoacetic acid).
     if kind in (
         "acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate",
-        "benzoic", "benzaldehyde", "acetophenone",
+        "benzoic", "benzaldehyde", "acetophenone", "pyridinecarboxylic",
     ):
         return False
     if n_carbons == 2 and len(substituents) == 1:

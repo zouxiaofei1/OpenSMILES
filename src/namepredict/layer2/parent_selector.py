@@ -5,6 +5,9 @@ from namepredict.layer2.alkenedioic import _alkenedioic_parent, _is_simple_alken
 from namepredict.layer2.arene_carbonyl import (
     _try_acetophenone_parent, _try_benzaldehyde_parent, _try_benzoic_parent,
 )
+from namepredict.layer2.pyridine import (
+    _try_pyridine_parent, _try_pyridinecarboxylic_parent,
+)
 from namepredict.layer2.ring_parent import (
     _benzenediol_parent, _endocyclic_double, _is_simple_aniline,
     _is_simple_benzene, _is_simple_benzenediol, _is_simple_cycloalcohol,
@@ -290,8 +293,9 @@ def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
     u = _try_unsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
     return u or _fg_chain(info, ekey, skind, ckey, **extra)
 def _acid_parent(info: dict) -> dict:
-    b = _try_benzoic_parent(info)
-    if b is not None: return b
+    for try_fn in (_try_pyridinecarboxylic_parent, _try_benzoic_parent):
+        b = try_fn(info)
+        if b is not None: return b
     if _is_simple_alkanedioic(info): return _diacid_parent(info)
     if _is_simple_alkenedioic(info): return _alkenedioic_parent(info)
     return _unsat_or_sat(
@@ -455,46 +459,33 @@ def _acid_ester_amide(info: dict) -> dict | None:
 def _aldehyde_ketone(info: dict) -> dict | None:
     if info.get("has_aldehyde") and info.get("aldehydes"):
         return _aldehyde_parent(info)
-    if info.get("has_ketone") and info.get("ketones"):
-        return _ketone_parent(info)
-    return None
+    return _ketone_parent(info) if info.get("has_ketone") and info.get("ketones") else None
 def _carbonyl_parent(info: dict) -> dict | None:
     top = _acid_ester_amide(info)
     return top if top is not None else _aldehyde_ketone(info)
 def _hetero_parent(info: dict) -> dict | None:
-    if info.get("has_alcohol") and info.get("hydroxyls"):
-        return _alcohol_parent(info)
-    if info.get("has_thiol") and info.get("thiols"):
-        return _thiol_parent(info)
-    if info.get("has_amine") and info.get("amines"):
-        return _amine_parent(info)
+    if info.get("has_alcohol") and info.get("hydroxyls"): return _alcohol_parent(info)
+    if info.get("has_thiol") and info.get("thiols"): return _thiol_parent(info)
+    if info.get("has_amine") and info.get("amines"): return _amine_parent(info)
     eth = _ether_parent(info)
     return eth if eth is not None else _sulfide_parent(info)
 def _fg_parent(info: dict) -> dict | None:
     carb = _carbonyl_parent(info)
     return carb if carb is not None else _hetero_parent(info)
 def _unsat_parent(info: dict) -> dict | None:
-    if _is_mono_alkyne(info):
-        return _alkyne_parent(info)
-    if _is_polyene(info):
-        return _polyene_parent(info)
-    if _is_mono_alkene(info):
-        return _alkene_parent(info)
-    return None
+    if _is_mono_alkyne(info): return _alkyne_parent(info)
+    if _is_polyene(info): return _polyene_parent(info)
+    return _alkene_parent(info) if _is_mono_alkene(info) else None
 def _ring_parent(info: dict) -> dict | None:
-    if _is_simple_benzene(info):
-        return _benzene_parent(info)
-    if _is_simple_cycloalkane(info):
-        return _cycloalkane_parent(info)
-    return None
+    p = _try_pyridine_parent(info)
+    if p is not None: return p
+    if _is_simple_benzene(info): return _benzene_parent(info)
+    return _cycloalkane_parent(info) if _is_simple_cycloalkane(info) else None
 def select_parent(info: dict) -> dict:
     fg = _fg_parent(info)
-    if fg is not None:
-        return fg
+    if fg is not None: return fg
     ring = _ring_parent(info)
-    if ring is not None:
-        return ring
+    if ring is not None: return ring
     unsat = _unsat_parent(info)
-    if unsat is not None:
-        return unsat
+    if unsat is not None: return unsat
     return _parent_dict(_longest_chain(info["mol"]), "alkane")

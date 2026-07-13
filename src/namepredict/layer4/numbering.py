@@ -292,26 +292,25 @@ def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> li
 
 def _orient_benzoic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fixed(chain, parent, substituents, "ring_attach_idx")
-
-
-
+def _orient_pyridine(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_ring_fixed(chain, parent, substituents, "n_idx")
+def _orient_pyridinecarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    attach, virtual = parent.get("ring_attach_idx"), list(substituents)
+    if attach is not None:
+        virtual = virtual + [{"attach_idx": attach, "en": ""}]
+    return _orient_pyridine(chain, parent, virtual)
 def _hetero_orienters() -> dict:
     return {
-        "alcohol": _orient_alcohol, "alkenol": _orient_alcohol,
-        "thiol": _orient_thiol,
-        "diol": _orient_polyol, "triol": _orient_polyol,
-        "diamine": _orient_diamine,
+        "alcohol": _orient_alcohol, "alkenol": _orient_alcohol, "thiol": _orient_thiol,
+        "diol": _orient_polyol, "triol": _orient_polyol, "diamine": _orient_diamine,
         "cycloalcohol": _orient_cycloalcohol, "phenol": _orient_cycloalcohol,
         "benzenediol": _orient_benzenediol,
         "cycloamine": _orient_cycloamine, "aniline": _orient_cycloamine,
         "amine": _orient_amine, "sec_amine": _orient_amine, "tert_amine": _orient_amine,
+        "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
     }
-
-
 def _orient_polyene(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return orient_polyene(chain, parent, substituents, _prefer_chain)
-
-
 def _unsat_orienters() -> dict:
     return {
         "cycloketone": _orient_cycloketone, "alkene": _orient_alkene,
@@ -321,17 +320,11 @@ def _unsat_orienters() -> dict:
         "benzoic": _orient_benzoic, "benzaldehyde": _orient_benzoic,
         "acetophenone": _orient_benzoic,
     }
-
-
 def _kind_orienters() -> dict:
     return {**_hetero_orienters(), **_unsat_orienters(), **_carbonyl_orienters()}
-
-
 def _orient_by_kind(kind: str, chain: list[int], parent: dict, subs: list) -> list[int]:
     fn = _kind_orienters().get(kind)
-    if fn is None:
-        return _orient_alkane(chain, subs)
-    return fn(chain, parent, subs)
+    return _orient_alkane(chain, subs) if fn is None else fn(chain, parent, subs)
 
 
 def _orient_chain(parent: dict, substituents: list) -> list[int]:
