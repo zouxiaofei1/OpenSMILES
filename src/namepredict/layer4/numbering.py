@@ -315,10 +315,11 @@ def _orient_polyene(chain: list[int], parent: dict, substituents: list) -> list[
 def _unsat_orienters() -> dict:
     return {
         "cycloketone": _orient_cycloketone, "alkene": _orient_alkene,
-        "polyene": _orient_polyene, "cycloalkene": _orient_cycloalkene,
-        "alkyne": _orient_alkyne, "cycloalkane": _orient_cycloalkane,
-        "benzene": _orient_cycloalkane, "benzoic": _orient_benzoic,
-        "benzaldehyde": _orient_benzoic, "acetophenone": _orient_benzoic,
+        "alkenedioic": _orient_alkene, "polyene": _orient_polyene,
+        "cycloalkene": _orient_cycloalkene, "alkyne": _orient_alkyne,
+        "cycloalkane": _orient_cycloalkane, "benzene": _orient_cycloalkane,
+        "benzoic": _orient_benzoic, "benzaldehyde": _orient_benzoic,
+        "acetophenone": _orient_benzoic,
     }
 
 
@@ -397,7 +398,7 @@ def _ene_locant(oriented: dict) -> int | None:
     kind = oriented.get("kind")
     if kind in (
         "alkene", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenol",
-        "alkenoate", "cycloalkene",
+        "alkenoate", "cycloalkene", "alkenedioic",
     ):
         return _bond_locant(oriented, kind, "double_bond")
     return None
@@ -428,7 +429,10 @@ def _omit_amine(am_pos: int | None, n_carbons: int, kind: str | None = None) -> 
 def _omit_unsat(n_carbons: int, kind: str | None = None) -> bool:
     if kind == "cycloalkene":
         return True
-    if kind in ("alkenoic_acid", "alkenal", "alkenenitrile", "alkenol", "alkenoate"):
+    if kind in (
+        "alkenoic_acid", "alkenal", "alkenenitrile", "alkenol",
+        "alkenoate", "alkenedioic",
+    ):
         return False
     return n_carbons <= 3
 

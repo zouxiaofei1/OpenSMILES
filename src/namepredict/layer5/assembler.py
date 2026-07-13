@@ -259,15 +259,20 @@ def _alkyne_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | N
     if locant is None:
         return None
     return _alkyne_with_locant(n, locant)
-def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
-    loc = (numbered or {}).get("ene_locant")
-    table = {
+def _acid_table(n: int, loc) -> dict:
+    return {
         "acid": lambda: _acid_names(n), "diacid": lambda: _diacid_names(n),
         "alkenoic_acid": lambda: _alkenoic_acid_names(n, loc),
         "alkenal": lambda: _alkenal_names(n, loc),
         "aldehyde": lambda: _aldehyde_names(n), "amide": lambda: _amide_names(n),
     }
-    fn = table.get(kind)
+
+
+def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
+    from namepredict.layer5.unsat_acid import alkenedioic_names
+    if kind == "alkenedioic":
+        return alkenedioic_names(n, numbered or {})
+    fn = _acid_table(n, (numbered or {}).get("ene_locant")).get(kind)
     return fn() if fn else None
 def _nitrile_or_none(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
     if kind == "nitrile":

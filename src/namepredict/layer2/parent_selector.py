@@ -1,6 +1,7 @@
 from __future__ import annotations
 from rdkit.Chem import Mol
 
+from namepredict.layer2.alkenedioic import _alkenedioic_parent, _is_simple_alkenedioic
 from namepredict.layer2.arene_carbonyl import (
     _try_acetophenone_parent, _try_benzaldehyde_parent, _try_benzoic_parent,
 )
@@ -292,6 +293,7 @@ def _acid_parent(info: dict) -> dict:
     b = _try_benzoic_parent(info)
     if b is not None: return b
     if _is_simple_alkanedioic(info): return _diacid_parent(info)
+    if _is_simple_alkenedioic(info): return _alkenedioic_parent(info)
     return _unsat_or_sat(
         info, "has_acid", "carboxyls", _ALKENOIC_BAD, "alkenoic_acid", "acid", "cooh_c_idx",
     )
