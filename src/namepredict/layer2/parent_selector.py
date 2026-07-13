@@ -471,20 +471,19 @@ def _hetero_parent(info: dict) -> dict | None:
     eth = _ether_parent(info)
     return eth if eth is not None else _sulfide_parent(info)
 def _fg_parent(info: dict) -> dict | None:
-    carb = _carbonyl_parent(info)
-    return carb if carb is not None else _hetero_parent(info)
+    """Compat wrapper: multi-class FG tries + score (no short-circuit)."""
+    from namepredict.layer2.candidates import _fg_parent as _fg_best
+    return _fg_best(info)
 def _unsat_parent(info: dict) -> dict | None:
     if _is_mono_alkyne(info): return _alkyne_parent(info)
     if _is_polyene(info): return _polyene_parent(info)
     return _alkene_parent(info) if _is_mono_alkene(info) else None
 def _ring_parent(info: dict) -> dict | None:
-    for try_fn in (_try_pyridine_parent, _try_diazine_parent, _try_hetero5_parent):
-        p = try_fn(info)
-        if p is not None: return p
-    if _is_simple_benzene(info): return _benzene_parent(info)
-    return _cycloalkane_parent(info) if _is_simple_cycloalkane(info) else None
+    """Compat wrapper: multi-class ring tries + score (no short-circuit)."""
+    from namepredict.layer2.candidates import _ring_parent as _ring_best
+    return _ring_best(info)
 def select_parent(info: dict) -> dict:
-    # lazy import: candidates.py collects from this module's try-paths
+    # lazy import: candidates.py multi-producer collection
     from namepredict.layer2.candidates import _alkane_fallback, _collect_candidates
     best = _pick_best(info, _collect_candidates(info))
     return best if best is not None else _alkane_fallback(info)

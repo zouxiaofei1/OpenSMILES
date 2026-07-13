@@ -2,7 +2,7 @@
 
 Each candidate parent dict is scored into a tuple (bigger wins):
 (has_principal_fg, fg_class_rank, sides_ok, is_hetero_ring, is_carbo_ring,
- n_rings, ring_size, n_unsat, n_carbons, retained_bonus, -n_unhandled_side)
+ n_rings, ring_size, retained_bonus, n_unsat, n_carbons, -n_unhandled_side)
 
 `sides_ok` sits above the ring bits on purpose: a ring candidate whose
 side chains cannot be expressed as substituents (parent["n_unhandled"]>0)
@@ -33,7 +33,8 @@ _HETERO_RING = frozenset(
 _CARBO_RING = frozenset({"benzene", "cycloalkane", "cycloalkene"})
 _RETAINED = frozenset(
     {"phenol", "aniline", "benzoic", "benzaldehyde", "acetophenone",
-     "benzonitrile", "benzoyl_chloride", "benzene"} | set(_HETERO_RING)
+     "benzoate", "benzonitrile", "benzoyl_chloride", "benzene"}
+    | set(_HETERO_RING)
 )
 
 
@@ -92,8 +93,8 @@ def _score_parent(info: dict, parent: dict) -> tuple:
         _has_principal_fg(kind), _fg_class_rank(kind), _sides_ok(parent),
         _is_hetero_ring(kind), _is_carbo_ring(kind),
         _n_rings(kind), _ring_size(parent, kind),
-        _n_unsat(parent), _n_carbons(parent),
-        _retained_bonus(kind), -_n_unhandled(parent),
+        _retained_bonus(kind), _n_unsat(parent), _n_carbons(parent),
+        -_n_unhandled(parent),
     )
 
 
