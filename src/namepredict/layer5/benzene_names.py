@@ -36,16 +36,16 @@ def benzene_prefix(numbered: dict, build_prefix) -> tuple[str, str]:
     return build_prefix(numbered.get("substituents") or [], 6, "benzene")
 
 
+_ARENE_FG = {
+    "phenol": ("phenol", "苯酚"), "aniline": ("aniline", "苯胺"),
+    "benzoic": ("benzoic acid", "苯甲酸"),
+    "benzaldehyde": ("benzaldehyde", "苯甲醛"),
+    "acetophenone": ("acetophenone", "苯乙酮"),
+}
+
+
 def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
-    if kind == "phenol":
-        return "phenol", "苯酚"
-    if kind == "aniline":
-        return "aniline", "苯胺"
-    if kind == "benzoic":
-        return "benzoic acid", "苯甲酸"
-    if kind == "benzaldehyde":
-        return "benzaldehyde", "苯甲醛"
-    return None
+    return _ARENE_FG.get(kind)
 
 
 def benzenediol_names(locs: list[int] | None) -> tuple[str, str] | None:

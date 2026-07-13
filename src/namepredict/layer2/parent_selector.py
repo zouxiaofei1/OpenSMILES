@@ -1,12 +1,14 @@
 from __future__ import annotations
 from rdkit.Chem import Mol
 
+from namepredict.layer2.arene_carbonyl import (
+    _try_acetophenone_parent, _try_benzaldehyde_parent, _try_benzoic_parent,
+)
 from namepredict.layer2.ring_parent import (
     _benzenediol_parent, _endocyclic_double, _is_simple_aniline,
     _is_simple_benzene, _is_simple_benzenediol, _is_simple_cycloalcohol,
     _is_simple_cycloalkane, _is_simple_cycloalkene, _is_simple_cycloamine,
-    _is_simple_cycloketone, _is_simple_phenol, _try_benzaldehyde_parent,
-    _try_benzoic_parent,
+    _is_simple_cycloketone, _is_simple_phenol,
 )
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
     atom = mol.GetAtomWithIdx(idx)
@@ -294,6 +296,9 @@ def _acid_parent(info: dict) -> dict:
         info, "has_acid", "carboxyls", _ALKENOIC_BAD, "alkenoic_acid", "acid", "cooh_c_idx",
     )
 def _ketone_parent(info: dict) -> dict:
+    a = _try_acetophenone_parent(info)
+    if a is not None:
+        return a
     if _is_simple_cycloketone(info):
         return _cyclo_fg_parent(info, "cycloketone", "ketones", "ketone_c_idx")
     if _is_simple_alkanedione(info):

@@ -314,14 +314,11 @@ def _orient_polyene(chain: list[int], parent: dict, substituents: list) -> list[
 
 def _unsat_orienters() -> dict:
     return {
-        "cycloketone": _orient_cycloketone,
-        "alkene": _orient_alkene,
-        "polyene": _orient_polyene,
-        "cycloalkene": _orient_cycloalkene,
-        "alkyne": _orient_alkyne,
-        "cycloalkane": _orient_cycloalkane,
-        "benzene": _orient_cycloalkane,
-        "benzoic": _orient_benzoic, "benzaldehyde": _orient_benzoic,
+        "cycloketone": _orient_cycloketone, "alkene": _orient_alkene,
+        "polyene": _orient_polyene, "cycloalkene": _orient_cycloalkene,
+        "alkyne": _orient_alkyne, "cycloalkane": _orient_cycloalkane,
+        "benzene": _orient_cycloalkane, "benzoic": _orient_benzoic,
+        "benzaldehyde": _orient_benzoic, "acetophenone": _orient_benzoic,
     }
 
 

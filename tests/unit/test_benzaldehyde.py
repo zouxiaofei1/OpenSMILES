@@ -25,8 +25,8 @@ CASES = [
     ("Oc1ccccc1", "phenol", "苯酚"),
     ("c1ccccc1", "benzene", "苯"),
     ("CCO", "ethanol", "乙醇"),
-    # negative: acetophenone not benzaldehyde this round
-    ("CC(=O)c1ccccc1", "octan-2-one", None),
+    # negative: acetophenone retained parent (not benzaldehyde)
+    ("CC(=O)c1ccccc1", "acetophenone", "苯乙酮"),
 ]
 
 
