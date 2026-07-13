@@ -57,11 +57,12 @@
 [#da485de][IUPAC P-93.4 / P-31.1] 一元烯酸 alkenoic acid (E)/(Z) 前缀 [+test_alkenoic_ez, dual 5.7%(233)→5.8%(236), fails 3829→3826]
 [#3483da7][IUPAC P-29.3.1 / P-22.1.3] 单取代烷基苯 C1–C4 直链 + isopropyl；L2/L3 拓扑对齐 [+test_alkylbenzene, dual 5.8%(236)→5.8%(237), fails 3826→3825]
 [#9b62d50][IUPAC P-22.2.1] 保留 pyridine + 单甲基/单卤（N=1）+ pyridinecarboxylic [+test_pyridine, dual 5.8%(237)→5.9%(240), fails 3825→3822]
+[#bffd2c1][IUPAC P-22.2.1] 保留 monocyclic 杂芳：furan/thiophene/1H-pyrrole + 未取代 diazine(pyrimidine/pyrazine/pyridazine) [+test_heteroarene5, dual 5.9%(240)→6.1%(246), fails 3822→3816]
 
 ## 其他
-- 基线(本轮前): en=5.9%(238/4062) zh=23.7%(179/756) dual=5.8%(237/4062)
-- 本次: en=6.0%(243/4062) zh=24.1%(182/756) dual=5.9%(240/4062) fails=3822
-- 改动: L2 pyridine 核(1N+5C芳香)；N=1 定向；单卤/甲基；吡啶甲酸挂环 COOH；L5 保留名
-- 验证: c1ccncc1→pyridine；Cc1ccccn1→2-methylpyridine；Clc1ccccn1→2-chloropyridine；OC(=O)c1ccccn1→pyridine-2-carboxylic acid；benzene/benzoic 不回归
-- 已知缺口: 硝基苯甲酸等 arene 羰基+nitro；氨基吡啶；烷氧基吡啶；sec/tert-butylbenzene；支化烷基前缀
-- 下一步候选: arene 羰基+nitro 贯通；或氨基吡啶；或 sec/tert-butyl 苯
+- 基线(本轮前): en=6.0%(243/4062) zh=24.1%(182/756) dual=5.9%(240/4062)
+- 本次: en=6.1%(249/4062) zh=24.9%(188/756) dual=6.1%(246/4062) fails=3816
+- 改动: L2 heteroarene5(五元单杂+六元二氮)；L1 芳香N不计入胺；L4 hetero5/diazine 定向；L5 保留名
+- 验证: furan/thiophene/1H-pyrrole/pyrimidine/pyrazine/pyridazine；pyridine/benzene/2-methylpyridine 不回归
+- 已知缺口: arene羰基+nitro；氨基/羟基吡啶；苯甲腈/苯甲酸酯/苯甲酰氯；环烷甲酸；萘/咪唑等
+- 下一步候选: 氨基吡啶(pyridin-2-amine)；或 methyl benzoate 保留酯；或 benzonitrile
