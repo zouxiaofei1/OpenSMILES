@@ -323,6 +323,37 @@ def _is_simple_phenol(info: dict) -> bool:
     return _arene_fg_subs_ok(mol, ring_set, {oh["o_idx"]})
 
 
+def _di_oh_on_ring(info: dict, ring_set: set[int]) -> list[dict] | None:
+    hydroxyls = info.get("hydroxyls") or []
+    if len(hydroxyls) != 2:
+        return None
+    if any(h["c_idx"] not in ring_set for h in hydroxyls):
+        return None
+    return hydroxyls
+
+
+def _is_simple_benzenediol(info: dict) -> bool:
+    if not _is_benzene_core(info) or info.get("amines"):
+        return False
+    mol: Mol = info["mol"]
+    ring_set = set(info["rings"][0]["atom_ids"])
+    ohs = _di_oh_on_ring(info, ring_set)
+    if ohs is None or _outside_carbons(mol, ring_set):
+        return False
+    return _hetero_allowed(mol, ring_set, {h["o_idx"] for h in ohs})
+
+
+def _benzenediol_parent(info: dict) -> dict:
+    ring = list(info["rings"][0]["atom_ids"])
+    ohs = _di_oh_on_ring(info, set(ring)) or []
+    return {
+        "chain": ring,
+        "n_carbons": len(ring),
+        "kind": "benzenediol",
+        "oh_c_idxs": [h["c_idx"] for h in ohs],
+    }
+
+
 def _is_simple_aniline(info: dict) -> bool:
     if not _is_benzene_core(info) or info.get("hydroxyls"):
         return False

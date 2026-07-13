@@ -30,6 +30,7 @@ from namepredict.layer5.benzene_names import (
     arene_fg_parent_names,
     benzene_parent_names,
     benzene_prefix,
+    benzenediol_names,
 )
 from namepredict.types import NameResult
 MULT_EN = {
@@ -314,9 +315,9 @@ def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
     if kind == "thiol":
         return _thiol_names(n, numbered.get("sh_locant"), numbered.get("omit_sh_locant", False))
-    if kind in ("diol", "triol"):
-        return _polyol_names(n, numbered.get("oh_locants"), kind)
-    return None
+    if kind == "benzenediol":
+        return benzenediol_names(numbered.get("oh_locants"))
+    return _polyol_names(n, numbered.get("oh_locants"), kind) if kind in ("diol", "triol") else None
 def _amine_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "diamine":
         return _diamine_names(n, numbered.get("amine_locants"))

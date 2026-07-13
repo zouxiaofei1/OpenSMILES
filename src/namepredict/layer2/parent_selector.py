@@ -3,9 +3,11 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from namepredict.layer2.ring_parent import (
+    _benzenediol_parent,
     _endocyclic_double,
     _is_simple_aniline,
     _is_simple_benzene,
+    _is_simple_benzenediol,
     _is_simple_cycloalcohol,
     _is_simple_cycloalkane,
     _is_simple_cycloalkene,
@@ -149,10 +151,17 @@ def _dione_parent(info: dict) -> dict:
     return _cover_parent(info, "ketones", 2, "dione", "ketone_c_idxs")
 def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
     return {"chain": chain, "n_carbons": len(chain), "kind": kind, **kw}
-def _alcohol_parent(info: dict) -> dict:
+def _ring_alcohol_parent(info: dict) -> dict | None:
+    if _is_simple_benzenediol(info):
+        return _benzenediol_parent(info)
     for pred, kind in ((_is_simple_phenol, "phenol"), (_is_simple_cycloalcohol, "cycloalcohol")):
         if pred(info):
             return _cyclo_fg_parent(info, kind, "hydroxyls", "oh_c_idx")
+    return None
+def _alcohol_parent(info: dict) -> dict:
+    ring = _ring_alcohol_parent(info)
+    if ring is not None:
+        return ring
     if _is_simple_alkanetriol(info):
         return _triol_parent(info)
     if _is_simple_alkanediol(info):

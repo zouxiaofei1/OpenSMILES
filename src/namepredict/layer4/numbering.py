@@ -255,6 +255,27 @@ def _orient_cycloalcohol(chain: list[int], parent: dict, substituents: list) -> 
     return _prefer_chain(base, rev, substituents)
 
 
+def _better_ring_pair(best, best_locs, cand, cs, subs):
+    locs = _pair_locs_on(cand, cs)
+    if locs is None:
+        return best, best_locs
+    if best_locs is None or locs < best_locs:
+        return cand, locs
+    if locs == best_locs:
+        return _prefer_chain(best, cand, subs), best_locs
+    return best, best_locs
+
+
+def _orient_benzenediol(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    cs = parent.get("oh_c_idxs")
+    if not cs or not chain:
+        return chain
+    best, best_locs = chain, _pair_locs_on(chain, cs)
+    for cand in _ring_candidates(chain):
+        best, best_locs = _better_ring_pair(best, best_locs, cand, cs, substituents)
+    return best
+
+
 def _orient_cycloketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
     ket_c = parent.get("ketone_c_idx")
     if ket_c is None or ket_c not in chain:
@@ -280,6 +301,7 @@ def _hetero_orienters() -> dict:
         "diol": _orient_polyol, "triol": _orient_polyol,
         "diamine": _orient_diamine,
         "cycloalcohol": _orient_cycloalcohol, "phenol": _orient_cycloalcohol,
+        "benzenediol": _orient_benzenediol,
         "cycloamine": _orient_cycloamine, "aniline": _orient_cycloamine,
         "amine": _orient_amine, "sec_amine": _orient_amine, "tert_amine": _orient_amine,
     }
@@ -342,7 +364,7 @@ def _pair_locants(oriented: dict, kind: str, key: str) -> list[int] | None:
 
 def _oh_locants(oriented: dict) -> list[int] | None:
     kind = oriented.get("kind")
-    if kind not in ("diol", "triol"):
+    if kind not in ("diol", "triol", "benzenediol"):
         return None
     locs = _pair_locs_on(oriented.get("chain") or [], oriented.get("oh_c_idxs"))
     return list(locs) if locs else None

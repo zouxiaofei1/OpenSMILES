@@ -42,3 +42,10 @@ def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
     if kind == "aniline":
         return "aniline", "苯胺"
     return None
+
+
+def benzenediol_names(locs: list[int] | None) -> tuple[str, str] | None:
+    if not locs or len(locs) != 2:
+        return None
+    loc = ",".join(str(x) for x in locs)
+    return f"benzene-{loc}-diol", f"苯-{loc}-二酚"
