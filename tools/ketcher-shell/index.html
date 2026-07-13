@@ -7,6 +7,13 @@
     <style>
       html, body, #root { height: 100%; margin: 0; }
     </style>
+    <!-- Node shims some ketcher deps expect in the browser -->
+    <script>
+      window.global = window.global || window;
+      window.process = window.process || { env: { NODE_ENV: "production" } };
+    </script>
+    <!-- ketcher-core evaluates require('raphael') at module load; must exist on window first -->
+    <script src="./raphael.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
