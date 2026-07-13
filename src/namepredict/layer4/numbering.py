@@ -285,6 +285,11 @@ def _orient_indole(chain: list[int], parent: dict, substituents: list) -> list[i
     return chain
 
 
+def _orient_benzofuranamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    """O fixed as 1; amine is principal FG (locant via amine_c_idx)."""
+    return chain
+
+
 def _sat_hetero_orienters() -> dict:
     kinds = (
         "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
@@ -313,6 +318,7 @@ def _arene_orienters() -> dict:
         "thiophenecarboxylic": _orient_hetero5carboxylic,
         "pyrrolecarboxylic": _orient_hetero5carboxylic,
         "naphthalene": _orient_naphthalene, "indole": _orient_indole,
+        "benzofuran": _orient_indole, "benzofuranamine": _orient_benzofuranamine,
         **_aza_orienters(), **_sat_hetero_orienters(),
     }
 def _hetero_orienters() -> dict:
@@ -372,11 +378,14 @@ def _oh_locants(oriented: dict) -> list[int] | None:
 def _amine_pair_locants(oriented: dict) -> list[int] | None:
     return _pair_locants(oriented, "diamine", "amine_c_idxs")
 def _amine_locant(oriented: dict) -> int | None:
-    return _fg_locant(
-        oriented,
-        ("amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine", "pyrimidinamine"),
-        "amine_c_idx",
+    kinds = (
+        "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
+        "pyrimidinamine", "benzofuranamine",
     )
+    if oriented.get("kind") == "benzofuranamine":
+        chain, a = oriented.get("chain") or [], oriented.get("amine_c_idx")
+        return _indole_sub_locant(chain, a) if a is not None else None
+    return _fg_locant(oriented, kinds, "amine_c_idx")
 def _ketone_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("ketone", "cycloketone"), "ketone_c_idx")
 def _ketone_pair_locants(oriented: dict) -> list[int] | None:
@@ -437,7 +446,7 @@ def _with_locants(chain: list[int], substituents: list, kind: str | None = None)
     for s in substituents:
         if kind == "naphthalene":
             loc = _naph_sub_locant(chain, s["attach_idx"])
-        elif kind == "indole":
+        elif kind in ("indole", "benzofuran", "benzofuranamine"):
             loc = _indole_sub_locant(chain, s["attach_idx"])
         else:
             loc = chain.index(s["attach_idx"]) + 1

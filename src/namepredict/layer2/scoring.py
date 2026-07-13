@@ -27,11 +27,12 @@ _FG_RANK = {
     "thiol": 4,
     "amine": 3, "diamine": 3, "sec_amine": 3, "tert_amine": 3,
     "cycloamine": 3, "aniline": 3, "pyridinamine": 3, "pyrimidinamine": 3,
+    "benzofuranamine": 3,
     "ether": 2, "sulfide": 2,
 }
 _HETERO_RING = frozenset(
     {"pyridine", "furan", "thiophene", "pyrrole", "imidazole", "pyrazole",
-     "pyrimidine", "pyrazine", "pyridazine", "indole",
+     "pyrimidine", "pyrazine", "pyridazine", "indole", "benzofuran",
      "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
      "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane"}
 )
@@ -71,7 +72,7 @@ def _is_carbo_ring(kind: str) -> int:
 
 
 def _n_rings(kind: str) -> int:
-    if kind in ("naphthalene", "indole"):
+    if kind in ("naphthalene", "indole", "benzofuran", "benzofuranamine"):
         return 2
     return 1 if kind in _HETERO_RING or kind in _CARBO_RING else 0
 

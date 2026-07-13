@@ -61,6 +61,7 @@ _ARENE_FG = {
     "pyridazine": ("pyridazine", "哒嗪"),
     "naphthalene": ("naphthalene", "萘"),
     "indole": ("1H-indole", "吲哚"),
+    "benzofuran": ("benzofuran", "苯并呋喃"),
     "aziridine": ("aziridine", "氮杂环丙烷"),
     "oxirane": ("oxirane", "环氧乙烷"),
     "oxolane": ("oxolane", "氧杂环戊烷"),
@@ -213,11 +214,19 @@ def pyridinol_names(numbered: dict) -> tuple[str, str] | None:
     return f"pyridin-{loc}-ol", f"吡啶-{loc}-醇"
 
 
+def benzofuranamine_names(numbered: dict) -> tuple[str, str] | None:
+    loc = numbered.get("amine_locant")
+    if loc is None:
+        return None
+    return f"benzofuran-{loc}-amine", f"苯并呋喃-{loc}-胺"
+
+
 def pyridine_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, str] | None:
     if kind == "pyridinecarboxylic": return pyridinecarboxylic_names(numbered)
     if kind == "pyridinecarbonitrile": return pyridinecarbonitrile_names(numbered)
     if kind == "pyridinamine": return pyridinamine_names(numbered)
     if kind == "pyrimidinamine": return pyrimidinamine_names(numbered, build_prefix)
     if kind == "pyridinol": return pyridinol_names(numbered)
+    if kind == "benzofuranamine": return benzofuranamine_names(numbered)
     return None
 

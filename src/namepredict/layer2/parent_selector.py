@@ -1,6 +1,5 @@
 from __future__ import annotations
 from rdkit.Chem import Mol
-
 from namepredict.layer2.alkenedioic import _alkenedioic_parent, _is_simple_alkenedioic
 from namepredict.layer2.arene_carbonyl import (
     _try_acetophenone_parent, _try_arene_other_fg, _try_benzaldehyde_parent,
@@ -8,6 +7,7 @@ from namepredict.layer2.arene_carbonyl import (
 )
 from namepredict.layer2.cyclo_carboxylic import _try_cycloalkanecarboxylic_parent
 from namepredict.layer2.hetero5_carboxylic import _try_hetero5carboxylic_parent as _try_h5cooh
+from namepredict.layer2.benzofuran import _try_benzofuranamine_parent as _try_bfam
 from namepredict.layer2.heteroarene5 import _try_pyrimidinamine_parent
 from namepredict.layer2.pyridine import (
     _try_pyridinecarbonitrile_parent as _try_pycn, _try_pyridinecarboxylic_parent,
@@ -215,9 +215,9 @@ def _primary_amine_parent(info: dict) -> dict:
     if prim is None: return _parent_dict(_longest_chain(info["mol"]), "alkane")
     return _parent_dict(_chain_through(info, prim["c_idx"]), "amine", amine_c_idx=prim["c_idx"])
 def _ring_amine_parent(info: dict) -> dict | None:
-    top = _try_pyrimidinamine_parent(info) or _try_pyridin_fg_parent(info)
-    if top is not None:
-        return top
+    top = (_try_bfam(info) or _try_pyrimidinamine_parent(info)
+           or _try_pyridin_fg_parent(info))
+    if top is not None: return top
     return _ring_fg_try(
         info, ((_is_simple_aniline, "aniline"), (_is_simple_cycloamine, "cycloamine")),
         "amines", "amine_c_idx",
