@@ -333,6 +333,19 @@ def _is_benzene_core(info: dict) -> bool:
     return all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atom_ids)
 
 
+def _unsub_phenyl_at(mol: Mol, c_idx: int, n_idx: int) -> bool:
+    """True if c_idx is the sole N-attachment of an unsubstituted phenyl ring."""
+    hits = [set(r) for r in mol.GetRingInfo().AtomRings() if c_idx in r and len(r) == 6]
+    if len(hits) != 1: return False
+    r = hits[0]
+    if not all(mol.GetAtomWithIdx(i).GetIsAromatic() and mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in r): return False
+    for i in r:
+        for nb in mol.GetAtomWithIdx(i).GetNeighbors():
+            z, j = nb.GetAtomicNum(), nb.GetIdx()
+            if z != 1 and j not in r and (i != c_idx or j != n_idx or z != 7): return False
+    return True
+
+
 def _ring_halo_n(mol: Mol, ring_set: set[int]) -> int:
     return sum(1 for a in mol.GetAtoms() if _is_ring_halo(a, ring_set))
 

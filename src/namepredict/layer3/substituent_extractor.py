@@ -246,6 +246,11 @@ def _n_alkyl_sub(en: str, zh: str, attach: int, n: int) -> dict:
         "kind": "n_alkyl", "n_carbons": n, "attach_idx": attach,
         "atoms": [], "en": en, "zh": zh,
     }
+def _n_phenyl_sub(attach: int) -> dict:
+    return {
+        "kind": "n_phenyl", "n_carbons": 6, "attach_idx": attach,
+        "atoms": [], "en": "N-phenyl", "zh": "N-苯基",
+    }
 def _tert_n_prefix(ns: list[int]) -> tuple[str, str] | None:
     if len(ns) != 2 or any(n not in _N_STEM_EN for n in ns):
         return None
@@ -266,6 +271,11 @@ def _extract_n_alkyl(parent: dict) -> list[dict]:
     key = "amide_c_idx" if parent.get("kind") == "amide" else "amine_c_idx"
     attach, pref = parent.get(key), _n_alkyl_prefix(parent)
     return [_n_alkyl_sub(*pref[:2], attach, pref[2])] if attach is not None and pref else []
+def _extract_n_phenyl(parent: dict) -> list[dict]:
+    if parent.get("kind") != "amide" or not parent.get("n_phenyl"):
+        return []
+    attach = parent.get("amide_c_idx")
+    return [_n_phenyl_sub(attach)] if attach is not None else []
 
 
 _ALKOXY_EN = {1: "methoxy", 2: "ethoxy"}
@@ -339,4 +349,5 @@ def extract_substituents(info: dict, parent: dict) -> list:
     oxo = _extract_oxos(info, parent)
     nitro = _extract_nitros(info, parent)
     alkox = _extract_alkoxys(info, parent)
-    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo + nitro + alkox + _extract_n_alkyl(parent)
+    n_sub = _extract_n_alkyl(parent) + _extract_n_phenyl(parent)
+    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo + nitro + alkox + n_sub

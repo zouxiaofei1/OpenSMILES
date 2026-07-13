@@ -16,7 +16,7 @@ from namepredict.layer2.ring_parent import (
     _benzenediol_parent, _endocyclic_double, _is_simple_aniline,
     _is_simple_benzene, _is_simple_benzenediol, _is_simple_cycloalcohol,
     _is_simple_cycloalkane, _is_simple_cycloalkene, _is_simple_cycloamine,
-    _is_simple_cycloketone, _is_simple_phenol,
+    _is_simple_cycloketone, _is_simple_phenol, _unsub_phenyl_at,
 )
 from namepredict.layer2.scoring import _pick_best
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
@@ -313,14 +313,19 @@ def _aldehyde_parent(info: dict) -> dict:
     return _try_benzaldehyde_parent(info) or _unsat_or_sat(
         info, "has_aldehyde", "aldehydes", _ALKENAL_BAD, "alkenal", "aldehyde", "aldehyde_c_idx",
     )
-def _amide_n_meta(info: dict) -> dict:
-    ams = info.get("amides") or []
-    if len(ams) != 1: return {}
-    mol, am, cs = info["mol"], ams[0], ams[0].get("n_c_idxs") or []
+def _amide_n_alkyl(mol: Mol, am: dict, cs: list[int]) -> dict:
     arms = [_longest_from(mol, c, set()) for c in cs]
     if not all(_arm_ok(mol, a, am["n_idx"]) for a in arms): return {}
     if len(arms) == 1: return {"n_alkyl_n": len(arms[0])}
     return {"n_alkyl_ns": [len(a) for a in arms]} if arms else {}
+def _amide_n_phenyl(mol: Mol, am: dict, cs: list[int]) -> dict:
+    if len(cs) != 1: return {}
+    return {"n_phenyl": True} if _unsub_phenyl_at(mol, cs[0], am["n_idx"]) else {}
+def _amide_n_meta(info: dict) -> dict:
+    ams = info.get("amides") or []
+    if len(ams) != 1: return {}
+    mol, am, cs = info["mol"], ams[0], ams[0].get("n_c_idxs") or []
+    return _amide_n_alkyl(mol, am, cs) or _amide_n_phenyl(mol, am, cs)
 def _amide_parent(info: dict) -> dict:
     return _fg_chain(info, "amides", "amide", "amide_c_idx", **_amide_n_meta(info))
 def _is_mono_fg(info: dict, flag: str, key: str) -> bool:
