@@ -163,9 +163,18 @@ ESTER_ACYL_EN = {
     9: "nonanoate",
     10: "decanoate",
 }
-# Alkyl stem for ester (no 基): methyl→甲, ethyl→乙, ...
-ESTER_ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
-ESTER_ALKYL_ZH = {1: "甲", 2: "乙", 3: "丙", 4: "丁"}
+# Alkyl stem for ester (no 基): methyl→甲 … hexadecyl→十六
+ESTER_ALKYL_EN = {
+    1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl",
+    5: "pentyl", 6: "hexyl", 7: "heptyl", 8: "octyl",
+    9: "nonyl", 10: "decyl", 11: "undecyl", 12: "dodecyl",
+    13: "tridecyl", 14: "tetradecyl", 15: "pentadecyl", 16: "hexadecyl",
+}
+ESTER_ALKYL_ZH = {
+    1: "甲", 2: "乙", 3: "丙", 4: "丁", 5: "戊", 6: "己", 7: "庚", 8: "辛",
+    9: "壬", 10: "癸", 11: "十一", 12: "十二", 13: "十三", 14: "十四",
+    15: "十五", 16: "十六",
+}
 
 # P-65.5.1 retained acetyl; C>=3 alkane stem -e + oyl chloride / …酰氯
 ACYL_CHLORIDE_EN = {

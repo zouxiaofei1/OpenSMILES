@@ -3,7 +3,8 @@ from rdkit.Chem import Mol
 
 from namepredict.layer2.alkenedioic import _alkenedioic_parent, _is_simple_alkenedioic
 from namepredict.layer2.arene_carbonyl import (
-    _try_acetophenone_parent, _try_benzaldehyde_parent, _try_benzoic_parent,
+    _try_acetophenone_parent, _try_arene_other_fg, _try_benzaldehyde_parent,
+    _try_benzoic_parent,
 )
 from namepredict.layer2.heteroarene5 import _try_diazine_parent, _try_hetero5_parent
 from namepredict.layer2.pyridine import (
@@ -444,15 +445,17 @@ def _cyclo_fg_parent(info: dict, kind: str, ekey: str, ckey: str) -> dict:
     return _parent_dict(_ring_atoms(info), kind, **{ckey: info[ekey][0]["c_idx"]})
 def _pick_mono(info: dict, flag: str, key: str, fn):
     return fn(info) if _is_mono_fg(info, flag, key) else None
-def _mono_other_carbonyl(info: dict) -> dict | None:
-    if _is_sym_anhydride(info):
-        return _anhydride_parent(info)
+def _chain_carbonyl_fg(info: dict) -> dict | None:
     return (
         _pick_mono(info, "has_acyl_chloride", "acyl_chlorides", _acyl_chloride_parent)
         or _pick_mono(info, "has_ester", "esters", _ester_parent)
         or _pick_mono(info, "has_amide", "amides", _amide_parent)
         or _pick_mono(info, "has_nitrile", "nitriles", _nitrile_parent)
     )
+def _mono_other_carbonyl(info: dict) -> dict | None:
+    if _is_sym_anhydride(info):
+        return _anhydride_parent(info)
+    return _try_arene_other_fg(info) or _chain_carbonyl_fg(info)
 def _acid_ester_amide(info: dict) -> dict | None:
     if info.get("has_acid") and info.get("carboxyls"):
         return _acid_parent(info)

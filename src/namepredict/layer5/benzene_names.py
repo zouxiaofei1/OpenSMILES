@@ -48,6 +48,8 @@ _ARENE_FG = {
     "benzoic": ("benzoic acid", "苯甲酸"),
     "benzaldehyde": ("benzaldehyde", "苯甲醛"),
     "acetophenone": ("acetophenone", "苯乙酮"),
+    "benzonitrile": ("benzonitrile", "苯甲腈"),
+    "benzoyl_chloride": ("benzoyl chloride", "苯甲酰氯"),
     "pyridine": ("pyridine", "吡啶"),
     "furan": ("furan", "呋喃"),
     "thiophene": ("thiophene", "噻吩"),
@@ -60,6 +62,24 @@ _ARENE_FG = {
 
 def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
     return _ARENE_FG.get(kind)
+
+
+def _ester_alkyl_pair(alkoxy_n: int | None) -> tuple[str, str] | None:
+    from namepredict.layer5.stems import ESTER_ALKYL_EN, ESTER_ALKYL_ZH
+    if alkoxy_n is None:
+        return None
+    en, zh = ESTER_ALKYL_EN.get(alkoxy_n), ESTER_ALKYL_ZH.get(alkoxy_n)
+    return (en, zh) if en and zh else None
+
+
+def benzoate_parent_names(numbered: dict, build_prefix) -> tuple[str, str] | None:
+    parent = numbered.get("parent") or {}
+    alkyl = _ester_alkyl_pair(parent.get("alkoxy_n"))
+    if not alkyl:
+        return None
+    pre_en, pre_zh = build_prefix(numbered.get("substituents") or [], 6, "benzoate")
+    en = f"{alkyl[0]} {pre_en}benzoate" if pre_en else f"{alkyl[0]} benzoate"
+    return en, f"{pre_zh}苯甲酸{alkyl[1]}酯"
 
 
 def benzenediol_names(locs: list[int] | None) -> tuple[str, str] | None:

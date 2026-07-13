@@ -28,7 +28,7 @@ from namepredict.layer5.stems import (
 )
 from namepredict.layer5.benzene_names import (
     arene_fg_parent_names, benzene_parent_names, benzene_prefix,
-    benzenediol_names, pyridinecarboxylic_names,
+    benzoate_parent_names, benzenediol_names, pyridinecarboxylic_names,
 )
 from namepredict.types import NameResult
 MULT_EN = {
@@ -410,6 +410,7 @@ def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None
     if kind == "cycloalkane": return _cycloalkane_names(n)
     if kind == "benzene": return benzene_parent_names(numbered)
     if kind == "pyridinecarboxylic": return pyridinecarboxylic_names(numbered)
+    if kind == "benzoate": return benzoate_parent_names(numbered, _build_prefix)
     return arene_fg_parent_names(kind) or _alkane_names(n)
 def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     unsat = _unsat_names(kind, n, numbered)
@@ -431,14 +432,15 @@ def _mult_en(n: int) -> str:
     return MULT_EN.get(n, "")
 def _mult_zh(n: int) -> str:
     return MULT_ZH.get(n, "")
+_KEEP_LOCANT_KINDS = frozenset({
+    "acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate",
+    "benzoic", "benzaldehyde", "acetophenone", "pyridinecarboxylic",
+    "benzoate", "benzonitrile", "benzoyl_chloride",
+})
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
     if n_carbons <= 1 or kind in ("sec_amine", "tert_amine", "amide"):
         return True
-    # Carboxylic acids number COOH as 1; keep substituent locants (e.g. 2-aminoacetic acid).
-    if kind in (
-        "acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate",
-        "benzoic", "benzaldehyde", "acetophenone", "pyridinecarboxylic",
-    ):
+    if kind in _KEEP_LOCANT_KINDS:
         return False
     if n_carbons == 2 and len(substituents) == 1:
         return True
@@ -477,6 +479,8 @@ def _join_name(prefix: str, parent: str) -> str:
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "benzene":
         return benzene_prefix(numbered, _build_prefix)
+    if kind == "benzoate":
+        return "", ""
     return _build_prefix(numbered.get("substituents") or [], n, kind)
 
 
