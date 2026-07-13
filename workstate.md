@@ -72,11 +72,12 @@
 [#43b3eee][IUPAC P-29.3 / P-29.6 / P-14.5] 通用保留支化烷基 isobutyl/sec-butyl/neopentyl/isopentyl + sec- 字母序 [+20 tests, dual 6.8%→6.8% 持平, fails 3784]
 [#8964095][IUPAC P-22.2.1] 保留母体 1H-pyrazole（1,2-diazole；NH=1/N=2；单甲基/单卤） [+11 tests, dual 6.8%(278)→6.9%(279), fails 3784→3783]
 [#e0c6e7f][IUPAC P-22.2.1 / P-25] 保留母体 1H-indole（苯并[b]吡咯；N=1…7a；单甲基/单卤） [+14 tests, dual 6.9%(279)→6.9%(280), fails 3783→3782]
+[#b5287d8][IUPAC P-14.3.4 / P-22.2.1] 五元杂芳简单取代上限1→2（halo/methyl；含2-iodo-4-methyl-imidazole） [+7 tests, dual 6.9%(280)→6.9%(281), fails 3782→3781]
 
 ## 其他
-- 基线(本轮前): en=6.9%(282/4062) zh=28.2%(213/756) dual=6.9%(279/4062)
-- 本次: en=7.0%(283/4062) zh=28.2%(213/756) dual=6.9%(280/4062) fails=3782
-- 改动: 新增 L2 `indole.py`；L4 indole 定向；L5 `1H-indole`/`吲哚`；naphthalene 负例期望更新
-- 验证: 未取代/3-甲基/5-溴吲哚；naphthalene/imidazole 负例；structure_lint+pytest 绿；review PASS
-- 已知缺口: N-取代 indole；indole 多取代/FG 母体；diazine 简单取代；quinoline；arene FG 支化侧链
-- 下一步候选: diazine 简单单/多烷基(卤)取代；或 imidazole 双简单取代(2-iodo-4-methyl)；或 pyridinecarboxylic 中文甲酸对齐
+- 基线(本轮前): en=7.0%(283/4062) zh=28.2%(213/756) dual=6.9%(280/4062)
+- 本次: en=7.0%(284/4062) zh=28.3%(214/756) dual=6.9%(281/4062) fails=3781
+- 改动: L2 `_hetero5_subs_ok` 上限2；L5 取代时中文补 `1H-`；测试期望对齐
+- 验证: 2-iodo-4-methyl-1H-imidazole 双语；mono/未取代/FG 负例；structure_lint+pytest 绿；review PASS
+- 已知缺口: diazine 简单取代；indole 多取代/N-取代；quinoline；pyridinecarboxylic 中文甲酸；arene FG 支化侧链
+- 下一步候选: diazine 简单单/多烷基(卤)取代；或 pyridinecarboxylic 中文甲酸对齐；或 indole 双简单取代对齐
