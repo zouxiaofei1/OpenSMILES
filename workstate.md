@@ -79,5 +79,6 @@
 [#e2f8d2a][IUPAC P-65.1.1.1 / P-14.3.4 / P-61.5 / P-63.2.2] 芳环酸/醛/酮允许 amino/alkoxy/nitro 前缀 [+11 tests, dual 7.1%(288)→7.3%(296), fails 3774→3766]
 [#33a70e9][IUPAC P-65.1.1 / P-22.2.1] 五元杂芳羧酸母体(furan/thiophene/pyrrole/imidazole/pyrazole) [+15 tests, dual 7.3%(296)→7.3%(297), fails 3766→3765]
 [#8cd4b1e][IUPAC P-66.5.1 / P-22.2.1] pyridinecarbonitrile 母体(吡啶-n-甲腈) [+13 tests, dual 7.3%(297)→7.3%(298), fails 3765→3764]
+[#2e8d793][IUPAC P-22.2.1 / P-25] 保留母体 benzofuran（苯并呋喃；O=1；单甲基/单卤+2-胺） [+tests, dual 7.3%(298)→7.4%(299), fails 3764→3763]
 
 ## 其他
