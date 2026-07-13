@@ -29,8 +29,9 @@ from namepredict.layer5.stems import (
 )
 from namepredict.layer5.benzene_names import (
     arene_fg_parent_names, benzene_parent_names, benzene_prefix,
-    benzoate_parent_names, benzenediol_names, pyridinecarboxylic_names,
-    pyridinamine_names, pyridinol_names,
+    benzoate_parent_names, benzenediol_names, join_parent_name,
+    pyridinecarboxylic_names, pyridinamine_names, pyridinol_names,
+    zh_1h_parent,
 )
 from namepredict.types import NameResult
 MULT_EN = {
@@ -480,8 +481,6 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -
     omit = _omit_sub_locants(n_carbons, substituents, kind)
     en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit)
     return "-".join(en_parts), "-".join(zh_parts)
-def _join_name(prefix: str, parent: str) -> str:
-    return (f"{prefix}-{parent}" if parent.startswith("1H-") else f"{prefix}{parent}") if prefix else parent
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "benzene":
         return benzene_prefix(numbered, _build_prefix)
@@ -494,6 +493,6 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     if not names:
         return _unsupported(n, kind)
     pre_en, pre_zh = _prefix_for(numbered, kind, n)
-    en = _join_name(pre_en, names[0])
-    zh = _join_name(pre_zh, names[1])
+    en = join_parent_name(pre_en, names[0])
+    zh = join_parent_name(pre_zh, zh_1h_parent(names[0], names[1], pre_zh))
     return _ok(en, zh, time_ms, source)

@@ -19,11 +19,11 @@ CASES = [
     # positive: unsubstituted
     ("c1ccc2[nH]ccc2c1", "1H-indole", "吲哚"),
     # positive: mono-methyl (pyrrole β = 3; α = 2)
-    ("Cc1c[nH]c2ccccc12", "3-methyl-1H-indole", "3-甲基吲哚"),
-    ("Cc1cc2ccccc2[nH]1", "2-methyl-1H-indole", "2-甲基吲哚"),
+    ("Cc1c[nH]c2ccccc12", "3-methyl-1H-indole", "3-甲基-1H-吲哚"),
+    ("Cc1cc2ccccc2[nH]1", "2-methyl-1H-indole", "2-甲基-1H-吲哚"),
     # positive: mono-halo on benzene ring
-    ("Brc1ccc2[nH]ccc2c1", "5-bromo-1H-indole", "5-溴吲哚"),
-    ("Clc1ccc2[nH]ccc2c1", "5-chloro-1H-indole", "5-氯吲哚"),
+    ("Brc1ccc2[nH]ccc2c1", "5-bromo-1H-indole", "5-溴-1H-吲哚"),
+    ("Clc1ccc2[nH]ccc2c1", "5-chloro-1H-indole", "5-氯-1H-吲哚"),
     # negative: must not regress naphthalene / imidazole / benzene / pyridine
     ("c1ccc2ccccc2c1", "naphthalene", "萘"),
     ("c1cnc[nH]1", "1H-imidazole", "咪唑"),

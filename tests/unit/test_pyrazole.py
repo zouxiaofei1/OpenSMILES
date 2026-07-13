@@ -15,11 +15,11 @@ CASES = [
     # positive: unsubstituted
     ("c1cn[nH]c1", "1H-pyrazole", "吡唑"),
     # positive: monomethyl (NH=1, N=2)
-    ("Cc1cn[nH]c1", "4-methyl-1H-pyrazole", "4-甲基吡唑"),
-    ("Cc1n[nH]cc1", "3-methyl-1H-pyrazole", "3-甲基吡唑"),
-    ("Cc1ccn[nH]1", "5-methyl-1H-pyrazole", "5-甲基吡唑"),
+    ("Cc1cn[nH]c1", "4-methyl-1H-pyrazole", "4-甲基-1H-吡唑"),
+    ("Cc1n[nH]cc1", "3-methyl-1H-pyrazole", "3-甲基-1H-吡唑"),
+    ("Cc1ccn[nH]1", "5-methyl-1H-pyrazole", "5-甲基-1H-吡唑"),
     # positive: monohalo
-    ("Clc1cn[nH]c1", "4-chloro-1H-pyrazole", "4-氯吡唑"),
+    ("Clc1cn[nH]c1", "4-chloro-1H-pyrazole", "4-氯-1H-吡唑"),
     # negative: must not misclassify 1,3-diazole / diazine / mono-hetero5
     ("c1cnc[nH]1", "1H-imidazole", "咪唑"),
     ("c1cncnc1", "pyrimidine", "嘧啶"),

@@ -15,10 +15,10 @@ CASES = [
     # positive: unsubstituted
     ("c1cnc[nH]1", "1H-imidazole", "咪唑"),
     # positive: monomethyl / monohalo (NH=1 → 2- or 4-)
-    ("Cc1ncc[nH]1", "2-methyl-1H-imidazole", "2-甲基咪唑"),
-    ("Clc1ncc[nH]1", "2-chloro-1H-imidazole", "2-氯咪唑"),
-    ("Cc1c[nH]cn1", "4-methyl-1H-imidazole", "4-甲基咪唑"),
-    ("Clc1c[nH]cn1", "4-chloro-1H-imidazole", "4-氯咪唑"),
+    ("Cc1ncc[nH]1", "2-methyl-1H-imidazole", "2-甲基-1H-咪唑"),
+    ("Clc1ncc[nH]1", "2-chloro-1H-imidazole", "2-氯-1H-咪唑"),
+    ("Cc1c[nH]cn1", "4-methyl-1H-imidazole", "4-甲基-1H-咪唑"),
+    ("Clc1c[nH]cn1", "4-chloro-1H-imidazole", "4-氯-1H-咪唑"),
     # negative: must not regress mono-hetero5 / arene / open chain
     ("c1cc[nH]c1", "1H-pyrrole", "吡咯"),
     ("c1ccccc1", "benzene", "苯"),

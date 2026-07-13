@@ -67,21 +67,21 @@ def _hetero5_fg_block(info: dict) -> bool:
 
 
 def _mono_methyl_only(mol: Mol, ring: set[int], starts: list[int]) -> bool:
-    if len(starts) != 1:
-        return False
-    outside = [
+    """True when every ring side start is a pure -CH3 (outside C set == starts)."""
+    if not starts:
+        return True
+    outside = {
         a.GetIdx() for a in mol.GetAtoms()
         if a.GetAtomicNum() == 6 and a.GetIdx() not in ring
-    ]
-    return outside == starts
+    }
+    return outside == set(starts)
 
 
 def _hetero5_subs_ok(mol: Mol, ring: set[int]) -> bool:
+    """Allow ≤2 ring simple subs: monohalo and/or monomethyl (P-14.3.4)."""
     h, starts = _ring_halo_n(mol, ring), _ring_side_starts(mol, ring)
-    if h + len(starts) > 1:
+    if h + len(starts) > 2:
         return False
-    if not starts:
-        return True
     return _mono_methyl_only(mol, ring, starts)
 
 

@@ -68,6 +68,19 @@ def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
     return _ARENE_FG.get(kind)
 
 
+def join_parent_name(prefix: str, parent: str) -> str:
+    if not prefix:
+        return parent
+    return f"{prefix}-{parent}" if parent.startswith("1H-") else f"{prefix}{parent}"
+
+
+def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
+    """Prefix Chinese retained 1H-parents with 1H- when ring is substituted."""
+    if not prefix or not en_parent.startswith("1H-") or zh_parent.startswith("1H-"):
+        return zh_parent
+    return f"1H-{zh_parent}"
+
+
 def _ester_alkyl_pair(alkoxy_n: int | None) -> tuple[str, str] | None:
     from namepredict.layer5.stems import ESTER_ALKYL_EN, ESTER_ALKYL_ZH
     if alkoxy_n is None:
