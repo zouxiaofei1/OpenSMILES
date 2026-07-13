@@ -48,11 +48,12 @@
 [#ee5881d][IUPAC P-63.1.4 / P-62.2.1.1.1] 保留母体 phenol/aniline：环上≤2卤/甲基，FG=1；仲胺 c_idx 防 KeyError [+phenol_aniline tests, dual 4.8%(196)→5.0%(205), fails 3866→3857]
 [#e422a3b][IUPAC P-63.1.2] 未取代苯二酚：L2–L5 系统名 benzene-a,b-diol / 苯-a,b-二酚（1,2/1,3/1,4） [+8 tests, dual 5.0%(205)→5.1%(208), fails 3857→3854]
 [#9a2042b][IUPAC P-65.1.1.1] 保留母体 benzoic acid/苯甲酸：环上≤2卤/甲基/羟基；COOH连接碳=1 [+benzoic tests, dual 5.1%(208)→5.3%(215), fails 3854→3847]
+[#77c8ca1][IUPAC P-66.6.1] 保留母体 benzaldehyde/苯甲醛：环上≤2卤/甲基/羟基；CHO连接碳=1 [+benzaldehyde tests, dual 5.3%(215)→5.4%(218), fails 3847→3844]
 
 ## 其他
-- 基线(本轮前): en=5.1%(208/4062) zh=21.7%(164/756) dual=5.1%(208/4062)
-- 本次: en=5.3%(215/4062) zh=22.2%(168/756) dual=5.3%(215/4062) fails=3847
-- 改动: L2 简单苯甲酸母体(COOH挂环)；L4 连接碳定向为1；L5 保留名+卤/甲基/羟基前缀
-- 验证: OC(=O)c1ccccc1→benzoic acid；OC(=O)c1ccc(Cl)cc1→4-chlorobenzoic acid；OC(=O)c1ccc(O)cc1→4-hydroxybenzoic acid；phenol/乙酸不回归
-- 已知缺口: 苯甲醛/苯乙酮；氨基酚；硝基苯；不饱和二酸(E/Z)；支化烷基前缀；C3+烷基苯；苯二甲酸
-- 下一步候选: 苯甲醛；或苯乙酮/acetophenone；或不饱和二酸(E/Z)
+- 基线(本轮前): en=5.3%(215/4062) zh=22.2%(168/756) dual=5.3%(215/4062)
+- 本次: en=5.4%(218/4062) zh=22.4%(169/756) dual=5.4%(218/4062) fails=3844
+- 改动: L2 简单苯甲醛母体(CHO挂环，排除环外醛碳当侧链)；L4 ring_attach=1；L5 保留名+卤/甲基/羟基前缀；parent_selector 压至493行
+- 验证: O=Cc1ccccc1→benzaldehyde；O=Cc1ccc(O)cc1→4-hydroxybenzaldehyde；benzoic/acetaldehyde不回归；acetophenone本轮未做
+- 已知缺口: 苯乙酮；氨基酚；硝基苯；烷氧基苯甲醛；不饱和二酸(E/Z)；支化烷基前缀；C3+烷基苯
+- 下一步候选: 苯乙酮/acetophenone；或不饱和二酸(E/Z)；或硝基苯
