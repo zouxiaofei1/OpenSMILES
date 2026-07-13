@@ -60,11 +60,12 @@
 [#bffd2c1][IUPAC P-22.2.1] 保留 monocyclic 杂芳：furan/thiophene/1H-pyrrole + 未取代 diazine(pyrimidine/pyrazine/pyridazine) [+test_heteroarene5, dual 5.9%(240)→6.1%(246), fails 3822→3816]
 [#cabb573][IUPAC P-65.6 / P-65.5.1 / P-66.5.1] 芳环 alkyl benzoate(C1–C16)+benzonitrile+benzoyl chloride [+test_arene_ester_nitrile, dual 6.1%(246)→6.2%(253), fails 3816→3809]
 [#f59b497][IUPAC P-65.1.1 / P-44] 环烷甲酸 cycloalkanecarboxylic：未取代+环上单卤/单C1–C4 [+test_cycloalkanecarboxylic, dual 6.2%(253)→6.3%(255), fails 3809→3807]
+[#3044bde][IUPAC P-62.2.1 / P-63.1.4] 吡啶胺/醇 pyridin-n-amine + pyridin-n-ol（N=1；可单卤/单甲基） [+test_pyridinamine_ol, dual 6.3%(255)→6.3%(257), fails 3807→3805]
 
 ## 其他
-- 基线(本轮前): en=6.3%(256/4062) zh=25.4%(192/756) dual=6.2%(253/4062)
-- 本次: en=6.4%(258/4062) zh=25.7%(194/756) dual=6.3%(255/4062) fails=3807
-- 改动: L2 cyclo_carboxylic；L4 COOH位=1；L5 cyclo…anecarboxylic acid/环…烷甲酸
-- 验证: cyclohexane/pentane/butane/propane carboxylic；2-methyl/2-chloro 环己烷甲酸；benzoic/hexanoic 不回归
-- 已知缺口: 氨基/羟基吡啶；萘/咪唑；arene羰基+nitro；支化烷基苯；CF3环烷甲酸
-- 下一步候选: 氨基吡啶(pyridin-2-amine)；或 1H-imidazole；或 naphthalene
+- 基线(本轮前): en=6.4%(258/4062) zh=25.7%(194/756) dual=6.3%(255/4062)
+- 本次: en=6.4%(260/4062) zh=25.9%(196/756) dual=6.3%(257/4062) fails=3805
+- 改动: L2 pyridine 扩 pyridinamine/pyridinol；L3/L4/L5 位次与保留名
+- 验证: 2/3/4-amine 与 2/3/4-ol；6-methylpyridin-2-amine；4-chloropyridin-3-amine；pyridine/aniline/phenol/picolinic 不回归
+- 已知缺口: 萘/咪唑；arene羰基+nitro；支化烷基苯；多取代吡啶胺
+- 下一步候选: 1H-imidazole；或 naphthalene；或 arene 羰基+nitro
