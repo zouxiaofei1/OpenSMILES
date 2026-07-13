@@ -34,6 +34,12 @@
     busy: false,
     sseConnected: false,
     pollTimer: null,
+    liveNameEnabled: false,
+    ketcherReady: false,
+    lastNamedSmiles: "",
+    nameReqSeq: 0,
+    ketcherBridge: null,
+    liveDebounceTimer: null,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -481,6 +487,145 @@
 
   /* ---------- Namer ---------- */
 
+  function setNamerError(msg) {
+    const errEl = $("namer-error");
+    if (!errEl) return;
+    if (!msg) {
+      errEl.hidden = true;
+      errEl.textContent = "";
+      return;
+    }
+    errEl.hidden = false;
+    errEl.textContent = msg;
+  }
+
+  function setKetcherControlsEnabled(on) {
+    ["btn-load-smiles", "btn-clear-ketcher"].forEach((id) => {
+      const el = $(id);
+      if (el) el.disabled = !on;
+    });
+  }
+
+  function showKetcherFallback(show) {
+    const fb = $("ketcher-fallback");
+    const frame = $("ketcher-frame");
+    if (fb) fb.hidden = !show;
+    if (frame) frame.style.visibility = show ? "hidden" : "visible";
+  }
+
+  function ensureKetcher() {
+    if (!window.ChemNamerKetcher) {
+      showKetcherFallback(true);
+      return;
+    }
+    if (state.ketcherBridge) {
+      state.ketcherBridge.init();
+      return;
+    }
+    const iframe = $("ketcher-frame");
+    if (!iframe) return;
+    state.ketcherBridge = window.ChemNamerKetcher.createBridge({
+      iframe,
+      src: window.ChemNamerKetcher.DEFAULT_SRC,
+      onReady: () => {
+        state.ketcherReady = true;
+        setKetcherControlsEnabled(true);
+        showKetcherFallback(false);
+        appendLog("ketcher", { message: "ready" });
+      },
+      onError: (err) => {
+        state.ketcherReady = false;
+        setKetcherControlsEnabled(false);
+        showKetcherFallback(true);
+        appendLog("error", {
+          message: "ketcher: " + (err && err.message ? err.message : String(err)),
+        });
+      },
+      onChange: () => {
+        scheduleLiveName();
+      },
+    });
+    state.ketcherBridge.init();
+  }
+
+  async function resolveSmilesForName() {
+    let fromEditor = "";
+    if (state.ketcherBridge && state.ketcherBridge.isReady()) {
+      fromEditor = await state.ketcherBridge.getSmiles();
+    }
+    if (fromEditor) {
+      const input = $("smiles-input");
+      if (input) input.value = fromEditor;
+      return fromEditor;
+    }
+    return (($("smiles-input") && $("smiles-input").value) || "").trim();
+  }
+
+  async function runName(smiles, opts) {
+    const fromLive = !!(opts && opts.fromLive);
+    const CK = window.ChemNamerKetcher;
+    const seq = CK ? CK.nextReqSeq(state.nameReqSeq) : state.nameReqSeq + 1;
+    state.nameReqSeq = seq;
+    setNamerError("");
+    if (!smiles) {
+      if (!fromLive) setNamerError("请绘制或输入 SMILES");
+      return;
+    }
+    const btn = $("btn-name");
+    if (!fromLive && btn) btn.disabled = true;
+    try {
+      const result = await api(API.name, {
+        method: "POST",
+        body: JSON.stringify({ smiles }),
+      });
+      if (seq !== state.nameReqSeq) return;
+      showNamerResult(result);
+      state.lastNamedSmiles = smiles;
+      state.namerHistory.unshift({
+        smiles,
+        en: result.en,
+        zh: result.zh,
+        success: result.success,
+        time_ms: result.time_ms,
+      });
+      state.namerHistory = state.namerHistory.slice(0, 20);
+      renderNamerHistory();
+      appendLog("name", {
+        smiles,
+        en: result.en,
+        zh: result.zh,
+        success: result.success,
+        live: fromLive,
+      });
+    } catch (err) {
+      if (seq !== state.nameReqSeq) return;
+      setNamerError(err.message || String(err));
+      appendLog("error", { message: "name: " + (err.message || String(err)) });
+    } finally {
+      if (!fromLive && btn) btn.disabled = false;
+    }
+  }
+
+  function scheduleLiveName() {
+    if (!state.liveNameEnabled) return;
+    if (state.liveDebounceTimer) clearTimeout(state.liveDebounceTimer);
+    state.liveDebounceTimer = setTimeout(async () => {
+      state.liveDebounceTimer = null;
+      if (!state.liveNameEnabled) return;
+      let smiles = "";
+      if (state.ketcherBridge && state.ketcherBridge.isReady()) {
+        smiles = await state.ketcherBridge.getSmiles();
+      }
+      const CK = window.ChemNamerKetcher;
+      if (CK && CK.shouldSkipLiveName(true, smiles, state.lastNamedSmiles)) return;
+      if (smiles) {
+        const input = $("smiles-input");
+        if (input) input.value = smiles;
+      }
+      await runName(smiles, { fromLive: true });
+    }, 700);
+  }
+
   function renderNamerHistory() {
     const ul = $("namer-history");
     if (!ul) return;
@@ -504,47 +649,8 @@
 
   async function onName(ev) {
     ev.preventDefault();
-    const input = $("smiles-input");
-    const errEl = $("namer-error");
-    const btn = $("btn-name");
-    const smiles = (input && input.value || "").trim();
-    if (errEl) {
-      errEl.hidden = true;
-      errEl.textContent = "";
-    }
-    if (!smiles) {
-      if (errEl) {
-        errEl.hidden = false;
-        errEl.textContent = "请输入 SMILES";
-      }
-      return;
-    }
-    if (btn) btn.disabled = true;
-    try {
-      const result = await api(API.name, {
-        method: "POST",
-        body: JSON.stringify({ smiles }),
-      });
-      showNamerResult(result);
-      state.namerHistory.unshift({
-        smiles,
-        en: result.en,
-        zh: result.zh,
-        success: result.success,
-        time_ms: result.time_ms,
-      });
-      state.namerHistory = state.namerHistory.slice(0, 20);
-      renderNamerHistory();
-      appendLog("name", { smiles, en: result.en, zh: result.zh, success: result.success });
-    } catch (err) {
-      if (errEl) {
-        errEl.hidden = false;
-        errEl.textContent = err.message;
-      }
-      appendLog("error", { message: "name: " + err.message });
-    } finally {
-      if (btn) btn.disabled = false;
-    }
+    const smiles = await resolveSmilesForName();
+    await runName(smiles, { fromLive: false });
   }
 
   function showNamerResult(result) {
@@ -665,6 +771,7 @@
       if (on) p.removeAttribute("hidden");
       else p.setAttribute("hidden", "");
     });
+    if (name === "namer") ensureKetcher();
   }
 
   /* ---------- Init ---------- */
@@ -678,6 +785,41 @@
       $("btn-clear-history").addEventListener("click", () => {
         state.namerHistory = [];
         renderNamerHistory();
+      });
+    $("btn-load-smiles") &&
+      $("btn-load-smiles").addEventListener("click", async () => {
+        const smiles = (($("smiles-input") && $("smiles-input").value) || "").trim();
+        if (!smiles) {
+          setNamerError("请输入 SMILES 再载入画板");
+          return;
+        }
+        if (!state.ketcherBridge || !state.ketcherBridge.isReady()) {
+          setNamerError("Ketcher 未就绪");
+          return;
+        }
+        try {
+          setNamerError("");
+          await state.ketcherBridge.setMolecule(smiles);
+        } catch (err) {
+          setNamerError(err.message || "载入结构失败");
+        }
+      });
+    $("btn-clear-ketcher") &&
+      $("btn-clear-ketcher").addEventListener("click", async () => {
+        if (!state.ketcherBridge || !state.ketcherBridge.isReady()) return;
+        try {
+          await state.ketcherBridge.clear();
+        } catch (err) {
+          setNamerError(err.message || "清空失败");
+        }
+      });
+    $("live-name-toggle") &&
+      $("live-name-toggle").addEventListener("change", (ev) => {
+        state.liveNameEnabled = !!(ev.target && ev.target.checked);
+        if (!state.liveNameEnabled && state.liveDebounceTimer) {
+          clearTimeout(state.liveDebounceTimer);
+          state.liveDebounceTimer = null;
+        }
       });
     $("btn-clear-logs") &&
       $("btn-clear-logs").addEventListener("click", () => {
