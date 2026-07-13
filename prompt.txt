@@ -5,11 +5,11 @@
 
 ##特别注意
 1.data\merged_benchmark.json 是**Benchmark数据库**
-2.Benchmark脚本运行方式:python -m benchmarks.benchmark --data data/merged_benchmark.json
+2.Benchmark脚本运行方式:python -m benchmarks.benchmark_parallel --data data/merged_benchmark.json --time
 3.严格按照IUPAC规则编写，IUPAC原文完整文档 docs\iupac\
 4.临时文件写在chem\tools
 5.每一次工作都必须运行**benchmark**
-7.禁止修改 benchmark和其数据库
+7.禁止修改 benchmark和其数据库。命令中不应包含>15s的sleep
 8.subagent有时会出问题。subagent不应更换模型。可以多尝试几次，不应自己编写代码
 12.benchmark使用english_name和chinese_name字段
 15.**文件必须**存在src\namepredict\layer0-layer5某个文件夹里，且代码长度不超过500行
@@ -27,10 +27,10 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 #工作步骤：
 0. 读取 workstate.md，了解当前进度和计划。
 1. 运行**benchmark**,记录并报告当前分数，格式**中英文双重准确:[ ]%**
-2. 选择一个改进点。需要时可参考IUPAC原文。考虑进行#架构升级，如果还没有做。
+2. 选择一个改进点。改进点的范围和工作量应该合理，改进点的修改代码量不应<100行。需要时可参考IUPAC原文。考虑进行#架构升级，如果还没有做。
 3. 调用一个subagent,进行编写代码（遵守 skills/chem-tdd-skill）
 4. 调用第二个subagent（review）：**必须先阅读并全文遵守 skills/chem-code-review**。
-   - 先审**选题**再审代码：代码全绿也可以反对选题（如「只做甲基」应升为通用单烷基）；裁决 PASS|FIX|ROLLBACK|CHALLENGE
+   - 先审**选题**再审代码：代码全绿也可以反对选题；裁决 PASS|FIX|ROLLBACK|CHALLENGE
    - 每个方法不得超过10行，超限则拆分；不应有架构性问题；输出审查报告
 4.1. review 运行**benchmark**（有 diff 时），分数回退不得>0.5%,否则 ROLLBACK（见 chem-code-review）
 4.2. **共识环**（直到选题一致，一致前禁止 git 提交）:
