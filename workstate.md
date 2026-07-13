@@ -61,11 +61,12 @@
 [#cabb573][IUPAC P-65.6 / P-65.5.1 / P-66.5.1] 芳环 alkyl benzoate(C1–C16)+benzonitrile+benzoyl chloride [+test_arene_ester_nitrile, dual 6.1%(246)→6.2%(253), fails 3816→3809]
 [#f59b497][IUPAC P-65.1.1 / P-44] 环烷甲酸 cycloalkanecarboxylic：未取代+环上单卤/单C1–C4 [+test_cycloalkanecarboxylic, dual 6.2%(253)→6.3%(255), fails 3809→3807]
 [#3044bde][IUPAC P-62.2.1 / P-63.1.4] 吡啶胺/醇 pyridin-n-amine + pyridin-n-ol（N=1；可单卤/单甲基） [+test_pyridinamine_ol, dual 6.3%(255)→6.3%(257), fails 3807→3805]
+[#c6c56d6][IUPAC P-44.1 / P-29.3.1 / P-14.5.2] 架构升级：L2 候选收集+可组合 tuple 评分；tert-butyl 侧链+多烷基苯放宽+tert- 字母序贯通 L3/L4/L5 [+12 tests, dual 6.3%(257)→6.4%(258), fails 3805→3804]
 
 ## 其他
-- 基线(本轮前): en=6.4%(258/4062) zh=25.7%(194/756) dual=6.3%(255/4062)
-- 本次: en=6.4%(260/4062) zh=25.9%(196/756) dual=6.3%(257/4062) fails=3805
-- 改动: L2 pyridine 扩 pyridinamine/pyridinol；L3/L4/L5 位次与保留名
-- 验证: 2/3/4-amine 与 2/3/4-ol；6-methylpyridin-2-amine；4-chloropyridin-3-amine；pyridine/aniline/phenol/picolinic 不回归
-- 已知缺口: 萘/咪唑；arene羰基+nitro；支化烷基苯；多取代吡啶胺
-- 下一步候选: 1H-imidazole；或 naphthalene；或 arene 羰基+nitro
+- 基线(本轮前): en=6.4%(260/4062) zh=25.9%(196/756) dual=6.3%(257/4062)
+- 本次: en=6.4%(261/4062) zh=26.1%(197/756) dual=6.4%(258/4062) fails=3804
+- 改动: 新 layer2/scoring.py + candidates.py；select_parent→_pick_best；tert-butyl/multi-alkyl 苯；alkyl_alpha_key
+- 验证: tert-butylbenzene；1-ethyl-2-methylbenzene；tert-butylcyclohexane；benzoic/isopropylbenzene/烷烃不回归
+- 已知缺口: FG/ring 内部仍是瀑布；sec/isobutyl 等通用支化烷基未做；L5 assembler 499 行
+- 下一步候选: 拆 _fg_parent/_ring_parent 为多候选生产者；或通用支化烷基递归；或 1H-imidazole/naphthalene
