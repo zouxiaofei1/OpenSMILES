@@ -29,7 +29,9 @@ _FG_RANK = {
 }
 _HETERO_RING = frozenset(
     {"pyridine", "furan", "thiophene", "pyrrole", "imidazole", "pyrazole",
-     "pyrimidine", "pyrazine", "pyridazine", "indole"}
+     "pyrimidine", "pyrazine", "pyridazine", "indole",
+     "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
+     "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane"}
 )
 _CARBO_RING = frozenset({"benzene", "cycloalkane", "cycloalkene", "naphthalene"})
 _RETAINED = frozenset(

@@ -11,6 +11,7 @@ from namepredict.layer2.heteroarene5 import (
     _try_diazine_parent, _try_hetero5_parent,
     _try_imidazole_parent, _try_pyrazole_parent,
 )
+from namepredict.layer2.sat_hetero import _try_sat_hetero_parent
 from namepredict.layer2.parent_selector import (
     _acid_parent,
     _acyl_chloride_parent,
@@ -148,7 +149,8 @@ def _try_simple_cycloalkane(info: dict) -> dict | None:
 _RING_TRY = (
     _try_naphthalene_parent, _try_indole_parent, _try_pyridine_parent,
     _try_diazine_parent, _try_imidazole_parent, _try_pyrazole_parent,
-    _try_hetero5_parent, _try_simple_benzene, _try_simple_cycloalkane,
+    _try_hetero5_parent, _try_sat_hetero_parent,
+    _try_simple_benzene, _try_simple_cycloalkane,
 )
 
 

@@ -61,6 +61,17 @@ _ARENE_FG = {
     "pyridazine": ("pyridazine", "哒嗪"),
     "naphthalene": ("naphthalene", "萘"),
     "indole": ("1H-indole", "吲哚"),
+    "aziridine": ("aziridine", "氮杂环丙烷"),
+    "oxirane": ("oxirane", "环氧乙烷"),
+    "oxolane": ("oxolane", "氧杂环戊烷"),
+    "oxane": ("oxane", "氧杂环己烷"),
+    "pyrrolidine": ("pyrrolidine", "吡咯烷"),
+    "piperidine": ("piperidine", "哌啶"),
+    "morpholine": ("morpholine", "吗啉"),
+    "piperazine": ("piperazine", "哌嗪"),
+    "dioxolane": ("1,3-dioxolane", "1,3-二氧戊环"),
+    "dioxane": ("1,4-dioxane", "1,4-二氧六环"),
+    "thiolane": ("thiolane", "硫杂环戊烷"),
 }
 
 

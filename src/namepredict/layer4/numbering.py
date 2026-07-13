@@ -212,6 +212,12 @@ def _orient_pyridine(chain: list[int], parent: dict, substituents: list) -> list
     return _orient_ring_fixed(chain, parent, substituents, "n_idx")
 def _orient_hetero5(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fixed(chain, parent, substituents, "hetero_idx")
+def _orient_sat_hetero(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    """Mono hetero = 1; di-hetero use pair locs (O before N for morpholine)."""
+    hs = parent.get("hetero_idxs") or []
+    if len(hs) >= 2:
+        return _orient_ring_pair(chain, parent, "hetero_idxs", substituents)
+    return _orient_ring_fixed(chain, parent, substituents, "hetero_idx")
 def _n_loc_on(chain: list[int], n: int | None) -> int:
     return chain.index(n) + 1 if n is not None and n in chain else 99
 def _orient_imidazole(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -271,16 +277,29 @@ def _orient_indole(chain: list[int], parent: dict, substituents: list) -> list[i
     return chain
 
 
-def _arene_orienters() -> dict:
+def _sat_hetero_orienters() -> dict:
+    kinds = (
+        "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
+        "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane",
+    )
+    return {k: _orient_sat_hetero for k in kinds}
+
+
+def _aza_orienters() -> dict:
     return {
         "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
         "pyridinamine": _orient_pyridinamine, "pyridinol": _orient_pyridinol,
-        "furan": _orient_hetero5, "thiophene": _orient_hetero5, "pyrrole": _orient_hetero5,
         "imidazole": _orient_imidazole, "pyrazole": _orient_imidazole,
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
         "pyridazine": _orient_diazine, "pyrimidinamine": _orient_pyrimidinamine,
-        "naphthalene": _orient_naphthalene,
-        "indole": _orient_indole,
+    }
+
+
+def _arene_orienters() -> dict:
+    return {
+        "furan": _orient_hetero5, "thiophene": _orient_hetero5, "pyrrole": _orient_hetero5,
+        "naphthalene": _orient_naphthalene, "indole": _orient_indole,
+        **_aza_orienters(), **_sat_hetero_orienters(),
     }
 def _hetero_orienters() -> dict:
     return {
