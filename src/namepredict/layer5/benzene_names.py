@@ -7,6 +7,11 @@ def _is_toluene(numbered: dict) -> bool:
     return len(subs) == 1 and subs[0].get("kind") == "alkyl" and subs[0].get("n_carbons") == 1
 
 
+def _is_anisole(numbered: dict) -> bool:
+    subs = numbered.get("substituents") or []
+    return len(subs) == 1 and subs[0].get("kind") == "alkoxy" and subs[0].get("n_carbons") == 1
+
+
 def _is_xylene(numbered: dict) -> bool:
     subs = numbered.get("substituents") or []
     if len(subs) != 2:
@@ -22,13 +27,15 @@ def _xylene_locants(numbered: dict) -> str:
 def benzene_parent_names(numbered: dict) -> tuple[str, str]:
     if _is_toluene(numbered):
         return "toluene", "甲苯"
+    if _is_anisole(numbered):
+        return "anisole", "苯甲醚"
     if _is_xylene(numbered):
         return "xylene", "苯"
     return "benzene", "苯"
 
 
 def benzene_prefix(numbered: dict, build_prefix) -> tuple[str, str]:
-    if _is_toluene(numbered):
+    if _is_toluene(numbered) or _is_anisole(numbered):
         return "", ""
     if _is_xylene(numbered):
         locs = _xylene_locants(numbered)

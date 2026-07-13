@@ -263,6 +263,70 @@ def _extract_n_alkyl(parent: dict) -> list[dict]:
     key = "amide_c_idx" if parent.get("kind") == "amide" else "amine_c_idx"
     attach, pref = parent.get(key), _n_alkyl_prefix(parent)
     return [_n_alkyl_sub(*pref[:2], attach, pref[2])] if attach is not None and pref else []
+
+
+_ALKOXY_EN = {1: "methoxy", 2: "ethoxy"}
+_ALKOXY_ZH = {1: "甲氧基", 2: "乙氧基"}
+
+
+def _heavies(atom) -> list:
+    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+
+
+def _outer_fwd(mol: Mol, cur: int, prev: int) -> list:
+    atom = mol.GetAtomWithIdx(cur)
+    if atom.GetAtomicNum() != 6 or atom.IsInRing():
+        return []
+    return [x for x in _heavies(atom) if x.GetIdx() != prev]
+
+
+def _alkoxy_n(mol: Mol, o_idx: int, outer_c: int) -> int:
+    fwd = _outer_fwd(mol, outer_c, o_idx)
+    if not fwd:
+        return 1
+    if len(fwd) == 1 and fwd[0].GetAtomicNum() == 6:
+        return 2 if not _outer_fwd(mol, fwd[0].GetIdx(), outer_c) else 0
+    return 0
+
+
+def _make_alkoxy(attach: int, o_idx: int, atoms: list[int], n: int) -> dict:
+    return {
+        "kind": "alkoxy", "attach_idx": attach, "atoms": [o_idx] + atoms,
+        "n_carbons": n, "en": _ALKOXY_EN[n], "zh": _ALKOXY_ZH[n],
+    }
+
+
+def _alkoxy_atoms(mol: Mol, outer: int, o_idx: int, n: int) -> list[int]:
+    if n == 1:
+        return [outer]
+    fwd = _outer_fwd(mol, outer, o_idx)
+    return [outer, fwd[0].GetIdx()] if fwd else [outer]
+
+
+def _one_ring_alkoxy(mol: Mol, e: dict, chain_set: set[int]) -> dict | None:
+    c1, c2, o = e["c1"], e["c2"], e["o_idx"]
+    if (c1 in chain_set) == (c2 in chain_set):
+        return None
+    ring_c, outer = (c1, c2) if c1 in chain_set else (c2, c1)
+    if not mol.GetAtomWithIdx(ring_c).IsInRing():
+        return None
+    n = _alkoxy_n(mol, o, outer)
+    if n not in _ALKOXY_EN:
+        return None
+    return _make_alkoxy(ring_c, o, _alkoxy_atoms(mol, outer, o, n), n)
+
+
+def _extract_alkoxys(info: dict, parent: dict) -> list[dict]:
+    mol: Mol = info["mol"]
+    chain_set = set(parent.get("chain") or [])
+    out: list[dict] = []
+    for e in info.get("ethers") or []:
+        one = _one_ring_alkoxy(mol, e, chain_set)
+        if one is not None:
+            out.append(one)
+    return out
+
+
 def extract_substituents(info: dict, parent: dict) -> list:
     mol: Mol = info["mol"]
     chain = parent.get("chain") or []
@@ -271,4 +335,5 @@ def extract_substituents(info: dict, parent: dict) -> list:
     nh2 = _extract_aminos(info, parent)
     oxo = _extract_oxos(info, parent)
     nitro = _extract_nitros(info, parent)
-    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo + nitro + _extract_n_alkyl(parent)
+    alkox = _extract_alkoxys(info, parent)
+    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo + nitro + alkox + _extract_n_alkyl(parent)

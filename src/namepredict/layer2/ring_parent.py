@@ -21,11 +21,16 @@ def _ring_bonds_single(mol: Mol, atom_ids: tuple) -> bool:
     return True
 
 
-def _outside_carbons(mol: Mol, ring_set: set[int]) -> list[int]:
+def _outside_carbons(
+    mol: Mol, ring_set: set[int], exclude: set[int] | None = None,
+) -> list[int]:
+    skip = exclude or set()
     return [
         a.GetIdx()
         for a in mol.GetAtoms()
-        if a.GetAtomicNum() == 6 and a.GetIdx() not in ring_set
+        if a.GetAtomicNum() == 6
+        and a.GetIdx() not in ring_set
+        and a.GetIdx() not in skip
     ]
 
 
@@ -40,12 +45,16 @@ def _pure_alkyl_outside(mol: Mol, outside: list[int]) -> bool:
     return True
 
 
-def _ring_side_starts(mol: Mol, ring_set: set[int]) -> list[int]:
+def _ring_side_starts(
+    mol: Mol, ring_set: set[int], exclude: set[int] | None = None,
+) -> list[int]:
+    skip = exclude or set()
     starts: list[int] = []
     for r in ring_set:
         for n in mol.GetAtomWithIdx(r).GetNeighbors():
             if n.GetAtomicNum() == 6 and n.GetIdx() not in ring_set:
-                starts.append(n.GetIdx())
+                if n.GetIdx() not in skip:
+                    starts.append(n.GetIdx())
     return starts
 
 
@@ -69,6 +78,66 @@ def _ring_nitro_atoms(info: dict, ring_set: set[int]) -> set[int]:
     return out
 
 
+def _heavies(atom) -> list:
+    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+
+def _outer_fwd(mol: Mol, cur: int, prev: int) -> list:
+    atom = mol.GetAtomWithIdx(cur)
+    if atom.GetAtomicNum() != 6 or atom.IsInRing():
+        return []
+    return [x for x in _heavies(atom) if x.GetIdx() != prev]
+
+def _outer_alkoxy_n(mol: Mol, start: int, o_idx: int) -> int:
+    fwd = _outer_fwd(mol, start, o_idx)
+    if not fwd:
+        return 1
+    if len(fwd) == 1 and fwd[0].GetAtomicNum() == 6:
+        return 2 if not _outer_fwd(mol, fwd[0].GetIdx(), start) else 0
+    return 0
+
+def _outer_atoms(mol: Mol, start: int, o_idx: int, n: int) -> list[int]:
+    if n == 1:
+        return [start]
+    fwd = _outer_fwd(mol, start, o_idx)
+    return [start, fwd[0].GetIdx()] if fwd else [start]
+
+def _ring_alkoxy_pair(e: dict, ring_set: set[int]) -> tuple[int, int, int] | None:
+    c1, c2, o = e["c1"], e["c2"], e["o_idx"]
+    if (c1 in ring_set) == (c2 in ring_set):
+        return None
+    return (o, c1, c2) if c1 in ring_set else (o, c2, c1)
+
+def _ring_alkoxy_one(mol: Mol, e: dict, ring_set: set[int]) -> dict | None:
+    pair = _ring_alkoxy_pair(e, ring_set)
+    if pair is None:
+        return None
+    o, ring_c, outer = pair
+    n = _outer_alkoxy_n(mol, outer, o)
+    if n == 0:
+        return None
+    return {"o_idx": o, "ring_c": ring_c, "outer_c": outer, "n": n,
+            "atoms": _outer_atoms(mol, outer, o, n)}
+
+def _ring_alkoxy_ethers(info: dict, ring_set: set[int]) -> list[dict]:
+    mol: Mol = info["mol"]
+    out: list[dict] = []
+    for e in info.get("ethers") or []:
+        one = _ring_alkoxy_one(mol, e, ring_set)
+        if one is not None:
+            out.append(one)
+    return out
+
+def _ring_alkoxy_atoms(info: dict, ring_set: set[int]) -> set[int]:
+    out: set[int] = set()
+    for a in _ring_alkoxy_ethers(info, ring_set):
+        out.add(a["o_idx"])
+        out.update(a["atoms"])
+    return out
+
+def _ring_alkoxy_n(info: dict, ring_set: set[int]) -> int:
+    return len(_ring_alkoxy_ethers(info, ring_set))
+
+
 def _no_hetero_outside(mol: Mol, ring_set: set[int], allowed: set[int] | None = None) -> bool:
     allow = allowed or set()
     for atom in mol.GetAtoms():
@@ -84,7 +153,8 @@ def _no_hetero_outside(mol: Mol, ring_set: set[int], allowed: set[int] | None = 
 def _outside_ok(mol: Mol, ring_set: set[int], allowed: set[int] | None = None) -> bool:
     if not _no_hetero_outside(mol, ring_set, allowed):
         return False
-    return _pure_alkyl_outside(mol, _outside_carbons(mol, ring_set))
+    allow = allowed or set()
+    return _pure_alkyl_outside(mol, _outside_carbons(mol, ring_set, allow))
 
 
 def _is_cycloalkane_core(info: dict) -> bool:
@@ -265,47 +335,60 @@ def _ring_halo_n(mol: Mol, ring_set: set[int]) -> int:
     return sum(1 for a in mol.GetAtoms() if _is_ring_halo(a, ring_set))
 
 
-def _benzene_alkyl_ns(mol: Mol, ring_set: set[int], starts: list[int]) -> list[int]:
-    outside = set(_outside_carbons(mol, ring_set))
-    if len(outside) != len(starts):
-        return []
-    if any(s not in outside for s in starts):
+def _benzene_alkyl_ns(
+    mol: Mol, ring_set: set[int], starts: list[int],
+    exclude: set[int] | None = None,
+) -> list[int]:
+    outside = set(_outside_carbons(mol, ring_set, exclude))
+    if len(outside) != len(starts) or any(s not in outside for s in starts):
         return []
     return [1] * len(starts)
 
 
-def _mono_benzene_ok(mol: Mol, ring_set: set[int], starts: list[int]) -> bool:
+def _mono_benzene_ok(
+    mol: Mol, ring_set: set[int], starts: list[int],
+    exclude: set[int] | None = None,
+) -> bool:
     if not starts:
         return True
-    return len(_outside_carbons(mol, ring_set)) in (1, 2)
+    return len(_outside_carbons(mol, ring_set, exclude)) in (1, 2)
 
 
-def _multi_benzene_ok(mol: Mol, ring_set: set[int], starts: list[int]) -> bool:
-    ns = _benzene_alkyl_ns(mol, ring_set, starts)
+def _multi_benzene_ok(
+    mol: Mol, ring_set: set[int], starts: list[int],
+    exclude: set[int] | None = None,
+) -> bool:
+    ns = _benzene_alkyl_ns(mol, ring_set, starts, exclude)
     return len(ns) == len(starts) and all(n == 1 for n in ns)
 
 
-def _benzene_subs_ok(mol: Mol, ring_set: set[int], n_nitro: int = 0) -> bool:
+def _benzene_subs_ok(
+    mol: Mol, ring_set: set[int], n_nitro: int = 0, n_alkoxy: int = 0,
+    exclude: set[int] | None = None,
+) -> bool:
     h = _ring_halo_n(mol, ring_set)
-    starts = _ring_side_starts(mol, ring_set)
-    n_sub = h + len(starts) + n_nitro
+    starts = _ring_side_starts(mol, ring_set, exclude)
+    n_sub = h + len(starts) + n_nitro + n_alkoxy
     if n_sub > 3:
         return False
     if n_sub <= 1:
-        return _mono_benzene_ok(mol, ring_set, starts)
-    return _multi_benzene_ok(mol, ring_set, starts)
+        return _mono_benzene_ok(mol, ring_set, starts, exclude)
+    return _multi_benzene_ok(mol, ring_set, starts, exclude)
 
+
+def _arene_alkoxy(info: dict, ring_set: set[int]) -> tuple[set[int], int]:
+    alk = _ring_alkoxy_atoms(info, ring_set)
+    return alk, len(_ring_alkoxy_ethers(info, ring_set))
 
 def _is_simple_benzene(info: dict) -> bool:
     if not _is_benzene_core(info):
         return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
-    allowed = _ring_nitro_atoms(info, ring_set)
+    mol, ring_set = info["mol"], set(info["rings"][0]["atom_ids"])
+    alk, n_alk = _arene_alkoxy(info, ring_set)
+    allowed = _ring_nitro_atoms(info, ring_set) | alk
     if not _outside_ok(mol, ring_set, allowed):
         return False
-    return _benzene_subs_ok(mol, ring_set, _ring_nitro_n(info, ring_set))
-
+    return _benzene_subs_ok(mol, ring_set, _ring_nitro_n(info, ring_set), n_alk, alk)
 
 def _hetero_or_ring_halo(mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
     for atom in mol.GetAtoms():
@@ -317,18 +400,16 @@ def _hetero_or_ring_halo(mol: Mol, ring_set: set[int], allowed: set[int]) -> boo
         return False
     return True
 
-
 def _arene_fg_subs_ok(
     mol: Mol, ring_set: set[int], allowed: set[int], n_nitro: int = 0,
-    n_amino: int = 0,
+    n_amino: int = 0, n_alkoxy: int = 0, exclude: set[int] | None = None,
 ) -> bool:
     if not _hetero_or_ring_halo(mol, ring_set, allowed):
         return False
-    starts = _ring_side_starts(mol, ring_set)
-    if len(_benzene_alkyl_ns(mol, ring_set, starts)) != len(starts):
+    starts = _ring_side_starts(mol, ring_set, exclude)
+    if len(_benzene_alkyl_ns(mol, ring_set, starts, exclude)) != len(starts):
         return False
-    return _ring_halo_n(mol, ring_set) + len(starts) + n_nitro + n_amino <= 2
-
+    return _ring_halo_n(mol, ring_set) + len(starts) + n_nitro + n_amino + n_alkoxy <= 2
 
 def _ring_primary_amines(info: dict, ring_set: set[int]) -> list:
     return [
@@ -336,79 +417,63 @@ def _ring_primary_amines(info: dict, ring_set: set[int]) -> list:
         if a.get("degree") == 1 and a.get("c_idx") in ring_set
     ]
 
-
 def _phenol_amines_ok(info: dict, ring_set: set[int]) -> list | None:
     ring_ams = _ring_primary_amines(info, ring_set)
     if len(info.get("amines") or []) != len(ring_ams):
         return None
     return ring_ams
 
-
 def _phenol_allowed(info: dict, ring_set: set[int], oh: dict, ring_ams: list) -> set[int]:
     am_n = {a["n_idx"] for a in ring_ams}
-    return {oh["o_idx"]} | _ring_nitro_atoms(info, ring_set) | am_n
-
+    return {oh["o_idx"]} | _ring_nitro_atoms(info, ring_set) | am_n | _ring_alkoxy_atoms(info, ring_set)
 
 def _phenol_subs_ok(mol: Mol, info: dict, ring_set: set[int], oh: dict, ring_ams: list) -> bool:
+    alk, n_alk = _arene_alkoxy(info, ring_set)
     allowed = _phenol_allowed(info, ring_set, oh, ring_ams)
-    n_nitro = _ring_nitro_n(info, ring_set)
-    return _arene_fg_subs_ok(mol, ring_set, allowed, n_nitro, len(ring_ams))
-
+    return _arene_fg_subs_ok(
+        mol, ring_set, allowed, _ring_nitro_n(info, ring_set), len(ring_ams), n_alk, alk,
+    )
 
 def _is_simple_phenol(info: dict) -> bool:
     if not _is_benzene_core(info):
         return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
-    oh = _mono_oh_on_ring(info, ring_set)
-    ring_ams = _phenol_amines_ok(info, ring_set)
+    mol, ring_set = info["mol"], set(info["rings"][0]["atom_ids"])
+    oh, ring_ams = _mono_oh_on_ring(info, ring_set), _phenol_amines_ok(info, ring_set)
     if oh is None or ring_ams is None:
         return False
     return _phenol_subs_ok(mol, info, ring_set, oh, ring_ams)
 
-
 def _di_oh_on_ring(info: dict, ring_set: set[int]) -> list[dict] | None:
     hydroxyls = info.get("hydroxyls") or []
-    if len(hydroxyls) != 2:
-        return None
-    if any(h["c_idx"] not in ring_set for h in hydroxyls):
+    if len(hydroxyls) != 2 or any(h["c_idx"] not in ring_set for h in hydroxyls):
         return None
     return hydroxyls
-
 
 def _is_simple_benzenediol(info: dict) -> bool:
     if not _is_benzene_core(info) or info.get("amines"):
         return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
+    mol, ring_set = info["mol"], set(info["rings"][0]["atom_ids"])
     ohs = _di_oh_on_ring(info, ring_set)
     if ohs is None or _outside_carbons(mol, ring_set):
         return False
     return _hetero_allowed(mol, ring_set, {h["o_idx"] for h in ohs})
 
-
 def _benzenediol_parent(info: dict) -> dict:
     ring = list(info["rings"][0]["atom_ids"])
     ohs = _di_oh_on_ring(info, set(ring)) or []
-    return {
-        "chain": ring,
-        "n_carbons": len(ring),
-        "kind": "benzenediol",
-        "oh_c_idxs": [h["c_idx"] for h in ohs],
-    }
-
+    return {"chain": ring, "n_carbons": len(ring), "kind": "benzenediol",
+            "oh_c_idxs": [h["c_idx"] for h in ohs]}
 
 def _is_simple_aniline(info: dict) -> bool:
     if not _is_benzene_core(info) or info.get("hydroxyls"):
         return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
+    mol, ring_set = info["mol"], set(info["rings"][0]["atom_ids"])
     am = _mono_amine_on_ring(info, ring_set)
     if am is None or am.get("degree") != 1:
         return False
-    allowed = {am["n_idx"]} | _ring_nitro_atoms(info, ring_set)
-    return _arene_fg_subs_ok(mol, ring_set, allowed, _ring_nitro_n(info, ring_set))
-
+    alk, n_alk = _arene_alkoxy(info, ring_set)
+    allowed = {am["n_idx"]} | _ring_nitro_atoms(info, ring_set) | alk
+    return _arene_fg_subs_ok(mol, ring_set, allowed, _ring_nitro_n(info, ring_set), 0, n_alk, alk)
 
 def _is_methyl_on_ring(mol: Mol, s: int, ring_set: set[int]) -> bool:
     atom = mol.GetAtomWithIdx(s)
