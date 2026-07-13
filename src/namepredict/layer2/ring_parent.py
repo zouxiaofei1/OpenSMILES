@@ -320,25 +320,51 @@ def _hetero_or_ring_halo(mol: Mol, ring_set: set[int], allowed: set[int]) -> boo
 
 def _arene_fg_subs_ok(
     mol: Mol, ring_set: set[int], allowed: set[int], n_nitro: int = 0,
+    n_amino: int = 0,
 ) -> bool:
     if not _hetero_or_ring_halo(mol, ring_set, allowed):
         return False
     starts = _ring_side_starts(mol, ring_set)
     if len(_benzene_alkyl_ns(mol, ring_set, starts)) != len(starts):
         return False
-    return _ring_halo_n(mol, ring_set) + len(starts) + n_nitro <= 2
+    return _ring_halo_n(mol, ring_set) + len(starts) + n_nitro + n_amino <= 2
+
+
+def _ring_primary_amines(info: dict, ring_set: set[int]) -> list:
+    return [
+        a for a in (info.get("amines") or [])
+        if a.get("degree") == 1 and a.get("c_idx") in ring_set
+    ]
+
+
+def _phenol_amines_ok(info: dict, ring_set: set[int]) -> list | None:
+    ring_ams = _ring_primary_amines(info, ring_set)
+    if len(info.get("amines") or []) != len(ring_ams):
+        return None
+    return ring_ams
+
+
+def _phenol_allowed(info: dict, ring_set: set[int], oh: dict, ring_ams: list) -> set[int]:
+    am_n = {a["n_idx"] for a in ring_ams}
+    return {oh["o_idx"]} | _ring_nitro_atoms(info, ring_set) | am_n
+
+
+def _phenol_subs_ok(mol: Mol, info: dict, ring_set: set[int], oh: dict, ring_ams: list) -> bool:
+    allowed = _phenol_allowed(info, ring_set, oh, ring_ams)
+    n_nitro = _ring_nitro_n(info, ring_set)
+    return _arene_fg_subs_ok(mol, ring_set, allowed, n_nitro, len(ring_ams))
 
 
 def _is_simple_phenol(info: dict) -> bool:
-    if not _is_benzene_core(info) or info.get("amines"):
+    if not _is_benzene_core(info):
         return False
     mol: Mol = info["mol"]
     ring_set = set(info["rings"][0]["atom_ids"])
     oh = _mono_oh_on_ring(info, ring_set)
-    if oh is None:
+    ring_ams = _phenol_amines_ok(info, ring_set)
+    if oh is None or ring_ams is None:
         return False
-    allowed = {oh["o_idx"]} | _ring_nitro_atoms(info, ring_set)
-    return _arene_fg_subs_ok(mol, ring_set, allowed, _ring_nitro_n(info, ring_set))
+    return _phenol_subs_ok(mol, info, ring_set, oh, ring_ams)
 
 
 def _di_oh_on_ring(info: dict, ring_set: set[int]) -> list[dict] | None:
