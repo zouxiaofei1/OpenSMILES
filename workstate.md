@@ -83,5 +83,6 @@
 [#5f85fcc][IUPAC P-65.1.1 / P-22.2.2] 饱和单杂环羧酸母体(piperidine/pyrrolidine/piperazine等) [+tests, dual 7.4%(299)→7.4%(301), fails 3763→3761]
 [#46a9f90][IUPAC P-22.2.1 / P-25] 保留母体 1-benzothiophene（+ol）及 anisole 中文→甲氧基苯 [+tests, dual 7.4%(301)→7.5%(304), fails 3761→3758]
 [#c20d51b][IUPAC P-22.2.1 / P-25] 保留母体 quinoline/isoquinoline（+ol/+carboxylic） [+tests, dual 7.5%(304)→7.6%(307), fails 3758→3755]
+[#12aba3c][IUPAC P-22.2.1 / P-25] 保留母体 1H-indazole（+carbonitrile/+carbaldehyde） [+tests, dual 7.6%(307)→7.6%(310), fails 3755→3752]
 
 ## 其他
