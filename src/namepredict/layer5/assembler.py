@@ -29,7 +29,7 @@ from namepredict.layer5.stems import (
 )
 from namepredict.layer5.benzene_names import (
     arene_fg_parent_names, benzene_parent_names, benzene_prefix,
-    benzoate_parent_names, benzenediol_names, hetero5carboxylic_names,
+    benzoate_parent_names, benzenediamine_names, benzenediol_names, hetero5carboxylic_names,
     join_parent_name, pyridine_kind_names, sat_hetero_carboxylic_names, zh_1h_parent,
 )
 from namepredict.types import NameResult
@@ -308,6 +308,8 @@ def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
 def _amine_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "diamine":
         return _diamine_names(n, numbered.get("amine_locants"))
+    if kind == "benzenediamine":
+        return benzenediamine_names(numbered.get("amine_locants"))
     if kind not in ("amine", "sec_amine", "tert_amine"):
         return None
     return _amine_names(
@@ -443,21 +445,22 @@ def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
     if omit:
         return f"{mult}{stem}"
     return f"{_locant_str(subs)}-{mult}{s}"
-def _prefix_one_zh(zh_stem: str, subs: list, omit: bool) -> str:
+def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> str:
     mult = _mult_zh(len(subs))
+    s = f"({zh_stem})" if paren_cf3 and zh_stem == "三氟甲基" else zh_stem
     if omit:
         return f"{mult}{zh_stem}"
-    return f"{_locant_str(subs)}-{mult}{zh_stem}"
+    return f"{_locant_str(subs)}-{mult}{s}"
 def _sorted_stems(groups: dict[str, list]) -> list[str]:
     return sorted((k for k in groups if k), key=alkyl_alpha_key)
-def _parts_for_stem(stem: str, subs: list, omit: bool) -> tuple[str, str]:
+def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> tuple[str, str]:
     zh_stem = subs[0].get("zh") or ""
-    return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit)
-def _collect_parts(groups: dict[str, list], omit: bool) -> tuple[list[str], list[str]]:
+    return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit, paren_cf3)
+def _collect_parts(groups: dict[str, list], omit: bool, paren_cf3: bool = False) -> tuple[list[str], list[str]]:
     en_parts: list[str] = []
     zh_parts: list[str] = []
     for stem in _sorted_stems(groups):
-        en_p, zh_p = _parts_for_stem(stem, groups[stem], omit)
+        en_p, zh_p = _parts_for_stem(stem, groups[stem], omit, paren_cf3)
         en_parts.append(en_p)
         zh_parts.append(zh_p)
     return en_parts, zh_parts
@@ -465,7 +468,8 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -
     if not substituents:
         return "", ""
     omit = _omit_sub_locants(n_carbons, substituents, kind)
-    en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit)
+    paren = kind == "benzene" and len(substituents) >= 4
+    en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit, paren)
     return "-".join(en_parts), "-".join(zh_parts)
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "benzene":

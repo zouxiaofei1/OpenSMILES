@@ -195,6 +195,8 @@ def _orient_ring_pair(chain: list[int], parent: dict, key: str, subs: list) -> l
     return best
 def _orient_benzenediol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "oh_c_idxs", substituents)
+def _orient_benzenediamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_ring_pair(chain, parent, "amine_c_idxs", substituents)
 def _orient_diazine(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "n_idxs", substituents)
 def _orient_pyrimidinamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -330,6 +332,7 @@ def _hetero_orienters() -> dict:
         "diol": _orient_polyol, "triol": _orient_polyol, "diamine": _orient_diamine,
         "cycloalcohol": _orient_cycloalcohol, "phenol": _orient_cycloalcohol,
         "benzenediol": _orient_benzenediol,
+        "benzenediamine": _orient_benzenediamine,
         "cycloamine": _orient_cycloamine, "aniline": _orient_cycloamine,
         "amine": _orient_amine, "sec_amine": _orient_amine, "tert_amine": _orient_amine,
         **_arene_orienters(),
@@ -372,19 +375,15 @@ def _oh_locant(oriented: dict) -> int | None:
     )
 def _sh_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("thiol",), "sh_c_idx")
-def _pair_locants(oriented: dict, kind: str, key: str) -> list[int] | None:
-    if oriented.get("kind") != kind:
+def _pair_locants(oriented: dict, kinds, key: str) -> list[int] | None:
+    if oriented.get("kind") not in kinds:
         return None
     locs = _pair_locs_on(oriented.get("chain") or [], oriented.get(key))
     return list(locs) if locs else None
 def _oh_locants(oriented: dict) -> list[int] | None:
-    kind = oriented.get("kind")
-    if kind not in ("diol", "triol", "benzenediol"):
-        return None
-    locs = _pair_locs_on(oriented.get("chain") or [], oriented.get("oh_c_idxs"))
-    return list(locs) if locs else None
+    return _pair_locants(oriented, ("diol", "triol", "benzenediol"), "oh_c_idxs")
 def _amine_pair_locants(oriented: dict) -> list[int] | None:
-    return _pair_locants(oriented, "diamine", "amine_c_idxs")
+    return _pair_locants(oriented, ("diamine", "benzenediamine"), "amine_c_idxs")
 def _amine_locant(oriented: dict) -> int | None:
     kinds = (
         "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
@@ -397,7 +396,7 @@ def _amine_locant(oriented: dict) -> int | None:
 def _ketone_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("ketone", "cycloketone"), "ketone_c_idx")
 def _ketone_pair_locants(oriented: dict) -> list[int] | None:
-    return _pair_locants(oriented, "dione", "ketone_c_idxs")
+    return _pair_locants(oriented, ("dione",), "ketone_c_idxs")
 def _bond_locant(oriented: dict, kind: str, key: str) -> int | None:
     if oriented.get("kind") != kind:
         return None

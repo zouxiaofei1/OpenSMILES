@@ -1,6 +1,8 @@
 """Retained / multi-substituted benzene parent and prefix helpers (P-22.1.3)."""
 from __future__ import annotations
 
+from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+
 
 def _is_toluene(numbered: dict) -> bool:
     subs = numbered.get("substituents") or []
@@ -24,6 +26,49 @@ def _xylene_locants(numbered: dict) -> str:
     return ",".join(str(x) for x in locs)
 
 
+def _methoxy_subs(subs: list) -> list:
+    return [s for s in subs if s.get("kind") == "alkoxy" and s.get("n_carbons") == 1]
+
+
+def _is_poly_anisole(numbered: dict) -> bool:
+    """≥2 ring subs with exactly one methoxy and no alkyl → zh 苯甲醚 parent."""
+    subs = numbered.get("substituents") or []
+    if len(subs) < 2 or len(_methoxy_subs(subs)) != 1:
+        return False
+    return not any(s.get("kind") == "alkyl" for s in subs)
+
+
+def _anisole_reloc(loc: int, meo: int, rev: bool) -> int:
+    d = (meo - loc) % 6 if rev else (loc - meo) % 6
+    return d + 1
+
+
+def _anisole_dir_key(others: list, meo: int, rev: bool) -> tuple:
+    """Locants in alphabetical citation order (not sorted-set)."""
+    ordered = sorted(
+        (s for s in others if "locant" in s),
+        key=lambda s: alkyl_alpha_key(s.get("en") or ""),
+    )
+    return tuple(_anisole_reloc(int(s["locant"]), meo, rev) for s in ordered)
+
+
+def _anisole_pick_rev(others: list, meo: int) -> bool:
+    return _anisole_dir_key(others, meo, True) < _anisole_dir_key(others, meo, False)
+
+
+def _anisole_renum(others: list, meo_loc: int, rev: bool) -> list:
+    return [{**s, "locant": _anisole_reloc(int(s["locant"]), meo_loc, rev)} for s in others]
+
+
+def _anisole_zh_prefix(numbered: dict, build_prefix) -> str:
+    subs = numbered.get("substituents") or []
+    meo = _methoxy_subs(subs)[0]
+    meo_loc = int(meo["locant"])
+    others = [s for s in subs if s is not meo]
+    renum = _anisole_renum(others, meo_loc, _anisole_pick_rev(others, meo_loc))
+    return build_prefix(renum, 6, "benzene")[1]
+
+
 def benzene_parent_names(numbered: dict) -> tuple[str, str]:
     if _is_toluene(numbered):
         return "toluene", "甲苯"
@@ -31,6 +76,8 @@ def benzene_parent_names(numbered: dict) -> tuple[str, str]:
         return "anisole", "甲氧基苯"
     if _is_xylene(numbered):
         return "xylene", "苯"
+    if _is_poly_anisole(numbered):
+        return "benzene", "苯甲醚"
     return "benzene", "苯"
 
 
@@ -40,7 +87,10 @@ def benzene_prefix(numbered: dict, build_prefix) -> tuple[str, str]:
     if _is_xylene(numbered):
         locs = _xylene_locants(numbered)
         return f"{locs}-", f"{locs}-二甲基"
-    return build_prefix(numbered.get("substituents") or [], 6, "benzene")
+    en_pre, zh_pre = build_prefix(numbered.get("substituents") or [], 6, "benzene")
+    if _is_poly_anisole(numbered):
+        return en_pre, _anisole_zh_prefix(numbered, build_prefix)
+    return en_pre, zh_pre
 
 
 _ARENE_FG = {
@@ -124,6 +174,13 @@ def benzenediol_names(locs: list[int] | None) -> tuple[str, str] | None:
         return None
     loc = ",".join(str(x) for x in locs)
     return f"benzene-{loc}-diol", f"苯-{loc}-二酚"
+
+
+def benzenediamine_names(locs: list[int] | None) -> tuple[str, str] | None:
+    if not locs or len(locs) != 2:
+        return None
+    loc = ",".join(str(x) for x in locs)
+    return f"benzene-{loc}-diamine", f"苯-{loc}-二胺"
 
 
 def _pyridine_cooh_loc(numbered: dict) -> int | None:

@@ -34,7 +34,7 @@ _FG_RANK = {
     "thiol": 4,
     "amine": 3, "diamine": 3, "sec_amine": 3, "tert_amine": 3,
     "cycloamine": 3, "aniline": 3, "pyridinamine": 3, "pyrimidinamine": 3,
-    "benzofuranamine": 3,
+    "benzofuranamine": 3, "benzenediamine": 3,
     "ether": 2, "sulfide": 2,
 }
 _HETERO_RING = frozenset(
@@ -45,7 +45,9 @@ _HETERO_RING = frozenset(
      "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
      "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane"}
 )
-_CARBO_RING = frozenset({"benzene", "cycloalkane", "cycloalkene", "naphthalene"})
+_CARBO_RING = frozenset({
+    "benzene", "cycloalkane", "cycloalkene", "naphthalene", "benzenediamine",
+})
 _SHCOOH = frozenset({
     "piperidinecarboxylic", "pyrrolidinecarboxylic", "piperazinecarboxylic",
     "morpholinecarboxylic", "oxolanecarboxylic", "oxanecarboxylic",
