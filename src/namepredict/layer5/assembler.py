@@ -88,6 +88,9 @@ def _cycloamine_names(n: int) -> tuple[str, str] | None:
     return _cyclo_from_alkane(
         n, lambda e: f"cyclo{e[:-1]}amine", lambda z: f"环{z[0]}胺"
     )
+def _cycloalkanecarboxylic_names(n: int) -> tuple[str, str] | None:
+    return _cyclo_from_alkane(
+        n, lambda e: f"cyclo{e[:-1]}ecarboxylic acid", lambda z: f"环{z}甲酸")
 def _omit_term_locant(n: int, loc: int | None, omit: bool) -> bool:
     return omit or loc is None or (loc == 1 and n <= 2)
 def _alcohol_names(n: int, oh_locant: int | None, omit: bool) -> tuple[str, str] | None:
@@ -269,6 +272,8 @@ def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[st
         return alkenedioic_names(n, numbered or {})
     if kind == "alkenoic_acid":
         return alkenoic_acid_names(n, numbered or {})
+    if kind == "cycloalkanecarboxylic":
+        return _cycloalkanecarboxylic_names(n)
     fn = _acid_table(n, (numbered or {}).get("ene_locant")).get(kind)
     return fn() if fn else None
 def _nitrile_or_none(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
@@ -435,7 +440,7 @@ def _mult_zh(n: int) -> str:
 _KEEP_LOCANT_KINDS = frozenset({
     "acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate",
     "benzoic", "benzaldehyde", "acetophenone", "pyridinecarboxylic",
-    "benzoate", "benzonitrile", "benzoyl_chloride",
+    "benzoate", "benzonitrile", "benzoyl_chloride", "cycloalkanecarboxylic",
 })
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
     if n_carbons <= 1 or kind in ("sec_amine", "tert_amine", "amide"):

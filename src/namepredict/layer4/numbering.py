@@ -327,6 +327,7 @@ def _unsat_orienters() -> dict:
         "benzoic": _orient_benzoic, "benzaldehyde": _orient_benzoic,
         "acetophenone": _orient_benzoic, "benzoate": _orient_benzoic,
         "benzonitrile": _orient_benzoic, "benzoyl_chloride": _orient_benzoic,
+        "cycloalkanecarboxylic": _orient_benzoic,
     }
 def _kind_orienters() -> dict:
     return {**_hetero_orienters(), **_unsat_orienters(), **_carbonyl_orienters()}
