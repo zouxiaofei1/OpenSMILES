@@ -47,11 +47,12 @@
 [#6b63d73][IUPAC P-14.3.4 / P-22.1.3] 简单多取代苯：2–3环上卤/甲基；en xylene保留+位次；zh系统二甲基苯 [+multi_benzene tests, dual 4.6%(187)→4.8%(196), fails 3875→3866]
 [#ee5881d][IUPAC P-63.1.4 / P-62.2.1.1.1] 保留母体 phenol/aniline：环上≤2卤/甲基，FG=1；仲胺 c_idx 防 KeyError [+phenol_aniline tests, dual 4.8%(196)→5.0%(205), fails 3866→3857]
 [#e422a3b][IUPAC P-63.1.2] 未取代苯二酚：L2–L5 系统名 benzene-a,b-diol / 苯-a,b-二酚（1,2/1,3/1,4） [+8 tests, dual 5.0%(205)→5.1%(208), fails 3857→3854]
+[#9a2042b][IUPAC P-65.1.1.1] 保留母体 benzoic acid/苯甲酸：环上≤2卤/甲基/羟基；COOH连接碳=1 [+benzoic tests, dual 5.1%(208)→5.3%(215), fails 3854→3847]
 
 ## 其他
-- 基线(本轮前): en=5.0%(205/4062) zh=21.4%(162/756) dual=5.0%(205/4062)
-- 本次: en=5.1%(208/4062) zh=21.7%(164/756) dual=5.1%(208/4062) fails=3854
-- 改动: L2 未取代 benzenediol 母体；L3 父OH过滤；L4 环上双OH最低位次集；L5 en diol / zh 二酚
-- 验证: Oc1ccccc1O→benzene-1,2-diol/苯-1,2-二酚；1,3/1,4 同理；phenol 与 ethane-1,2-diol 不回归
-- 已知缺口: 氨基酚；N-烷基苯胺；取代苯二酚；硝基酚；不饱和二酸(E/Z)；支化烷基前缀；C3+烷基苯
-- 下一步候选: 不饱和二酸(E/Z)；或支化烷基前缀；或氨基酚
+- 基线(本轮前): en=5.1%(208/4062) zh=21.7%(164/756) dual=5.1%(208/4062)
+- 本次: en=5.3%(215/4062) zh=22.2%(168/756) dual=5.3%(215/4062) fails=3847
+- 改动: L2 简单苯甲酸母体(COOH挂环)；L4 连接碳定向为1；L5 保留名+卤/甲基/羟基前缀
+- 验证: OC(=O)c1ccccc1→benzoic acid；OC(=O)c1ccc(Cl)cc1→4-chlorobenzoic acid；OC(=O)c1ccc(O)cc1→4-hydroxybenzoic acid；phenol/乙酸不回归
+- 已知缺口: 苯甲醛/苯乙酮；氨基酚；硝基苯；不饱和二酸(E/Z)；支化烷基前缀；C3+烷基苯；苯二甲酸
+- 下一步候选: 苯甲醛；或苯乙酮/acetophenone；或不饱和二酸(E/Z)
