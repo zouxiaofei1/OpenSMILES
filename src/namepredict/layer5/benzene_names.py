@@ -55,6 +55,7 @@ _ARENE_FG = {
     "thiophene": ("thiophene", "噻吩"),
     "pyrrole": ("1H-pyrrole", "吡咯"),
     "imidazole": ("1H-imidazole", "咪唑"),
+    "pyrazole": ("1H-pyrazole", "吡唑"),
     "pyrimidine": ("pyrimidine", "嘧啶"),
     "pyrazine": ("pyrazine", "吡嗪"),
     "pyridazine": ("pyridazine", "哒嗪"),

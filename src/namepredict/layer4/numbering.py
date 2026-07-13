@@ -210,7 +210,7 @@ def _orient_hetero5(chain: list[int], parent: dict, substituents: list) -> list[
 def _n_loc_on(chain: list[int], n: int | None) -> int:
     return chain.index(n) + 1 if n is not None and n in chain else 99
 def _orient_imidazole(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    """NH = 1; choose direction so the other N is at 3 (not 4)."""
+    """NH = 1; choose direction so the other N has the lowest locant (3 vs 4; 2 vs 5)."""
     nh = parent.get("nh_idx")
     if nh is None or nh not in chain:
         return chain
@@ -264,7 +264,7 @@ def _arene_orienters() -> dict:
         "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
         "pyridinamine": _orient_pyridinamine, "pyridinol": _orient_pyridinol,
         "furan": _orient_hetero5, "thiophene": _orient_hetero5, "pyrrole": _orient_hetero5,
-        "imidazole": _orient_imidazole,
+        "imidazole": _orient_imidazole, "pyrazole": _orient_imidazole,
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
         "pyridazine": _orient_diazine, "naphthalene": _orient_naphthalene,
     }

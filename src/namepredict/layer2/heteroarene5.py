@@ -1,7 +1,7 @@
 """Retained monocyclic heteroarene parents (IUPAC P-22.2.1 / P-22.1).
 
 Five-membered mono-hetero: furan / thiophene / 1H-pyrrole (optional monomethyl/monohalo).
-Five-membered di-aza: 1H-imidazole (optional monomethyl/monohalo).
+Five-membered di-aza: 1H-imidazole / 1H-pyrazole (optional monomethyl/monohalo).
 Six-membered diazines: pyrimidine / pyrazine / pyridazine (unsubstituted only).
 """
 from __future__ import annotations
@@ -164,7 +164,7 @@ def _try_diazine_parent(info: dict) -> dict | None:
     return _diazine_parent(info) if _is_simple_diazine(info) else None
 
 
-def _is_imidazole_core(info: dict) -> bool:
+def _is_diazole_core(info: dict) -> bool:
     atom_ids = _ring_atoms_if_mono(info)
     if atom_ids is None or len(atom_ids) != 5:
         return False
@@ -184,20 +184,30 @@ def _nh_among(mol: Mol, ns: list[int]) -> int | None:
     return hs[0] if len(hs) == 1 else None
 
 
-def _imidazole_n_pair(info: dict) -> tuple[int, int] | None:
-    """Return (nh_idx, n_idx) for 1H-imidazole (1,3-diazole); else None."""
-    if not _is_imidazole_core(info):
+def _diazole_n_pair(info: dict, nn_dist: int) -> tuple[int, int] | None:
+    """Return (nh_idx, n_idx) for 1H-diazole with given N–N ring distance."""
+    if not _is_diazole_core(info):
         return None
     mol, ring = info["mol"], list(info["rings"][0]["atom_ids"])
     ns = _ring_n_idxs(mol, ring)
-    if len(ns) != 2 or _ring_nn_dist(ring, ns) != 2:
+    if len(ns) != 2 or _ring_nn_dist(ring, ns) != nn_dist:
         return None
     nh = _nh_among(mol, ns)
     return None if nh is None else (nh, ns[0] if ns[1] == nh else ns[1])
 
 
-def _is_simple_imidazole(info: dict) -> bool:
-    if _imidazole_n_pair(info) is None or _hetero5_fg_block(info):
+def _imidazole_n_pair(info: dict) -> tuple[int, int] | None:
+    """Return (nh_idx, n_idx) for 1H-imidazole (1,3-diazole); else None."""
+    return _diazole_n_pair(info, 2)
+
+
+def _pyrazole_n_pair(info: dict) -> tuple[int, int] | None:
+    """Return (nh_idx, n_idx) for 1H-pyrazole (1,2-diazole); else None."""
+    return _diazole_n_pair(info, 1)
+
+
+def _is_simple_diazole(info: dict, pair_fn) -> bool:
+    if pair_fn(info) is None or _hetero5_fg_block(info):
         return False
     mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
     if not _outside_ok(mol, ring):
@@ -205,14 +215,34 @@ def _is_simple_imidazole(info: dict) -> bool:
     return _hetero5_subs_ok(mol, ring)
 
 
-def _imidazole_parent(info: dict) -> dict:
+def _diazole_parent(info: dict, kind: str, pair_fn) -> dict:
     ring = list(info["rings"][0]["atom_ids"])
-    nh, n = _imidazole_n_pair(info)
+    nh, n = pair_fn(info)
     return {
-        "chain": ring, "n_carbons": 5, "kind": "imidazole",
+        "chain": ring, "n_carbons": 5, "kind": kind,
         "nh_idx": nh, "n_idx": n, "n_idxs": [nh, n],
     }
 
 
+def _is_simple_imidazole(info: dict) -> bool:
+    return _is_simple_diazole(info, _imidazole_n_pair)
+
+
+def _imidazole_parent(info: dict) -> dict:
+    return _diazole_parent(info, "imidazole", _imidazole_n_pair)
+
+
 def _try_imidazole_parent(info: dict) -> dict | None:
     return _imidazole_parent(info) if _is_simple_imidazole(info) else None
+
+
+def _is_simple_pyrazole(info: dict) -> bool:
+    return _is_simple_diazole(info, _pyrazole_n_pair)
+
+
+def _pyrazole_parent(info: dict) -> dict:
+    return _diazole_parent(info, "pyrazole", _pyrazole_n_pair)
+
+
+def _try_pyrazole_parent(info: dict) -> dict | None:
+    return _pyrazole_parent(info) if _is_simple_pyrazole(info) else None
