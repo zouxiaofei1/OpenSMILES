@@ -30,8 +30,7 @@ from namepredict.layer5.stems import (
 from namepredict.layer5.benzene_names import (
     arene_fg_parent_names, benzene_parent_names, benzene_prefix,
     benzoate_parent_names, benzenediol_names, join_parent_name,
-    pyridinecarboxylic_names, pyridinamine_names, pyridinol_names,
-    zh_1h_parent,
+    pyridine_kind_names, zh_1h_parent,
 )
 from namepredict.types import NameResult
 MULT_EN = {
@@ -414,11 +413,9 @@ def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
 def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "cycloalkane": return _cycloalkane_names(n)
     if kind == "benzene": return benzene_parent_names(numbered)
-    if kind == "pyridinecarboxylic": return pyridinecarboxylic_names(numbered)
-    if kind == "pyridinamine": return pyridinamine_names(numbered)
-    if kind == "pyridinol": return pyridinol_names(numbered)
     if kind == "benzoate": return benzoate_parent_names(numbered, _build_prefix)
-    return arene_fg_parent_names(kind) or _alkane_names(n)
+    top = pyridine_kind_names(kind, numbered, _build_prefix)
+    return top if top is not None else (arene_fg_parent_names(kind) or _alkane_names(n))
 def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     unsat = _unsat_names(kind, n, numbered)
     return unsat if unsat is not None else _ring_or_alkane(kind, n, numbered)
@@ -484,7 +481,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "benzene":
         return benzene_prefix(numbered, _build_prefix)
-    if kind == "benzoate":
+    if kind in ("benzoate", "pyrimidinamine"):
         return "", ""
     return _build_prefix(numbered.get("substituents") or [], n, kind)
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:

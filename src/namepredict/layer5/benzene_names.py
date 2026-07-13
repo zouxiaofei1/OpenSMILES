@@ -138,9 +138,35 @@ def pyridinamine_names(numbered: dict) -> tuple[str, str] | None:
     return f"pyridin-{loc}-amine", f"吡啶-{loc}-胺"
 
 
+def _pyrimidinamine_en(pre_en: str, loc: int) -> str:
+    return f"{pre_en}pyrimidin-{loc}-amine" if pre_en else f"pyrimidin-{loc}-amine"
+
+
+def _pyrimidinamine_zh(pre_zh: str, loc: int) -> str:
+    if not pre_zh:
+        return f"嘧啶-{loc}-胺"
+    return f"{loc}-氨基-{pre_zh}嘧啶"
+
+
+def pyrimidinamine_names(numbered: dict, build_prefix) -> tuple[str, str] | None:
+    loc = numbered.get("amine_locant") or _pyridine_fg_loc(numbered, "amine_c_idx")
+    if loc is None:
+        return None
+    pre_en, pre_zh = build_prefix(numbered.get("substituents") or [], 6, "pyrimidinamine")
+    return _pyrimidinamine_en(pre_en, loc), _pyrimidinamine_zh(pre_zh, loc)
+
+
 def pyridinol_names(numbered: dict) -> tuple[str, str] | None:
     loc = numbered.get("oh_locant") or _pyridine_fg_loc(numbered, "oh_c_idx")
     if loc is None:
         return None
     return f"pyridin-{loc}-ol", f"吡啶-{loc}-醇"
+
+
+def pyridine_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, str] | None:
+    if kind == "pyridinecarboxylic": return pyridinecarboxylic_names(numbered)
+    if kind == "pyridinamine": return pyridinamine_names(numbered)
+    if kind == "pyrimidinamine": return pyrimidinamine_names(numbered, build_prefix)
+    if kind == "pyridinol": return pyridinol_names(numbered)
+    return None
 

@@ -2,13 +2,21 @@
 
 Five-membered mono-hetero: furan / thiophene / 1H-pyrrole (optional monomethyl/monohalo).
 Five-membered di-aza: 1H-imidazole / 1H-pyrazole (optional monomethyl/monohalo).
-Six-membered diazines: pyrimidine / pyrazine / pyridazine (unsubstituted only).
+Six-membered diazines: pyrimidine / pyrazine / pyridazine (simple ring subs / pyrimidinamine).
 """
 from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.ring_parent import _outside_ok, _ring_halo_n, _ring_side_starts
+from namepredict.layer2.ring_parent import (
+    _arene_alkoxy,
+    _mono_amine_on_ring,
+    _outside_ok,
+    _ring_halo_n,
+    _ring_nitro_atoms,
+    _ring_nitro_n,
+    _ring_side_starts,
+)
 
 # Z of ring hetero → parent kind (5-membered mono)
 _HETERO5_KIND = {8: "furan", 16: "thiophene", 7: "pyrrole"}
@@ -139,17 +147,57 @@ def _diazine_kind(info: dict) -> str | None:
     return _DIAZINE_KIND.get(_ring_nn_dist(ring, n_idxs))
 
 
-def _diazine_unsub(mol: Mol, ring: set[int]) -> bool:
-    return _ring_halo_n(mol, ring) == 0 and not _ring_side_starts(mol, ring)
+def _diazine_fg_block(info: dict) -> bool:
+    """Block principal FGs for simple diazine (amine routes to pyrimidinamine)."""
+    if info.get("has_acid") or info.get("has_aldehyde") or info.get("has_ketone"):
+        return True
+    if info.get("has_alcohol") or info.get("has_ester") or info.get("has_amide"):
+        return True
+    if info.get("has_nitrile") or info.get("has_thiol") or info.get("has_amine"):
+        return True
+    return False
+
+
+def _outside_c_set(mol: Mol, ring: set[int], skip: set[int]) -> set[int]:
+    return {
+        a.GetIdx() for a in mol.GetAtoms()
+        if a.GetAtomicNum() == 6 and a.GetIdx() not in ring and a.GetIdx() not in skip
+    }
+
+
+def _diazine_side_methyl_ok(
+    mol: Mol, ring: set[int], starts: list[int], skip: set[int],
+) -> bool:
+    """True when every ring C-side is pure -CH3 (outside C set == starts)."""
+    if not starts:
+        return not _outside_c_set(mol, ring, skip)
+    return _outside_c_set(mol, ring, skip) == set(starts)
+
+
+def _diazine_subs_ok(info: dict, mol: Mol, ring: set[int]) -> bool:
+    """Allow ≤4 simple ring subs: halo / methyl / methoxy / nitro (P-14.3.4)."""
+    alk, n_alk = _arene_alkoxy(info, ring)
+    h = _ring_halo_n(mol, ring)
+    starts = _ring_side_starts(mol, ring, alk)
+    n_sub = h + len(starts) + _ring_nitro_n(info, ring) + n_alk
+    if n_sub > 4:
+        return False
+    return _diazine_side_methyl_ok(mol, ring, starts, alk)
+
+
+def _diazine_outside_ok(info: dict, mol: Mol, ring: set[int]) -> bool:
+    alk = _arene_alkoxy(info, ring)[0]
+    allowed = _ring_nitro_atoms(info, ring) | alk
+    return _outside_ok(mol, ring, allowed)
 
 
 def _is_simple_diazine(info: dict) -> bool:
-    if _diazine_kind(info) is None or _hetero5_fg_block(info):
+    if _diazine_kind(info) is None or _diazine_fg_block(info):
         return False
     mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
-    if not _outside_ok(mol, ring):
+    if not _diazine_outside_ok(info, mol, ring):
         return False
-    return _diazine_unsub(mol, ring)
+    return _diazine_subs_ok(info, mol, ring)
 
 
 def _diazine_parent(info: dict) -> dict:
@@ -162,6 +210,58 @@ def _diazine_parent(info: dict) -> dict:
 
 def _try_diazine_parent(info: dict) -> dict | None:
     return _diazine_parent(info) if _is_simple_diazine(info) else None
+
+
+def _pyrimidinamine_fg_block(info: dict) -> bool:
+    """Block non-amine principal FGs for pyrimidinamine parent."""
+    if info.get("has_acid") or info.get("has_aldehyde") or info.get("has_ketone"):
+        return True
+    if info.get("has_alcohol") or info.get("has_ester") or info.get("has_amide"):
+        return True
+    return bool(info.get("has_nitrile") or info.get("has_thiol"))
+
+
+def _pyrimidinamine_subs_ok(info: dict, mol: Mol, ring: set[int], am_n: int) -> bool:
+    """Extra ring subs: ≤2 of halo / methyl / methoxy (amine is principal FG)."""
+    alk, n_alk = _arene_alkoxy(info, ring)
+    h = _ring_halo_n(mol, ring)
+    starts = _ring_side_starts(mol, ring, alk)
+    if h + len(starts) + n_alk > 2:
+        return False
+    return _diazine_side_methyl_ok(mol, ring, starts, alk)
+
+
+def _pyrimidinamine_outside(info: dict, mol: Mol, ring: set[int], am_n: int) -> bool:
+    alk = _arene_alkoxy(info, ring)[0]
+    allowed = {am_n} | alk
+    return _outside_ok(mol, ring, allowed)
+
+
+def _is_simple_pyrimidinamine(info: dict) -> bool:
+    if _diazine_kind(info) != "pyrimidine" or _pyrimidinamine_fg_block(info):
+        return False
+    mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
+    am = _mono_amine_on_ring(info, ring)
+    if am is None or am.get("degree") != 1:
+        return False
+    if not _pyrimidinamine_outside(info, mol, ring, am["n_idx"]):
+        return False
+    return _pyrimidinamine_subs_ok(info, mol, ring, am["n_idx"])
+
+
+def _pyrimidinamine_parent(info: dict) -> dict:
+    ring = list(info["rings"][0]["atom_ids"])
+    return {
+        "chain": ring, "n_carbons": 6, "kind": "pyrimidinamine",
+        "n_idxs": _diazine_n_idxs(info),
+        "amine_c_idx": info["amines"][0]["c_idx"],
+    }
+
+
+def _try_pyrimidinamine_parent(info: dict) -> dict | None:
+    if not _is_simple_pyrimidinamine(info):
+        return None
+    return _pyrimidinamine_parent(info)
 
 
 def _is_diazole_core(info: dict) -> bool:

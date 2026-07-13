@@ -24,7 +24,7 @@ _FG_RANK = {
     "cycloalcohol": 5, "phenol": 5, "benzenediol": 5, "pyridinol": 5,
     "thiol": 4,
     "amine": 3, "diamine": 3, "sec_amine": 3, "tert_amine": 3,
-    "cycloamine": 3, "aniline": 3, "pyridinamine": 3,
+    "cycloamine": 3, "aniline": 3, "pyridinamine": 3, "pyrimidinamine": 3,
     "ether": 2, "sulfide": 2,
 }
 _HETERO_RING = frozenset(

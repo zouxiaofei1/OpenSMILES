@@ -197,6 +197,11 @@ def _orient_benzenediol(chain: list[int], parent: dict, substituents: list) -> l
     return _orient_ring_pair(chain, parent, "oh_c_idxs", substituents)
 def _orient_diazine(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "n_idxs", substituents)
+def _orient_pyrimidinamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    attach, virtual = parent.get("amine_c_idx"), list(substituents)
+    if attach is not None:
+        virtual = virtual + [{"attach_idx": attach, "en": ""}]
+    return _orient_diazine(chain, parent, virtual)
 def _orient_cycloketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fixed(chain, parent, substituents, "ketone_c_idx")
 def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -273,7 +278,8 @@ def _arene_orienters() -> dict:
         "furan": _orient_hetero5, "thiophene": _orient_hetero5, "pyrrole": _orient_hetero5,
         "imidazole": _orient_imidazole, "pyrazole": _orient_imidazole,
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
-        "pyridazine": _orient_diazine, "naphthalene": _orient_naphthalene,
+        "pyridazine": _orient_diazine, "pyrimidinamine": _orient_pyrimidinamine,
+        "naphthalene": _orient_naphthalene,
         "indole": _orient_indole,
     }
 def _hetero_orienters() -> dict:
@@ -335,7 +341,7 @@ def _amine_pair_locants(oriented: dict) -> list[int] | None:
 def _amine_locant(oriented: dict) -> int | None:
     return _fg_locant(
         oriented,
-        ("amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine"),
+        ("amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine", "pyrimidinamine"),
         "amine_c_idx",
     )
 def _ketone_locant(oriented: dict) -> int | None:
