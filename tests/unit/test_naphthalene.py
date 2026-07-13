@@ -28,7 +28,7 @@ CASES = [
     ("c1ccccc1", "benzene", "苯"),
     ("c1ccncc1", "pyridine", "吡啶"),
     ("CCCCCCCCCC", "decane", "癸烷"),
-    ("c1ccc2[nH]ccc2c1", "octane", "辛烷"),  # indole falls back (no indole yet)
+    ("c1ccc2[nH]ccc2c1", "1H-indole", "吲哚"),  # indole retained parent (not naphthalene)
 ]
 
 

@@ -234,6 +234,8 @@ def _orient_pyridinol(chain: list[int], parent: dict, substituents: list) -> lis
     return _orient_pyridin_fg(chain, parent, substituents, "oh_c_idx")
 
 _NAPH_LOCANTS = (1, 2, 3, 4, None, 5, 6, 7, 8, None)
+# chain: N,2,3,3a,4,5,6,7,7a → locants 1,2,3,·,4,5,6,7,·
+_INDOLE_LOCANTS = (1, 2, 3, None, 4, 5, 6, 7, None)
 
 
 def _naph_loc_on(chain: list[int], attach: int) -> int:
@@ -259,6 +261,11 @@ def _orient_naphthalene(chain: list[int], parent: dict, substituents: list) -> l
     return best
 
 
+def _orient_indole(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    """NH fixed as locant 1; chain already built in standard order."""
+    return chain
+
+
 def _arene_orienters() -> dict:
     return {
         "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
@@ -267,6 +274,7 @@ def _arene_orienters() -> dict:
         "imidazole": _orient_imidazole, "pyrazole": _orient_imidazole,
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
         "pyridazine": _orient_diazine, "naphthalene": _orient_naphthalene,
+        "indole": _orient_indole,
     }
 def _hetero_orienters() -> dict:
     return {
@@ -378,11 +386,20 @@ def _naph_sub_locant(chain: list[int], attach: int) -> int:
     return loc if loc is not None else chain.index(attach) + 1
 
 
+def _indole_sub_locant(chain: list[int], attach: int) -> int:
+    if attach not in chain or len(chain) != 9:
+        return chain.index(attach) + 1 if attach in chain else 0
+    loc = _INDOLE_LOCANTS[chain.index(attach)]
+    return loc if loc is not None else chain.index(attach) + 1
+
+
 def _with_locants(chain: list[int], substituents: list, kind: str | None = None) -> list:
     out: list = []
     for s in substituents:
         if kind == "naphthalene":
             loc = _naph_sub_locant(chain, s["attach_idx"])
+        elif kind == "indole":
+            loc = _indole_sub_locant(chain, s["attach_idx"])
         else:
             loc = chain.index(s["attach_idx"]) + 1
         out.append({**s, "locant": loc})

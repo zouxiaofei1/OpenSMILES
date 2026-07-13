@@ -29,7 +29,7 @@ _FG_RANK = {
 }
 _HETERO_RING = frozenset(
     {"pyridine", "furan", "thiophene", "pyrrole", "imidazole", "pyrazole",
-     "pyrimidine", "pyrazine", "pyridazine"}
+     "pyrimidine", "pyrazine", "pyridazine", "indole"}
 )
 _CARBO_RING = frozenset({"benzene", "cycloalkane", "cycloalkene", "naphthalene"})
 _RETAINED = frozenset(
@@ -64,7 +64,7 @@ def _is_carbo_ring(kind: str) -> int:
 
 
 def _n_rings(kind: str) -> int:
-    if kind == "naphthalene":
+    if kind in ("naphthalene", "indole"):
         return 2
     return 1 if kind in _HETERO_RING or kind in _CARBO_RING else 0
 
