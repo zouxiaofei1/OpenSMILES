@@ -5,8 +5,14 @@ from rdkit.Chem import Mol
 from namepredict.layer2.side_alkyl import (
     _c_neighbors,
     _is_isopropyl,
+    _is_tert_butyl,
     _walk_linear,
 )
+
+
+def alkyl_alpha_key(stem: str) -> str:
+    """Alphanumerical-order key: italic prefixes like tert- are ignored (P-14.5.2)."""
+    return stem[5:] if stem.startswith("tert-") else stem
 
 ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
 ALKYL_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
@@ -47,12 +53,26 @@ def _make_isopropyl(attach: int, atoms: list[int]) -> dict:
     }
 
 
+def _make_tert_butyl(attach: int, atoms: list[int]) -> dict:
+    return {
+        "kind": "alkyl",
+        "n_carbons": 4,
+        "attach_idx": attach,
+        "atoms": atoms,
+        "en": "tert-butyl",
+        "zh": "叔丁基",
+    }
+
+
 def _one_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict | None:
     path = _walk_linear(mol, start, chain_set)
     if path:
         return _make_alkyl(attach, path)
     atoms = _is_isopropyl(mol, start, chain_set)
-    return _make_isopropyl(attach, atoms) if atoms else None
+    if atoms:
+        return _make_isopropyl(attach, atoms)
+    tb = _is_tert_butyl(mol, start, chain_set)
+    return _make_tert_butyl(attach, tb) if tb else None
 
 
 def _make_halo(attach: int, halo_idx: int, z: int) -> dict:

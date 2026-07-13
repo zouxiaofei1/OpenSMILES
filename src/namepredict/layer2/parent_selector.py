@@ -18,6 +18,7 @@ from namepredict.layer2.ring_parent import (
     _is_simple_cycloalkane, _is_simple_cycloalkene, _is_simple_cycloamine,
     _is_simple_cycloketone, _is_simple_phenol,
 )
+from namepredict.layer2.scoring import _pick_best
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
     atom = mol.GetAtomWithIdx(idx)
     return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
@@ -483,10 +484,7 @@ def _ring_parent(info: dict) -> dict | None:
     if _is_simple_benzene(info): return _benzene_parent(info)
     return _cycloalkane_parent(info) if _is_simple_cycloalkane(info) else None
 def select_parent(info: dict) -> dict:
-    fg = _fg_parent(info)
-    if fg is not None: return fg
-    ring = _ring_parent(info)
-    if ring is not None: return ring
-    unsat = _unsat_parent(info)
-    if unsat is not None: return unsat
-    return _parent_dict(_longest_chain(info["mol"]), "alkane")
+    # lazy import: candidates.py collects from this module's try-paths
+    from namepredict.layer2.candidates import _alkane_fallback, _collect_candidates
+    best = _pick_best(info, _collect_candidates(info))
+    return best if best is not None else _alkane_fallback(info)

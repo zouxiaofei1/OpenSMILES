@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.side_alkyl import _side_covers
+from namepredict.layer2.side_alkyl import _disjoint_cover, _side_covers, _side_sets
 
 
 def _all_carbons_are_c(mol: Mol, atom_ids: tuple) -> bool:
@@ -342,9 +342,10 @@ def _benzene_alkyl_ns(
     exclude: set[int] | None = None,
 ) -> list[int]:
     outside = set(_outside_carbons(mol, ring_set, exclude))
-    if len(outside) != len(starts) or any(s not in outside for s in starts):
+    sets = _side_sets(mol, ring_set, starts)
+    if sets is None or not _disjoint_cover(sets, outside):
         return []
-    return [1] * len(starts)
+    return [len(s) for s in sets]
 
 
 def _mono_benzene_ok(
@@ -364,7 +365,7 @@ def _multi_benzene_ok(
     exclude: set[int] | None = None,
 ) -> bool:
     ns = _benzene_alkyl_ns(mol, ring_set, starts, exclude)
-    return len(ns) == len(starts) and all(n == 1 for n in ns)
+    return len(ns) == len(starts)
 
 
 def _benzene_subs_ok(

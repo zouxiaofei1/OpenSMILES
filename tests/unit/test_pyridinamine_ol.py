@@ -78,8 +78,16 @@ def test_amino_locant_is_2_not_6() -> None:
 
 
 def test_multi_sub_not_pyridinamine() -> None:
-    """Dimethyl / dichloro / ethyl ring must not stay as pyridinamine parent."""
-    for s in ("Cc1cc(C)nc(N)c1", "Clc1cc(Cl)nc(N)c1", "CCc1cccc(N)n1"):
+    """Dimethyl / dichloro rings (>1 extra sub) must not stay as pyridinamine parent."""
+    for s in ("Cc1cc(C)nc(N)c1", "Clc1cc(Cl)nc(N)c1"):
         r = SMILESNNamer().name(s)
         assert r.success
         assert "pyridin" not in normalize_en(r.en)
+
+
+def test_mono_ethyl_pyridinamine() -> None:
+    """Recursive alkyl sides (P-29.3.1): one ethyl side is now a valid substituent."""
+    r = SMILESNNamer().name("CCc1cccc(N)n1")
+    assert r.success
+    assert normalize_en(r.en) == normalize_en("6-ethylpyridin-2-amine")
+    assert normalize_zh(r.zh) == normalize_zh("6-乙基吡啶-2-胺")

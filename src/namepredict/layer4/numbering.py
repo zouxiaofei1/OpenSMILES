@@ -1,4 +1,5 @@
 from __future__ import annotations
+from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 from namepredict.layer4.polyene import ene_locants, orient_polyene
 def _pos_on(chain: list[int], c: int | None) -> int | None:
     if c is None or c not in chain:
@@ -13,7 +14,10 @@ def _locants_on(chain: list[int], substituents: list) -> list[int]:
 def _locant_key(locs: list[int]) -> tuple:
     return (locs, len(locs))
 def _stem_loc_pairs(chain: list[int], substituents: list) -> list[tuple]:
-    return sorted((s.get("en") or "", chain.index(s["attach_idx"]) + 1) for s in substituents)
+    return sorted(
+        (alkyl_alpha_key(s.get("en") or ""), chain.index(s["attach_idx"]) + 1)
+        for s in substituents
+    )
 def _orient_key(chain: list[int], substituents: list) -> tuple:
     return (_locant_key(_locants_on(chain, substituents)), _stem_loc_pairs(chain, substituents))
 def _prefer_chain(a: list[int], b: list[int], substituents: list) -> list[int]:

@@ -1,4 +1,4 @@
-"""Mono alkyl side-chain topology: linear C1–C4 or isopropyl (L2/L3 shared)."""
+"""Mono alkyl side-chain topology: linear C1–C4, isopropyl or tert-butyl (L2/L3 shared)."""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
@@ -87,8 +87,23 @@ def _is_isopropyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     return [start, free[0], free[1]]
 
 
+def _is_tert_butyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    if not _is_pure_alkyl_c(mol, start):
+        return None
+    free = [n for n in _c_neighbors(mol, start) if n not in chain]
+    if len(free) != 3:
+        return None
+    if not all(_is_terminal_methyl(mol, m, start) for m in free):
+        return None
+    return [start, *free]
+
+
 def _side_atoms(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
-    return _walk_linear(mol, start, chain) or _is_isopropyl(mol, start, chain)
+    return (
+        _walk_linear(mol, start, chain)
+        or _is_isopropyl(mol, start, chain)
+        or _is_tert_butyl(mol, start, chain)
+    )
 
 
 def _side_covers(
@@ -96,3 +111,22 @@ def _side_covers(
 ) -> bool:
     atoms = _side_atoms(mol, start, chain)
     return atoms is not None and set(atoms) == outside
+
+
+def _side_sets(mol: Mol, chain: set[int], starts: list[int]) -> list[set[int]] | None:
+    sets: list[set[int]] = []
+    for s in starts:
+        atoms = _side_atoms(mol, s, chain)
+        if atoms is None:
+            return None
+        sets.append(set(atoms))
+    return sets
+
+
+def _disjoint_cover(sets: list[set[int]], outside: set[int]) -> bool:
+    seen: set[int] = set()
+    for s in sets:
+        if seen & s:
+            return False
+        seen |= s
+    return seen == outside

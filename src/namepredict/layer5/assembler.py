@@ -1,4 +1,5 @@
 from __future__ import annotations
+from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 from namepredict.layer5.stems import (
     ACID_EN,
     ACID_ZH,
@@ -461,7 +462,7 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool) -> str:
         return f"{mult}{zh_stem}"
     return f"{_locant_str(subs)}-{mult}{zh_stem}"
 def _sorted_stems(groups: dict[str, list]) -> list[str]:
-    return sorted(k for k in groups if k)
+    return sorted((k for k in groups if k), key=alkyl_alpha_key)
 def _parts_for_stem(stem: str, subs: list, omit: bool) -> tuple[str, str]:
     zh_stem = subs[0].get("zh") or ""
     return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit)
