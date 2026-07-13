@@ -315,6 +315,7 @@ def _fused_orienters() -> dict:
         "indazolecarbaldehyde": _orient_indole,
         "benzofuran": _orient_indole, "benzofuranamine": _orient_indole,
         "benzothiophene": _orient_indole, "benzothiophenol": _orient_indole,
+        "benzothiazole": _orient_indole, "benzothiazolamine": _orient_indole,
         "quinoline": _orient_indole, "isoquinoline": _orient_indole,
         "quinolinol": _orient_indole, "quinolinecarboxylic": _orient_indole,
     }
@@ -387,9 +388,9 @@ def _amine_pair_locants(oriented: dict) -> list[int] | None:
 def _amine_locant(oriented: dict) -> int | None:
     kinds = (
         "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
-        "pyrimidinamine", "benzofuranamine",
+        "pyrimidinamine", "benzofuranamine", "benzothiazolamine",
     )
-    if oriented.get("kind") == "benzofuranamine":
+    if oriented.get("kind") in ("benzofuranamine", "benzothiazolamine"):
         chain, a = oriented.get("chain") or [], oriented.get("amine_c_idx")
         return _indole_sub_locant(chain, a) if a is not None else None
     return _fg_locant(oriented, kinds, "amine_c_idx")
@@ -447,6 +448,7 @@ def _indole_sub_locant(chain: list[int], attach: int) -> int:
 _FUSED56_KINDS = frozenset({
     "indole", "indazole", "indazolecarbonitrile", "indazolecarbaldehyde",
     "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol",
+    "benzothiazole", "benzothiazolamine",
 })
 _Q_KINDS = frozenset({
     "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",

@@ -9,6 +9,7 @@ from namepredict.layer2.hetero5_carboxylic import _try_hetero5carboxylic_parent 
 from namepredict.layer2.sat_hetero_carboxylic import _try_sat_hetero_carboxylic_parent as _try_shcooh
 from namepredict.layer2.benzofuran import _try_benzofuranamine_parent as _try_bfam
 from namepredict.layer2.benzothiophene import _try_benzothiophenol_parent as _try_btol
+from namepredict.layer2.benzothiazole import _try_benzothiazolamine_parent as _try_btzam
 from namepredict.layer2.indazole import (
     _try_indazolecarbaldehyde_parent as _try_izald, _try_indazolecarbonitrile_parent as _try_izcn,
 )
@@ -221,13 +222,11 @@ def _primary_amine_parent(info: dict) -> dict:
     if prim is None: return _parent_dict(_longest_chain(info["mol"]), "alkane")
     return _parent_dict(_chain_through(info, prim["c_idx"]), "amine", amine_c_idx=prim["c_idx"])
 def _ring_amine_parent(info: dict) -> dict | None:
-    top = (_try_bfam(info) or _try_pyrimidinamine_parent(info)
+    top = (_try_btzam(info) or _try_bfam(info) or _try_pyrimidinamine_parent(info)
            or _try_pyridin_fg_parent(info))
     if top is not None: return top
-    return _ring_fg_try(
-        info, ((_is_simple_aniline, "aniline"), (_is_simple_cycloamine, "cycloamine")),
-        "amines", "amine_c_idx",
-    )
+    return _ring_fg_try(info, ((_is_simple_aniline, "aniline"),
+        (_is_simple_cycloamine, "cycloamine")), "amines", "amine_c_idx")
 def _amine_parent(info: dict) -> dict:
     ring = _ring_amine_parent(info)
     if ring is not None: return ring
