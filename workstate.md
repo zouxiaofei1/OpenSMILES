@@ -56,11 +56,12 @@
 [#1ec3b38][IUPAC P-44 / P-31.1] 开链不饱和二酸 alkenedioic：双COOH+单C=C；ene位次；(E/Z)前缀 [+test_alkenedioic, dual 5.7%(230)→5.7%(233), fails 3832→3829]
 [#da485de][IUPAC P-93.4 / P-31.1] 一元烯酸 alkenoic acid (E)/(Z) 前缀 [+test_alkenoic_ez, dual 5.7%(233)→5.8%(236), fails 3829→3826]
 [#3483da7][IUPAC P-29.3.1 / P-22.1.3] 单取代烷基苯 C1–C4 直链 + isopropyl；L2/L3 拓扑对齐 [+test_alkylbenzene, dual 5.8%(236)→5.8%(237), fails 3826→3825]
+[#9b62d50][IUPAC P-22.2.1] 保留 pyridine + 单甲基/单卤（N=1）+ pyridinecarboxylic [+test_pyridine, dual 5.8%(237)→5.9%(240), fails 3825→3822]
 
 ## 其他
-- 基线(本轮前): en=5.8%(237/4062) zh=23.5%(178/756) dual=5.8%(236/4062)
-- 本次: en=5.9%(238/4062) zh=23.7%(179/756) dual=5.8%(237/4062) fails=3825
-- 改动: L2 mono 侧链仅接受可提取拓扑(直链C1–C4/isopropyl)；L3 isopropyl；共享 side_alkyl.py；拒 isobutyl/sec/tert 裸 benzene
-- 验证: CC(C)c1ccccc1→isopropylbenzene；CCCc1ccccc1→propylbenzene；toluene/ethyl 不回归；CC(C)Cc1ccccc1 不输出裸 benzene
-- 已知缺口: 硝基苯甲酸等 arene 羰基+nitro；sec/tert-butylbenzene；支化烷基前缀(开链PIN)；多烯二酸
-- 下一步候选: arene 羰基+nitro 贯通；或 sec/tert-butyl 苯；或支化烷基前缀
+- 基线(本轮前): en=5.9%(238/4062) zh=23.7%(179/756) dual=5.8%(237/4062)
+- 本次: en=6.0%(243/4062) zh=24.1%(182/756) dual=5.9%(240/4062) fails=3822
+- 改动: L2 pyridine 核(1N+5C芳香)；N=1 定向；单卤/甲基；吡啶甲酸挂环 COOH；L5 保留名
+- 验证: c1ccncc1→pyridine；Cc1ccccn1→2-methylpyridine；Clc1ccccn1→2-chloropyridine；OC(=O)c1ccccn1→pyridine-2-carboxylic acid；benzene/benzoic 不回归
+- 已知缺口: 硝基苯甲酸等 arene 羰基+nitro；氨基吡啶；烷氧基吡啶；sec/tert-butylbenzene；支化烷基前缀
+- 下一步候选: arene 羰基+nitro 贯通；或氨基吡啶；或 sec/tert-butyl 苯
