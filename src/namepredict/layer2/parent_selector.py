@@ -7,10 +7,10 @@ from namepredict.layer2.arene_carbonyl import (
     _try_benzoic_parent,
 )
 from namepredict.layer2.cyclo_carboxylic import _try_cycloalkanecarboxylic_parent
+from namepredict.layer2.hetero5_carboxylic import _try_hetero5carboxylic_parent as _try_h5cooh
 from namepredict.layer2.heteroarene5 import _try_pyrimidinamine_parent
 from namepredict.layer2.pyridine import (
-    _try_pyridinecarboxylic_parent,
-    _try_pyridin_fg_parent,
+    _try_pyridinecarboxylic_parent, _try_pyridin_fg_parent,
 )
 from namepredict.layer2.ring_parent import (
     _benzenediol_parent, _endocyclic_double, _is_simple_aniline,
@@ -295,9 +295,11 @@ def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
     u = _try_unsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
     return u or _fg_chain(info, ekey, skind, ckey, **extra)
 def _acid_parent(info: dict) -> dict:
-    for fn in (_try_pyridinecarboxylic_parent, _try_benzoic_parent, _try_cycloalkanecarboxylic_parent):
-        b = fn(info)
-        if b is not None: return b
+    for fn in (
+        _try_h5cooh, _try_pyridinecarboxylic_parent,
+        _try_benzoic_parent, _try_cycloalkanecarboxylic_parent,
+    ):
+        if (b := fn(info)) is not None: return b
     if _is_simple_alkanedioic(info): return _diacid_parent(info)
     if _is_simple_alkenedioic(info): return _alkenedioic_parent(info)
     return _unsat_or_sat(

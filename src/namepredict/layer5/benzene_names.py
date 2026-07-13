@@ -133,6 +133,38 @@ def pyridinecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
     return f"pyridine-{loc}-carboxylic acid", f"吡啶-{loc}-甲酸"
 
 
+# base_kind → (en stem, zh stem, needs_1h)
+_H5COOH_STEM = {
+    "furan": ("furan", "呋喃", False),
+    "thiophene": ("thiophene", "噻吩", False),
+    "pyrrole": ("pyrrole", "吡咯", True),
+    "imidazole": ("imidazole", "咪唑", True),
+    "pyrazole": ("pyrazole", "吡唑", True),
+}
+
+
+def _h5cooh_stem(parent: dict) -> tuple[str, str] | None:
+    base = parent.get("base_kind") or ""
+    got = _H5COOH_STEM.get(base)
+    if got is None:
+        return None
+    en0, zh0, one_h = got
+    if one_h:
+        return f"1H-{en0}", f"1H-{zh0}"
+    return en0, zh0
+
+
+def hetero5carboxylic_names(numbered: dict) -> tuple[str, str] | None:
+    """furan/thiophene/1H-pyrrole/imidazole/pyrazole-n-carboxylic acid / …-甲酸."""
+    parent = numbered.get("parent") or {}
+    loc = _pyridine_cooh_loc(numbered)
+    stem = _h5cooh_stem(parent)
+    if loc is None or stem is None:
+        return None
+    en_s, zh_s = stem
+    return f"{en_s}-{loc}-carboxylic acid", f"{zh_s}-{loc}-甲酸"
+
+
 def _pyridine_fg_loc(numbered: dict, key: str) -> int | None:
     parent = numbered.get("parent") or {}
     chain = parent.get("chain") or []

@@ -13,6 +13,8 @@ from __future__ import annotations
 _FG_RANK = {
     "acid": 13, "diacid": 13, "alkenoic_acid": 13, "alkenedioic": 13,
     "benzoic": 13, "pyridinecarboxylic": 13, "cycloalkanecarboxylic": 13,
+    "furancarboxylic": 13, "thiophenecarboxylic": 13, "pyrrolecarboxylic": 13,
+    "imidazolecarboxylic": 13, "pyrazolecarboxylic": 13,
     "anhydride": 12,
     "ester": 11, "alkenoate": 11, "benzoate": 11,
     "acyl_chloride": 10, "benzoyl_chloride": 10,
@@ -36,7 +38,9 @@ _HETERO_RING = frozenset(
 _CARBO_RING = frozenset({"benzene", "cycloalkane", "cycloalkene", "naphthalene"})
 _RETAINED = frozenset(
     {"phenol", "aniline", "benzoic", "benzaldehyde", "acetophenone",
-     "benzoate", "benzonitrile", "benzoyl_chloride", "benzene", "naphthalene"}
+     "benzoate", "benzonitrile", "benzoyl_chloride", "benzene", "naphthalene",
+     "furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic",
+     "imidazolecarboxylic", "pyrazolecarboxylic", "pyridinecarboxylic"}
     | set(_HETERO_RING)
 )
 

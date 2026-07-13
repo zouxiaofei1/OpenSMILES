@@ -229,11 +229,19 @@ def _orient_imidazole(chain: list[int], parent: dict, substituents: list) -> lis
     rev = _rotate_to_front(list(reversed(chain)), nh)
     n = parent.get("n_idx")
     return base if _n_loc_on(base, n) <= _n_loc_on(rev, n) else rev
-def _orient_pyridinecarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+def _virtual_cooh_subs(parent: dict, substituents: list) -> list:
     attach, virtual = parent.get("ring_attach_idx"), list(substituents)
     if attach is not None:
         virtual = virtual + [{"attach_idx": attach, "en": ""}]
-    return _orient_pyridine(chain, parent, virtual)
+    return virtual
+def _orient_pyridinecarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_pyridine(chain, parent, _virtual_cooh_subs(parent, substituents))
+def _orient_hetero5carboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    """Hetero fixed as 1; COOH attach as virtual sub for direction."""
+    return _orient_hetero5(chain, parent, _virtual_cooh_subs(parent, substituents))
+def _orient_diazolecarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    """NH=1, other N lowest; COOH is suffix (locant from fixed orientation)."""
+    return _orient_imidazole(chain, parent, substituents)
 def _orient_pyridin_fg(chain: list[int], parent: dict, substituents: list, key: str) -> list[int]:
     attach, virtual = parent.get(key), list(substituents)
     if attach is not None:
@@ -290,6 +298,8 @@ def _aza_orienters() -> dict:
         "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
         "pyridinamine": _orient_pyridinamine, "pyridinol": _orient_pyridinol,
         "imidazole": _orient_imidazole, "pyrazole": _orient_imidazole,
+        "imidazolecarboxylic": _orient_diazolecarboxylic,
+        "pyrazolecarboxylic": _orient_diazolecarboxylic,
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
         "pyridazine": _orient_diazine, "pyrimidinamine": _orient_pyrimidinamine,
     }
@@ -298,6 +308,9 @@ def _aza_orienters() -> dict:
 def _arene_orienters() -> dict:
     return {
         "furan": _orient_hetero5, "thiophene": _orient_hetero5, "pyrrole": _orient_hetero5,
+        "furancarboxylic": _orient_hetero5carboxylic,
+        "thiophenecarboxylic": _orient_hetero5carboxylic,
+        "pyrrolecarboxylic": _orient_hetero5carboxylic,
         "naphthalene": _orient_naphthalene, "indole": _orient_indole,
         **_aza_orienters(), **_sat_hetero_orienters(),
     }

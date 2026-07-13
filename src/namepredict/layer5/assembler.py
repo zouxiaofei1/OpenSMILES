@@ -29,8 +29,8 @@ from namepredict.layer5.stems import (
 )
 from namepredict.layer5.benzene_names import (
     arene_fg_parent_names, benzene_parent_names, benzene_prefix,
-    benzoate_parent_names, benzenediol_names, join_parent_name,
-    pyridine_kind_names, zh_1h_parent,
+    benzoate_parent_names, benzenediol_names, hetero5carboxylic_names,
+    join_parent_name, pyridine_kind_names, zh_1h_parent,
 )
 from namepredict.types import NameResult
 MULT_EN = {
@@ -410,10 +410,15 @@ def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         omit = numbered.get("omit_yne_locant", False)
         return _alkyne_names(n, numbered.get("yne_locant"), omit)
     return None
+_H5COOH_KINDS = frozenset({
+    "furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic",
+    "imidazolecarboxylic", "pyrazolecarboxylic",
+})
 def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "cycloalkane": return _cycloalkane_names(n)
     if kind == "benzene": return benzene_parent_names(numbered)
     if kind == "benzoate": return benzoate_parent_names(numbered, _build_prefix)
+    if kind in _H5COOH_KINDS: return hetero5carboxylic_names(numbered)
     top = pyridine_kind_names(kind, numbered, _build_prefix)
     return top if top is not None else (arene_fg_parent_names(kind) or _alkane_names(n))
 def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
@@ -440,7 +445,7 @@ _KEEP_LOCANT_KINDS = frozenset({
     "acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate",
     "benzoic", "benzaldehyde", "acetophenone", "pyridinecarboxylic",
     "benzoate", "benzonitrile", "benzoyl_chloride", "cycloalkanecarboxylic",
-})
+}) | _H5COOH_KINDS
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
     if n_carbons <= 1 or kind in ("sec_amine", "tert_amine", "amide"):
         return True
