@@ -373,12 +373,20 @@ def _ring_c_neighbors(mol: Mol, c_idx: int, ring_set: set[int]) -> list[int]:
     ]
 
 
-def _carboxyl_ring_c(info: dict, ring_set: set[int]) -> int | None:
-    carboxyls = info.get("carboxyls") or []
-    if len(carboxyls) != 1:
+def _fg_ring_c(info: dict, ring_set: set[int], ekey: str) -> int | None:
+    entries = info.get(ekey) or []
+    if len(entries) != 1:
         return None
-    nbs = _ring_c_neighbors(info["mol"], carboxyls[0]["c_idx"], ring_set)
+    nbs = _ring_c_neighbors(info["mol"], entries[0]["c_idx"], ring_set)
     return nbs[0] if len(nbs) == 1 else None
+
+
+def _carboxyl_ring_c(info: dict, ring_set: set[int]) -> int | None:
+    return _fg_ring_c(info, ring_set, "carboxyls")
+
+
+def _aldehyde_ring_c(info: dict, ring_set: set[int]) -> int | None:
+    return _fg_ring_c(info, ring_set, "aldehydes")
 
 
 def _cooh_oxygen_idxs(mol: Mol, c_idx: int) -> set[int]:
@@ -390,10 +398,10 @@ def _ring_phenol_ohs(info: dict, ring_set: set[int]) -> list[dict]:
     return [h for h in (info.get("hydroxyls") or []) if h["c_idx"] in ring_set]
 
 
-def _benzoic_conflict_fg(info: dict) -> bool:
+def _arene_carbonyl_conflict(info: dict, *extra: str) -> bool:
     bad = (
-        "has_ester", "has_amide", "has_aldehyde", "has_ketone",
-        "has_acyl_chloride", "has_anhydride", "has_nitrile",
+        "has_ester", "has_amide", "has_ketone",
+        "has_acyl_chloride", "has_anhydride", "has_nitrile", *extra,
     )
     if any(info.get(k) for k in bad):
         return True
@@ -410,36 +418,36 @@ def _is_methyl_on_ring(mol: Mol, s: int, ring_set: set[int]) -> bool:
     return True
 
 
-def _benzoic_alkyl_ok(mol: Mol, ring_set: set[int], cooh_c: int) -> bool:
-    starts = [s for s in _ring_side_starts(mol, ring_set) if s != cooh_c]
-    outside = [i for i in _outside_carbons(mol, ring_set) if i != cooh_c]
+def _benzoic_alkyl_ok(mol: Mol, ring_set: set[int], exclude_c: int) -> bool:
+    starts = [s for s in _ring_side_starts(mol, ring_set) if s != exclude_c]
+    outside = [i for i in _outside_carbons(mol, ring_set) if i != exclude_c]
     if set(outside) != set(starts):
         return False
     return all(_is_methyl_on_ring(mol, s, ring_set) for s in starts)
 
 
-def _benzoic_extra_n(info: dict, mol: Mol, ring_set: set[int], cooh_c: int) -> int:
-    starts = [s for s in _ring_side_starts(mol, ring_set) if s != cooh_c]
+def _benzoic_extra_n(info: dict, mol: Mol, ring_set: set[int], exclude_c: int) -> int:
+    starts = [s for s in _ring_side_starts(mol, ring_set) if s != exclude_c]
     ohs = _ring_phenol_ohs(info, ring_set)
     return _ring_halo_n(mol, ring_set) + len(starts) + len(ohs)
 
 
-def _benzoic_hetero_ok(info: dict, mol: Mol, ring_set: set[int], cooh_c: int) -> bool:
+def _benzoic_hetero_ok(info: dict, mol: Mol, ring_set: set[int], fg_c: int) -> bool:
     ohs = _ring_phenol_ohs(info, ring_set)
-    allowed = _cooh_oxygen_idxs(mol, cooh_c) | {h["o_idx"] for h in ohs}
+    allowed = _cooh_oxygen_idxs(mol, fg_c) | {h["o_idx"] for h in ohs}
     return _hetero_or_ring_halo(mol, ring_set, allowed)
 
 
-def _benzoic_subs_ok(info: dict, mol: Mol, ring_set: set[int], cooh_c: int) -> bool:
-    if not _benzoic_hetero_ok(info, mol, ring_set, cooh_c):
+def _benzoic_subs_ok(info: dict, mol: Mol, ring_set: set[int], fg_c: int) -> bool:
+    if not _benzoic_hetero_ok(info, mol, ring_set, fg_c):
         return False
-    if not _benzoic_alkyl_ok(mol, ring_set, cooh_c):
+    if not _benzoic_alkyl_ok(mol, ring_set, fg_c):
         return False
-    return _benzoic_extra_n(info, mol, ring_set, cooh_c) <= 2
+    return _benzoic_extra_n(info, mol, ring_set, fg_c) <= 2
 
 
 def _is_simple_benzoic(info: dict) -> bool:
-    if not _is_benzene_core(info) or _benzoic_conflict_fg(info):
+    if not _is_benzene_core(info) or _arene_carbonyl_conflict(info, "has_aldehyde"):
         return False
     mol: Mol = info["mol"]
     ring_set = set(info["rings"][0]["atom_ids"])
@@ -459,3 +467,26 @@ def _benzoic_parent(info: dict) -> dict:
 
 def _try_benzoic_parent(info: dict) -> dict | None:
     return _benzoic_parent(info) if _is_simple_benzoic(info) else None
+
+
+def _is_simple_benzaldehyde(info: dict) -> bool:
+    if not _is_benzene_core(info) or _arene_carbonyl_conflict(info, "has_acid"):
+        return False
+    mol: Mol = info["mol"]
+    ring_set = set(info["rings"][0]["atom_ids"])
+    if _aldehyde_ring_c(info, ring_set) is None:
+        return False
+    return _benzoic_subs_ok(info, mol, ring_set, info["aldehydes"][0]["c_idx"])
+
+
+def _benzaldehyde_parent(info: dict) -> dict:
+    ring = list(info["rings"][0]["atom_ids"])
+    ald_c = info["aldehydes"][0]["c_idx"]
+    return {
+        "chain": ring, "n_carbons": 6, "kind": "benzaldehyde",
+        "aldehyde_c_idx": ald_c, "ring_attach_idx": _aldehyde_ring_c(info, set(ring)),
+    }
+
+
+def _try_benzaldehyde_parent(info: dict) -> dict | None:
+    return _benzaldehyde_parent(info) if _is_simple_benzaldehyde(info) else None

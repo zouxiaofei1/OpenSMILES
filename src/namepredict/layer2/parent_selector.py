@@ -2,17 +2,10 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from namepredict.layer2.ring_parent import (
-    _benzenediol_parent,
-    _endocyclic_double,
-    _is_simple_aniline,
-    _is_simple_benzene,
-    _is_simple_benzenediol,
-    _is_simple_cycloalcohol,
-    _is_simple_cycloalkane,
-    _is_simple_cycloalkene,
-    _is_simple_cycloamine,
-    _is_simple_cycloketone,
-    _is_simple_phenol,
+    _benzenediol_parent, _endocyclic_double, _is_simple_aniline,
+    _is_simple_benzene, _is_simple_benzenediol, _is_simple_cycloalcohol,
+    _is_simple_cycloalkane, _is_simple_cycloalkene, _is_simple_cycloamine,
+    _is_simple_cycloketone, _is_simple_phenol, _try_benzaldehyde_parent,
     _try_benzoic_parent,
 )
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
@@ -307,7 +300,7 @@ def _ketone_parent(info: dict) -> dict:
         return _dione_parent(info)
     return _fg_chain(info, "ketones", "ketone", "ketone_c_idx")
 def _aldehyde_parent(info: dict) -> dict:
-    return _unsat_or_sat(
+    return _try_benzaldehyde_parent(info) or _unsat_or_sat(
         info, "has_aldehyde", "aldehydes", _ALKENAL_BAD, "alkenal", "aldehyde", "aldehyde_c_idx",
     )
 def _amide_n_meta(info: dict) -> dict:

@@ -43,6 +43,8 @@ def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
         return "aniline", "苯胺"
     if kind == "benzoic":
         return "benzoic acid", "苯甲酸"
+    if kind == "benzaldehyde":
+        return "benzaldehyde", "苯甲醛"
     return None
 
 
