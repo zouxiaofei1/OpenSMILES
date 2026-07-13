@@ -55,11 +55,12 @@
 [#686780c][IUPAC P-63.2.2] 芳环烷氧基 methoxy/ethoxy + anisole/苯甲醚 [+test_anisole, dual 5.6%(226)→5.7%(230), fails 3836→3832]
 [#1ec3b38][IUPAC P-44 / P-31.1] 开链不饱和二酸 alkenedioic：双COOH+单C=C；ene位次；(E/Z)前缀 [+test_alkenedioic, dual 5.7%(230)→5.7%(233), fails 3832→3829]
 [#da485de][IUPAC P-93.4 / P-31.1] 一元烯酸 alkenoic acid (E)/(Z) 前缀 [+test_alkenoic_ez, dual 5.7%(233)→5.8%(236), fails 3829→3826]
+[#3483da7][IUPAC P-29.3.1 / P-22.1.3] 单取代烷基苯 C1–C4 直链 + isopropyl；L2/L3 拓扑对齐 [+test_alkylbenzene, dual 5.8%(236)→5.8%(237), fails 3826→3825]
 
 ## 其他
-- 基线(本轮前): en=5.8%(234/4062) zh=23.5%(178/756) dual=5.7%(233/4062)
-- 本次: en=5.8%(237/4062) zh=23.5%(178/756) dual=5.8%(236/4062) fails=3826
-- 改动: unsat parent 带 mol；L5 复用 BondStereo 前缀到 alkenoic；无立体不加 (E)/(Z)
-- 验证: CCCCCC/C=C/C(=O)O→(E)-non-2-enoic acid；CC/C=C/CC(=O)O→(E)-hex-3-enoic；CCCCC/C=C\CCC(=O)O→(Z)-dec-4-enoic；OC(=O)C=C 仍 prop-2-enoic；烯二酸不回归
-- 已知缺口: 硝基苯甲酸等 arene 羰基+nitro；支化烷基前缀；C3+烷基苯/异丙苯；多烯二酸
-- 下一步候选: C3+烷基苯/异丙苯；或 arene 羰基+nitro 贯通；或支化烷基前缀
+- 基线(本轮前): en=5.8%(237/4062) zh=23.5%(178/756) dual=5.8%(236/4062)
+- 本次: en=5.9%(238/4062) zh=23.7%(179/756) dual=5.8%(237/4062) fails=3825
+- 改动: L2 mono 侧链仅接受可提取拓扑(直链C1–C4/isopropyl)；L3 isopropyl；共享 side_alkyl.py；拒 isobutyl/sec/tert 裸 benzene
+- 验证: CC(C)c1ccccc1→isopropylbenzene；CCCc1ccccc1→propylbenzene；toluene/ethyl 不回归；CC(C)Cc1ccccc1 不输出裸 benzene
+- 已知缺口: 硝基苯甲酸等 arene 羰基+nitro；sec/tert-butylbenzene；支化烷基前缀(开链PIN)；多烯二酸
+- 下一步候选: arene 羰基+nitro 贯通；或 sec/tert-butyl 苯；或支化烷基前缀
