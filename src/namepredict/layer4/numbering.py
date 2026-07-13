@@ -239,8 +239,17 @@ def _orient_pyridinecarboxylic(chain: list[int], parent: dict, substituents: lis
 def _orient_hetero5carboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     """Hetero fixed as 1; COOH attach as virtual sub for direction."""
     return _orient_hetero5(chain, parent, _virtual_cooh_subs(parent, substituents))
+def _orient_fixed_hetero(chain, parent, subs, h):
+    return _orient_ring_fixed(chain, {**parent, "hetero_idx": h}, subs, "hetero_idx")
+def _orient_sat_hetero_carboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    """Hetero=1; asym dihetero fix first (O); sym try both for lowest COOH."""
+    hs, virt = parent.get("hetero_idxs") or [], _virtual_cooh_subs(parent, substituents)
+    if len(hs) < 2 or parent.get("hetero_asym"):
+        return _orient_fixed_hetero(chain, parent, virt, hs[0] if hs else None)
+    a = _orient_fixed_hetero(chain, parent, virt, hs[0])
+    b = _orient_fixed_hetero(chain, parent, virt, hs[1])
+    return _prefer_chain(a, b, virt)
 def _orient_diazolecarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    """NH=1, other N lowest; COOH is suffix (locant from fixed orientation)."""
     return _orient_imidazole(chain, parent, substituents)
 def _orient_pyridin_fg(chain: list[int], parent: dict, substituents: list, key: str) -> list[int]:
     attach, virtual = parent.get(key), list(substituents)
@@ -251,19 +260,13 @@ def _orient_pyridinamine(chain: list[int], parent: dict, substituents: list) -> 
     return _orient_pyridin_fg(chain, parent, substituents, "amine_c_idx")
 def _orient_pyridinol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_pyridin_fg(chain, parent, substituents, "oh_c_idx")
-
 _NAPH_LOCANTS = (1, 2, 3, 4, None, 5, 6, 7, 8, None)
-# chain: N,2,3,3a,4,5,6,7,7a → locants 1,2,3,·,4,5,6,7,·
 _INDOLE_LOCANTS = (1, 2, 3, None, 4, 5, 6, 7, None)
-
-
 def _naph_loc_on(chain: list[int], attach: int) -> int:
     if attach not in chain:
         return 99
     loc = _NAPH_LOCANTS[chain.index(attach)]
     return 99 if loc is None else loc
-
-
 def _naph_loc_key(chain: list[int], substituents: list) -> tuple:
     locs = sorted(_naph_loc_on(chain, s["attach_idx"]) for s in substituents)
     return tuple(locs) if locs else ()
@@ -289,13 +292,19 @@ def _orient_benzofuranamine(chain: list[int], parent: dict, substituents: list) 
     """O fixed as 1; amine is principal FG (locant via amine_c_idx)."""
     return chain
 
-
+_SAT_HETERO_PLAIN = (
+    "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
+    "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane",
+)
+_SAT_HETERO_COOH = (
+    "piperidinecarboxylic", "pyrrolidinecarboxylic", "piperazinecarboxylic",
+    "morpholinecarboxylic", "oxolanecarboxylic", "oxanecarboxylic",
+    "thiolanecarboxylic", "aziridinecarboxylic",
+)
 def _sat_hetero_orienters() -> dict:
-    kinds = (
-        "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
-        "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane",
-    )
-    return {k: _orient_sat_hetero for k in kinds}
+    d = {k: _orient_sat_hetero for k in _SAT_HETERO_PLAIN}
+    d.update({k: _orient_sat_hetero_carboxylic for k in _SAT_HETERO_COOH})
+    return d
 
 
 def _aza_orienters() -> dict:

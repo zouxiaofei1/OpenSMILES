@@ -15,6 +15,10 @@ _FG_RANK = {
     "benzoic": 13, "pyridinecarboxylic": 13, "cycloalkanecarboxylic": 13,
     "furancarboxylic": 13, "thiophenecarboxylic": 13, "pyrrolecarboxylic": 13,
     "imidazolecarboxylic": 13, "pyrazolecarboxylic": 13,
+    "piperidinecarboxylic": 13, "pyrrolidinecarboxylic": 13,
+    "piperazinecarboxylic": 13, "morpholinecarboxylic": 13,
+    "oxolanecarboxylic": 13, "oxanecarboxylic": 13,
+    "thiolanecarboxylic": 13, "aziridinecarboxylic": 13,
     "anhydride": 12,
     "ester": 11, "alkenoate": 11, "benzoate": 11,
     "acyl_chloride": 10, "benzoyl_chloride": 10,
@@ -37,13 +41,18 @@ _HETERO_RING = frozenset(
      "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane"}
 )
 _CARBO_RING = frozenset({"benzene", "cycloalkane", "cycloalkene", "naphthalene"})
+_SHCOOH = frozenset({
+    "piperidinecarboxylic", "pyrrolidinecarboxylic", "piperazinecarboxylic",
+    "morpholinecarboxylic", "oxolanecarboxylic", "oxanecarboxylic",
+    "thiolanecarboxylic", "aziridinecarboxylic",
+})
 _RETAINED = frozenset(
     {"phenol", "aniline", "benzoic", "benzaldehyde", "acetophenone",
      "benzoate", "benzonitrile", "benzoyl_chloride", "benzene", "naphthalene",
      "furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic",
      "imidazolecarboxylic", "pyrazolecarboxylic", "pyridinecarboxylic",
      "pyridinecarbonitrile"}
-    | set(_HETERO_RING)
+    | set(_HETERO_RING) | _SHCOOH
 )
 
 

@@ -184,13 +184,21 @@ def _hetero_pair(info: dict) -> list[int]:
     return sorted(hs, key=lambda i: (mol.GetAtomWithIdx(i).GetAtomicNum() != 8, i))
 
 
+def _hetero_asym(info: dict, hs: list[int]) -> bool:
+    """True when dihetero atoms differ (morpholine O≠N); false for N–N / O–O."""
+    if len(hs) < 2:
+        return False
+    mol: Mol = info["mol"]
+    return mol.GetAtomWithIdx(hs[0]).GetAtomicNum() != mol.GetAtomWithIdx(hs[1]).GetAtomicNum()
+
+
 def _sat_hetero_parent(info: dict) -> dict:
     atom_ids = _ring_atoms_if_mono(info)
     kind = _kind_of(info)
     hs = _hetero_pair(info)
     out = {
         "chain": atom_ids, "n_carbons": len(atom_ids), "kind": kind,
-        "hetero_idxs": hs,
+        "hetero_idxs": hs, "hetero_asym": _hetero_asym(info, hs),
     }
     if len(hs) == 1:
         out["hetero_idx"] = hs[0]
