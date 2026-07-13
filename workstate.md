@@ -70,11 +70,12 @@
 [#5652b1a][IUPAC P-22.1.1 / P-25] 保留母体 naphthalene（未取代+单甲基/单卤；1–8 位次） [+14 tests, dual 6.8%(276)→6.8%(277), fails 3786→3785]
 [#878ff39][IUPAC P-66.1.1.1.3] 简单开链 N-phenylalkanamide（L2 alkyl/phenyl meta + `_unsub_phenyl_at` + L3 n_phenyl） [+7 tests, dual 6.8%(277)→6.8%(278), fails 3785→3784]
 [#43b3eee][IUPAC P-29.3 / P-29.6 / P-14.5] 通用保留支化烷基 isobutyl/sec-butyl/neopentyl/isopentyl + sec- 字母序 [+20 tests, dual 6.8%→6.8% 持平, fails 3784]
+[#8964095][IUPAC P-22.2.1] 保留母体 1H-pyrazole（1,2-diazole；NH=1/N=2；单甲基/单卤） [+11 tests, dual 6.8%(278)→6.9%(279), fails 3784→3783]
 
 ## 其他
 - 基线(本轮前): en=6.9%(281/4062) zh=28.2%(213/756) dual=6.8%(278/4062)
-- 本次: en=6.9%(281/4062) zh=28.2%(213/756) dual=6.8%(278/4062) fails=3784（**无 dual 增益**）
-- 改动: L2 `side_alkyl` 拓扑 isobutyl/sec-butyl/neopentyl/isopentyl；L3 `_BRANCH_CHECKS` 表驱动；`alkyl_alpha_key` strip sec-
-- 验证: 异/仲丁基/新戊/异戊基苯+酚/环己烷；isopropyl/tert-butyl/butyl 不回归
-- 已知缺口: 2-isobutylbenzoic 等 arene FG 支化侧链；支化烷氧基；N-支化烷基；pyrazole；diazine 取代
-- 下一步候选: pyrazole(1,2-diazole)；或 diazine 简单取代；或 arene FG 贯通支化烷基
+- 本次: en=6.9%(282/4062) zh=28.2%(213/756) dual=6.9%(279/4062) fails=3783
+- 改动: L2 diazole 公共抽取 + `_try_pyrazole_parent`；L4 复用 imidazole 定向；L5 `1H-pyrazole`/`吡唑`
+- 验证: 未取代/4-甲基吡唑；imidazole/pyrimidine 负例；structure_lint+pytest 绿；review PASS
+- 已知缺口: N-取代 pyrazole；diazine 简单取代；arene FG 支化侧链；indole/quinoline
+- 下一步候选: diazine 简单单取代（甲基/卤）；或 indole 保留母体；或 arene FG 贯通支化烷基
