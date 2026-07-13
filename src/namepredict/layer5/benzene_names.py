@@ -104,3 +104,26 @@ def pyridinecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
         return None
     return f"pyridine-{loc}-carboxylic acid", f"吡啶-{loc}-羧酸"
 
+
+def _pyridine_fg_loc(numbered: dict, key: str) -> int | None:
+    parent = numbered.get("parent") or {}
+    chain = parent.get("chain") or []
+    attach = parent.get(key)
+    if attach is None or attach not in chain:
+        return None
+    return chain.index(attach) + 1
+
+
+def pyridinamine_names(numbered: dict) -> tuple[str, str] | None:
+    loc = numbered.get("amine_locant") or _pyridine_fg_loc(numbered, "amine_c_idx")
+    if loc is None:
+        return None
+    return f"pyridin-{loc}-amine", f"吡啶-{loc}-胺"
+
+
+def pyridinol_names(numbered: dict) -> tuple[str, str] | None:
+    loc = numbered.get("oh_locant") or _pyridine_fg_loc(numbered, "oh_c_idx")
+    if loc is None:
+        return None
+    return f"pyridin-{loc}-ol", f"吡啶-{loc}-醇"
+

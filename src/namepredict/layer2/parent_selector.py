@@ -10,6 +10,7 @@ from namepredict.layer2.cyclo_carboxylic import _try_cycloalkanecarboxylic_paren
 from namepredict.layer2.heteroarene5 import _try_diazine_parent, _try_hetero5_parent
 from namepredict.layer2.pyridine import (
     _try_pyridine_parent, _try_pyridinecarboxylic_parent,
+    _try_pyridin_fg_parent,
 )
 from namepredict.layer2.ring_parent import (
     _benzenediol_parent, _endocyclic_double, _is_simple_aniline,
@@ -153,21 +154,23 @@ def _dione_parent(info: dict) -> dict:
     return _cover_parent(info, "ketones", 2, "dione", "ketone_c_idxs")
 def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
     return {"chain": chain, "n_carbons": len(chain), "kind": kind, **kw}
+def _ring_fg_try(info: dict, pairs, ekey: str, ckey: str) -> dict | None:
+    for pred, kind in pairs:
+        if pred(info):
+            return _cyclo_fg_parent(info, kind, ekey, ckey)
+    return None
 def _ring_alcohol_parent(info: dict) -> dict | None:
     if _is_simple_benzenediol(info):
         return _benzenediol_parent(info)
-    for pred, kind in ((_is_simple_phenol, "phenol"), (_is_simple_cycloalcohol, "cycloalcohol")):
-        if pred(info):
-            return _cyclo_fg_parent(info, kind, "hydroxyls", "oh_c_idx")
-    return None
+    return _try_pyridin_fg_parent(info) or _ring_fg_try(
+        info, ((_is_simple_phenol, "phenol"), (_is_simple_cycloalcohol, "cycloalcohol")),
+        "hydroxyls", "oh_c_idx",
+    )
 def _alcohol_parent(info: dict) -> dict:
     ring = _ring_alcohol_parent(info)
-    if ring is not None:
-        return ring
-    if _is_simple_alkanetriol(info):
-        return _triol_parent(info)
-    if _is_simple_alkanediol(info):
-        return _diol_parent(info)
+    if ring is not None: return ring
+    if _is_simple_alkanetriol(info): return _triol_parent(info)
+    if _is_simple_alkanediol(info): return _diol_parent(info)
     return _unsat_or_sat(
         info, "has_alcohol", "hydroxyls", _ALKENOL_BAD, "alkenol", "alcohol", "oh_c_idx",
     )
@@ -188,45 +191,37 @@ def _amine_of_deg(info: dict, deg: int) -> dict | None:
     return ams[0] if len(ams) == 1 and len(info.get("amines") or []) == 1 else None
 def _n_arms(info: dict, deg: int) -> list[list[int]] | None:
     am = _amine_of_deg(info, deg)
-    if am is None:
-        return None
+    if am is None: return None
     mol, n_idx, cs = info["mol"], am["n_idx"], am["c_idxs"]
     arms = [_longest_from(mol, c, set()) for c in cs]
     return arms if all(_arm_ok(mol, a, n_idx) for a in arms) else None
 def _sec_amine_parent(info: dict) -> dict | None:
-    if not _is_open_sat(info) or not _no_fgs(info, _DIAMINE_BAD):
-        return None
+    if not _is_open_sat(info) or not _no_fgs(info, _DIAMINE_BAD): return None
     arms = _n_arms(info, 2)
-    if arms is None:
-        return None
+    if arms is None: return None
     parent, n_arm = (arms[0], arms[1]) if len(arms[0]) >= len(arms[1]) else (arms[1], arms[0])
     return _parent_dict(parent, "sec_amine", amine_c_idx=parent[0], n_alkyl_n=len(n_arm))
 def _tert_amine_parent(info: dict) -> dict | None:
-    if not _is_open_sat(info) or not _no_fgs(info, _DIAMINE_BAD):
-        return None
+    if not _is_open_sat(info) or not _no_fgs(info, _DIAMINE_BAD): return None
     arms = _n_arms(info, 3)
-    if arms is None:
-        return None
+    if arms is None: return None
     arms = sorted(arms, key=len, reverse=True)
     parent, ns = arms[0], [len(a) for a in arms[1:]]
     return _parent_dict(parent, "tert_amine", amine_c_idx=parent[0], n_alkyl_ns=ns)
 def _primary_amine_parent(info: dict) -> dict:
     prim = next((a for a in info.get("amines") or [] if "c_idx" in a), None)
-    if prim is None:
-        return _parent_dict(_longest_chain(info["mol"]), "alkane")
-    c = prim["c_idx"]
-    return _parent_dict(_chain_through(info, c), "amine", amine_c_idx=c)
+    if prim is None: return _parent_dict(_longest_chain(info["mol"]), "alkane")
+    return _parent_dict(_chain_through(info, prim["c_idx"]), "amine", amine_c_idx=prim["c_idx"])
+def _ring_amine_parent(info: dict) -> dict | None:
+    return _try_pyridin_fg_parent(info) or _ring_fg_try(
+        info, ((_is_simple_aniline, "aniline"), (_is_simple_cycloamine, "cycloamine")),
+        "amines", "amine_c_idx",
+    )
 def _amine_parent(info: dict) -> dict:
-    for pred, kind in ((_is_simple_aniline, "aniline"), (_is_simple_cycloamine, "cycloamine")):
-        if pred(info):
-            return _cyclo_fg_parent(info, kind, "amines", "amine_c_idx")
-    if _is_simple_alkanediamine(info):
-        return _diamine_parent(info)
-    tert = _tert_amine_parent(info)
-    if tert is not None:
-        return tert
-    sec = _sec_amine_parent(info)
-    return sec if sec is not None else _primary_amine_parent(info)
+    ring = _ring_amine_parent(info)
+    if ring is not None: return ring
+    if _is_simple_alkanediamine(info): return _diamine_parent(info)
+    return _tert_amine_parent(info) or _sec_amine_parent(info) or _primary_amine_parent(info)
 _ETHER_BAD = _CORE_BAD + ("has_amine", "has_alcohol", "has_thiol", "has_sulfide")
 _SULFIDE_BAD = _CORE_BAD + ("has_amine", "has_alcohol", "has_thiol", "has_ether")
 def _ether_arms(info: dict) -> tuple[list[int], list[int], dict] | None:

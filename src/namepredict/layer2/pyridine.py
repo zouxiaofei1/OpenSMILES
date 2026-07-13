@@ -1,4 +1,4 @@
-"""Retained pyridine / pyridinecarboxylic parents (IUPAC P-22.2.1)."""
+"""Retained pyridine / pyridinecarboxylic / pyridinamine / pyridinol parents."""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
@@ -10,8 +10,13 @@ from namepredict.layer2.arene_carbonyl import (
     _cooh_oxygen_idxs,
 )
 from namepredict.layer2.ring_parent import (
+    _arene_fg_subs_ok,
     _benzene_subs_ok,
+    _mono_amine_on_ring,
+    _mono_oh_on_ring,
     _outside_ok,
+    _ring_halo_n,
+    _ring_side_starts,
 )
 
 
@@ -98,3 +103,71 @@ def _try_pyridinecarboxylic_parent(info: dict) -> dict | None:
     if not _is_simple_pyridinecarboxylic(info):
         return None
     return _pyridinecarboxylic_parent(info)
+
+
+def _pyridine_fg_conflict(info: dict, *extra: str) -> bool:
+    bad = (
+        "has_acid", "has_ester", "has_amide", "has_nitrile",
+        "has_aldehyde", "has_ketone", "has_acyl_chloride", "has_anhydride",
+        *extra,
+    )
+    return any(info.get(k) for k in bad)
+
+
+def _pyridine_subs_ok(mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
+    """Allow FG heteroatoms plus at most one ring mono-halo or mono-methyl."""
+    if not _arene_fg_subs_ok(mol, ring_set, allowed, 0, 0, 0, None):
+        return False
+    starts = _ring_side_starts(mol, ring_set)
+    return _ring_halo_n(mol, ring_set) + len(starts) <= 1
+
+
+def _is_simple_pyridinamine(info: dict) -> bool:
+    if not _is_pyridine_core(info) or _pyridine_fg_conflict(info, "has_alcohol"):
+        return False
+    mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
+    am = _mono_amine_on_ring(info, ring)
+    if am is None or am.get("degree") != 1:
+        return False
+    return _pyridine_subs_ok(mol, ring, {am["n_idx"]})
+
+
+def _pyridinamine_parent(info: dict) -> dict:
+    ring = list(info["rings"][0]["atom_ids"])
+    return {
+        "chain": ring, "n_carbons": 6, "kind": "pyridinamine",
+        "n_idx": _pyridine_n_idx(info),
+        "amine_c_idx": info["amines"][0]["c_idx"],
+    }
+
+
+def _try_pyridinamine_parent(info: dict) -> dict | None:
+    return _pyridinamine_parent(info) if _is_simple_pyridinamine(info) else None
+
+
+def _is_simple_pyridinol(info: dict) -> bool:
+    if not _is_pyridine_core(info) or _pyridine_fg_conflict(info, "has_amine"):
+        return False
+    mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
+    oh = _mono_oh_on_ring(info, ring)
+    if oh is None:
+        return False
+    return _pyridine_subs_ok(mol, ring, {oh["o_idx"]})
+
+
+def _pyridinol_parent(info: dict) -> dict:
+    ring = list(info["rings"][0]["atom_ids"])
+    return {
+        "chain": ring, "n_carbons": 6, "kind": "pyridinol",
+        "n_idx": _pyridine_n_idx(info),
+        "oh_c_idx": info["hydroxyls"][0]["c_idx"],
+    }
+
+
+def _try_pyridinol_parent(info: dict) -> dict | None:
+    return _pyridinol_parent(info) if _is_simple_pyridinol(info) else None
+
+
+def _try_pyridin_fg_parent(info: dict) -> dict | None:
+    """Prefer pyridinamine, else pyridinol (FG-priority parents)."""
+    return _try_pyridinamine_parent(info) or _try_pyridinol_parent(info)

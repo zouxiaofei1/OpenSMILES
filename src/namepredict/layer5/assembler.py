@@ -29,6 +29,7 @@ from namepredict.layer5.stems import (
 from namepredict.layer5.benzene_names import (
     arene_fg_parent_names, benzene_parent_names, benzene_prefix,
     benzoate_parent_names, benzenediol_names, pyridinecarboxylic_names,
+    pyridinamine_names, pyridinol_names,
 )
 from namepredict.types import NameResult
 MULT_EN = {
@@ -264,8 +265,6 @@ def _acid_table(n: int, loc) -> dict:
         "alkenal": lambda: _alkenal_names(n, loc),
         "aldehyde": lambda: _aldehyde_names(n), "amide": lambda: _amide_names(n),
     }
-
-
 def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
     from namepredict.layer5.unsat_acid import alkenoic_acid_names, alkenedioic_names
     if kind == "alkenedioic":
@@ -333,7 +332,6 @@ def _amine_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | No
     return _amine_names(
         n, numbered.get("amine_locant"), numbered.get("omit_amine_locant", False)
     )
-
 def _sym_ether_names(n: int) -> tuple[str, str] | None:
     return _pair(ETHER_SYM_EN, ETHER_SYM_ZH, n)
 def _asym_ether_names(parent_n: int, alkoxy_n: int) -> tuple[str, str] | None:
@@ -415,6 +413,8 @@ def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None
     if kind == "cycloalkane": return _cycloalkane_names(n)
     if kind == "benzene": return benzene_parent_names(numbered)
     if kind == "pyridinecarboxylic": return pyridinecarboxylic_names(numbered)
+    if kind == "pyridinamine": return pyridinamine_names(numbered)
+    if kind == "pyridinol": return pyridinol_names(numbered)
     if kind == "benzoate": return benzoate_parent_names(numbered, _build_prefix)
     return arene_fg_parent_names(kind) or _alkane_names(n)
 def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
@@ -487,8 +487,6 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "benzoate":
         return "", ""
     return _build_prefix(numbered.get("substituents") or [], n, kind)
-
-
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     kind, n = _parent_n(numbered)
     names = _names_for(kind, n, numbered)
