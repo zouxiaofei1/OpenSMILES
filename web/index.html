@@ -224,52 +224,86 @@
 
           <!-- Namer -->
           <section id="panel-namer" class="tab-panel" role="tabpanel" aria-labelledby="tab-namer" hidden>
-            <div class="card namer-card">
-              <h3 class="card-title">SMILES Namer</h3>
-              <form id="namer-form" class="namer-form" autocomplete="off">
-                <label class="field-label" for="smiles-input">SMILES</label>
-                <div class="namer-row">
-                  <input
-                    id="smiles-input"
-                    name="smiles"
-                    class="input mono"
-                    type="text"
-                    placeholder="e.g. CCO"
-                    required
-                    spellcheck="false"
-                    aria-describedby="namer-error"
-                  />
-                  <button type="submit" id="btn-name" class="btn btn-primary" aria-label="Name SMILES">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
-                      <path d="M8.5 2h7" />
-                      <path d="M7 16h10" />
-                    </svg>
-                    <span>Name</span>
-                  </button>
+            <div id="namer-layout" class="namer-layout">
+              <div class="card namer-structure-card">
+                <div class="card-head row-between">
+                  <h3 class="card-title">Structure</h3>
+                  <div class="namer-structure-actions">
+                    <button type="button" id="btn-load-smiles" class="btn btn-secondary btn-sm" disabled>
+                      从 SMILES 载入
+                    </button>
+                    <button type="button" id="btn-clear-ketcher" class="btn btn-ghost btn-sm" disabled>
+                      清空画板
+                    </button>
+                  </div>
                 </div>
-                <p id="namer-error" class="field-error" role="alert" hidden></p>
-              </form>
-              <div id="namer-result" class="namer-result hidden" aria-live="polite">
-                <div class="result-head">
-                  <span id="namer-success" class="badge">—</span>
-                  <span id="namer-time" class="muted-text small mono"></span>
+                <div class="ketcher-wrap">
+                  <iframe
+                    id="ketcher-frame"
+                    class="ketcher-frame"
+                    title="Ketcher molecule editor"
+                    src="about:blank"
+                  ></iframe>
+                  <div id="ketcher-fallback" class="ketcher-fallback" hidden>
+                    <p class="empty-title">Ketcher 未安装</p>
+                    <p class="empty-sub">请将构建产物放到 <code>web/vendor/ketcher/</code>，或运行 <code>bash tools/build_ketcher_vendor.sh</code>。文本 SMILES 命名仍可用。</p>
+                  </div>
                 </div>
-                <dl class="kv">
-                  <div><dt>en</dt><dd id="namer-en" class="mono">—</dd></div>
-                  <div><dt>zh</dt><dd id="namer-zh" class="mono">—</dd></div>
-                  <div><dt>source</dt><dd id="namer-source" class="mono">—</dd></div>
-                </dl>
               </div>
-            </div>
-            <div class="card">
-              <div class="card-head row-between">
-                <h3 class="card-title">Recent (20)</h3>
-                <button type="button" id="btn-clear-history" class="btn btn-ghost btn-sm">清空</button>
+              <div class="namer-side">
+                <div class="card namer-card">
+                  <h3 class="card-title">SMILES Namer</h3>
+                  <form id="namer-form" class="namer-form" autocomplete="off">
+                    <label class="field-label" for="smiles-input">SMILES</label>
+                    <div class="namer-row">
+                      <input
+                        id="smiles-input"
+                        name="smiles"
+                        class="input mono"
+                        type="text"
+                        placeholder="e.g. CCO"
+                        required
+                        spellcheck="false"
+                        aria-describedby="namer-error live-name-hint"
+                      />
+                      <button type="submit" id="btn-name" class="btn btn-primary" aria-label="Name SMILES">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
+                          <path d="M8.5 2h7" />
+                          <path d="M7 16h10" />
+                        </svg>
+                        <span>Name</span>
+                      </button>
+                    </div>
+                    <label class="live-toggle">
+                      <input type="checkbox" id="live-name-toggle" />
+                      <span>实时命名</span>
+                    </label>
+                    <p id="live-name-hint" class="muted-text small">结构变化后约 0.7s 自动命名（默认关）</p>
+                    <p id="namer-error" class="field-error" role="alert" hidden></p>
+                  </form>
+                  <div id="namer-result" class="namer-result hidden" aria-live="polite">
+                    <div class="result-head">
+                      <span id="namer-success" class="badge">—</span>
+                      <span id="namer-time" class="muted-text small mono"></span>
+                    </div>
+                    <dl class="kv">
+                      <div><dt>en</dt><dd id="namer-en" class="mono">—</dd></div>
+                      <div><dt>zh</dt><dd id="namer-zh" class="mono">—</dd></div>
+                      <div><dt>source</dt><dd id="namer-source" class="mono">—</dd></div>
+                    </dl>
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-head row-between">
+                    <h3 class="card-title">Recent (20)</h3>
+                    <button type="button" id="btn-clear-history" class="btn btn-ghost btn-sm">清空</button>
+                  </div>
+                  <ul id="namer-history" class="history-list">
+                    <li class="muted-text small">尚无命名记录</li>
+                  </ul>
+                </div>
               </div>
-              <ul id="namer-history" class="history-list">
-                <li class="muted-text small">尚无命名记录</li>
-              </ul>
             </div>
           </section>
 
@@ -293,6 +327,7 @@
       </main>
     </div>
   </div>
+  <script src="/js/namer-ketcher.js"></script>
   <script src="/js/app.js" defer></script>
 </body>
 </html>
