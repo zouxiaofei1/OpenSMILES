@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.layer2.side_alkyl import _side_covers
+
 
 def _all_carbons_are_c(mol: Mol, atom_ids: tuple) -> bool:
     return all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atom_ids)
@@ -351,7 +353,10 @@ def _mono_benzene_ok(
 ) -> bool:
     if not starts:
         return True
-    return len(_outside_carbons(mol, ring_set, exclude)) in (1, 2)
+    if len(starts) != 1:
+        return False
+    outside = set(_outside_carbons(mol, ring_set, exclude))
+    return _side_covers(mol, starts[0], ring_set, outside)
 
 
 def _multi_benzene_ok(
