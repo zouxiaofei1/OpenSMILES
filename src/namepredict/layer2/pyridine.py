@@ -10,12 +10,15 @@ from namepredict.layer2.arene_carbonyl import (
     _cooh_oxygen_idxs,
 )
 from namepredict.layer2.ring_parent import (
+    _arene_alkoxy,
     _arene_fg_subs_ok,
     _benzene_subs_ok,
     _mono_amine_on_ring,
     _mono_oh_on_ring,
     _outside_ok,
     _ring_halo_n,
+    _ring_nitro_atoms,
+    _ring_nitro_n,
     _ring_side_starts,
 )
 
@@ -60,9 +63,11 @@ def _is_simple_pyridine(info: dict) -> bool:
     if not _is_pyridine_core(info) or _pyridine_fg_block(info):
         return False
     mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
-    if not _outside_ok(mol, ring):
+    alk, n_alk = _arene_alkoxy(info, ring)
+    allowed = _ring_nitro_atoms(info, ring) | alk
+    if not _outside_ok(mol, ring, allowed):
         return False
-    return _benzene_subs_ok(mol, ring)
+    return _benzene_subs_ok(mol, ring, _ring_nitro_n(info, ring), n_alk, alk)
 
 
 def _pyridine_parent(info: dict) -> dict:
