@@ -119,7 +119,7 @@ def pyridinecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
     loc = _pyridine_cooh_loc(numbered)
     if loc is None:
         return None
-    return f"pyridine-{loc}-carboxylic acid", f"吡啶-{loc}-羧酸"
+    return f"pyridine-{loc}-carboxylic acid", f"吡啶-{loc}-甲酸"
 
 
 def _pyridine_fg_loc(numbered: dict, key: str) -> int | None:

@@ -16,8 +16,8 @@ CASES = [
     ("Cc1ccccn1", "2-methylpyridine", "2-甲基吡啶"),
     ("Clc1ccccn1", "2-chloropyridine", "2-氯吡啶"),
     # positive: pyridinecarboxylic acids (N=1)
-    ("OC(=O)c1ccccn1", "pyridine-2-carboxylic acid", "吡啶-2-羧酸"),
-    ("OC(=O)c1cccnc1", "pyridine-3-carboxylic acid", "吡啶-3-羧酸"),
+    ("OC(=O)c1ccccn1", "pyridine-2-carboxylic acid", "吡啶-2-甲酸"),
+    ("OC(=O)c1cccnc1", "pyridine-3-carboxylic acid", "吡啶-3-甲酸"),
     # negative: carbocycles / simple chain must stay correct
     ("c1ccccc1", "benzene", "苯"),
     ("Cc1ccccc1", "toluene", "甲苯"),

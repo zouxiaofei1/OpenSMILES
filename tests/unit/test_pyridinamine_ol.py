@@ -51,7 +51,7 @@ CASES = [
     ("Nc1ccccc1", "aniline", "苯胺"),
     ("Oc1ccccc1", "phenol", "苯酚"),
     ("CCN", "ethanamine", "乙胺"),
-    ("OC(=O)c1ccccn1", "pyridine-2-carboxylic acid", "吡啶-2-羧酸"),
+    ("OC(=O)c1ccccn1", "pyridine-2-carboxylic acid", "吡啶-2-甲酸"),
     # negative: mono-methyl / mono-halo retained pyridine (no amine/ol FG)
     ("Cc1ccccn1", "2-methylpyridine", "2-甲基吡啶"),
     ("Clc1ccccn1", "2-chloropyridine", "2-氯吡啶"),
