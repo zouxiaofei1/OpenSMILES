@@ -1,0 +1,26 @@
+## 代码审查报告
+- **范围**: `src/namepredict/layer1/analyzer.py`, `src/namepredict/layer2/ring_parent.py`, `src/namepredict/layer3/substituent_extractor.py`, `tests/unit/test_nitrobenzene.py`
+- **主规则/意图**: IUPAC P-61.5.1 硝基前缀 nitro：L1 检测 + L2 苯/酚/苯胺环上允许 + L3 前缀提取（L5 走通用前缀路径）
+- **选题同意**: 是
+- **选题意见**: 与 `workstate.md`「下一步候选: 硝基苯」一致；P-61.5.1 前缀规则粒度合适，不是单 SMILES 特判。实现按系统路径（检测→母体放行→取代基→通用组装），顺带 nitromethane 是同一规则在烷烃母体上的自然结果，可接受。dual +5、fails −5，有结构推进。
+- **共识状态**: 一致（往返轮次: 0）
+- **Layer**: L1 检测 / L2 母体放行 / L3 取代基；无 L5 糊名；无跨层 import 或职责错位
+- **structure_lint**: pass（`python tools/structure_lint.py --root src/namepredict`）
+- **pytest**: pass（`test_nitrobenzene` + simple/multi benzene + phenol_aniline: 48 passed；namepredict 相关 unit 忽略无关 API 收集错误后 626 passed）
+- **benchmark**: dual 5.4%(219/4062) → 5.5%(224/4062)；fails 3843→3838；en=5.5%(224) zh=22.8%(172)；**中英文双重准确: 5.5%**
+- **体量**: 函数体超限 0 处；文件超限 0 处（analyzer 471 / ring_parent 394 / substituent_extractor 274；新函数体均 ≤10）
+- **架构**: 无问题。L5 未改，依赖既有 `en`/`zh` 前缀组装与 benzene 省略一元位次；酚用既有 `oh_c_idx` 定向得 4-nitrophenol。
+- **化学逻辑**: 主路径无问题。
+  - `_is_nitro_nitrogen`：N 形式电荷 +1、重原子邻接 2O+1C，符合 RDKit 标准硝基；不与胺（需 C/H 计数）或醚（O 需连 2C）混淆。
+  - `_outside_ok` / `_arene_fg_subs_ok` 经 `_ring_nitro_atoms` 放行环硝基 N/O；苯取代计数含 nitro；酚/苯胺 ≤2 额外取代含 nitro。
+  - 无 SMILES `==` 特判。
+  - **已知缺口（非本轮阻断）**: 硝基苯甲酸等仍因 `arene_carbonyl` 未放行 nitro 而落回开链酸，现可拼出错误的 `5-nitroheptanoic acid`（金标无简单 4-nitrobenzoic；dual 未回退）。后续应在 benzoic/benzaldehyde/acetophenone 路径允许 nitro 前缀。
+- **路径合规**: 可写范围内（仅 layer1–3 + tests/unit）
+- **代码质量**: 合格（与选题解耦：代码与选题均合格）
+- **裁决**: PASS
+- **必须修改**（FIX 时逐条可执行）:
+  - （无）
+- **回滚原因**（ROLLBACK 时）: （无）
+- **挑战要点**（CHALLENGE 时）: （无）
+- **可提交摘要**（仅 PASS 时，供 workstate）:
+  [#pending][IUPAC P-61.5.1] 硝基前缀 nitro：L1 检测 + 苯/酚/苯胺环上允许 + L3 前缀；nitromethane 顺带 [+nitrobenzene tests, dual 5.4%→5.5% (219→224), fails 3843→3838]

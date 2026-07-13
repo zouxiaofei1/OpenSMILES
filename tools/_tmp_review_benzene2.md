@@ -1,0 +1,26 @@
+## 代码审查报告
+- **范围**: `src/namepredict/layer2/ring_parent.py`, `src/namepredict/layer2/parent_selector.py`, `src/namepredict/layer4/numbering.py`, `src/namepredict/layer5/assembler.py`, `tests/unit/test_simple_benzene.py`
+- **主规则/意图**: 保留名苯母体（P-22.1.3）— 未取代 / 单卤 / 单 C1–C2 正烷基苯；本轮 re-review 核实「不饱和侧链不得当作纯烷基 → ethylbenzene」FIX
+- **选题同意**: 是
+- **选题意见**: 同意。芳环单取代是 workstate「下一步候选」方向；切片为自然规则边界（苯核 + 单取代 C1–C2/卤），非单 SMILES 特判；dual +7（180→187）有结构推进。上轮 FIX 点为化学正确性收口，非扩题
+- **共识状态**: 一致（往返轮次: 2，本轮 re-review）
+- **Layer**: L2 选 `benzene` 母体；L4 复用环向编号（单取代省略位次）；L5 组装 benzene/toluene/alkylbenzene。无越界；非 L5 糊同分
+- **structure_lint**: pass（`structure_lint: ok`）
+- **pytest**: pass — `test_simple_benzene.py` 14 passed；`tests/unit` 553 passed（忽略无关 API 收集错误 `test_api_name` / `test_settings_api`）
+- **benchmark**: dual 4.4%(180) → 4.6%(187)；FIX 前后本轮 dual 同为 4.6%(187/4062) fails=3875，无回退。**中英文双重准确: 4.6%**
+- **体量**: 函数体超限 0 处；文件超限 0 处。关键：`_pure_alkyl_outside` 8；`_is_simple_benzene` 7；`_benzene_subs_ok` 7；`select_parent` 10
+- **架构**: 无问题。`_ring_parent` 编排 benzene→cycloalkane；`_pure_alkyl_outside` 为环侧链共享约束（苯与环烷一并受益）；L5 仅组装 + toluene 保留名，未重选母体
+- **化学逻辑**: 无问题（FIX 已落实）。
+  - 外侧碳到非 H 邻居须 `SINGLE`，`C=Cc1ccccc1` / `C#Cc1ccccc1` 不再命中 simple benzene → 实测 en ≠ `ethylbenzene`
+  - 正例：benzene / halo / toluene / ethylbenzene 仍绿
+  - 负例测例存在且未放宽 `normalize_*`
+  - 掉出范围后走开链 en/yne（如 styrene→`oct-1-ene`）属未实现芳烯/芳炔，非本轮范围；负例只禁错误母体，合理
+- **路径合规**: 可写范围内（layer2/4/5 + unit tests）；未触 `data/*` / benchmark 计分
+- **代码质量**: 合格（与选题解耦；FIX 为规则化键级约束，非 SMILES 映射）
+- **裁决**: PASS
+- **必须修改**（FIX 时逐条可执行）:
+  - （无）
+- **回滚原因**（ROLLBACK 时）: （无）
+- **挑战要点**（CHALLENGE 时）: （无）
+- **可提交摘要**（仅 PASS 时，供 workstate）:
+  [#pending][IUPAC P-22.1.3] 简单苯母体：未取代/单卤/单C1–C2烷基；`_pure_alkyl_outside` 拒不饱和侧链 [+14 tests, dual 4.4%(180)→4.6%(187)]

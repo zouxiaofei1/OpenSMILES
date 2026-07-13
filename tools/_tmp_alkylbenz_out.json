@@ -1,0 +1,62 @@
+[
+  {
+    "smiles": "CC(C)c1ccccc1",
+    "en": "isopropylbenzene",
+    "zh": "异丙基苯",
+    "ok": true
+  },
+  {
+    "smiles": "CCCc1ccccc1",
+    "en": "propylbenzene",
+    "zh": "丙基苯",
+    "ok": true
+  },
+  {
+    "smiles": "CCCCc1ccccc1",
+    "en": "butylbenzene",
+    "zh": "丁基苯",
+    "ok": true
+  },
+  {
+    "smiles": "CCc1ccccc1",
+    "en": "ethylbenzene",
+    "zh": "乙基苯",
+    "ok": true
+  },
+  {
+    "smiles": "Cc1ccccc1",
+    "en": "toluene",
+    "zh": "甲苯",
+    "ok": true
+  },
+  {
+    "smiles": "c1ccccc1",
+    "en": "benzene",
+    "zh": "苯",
+    "ok": true
+  },
+  {
+    "smiles": "Clc1ccccc1",
+    "en": "chlorobenzene",
+    "zh": "氯苯",
+    "ok": true
+  },
+  {
+    "smiles": "CCO",
+    "en": "ethanol",
+    "zh": "乙醇",
+    "ok": true
+  },
+  {
+    "smiles": "CC(C)C",
+    "en": "2-methylpropane",
+    "zh": "2-甲基丙烷",
+    "ok": true
+  },
+  {
+    "smiles": "Cc1ccc(C)cc1",
+    "en": "1,4-xylene",
+    "zh": "1,4-二甲基苯",
+    "ok": true
+  }
+]

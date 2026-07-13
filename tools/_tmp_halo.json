@@ -1,0 +1,87 @@
+[
+  {
+    "smiles": "CCCl",
+    "en": "chloroethane",
+    "zh": "氯乙烷"
+  },
+  {
+    "smiles": "CCBr",
+    "en": "bromoethane",
+    "zh": "溴乙烷"
+  },
+  {
+    "smiles": "ClCCCl",
+    "en": "1,2-dichloroethane",
+    "zh": "1,2-二氯乙烷"
+  },
+  {
+    "smiles": "CC(Cl)C",
+    "en": "2-chloropropane",
+    "zh": "2-氯丙烷"
+  },
+  {
+    "smiles": "CC(Br)CC",
+    "en": "2-bromobutane",
+    "zh": "2-溴丁烷"
+  },
+  {
+    "smiles": "CC(C)CCl",
+    "en": "1-chloro-2-methylpropane",
+    "zh": "1-氯-2-甲基丙烷"
+  },
+  {
+    "smiles": "CCCCF",
+    "en": "1-fluorobutane",
+    "zh": "1-氟丁烷"
+  },
+  {
+    "smiles": "CCCCCI",
+    "en": "1-iodopentane",
+    "zh": "1-碘戊烷"
+  },
+  {
+    "smiles": "BrC(C)CC(C)C",
+    "en": "2-bromo-4-methylpentane",
+    "zh": "2-溴-4-甲基戊烷"
+  },
+  {
+    "smiles": "ClCCCCCCCCCC",
+    "en": "1-chlorodecane",
+    "zh": "1-氯癸烷"
+  },
+  {
+    "smiles": "FC(C(C(C(C(F)(F)F)(I)C(F)(F)F)(F)F)(F)F)(F)F",
+    "en": "decafluoro-2-iodo-2-(trifluoromethyl)pentane",
+    "zh": "全氟(2-碘-2-甲基戊烷)"
+  },
+  {
+    "smiles": "CC(Br)(Br)C(C)Br",
+    "en": "2,2,3-tribromobutane",
+    "zh": "2,2,3-三溴丁烷"
+  },
+  {
+    "smiles": "FC(C(C(F)(F)F)(F)I)(F)F",
+    "en": "heptafluoro-2-iodopropane",
+    "zh": "七氟-2-碘丙烷"
+  },
+  {
+    "smiles": "CCCCCCCCCCCCCCI",
+    "en": "1-iodotetradecane",
+    "zh": ""
+  },
+  {
+    "smiles": "BrCBr",
+    "en": "dibromomethane",
+    "zh": ""
+  },
+  {
+    "smiles": "ClC(Cl)C(Cl)(Cl)Cl",
+    "en": "1,1,1,2,2-pentachloroethane",
+    "zh": ""
+  },
+  {
+    "smiles": "CF",
+    "en": "fluoromethane",
+    "zh": ""
+  }
+]
