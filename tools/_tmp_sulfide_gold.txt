@@ -1,3 +1,0 @@
-{'id': 'tiers-66', 'smiles': 'CCSC', 'english_name': 'ethyl methyl sulfide', 'chinese_name': '乙基甲基硫醚', 'source': 'smiles_tiers', 'tier': 2, 'features': ['thioether'], 'eval_en': True, 'eval_zh': True}
-ethyl methyl sulfide
-乙基甲基硫醚

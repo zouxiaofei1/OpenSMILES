@@ -1,8 +1,0 @@
-CCSC => ethyl methyl sulfide | 乙基甲基硫醚
-CSC => dimethyl sulfide | 二甲硫醚
-CCSCC => diethyl sulfide | 二乙硫醚
-CCCSC => methyl propyl sulfide | 甲基丙基硫醚
-CCCSCCC => dipropyl sulfide | 二丙硫醚
-CCS => ethanethiol | 乙硫醇
-CCOCC => diethyl ether | 二乙基醚
-CCO => ethanol | 乙醇

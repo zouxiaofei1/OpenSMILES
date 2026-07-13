@@ -76,9 +76,3 @@
 [#5ea08e4][IUPAC P-65.1.1 / 中文] pyridinecarboxylic 中文羧酸→甲酸（对齐 benzoic/cyclo/金标） [+5 tests, dual 6.9%(281)→7.0%(283), fails 3781→3779]
 
 ## 其他
-- 基线(本轮前): en=7.0%(284/4062) zh=28.3%(214/756) dual=6.9%(281/4062)
-- 本次: en=7.0%(284/4062) zh=28.6%(216/756) dual=7.0%(283/4062) fails=3779
-- 改动: L5 `pyridinecarboxylic_names` 羧酸→甲酸；相关单测期望同步
-- 验证: 吡啶-2/3/4-甲酸；benzoic/cyclohexanecarboxylic 不回归；review 共识环 CHALLENGE→PASS
-- 已知缺口: diazine 简单取代（金标多复杂/俗名川芎嗪）；indole 多取代/N-取代；quinoline；arene FG 支化侧链
-- 下一步候选: diazine 简单 Me/halo 取代（系统名；俗名策略另议）；或 indole 双简单取代；或 quinoline 保留母体

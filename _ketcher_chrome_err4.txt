@@ -1,3 +1,0 @@
-[23016:23176:0713/110528.555:INFO:components\enterprise\browser\controller\chrome_browser_cloud_management_controller.cc:239] No machine level policy manager exists.
-[23016:23284:0713/110528.616:ERROR:chrome\browser\extensions\external_registry_loader_win.cc:147] Missing value path for key Software\Google\Chrome\Extensions\ngpampappnmepgilojfohadhhmbhlaek.
-[23016:23176:0713/110530.406:INFO:CONSOLE:256093] "Uncaught (in promise) ReferenceError: global is not defined", source: http://127.0.0.1:8765/vendor/ketcher/assets/index-BCYr9Yqk.js (256093)
