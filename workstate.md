@@ -54,11 +54,12 @@
 [#15b936a][IUPAC P-63.1.4 / P-62.5] 氨基酚：phenol 母体 + 环上伯胺 amino 前缀（OH 优先） [+aminophenol tests, dual 5.5%(224)→5.6%(226), fails 3838→3836]
 [#686780c][IUPAC P-63.2.2] 芳环烷氧基 methoxy/ethoxy + anisole/苯甲醚 [+test_anisole, dual 5.6%(226)→5.7%(230), fails 3836→3832]
 [#1ec3b38][IUPAC P-44 / P-31.1] 开链不饱和二酸 alkenedioic：双COOH+单C=C；ene位次；(E/Z)前缀 [+test_alkenedioic, dual 5.7%(230)→5.7%(233), fails 3832→3829]
+[#da485de][IUPAC P-93.4 / P-31.1] 一元烯酸 alkenoic acid (E)/(Z) 前缀 [+test_alkenoic_ez, dual 5.7%(233)→5.8%(236), fails 3829→3826]
 
 ## 其他
-- 基线(本轮前): en=5.7%(231/4062) zh=23.3%(176/756) dual=5.7%(230/4062)
-- 本次: en=5.8%(234/4062) zh=23.5%(178/756) dual=5.7%(233/4062) fails=3829
-- 改动: L2 alkenedioic 母体(拒_open_sat)；L4 ene 位次；L5 (E/Z)-alk-n-enedioic acid / (E/Z)-X-n-烯二酸；抽 alkenedioic.py + unsat_acid.py
-- 验证: OC(=O)/C=C/C(=O)O→(E)-but-2-enedioic acid；/C=C\→(Z)；O=C(O)/C=C/CCC(=O)O→(E)-hex-2-enedioic；饱和二酸/单烯酸/苯甲酸不回归
-- 已知缺口: 硝基苯甲酸等 arene 羰基+nitro；支化烷基前缀；C3+烷基苯；多烯二酸；单烯酸补 E/Z
-- 下一步候选: arene 羰基+nitro 贯通；或 C3+烷基苯/异丙苯；或单烯酸 E/Z
+- 基线(本轮前): en=5.8%(234/4062) zh=23.5%(178/756) dual=5.7%(233/4062)
+- 本次: en=5.8%(237/4062) zh=23.5%(178/756) dual=5.8%(236/4062) fails=3826
+- 改动: unsat parent 带 mol；L5 复用 BondStereo 前缀到 alkenoic；无立体不加 (E)/(Z)
+- 验证: CCCCCC/C=C/C(=O)O→(E)-non-2-enoic acid；CC/C=C/CC(=O)O→(E)-hex-3-enoic；CCCCC/C=C\CCC(=O)O→(Z)-dec-4-enoic；OC(=O)C=C 仍 prop-2-enoic；烯二酸不回归
+- 已知缺口: 硝基苯甲酸等 arene 羰基+nitro；支化烷基前缀；C3+烷基苯/异丙苯；多烯二酸
+- 下一步候选: C3+烷基苯/异丙苯；或 arene 羰基+nitro 贯通；或支化烷基前缀
