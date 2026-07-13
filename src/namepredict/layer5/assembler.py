@@ -481,7 +481,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -
     en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit)
     return "-".join(en_parts), "-".join(zh_parts)
 def _join_name(prefix: str, parent: str) -> str:
-    return f"{prefix}{parent}" if prefix else parent
+    return (f"{prefix}-{parent}" if parent.startswith("1H-") else f"{prefix}{parent}") if prefix else parent
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "benzene":
         return benzene_prefix(numbered, _build_prefix)

@@ -1,6 +1,7 @@
 """Retained monocyclic heteroarene parents (IUPAC P-22.2.1 / P-22.1).
 
 Five-membered mono-hetero: furan / thiophene / 1H-pyrrole (optional monomethyl/monohalo).
+Five-membered di-aza: 1H-imidazole (optional monomethyl/monohalo).
 Six-membered diazines: pyrimidine / pyrazine / pyridazine (unsubstituted only).
 """
 from __future__ import annotations
@@ -161,3 +162,57 @@ def _diazine_parent(info: dict) -> dict:
 
 def _try_diazine_parent(info: dict) -> dict | None:
     return _diazine_parent(info) if _is_simple_diazine(info) else None
+
+
+def _is_imidazole_core(info: dict) -> bool:
+    atom_ids = _ring_atoms_if_mono(info)
+    if atom_ids is None or len(atom_ids) != 5:
+        return False
+    mol: Mol = info["mol"]
+    if not all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atom_ids):
+        return False
+    zs = _hetero5_zs(mol, atom_ids)
+    return zs.count(7) == 2 and zs.count(6) == 3
+
+
+def _ring_n_idxs(mol: Mol, ring: list[int]) -> list[int]:
+    return [i for i in ring if mol.GetAtomWithIdx(i).GetAtomicNum() == 7]
+
+
+def _nh_among(mol: Mol, ns: list[int]) -> int | None:
+    hs = [i for i in ns if mol.GetAtomWithIdx(i).GetTotalNumHs() >= 1]
+    return hs[0] if len(hs) == 1 else None
+
+
+def _imidazole_n_pair(info: dict) -> tuple[int, int] | None:
+    """Return (nh_idx, n_idx) for 1H-imidazole (1,3-diazole); else None."""
+    if not _is_imidazole_core(info):
+        return None
+    mol, ring = info["mol"], list(info["rings"][0]["atom_ids"])
+    ns = _ring_n_idxs(mol, ring)
+    if len(ns) != 2 or _ring_nn_dist(ring, ns) != 2:
+        return None
+    nh = _nh_among(mol, ns)
+    return None if nh is None else (nh, ns[0] if ns[1] == nh else ns[1])
+
+
+def _is_simple_imidazole(info: dict) -> bool:
+    if _imidazole_n_pair(info) is None or _hetero5_fg_block(info):
+        return False
+    mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
+    if not _outside_ok(mol, ring):
+        return False
+    return _hetero5_subs_ok(mol, ring)
+
+
+def _imidazole_parent(info: dict) -> dict:
+    ring = list(info["rings"][0]["atom_ids"])
+    nh, n = _imidazole_n_pair(info)
+    return {
+        "chain": ring, "n_carbons": 5, "kind": "imidazole",
+        "nh_idx": nh, "n_idx": n, "n_idxs": [nh, n],
+    }
+
+
+def _try_imidazole_parent(info: dict) -> dict | None:
+    return _imidazole_parent(info) if _is_simple_imidazole(info) else None

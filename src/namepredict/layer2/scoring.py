@@ -28,7 +28,8 @@ _FG_RANK = {
     "ether": 2, "sulfide": 2,
 }
 _HETERO_RING = frozenset(
-    {"pyridine", "furan", "thiophene", "pyrrole", "pyrimidine", "pyrazine", "pyridazine"}
+    {"pyridine", "furan", "thiophene", "pyrrole", "imidazole",
+     "pyrimidine", "pyrazine", "pyridazine"}
 )
 _CARBO_RING = frozenset({"benzene", "cycloalkane", "cycloalkene"})
 _RETAINED = frozenset(
