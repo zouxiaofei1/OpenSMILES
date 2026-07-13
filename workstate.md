@@ -50,11 +50,12 @@
 [#9a2042b][IUPAC P-65.1.1.1] 保留母体 benzoic acid/苯甲酸：环上≤2卤/甲基/羟基；COOH连接碳=1 [+benzoic tests, dual 5.1%(208)→5.3%(215), fails 3854→3847]
 [#77c8ca1][IUPAC P-66.6.1] 保留母体 benzaldehyde/苯甲醛：环上≤2卤/甲基/羟基；CHO连接碳=1 [+benzaldehyde tests, dual 5.3%(215)→5.4%(218), fails 3847→3844]
 [#2ce5ae1][IUPAC P-64.1.1] 保留母体 acetophenone/苯乙酮：环上≤2卤/甲基/羟基；乙酰连接碳=1；抽 arene_carbonyl [+acetophenone tests, dual 5.4%(218)→5.4%(219), fails 3844→3843]
+[#974452a][IUPAC P-61.5.1] 硝基前缀 nitro：L1 检测 + 苯/酚/苯胺环上允许 + L3 前缀；nitromethane 顺带 [+nitrobenzene tests, dual 5.4%(219)→5.5%(224), fails 3843→3838]
 
 ## 其他
-- 基线(本轮前): en=5.4%(218/4062) zh=22.4%(169/756) dual=5.4%(218/4062)
-- 本次: en=5.4%(219/4062) zh=22.5%(170/756) dual=5.4%(219/4062) fails=3843
-- 改动: L2 识别 Ph–CO–CH3（拒 propiophenone）；exclude 酮碳+甲基；L4 attach=1；L5 保留名；arene 羰基逻辑抽至 arene_carbonyl.py
-- 验证: CC(=O)c1ccccc1→acetophenone/苯乙酮；4-chloro/4-hydroxy 前缀正确；CCC(=O)c1ccccc1≠acetophenone；benzaldehyde/benzoic 不回归
-- 已知缺口: 氨基酚；硝基苯；烷氧基苯；不饱和二酸(E/Z)；支化烷基前缀；C3+烷基苯；propiophenone
-- 下一步候选: 硝基苯；或不饱和二酸(E/Z)；或氨基酚
+- 基线(本轮前): en=5.4%(219/4062) zh=22.5%(170/756) dual=5.4%(219/4062)
+- 本次: en=5.5%(224/4062) zh=22.8%(172/756) dual=5.5%(224/4062) fails=3838
+- 改动: L1 硝基(N+/2O/1C)；L2 环上 NO2 放行 outside_ok/酚/苯胺；L3 nitro 取代基；烷烃上顺带 nitromethane
+- 验证: [O-][N+](=O)c1ccccc1→nitrobenzene；O=[N+]([O-])c1cccc(I)c1→1-iodo-3-nitrobenzene；Oc1ccc([N+]([O-])=O)cc1→4-nitrophenol；benzene/chlorobenzene 不回归
+- 已知缺口: 硝基苯甲酸等 arene 羰基路径未放行 nitro；氨基酚；烷氧基苯；不饱和二酸(E/Z)；支化烷基前缀；C3+烷基苯
+- 下一步候选: 氨基酚；或不饱和二酸(E/Z)；或 arene 羰基+nitro 贯通
