@@ -69,11 +69,12 @@
 [#f64c0d6][IUPAC P-22.2.1] simple pyridine 环上取代对齐 benzene（alkoxy/nitro 门控） [+9 tests, dual 6.7%(273)→6.8%(276), fails 3789→3786]
 [#5652b1a][IUPAC P-22.1.1 / P-25] 保留母体 naphthalene（未取代+单甲基/单卤；1–8 位次） [+14 tests, dual 6.8%(276)→6.8%(277), fails 3786→3785]
 [#878ff39][IUPAC P-66.1.1.1.3] 简单开链 N-phenylalkanamide（L2 alkyl/phenyl meta + `_unsub_phenyl_at` + L3 n_phenyl） [+7 tests, dual 6.8%(277)→6.8%(278), fails 3785→3784]
+[#43b3eee][IUPAC P-29.3 / P-29.6 / P-14.5] 通用保留支化烷基 isobutyl/sec-butyl/neopentyl/isopentyl + sec- 字母序 [+20 tests, dual 6.8%→6.8% 持平, fails 3784]
 
 ## 其他
-- 基线(本轮前): en=6.9%(280/4062) zh=28.0%(212/756) dual=6.8%(277/4062)
-- 本次: en=6.9%(281/4062) zh=28.2%(213/756) dual=6.8%(278/4062) fails=3784
-- 改动: `_amide_n_meta` 拆 alkyl|phenyl；`_unsub_phenyl_at`；L3 `_extract_n_phenyl`
-- 验证: N-phenylacetamide/丙酰胺/甲酰胺；N-methyl/N,N-dimethyl 不回归；N-benzyl 不误收
-- 已知缺口: pyrazole；diazine 简单取代；N-benzyl/环上取代 N-aryl；assembler/ring_parent 499 行
-- 下一步候选: pyrazole(1,2-diazole)；或 diazine 简单取代；或通用支化烷基
+- 基线(本轮前): en=6.9%(281/4062) zh=28.2%(213/756) dual=6.8%(278/4062)
+- 本次: en=6.9%(281/4062) zh=28.2%(213/756) dual=6.8%(278/4062) fails=3784（**无 dual 增益**）
+- 改动: L2 `side_alkyl` 拓扑 isobutyl/sec-butyl/neopentyl/isopentyl；L3 `_BRANCH_CHECKS` 表驱动；`alkyl_alpha_key` strip sec-
+- 验证: 异/仲丁基/新戊/异戊基苯+酚/环己烷；isopropyl/tert-butyl/butyl 不回归
+- 已知缺口: 2-isobutylbenzoic 等 arene FG 支化侧链；支化烷氧基；N-支化烷基；pyrazole；diazine 取代
+- 下一步候选: pyrazole(1,2-diazole)；或 diazine 简单取代；或 arene FG 贯通支化烷基
