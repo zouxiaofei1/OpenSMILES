@@ -4,7 +4,11 @@ from rdkit.Chem import Mol
 
 from namepredict.layer2.side_alkyl import (
     _c_neighbors,
+    _is_isobutyl,
+    _is_isopentyl,
     _is_isopropyl,
+    _is_neopentyl,
+    _is_sec_butyl,
     _is_tert_butyl,
     _is_trifluoromethyl,
     _walk_linear,
@@ -12,8 +16,10 @@ from namepredict.layer2.side_alkyl import (
 
 
 def alkyl_alpha_key(stem: str) -> str:
-    """Alphanumerical-order key: italic prefixes like tert- are ignored (P-14.5.2)."""
-    return stem[5:] if stem.startswith("tert-") else stem
+    """Alphanumerical-order key: italic prefixes sec-/tert- ignored (P-14.5)."""
+    if stem.startswith("tert-") or stem.startswith("sec-"):
+        return stem[stem.index("-") + 1 :]
+    return stem
 
 ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
 ALKYL_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
@@ -43,25 +49,12 @@ def _make_alkyl(attach: int, path: list[int]) -> dict:
     }
 
 
-def _make_isopropyl(attach: int, atoms: list[int]) -> dict:
+def _make_branch(
+    attach: int, atoms: list[int], n: int, en: str, zh: str,
+) -> dict:
     return {
-        "kind": "alkyl",
-        "n_carbons": 3,
-        "attach_idx": attach,
-        "atoms": atoms,
-        "en": "isopropyl",
-        "zh": "异丙基",
-    }
-
-
-def _make_tert_butyl(attach: int, atoms: list[int]) -> dict:
-    return {
-        "kind": "alkyl",
-        "n_carbons": 4,
-        "attach_idx": attach,
-        "atoms": atoms,
-        "en": "tert-butyl",
-        "zh": "叔丁基",
+        "kind": "alkyl", "n_carbons": n, "attach_idx": attach,
+        "atoms": atoms, "en": en, "zh": zh,
     }
 
 
@@ -83,13 +76,21 @@ def _one_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict |
     return _one_branched(mol, attach, start, chain_set)
 
 
+_BRANCH_CHECKS = (
+    (_is_isopropyl, 3, "isopropyl", "异丙基"),
+    (_is_tert_butyl, 4, "tert-butyl", "叔丁基"),
+    (_is_isobutyl, 4, "isobutyl", "异丁基"),
+    (_is_sec_butyl, 4, "sec-butyl", "仲丁基"),
+    (_is_neopentyl, 5, "neopentyl", "新戊基"),
+    (_is_isopentyl, 5, "isopentyl", "异戊基"),
+)
+
+
 def _one_branched(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict | None:
-    atoms = _is_isopropyl(mol, start, chain_set)
-    if atoms:
-        return _make_isopropyl(attach, atoms)
-    tb = _is_tert_butyl(mol, start, chain_set)
-    if tb:
-        return _make_tert_butyl(attach, tb)
+    for fn, n, en, zh in _BRANCH_CHECKS:
+        atoms = fn(mol, start, chain_set)
+        if atoms:
+            return _make_branch(attach, atoms, n, en, zh)
     cf3 = _is_trifluoromethyl(mol, start, chain_set)
     return _make_cf3(attach, cf3) if cf3 else None
 
