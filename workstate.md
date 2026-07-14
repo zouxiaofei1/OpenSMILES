@@ -129,6 +129,7 @@
 [#556ed16][IUPAC P-92 / P-93] 母体链 CIP R/S 前缀；与 E/Z 合并 (E,8R)- [+11 tests, dual 11.3%(458)→12.8%(520), fails 3604→3542]
 [#b06bf8a][IUPAC P-92 / P-93] R/S扩展ketone/ester/杂环；酯methyl (2S)-；环单中心(R)-；禁C1假立体 [+13 tests, dual 12.8%(520)→13.0%(530), fails 3542→3532]
 [#5133dfa][IUPAC P-65.1.1 / P-22.2.1 / P-25] indolecarboxylic+naphthalenecarboxylic 保留母体修formic坍缩 [+11 tests, dual 13.0%(530)→13.2%(535), fails 3532→3527]
+[#58600bf][IUPAC P-65.1.2] 开链饱和 diacid 允许 hydroxy/amino/oxo 前缀(…dioic acid/…dioate) [+9 tests, dual 13.2%(535)→13.5%(547), fails 3527→3515]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多羧酸根/磷酸盐未做
 - 炔醇/带复杂侧链多烯醇未做
