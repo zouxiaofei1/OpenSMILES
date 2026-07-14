@@ -35,7 +35,7 @@ from namepredict.layer2.chain_walk import (
     _chain_through_two, _longest_chain, _longest_from,
 )
 from namepredict.layer2.polyalkenol import _polyalkenol_parent as _try_polyalkenol
-from namepredict.layer2.hydroxy_alkenoic import _hy_alkenoic_parent as _try_hy_alkenoic
+from namepredict.layer2.prefix_alkenoic import _prefix_alkenoic_parent as _try_hy_alkenoic
 def _no_fgs(info: dict, keys: tuple) -> bool:
     return not any(info.get(k) for k in keys)
 _CORE_BAD = (
@@ -250,10 +250,9 @@ def _sulfide_parent(info: dict) -> dict | None:
     return _parent_dict(
         parent, "sulfide", s_idx=e["s_idx"], alkyl_ns=(len(a1), len(a2)),
     )
-# has_alcohol excluded: hydroxy is a prefix on alkenoic acids (P-65.1.2)
-_ALKENOIC_BAD = tuple(
-    k for k in _DIACID_BAD + ("has_thiol",) if k != "has_alcohol"
-)
+# hydroxy/amino/oxo are prefixes on alkenoic acids (P-65.1.2), not competing
+_ALKENOIC_OK = frozenset({"has_alcohol", "has_amine", "has_ketone"})
+_ALKENOIC_BAD = tuple(k for k in _DIACID_BAD + ("has_thiol",) if k not in _ALKENOIC_OK)
 _UNSAT_FG_BASE = (
     "has_acid", "has_ester", "has_amide", "has_ketone", "has_amine",
     "has_acyl_chloride", "has_anhydride", "has_thiol",
@@ -269,8 +268,9 @@ def _ok_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple) -> bool:
     return _is_mono_fg(info, flag, ekey) and _is_mono_alkene(info) and _no_fgs(info, bad)
 def _unsat_cover_atoms(info, c_idx: int, db: dict) -> list[int]:
     atoms = {c_idx, db["c1"], db["c2"]}
-    for h in _aliphatic_entries(info, "hydroxyls"):
-        atoms.add(h["c_idx"])
+    for key in ("hydroxyls", "ketones", "amines"):
+        for e in _aliphatic_entries(info, key):
+            atoms.add(e["c_idx"])
     return list(atoms)
 def _try_unsat_fg(info, flag, ekey, bad, kind, ckey, **extra) -> dict | None:
     if not _ok_unsat_fg(info, flag, ekey, bad):
