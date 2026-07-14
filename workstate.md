@@ -112,7 +112,9 @@
 [#ba93df4][架构 P0] ring_systems 融合分量 + retained_registry 骨架 [+15 tests, dual 8.8%(357) 持平]
 [#bf2a956][IUPAC P-29 P2] 未取代 pyridin-n-yl 开链侧链 [+10 tests, dual 8.8% 持平]
 [#87257c0][IUPAC P-29 P2] pyridinyl 简单叶 halo/Me/alkoxy [+3 tests, dual 8.8%(357)→8.8%(358)]
+[#e467488][IUPAC P-29 P2] 未取代 naphthalen-n-yl 开链侧链 [+9 tests, dual 8.8%(358) 持平]
+[#1f4962e][IUPAC P-25 P1] 未取代 anthracene 母体（ring_systems 线性666）[+4 tests, dual 8.8%(358) 持平]
 
 ## 其他
-- 稠/杂计划：P0 done；P2 pyridinyl 已开；下一项 naphthalen-n-yl 或 P1 anthracene
+- 稠/杂计划：P0 done；P2 pyridinyl+naphthyl 已开；P1 anthracene 未取代 done；下一项 phenanthrene/quinazoline 或 mono-sub anthracene
 - 加叶：layer2/leaves 注册 handler；杂芳侧链 layer2/heteroaryl_sub
