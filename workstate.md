@@ -105,7 +105,8 @@
 [#e6fe524][IUPAC P-29.3] depth-2 propoxy/butoxy + 嵌套未取代 Ph 叶；酚OH不抢脂肪胺母体 [+10 tests, dual 8.6%(348) 持平, en 352]
 [#50c8d97][IUPAC P-29.3 / P-14.3.1] 真递归芳基取代基 namer（depth≤3）：嵌套 Ph/OPh 可再带叶 [+12 tests, dual 8.6%(348)→8.6%(349), en 352→353, fails 3714→3713]
 [#fc5b107][架构] LeafHandler registry：protocol+match/name；complex 先于 simple；name_ph_ring 只组装 [dual 8.6%(349)→8.7%(352), en 353→356, fails 3713→3710]
+[#0027734][IUPAC P-29.3] registry 叶 n-alkyl/MeS/cyano + 嵌套苄基；Ar-CN 不作链腈母体 [+13 tests, dual 8.7%(352)→8.6%(351), en 356→355]
 
 ## 其他
-- 加叶：在 layer2/leaves 注册 handler（match+name），勿改 ring_namer 核心
-- 递归未做：嵌套苄基；N-芳基叶；pyridyl skeleton
+- 加叶：layer2/leaves 注册 handler（match+name），勿改 ring_namer 核心
+- 递归未做：嵌套 benzyloxy；N-芳基叶；pyridyl skeleton；vinyl 叶
