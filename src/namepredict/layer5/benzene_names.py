@@ -1,6 +1,7 @@
 """Retained / multi-substituted benzene parent and prefix helpers (P-22.1.3)."""
 from __future__ import annotations
 
+from namepredict.layer2.kind_registry import parent_names as _registry_parent_names
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 
 
@@ -93,53 +94,8 @@ def benzene_prefix(numbered: dict, build_prefix) -> tuple[str, str]:
     return en_pre, zh_pre
 
 
-_ARENE_FG = {
-    "phenol": ("phenol", "苯酚"), "aniline": ("aniline", "苯胺"),
-    "benzoic": ("benzoic acid", "苯甲酸"),
-    "benzaldehyde": ("benzaldehyde", "苯甲醛"),
-    "acetophenone": ("acetophenone", "苯乙酮"),
-    "benzonitrile": ("benzonitrile", "苯甲腈"),
-    "benzoyl_chloride": ("benzoyl chloride", "苯甲酰氯"),
-    "pyridine": ("pyridine", "吡啶"),
-    "furan": ("furan", "呋喃"),
-    "thiophene": ("thiophene", "噻吩"),
-    "pyrrole": ("1H-pyrrole", "吡咯"),
-    "imidazole": ("1H-imidazole", "咪唑"),
-    "pyrazole": ("1H-pyrazole", "吡唑"),
-    "oxazole": ("1,3-oxazole", "恶唑"),
-    "thiazole": ("1,3-thiazole", "噻唑"),
-    "pyrimidine": ("pyrimidine", "嘧啶"),
-    "pyrazine": ("pyrazine", "吡嗪"),
-    "pyridazine": ("pyridazine", "哒嗪"),
-    "naphthalene": ("naphthalene", "萘"),
-    "anthracene": ("anthracene", "蒽"),
-    "indole": ("1H-indole", "吲哚"),
-    "indazole": ("1H-indazole", "1H-吲唑"),
-    "benzofuran": ("benzofuran", "苯并呋喃"),
-    "benzothiophene": ("1-benzothiophene", "苯并[b]噻吩"),
-    "benzothiazole": ("1,3-benzothiazole", "1,3-苯并噻唑"),
-    "benzoxazole": ("1,3-benzoxazole", "1,3-苯并噁唑"),
-    "benzimidazole": ("1H-benzimidazole", "1H-苯并咪唑"),
-    "quinoline": ("quinoline", "喹啉"),
-    "quinazoline": ("quinazoline", "喹唑啉"),
-    "quinoxaline": ("quinoxaline", "喹喔啉"),
-    "isoquinoline": ("isoquinoline", "异喹啉"),
-    "aziridine": ("aziridine", "氮杂环丙烷"),
-    "oxirane": ("oxirane", "环氧乙烷"),
-    "oxolane": ("oxolane", "氧杂环戊烷"),
-    "oxane": ("oxane", "氧杂环己烷"),
-    "pyrrolidine": ("pyrrolidine", "吡咯烷"),
-    "piperidine": ("piperidine", "哌啶"),
-    "morpholine": ("morpholine", "吗啉"),
-    "piperazine": ("piperazine", "哌嗪"),
-    "dioxolane": ("1,3-dioxolane", "1,3-二氧戊环"),
-    "dioxane": ("1,4-dioxane", "1,4-二氧六环"),
-    "thiolane": ("thiolane", "硫杂环戊烷"),
-}
-
-
 def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
-    return _ARENE_FG.get(kind)
+    return _registry_parent_names(kind)
 
 
 def join_parent_name(prefix: str, parent: str) -> str:

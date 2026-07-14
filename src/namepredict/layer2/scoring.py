@@ -10,70 +10,23 @@ must lose to a chain fallback instead of emitting a bare ring name.
 """
 from __future__ import annotations
 
+from namepredict.layer2 import kind_registry as _kr
+
+# Thin frozenset wrappers derived from registry (compat / external imports).
 _FG_RANK = {
-    "acid": 13, "diacid": 13, "alkenoic_acid": 13, "alkenedioic": 13,
-    "benzoic": 13, "pyridinecarboxylic": 13, "quinolinecarboxylic": 13,
-    "cycloalkanecarboxylic": 13,
-    "furancarboxylic": 13, "thiophenecarboxylic": 13, "pyrrolecarboxylic": 13,
-    "imidazolecarboxylic": 13, "pyrazolecarboxylic": 13,
-    "piperidinecarboxylic": 13, "pyrrolidinecarboxylic": 13,
-    "piperazinecarboxylic": 13, "morpholinecarboxylic": 13,
-    "oxolanecarboxylic": 13, "oxanecarboxylic": 13,
-    "thiolanecarboxylic": 13, "aziridinecarboxylic": 13,
-    "anhydride": 12,
-    "ester": 11, "alkenoate": 11, "benzoate": 11,
-    "acyl_chloride": 10, "benzoyl_chloride": 10,
-    "amide": 9,
-    "nitrile": 8, "alkenenitrile": 8, "benzonitrile": 8, "pyridinecarbonitrile": 8,
-    "indazolecarbonitrile": 8,
-    "aldehyde": 7, "alkenal": 7, "benzaldehyde": 7, "indazolecarbaldehyde": 7,
-    "ketone": 6, "dione": 6, "cycloketone": 6, "acetophenone": 6,
-    "alcohol": 5, "alkenol": 5, "diol": 5, "triol": 5,
-    "cycloalcohol": 5, "phenol": 5, "benzenediol": 5, "pyridinol": 5,
-    "benzothiophenol": 5, "quinolinol": 5,
-    "thiol": 4,
-    "amine": 3, "diamine": 3, "sec_amine": 3, "tert_amine": 3,
-    "cycloamine": 3, "aniline": 3, "pyridinamine": 3, "pyrimidinamine": 3,
-    "benzofuranamine": 3, "benzenediamine": 3, "benzothiazolamine": 3,
-    "benzimidazolamine": 3, "benzoxazolamine": 3,
-    "ether": 2, "sulfide": 2,
+    k: _kr.fg_rank(k) for k in _kr.all_kinds() if _kr.fg_rank(k)
 }
-_HETERO_RING = frozenset(
-    {"pyridine", "furan", "thiophene", "pyrrole", "imidazole", "pyrazole",
-     "oxazole", "thiazole",
-     "pyrimidine", "pyrazine", "pyridazine", "indole", "indazole", "benzofuran",
-     "benzothiophene", "benzothiazole", "benzoxazole", "benzimidazole",
-     "quinoline", "isoquinoline", "quinazoline", "quinoxaline",
-     "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
-     "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane"}
-)
-_CARBO_RING = frozenset({
-    "benzene", "cycloalkane", "cycloalkene", "naphthalene", "anthracene",
-    "benzenediamine",
-})
-_SHCOOH = frozenset({
-    "piperidinecarboxylic", "pyrrolidinecarboxylic", "piperazinecarboxylic",
-    "morpholinecarboxylic", "oxolanecarboxylic", "oxanecarboxylic",
-    "thiolanecarboxylic", "aziridinecarboxylic",
-})
-_RETAINED = frozenset(
-    {"phenol", "aniline", "benzoic", "benzaldehyde", "acetophenone",
-     "benzoate", "benzonitrile", "benzoyl_chloride", "benzene", "naphthalene",
-     "anthracene",
-     "furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic",
-     "imidazolecarboxylic", "pyrazolecarboxylic", "pyridinecarboxylic",
-     "quinolinecarboxylic", "pyridinecarbonitrile",
-     "indazolecarbonitrile", "indazolecarbaldehyde"}
-    | set(_HETERO_RING) | _SHCOOH
-)
+_HETERO_RING = frozenset(k for k in _kr.all_kinds() if _kr.is_hetero_ring(k))
+_CARBO_RING = frozenset(k for k in _kr.all_kinds() if _kr.is_carbo_ring(k))
+_RETAINED = frozenset(k for k in _kr.all_kinds() if _kr.retained_bonus(k))
 
 
 def _has_principal_fg(kind: str) -> int:
-    return 1 if kind in _FG_RANK else 0
+    return _kr.has_principal_fg(kind)
 
 
 def _fg_class_rank(kind: str) -> int:
-    return _FG_RANK.get(kind, 0)
+    return _kr.fg_rank(kind)
 
 
 def _n_unhandled(parent: dict) -> int:
@@ -85,29 +38,15 @@ def _sides_ok(parent: dict) -> int:
 
 
 def _is_hetero_ring(kind: str) -> int:
-    return 1 if kind in _HETERO_RING else 0
+    return _kr.is_hetero_ring(kind)
 
 
 def _is_carbo_ring(kind: str) -> int:
-    return 1 if kind in _CARBO_RING else 0
-
-
-_FUSED2 = frozenset({
-    "naphthalene", "indole", "indazole", "indazolecarbonitrile",
-    "indazolecarbaldehyde", "benzofuran", "benzofuranamine",
-    "benzothiophene", "benzothiophenol", "benzothiazole", "benzothiazolamine",
-    "benzoxazole", "benzoxazolamine", "benzimidazole", "benzimidazolamine",
-    "quinoline", "isoquinoline", "quinazoline", "quinoxaline", "quinolinol", "quinolinecarboxylic",
-})
-_FUSED3 = frozenset({"anthracene"})
+    return _kr.is_carbo_ring(kind)
 
 
 def _n_rings(kind: str) -> int:
-    if kind in _FUSED3:
-        return 3
-    if kind in _FUSED2:
-        return 2
-    return 1 if kind in _HETERO_RING or kind in _CARBO_RING else 0
+    return _kr.n_rings_of(kind)
 
 
 def _ring_size(parent: dict, kind: str) -> int:
@@ -128,7 +67,7 @@ def _n_carbons(parent: dict) -> int:
 
 
 def _retained_bonus(kind: str) -> int:
-    return 1 if kind in _RETAINED else 0
+    return _kr.retained_bonus(kind)
 
 
 def _score_parent(info: dict, parent: dict) -> tuple:

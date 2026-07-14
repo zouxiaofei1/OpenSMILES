@@ -185,6 +185,70 @@ def _parse(path: Path) -> tuple[str, ast.AST | None, list[str]]:
     return source, tree, []
 
 
+def _is_scoring(path: Path) -> bool:
+    return path.name == "scoring.py" and "layer2" in path.parts
+
+
+def _frozenset_str_literal_count(node: ast.Call) -> int:
+    if not isinstance(node.func, ast.Name) or node.func.id != "frozenset":
+        return 0
+    if not node.args:
+        return 0
+    arg = node.args[0]
+    if isinstance(arg, (ast.Set, ast.List, ast.Tuple)):
+        return sum(1 for elt in arg.elts if isinstance(elt, ast.Constant) and isinstance(elt.value, str))
+    return 0
+
+
+def _check_scoring_no_hand_frozenset(path: Path, root: Path, tree: ast.AST) -> list[str]:
+    """Scoring must derive kind sets from kind_registry, not big literal frozensets."""
+    if not _is_scoring(path):
+        return []
+    issues: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        n = _frozenset_str_literal_count(node)
+        if n >= 5:
+            issues.append(
+                f"{_rel(path, root)}:{node.lineno}: hand-written frozenset "
+                f"with {n} string literals (use kind_registry)"
+            )
+    return issues
+
+
+def _pkg_src_root(namepredict_root: Path) -> Path | None:
+    """src/ when lint root is src/namepredict."""
+    if namepredict_root.name == "namepredict":
+        return namepredict_root.parent
+    return None
+
+
+def _check_kind_registry_named_rings(root: Path) -> list[str]:
+    """Named ring kinds (ring!='none') must carry both en and zh stems."""
+    src = _pkg_src_root(root)
+    if src is None:
+        return []
+    sys_path_0 = str(src)
+    if sys_path_0 not in sys.path:
+        sys.path.insert(0, sys_path_0)
+    try:
+        from namepredict.layer2 import kind_registry as kr
+    except Exception:
+        return []
+    skip = {"cycloalkane", "cycloalkene", "benzenediamine"}
+    issues: list[str] = []
+    for kind in sorted(kr.all_kinds()):
+        m = kr.get(kind)
+        if m is None or m.ring == "none" or kind in skip:
+            continue
+        if m.en is None or m.zh is None:
+            issues.append(
+                f"kind_registry: ring kind {kind!r} missing en/zh"
+            )
+    return issues
+
+
 def lint_file(path: Path, root: Path) -> list[str]:
     issues = _check_file_lines(path, root)
     source, tree, parse_issues = _parse(path)
@@ -195,6 +259,7 @@ def lint_file(path: Path, root: Path) -> list[str]:
     issues.extend(_check_smiles_eq(path, root, source))
     issues.extend(_check_layer_imports(path, root, source))
     issues.extend(_check_cache_entries(path, root, tree))
+    issues.extend(_check_scoring_no_hand_frozenset(path, root, tree))
     return issues
 
 
@@ -202,6 +267,7 @@ def lint_tree(root: Path) -> list[str]:
     issues: list[str] = []
     for path in _iter_py_files(root):
         issues.extend(lint_file(path, root))
+    issues.extend(_check_kind_registry_named_rings(root))
     return issues
 
 
