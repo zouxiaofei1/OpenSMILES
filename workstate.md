@@ -119,7 +119,7 @@
 [#5687602][IUPAC P-22.2.1 P1] 未取代 quinoxaline 母体 [+2 tests, dual 8.8%(358) 持平]
 [#e73150a][架构 Kind 注册表] ParentKind/kind_registry：scoring+L5 词表单一权威源 [+56 tests, dual 8.8%(358) 持平]
 [#64c6cd0][IUPAC P-22.2.2] 环内O/S/N勿作开链ether/amine/sulfide母体(_hetero_open_chain) [+tests, dual 8.8%→8.9%(360)]
-[#PENDING][架构 ring_producers] 环母体 _RING_TRY 迁入 kind_registry.ring_try_fns [+14 tests, dual 8.9%(360) 持平]
+[#594de1b][架构 ring_producers] 环母体 _RING_TRY 迁入 kind_registry.ring_try_fns [+14 tests, dual 8.9%(360) 持平]
 ## 其他
 - 维护性：kind_registry=meta+词干；ring_producers=环候选注册；candidates 只消费
 - 下一项维护：① fused56 复制模块数据化 ② L4 orienter 并表 ③ FG_TRY 同类注册
