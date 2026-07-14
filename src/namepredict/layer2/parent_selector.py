@@ -34,6 +34,7 @@ from namepredict.layer2.chain_walk import (
     _better, _best_arm_away, _carbon_neighbors, _chain_through, _chain_through_bond,
     _chain_through_two, _longest_chain, _longest_from,
 )
+from namepredict.layer2.polyalkenol import _polyalkenol_parent as _try_polyalkenol
 def _no_fgs(info: dict, keys: tuple) -> bool:
     return not any(info.get(k) for k in keys)
 _CORE_BAD = (
@@ -116,16 +117,23 @@ def _polyol_or_chain_alcohol(info: dict) -> dict | None:
     return _chain_alcohol_parent(info)
 
 
-def _alcohol_parent(info: dict) -> dict | None:
-    ring = _ring_alcohol_parent(info)
-    if ring is not None: return ring
-    top = _polyol_or_chain_alcohol(info)
-    if top is not None: return top
-    if not _aliphatic_entries(info, "hydroxyls"):
-        return None
-    return _unsat_or_sat(
-        info, "has_alcohol", "hydroxyls", _ALKENOL_BAD, "alkenol", "alcohol", "oh_c_idx",
+def _chain_or_unsat_alcohol(info: dict) -> dict | None:
+    """Mono/poly alkenol first, else saturated polyol/alcohol."""
+    poly = _try_polyalkenol(
+        info, _ALKENOL_BAD, _best_cover_pair, _parent_dict, _db_pairs,
     )
+    if poly is not None:
+        return poly
+    unsat = _try_unsat_fg(
+        info, "has_alcohol", "hydroxyls", _ALKENOL_BAD, "alkenol", "oh_c_idx",
+    )
+    return unsat if unsat is not None else _polyol_or_chain_alcohol(info)
+
+
+def _alcohol_parent(info: dict) -> dict | None:
+    """Ring OH; poly/mono alkenol; else polyol/saturated alcohol."""
+    ring = _ring_alcohol_parent(info)
+    return ring if ring is not None else _chain_or_unsat_alcohol(info)
 def _thiol_parent(info: dict) -> dict:
     return _fg_chain(info, "thiols", "thiol", "sh_c_idx")
 def _side_carbons(mol: Mol, start: int, forbid: set[int]) -> set[int]:

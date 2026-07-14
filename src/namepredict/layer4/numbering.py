@@ -1,6 +1,6 @@
 from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
-from namepredict.layer4.polyene import ene_locants, orient_polyene
+from namepredict.layer4.polyene import ene_locants, orient_alkenol, orient_polyene
 def _pos_on(chain: list[int], c: int | None) -> int | None:
     if c is None or c not in chain:
         return None
@@ -39,6 +39,7 @@ def _orient_by_single_fg(
         return _prefer_chain(base, rev, substituents)
     return base
 def _orient_alcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    if parent.get("double_bonds"): return orient_alkenol(chain, parent, substituents, _prefer_chain)
     return _orient_by_single_fg(chain, parent, substituents, "oh_c_idx")
 def _orient_thiol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_by_single_fg(chain, parent, substituents, "sh_c_idx")

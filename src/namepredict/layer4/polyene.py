@@ -41,7 +41,27 @@ def orient_polyene(chain: list[int], parent: dict, subs: list, prefer_fn) -> lis
 
 
 def ene_locants(oriented: dict) -> list[int] | None:
-    if oriented.get("kind") != "polyene":
+    bonds = oriented.get("double_bonds")
+    if not bonds:
         return None
-    locs = _bond_min_locs(oriented.get("chain") or [], oriented.get("double_bonds"))
+    kind = oriented.get("kind")
+    if kind not in ("polyene", "alkenol"):
+        return None
+    locs = _bond_min_locs(oriented.get("chain") or [], bonds)
     return list(locs) if locs else None
+
+
+def _pick_oh_orient(a: list[int], b: list[int], oh: int) -> list[int] | None:
+    la, lb = a.index(oh) + 1, b.index(oh) + 1
+    if la < lb:
+        return a
+    return b if lb < la else None
+
+
+def orient_alkenol(chain: list[int], parent: dict, subs: list, prefer_fn) -> list[int]:
+    """OH lowest first; multi-ene uses polyene set as secondary (P-31.1)."""
+    oh = parent.get("oh_c_idx")
+    if oh is None or oh not in chain:
+        return orient_polyene(chain, parent, subs, prefer_fn)
+    picked = _pick_oh_orient(list(chain), list(reversed(chain)), oh)
+    return picked if picked is not None else orient_polyene(chain, parent, subs, prefer_fn)

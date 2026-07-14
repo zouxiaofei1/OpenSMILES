@@ -263,15 +263,38 @@ def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
     if kind == "cycloalcohol":
         return _cycloalcohol_names(n)
     return _cycloamine_names(n) if kind == "cycloamine" else None
-def _alkenol_names(n, ene_loc, oh_loc) -> tuple[str, str] | None:
+def _alkenol_names(n, ene_loc, oh_loc, ez="") -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain or ene_loc is None or oh_loc is None:
         return None
     en, zh = plain
-    return f"{en[:-3]}-{ene_loc}-en-{oh_loc}-ol", f"{zh_stem(zh)}-{ene_loc}-烯-{oh_loc}-醇"
+    return (
+        f"{ez}{en[:-3]}-{ene_loc}-en-{oh_loc}-ol",
+        f"{ez}{zh_stem(zh)}-{ene_loc}-烯-{oh_loc}-醇",
+    )
+def _polyalkenol_names(n, locs, oh_loc, ez="") -> tuple[str, str] | None:
+    """…-a,b-dien-m-ol (drop trailing e of diene/triene before -ol)."""
+    stem = _polyene_stem(n)
+    me, mz = _ene_mult(len(locs or []))
+    if not stem or not me or oh_loc is None or not locs or len(locs) < 2:
+        return None
+    loc, en_m = _pair_loc_str(locs), me[:-1] if me.endswith("e") else me
+    return (
+        f"{ez}{stem[0]}-{loc}-{en_m}-{oh_loc}-ol",
+        f"{ez}{stem[1]}-{loc}-{mz}-{oh_loc}-醇",
+    )
+def _alkenol_from(n: int, numbered: dict) -> tuple[str, str] | None:
+    from namepredict.layer5.unsat_acid import _ez_for_alkenol
+    ez = _ez_for_alkenol(numbered)
+    locs = numbered.get("ene_locants")
+    if locs and len(locs) >= 2:
+        return _polyalkenol_names(n, locs, numbered.get("oh_locant"), ez)
+    return _alkenol_names(
+        n, numbered.get("ene_locant"), numbered.get("oh_locant"), ez,
+    )
 def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alkenol":
-        return _alkenol_names(n, numbered.get("ene_locant"), numbered.get("oh_locant"))
+        return _alkenol_from(n, numbered)
     if kind == "alcohol":
         return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
     if kind == "thiol":
