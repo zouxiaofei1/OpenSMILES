@@ -5,10 +5,14 @@ from rdkit.Chem import Mol
 
 
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
+    """Open (non-aromatic, non-ring) carbon neighbors for chain FG walks.
+
+    Ring atoms must not enter open parents (else 1-cyclohexylethanone → octan-2-one).
+    """
     atom = mol.GetAtomWithIdx(idx)
     return [
         n.GetIdx() for n in atom.GetNeighbors()
-        if n.GetAtomicNum() == 6 and not n.GetIsAromatic()
+        if n.GetAtomicNum() == 6 and not n.GetIsAromatic() and not n.IsInRing()
     ]
 
 

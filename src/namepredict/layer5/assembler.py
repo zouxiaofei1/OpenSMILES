@@ -41,35 +41,23 @@ def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult: return Nam
 def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:
     en, zh = en_map.get(n), zh_map.get(n); return (en, zh) if en and zh else None
 def _alkane_names(n: int) -> tuple[str, str] | None: return _pair(ALKANE_EN, ALKANE_ZH, n)
-def _cyclo_from_alkane(
-    n: int, en_fn, zh_fn
-) -> tuple[str, str] | None:
+def _cyclo_from_alkane(n: int, en_fn, zh_fn) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain or n < 3:
         return None
-    en, zh = plain
-    return en_fn(en), zh_fn(zh)
+    return en_fn(plain[0]), zh_fn(plain[1])
 def _cycloalkane_names(n: int) -> tuple[str, str] | None:
     return _cyclo_from_alkane(n, lambda e: f"cyclo{e}", lambda z: f"环{z}")
 def _cycloalkene_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(
-        n, lambda e: f"cyclo{e[:-3]}ene", lambda z: f"环{z[0]}烯"
-    )
+    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-3]}ene", lambda z: f"环{z[0]}烯")
 def _cycloalcohol_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(
-        n, lambda e: f"cyclo{e[:-1]}ol", lambda z: f"环{z[0]}醇"
-    )
+    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}ol", lambda z: f"环{z[0]}醇")
 def _cycloketone_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(
-        n, lambda e: f"cyclo{e[:-1]}one", lambda z: f"环{z[0]}酮"
-    )
+    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}one", lambda z: f"环{z[0]}酮")
 def _cycloamine_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(
-        n, lambda e: f"cyclo{e[:-1]}amine", lambda z: f"环{z[0]}胺"
-    )
+    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}amine", lambda z: f"环{z[0]}胺")
 def _cycloalkanecarboxylic_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(
-        n, lambda e: f"cyclo{e[:-1]}ecarboxylic acid", lambda z: f"环{z}甲酸")
+    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}ecarboxylic acid", lambda z: f"环{z}甲酸")
 def _omit_term_locant(n: int, loc: int | None, omit: bool) -> bool:
     return omit or loc is None or (loc == 1 and n <= 2)
 def _alcohol_names(n: int, oh_locant: int | None, omit: bool) -> tuple[str, str] | None:
@@ -166,6 +154,13 @@ def _ester_names(acyl_n: int, alkoxy_n: int | None) -> tuple[str, str] | None:
     if not alkyl or not acyl or not acid_zh:
         return None
     return f"{alkyl[0]} {acyl}", f"{acid_zh}{alkyl[1]}酯"
+def _ketone_plain(n: int) -> tuple[str, str] | None:
+    """ethanone / propanone form (no locant; used when n≤2)."""
+    plain = _alkane_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    return f"{en[:-1]}one", f"{zh[0]}酮"
 def _ketone_from_alkane(n: int, locant: int) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain:
@@ -175,6 +170,8 @@ def _ketone_from_alkane(n: int, locant: int) -> tuple[str, str] | None:
 def _ketone_names(n: int, locant: int | None) -> tuple[str, str] | None:
     if locant is None:
         return None
+    if n <= 2 and locant == 1:
+        return _ketone_plain(n)
     return _ketone_from_alkane(n, locant)
 def _dione_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
     plain = _alkane_names(n)
@@ -434,7 +431,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return True
     if kind in ("sec_amine", "tert_amine", "amide"):
         return {s.get("kind") for s in substituents} <= {"n_alkyl", "n_phenyl"}
-    if kind in _KEEP_LOCANT_KINDS:
+    if kind in _KEEP_LOCANT_KINDS or kind == "ketone":
         return False
     if any(s.get("paren") or (s.get("en") or "")[:1] == "(" for s in substituents):
         return False
