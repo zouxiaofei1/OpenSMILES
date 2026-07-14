@@ -140,6 +140,7 @@ def all_kinds() -> frozenset[str]:
 
 # Ordered ring parent producers (filled by layer2.ring_producers bootstrap).
 _RING_TRY: list = []
+_RING_BOOTSTRAPPED = False
 
 
 def register_ring_try(fn) -> None:
@@ -147,8 +148,18 @@ def register_ring_try(fn) -> None:
     _RING_TRY.append(fn)
 
 
+def _ensure_ring_producers() -> None:
+    """Import ring_producers once so ring_try_fns works without candidates import."""
+    global _RING_BOOTSTRAPPED
+    if _RING_BOOTSTRAPPED:
+        return
+    from namepredict.layer2 import ring_producers as _rp  # noqa: F401
+    _RING_BOOTSTRAPPED = True
+
+
 def ring_try_fns() -> list:
     """Return registered ring parent try callables (order = try order)."""
+    _ensure_ring_producers()
     return list(_RING_TRY)
 
 
