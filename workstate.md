@@ -123,7 +123,7 @@
 [#a93115b][架构 fused56 数据化] Fused56MonoSpec 引擎；benzofuran/benzothiophene 薄封装 [+9 tests, dual 8.9%(360) 持平]
 [#cc3288b][IUPAC P-14.2.1] 开链词干 C11–C35：C11–19 半系统表 + C20+ 程序 compose；zh_stem 替换 zh[0] [+16 tests, dual 8.9%(360)→9.9%(402), fails 3702→3660]
 [#9120ff9][IUPAC P-65.1.1 / P-72.2.2.1] 羧酸根C(=O)[O-]：L1并入carboxyl+排除醛；L2 acid+anion；L5 alkanoate/酸根 [+11 tests, dual 9.9%(402)→10.5%(426), fails 3660→3636]
-[#pending][IUPAC P-63.1.1 / P-31.1 / P-93.4] 开链alkenol：修L2早返回+polyalkenol+E/Z(2E,6Z) [+17 tests, dual 10.5%(426)→10.6%(431), fails 3636→3631]
+[#5f6a8f7][IUPAC P-63.1.1 / P-31.1 / P-93.4] 开链alkenol：修L2早返回+polyalkenol+E/Z(2E,6Z) [+17 tests, dual 10.5%(426)→10.6%(431), fails 3636→3631]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多羧酸根/磷酸盐未做
 - 炔醇/带复杂侧链多烯醇未做
