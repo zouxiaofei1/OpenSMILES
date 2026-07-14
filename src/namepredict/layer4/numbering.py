@@ -308,17 +308,16 @@ def _aza_orienters() -> dict:
         "pyrazolecarboxylic": _orient_diazolecarboxylic,
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
         "pyridazine": _orient_diazine, "pyrimidinamine": _orient_pyrimidinamine}
+_INDOLE_ORIENT_KINDS = (
+    "indole", "indazole", "indazolecarbonitrile", "indazolecarbaldehyde",
+    "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol",
+    "benzothiazole", "benzothiazolamine", "benzimidazole", "benzimidazolamine",
+    "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
+)
 def _fused_orienters() -> dict:
-    return {
-        "naphthalene": _orient_naphthalene, "indole": _orient_indole,
-        "indazole": _orient_indole, "indazolecarbonitrile": _orient_indole,
-        "indazolecarbaldehyde": _orient_indole,
-        "benzofuran": _orient_indole, "benzofuranamine": _orient_indole,
-        "benzothiophene": _orient_indole, "benzothiophenol": _orient_indole,
-        "benzothiazole": _orient_indole, "benzothiazolamine": _orient_indole,
-        "quinoline": _orient_indole, "isoquinoline": _orient_indole,
-        "quinolinol": _orient_indole, "quinolinecarboxylic": _orient_indole,
-    }
+    d = {k: _orient_indole for k in _INDOLE_ORIENT_KINDS}
+    d["naphthalene"] = _orient_naphthalene
+    return d
 def _arene_orienters() -> dict:
     return {
         "furan": _orient_hetero5, "thiophene": _orient_hetero5, "pyrrole": _orient_hetero5,
@@ -389,8 +388,10 @@ def _amine_locant(oriented: dict) -> int | None:
     kinds = (
         "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
         "pyrimidinamine", "benzofuranamine", "benzothiazolamine",
+        "benzimidazolamine",
     )
-    if oriented.get("kind") in ("benzofuranamine", "benzothiazolamine"):
+    fused_am = ("benzofuranamine", "benzothiazolamine", "benzimidazolamine")
+    if oriented.get("kind") in fused_am:
         chain, a = oriented.get("chain") or [], oriented.get("amine_c_idx")
         return _indole_sub_locant(chain, a) if a is not None else None
     return _fg_locant(oriented, kinds, "amine_c_idx")
@@ -445,14 +446,10 @@ def _indole_sub_locant(chain: list[int], attach: int) -> int:
         return chain.index(attach) + 1 if attach in chain else 0
     loc = _INDOLE_LOCANTS[chain.index(attach)]
     return loc if loc is not None else chain.index(attach) + 1
-_FUSED56_KINDS = frozenset({
-    "indole", "indazole", "indazolecarbonitrile", "indazolecarbaldehyde",
-    "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol",
-    "benzothiazole", "benzothiazolamine",
-})
 _Q_KINDS = frozenset({
     "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
 })
+_FUSED56_KINDS = frozenset(_INDOLE_ORIENT_KINDS) - _Q_KINDS
 def _sub_locant(chain: list[int], attach: int, kind: str | None) -> int:
     if kind == "naphthalene" or kind in _Q_KINDS:
         return _naph_sub_locant(chain, attach)

@@ -35,13 +35,14 @@ _FG_RANK = {
     "amine": 3, "diamine": 3, "sec_amine": 3, "tert_amine": 3,
     "cycloamine": 3, "aniline": 3, "pyridinamine": 3, "pyrimidinamine": 3,
     "benzofuranamine": 3, "benzenediamine": 3, "benzothiazolamine": 3,
+    "benzimidazolamine": 3,
     "ether": 2, "sulfide": 2,
 }
 _HETERO_RING = frozenset(
     {"pyridine", "furan", "thiophene", "pyrrole", "imidazole", "pyrazole",
      "oxazole", "thiazole",
      "pyrimidine", "pyrazine", "pyridazine", "indole", "indazole", "benzofuran",
-     "benzothiophene", "benzothiazole", "quinoline", "isoquinoline",
+     "benzothiophene", "benzothiazole", "benzimidazole", "quinoline", "isoquinoline",
      "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
      "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane"}
 )
@@ -94,6 +95,7 @@ def _n_rings(kind: str) -> int:
         "indazolecarbaldehyde", "benzofuran", "benzofuranamine",
         "benzothiophene", "benzothiophenol",
         "benzothiazole", "benzothiazolamine",
+        "benzimidazole", "benzimidazolamine",
         "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
     ):
         return 2
