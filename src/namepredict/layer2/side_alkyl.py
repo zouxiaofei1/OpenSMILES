@@ -346,66 +346,9 @@ def _linear_n_alkyl_sides_ok(
     return _disjoint_cover(paths, _outside_c_atoms(mol, ring))
 
 
-def _heavies(atom) -> list:
-    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
-
-
-def _outer_fwd(mol: Mol, cur: int, prev: int) -> list:
-    atom = mol.GetAtomWithIdx(cur)
-    if atom.GetAtomicNum() != 6 or atom.IsInRing():
-        return []
-    return [x for x in _heavies(atom) if x.GetIdx() != prev]
-
-
-def _is_terminal_me(mol: Mol, c_idx: int, o_idx: int) -> bool:
-    atom = mol.GetAtomWithIdx(c_idx)
-    if atom.GetAtomicNum() != 6 or atom.IsInRing():
-        return False
-    return all(n.GetIdx() == o_idx or n.GetAtomicNum() == 1 for n in atom.GetNeighbors())
-
-
-def _meoet_tail(mol: Mol, mid: int, o_mid: int) -> list[int] | None:
-    """From CH2 next to ring-O: detect -CH2-O-CH3 → [mid, o, me]."""
-    fwd = _outer_fwd(mol, mid, o_mid)
-    if len(fwd) != 1 or fwd[0].GetAtomicNum() != 8:
-        return None
-    o2 = fwd[0]
-    nbs = [n for n in _heavies(o2) if n.GetIdx() != mid]
-    if len(nbs) != 1 or nbs[0].GetAtomicNum() != 6:
-        return None
-    me = nbs[0].GetIdx()
-    return [mid, o2.GetIdx(), me] if _is_terminal_me(mol, me, o2.GetIdx()) else None
-
-
-def _alkoxy_from_carbon(mol: Mol, nxt, start: int) -> int:
-    """2=ethoxy, 12=2-methoxyethoxy; 0=unsupported from carbon next."""
-    if nxt.GetAtomicNum() != 6 or nxt.GetIsAromatic() or nxt.IsInRing():
-        return 0
-    if not _outer_fwd(mol, nxt.GetIdx(), start):
-        return 2
-    if _meoet_tail(mol, nxt.GetIdx(), start):
-        return 12
-    return 0
-
-
-def _outer_alkoxy_n(mol: Mol, start: int, o_idx: int) -> int:
-    """1=methoxy, 2=ethoxy, 12=2-methoxyethoxy; 0=unsupported."""
-    fwd = _outer_fwd(mol, start, o_idx)
-    if not fwd:
-        return 1
-    if len(fwd) != 1:
-        return 0
-    return _alkoxy_from_carbon(mol, fwd[0], start)
-
-
-def _outer_atoms(mol: Mol, start: int, o_idx: int, n: int) -> list[int]:
-    if n == 1:
-        return [start]
-    if n == 2:
-        fwd = _outer_fwd(mol, start, o_idx)
-        return [start, fwd[0].GetIdx()] if fwd else [start]
-    if n == 12:
-        fwd = _outer_fwd(mol, start, o_idx)
-        tail = _meoet_tail(mol, fwd[0].GetIdx(), start) if fwd else None
-        return [start, *tail] if tail else [start]
-    return [start]
+# Ring outer alkoxy topology lives in side_alkoxy (shared by ring_parent / L3).
+from namepredict.layer2.side_alkoxy import (  # noqa: E402
+    _outer_alkoxy_n,
+    _outer_atoms,
+    _parse_outer_alkoxy,
+)

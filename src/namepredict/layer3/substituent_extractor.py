@@ -21,12 +21,11 @@ from namepredict.layer2.side_alkyl import (
     _is_sec_butyl,
     _is_tert_butyl,
     _is_trifluoromethyl,
-    _outer_alkoxy_n,
-    _outer_atoms,
     _terminal_halo_z,
     _walk_linear,
     _walk_omega_halo,
 )
+from namepredict.layer3.alkoxy_names import _extract_alkoxys
 
 
 def alkyl_alpha_key(stem: str) -> str:
@@ -326,50 +325,6 @@ def _extract_n_phenyl(parent: dict) -> list[dict]:
         return []
     attach = parent.get("amide_c_idx")
     return [_n_phenyl_sub(attach)] if attach is not None else []
-
-
-_ALKOXY_EN = {1: "methoxy", 2: "ethoxy", 12: "2-methoxyethoxy"}
-_ALKOXY_ZH = {1: "甲氧基", 2: "乙氧基", 12: "2-甲氧基乙氧基"}
-
-
-def _make_alkoxy(attach: int, o_idx: int, atoms: list[int], n: int) -> dict:
-    return {
-        "kind": "alkoxy", "attach_idx": attach, "atoms": [o_idx] + atoms,
-        "n_carbons": n, "en": _ALKOXY_EN[n], "zh": _ALKOXY_ZH[n],
-        "paren": n >= 12,
-    }
-
-
-def _alkoxy_ends(e: dict, chain_set: set[int]) -> tuple[int, int, int] | None:
-    c1, c2, o = e["c1"], e["c2"], e["o_idx"]
-    if (c1 in chain_set) == (c2 in chain_set):
-        return None
-    ring_c, outer = (c1, c2) if c1 in chain_set else (c2, c1)
-    return o, ring_c, outer
-
-
-def _one_ring_alkoxy(mol: Mol, e: dict, chain_set: set[int]) -> dict | None:
-    ends = _alkoxy_ends(e, chain_set)
-    if ends is None:
-        return None
-    o, ring_c, outer = ends
-    if not mol.GetAtomWithIdx(ring_c).IsInRing() or mol.GetAtomWithIdx(outer).GetIsAromatic():
-        return None
-    n = _outer_alkoxy_n(mol, outer, o)
-    if n not in _ALKOXY_EN:
-        return None
-    return _make_alkoxy(ring_c, o, _outer_atoms(mol, outer, o, n), n)
-
-
-def _extract_alkoxys(info: dict, parent: dict) -> list[dict]:
-    mol: Mol = info["mol"]
-    chain_set = set(parent.get("chain") or [])
-    out: list[dict] = []
-    for e in info.get("ethers") or []:
-        one = _one_ring_alkoxy(mol, e, chain_set)
-        if one is not None:
-            out.append(one)
-    return out
 
 
 def _make_aryl(kind: str, attach: int, atoms: list[int], en: str, zh: str, paren: bool) -> dict:
