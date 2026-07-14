@@ -1,32 +1,11 @@
 from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 from namepredict.layer5.stems import (
-    ACID_EN,
-    ACID_ZH,
-    ACYL_CHLORIDE_EN,
-    ACYL_CHLORIDE_ZH,
-    ALCOHOL_EN,
-    ALCOHOL_ZH,
-    ALDEHYDE_EN,
-    ALDEHYDE_ZH,
-    ALKANE_EN,
-    ALKANE_ZH,
-    ALKOXY_EN,
-    ALKOXY_ZH,
-    AMIDE_EN,
-    AMIDE_ZH,
-    ESTER_ACYL_EN,
-    ESTER_ALKYL_EN,
-    ESTER_ALKYL_ZH,
-    ETHER_SYM_EN,
-    ETHER_SYM_ZH,
-    NITRILE_EN,
-    NITRILE_ZH,
-    SULFIDE_ALKYL_EN,
-    SULFIDE_ALKYL_ZH,
-    SULFIDE_SYM_EN,
-    SULFIDE_SYM_ZH,
-    zh_stem,
+    ACID_EN, ACID_ZH, ACYL_CHLORIDE_EN, ACYL_CHLORIDE_ZH, ALCOHOL_EN, ALCOHOL_ZH,
+    ALDEHYDE_EN, ALDEHYDE_ZH, ALKANE_EN, ALKANE_ZH, ALKOXY_EN, ALKOXY_ZH,
+    AMIDE_EN, AMIDE_ZH, ESTER_ACYL_EN, ESTER_ALKYL_EN, ESTER_ALKYL_ZH,
+    ETHER_SYM_EN, ETHER_SYM_ZH, NITRILE_EN, NITRILE_ZH, SULFIDE_ALKYL_EN,
+    SULFIDE_ALKYL_ZH, SULFIDE_SYM_EN, SULFIDE_SYM_ZH, maybe_anion_names, zh_stem,
 )
 from namepredict.layer5.benzene_names import (
     arene_fg_parent_names, benzene_parent_names, benzene_prefix,
@@ -493,4 +472,5 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     if not names:
         return _unsupported(n, kind)
     en, zh = join_kind_name(kind, _prefix_for(numbered, kind, n), names)
+    en, zh = maybe_anion_names(numbered, en, zh)
     return _ok(en, zh, time_ms, source)

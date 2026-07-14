@@ -201,6 +201,27 @@ def ester_acyl_en(n: int) -> str | None:
     return f"{s}anoate" if s else None
 
 
+def acid_to_anion_en(en: str) -> str:
+    """dodecanoic acid → dodecanoate; acetic acid → acetate."""
+    if en.endswith("oic acid"):
+        return en[:-8] + "oate"
+    if en.endswith("ic acid"):
+        return en[:-7] + "ate"
+    return en
+
+
+def acid_to_anion_zh(zh: str) -> str:
+    """十二酸 → 十二酸根; 乙酸 → 乙酸根."""
+    return zh if zh.endswith("根") else f"{zh}根"
+
+
+def maybe_anion_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
+    """If parent is carboxylate anion, convert acid suffix to -ate / 酸根."""
+    if not (numbered.get("parent") or {}).get("anion"):
+        return en, zh
+    return acid_to_anion_en(en), acid_to_anion_zh(zh)
+
+
 def ester_alkyl_en(n: int) -> str | None:
     retained = {
         1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl",

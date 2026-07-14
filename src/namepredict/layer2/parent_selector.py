@@ -269,7 +269,11 @@ def _fg_chain(info: dict, ekey: str, kind: str, ckey: str, **extra) -> dict:
 def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
     u = _try_unsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
     return u or _fg_chain(info, ekey, skind, ckey, **extra)
-def _acid_parent(info: dict) -> dict:
+def _with_anion(info: dict, parent: dict) -> dict:
+    if any(c.get("anion") for c in info.get("carboxyls") or []):
+        return {**parent, "anion": True}
+    return parent
+def _acid_parent_core(info: dict) -> dict:
     for fn in (_try_shcooh, _try_h5cooh, _try_qcooh, _try_pyridinecarboxylic_parent,
                _try_benzoic_parent, _try_cycloalkanecarboxylic_parent):
         if (b := fn(info)) is not None: return b
@@ -278,6 +282,8 @@ def _acid_parent(info: dict) -> dict:
     return _unsat_or_sat(
         info, "has_acid", "carboxyls", _ALKENOIC_BAD, "alkenoic_acid", "acid", "cooh_c_idx",
     )
+def _acid_parent(info: dict) -> dict:
+    return _with_anion(info, _acid_parent_core(info))
 def _ketone_parent(info: dict) -> dict:
     a = _try_acetophenone_parent(info)
     if a is not None: return a
