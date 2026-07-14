@@ -91,5 +91,6 @@
 [#82ed912][IUPAC P-22.2.1 / P-25 / P-62.2.1] 保留母体 1H-benzimidazole（+halo/methyl/CF3 + C2 胺/2-imino） [+25 tests, dual 8.0%(323)→8.0%(324), fails 3739→3738]
 [#82c88fd][IUPAC P-29.3 / P-14.3.1] 递归取代基第一刀：depth=1 未取代/单卤 phenyl·phenoxy [+7 tests, dual 8.0%(324)→8.0%(326), en 326→328, fails 3738→3736]
 [#cad0140][IUPAC P-29.3 / P-63.1.4 / P-62.2.1 / P-66.6.1 / P-65.1.1.1] 递归取代基第二刀：depth-1 phenyl/phenoxy→phenol/aniline/benzaldehyde/benzoic [+test_arene_aryl_fg, dual 8.0%(326)→8.1%(329), fails 3736→3733]
+[#29f4345][IUPAC P-29.3 / P-14.3.1 / P-22.2.1] 递归芳基广扩：多卤Ph/OPh≤3 + benzyl/benzyloxy + pyridine 多环aryl；FIX零卤N-Ph/混卤字母序/Bn nC=7 [+17 tests, dual 8.1%→8.1%(329), en 332]
 
 ## 其他
