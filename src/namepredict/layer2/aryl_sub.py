@@ -13,10 +13,8 @@ from namepredict.layer2.aryl_depth2 import (
     _depth2_atoms_on,
     _join_pref,
 )
-from namepredict.layer2.aryl_recurse import (
-    _recurse_leaf_kind,
-    _recursive_ph_name,
-)
+from namepredict.layer2.leaves.registry import match_leaf_kind as _recurse_leaf_kind
+from namepredict.layer2.leaves.ring_namer import recursive_ph_name as _recursive_ph_name
 
 _HALO = frozenset({9, 17, 35, 53})
 _HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
