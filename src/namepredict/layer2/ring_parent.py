@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.layer2.aryl_sub import (
+    _arom_c6_ring_lists, _is_unfused_benzene_ring, _unsub_phenyl_at,
+)
 from namepredict.layer2.side_alkyl import (
     _disjoint_cover, _is_cf3_carbon, _is_cf3_fluoro, _is_omega_halo_c,
     _is_side_halo, _outer_alkoxy_n, _outer_atoms, _side_covers, _side_sets,
@@ -97,7 +100,7 @@ def _ring_alkoxy_pair(e: dict, ring_set: set[int]) -> tuple[int, int, int] | Non
 
 def _ring_alkoxy_one(mol: Mol, e: dict, ring_set: set[int]) -> dict | None:
     pair = _ring_alkoxy_pair(e, ring_set)
-    if pair is None:
+    if pair is None or mol.GetAtomWithIdx(pair[2]).GetIsAromatic():
         return None
     o, ring_c, outer = pair
     n = _outer_alkoxy_n(mol, outer, o)
@@ -309,24 +312,12 @@ def _is_simple_cycloketone(info: dict) -> bool:
 
 
 def _is_benzene_core(info: dict) -> bool:
-    atom_ids = _is_carbocycle_ring(info)
-    if atom_ids is None or len(atom_ids) != 6:
-        return False
+    """True if mol has at least one unfused aromatic C6 carbocycle."""
     mol: Mol = info["mol"]
-    return all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atom_ids)
-
-
-def _unsub_phenyl_at(mol: Mol, c_idx: int, n_idx: int) -> bool:
-    """True if c_idx is the sole N-attachment of an unsubstituted phenyl ring."""
-    hits = [set(r) for r in mol.GetRingInfo().AtomRings() if c_idx in r and len(r) == 6]
-    if len(hits) != 1: return False
-    r = hits[0]
-    if not all(mol.GetAtomWithIdx(i).GetIsAromatic() and mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in r): return False
-    for i in r:
-        for nb in mol.GetAtomWithIdx(i).GetNeighbors():
-            z, j = nb.GetAtomicNum(), nb.GetIdx()
-            if z != 1 and j not in r and (i != c_idx or j != n_idx or z != 7): return False
-    return True
+    for ring in _arom_c6_ring_lists(mol):
+        if _is_unfused_benzene_ring(mol, set(ring)):
+            return True
+    return False
 
 
 def _ring_halo_n(mol: Mol, ring_set: set[int]) -> int:
@@ -366,11 +357,11 @@ def _multi_benzene_ok(
 
 def _benzene_subs_ok(
     mol: Mol, ring_set: set[int], n_nitro: int = 0, n_alkoxy: int = 0,
-    exclude: set[int] | None = None,
+    exclude: set[int] | None = None, n_aryl: int = 0,
 ) -> bool:
     h = _ring_halo_n(mol, ring_set)
     starts = _ring_side_starts(mol, ring_set, exclude)
-    n_sub = h + len(starts) + n_nitro + n_alkoxy
+    n_sub = h + len(starts) + n_nitro + n_alkoxy + n_aryl
     if n_sub > 4:
         return False
     if n_sub <= 1:
@@ -382,15 +373,11 @@ def _arene_alkoxy(info: dict, ring_set: set[int]) -> tuple[set[int], int]:
     alk = _ring_alkoxy_atoms(info, ring_set)
     return alk, len(_ring_alkoxy_ethers(info, ring_set))
 
+
 def _is_simple_benzene(info: dict) -> bool:
-    if not _is_benzene_core(info):
-        return False
-    mol, ring_set = info["mol"], set(info["rings"][0]["atom_ids"])
-    alk, n_alk = _arene_alkoxy(info, ring_set)
-    allowed = _ring_nitro_atoms(info, ring_set) | alk
-    if not _outside_ok(mol, ring_set, allowed):
-        return False
-    return _benzene_subs_ok(mol, ring_set, _ring_nitro_n(info, ring_set), n_alk, alk)
+    from namepredict.layer2.benzene_pick import _is_simple_benzene as _isb
+    return _isb(info)
+
 
 def _hetero_or_ring_halo(mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
     return all(_outside_hetero_ok(a, ring_set, allowed) for a in mol.GetAtoms())

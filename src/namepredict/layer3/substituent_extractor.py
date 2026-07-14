@@ -2,6 +2,12 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.layer2.aryl_sub import (
+    _phenoxy_name,
+    _phenyl_name,
+    _ring_phenoxys,
+    _ring_phenyls,
+)
 from namepredict.layer2.side_alkyl import (
     _c_neighbors,
     _is_isobutyl,
@@ -329,12 +335,20 @@ def _make_alkoxy(attach: int, o_idx: int, atoms: list[int], n: int) -> dict:
     }
 
 
-def _one_ring_alkoxy(mol: Mol, e: dict, chain_set: set[int]) -> dict | None:
+def _alkoxy_ends(e: dict, chain_set: set[int]) -> tuple[int, int, int] | None:
     c1, c2, o = e["c1"], e["c2"], e["o_idx"]
     if (c1 in chain_set) == (c2 in chain_set):
         return None
     ring_c, outer = (c1, c2) if c1 in chain_set else (c2, c1)
-    if not mol.GetAtomWithIdx(ring_c).IsInRing():
+    return o, ring_c, outer
+
+
+def _one_ring_alkoxy(mol: Mol, e: dict, chain_set: set[int]) -> dict | None:
+    ends = _alkoxy_ends(e, chain_set)
+    if ends is None:
+        return None
+    o, ring_c, outer = ends
+    if not mol.GetAtomWithIdx(ring_c).IsInRing() or mol.GetAtomWithIdx(outer).GetIsAromatic():
         return None
     n = _outer_alkoxy_n(mol, outer, o)
     if n not in _ALKOXY_EN:
@@ -353,14 +367,76 @@ def _extract_alkoxys(info: dict, parent: dict) -> list[dict]:
     return out
 
 
-def extract_substituents(info: dict, parent: dict) -> list:
+def _make_phenoxy(attach: int, atoms: list[int], en: str, zh: str, paren: bool) -> dict:
+    return {
+        "kind": "phenoxy", "attach_idx": attach, "atoms": atoms,
+        "n_carbons": 6, "en": en, "zh": zh, "paren": paren,
+    }
+
+
+def _make_phenyl(attach: int, atoms: list[int], en: str, zh: str, paren: bool) -> dict:
+    return {
+        "kind": "phenyl", "attach_idx": attach, "atoms": atoms,
+        "n_carbons": 6, "en": en, "zh": zh, "paren": paren,
+    }
+
+
+def _one_phenoxy(mol: Mol, p: dict) -> dict:
+    en, zh, paren = _phenoxy_name(mol, p["ph"], p["outer_c"])
+    return _make_phenoxy(p["ring_c"], p["atoms"], en, zh, paren)
+
+
+def _one_phenyl(mol: Mol, p: dict) -> dict:
+    en, zh, paren = _phenyl_name(mol, p["ph"], p["outer_c"])
+    return _make_phenyl(p["attach"], p["atoms"], en, zh, paren)
+
+
+def _extract_phenoxys(info: dict, parent: dict) -> list[dict]:
+    mol: Mol = info["mol"]
+    chain = set(parent.get("chain") or [])
+    return [_one_phenoxy(mol, p) for p in _ring_phenoxys(info, chain)]
+
+
+def _extract_phenyls(info: dict, parent: dict) -> list[dict]:
+    mol: Mol = info["mol"]
+    chain = set(parent.get("chain") or [])
+    return [_one_phenyl(mol, p) for p in _ring_phenyls(mol, chain)]
+
+
+def _aryl_outer_starts(info: dict, parent: dict) -> set[int]:
+    mol: Mol = info["mol"]
+    chain = set(parent.get("chain") or [])
+    return {p["outer_c"] for p in _ring_phenyls(mol, chain)}
+
+
+def _extract_alkyls_no_aryl(mol: Mol, chain: list[int], skip: set[int]) -> list[dict]:
+    chain_set = set(chain)
+    out: list[dict] = []
+    for attach, start in _side_starts(mol, chain):
+        if start in skip:
+            continue
+        one = _one_alkyl(mol, attach, start, chain_set)
+        if one is not None:
+            out.append(one)
+    return out
+
+
+def _extract_core_subs(info: dict, parent: dict) -> list:
     mol: Mol = info["mol"]
     chain = parent.get("chain") or []
     halo = _filter_fg_halos(_extract_halos(mol, chain), parent)
-    oh = _extract_hydroxys(info, parent)
-    nh2 = _extract_aminos(info, parent)
-    oxo = _extract_oxos(info, parent)
-    nitro = _extract_nitros(info, parent)
+    return (
+        halo + _extract_hydroxys(info, parent) + _extract_aminos(info, parent)
+        + _extract_oxos(info, parent) + _extract_nitros(info, parent)
+    )
+
+
+def extract_substituents(info: dict, parent: dict) -> list:
+    mol: Mol = info["mol"]
+    chain = parent.get("chain") or []
+    core = _extract_core_subs(info, parent)
     alkox = _extract_alkoxys(info, parent)
+    aryl = _extract_phenoxys(info, parent) + _extract_phenyls(info, parent)
     n_sub = _extract_n_alkyl(parent) + _extract_n_phenyl(parent)
-    return _extract_alkyls(mol, chain) + halo + oh + nh2 + oxo + nitro + alkox + n_sub
+    alkyl = _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent))
+    return alkyl + core + alkox + aryl + n_sub

@@ -57,9 +57,7 @@ def _side_count(mol: Mol, chain: list[int]) -> int:
 def _chain_key(mol: Mol, path: list[int]) -> tuple:
     return (len(path), _side_count(mol, path))
 def _better(mol: Mol, cand: list[int], best: list[int]) -> bool:
-    if not best:
-        return True
-    return _chain_key(mol, cand) > _chain_key(mol, best)
+    return (not best) or _chain_key(mol, cand) > _chain_key(mol, best)
 def _best_among(mol: Mol, seeds: list[int]) -> list[int]:
     best: list[int] = []
     for c in seeds:
@@ -448,10 +446,11 @@ def _ring_atoms(info: dict) -> list[int]:
 def _cycloalkane_parent(info: dict) -> dict:
     return _parent_dict(_ring_atoms(info), "cycloalkane")
 def _benzene_parent(info: dict) -> dict:
-    return _parent_dict(_ring_atoms(info), "benzene")
+    from namepredict.layer2.benzene_pick import _pick_benzene_ring as _pbr
+    return _parent_dict(_pbr(info) or _ring_atoms(info), "benzene")
 def _cycloalkene_parent(info: dict) -> dict:
-    chain = _ring_atoms(info)
-    return _parent_dict(chain, "cycloalkene", double_bond=_endocyclic_double(info, set(chain)))
+    c = _ring_atoms(info)
+    return _parent_dict(c, "cycloalkene", double_bond=_endocyclic_double(info, set(c)))
 def _cyclo_fg_parent(info: dict, kind: str, ekey: str, ckey: str) -> dict:
     return _parent_dict(_ring_atoms(info), kind, **{ckey: info[ekey][0]["c_idx"]})
 def _pick_mono(info: dict, flag: str, key: str, fn):
