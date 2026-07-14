@@ -1,19 +1,23 @@
 """Saturated monocyclic hetero parents (IUPAC P-22.2.2 / P-22.2.3 / P-25).
 
-Unsubstituted (or ≤1 mono-methyl / mono-halo on ring C) Hantzsch–Widman /
-retained saturated monoheterocycles: aziridine, oxirane, oxolane, oxane,
-pyrrolidine, piperidine, morpholine, piperazine, 1,3-dioxolane, 1,4-dioxane,
-optional thiolane.
+Unsubstituted or ring-C simple alkyl / mono-halo Hantzsch–Widman / retained
+saturated monoheterocycles: aziridine, oxirane, oxolane, oxane, pyrrolidine,
+piperidine, morpholine, piperazine, 1,3-dioxolane, 1,4-dioxane, optional
+thiolane. Ring-C sides: linear n-alkyl C1–C4 (multi) + retained branched
+(tert-butyl / isopropyl / …); N-alkyl out of scope.
 """
 from __future__ import annotations
 
 from rdkit.Chem import Mol
 
 from namepredict.layer2.ring_parent import (
+    _disjoint_cover,
+    _outside_carbons,
     _outside_ok,
     _ring_bonds_single,
     _ring_halo_n,
     _ring_side_starts,
+    _side_sets,
 )
 
 # (size, z_counts frozenset of (Z, count)) → kind
@@ -143,21 +147,27 @@ def _n_unsub(mol: Mol, ring_ns: set[int]) -> bool:
 
 
 def _mono_methyl_only(mol: Mol, ring: set[int], starts: list[int]) -> bool:
+    """True when every outside C is a mono-methyl attach (used by carboxylic)."""
     if not starts:
         return True
-    outside = {
-        a.GetIdx() for a in mol.GetAtoms()
-        if a.GetAtomicNum() == 6 and a.GetIdx() not in ring
-    }
+    outside = set(_outside_carbons(mol, ring))
     return outside == set(starts)
 
 
+def _sides_cover(mol: Mol, ring: set[int], starts: list[int]) -> bool:
+    """Outside C fully covered by recognized alkyl side probes (C1–C4 / branched)."""
+    outside = set(_outside_carbons(mol, ring))
+    if not starts:
+        return not outside
+    sets = _side_sets(mol, ring, starts)
+    return sets is not None and _disjoint_cover(sets, outside)
+
+
 def _subs_ok(mol: Mol, ring: set[int]) -> bool:
-    """Allow ≤1 simple ring sub: monohalo or monomethyl on ring C."""
-    h, starts = _ring_halo_n(mol, ring), _ring_side_starts(mol, ring)
-    if h + len(starts) > 1:
+    """Allow ring-C linear/branched alkyl sides + monohalo (P-22.2.2 / P-14.3.4)."""
+    if _ring_halo_n(mol, ring) > 1:
         return False
-    return _mono_methyl_only(mol, ring, starts)
+    return _sides_cover(mol, ring, _ring_side_starts(mol, ring))
 
 
 def _is_simple_sat_hetero(info: dict) -> bool:
