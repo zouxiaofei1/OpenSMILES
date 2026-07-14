@@ -1,11 +1,22 @@
-"""Depth-1 aryl arms: Ph / OPh / CH2Ph / OCH2Ph (P-29.3).
+"""Depth-1/2 aryl arms: Ph / OPh / CH2Ph / OCH2Ph (P-29.3).
 
-Ph may carry ≤3 terminal ring-halos; locants from attach=1 (lowest set).
-Nested aryl (Ph-on-Ph as depth≥2 arm) is rejected; extend via depth hooks.
+Ph may carry ≤3 simple leaves (halo/Me + depth-2 alkoxy/nitro/CF3).
+Locants from attach=1 (lowest set). Nested Ph-on-Ph still rejected.
 """
 from __future__ import annotations
 
 from rdkit.Chem import Mol
+
+from namepredict.layer2.aryl_depth2 import (
+    _alkoxy_prefix,
+    _alkoxy_sites,
+    _cf3_prefix,
+    _cf3_sites,
+    _depth2_atoms_on,
+    _depth2_kind,
+    _nitro_prefix,
+    _nitro_sites,
+)
 
 _HALO = frozenset({9, 17, 35, 53})
 _HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
@@ -57,7 +68,7 @@ def _side_leaf_kind(mol: Mol, nb, ring_i: int) -> str | None:
         return "halo"
     if nb.GetAtomicNum() == 6 and _is_terminal_me_leaf(mol, nb.GetIdx(), ring_i):
         return "me"
-    return None
+    return _depth2_kind(mol, nb, ring_i)
 
 
 def _count_side_leaves(mol: Mol, ring: set[int], attach: int, parent: int) -> int | None:
@@ -132,7 +143,12 @@ def _loc_tuple(order: list[int], sites: list[int]) -> tuple[int, ...]:
 
 
 def _sub_sites(mol: Mol, ring: set[int]) -> list[int]:
-    return [s for s, _ in _halo_list(mol, ring)] + _me_sites(mol, ring)
+    d2 = (
+        _nitro_sites(mol, ring, _nb_outside)
+        + _cf3_sites(mol, ring, _nb_outside)
+        + [s for s, _ in _alkoxy_sites(mol, ring, _nb_outside)]
+    )
+    return [s for s, _ in _halo_list(mol, ring)] + _me_sites(mol, ring) + d2
 
 
 def _ring_order(mol: Mol, ring: set[int], start: int) -> list[int]:
@@ -190,16 +206,35 @@ def _join_pref(parts: list[str]) -> str:
     return "-".join(p for p in parts if p)
 
 
+def _loc_sites(mol: Mol, ph: set[int], attach: int, sites: list[int]) -> list[int]:
+    return [_ph_locant(mol, ph, attach, s) for s in sites]
+
+
+def _d2_pref_parts(mol: Mol, ph: set[int], attach: int) -> tuple[list[str], list[str]]:
+    no2 = _loc_sites(mol, ph, attach, _nitro_sites(mol, ph, _nb_outside))
+    cf3 = _loc_sites(mol, ph, attach, _cf3_sites(mol, ph, _nb_outside))
+    alk = [(_ph_locant(mol, ph, attach, s), n) for s, n in _alkoxy_sites(mol, ph, _nb_outside)]
+    ne, nz = _nitro_prefix(no2)
+    ce, cz = _cf3_prefix(cf3)
+    ae, az = _alkoxy_prefix(alk)
+    return [ae, ne, ce], [az, nz, cz]
+
+
 def _ph_leaf_prefs(mol: Mol, ph: set[int], attach: int) -> tuple[str, str]:
     items = sorted((_ph_locant(mol, ph, attach, s), z) for s, z in _halo_list(mol, ph))
-    me_locs = [_ph_locant(mol, ph, attach, s) for s in _me_sites(mol, ph)]
+    me = _loc_sites(mol, ph, attach, _me_sites(mol, ph))
     pe, pz = _halo_prefix(items) if items else ("", "")
-    me_e, me_z = _me_prefix(me_locs)
-    return _join_pref([pe, me_e]), _join_pref([pz, me_z])
+    me_e, me_z = _me_prefix(me)
+    de, dz = _d2_pref_parts(mol, ph, attach)
+    # alpha-ish: alkoxy, halo, methyl, nitro, CF3
+    return (
+        _join_pref([de[0], pe, me_e, de[1], de[2]]),
+        _join_pref([dz[0], pz, me_z, dz[1], dz[2]]),
+    )
 
 
 def _halo_ph_names(mol: Mol, ph: set[int], attach: int, stem_en: str, stem_zh: str):
-    if not _halo_list(mol, ph) and not _me_sites(mol, ph):
+    if not _sub_sites(mol, ph):
         return stem_en, stem_zh, False
     pe, pz = _ph_leaf_prefs(mol, ph, attach)
     return pe + stem_en, pz + stem_zh, True
@@ -359,8 +394,7 @@ def _ring_benzyls(mol: Mol, parent: set[int]) -> list[dict]:
     return out
 
 
-def _halo_atoms_on(mol: Mol, ph: set[int]) -> set[int]:
-    """Halo + methyl leaf atom indices on Ph (legacy name)."""
+def _simple_leaf_atoms(mol: Mol, ph: set[int]) -> set[int]:
     out: set[int] = set()
     for i in ph:
         for nb in _nb_outside(mol, i, ph):
@@ -369,6 +403,11 @@ def _halo_atoms_on(mol: Mol, ph: set[int]) -> set[int]:
             elif nb.GetAtomicNum() == 6 and _is_terminal_me_leaf(mol, nb.GetIdx(), i):
                 out.add(nb.GetIdx())
     return out
+
+
+def _halo_atoms_on(mol: Mol, ph: set[int]) -> set[int]:
+    """Halo + methyl + depth-2 leaf atom indices on Ph (legacy name)."""
+    return _simple_leaf_atoms(mol, ph) | _depth2_atoms_on(mol, ph, _nb_outside)
 
 
 def _one_arm_atoms(mol: Mol, p: dict) -> set[int]:
