@@ -18,6 +18,7 @@ from namepredict.layer2.ring_parent import (
     _ring_side_starts,
 )
 from namepredict.layer2.side_alkyl import _linear_n_alkyl_sides_ok
+from namepredict.layer2.aryl_sub import _aryl_atoms, _aryl_exclude, _aryl_sub_n
 
 # Z of ring hetero → parent kind (5-membered mono)
 _HETERO5_KIND = {8: "furan", 16: "thiophene", 7: "pyrrole"}
@@ -32,39 +33,77 @@ def _ring_atoms_if_mono(info: dict) -> list[int] | None:
     return list(rings[0]["atom_ids"])
 
 
+def _unfused_ring(mol: Mol, ring: set[int]) -> bool:
+    for i in ring:
+        if sum(1 for r in mol.GetRingInfo().AtomRings() if i in r) != 1:
+            return False
+    return True
+
+
+def _arom_ring_lists(mol: Mol, n: int, pred) -> list[list[int]]:
+    out: list[list[int]] = []
+    for r in mol.GetRingInfo().AtomRings():
+        ids = list(r)
+        if len(ids) != n or not _unfused_ring(mol, set(ids)):
+            continue
+        if not all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ids):
+            continue
+        if pred(mol, ids):
+            out.append(ids)
+    return out
+
+
+def _is_c4n2(mol: Mol, atoms: list[int]) -> bool:
+    zs = _hetero5_zs(mol, atoms)
+    return zs.count(7) == 2 and zs.count(6) == 4
+
+
+def _is_c4x_mono(mol: Mol, atoms: list[int]) -> bool:
+    zs = _hetero5_zs(mol, atoms)
+    return zs.count(6) == 4 and sum(1 for z in zs if z in _HETERO5_KIND) == 1
+
+
+def _diazine_rings(mol: Mol) -> list[list[int]]:
+    return _arom_ring_lists(mol, 6, _is_c4n2)
+
+
+def _hetero5_rings(mol: Mol) -> list[list[int]]:
+    return _arom_ring_lists(mol, 5, _is_c4x_mono)
+
+
 def _hetero5_zs(mol: Mol, atom_ids: list[int]) -> list[int]:
     return [mol.GetAtomWithIdx(i).GetAtomicNum() for i in atom_ids]
 
 
 def _is_hetero5_core(info: dict) -> bool:
-    atom_ids = _ring_atoms_if_mono(info)
-    if atom_ids is None or len(atom_ids) != 5:
-        return False
-    mol: Mol = info["mol"]
-    if not all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atom_ids):
-        return False
-    zs = _hetero5_zs(mol, atom_ids)
-    return zs.count(6) == 4 and sum(1 for z in zs if z in _HETERO5_KIND) == 1
+    return bool(_hetero5_rings(info["mol"]))
 
 
-def _hetero5_idx(info: dict) -> int | None:
-    if not _is_hetero5_core(info):
-        return None
-    mol: Mol = info["mol"]
-    for i in info["rings"][0]["atom_ids"]:
+def _hetero5_idx_in(mol: Mol, ring: list[int]) -> int | None:
+    for i in ring:
         if mol.GetAtomWithIdx(i).GetAtomicNum() in _HETERO5_KIND:
             return i
     return None
 
 
-def _hetero5_kind(info: dict) -> str | None:
-    idx = _hetero5_idx(info)
+def _hetero5_kind_of(mol: Mol, ring: list[int]) -> str | None:
+    idx = _hetero5_idx_in(mol, ring)
     if idx is None:
         return None
-    z = info["mol"].GetAtomWithIdx(idx).GetAtomicNum()
-    if z == 7 and info["mol"].GetAtomWithIdx(idx).GetTotalNumHs() < 1:
+    z = mol.GetAtomWithIdx(idx).GetAtomicNum()
+    if z == 7 and mol.GetAtomWithIdx(idx).GetTotalNumHs() < 1:
         return None
     return _HETERO5_KIND.get(z)
+
+
+def _hetero5_idx(info: dict) -> int | None:
+    rings = _hetero5_rings(info["mol"])
+    return None if not rings else _hetero5_idx_in(info["mol"], rings[0])
+
+
+def _hetero5_kind(info: dict) -> str | None:
+    rings = _hetero5_rings(info["mol"])
+    return None if not rings else _hetero5_kind_of(info["mol"], rings[0])
 
 
 def _hetero5_fg_block(info: dict) -> bool:
@@ -86,29 +125,41 @@ def _mono_methyl_only(mol: Mol, ring: set[int], starts: list[int]) -> bool:
     return outside == set(starts)
 
 
-def _hetero5_subs_ok(mol: Mol, ring: set[int]) -> bool:
-    """Allow ≤2 ring simple subs: monohalo and/or n-alkyl C1–C2 (P-14.3.4)."""
-    h, starts = _ring_halo_n(mol, ring), _ring_side_starts(mol, ring)
-    if h + len(starts) > 2:
+def _hetero5_subs_ok(info: dict, mol: Mol, ring: set[int]) -> bool:
+    """Allow ≤2 ring subs: halo / methyl / aryl (P-14.3.4 / P-29.3)."""
+    n_aryl = _aryl_sub_n(info, ring)
+    excl = _aryl_exclude(info, ring)
+    h = _ring_halo_n(mol, ring)
+    starts = _ring_side_starts(mol, ring, excl)
+    if h + len(starts) + n_aryl > 2:
         return False
-    return _linear_n_alkyl_sides_ok(mol, ring, starts, 2)
+    return True if not starts else _linear_n_alkyl_sides_ok(mol, ring, starts, 2)
+
+
+def _h5_ring_ok(info: dict, ring: list[int]) -> bool:
+    mol, rs = info["mol"], set(ring)
+    if not _outside_ok(mol, rs, _aryl_atoms(info, rs)):
+        return False
+    return _hetero5_subs_ok(info, mol, rs)
+
+
+def _pick_hetero5_ring(info: dict) -> list[int] | None:
+    cands = [r for r in _hetero5_rings(info["mol"]) if _h5_ring_ok(info, r)]
+    return min(cands, key=min) if cands else None
 
 
 def _is_simple_hetero5(info: dict) -> bool:
-    if _hetero5_kind(info) is None or _hetero5_fg_block(info):
+    if _hetero5_fg_block(info):
         return False
-    mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
-    if not _outside_ok(mol, ring):
-        return False
-    return _hetero5_subs_ok(mol, ring)
+    return _pick_hetero5_ring(info) is not None
 
 
 def _hetero5_parent(info: dict) -> dict:
-    ring = list(info["rings"][0]["atom_ids"])
-    kind = _hetero5_kind(info)
+    ring = _pick_hetero5_ring(info) or _hetero5_rings(info["mol"])[0]
+    mol = info["mol"]
     return {
-        "chain": ring, "n_carbons": 5, "kind": kind,
-        "hetero_idx": _hetero5_idx(info),
+        "chain": ring, "n_carbons": 5, "kind": _hetero5_kind_of(mol, ring),
+        "hetero_idx": _hetero5_idx_in(mol, ring),
     }
 
 
@@ -117,21 +168,21 @@ def _try_hetero5_parent(info: dict) -> dict | None:
 
 
 def _is_diazine_core(info: dict) -> bool:
-    atom_ids = _ring_atoms_if_mono(info)
-    if atom_ids is None or len(atom_ids) != 6:
-        return False
-    mol: Mol = info["mol"]
-    if not all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atom_ids):
-        return False
-    zs = _hetero5_zs(mol, atom_ids)
-    return zs.count(7) == 2 and zs.count(6) == 4
+    return bool(_diazine_rings(info["mol"]))
 
 
-def _diazine_n_idxs(info: dict) -> list[int] | None:
-    if not _is_diazine_core(info):
+def _n_idxs_in(mol: Mol, ring: list[int]) -> list[int]:
+    return [i for i in ring if mol.GetAtomWithIdx(i).GetAtomicNum() == 7]
+
+
+def _diazine_n_idxs(info: dict, ring: list[int] | None = None) -> list[int] | None:
+    rings = _diazine_rings(info["mol"])
+    if ring is None:
+        ring = rings[0] if rings else None
+    if ring is None:
         return None
-    mol: Mol = info["mol"]
-    return [i for i in info["rings"][0]["atom_ids"] if mol.GetAtomWithIdx(i).GetAtomicNum() == 7]
+    ns = _n_idxs_in(info["mol"], ring)
+    return ns if len(ns) == 2 else None
 
 
 def _ring_nn_dist(atom_ids: list[int], n_idxs: list[int]) -> int:
@@ -140,12 +191,17 @@ def _ring_nn_dist(atom_ids: list[int], n_idxs: list[int]) -> int:
     return min(d, len(atom_ids) - d)
 
 
-def _diazine_kind(info: dict) -> str | None:
-    n_idxs = _diazine_n_idxs(info)
-    if n_idxs is None or len(n_idxs) != 2:
-        return None
-    ring = list(info["rings"][0]["atom_ids"])
+def _diazine_kind_of(ring: list[int], n_idxs: list[int]) -> str | None:
     return _DIAZINE_KIND.get(_ring_nn_dist(ring, n_idxs))
+
+
+def _diazine_kind(info: dict, ring: list[int] | None = None) -> str | None:
+    rings = _diazine_rings(info["mol"])
+    ring = ring or (rings[0] if rings else None)
+    ns = _diazine_n_idxs(info, ring)
+    if ring is None or ns is None:
+        return None
+    return _diazine_kind_of(ring, ns)
 
 
 def _diazine_fg_block(info: dict) -> bool:
@@ -176,36 +232,45 @@ def _diazine_side_methyl_ok(
 
 
 def _diazine_subs_ok(info: dict, mol: Mol, ring: set[int]) -> bool:
-    """Allow ≤4 simple ring subs: halo / methyl / methoxy / nitro (P-14.3.4)."""
+    """Allow ≤4 ring subs: halo / methyl / alkoxy / nitro / aryl."""
     alk, n_alk = _arene_alkoxy(info, ring)
+    excl = alk | _aryl_exclude(info, ring)
     h = _ring_halo_n(mol, ring)
-    starts = _ring_side_starts(mol, ring, alk)
-    n_sub = h + len(starts) + _ring_nitro_n(info, ring) + n_alk
+    starts = _ring_side_starts(mol, ring, excl)
+    n_sub = h + len(starts) + _ring_nitro_n(info, ring) + n_alk + _aryl_sub_n(info, ring)
     if n_sub > 4:
         return False
-    return _diazine_side_methyl_ok(mol, ring, starts, alk)
+    return True if not starts else _diazine_side_methyl_ok(mol, ring, starts, excl)
 
 
 def _diazine_outside_ok(info: dict, mol: Mol, ring: set[int]) -> bool:
     alk = _arene_alkoxy(info, ring)[0]
-    allowed = _ring_nitro_atoms(info, ring) | alk
+    allowed = _ring_nitro_atoms(info, ring) | alk | _aryl_atoms(info, ring)
     return _outside_ok(mol, ring, allowed)
 
 
+def _dz_ring_ok(info: dict, ring: list[int]) -> bool:
+    mol, rs = info["mol"], set(ring)
+    return _diazine_outside_ok(info, mol, rs) and _diazine_subs_ok(info, mol, rs)
+
+
+def _pick_diazine_ring(info: dict) -> list[int] | None:
+    cands = [r for r in _diazine_rings(info["mol"]) if _dz_ring_ok(info, r)]
+    return min(cands, key=min) if cands else None
+
+
 def _is_simple_diazine(info: dict) -> bool:
-    if _diazine_kind(info) is None or _diazine_fg_block(info):
+    if _diazine_fg_block(info):
         return False
-    mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
-    if not _diazine_outside_ok(info, mol, ring):
-        return False
-    return _diazine_subs_ok(info, mol, ring)
+    return _pick_diazine_ring(info) is not None
 
 
 def _diazine_parent(info: dict) -> dict:
-    ring = list(info["rings"][0]["atom_ids"])
+    ring = _pick_diazine_ring(info) or _diazine_rings(info["mol"])[0]
+    ns = _diazine_n_idxs(info, ring) or []
     return {
-        "chain": ring, "n_carbons": 6, "kind": _diazine_kind(info),
-        "n_idxs": _diazine_n_idxs(info),
+        "chain": ring, "n_carbons": 6, "kind": _diazine_kind_of(ring, ns),
+        "n_idxs": ns,
     }
 
 
@@ -238,23 +303,35 @@ def _pyrimidinamine_outside(info: dict, mol: Mol, ring: set[int], am_n: int) -> 
     return _outside_ok(mol, ring, allowed)
 
 
-def _is_simple_pyrimidinamine(info: dict) -> bool:
-    if _diazine_kind(info) != "pyrimidine" or _pyrimidinamine_fg_block(info):
-        return False
-    mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
-    am = _mono_amine_on_ring(info, ring)
+def _pyrimidinamine_ring_ok(info: dict, ring: list[int]) -> bool:
+    mol, rs = info["mol"], set(ring)
+    am = _mono_amine_on_ring(info, rs)
     if am is None or am.get("degree") != 1:
         return False
-    if not _pyrimidinamine_outside(info, mol, ring, am["n_idx"]):
+    if not _pyrimidinamine_outside(info, mol, rs, am["n_idx"]):
         return False
-    return _pyrimidinamine_subs_ok(info, mol, ring, am["n_idx"])
+    return _pyrimidinamine_subs_ok(info, mol, rs, am["n_idx"])
+
+
+def _pick_pyrimidinamine_ring(info: dict) -> list[int] | None:
+    if _pyrimidinamine_fg_block(info):
+        return None
+    cands = [
+        r for r in _diazine_rings(info["mol"])
+        if _diazine_kind(info, r) == "pyrimidine" and _pyrimidinamine_ring_ok(info, r)
+    ]
+    return min(cands, key=min) if cands else None
+
+
+def _is_simple_pyrimidinamine(info: dict) -> bool:
+    return _pick_pyrimidinamine_ring(info) is not None
 
 
 def _pyrimidinamine_parent(info: dict) -> dict:
-    ring = list(info["rings"][0]["atom_ids"])
+    ring = _pick_pyrimidinamine_ring(info) or _diazine_rings(info["mol"])[0]
     return {
         "chain": ring, "n_carbons": 6, "kind": "pyrimidinamine",
-        "n_idxs": _diazine_n_idxs(info),
+        "n_idxs": _diazine_n_idxs(info, ring),
         "amine_c_idx": info["amines"][0]["c_idx"],
     }
 
@@ -311,9 +388,9 @@ def _is_simple_diazole(info: dict, pair_fn) -> bool:
     if pair_fn(info) is None or _hetero5_fg_block(info):
         return False
     mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
-    if not _outside_ok(mol, ring):
+    if not _outside_ok(mol, ring, _aryl_atoms(info, ring)):
         return False
-    return _hetero5_subs_ok(mol, ring)
+    return _hetero5_subs_ok(info, mol, ring)
 
 
 def _diazole_parent(info: dict, kind: str, pair_fn) -> dict:
