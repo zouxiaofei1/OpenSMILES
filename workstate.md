@@ -102,4 +102,6 @@
 
 [#9eed8af][IUPAC P-22.2.1 / P-29.3] diazine/hetero5 多环挑选 + phenyl 侧链 [+8 tests, dual 8.3%(336)→8.4%(340)]
 
+[#12c0279][IUPAC P-22.2.1 / P-29.3] multi-ring fused56 + benzimidazole phenyl 侧链 [dual 8.4%(340) held]
+
 ## 其他
