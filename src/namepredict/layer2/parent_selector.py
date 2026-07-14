@@ -259,11 +259,17 @@ _UNSAT_FG_CORE = _UNSAT_FG_BASE + ("has_alcohol",)
 _ALKENAL_BAD = _UNSAT_FG_CORE + ("has_nitrile",)
 _ALKENENITRILE_BAD = _UNSAT_FG_CORE + ("has_aldehyde",)
 _ALKENOL_BAD = _UNSAT_FG_BASE + ("has_aldehyde", "has_nitrile")
-_ALKENOATE_BAD = tuple(k for k in _UNSAT_FG_CORE + ("has_nitrile",) if k != "has_ester")
+_ALKENOATE_BAD = tuple(k for k in _UNSAT_FG_BASE + ("has_nitrile",) if k != "has_ester")
+def _open_chain_unsat_atoms(mol, fg_c: int, db: dict) -> bool:
+    """True iff principal FG attach carbon and both C=C ends are acyclic."""
+    atoms = (int(fg_c), int(db["c1"]), int(db["c2"]))
+    return all(not mol.GetAtomWithIdx(a).IsInRing() for a in atoms)
 def _ok_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple) -> bool:
-    if info.get("has_ring") or info.get("has_alkyne"):
+    """Mono open-chain unsat FG: FG carbon + C=C ends not in ring (aryl OK)."""
+    if info.get("has_alkyne") or not _is_mono_fg(info, flag, ekey) or not _is_mono_alkene(info):
         return False
-    return _is_mono_fg(info, flag, ekey) and _is_mono_alkene(info) and _no_fgs(info, bad)
+    c, db, mol = info[ekey][0]["c_idx"], info["double_bonds"][0], info["mol"]
+    return _open_chain_unsat_atoms(mol, c, db) and _no_fgs(info, bad)
 def _unsat_cover_atoms(info, c_idx: int, db: dict) -> list[int]:
     atoms = {c_idx, db["c1"], db["c2"]}
     for key in ("hydroxyls", "ketones", "amines"):
@@ -285,9 +291,7 @@ def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
     u = _try_unsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
     return u or _fg_chain(info, ekey, skind, ckey, **extra)
 def _with_anion(info: dict, parent: dict) -> dict:
-    if any(c.get("anion") for c in info.get("carboxyls") or []):
-        return {**parent, "anion": True}
-    return parent
+    return {**parent, "anion": True} if any(c.get("anion") for c in info.get("carboxyls") or []) else parent
 def _ring_acid_try(info: dict) -> dict | None:
     for fn in (_try_shcooh, _try_h5cooh, _try_indcooh, _try_naphcooh, _try_qcooh,
                _try_pyridinecarboxylic_parent, _try_benzoic_parent,
@@ -297,13 +301,10 @@ def _ring_acid_try(info: dict) -> dict | None:
 def _poly_acid_try(info: dict) -> dict | None:
     if _is_simple_alkanedioic(info): return _diacid_parent(info)
     if _is_simple_alkenedioic(info): return _alkenedioic_parent(info)
-    return _try_hy_alkenoic(
-        info, _ALKENOIC_BAD, _best_cover_pair, _parent_dict, _db_pairs,
-    )
+    return _try_hy_alkenoic(info, _ALKENOIC_BAD, _best_cover_pair, _parent_dict, _db_pairs)
 def _acid_parent_core(info: dict) -> dict:
     top = _ring_acid_try(info) or _poly_acid_try(info)
-    if top is not None:
-        return top
+    if top is not None: return top
     return _unsat_or_sat(
         info, "has_acid", "carboxyls", _ALKENOIC_BAD, "alkenoic_acid", "acid", "cooh_c_idx",
     )

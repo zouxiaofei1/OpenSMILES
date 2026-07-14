@@ -4,13 +4,24 @@ from __future__ import annotations
 from namepredict.layer2.aliph_fg import _aliphatic_entries
 
 
+def _open_poly_atoms(mol, oh_c: int, dbs: list) -> bool:
+    """OH attach carbon and all C=C ends must be acyclic (aryl OK)."""
+    atoms = {int(oh_c)}
+    for db in dbs:
+        atoms.add(int(db["c1"]))
+        atoms.add(int(db["c2"]))
+    return all(not mol.GetAtomWithIdx(a).IsInRing() for a in atoms)
+
+
 def _polyalkenol_ok(info: dict, bad: tuple) -> bool:
-    """≥2 C=C, one aliphatic OH, no ring/alkyne/higher FG."""
-    if info.get("has_ring") or info.get("triple_bonds"):
+    """≥2 open-chain C=C, one aliphatic OH; molecule rings OK if parent open."""
+    if info.get("triple_bonds"):
         return False
-    if len(_aliphatic_entries(info, "hydroxyls")) != 1:
+    ohs = _aliphatic_entries(info, "hydroxyls")
+    dbs = info.get("double_bonds") or []
+    if len(ohs) != 1 or len(dbs) < 2:
         return False
-    if len(info.get("double_bonds") or []) < 2:
+    if not _open_poly_atoms(info["mol"], ohs[0]["c_idx"], dbs):
         return False
     return not any(info.get(k) for k in bad)
 

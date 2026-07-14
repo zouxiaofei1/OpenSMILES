@@ -116,14 +116,21 @@ def join_parent_name(prefix: str, parent: str) -> str:
     return f"{stereo}{body}"
 
 
+def _join_alkyl_stereo(alkyl: str, pre: str, rest: str) -> str:
+    """alkyl + stereo-lead rest with substituent prefix after stereo."""
+    st, body = _stereo_lead(rest)
+    return f"{alkyl} {st}{pre}{body}" if alkyl else f"{st}{pre}{body}"
+
+
 def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str]) -> tuple[str, str]:
-    """methyl butanoate + 2-oxo-4-phenyl → methyl 2-oxo-4-phenylbutanoate."""
+    """methyl butanoate + 2-oxo → methyl 2-oxobutanoate; keeps (E)- after alkyl."""
     en, zh = names
     if not pre_en:
         return en, zh
     parts = en.split(" ", 1)
-    en = f"{parts[0]} {pre_en}{parts[1]}" if len(parts) == 2 else f"{pre_en}{en}"
-    return en, f"{pre_zh}{zh}" if pre_zh else zh
+    en = _join_alkyl_stereo(parts[0] if len(parts) == 2 else "", pre_en, parts[-1])
+    stz, bodyz = _stereo_lead(zh)
+    return en, f"{stz}{pre_zh}{bodyz}" if pre_zh else zh
 
 
 def join_kind_name(

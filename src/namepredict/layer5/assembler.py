@@ -87,12 +87,12 @@ def _unsat_stem_names(n: int, locant: int | None, en_sfx: str, zh_sfx: str) -> t
         return None
     en, zh = plain
     return f"{en[:-3]}-{locant}-{en_sfx}", f"{zh_stem(zh)}-{locant}-{zh_sfx}"
-def _alkenoate_names(n, locant, alkoxy_n) -> tuple[str, str] | None:
+def _alkenoate_names(n, locant, alkoxy_n, ez="") -> tuple[str, str] | None:
     alkyl = _ester_alkyl_pair(alkoxy_n) if alkoxy_n is not None else None
     stem = _unsat_stem_names(n, locant, "enoate", "烯酸")
     if not alkyl or not stem:
         return None
-    return f"{alkyl[0]} {stem[0]}", f"{stem[1]}{alkyl[1]}酯"
+    return f"{alkyl[0]} {ez}{stem[0]}", f"{ez}{stem[1]}{alkyl[1]}酯"
 def _alkenal_names(n: int, locant: int | None) -> tuple[str, str] | None:
     return _unsat_stem_names(n, locant, "enal", "烯醛")
 def _alkenenitrile_names(n: int, locant: int | None) -> tuple[str, str] | None:
@@ -241,15 +241,13 @@ def _nitrile_or_none(kind: str, n: int, numbered: dict | None = None) -> tuple[s
     return None
 def _ester_or_alkenoate(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     parent = numbered.get("parent") or {}
-    if kind == "ester":
-        return _ester_names(n, parent.get("alkoxy_n"))
-    if kind == "alkenoate":
-        return _alkenoate_names(n, numbered.get("ene_locant"), parent.get("alkoxy_n"))
-    return None
+    if kind == "ester": return _ester_names(n, parent.get("alkoxy_n"))
+    if kind != "alkenoate": return None
+    from namepredict.layer5.unsat_acid import _ez_prefix
+    return _alkenoate_names(n, numbered.get("ene_locant"), parent.get("alkoxy_n"), _ez_prefix(numbered))
 def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _ester_or_alkenoate(kind, n, numbered)
-    if top is not None:
-        return top
+    if top is not None: return top
     if kind == "dione":
         return _dione_names(n, numbered.get("ketone_locants"))
     if kind == "ketone":

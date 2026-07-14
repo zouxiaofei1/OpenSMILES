@@ -24,11 +24,24 @@ def _prefix_fg_ok(info: dict) -> bool:
     return oh <= 1 and am <= 1 and ox <= 1 and (oh + am + ox) >= 1
 
 
+def _open_parent_atoms(mol, cooh: int, dbs: list) -> bool:
+    """Principal COOH carbon and all C=C ends must be acyclic (aryl OK)."""
+    atoms = {int(cooh)}
+    for db in dbs:
+        atoms.add(int(db["c1"]))
+        atoms.add(int(db["c2"]))
+    return all(not mol.GetAtomWithIdx(a).IsInRing() for a in atoms)
+
+
 def _prefix_ok(info: dict, bad: tuple) -> bool:
-    """Mono COOH + ≥1 C=C + optional mono OH/amine/ketone prefixes."""
-    if info.get("has_ring") or info.get("triple_bonds") or info.get("has_alkyne"):
+    """Mono COOH + ≥1 open-chain C=C + optional mono OH/amine/ketone prefixes."""
+    if info.get("triple_bonds") or info.get("has_alkyne"):
         return False
-    if len(info.get("carboxyls") or []) != 1 or not (info.get("double_bonds") or []):
+    carbs = info.get("carboxyls") or []
+    dbs = info.get("double_bonds") or []
+    if len(carbs) != 1 or not dbs:
+        return False
+    if not _open_parent_atoms(info["mol"], carbs[0]["c_idx"], dbs):
         return False
     return _prefix_fg_ok(info) and not any(info.get(k) for k in bad)
 
