@@ -385,13 +385,15 @@ def _hetero_or_ring_halo(mol: Mol, ring_set: set[int], allowed: set[int]) -> boo
 def _arene_fg_subs_ok(
     mol: Mol, ring_set: set[int], allowed: set[int], n_nitro: int = 0,
     n_amino: int = 0, n_alkoxy: int = 0, exclude: set[int] | None = None,
+    n_aryl: int = 0,
 ) -> bool:
     if not _hetero_or_ring_halo(mol, ring_set, allowed):
         return False
     starts = _ring_side_starts(mol, ring_set, exclude)
     if len(_benzene_alkyl_ns(mol, ring_set, starts, exclude)) != len(starts):
         return False
-    return _ring_halo_n(mol, ring_set) + len(starts) + n_nitro + n_amino + n_alkoxy <= 4
+    n = _ring_halo_n(mol, ring_set) + len(starts) + n_nitro + n_amino + n_alkoxy + n_aryl
+    return n <= 4
 
 def _ring_primary_amines(info: dict, ring_set: set[int]) -> list:
     return [
@@ -405,31 +407,13 @@ def _phenol_amines_ok(info: dict, ring_set: set[int]) -> list | None:
         return None
     return ring_ams
 
-def _phenol_allowed(info: dict, ring_set: set[int], oh: dict, ring_ams: list) -> set[int]:
-    am_n = {a["n_idx"] for a in ring_ams}
-    return {oh["o_idx"]} | _ring_nitro_atoms(info, ring_set) | am_n | _ring_alkoxy_atoms(info, ring_set)
-
-def _phenol_subs_ok(mol: Mol, info: dict, ring_set: set[int], oh: dict, ring_ams: list) -> bool:
-    alk, n_alk = _arene_alkoxy(info, ring_set)
-    allowed = _phenol_allowed(info, ring_set, oh, ring_ams)
-    return _arene_fg_subs_ok(
-        mol, ring_set, allowed, _ring_nitro_n(info, ring_set), len(ring_ams), n_alk, alk,
-    )
-
-def _is_simple_phenol(info: dict) -> bool:
-    if not _is_benzene_core(info):
-        return False
-    mol, ring_set = info["mol"], set(info["rings"][0]["atom_ids"])
-    oh, ring_ams = _mono_oh_on_ring(info, ring_set), _phenol_amines_ok(info, ring_set)
-    if oh is None or ring_ams is None:
-        return False
-    return _phenol_subs_ok(mol, info, ring_set, oh, ring_ams)
 
 def _di_oh_on_ring(info: dict, ring_set: set[int]) -> list[dict] | None:
     hydroxyls = info.get("hydroxyls") or []
     if len(hydroxyls) != 2 or any(h["c_idx"] not in ring_set for h in hydroxyls):
         return None
     return hydroxyls
+
 
 def _is_simple_benzenediol(info: dict) -> bool:
     if not _is_benzene_core(info) or info.get("amines"):
@@ -440,22 +424,13 @@ def _is_simple_benzenediol(info: dict) -> bool:
         return False
     return _hetero_allowed(mol, ring_set, {h["o_idx"] for h in ohs})
 
+
 def _benzenediol_parent(info: dict) -> dict:
     ring = list(info["rings"][0]["atom_ids"])
     ohs = _di_oh_on_ring(info, set(ring)) or []
     return {"chain": ring, "n_carbons": len(ring), "kind": "benzenediol",
             "oh_c_idxs": [h["c_idx"] for h in ohs]}
 
-def _is_simple_aniline(info: dict) -> bool:
-    if not _is_benzene_core(info) or info.get("hydroxyls"):
-        return False
-    mol, ring_set = info["mol"], set(info["rings"][0]["atom_ids"])
-    am = _mono_amine_on_ring(info, ring_set)
-    if am is None or am.get("degree") != 1:
-        return False
-    alk, n_alk = _arene_alkoxy(info, ring_set)
-    allowed = {am["n_idx"]} | _ring_nitro_atoms(info, ring_set) | alk
-    return _arene_fg_subs_ok(mol, ring_set, allowed, _ring_nitro_n(info, ring_set), 0, n_alk, alk)
 
 def _is_methyl_on_ring(mol: Mol, s: int, ring_set: set[int]) -> bool:
     if _is_cf3_carbon(mol, s):

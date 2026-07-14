@@ -237,3 +237,26 @@ def _unsub_phenyl_at(mol: Mol, c_idx: int, n_idx: int) -> bool:
 
 def _arom_c6_ring_lists(mol: Mol) -> list[list[int]]:
     return [list(r) for r in mol.GetRingInfo().AtomRings() if _is_arom_c6(mol, r)]
+
+
+def _unfused_c6_at(mol: Mol, c_idx: int) -> set[int] | None:
+    """Sole unfused aromatic C6 containing c_idx, else None."""
+    hits = [
+        set(r) for r in _arom_c6_ring_lists(mol)
+        if c_idx in r and _is_unfused_benzene_ring(mol, set(r))
+    ]
+    return hits[0] if len(hits) == 1 else None
+
+
+def _exocyclic_fg_ring(mol: Mol, fg_c: int) -> set[int] | None:
+    """Unfused C6 attached to exocyclic FG carbon (COOH/CHO/CN/...)."""
+    nbs = [
+        n.GetIdx() for n in mol.GetAtomWithIdx(fg_c).GetNeighbors()
+        if n.GetAtomicNum() == 6 and n.GetIsAromatic()
+    ]
+    return _unfused_c6_at(mol, nbs[0]) if len(nbs) == 1 else None
+
+
+def _aryl_exclude(info: dict, parent: set[int]) -> set[int]:
+    mol: Mol = info["mol"]
+    return _aryl_atoms(info, parent) | _phenyl_starts_set(mol, parent)

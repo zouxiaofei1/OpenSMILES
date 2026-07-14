@@ -21,12 +21,12 @@ from namepredict.layer2.heteroarene5 import _try_pyrimidinamine_parent
 from namepredict.layer2.pyridine import (
     _try_pyridinecarbonitrile_parent as _try_pycn, _try_pyridinecarboxylic_parent, _try_pyridin_fg_parent,
 )
+from namepredict.layer2.phenol_aniline import (
+    _aniline_parent, _is_simple_aniline, _is_simple_phenol, _phenol_parent)
 from namepredict.layer2.ring_parent import (
-    _benzenediol_parent, _endocyclic_double, _is_simple_aniline, _is_simple_benzene,
-    _is_simple_benzenediol, _is_simple_cycloalcohol, _is_simple_cycloalkane,
-    _is_simple_cycloalkene, _is_simple_cycloamine, _is_simple_cycloketone,
-    _is_simple_phenol, _unsub_phenyl_at,
-)
+    _benzenediol_parent, _endocyclic_double, _is_simple_benzene, _is_simple_benzenediol,
+    _is_simple_cycloalcohol, _is_simple_cycloalkane, _is_simple_cycloalkene,
+    _is_simple_cycloamine, _is_simple_cycloketone, _unsub_phenyl_at)
 from namepredict.layer2.scoring import _pick_best
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
     atom = mol.GetAtomWithIdx(idx)
@@ -170,10 +170,10 @@ def _ring_fg_try(info: dict, pairs, ekey: str, ckey: str) -> dict | None:
 def _ring_alcohol_parent(info: dict) -> dict | None:
     if _is_simple_benzenediol(info): return _benzenediol_parent(info)
     top = _try_qol(info) or _try_btol(info) or _try_pyridin_fg_parent(info)
-    return top or _ring_fg_try(
-        info, ((_is_simple_phenol, "phenol"), (_is_simple_cycloalcohol, "cycloalcohol")),
-        "hydroxyls", "oh_c_idx",
-    )
+    if top is not None: return top
+    if _is_simple_phenol(info): return _phenol_parent(info)
+    return _ring_fg_try(info, ((_is_simple_cycloalcohol, "cycloalcohol"),),
+                        "hydroxyls", "oh_c_idx")
 def _alcohol_parent(info: dict) -> dict:
     ring = _ring_alcohol_parent(info)
     if ring is not None: return ring
@@ -224,8 +224,8 @@ def _ring_amine_parent(info: dict) -> dict | None:
     top = (_try_btzam(info) or _try_bimam(info) or _try_bfam(info)
            or _try_pyrimidinamine_parent(info) or _try_pyridin_fg_parent(info))
     if top is not None: return top
-    return _ring_fg_try(info, ((_is_simple_aniline, "aniline"),
-        (_is_simple_cycloamine, "cycloamine")), "amines", "amine_c_idx")
+    if _is_simple_aniline(info): return _aniline_parent(info)
+    return _ring_fg_try(info, ((_is_simple_cycloamine, "cycloamine"),), "amines", "amine_c_idx")
 def _amine_parent(info: dict) -> dict:
     ring = _ring_amine_parent(info)
     if ring is not None: return ring

@@ -3,6 +3,13 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.layer2.aryl_sub import (
+    _aryl_atoms,
+    _aryl_exclude,
+    _aryl_sub_n,
+    _exocyclic_fg_ring,
+    _ring_phenoxys,
+)
 from namepredict.layer2.ring_parent import (
     _arene_alkoxy,
     _arene_fg_subs_ok,
@@ -66,7 +73,9 @@ def _arene_fg_conflict(
 
 
 def _arene_ethers_ok(info: dict, ring_set: set[int]) -> bool:
-    return len(info.get("ethers") or []) == len(_ring_alkoxy_ethers(info, ring_set))
+    n_ether = len(info.get("ethers") or [])
+    n_ok = len(_ring_alkoxy_ethers(info, ring_set)) + len(_ring_phenoxys(info, ring_set))
+    return n_ether == n_ok
 
 
 def _arene_ring_prefix_ok(info: dict, ring_set: set[int]) -> bool:
@@ -84,7 +93,17 @@ def _arene_prefix_atoms(info: dict, ring_set: set[int]) -> set[int]:
         | {h["o_idx"] for h in ohs}
         | _ring_nitro_atoms(info, ring_set)
         | alk
+        | _aryl_atoms(info, ring_set)
     )
+
+
+def _arene_sub_ctx(info: dict, ring_set: set[int], exclude: set[int], allowed: set[int]):
+    alk, n_alk = _arene_alkoxy(info, ring_set)
+    ams = _ring_primary_amines(info, ring_set)
+    n_oh = len(_ring_phenol_ohs(info, ring_set))
+    full = allowed | _arene_prefix_atoms(info, ring_set)
+    excl = exclude | alk | _aryl_exclude(info, ring_set)
+    return full, excl, n_alk, len(ams) + n_oh
 
 
 def _arene_subs_ok(
@@ -92,33 +111,36 @@ def _arene_subs_ok(
 ) -> bool:
     if not _arene_ring_prefix_ok(info, ring_set):
         return False
-    alk, n_alk = _arene_alkoxy(info, ring_set)
-    ams = _ring_primary_amines(info, ring_set)
-    n_oh = len(_ring_phenol_ohs(info, ring_set))
-    full = allowed | _arene_prefix_atoms(info, ring_set)
+    full, excl, n_alk, n_am = _arene_sub_ctx(info, ring_set, exclude, allowed)
     return _arene_fg_subs_ok(
-        mol, ring_set, full,
-        _ring_nitro_n(info, ring_set), len(ams) + n_oh, n_alk, exclude | alk,
+        mol, ring_set, full, _ring_nitro_n(info, ring_set), n_am, n_alk, excl,
+        _aryl_sub_n(info, ring_set),
     )
+
+
+def _pick_fg_ring(info: dict, ekey: str) -> set[int] | None:
+    entries = info.get(ekey) or []
+    if len(entries) != 1:
+        return None
+    return _exocyclic_fg_ring(info["mol"], entries[0]["c_idx"])
 
 
 def _is_simple_benzoic(info: dict) -> bool:
     if not _is_benzene_core(info) or _arene_fg_conflict(info, "has_aldehyde", "has_ketone"):
         return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
-    if _carboxyl_ring_c(info, ring_set) is None:
+    ring = _pick_fg_ring(info, "carboxyls")
+    if ring is None or _carboxyl_ring_c(info, ring) is None:
         return False
-    fg_c = info["carboxyls"][0]["c_idx"]
-    return _arene_subs_ok(info, mol, ring_set, {fg_c}, _cooh_oxygen_idxs(mol, fg_c))
+    mol, fg_c = info["mol"], info["carboxyls"][0]["c_idx"]
+    return _arene_subs_ok(info, mol, ring, {fg_c}, _cooh_oxygen_idxs(mol, fg_c))
 
 
 def _benzoic_parent(info: dict) -> dict:
-    ring = list(info["rings"][0]["atom_ids"])
+    ring = _pick_fg_ring(info, "carboxyls") or set()
     cooh_c = info["carboxyls"][0]["c_idx"]
     return {
-        "chain": ring, "n_carbons": 6, "kind": "benzoic",
-        "cooh_c_idx": cooh_c, "ring_attach_idx": _carboxyl_ring_c(info, set(ring)),
+        "chain": list(ring), "n_carbons": 6, "kind": "benzoic",
+        "cooh_c_idx": cooh_c, "ring_attach_idx": _carboxyl_ring_c(info, ring),
     }
 
 
@@ -129,10 +151,10 @@ def _try_benzoic_parent(info: dict) -> dict | None:
 def _oxo_fg_ok(info: dict, ekey: str, *conflict: str) -> tuple | None:
     if not _is_benzene_core(info) or _arene_fg_conflict(info, *conflict):
         return None
-    mol, ring = info["mol"], set(info["rings"][0]["atom_ids"])
-    if _fg_ring_c(info, ring, ekey) is None:
+    ring = _pick_fg_ring(info, ekey)
+    if ring is None or _fg_ring_c(info, ring, ekey) is None:
         return None
-    fg_c = info[ekey][0]["c_idx"]
+    mol, fg_c = info["mol"], info[ekey][0]["c_idx"]
     o_idx = _dbl_o_idx(mol, fg_c)
     return (mol, ring, fg_c, o_idx) if o_idx is not None else None
 
@@ -146,11 +168,11 @@ def _is_simple_benzaldehyde(info: dict) -> bool:
 
 
 def _benzaldehyde_parent(info: dict) -> dict:
-    ring = list(info["rings"][0]["atom_ids"])
+    ring = _pick_fg_ring(info, "aldehydes") or set()
     ald_c = info["aldehydes"][0]["c_idx"]
     return {
-        "chain": ring, "n_carbons": 6, "kind": "benzaldehyde",
-        "aldehyde_c_idx": ald_c, "ring_attach_idx": _aldehyde_ring_c(info, set(ring)),
+        "chain": list(ring), "n_carbons": 6, "kind": "benzaldehyde",
+        "aldehyde_c_idx": ald_c, "ring_attach_idx": _aldehyde_ring_c(info, ring),
     }
 
 
@@ -190,13 +212,13 @@ def _is_simple_acetophenone(info: dict) -> bool:
 
 
 def _acetophenone_parent(info: dict) -> dict:
-    ring = list(info["rings"][0]["atom_ids"])
+    ring = _pick_fg_ring(info, "ketones") or set()
     ket_c = info["ketones"][0]["c_idx"]
-    me = _acetyl_methyl_c(info["mol"], ket_c, set(ring))
+    me = _acetyl_methyl_c(info["mol"], ket_c, ring)
     return {
-        "chain": ring, "n_carbons": 6, "kind": "acetophenone",
+        "chain": list(ring), "n_carbons": 6, "kind": "acetophenone",
         "ketone_c_idx": ket_c, "acetyl_methyl_idx": me,
-        "ring_attach_idx": _ketone_ring_c(info, set(ring)),
+        "ring_attach_idx": _ketone_ring_c(info, ring),
     }
 
 
@@ -264,8 +286,8 @@ def _arene_fg_ctx(
         info, "has_acid", "has_aldehyde", "has_ketone", allow=allow,
     ):
         return None
-    ring = set(info["rings"][0]["atom_ids"])
-    if _fg_ring_c(info, ring, ekey) is None:
+    ring = _pick_fg_ring(info, ekey)
+    if ring is None or _fg_ring_c(info, ring, ekey) is None:
         return None
     return info["mol"], ring
 
@@ -283,14 +305,14 @@ def _is_simple_benzoate(info: dict) -> bool:
 
 
 def _benzoate_parent(info: dict) -> dict:
-    ring = list(info["rings"][0]["atom_ids"])
+    ring = _pick_fg_ring(info, "esters") or set()
     e, mol = info["esters"][0], info["mol"]
     an = _simple_alkoxy_n(mol, e["alkoxy_c_idx"], e["o_idx"])
     return {
-        "chain": ring, "n_carbons": 6, "kind": "benzoate",
+        "chain": list(ring), "n_carbons": 6, "kind": "benzoate",
         "ester_c_idx": e["c_idx"], "o_idx": e["o_idx"],
         "alkoxy_c_idx": e["alkoxy_c_idx"], "alkoxy_n": an,
-        "ring_attach_idx": _fg_ring_c(info, set(ring), "esters"),
+        "ring_attach_idx": _fg_ring_c(info, ring, "esters"),
     }
 
 
@@ -317,11 +339,11 @@ def _is_simple_benzonitrile(info: dict) -> bool:
 
 
 def _benzonitrile_parent(info: dict) -> dict:
-    ring = list(info["rings"][0]["atom_ids"])
+    ring = _pick_fg_ring(info, "nitriles") or set()
     c = info["nitriles"][0]["c_idx"]
     return {
-        "chain": ring, "n_carbons": 6, "kind": "benzonitrile",
-        "nitrile_c_idx": c, "ring_attach_idx": _fg_ring_c(info, set(ring), "nitriles"),
+        "chain": list(ring), "n_carbons": 6, "kind": "benzonitrile",
+        "nitrile_c_idx": c, "ring_attach_idx": _fg_ring_c(info, ring, "nitriles"),
     }
 
 
@@ -345,12 +367,12 @@ def _is_simple_benzoyl_chloride(info: dict) -> bool:
 
 
 def _benzoyl_chloride_parent(info: dict) -> dict:
-    ring = list(info["rings"][0]["atom_ids"])
+    ring = _pick_fg_ring(info, "acyl_chlorides") or set()
     e = info["acyl_chlorides"][0]
     return {
-        "chain": ring, "n_carbons": 6, "kind": "benzoyl_chloride",
+        "chain": list(ring), "n_carbons": 6, "kind": "benzoyl_chloride",
         "acyl_c_idx": e["c_idx"], "cl_idx": e["cl_idx"],
-        "ring_attach_idx": _fg_ring_c(info, set(ring), "acyl_chlorides"),
+        "ring_attach_idx": _fg_ring_c(info, ring, "acyl_chlorides"),
     }
 
 
