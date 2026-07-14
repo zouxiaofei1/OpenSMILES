@@ -107,7 +107,8 @@
 [#fc5b107][架构] LeafHandler registry：protocol+match/name；complex 先于 simple；name_ph_ring 只组装 [dual 8.6%(349)→8.7%(352), en 353→356, fails 3713→3710]
 [#0027734][IUPAC P-29.3] registry 叶 n-alkyl/MeS/cyano + 嵌套苄基；Ar-CN 不作链腈母体 [+13 tests, dual 8.7%(352)→8.6%(351), en 356→355]
 [#60bbca7][IUPAC P-62.2.2.1 / P-29.3] 仲胺优先芳基臂+claim Ph；酯前缀插在烷基与酰基间 [+11 tests, dual 8.6%(351)→8.7%(355), en 355→359, fails 3711→3707]
+[#9892a4f][IUPAC P-44 / P-29.6] 开链 FG walk 不进环；claim 环己基/哌啶基侧链 [+11 tests, dual 8.7%(355)→8.8%(357), en 359→361, fails 3707→3705]
 
 ## 其他
 - 加叶：layer2/leaves 注册 handler（match+name），勿改 ring_namer 核心
-- 链吃芳环：仲胺等长臂已修；仍有杂环/硼酸/复杂酰胺等未 claim 簇
+- 母体选错：开链 walk 吞环已修；仍有酰胺 N-苄基、杂环母体、硼酸等簇
