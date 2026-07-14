@@ -104,6 +104,8 @@
 [#9636b18][IUPAC P-29.3 / P-63.1 / P-62.2] depth-2 hydroxy/amino 叶 + 脂肪 poly-FG 过滤 [+16 tests, dual 8.4%(343)→8.6%(348), en 347→352, fails 3719→3714]
 [#e6fe524][IUPAC P-29.3] depth-2 propoxy/butoxy + 嵌套未取代 Ph 叶；酚OH不抢脂肪胺母体 [+10 tests, dual 8.6%(348) 持平, en 352]
 [#50c8d97][IUPAC P-29.3 / P-14.3.1] 真递归芳基取代基 namer（depth≤3）：嵌套 Ph/OPh 可再带叶 [+12 tests, dual 8.6%(348)→8.6%(349), en 352→353, fails 3714→3713]
+[#fc5b107][架构] LeafHandler registry：protocol+match/name；complex 先于 simple；name_ph_ring 只组装 [dual 8.6%(349)→8.7%(352), en 353→356, fails 3713→3710]
 
 ## 其他
-- 递归未做：嵌套 Ph 再嵌套 Ph（depth=4）；N-芳基上的递归叶；嵌套苄基
+- 加叶：在 layer2/leaves 注册 handler（match+name），勿改 ring_namer 核心
+- 递归未做：嵌套苄基；N-芳基叶；pyridyl skeleton
