@@ -138,6 +138,20 @@ def all_kinds() -> frozenset[str]:
     return frozenset(_REG)
 
 
+# Ordered ring parent producers (filled by layer2.ring_producers bootstrap).
+_RING_TRY: list = []
+
+
+def register_ring_try(fn) -> None:
+    """Append a ring parent producer: (info) -> parent dict | None."""
+    _RING_TRY.append(fn)
+
+
+def ring_try_fns() -> list:
+    """Return registered ring parent try callables (order = try order)."""
+    return list(_RING_TRY)
+
+
 def _add(
     kind: str,
     *,

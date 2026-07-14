@@ -3,16 +3,19 @@
 FG and ring classes each try independently (no short-circuit `or`).
 Scoring then picks the best among all viable parents so `_FG_RANK`
 actually arbitrates acid vs alcohol vs amine, etc.
+
+Ring parent producers are registered in `layer2.ring_producers` →
+`kind_registry.ring_try_fns()` (not a hand-written tuple here).
 """
 from __future__ import annotations
 
+from namepredict.layer2 import kind_registry as _kr
+from namepredict.layer2 import ring_producers as _ring_producers  # noqa: F401  bootstrap
 from namepredict.layer2.arene_carbonyl import _try_arene_other_fg
-from namepredict.layer2.azole13 import _try_azole13_parent
-from namepredict.layer2.heteroarene5 import (
-    _try_diazine_parent, _try_hetero5_parent,
-    _try_imidazole_parent, _try_pyrazole_parent,
+from namepredict.layer2.benzenediamine import (
+    _benzenediamine_parent,
+    _is_simple_benzenediamine,
 )
-from namepredict.layer2.sat_hetero import _try_sat_hetero_parent
 from namepredict.layer2.parent_selector import (
     _acid_parent,
     _acyl_chloride_parent,
@@ -24,7 +27,6 @@ from namepredict.layer2.parent_selector import (
     _amine_parent,
     _anhydride_parent,
     _benzene_parent,
-    _cycloalkane_parent,
     _ester_parent,
     _ether_parent,
     _is_mono_alkene,
@@ -40,34 +42,14 @@ from namepredict.layer2.parent_selector import (
     _sulfide_parent,
     _thiol_parent,
 )
-from namepredict.layer2.pyridine import _try_pyridine_parent
-from namepredict.layer2.anthracene import _try_anthracene_parent
-from namepredict.layer2.benzodiazine import _try_quinazoline_parent, _try_quinoxaline_parent
-from namepredict.layer2.naphthalene import _try_naphthalene_parent
-from namepredict.layer2.indole import _try_indole_parent
-from namepredict.layer2.indazole import _try_indazole_parent
-from namepredict.layer2.benzofuran import _try_benzofuran_parent
-from namepredict.layer2.benzothiazole import _try_benzothiazole_parent
-from namepredict.layer2.benzoxazole import _try_benzoxazole_parent
-from namepredict.layer2.benzimidazole import (
-    _try_benzimidazole_parent,
-    _try_benzimidazolamine_parent,
-)
-from namepredict.layer2.benzothiophene import _try_benzothiophene_parent
-from namepredict.layer2.quinoline import (
-    _try_isoquinoline_parent,
-    _try_quinoline_parent,
-)
-from namepredict.layer2.benzenediamine import (
-    _benzenediamine_parent,
-    _is_simple_benzenediamine,
-)
 from namepredict.layer2.ring_parent import (
     _is_benzene_core,
     _is_simple_benzene,
-    _is_simple_cycloalkane,
 )
 from namepredict.layer2.scoring import _pick_best
+
+# silence unused: import side-effect registers producers
+assert _ring_producers is not None
 
 
 def _benzene_candidate(info: dict) -> dict | None:
@@ -175,30 +157,8 @@ def _fg_candidates(info: dict) -> list[dict]:
     return [c for fn in _FG_TRY if (c := fn(info)) is not None]
 
 
-def _try_simple_benzene(info: dict) -> dict | None:
-    return _benzene_parent(info) if _is_simple_benzene(info) else None
-
-
-def _try_simple_cycloalkane(info: dict) -> dict | None:
-    return _cycloalkane_parent(info) if _is_simple_cycloalkane(info) else None
-
-
-_RING_TRY = (
-    _try_anthracene_parent, _try_quinazoline_parent, _try_quinoxaline_parent, _try_naphthalene_parent,
-    _try_indole_parent, _try_indazole_parent,
-    _try_benzofuran_parent, _try_benzothiophene_parent,
-    _try_benzothiazole_parent, _try_benzoxazole_parent,
-    _try_benzimidazolamine_parent, _try_benzimidazole_parent,
-    _try_quinoline_parent, _try_isoquinoline_parent,
-    _try_pyridine_parent, _try_diazine_parent,
-    _try_imidazole_parent, _try_pyrazole_parent, _try_azole13_parent,
-    _try_hetero5_parent, _try_sat_hetero_parent,
-    _try_simple_benzene, _try_simple_cycloalkane,
-)
-
-
 def _ring_candidates(info: dict) -> list[dict]:
-    return [c for fn in _RING_TRY if (c := fn(info)) is not None]
+    return [c for fn in _kr.ring_try_fns() if (c := fn(info)) is not None]
 
 
 def _unsat_candidates(info: dict) -> list[dict]:
