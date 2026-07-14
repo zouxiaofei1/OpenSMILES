@@ -1,7 +1,7 @@
-"""Depth-1 unsubstituted (or mono-halo) phenyl / phenoxy topology (P-29.3).
+"""Depth-1 aryl arms: Ph / OPh / CH2Ph / OCH2Ph (P-29.3).
 
-Used by L2 parent selection (allowed atoms / ring pick) and L3 extractors.
-Nested aryl (Ph-on-Ph) is intentionally rejected this round (depth=1).
+Ph may carry ≤3 terminal ring-halos; locants from attach=1 (lowest set).
+Nested aryl (Ph-on-Ph as depth≥2 arm) is rejected; extend via depth hooks.
 """
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ from rdkit.Chem import Mol
 _HALO = frozenset({9, 17, 35, 53})
 _HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
 _HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}
+_MULT_EN = {1: "", 2: "di", 3: "tri"}
+_MULT_ZH = {1: "", 2: "二", 3: "三"}
 
 
 def _is_arom_c6(mol: Mol, atoms) -> bool:
@@ -56,7 +58,7 @@ def _count_side_halos(mol: Mol, ring: set[int], attach: int, parent: int) -> int
 
 def _side_ok(mol: Mol, ring: set[int], attach: int, parent: int) -> bool:
     n = _count_side_halos(mol, ring, attach, parent)
-    return n is not None and n <= 1
+    return n is not None and n <= 3
 
 
 def _phenyl_at(mol: Mol, attach: int, parent: int) -> set[int] | None:
@@ -67,13 +69,17 @@ def _phenyl_at(mol: Mol, attach: int, parent: int) -> set[int] | None:
     return ring if _side_ok(mol, ring, attach, parent) else None
 
 
-def _halo_pair(mol: Mol, ring: set[int]) -> tuple[int, int] | None:
-    found = [
+def _halo_list(mol: Mol, ring: set[int]) -> list[tuple[int, int]]:
+    return [
         (i, nb.GetAtomicNum())
         for i in ring
         for nb in _nb_outside(mol, i, ring)
         if _is_terminal_halo(nb)
     ]
+
+
+def _halo_pair(mol: Mol, ring: set[int]) -> tuple[int, int] | None:
+    found = _halo_list(mol, ring)
     return found[0] if len(found) == 1 else None
 
 
@@ -95,18 +101,107 @@ def _walk_ring(mol: Mol, ring: set[int], start: int, nxt: int) -> list[int]:
     return path
 
 
+def _loc_tuple(order: list[int], sites: list[int]) -> tuple[int, ...]:
+    return tuple(sorted(order.index(s) + 1 for s in sites if s in order))
+
+
 def _ring_order(mol: Mol, ring: set[int], start: int) -> list[int]:
     nbrs = _ring_nbrs(mol, start, ring)
     if len(nbrs) != 2:
         return [start]
     a = _walk_ring(mol, ring, start, nbrs[0])
     b = _walk_ring(mol, ring, start, nbrs[1])
+    sites = [s for s, _ in _halo_list(mol, ring)]
+    ta, tb = _loc_tuple(a, sites), _loc_tuple(b, sites)
+    if ta != tb:
+        return a if ta < tb else b
     return a if a <= b else b
 
 
 def _ph_locant(mol: Mol, ring: set[int], attach: int, site: int) -> int:
     order = _ring_order(mol, ring, attach)
     return order.index(site) + 1 if site in order else 1
+
+
+def _same_z_prefix(items: list[tuple[int, int]]) -> tuple[str, str]:
+    z, n = items[0][1], len(items)
+    locs = ",".join(str(l) for l, _ in items)
+    return (
+        f"{locs}-{_MULT_EN.get(n, '')}{_HALO_EN[z]}",
+        f"{locs}-{_MULT_ZH.get(n, '')}{_HALO_ZH[z]}",
+    )
+
+
+def _mixed_z_prefix(items: list[tuple[int, int]]) -> tuple[str, str]:
+    by_en = sorted(items, key=lambda lz: _HALO_EN[lz[1]])
+    en = "-".join(f"{l}-{_HALO_EN[z]}" for l, z in by_en)
+    zh = "-".join(f"{l}-{_HALO_ZH[z]}" for l, z in by_en)
+    return en, zh
+
+
+def _halo_prefix(items: list[tuple[int, int]]) -> tuple[str, str]:
+    if len({z for _, z in items}) == 1:
+        return _same_z_prefix(items)
+    return _mixed_z_prefix(items)
+
+
+def _halo_ph_names(mol: Mol, ph: set[int], attach: int, stem_en: str, stem_zh: str):
+    found = _halo_list(mol, ph)
+    if not found:
+        return stem_en, stem_zh, False
+    items = sorted((_ph_locant(mol, ph, attach, s), z) for s, z in found)
+    pe, pz = _halo_prefix(items)
+    return f"{pe}{stem_en}", f"{pz}{stem_zh}", True
+
+
+def _ph_bridge_attach(mol: Mol, ph: set[int], bridge: int) -> int:
+    for i in ph:
+        for n in mol.GetAtomWithIdx(i).GetNeighbors():
+            if n.GetIdx() == bridge:
+                return i
+    return min(ph)
+
+
+def _phenyl_name(mol: Mol, ph: set[int], attach: int) -> tuple[str, str, bool]:
+    return _halo_ph_names(mol, ph, attach, "phenyl", "苯基")
+
+
+def _phenoxy_name(mol: Mol, ph: set[int], outer: int) -> tuple[str, str, bool]:
+    return _halo_ph_names(mol, ph, outer, "phenoxy", "苯氧基")
+
+
+def _benzyl_name(mol: Mol, ph: set[int], ch2: int) -> tuple[str, str, bool]:
+    att = _ph_bridge_attach(mol, ph, ch2)
+    return _halo_ph_names(mol, ph, att, "benzyl", "苄基")
+
+
+def _benzyloxy_name(mol: Mol, ph: set[int], ch2: int) -> tuple[str, str, bool]:
+    att = _ph_bridge_attach(mol, ph, ch2)
+    return _halo_ph_names(mol, ph, att, "benzyloxy", "苄氧基")
+
+
+def _heavies(atom) -> list:
+    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+
+
+def _is_open_ch2(atom) -> bool:
+    return atom.GetAtomicNum() == 6 and not atom.GetIsAromatic() and not atom.IsInRing()
+
+
+def _other_heavy(atom, parent: int) -> int | None:
+    heavies = _heavies(atom)
+    if len(heavies) != 2:
+        return None
+    ids = {h.GetIdx() for h in heavies}
+    return None if parent not in ids else (ids - {parent}).pop()
+
+
+def _ch2_ph_at(mol: Mol, ch2: int, parent: int) -> set[int] | None:
+    atom = mol.GetAtomWithIdx(ch2)
+    if not _is_open_ch2(atom):
+        return None
+    other = _other_heavy(atom, parent)
+    return None if other is None else _phenyl_at(mol, other, ch2)
 
 
 def _phenoxy_from_ether(mol: Mol, e: dict, parent: set[int]) -> dict | None:
@@ -119,6 +214,18 @@ def _phenoxy_from_ether(mol: Mol, e: dict, parent: set[int]) -> dict | None:
         return None
     return {"o_idx": o, "ring_c": ring_c, "outer_c": outer, "ph": ph,
             "atoms": [o, *ph]}
+
+
+def _benzyloxy_from_ether(mol: Mol, e: dict, parent: set[int]) -> dict | None:
+    c1, c2, o = e["c1"], e["c2"], e["o_idx"]
+    if (c1 in parent) == (c2 in parent):
+        return None
+    ring_c, outer = (c1, c2) if c1 in parent else (c2, c1)
+    ph = _ch2_ph_at(mol, outer, o)
+    if ph is None:
+        return None
+    return {"o_idx": o, "ring_c": ring_c, "outer_c": outer, "ch2": outer,
+            "ph": ph, "atoms": [o, outer, *ph]}
 
 
 def _parent_link(mol: Mol, start: int, parent: set[int]) -> int | None:
@@ -141,11 +248,34 @@ def _phenyl_from_start(mol: Mol, start: int, parent: set[int]) -> dict | None:
     }
 
 
+def _benzyl_from_start(mol: Mol, start: int, parent: set[int]) -> dict | None:
+    if start in parent:
+        return None
+    att = _parent_link(mol, start, parent)
+    if att is None:
+        return None
+    ph = _ch2_ph_at(mol, start, att)
+    if ph is None:
+        return None
+    return {"attach": att, "outer_c": start, "ch2": start, "ph": ph,
+            "atoms": [start, *ph]}
+
+
 def _ring_phenoxys(info: dict, parent: set[int]) -> list[dict]:
     mol: Mol = info["mol"]
     out: list[dict] = []
     for e in info.get("ethers") or []:
         one = _phenoxy_from_ether(mol, e, parent)
+        if one is not None:
+            out.append(one)
+    return out
+
+
+def _ring_benzyloxys(info: dict, parent: set[int]) -> list[dict]:
+    mol: Mol = info["mol"]
+    out: list[dict] = []
+    for e in info.get("ethers") or []:
+        one = _benzyloxy_from_ether(mol, e, parent)
         if one is not None:
             out.append(one)
     return out
@@ -169,6 +299,15 @@ def _ring_phenyls(mol: Mol, parent: set[int]) -> list[dict]:
     return out
 
 
+def _ring_benzyls(mol: Mol, parent: set[int]) -> list[dict]:
+    out: list[dict] = []
+    for s in _side_c_starts(mol, parent):
+        one = _benzyl_from_start(mol, s, parent)
+        if one is not None:
+            out.append(one)
+    return out
+
+
 def _halo_atoms_on(mol: Mol, ph: set[int]) -> set[int]:
     return {
         nb.GetIdx()
@@ -178,38 +317,29 @@ def _halo_atoms_on(mol: Mol, ph: set[int]) -> set[int]:
     }
 
 
+def _one_arm_atoms(mol: Mol, p: dict) -> set[int]:
+    out = set(p["atoms"]) | _halo_atoms_on(mol, p["ph"])
+    return out
+
+
 def _aryl_atoms(info: dict, parent: set[int]) -> set[int]:
     mol: Mol = info["mol"]
     out: set[int] = set()
-    for p in _ring_phenoxys(info, parent):
-        out.update(p["atoms"])
-        out.update(_halo_atoms_on(mol, p["ph"]))
-    for p in _ring_phenyls(mol, parent):
-        out.update(p["atoms"])
-        out.update(_halo_atoms_on(mol, p["ph"]))
+    arms = (
+        _ring_phenoxys(info, parent) + _ring_benzyloxys(info, parent)
+        + _ring_phenyls(mol, parent) + _ring_benzyls(mol, parent)
+    )
+    for p in arms:
+        out |= _one_arm_atoms(mol, p)
     return out
 
 
 def _aryl_sub_n(info: dict, parent: set[int]) -> int:
     mol: Mol = info["mol"]
-    return len(_ring_phenyls(mol, parent)) + len(_ring_phenoxys(info, parent))
-
-
-def _halo_ph_names(mol: Mol, ph: set[int], attach: int, stem_en: str, stem_zh: str):
-    hp = _halo_pair(mol, ph)
-    if hp is None:
-        return stem_en, stem_zh, False
-    site, z = hp
-    loc = _ph_locant(mol, ph, attach, site)
-    return f"{loc}-{_HALO_EN[z]}{stem_en}", f"{loc}-{_HALO_ZH[z]}{stem_zh}", True
-
-
-def _phenyl_name(mol: Mol, ph: set[int], attach: int) -> tuple[str, str, bool]:
-    return _halo_ph_names(mol, ph, attach, "phenyl", "苯基")
-
-
-def _phenoxy_name(mol: Mol, ph: set[int], outer: int) -> tuple[str, str, bool]:
-    return _halo_ph_names(mol, ph, outer, "phenoxy", "苯氧基")
+    return (
+        len(_ring_phenyls(mol, parent)) + len(_ring_phenoxys(info, parent))
+        + len(_ring_benzyls(mol, parent)) + len(_ring_benzyloxys(info, parent))
+    )
 
 
 def _arom_c6_rings(mol: Mol) -> list[set[int]]:
@@ -224,7 +354,8 @@ def _is_unfused_benzene_ring(mol: Mol, ring: set[int]) -> bool:
 
 
 def _phenyl_starts_set(mol: Mol, parent: set[int]) -> set[int]:
-    return {p["outer_c"] for p in _ring_phenyls(mol, parent)}
+    ps = {p["outer_c"] for p in _ring_phenyls(mol, parent)}
+    return ps | {p["outer_c"] for p in _ring_benzyls(mol, parent)}
 
 
 def _unsub_phenyl_at(mol: Mol, c_idx: int, n_idx: int) -> bool:
@@ -232,7 +363,7 @@ def _unsub_phenyl_at(mol: Mol, c_idx: int, n_idx: int) -> bool:
     if mol.GetAtomWithIdx(n_idx).GetAtomicNum() != 7:
         return False
     ph = _phenyl_at(mol, c_idx, n_idx)
-    return ph is not None and _halo_pair(mol, ph) is None
+    return ph is not None and not _halo_list(mol, ph)
 
 
 def _arom_c6_ring_lists(mol: Mol) -> list[list[int]]:

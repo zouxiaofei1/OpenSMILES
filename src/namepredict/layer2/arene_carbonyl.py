@@ -8,6 +8,7 @@ from namepredict.layer2.aryl_sub import (
     _aryl_exclude,
     _aryl_sub_n,
     _exocyclic_fg_ring,
+    _ring_benzyloxys,
     _ring_phenoxys,
 )
 from namepredict.layer2.ring_parent import (
@@ -74,7 +75,11 @@ def _arene_fg_conflict(
 
 def _arene_ethers_ok(info: dict, ring_set: set[int]) -> bool:
     n_ether = len(info.get("ethers") or [])
-    n_ok = len(_ring_alkoxy_ethers(info, ring_set)) + len(_ring_phenoxys(info, ring_set))
+    n_ok = (
+        len(_ring_alkoxy_ethers(info, ring_set))
+        + len(_ring_phenoxys(info, ring_set))
+        + len(_ring_benzyloxys(info, ring_set))
+    )
     return n_ether == n_ok
 
 

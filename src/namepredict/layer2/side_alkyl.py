@@ -379,7 +379,7 @@ def _meoet_tail(mol: Mol, mid: int, o_mid: int) -> list[int] | None:
 
 def _alkoxy_from_carbon(mol: Mol, nxt, start: int) -> int:
     """2=ethoxy, 12=2-methoxyethoxy; 0=unsupported from carbon next."""
-    if nxt.GetAtomicNum() != 6:
+    if nxt.GetAtomicNum() != 6 or nxt.GetIsAromatic() or nxt.IsInRing():
         return 0
     if not _outer_fwd(mol, nxt.GetIdx(), start):
         return 2

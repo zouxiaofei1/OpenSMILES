@@ -3,8 +3,12 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from namepredict.layer2.aryl_sub import (
+    _benzyl_name,
+    _benzyloxy_name,
     _phenoxy_name,
     _phenyl_name,
+    _ring_benzyls,
+    _ring_benzyloxys,
     _ring_phenoxys,
     _ring_phenyls,
 )
@@ -367,28 +371,32 @@ def _extract_alkoxys(info: dict, parent: dict) -> list[dict]:
     return out
 
 
-def _make_phenoxy(attach: int, atoms: list[int], en: str, zh: str, paren: bool) -> dict:
+def _make_aryl(kind: str, attach: int, atoms: list[int], en: str, zh: str, paren: bool) -> dict:
+    n = 7 if kind in ("benzyl", "benzyloxy") else 6
     return {
-        "kind": "phenoxy", "attach_idx": attach, "atoms": atoms,
-        "n_carbons": 6, "en": en, "zh": zh, "paren": paren,
-    }
-
-
-def _make_phenyl(attach: int, atoms: list[int], en: str, zh: str, paren: bool) -> dict:
-    return {
-        "kind": "phenyl", "attach_idx": attach, "atoms": atoms,
-        "n_carbons": 6, "en": en, "zh": zh, "paren": paren,
+        "kind": kind, "attach_idx": attach, "atoms": atoms,
+        "n_carbons": n, "en": en, "zh": zh, "paren": paren,
     }
 
 
 def _one_phenoxy(mol: Mol, p: dict) -> dict:
     en, zh, paren = _phenoxy_name(mol, p["ph"], p["outer_c"])
-    return _make_phenoxy(p["ring_c"], p["atoms"], en, zh, paren)
+    return _make_aryl("phenoxy", p["ring_c"], p["atoms"], en, zh, paren)
 
 
 def _one_phenyl(mol: Mol, p: dict) -> dict:
     en, zh, paren = _phenyl_name(mol, p["ph"], p["outer_c"])
-    return _make_phenyl(p["attach"], p["atoms"], en, zh, paren)
+    return _make_aryl("phenyl", p["attach"], p["atoms"], en, zh, paren)
+
+
+def _one_benzyl(mol: Mol, p: dict) -> dict:
+    en, zh, paren = _benzyl_name(mol, p["ph"], p["ch2"])
+    return _make_aryl("benzyl", p["attach"], p["atoms"], en, zh, paren)
+
+
+def _one_benzyloxy(mol: Mol, p: dict) -> dict:
+    en, zh, paren = _benzyloxy_name(mol, p["ph"], p["ch2"])
+    return _make_aryl("benzyloxy", p["ring_c"], p["atoms"], en, zh, paren)
 
 
 def _extract_phenoxys(info: dict, parent: dict) -> list[dict]:
@@ -403,10 +411,23 @@ def _extract_phenyls(info: dict, parent: dict) -> list[dict]:
     return [_one_phenyl(mol, p) for p in _ring_phenyls(mol, chain)]
 
 
+def _extract_benzyls(info: dict, parent: dict) -> list[dict]:
+    mol: Mol = info["mol"]
+    chain = set(parent.get("chain") or [])
+    return [_one_benzyl(mol, p) for p in _ring_benzyls(mol, chain)]
+
+
+def _extract_benzyloxys(info: dict, parent: dict) -> list[dict]:
+    mol: Mol = info["mol"]
+    chain = set(parent.get("chain") or [])
+    return [_one_benzyloxy(mol, p) for p in _ring_benzyloxys(info, chain)]
+
+
 def _aryl_outer_starts(info: dict, parent: dict) -> set[int]:
     mol: Mol = info["mol"]
     chain = set(parent.get("chain") or [])
-    return {p["outer_c"] for p in _ring_phenyls(mol, chain)}
+    ph = {p["outer_c"] for p in _ring_phenyls(mol, chain)}
+    return ph | {p["outer_c"] for p in _ring_benzyls(mol, chain)}
 
 
 def _extract_alkyls_no_aryl(mol: Mol, chain: list[int], skip: set[int]) -> list[dict]:
@@ -431,12 +452,19 @@ def _extract_core_subs(info: dict, parent: dict) -> list:
     )
 
 
+def _extract_aryls(info: dict, parent: dict) -> list[dict]:
+    return (
+        _extract_phenoxys(info, parent) + _extract_phenyls(info, parent)
+        + _extract_benzyloxys(info, parent) + _extract_benzyls(info, parent)
+    )
+
+
 def extract_substituents(info: dict, parent: dict) -> list:
     mol: Mol = info["mol"]
     chain = parent.get("chain") or []
     core = _extract_core_subs(info, parent)
     alkox = _extract_alkoxys(info, parent)
-    aryl = _extract_phenoxys(info, parent) + _extract_phenyls(info, parent)
+    aryl = _extract_aryls(info, parent)
     n_sub = _extract_n_alkyl(parent) + _extract_n_phenyl(parent)
     alkyl = _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent))
     return alkyl + core + alkox + aryl + n_sub
