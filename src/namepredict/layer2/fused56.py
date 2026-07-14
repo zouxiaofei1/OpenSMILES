@@ -4,11 +4,24 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 
+def _fused_56_pair(rings: list[list[int]]) -> tuple[list[int], list[int]] | None:
+    fives = [r for r in rings if len(r) == 5]
+    sixes = [r for r in rings if len(r) == 6]
+    for five in fives:
+        for six in sixes:
+            if len(set(five) & set(six)) == 2:
+                return five, six
+    return None
+
+
 def _two_rings(info: dict) -> tuple[list[int], list[int]] | None:
-    rings = info.get("rings") or []
-    if len(rings) != 2:
+    """Adjacent ring pair; multi-ring prefers fused 5+6."""
+    rings = [list(r["atom_ids"]) for r in (info.get("rings") or [])]
+    if len(rings) < 2:
         return None
-    return list(rings[0]["atom_ids"]), list(rings[1]["atom_ids"])
+    if len(rings) == 2:
+        return rings[0], rings[1]
+    return _fused_56_pair(rings) or (rings[0], rings[1])
 
 
 def _size_pair(

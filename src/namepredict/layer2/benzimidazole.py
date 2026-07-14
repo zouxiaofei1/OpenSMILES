@@ -15,6 +15,7 @@ from namepredict.layer2.fused56 import (
     _six_all_c,
 )
 from namepredict.layer2.heteroarene5 import _ring_nn_dist
+from namepredict.layer2.aryl_sub import _aryl_atoms, _aryl_exclude, _aryl_sub_n
 from namepredict.layer2.ring_parent import (
     _is_methyl_on_ring,
     _mono_amine_on_ring,
@@ -95,12 +96,26 @@ def _starts_ok(mol: Mol, ring: set[int], starts: list[int]) -> bool:
     return all(_is_methyl_on_ring(mol, s, ring) for s in starts)
 
 
-def _bim_subs_ok(mol: Mol, ring: set[int], cap: int = 2) -> bool:
-    """Allow ≤cap simple ring subs: halo + methyl + CF3."""
-    h, starts = _ring_halo_n(mol, ring), _ring_side_starts(mol, ring)
-    if h + len(starts) > cap:
+def _bim_subs_ok(info: dict, mol: Mol, ring: set[int], cap: int = 2) -> bool:
+    """Allow <=cap ring subs: halo + methyl/CF3 + aryl."""
+    n_aryl = _aryl_sub_n(info, ring)
+    excl = _aryl_exclude(info, ring)
+    h = _ring_halo_n(mol, ring)
+    starts = _ring_side_starts(mol, ring, excl)
+    if h + len(starts) + n_aryl > cap:
         return False
-    return True if not starts else _starts_ok(mol, ring, starts)
+    return True if not starts else _starts_ok(mol, ring, starts, excl)
+
+
+def _starts_ok(mol: Mol, ring: set[int], starts: list[int], skip: set[int] | None = None) -> bool:
+    skip = skip or set()
+    outside = [
+        a.GetIdx() for a in mol.GetAtoms()
+        if a.GetAtomicNum() == 6 and a.GetIdx() not in ring and a.GetIdx() not in skip
+    ]
+    if set(outside) != set(starts):
+        return False
+    return all(_is_methyl_on_ring(mol, s, ring) for s in starts)
 
 
 def _is_simple_benzimidazole(info: dict) -> bool:
@@ -110,7 +125,8 @@ def _is_simple_benzimidazole(info: dict) -> bool:
     parts = _bim_parts(info)
     assert parts is not None
     ring = _ring_set(parts)
-    return _outside_ok(mol, ring) and _bim_subs_ok(mol, ring)
+    allowed = _aryl_atoms(info, ring)
+    return _outside_ok(mol, ring, allowed) and _bim_subs_ok(info, mol, ring)
 
 
 def _build_chain(
@@ -186,7 +202,7 @@ def _is_simple_benzimidazolamine(info: dict) -> bool:
     mol, ring, am = ctx
     if not _outside_ok(mol, ring, {am["n_idx"]}):
         return False
-    return _bim_subs_ok(mol, ring, cap=1)
+    return _bim_subs_ok(info, mol, ring, cap=1)
 
 
 def _benzimidazolamine_parent(info: dict) -> dict:
@@ -313,7 +329,7 @@ def _is_simple_bim_imino(info: dict) -> bool:
     mol, ring, _c2, exo, _nh = ctx
     if not _outside_ok(mol, ring, {exo}):
         return False
-    return _bim_subs_ok(mol, ring, cap=1)
+    return _bim_subs_ok(info, mol, ring, cap=1)
 
 
 def _bim_imino_dict(
