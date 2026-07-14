@@ -129,9 +129,9 @@
 [#556ed16][IUPAC P-92 / P-93] 母体链 CIP R/S 前缀；与 E/Z 合并 (E,8R)- [+11 tests, dual 11.3%(458)→12.8%(520), fails 3604→3542]
 [#b06bf8a][IUPAC P-92 / P-93] R/S扩展ketone/ester/杂环；酯methyl (2S)-；环单中心(R)-；禁C1假立体 [+13 tests, dual 12.8%(520)→13.0%(530), fails 3542→3532]
 [#5133dfa][IUPAC P-65.1.1 / P-22.2.1 / P-25] indolecarboxylic+naphthalenecarboxylic 保留母体修formic坍缩 [+11 tests, dual 13.0%(530)→13.2%(535), fails 3532→3527]
-[#58600bf][IUPAC P-65.1.2] 开链饱和 diacid 允许 hydroxy/amino/oxo 前缀(…dioic acid/…dioate) [+9 tests, dual 13.2%(535)→13.5%(547), fails 3527→3515]
+[#58600bf][IUPAC P-65.1.2] 开链饱和 diacid 允许 hydroxy/amino/oxo 前缀(…dioic acid/…dioate) [+9 tests, dual 13.2%(535)→13.4%(544), fails 3527→3518]
 [#fc4e75d][IUPAC P-31.1 / P-65.1.1 / P-65.6] 开链 alkenoic/alkenoate 门控改「FG+C=C 不在环」允许芳基取代 [+8 tests, dual 13.4%(544)→13.6%(553), fails 3518→3509]
-[#76501fd][IUPAC P-66.1.1 / P-31.1] 开链一元 alkenamide：…-n-enamide/…-n-烯酰胺（E/Z+芳基） [+8 tests, dual 13.6%(553)→13.7%(558), fails 3509→3504]
+[#76501fd][IUPAC P-66.1.1 / P-31.1] 开链一元 alkenamide：…-n-enamide/…-n-烯酰胺（E/Z+芳基） [+8 tests, dual 13.6%(553) 持平, fails 3509；实现方曾报 558/3504，复测未兑现]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多羧酸根/磷酸盐未做
 - 炔醇/带复杂侧链多烯醇未做
