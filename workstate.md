@@ -98,4 +98,6 @@
 [#520dfb8][IUPAC P-29.6 / P-22.1.1] monocyloalkyl 取代基 C3–C8 + 多环环烷母体挑选 C3–C10 + 1-cycloalkylethyl [+7 tests, dual 8.1%→8.1%(329)]
 [#c0e619e][IUPAC P-29.3 / P-62.2 / P-65.1] 链上 sec-amine/acid 的 phenoxy（Ph 可卤+甲基；N-取代不占碳位次） [+8 tests, dual 8.1%(329)→8.1%(330)]
 
+[#b2ef9bd][IUPAC P-29.3 / P-63.1 / P-65.1] 开链不进芳环；2-苄基丁二酸；2-[(3,4-二氯苄基)氨基]乙醇 [+tests, dual 8.1%(330)→8.3%(336)]
+
 ## 其他
