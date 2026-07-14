@@ -55,6 +55,9 @@ _ANHYDRIDE_BAD = (
     "has_aldehyde", "has_ketone", "has_amine", "has_alcohol", "has_acyl_chloride",
 )
 def _is_open_sat(info: dict) -> bool: return not (info.get("has_alkene") or info.get("has_alkyne"))
+def _hetero_open_chain(mol: Mol, idx: int) -> bool:
+    """True iff hetero atom is not in a ring (open-chain ether/amine/sulfide)."""
+    return not mol.GetAtomWithIdx(idx).IsInRing()
 def _is_simple_n(info: dict, bad: tuple, ekey: str, n: int) -> bool:
     """Poly-FG only when exactly n *aliphatic* attachment carbons."""
     return (
@@ -158,6 +161,8 @@ def _n_arms(info: dict, deg: int) -> list[list[int]] | None:
     am = _amine_of_deg(info, deg)
     if am is None: return None
     mol, n_idx, cs = info["mol"], am["n_idx"], am["c_idxs"]
+    if not _hetero_open_chain(mol, n_idx):
+        return None
     arms = [_longest_from(mol, c, set()) for c in cs]
     return arms if all(_arm_ok(mol, a, n_idx) for a in arms) else None
 def _amine_sat_ok(info: dict) -> bool: return _no_fgs(info, _CORE_BAD) and not (info.get("has_alkene") or info.get("has_alkyne"))
@@ -200,6 +205,8 @@ def _ether_arms(info: dict) -> tuple[list[int], list[int], dict] | None:
         return None
     e, mol = ets[0], info["mol"]
     o_idx, cs = e["o_idx"], [e["c1"], e["c2"]]
+    if not _hetero_open_chain(mol, o_idx):
+        return None
     arms = [_longest_from(mol, c, set()) for c in cs]
     return (arms[0], arms[1], e) if all(_arm_ok(mol, a, o_idx) for a in arms) else None
 def _ether_parent(info: dict) -> dict | None:
@@ -219,6 +226,8 @@ def _sulfide_arms(info: dict) -> tuple[list[int], list[int], dict] | None:
         return None
     e, mol = sfs[0], info["mol"]
     s_idx, cs = e["s_idx"], [e["c1"], e["c2"]]
+    if not _hetero_open_chain(mol, s_idx):
+        return None
     arms = [_longest_from(mol, c, set()) for c in cs]
     return (arms[0], arms[1], e) if all(_arm_ok(mol, a, s_idx) for a in arms) else None
 def _sulfide_parent(info: dict) -> dict | None:
