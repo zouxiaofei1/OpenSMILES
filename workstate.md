@@ -115,6 +115,8 @@
 [#e467488][IUPAC P-29 P2] 未取代 naphthalen-n-yl 开链侧链 [+9 tests, dual 8.8%(358) 持平]
 [#1f4962e][IUPAC P-25 P1] 未取代 anthracene 母体（ring_systems 线性666）[+4 tests, dual 8.8%(358) 持平]
 
+[#e0958ae][IUPAC P-22.2.1 P1] 未取代 quinazoline 母体 [+4 tests, dual 8.8%(358) 持平]
+[#5687602][IUPAC P-22.2.1 P1] 未取代 quinoxaline 母体 [+2 tests, dual 8.8%(358) 持平]
 ## 其他
 - 稠/杂计划：P0 done；P2 pyridinyl+naphthyl 已开；P1 anthracene 未取代 done；下一项 phenanthrene/quinazoline 或 mono-sub anthracene
 - 加叶：layer2/leaves 注册 handler；杂芳侧链 layer2/heteroaryl_sub
