@@ -126,7 +126,7 @@
 [#5f6a8f7][IUPAC P-63.1.1 / P-31.1 / P-93.4] 开链alkenol：修L2早返回+polyalkenol+E/Z(2E,6Z) [+17 tests, dual 10.5%(426)→10.6%(431), fails 3636→3631]
 [#37f21a2][IUPAC P-65.1.2 / P-31.1 / P-93.4] 羟基烯酸：ALKENOIC 允许OH前缀+链盖OH碳+多烯；stereo前缀在取代基前 [+11 tests, dual 10.6%(431)→11.1%(452), fails 3631→3610]
 [#7f5af8d][IUPAC P-65.1.2 / P-31.1] 烯酸前缀 amino/oxo：ALKENOIC_BAD 放行+prefix_alkenoic 通用模块 [+11 tests, dual 11.1%(452)→11.3%(458), fails 3610→3604]
-[#pending][IUPAC P-92 / P-93] 母体链 CIP R/S 前缀；与 E/Z 合并 (E,8R)- [+11 tests, dual 11.3%(458)→12.8%(520), fails 3604→3542]
+[#556ed16][IUPAC P-92 / P-93] 母体链 CIP R/S 前缀；与 E/Z 合并 (E,8R)- [+11 tests, dual 11.3%(458)→12.8%(520), fails 3604→3542]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多羧酸根/磷酸盐未做
 - 炔醇/带复杂侧链多烯醇未做
