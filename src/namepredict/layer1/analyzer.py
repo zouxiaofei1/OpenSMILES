@@ -376,8 +376,13 @@ def _ring_entries(mol: Mol) -> list[dict]:
     return [_ring_entry(r) for r in mol.GetRingInfo().AtomRings()]
 
 def _ring_meta(mol: Mol) -> dict:
+    from namepredict.layer1.ring_systems import build_ring_systems
     rings = _ring_entries(mol)
-    return {"rings": rings, "n_rings": len(rings), "has_ring": bool(rings)}
+    systems = build_ring_systems(mol)
+    return {
+        "rings": rings, "n_rings": len(rings), "has_ring": bool(rings),
+        "ring_systems": systems, "n_ring_systems": len(systems),
+    }
 
 def _carbon_ids(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
