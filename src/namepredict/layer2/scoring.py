@@ -35,14 +35,15 @@ _FG_RANK = {
     "amine": 3, "diamine": 3, "sec_amine": 3, "tert_amine": 3,
     "cycloamine": 3, "aniline": 3, "pyridinamine": 3, "pyrimidinamine": 3,
     "benzofuranamine": 3, "benzenediamine": 3, "benzothiazolamine": 3,
-    "benzimidazolamine": 3,
+    "benzimidazolamine": 3, "benzoxazolamine": 3,
     "ether": 2, "sulfide": 2,
 }
 _HETERO_RING = frozenset(
     {"pyridine", "furan", "thiophene", "pyrrole", "imidazole", "pyrazole",
      "oxazole", "thiazole",
      "pyrimidine", "pyrazine", "pyridazine", "indole", "indazole", "benzofuran",
-     "benzothiophene", "benzothiazole", "benzimidazole", "quinoline", "isoquinoline",
+     "benzothiophene", "benzothiazole", "benzoxazole", "benzimidazole",
+     "quinoline", "isoquinoline",
      "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
      "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane"}
 )
@@ -89,15 +90,17 @@ def _is_carbo_ring(kind: str) -> int:
     return 1 if kind in _CARBO_RING else 0
 
 
+_FUSED2 = frozenset({
+    "naphthalene", "indole", "indazole", "indazolecarbonitrile",
+    "indazolecarbaldehyde", "benzofuran", "benzofuranamine",
+    "benzothiophene", "benzothiophenol", "benzothiazole", "benzothiazolamine",
+    "benzoxazole", "benzoxazolamine", "benzimidazole", "benzimidazolamine",
+    "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
+})
+
+
 def _n_rings(kind: str) -> int:
-    if kind in (
-        "naphthalene", "indole", "indazole", "indazolecarbonitrile",
-        "indazolecarbaldehyde", "benzofuran", "benzofuranamine",
-        "benzothiophene", "benzothiophenol",
-        "benzothiazole", "benzothiazolamine",
-        "benzimidazole", "benzimidazolamine",
-        "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
-    ):
+    if kind in _FUSED2:
         return 2
     return 1 if kind in _HETERO_RING or kind in _CARBO_RING else 0
 

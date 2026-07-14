@@ -117,6 +117,7 @@ _ARENE_FG = {
     "benzofuran": ("benzofuran", "苯并呋喃"),
     "benzothiophene": ("1-benzothiophene", "苯并[b]噻吩"),
     "benzothiazole": ("1,3-benzothiazole", "1,3-苯并噻唑"),
+    "benzoxazole": ("1,3-benzoxazole", "1,3-苯并噁唑"),
     "benzimidazole": ("1H-benzimidazole", "1H-苯并咪唑"),
     "quinoline": ("quinoline", "喹啉"),
     "isoquinoline": ("isoquinoline", "异喹啉"),
@@ -333,6 +334,27 @@ def benzothiazolamine_names(numbered: dict, build_prefix) -> tuple[str, str] | N
     return _btzam_en(pre_en, loc), _btzam_zh(pre_zh, loc)
 
 
+def _boxam_en(pre_en: str, loc: int) -> str:
+    stem = f"1,3-benzoxazol-{loc}-amine"
+    if not pre_en:
+        return stem
+    return f"{pre_en}-{stem}" if stem[:1].isdigit() else f"{pre_en}{stem}"
+
+
+def _boxam_zh(pre_zh: str, loc: int) -> str:
+    if not pre_zh:
+        return f"{loc}-氨基苯并噁唑"
+    return f"{loc}-氨基-{pre_zh}苯并噁唑"
+
+
+def benzoxazolamine_names(numbered: dict, build_prefix) -> tuple[str, str] | None:
+    loc = numbered.get("amine_locant")
+    if loc is None:
+        return None
+    pre_en, pre_zh = build_prefix(numbered.get("substituents") or [], 9, "benzoxazolamine")
+    return _boxam_en(pre_en, loc), _boxam_zh(pre_zh, loc)
+
+
 def _bimam_en(pre_en: str, loc: int) -> str:
     stem = f"1H-benzimidazol-{loc}-amine"
     if not pre_en:
@@ -436,6 +458,8 @@ def pyridine_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, s
         return pyrimidinamine_names(numbered, build_prefix)
     if kind == "benzothiazolamine":
         return benzothiazolamine_names(numbered, build_prefix)
+    if kind == "benzoxazolamine":
+        return benzoxazolamine_names(numbered, build_prefix)
     if kind == "benzimidazolamine":
         return benzimidazolamine_names(numbered, build_prefix)
     fn = _PYRIDINE_KIND_FN.get(kind)

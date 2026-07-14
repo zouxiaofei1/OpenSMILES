@@ -311,8 +311,9 @@ def _aza_orienters() -> dict:
 _INDOLE_ORIENT_KINDS = (
     "indole", "indazole", "indazolecarbonitrile", "indazolecarbaldehyde",
     "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol",
-    "benzothiazole", "benzothiazolamine", "benzimidazole", "benzimidazolamine",
-    "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
+    "benzothiazole", "benzothiazolamine", "benzoxazole", "benzoxazolamine",
+    "benzimidazole", "benzimidazolamine", "quinoline", "isoquinoline",
+    "quinolinol", "quinolinecarboxylic",
 )
 def _fused_orienters() -> dict:
     d = {k: _orient_indole for k in _INDOLE_ORIENT_KINDS}
@@ -384,17 +385,18 @@ def _oh_locants(oriented: dict) -> list[int] | None:
     return _pair_locants(oriented, ("diol", "triol", "benzenediol"), "oh_c_idxs")
 def _amine_pair_locants(oriented: dict) -> list[int] | None:
     return _pair_locants(oriented, ("diamine", "benzenediamine"), "amine_c_idxs")
+_FUSED_AM = (
+    "benzofuranamine", "benzothiazolamine", "benzoxazolamine", "benzimidazolamine",
+)
+_AMINE_KINDS = (
+    "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
+    "pyrimidinamine",
+) + _FUSED_AM
 def _amine_locant(oriented: dict) -> int | None:
-    kinds = (
-        "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
-        "pyrimidinamine", "benzofuranamine", "benzothiazolamine",
-        "benzimidazolamine",
-    )
-    fused_am = ("benzofuranamine", "benzothiazolamine", "benzimidazolamine")
-    if oriented.get("kind") in fused_am:
+    if oriented.get("kind") in _FUSED_AM:
         chain, a = oriented.get("chain") or [], oriented.get("amine_c_idx")
         return _indole_sub_locant(chain, a) if a is not None else None
-    return _fg_locant(oriented, kinds, "amine_c_idx")
+    return _fg_locant(oriented, _AMINE_KINDS, "amine_c_idx")
 def _ketone_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("ketone", "cycloketone"), "ketone_c_idx")
 def _ketone_pair_locants(oriented: dict) -> list[int] | None:
