@@ -1,11 +1,18 @@
 """Retained 1H-indole parent (IUPAC P-22.2.1 / P-25).
 
 Fused aromatic 6+5: benzo[b]pyrrole. NH = 1; mono-methyl / mono-halo only.
+Mono ring-C COOH → indolecarboxylic (P-65.1.1).
 """
 from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.layer2.arene_carbonyl import (
+    _arene_fg_conflict,
+    _arene_subs_ok,
+    _carboxyl_ring_c,
+    _cooh_oxygen_idxs,
+)
 from namepredict.layer2.fused56 import (
     _all_aromatic,
     _chain_atoms,
@@ -99,16 +106,46 @@ def _build_chain(
     return _chain_atoms(mol, five, six, nh, ba, bb)
 
 
-def _indole_parent(info: dict) -> dict:
+def _indole_parent_dict(info: dict, kind: str, **extra) -> dict:
     parts = _indole_parts(info)
     assert parts is not None
     five, six, nh, ba, bb = parts
     chain = _build_chain(info["mol"], five, six, nh, ba, bb) or []
     return {
-        "chain": chain, "n_carbons": 9, "kind": "indole",
-        "nh_idx": nh, "bridge": [ba, bb],
+        "chain": chain, "n_carbons": 9, "kind": kind,
+        "nh_idx": nh, "bridge": [ba, bb], **extra,
     }
+
+
+def _indole_parent(info: dict) -> dict:
+    return _indole_parent_dict(info, "indole")
 
 
 def _try_indole_parent(info: dict) -> dict | None:
     return _indole_parent(info) if _is_simple_indole(info) else None
+
+
+def _indole_ring(info: dict) -> set[int] | None:
+    parts = _indole_parts(info)
+    return None if parts is None else set(parts[0]) | set(parts[1])
+
+
+def _is_simple_indolecarboxylic(info: dict) -> bool:
+    ring = _indole_ring(info)
+    if ring is None or _arene_fg_conflict(info, "has_aldehyde", "has_ketone"):
+        return False
+    if _carboxyl_ring_c(info, ring) is None:
+        return False
+    mol, fg_c = info["mol"], info["carboxyls"][0]["c_idx"]
+    return _arene_subs_ok(info, mol, ring, {fg_c}, _cooh_oxygen_idxs(mol, fg_c))
+
+
+def _try_indolecarboxylic_parent(info: dict) -> dict | None:
+    if not _is_simple_indolecarboxylic(info):
+        return None
+    ring = _indole_ring(info) or set()
+    return _indole_parent_dict(
+        info, "indolecarboxylic",
+        cooh_c_idx=info["carboxyls"][0]["c_idx"],
+        ring_attach_idx=_carboxyl_ring_c(info, ring),
+    )

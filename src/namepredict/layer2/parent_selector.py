@@ -15,13 +15,12 @@ from namepredict.layer2.benzimidazole import _try_benzimidazolamine_parent as _t
 from namepredict.layer2.indazole import (
     _try_indazolecarbaldehyde_parent as _try_izald, _try_indazolecarbonitrile_parent as _try_izcn,
 )
-from namepredict.layer2.quinoline import (
-    _try_quinolinecarboxylic_parent as _try_qcooh, _try_quinolinol_parent as _try_qol,
-)
+from namepredict.layer2.indole import _try_indolecarboxylic_parent as _try_indcooh
+from namepredict.layer2.naphthalene import _try_naphthalenecarboxylic_parent as _try_naphcooh
+from namepredict.layer2.quinoline import _try_quinolinecarboxylic_parent as _try_qcooh, _try_quinolinol_parent as _try_qol
 from namepredict.layer2.heteroarene5 import _try_pyrimidinamine_parent
 from namepredict.layer2.pyridine import (
-    _try_pyridinecarbonitrile_parent as _try_pycn, _try_pyridinecarboxylic_parent, _try_pyridin_fg_parent,
-)
+    _try_pyridinecarbonitrile_parent as _try_pycn, _try_pyridinecarboxylic_parent, _try_pyridin_fg_parent)
 from namepredict.layer2.phenol_aniline import (
     _aniline_parent, _is_simple_aniline, _is_simple_phenol, _phenol_parent)
 from namepredict.layer2.ring_parent import (
@@ -291,8 +290,9 @@ def _with_anion(info: dict, parent: dict) -> dict:
         return {**parent, "anion": True}
     return parent
 def _ring_acid_try(info: dict) -> dict | None:
-    for fn in (_try_shcooh, _try_h5cooh, _try_qcooh, _try_pyridinecarboxylic_parent,
-               _try_benzoic_parent, _try_cycloalkanecarboxylic_parent):
+    for fn in (_try_shcooh, _try_h5cooh, _try_indcooh, _try_naphcooh, _try_qcooh,
+               _try_pyridinecarboxylic_parent, _try_benzoic_parent,
+               _try_cycloalkanecarboxylic_parent):
         if (b := fn(info)) is not None: return b
     return None
 def _poly_acid_try(info: dict) -> dict | None:

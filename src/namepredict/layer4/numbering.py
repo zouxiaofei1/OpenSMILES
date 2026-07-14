@@ -48,24 +48,18 @@ def _orient_amine(chain: list[int], parent: dict, substituents: list) -> list[in
 def _orient_ketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_by_single_fg(chain, parent, substituents, "ketone_c_idx")
 def _pair_locs_on(chain: list[int], cs) -> tuple[int, ...] | None:
-    if not cs:
-        return None
+    if not cs: return None
     locs = sorted(chain.index(c) + 1 for c in cs if c in chain)
     return tuple(locs) if len(locs) == len(cs) else None
 def _better_pair_orient(a: list[int], b: list[int], cs, subs: list) -> list[int]:
     la, lb = _pair_locs_on(a, cs), _pair_locs_on(b, cs)
-    if la is None:
-        return b
-    if lb is None or la < lb:
-        return a
-    if lb < la:
-        return b
+    if la is None: return b
+    if lb is None or la < lb: return a
+    if lb < la: return b
     return _prefer_chain(a, b, subs)
 def _orient_pair(chain: list[int], parent: dict, key: str, subs: list) -> list[int]:
     cs = parent.get(key)
-    if not cs:
-        return chain
-    return _better_pair_orient(chain, list(reversed(chain)), cs, subs)
+    return chain if not cs else _better_pair_orient(chain, list(reversed(chain)), cs, subs)
 def _orient_polyol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_pair(chain, parent, "oh_c_idxs", substituents)
 def _orient_diamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -74,9 +68,7 @@ def _orient_dione(chain: list[int], parent: dict, substituents: list) -> list[in
     return _orient_pair(chain, parent, "ketone_c_idxs", substituents)
 def _orient_to_terminal(chain: list[int], c_idx: int | None) -> list[int]:
     pos = _pos_on(chain, c_idx)
-    if pos is None or pos == 1:
-        return chain
-    return list(reversed(chain))
+    return chain if pos is None or pos == 1 else list(reversed(chain))
 def _orient_acid(chain: list[int], parent: dict) -> list[int]:
     return _orient_to_terminal(chain, parent.get("cooh_c_idx"))
 def _orient_aldehyde(chain: list[int], parent: dict) -> list[int]:
@@ -90,20 +82,15 @@ def _orient_nitrile(chain: list[int], parent: dict) -> list[int]:
 def _orient_acyl_chloride(chain: list[int], parent: dict) -> list[int]:
     return _orient_to_terminal(chain, parent.get("acyl_c_idx"))
 def _ene_ends_on(chain: list[int], ends: tuple[int, int] | None) -> tuple[int, int] | None:
-    if not ends or ends[0] not in chain or ends[1] not in chain:
-        return None
+    if not ends or ends[0] not in chain or ends[1] not in chain: return None
     return chain.index(ends[0]) + 1, chain.index(ends[1]) + 1
 def _ene_locant_of(ends: tuple[int, int] | None) -> int | None:
-    if ends is None:
-        return None
-    return min(ends)
+    return None if ends is None else min(ends)
 def _tie_break_orient(
     base: list[int], ends0: tuple[int, int] | None, substituents: list
 ) -> list[int]:
     rev = list(reversed(base))
-    if _ene_locant_of(_ene_ends_on(base, ends0)) == _ene_locant_of(
-        _ene_ends_on(rev, ends0)
-    ):
+    if _ene_locant_of(_ene_ends_on(base, ends0)) == _ene_locant_of(_ene_ends_on(rev, ends0)):
         return _prefer_chain(base, rev, substituents)
     return base
 def _orient_by_bond(
@@ -111,18 +98,14 @@ def _orient_by_bond(
 ) -> list[int]:
     ends0 = parent.get(key)
     ends = _ene_ends_on(chain, ends0)
-    if ends is None:
-        return chain
-    base = _maybe_reverse(chain, _ene_locant_of(ends) or 1)
-    return _tie_break_orient(base, ends0, substituents)
+    if ends is None: return chain
+    return _tie_break_orient(_maybe_reverse(chain, _ene_locant_of(ends) or 1), ends0, substituents)
 def _orient_alkene(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_by_bond(chain, parent, substituents, "double_bond")
 def _orient_cycloalkene(chain: list[int], parent: dict, substituents: list) -> list[int]:
     ends = parent.get("double_bond")
-    if not ends or ends[0] not in chain:
-        return chain
+    if not ends or ends[0] not in chain: return chain
     base = _rotate_to_front(chain, ends[0])
-    # prefer orientation with second double-bond atom at locant 2
     if len(base) > 1 and base[1] != ends[1]:
         base = _rotate_to_front(list(reversed(chain)), ends[0])
     return base
@@ -140,14 +123,9 @@ def _terminal_orienters() -> dict:
         "acyl_chloride": _term_fn(_orient_acyl_chloride),
     }
 def _carbonyl_orienters() -> dict:
-    return {
-        **_terminal_orienters(),
-        "ketone": _orient_ketone,
-        "dione": _orient_dione,
-    }
+    return {**_terminal_orienters(), "ketone": _orient_ketone, "dione": _orient_dione}
 def _rotate_to_front(chain: list[int], atom: int) -> list[int]:
-    if atom not in chain:
-        return chain
+    if atom not in chain: return chain
     i = chain.index(atom)
     return chain[i:] + chain[:i]
 def _rotations(chain: list[int]) -> list[list[int]]:
@@ -163,9 +141,7 @@ def _best_ring(chain: list[int], substituents: list) -> list[int]:
         best = _prefer_chain(best, cand, substituents)
     return best
 def _orient_cycloalkane(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    if not chain or not substituents:
-        return chain
-    return _best_ring(chain, substituents)
+    return chain if not chain or not substituents else _best_ring(chain, substituents)
 def _orient_ring_fixed(
     chain: list[int], parent: dict, substituents: list, key: str
 ) -> list[int]:
@@ -266,24 +242,33 @@ def _orient_pyridinol(chain: list[int], parent: dict, substituents: list) -> lis
 _NAPH_LOCANTS = (1, 2, 3, 4, None, 5, 6, 7, 8, None)
 _INDOLE_LOCANTS = (1, 2, 3, None, 4, 5, 6, 7, None)
 def _naph_loc_on(chain: list[int], attach: int) -> int:
-    if attach not in chain:
-        return 99
+    if attach not in chain: return 99
     loc = _NAPH_LOCANTS[chain.index(attach)]
     return 99 if loc is None else loc
 def _naph_loc_key(chain: list[int], substituents: list) -> tuple:
     locs = sorted(_naph_loc_on(chain, s["attach_idx"]) for s in substituents)
     return tuple(locs) if locs else ()
-def _orient_naphthalene(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    cands = parent.get("naph_chains") or [chain]
-    if not substituents:
-        return cands[0] if cands else chain
+def _pick_naph_chain(cands: list, key_fn) -> list[int]:
     best = cands[0]
     for cand in cands[1:]:
-        if _naph_loc_key(cand, substituents) < _naph_loc_key(best, substituents):
-            best = cand
+        if key_fn(cand) < key_fn(best): best = cand
     return best
+def _orient_naphthalene(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    cands = parent.get("naph_chains") or [chain]
+    if not cands: return chain
+    if not substituents: return cands[0]
+    return _pick_naph_chain(cands, lambda c: _naph_loc_key(c, substituents))
+def _orient_naphthalenecarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    """Lowest sub set, then lowest principal COOH locant (P-14.4)."""
+    cands = parent.get("naph_chains") or [chain]
+    if not cands: return chain
+    virt = _virtual_cooh_subs(parent, substituents)
+    attach = parent.get("ring_attach_idx")
+    def key(c):
+        cooh = 99 if attach is None else _naph_loc_on(c, attach)
+        return (_naph_loc_key(c, virt), cooh)
+    return _pick_naph_chain(cands, key)
 def _orient_indole(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    """Hetero fixed as locant 1; chain already built in standard order."""
     return chain
 _SAT_HETERO_PLAIN = (
     "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
@@ -310,15 +295,16 @@ def _aza_orienters() -> dict:
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
         "pyridazine": _orient_diazine, "pyrimidinamine": _orient_pyrimidinamine}
 _INDOLE_ORIENT_KINDS = (
-    "indole", "indazole", "indazolecarbonitrile", "indazolecarbaldehyde",
-    "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol",
-    "benzothiazole", "benzothiazolamine", "benzoxazole", "benzoxazolamine",
-    "benzimidazole", "benzimidazolamine", "quinoline", "isoquinoline",
-    "quinolinol", "quinolinecarboxylic",
+    "indole", "indolecarboxylic", "indazole", "indazolecarbonitrile",
+    "indazolecarbaldehyde", "benzofuran", "benzofuranamine", "benzothiophene",
+    "benzothiophenol", "benzothiazole", "benzothiazolamine", "benzoxazole",
+    "benzoxazolamine", "benzimidazole", "benzimidazolamine", "quinoline",
+    "isoquinoline", "quinolinol", "quinolinecarboxylic",
 )
 def _fused_orienters() -> dict:
     d = {k: _orient_indole for k in _INDOLE_ORIENT_KINDS}
     d["naphthalene"] = _orient_naphthalene
+    d["naphthalenecarboxylic"] = _orient_naphthalenecarboxylic
     return d
 def _arene_orienters() -> dict:
     return {
@@ -452,9 +438,10 @@ def _indole_sub_locant(chain: list[int], attach: int) -> int:
 _Q_KINDS = frozenset({
     "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
 })
+_NAPH_KINDS = frozenset({"naphthalene", "naphthalenecarboxylic"})
 _FUSED56_KINDS = frozenset(_INDOLE_ORIENT_KINDS) - _Q_KINDS
 def _sub_locant(chain: list[int], attach: int, kind: str | None) -> int:
-    if kind == "naphthalene" or kind in _Q_KINDS:
+    if kind in _NAPH_KINDS or kind in _Q_KINDS:
         return _naph_sub_locant(chain, attach)
     if kind in _FUSED56_KINDS:
         return _indole_sub_locant(chain, attach)

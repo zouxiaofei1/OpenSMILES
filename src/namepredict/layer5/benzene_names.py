@@ -428,6 +428,20 @@ def indazolecarbaldehyde_names(numbered: dict) -> tuple[str, str] | None:
     return f"1H-indazole-{loc}-carbaldehyde", f"1H-吲唑-{loc}-甲醛"
 
 
+def indolecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
+    loc = _iz_fg_loc(numbered)
+    if loc is None:
+        return None
+    return f"1H-indole-{loc}-carboxylic acid", f"1H-吲哚-{loc}-甲酸"
+
+
+def naphthalenecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
+    loc = _q_cooh_loc(numbered)
+    if loc is None:
+        return None
+    return f"naphthalene-{loc}-carboxylic acid", f"萘-{loc}-甲酸"
+
+
 _PYRIDINE_KIND_FN = {
     "pyridinecarboxylic": pyridinecarboxylic_names,
     "pyridinecarbonitrile": pyridinecarbonitrile_names,
@@ -439,6 +453,8 @@ _PYRIDINE_KIND_FN = {
     "quinolinecarboxylic": quinolinecarboxylic_names,
     "indazolecarbonitrile": indazolecarbonitrile_names,
     "indazolecarbaldehyde": indazolecarbaldehyde_names,
+    "indolecarboxylic": indolecarboxylic_names,
+    "naphthalenecarboxylic": naphthalenecarboxylic_names,
 }
 
 

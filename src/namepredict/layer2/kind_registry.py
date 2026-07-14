@@ -51,7 +51,8 @@ _SAT_COOH = (
     "thiolanecarboxylic", "aziridinecarboxylic",
 )
 _FUSED_FG: tuple[tuple[str, int, bool], ...] = (
-    ("quinolinecarboxylic", 13, True), ("indazolecarbonitrile", 8, True),
+    ("quinolinecarboxylic", 13, True), ("indolecarboxylic", 13, True),
+    ("naphthalenecarboxylic", 13, True), ("indazolecarbonitrile", 8, True),
     ("indazolecarbaldehyde", 7, True), ("benzothiophenol", 5, False),
     ("quinolinol", 5, False), ("benzofuranamine", 3, False),
     ("benzothiazolamine", 3, False), ("benzimidazolamine", 3, False),
