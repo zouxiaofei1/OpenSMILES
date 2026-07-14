@@ -43,6 +43,22 @@ CASES = [
         "2-(pyridin-2-yl)ethanol",
         "2-(吡啶-2-基)乙醇",
     ),
+    # simple leaves on pyridine
+    (
+        "BrCC(=O)C1=NC=CC(=C1)OC",
+        "2-bromo-1-(4-methoxypyridin-2-yl)ethanone",
+        "2-溴-1-(4-甲氧基吡啶-2-基)乙酮",
+    ),
+    (
+        "O=C(C)c1nc(OC)ccc1",
+        "1-(6-methoxypyridin-2-yl)ethanone",
+        "1-(6-甲氧基吡啶-2-基)乙酮",
+    ),
+    (
+        "N#CCc1cc(Cl)ccn1",
+        "2-(4-chloropyridin-2-yl)acetonitrile",
+        "2-(4-氯吡啶-2-基)乙腈",
+    ),
     # negatives: pyridine parent, phenyl ethanol
     ("c1ccncc1", "pyridine", "吡啶"),
     ("Cc1ccncc1", "4-methylpyridine", "4-甲基吡啶"),
