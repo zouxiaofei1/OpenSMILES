@@ -121,7 +121,7 @@
 [#64c6cd0][IUPAC P-22.2.2] 环内O/S/N勿作开链ether/amine/sulfide母体(_hetero_open_chain) [+tests, dual 8.8%→8.9%(360)]
 [#594de1b][架构 ring_producers] 环母体 _RING_TRY 迁入 kind_registry.ring_try_fns [+14 tests, dual 8.9%(360) 持平]
 [#a93115b][架构 fused56 数据化] Fused56MonoSpec 引擎；benzofuran/benzothiophene 薄封装 [+9 tests, dual 8.9%(360) 持平]
-[#pending][IUPAC P-14.2.1] 开链词干 C11–C35：C11–19 半系统表 + C20+ 程序 compose；zh_stem 替换 zh[0] [+16 tests, dual 8.9%(360)→9.9%(402), fails 3702→3660]
+[#cc3288b][IUPAC P-14.2.1] 开链词干 C11–C35：C11–19 半系统表 + C20+ 程序 compose；zh_stem 替换 zh[0] [+16 tests, dual 8.9%(360)→9.9%(402), fails 3702→3660]
 ## 其他
 - 长链羧酸根阴离子仍可能被判成 aldehyde（非本轮范围）
 - C20+ 英文用 icos/henicos 组合；中文数字自动生成
