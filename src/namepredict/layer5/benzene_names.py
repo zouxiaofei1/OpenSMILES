@@ -112,6 +112,7 @@ _ARENE_FG = {
     "pyrazine": ("pyrazine", "吡嗪"),
     "pyridazine": ("pyridazine", "哒嗪"),
     "naphthalene": ("naphthalene", "萘"),
+    "anthracene": ("anthracene", "蒽"),
     "indole": ("1H-indole", "吲哚"),
     "indazole": ("1H-indazole", "1H-吲唑"),
     "benzofuran": ("benzofuran", "苯并呋喃"),

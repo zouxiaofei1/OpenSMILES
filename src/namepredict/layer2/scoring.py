@@ -48,7 +48,8 @@ _HETERO_RING = frozenset(
      "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane"}
 )
 _CARBO_RING = frozenset({
-    "benzene", "cycloalkane", "cycloalkene", "naphthalene", "benzenediamine",
+    "benzene", "cycloalkane", "cycloalkene", "naphthalene", "anthracene",
+    "benzenediamine",
 })
 _SHCOOH = frozenset({
     "piperidinecarboxylic", "pyrrolidinecarboxylic", "piperazinecarboxylic",
@@ -58,6 +59,7 @@ _SHCOOH = frozenset({
 _RETAINED = frozenset(
     {"phenol", "aniline", "benzoic", "benzaldehyde", "acetophenone",
      "benzoate", "benzonitrile", "benzoyl_chloride", "benzene", "naphthalene",
+     "anthracene",
      "furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic",
      "imidazolecarboxylic", "pyrazolecarboxylic", "pyridinecarboxylic",
      "quinolinecarboxylic", "pyridinecarbonitrile",
@@ -97,9 +99,12 @@ _FUSED2 = frozenset({
     "benzoxazole", "benzoxazolamine", "benzimidazole", "benzimidazolamine",
     "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
 })
+_FUSED3 = frozenset({"anthracene"})
 
 
 def _n_rings(kind: str) -> int:
+    if kind in _FUSED3:
+        return 3
     if kind in _FUSED2:
         return 2
     return 1 if kind in _HETERO_RING or kind in _CARBO_RING else 0
