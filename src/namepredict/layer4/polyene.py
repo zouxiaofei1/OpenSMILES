@@ -45,7 +45,7 @@ def ene_locants(oriented: dict) -> list[int] | None:
     if not bonds:
         return None
     kind = oriented.get("kind")
-    if kind not in ("polyene", "alkenol"):
+    if kind not in ("polyene", "alkenol", "alkenoic_acid"):
         return None
     locs = _bond_min_locs(oriented.get("chain") or [], bonds)
     return list(locs) if locs else None

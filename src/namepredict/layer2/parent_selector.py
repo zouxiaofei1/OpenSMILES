@@ -35,6 +35,7 @@ from namepredict.layer2.chain_walk import (
     _chain_through_two, _longest_chain, _longest_from,
 )
 from namepredict.layer2.polyalkenol import _polyalkenol_parent as _try_polyalkenol
+from namepredict.layer2.hydroxy_alkenoic import _hy_alkenoic_parent as _try_hy_alkenoic
 def _no_fgs(info: dict, keys: tuple) -> bool:
     return not any(info.get(k) for k in keys)
 _CORE_BAD = (
@@ -249,7 +250,10 @@ def _sulfide_parent(info: dict) -> dict | None:
     return _parent_dict(
         parent, "sulfide", s_idx=e["s_idx"], alkyl_ns=(len(a1), len(a2)),
     )
-_ALKENOIC_BAD = _DIACID_BAD + ("has_thiol",)
+# has_alcohol excluded: hydroxy is a prefix on alkenoic acids (P-65.1.2)
+_ALKENOIC_BAD = tuple(
+    k for k in _DIACID_BAD + ("has_thiol",) if k != "has_alcohol"
+)
 _UNSAT_FG_BASE = (
     "has_acid", "has_ester", "has_amide", "has_ketone", "has_amine",
     "has_acyl_chloride", "has_anhydride", "has_thiol",
@@ -263,11 +267,16 @@ def _ok_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple) -> bool:
     if info.get("has_ring") or info.get("has_alkyne"):
         return False
     return _is_mono_fg(info, flag, ekey) and _is_mono_alkene(info) and _no_fgs(info, bad)
+def _unsat_cover_atoms(info, c_idx: int, db: dict) -> list[int]:
+    atoms = {c_idx, db["c1"], db["c2"]}
+    for h in _aliphatic_entries(info, "hydroxyls"):
+        atoms.add(h["c_idx"])
+    return list(atoms)
 def _try_unsat_fg(info, flag, ekey, bad, kind, ckey, **extra) -> dict | None:
     if not _ok_unsat_fg(info, flag, ekey, bad):
         return None
     c_idx, db = info[ekey][0]["c_idx"], info["double_bonds"][0]
-    chain = _best_cover_pair(info["mol"], [c_idx, db["c1"], db["c2"]])
+    chain = _best_cover_pair(info["mol"], _unsat_cover_atoms(info, c_idx, db))
     if not chain or c_idx not in chain:
         return None
     return _parent_dict(chain, kind, **{ckey: c_idx, "double_bond": (db["c1"], db["c2"]), "mol": info["mol"], **extra})
@@ -281,12 +290,21 @@ def _with_anion(info: dict, parent: dict) -> dict:
     if any(c.get("anion") for c in info.get("carboxyls") or []):
         return {**parent, "anion": True}
     return parent
-def _acid_parent_core(info: dict) -> dict:
+def _ring_acid_try(info: dict) -> dict | None:
     for fn in (_try_shcooh, _try_h5cooh, _try_qcooh, _try_pyridinecarboxylic_parent,
                _try_benzoic_parent, _try_cycloalkanecarboxylic_parent):
         if (b := fn(info)) is not None: return b
+    return None
+def _poly_acid_try(info: dict) -> dict | None:
     if _is_simple_alkanedioic(info): return _diacid_parent(info)
     if _is_simple_alkenedioic(info): return _alkenedioic_parent(info)
+    return _try_hy_alkenoic(
+        info, _ALKENOIC_BAD, _best_cover_pair, _parent_dict, _db_pairs,
+    )
+def _acid_parent_core(info: dict) -> dict:
+    top = _ring_acid_try(info) or _poly_acid_try(info)
+    if top is not None:
+        return top
     return _unsat_or_sat(
         info, "has_acid", "carboxyls", _ALKENOIC_BAD, "alkenoic_acid", "acid", "cooh_c_idx",
     )

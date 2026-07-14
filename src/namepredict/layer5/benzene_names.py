@@ -98,12 +98,22 @@ def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
     return _registry_parent_names(kind)
 
 
+def _stereo_lead(parent: str) -> tuple[str, str]:
+    """Split leading stereo '(E)-' / '(9Z,11E)-' from parent stem."""
+    if not parent.startswith("("):
+        return "", parent
+    close = parent.find(")-")
+    if close < 0:
+        return "", parent
+    return parent[: close + 2], parent[close + 2 :]
+
+
 def join_parent_name(prefix: str, parent: str) -> str:
     if not prefix:
         return parent
-    if parent[:1].isdigit() or parent.startswith("1H-"):
-        return f"{prefix}-{parent}"
-    return f"{prefix}{parent}"
+    stereo, stem = _stereo_lead(parent)
+    body = f"{prefix}-{stem}" if stem[:1].isdigit() or stem.startswith("1H-") else f"{prefix}{stem}"
+    return f"{stereo}{body}"
 
 
 def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str]) -> tuple[str, str]:
