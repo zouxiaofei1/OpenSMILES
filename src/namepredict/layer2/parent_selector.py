@@ -137,6 +137,20 @@ def _arm_ok(mol: Mol, arm: list[int], n_idx: int) -> bool:
     if not arm or len(arm) > 4 or mol.GetAtomWithIdx(arm[0]).GetIsAromatic():
         return False
     return len(_side_carbons(mol, arm[0], {n_idx})) == len(arm)
+def _arm_has_aryl(mol: Mol, arm: list[int]) -> bool:
+    """True if any arm carbon is bonded to an aromatic carbon outside the arm."""
+    arm_set = set(arm)
+    for i in arm:
+        for n in mol.GetAtomWithIdx(i).GetNeighbors():
+            if n.GetIdx() not in arm_set and n.GetAtomicNum() == 6 and n.GetIsAromatic():
+                return True
+    return False
+def _pick_amine_arms(mol: Mol, arms: list[list[int]]) -> tuple[list[int], list[list[int]]]:
+    """Parent = longest arm; tie-break prefer aryl-bearing arm."""
+    def key(a: list[int]) -> tuple:
+        return (len(a), 1 if _arm_has_aryl(mol, a) else 0)
+    ranked = sorted(arms, key=key, reverse=True)
+    return ranked[0], ranked[1:]
 def _amine_of_deg(info: dict, deg: int) -> dict | None:
     ams = [a for a in info.get("amines") or [] if a.get("degree") == deg]
     return ams[0] if len(ams) == 1 and len(info.get("amines") or []) == 1 else None
@@ -151,14 +165,15 @@ def _sec_amine_parent(info: dict) -> dict | None:
     if not _amine_sat_ok(info): return None
     arms = _n_arms(info, 2)
     if arms is None: return None
-    parent, n_arm = (arms[0], arms[1]) if len(arms[0]) >= len(arms[1]) else (arms[1], arms[0])
-    return _parent_dict(parent, "sec_amine", amine_c_idx=parent[0], n_alkyl_n=len(n_arm))
+    mol = info["mol"]
+    parent, rest = _pick_amine_arms(mol, arms)
+    return _parent_dict(parent, "sec_amine", amine_c_idx=parent[0], n_alkyl_n=len(rest[0]))
 def _tert_amine_parent(info: dict) -> dict | None:
     if not _amine_sat_ok(info): return None
     arms = _n_arms(info, 3)
     if arms is None: return None
-    arms = sorted(arms, key=len, reverse=True)
-    return _parent_dict(arms[0], "tert_amine", amine_c_idx=arms[0][0], n_alkyl_ns=[len(a) for a in arms[1:]])
+    parent, rest = _pick_amine_arms(info["mol"], arms)
+    return _parent_dict(parent, "tert_amine", amine_c_idx=parent[0], n_alkyl_ns=[len(a) for a in rest])
 def _primary_amine_parent(info: dict) -> dict:
     aliph = _aliphatic_entries(info, "amines")
     prim = next((a for a in aliph if "c_idx" in a), None)

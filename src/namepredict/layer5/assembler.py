@@ -30,7 +30,8 @@ from namepredict.layer5.stems import (
 from namepredict.layer5.benzene_names import (
     arene_fg_parent_names, benzene_parent_names, benzene_prefix,
     benzoate_parent_names, benzenediamine_names, benzenediol_names, hetero5carboxylic_names,
-    join_parent_name, pyridine_kind_names, sat_hetero_carboxylic_names, zh_1h_parent,
+    join_kind_name, join_parent_name, pyridine_kind_names, sat_hetero_carboxylic_names,
+    zh_1h_parent,
 )
 from namepredict.types import NameResult
 MULT_EN = {2: "di", 3: "tri", 4: "tetra", 5: "penta", 6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
@@ -493,7 +494,5 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     names = _names_for(kind, n, numbered)
     if not names:
         return _unsupported(n, kind)
-    pre_en, pre_zh = _prefix_for(numbered, kind, n)
-    en = join_parent_name(pre_en, names[0])
-    zh = join_parent_name(pre_zh, zh_1h_parent(names[0], names[1], pre_zh))
+    en, zh = join_kind_name(kind, _prefix_for(numbered, kind, n), names)
     return _ok(en, zh, time_ms, source)

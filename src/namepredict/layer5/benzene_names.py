@@ -147,6 +147,26 @@ def join_parent_name(prefix: str, parent: str) -> str:
     return f"{prefix}{parent}"
 
 
+def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str]) -> tuple[str, str]:
+    """methyl butanoate + 2-oxo-4-phenyl → methyl 2-oxo-4-phenylbutanoate."""
+    en, zh = names
+    if not pre_en:
+        return en, zh
+    parts = en.split(" ", 1)
+    en = f"{parts[0]} {pre_en}{parts[1]}" if len(parts) == 2 else f"{pre_en}{en}"
+    return en, f"{pre_zh}{zh}" if pre_zh else zh
+
+
+def join_kind_name(
+    kind: str | None, pre: tuple[str, str], names: tuple[str, str],
+) -> tuple[str, str]:
+    if kind in ("ester", "alkenoate"):
+        return join_ester_name(pre[0], pre[1], names)
+    en = join_parent_name(pre[0], names[0])
+    zh = join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))
+    return en, zh
+
+
 def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
     """Prefix Chinese retained 1H-parents with 1H- when ring is substituted."""
     if not prefix or not en_parent.startswith("1H-") or zh_parent.startswith("1H-"):
