@@ -107,13 +107,19 @@ def _chain_alcohol_parent(info: dict) -> dict | None:
     return _parent_dict(
         _chain_through(info, aliph[0]["c_idx"]), "alcohol", oh_c_idx=aliph[0]["c_idx"],
     )
-def _alcohol_parent(info: dict) -> dict:
-    ring = _ring_alcohol_parent(info)
-    if ring is not None: return ring
+def _polyol_or_chain_alcohol(info: dict) -> dict | None:
     if _is_simple_alkanetriol(info): return _triol_parent(info)
     if _is_simple_alkanediol(info): return _diol_parent(info)
-    chain = _chain_alcohol_parent(info)
-    if chain is not None: return chain
+    return _chain_alcohol_parent(info)
+
+
+def _alcohol_parent(info: dict) -> dict | None:
+    ring = _ring_alcohol_parent(info)
+    if ring is not None: return ring
+    top = _polyol_or_chain_alcohol(info)
+    if top is not None: return top
+    if not _aliphatic_entries(info, "hydroxyls"):
+        return None
     return _unsat_or_sat(
         info, "has_alcohol", "hydroxyls", _ALKENOL_BAD, "alkenol", "alcohol", "oh_c_idx",
     )

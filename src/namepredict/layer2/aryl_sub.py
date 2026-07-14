@@ -139,11 +139,11 @@ def _loc_tuple(order: list[int], sites: list[int]) -> tuple[int, ...]:
     return tuple(sorted(order.index(s) + 1 for s in sites if s in order))
 
 
-def _sub_sites(mol: Mol, ring: set[int]) -> list[int]:
+def _sub_sites(mol: Mol, ring: set[int], attach: int | None = None) -> list[int]:
     return (
         [s for s, _ in _halo_list(mol, ring)]
         + _me_sites(mol, ring)
-        + _d2_sites(mol, ring, _nb_outside)
+        + _d2_sites(mol, ring, _nb_outside, attach)
     )
 
 
@@ -153,7 +153,7 @@ def _ring_order(mol: Mol, ring: set[int], start: int) -> list[int]:
         return [start]
     a = _walk_ring(mol, ring, start, nbrs[0])
     b = _walk_ring(mol, ring, start, nbrs[1])
-    sites = _sub_sites(mol, ring)
+    sites = _sub_sites(mol, ring, start)
     ta, tb = _loc_tuple(a, sites), _loc_tuple(b, sites)
     if ta != tb:
         return a if ta < tb else b
@@ -209,14 +209,14 @@ def _halo_me_prefs(mol: Mol, ph: set[int], attach: int) -> tuple[str, str, str, 
 def _ph_leaf_prefs(mol: Mol, ph: set[int], attach: int) -> tuple[str, str]:
     pe, pz, me_e, me_z = _halo_me_prefs(mol, ph, attach)
     de, dz = _d2_pref_parts(mol, ph, attach, _ph_locant, _nb_outside)
-    # alpha-ish: amino, alkoxy, halo, hydroxy, methyl, nitro, CF3
-    en = _join_pref([de[0], de[1], pe, de[2], me_e, de[3], de[4]])
-    zh = _join_pref([dz[0], dz[1], pz, dz[2], me_z, dz[3], dz[4]])
+    # amino, alkoxy, halo, hydroxy, methyl, nitro, phenyl, CF3
+    en = _join_pref([de[0], de[1], pe, de[2], me_e, de[3], de[4], de[5]])
+    zh = _join_pref([dz[0], dz[1], pz, dz[2], me_z, dz[3], dz[4], dz[5]])
     return en, zh
 
 
 def _halo_ph_names(mol: Mol, ph: set[int], attach: int, stem_en: str, stem_zh: str):
-    if not _sub_sites(mol, ph):
+    if not _sub_sites(mol, ph, attach):
         return stem_en, stem_zh, False
     pe, pz = _ph_leaf_prefs(mol, ph, attach)
     return pe + stem_en, pz + stem_zh, True
@@ -387,14 +387,14 @@ def _simple_leaf_atoms(mol: Mol, ph: set[int]) -> set[int]:
     return out
 
 
-def _halo_atoms_on(mol: Mol, ph: set[int]) -> set[int]:
+def _halo_atoms_on(mol: Mol, ph: set[int], attach: int | None = None) -> set[int]:
     """Halo + methyl + depth-2 leaf atom indices on Ph (legacy name)."""
-    return _simple_leaf_atoms(mol, ph) | _depth2_atoms_on(mol, ph, _nb_outside)
+    return _simple_leaf_atoms(mol, ph) | _depth2_atoms_on(mol, ph, _nb_outside, attach)
 
 
 def _one_arm_atoms(mol: Mol, p: dict) -> set[int]:
-    out = set(p["atoms"]) | _halo_atoms_on(mol, p["ph"])
-    return out
+    att = p.get("outer_c") if "outer_c" in p else p.get("attach")
+    return set(p["atoms"]) | _halo_atoms_on(mol, p["ph"], att)
 
 
 def _aryl_atoms(info: dict, parent: set[int]) -> set[int]:
