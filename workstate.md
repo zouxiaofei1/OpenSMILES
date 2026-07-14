@@ -120,7 +120,7 @@
 [#e73150a][架构 Kind 注册表] ParentKind/kind_registry：scoring+L5 词表单一权威源 [+56 tests, dual 8.8%(358) 持平]
 [#64c6cd0][IUPAC P-22.2.2] 环内O/S/N勿作开链ether/amine/sulfide母体(_hetero_open_chain) [+tests, dual 8.8%→8.9%(360)]
 [#594de1b][架构 ring_producers] 环母体 _RING_TRY 迁入 kind_registry.ring_try_fns [+14 tests, dual 8.9%(360) 持平]
-[#PENDING][架构 fused56 数据化] Fused56MonoSpec 引擎；benzofuran/benzothiophene 薄封装 [+9 tests, dual 8.9%(360) 持平]
+[#a93115b][架构 fused56 数据化] Fused56MonoSpec 引擎；benzofuran/benzothiophene 薄封装 [+9 tests, dual 8.9%(360) 持平]
 ## 其他
 - 维护性：kind_registry + ring_producers + fused56 mono 引擎；benzo O/S 已数据化
 - 下一项维护：① fused56 扩 1,3-azole(box/btz) ② L4 orienter 并表 ③ FG_TRY 注册
