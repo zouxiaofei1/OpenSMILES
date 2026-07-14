@@ -30,16 +30,29 @@ from namepredict.layer3.alkoxy_names import _extract_alkoxys
 from namepredict.layer3.cycloalkyl_names import _one_cycloalkyl_side
 
 
-def alkyl_alpha_key(stem: str) -> str:
-    """Alphanumerical-order key: sec-/tert-/leading locants ignored (P-14.5)."""
+def _strip_ital_prefix(stem: str) -> str:
     if stem.startswith("tert-") or stem.startswith("sec-"):
         return stem[stem.index("-") + 1 :]
+    return stem
+
+
+def _strip_n_prefix(stem: str) -> str:
+    if stem.startswith("N,"):
+        return stem.split("-")[-1] if "-" in stem else stem
+    return stem[2:] if stem.startswith("N-") else stem
+
+
+def _strip_lead_locant(stem: str) -> str:
     i = 0
     while i < len(stem) and stem[i].isdigit():
         i += 1
-    if i and i < len(stem) and stem[i] == "-":
-        return stem[i + 1 :]
-    return stem
+    return stem[i + 1 :] if i and i < len(stem) and stem[i] == "-" else stem
+
+
+def alkyl_alpha_key(stem: str) -> str:
+    """Alphanumerical-order key: sec-/tert-/N-/leading locants ignored (P-14.5)."""
+    return _strip_lead_locant(_strip_n_prefix(_strip_ital_prefix(stem)))
+
 
 ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
 ALKYL_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}

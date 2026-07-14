@@ -133,8 +133,7 @@ _ANHYDRIDE_BAD = (
     "has_acid", "has_ester", "has_amide", "has_nitrile",
     "has_aldehyde", "has_ketone", "has_amine", "has_alcohol", "has_acyl_chloride",
 )
-def _is_open_sat(info: dict) -> bool:
-    return not (info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"))
+def _is_open_sat(info: dict) -> bool: return not (info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"))
 def _is_simple_n(info: dict, bad: tuple, ekey: str, n: int) -> bool:
     return _is_open_sat(info) and _no_fgs(info, bad) and _c_idxs(info.get(ekey) or [], n) is not None
 def _cover_parent(info: dict, ekey: str, n: int, kind: str, key: str) -> dict:
@@ -204,19 +203,20 @@ def _n_arms(info: dict, deg: int) -> list[list[int]] | None:
     mol, n_idx, cs = info["mol"], am["n_idx"], am["c_idxs"]
     arms = [_longest_from(mol, c, set()) for c in cs]
     return arms if all(_arm_ok(mol, a, n_idx) for a in arms) else None
+def _amine_sat_ok(info: dict) -> bool:
+    return _no_fgs(info, _DIAMINE_BAD) and not (info.get("has_alkene") or info.get("has_alkyne"))
 def _sec_amine_parent(info: dict) -> dict | None:
-    if not _is_open_sat(info) or not _no_fgs(info, _DIAMINE_BAD): return None
+    if not _amine_sat_ok(info): return None
     arms = _n_arms(info, 2)
     if arms is None: return None
     parent, n_arm = (arms[0], arms[1]) if len(arms[0]) >= len(arms[1]) else (arms[1], arms[0])
     return _parent_dict(parent, "sec_amine", amine_c_idx=parent[0], n_alkyl_n=len(n_arm))
 def _tert_amine_parent(info: dict) -> dict | None:
-    if not _is_open_sat(info) or not _no_fgs(info, _DIAMINE_BAD): return None
+    if not _amine_sat_ok(info): return None
     arms = _n_arms(info, 3)
     if arms is None: return None
     arms = sorted(arms, key=len, reverse=True)
-    parent, ns = arms[0], [len(a) for a in arms[1:]]
-    return _parent_dict(parent, "tert_amine", amine_c_idx=parent[0], n_alkyl_ns=ns)
+    return _parent_dict(arms[0], "tert_amine", amine_c_idx=arms[0][0], n_alkyl_ns=[len(a) for a in arms[1:]])
 def _primary_amine_parent(info: dict) -> dict:
     prim = next((a for a in info.get("amines") or [] if "c_idx" in a), None)
     if prim is None: return _parent_dict(_longest_chain(info["mol"]), "alkane")

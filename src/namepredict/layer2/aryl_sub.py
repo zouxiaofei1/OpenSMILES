@@ -44,20 +44,37 @@ def _is_terminal_halo(atom) -> bool:
     return sum(1 for n in atom.GetNeighbors() if n.GetAtomicNum() != 1) == 1
 
 
-def _count_side_halos(mol: Mol, ring: set[int], attach: int, parent: int) -> int | None:
+def _is_terminal_me_leaf(mol: Mol, c_idx: int, ring_c: int) -> bool:
+    """Methyl leaf on Ph: C only bonded to ring carbon (+H)."""
+    atom = mol.GetAtomWithIdx(c_idx)
+    if atom.GetAtomicNum() != 6 or atom.IsInRing() or atom.GetIsAromatic():
+        return False
+    return all(n.GetIdx() == ring_c or n.GetAtomicNum() == 1 for n in atom.GetNeighbors())
+
+
+def _side_leaf_kind(mol: Mol, nb, ring_i: int) -> str | None:
+    if _is_terminal_halo(nb):
+        return "halo"
+    if nb.GetAtomicNum() == 6 and _is_terminal_me_leaf(mol, nb.GetIdx(), ring_i):
+        return "me"
+    return None
+
+
+def _count_side_leaves(mol: Mol, ring: set[int], attach: int, parent: int) -> int | None:
+    """Count terminal halo + methyl leaves on Ph (exclude parent link)."""
     n = 0
     for i in ring:
         for nb in _nb_outside(mol, i, ring):
             if i == attach and nb.GetIdx() == parent:
                 continue
-            if not _is_terminal_halo(nb):
+            if _side_leaf_kind(mol, nb, i) is None:
                 return None
             n += 1
     return n
 
 
 def _side_ok(mol: Mol, ring: set[int], attach: int, parent: int) -> bool:
-    n = _count_side_halos(mol, ring, attach, parent)
+    n = _count_side_leaves(mol, ring, attach, parent)
     return n is not None and n <= 3
 
 
@@ -76,6 +93,15 @@ def _halo_list(mol: Mol, ring: set[int]) -> list[tuple[int, int]]:
         for nb in _nb_outside(mol, i, ring)
         if _is_terminal_halo(nb)
     ]
+
+
+def _me_sites(mol: Mol, ring: set[int]) -> list[int]:
+    sites: list[int] = []
+    for i in ring:
+        for nb in _nb_outside(mol, i, ring):
+            if nb.GetAtomicNum() == 6 and _is_terminal_me_leaf(mol, nb.GetIdx(), i):
+                sites.append(i)
+    return sites
 
 
 def _halo_pair(mol: Mol, ring: set[int]) -> tuple[int, int] | None:
@@ -105,13 +131,17 @@ def _loc_tuple(order: list[int], sites: list[int]) -> tuple[int, ...]:
     return tuple(sorted(order.index(s) + 1 for s in sites if s in order))
 
 
+def _sub_sites(mol: Mol, ring: set[int]) -> list[int]:
+    return [s for s, _ in _halo_list(mol, ring)] + _me_sites(mol, ring)
+
+
 def _ring_order(mol: Mol, ring: set[int], start: int) -> list[int]:
     nbrs = _ring_nbrs(mol, start, ring)
     if len(nbrs) != 2:
         return [start]
     a = _walk_ring(mol, ring, start, nbrs[0])
     b = _walk_ring(mol, ring, start, nbrs[1])
-    sites = [s for s, _ in _halo_list(mol, ring)]
+    sites = _sub_sites(mol, ring)
     ta, tb = _loc_tuple(a, sites), _loc_tuple(b, sites)
     if ta != tb:
         return a if ta < tb else b
@@ -145,13 +175,34 @@ def _halo_prefix(items: list[tuple[int, int]]) -> tuple[str, str]:
     return _mixed_z_prefix(items)
 
 
+def _me_prefix(locs: list[int]) -> tuple[str, str]:
+    if not locs:
+        return "", ""
+    n = len(locs)
+    ls = ",".join(str(l) for l in sorted(locs))
+    return (
+        f"{ls}-{_MULT_EN.get(n, '')}methyl",
+        f"{ls}-{_MULT_ZH.get(n, '')}甲基",
+    )
+
+
+def _join_pref(parts: list[str]) -> str:
+    return "-".join(p for p in parts if p)
+
+
+def _ph_leaf_prefs(mol: Mol, ph: set[int], attach: int) -> tuple[str, str]:
+    items = sorted((_ph_locant(mol, ph, attach, s), z) for s, z in _halo_list(mol, ph))
+    me_locs = [_ph_locant(mol, ph, attach, s) for s in _me_sites(mol, ph)]
+    pe, pz = _halo_prefix(items) if items else ("", "")
+    me_e, me_z = _me_prefix(me_locs)
+    return _join_pref([pe, me_e]), _join_pref([pz, me_z])
+
+
 def _halo_ph_names(mol: Mol, ph: set[int], attach: int, stem_en: str, stem_zh: str):
-    found = _halo_list(mol, ph)
-    if not found:
+    if not _halo_list(mol, ph) and not _me_sites(mol, ph):
         return stem_en, stem_zh, False
-    items = sorted((_ph_locant(mol, ph, attach, s), z) for s, z in found)
-    pe, pz = _halo_prefix(items)
-    return f"{pe}{stem_en}", f"{pz}{stem_zh}", True
+    pe, pz = _ph_leaf_prefs(mol, ph, attach)
+    return pe + stem_en, pz + stem_zh, True
 
 
 def _ph_bridge_attach(mol: Mol, ph: set[int], bridge: int) -> int:
@@ -309,12 +360,15 @@ def _ring_benzyls(mol: Mol, parent: set[int]) -> list[dict]:
 
 
 def _halo_atoms_on(mol: Mol, ph: set[int]) -> set[int]:
-    return {
-        nb.GetIdx()
-        for i in ph
-        for nb in _nb_outside(mol, i, ph)
-        if _is_terminal_halo(nb)
-    }
+    """Halo + methyl leaf atom indices on Ph (legacy name)."""
+    out: set[int] = set()
+    for i in ph:
+        for nb in _nb_outside(mol, i, ph):
+            if _is_terminal_halo(nb):
+                out.add(nb.GetIdx())
+            elif nb.GetAtomicNum() == 6 and _is_terminal_me_leaf(mol, nb.GetIdx(), i):
+                out.add(nb.GetIdx())
+    return out
 
 
 def _one_arm_atoms(mol: Mol, p: dict) -> set[int]:

@@ -35,15 +35,12 @@ from namepredict.layer5.benzene_names import (
 from namepredict.types import NameResult
 MULT_EN = {2: "di", 3: "tri", 4: "tetra", 5: "penta", 6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
 MULT_ZH = {2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
-def _fail(meta: dict | None = None) -> NameResult:
-    return NameResult(en="", zh="", success=False, source="iupac", meta=meta or {})
+def _fail(meta: dict | None = None) -> NameResult: return NameResult(en="", zh="", success=False, source="iupac", meta=meta or {})
 def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult:
     return NameResult(en=en, zh=zh, success=True, source=source, time_ms=time_ms)
 def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:
-    en, zh = en_map.get(n), zh_map.get(n)
-    return (en, zh) if en and zh else None
-def _alkane_names(n: int) -> tuple[str, str] | None:
-    return _pair(ALKANE_EN, ALKANE_ZH, n)
+    en, zh = en_map.get(n), zh_map.get(n); return (en, zh) if en and zh else None
+def _alkane_names(n: int) -> tuple[str, str] | None: return _pair(ALKANE_EN, ALKANE_ZH, n)
 def _cyclo_from_alkane(
     n: int, en_fn, zh_fn
 ) -> tuple[str, str] | None:
@@ -433,8 +430,10 @@ _KEEP_LOCANT_KINDS = frozenset({
     "pyridinecarbonitrile", "benzoate", "benzonitrile", "benzoyl_chloride",
     "cycloalkanecarboxylic"}) | _H5COOH_KINDS | _SHCOOH_KINDS
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
-    if n_carbons <= 1 or kind in ("sec_amine", "tert_amine", "amide"):
+    if n_carbons <= 1:
         return True
+    if kind in ("sec_amine", "tert_amine", "amide"):
+        return {s.get("kind") for s in substituents} <= {"n_alkyl", "n_phenyl"}
     if kind in _KEEP_LOCANT_KINDS:
         return False
     if n_carbons == 2 and len(substituents) == 1:
@@ -447,8 +446,7 @@ def _stem_needs_paren(stem: str, subs: list, omit: bool) -> bool:
     if stem and stem[0].isdigit():
         return True
     return (not omit) and stem == "trifluoromethyl"
-def _wrap_stem(stem: str, need: bool) -> str:
-    return f"({stem})" if need else stem
+def _wrap_stem(stem: str, need: bool) -> str: return f"({stem})" if need else stem
 def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
     mult = _mult_en(len(subs))
     s = _wrap_stem(stem, _stem_needs_paren(stem, subs, omit))
@@ -461,10 +459,11 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False
         need = True
     s = _wrap_stem(zh_stem, need)
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
-def _sorted_stems(groups: dict[str, list]) -> list[str]:
-    return sorted((k for k in groups if k), key=alkyl_alpha_key)
+def _sorted_stems(groups: dict[str, list]) -> list[str]: return sorted((k for k in groups if k), key=alkyl_alpha_key)
 def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> tuple[str, str]:
     zh_stem = subs[0].get("zh") or ""
+    if (subs[0].get("kind") or "") in ("n_alkyl", "n_phenyl"):
+        omit = True
     return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit, paren_cf3)
 def _collect_parts(groups: dict[str, list], omit: bool, paren_cf3: bool = False) -> tuple[list[str], list[str]]:
     en_parts: list[str] = []
