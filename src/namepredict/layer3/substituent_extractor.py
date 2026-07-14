@@ -305,6 +305,22 @@ def _n_phenyl_sub(attach: int) -> dict:
         "kind": "n_phenyl", "n_carbons": 6, "attach_idx": attach,
         "atoms": [], "en": "N-phenyl", "zh": "N-苯基",
     }
+
+
+def _n_benzyl_en_zh(en: str, zh: str, paren: bool) -> tuple[str, str]:
+    if paren or en != "benzyl":
+        return f"N-({en})", f"N-({zh})"
+    return f"N-{en}", f"N-{zh}"
+
+
+def _n_benzyl_sub(attach: int, en: str, zh: str, paren: bool) -> dict:
+    ne, nz = _n_benzyl_en_zh(en, zh, paren)
+    return {
+        "kind": "n_benzyl", "n_carbons": 7, "attach_idx": attach,
+        "atoms": [], "en": ne, "zh": nz,
+    }
+
+
 def _tert_n_prefix(ns: list[int]) -> tuple[str, str] | None:
     if len(ns) != 2 or any(n not in _N_STEM_EN for n in ns):
         return None
@@ -330,6 +346,24 @@ def _extract_n_phenyl(parent: dict) -> list[dict]:
         return []
     attach = parent.get("amide_c_idx")
     return [_n_phenyl_sub(attach)] if attach is not None else []
+
+
+def _n_benzyl_named(info: dict, ch2: int) -> tuple[str, str, bool] | None:
+    from namepredict.layer2.aryl_sub import _benzyl_name, _ch2_ph_at
+    ams = info.get("amides") or []
+    n_idx = ams[0]["n_idx"] if ams else -1
+    ph = _ch2_ph_at(info["mol"], ch2, n_idx)
+    return None if ph is None else _benzyl_name(info["mol"], ph, ch2)
+
+
+def _extract_n_benzyl(info: dict, parent: dict) -> list[dict]:
+    if parent.get("kind") != "amide" or not parent.get("n_benzyl"):
+        return []
+    attach, ch2 = parent.get("amide_c_idx"), parent.get("n_benzyl_ch2")
+    if attach is None or ch2 is None:
+        return []
+    named = _n_benzyl_named(info, ch2)
+    return [_n_benzyl_sub(attach, *named)] if named else []
 
 
 def _make_aryl(kind: str, attach: int, atoms: list[int], en: str, zh: str, paren: bool) -> dict:
@@ -420,12 +454,18 @@ def _extract_aryls(info: dict, parent: dict) -> list[dict]:
     )
 
 
+def _extract_n_subs(info: dict, parent: dict) -> list[dict]:
+    return (
+        _extract_n_alkyl(parent) + _extract_n_phenyl(parent)
+        + _extract_n_benzyl(info, parent)
+    )
+
+
 def extract_substituents(info: dict, parent: dict) -> list:
     mol: Mol = info["mol"]
     chain = parent.get("chain") or []
-    core = _extract_core_subs(info, parent)
-    alkox = _extract_alkoxys(info, parent)
-    aryl = _extract_aryls(info, parent)
-    n_sub = _extract_n_alkyl(parent) + _extract_n_phenyl(parent)
     alkyl = _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent))
-    return alkyl + core + alkox + aryl + n_sub
+    return (
+        alkyl + _extract_core_subs(info, parent) + _extract_alkoxys(info, parent)
+        + _extract_aryls(info, parent) + _extract_n_subs(info, parent)
+    )

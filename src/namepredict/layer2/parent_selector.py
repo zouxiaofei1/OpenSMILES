@@ -289,11 +289,22 @@ def _amide_n_alkyl(mol: Mol, am: dict, cs: list[int]) -> dict:
 def _amide_n_phenyl(mol: Mol, am: dict, cs: list[int]) -> dict:
     if len(cs) != 1: return {}
     return {"n_phenyl": True} if _unsub_phenyl_at(mol, cs[0], am["n_idx"]) else {}
+def _amide_n_benzyl(mol: Mol, am: dict, cs: list[int]) -> dict:
+    """N–CH2–Ph (Ph may carry simple leaves) → n_benzyl flag + ch2 idx."""
+    from namepredict.layer2.aryl_sub import _ch2_ph_at
+    if len(cs) != 1: return {}
+    ch2 = cs[0]
+    ph = _ch2_ph_at(mol, ch2, am["n_idx"])
+    return {"n_benzyl": True, "n_benzyl_ch2": ch2} if ph is not None else {}
 def _amide_n_meta(info: dict) -> dict:
     ams = info.get("amides") or []
     if len(ams) != 1: return {}
     mol, am, cs = info["mol"], ams[0], ams[0].get("n_c_idxs") or []
-    return _amide_n_alkyl(mol, am, cs) or _amide_n_phenyl(mol, am, cs)
+    return (
+        _amide_n_benzyl(mol, am, cs)
+        or _amide_n_phenyl(mol, am, cs)
+        or _amide_n_alkyl(mol, am, cs)
+    )
 def _amide_parent(info: dict) -> dict:
     return _fg_chain(info, "amides", "amide", "amide_c_idx", **_amide_n_meta(info))
 def _is_mono_fg(info: dict, flag: str, key: str) -> bool:
