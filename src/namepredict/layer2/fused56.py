@@ -1,7 +1,15 @@
 """Shared fused aromatic 5+6 ring helpers (IUPAC P-22.2.1 / P-25)."""
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from rdkit.Chem import Mol
+
+from namepredict.layer2.ring_parent import (
+    _outside_ok,
+    _ring_halo_n,
+    _ring_side_starts,
+)
 
 
 def _fused_56_pair(rings: list[list[int]]) -> tuple[list[int], list[int]] | None:
@@ -139,3 +147,109 @@ def _chain_atoms(
     mid = _path_of_len(five, pos2, a3a, 1)
     ext = _exterior6(six, a3a, a7a) if mid else None
     return None if not mid or not ext else [h, pos2, mid[0], a3a] + ext + [a7a]
+
+
+# --- data-driven mono-hetero fused 5+6 (benzofuran / benzothiophene) ---
+
+_FG_BLOCK_KEYS = (
+    "has_acid", "has_aldehyde", "has_ketone", "has_alcohol",
+    "has_ester", "has_amide", "has_nitrile", "has_amine",
+    "has_thiol", "has_nitro", "has_acyl_chloride", "has_anhydride",
+)
+
+
+@dataclass(frozen=True)
+class Fused56MonoSpec:
+    """Mono-hetero benzo[b] scaffold: one hetero Z on five-ring, four C."""
+
+    kind: str
+    hetero_z: int
+    hetero_key: str  # parent dict key, e.g. o_idx / s_idx
+    sub_cap: int = 1
+    n_atoms: int = 9
+
+
+def _five_one_z(mol: Mol, five: list[int], z: int) -> int | None:
+    """Exactly one atom of atomic num z and four C on the five-ring."""
+    zs = [mol.GetAtomWithIdx(i).GetAtomicNum() for i in five]
+    if zs.count(z) != 1 or zs.count(6) != 4:
+        return None
+    return next(i for i in five if mol.GetAtomWithIdx(i).GetAtomicNum() == z)
+
+
+def _mono_core_ok(
+    mol: Mol, five: list[int], six: list[int], spec: Fused56MonoSpec,
+) -> int | None:
+    atoms = set(five) | set(six)
+    if len(atoms) != spec.n_atoms or not _all_aromatic(mol, atoms):
+        return None
+    if not _six_all_c(mol, six):
+        return None
+    return _five_one_z(mol, five, spec.hetero_z)
+
+
+def _mono_parts(
+    info: dict, spec: Fused56MonoSpec,
+) -> tuple[list[int], list[int], int, int, int] | None:
+    """Return (five, six, hetero_idx, ba, bb) or None."""
+    fused = _fused56(info)
+    if fused is None:
+        return None
+    five, six, (ba, bb) = fused
+    h = _mono_core_ok(info["mol"], five, six, spec)
+    return None if h is None else (five, six, h, ba, bb)
+
+
+def _fg_block(info: dict, keys: tuple[str, ...] = _FG_BLOCK_KEYS) -> bool:
+    return any(info.get(k) for k in keys)
+
+
+def _mono_methyl_only(mol: Mol, ring: set[int], starts: list[int]) -> bool:
+    if len(starts) != 1:
+        return False
+    outside = [
+        a.GetIdx() for a in mol.GetAtoms()
+        if a.GetAtomicNum() == 6 and a.GetIdx() not in ring
+    ]
+    return outside == starts
+
+
+def _subs_ok_cap(mol: Mol, ring: set[int], cap: int) -> bool:
+    """≤cap simple ring subs: halo + mono-methyl only (no multi-alkyl)."""
+    h, starts = _ring_halo_n(mol, ring), _ring_side_starts(mol, ring)
+    if h + len(starts) > cap:
+        return False
+    if not starts:
+        return True
+    return _mono_methyl_only(mol, ring, starts)
+
+
+def _ring_set_parts(parts: tuple) -> set[int]:
+    return set(parts[0]) | set(parts[1])
+
+
+def _is_simple_mono(info: dict, spec: Fused56MonoSpec) -> bool:
+    if _mono_parts(info, spec) is None or _fg_block(info):
+        return False
+    parts = _mono_parts(info, spec)
+    assert parts is not None
+    mol, ring = info["mol"], _ring_set_parts(parts)
+    if not _outside_ok(mol, ring):
+        return False
+    return _subs_ok_cap(mol, ring, spec.sub_cap)
+
+
+def _mono_parent_dict(info: dict, spec: Fused56MonoSpec, **extra) -> dict:
+    parts = _mono_parts(info, spec)
+    assert parts is not None
+    five, six, h, ba, bb = parts
+    chain = _chain_atoms(info["mol"], five, six, h, ba, bb) or []
+    return {
+        "chain": chain, "n_carbons": spec.n_atoms, "kind": spec.kind,
+        spec.hetero_key: h, "bridge": [ba, bb], **extra,
+    }
+
+
+def _try_mono_fused56(info: dict, spec: Fused56MonoSpec) -> dict | None:
+    """Simple unsubstituted/mono-sub mono-hetero fused 5+6 parent."""
+    return _mono_parent_dict(info, spec) if _is_simple_mono(info, spec) else None
