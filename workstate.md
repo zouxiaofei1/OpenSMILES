@@ -127,7 +127,7 @@
 [#37f21a2][IUPAC P-65.1.2 / P-31.1 / P-93.4] 羟基烯酸：ALKENOIC 允许OH前缀+链盖OH碳+多烯；stereo前缀在取代基前 [+11 tests, dual 10.6%(431)→11.1%(452), fails 3631→3610]
 [#7f5af8d][IUPAC P-65.1.2 / P-31.1] 烯酸前缀 amino/oxo：ALKENOIC_BAD 放行+prefix_alkenoic 通用模块 [+11 tests, dual 11.1%(452)→11.3%(458), fails 3610→3604]
 [#556ed16][IUPAC P-92 / P-93] 母体链 CIP R/S 前缀；与 E/Z 合并 (E,8R)- [+11 tests, dual 11.3%(458)→12.8%(520), fails 3604→3542]
-[#pending][IUPAC P-92 / P-93] R/S扩展ketone/ester/杂环；酯methyl (2S)-；环单中心(R)-；禁C1假立体 [+13 tests, dual 12.8%(520)→13.0%(530), fails 3542→3532]
+[#b06bf8a][IUPAC P-92 / P-93] R/S扩展ketone/ester/杂环；酯methyl (2S)-；环单中心(R)-；禁C1假立体 [+13 tests, dual 12.8%(520)→13.0%(530), fails 3542→3532]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多羧酸根/磷酸盐未做
 - 炔醇/带复杂侧链多烯醇未做
