@@ -58,12 +58,32 @@ def _name_alkoxy(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
     return _ALKOXY_EN[n], _ALKOXY_ZH[n], set(m["atoms"])
 
 
+_ALKYL_EN = {2: "ethyl", 3: "propyl", 4: "butyl"}
+_ALKYL_ZH = {2: "乙基", 3: "丙基", 4: "丁基"}
+
+
+def _name_n_alkyl(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
+    n = m["n"]
+    return _ALKYL_EN[n], _ALKYL_ZH[n], set(m["atoms"])
+
+
+def _name_methylthio(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
+    return "methylsulfanyl", "甲硫基", set(m["atoms"])
+
+
+def _name_cyano(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
+    return "cyano", "氰基", set(m["atoms"])
+
+
 SIMPLE_HANDLERS = [
     _FnHandler("halo", "halo", topo.match_halo, _name_halo),
     _FnHandler("amino", "amino", topo.match_amino, _name_amino),
+    _FnHandler("cyano", "cyano", topo.match_cyano, _name_cyano),
     _FnHandler("alkoxy", "alkoxy", topo.match_alkoxy, _name_alkoxy),
     _FnHandler("hydroxy", "hydroxy", topo.match_hydroxy, _name_hydroxy),
     _FnHandler("me", "methyl", topo.match_me, _name_me),
+    _FnHandler("n_alkyl", "alkyl", topo.match_n_alkyl, _name_n_alkyl),
+    _FnHandler("methylthio", "methylsulfanyl", topo.match_methylthio, _name_methylthio),
     _FnHandler("nitro", "nitro", topo.match_nitro, _name_nitro),
     _FnHandler("cf3", "trifluoromethyl", topo.match_cf3, _name_cf3),
 ]

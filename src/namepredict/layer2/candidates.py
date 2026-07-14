@@ -109,10 +109,20 @@ def _try_amide(info: dict) -> dict | None:
     return None
 
 
+def _is_aryl_nitrile_c(mol, c_idx: int) -> bool:
+    """True if nitrile carbon's only carbon neighbor is aromatic (Ar–CN leaf)."""
+    atom = mol.GetAtomWithIdx(c_idx)
+    cs = [n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
+    return len(cs) == 1 and cs[0].GetIsAromatic()
+
+
 def _try_nitrile(info: dict) -> dict | None:
-    if _is_mono_fg(info, "has_nitrile", "nitriles"):
-        return _nitrile_parent(info)
-    return None
+    if not _is_mono_fg(info, "has_nitrile", "nitriles"):
+        return None
+    nit = info["nitriles"][0]
+    if _is_aryl_nitrile_c(info["mol"], nit["c_idx"]):
+        return None  # Ar–CN is a leaf; benzonitrile via arene path
+    return _nitrile_parent(info)
 
 
 def _try_aldehyde(info: dict) -> dict | None:

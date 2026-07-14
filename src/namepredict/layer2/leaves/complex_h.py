@@ -87,7 +87,39 @@ def name_phenoxy(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
     return en, zh, atoms | {m["o_idx"]}
 
 
+def match_benzyl(mol: Mol, nb, ring_i: int, depth: int) -> Match | None:
+    got = topo.match_benzyl_bridge(mol, nb, ring_i)
+    if got is None:
+        return None
+    ch2, ph, outer = got
+    if not _ph_ok(mol, ph, outer, ch2, depth + 1):
+        return None
+    return make_match(
+        "benzyl", set(ph) | {ch2}, ring_i,
+        child_ring=ph, child_attach=outer, child_parent=ch2, ch2=ch2,
+    )
+
+
+def _to_benzyl(en: str, zh: str) -> tuple[str, str]:
+    if en.endswith("phenyl"):
+        en = en[: -len("phenyl")] + "benzyl"
+    if zh.endswith("苯基"):
+        zh = zh[: -len("苯基")] + "苄基"
+    return en, zh
+
+
+def name_benzyl(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
+    from namepredict.layer2.leaves.ring_namer import name_ph_ring
+
+    en, zh, atoms = name_ph_ring(
+        mol, m["child_ring"], m["child_attach"], m["child_parent"], depth + 1,
+    )
+    en, zh = _to_benzyl(en, zh)
+    return en, zh, atoms | {m["ch2"]}
+
+
 COMPLEX_HANDLERS = [
     _FnHandler("phenyl", "phenyl", match_phenyl, name_phenyl, complex=True),
     _FnHandler("phenoxy", "phenoxy", match_phenoxy, name_phenoxy, complex=True),
+    _FnHandler("benzyl", "benzyl", match_benzyl, name_benzyl, complex=True),
 ]
