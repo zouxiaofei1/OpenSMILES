@@ -117,7 +117,7 @@
 
 [#e0958ae][IUPAC P-22.2.1 P1] 未取代 quinazoline 母体 [+4 tests, dual 8.8%(358) 持平]
 [#5687602][IUPAC P-22.2.1 P1] 未取代 quinoxaline 母体 [+2 tests, dual 8.8%(358) 持平]
-[#PENDING][架构 Kind 注册表] ParentKind/kind_registry：scoring+L5 词表单一权威源 [+56 tests, dual 8.8%(358) 持平]
+[#e73150a][架构 Kind 注册表] ParentKind/kind_registry：scoring+L5 词表单一权威源 [+56 tests, dual 8.8%(358) 持平]
 ## 其他
 - 维护性：kind_registry 已收 scoring 集合与 arene 词干；candidates._RING_TRY 与 L4 orienter 仍多点注册
 - 下一项维护：① 环内 ether/amine/sulfide 勿抢 sat_hetero 母体 ② candidates 注册并入 registry ③ fused56 复制模块数据化
