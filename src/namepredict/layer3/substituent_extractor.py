@@ -11,20 +11,32 @@ from namepredict.layer2.side_alkyl import (
     _is_sec_butyl,
     _is_tert_butyl,
     _is_trifluoromethyl,
+    _outer_alkoxy_n,
+    _outer_atoms,
+    _terminal_halo_z,
     _walk_linear,
+    _walk_omega_halo,
 )
 
 
 def alkyl_alpha_key(stem: str) -> str:
-    """Alphanumerical-order key: italic prefixes sec-/tert- ignored (P-14.5)."""
+    """Alphanumerical-order key: sec-/tert-/leading locants ignored (P-14.5)."""
     if stem.startswith("tert-") or stem.startswith("sec-"):
         return stem[stem.index("-") + 1 :]
+    i = 0
+    while i < len(stem) and stem[i].isdigit():
+        i += 1
+    if i and i < len(stem) and stem[i] == "-":
+        return stem[i + 1 :]
     return stem
 
 ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
 ALKYL_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
 HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
 HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}
+# ω-halo n-alkyl: locant = chain length (terminal carbon)
+_HALOALKYL_STEM_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
+_HALOALKYL_STEM_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
 
 
 def _side_starts(mol: Mol, chain: list[int]) -> list[tuple[int, int]]:
@@ -69,11 +81,36 @@ def _make_cf3(attach: int, atoms: list[int]) -> dict:
     }
 
 
+def _haloalkyl_names(n: int, z: int) -> tuple[str, str]:
+    se, sz = _HALOALKYL_STEM_EN[n], _HALOALKYL_STEM_ZH[n]
+    if n == 1:
+        return f"{HALO_EN[z]}{se}", f"{HALO_ZH[z]}{sz}"
+    return f"{n}-{HALO_EN[z]}{se}", f"{n}-{HALO_ZH[z]}{sz}"
+
+
+def _make_haloalkyl(attach: int, path: list[int], z: int) -> dict:
+    n = len(path)
+    en, zh = _haloalkyl_names(n, z)
+    return {
+        "kind": "haloalkyl", "n_carbons": n, "attach_idx": attach,
+        "atoms": path, "en": en, "zh": zh, "paren": True,
+    }
+
+
+def _one_haloalkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict | None:
+    path = _walk_omega_halo(mol, start, chain_set)
+    if not path:
+        return None
+    z = _terminal_halo_z(mol, path[-1])
+    return _make_haloalkyl(attach, path, z) if z else None
+
+
 def _one_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict | None:
     path = _walk_linear(mol, start, chain_set)
     if path:
         return _make_alkyl(attach, path)
-    return _one_branched(mol, attach, start, chain_set)
+    ha = _one_haloalkyl(mol, attach, start, chain_set)
+    return ha if ha is not None else _one_branched(mol, attach, start, chain_set)
 
 
 _BRANCH_CHECKS = (
@@ -280,42 +317,16 @@ def _extract_n_phenyl(parent: dict) -> list[dict]:
     return [_n_phenyl_sub(attach)] if attach is not None else []
 
 
-_ALKOXY_EN = {1: "methoxy", 2: "ethoxy"}
-_ALKOXY_ZH = {1: "甲氧基", 2: "乙氧基"}
-
-
-def _heavies(atom) -> list:
-    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
-
-
-def _outer_fwd(mol: Mol, cur: int, prev: int) -> list:
-    atom = mol.GetAtomWithIdx(cur)
-    if atom.GetAtomicNum() != 6 or atom.IsInRing():
-        return []
-    return [x for x in _heavies(atom) if x.GetIdx() != prev]
-
-
-def _alkoxy_n(mol: Mol, o_idx: int, outer_c: int) -> int:
-    fwd = _outer_fwd(mol, outer_c, o_idx)
-    if not fwd:
-        return 1
-    if len(fwd) == 1 and fwd[0].GetAtomicNum() == 6:
-        return 2 if not _outer_fwd(mol, fwd[0].GetIdx(), outer_c) else 0
-    return 0
+_ALKOXY_EN = {1: "methoxy", 2: "ethoxy", 12: "2-methoxyethoxy"}
+_ALKOXY_ZH = {1: "甲氧基", 2: "乙氧基", 12: "2-甲氧基乙氧基"}
 
 
 def _make_alkoxy(attach: int, o_idx: int, atoms: list[int], n: int) -> dict:
     return {
         "kind": "alkoxy", "attach_idx": attach, "atoms": [o_idx] + atoms,
         "n_carbons": n, "en": _ALKOXY_EN[n], "zh": _ALKOXY_ZH[n],
+        "paren": n >= 12,
     }
-
-
-def _alkoxy_atoms(mol: Mol, outer: int, o_idx: int, n: int) -> list[int]:
-    if n == 1:
-        return [outer]
-    fwd = _outer_fwd(mol, outer, o_idx)
-    return [outer, fwd[0].GetIdx()] if fwd else [outer]
 
 
 def _one_ring_alkoxy(mol: Mol, e: dict, chain_set: set[int]) -> dict | None:
@@ -325,10 +336,10 @@ def _one_ring_alkoxy(mol: Mol, e: dict, chain_set: set[int]) -> dict | None:
     ring_c, outer = (c1, c2) if c1 in chain_set else (c2, c1)
     if not mol.GetAtomWithIdx(ring_c).IsInRing():
         return None
-    n = _alkoxy_n(mol, o, outer)
+    n = _outer_alkoxy_n(mol, outer, o)
     if n not in _ALKOXY_EN:
         return None
-    return _make_alkoxy(ring_c, o, _alkoxy_atoms(mol, outer, o, n), n)
+    return _make_alkoxy(ring_c, o, _outer_atoms(mol, outer, o, n), n)
 
 
 def _extract_alkoxys(info: dict, parent: dict) -> list[dict]:

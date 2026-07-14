@@ -440,17 +440,27 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     if n_carbons == 2 and len(substituents) == 1:
         return True
     return kind in ("cycloalkane", "benzene") and len(substituents) == 1
+def _stem_needs_paren(stem: str, subs: list, omit: bool) -> bool:
+    """Paren: explicit flag, leading-locant stems, or multi CF3 (EN)."""
+    if any(s.get("paren") for s in subs):
+        return True
+    if stem and stem[0].isdigit():
+        return True
+    return (not omit) and stem == "trifluoromethyl"
+def _wrap_stem(stem: str, need: bool) -> str:
+    return f"({stem})" if need else stem
 def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
-    mult, s = _mult_en(len(subs)), f"({stem})" if stem == "trifluoromethyl" else stem
-    if omit:
-        return f"{mult}{stem}"
-    return f"{_locant_str(subs)}-{mult}{s}"
+    mult = _mult_en(len(subs))
+    s = _wrap_stem(stem, _stem_needs_paren(stem, subs, omit))
+    return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> str:
     mult = _mult_zh(len(subs))
-    s = f"({zh_stem})" if paren_cf3 and zh_stem == "三氟甲基" else zh_stem
-    if omit:
-        return f"{mult}{zh_stem}"
-    return f"{_locant_str(subs)}-{mult}{s}"
+    en = subs[0].get("en") or ""
+    need = any(s.get("paren") for s in subs) or (en[:1].isdigit() if en else False)
+    if paren_cf3 and zh_stem == "三氟甲基":
+        need = True
+    s = _wrap_stem(zh_stem, need)
+    return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 def _sorted_stems(groups: dict[str, list]) -> list[str]:
     return sorted((k for k in groups if k), key=alkyl_alpha_key)
 def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> tuple[str, str]:

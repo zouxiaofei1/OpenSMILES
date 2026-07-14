@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+_HALO_Z = frozenset({9, 17, 35, 53})
+
 
 def _c_neighbors(mol: Mol, idx: int) -> list[int]:
     atom = mol.GetAtomWithIdx(idx)
@@ -44,6 +46,32 @@ def _is_cf3_fluoro(atom) -> bool:
         return False
     nbs = [n for n in c.GetNeighbors() if n.GetAtomicNum() != 1]
     return len(nbs) == 4 and sum(n.GetAtomicNum() == 9 for n in nbs) == 3
+
+
+def _is_side_halo(atom) -> bool:
+    """Terminal halogen on a non-ring carbon (ω-haloalkyl)."""
+    if atom.GetAtomicNum() not in _HALO_Z:
+        return False
+    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    if len(heavies) != 1 or heavies[0].GetAtomicNum() != 6:
+        return False
+    return not heavies[0].IsInRing()
+
+
+def _terminal_halo_z(mol: Mol, idx: int) -> int | None:
+    """Atomic number of the single terminal halo on carbon, else None."""
+    atom = mol.GetAtomWithIdx(idx)
+    if atom.GetAtomicNum() != 6 or atom.IsInRing():
+        return None
+    halos = [n for n in atom.GetNeighbors() if n.GetAtomicNum() in _HALO_Z]
+    if len(halos) != 1:
+        return None
+    ok = all(n.GetAtomicNum() in (1, 6) or n.GetAtomicNum() in _HALO_Z for n in atom.GetNeighbors())
+    return halos[0].GetAtomicNum() if ok else None
+
+
+def _is_omega_halo_c(mol: Mol, idx: int) -> bool:
+    return _terminal_halo_z(mol, idx) is not None
 
 
 def _is_trifluoromethyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
@@ -94,17 +122,41 @@ def _advance(
     return cur, nxt  # type: ignore[return-value]
 
 
-def _walk_linear(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+def _omega_step(
+    mol: Mol, cur: int, prev: int | None, chain: set[int], start: int,
+) -> tuple[int, int | None] | None:
+    """One step along ω-halo n-alkyl: pure C or terminal mono-halo C."""
+    free = _free_neighbors(mol, cur, prev, chain, start)
+    if free is None or len(free) > 1:
+        return None
+    if free:
+        return (cur, free[0]) if _is_pure_alkyl_c(mol, cur) else None
+    return (cur, None) if _is_omega_halo_c(mol, cur) else None
+
+
+def _walk_with(mol: Mol, start: int, chain: set[int], step_fn) -> list[int] | None:
     path: list[int] = []
     prev: int | None = None
     cur: int | None = start
     while cur is not None and len(path) < 5:
-        step = _advance(mol, cur, prev, chain, start)
+        step = step_fn(mol, cur, prev, chain, start)
         if step is None:
             return None
         path.append(step[0])
         prev, cur = step[0], step[1]
-    return path if 1 <= len(path) <= 4 else None
+    return path
+
+
+def _walk_omega_halo(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    path = _walk_with(mol, start, chain, _omega_step)
+    if path is None or not (1 <= len(path) <= 4):
+        return None
+    return path if _is_omega_halo_c(mol, path[-1]) else None
+
+
+def _walk_linear(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    path = _walk_with(mol, start, chain, _advance)
+    return path if path is not None and 1 <= len(path) <= 4 else None
 
 
 def _is_terminal_methyl(mol: Mol, idx: int, parent: int) -> bool:
@@ -213,17 +265,29 @@ def _is_isopentyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     return [start, mid, outer, *mids] if mids else None
 
 
+_SIDE_PROBES = (
+    _walk_linear,
+    _walk_omega_halo,
+    _is_isopropyl,
+    _is_tert_butyl,
+    _is_isobutyl,
+    _is_sec_butyl,
+    _is_neopentyl,
+    _is_isopentyl,
+    _is_trifluoromethyl,
+)
+
+
+def _first_side(mol: Mol, start: int, chain: set[int], probes) -> list[int] | None:
+    for probe in probes:
+        got = probe(mol, start, chain)
+        if got is not None:
+            return got
+    return None
+
+
 def _side_atoms(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
-    return (
-        _walk_linear(mol, start, chain)
-        or _is_isopropyl(mol, start, chain)
-        or _is_tert_butyl(mol, start, chain)
-        or _is_isobutyl(mol, start, chain)
-        or _is_sec_butyl(mol, start, chain)
-        or _is_neopentyl(mol, start, chain)
-        or _is_isopentyl(mol, start, chain)
-        or _is_trifluoromethyl(mol, start, chain)
-    )
+    return _first_side(mol, start, chain, _SIDE_PROBES)
 
 
 def _side_covers(
@@ -280,3 +344,68 @@ def _linear_n_alkyl_sides_ok(
             return False
         paths.append(set(path))
     return _disjoint_cover(paths, _outside_c_atoms(mol, ring))
+
+
+def _heavies(atom) -> list:
+    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+
+
+def _outer_fwd(mol: Mol, cur: int, prev: int) -> list:
+    atom = mol.GetAtomWithIdx(cur)
+    if atom.GetAtomicNum() != 6 or atom.IsInRing():
+        return []
+    return [x for x in _heavies(atom) if x.GetIdx() != prev]
+
+
+def _is_terminal_me(mol: Mol, c_idx: int, o_idx: int) -> bool:
+    atom = mol.GetAtomWithIdx(c_idx)
+    if atom.GetAtomicNum() != 6 or atom.IsInRing():
+        return False
+    return all(n.GetIdx() == o_idx or n.GetAtomicNum() == 1 for n in atom.GetNeighbors())
+
+
+def _meoet_tail(mol: Mol, mid: int, o_mid: int) -> list[int] | None:
+    """From CH2 next to ring-O: detect -CH2-O-CH3 → [mid, o, me]."""
+    fwd = _outer_fwd(mol, mid, o_mid)
+    if len(fwd) != 1 or fwd[0].GetAtomicNum() != 8:
+        return None
+    o2 = fwd[0]
+    nbs = [n for n in _heavies(o2) if n.GetIdx() != mid]
+    if len(nbs) != 1 or nbs[0].GetAtomicNum() != 6:
+        return None
+    me = nbs[0].GetIdx()
+    return [mid, o2.GetIdx(), me] if _is_terminal_me(mol, me, o2.GetIdx()) else None
+
+
+def _alkoxy_from_carbon(mol: Mol, nxt, start: int) -> int:
+    """2=ethoxy, 12=2-methoxyethoxy; 0=unsupported from carbon next."""
+    if nxt.GetAtomicNum() != 6:
+        return 0
+    if not _outer_fwd(mol, nxt.GetIdx(), start):
+        return 2
+    if _meoet_tail(mol, nxt.GetIdx(), start):
+        return 12
+    return 0
+
+
+def _outer_alkoxy_n(mol: Mol, start: int, o_idx: int) -> int:
+    """1=methoxy, 2=ethoxy, 12=2-methoxyethoxy; 0=unsupported."""
+    fwd = _outer_fwd(mol, start, o_idx)
+    if not fwd:
+        return 1
+    if len(fwd) != 1:
+        return 0
+    return _alkoxy_from_carbon(mol, fwd[0], start)
+
+
+def _outer_atoms(mol: Mol, start: int, o_idx: int, n: int) -> list[int]:
+    if n == 1:
+        return [start]
+    if n == 2:
+        fwd = _outer_fwd(mol, start, o_idx)
+        return [start, fwd[0].GetIdx()] if fwd else [start]
+    if n == 12:
+        fwd = _outer_fwd(mol, start, o_idx)
+        tail = _meoet_tail(mol, fwd[0].GetIdx(), start) if fwd else None
+        return [start, *tail] if tail else [start]
+    return [start]

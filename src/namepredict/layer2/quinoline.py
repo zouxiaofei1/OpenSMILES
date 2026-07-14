@@ -20,6 +20,7 @@ from namepredict.layer2.naphthalene import (
     _two_six_rings,
 )
 from namepredict.layer2.ring_parent import (
+    _is_methyl_on_ring,
     _mono_oh_on_ring,
     _outside_ok,
     _ring_halo_n,
@@ -95,10 +96,7 @@ def _ring_set(parts: tuple) -> set[int]:
 
 
 def _is_methyl(mol: Mol, s: int, ring: set[int]) -> bool:
-    return all(
-        n.GetAtomicNum() == 1 or n.GetIdx() in ring
-        for n in mol.GetAtomWithIdx(s).GetNeighbors()
-    )
+    return _is_methyl_on_ring(mol, s, ring)
 
 
 def _methyl_starts_ok(mol: Mol, ring: set[int], starts: list[int]) -> bool:

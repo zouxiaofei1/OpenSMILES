@@ -3,7 +3,8 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from namepredict.layer2.side_alkyl import (
-    _disjoint_cover, _is_cf3_carbon, _is_cf3_fluoro, _side_covers, _side_sets,
+    _disjoint_cover, _is_cf3_carbon, _is_cf3_fluoro, _is_omega_halo_c,
+    _is_side_halo, _outer_alkoxy_n, _outer_atoms, _side_covers, _side_sets,
 )
 
 
@@ -49,7 +50,10 @@ def _pure_c_bonds(mol: Mol, idx: int) -> bool:
 
 
 def _pure_alkyl_outside(mol: Mol, outside: list[int]) -> bool:
-    return all(_is_cf3_carbon(mol, i) or _pure_c_bonds(mol, i) for i in outside)
+    return all(
+        _is_cf3_carbon(mol, i) or _is_omega_halo_c(mol, i) or _pure_c_bonds(mol, i)
+        for i in outside
+    )
 
 
 def _ring_side_starts(
@@ -84,29 +88,6 @@ def _ring_nitro_atoms(info: dict, ring_set: set[int]) -> set[int]:
             out.update(n.get("o_idxs") or [])
     return out
 
-
-def _heavies(atom) -> list:
-    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
-
-def _outer_fwd(mol: Mol, cur: int, prev: int) -> list:
-    atom = mol.GetAtomWithIdx(cur)
-    if atom.GetAtomicNum() != 6 or atom.IsInRing():
-        return []
-    return [x for x in _heavies(atom) if x.GetIdx() != prev]
-
-def _outer_alkoxy_n(mol: Mol, start: int, o_idx: int) -> int:
-    fwd = _outer_fwd(mol, start, o_idx)
-    if not fwd:
-        return 1
-    if len(fwd) == 1 and fwd[0].GetAtomicNum() == 6:
-        return 2 if not _outer_fwd(mol, fwd[0].GetIdx(), start) else 0
-    return 0
-
-def _outer_atoms(mol: Mol, start: int, o_idx: int, n: int) -> list[int]:
-    if n == 1:
-        return [start]
-    fwd = _outer_fwd(mol, start, o_idx)
-    return [start, fwd[0].GetIdx()] if fwd else [start]
 
 def _ring_alkoxy_pair(e: dict, ring_set: set[int]) -> tuple[int, int, int] | None:
     c1, c2, o = e["c1"], e["c2"], e["o_idx"]
@@ -148,7 +129,9 @@ def _ring_alkoxy_n(info: dict, ring_set: set[int]) -> int:
 def _outside_hetero_ok(atom, ring_set: set[int], allow: set[int]) -> bool:
     if atom.GetAtomicNum() in (1, 6) or atom.GetIdx() in ring_set:
         return True
-    return atom.GetIdx() in allow or _is_ring_halo(atom, ring_set) or _is_cf3_fluoro(atom)
+    if atom.GetIdx() in allow or _is_ring_halo(atom, ring_set):
+        return True
+    return _is_cf3_fluoro(atom) or _is_side_halo(atom)
 
 
 def _no_hetero_outside(mol: Mol, ring_set: set[int], allowed: set[int] | None = None) -> bool:
