@@ -27,6 +27,7 @@ from namepredict.layer2.side_alkyl import (
     _walk_omega_halo,
 )
 from namepredict.layer3.alkoxy_names import _extract_alkoxys
+from namepredict.layer3.cycloalkyl_names import _one_cycloalkyl_side
 
 
 def alkyl_alpha_key(stem: str) -> str:
@@ -139,6 +140,9 @@ def _one_branched(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dic
         atoms = fn(mol, start, chain_set)
         if atoms:
             return _make_branch(attach, atoms, n, en, zh)
+    cyc = _one_cycloalkyl_side(mol, attach, start, chain_set)
+    if cyc is not None:
+        return cyc
     cf3 = _is_trifluoromethyl(mol, start, chain_set)
     return _make_cf3(attach, cf3) if cf3 else None
 

@@ -148,34 +148,6 @@ def _outside_ok(mol: Mol, ring_set: set[int], allowed: set[int] | None = None) -
     return _pure_alkyl_outside(mol, _outside_carbons(mol, ring_set, allowed or set()))
 
 
-def _is_cycloalkane_core(info: dict) -> bool:
-    rings = info.get("rings") or []
-    if len(rings) != 1:
-        return False
-    atom_ids = rings[0]["atom_ids"]
-    return _all_carbons_are_c(info["mol"], atom_ids) and _ring_bonds_single(info["mol"], atom_ids)
-
-
-def _cyclo_sides_cover(mol: Mol, ring_set: set[int]) -> bool:
-    """Outside C must be fully covered by recognized alkyl side probes."""
-    starts = _ring_side_starts(mol, ring_set)
-    outside = set(_outside_carbons(mol, ring_set))
-    if not starts:
-        return not outside
-    sets = _side_sets(mol, ring_set, starts)
-    return sets is not None and _disjoint_cover(sets, outside)
-
-
-def _is_simple_cycloalkane(info: dict) -> bool:
-    if not _is_cycloalkane_core(info):
-        return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
-    if not _outside_ok(mol, ring_set):
-        return False
-    return _cyclo_sides_cover(mol, ring_set)
-
-
 def _ring_double_count(mol: Mol, atom_ids: tuple) -> int:
     ids = list(atom_ids)
     n = 0
@@ -454,3 +426,11 @@ def _is_methyl_on_ring(mol: Mol, s: int, ring_set: set[int]) -> bool:
             continue
         return False
     return True
+
+# Multi-ring cyclo parent pick lives in cyclo_pick (late re-export avoids cycles).
+from namepredict.layer2.cyclo_pick import (  # noqa: E402
+    _is_cycloalkane_core,
+    _is_simple_cycloalkane,
+    _pick_cycloalkane_ring,
+)
+

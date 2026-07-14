@@ -301,6 +301,16 @@ def _is_isopentyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     return [start, mid, outer, *mids] if mids else None
 
 
+def _probe_monocycloalkyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    from namepredict.layer2.side_cycloalkyl import _is_monocycloalkyl
+    return _is_monocycloalkyl(mol, start, chain)
+
+
+def _probe_1_cycloalkylethyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    from namepredict.layer2.side_cycloalkyl import _is_1_cycloalkylethyl
+    return _is_1_cycloalkylethyl(mol, start, chain)
+
+
 _SIDE_PROBES = (
     _walk_linear,
     _walk_omega_halo,
@@ -312,6 +322,8 @@ _SIDE_PROBES = (
     _is_neopentyl,
     _is_isopentyl,
     _is_trifluoromethyl,
+    _probe_1_cycloalkylethyl,
+    _probe_monocycloalkyl,
 )
 
 

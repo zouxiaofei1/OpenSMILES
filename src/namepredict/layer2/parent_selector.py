@@ -445,13 +445,13 @@ def _polyene_parent(info: dict) -> dict:
 def _ring_atoms(info: dict) -> list[int]:
     return list(info["rings"][0]["atom_ids"])
 def _cycloalkane_parent(info: dict) -> dict:
-    return _parent_dict(_ring_atoms(info), "cycloalkane")
+    from namepredict.layer2.ring_parent import _pick_cycloalkane_ring as _pcr
+    return _parent_dict(list(_pcr(info) or _ring_atoms(info)), "cycloalkane")
 def _benzene_parent(info: dict) -> dict:
     from namepredict.layer2.benzene_pick import _pick_benzene_ring as _pbr
     return _parent_dict(_pbr(info) or _ring_atoms(info), "benzene")
 def _cycloalkene_parent(info: dict) -> dict:
-    c = _ring_atoms(info)
-    return _parent_dict(c, "cycloalkene", double_bond=_endocyclic_double(info, set(c)))
+    c = _ring_atoms(info); return _parent_dict(c, "cycloalkene", double_bond=_endocyclic_double(info, set(c)))
 def _cyclo_fg_parent(info: dict, kind: str, ekey: str, ckey: str) -> dict:
     return _parent_dict(_ring_atoms(info), kind, **{ckey: info[ekey][0]["c_idx"]})
 def _pick_mono(info: dict, flag: str, key: str, fn):
