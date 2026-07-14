@@ -66,29 +66,66 @@ def _alkoxy_kind(n: int | None) -> str | None:
     return {1: "methoxy", 2: "ethoxy"}.get(n) if n else None
 
 
+def _is_terminal_oh(nb, ring_i: int) -> bool:
+    """Phenolic OH: O bonded only to ring carbon (+H)."""
+    if nb.GetAtomicNum() != 8 or nb.IsInRing():
+        return False
+    nbs = _heavies(nb)
+    return len(nbs) == 1 and nbs[0].GetIdx() == ring_i
+
+
+def _is_terminal_nh2(nb, ring_i: int) -> bool:
+    """Primary amino on ring: N bonded only to ring carbon (+H)."""
+    if nb.GetAtomicNum() != 7 or nb.IsInRing():
+        return False
+    nbs = _heavies(nb)
+    return len(nbs) == 1 and nbs[0].GetIdx() == ring_i
+
+
 def _depth2_kind(mol: Mol, nb, ring_i: int) -> str | None:
-    """Return 'nitro' | 'cf3' | 'methoxy' | 'ethoxy' | None for one outside nb."""
+    """nitro | cf3 | alkoxy | hydroxy | amino leaf kind, else None."""
     if _is_terminal_nitro(nb):
         return "nitro"
     if nb.GetAtomicNum() == 6 and _is_cf3_leaf(mol, nb.GetIdx(), ring_i):
         return "cf3"
+    if _is_terminal_oh(nb, ring_i):
+        return "hydroxy"
+    if _is_terminal_nh2(nb, ring_i):
+        return "amino"
     return _alkoxy_kind(_alkoxy_n(mol, nb, ring_i))
 
 
-def _nitro_sites(mol: Mol, ring: set[int], nb_outside) -> list[int]:
+def _sites_where(mol: Mol, ring: set[int], nb_outside, pred) -> list[int]:
     return [
         i for i in ring
         for nb in nb_outside(mol, i, ring)
-        if _is_terminal_nitro(nb)
+        if pred(mol, nb, i)
     ]
+
+
+def _nitro_sites(mol: Mol, ring: set[int], nb_outside) -> list[int]:
+    return _sites_where(
+        mol, ring, nb_outside, lambda _m, nb, _i: _is_terminal_nitro(nb),
+    )
 
 
 def _cf3_sites(mol: Mol, ring: set[int], nb_outside) -> list[int]:
-    return [
-        i for i in ring
-        for nb in nb_outside(mol, i, ring)
-        if nb.GetAtomicNum() == 6 and _is_cf3_leaf(mol, nb.GetIdx(), i)
-    ]
+    return _sites_where(
+        mol, ring, nb_outside,
+        lambda m, nb, i: nb.GetAtomicNum() == 6 and _is_cf3_leaf(m, nb.GetIdx(), i),
+    )
+
+
+def _hydroxy_sites(mol: Mol, ring: set[int], nb_outside) -> list[int]:
+    return _sites_where(
+        mol, ring, nb_outside, lambda _m, nb, i: _is_terminal_oh(nb, i),
+    )
+
+
+def _amino_sites(mol: Mol, ring: set[int], nb_outside) -> list[int]:
+    return _sites_where(
+        mol, ring, nb_outside, lambda _m, nb, i: _is_terminal_nh2(nb, i),
+    )
 
 
 def _alkoxy_sites(mol: Mol, ring: set[int], nb_outside) -> list[tuple[int, int]]:
@@ -143,6 +180,46 @@ def _nitro_prefix(locs: list[int]) -> tuple[str, str]:
     return _same_stem_prefix(locs, "nitro", "硝基")
 
 
+def _hydroxy_prefix(locs: list[int]) -> tuple[str, str]:
+    return _same_stem_prefix(locs, "hydroxy", "羟基")
+
+
+def _amino_prefix(locs: list[int]) -> tuple[str, str]:
+    return _same_stem_prefix(locs, "amino", "氨基")
+
+
+def _d2_sites(mol: Mol, ring: set[int], nb_outside) -> list[int]:
+    return (
+        _nitro_sites(mol, ring, nb_outside)
+        + _cf3_sites(mol, ring, nb_outside)
+        + _hydroxy_sites(mol, ring, nb_outside)
+        + _amino_sites(mol, ring, nb_outside)
+        + [s for s, _ in _alkoxy_sites(mol, ring, nb_outside)]
+    )
+
+
+def _join_pref(parts: list[str]) -> str:
+    return "-".join(p for p in parts if p)
+
+
+def _d2_pref_pairs(mol: Mol, ph: set[int], attach: int, loc_fn, nb_outside) -> list:
+    p = lambda sites: [loc_fn(mol, ph, attach, s) for s in sites]
+    alk = [(loc_fn(mol, ph, attach, s), n) for s, n in _alkoxy_sites(mol, ph, nb_outside)]
+    return [
+        _amino_prefix(p(_amino_sites(mol, ph, nb_outside))),
+        _alkoxy_prefix(alk),
+        _hydroxy_prefix(p(_hydroxy_sites(mol, ph, nb_outside))),
+        _nitro_prefix(p(_nitro_sites(mol, ph, nb_outside))),
+        _cf3_prefix(p(_cf3_sites(mol, ph, nb_outside))),
+    ]
+
+
+def _d2_pref_parts(mol: Mol, ph: set[int], attach: int, loc_fn, nb_outside) -> tuple[list[str], list[str]]:
+    """EN/ZH: amino, alkoxy, hydroxy, nitro, CF3."""
+    pairs = _d2_pref_pairs(mol, ph, attach, loc_fn, nb_outside)
+    return [a for a, _ in pairs], [b for _, b in pairs]
+
+
 def _leaf_atoms_nitro(nb) -> set[int]:
     return {nb.GetIdx()} | {o.GetIdx() for o in _heavies(nb) if o.GetAtomicNum() == 8}
 
@@ -168,6 +245,8 @@ def _leaf_atoms_one(mol: Mol, nb, ring_i: int) -> set[int]:
         return _leaf_atoms_cf3(mol, nb.GetIdx())
     if kind in ("methoxy", "ethoxy"):
         return _leaf_atoms_alkoxy(mol, nb.GetIdx(), ring_i)
+    if kind in ("hydroxy", "amino"):
+        return {nb.GetIdx()}
     return set()
 
 

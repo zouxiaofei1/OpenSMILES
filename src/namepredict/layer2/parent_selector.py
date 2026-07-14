@@ -29,88 +29,11 @@ from namepredict.layer2.ring_parent import (
     _is_simple_cycloalcohol, _is_simple_cycloalkane, _is_simple_cycloalkene,
     _is_simple_cycloamine, _is_simple_cycloketone, _unsub_phenyl_at)
 from namepredict.layer2.scoring import _pick_best
-def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
-    atom = mol.GetAtomWithIdx(idx)
-    return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6 and not n.GetIsAromatic()]
-def _extend_best(mol: Mol, node: int, path: list[int], forbid: set[int], best: list[int]) -> list[int]:
-    for nb in _carbon_neighbors(mol, node):
-        if nb in path or nb in forbid:
-            continue
-        cand = _dfs_path(mol, nb, path + [nb], forbid)
-        if len(cand) > len(best):
-            best = cand
-    return best
-def _dfs_path(mol: Mol, node: int, path: list[int], forbid: set[int]) -> list[int]: return _extend_best(mol, node, path, forbid, path)
-def _longest_from(mol: Mol, start: int, forbidden: set[int] | None = None) -> list[int]: return _dfs_path(mol, start, [start], forbidden or set())
-def _all_carbons(mol: Mol) -> list[int]:
-    return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
-def _side_count(mol: Mol, chain: list[int]) -> int:
-    chain_set = set(chain)
-    n = 0
-    for c in chain:
-        atom = mol.GetAtomWithIdx(c)
-        for nb in atom.GetNeighbors():
-            if nb.GetAtomicNum() != 1 and nb.GetIdx() not in chain_set:
-                n += 1
-    return n
-def _chain_key(mol: Mol, path: list[int]) -> tuple:
-    return (len(path), _side_count(mol, path))
-def _better(mol: Mol, cand: list[int], best: list[int]) -> bool:
-    return (not best) or _chain_key(mol, cand) > _chain_key(mol, best)
-def _best_among(mol: Mol, seeds: list[int]) -> list[int]:
-    best: list[int] = []
-    for c in seeds:
-        path = _longest_from(mol, c)
-        if _better(mol, path, best):
-            best = path
-    return best
-def _longest_chain(mol: Mol, seeds: list[int] | None = None) -> list[int]:
-    return _best_among(mol, seeds or _all_carbons(mol))
-def _arms_from(mol: Mol, center: int) -> list[list[int]]:
-    forbid = {center}
-    return [_longest_from(mol, nb, forbid) for nb in _carbon_neighbors(mol, center)]
-def _join_through(center: int, arms: list[list[int]]) -> list[int]:
-    arms = sorted(arms, key=len, reverse=True)
-    if not arms:
-        return [center]
-    if len(arms) == 1:
-        return list(reversed(arms[0])) + [center]
-    return list(reversed(arms[0])) + [center] + arms[1]
-def _chain_through(info: dict, c_idx: int) -> list[int]:
-    mol: Mol = info["mol"]
-    return _join_through(c_idx, _arms_from(mol, c_idx))
-def _bfs_expand(mol: Mol, cur: int, prev: dict, q: list) -> None:
-    for nb in _carbon_neighbors(mol, cur):
-        if nb not in prev:
-            prev[nb] = cur
-            q.append(nb)
-def _bfs_prev(mol: Mol, start: int, goal: int) -> dict | None:
-    prev: dict = {start: None}
-    q = [start]
-    while q:
-        cur = q.pop(0)
-        if cur == goal:
-            return prev
-        _bfs_expand(mol, cur, prev, q)
-    return None
-def _rebuild_path(prev: dict, end: int) -> list[int]:
-    path = [end]
-    while prev[path[-1]] is not None:
-        path.append(prev[path[-1]])
-    return list(reversed(path))
-def _path_between(mol: Mol, a: int, b: int) -> list[int]:
-    if a == b:
-        return [a]
-    prev = _bfs_prev(mol, a, b)
-    return _rebuild_path(prev, b) if prev else [a]
-def _chain_through_two(mol: Mol, c1: int, c2: int) -> list[int]:
-    path = _path_between(mol, c1, c2)
-    left = _best_arm_away(mol, path[0], set(path[1:]))
-    right = _best_arm_away(mol, path[-1], set(path[:-1]))
-    return list(reversed(left)) + path + right
-def _c_idxs(entries, n: int) -> list[int] | None:
-    xs = [e["c_idx"] for e in entries or [] if "c_idx" in e]
-    return xs if len(xs) == n and len(set(xs)) == n else None
+from namepredict.layer2.aliph_fg import _aliph_c_idxs, _aliphatic_entries, _c_idxs
+from namepredict.layer2.chain_walk import (
+    _better, _best_arm_away, _carbon_neighbors, _chain_through, _chain_through_bond,
+    _chain_through_two, _longest_chain, _longest_from,
+)
 def _no_fgs(info: dict, keys: tuple) -> bool:
     return not any(info.get(k) for k in keys)
 _CORE_BAD = (
@@ -133,9 +56,13 @@ _ANHYDRIDE_BAD = (
 )
 def _is_open_sat(info: dict) -> bool: return not (info.get("has_alkene") or info.get("has_alkyne"))
 def _is_simple_n(info: dict, bad: tuple, ekey: str, n: int) -> bool:
-    return _is_open_sat(info) and _no_fgs(info, bad) and _c_idxs(info.get(ekey) or [], n) is not None
+    """Poly-FG only when exactly n *aliphatic* attachment carbons."""
+    return (
+        _is_open_sat(info) and _no_fgs(info, bad)
+        and _aliph_c_idxs(info, ekey, n) is not None
+    )
 def _cover_parent(info: dict, ekey: str, n: int, kind: str, key: str) -> dict:
-    atoms = _c_idxs(info.get(ekey) or [], n) or []
+    atoms = _aliph_c_idxs(info, ekey, n) or _c_idxs(info.get(ekey) or [], n) or []
     chain = _best_cover_pair(info["mol"], atoms) or _longest_chain(info["mol"])
     return _parent_dict(chain, kind, **{key: atoms})
 def _is_simple_alkanediol(info: dict) -> bool:
@@ -172,11 +99,21 @@ def _ring_alcohol_parent(info: dict) -> dict | None:
     if _is_simple_phenol(info): return _phenol_parent(info)
     return _ring_fg_try(info, ((_is_simple_cycloalcohol, "cycloalcohol"),),
                         "hydroxyls", "oh_c_idx")
+def _chain_alcohol_parent(info: dict) -> dict | None:
+    """Mono aliphatic OH → alcohol parent (ignore aromatic phenolic OH)."""
+    aliph = _aliphatic_entries(info, "hydroxyls")
+    if len(aliph) != 1:
+        return None
+    return _parent_dict(
+        _chain_through(info, aliph[0]["c_idx"]), "alcohol", oh_c_idx=aliph[0]["c_idx"],
+    )
 def _alcohol_parent(info: dict) -> dict:
     ring = _ring_alcohol_parent(info)
     if ring is not None: return ring
     if _is_simple_alkanetriol(info): return _triol_parent(info)
     if _is_simple_alkanediol(info): return _diol_parent(info)
+    chain = _chain_alcohol_parent(info)
+    if chain is not None: return chain
     return _unsat_or_sat(
         info, "has_alcohol", "hydroxyls", _ALKENOL_BAD, "alkenol", "alcohol", "oh_c_idx",
     )
@@ -217,7 +154,10 @@ def _tert_amine_parent(info: dict) -> dict | None:
     arms = sorted(arms, key=len, reverse=True)
     return _parent_dict(arms[0], "tert_amine", amine_c_idx=arms[0][0], n_alkyl_ns=[len(a) for a in arms[1:]])
 def _primary_amine_parent(info: dict) -> dict:
-    prim = next((a for a in info.get("amines") or [] if "c_idx" in a), None)
+    aliph = _aliphatic_entries(info, "amines")
+    prim = next((a for a in aliph if "c_idx" in a), None)
+    if prim is None:
+        prim = next((a for a in info.get("amines") or [] if "c_idx" in a), None)
     if prim is None: return _parent_dict(_longest_chain(info["mol"]), "alkane")
     return _parent_dict(_chain_through(info, prim["c_idx"]), "amine", amine_c_idx=prim["c_idx"])
 def _ring_amine_parent(info: dict) -> dict | None:
@@ -377,19 +317,6 @@ def _ester_parent(info: dict) -> dict:
         info, "has_ester", "esters", _ALKENOATE_BAD, "alkenoate", "ester",
         "ester_c_idx", **_ester_meta(info),
     )
-def _best_arm_away(mol: Mol, from_c: int, forbid: set[int]) -> list[int]:
-    best: list[int] = []
-    for nb in _carbon_neighbors(mol, from_c):
-        if nb in forbid:
-            continue
-        path = _longest_from(mol, nb, forbid | {from_c})
-        if len(path) > len(best):
-            best = path
-    return best
-def _chain_through_bond(mol: Mol, c1: int, c2: int) -> list[int]:
-    left = _best_arm_away(mol, c1, {c2})
-    right = _best_arm_away(mol, c2, {c1})
-    return list(reversed(left)) + [c1, c2] + right
 def _alkene_parent(info: dict) -> dict:
     if _is_simple_cycloalkene(info):
         return _cycloalkene_parent(info)

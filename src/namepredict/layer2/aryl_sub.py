@@ -8,14 +8,11 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from namepredict.layer2.aryl_depth2 import (
-    _alkoxy_prefix,
-    _alkoxy_sites,
-    _cf3_prefix,
-    _cf3_sites,
+    _d2_pref_parts,
+    _d2_sites,
     _depth2_atoms_on,
     _depth2_kind,
-    _nitro_prefix,
-    _nitro_sites,
+    _join_pref,
 )
 
 _HALO = frozenset({9, 17, 35, 53})
@@ -143,12 +140,11 @@ def _loc_tuple(order: list[int], sites: list[int]) -> tuple[int, ...]:
 
 
 def _sub_sites(mol: Mol, ring: set[int]) -> list[int]:
-    d2 = (
-        _nitro_sites(mol, ring, _nb_outside)
-        + _cf3_sites(mol, ring, _nb_outside)
-        + [s for s, _ in _alkoxy_sites(mol, ring, _nb_outside)]
+    return (
+        [s for s, _ in _halo_list(mol, ring)]
+        + _me_sites(mol, ring)
+        + _d2_sites(mol, ring, _nb_outside)
     )
-    return [s for s, _ in _halo_list(mol, ring)] + _me_sites(mol, ring) + d2
 
 
 def _ring_order(mol: Mol, ring: set[int], start: int) -> list[int]:
@@ -202,35 +198,21 @@ def _me_prefix(locs: list[int]) -> tuple[str, str]:
     )
 
 
-def _join_pref(parts: list[str]) -> str:
-    return "-".join(p for p in parts if p)
-
-
-def _loc_sites(mol: Mol, ph: set[int], attach: int, sites: list[int]) -> list[int]:
-    return [_ph_locant(mol, ph, attach, s) for s in sites]
-
-
-def _d2_pref_parts(mol: Mol, ph: set[int], attach: int) -> tuple[list[str], list[str]]:
-    no2 = _loc_sites(mol, ph, attach, _nitro_sites(mol, ph, _nb_outside))
-    cf3 = _loc_sites(mol, ph, attach, _cf3_sites(mol, ph, _nb_outside))
-    alk = [(_ph_locant(mol, ph, attach, s), n) for s, n in _alkoxy_sites(mol, ph, _nb_outside)]
-    ne, nz = _nitro_prefix(no2)
-    ce, cz = _cf3_prefix(cf3)
-    ae, az = _alkoxy_prefix(alk)
-    return [ae, ne, ce], [az, nz, cz]
+def _halo_me_prefs(mol: Mol, ph: set[int], attach: int) -> tuple[str, str, str, str]:
+    items = sorted((_ph_locant(mol, ph, attach, s), z) for s, z in _halo_list(mol, ph))
+    pe, pz = _halo_prefix(items) if items else ("", "")
+    me = [_ph_locant(mol, ph, attach, s) for s in _me_sites(mol, ph)]
+    me_e, me_z = _me_prefix(me)
+    return pe, pz, me_e, me_z
 
 
 def _ph_leaf_prefs(mol: Mol, ph: set[int], attach: int) -> tuple[str, str]:
-    items = sorted((_ph_locant(mol, ph, attach, s), z) for s, z in _halo_list(mol, ph))
-    me = _loc_sites(mol, ph, attach, _me_sites(mol, ph))
-    pe, pz = _halo_prefix(items) if items else ("", "")
-    me_e, me_z = _me_prefix(me)
-    de, dz = _d2_pref_parts(mol, ph, attach)
-    # alpha-ish: alkoxy, halo, methyl, nitro, CF3
-    return (
-        _join_pref([de[0], pe, me_e, de[1], de[2]]),
-        _join_pref([dz[0], pz, me_z, dz[1], dz[2]]),
-    )
+    pe, pz, me_e, me_z = _halo_me_prefs(mol, ph, attach)
+    de, dz = _d2_pref_parts(mol, ph, attach, _ph_locant, _nb_outside)
+    # alpha-ish: amino, alkoxy, halo, hydroxy, methyl, nitro, CF3
+    en = _join_pref([de[0], de[1], pe, de[2], me_e, de[3], de[4]])
+    zh = _join_pref([dz[0], dz[1], pz, dz[2], me_z, dz[3], dz[4]])
+    return en, zh
 
 
 def _halo_ph_names(mol: Mol, ph: set[int], attach: int, stem_en: str, stem_zh: str):
