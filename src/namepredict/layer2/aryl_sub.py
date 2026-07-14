@@ -1,7 +1,7 @@
-"""Depth-1/2 aryl arms: Ph / OPh / CH2Ph / OCH2Ph (P-29.3).
+"""Aryl arms: Ph / OPh / CH2Ph / OCH2Ph with recursive nested leaves (P-29.3).
 
-Ph may carry ≤3 simple leaves (halo/Me + depth-2 alkoxy/nitro/CF3).
-Locants from attach=1 (lowest set). Nested Ph-on-Ph still rejected.
+Ph may carry ≤3 leaves (simple + nested Ph/OPh up to max depth).
+Locants from attach=1 (lowest set).
 """
 from __future__ import annotations
 
@@ -11,8 +11,11 @@ from namepredict.layer2.aryl_depth2 import (
     _d2_pref_parts,
     _d2_sites,
     _depth2_atoms_on,
-    _depth2_kind,
     _join_pref,
+)
+from namepredict.layer2.aryl_recurse import (
+    _recurse_leaf_kind,
+    _recursive_ph_name,
 )
 
 _HALO = frozenset({9, 17, 35, 53})
@@ -65,7 +68,7 @@ def _side_leaf_kind(mol: Mol, nb, ring_i: int) -> str | None:
         return "halo"
     if nb.GetAtomicNum() == 6 and _is_terminal_me_leaf(mol, nb.GetIdx(), ring_i):
         return "me"
-    return _depth2_kind(mol, nb, ring_i)
+    return _recurse_leaf_kind(mol, nb, ring_i)
 
 
 def _count_side_leaves(mol: Mol, ring: set[int], attach: int, parent: int) -> int | None:
@@ -215,13 +218,6 @@ def _ph_leaf_prefs(mol: Mol, ph: set[int], attach: int) -> tuple[str, str]:
     return en, zh
 
 
-def _halo_ph_names(mol: Mol, ph: set[int], attach: int, stem_en: str, stem_zh: str):
-    if not _sub_sites(mol, ph, attach):
-        return stem_en, stem_zh, False
-    pe, pz = _ph_leaf_prefs(mol, ph, attach)
-    return pe + stem_en, pz + stem_zh, True
-
-
 def _ph_bridge_attach(mol: Mol, ph: set[int], bridge: int) -> int:
     for i in ph:
         for n in mol.GetAtomWithIdx(i).GetNeighbors():
@@ -230,22 +226,47 @@ def _ph_bridge_attach(mol: Mol, ph: set[int], bridge: int) -> int:
     return min(ph)
 
 
+def _stem_swap(en: str, zh: str, from_en: str, to_en: str, from_zh: str, to_zh: str):
+    if en.endswith(from_en):
+        en = en[: -len(from_en)] + to_en
+    if zh.endswith(from_zh):
+        zh = zh[: -len(from_zh)] + to_zh
+    return en, zh
+
+
 def _phenyl_name(mol: Mol, ph: set[int], attach: int) -> tuple[str, str, bool]:
-    return _halo_ph_names(mol, ph, attach, "phenyl", "苯基")
+    # parent of arm Ph is outside attach; use any non-ring heavy as parent proxy
+    parent = _arm_parent_of(mol, ph, attach)
+    en, zh, paren, _ = _recursive_ph_name(mol, ph, attach, parent)
+    return en, zh, paren
+
+
+def _arm_parent_of(mol: Mol, ph: set[int], attach: int) -> int:
+    for n in mol.GetAtomWithIdx(attach).GetNeighbors():
+        if n.GetAtomicNum() != 1 and n.GetIdx() not in ph:
+            return n.GetIdx()
+    return -1
 
 
 def _phenoxy_name(mol: Mol, ph: set[int], outer: int) -> tuple[str, str, bool]:
-    return _halo_ph_names(mol, ph, outer, "phenoxy", "苯氧基")
+    parent = _arm_parent_of(mol, ph, outer)
+    en, zh, paren, _ = _recursive_ph_name(mol, ph, outer, parent)
+    en, zh = _stem_swap(en, zh, "phenyl", "phenoxy", "苯基", "苯氧基")
+    return en, zh, paren
 
 
 def _benzyl_name(mol: Mol, ph: set[int], ch2: int) -> tuple[str, str, bool]:
     att = _ph_bridge_attach(mol, ph, ch2)
-    return _halo_ph_names(mol, ph, att, "benzyl", "苄基")
+    en, zh, paren, _ = _recursive_ph_name(mol, ph, att, ch2)
+    en, zh = _stem_swap(en, zh, "phenyl", "benzyl", "苯基", "苄基")
+    return en, zh, paren
 
 
 def _benzyloxy_name(mol: Mol, ph: set[int], ch2: int) -> tuple[str, str, bool]:
     att = _ph_bridge_attach(mol, ph, ch2)
-    return _halo_ph_names(mol, ph, att, "benzyloxy", "苄氧基")
+    en, zh, paren, _ = _recursive_ph_name(mol, ph, att, ch2)
+    en, zh = _stem_swap(en, zh, "phenyl", "benzyloxy", "苯基", "苄氧基")
+    return en, zh, paren
 
 
 def _heavies(atom) -> list:
@@ -392,9 +413,17 @@ def _halo_atoms_on(mol: Mol, ph: set[int], attach: int | None = None) -> set[int
     return _simple_leaf_atoms(mol, ph) | _depth2_atoms_on(mol, ph, _nb_outside, attach)
 
 
+def _arm_attach_parent(mol: Mol, p: dict) -> tuple[int, int]:
+    if "ch2" in p:
+        return _ph_bridge_attach(mol, p["ph"], p["ch2"]), p["ch2"]
+    att = p.get("outer_c", p.get("attach"))
+    return att, _arm_parent_of(mol, p["ph"], att)
+
+
 def _one_arm_atoms(mol: Mol, p: dict) -> set[int]:
-    att = p.get("outer_c") if "outer_c" in p else p.get("attach")
-    return set(p["atoms"]) | _halo_atoms_on(mol, p["ph"], att)
+    att, parent = _arm_attach_parent(mol, p)
+    _, _, _, nested = _recursive_ph_name(mol, p["ph"], att, parent)
+    return set(p["atoms"]) | nested
 
 
 def _aryl_atoms(info: dict, parent: set[int]) -> set[int]:
