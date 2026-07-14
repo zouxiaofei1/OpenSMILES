@@ -96,5 +96,6 @@
 [#313dd94][IUPAC P-63.2.2 / P-29.3] 芳环线性 propoxy/butoxy + PEG k≤3 烷氧基（L2 walk/L3 名；防误选 hexane） [+10 tests, dual 8.1%→8.1%(329)]
 [#005e2aa][IUPAC P-29.3.2 / P-14.3.4] 2-methylbutan-2-yl 支链前缀 + simple cyclo 侧链必须可 claim [+14 tests, dual 8.1%→8.1%(329)]
 [#520dfb8][IUPAC P-29.6 / P-22.1.1] monocyloalkyl 取代基 C3–C8 + 多环环烷母体挑选 C3–C10 + 1-cycloalkylethyl [+7 tests, dual 8.1%→8.1%(329)]
+[#c0e619e][IUPAC P-29.3 / P-62.2 / P-65.1] 链上 sec-amine/acid 的 phenoxy（Ph 可卤+甲基；N-取代不占碳位次） [+8 tests, dual 8.1%(329)→8.1%(330)]
 
 ## 其他
