@@ -23,12 +23,15 @@ if _src_str not in sys.path:
     sys.path.insert(0, _src_str)
 
 from benchmarks.benchmark import (  # noqa: E402
+    _SNAPSHOT_PATH,
     _empty_bucket,
     _fail_entry,
     _finalize,
+    _handle_report,
     _is_fail,
     _load_rows,
     _print_summary,
+    _result_entry,
     _tally,
     score_record,
 )
@@ -74,13 +77,16 @@ def _aggregate(
     by_source: dict[str, dict[str, int]] = defaultdict(_empty_bucket)
     by_tier: dict[Any, dict[str, int]] = defaultdict(_empty_bucket)
     fails: list[dict] = []
+    entries: list[dict] = []
     for score, pred_en, pred_zh, row in results:
         _tally(total, score)
         _tally(by_source[str(row.get("source") or "unknown")], score)
         _tally(by_tier[row.get("tier", 0)], score)
+        entry = _result_entry(row, score, pred_en, pred_zh)
+        entries.append(entry)
         if _is_fail(score):
-            fails.append(_fail_entry(row, score, pred_en, pred_zh))
-    return _finalize(total, by_source, by_tier, fails)
+            fails.append(entry)
+    return _finalize(total, by_source, by_tier, fails, entries)
 
 
 def run_benchmark_parallel(
@@ -123,6 +129,17 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print wall-clock seconds on stderr",
     )
+    p.add_argument(
+        "--snapshot",
+        type=Path,
+        default=_SNAPSHOT_PATH,
+        help="Path to last-run snapshot for diff (default: benchmarks/.last_run.json)",
+    )
+    p.add_argument(
+        "--no-snapshot",
+        action="store_true",
+        help="Skip load/save of last-run snapshot (no diff)",
+    )
     return p
 
 
@@ -142,15 +159,30 @@ def main(argv: list[str] | None = None) -> None:
     n_workers = args.workers if args.workers is not None else _default_workers()
     n_rows = int(report.get("n_dual") or report.get("n_en") or 0)
     avg_ms = (elapsed * 1000.0 / n_rows) if n_rows else 0.0
-    if args.json:
-        report = dict(report)
-        report["elapsed_sec"] = round(elapsed, 3)
-        report["workers"] = n_workers
-        report["avg_ms_per_row"] = round(avg_ms, 3)
-        print(json.dumps(report, ensure_ascii=False))
+    if args.no_snapshot:
+        if args.json:
+            out = {k: v for k, v in report.items() if k != "results"}
+            out["elapsed_sec"] = round(elapsed, 3)
+            out["workers"] = n_workers
+            out["avg_ms_per_row"] = round(avg_ms, 3)
+            print(json.dumps(out, ensure_ascii=False))
+        else:
+            _print_summary(report)
+        if args.time:
+            print(
+                f"workers={n_workers} elapsed={elapsed:.2f}s "
+                f"avg={avg_ms:.2f}ms/row (n={n_rows})",
+                file=sys.stderr,
+            )
         return
-    _print_summary(report)
-    if args.time:
+
+    # Attach timing fields before handle so --json consumers still get them.
+    report = dict(report)
+    report["elapsed_sec"] = round(elapsed, 3)
+    report["workers"] = n_workers
+    report["avg_ms_per_row"] = round(avg_ms, 3)
+    _handle_report(report, as_json=args.json, snapshot_path=args.snapshot)
+    if args.time and not args.json:
         print(
             f"workers={n_workers} elapsed={elapsed:.2f}s "
             f"avg={avg_ms:.2f}ms/row (n={n_rows})",

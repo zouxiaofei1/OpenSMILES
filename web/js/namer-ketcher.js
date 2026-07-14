@@ -4,7 +4,8 @@
 
   const DEFAULT_SRC = "/vendor/ketcher/index.html";
   const READY_POLL_MS = 200;
-  const READY_TIMEOUT_MS = 20000;
+  // Cold load pulls ~23MB main + ~11MB worker; allow slower disks/networks.
+  const READY_TIMEOUT_MS = 60000;
 
   function shouldSkipLiveName(liveEnabled, smiles, lastNamed) {
     if (!liveEnabled) return true;
@@ -16,6 +17,13 @@
   function nextReqSeq(current) {
     const n = Number(current) || 0;
     return n + 1;
+  }
+
+  /** Append cache-bust query so iframe navigation cannot reuse a broken HTML shell. */
+  function withCacheBust(url) {
+    const base = String(url || DEFAULT_SRC);
+    const sep = base.indexOf("?") >= 0 ? "&" : "?";
+    return base + sep + "v=" + Date.now();
   }
 
   function createBridge(opts) {
@@ -32,6 +40,9 @@
     let destroyed = false;
     let lastPolledSmiles = null;
     let smilesPollTimer = null;
+    let loadHandler = null;
+    let errorHandler = null;
+    let failed = false;
 
     function isReady() {
       return ready && !!ketcher;
@@ -42,6 +53,13 @@
         return iframe.contentWindow && iframe.contentWindow.ketcher;
       } catch (_) {
         return null;
+      }
+    }
+
+    function clearPoll() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
       }
     }
 
@@ -96,15 +114,27 @@
       if (destroyed || ready) return;
       ketcher = k;
       ready = true;
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
+      failed = false;
+      clearPoll();
       attachChange(k);
       onReady(k);
     }
 
+    function fail(err) {
+      if (destroyed || ready) return;
+      failed = true;
+      clearPoll();
+      // Allow a later init()/retry to run again.
+      try {
+        delete iframe.dataset.ketcherInit;
+      } catch (_) {
+        iframe.dataset.ketcherInit = "";
+      }
+      onError(err);
+    }
+
     function startPolling() {
+      clearPoll();
       const t0 = Date.now();
       pollTimer = setInterval(function () {
         if (destroyed) return;
@@ -114,9 +144,7 @@
           return;
         }
         if (Date.now() - t0 > READY_TIMEOUT_MS) {
-          clearInterval(pollTimer);
-          pollTimer = null;
-          onError(new Error("Ketcher 加载超时"));
+          fail(new Error("Ketcher 加载超时（可点「重试」或硬刷新；首次需下载约 35MB）"));
         }
       }, READY_POLL_MS);
     }
@@ -125,7 +153,7 @@
       if (destroyed) return;
       const win = iframe.contentWindow;
       if (!win) {
-        onError(new Error("Ketcher iframe 不可用"));
+        fail(new Error("Ketcher iframe 不可用"));
         return;
       }
       const existing = getKetcherFromFrame();
@@ -145,21 +173,65 @@
       startPolling();
     }
 
+    function detachFrameHandlers() {
+      if (loadHandler) {
+        try {
+          iframe.removeEventListener("load", loadHandler);
+        } catch (_) {}
+        loadHandler = null;
+      }
+      if (errorHandler) {
+        try {
+          iframe.removeEventListener("error", errorHandler);
+        } catch (_) {}
+        errorHandler = null;
+      }
+    }
+
     function init() {
       if (destroyed) return;
-      if (iframe.dataset.ketcherInit === "1") return;
+      if (ready) return;
+      // Already loading
+      if (iframe.dataset.ketcherInit === "1" && !failed) return;
+
+      failed = false;
+      ready = false;
+      ketcher = null;
+      clearPoll();
+      if (changeUnsub) {
+        try {
+          changeUnsub();
+        } catch (_) {}
+        changeUnsub = null;
+      }
+      detachFrameHandlers();
+
       iframe.dataset.ketcherInit = "1";
-      iframe.addEventListener("load", onFrameLoad);
-      iframe.addEventListener("error", function () {
-        onError(new Error("Ketcher 资源加载失败"));
-      });
-      fetch(src, { method: "GET", cache: "no-cache" })
+      loadHandler = onFrameLoad;
+      errorHandler = function () {
+        fail(new Error("Ketcher 资源加载失败"));
+      };
+      iframe.addEventListener("load", loadHandler);
+      iframe.addEventListener("error", errorHandler);
+
+      // Cache-bust the iframe document itself (fetch no-cache does not apply to iframe.src).
+      const busted = withCacheBust(src);
+      // Probe that vendor shell exists; then navigate iframe with busted URL.
+      fetch(src, { method: "GET", cache: "no-store" })
         .then(function (res) {
           if (!res.ok) throw new Error("HTTP " + res.status);
-          iframe.src = src;
+          return res.text();
+        })
+        .then(function (html) {
+          if (html.indexOf("window.global") < 0) {
+            throw new Error(
+              "Ketcher shell 缺少 global shim；请运行 bash tools/build_ketcher_vendor.sh 或检查 web/vendor/ketcher/index.html"
+            );
+          }
+          iframe.src = busted;
         })
         .catch(function (err) {
-          onError(err);
+          fail(err);
         });
     }
 
@@ -193,15 +265,19 @@
 
     function destroy() {
       destroyed = true;
-      if (pollTimer) clearInterval(pollTimer);
+      clearPoll();
       if (smilesPollTimer) clearInterval(smilesPollTimer);
       if (changeUnsub) {
         try {
           changeUnsub();
         } catch (_) {}
       }
+      detachFrameHandlers();
       ready = false;
       ketcher = null;
+      try {
+        delete iframe.dataset.ketcherInit;
+      } catch (_) {}
     }
 
     return {

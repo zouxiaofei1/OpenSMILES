@@ -244,9 +244,13 @@
                     title="Ketcher molecule editor"
                     src="about:blank"
                   ></iframe>
-                  <div id="ketcher-fallback" class="ketcher-fallback" hidden>
-                    <p class="empty-title">Ketcher 未安装</p>
-                    <p class="empty-sub">请将构建产物放到 <code>web/vendor/ketcher/</code>，或运行 <code>bash tools/build_ketcher_vendor.sh</code>。文本 SMILES 命名仍可用。</p>
+                  <div id="ketcher-fallback" class="ketcher-fallback" hidden style="display: none">
+                    <p class="empty-title">Ketcher 不可用</p>
+                    <p id="ketcher-fallback-msg" class="empty-sub">请将构建产物放到 <code>web/vendor/ketcher/</code>，或运行 <code>bash tools/build_ketcher_vendor.sh</code>。文本 SMILES 命名仍可用。</p>
+                    <p class="empty-sub muted-text small">首次加载约 35MB；若刚更新过 vendor，请硬刷新（Ctrl+F5）或点重试。</p>
+                    <button type="button" id="btn-retry-ketcher" class="btn btn-secondary btn-sm" style="margin-top: 0.75rem">
+                      重试加载画板
+                    </button>
                   </div>
                 </div>
               </div>

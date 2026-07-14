@@ -1016,6 +1016,13 @@ button {
   text-align: center;
   background: var(--color-muted);
   color: var(--color-foreground);
+  z-index: 2;
+}
+
+/* Author `display: flex` would otherwise override the UA [hidden] rule and
+   permanently cover the Ketcher iframe even after bridge onReady. */
+.ketcher-fallback[hidden] {
+  display: none !important;
 }
 
 .live-toggle {

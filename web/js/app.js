@@ -506,17 +506,34 @@
     });
   }
 
-  function showKetcherFallback(show) {
+  function showKetcherFallback(show, msg) {
     const fb = $("ketcher-fallback");
     const frame = $("ketcher-frame");
-    if (fb) fb.hidden = !show;
+    const msgEl = $("ketcher-fallback-msg");
+    if (fb) {
+      fb.hidden = !show;
+      // Belt-and-suspenders: author CSS uses display:flex which can fight [hidden].
+      fb.style.display = show ? "flex" : "none";
+    }
     if (frame) frame.style.visibility = show ? "hidden" : "visible";
+    if (msgEl && msg) msgEl.textContent = msg;
   }
 
-  function ensureKetcher() {
+  function ensureKetcher(forceRetry) {
     if (!window.ChemNamerKetcher) {
-      showKetcherFallback(true);
+      showKetcherFallback(
+        true,
+        "前端 bridge 未加载（/js/namer-ketcher.js）。请硬刷新页面。"
+      );
       return;
+    }
+    if (forceRetry && state.ketcherBridge) {
+      try {
+        state.ketcherBridge.destroy();
+      } catch (_) {}
+      state.ketcherBridge = null;
+      state.ketcherReady = false;
+      setKetcherControlsEnabled(false);
     }
     if (state.ketcherBridge) {
       state.ketcherBridge.init();
@@ -524,6 +541,8 @@
     }
     const iframe = $("ketcher-frame");
     if (!iframe) return;
+    // Hide stale error while (re)loading; keep frame visible so progress can paint.
+    showKetcherFallback(false);
     state.ketcherBridge = window.ChemNamerKetcher.createBridge({
       iframe,
       src: window.ChemNamerKetcher.DEFAULT_SRC,
@@ -536,10 +555,10 @@
       onError: (err) => {
         state.ketcherReady = false;
         setKetcherControlsEnabled(false);
-        showKetcherFallback(true);
-        appendLog("error", {
-          message: "ketcher: " + (err && err.message ? err.message : String(err)),
-        });
+        const message =
+          (err && err.message ? err.message : String(err)) || "Ketcher 加载失败";
+        showKetcherFallback(true, message + "。文本 SMILES 命名仍可用。");
+        appendLog("error", { message: "ketcher: " + message });
       },
       onChange: () => {
         scheduleLiveName();
@@ -812,6 +831,11 @@
         } catch (err) {
           setNamerError(err.message || "清空失败");
         }
+      });
+    $("btn-retry-ketcher") &&
+      $("btn-retry-ketcher").addEventListener("click", () => {
+        appendLog("ketcher", { message: "retry" });
+        ensureKetcher(true);
       });
     $("live-name-toggle") &&
       $("live-name-toggle").addEventListener("change", (ev) => {

@@ -7,6 +7,12 @@
     <style>
       html, body, #root { height: 100%; margin: 0; }
     </style>
+    <!-- Node shims some ketcher deps expect in the browser (match namepredict-v3) -->
+    <script>
+      window.global = window.global || window;
+      window.process = window.process || { env: { NODE_ENV: "production" }, platform: "browser" };
+      if (window.process && !window.process.platform) window.process.platform = "browser";
+    </script>
     <!-- ketcher-core evaluates require('raphael') at module load; must exist on window first -->
     <script src="./raphael.min.js"></script>
     <script type="module" crossorigin src="/vendor/ketcher/assets/index-BCYr9Yqk.js"></script>

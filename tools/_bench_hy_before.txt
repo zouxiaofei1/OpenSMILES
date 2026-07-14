@@ -1,0 +1,163 @@
+[19:26:35] Explicit valence for atom # 20 C, 5, is greater than permitted
+en=10.7% (435/4062) zh=35.3% (267/756) dual=10.6% (431/4062) fails=3631
+diff_vs_last: total=32 REGRESS=21 IMPROVE=0 CHANGE=11
+  [REGRESS] id:tiers-197  smiles=OC/C=C/C(=O)O  dual ok->fail  en ok->fail  zh ok->fail
+    gold_en='(E)-4-hydroxybut-2-enoic acid'
+    gold_zh='(E)-4-羟基丁-2-烯酸'
+    prev_pred_en='(E)-4-hydroxybut-2-enoic acid'  cur_pred_en='4-hydroxybutanoic acid'
+    prev_pred_zh='(E)-4-羟基丁-2-烯酸'  cur_pred_zh='4-羟基丁酸'
+  [CHANGE] id:tiers-16355  smiles=OCCCCCCC=CC(=O)O  dual fail->fail  en ok->fail  zh fail->fail
+    gold_en='9-hydroxynon-2-enoic acid'
+    gold_zh='9-羟基-2-壬烯酸'
+    prev_pred_en='9-hydroxynon-2-enoic acid'  cur_pred_en='9-hydroxynonanoic acid'
+    prev_pred_zh='9-羟基壬-2-烯酸'  cur_pred_zh='9-羟基壬酸'
+  [REGRESS] id:chebi-147  smiles=CC/C=C\C=C\C(O)C/C=C\C/C=C\C/C=C\C/C=C\CCC(=O)O  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(4Z,7Z,10Z,13Z,17E,19Z)-16-hydroxydocosa-4,7,10,13,17,19-hexaenoic acid'
+    gold_zh=''
+    prev_pred_en='(4Z,7Z,10Z,13Z,17E,19Z)-16-hydroxydocosa-4,7,10,13,17,19-hexaenoic acid'  cur_pred_en='16-hydroxydocosanoic acid'
+    prev_pred_zh='(4Z,7Z,10Z,13Z,17E,19Z)-16-羟基二十二-4,7,10,13,17,19-六烯酸'  cur_pred_zh='16-羟基二十二酸'
+  [REGRESS] id:chebi-339  smiles=CC(C)CCCCCCC/C=C/C(=O)O  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(E)-11-methyldodec-2-enoic acid'
+    gold_zh=''
+    prev_pred_en='(E)-11-methyldodec-2-enoic acid'  cur_pred_en='11-methyl(E)-dodec-2-enoic acid'
+    prev_pred_zh='(E)-11-甲基十二-2-烯酸'  cur_pred_zh='11-甲基(E)-十二-2-烯酸'
+  [REGRESS] id:chebi-382  smiles=CC/C=C\C/C=C\C/C=C\C/C=C\C=C\C(O)CCCCCC(=O)[O-]  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(8E,10Z,13Z,16Z,19Z)-7-hydroxydocosa-8,10,13,16,19-pentaenoate'
+    gold_zh=''
+    prev_pred_en='(8E,10Z,13Z,16Z,19Z)-7-hydroxydocosa-8,10,13,16,19-pentaenoate'  cur_pred_en='7-hydroxydocosanoate'
+    prev_pred_zh='(8E,10Z,13Z,16Z,19Z)-7-羟基二十二-8,10,13,16,19-五烯酸根'  cur_pred_zh='7-羟基二十二酸根'
+  [REGRESS] id:chebi-608  smiles=CCCCCC(O)/C=C/C=C\C/C=C\C/C=C\CCCC(=O)O  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(5Z,8Z,11Z,13E)-15-hydroxyicosa-5,8,11,13-tetraenoic acid'
+    gold_zh=''
+    prev_pred_en='(5Z,8Z,11Z,13E)-15-hydroxyicosa-5,8,11,13-tetraenoic acid'  cur_pred_en='15-hydroxyicosanoic acid'
+    prev_pred_zh='(5Z,8Z,11Z,13E)-15-羟基二十-5,8,11,13-四烯酸'  cur_pred_zh='15-羟基二十酸'
+  [CHANGE] id:chebi-613  smiles=C[C@@H](O)CCCCC/C=C/C(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(E,9R)-9-hydroxydec-2-enoic acid'
+    gold_zh=''
+    prev_pred_en='(E)-9-hydroxydec-2-enoic acid'  cur_pred_en='9-hydroxydecanoic acid'
+    prev_pred_zh='(E)-9-羟基癸-2-烯酸'  cur_pred_zh='9-羟基癸酸'
+  [CHANGE] id:chebi-683  smiles=CC/C=C\C/C=C\C=C\[C@H](O)C/C=C\C/C=C\CCCCCC(=O)[O-]  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(7Z,10Z,13R,14E,16Z,19Z)-13-hydroxydocosa-7,10,14,16,19-pentaenoate'
+    gold_zh=''
+    prev_pred_en='(7Z,10Z,14E,16Z,19Z)-13-hydroxydocosa-7,10,14,16,19-pentaenoate'  cur_pred_en='13-hydroxydocosanoate'
+    prev_pred_zh='(7Z,10Z,14E,16Z,19Z)-13-羟基二十二-7,10,14,16,19-五烯酸根'  cur_pred_zh='13-羟基二十二酸根'
+  [CHANGE] id:chebi-706  smiles=CC(C)/C(=C/C(=O)O)C(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(Z)-2-propan-2-ylbut-2-enedioic acid'
+    gold_zh=''
+    prev_pred_en='(Z)-2-isopropylbut-2-enedioic acid'  cur_pred_en='2-isopropyl(Z)-but-2-enedioic acid'
+    prev_pred_zh='(Z)-2-异丙基丁-2-烯二酸'  cur_pred_zh='2-异丙基(Z)-丁-2-烯二酸'
+  [REGRESS] id:chebi-727  smiles=CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCCCCCCCCCC(O)C(=O)O  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(14Z,17Z,20Z,23Z,26Z)-2-hydroxydotriaconta-14,17,20,23,26-pentaenoic acid'
+    gold_zh=''
+    prev_pred_en='(14Z,17Z,20Z,23Z,26Z)-2-hydroxydotriaconta-14,17,20,23,26-pentaenoic acid'  cur_pred_en='2-hydroxydotriacontanoic acid'
+    prev_pred_zh='(14Z,17Z,20Z,23Z,26Z)-2-羟基三十二-14,17,20,23,26-五烯酸'  cur_pred_zh='2-羟基三十二酸'
+  [REGRESS] id:chebi-747  smiles=CC(O)CCC/C=C\C/C=C\CCCCCCCC(=O)[O-]  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(9Z,12Z)-17-hydroxyoctadeca-9,12-dienoate'
+    gold_zh=''
+    prev_pred_en='(9Z,12Z)-17-hydroxyoctadeca-9,12-dienoate'  cur_pred_en='17-hydroxyoctadecanoate'
+    prev_pred_zh='(9Z,12Z)-17-羟基十八-9,12-二烯酸根'  cur_pred_zh='17-羟基十八酸根'
+  [CHANGE] id:chebi-806  smiles=CC/C=C\C/C=C\C=C\[C@H](O)C/C=C\C/C=C\CCCCCC(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(7Z,10Z,13R,14E,16Z,19Z)-13-hydroxydocosa-7,10,14,16,19-pentaenoic acid'
+    gold_zh=''
+    prev_pred_en='(7Z,10Z,14E,16Z,19Z)-13-hydroxydocosa-7,10,14,16,19-pentaenoic acid'  cur_pred_en='13-hydroxydocosanoic acid'
+    prev_pred_zh='(7Z,10Z,14E,16Z,19Z)-13-羟基二十二-7,10,14,16,19-五烯酸'  cur_pred_zh='13-羟基二十二酸'
+  [REGRESS] id:chebi-906  smiles=C=C(O)C(=O)O  dual ok->fail  en ok->fail  zh -->-
+    gold_en='2-hydroxyprop-2-enoic acid'
+    gold_zh=''
+    prev_pred_en='2-hydroxyprop-2-enoic acid'  cur_pred_en='2-hydroxypropanoic acid'
+    prev_pred_zh='2-羟基丙-2-烯酸'  cur_pred_zh='2-羟基丙酸'
+  [REGRESS] id:chebi-933  smiles=O=C([O-])CCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCO  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(5Z,8Z,11Z,14Z,17Z)-20-hydroxyicosa-5,8,11,14,17-pentaenoate'
+    gold_zh=''
+    prev_pred_en='(5Z,8Z,11Z,14Z,17Z)-20-hydroxyicosa-5,8,11,14,17-pentaenoate'  cur_pred_en='20-hydroxyicosanoate'
+    prev_pred_zh='(5Z,8Z,11Z,14Z,17Z)-20-羟基二十-5,8,11,14,17-五烯酸根'  cur_pred_zh='20-羟基二十酸根'
+  [CHANGE] id:chebi-1010  smiles=CCCCCCCC/C=C\C/C=C\C=C\[C@@H](O)CCCC(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(5S,6E,8Z,11Z)-5-hydroxyicosa-6,8,11-trienoic acid'
+    gold_zh=''
+    prev_pred_en='(6E,8Z,11Z)-5-hydroxyicosa-6,8,11-trienoic acid'  cur_pred_en='5-hydroxyicosanoic acid'
+    prev_pred_zh='(6E,8Z,11Z)-5-羟基二十-6,8,11-三烯酸'  cur_pred_zh='5-羟基二十酸'
+  [REGRESS] id:chebi-1151  smiles=CC/C=C\C/C=C\C=C\C(O)C/C=C\C/C=C\C/C=C\CCC(=O)[O-]  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(4Z,7Z,10Z,14E,16Z,19Z)-13-hydroxydocosa-4,7,10,14,16,19-hexaenoate'
+    gold_zh=''
+    prev_pred_en='(4Z,7Z,10Z,14E,16Z,19Z)-13-hydroxydocosa-4,7,10,14,16,19-hexaenoate'  cur_pred_en='13-hydroxydocosanoate'
+    prev_pred_zh='(4Z,7Z,10Z,14E,16Z,19Z)-13-羟基二十二-4,7,10,14,16,19-六烯酸根'  cur_pred_zh='13-羟基二十二酸根'
+  [REGRESS] id:chebi-1407  smiles=CCCCCCC(O)C/C=C\CCCCCCCC(=O)[O-]  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(Z)-12-hydroxyoctadec-9-enoate'
+    gold_zh=''
+    prev_pred_en='(Z)-12-hydroxyoctadec-9-enoate'  cur_pred_en='12-hydroxyoctadecanoate'
+    prev_pred_zh='(Z)-12-羟基十八-9-烯酸根'  cur_pred_zh='12-羟基十八酸根'
+  [CHANGE] id:chebi-1494  smiles=CCCCC[C@H](O)/C=C/C=C\CCCCCCCC(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(9Z,11E,13S)-13-hydroxyoctadeca-9,11-dienoic acid'
+    gold_zh=''
+    prev_pred_en='(9Z,11E)-13-hydroxyoctadeca-9,11-dienoic acid'  cur_pred_en='13-hydroxyoctadecanoic acid'
+    prev_pred_zh='(9Z,11E)-13-羟基十八-9,11-二烯酸'  cur_pred_zh='13-羟基十八酸'
+  [REGRESS] id:chebi-1499  smiles=CCCCCCCCC/C=C(\O)C(=O)O  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(Z)-2-hydroxydodec-2-enoic acid'
+    gold_zh=''
+    prev_pred_en='(Z)-2-hydroxydodec-2-enoic acid'  cur_pred_en='2-hydroxydodecanoic acid'
+    prev_pred_zh='(Z)-2-羟基十二-2-烯酸'  cur_pred_zh='2-羟基十二酸'
+  [REGRESS] id:chebi-1535  smiles=CCC(O)/C=C/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)O  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(5Z,8Z,11Z,14Z,16E)-18-hydroxyicosa-5,8,11,14,16-pentaenoic acid'
+    gold_zh=''
+    prev_pred_en='(5Z,8Z,11Z,14Z,16E)-18-hydroxyicosa-5,8,11,14,16-pentaenoic acid'  cur_pred_en='18-hydroxyicosanoic acid'
+    prev_pred_zh='(5Z,8Z,11Z,14Z,16E)-18-羟基二十-5,8,11,14,16-五烯酸'  cur_pred_zh='18-羟基二十酸'
+  [REGRESS] id:chebi-1622  smiles=CC/C=C\C/C=C\C=C\C(O)CCCCCCCC(=O)O  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(10E,12Z,15Z)-9-hydroxyoctadeca-10,12,15-trienoic acid'
+    gold_zh=''
+    prev_pred_en='(10E,12Z,15Z)-9-hydroxyoctadeca-10,12,15-trienoic acid'  cur_pred_en='9-hydroxyoctadecanoic acid'
+    prev_pred_zh='(10E,12Z,15Z)-9-羟基十八-10,12,15-三烯酸'  cur_pred_zh='9-羟基十八酸'
+  [CHANGE] id:chebi-1742  smiles=CCCCC/C=C\C[C@H](O)/C=C/C=C\C/C=C\C/C=C\CCC(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(4Z,7Z,10Z,12E,14S,16Z)-14-hydroxydocosa-4,7,10,12,16-pentaenoic acid'
+    gold_zh=''
+    prev_pred_en='(4Z,7Z,10Z,12E,16Z)-14-hydroxydocosa-4,7,10,12,16-pentaenoic acid'  cur_pred_en='14-hydroxydocosanoic acid'
+    prev_pred_zh='(4Z,7Z,10Z,12E,16Z)-14-羟基二十二-4,7,10,12,16-五烯酸'  cur_pred_zh='14-羟基二十二酸'
+  [CHANGE] id:chebi-2129  smiles=CC/C=C\C[C@@H](O)/C=C/C=C\C/C=C\C/C=C\CCCC(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(5Z,8Z,11Z,13E,15R,17Z)-15-hydroxyicosa-5,8,11,13,17-pentaenoic acid'
+    gold_zh=''
+    prev_pred_en='(5Z,8Z,11Z,13E,17Z)-15-hydroxyicosa-5,8,11,13,17-pentaenoic acid'  cur_pred_en='15-hydroxyicosanoic acid'
+    prev_pred_zh='(5Z,8Z,11Z,13E,17Z)-15-羟基二十-5,8,11,13,17-五烯酸'  cur_pred_zh='15-羟基二十酸'
+  [CHANGE] id:chebi-2189  smiles=C[C@@H](O)CCCC/C=C/C(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(E,8R)-8-hydroxynon-2-enoic acid'
+    gold_zh=''
+    prev_pred_en='(E)-8-hydroxynon-2-enoic acid'  cur_pred_en='8-hydroxynonanoic acid'
+    prev_pred_zh='(E)-8-羟基壬-2-烯酸'  cur_pred_zh='8-羟基壬酸'
+  [REGRESS] id:chebi-2217  smiles=C/C(=C/C(=O)[O-])C(=O)[O-]  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(Z)-2-methylbut-2-enedioate'
+    gold_zh=''
+    prev_pred_en='(Z)-2-methylbut-2-enedioate'  cur_pred_en='2-methyl(Z)-but-2-enedioate'
+    prev_pred_zh='(Z)-2-甲基丁-2-烯二酸根'  cur_pred_zh='2-甲基(Z)-丁-2-烯二酸根'
+  [REGRESS] id:chebi-2625  smiles=CC(O)CCCCCC/C=C\C/C=C\C/C=C\CCCC(=O)O  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(5Z,8Z,11Z)-19-hydroxyicosa-5,8,11-trienoic acid'
+    gold_zh=''
+    prev_pred_en='(5Z,8Z,11Z)-19-hydroxyicosa-5,8,11-trienoic acid'  cur_pred_en='19-hydroxyicosanoic acid'
+    prev_pred_zh='(5Z,8Z,11Z)-19-羟基二十-5,8,11-三烯酸'  cur_pred_zh='19-羟基二十酸'
+  [REGRESS] id:chebi-2735  smiles=CC/C=C\C/C=C\CC(O)/C=C/C=C\C/C=C\C/C=C\CCC(=O)[O-]  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(4Z,7Z,10Z,12E,16Z,19Z)-14-hydroxydocosa-4,7,10,12,16,19-hexaenoate'
+    gold_zh=''
+    prev_pred_en='(4Z,7Z,10Z,12E,16Z,19Z)-14-hydroxydocosa-4,7,10,12,16,19-hexaenoate'  cur_pred_en='14-hydroxydocosanoate'
+    prev_pred_zh='(4Z,7Z,10Z,12E,16Z,19Z)-14-羟基二十二-4,7,10,12,16,19-六烯酸根'  cur_pred_zh='14-羟基二十二酸根'
+  [REGRESS] id:chebi-2787  smiles=CCCCCCCC/C=C\CCCCCCCCCCCCC(O)C(=O)[O-]  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(Z)-2-hydroxytetracos-15-enoate'
+    gold_zh=''
+    prev_pred_en='(Z)-2-hydroxytetracos-15-enoate'  cur_pred_en='2-hydroxytetracosanoate'
+    prev_pred_zh='(Z)-2-羟基二十四-15-烯酸根'  cur_pred_zh='2-羟基二十四酸根'
+  [REGRESS] id:chebi-2857  smiles=C/C(=C\C(=O)[O-])C(=O)[O-]  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(E)-2-methylbut-2-enedioate'
+    gold_zh=''
+    prev_pred_en='(E)-2-methylbut-2-enedioate'  cur_pred_en='2-methyl(E)-but-2-enedioate'
+    prev_pred_zh='(E)-2-甲基丁-2-烯二酸根'  cur_pred_zh='2-甲基(E)-丁-2-烯二酸根'
+  [CHANGE] id:chebi-2936  smiles=CCCCCCCC[C@H](O)/C=C/CCCCCCC(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(E,10S)-10-hydroxyoctadec-8-enoic acid'
+    gold_zh=''
+    prev_pred_en='(E)-10-hydroxyoctadec-8-enoic acid'  cur_pred_en='10-hydroxyoctadecanoic acid'
+    prev_pred_zh='(E)-10-羟基十八-8-烯酸'  cur_pred_zh='10-羟基十八酸'
+  [REGRESS] id:chebi-3048  smiles=CC(C)CCCCCCCCCC/C=C\C(=O)O  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(Z)-14-methylpentadec-2-enoic acid'
+    gold_zh=''
+    prev_pred_en='(Z)-14-methylpentadec-2-enoic acid'  cur_pred_en='14-methyl(Z)-pentadec-2-enoic acid'
+    prev_pred_zh='(Z)-14-甲基十五-2-烯酸'  cur_pred_zh='14-甲基(Z)-十五-2-烯酸'
+  [REGRESS] id:chebi-3204  smiles=CCCCCCCC/C=C\CCCCCCC(O)C(=O)[O-]  dual ok->fail  en ok->fail  zh -->-
+    gold_en='(Z)-2-hydroxyoctadec-9-enoate'
+    gold_zh=''
+    prev_pred_en='(Z)-2-hydroxyoctadec-9-enoate'  cur_pred_en='2-hydroxyoctadecanoate'
+    prev_pred_zh='(Z)-2-羟基十八-9-烯酸根'  cur_pred_zh='2-羟基十八酸根'
