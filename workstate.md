@@ -89,5 +89,6 @@
 [#e30c41a][IUPAC P-22.2.1 / P-25 / P-62.2.1] 保留母体 1,3-benzothiazole（+2-amine/CF3） [+23 tests, dual 7.8%(317)→7.8%(318), fails 3745→3744]
 [#b4f465a][IUPAC P-29.3 / P-14.3.4 / P-22.2.1 / P-63.2.2] 芳环简单侧链扩展(ω-halo n-alkyl / 2-methoxyethoxy / quinoline halo+CF3) [+7 tests, dual 7.8%(318)→8.0%(323), fails 3744→3739]
 [#82ed912][IUPAC P-22.2.1 / P-25 / P-62.2.1] 保留母体 1H-benzimidazole（+halo/methyl/CF3 + C2 胺/2-imino） [+25 tests, dual 8.0%(323)→8.0%(324), fails 3739→3738]
+[#82c88fd][IUPAC P-29.3 / P-14.3.1] 递归取代基第一刀：depth=1 未取代/单卤 phenyl·phenoxy [+7 tests, dual 8.0%(324)→8.0%(326), en 326→328, fails 3738→3736]
 
 ## 其他
