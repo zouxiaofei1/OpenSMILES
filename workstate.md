@@ -106,7 +106,8 @@
 [#50c8d97][IUPAC P-29.3 / P-14.3.1] 真递归芳基取代基 namer（depth≤3）：嵌套 Ph/OPh 可再带叶 [+12 tests, dual 8.6%(348)→8.6%(349), en 352→353, fails 3714→3713]
 [#fc5b107][架构] LeafHandler registry：protocol+match/name；complex 先于 simple；name_ph_ring 只组装 [dual 8.6%(349)→8.7%(352), en 353→356, fails 3713→3710]
 [#0027734][IUPAC P-29.3] registry 叶 n-alkyl/MeS/cyano + 嵌套苄基；Ar-CN 不作链腈母体 [+13 tests, dual 8.7%(352)→8.6%(351), en 356→355]
+[#60bbca7][IUPAC P-62.2.2.1 / P-29.3] 仲胺优先芳基臂+claim Ph；酯前缀插在烷基与酰基间 [+11 tests, dual 8.6%(351)→8.7%(355), en 355→359, fails 3711→3707]
 
 ## 其他
 - 加叶：layer2/leaves 注册 handler（match+name），勿改 ring_namer 核心
-- 递归未做：嵌套 benzyloxy；N-芳基叶；pyridyl skeleton；vinyl 叶
+- 链吃芳环：仲胺等长臂已修；仍有杂环/硼酸/复杂酰胺等未 claim 簇
