@@ -10,8 +10,7 @@ from namepredict.layer5.stems import (
 from namepredict.layer5.benzene_names import (
     arene_fg_parent_names, benzene_parent_names, benzene_prefix,
     benzoate_parent_names, benzenediamine_names, benzenediol_names, hetero5carboxylic_names,
-    join_kind_name, join_parent_name, pyridine_kind_names, sat_hetero_carboxylic_names,
-    zh_1h_parent,
+    join_kind_name, pyridine_kind_names, sat_hetero_carboxylic_names,
 )
 from namepredict.types import NameResult
 MULT_EN = {2: "di", 3: "tri", 4: "tetra", 5: "penta", 6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
@@ -490,10 +489,12 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
         return "", ""
     return _build_prefix(numbered.get("substituents") or [], n, kind)
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
+    from namepredict.layer5.stereo_rs import apply_rs_prefix
     kind, n = _parent_n(numbered)
     names = _names_for(kind, n, numbered)
     if not names:
         return _unsupported(n, kind)
     en, zh = join_kind_name(kind, _prefix_for(numbered, kind, n), names)
     en, zh = maybe_anion_names(numbered, en, zh)
+    en, zh = apply_rs_prefix(numbered, en, zh)
     return _ok(en, zh, time_ms, source)

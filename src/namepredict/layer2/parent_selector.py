@@ -496,4 +496,5 @@ def _ring_parent(info: dict) -> dict | None:
 def select_parent(info: dict) -> dict:
     from namepredict.layer2.candidates import _alkane_fallback, _collect_candidates
     best = _pick_best(info, _collect_candidates(info))
-    return best if best is not None else _alkane_fallback(info)
+    parent = best if best is not None else _alkane_fallback(info)
+    return parent if parent.get("mol") is not None else {**parent, "mol": info.get("mol")}
