@@ -21,7 +21,7 @@ _REG: dict[str, KindMeta] = {}
 _CHAIN_FG: tuple[tuple[str, int], ...] = (
     ("acid", 13), ("diacid", 13), ("alkenoic_acid", 13), ("alkenedioic", 13),
     ("anhydride", 12), ("ester", 11), ("alkenoate", 11),
-    ("acyl_chloride", 10), ("amide", 9),
+    ("acyl_chloride", 10), ("amide", 9), ("alkenamide", 9),
     ("nitrile", 8), ("alkenenitrile", 8),
     ("aldehyde", 7), ("alkenal", 7),
     ("ketone", 6), ("dione", 6), ("cycloketone", 6),

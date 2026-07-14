@@ -329,35 +329,32 @@ def _tert_n_prefix(ns: list[int]) -> tuple[str, str] | None:
         return f"N,N-di{_N_STEM_EN[a]}", f"N,N-二{_N_STEM_ZH[a]}"
     x, y = sorted(ns, key=lambda n: _N_STEM_EN[n])
     return f"N-{_N_STEM_EN[x]}-N-{_N_STEM_EN[y]}", f"N-{_N_STEM_ZH[x]}-N-{_N_STEM_ZH[y]}"
+_AMIDE_KINDS = frozenset({"amide", "alkenamide"})
 def _n_alkyl_prefix(parent: dict) -> tuple[str, str, int] | None:
     kind, n = parent.get("kind"), parent.get("n_alkyl_n")
-    if kind in ("sec_amine", "amide") and n in _N_ALKYL_EN:
+    if kind in ("sec_amine", "amide", "alkenamide") and n in _N_ALKYL_EN:
         return _N_ALKYL_EN[n], _N_ALKYL_ZH[n], n
-    if kind in ("tert_amine", "amide"):
+    if kind in ("tert_amine", "amide", "alkenamide"):
         pref = _tert_n_prefix(list(parent.get("n_alkyl_ns") or []))
         return (*pref, 0) if pref else None
     return None
 def _extract_n_alkyl(parent: dict) -> list[dict]:
-    key = "amide_c_idx" if parent.get("kind") == "amide" else "amine_c_idx"
+    key = "amide_c_idx" if parent.get("kind") in _AMIDE_KINDS else "amine_c_idx"
     attach, pref = parent.get(key), _n_alkyl_prefix(parent)
     return [_n_alkyl_sub(*pref[:2], attach, pref[2])] if attach is not None and pref else []
 def _extract_n_phenyl(parent: dict) -> list[dict]:
-    if parent.get("kind") != "amide" or not parent.get("n_phenyl"):
+    if parent.get("kind") not in _AMIDE_KINDS or not parent.get("n_phenyl"):
         return []
     attach = parent.get("amide_c_idx")
     return [_n_phenyl_sub(attach)] if attach is not None else []
-
-
 def _n_benzyl_named(info: dict, ch2: int) -> tuple[str, str, bool] | None:
     from namepredict.layer2.aryl_sub import _benzyl_name, _ch2_ph_at
     ams = info.get("amides") or []
     n_idx = ams[0]["n_idx"] if ams else -1
     ph = _ch2_ph_at(info["mol"], ch2, n_idx)
     return None if ph is None else _benzyl_name(info["mol"], ph, ch2)
-
-
 def _extract_n_benzyl(info: dict, parent: dict) -> list[dict]:
-    if parent.get("kind") != "amide" or not parent.get("n_benzyl"):
+    if parent.get("kind") not in _AMIDE_KINDS or not parent.get("n_benzyl"):
         return []
     attach, ch2 = parent.get("amide_c_idx"), parent.get("n_benzyl_ch2")
     if attach is None or ch2 is None:

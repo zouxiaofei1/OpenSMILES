@@ -220,13 +220,10 @@ def _acid_table(n: int, loc) -> dict:
         "aldehyde": lambda: _aldehyde_names(n), "amide": lambda: _amide_names(n),
     }
 def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
-    from namepredict.layer5.unsat_acid import alkenoic_acid_names, alkenedioic_names
-    if kind == "alkenedioic":
-        return alkenedioic_names(n, numbered or {})
-    if kind == "alkenoic_acid":
-        return alkenoic_acid_names(n, numbered or {})
-    if kind == "cycloalkanecarboxylic":
-        return _cycloalkanecarboxylic_names(n)
+    from namepredict.layer5.unsat_acid import unsat_carbonyl_names
+    top = unsat_carbonyl_names(kind, n, numbered or {})
+    if top is not None: return top
+    if kind == "cycloalkanecarboxylic": return _cycloalkanecarboxylic_names(n)
     fn = _acid_table(n, (numbered or {}).get("ene_locant")).get(kind)
     return fn() if fn else None
 def _nitrile_or_none(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
@@ -422,14 +419,14 @@ def _locant_str(subs: list) -> str:
 def _mult_en(n: int) -> str: return MULT_EN.get(n, "")
 def _mult_zh(n: int) -> str: return MULT_ZH.get(n, "")
 _KEEP_LOCANT_KINDS = frozenset({
-    "acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenoate",
+    "acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenamide", "alkenoate",
     "benzoic", "benzaldehyde", "acetophenone", "pyridinecarboxylic",
     "pyridinecarbonitrile", "benzoate", "benzonitrile", "benzoyl_chloride",
     "cycloalkanecarboxylic"}) | _H5COOH_KINDS | _SHCOOH_KINDS
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
     if n_carbons <= 1 or (kind in ("cycloalkane", "benzene") and len(substituents) == 1):
         return True
-    if kind in ("sec_amine", "tert_amine", "amide"):
+    if kind in ("sec_amine", "tert_amine", "amide", "alkenamide"):
         return {s.get("kind") for s in substituents} <= {"n_alkyl", "n_phenyl", "n_benzyl"}
     if kind in _KEEP_LOCANT_KINDS or kind == "ketone":
         return False

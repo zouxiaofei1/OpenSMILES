@@ -118,3 +118,19 @@ def alkenoic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
     return _alkenoic_acid_names(
         n, numbered.get("ene_locant"), _ez_prefix(numbered),
     )
+
+
+def alkenamide_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """prop-2-enamide / (E)-but-2-enamide with E/Z when stereo defined."""
+    return _unsat_acid_pair(
+        n, numbered.get("ene_locant"), _ez_prefix(numbered), "enamide", "烯酰胺",
+    )
+
+
+def unsat_carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    """Dispatch alkenoic / alkenedioic / alkenamide parent stems."""
+    if kind == "alkenedioic":
+        return alkenedioic_names(n, numbered)
+    if kind == "alkenoic_acid":
+        return alkenoic_acid_names(n, numbered)
+    return alkenamide_names(n, numbered) if kind == "alkenamide" else None
