@@ -109,7 +109,10 @@
 [#60bbca7][IUPAC P-62.2.2.1 / P-29.3] 仲胺优先芳基臂+claim Ph；酯前缀插在烷基与酰基间 [+11 tests, dual 8.6%(351)→8.7%(355), en 355→359, fails 3711→3707]
 [#9892a4f][IUPAC P-44 / P-29.6] 开链 FG walk 不进环；claim 环己基/哌啶基侧链 [+11 tests, dual 8.7%(355)→8.8%(357), en 359→361, fails 3707→3705]
 [#2c2cb25][IUPAC P-66.1.1.1.3 / P-29.3] 酰胺 N-苄基 claim（非 N-methyl）[ +10 tests, dual 8.8%(357) 持平]
+[#ba93df4][架构 P0] ring_systems 融合分量 + retained_registry 骨架 [+15 tests, dual 8.8%(357) 持平]
+[#bf2a956][IUPAC P-29 P2] 未取代 pyridin-n-yl 开链侧链 [+10 tests, dual 8.8% 持平]
+[#87257c0][IUPAC P-29 P2] pyridinyl 简单叶 halo/Me/alkoxy [+3 tests, dual 8.8%(357)→8.8%(358)]
 
 ## 其他
-- 加叶：layer2/leaves 注册 handler（match+name），勿改 ring_namer 核心
-- 母体选错：N-苄基酰胺已修；仍有 N-(1-苯乙基)、杂环母体、硼酸等簇
+- 稠/杂计划：P0 done；P2 pyridinyl 已开；下一项 naphthalen-n-yl 或 P1 anthracene
+- 加叶：layer2/leaves 注册 handler；杂芳侧链 layer2/heteroaryl_sub
