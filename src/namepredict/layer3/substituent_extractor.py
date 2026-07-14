@@ -419,13 +419,12 @@ def _extract_benzyloxys(info: dict, parent: dict) -> list[dict]:
 
 
 def _aryl_outer_starts(info: dict, parent: dict) -> set[int]:
-    from namepredict.layer2.heteroaryl_sub import ring_pyridinyls
+    from namepredict.layer2.heteroaryl_sub import heteroaryl_outers
     mol: Mol = info["mol"]
     chain = set(parent.get("chain") or [])
     ph = {p["outer_c"] for p in _ring_phenyls(mol, chain)}
     bn = {p["outer_c"] for p in _ring_benzyls(mol, chain)}
-    py = {p["outer_c"] for p in ring_pyridinyls(mol, chain)}
-    return ph | bn | py
+    return ph | bn | heteroaryl_outers(mol, chain)
 
 
 def _extract_alkyls_no_aryl(mol: Mol, chain: list[int], skip: set[int]) -> list[dict]:
@@ -450,24 +449,14 @@ def _extract_core_subs(info: dict, parent: dict) -> list:
     )
 
 
-def _extract_pyridinyls(info: dict, parent: dict) -> list[dict]:
-    from namepredict.layer2.heteroaryl_sub import ring_pyridinyls
-    mol: Mol = info["mol"]
-    chain = set(parent.get("chain") or [])
-    out: list[dict] = []
-    for p in ring_pyridinyls(mol, chain):
-        out.append({
-            "kind": "pyridinyl", "attach_idx": p["attach"], "atoms": p["atoms"],
-            "n_carbons": 5, "en": p["en"], "zh": p["zh"], "paren": p["paren"],
-        })
-    return out
-
-
 def _extract_aryls(info: dict, parent: dict) -> list[dict]:
+    from namepredict.layer2.heteroaryl_sub import extract_naphthyls, extract_pyridinyls
+    chain = set(parent.get("chain") or [])
+    mol = info["mol"]
     return (
         _extract_phenoxys(info, parent) + _extract_phenyls(info, parent)
         + _extract_benzyloxys(info, parent) + _extract_benzyls(info, parent)
-        + _extract_pyridinyls(info, parent)
+        + extract_pyridinyls(mol, chain) + extract_naphthyls(mol, chain)
     )
 
 

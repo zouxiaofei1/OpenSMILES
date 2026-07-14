@@ -244,3 +244,125 @@ def pyridinyl_atoms(mol: Mol, parent: set[int]) -> set[int]:
         out |= set(p["atoms"])
         out |= _leaf_atoms_on(mol, p["ring"], p["outer_c"], p["attach"])
     return out
+
+
+# --- unsubstituted naphthalen-n-yl ---
+
+def _naph_chains(mol: Mol, r1: list[int], r2: list[int], br: tuple[int, int]):
+    from namepredict.layer2.naphthalene import _chains_for_bridge
+    return _chains_for_bridge(r1, r2, *br) + _chains_for_bridge(r1, r2, br[1], br[0])
+
+
+def _naph_atoms_ok(mol: Mol, r1: list[int], r2: list[int]) -> set[int] | None:
+    from namepredict.layer2.naphthalene import _all_aromatic_c
+    atoms = set(r1) | set(r2)
+    return atoms if len(atoms) == 10 and _all_aromatic_c(mol, atoms) else None
+
+
+def _try_naph_pair(mol: Mol, r1: list[int], r2: list[int]):
+    from namepredict.layer2.naphthalene import _bridge_adjacent, _bridge_pair
+    br = _bridge_pair(r1, r2)
+    if br is None or not _bridge_adjacent(mol, *br):
+        return None
+    atoms = _naph_atoms_ok(mol, r1, r2)
+    if atoms is None:
+        return None
+    ch = _naph_chains(mol, r1, r2, br)
+    return (atoms, ch) if ch else None
+
+
+def _naph_core(mol: Mol) -> tuple[set[int], list[list[int]]] | None:
+    """Return (atom set, numbering chains) if mol has one naphthalene core."""
+    rings = [list(r) for r in mol.GetRingInfo().AtomRings() if len(r) == 6]
+    for i, r1 in enumerate(rings):
+        for r2 in rings[i + 1 :]:
+            got = _try_naph_pair(mol, r1, r2)
+            if got is not None:
+                return got
+    return None
+
+
+def _naph_unsub_ok(mol: Mol, atoms: set[int], attach: int, parent: int) -> bool:
+    if attach not in atoms or mol.GetAtomWithIdx(attach).GetAtomicNum() != 6:
+        return False
+    for i in atoms:
+        for nb in _nb_out(mol, i, atoms):
+            if not (i == attach and nb.GetIdx() == parent):
+                return False
+    return True
+
+
+def _naph_locant(chains: list[list[int]], attach: int) -> int:
+    best = 99
+    for ch in chains:
+        if attach in ch:
+            best = min(best, ch.index(attach) + 1)
+    return best if best < 99 else 1
+
+
+def _make_naphthyl(att: int, start: int, atoms: set[int], loc: int) -> dict:
+    return {
+        "attach": att, "outer_c": start, "atoms": list(atoms),
+        "en": f"naphthalen-{loc}-yl", "zh": f"萘-{loc}-基", "paren": True,
+    }
+
+
+def _naph_ready(mol: Mol, start: int, att: int) -> tuple[set[int], list] | None:
+    core = _naph_core(mol)
+    if core is None:
+        return None
+    atoms, chains = core
+    if start not in atoms or att in atoms:
+        return None
+    if not _naph_unsub_ok(mol, atoms, start, att):
+        return None
+    return atoms, chains
+
+
+def _naph_from_start(mol: Mol, start: int, parent: set[int]) -> dict | None:
+    if start in parent:
+        return None
+    att = _parent_link(mol, start, parent)
+    if att is None:
+        return None
+    ready = _naph_ready(mol, start, att)
+    if ready is None:
+        return None
+    atoms, chains = ready
+    return _make_naphthyl(att, start, atoms, _naph_locant(chains, start))
+
+
+def ring_naphthyls(mol: Mol, parent: set[int]) -> list[dict]:
+    out: list[dict] = []
+    for s in _side_starts(mol, parent):
+        one = _naph_from_start(mol, s, parent)
+        if one is not None:
+            out.append(one)
+    return out
+
+
+def naphthyl_atoms(mol: Mol, parent: set[int]) -> set[int]:
+    out: set[int] = set()
+    for p in ring_naphthyls(mol, parent):
+        out |= set(p["atoms"])
+    return out
+
+
+def _as_sub(p: dict, kind: str, n_c: int) -> dict:
+    return {
+        "kind": kind, "attach_idx": p["attach"], "atoms": p["atoms"],
+        "n_carbons": n_c, "en": p["en"], "zh": p["zh"], "paren": p["paren"],
+    }
+
+
+def extract_pyridinyls(mol: Mol, chain: set[int]) -> list[dict]:
+    return [_as_sub(p, "pyridinyl", 5) for p in ring_pyridinyls(mol, chain)]
+
+
+def extract_naphthyls(mol: Mol, chain: set[int]) -> list[dict]:
+    return [_as_sub(p, "naphthyl", 10) for p in ring_naphthyls(mol, chain)]
+
+
+def heteroaryl_outers(mol: Mol, chain: set[int]) -> set[int]:
+    py = {p["outer_c"] for p in ring_pyridinyls(mol, chain)}
+    return py | {p["outer_c"] for p in ring_naphthyls(mol, chain)}
