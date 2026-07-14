@@ -34,8 +34,8 @@ CASES = [
     ),
     (
         r"CCCCCCCC[C@H](O)/C=C/CCCCCCC(=O)O",
-        "(E)-10-hydroxyoctadec-8-enoic acid",
-        "(E)-10-羟基十八-8-烯酸",
+        "(E,10S)-10-hydroxyoctadec-8-enoic acid",
+        "(E,10S)-10-羟基十八-8-烯酸",
     ),
     (
         r"CCCCCCC(O)C/C=C\CCCCCCCC(=O)[O-]",
@@ -44,14 +44,14 @@ CASES = [
     ),
     (
         r"C[C@@H](O)CCCC/C=C/C(=O)O",
-        "(E)-8-hydroxynon-2-enoic acid",
-        "(E)-8-羟基壬-2-烯酸",
+        "(E,8R)-8-hydroxynon-2-enoic acid",
+        "(E,8R)-8-羟基壬-2-烯酸",
     ),
     # positive: multi-ene hydroxyalkenoic acid
     (
         r"CCCCC[C@H](O)/C=C/C=C\CCCCCCCC(=O)O",
-        "(9Z,11E)-13-hydroxyoctadeca-9,11-dienoic acid",
-        "(9Z,11E)-13-羟基十八-9,11-二烯酸",
+        "(9Z,11E,13S)-13-hydroxyoctadeca-9,11-dienoic acid",
+        "(9Z,11E,13S)-13-羟基十八-9,11-二烯酸",
     ),
     # negatives: plain alkenoic, saturated hydroxy acid, alkenol, carboxylate
     ("C=CC(=O)O", "prop-2-enoic acid", "丙-2-烯酸"),

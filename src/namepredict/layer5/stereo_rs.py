@@ -7,6 +7,17 @@ from rdkit.Chem import Mol
 _RS_KINDS = frozenset({
     "acid", "alkenoic_acid", "alcohol", "alkenol",
     "diol", "triol", "amine", "diamine",
+    "ketone", "ester", "alkenoate",
+    "piperidine", "pyrrolidine", "piperazine", "morpholine",
+    "oxolane", "oxane",
+    "piperidinecarboxylic", "pyrrolidinecarboxylic",
+    "piperazinecarboxylic", "morpholinecarboxylic",
+})
+
+# Single-center sat-hetero parents omit locant: (R)- not (3R)-.
+_RS_OMIT_LOC = frozenset({
+    "piperidine", "pyrrolidine", "piperazine", "morpholine",
+    "oxolane", "oxane",
 })
 
 
@@ -32,9 +43,22 @@ def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:
     return out
 
 
+def _collapsed_parent(parent: dict) -> bool:
+    """Skip RS when parent C1 collapses from a larger/ring molecule."""
+    n = int(parent.get("n_carbons") or 0)
+    if n > 1:
+        return False
+    mol = parent.get("mol")
+    if mol is None:
+        return False
+    if mol.GetRingInfo().NumRings() > 0:
+        return True
+    return mol.GetNumHeavyAtoms() > n + 2
+
+
 def _rs_parts(numbered: dict) -> list[tuple[int, str]]:
     parent = numbered.get("parent") or {}
-    if parent.get("kind") not in _RS_KINDS:
+    if parent.get("kind") not in _RS_KINDS or _collapsed_parent(parent):
         return []
     mol, chain = parent.get("mol"), parent.get("chain") or []
     if mol is None or not chain:
@@ -90,14 +114,29 @@ def _format_stereo(parts: list[tuple[int | None, str]]) -> str:
 
 
 def _merge_parts(
-    old: list[tuple[int | None, str]], rs: list[tuple[int, str]],
+    old: list[tuple[int | None, str]], rs: list[tuple[int | None, str]],
 ) -> list[tuple[int | None, str]]:
     """Keep non-RS stereo; add R/S by locant."""
     keep = [(loc, let) for loc, let in old if let not in ("R", "S")]
-    return keep + [(loc, let) for loc, let in rs]
+    return keep + list(rs)
 
 
-def _with_rs(name: str, rs: list[tuple[int, str]]) -> str:
+def _omit_locants(rs: list[tuple[int, str]]) -> list[tuple[int | None, str]]:
+    """Drop locants when a single center needs bare (R)/(S)."""
+    if len(rs) != 1:
+        return [(loc, let) for loc, let in rs]
+    return [(None, rs[0][1])]
+
+
+def _display_rs(
+    kind: str | None, rs: list[tuple[int, str]],
+) -> list[tuple[int | None, str]]:
+    if kind in _RS_OMIT_LOC:
+        return _omit_locants(rs)
+    return [(loc, let) for loc, let in rs]
+
+
+def _with_rs(name: str, rs: list[tuple[int | None, str]]) -> str:
     if not rs:
         return name
     tag, stem = _strip_stereo(name)
@@ -105,8 +144,20 @@ def _with_rs(name: str, rs: list[tuple[int, str]]) -> str:
     return f"{_format_stereo(parts)}{stem}"
 
 
+def _ester_en_rs(en: str, rs: list[tuple[int | None, str]]) -> str:
+    """Insert RS after alkyl word: 'methyl X' → 'methyl (2S)-X'."""
+    if not rs or " " not in en:
+        return _with_rs(en, rs)
+    alkyl, acyl = en.split(" ", 1)
+    return f"{alkyl} {_with_rs(acyl, rs)}"
+
+
 def apply_rs_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
-    rs = _rs_parts(numbered)
-    if not rs:
+    rs_raw = _rs_parts(numbered)
+    if not rs_raw:
         return en, zh
+    kind = (numbered.get("parent") or {}).get("kind")
+    rs = _display_rs(kind, rs_raw)
+    if kind in ("ester", "alkenoate"):
+        return _ester_en_rs(en, rs), _with_rs(zh, rs)
     return _with_rs(en, rs), _with_rs(zh, rs)

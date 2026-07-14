@@ -24,13 +24,13 @@ CASES = [
     ),
     (
         "N[C@H](C(=O)O)CC=C",
-        "2-aminopent-4-enoic acid",
-        "2-氨基戊-4-烯酸",
+        "(2S)-2-aminopent-4-enoic acid",
+        "(2S)-2-氨基戊-4-烯酸",
     ),
     (
         "C=C(Cl)C[C@H](N)C(=O)O",
-        "2-amino-4-chloropent-4-enoic acid",
-        "2-氨基-4-氯戊-4-烯酸",
+        "(2S)-2-amino-4-chloropent-4-enoic acid",
+        "(2S)-2-氨基-4-氯戊-4-烯酸",
     ),
     (
         r"NC/C=C/C(=O)O",
