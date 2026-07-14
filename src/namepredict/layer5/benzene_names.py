@@ -122,6 +122,7 @@ _ARENE_FG = {
     "benzimidazole": ("1H-benzimidazole", "1H-苯并咪唑"),
     "quinoline": ("quinoline", "喹啉"),
     "quinazoline": ("quinazoline", "喹唑啉"),
+    "quinoxaline": ("quinoxaline", "喹喔啉"),
     "isoquinoline": ("isoquinoline", "异喹啉"),
     "aziridine": ("aziridine", "氮杂环丙烷"),
     "oxirane": ("oxirane", "环氧乙烷"),

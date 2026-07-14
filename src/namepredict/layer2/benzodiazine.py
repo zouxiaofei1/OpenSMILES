@@ -120,3 +120,51 @@ def _quinazoline_parent(info: dict) -> dict:
 
 def _try_quinazoline_parent(info: dict) -> dict | None:
     return _quinazoline_parent(info) if _is_simple_quinazoline(info) else None
+
+
+def _is_quinoxaline_n(mol: Mol, ns: list[int], bridge: set[int]) -> bool:
+    """Both N adj to bridge (para diazine); no N–N bond; no shared mid."""
+    if any(n in bridge for n in ns):
+        return False
+    adj = sum(1 for n in ns if _n_adj_bridge(mol, n, bridge))
+    if adj != 2:
+        return False
+    if mol.GetBondBetweenAtoms(ns[0], ns[1]) is not None:
+        return False
+    return not _n_share_mid(mol, ns[0], ns[1], bridge)
+
+def _qx_from_fused(mol: Mol, r1, r2, br) -> tuple[set[int], list[int], set[int]] | None:
+    atoms = _atoms_ok(mol, r1, r2)
+    if atoms is None:
+        return None
+    ns = _n_idxs(mol, atoms)
+    if not _is_quinoxaline_n(mol, ns, set(br)):
+        return None
+    return atoms, ns, set(br)
+
+
+def _qx_core(info: dict) -> tuple[set[int], list[int], set[int]] | None:
+    fused = _fused_pair(info)
+    return None if fused is None else _qx_from_fused(info["mol"], *fused)
+
+
+def _is_simple_quinoxaline(info: dict) -> bool:
+    core = _qx_core(info)
+    if core is None or _fg_block(info):
+        return False
+    return _unsub_ok(info["mol"], core[0])
+
+
+def _quinoxaline_parent(info: dict) -> dict:
+    core = _qx_core(info)
+    atoms, ns, bridge = core
+    n1 = min(ns)  # either N works for unsub
+    chain = [n1] + [i for i in sorted(atoms) if i != n1]
+    return {
+        "chain": chain, "n_carbons": 10, "kind": "quinoxaline",
+        "ring_atoms": list(atoms),
+    }
+
+
+def _try_quinoxaline_parent(info: dict) -> dict | None:
+    return _quinoxaline_parent(info) if _is_simple_quinoxaline(info) else None

@@ -24,7 +24,15 @@ def test_quinazoline(smiles: str, en: str, zh: str | None) -> None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
 
 
-def test_quinoxaline_not_quinazoline() -> None:
+def test_quinoxaline_parent() -> None:
     r = SMILESNNamer().name("c1ccc2nccnc2c1")
     assert r.success
-    assert "quinazoline" not in normalize_en(r.en)
+    assert normalize_en(r.en) == "quinoxaline"
+    assert normalize_zh(r.zh) == "喹喔啉"
+
+
+def test_cinnoline_not_benzodiazine() -> None:
+    r = SMILESNNamer().name("c1ccc2nnccc2c1")
+    assert r.success
+    en = normalize_en(r.en)
+    assert "quinazoline" not in en and "quinoxaline" not in en

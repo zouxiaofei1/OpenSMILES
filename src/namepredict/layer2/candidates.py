@@ -42,7 +42,7 @@ from namepredict.layer2.parent_selector import (
 )
 from namepredict.layer2.pyridine import _try_pyridine_parent
 from namepredict.layer2.anthracene import _try_anthracene_parent
-from namepredict.layer2.benzodiazine import _try_quinazoline_parent
+from namepredict.layer2.benzodiazine import _try_quinazoline_parent, _try_quinoxaline_parent
 from namepredict.layer2.naphthalene import _try_naphthalene_parent
 from namepredict.layer2.indole import _try_indole_parent
 from namepredict.layer2.indazole import _try_indazole_parent
@@ -184,7 +184,7 @@ def _try_simple_cycloalkane(info: dict) -> dict | None:
 
 
 _RING_TRY = (
-    _try_anthracene_parent, _try_quinazoline_parent, _try_naphthalene_parent,
+    _try_anthracene_parent, _try_quinazoline_parent, _try_quinoxaline_parent, _try_naphthalene_parent,
     _try_indole_parent, _try_indazole_parent,
     _try_benzofuran_parent, _try_benzothiophene_parent,
     _try_benzothiazole_parent, _try_benzoxazole_parent,

@@ -43,7 +43,7 @@ _HETERO_RING = frozenset(
      "oxazole", "thiazole",
      "pyrimidine", "pyrazine", "pyridazine", "indole", "indazole", "benzofuran",
      "benzothiophene", "benzothiazole", "benzoxazole", "benzimidazole",
-     "quinoline", "isoquinoline", "quinazoline",
+     "quinoline", "isoquinoline", "quinazoline", "quinoxaline",
      "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
      "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane"}
 )
@@ -97,7 +97,7 @@ _FUSED2 = frozenset({
     "indazolecarbaldehyde", "benzofuran", "benzofuranamine",
     "benzothiophene", "benzothiophenol", "benzothiazole", "benzothiazolamine",
     "benzoxazole", "benzoxazolamine", "benzimidazole", "benzimidazolamine",
-    "quinoline", "isoquinoline", "quinazoline", "quinolinol", "quinolinecarboxylic",
+    "quinoline", "isoquinoline", "quinazoline", "quinoxaline", "quinolinol", "quinolinecarboxylic",
 })
 _FUSED3 = frozenset({"anthracene"})
 
