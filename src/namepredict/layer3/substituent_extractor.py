@@ -14,6 +14,7 @@ from namepredict.layer2.aryl_sub import (
 )
 from namepredict.layer2.side_alkyl import (
     _c_neighbors,
+    _is_2_methylbutan_2_yl,
     _is_isobutyl,
     _is_isopentyl,
     _is_isopropyl,
@@ -125,6 +126,7 @@ def _one_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict |
 _BRANCH_CHECKS = (
     (_is_isopropyl, 3, "isopropyl", "异丙基"),
     (_is_tert_butyl, 4, "tert-butyl", "叔丁基"),
+    (_is_2_methylbutan_2_yl, 5, "2-methylbutan-2-yl", "2-甲基丁-2-基"),
     (_is_isobutyl, 4, "isobutyl", "异丁基"),
     (_is_sec_butyl, 4, "sec-butyl", "仲丁基"),
     (_is_neopentyl, 5, "neopentyl", "新戊基"),

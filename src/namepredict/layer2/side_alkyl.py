@@ -206,6 +206,42 @@ def _is_tert_butyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     return [start, *mids] if mids else None
 
 
+def _class_tert_arm(mol: Mol, idx: int, parent: int) -> str | None:
+    """Classify free C off quaternary attach: 'Me' or 'Et'."""
+    if _is_terminal_methyl(mol, idx, parent):
+        return "Me"
+    if _is_ethyl_arm(mol, idx, parent):
+        return "Et"
+    return None
+
+
+def _tert_pentyl_arms(mol: Mol, start: int, free: list[int]) -> list[int] | None:
+    """Two Me + one Et off start → atom list without start."""
+    kinds = [_class_tert_arm(mol, c, start) for c in free]
+    if kinds.count("Me") != 2 or kinds.count("Et") != 1:
+        return None
+    eth_i = free[kinds.index("Et")]
+    eth = _is_ethyl_arm(mol, eth_i, start)
+    mes = [c for c, k in zip(free, kinds) if k == "Me"]
+    return [*mes, *eth] if eth else None
+
+
+def _is_2_methylbutan_2_yl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    """parent–C(Me)(Me)–CH2–CH3 (2-methylbutan-2-yl / tert-pentyl)."""
+    if not _is_pure_alkyl_c(mol, start):
+        return None
+    free = _free_c(mol, start, chain)
+    if len(free) != 3:
+        return None
+    arms = _tert_pentyl_arms(mol, start, free)
+    return [start, *arms] if arms else None
+
+
+def _is_tert_pentyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    """Alias for retained-name call sites; same topology as 2-methylbutan-2-yl."""
+    return _is_2_methylbutan_2_yl(mol, start, chain)
+
+
 def _is_isobutyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     if not _is_pure_alkyl_c(mol, start):
         return None
@@ -270,6 +306,7 @@ _SIDE_PROBES = (
     _walk_omega_halo,
     _is_isopropyl,
     _is_tert_butyl,
+    _is_2_methylbutan_2_yl,
     _is_isobutyl,
     _is_sec_butyl,
     _is_neopentyl,
