@@ -106,5 +106,7 @@
 
 [#85b8ce0][IUPAC P-29.3 / P-14.3.1] 递归取代基 depth=2：Ph臂 alkoxy/nitro/CF3 叶 [+11 tests, dual 8.4%(340)→8.4%(343), en 343→347, fails 3722→3719]
 
+[#9636b18][IUPAC P-29.3 / P-63.1 / P-62.2] depth-2 hydroxy/amino 叶 + 脂肪 poly-FG 过滤 [+16 tests, dual 8.4%(343)→8.6%(348), en 347→352, fails 3719→3714]
+
 ## 其他
-- depth=2 未做：hydroxy/aminophenyl（牵 L2 diol 母体）、嵌套 Ph-on-Ph / phenoxy-on-phenyl
+- depth=2 未做：嵌套 Ph-on-Ph / phenoxy-on-phenyl；propoxy/butoxy 叶（仅 MeO/EtO）
