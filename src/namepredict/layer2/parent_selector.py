@@ -31,7 +31,7 @@ from namepredict.layer2.ring_parent import (
 from namepredict.layer2.scoring import _pick_best
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
     atom = mol.GetAtomWithIdx(idx)
-    return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
+    return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6 and not n.GetIsAromatic()]
 def _extend_best(mol: Mol, node: int, path: list[int], forbid: set[int], best: list[int]) -> list[int]:
     for nb in _carbon_neighbors(mol, node):
         if nb in path or nb in forbid:
@@ -40,10 +40,8 @@ def _extend_best(mol: Mol, node: int, path: list[int], forbid: set[int], best: l
         if len(cand) > len(best):
             best = cand
     return best
-def _dfs_path(mol: Mol, node: int, path: list[int], forbid: set[int]) -> list[int]:
-    return _extend_best(mol, node, path, forbid, path)
-def _longest_from(mol: Mol, start: int, forbidden: set[int] | None = None) -> list[int]:
-    return _dfs_path(mol, start, [start], forbidden or set())
+def _dfs_path(mol: Mol, node: int, path: list[int], forbid: set[int]) -> list[int]: return _extend_best(mol, node, path, forbid, path)
+def _longest_from(mol: Mol, start: int, forbidden: set[int] | None = None) -> list[int]: return _dfs_path(mol, start, [start], forbidden or set())
 def _all_carbons(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
 def _side_count(mol: Mol, chain: list[int]) -> int:
@@ -133,7 +131,7 @@ _ANHYDRIDE_BAD = (
     "has_acid", "has_ester", "has_amide", "has_nitrile",
     "has_aldehyde", "has_ketone", "has_amine", "has_alcohol", "has_acyl_chloride",
 )
-def _is_open_sat(info: dict) -> bool: return not (info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"))
+def _is_open_sat(info: dict) -> bool: return not (info.get("has_alkene") or info.get("has_alkyne"))
 def _is_simple_n(info: dict, bad: tuple, ekey: str, n: int) -> bool:
     return _is_open_sat(info) and _no_fgs(info, bad) and _c_idxs(info.get(ekey) or [], n) is not None
 def _cover_parent(info: dict, ekey: str, n: int, kind: str, key: str) -> dict:
@@ -193,7 +191,9 @@ def _side_carbons(mol: Mol, start: int, forbid: set[int]) -> set[int]:
             stack.extend(_carbon_neighbors(mol, cur))
     return seen
 def _arm_ok(mol: Mol, arm: list[int], n_idx: int) -> bool:
-    return bool(arm) and len(arm) <= 4 and len(_side_carbons(mol, arm[0], {n_idx})) == len(arm)
+    if not arm or len(arm) > 4 or mol.GetAtomWithIdx(arm[0]).GetIsAromatic():
+        return False
+    return len(_side_carbons(mol, arm[0], {n_idx})) == len(arm)
 def _amine_of_deg(info: dict, deg: int) -> dict | None:
     ams = [a for a in info.get("amines") or [] if a.get("degree") == deg]
     return ams[0] if len(ams) == 1 and len(info.get("amines") or []) == 1 else None
@@ -203,8 +203,7 @@ def _n_arms(info: dict, deg: int) -> list[list[int]] | None:
     mol, n_idx, cs = info["mol"], am["n_idx"], am["c_idxs"]
     arms = [_longest_from(mol, c, set()) for c in cs]
     return arms if all(_arm_ok(mol, a, n_idx) for a in arms) else None
-def _amine_sat_ok(info: dict) -> bool:
-    return _no_fgs(info, _DIAMINE_BAD) and not (info.get("has_alkene") or info.get("has_alkyne"))
+def _amine_sat_ok(info: dict) -> bool: return _no_fgs(info, _CORE_BAD) and not (info.get("has_alkene") or info.get("has_alkyne"))
 def _sec_amine_parent(info: dict) -> dict | None:
     if not _amine_sat_ok(info): return None
     arms = _n_arms(info, 2)

@@ -28,6 +28,7 @@ from namepredict.layer2.side_alkyl import (
 )
 from namepredict.layer3.alkoxy_names import _extract_alkoxys
 from namepredict.layer3.cycloalkyl_names import _one_cycloalkyl_side
+from namepredict.layer3.amino_side import _extract_aminos as _extract_aminos_impl
 
 
 def _strip_ital_prefix(stem: str) -> str:
@@ -231,16 +232,6 @@ def _make_hydroxy(attach: int, o_idx: int) -> dict:
     }
 
 
-def _make_amino(attach: int, n_idx: int) -> dict:
-    return {
-        "kind": "amino",
-        "attach_idx": attach,
-        "atoms": [n_idx],
-        "en": "amino",
-        "zh": "氨基",
-    }
-
-
 def _make_oxo(attach: int) -> dict:
     return {
         "kind": "oxo",
@@ -282,14 +273,9 @@ def _extract_hydroxys(info: dict, parent: dict) -> list[dict]:
 
 
 def _extract_aminos(info: dict, parent: dict) -> list[dict]:
-    if parent.get("kind") in _PARENT_NH2_KINDS:
-        return []
-    chain_set = set(parent.get("chain") or [])
-    out: list[dict] = []
-    for a in info.get("amines") or []:
-        if "c_idx" in a and a["c_idx"] in chain_set:
-            out.append(_make_amino(a["c_idx"], a["n_idx"]))
-    return out
+    return _extract_aminos_impl(info, parent, _PARENT_NH2_KINDS)
+
+
 
 
 def _extract_oxos(info: dict, parent: dict) -> list[dict]:

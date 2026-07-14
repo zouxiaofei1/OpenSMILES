@@ -14,7 +14,7 @@ from namepredict.namer import SMILESNNamer
 CASES = [
     # primary already works — regression
     ("c1ccc(OCCN)cc1", "phenoxyethanamine", None),
-    ("Clc1ccc(OCCN)cc1", "(4-chlorophenoxy)ethanamine", None),
+    ("Clc1ccc(OCCN)cc1", "2-(4-chlorophenoxy)ethanamine", None),
     ("OCCOc1ccccc1", "phenoxyethanol", None),
     # sec amine with ring (was 1-chlorohexane)
     (
