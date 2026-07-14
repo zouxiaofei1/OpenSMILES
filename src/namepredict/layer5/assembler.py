@@ -26,6 +26,7 @@ from namepredict.layer5.stems import (
     SULFIDE_ALKYL_ZH,
     SULFIDE_SYM_EN,
     SULFIDE_SYM_ZH,
+    zh_stem,
 )
 from namepredict.layer5.benzene_names import (
     arene_fg_parent_names, benzene_parent_names, benzene_prefix,
@@ -49,13 +50,13 @@ def _cyclo_from_alkane(n: int, en_fn, zh_fn) -> tuple[str, str] | None:
 def _cycloalkane_names(n: int) -> tuple[str, str] | None:
     return _cyclo_from_alkane(n, lambda e: f"cyclo{e}", lambda z: f"环{z}")
 def _cycloalkene_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-3]}ene", lambda z: f"环{z[0]}烯")
+    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-3]}ene", lambda z: f"环{zh_stem(z)}烯")
 def _cycloalcohol_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}ol", lambda z: f"环{z[0]}醇")
+    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}ol", lambda z: f"环{zh_stem(z)}醇")
 def _cycloketone_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}one", lambda z: f"环{z[0]}酮")
+    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}one", lambda z: f"环{zh_stem(z)}酮")
 def _cycloamine_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}amine", lambda z: f"环{z[0]}胺")
+    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}amine", lambda z: f"环{zh_stem(z)}胺")
 def _cycloalkanecarboxylic_names(n: int) -> tuple[str, str] | None:
     return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}ecarboxylic acid", lambda z: f"环{z}甲酸")
 def _omit_term_locant(n: int, loc: int | None, omit: bool) -> bool:
@@ -67,15 +68,15 @@ def _alcohol_names(n: int, oh_locant: int | None, omit: bool) -> tuple[str, str]
     if not plain:
         return None
     en, zh = plain
-    return f"{en[:-2]}-{oh_locant}-ol", f"{zh[0]}-{oh_locant}-醇"
+    return f"{en[:-2]}-{oh_locant}-ol", f"{zh_stem(zh)}-{oh_locant}-醇"
 def _thiol_names(n: int, sh_locant: int | None, omit: bool) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain:
         return None
     en, zh = plain
     if _omit_term_locant(n, sh_locant, omit):
-        return f"{en}thiol", f"{zh[0]}硫醇"
-    return f"{en}-{sh_locant}-thiol", f"{zh[0]}-{sh_locant}-硫醇"
+        return f"{en}thiol", f"{zh_stem(zh)}硫醇"
+    return f"{en}-{sh_locant}-thiol", f"{zh_stem(zh)}-{sh_locant}-硫醇"
 def _pair_loc_str(locs: list[int]) -> str:
     return ",".join(str(x) for x in locs)
 def _poly_fg_names(
@@ -98,8 +99,8 @@ def _amine_names(n: int, am_locant: int | None, omit: bool) -> tuple[str, str] |
         return None
     en, zh = plain
     if _omit_term_locant(n, am_locant, omit):
-        return f"{en[:-1]}amine", f"{zh[0]}胺"
-    return f"{en[:-1]}-{am_locant}-amine", f"{zh[0]}-{am_locant}-胺"
+        return f"{en[:-1]}amine", f"{zh_stem(zh)}胺"
+    return f"{en[:-1]}-{am_locant}-amine", f"{zh_stem(zh)}-{am_locant}-胺"
 def _acid_names(n: int) -> tuple[str, str] | None:
     return _pair(ACID_EN, ACID_ZH, n)
 def _unsat_stem_names(n: int, locant: int | None, en_sfx: str, zh_sfx: str) -> tuple[str, str] | None:
@@ -107,7 +108,7 @@ def _unsat_stem_names(n: int, locant: int | None, en_sfx: str, zh_sfx: str) -> t
     if not plain or locant is None:
         return None
     en, zh = plain
-    return f"{en[:-3]}-{locant}-{en_sfx}", f"{zh[0]}-{locant}-{zh_sfx}"
+    return f"{en[:-3]}-{locant}-{en_sfx}", f"{zh_stem(zh)}-{locant}-{zh_sfx}"
 def _alkenoate_names(n, locant, alkoxy_n) -> tuple[str, str] | None:
     alkyl = _ester_alkyl_pair(alkoxy_n) if alkoxy_n is not None else None
     stem = _unsat_stem_names(n, locant, "enoate", "烯酸")
@@ -129,7 +130,7 @@ def _diacid_from_alkane(n: int) -> tuple[str, str] | None:
     if not plain or n < 3:
         return None
     en, zh = plain
-    return f"{en}dioic acid", f"{zh[0]}二酸"
+    return f"{en}dioic acid", f"{zh_stem(zh)}二酸"
 def _diacid_names(n: int) -> tuple[str, str] | None:
     if n == 2:
         return "oxalic acid", "草酸"
@@ -160,13 +161,13 @@ def _ketone_plain(n: int) -> tuple[str, str] | None:
     if not plain:
         return None
     en, zh = plain
-    return f"{en[:-1]}one", f"{zh[0]}酮"
+    return f"{en[:-1]}one", f"{zh_stem(zh)}酮"
 def _ketone_from_alkane(n: int, locant: int) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain:
         return None
     en, zh = plain
-    return f"{en[:-1]}-{locant}-one", f"{zh[0]}-{locant}-酮"
+    return f"{en[:-1]}-{locant}-one", f"{zh_stem(zh)}-{locant}-酮"
 def _ketone_names(n: int, locant: int | None) -> tuple[str, str] | None:
     if locant is None:
         return None
@@ -179,19 +180,19 @@ def _dione_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
         return None
     en, zh = plain
     loc = _pair_loc_str(locs)
-    return f"{en}-{loc}-dione", f"{zh[0]}-{loc}-二酮"
+    return f"{en}-{loc}-dione", f"{zh_stem(zh)}-{loc}-二酮"
 def _alkene_plain(n: int) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain:
         return None
     en, zh = plain
-    return f"{en[:-3]}ene", f"{zh[0]}烯"
+    return f"{en[:-3]}ene", f"{zh_stem(zh)}烯"
 def _alkene_with_locant(n: int, locant: int) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain:
         return None
     en, zh = plain
-    return f"{en[:-3]}-{locant}-ene", f"{zh[0]}-{locant}-烯"
+    return f"{en[:-3]}-{locant}-ene", f"{zh_stem(zh)}-{locant}-烯"
 def _alkene_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | None:
     if omit or locant is None or n <= 3:
         return _alkene_plain(n)
@@ -205,7 +206,7 @@ def _polyene_stem(n: int) -> tuple[str, str] | None:
     if not plain:
         return None
     en, zh = plain
-    return f"{en[:-3]}a", zh[0]
+    return f"{en[:-3]}a", zh_stem(zh)
 def _polyene_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
     stem = _polyene_stem(n)
     if not stem or not locs or len(locs) < 2:
@@ -226,7 +227,7 @@ def _alkyne_with_locant(n: int, locant: int) -> tuple[str, str] | None:
     if not plain:
         return None
     en, zh = plain
-    return f"{en[:-3]}-{locant}-yne", f"{zh[0]}-{locant}-炔"
+    return f"{en[:-3]}-{locant}-yne", f"{zh_stem(zh)}-{locant}-炔"
 def _alkyne_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | None:
     retained = _alkyne_retained(n)
     if retained is not None:
@@ -288,7 +289,7 @@ def _alkenol_names(n, ene_loc, oh_loc) -> tuple[str, str] | None:
     if not plain or ene_loc is None or oh_loc is None:
         return None
     en, zh = plain
-    return f"{en[:-3]}-{ene_loc}-en-{oh_loc}-ol", f"{zh[0]}-{ene_loc}-烯-{oh_loc}-醇"
+    return f"{en[:-3]}-{ene_loc}-en-{oh_loc}-ol", f"{zh_stem(zh)}-{ene_loc}-烯-{oh_loc}-醇"
 def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alkenol":
         return _alkenol_names(n, numbered.get("ene_locant"), numbered.get("oh_locant"))

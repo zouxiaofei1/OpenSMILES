@@ -1,204 +1,254 @@
-"""Carbon-count stem tables for C1–C10 alkanes, monoalcohols, monoacids."""
+"""Carbon-count stem tables/generators for alkanes and FG parents (C1–C35+).
+
+C1–C10: retained/table. C11–C19: semi-systematic. C20+: multiplicative compose.
+IUPAC P-14.2.1 / P-21 (icos- preferred over eicos-).
+"""
 
 from __future__ import annotations
 
-ALKANE_EN = {
-    1: "methane",
-    2: "ethane",
-    3: "propane",
-    4: "butane",
-    5: "pentane",
-    6: "hexane",
-    7: "heptane",
-    8: "octane",
-    9: "nonane",
-    10: "decane",
+# --- C1–C10 retained / systematic base (byte-compatible) ---
+_ALKANE_EN_BASE = {
+    1: "methane", 2: "ethane", 3: "propane", 4: "butane", 5: "pentane",
+    6: "hexane", 7: "heptane", 8: "octane", 9: "nonane", 10: "decane",
 }
-ALKANE_ZH = {
-    1: "甲烷",
-    2: "乙烷",
-    3: "丙烷",
-    4: "丁烷",
-    5: "戊烷",
-    6: "己烷",
-    7: "庚烷",
-    8: "辛烷",
-    9: "壬烷",
-    10: "癸烷",
+_ALKANE_ZH_BASE = {
+    1: "甲烷", 2: "乙烷", 3: "丙烷", 4: "丁烷", 5: "戊烷",
+    6: "己烷", 7: "庚烷", 8: "辛烷", 9: "壬烷", 10: "癸烷",
 }
-ALCOHOL_EN = {
-    1: "methanol",
-    2: "ethanol",
-    3: "propanol",
-    4: "butanol",
-    5: "pentanol",
-    6: "hexanol",
-    7: "heptanol",
-    8: "octanol",
-    9: "nonanol",
-    10: "decanol",
+_SEMI_EN = {
+    11: "undec", 12: "dodec", 13: "tridec", 14: "tetradec", 15: "pentadec",
+    16: "hexadec", 17: "heptadec", 18: "octadec", 19: "nonadec",
 }
-ALCOHOL_ZH = {
-    1: "甲醇",
-    2: "乙醇",
-    3: "丙醇",
-    4: "丁醇",
-    5: "戊醇",
-    6: "己醇",
-    7: "庚醇",
-    8: "辛醇",
-    9: "壬醇",
-    10: "癸醇",
+_UNITS = {
+    1: "hen", 2: "do", 3: "tri", 4: "tetra", 5: "penta",
+    6: "hexa", 7: "hepta", 8: "octa", 9: "nona",
 }
-# P-65.1.1 retained: formic/acetic; else systematic …oic acid / …酸
-ACID_EN = {
-    1: "formic acid",
-    2: "acetic acid",
-    3: "propanoic acid",
-    4: "butanoic acid",
-    5: "pentanoic acid",
-    6: "hexanoic acid",
-    7: "heptanoic acid",
-    8: "octanoic acid",
-    9: "nonanoic acid",
-    10: "decanoic acid",
+_TENS = {
+    2: "icos", 3: "triacont", 4: "tetracont", 5: "pentacont",
+    6: "hexacont", 7: "heptacont", 8: "octacont", 9: "nonacont",
 }
-ACID_ZH = {
-    1: "甲酸",
-    2: "乙酸",
-    3: "丙酸",
-    4: "丁酸",
-    5: "戊酸",
-    6: "己酸",
-    7: "庚酸",
-    8: "辛酸",
-    9: "壬酸",
-    10: "癸酸",
-}
-# P-66.6.1 retained: formaldehyde/acetaldehyde; else systematic …anal / …醛
-ALDEHYDE_EN = {
-    1: "formaldehyde",
-    2: "acetaldehyde",
-    3: "propanal",
-    4: "butanal",
-    5: "pentanal",
-    6: "hexanal",
-    7: "heptanal",
-    8: "octanal",
-    9: "nonanal",
-    10: "decanal",
-}
-ALDEHYDE_ZH = {
-    1: "甲醛",
-    2: "乙醛",
-    3: "丙醛",
-    4: "丁醛",
-    5: "戊醛",
-    6: "己醛",
-    7: "庚醛",
-    8: "辛醛",
-    9: "壬醛",
-    10: "癸醛",
-}
-# P-66.1.1 retained: formamide/acetamide; else systematic …amide / …酰胺
-AMIDE_EN = {
-    1: "formamide",
-    2: "acetamide",
-    3: "propanamide",
-    4: "butanamide",
-    5: "pentanamide",
-    6: "hexanamide",
-    7: "heptanamide",
-    8: "octanamide",
-    9: "nonanamide",
-    10: "decanamide",
-}
-AMIDE_ZH = {
-    1: "甲酰胺",
-    2: "乙酰胺",
-    3: "丙酰胺",
-    4: "丁酰胺",
-    5: "戊酰胺",
-    6: "己酰胺",
-    7: "庚酰胺",
-    8: "辛酰胺",
-    9: "壬酰胺",
-    10: "癸酰胺",
-}
-# P-66.5.1 retained acetonitrile; C1 formonitrile; else …nitrile / …腈
-NITRILE_EN = {
-    1: "formonitrile",
-    2: "acetonitrile",
-    3: "propanenitrile",
-    4: "butanenitrile",
-    5: "pentanenitrile",
-    6: "hexanenitrile",
-    7: "heptanenitrile",
-    8: "octanenitrile",
-    9: "nonanenitrile",
-    10: "decanenitrile",
-}
-NITRILE_ZH = {
-    1: "甲腈",
-    2: "乙腈",
-    3: "丙腈",
-    4: "丁腈",
-    5: "戊腈",
-    6: "己腈",
-    7: "庚腈",
-    8: "辛腈",
-    9: "壬腈",
-    10: "癸腈",
-}
-# P-65.6 functional class: alkyl alkanoate (retained formate/acetate)
-ESTER_ACYL_EN = {
-    1: "formate",
-    2: "acetate",
-    3: "propanoate",
-    4: "butanoate",
-    5: "pentanoate",
-    6: "hexanoate",
-    7: "heptanoate",
-    8: "octanoate",
-    9: "nonanoate",
-    10: "decanoate",
-}
-# Alkyl stem for ester (no 基): methyl→甲 … hexadecyl→十六
-ESTER_ALKYL_EN = {
-    1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl",
-    5: "pentyl", 6: "hexyl", 7: "heptyl", 8: "octyl",
-    9: "nonyl", 10: "decyl", 11: "undecyl", 12: "dodecyl",
-    13: "tridecyl", 14: "tetradecyl", 15: "pentadecyl", 16: "hexadecyl",
-}
-ESTER_ALKYL_ZH = {
-    1: "甲", 2: "乙", 3: "丙", 4: "丁", 5: "戊", 6: "己", 7: "庚", 8: "辛",
-    9: "壬", 10: "癸", 11: "十一", 12: "十二", 13: "十三", 14: "十四",
-    15: "十五", 16: "十六",
-}
+_DIGIT_ZH = "零一二三四五六七八九"
+_ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈", "胺", "酮", "烯", "炔")
 
-# P-65.5.1 retained acetyl; C>=3 alkane stem -e + oyl chloride / …酰氯
-ACYL_CHLORIDE_EN = {
-    2: "acetyl chloride",
-    3: "propanoyl chloride",
-    4: "butanoyl chloride",
-    5: "pentanoyl chloride",
-    6: "hexanoyl chloride",
-    7: "heptanoyl chloride",
-    8: "octanoyl chloride",
-    9: "nonanoyl chloride",
-    10: "decanoyl chloride",
-}
-ACYL_CHLORIDE_ZH = {
-    2: "乙酰氯",
-    3: "丙酰氯",
-    4: "丁酰氯",
-    5: "戊酰氯",
-    6: "己酰氯",
-    7: "庚酰氯",
-    8: "辛酰氯",
-    9: "壬酰氯",
-    10: "癸酰氯",
-}
+
+def zh_num(n: int) -> str | None:
+    """Chinese cardinal for n in 1..99 (十一…三十五); None if out of range."""
+    if n < 1 or n > 99:
+        return None
+    if n < 10:
+        return _DIGIT_ZH[n]
+    tens, ones = divmod(n, 10)
+    head = "十" if tens == 1 else f"{_DIGIT_ZH[tens]}十"
+    return head if ones == 0 else f"{head}{_DIGIT_ZH[ones]}"
+
+
+def zh_stem(zh_full: str) -> str:
+    """Strip terminal FG/parent suffix from Chinese full name (十一烷→十一)."""
+    for s in _ZH_SUFFIXES:
+        if zh_full.endswith(s) and len(zh_full) > len(s):
+            return zh_full[: -len(s)]
+    return zh_full
+
+
+def _compose_en_stem(n: int) -> str | None:
+    """C20+ multiplicative stem (icos / henicos / hexacos / triacont / …)."""
+    tens, ones = divmod(n, 10)
+    t = _TENS.get(tens)
+    if not t or ones > 9:
+        return None
+    if ones == 0:
+        return t
+    # icos + do/tri/… → docos/tricos (elide i); hen keeps icos; 30+ no elide
+    base = "cos" if tens == 2 and ones >= 2 else t
+    return f"{_UNITS[ones]}{base}"
+
+
+def _en_stem(n: int) -> str | None:
+    """Alkane stem without 'ane' (meth…dec / undec… / icos…)."""
+    if n in _ALKANE_EN_BASE:
+        return _ALKANE_EN_BASE[n][:-3]
+    if n in _SEMI_EN:
+        return _SEMI_EN[n]
+    return _compose_en_stem(n) if n >= 20 else None
+
+
+def alkane_en(n: int) -> str | None:
+    s = _en_stem(n)
+    return f"{s}ane" if s else None
+
+
+def alkane_zh(n: int) -> str | None:
+    if n in _ALKANE_ZH_BASE:
+        return _ALKANE_ZH_BASE[n]
+    z = zh_num(n)
+    return f"{z}烷" if z else None
+
+
+def alcohol_en(n: int) -> str | None:
+    s = _en_stem(n)
+    return f"{s}anol" if s else None
+
+
+def alcohol_zh(n: int) -> str | None:
+    if n <= 10 and n in _ALKANE_ZH_BASE:
+        return f"{_ALKANE_ZH_BASE[n][0]}醇"
+    z = zh_num(n)
+    return f"{z}醇" if z else None
+
+
+def acid_en(n: int) -> str | None:
+    if n == 1:
+        return "formic acid"
+    if n == 2:
+        return "acetic acid"
+    s = _en_stem(n)
+    return f"{s}anoic acid" if s else None
+
+
+def acid_zh(n: int) -> str | None:
+    if n == 1:
+        return "甲酸"
+    if n == 2:
+        return "乙酸"
+    if n <= 10 and n in _ALKANE_ZH_BASE:
+        return f"{_ALKANE_ZH_BASE[n][0]}酸"
+    z = zh_num(n)
+    return f"{z}酸" if z else None
+
+
+def aldehyde_en(n: int) -> str | None:
+    if n == 1:
+        return "formaldehyde"
+    if n == 2:
+        return "acetaldehyde"
+    s = _en_stem(n)
+    return f"{s}anal" if s else None
+
+
+def aldehyde_zh(n: int) -> str | None:
+    if n == 1:
+        return "甲醛"
+    if n == 2:
+        return "乙醛"
+    if n <= 10 and n in _ALKANE_ZH_BASE:
+        return f"{_ALKANE_ZH_BASE[n][0]}醛"
+    z = zh_num(n)
+    return f"{z}醛" if z else None
+
+
+def amide_en(n: int) -> str | None:
+    if n == 1:
+        return "formamide"
+    if n == 2:
+        return "acetamide"
+    s = _en_stem(n)
+    return f"{s}anamide" if s else None
+
+
+def amide_zh(n: int) -> str | None:
+    if n == 1:
+        return "甲酰胺"
+    if n == 2:
+        return "乙酰胺"
+    if n <= 10 and n in _ALKANE_ZH_BASE:
+        return f"{_ALKANE_ZH_BASE[n][0]}酰胺"
+    z = zh_num(n)
+    return f"{z}酰胺" if z else None
+
+
+def nitrile_en(n: int) -> str | None:
+    if n == 1:
+        return "formonitrile"
+    if n == 2:
+        return "acetonitrile"
+    s = _en_stem(n)
+    return f"{s}anenitrile" if s else None
+
+
+def nitrile_zh(n: int) -> str | None:
+    if n == 1:
+        return "甲腈"
+    if n == 2:
+        return "乙腈"
+    if n <= 10 and n in _ALKANE_ZH_BASE:
+        return f"{_ALKANE_ZH_BASE[n][0]}腈"
+    z = zh_num(n)
+    return f"{z}腈" if z else None
+
+
+def acyl_chloride_en(n: int) -> str | None:
+    if n == 2:
+        return "acetyl chloride"
+    s = _en_stem(n)
+    return f"{s}anoyl chloride" if s and n >= 3 else None
+
+
+def acyl_chloride_zh(n: int) -> str | None:
+    if n == 2:
+        return "乙酰氯"
+    if 3 <= n <= 10 and n in _ALKANE_ZH_BASE:
+        return f"{_ALKANE_ZH_BASE[n][0]}酰氯"
+    z = zh_num(n)
+    return f"{z}酰氯" if z and n >= 3 else None
+
+
+def ester_acyl_en(n: int) -> str | None:
+    if n == 1:
+        return "formate"
+    if n == 2:
+        return "acetate"
+    s = _en_stem(n)
+    return f"{s}anoate" if s else None
+
+
+def ester_alkyl_en(n: int) -> str | None:
+    retained = {
+        1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl",
+        5: "pentyl", 6: "hexyl", 7: "heptyl", 8: "octyl",
+        9: "nonyl", 10: "decyl",
+    }
+    if n in retained:
+        return retained[n]
+    s = _en_stem(n)
+    return f"{s}yl" if s else None
+
+
+def ester_alkyl_zh(n: int) -> str | None:
+    base = {
+        1: "甲", 2: "乙", 3: "丙", 4: "丁", 5: "戊", 6: "己", 7: "庚", 8: "辛",
+        9: "壬", 10: "癸",
+    }
+    return base.get(n) or zh_num(n)
+
+
+def _fill(fn, lo: int = 1, hi: int = 35) -> dict[int, str]:
+    out: dict[int, str] = {}
+    for n in range(lo, hi + 1):
+        v = fn(n)
+        if v:
+            out[n] = v
+    return out
+
+
+# Public dict API (C1–C35 filled by generators; C20+ never handwritten)
+ALKANE_EN = _fill(alkane_en)
+ALKANE_ZH = _fill(alkane_zh)
+ALCOHOL_EN = _fill(alcohol_en)
+ALCOHOL_ZH = _fill(alcohol_zh)
+ACID_EN = _fill(acid_en)
+ACID_ZH = _fill(acid_zh)
+ALDEHYDE_EN = _fill(aldehyde_en)
+ALDEHYDE_ZH = _fill(aldehyde_zh)
+AMIDE_EN = _fill(amide_en)
+AMIDE_ZH = _fill(amide_zh)
+NITRILE_EN = _fill(nitrile_en)
+NITRILE_ZH = _fill(nitrile_zh)
+ESTER_ACYL_EN = _fill(ester_acyl_en)
+ESTER_ALKYL_EN = _fill(ester_alkyl_en)
+ESTER_ALKYL_ZH = _fill(ester_alkyl_zh)
+ACYL_CHLORIDE_EN = _fill(acyl_chloride_en, lo=2)
+ACYL_CHLORIDE_ZH = _fill(acyl_chloride_zh, lo=2)
+
 # P-63.2.2 symmetric dialkyl ether retained: dimethyl…dibutyl ether / 二…基醚
 ETHER_SYM_EN = {
     1: "dimethyl ether", 2: "diethyl ether",
@@ -221,4 +271,3 @@ SULFIDE_SYM_ZH = {
 # Alkyl radical for asymmetric alkyl alkyl sulfide (alphabetical EN)
 SULFIDE_ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
 SULFIDE_ALKYL_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
-
