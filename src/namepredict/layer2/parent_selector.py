@@ -42,9 +42,9 @@ _CORE_BAD = (
     "has_aldehyde", "has_ketone", "has_acyl_chloride", "has_anhydride",
 )
 _DIOL_BAD = _CORE_BAD + ("has_amine",)
-_DIACID_BAD = (
+_DIACID_BAD = (  # P-65.1.2: hydroxy/amino/oxo are prefixes, not competing
     "has_ester", "has_amide", "has_nitrile", "has_acyl_chloride",
-    "has_aldehyde", "has_ketone", "has_amine", "has_alcohol", "has_anhydride",
+    "has_aldehyde", "has_anhydride",
 )
 _DIAMINE_BAD = _CORE_BAD + ("has_alcohol",)
 _DIONE_BAD = (
@@ -249,9 +249,8 @@ def _sulfide_parent(info: dict) -> dict | None:
     return _parent_dict(
         parent, "sulfide", s_idx=e["s_idx"], alkyl_ns=(len(a1), len(a2)),
     )
-# hydroxy/amino/oxo are prefixes on alkenoic acids (P-65.1.2), not competing
-_ALKENOIC_OK = frozenset({"has_alcohol", "has_amine", "has_ketone"})
-_ALKENOIC_BAD = tuple(k for k in _DIACID_BAD + ("has_thiol",) if k not in _ALKENOIC_OK)
+# hydroxy/amino/oxo are prefixes on alkenoic/alkanedioic (P-65.1.2)
+_ALKENOIC_BAD = _DIACID_BAD + ("has_thiol",)
 _UNSAT_FG_BASE = (
     "has_acid", "has_ester", "has_amide", "has_ketone", "has_amine",
     "has_acyl_chloride", "has_anhydride", "has_thiol",
