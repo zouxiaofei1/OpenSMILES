@@ -104,4 +104,7 @@
 
 [#12c0279][IUPAC P-22.2.1 / P-29.3] multi-ring fused56 + benzimidazole phenyl 侧链 [dual 8.4%(340) held]
 
+[#85b8ce0][IUPAC P-29.3 / P-14.3.1] 递归取代基 depth=2：Ph臂 alkoxy/nitro/CF3 叶 [+11 tests, dual 8.4%(340)→8.4%(343), en 343→347, fails 3722→3719]
+
 ## 其他
+- depth=2 未做：hydroxy/aminophenyl（牵 L2 diol 母体）、嵌套 Ph-on-Ph / phenoxy-on-phenyl
