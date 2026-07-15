@@ -343,17 +343,16 @@ def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
 def _special_fg_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     from namepredict.layer5.carbamate_names import carbamate_names
     from namepredict.layer5.diester_names import diester_names
-    if kind == "carbamate":
-        return carbamate_names(numbered)
-    return diester_names(n, numbered) if kind == "diester" else None
+    from namepredict.layer5.sulfoxide_names import sulfoxide_names
+    if kind == "carbamate": return carbamate_names(numbered)
+    if kind == "diester": return diester_names(n, numbered)
+    return sulfoxide_names(numbered) if kind == "sulfoxide" else None
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     from namepredict.layer5.phosphate_names import p_fg_names
     top = _special_fg_names(kind, n, numbered)
-    if top is not None:
-        return top
+    if top is not None: return top
     top = p_fg_names(kind, n, numbered) or _hetero_names(kind, n, numbered)
-    if top is not None:
-        return top
+    if top is not None: return top
     carb = _carbonyl_names(kind, n, numbered)
     return carb if carb is not None else _unsat_or_alkane(kind, n, numbered)
 def _with_ez(pair: tuple[str, str] | None, numbered: dict) -> tuple[str, str] | None:

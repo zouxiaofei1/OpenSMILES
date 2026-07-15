@@ -9,7 +9,7 @@ _FG_BOOL_MORE_KEYS = (
     ("has_anhydride", "anhydrides"), ("has_thiol", "thiols"),
     ("has_ether", "ethers"), ("has_sulfide", "sulfides"), ("has_nitro", "nitros"),
     ("has_phosphate", "phosphates"), ("has_phosphonic", "phosphonics"),
-    ("has_carbamate", "carbamates"),
+    ("has_carbamate", "carbamates"), ("has_sulfoxide", "sulfoxides"),
 )
 
 def _is_single_c_oh(atom) -> bool:
@@ -428,7 +428,7 @@ def _fg_more_lists(parts: dict) -> dict:
     keys = (
         "aldehydes", "amines", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
-        "nitros", "phosphates", "phosphonics", "carbamates",
+        "nitros", "phosphates", "phosphonics", "carbamates", "sulfoxides",
     )
     return {k: parts[k] for k in keys}
 
@@ -466,9 +466,10 @@ def _fg_parts_a(mol: Mol) -> dict:
 def _p_fg_parts(mol: Mol) -> dict:
     from namepredict.layer1.phosphate import phosphate_entries, phosphonic_entries
     from namepredict.layer1.carbamate import carbamate_entries
+    from namepredict.layer1.sulfoxide import sulfoxide_entries
     return {
         "phosphates": phosphate_entries(mol), "phosphonics": phosphonic_entries(mol),
-        "carbamates": carbamate_entries(mol),
+        "carbamates": carbamate_entries(mol), "sulfoxides": sulfoxide_entries(mol),
     }
 
 def _fg_parts_b_core(mol: Mol) -> dict:
