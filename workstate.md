@@ -166,10 +166,11 @@
 [#f1cb3db][架构 P-22.2.1 / P-25] Phase 2.2：indole/indazole/bim + quinoline/naph 进 ScaffoldSpec；parent scaffold_id；L4 单一 kind 表 [+test_scaffold_fused_retained_specs, dual 14.6%(593)持平, 0 REGRESS]
 [#ce81706][IUPAC P-68.3.1.2] 简单肼 hydrazine：L1 N–N 检测；未取代/1,1-二烷基/N-苯基；L0 HCl 盐 → `;hydrochloride` [+tests, dual 14.6%(593)→14.7%(596), fails 3469→3466, 0 REGRESS]
 [#7ebf8e8][架构 P-22 / P-25] Phase 2.4 单一 scaffold 注册源：monohetero+anth/quinaz 进 Spec；kind_registry stem 从 Spec 同步；retained 拓扑化 [+test_scaffold_registry_single_source, dual 14.7%(596)持平, 0 REGRESS]
+[#1db8d65][IUPAC P-65.3] 简单磺酰胺：烷/芳 SO2NH2；N-芳基烷磺酰胺；N-环烷基芳磺酰胺 [+13 tests, dual 14.7%(596)→14.7%(598), fails 3466→3464, 0 REGRESS]
 ## 其他
+- 简单磺酰胺第一刀：methane/benzene/N-aryl-alkyl/N-cyclo-aryl；双磺酰/N,N-二取代/杂芳磺酰胺未做
 - Phase 2.1–2.4：Spec 为 stem 权威（50 specs）；try_* 引擎仍分文件；numbering orient 仍 no-op
 - 简单肼第一刀：hydrazine/1,1-dimethyl/phenyl + HCl；酰肼/1,2-二芳基/环肼未做
 - 简单脲第一刀：未取代+单芳基+Me2-芳基；环脲/硫脲/磺酰脲/双芳基脲未做
 - 简单开链/芳环 mono iso(thio)cyanate 已做；喹啉异氰/甲氧基异硫氰甲烷/复杂螺环未做
 - 简单 Li/Na/K 一元羧酸盐功能类名已做；L0 已支持 HCl 片段；多磷酸/复杂水合盐未做
-- C20+ 英文用 icos/henicos 组合；中文数字自动生成
