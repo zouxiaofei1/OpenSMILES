@@ -205,7 +205,9 @@ def _acid_table(n: int) -> dict:
         "aldehyde": lambda: _aldehyde_names(n), "amide": lambda: _amide_names(n),
     }
 def _unsat_aldehyde(n: int, numbered: dict) -> tuple[str, str] | None:
-    from namepredict.layer5.unsat_acid import alkenal_names
+    from namepredict.layer5.unsat_acid import _has_yne, alkenal_names, alkynal_names
+    if _has_yne(numbered):
+        return alkynal_names(n, numbered)
     if numbered.get("ene_locant") is None:
         return None
     return alkenal_names(n, numbered)
@@ -219,12 +221,18 @@ def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[st
     if kind == "cycloalkanecarboxylic": return _cycloalkanecarboxylic_names(n)
     fn = _acid_table(n).get(kind)
     return fn() if fn else None
+def _unsat_nitrile(n: int, numbered: dict) -> tuple[str, str] | None:
+    from namepredict.layer5.unsat_acid import (
+        _has_yne, alkenenitrile_names, alkynenitrile_names,
+    )
+    if _has_yne(numbered):
+        return alkynenitrile_names(n, numbered)
+    if numbered.get("ene_locant") is not None:
+        return alkenenitrile_names(n, numbered)
+    return None
 def _nitrile_or_none(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
     if kind == "nitrile":
-        from namepredict.layer5.unsat_acid import alkenenitrile_names
-        if (numbered or {}).get("ene_locant") is not None:
-            return alkenenitrile_names(n, numbered or {})
-        return _nitrile_names(n)
+        return _unsat_nitrile(n, numbered or {}) or _nitrile_names(n)
     if kind == "acyl_chloride":
         return _pair(ACYL_CHLORIDE_EN, ACYL_CHLORIDE_ZH, n)
     if kind == "anhydride":
@@ -254,7 +262,11 @@ def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
         return _cycloalcohol_names(n)
     return _cycloamine_names(n) if kind == "cycloamine" else None
 def _alcohol_or_alkenol(n: int, numbered: dict) -> tuple[str, str] | None:
-    from namepredict.layer5.unsat_acid import _has_ene, alkenol_from
+    from namepredict.layer5.unsat_acid import (
+        _has_ene, _has_yne, alkenol_from, alkynol_from,
+    )
+    if _has_yne(numbered):
+        return alkynol_from(n, numbered)
     if _has_ene(numbered):
         return alkenol_from(n, numbered)
     return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))

@@ -118,10 +118,23 @@ def alkynoic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
     )
 
 
-def unsat_carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    """Dispatch unsat acid / diacid / amide stems (yne then ene)."""
+def alkynamide_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """propynamide / but-3-ynamide (omit locant when n≤3)."""
+    return _alkynoic_pair(
+        n, numbered.get("yne_locant"), "ynamide", "炔酰胺",
+        numbered.get("omit_yne_locant", False),
+    )
+
+
+def _yne_carbonyl(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "acid" and _has_yne(numbered):
         return alkynoic_acid_names(n, numbered)
+    if kind == "amide" and _has_yne(numbered):
+        return alkynamide_names(n, numbered)
+    return None
+
+
+def _ene_carbonyl(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if not _has_ene(numbered):
         return None
     if kind == "diacid":
@@ -131,6 +144,11 @@ def unsat_carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] |
     return alkenamide_names(n, numbered) if kind == "amide" else None
 
 
+def unsat_carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    """Dispatch unsat acid / diacid / amide stems (yne then ene)."""
+    return _yne_carbonyl(kind, n, numbered) or _ene_carbonyl(kind, n, numbered)
+
+
 def alkenal_names(n: int, numbered: dict) -> tuple[str, str] | None:
     """non-2-enal / (E)-non-2-enal with E/Z when stereo defined."""
     return _unsat_acid_pair(
@@ -138,10 +156,26 @@ def alkenal_names(n: int, numbered: dict) -> tuple[str, str] | None:
     )
 
 
+def alkynal_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """propynal / but-3-ynal (omit locant when n≤3)."""
+    return _alkynoic_pair(
+        n, numbered.get("yne_locant"), "ynal", "炔醛",
+        numbered.get("omit_yne_locant", False),
+    )
+
+
 def alkenenitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
     """octadec-9-enenitrile / (Z)-… with E/Z when stereo defined."""
     return _unsat_acid_pair(
         n, numbered.get("ene_locant"), ez_for_parent(numbered), "enenitrile", "烯腈",
+    )
+
+
+def alkynenitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """propynenitrile / but-3-ynenitrile (omit locant when n≤3)."""
+    return _alkynoic_pair(
+        n, numbered.get("yne_locant"), "ynenitrile", "炔腈",
+        numbered.get("omit_yne_locant", False),
     )
 
 
@@ -202,6 +236,21 @@ def alkenol_from(n: int, numbered: dict) -> tuple[str, str] | None:
     if locs and len(locs) >= 2:
         return _polyalkenol_names(n, locs, numbered.get("oh_locant"), ez)
     return _alkenol_names(n, numbered.get("ene_locant"), numbered.get("oh_locant"), ez)
+
+
+def _alkynol_names(n, yne_loc, oh_loc) -> tuple[str, str] | None:
+    en, zh = ALKANE_EN.get(n), ALKANE_ZH.get(n)
+    if not en or not zh or yne_loc is None or oh_loc is None:
+        return None
+    return (
+        f"{en[:-3]}-{yne_loc}-yn-{oh_loc}-ol",
+        f"{zh_stem(zh)}-{yne_loc}-炔-{oh_loc}-醇",
+    )
+
+
+def alkynol_from(n: int, numbered: dict) -> tuple[str, str] | None:
+    """but-3-yn-1-ol / prop-2-yn-1-ol (OH + yne locants retained)."""
+    return _alkynol_names(n, numbered.get("yne_locant"), numbered.get("oh_locant"))
 
 
 def ester_or_alkenoate(n: int, numbered: dict) -> tuple[str, str] | None:

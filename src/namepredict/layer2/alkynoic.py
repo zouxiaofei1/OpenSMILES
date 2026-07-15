@@ -47,3 +47,22 @@ def ynsat_or_unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
         return y
     u = _try_unsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
     return u or _fg_chain(info, ekey, skind, ckey, **extra)
+
+
+def try_ynsat_alcohol(info, bad) -> dict | None:
+    """Mono open-chain alkynol parent (kind=alcohol + triple_bond)."""
+    return _try_ynsat_fg(
+        info, "has_alcohol", "hydroxyls", bad, "alcohol", "oh_c_idx",
+    )
+
+
+def chain_or_unsat_alcohol(info, bad, poly_fn, unsat_fn, sat_fn) -> dict | None:
+    """Yne then poly/mono ene then saturated polyol/alcohol."""
+    y = try_ynsat_alcohol(info, bad)
+    if y is not None:
+        return y
+    poly = poly_fn()
+    if poly is not None:
+        return poly
+    unsat = unsat_fn()
+    return unsat if unsat is not None else sat_fn()

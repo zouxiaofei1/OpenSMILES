@@ -119,20 +119,17 @@ def _polyol_or_chain_alcohol(info: dict) -> dict | None:
     return _chain_alcohol_parent(info)
 
 def _chain_or_unsat_alcohol(info: dict) -> dict | None:
-    """Mono/poly alkenol first, else saturated polyol/alcohol."""
-    poly = _try_polyalkenol(
-        info, _ALKENOL_BAD, _best_cover_pair, _parent_dict, _db_pairs,
+    """Yne then poly/mono ene then saturated polyol/alcohol."""
+    from namepredict.layer2.alkynoic import chain_or_unsat_alcohol as _c
+    b = _ALKENOL_BAD
+    return _c(
+        info, b,
+        lambda: _try_polyalkenol(info, b, _best_cover_pair, _parent_dict, _db_pairs),
+        lambda: _try_unsat_fg(info, "has_alcohol", "hydroxyls", b, "alcohol", "oh_c_idx"),
+        lambda: _polyol_or_chain_alcohol(info),
     )
-    if poly is not None:
-        return poly
-    unsat = _try_unsat_fg(
-        info, "has_alcohol", "hydroxyls", _ALKENOL_BAD, "alcohol", "oh_c_idx",
-    )
-    return unsat if unsat is not None else _polyol_or_chain_alcohol(info)
-
-
 def _alcohol_parent(info: dict) -> dict | None:
-    """Ring OH; poly/mono alkenol; else polyol/saturated alcohol."""
+    """Ring OH; yne/ene/polyol/sat alcohol."""
     ring = _ring_alcohol_parent(info)
     return ring if ring is not None else _chain_or_unsat_alcohol(info)
 def _thiol_parent(info: dict) -> dict:

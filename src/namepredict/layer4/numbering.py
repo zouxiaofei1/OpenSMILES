@@ -415,10 +415,12 @@ def _yne_locant(oriented: dict) -> int | None:
     if oriented.get("kind") == "alkyne" or oriented.get("triple_bond"):
         return _ene_locant_of(_ene_ends_on(oriented.get("chain") or [], oriented.get("triple_bond")))
     return None
+def _has_parent_yne(oriented: dict) -> bool:
+    return bool(oriented.get("triple_bond"))
 def _omit_oh(oh_pos: int | None, n_carbons: int, kind: str | None = None, parent: dict | None = None) -> bool:
     if kind == "cycloalcohol":
         return True
-    if kind == "alcohol" and parent and _has_parent_ene(parent):
+    if kind == "alcohol" and parent and (_has_parent_ene(parent) or _has_parent_yne(parent)):
         return False
     return oh_pos == 1 and n_carbons <= 2
 def _omit_sh(sh_pos: int | None, n_carbons: int) -> bool:
@@ -430,6 +432,8 @@ def _omit_amine(am_pos: int | None, n_carbons: int, kind: str | None = None) -> 
 def _omit_unsat(n_carbons: int, kind: str | None = None, parent: dict | None = None) -> bool:
     if kind == "cycloalkene":
         return True
+    if kind == "alcohol" and parent and _has_parent_yne(parent):
+        return False
     if parent and _has_parent_ene(parent) and kind != "alkene":
         return False
     return n_carbons <= 3
@@ -462,7 +466,7 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "ene_locants": ene_locants(oriented),
         "omit_ene_locant": _omit_unsat(n, kind, oriented),
         "yne_locant": _yne_locant(oriented),
-        "omit_yne_locant": _omit_unsat(n),
+        "omit_yne_locant": _omit_unsat(n, kind, oriented),
     }
 def _oh_am_locants(oriented: dict, n: int) -> dict:
     oh, am = _oh_locant(oriented), _amine_locant(oriented)
