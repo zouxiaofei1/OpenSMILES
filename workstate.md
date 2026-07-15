@@ -175,11 +175,13 @@
 [#cc6f5e9][IUPAC P-25 / P-64] 9,10-蒽醌：线性 anthracene + meso 二酮；2,3-二甲基蒽醌 [+tests, dual 14.8%(602)→14.8%(603), fails 3460→3459, 0 REGRESS]
 [#8a5ba10][IUPAC P-65.3] 磺酰氯：烷/芳 SO2Cl；3,3,3-三氟丙烷磺酰氯 [+tests, dual 14.8%(603)→14.9%(604), fails 3459→3458, 0 REGRESS]
 [#d97a7d0][IUPAC P-66.4.1.2.1] 简单胍功能母体第一刀：未取代/mono N-aryl/N-arylsulfonyl [+8 tests, dual 14.9%(604)→14.9%(605), fails 3458→3457]
+[#7b27c53][架构 P-31.1/P-44] unsat 生产者迁 kind_registry（alkyne→polyene→alkene） [+test_unsat_producers, dual 14.9%(605)持平, fails 3457, 0 REGRESS]
 ## 其他
+- FG/环/unsat 生产者均已注册表化；benzene `_benzene_candidate` 仍手写（n_unhandled 双路径）
+- heteroaryl_sub 手写 -yl 未收口；NumberingPlan 半接线
 - 胍第一刀：未取代+mono N-aryl+N-arylsulfonyl；N-alkyl/多N取代未做
 - 磺酰氯第一刀：烷基 C1–C4(+F/CF3)+简单芳基；磺酰氟/溴未做
 - 9,10-蒽醌第一刀：未取代+环甲基；多羟基蒽醌编号未做
 - 有机碳酸酯第一刀：dialkyl C1–C4 + alkyl-aryl(Me/halo≤2)；环状/二杂芳/无机盐未做
-- FG/环生产者均已注册表化；unsat 仍在 candidates；heteroaryl_sub 手写 -yl 未收口
 - 简单磺酸酯第一刀：芳/烷 SO2OR(C1–C4)；盐/内酯侧链/硫酸酯未做
 - 酰卤：Cl 已有；Br 开链+苯甲酰+异丁酰保留；乙二酰二溴/氟未做
