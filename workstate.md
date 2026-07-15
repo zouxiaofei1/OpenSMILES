@@ -160,9 +160,10 @@
 [#65eb283][IUPAC P-65.1.1 / P-31.1 / P-93] 开链对称 mono-ene 二酸二酯（最低 ene 定向 + E/Z；不对称 pent-2/hex-2） [+test_alkenedioate_diester, dual 14.4%(585)→14.4%(586), 0 REGRESS]
 [#fe0666c][IUPAC P-72.2.2.1 / P-65.1.1] L0 盐解离 + 碱金属羧酸盐功能类名（sodium …ate / …酸钠；金属前缀在 R/S·E/Z 后） [+13 tests, dual 14.4%(586)→14.5%(587), 0 REGRESS]
 [#104704a][IUPAC P-63.3] 开链简单二烷基亚砜 dialkyl sulfoxide（L1/L2/L5；修 CS(C)=O→methane） [+10 tests, dual 14.5%(587)→14.5%(588), 0 REGRESS]
+[#b3dcfe6][架构 P-22.2.1 / P-25] fused56→ScaffoldSpec：benzofuran/bt/btz/box 注册+builder 常量+scaffold_id；L4 labels 契约（无 L4→L2） [+test_scaffold_fused56_specs, dual 14.5%(588)→14.5%(589), 0 REGRESS]
 ## 其他
+- Phase 2.1 完成：fused56 四骨架进 Spec；indole/quinoline/naph 仍硬表（Phase 2.2）
+- L2 FUSED56_LABELS 与 L4 INDOLE_LABELS 靠契约测试对齐；引擎仍在 layer2/fused56.py
 - 简单 Li/Na/K 一元羧酸盐功能类名已做；多磷酸/核苷酸磷酸/复杂水合盐未做
 - 简单开链一元炔醇/炔醛/炔腈/炔酰胺已做；带复杂侧链多烯醇/多炔未做
 - C20+ 英文用 icos/henicos 组合；中文数字自动生成
-- 磷酸第一刀：仅简单烷基磷酸单酯与烷基膦酸；L1 已检 P
-- carbamate 第一刀：复杂 diaryl/Boc-侧链醇/金标括号风格仍有缺口
