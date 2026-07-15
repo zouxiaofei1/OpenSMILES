@@ -1,4 +1,8 @@
-"""Adapt retained fused-ring chain + kind → NumberingPlan (zero behavior)."""
+"""Adapt retained fused-ring chain + kind → NumberingPlan (zero behavior).
+
+L4 must not import L2. Fused56 labels live here for Plan build; L2
+ScaffoldSpec.standard_path must stay equal (contract-tested in unit tests).
+"""
 from __future__ import annotations
 
 from namepredict.layer4.locants.plan import NumberingPlan, locant, make_plan
@@ -7,6 +11,7 @@ from namepredict.layer4.locants.plan import NumberingPlan, locant, make_plan
 NAPH_LOCANTS = (1, 2, 3, 4, None, 5, 6, 7, 8, None)
 INDOLE_LOCANTS = (1, 2, 3, None, 4, 5, 6, 7, None)
 NAPH_LABELS = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a")
+# Fused 5+6 path labels (must match scaffold.specs.FUSED56_LABELS).
 INDOLE_LABELS = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
 
 _Q_KINDS = frozenset({
@@ -24,6 +29,7 @@ _FUSED56_KINDS = frozenset(_INDOLE_ORIENT_KINDS) - _Q_KINDS
 
 
 def _labels_for(kind: str | None) -> tuple[str, ...] | None:
+    """Resolve labels from L4 tables only (no L2 import)."""
     if kind in _NAPH_KINDS or kind in _Q_KINDS:
         return NAPH_LABELS
     if kind in _FUSED56_KINDS:

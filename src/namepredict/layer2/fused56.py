@@ -247,10 +247,11 @@ def _mono_parent_dict(info: dict, spec: Fused56MonoSpec, **extra) -> dict:
     assert parts is not None
     five, six, h, ba, bb = parts
     chain = _chain_atoms(info["mol"], five, six, h, ba, bb) or []
-    return {
+    base = {
         "chain": chain, "n_carbons": spec.n_atoms, "kind": spec.kind,
-        spec.hetero_key: h, "bridge": [ba, bb], **extra,
+        "scaffold_id": spec.kind, spec.hetero_key: h, "bridge": [ba, bb],
     }
+    return {**base, **extra}
 
 
 def _try_mono_fused56(info: dict, spec: Fused56MonoSpec) -> dict | None:
@@ -344,10 +345,12 @@ def _di13_parent_dict(info: dict, spec: Fused56Di13Spec, kind: str, **extra) -> 
     assert parts is not None
     five, six, h, n, ba, bb = parts
     chain = _chain_atoms(info["mol"], five, six, h, ba, bb) or []
-    return {
+    base = {
         "chain": chain, "n_carbons": spec.n_atoms, "kind": kind,
-        spec.hetero_key: h, "n_idx": n, "nh_idx": h, "bridge": [ba, bb], **extra,
+        "scaffold_id": kind, spec.hetero_key: h, "n_idx": n, "nh_idx": h,
+        "bridge": [ba, bb],
     }
+    return {**base, **extra}
 
 
 def _try_di13_fused56(info: dict, spec: Fused56Di13Spec) -> dict | None:

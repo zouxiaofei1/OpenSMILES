@@ -3,12 +3,11 @@
 Fused aromatic 6+5: benzo[b]thiophene. S = 1; mono-methyl / mono-halo;
 mono ring OH → 1-benzothiophen-n-ol / 苯并[b]噻吩-n-醇.
 
-Core gate/subs/parent dict via fused56.Fused56MonoSpec engine.
+Engine via fused56; MonoSpec + ScaffoldSpec from scaffold.builders.fused56.
 """
 from __future__ import annotations
 
 from namepredict.layer2.fused56 import (
-    Fused56MonoSpec,
     _fg_block,
     _mono_parent_dict,
     _mono_parts,
@@ -17,10 +16,7 @@ from namepredict.layer2.fused56 import (
     _try_mono_fused56,
 )
 from namepredict.layer2.ring_parent import _mono_oh_on_ring, _outside_ok
-
-_BT = Fused56MonoSpec(
-    kind="benzothiophene", hetero_z=16, hetero_key="s_idx", sub_cap=1,
-)
+from namepredict.layer2.scaffold.builders.fused56 import BT_MONO, BT_OL
 
 _OL_BLOCK = (
     "has_acid", "has_aldehyde", "has_ketone", "has_ester",
@@ -30,27 +26,24 @@ _OL_BLOCK = (
 
 
 def _try_benzothiophene_parent(info: dict) -> dict | None:
-    return _try_mono_fused56(info, _BT)
+    return _try_mono_fused56(info, BT_MONO)
 
 
 def _is_simple_benzothiophenol(info: dict) -> bool:
-    if _mono_parts(info, _BT) is None or _fg_block(info, _OL_BLOCK):
+    if _mono_parts(info, BT_MONO) is None or _fg_block(info, _OL_BLOCK):
         return False
-    parts = _mono_parts(info, _BT)
+    parts = _mono_parts(info, BT_MONO)
     assert parts is not None
     mol, ring = info["mol"], _ring_set_parts(parts)
     oh = _mono_oh_on_ring(info, ring)
     if oh is None or not _outside_ok(mol, ring, {oh["o_idx"]}):
         return False
-    return _subs_ok_cap(mol, ring, _BT.sub_cap)
+    return _subs_ok_cap(mol, ring, BT_MONO.sub_cap)
 
 
 def _benzothiophenol_parent(info: dict) -> dict:
     return _mono_parent_dict(
-        info, Fused56MonoSpec(
-            kind="benzothiophenol", hetero_z=16, hetero_key="s_idx", sub_cap=1,
-        ),
-        oh_c_idx=info["hydroxyls"][0]["c_idx"],
+        info, BT_OL, oh_c_idx=info["hydroxyls"][0]["c_idx"],
     )
 
 
