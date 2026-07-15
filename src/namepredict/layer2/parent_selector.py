@@ -103,10 +103,12 @@ def _ring_alcohol_parent(info: dict) -> dict | None:
     if _is_simple_phenol(info): return _phenol_parent(info)
     return _ring_fg_try(info, ((_is_simple_cycloalcohol, "cycloalcohol"),),
                         "hydroxyls", "oh_c_idx")
+def _oh_c_in_ring(info: dict, c_idx: int) -> bool:
+    return info["mol"].GetAtomWithIdx(int(c_idx)).IsInRing()
 def _chain_alcohol_parent(info: dict) -> dict | None:
     """Mono aliphatic OH → alcohol parent (ignore aromatic phenolic OH)."""
     aliph = _aliphatic_entries(info, "hydroxyls")
-    if len(aliph) != 1:
+    if len(aliph) != 1 or _oh_c_in_ring(info, aliph[0]["c_idx"]):
         return None
     return _parent_dict(
         _chain_through(info, aliph[0]["c_idx"]), "alcohol", oh_c_idx=aliph[0]["c_idx"],
