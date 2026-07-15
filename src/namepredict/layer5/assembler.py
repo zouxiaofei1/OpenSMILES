@@ -473,7 +473,7 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "benzene":
         return benzene_prefix(numbered, _build_prefix)
     _skip = ("benzoate", "pyrimidinamine", "benzothiazolamine",
-             "benzoxazolamine", "benzimidazolamine")
+             "benzoxazolamine", "benzimidazolamine", "boronic")
     if kind in _skip:
         return "", ""
     return _build_prefix(numbered.get("substituents") or [], n, kind)

@@ -161,6 +161,8 @@ def _orient_ring_fixed(
     return _prefer_chain(base, rev, substituents)
 def _orient_cycloalcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fixed(chain, parent, substituents, "oh_c_idx")
+def _orient_boronic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_ring_fixed(chain, parent, substituents, "c_attach")
 def _better_ring_pair(best, best_locs, cand, cs, subs):
     locs = _pair_locs_on(cand, cs)
     if locs is None:
@@ -318,7 +320,7 @@ def _hetero_orienters() -> dict:
         "alcohol": _orient_alcohol, "thiol": _orient_thiol,
         "diol": _orient_polyol, "triol": _orient_polyol, "diamine": _orient_diamine,
         "cycloalcohol": _orient_cycloalcohol, "phenol": _orient_cycloalcohol,
-        "benzenediol": _orient_benzenediol,
+        "boronic": _orient_boronic, "benzenediol": _orient_benzenediol,
         "benzenediamine": _orient_benzenediamine,
         "cycloamine": _orient_cycloamine, "aniline": _orient_cycloamine,
         "amine": _orient_amine, "sec_amine": _orient_amine, "tert_amine": _orient_amine,

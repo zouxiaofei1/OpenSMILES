@@ -12,7 +12,7 @@ _FG_BOOL_MORE_KEYS = (
     ("has_carbamate", "carbamates"), ("has_sulfoxide", "sulfoxides"),
     ("has_isocyanate", "isocyanates"), ("has_isothiocyanate", "isothiocyanates"),
     ("has_urea", "ureas"), ("has_hydrazine", "hydrazines"),
-    ("has_sulfonamide", "sulfonamides"),
+    ("has_sulfonamide", "sulfonamides"), ("has_boronic", "boronics"),
 )
 
 def _is_single_c_oh(atom) -> bool:
@@ -422,6 +422,7 @@ def _fg_more_lists(parts: dict) -> dict:
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
         "nitros", "phosphates", "phosphonics", "carbamates", "sulfoxides",
         "isocyanates", "isothiocyanates", "ureas", "hydrazines", "sulfonamides",
+        "boronics",
     )
     return {k: parts[k] for k in keys}
 
@@ -463,13 +464,14 @@ def _p_fg_a(mol: Mol) -> dict:
     return {"phosphates": phosphate_entries(mol), "phosphonics": phosphonic_entries(mol),
             "carbamates": carbamate_entries(mol), "sulfoxides": sulfoxide_entries(mol)}
 def _p_fg_b(mol: Mol) -> dict:
+    from namepredict.layer1.boronic import boronic_entries
     from namepredict.layer1.hydrazine import hydrazine_entries
     from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
     from namepredict.layer1.urea import urea_entries
     from namepredict.layer1.sulfonamide import sulfonamide_entries
     return {"isocyanates": isocyanate_entries(mol), "isothiocyanates": isothiocyanate_entries(mol),
             "ureas": urea_entries(mol), "hydrazines": hydrazine_entries(mol),
-            "sulfonamides": sulfonamide_entries(mol)}
+            "sulfonamides": sulfonamide_entries(mol), "boronics": boronic_entries(mol)}
 def _p_fg_parts(mol: Mol) -> dict:
     return {**_p_fg_a(mol), **_p_fg_b(mol)}
 def _fg_parts_b_core(mol: Mol) -> dict:
@@ -484,17 +486,13 @@ def _fg_parts_b_core(mol: Mol) -> dict:
 
 def _fg_parts_b(mol: Mol) -> dict:
     return {**_fg_parts_b_core(mol), **_p_fg_parts(mol)}
-
 def _fg_parts(mol: Mol) -> dict:
     return {**_fg_parts_a(mol), **_fg_parts_b(mol)}
-
 def _collect_fgs(mol: Mol) -> dict:
     lists = _fg_lists(_fg_parts(mol))
     return {**lists, **_fg_bools(lists)}
-
 def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
     base = {"mol": mol, "carbon_ids": carbons, "n_carbons": len(carbons)}
     return {**base, **fgs, **_ring_meta(mol)}
-
 def analyze(mol: Mol) -> dict:
     return _info(mol, _carbon_ids(mol), _collect_fgs(mol))

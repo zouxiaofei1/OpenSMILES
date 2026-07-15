@@ -40,6 +40,7 @@ _ARENE_NAMED: tuple[tuple[str, str, str, int], ...] = (
     ("acetophenone", "acetophenone", "苯乙酮", 6),
     ("phenol", "phenol", "苯酚", 5),
     ("aniline", "aniline", "苯胺", 3),
+    ("boronic", "phenylboronic acid", "苯基硼酸", 12),
 )
 _H5_COOH = (
     "furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic",

@@ -1,6 +1,7 @@
 """L5 dispatch for special functional-parent names (thin assembler helper)."""
 from __future__ import annotations
 
+from namepredict.layer5.boronic_names import boronic_names
 from namepredict.layer5.carbamate_names import carbamate_names
 from namepredict.layer5.diester_names import diester_names
 from namepredict.layer5.hydrazine_names import hydrazine_names
@@ -17,6 +18,7 @@ def _by_kind(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         "hydrazine": lambda: hydrazine_names(numbered),
         "diester": lambda: diester_names(n, numbered),
         "sulfonamide": lambda: sulfonamide_names(numbered),
+        "boronic": lambda: boronic_names(numbered),
     }
     fn = table.get(kind)
     return fn() if fn else None

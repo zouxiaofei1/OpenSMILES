@@ -20,6 +20,7 @@ from namepredict.layer2.phosphate import _phosphate_parent, _phosphonic_parent
 from namepredict.layer2.carbamate import _carbamate_parent
 from namepredict.layer2.diester import _diester_parent
 from namepredict.layer2.sulfoxide import _sulfoxide_parent
+from namepredict.layer2.boronic import _try_boronic
 from namepredict.layer2.hydrazine import _hydrazine_parent
 from namepredict.layer2.isocyanate import _try_isocyanate, _try_isothiocyanate
 from namepredict.layer2.sulfonamide import _sulfonamide_parent
@@ -192,6 +193,7 @@ _FG_TRY = (
     _try_alcohol, _try_thiol, _try_benzenediamine, _try_amine, _try_hydrazine,
     _try_phosphate, _try_phosphonic, _ether_parent, _sulfide_parent,
     _sulfoxide_parent, _try_isocyanate, _try_isothiocyanate, _sulfonamide_parent,
+    _try_boronic,
 )
 
 
