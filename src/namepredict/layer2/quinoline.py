@@ -224,7 +224,8 @@ def _q_parent_dict(info: dict, kind: str, **extra) -> dict:
     chain = _build_chain(info, parts)
     return {
         "chain": chain, "n_carbons": 10, "kind": kind,
-        "n_idx": parts[2], "bridge": [parts[3], parts[4]], **extra,
+        "scaffold_id": kind, "n_idx": parts[2], "bridge": [parts[3], parts[4]],
+        **extra,
     }
 
 

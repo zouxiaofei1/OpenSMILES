@@ -1,6 +1,6 @@
 """Adapt retained fused-ring chain + kind → NumberingPlan (zero behavior).
 
-L4 must not import L2. Fused56 labels live here for Plan build; L2
+L4 must not import L2. Fused56 / naph labels live here for Plan build; L2
 ScaffoldSpec.standard_path must stay equal (contract-tested in unit tests).
 """
 from __future__ import annotations
@@ -14,25 +14,32 @@ NAPH_LABELS = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a")
 # Fused 5+6 path labels (must match scaffold.specs.FUSED56_LABELS).
 INDOLE_LABELS = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
 
-_Q_KINDS = frozenset({
-    "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
-})
-_NAPH_KINDS = frozenset({"naphthalene", "naphthalenecarboxylic"})
-_INDOLE_ORIENT_KINDS = (
+# Single L4 data tables (contract-tested vs L2 ScaffoldSpec ids).
+FUSED56_KINDS = frozenset({
     "indole", "indolecarboxylic", "indazole", "indazolecarbonitrile",
     "indazolecarbaldehyde", "benzofuran", "benzofuranamine", "benzothiophene",
     "benzothiophenol", "benzothiazole", "benzothiazolamine", "benzoxazole",
-    "benzoxazolamine", "benzimidazole", "benzimidazolamine", "quinoline",
-    "isoquinoline", "quinolinol", "quinolinecarboxylic",
-)
-_FUSED56_KINDS = frozenset(_INDOLE_ORIENT_KINDS) - _Q_KINDS
+    "benzoxazolamine", "benzimidazole", "benzimidazolamine",
+})
+Q_KINDS = frozenset({
+    "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
+})
+NAPH_KINDS = frozenset({"naphthalene", "naphthalenecarboxylic"})
+# Fixed-chain orient kinds (naphthalene has dedicated orienter).
+INDOLE_ORIENT_KINDS = tuple(sorted(FUSED56_KINDS | Q_KINDS))
+
+# Back-compat private aliases (numbering / older tests may import _).
+_FUSED56_KINDS = FUSED56_KINDS
+_Q_KINDS = Q_KINDS
+_NAPH_KINDS = NAPH_KINDS
+_INDOLE_ORIENT_KINDS = INDOLE_ORIENT_KINDS
 
 
 def _labels_for(kind: str | None) -> tuple[str, ...] | None:
     """Resolve labels from L4 tables only (no L2 import)."""
-    if kind in _NAPH_KINDS or kind in _Q_KINDS:
+    if kind in NAPH_KINDS or kind in Q_KINDS:
         return NAPH_LABELS
-    if kind in _FUSED56_KINDS:
+    if kind in FUSED56_KINDS:
         return INDOLE_LABELS
     return None
 

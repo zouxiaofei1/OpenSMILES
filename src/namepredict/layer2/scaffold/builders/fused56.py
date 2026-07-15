@@ -10,6 +10,7 @@ from namepredict.layer2.scaffold.specs import FUSED56_LABELS, get_spec
 
 __all__ = [
     "FUSED56_LABELS",
+    "FUSED56_AZA_KINDS",
     "BF_MONO",
     "BF_AMINE",
     "BT_MONO",
@@ -18,6 +19,12 @@ __all__ = [
     "BOX_DI13",
     "scaffold_id_for_kind",
 ]
+
+# Aza fused56 kinds (indole / indazole / bim); O/S engine specs below.
+FUSED56_AZA_KINDS = frozenset({
+    "indole", "indolecarboxylic", "indazole", "indazolecarbonitrile",
+    "indazolecarbaldehyde", "benzimidazole", "benzimidazolamine",
+})
 
 # Engine specs aligned with ScaffoldSpec ids in specs.FUSED56_SPECS.
 BF_MONO = Fused56MonoSpec(

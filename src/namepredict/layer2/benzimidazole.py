@@ -143,7 +143,7 @@ def _bim_parent_dict(info: dict, kind: str, **extra) -> dict:
     chain = _build_chain(info["mol"], five, six, nh, ba, bb) or []
     return {
         "chain": chain, "n_carbons": 9, "kind": kind,
-        "nh_idx": nh, "n_idx": n, "bridge": [ba, bb], **extra,
+        "scaffold_id": kind, "nh_idx": nh, "n_idx": n, "bridge": [ba, bb], **extra,
     }
 
 
@@ -340,6 +340,7 @@ def _bim_imino_dict(
     chain = _build_chain(mol, five, six, nh, ba, bb) or []
     return {
         "chain": chain, "n_carbons": 9, "kind": "benzimidazolamine",
+        "scaffold_id": "benzimidazolamine",
         "nh_idx": nh, "n_idx": n_other, "bridge": [ba, bb],
         "amine_c_idx": c2,
     }

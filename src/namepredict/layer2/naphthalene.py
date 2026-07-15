@@ -169,7 +169,7 @@ def _naph_parent_dict(info: dict, kind: str, **extra) -> dict:
     bridge = list(_bridge_pair(*_two_six_rings(info)) or ())
     return {
         "chain": chain, "n_carbons": 10, "kind": kind,
-        "bridge": bridge, "naph_chains": chains, **extra,
+        "scaffold_id": kind, "bridge": bridge, "naph_chains": chains, **extra,
     }
 
 

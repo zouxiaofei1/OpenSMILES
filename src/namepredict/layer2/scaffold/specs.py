@@ -31,6 +31,10 @@ class ScaffoldSpec:
 FUSED56_LABELS: tuple[str, ...] = (
     "1", "2", "3", "3a", "4", "5", "6", "7", "7a",
 )
+# Naphthalene / quinoline family path labels (P-25): 1…4a…8a.
+NAPH_LABELS: tuple[str, ...] = (
+    "1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a",
+)
 
 
 def _carbo(sid: str, mode: str) -> ScaffoldSpec:
@@ -42,12 +46,27 @@ def _carbo(sid: str, mode: str) -> ScaffoldSpec:
 
 
 def _fused56(
-    sid: str, stem_en: str, stem_zh: str, fg_rank: int = 0,
+    sid: str, stem_en: str | None, stem_zh: str | None, fg_rank: int = 0,
 ) -> ScaffoldSpec:
     pol = NumberingPolicy(mode="fused56_fixed", standard_path=FUSED56_LABELS)
     return ScaffoldSpec(
         id=sid, naming_class="fused56", stem_en=stem_en, stem_zh=stem_zh,
         n_rings=2, ring="hetero", retained=True, fg_rank=fg_rank, numbering=pol,
+    )
+
+
+def _naph(
+    sid: str,
+    stem_en: str | None,
+    stem_zh: str | None,
+    *,
+    ring: str = "hetero",
+    fg_rank: int = 0,
+) -> ScaffoldSpec:
+    pol = NumberingPolicy(mode="naph_family", standard_path=NAPH_LABELS)
+    return ScaffoldSpec(
+        id=sid, naming_class="naph_family", stem_en=stem_en, stem_zh=stem_zh,
+        n_rings=2, ring=ring, retained=True, fg_rank=fg_rank, numbering=pol,
     )
 
 
@@ -57,6 +76,7 @@ CARBOCYCLE_SPECS: tuple[ScaffoldSpec, ...] = (
     _carbo("cyclopolyene", "poly_unsat"),
 )
 
+# O/S 5+6 retained (prior Phase 2.1) + aza 5+6 (indole / indazole / bim).
 FUSED56_SPECS: tuple[ScaffoldSpec, ...] = (
     _fused56("benzofuran", "benzofuran", "苯并呋喃"),
     _fused56("benzofuranamine", "benzofuranamine", "苯并呋喃胺", fg_rank=3),
@@ -66,9 +86,35 @@ FUSED56_SPECS: tuple[ScaffoldSpec, ...] = (
     _fused56("benzothiazolamine", "benzothiazolamine", "苯并噻唑胺", fg_rank=3),
     _fused56("benzoxazole", "1,3-benzoxazole", "1,3-苯并噁唑"),
     _fused56("benzoxazolamine", "benzoxazolamine", "苯并噁唑胺", fg_rank=3),
+    _fused56("indole", "1H-indole", "吲哚"),
+    _fused56("indolecarboxylic", "indolecarboxylic", "吲哚羧酸", fg_rank=13),
+    _fused56("indazole", "1H-indazole", "1H-吲唑"),
+    _fused56("indazolecarbonitrile", "indazolecarbonitrile", "吲唑甲腈", fg_rank=8),
+    _fused56("indazolecarbaldehyde", "indazolecarbaldehyde", "吲唑甲醛", fg_rank=7),
+    _fused56("benzimidazole", "1H-benzimidazole", "1H-苯并咪唑"),
+    _fused56(
+        "benzimidazolamine", "benzimidazolamine", "苯并咪唑胺", fg_rank=3,
+    ),
 )
 
-_ALL_SPECS: tuple[ScaffoldSpec, ...] = CARBOCYCLE_SPECS + FUSED56_SPECS
+# Quinoline / isoquinoline / naphthalene (10-atom path, naph labels).
+NAPH_FAMILY_SPECS: tuple[ScaffoldSpec, ...] = (
+    _naph("quinoline", "quinoline", "喹啉"),
+    _naph("isoquinoline", "isoquinoline", "异喹啉"),
+    _naph("quinolinol", "quinolinol", "喹啉酚", fg_rank=5),
+    _naph(
+        "quinolinecarboxylic", "quinolinecarboxylic", "喹啉羧酸", fg_rank=13,
+    ),
+    _naph("naphthalene", "naphthalene", "萘", ring="carbo"),
+    _naph(
+        "naphthalenecarboxylic", "naphthalenecarboxylic", "萘羧酸",
+        ring="carbo", fg_rank=13,
+    ),
+)
+
+_ALL_SPECS: tuple[ScaffoldSpec, ...] = (
+    CARBOCYCLE_SPECS + FUSED56_SPECS + NAPH_FAMILY_SPECS
+)
 _BY_ID: dict[str, ScaffoldSpec] = {s.id: s for s in _ALL_SPECS}
 
 
@@ -83,3 +129,13 @@ def all_specs() -> tuple[ScaffoldSpec, ...]:
 def fused56_kind_ids() -> frozenset[str]:
     """Kind / scaffold ids that use fused56 1…7a labels."""
     return frozenset(s.id for s in FUSED56_SPECS)
+
+
+def naph_kind_ids() -> frozenset[str]:
+    """Kind / scaffold ids that use naph 1…8a labels."""
+    return frozenset(s.id for s in NAPH_FAMILY_SPECS)
+
+
+def kind_ids_for(naming_class: str) -> frozenset[str]:
+    """Ids for a naming_class (fused56 / naph_family / carbocycle)."""
+    return frozenset(s.id for s in _ALL_SPECS if s.naming_class == naming_class)

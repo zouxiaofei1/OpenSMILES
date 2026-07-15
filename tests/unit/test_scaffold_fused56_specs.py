@@ -36,7 +36,7 @@ POS_CASES = [
 ]
 
 # Negative: non-fused56 parents must not be fused56 specs.
-NEG_KINDS = ("benzene", "naphthalene", "indole", "cycloalkane", "furan")
+NEG_KINDS = ("benzene", "naphthalene", "cycloalkane", "furan")
 
 
 def _mol(smiles: str):

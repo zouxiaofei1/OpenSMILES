@@ -113,7 +113,7 @@ def _indole_parent_dict(info: dict, kind: str, **extra) -> dict:
     chain = _build_chain(info["mol"], five, six, nh, ba, bb) or []
     return {
         "chain": chain, "n_carbons": 9, "kind": kind,
-        "nh_idx": nh, "bridge": [ba, bb], **extra,
+        "scaffold_id": kind, "nh_idx": nh, "bridge": [ba, bb], **extra,
     }
 
 

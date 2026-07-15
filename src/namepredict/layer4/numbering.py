@@ -1,11 +1,12 @@
 from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 from namepredict.layer4.locants.adapt import (
+    FUSED56_KINDS as _FUSED56_KINDS,
     INDOLE_LOCANTS as _INDOLE_LOCANTS,
+    INDOLE_ORIENT_KINDS as _INDOLE_ORIENT_KINDS,
+    NAPH_KINDS as _NAPH_KINDS,
     NAPH_LOCANTS as _NAPH_LOCANTS,
-    _FUSED56_KINDS,
-    _NAPH_KINDS,
-    _Q_KINDS,
+    Q_KINDS as _Q_KINDS,
     effective_sub_locant,
     plan_from_chain,
 )
@@ -299,13 +300,6 @@ def _aza_orienters() -> dict:
         "pyrazolecarboxylic": _orient_diazolecarboxylic,
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
         "pyridazine": _orient_diazine, "pyrimidinamine": _orient_pyrimidinamine}
-_INDOLE_ORIENT_KINDS = (
-    "indole", "indolecarboxylic", "indazole", "indazolecarbonitrile",
-    "indazolecarbaldehyde", "benzofuran", "benzofuranamine", "benzothiophene",
-    "benzothiophenol", "benzothiazole", "benzothiazolamine", "benzoxazole",
-    "benzoxazolamine", "benzimidazole", "benzimidazolamine", "quinoline",
-    "isoquinoline", "quinolinol", "quinolinecarboxylic",
-)
 def _fused_orienters() -> dict:
     d = {k: _orient_indole for k in _INDOLE_ORIENT_KINDS}
     d["naphthalene"] = _orient_naphthalene
