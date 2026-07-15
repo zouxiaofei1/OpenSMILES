@@ -154,6 +154,7 @@
 [#b7164f7][IUPAC P-22.2.3] 饱和单环替换母体接入 namer（x杂环y烷；retained 优先）[+tests, dual 14.3%(579)→14.2%(576)]
 [#9c9ef60][IUPAC P-66.5.1 / P-22.2.1 / P-44] 修复芳腈候选门控：`_try_nitrile` 先试 heteroaryl carbonitrile（izcn|pycn），恢复 pyridine/indazole-carbonitrile [+1 test CCC#N, dual 14.2%(576)→14.2%(578), fails 3486→3484, 0 REGRESS]
 [#76392cf][IUPAC P-65.6] 酯O-侧 special alkoxy：benzyl/tert-butyl/propan-2-yl/phenyl（bare Ph 门控）[+NOT_BARE tests, dual 14.2%(578)→14.3%(581), 0 REGRESS]
+[#dfb7893][IUPAC P-65.1.1 / P-31.1] 开链一元炔酸/炔酸酯 alkynoic & alkynoate：L2 yne→ene→sat 挂 triple_bond + L4 yne_locant + L5 ynoic/ynoate/炔酸 [+9 tests, dual 14.3%(581)→14.4%(584), 0 REGRESS]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多磷酸/核苷酸磷酸未做
 - 炔醇/带复杂侧链多烯醇未做
