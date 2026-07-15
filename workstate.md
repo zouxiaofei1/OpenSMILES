@@ -146,6 +146,7 @@
 [#277cce1][架构 L1 fingerprint] 环布局指纹 sizes|fusion|hetero|arom（indole≠benzofuran；零行为）[+7 tests, dual 14.2%(575)持平]
 [#055634f][架构 L4 NumberingPlan] 纯数据 Plan + locant/locant_int（3a 全序；无引擎；零行为）[+7 tests, dual 14.2%(575)持平]
 [#4d3684d][架构 L4 adapt Plan] 稠环 chain→NumberingPlan；_sub_locant 优先 plan（零行为）[+tests, dual 14.2%(575)持平]
+[#a7bfd71][架构 L2 ScaffoldSpec] carbocycle Specs + builder（alkane/ene/polyene 识别；未接 namer）[+tests, dual 14.2%(575)持平]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多磷酸/核苷酸磷酸未做
 - 炔醇/带复杂侧链多烯醇未做
