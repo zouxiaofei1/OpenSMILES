@@ -7,7 +7,7 @@ _SA_BAD = (
     "has_aldehyde", "has_ketone", "has_anhydride", "has_thiol",
     "has_phosphate", "has_phosphonic", "has_carbamate", "has_urea",
     "has_sulfoxide", "has_isocyanate", "has_isothiocyanate", "has_sulfonate",
-    "has_sulfonyl_chloride",
+    "has_sulfonyl_chloride", "has_sulfonic_acid",
 )
 
 

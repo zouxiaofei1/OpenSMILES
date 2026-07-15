@@ -11,6 +11,7 @@ from namepredict.layer5.hydrazine_names import hydrazine_names
 from namepredict.layer5.isocyanate_names import iso_kind_names
 from namepredict.layer5.sulfonamide_names import sulfonamide_names
 from namepredict.layer5.sulfonate_names import sulfonate_names
+from namepredict.layer5.sulfonic_acid_names import sulfonic_acid_names
 from namepredict.layer5.sulfonyl_chloride_names import sulfonyl_chloride_names
 from namepredict.layer5.sulfoxide_names import sulfoxide_names
 from namepredict.layer5.urea_names import urea_names
@@ -33,6 +34,7 @@ def _s_table(numbered: dict) -> dict:
         "sulfonamide": lambda: sulfonamide_names(numbered),
         "sulfonate": lambda: sulfonate_names(numbered),
         "sulfonyl_chloride": lambda: sulfonyl_chloride_names(numbered),
+        "sulfonic_acid": lambda: sulfonic_acid_names(numbered),
     }
 
 

@@ -14,7 +14,8 @@ _FG_BOOL_MORE_KEYS = (
     ("has_isocyanate", "isocyanates"), ("has_isothiocyanate", "isothiocyanates"),
     ("has_urea", "ureas"), ("has_hydrazine", "hydrazines"), ("has_guanidine", "guanidines"),
     ("has_sulfonamide", "sulfonamides"), ("has_sulfonate", "sulfonates"),
-    ("has_sulfonyl_chloride", "sulfonyl_chlorides"), ("has_boronic", "boronics"),
+    ("has_sulfonyl_chloride", "sulfonyl_chlorides"),
+    ("has_sulfonic_acid", "sulfonic_acids"), ("has_boronic", "boronics"),
 )
 
 def _is_single_c_oh(atom) -> bool:
@@ -421,17 +422,16 @@ def _fg_more_lists(parts: dict) -> dict:
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
         "nitros", "phosphates", "phosphonics", "carbamates", "carbonates",
         "sulfoxides", "isocyanates", "isothiocyanates", "ureas", "hydrazines",
-        "guanidines", "sulfonamides", "sulfonates", "sulfonyl_chlorides", "boronics",
+        "guanidines", "sulfonamides", "sulfonates", "sulfonyl_chlorides",
+        "sulfonic_acids", "boronics",
     )
     return {k: parts[k] for k in keys}
-
 def _fg_lists(parts: dict) -> dict:
     core = _fg_core_lists(
         parts["hydroxyls"], parts["carboxyls"], parts["esters"],
         parts["amides"], parts["ketones"],
     )
     return {**core, **_fg_more_lists(parts)}
-
 def _fg_bools_core(lists: dict) -> dict:
     return {
         "has_alcohol": bool(lists["hydroxyls"]), "has_acid": bool(lists["carboxyls"]),
@@ -468,9 +468,11 @@ def _p_fg_b2(mol: Mol) -> dict:
     from namepredict.layer1.boronic import boronic_entries
     from namepredict.layer1.sulfonamide import sulfonamide_entries
     from namepredict.layer1.sulfonate import sulfonate_entries
+    from namepredict.layer1.sulfonic_acid import sulfonic_acid_entries
     from namepredict.layer1.sulfonyl_chloride import sulfonyl_chloride_entries
     return {"sulfonamides": sulfonamide_entries(mol), "sulfonates": sulfonate_entries(mol),
-            "sulfonyl_chlorides": sulfonyl_chloride_entries(mol), "boronics": boronic_entries(mol)}
+            "sulfonyl_chlorides": sulfonyl_chloride_entries(mol),
+            "sulfonic_acids": sulfonic_acid_entries(mol), "boronics": boronic_entries(mol)}
 def _p_fg_b(mol: Mol) -> dict:
     return {**_p_fg_b1(mol), **_p_fg_b2(mol)}
 def _p_fg_parts(mol: Mol) -> dict:
@@ -484,7 +486,6 @@ def _fg_parts_b_core(mol: Mol) -> dict:
         "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
         "nitros": _nitro_entries(mol),
     }
-
 def _fg_parts_b(mol: Mol) -> dict:
     return {**_fg_parts_b_core(mol), **_p_fg_parts(mol)}
 def _fg_parts(mol: Mol) -> dict:

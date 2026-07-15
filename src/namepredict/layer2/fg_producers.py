@@ -41,6 +41,7 @@ from namepredict.layer2.parent_selector import (
 from namepredict.layer2.phosphate import _phosphate_parent, _phosphonic_parent
 from namepredict.layer2.sulfonamide import _sulfonamide_parent
 from namepredict.layer2.sulfonate import _sulfonate_parent
+from namepredict.layer2.sulfonic_acid import _sulfonic_acid_parent
 from namepredict.layer2.sulfonyl_chloride import _sulfonyl_chloride_parent
 from namepredict.layer2.sulfoxide import _sulfoxide_parent
 from namepredict.layer2.urea import _urea_parent
@@ -197,6 +198,7 @@ _FG_PRODUCERS = (
     _sulfonamide_parent,
     _sulfonate_parent,
     _sulfonyl_chloride_parent,
+    _sulfonic_acid_parent,
     _try_boronic,
 )
 

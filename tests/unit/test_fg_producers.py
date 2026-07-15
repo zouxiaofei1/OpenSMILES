@@ -44,6 +44,7 @@ _EXPECTED_FG_TRY_NAMES = (
     "_sulfonamide_parent",
     "_sulfonate_parent",
     "_sulfonyl_chloride_parent",
+    "_sulfonic_acid_parent",
     "_try_boronic",
 )
 
@@ -56,6 +57,7 @@ _RECENT_FG_MARKERS = (
     "hydrazine",
     "isocyanate",
     "sulfonate",
+    "sulfonic_acid",
     "sulfoxide",
     "carbonate",
 )
@@ -70,6 +72,7 @@ _KIND_CASES = [
     ("NN", {"hydrazine"}),
     ("N=C(N)N", {"guanidine"}),
     ("CC(=O)Cl", {"acyl_chloride"}),
+    ("CS(=O)(=O)O", {"sulfonic_acid"}),
 ]
 
 
