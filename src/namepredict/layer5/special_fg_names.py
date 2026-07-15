@@ -5,20 +5,21 @@ from namepredict.layer5.carbamate_names import carbamate_names
 from namepredict.layer5.diester_names import diester_names
 from namepredict.layer5.hydrazine_names import hydrazine_names
 from namepredict.layer5.isocyanate_names import iso_kind_names
+from namepredict.layer5.sulfonamide_names import sulfonamide_names
 from namepredict.layer5.sulfoxide_names import sulfoxide_names
 from namepredict.layer5.urea_names import urea_names
 
 
 def _by_kind(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    if kind == "carbamate":
-        return carbamate_names(numbered)
-    if kind == "urea":
-        return urea_names(numbered)
-    if kind == "hydrazine":
-        return hydrazine_names(numbered)
-    if kind == "diester":
-        return diester_names(n, numbered)
-    return None
+    table = {
+        "carbamate": lambda: carbamate_names(numbered),
+        "urea": lambda: urea_names(numbered),
+        "hydrazine": lambda: hydrazine_names(numbered),
+        "diester": lambda: diester_names(n, numbered),
+        "sulfonamide": lambda: sulfonamide_names(numbered),
+    }
+    fn = table.get(kind)
+    return fn() if fn else None
 
 
 def special_fg_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:

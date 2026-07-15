@@ -12,6 +12,7 @@ _FG_BOOL_MORE_KEYS = (
     ("has_carbamate", "carbamates"), ("has_sulfoxide", "sulfoxides"),
     ("has_isocyanate", "isocyanates"), ("has_isothiocyanate", "isothiocyanates"),
     ("has_urea", "ureas"), ("has_hydrazine", "hydrazines"),
+    ("has_sulfonamide", "sulfonamides"),
 )
 
 def _is_single_c_oh(atom) -> bool:
@@ -420,7 +421,7 @@ def _fg_more_lists(parts: dict) -> dict:
         "aldehydes", "amines", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
         "nitros", "phosphates", "phosphonics", "carbamates", "sulfoxides",
-        "isocyanates", "isothiocyanates", "ureas", "hydrazines",
+        "isocyanates", "isothiocyanates", "ureas", "hydrazines", "sulfonamides",
     )
     return {k: parts[k] for k in keys}
 
@@ -465,8 +466,10 @@ def _p_fg_b(mol: Mol) -> dict:
     from namepredict.layer1.hydrazine import hydrazine_entries
     from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
     from namepredict.layer1.urea import urea_entries
+    from namepredict.layer1.sulfonamide import sulfonamide_entries
     return {"isocyanates": isocyanate_entries(mol), "isothiocyanates": isothiocyanate_entries(mol),
-            "ureas": urea_entries(mol), "hydrazines": hydrazine_entries(mol)}
+            "ureas": urea_entries(mol), "hydrazines": hydrazine_entries(mol),
+            "sulfonamides": sulfonamide_entries(mol)}
 def _p_fg_parts(mol: Mol) -> dict:
     return {**_p_fg_a(mol), **_p_fg_b(mol)}
 def _fg_parts_b_core(mol: Mol) -> dict:

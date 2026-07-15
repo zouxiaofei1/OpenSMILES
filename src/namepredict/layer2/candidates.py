@@ -22,6 +22,7 @@ from namepredict.layer2.diester import _diester_parent
 from namepredict.layer2.sulfoxide import _sulfoxide_parent
 from namepredict.layer2.hydrazine import _hydrazine_parent
 from namepredict.layer2.isocyanate import _try_isocyanate, _try_isothiocyanate
+from namepredict.layer2.sulfonamide import _sulfonamide_parent
 from namepredict.layer2.urea import _urea_parent
 from namepredict.layer2.parent_selector import (
     _acid_parent,
@@ -190,7 +191,7 @@ _FG_TRY = (
     _try_diester, _try_ester, _try_carbamate, _try_urea, _try_amide, _try_nitrile, _try_aldehyde, _try_ketone,
     _try_alcohol, _try_thiol, _try_benzenediamine, _try_amine, _try_hydrazine,
     _try_phosphate, _try_phosphonic, _ether_parent, _sulfide_parent,
-    _sulfoxide_parent, _try_isocyanate, _try_isothiocyanate,
+    _sulfoxide_parent, _try_isocyanate, _try_isothiocyanate, _sulfonamide_parent,
 )
 
 
