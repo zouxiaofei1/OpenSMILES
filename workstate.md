@@ -141,6 +141,7 @@
 [#946becc][IUPAC P-65.1.1.1 / P-63.2.2 / P-29.3] 拒环上COOH的C1 formic假母体+芳环isopropoxy/isobutoxy claim与命名 [+10 tests, dual 14.1%(574)→14.2%(575), formic假阳 248→28, fails 3488→3487]
 [#ae748cc][IUPAC P-64.2.1 / P-44] 拒环上酮羰基C1 methanone假母体(泛化_open_mono_fg_ok) [+6 tests, dual 14.2%(575)持平, methanone假阳~271→63, fails 3487]
 [#cdf1906][IUPAC P-63.1.1 / P-44] 拒环上OH碳坍缩为methanol(链醇闸门；保留苄醇/真甲醇) [+7 tests, dual 14.2%(575)持平, methanol假阳~139→41, fails 3487]
+[#058c570][IUPAC P-66.6.1 / P-65.6 / P-44] 拒环上醛/酯羰基坍缩formaldehyde与methyl formate [+9 tests, dual 14.2%(575)持平, formaldehyde~50→10, methyl formate~131→4]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多磷酸/核苷酸磷酸未做
 - 炔醇/带复杂侧链多烯醇未做
