@@ -81,5 +81,5 @@ def _prefix_alkenoic_parent(
     if not chain or not need.issubset(chain):
         return None
     return parent_fn(
-        chain, "alkenoic_acid", cooh_c_idx=cooh, mol=info["mol"], **_db_kw(pairs_fn(info)),
+        chain, "acid", cooh_c_idx=cooh, mol=info["mol"], **_db_kw(pairs_fn(info)),
     )

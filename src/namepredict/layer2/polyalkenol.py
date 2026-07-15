@@ -44,5 +44,5 @@ def _polyalkenol_parent(
     if not chain or oh_c not in chain:
         return None
     return parent_fn(
-        chain, "alkenol", oh_c_idx=oh_c, double_bonds=pairs_fn(info), mol=info["mol"],
+        chain, "alcohol", oh_c_idx=oh_c, double_bonds=pairs_fn(info), mol=info["mol"],
     )

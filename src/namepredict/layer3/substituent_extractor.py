@@ -207,7 +207,7 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
 
 _PARENT_OH_KINDS = frozenset(
     {
-        "alcohol", "alkenol", "diol", "triol", "cycloalcohol",
+        "alcohol", "diol", "triol", "cycloalcohol",
         "phenol", "benzenediol", "pyridinol", "benzothiophenol", "quinolinol",
     }
 )
@@ -329,12 +329,12 @@ def _tert_n_prefix(ns: list[int]) -> tuple[str, str] | None:
         return f"N,N-di{_N_STEM_EN[a]}", f"N,N-二{_N_STEM_ZH[a]}"
     x, y = sorted(ns, key=lambda n: _N_STEM_EN[n])
     return f"N-{_N_STEM_EN[x]}-N-{_N_STEM_EN[y]}", f"N-{_N_STEM_ZH[x]}-N-{_N_STEM_ZH[y]}"
-_AMIDE_KINDS = frozenset({"amide", "alkenamide"})
+_AMIDE_KINDS = frozenset({"amide"})
 def _n_alkyl_prefix(parent: dict) -> tuple[str, str, int] | None:
     kind, n = parent.get("kind"), parent.get("n_alkyl_n")
-    if kind in ("sec_amine", "amide", "alkenamide") and n in _N_ALKYL_EN:
+    if kind in ("sec_amine", "amide") and n in _N_ALKYL_EN:
         return _N_ALKYL_EN[n], _N_ALKYL_ZH[n], n
-    if kind in ("tert_amine", "amide", "alkenamide"):
+    if kind in ("tert_amine", "amide"):
         pref = _tert_n_prefix(list(parent.get("n_alkyl_ns") or []))
         return (*pref, 0) if pref else None
     return None

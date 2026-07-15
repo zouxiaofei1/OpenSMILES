@@ -125,7 +125,7 @@ def _chain_or_unsat_alcohol(info: dict) -> dict | None:
     if poly is not None:
         return poly
     unsat = _try_unsat_fg(
-        info, "has_alcohol", "hydroxyls", _ALKENOL_BAD, "alkenol", "oh_c_idx",
+        info, "has_alcohol", "hydroxyls", _ALKENOL_BAD, "alcohol", "oh_c_idx",
     )
     return unsat if unsat is not None else _polyol_or_chain_alcohol(info)
 
@@ -306,7 +306,7 @@ def _acid_parent_core(info: dict) -> dict:
     top = _ring_acid_try(info) or _poly_acid_try(info)
     if top is not None: return top
     return _unsat_or_sat(
-        info, "has_acid", "carboxyls", _ALKENOIC_BAD, "alkenoic_acid", "acid", "cooh_c_idx",
+        info, "has_acid", "carboxyls", _ALKENOIC_BAD, "acid", "acid", "cooh_c_idx",
     )
 def _acid_parent(info: dict) -> dict:
     return _with_anion(info, _acid_parent_core(info))
@@ -320,7 +320,7 @@ def _ketone_parent(info: dict) -> dict:
     return _fg_chain(info, "ketones", "ketone", "ketone_c_idx")
 def _aldehyde_parent(info: dict) -> dict:
     return _try_izald(info) or _try_benzaldehyde_parent(info) or _unsat_or_sat(
-        info, "has_aldehyde", "aldehydes", _ALKENAL_BAD, "alkenal", "aldehyde", "aldehyde_c_idx",
+        info, "has_aldehyde", "aldehydes", _ALKENAL_BAD, "aldehyde", "aldehyde", "aldehyde_c_idx",
     )
 def _amide_parent(info: dict) -> dict:
     from namepredict.layer2.alkenamide import _amide_parent as _ap
@@ -354,7 +354,7 @@ def _anhydride_parent(info: dict) -> dict:
 def _nitrile_parent(info: dict) -> dict:
     return _try_izcn(info) or _try_pycn(info) or _unsat_or_sat(
         info, "has_nitrile", "nitriles", _ALKENENITRILE_BAD,
-        "alkenenitrile", "nitrile", "nitrile_c_idx",
+        "nitrile", "nitrile", "nitrile_c_idx",
     )
 def _ester_meta(info: dict) -> dict:
     e = info["esters"][0]
@@ -364,7 +364,7 @@ def _ester_meta(info: dict) -> dict:
     )
 def _ester_parent(info: dict) -> dict:
     return _unsat_or_sat(
-        info, "has_ester", "esters", _ALKENOATE_BAD, "alkenoate", "ester",
+        info, "has_ester", "esters", _ALKENOATE_BAD, "ester", "ester",
         "ester_c_idx", **_ester_meta(info),
     )
 def _alkene_parent(info: dict) -> dict:

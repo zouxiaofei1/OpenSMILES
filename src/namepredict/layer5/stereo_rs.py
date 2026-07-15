@@ -5,9 +5,9 @@ from rdkit import Chem
 from rdkit.Chem import Mol
 
 _RS_KINDS = frozenset({
-    "acid", "alkenoic_acid", "alcohol", "alkenol",
+    "acid", "alcohol",
     "diol", "triol", "amine", "diamine",
-    "ketone", "ester", "alkenoate",
+    "ketone", "ester",
     "piperidine", "pyrrolidine", "piperazine", "morpholine",
     "oxolane", "oxane",
     "piperidinecarboxylic", "pyrrolidinecarboxylic",
@@ -158,6 +158,6 @@ def apply_rs_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
         return en, zh
     kind = (numbered.get("parent") or {}).get("kind")
     rs = _display_rs(kind, rs_raw)
-    if kind in ("ester", "alkenoate"):
+    if kind == "ester":
         return _ester_en_rs(en, rs), _with_rs(zh, rs)
     return _with_rs(en, rs), _with_rs(zh, rs)

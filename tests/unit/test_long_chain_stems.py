@@ -26,11 +26,11 @@ CASES = [
     ("CCCCCCCCCCC(=O)O", "undecanoic acid", "十一酸"),
     ("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC=O", "triacontanal", "三十醛"),
     ("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCO", "tetratriacontan-1-ol", "三十四-1-醇"),
-    # negative: C≤10 retained / boundary / known alkenol-as-alcohol must not regress
+    # negative: C≤10 retained / boundary / unsat alcohol must not regress
     ("CCO", "ethanol", "乙醇"),
     ("CCCCCCCCCC", "decane", "癸烷"),
     ("CC(=O)O", "acetic acid", "乙酸"),
-    ("C=CCCO", "butan-1-ol", "丁-1-醇"),
+    ("C=CCCO", "but-3-en-1-ol", "丁-3-烯-1-醇"),
     ("CCCCCCCCCO", "nonan-1-ol", "壬-1-醇"),
     ("C=O", "formaldehyde", "甲醛"),
 ]

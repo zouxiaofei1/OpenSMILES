@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from rdkit.Chem import BondStereo, Mol
 
-from namepredict.layer5.stems import ALKANE_EN, ALKANE_ZH, zh_stem
+from namepredict.layer5.stems import (
+    ALKANE_EN, ALKANE_ZH, ESTER_ALKYL_EN, ESTER_ALKYL_ZH, zh_stem,
+)
 
 
 def _stereo_tag(st) -> str:
@@ -148,10 +150,87 @@ def alkenamide_names(n: int, numbered: dict) -> tuple[str, str] | None:
     )
 
 
+def _has_ene(numbered: dict) -> bool:
+    p = numbered.get("parent") or {}
+    return bool(
+        numbered.get("ene_locant") or numbered.get("ene_locants")
+        or p.get("double_bond") or p.get("double_bonds")
+    )
+
+
 def unsat_carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    """Dispatch alkenoic / alkenedioic / alkenamide parent stems."""
-    if kind == "alkenedioic":
+    """Dispatch unsat acid / diacid / amide stems when parent has ene fields."""
+    if not _has_ene(numbered):
+        return None
+    if kind == "diacid":
         return alkenedioic_names(n, numbered)
-    if kind == "alkenoic_acid":
+    if kind == "acid":
         return alkenoic_acid_names(n, numbered)
-    return alkenamide_names(n, numbered) if kind == "alkenamide" else None
+    return alkenamide_names(n, numbered) if kind == "amide" else None
+
+
+def alkenal_names(n: int, locant: int | None) -> tuple[str, str] | None:
+    return _unsat_acid_pair(n, locant, "", "enal", "烯醛")
+
+
+def alkenenitrile_names(n: int, locant: int | None) -> tuple[str, str] | None:
+    return _unsat_acid_pair(n, locant, "", "enenitrile", "烯腈")
+
+
+def _ester_alkyl_pair(alkoxy_n: int) -> tuple[str, str] | None:
+    en, zh = ESTER_ALKYL_EN.get(alkoxy_n), ESTER_ALKYL_ZH.get(alkoxy_n)
+    return (en, zh) if en and zh else None
+
+
+def alkenoate_names(n, locant, alkoxy_n, ez="") -> tuple[str, str] | None:
+    alkyl = _ester_alkyl_pair(alkoxy_n) if alkoxy_n is not None else None
+    stem = _unsat_acid_pair(n, locant, "", "enoate", "烯酸")
+    if not alkyl or not stem:
+        return None
+    return f"{alkyl[0]} {ez}{stem[0]}", f"{ez}{stem[1]}{alkyl[1]}酯"
+
+
+def _ene_mult_ol(k: int) -> tuple[str, str]:
+    en = {2: "diene", 3: "triene", 4: "tetraene", 5: "pentaene"}.get(k, "")
+    zh = {2: "二烯", 3: "三烯", 4: "四烯", 5: "五烯"}.get(k, "")
+    return en, zh
+
+
+def _alkenol_names(n, ene_loc, oh_loc, ez="") -> tuple[str, str] | None:
+    en, zh = ALKANE_EN.get(n), ALKANE_ZH.get(n)
+    if not en or not zh or ene_loc is None or oh_loc is None:
+        return None
+    return (
+        f"{ez}{en[:-3]}-{ene_loc}-en-{oh_loc}-ol",
+        f"{ez}{zh_stem(zh)}-{ene_loc}-烯-{oh_loc}-醇",
+    )
+
+
+def _polyalkenol_names(n, locs, oh_loc, ez="") -> tuple[str, str] | None:
+    en, zh = ALKANE_EN.get(n), ALKANE_ZH.get(n)
+    me, mz = _ene_mult_ol(len(locs or []))
+    if not en or not zh or not me or oh_loc is None or not locs or len(locs) < 2:
+        return None
+    loc, en_m = ",".join(str(x) for x in locs), me[:-1] if me.endswith("e") else me
+    return (
+        f"{ez}{en[:-3]}a-{loc}-{en_m}-{oh_loc}-ol",
+        f"{ez}{zh_stem(zh)}-{loc}-{mz}-{oh_loc}-醇",
+    )
+
+
+def alkenol_from(n: int, numbered: dict) -> tuple[str, str] | None:
+    ez = _ez_for_alkenol(numbered)
+    locs = numbered.get("ene_locants")
+    if locs and len(locs) >= 2:
+        return _polyalkenol_names(n, locs, numbered.get("oh_locant"), ez)
+    return _alkenol_names(n, numbered.get("ene_locant"), numbered.get("oh_locant"), ez)
+
+
+def ester_or_alkenoate(n: int, numbered: dict) -> tuple[str, str] | None:
+    """Ester stem; unsat when ene fields present."""
+    parent = numbered.get("parent") or {}
+    if _has_ene(numbered):
+        return alkenoate_names(
+            n, numbered.get("ene_locant"), parent.get("alkoxy_n"), _ez_prefix(numbered),
+        )
+    return None

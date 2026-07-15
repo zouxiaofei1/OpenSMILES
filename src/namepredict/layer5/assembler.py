@@ -81,22 +81,6 @@ def _amine_names(n: int, am_locant: int | None, omit: bool) -> tuple[str, str] |
     return f"{en[:-1]}-{am_locant}-amine", f"{zh_stem(zh)}-{am_locant}-胺"
 def _acid_names(n: int) -> tuple[str, str] | None:
     return _pair(ACID_EN, ACID_ZH, n)
-def _unsat_stem_names(n: int, locant: int | None, en_sfx: str, zh_sfx: str) -> tuple[str, str] | None:
-    plain = _alkane_names(n)
-    if not plain or locant is None:
-        return None
-    en, zh = plain
-    return f"{en[:-3]}-{locant}-{en_sfx}", f"{zh_stem(zh)}-{locant}-{zh_sfx}"
-def _alkenoate_names(n, locant, alkoxy_n, ez="") -> tuple[str, str] | None:
-    alkyl = _ester_alkyl_pair(alkoxy_n) if alkoxy_n is not None else None
-    stem = _unsat_stem_names(n, locant, "enoate", "烯酸")
-    if not alkyl or not stem:
-        return None
-    return f"{alkyl[0]} {ez}{stem[0]}", f"{ez}{stem[1]}{alkyl[1]}酯"
-def _alkenal_names(n: int, locant: int | None) -> tuple[str, str] | None:
-    return _unsat_stem_names(n, locant, "enal", "烯醛")
-def _alkenenitrile_names(n: int, locant: int | None) -> tuple[str, str] | None:
-    return _unsat_stem_names(n, locant, "enenitrile", "烯腈")
 def _anhydride_from_acid(n: int) -> tuple[str, str] | None:
     plain = _acid_names(n)
     if not plain:
@@ -213,35 +197,43 @@ def _alkyne_names(n: int, locant: int | None, omit: bool) -> tuple[str, str] | N
     if locant is None:
         return None
     return _alkyne_with_locant(n, locant)
-def _acid_table(n: int, loc) -> dict:
+def _acid_table(n: int) -> dict:
     return {
         "acid": lambda: _acid_names(n), "diacid": lambda: _diacid_names(n),
-        "alkenal": lambda: _alkenal_names(n, loc),
         "aldehyde": lambda: _aldehyde_names(n), "amide": lambda: _amide_names(n),
     }
+def _unsat_aldehyde(n: int, numbered: dict) -> tuple[str, str] | None:
+    from namepredict.layer5.unsat_acid import alkenal_names
+    loc = numbered.get("ene_locant")
+    return alkenal_names(n, loc) if loc is not None else None
 def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
     from namepredict.layer5.unsat_acid import unsat_carbonyl_names
     top = unsat_carbonyl_names(kind, n, numbered or {})
     if top is not None: return top
+    if kind == "aldehyde" and numbered:
+        top = _unsat_aldehyde(n, numbered)
+        if top is not None: return top
     if kind == "cycloalkanecarboxylic": return _cycloalkanecarboxylic_names(n)
-    fn = _acid_table(n, (numbered or {}).get("ene_locant")).get(kind)
+    fn = _acid_table(n).get(kind)
     return fn() if fn else None
 def _nitrile_or_none(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
     if kind == "nitrile":
-        return _nitrile_names(n)
-    if kind == "alkenenitrile":
-        return _alkenenitrile_names(n, (numbered or {}).get("ene_locant"))
+        from namepredict.layer5.unsat_acid import alkenenitrile_names
+        loc = (numbered or {}).get("ene_locant")
+        return alkenenitrile_names(n, loc) if loc is not None else _nitrile_names(n)
     if kind == "acyl_chloride":
         return _pair(ACYL_CHLORIDE_EN, ACYL_CHLORIDE_ZH, n)
     if kind == "anhydride":
         return _anhydride_from_acid(n)
     return None
 def _ester_or_alkenoate(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    parent = numbered.get("parent") or {}
-    if kind == "ester": return _ester_names(n, parent.get("alkoxy_n"))
-    if kind != "alkenoate": return None
-    from namepredict.layer5.unsat_acid import _ez_prefix
-    return _alkenoate_names(n, numbered.get("ene_locant"), parent.get("alkoxy_n"), _ez_prefix(numbered))
+    if kind != "ester":
+        return None
+    from namepredict.layer5.unsat_acid import ester_or_alkenoate
+    top = ester_or_alkenoate(n, numbered)
+    if top is not None:
+        return top
+    return _ester_names(n, (numbered.get("parent") or {}).get("alkoxy_n"))
 def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _ester_or_alkenoate(kind, n, numbered)
     if top is not None: return top
@@ -257,40 +249,14 @@ def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
     if kind == "cycloalcohol":
         return _cycloalcohol_names(n)
     return _cycloamine_names(n) if kind == "cycloamine" else None
-def _alkenol_names(n, ene_loc, oh_loc, ez="") -> tuple[str, str] | None:
-    plain = _alkane_names(n)
-    if not plain or ene_loc is None or oh_loc is None:
-        return None
-    en, zh = plain
-    return (
-        f"{ez}{en[:-3]}-{ene_loc}-en-{oh_loc}-ol",
-        f"{ez}{zh_stem(zh)}-{ene_loc}-烯-{oh_loc}-醇",
-    )
-def _polyalkenol_names(n, locs, oh_loc, ez="") -> tuple[str, str] | None:
-    """…-a,b-dien-m-ol (drop trailing e of diene/triene before -ol)."""
-    stem = _polyene_stem(n)
-    me, mz = _ene_mult(len(locs or []))
-    if not stem or not me or oh_loc is None or not locs or len(locs) < 2:
-        return None
-    loc, en_m = _pair_loc_str(locs), me[:-1] if me.endswith("e") else me
-    return (
-        f"{ez}{stem[0]}-{loc}-{en_m}-{oh_loc}-ol",
-        f"{ez}{stem[1]}-{loc}-{mz}-{oh_loc}-醇",
-    )
-def _alkenol_from(n: int, numbered: dict) -> tuple[str, str] | None:
-    from namepredict.layer5.unsat_acid import _ez_for_alkenol
-    ez = _ez_for_alkenol(numbered)
-    locs = numbered.get("ene_locants")
-    if locs and len(locs) >= 2:
-        return _polyalkenol_names(n, locs, numbered.get("oh_locant"), ez)
-    return _alkenol_names(
-        n, numbered.get("ene_locant"), numbered.get("oh_locant"), ez,
-    )
+def _alcohol_or_alkenol(n: int, numbered: dict) -> tuple[str, str] | None:
+    from namepredict.layer5.unsat_acid import _has_ene, alkenol_from
+    if _has_ene(numbered):
+        return alkenol_from(n, numbered)
+    return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
 def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    if kind == "alkenol":
-        return _alkenol_from(n, numbered)
     if kind == "alcohol":
-        return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
+        return _alcohol_or_alkenol(n, numbered)
     if kind == "thiol":
         return _thiol_names(n, numbered.get("sh_locant"), numbered.get("omit_sh_locant", False))
     if kind == "benzenediol":
@@ -421,14 +387,14 @@ def _locant_str(subs: list) -> str:
 def _mult_en(n: int) -> str: return MULT_EN.get(n, "")
 def _mult_zh(n: int) -> str: return MULT_ZH.get(n, "")
 _KEEP_LOCANT_KINDS = frozenset({
-    "acid", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenamide", "alkenoate",
+    "acid",
     "benzoic", "benzaldehyde", "acetophenone", "pyridinecarboxylic",
     "pyridinecarbonitrile", "benzoate", "benzonitrile", "benzoyl_chloride",
     "cycloalkanecarboxylic"}) | _H5COOH_KINDS | _SHCOOH_KINDS
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
     if n_carbons <= 1 or (kind in ("cycloalkane", "benzene") and len(substituents) == 1):
         return True
-    if kind in ("sec_amine", "tert_amine", "amide", "alkenamide"):
+    if kind in ("sec_amine", "tert_amine", "amide"):
         return {s.get("kind") for s in substituents} <= {"n_alkyl", "n_phenyl", "n_benzyl"}
     if kind in _KEEP_LOCANT_KINDS or kind == "ketone":
         return False

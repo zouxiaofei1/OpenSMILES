@@ -115,11 +115,11 @@ def _term_fn(fn):
     return lambda c, p, s: fn(c, p)
 def _terminal_orienters() -> dict:
     return {
-        "acid": _term_fn(_orient_acid), "alkenoic_acid": _term_fn(_orient_acid),
-        "alkenal": _term_fn(_orient_aldehyde), "aldehyde": _term_fn(_orient_aldehyde),
-        "ester": _term_fn(_orient_ester), "alkenoate": _term_fn(_orient_ester),
-        "amide": _term_fn(_orient_amide), "alkenamide": _term_fn(_orient_amide),
-        "nitrile": _term_fn(_orient_nitrile), "alkenenitrile": _term_fn(_orient_nitrile),
+        "acid": _term_fn(_orient_acid),
+        "aldehyde": _term_fn(_orient_aldehyde),
+        "ester": _term_fn(_orient_ester),
+        "amide": _term_fn(_orient_amide),
+        "nitrile": _term_fn(_orient_nitrile),
         "acyl_chloride": _term_fn(_orient_acyl_chloride),
     }
 def _carbonyl_orienters() -> dict:
@@ -316,7 +316,7 @@ def _arene_orienters() -> dict:
     }
 def _hetero_orienters() -> dict:
     return {
-        "alcohol": _orient_alcohol, "alkenol": _orient_alcohol, "thiol": _orient_thiol,
+        "alcohol": _orient_alcohol, "thiol": _orient_thiol,
         "diol": _orient_polyol, "triol": _orient_polyol, "diamine": _orient_diamine,
         "cycloalcohol": _orient_cycloalcohol, "phenol": _orient_cycloalcohol,
         "benzenediol": _orient_benzenediol,
@@ -329,10 +329,14 @@ def _orient_polyene(chain: list[int], parent: dict, substituents: list) -> list[
     return orient_polyene(chain, parent, substituents, _prefer_chain)
 def _orient_alkenedioic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return orient_alkenedioic(chain, parent, substituents, _prefer_chain, _orient_alkene)
+def _orient_diacid(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    if parent.get("double_bond") or parent.get("double_bonds"):
+        return _orient_alkenedioic(chain, parent, substituents)
+    return _orient_alkane(chain, substituents)
 def _unsat_orienters() -> dict:
     return {
         "cycloketone": _orient_cycloketone, "alkene": _orient_alkene,
-        "alkenedioic": _orient_alkenedioic, "polyene": _orient_polyene,
+        "diacid": _orient_diacid, "polyene": _orient_polyene,
         "cycloalkene": _orient_cycloalkene, "alkyne": _orient_alkyne,
         "cycloalkane": _orient_cycloalkane, "benzene": _orient_cycloalkane,
         "benzoic": _orient_benzoic, "benzaldehyde": _orient_benzoic,
@@ -361,7 +365,7 @@ def _oh_locant(oriented: dict) -> int | None:
     if kind == "benzothiophenol" and a is not None:
         return _indole_sub_locant(chain, a)
     return _fg_locant(
-        oriented, ("alcohol", "alkenol", "cycloalcohol", "pyridinol"), "oh_c_idx",
+        oriented, ("alcohol", "cycloalcohol", "pyridinol"), "oh_c_idx",
     )
 def _sh_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("thiol",), "sh_c_idx")
@@ -396,20 +400,21 @@ def _bond_locant(oriented: dict, kind: str, key: str) -> int | None:
     return _ene_locant_of(
         _ene_ends_on(oriented.get("chain") or [], oriented.get(key))
     )
+def _has_parent_ene(oriented: dict) -> bool:
+    return bool(oriented.get("double_bond") or oriented.get("double_bonds"))
 def _ene_locant(oriented: dict) -> int | None:
     kind = oriented.get("kind")
-    if kind in (
-        "alkene", "alkenoic_acid", "alkenal", "alkenenitrile", "alkenamide", "alkenol",
-        "alkenoate", "cycloalkene", "alkenedioic",
-    ):
-        return _bond_locant(oriented, kind, "double_bond")
+    if kind in ("alkene", "cycloalkene") or _has_parent_ene(oriented):
+        return _ene_locant_of(
+            _ene_ends_on(oriented.get("chain") or [], oriented.get("double_bond"))
+        )
     return None
 def _yne_locant(oriented: dict) -> int | None:
     return _bond_locant(oriented, "alkyne", "triple_bond")
-def _omit_oh(oh_pos: int | None, n_carbons: int, kind: str | None = None) -> bool:
+def _omit_oh(oh_pos: int | None, n_carbons: int, kind: str | None = None, parent: dict | None = None) -> bool:
     if kind == "cycloalcohol":
         return True
-    if kind == "alkenol":
+    if kind == "alcohol" and parent and _has_parent_ene(parent):
         return False
     return oh_pos == 1 and n_carbons <= 2
 def _omit_sh(sh_pos: int | None, n_carbons: int) -> bool:
@@ -418,13 +423,10 @@ def _omit_amine(am_pos: int | None, n_carbons: int, kind: str | None = None) -> 
     if kind == "cycloamine":
         return True
     return am_pos == 1 and n_carbons <= 2
-def _omit_unsat(n_carbons: int, kind: str | None = None) -> bool:
+def _omit_unsat(n_carbons: int, kind: str | None = None, parent: dict | None = None) -> bool:
     if kind == "cycloalkene":
         return True
-    if kind in (
-        "alkenoic_acid", "alkenal", "alkenenitrile", "alkenamide", "alkenol",
-        "alkenoate", "alkenedioic",
-    ):
+    if parent and _has_parent_ene(parent) and kind != "alkene":
         return False
     return n_carbons <= 3
 def _naph_sub_locant(chain: list[int], attach: int) -> int:
@@ -455,7 +457,7 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
     return {
         "ene_locant": _ene_locant(oriented),
         "ene_locants": ene_locants(oriented),
-        "omit_ene_locant": _omit_unsat(n, kind),
+        "omit_ene_locant": _omit_unsat(n, kind, oriented),
         "yne_locant": _yne_locant(oriented),
         "omit_yne_locant": _omit_unsat(n),
     }
@@ -464,7 +466,7 @@ def _oh_am_locants(oriented: dict, n: int) -> dict:
     kind = oriented.get("kind")
     return {
         "oh_locant": oh, "oh_locants": _oh_locants(oriented),
-        "omit_oh_locant": _omit_oh(oh, n, kind),
+        "omit_oh_locant": _omit_oh(oh, n, kind, oriented),
         "amine_locant": am, "amine_locants": _amine_pair_locants(oriented),
         "omit_amine_locant": _omit_amine(am, n, kind),
     }

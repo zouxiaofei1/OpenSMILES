@@ -62,4 +62,4 @@ def _alkenedioic_parent(info: dict) -> dict:
 
     atoms = _alkenedioic_atoms(info) or []
     chain = _best_cover_pair(info["mol"], atoms)
-    return _parent_dict(chain, "alkenedioic", **_alkenedioic_meta(info))
+    return _parent_dict(chain, "diacid", **_alkenedioic_meta(info))

@@ -55,6 +55,6 @@ def _amide_n_meta(info: dict) -> dict:
 def _amide_parent(info: dict) -> dict:
     from namepredict.layer2.parent_selector import _unsat_or_sat
     return _unsat_or_sat(
-        info, "has_amide", "amides", _ALKENAMIDE_BAD, "alkenamide", "amide",
+        info, "has_amide", "amides", _ALKENAMIDE_BAD, "amide", "amide",
         "amide_c_idx", **_amide_n_meta(info),
     )

@@ -94,7 +94,7 @@ def test_pick_best_prefers_acid_over_alcohol() -> None:
     cands = _fg_candidates(info)
     best = _pick_best(info, cands)
     assert best is not None
-    assert best["kind"] in ("acid", "alkenoic_acid", "diacid")
+    assert best["kind"] in ("acid", "diacid")
 
 
 # --- integration: retained dual behavior ---
