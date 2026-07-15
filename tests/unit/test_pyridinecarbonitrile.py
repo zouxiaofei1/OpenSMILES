@@ -41,6 +41,7 @@ CASES = [
     ("c1ccncc1", "pyridine", "吡啶"),
     ("O=C(O)c1ccncc1", "pyridine-4-carboxylic acid", "吡啶-4-甲酸"),
     ("CC#N", "acetonitrile", "乙腈"),
+    ("CCC#N", "propanenitrile", "丙腈"),
 ]
 
 

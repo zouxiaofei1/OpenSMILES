@@ -43,6 +43,8 @@ from namepredict.layer2.parent_selector import (
     _polyene_parent,
     _sulfide_parent,
     _thiol_parent,
+    _try_izcn,
+    _try_pycn,
 )
 from namepredict.layer2.ring_parent import (
     _is_benzene_core,
@@ -102,12 +104,19 @@ def _is_aryl_nitrile_c(mol, c_idx: int) -> bool:
     return len(cs) == 1 and cs[0].GetIsAromatic()
 
 
+def _try_heteroaryl_carbonitrile(info: dict) -> dict | None:
+    """Retained heteroaryl–CN parents (indazole / pyridine carbonitrile)."""
+    return _try_izcn(info) or _try_pycn(info)
+
+
 def _try_nitrile(info: dict) -> dict | None:
     if not _is_mono_fg(info, "has_nitrile", "nitriles"):
         return None
+    if (h := _try_heteroaryl_carbonitrile(info)) is not None:
+        return h
     nit = info["nitriles"][0]
     if _is_aryl_nitrile_c(info["mol"], nit["c_idx"]):
-        return None  # Ar–CN is a leaf; benzonitrile via arene path
+        return None  # Ar–CN leaf; benzonitrile via arene path
     return _nitrile_parent(info)
 
 
