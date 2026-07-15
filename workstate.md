@@ -174,7 +174,9 @@
 [#67db2e4][IUPAC P-65.6] 有机碳酸酯：对称二烷基 + 烷基芳基；修 formate 坍缩 [+tests, dual 14.8%(601)→14.8%(602), fails 3461→3460, 0 REGRESS]
 [#cc6f5e9][IUPAC P-25 / P-64] 9,10-蒽醌：线性 anthracene + meso 二酮；2,3-二甲基蒽醌 [+tests, dual 14.8%(602)→14.8%(603), fails 3460→3459, 0 REGRESS]
 [#8a5ba10][IUPAC P-65.3] 磺酰氯：烷/芳 SO2Cl；3,3,3-三氟丙烷磺酰氯 [+tests, dual 14.8%(603)→14.9%(604), fails 3459→3458, 0 REGRESS]
+[#d97a7d0][IUPAC P-66.4.1.2.1] 简单胍功能母体第一刀：未取代/mono N-aryl/N-arylsulfonyl [+8 tests, dual 14.9%(604)→14.9%(605), fails 3458→3457]
 ## 其他
+- 胍第一刀：未取代+mono N-aryl+N-arylsulfonyl；N-alkyl/多N取代未做
 - 磺酰氯第一刀：烷基 C1–C4(+F/CF3)+简单芳基；磺酰氟/溴未做
 - 9,10-蒽醌第一刀：未取代+环甲基；多羟基蒽醌编号未做
 - 有机碳酸酯第一刀：dialkyl C1–C4 + alkyl-aryl(Me/halo≤2)；环状/二杂芳/无机盐未做
