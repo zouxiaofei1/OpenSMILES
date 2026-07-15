@@ -1,19 +1,19 @@
-"""Retained scaffold registry (P-22 / P-25) — match metadata for L2.
+"""Retained scaffold registry (P-22 / P-25) — topology match; stems from Spec.
 
-Phase-0 skeleton: entries describe topology predicates using ring_systems.
-Existing _try_* modules remain authoritative until migrated.
+Phase-0 topology predicates using ring_systems. Stem en/zh come from
+scaffold.specs (single source). Existing _try_* modules remain authoritative
+until fully migrated.
 """
 from __future__ import annotations
 
-from typing import Callable
+from namepredict.layer2.scaffold.specs import get_spec
 
-from rdkit.Chem import Mol
-
-# scaffold_id → entry
-# entry keys: kind, n_rings, n_atoms, hetero_Z (sorted), topology, en, zh
+# scaffold_id → topology entry (en/zh resolved via get_spec at read time)
+# topology keys: kind, n_rings, n_atoms, hetero_Z (sorted), topology, aromatic
 RetainedEntry = dict
 
-_REGISTRY: dict[str, RetainedEntry] = {
+# Topology-only table; ids MUST be ⊆ ScaffoldSpec registry.
+_TOPOLOGY: dict[str, dict] = {
     "benzene": {
         "kind": "benzene",
         "n_rings": 1,
@@ -21,8 +21,6 @@ _REGISTRY: dict[str, RetainedEntry] = {
         "hetero_Z": (),
         "topology": "mono",
         "aromatic": True,
-        "en": "benzene",
-        "zh": "苯",
     },
     "pyridine": {
         "kind": "pyridine",
@@ -31,8 +29,6 @@ _REGISTRY: dict[str, RetainedEntry] = {
         "hetero_Z": (7,),
         "topology": "mono",
         "aromatic": True,
-        "en": "pyridine",
-        "zh": "吡啶",
     },
     "naphthalene": {
         "kind": "naphthalene",
@@ -41,8 +37,6 @@ _REGISTRY: dict[str, RetainedEntry] = {
         "hetero_Z": (),
         "topology": "fused",
         "aromatic": True,
-        "en": "naphthalene",
-        "zh": "萘",
     },
     "indole": {
         "kind": "indole",
@@ -51,18 +45,24 @@ _REGISTRY: dict[str, RetainedEntry] = {
         "hetero_Z": (7,),
         "topology": "fused",
         "aromatic": True,
-        "en": "1H-indole",
-        "zh": "1H-吲哚",
     },
 }
 
 
+def _entry_with_stems(sid: str, topo: dict) -> RetainedEntry:
+    sp = get_spec(sid)
+    en = sp.stem_en if sp else None
+    zh = sp.stem_zh if sp else None
+    return {**topo, "en": en, "zh": zh}
+
+
 def registry() -> dict[str, RetainedEntry]:
-    return _REGISTRY
+    return {sid: _entry_with_stems(sid, t) for sid, t in _TOPOLOGY.items()}
 
 
 def get_entry(scaffold_id: str) -> RetainedEntry | None:
-    return _REGISTRY.get(scaffold_id)
+    topo = _TOPOLOGY.get(scaffold_id)
+    return None if topo is None else _entry_with_stems(scaffold_id, topo)
 
 
 def _hetero_Z_tuple(system: dict) -> tuple[int, ...]:
@@ -85,7 +85,8 @@ def match_systems(info: dict) -> list[tuple[str, dict, RetainedEntry]]:
     """Return (scaffold_id, ring_system, entry) for matching systems."""
     out: list[tuple[str, dict, RetainedEntry]] = []
     for system in info.get("ring_systems") or []:
-        for sid, entry in _REGISTRY.items():
+        for sid, topo in _TOPOLOGY.items():
+            entry = _entry_with_stems(sid, topo)
             if _system_matches(system, entry):
                 out.append((sid, system, entry))
     return out

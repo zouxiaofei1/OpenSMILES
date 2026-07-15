@@ -47,26 +47,65 @@ def _carbo(sid: str, mode: str) -> ScaffoldSpec:
 
 def _fused56(
     sid: str, stem_en: str | None, stem_zh: str | None, fg_rank: int = 0,
+    *, retained: bool = True,
 ) -> ScaffoldSpec:
     pol = NumberingPolicy(mode="fused56_fixed", standard_path=FUSED56_LABELS)
     return ScaffoldSpec(
         id=sid, naming_class="fused56", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=2, ring="hetero", retained=True, fg_rank=fg_rank, numbering=pol,
+        n_rings=2, ring="hetero", retained=retained, fg_rank=fg_rank,
+        numbering=pol,
     )
 
 
 def _naph(
-    sid: str,
-    stem_en: str | None,
-    stem_zh: str | None,
-    *,
-    ring: str = "hetero",
-    fg_rank: int = 0,
+    sid: str, stem_en: str | None, stem_zh: str | None, *,
+    ring: str = "hetero", fg_rank: int = 0, retained: bool = True,
 ) -> ScaffoldSpec:
     pol = NumberingPolicy(mode="naph_family", standard_path=NAPH_LABELS)
     return ScaffoldSpec(
         id=sid, naming_class="naph_family", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=2, ring=ring, retained=True, fg_rank=fg_rank, numbering=pol,
+        n_rings=2, ring=ring, retained=retained, fg_rank=fg_rank, numbering=pol,
+    )
+
+
+def _monohetero(
+    sid: str, stem_en: str, stem_zh: str, *, fg_rank: int = 0,
+) -> ScaffoldSpec:
+    pol = NumberingPolicy(mode="fixed_hetero")
+    return ScaffoldSpec(
+        id=sid, naming_class="monohetero", stem_en=stem_en, stem_zh=stem_zh,
+        n_rings=1, ring="hetero", retained=True, fg_rank=fg_rank,
+        numbering=pol,
+    )
+
+
+def _mono_carbo(
+    sid: str, stem_en: str, stem_zh: str, *, mode: str = "fixed_roles",
+) -> ScaffoldSpec:
+    pol = NumberingPolicy(mode=mode)
+    return ScaffoldSpec(
+        id=sid, naming_class="mono_carbo", stem_en=stem_en, stem_zh=stem_zh,
+        n_rings=1, ring="carbo", retained=True, fg_rank=0, numbering=pol,
+    )
+
+
+def _poly_carbo(
+    sid: str, stem_en: str, stem_zh: str, n_rings: int, mode: str,
+) -> ScaffoldSpec:
+    pol = NumberingPolicy(mode=mode)
+    return ScaffoldSpec(
+        id=sid, naming_class="poly_carbo", stem_en=stem_en, stem_zh=stem_zh,
+        n_rings=n_rings, ring="carbo", retained=True, fg_rank=0,
+        numbering=pol,
+    )
+
+
+def _benzodiazine(sid: str, stem_en: str, stem_zh: str) -> ScaffoldSpec:
+    """6+6 diazine; 10-atom path uses naph labels (not yet in L4 Q_KINDS)."""
+    pol = NumberingPolicy(mode="naph_family", standard_path=NAPH_LABELS)
+    return ScaffoldSpec(
+        id=sid, naming_class="benzodiazine", stem_en=stem_en, stem_zh=stem_zh,
+        n_rings=2, ring="hetero", retained=True, fg_rank=0, numbering=pol,
     )
 
 
@@ -97,7 +136,7 @@ FUSED56_SPECS: tuple[ScaffoldSpec, ...] = (
     ),
 )
 
-# Quinoline / isoquinoline / naphthalene (10-atom path, naph labels).
+# Quinoline / isoquinoline / naphthalene (10-atom path; L4 NAPH∪Q contract).
 NAPH_FAMILY_SPECS: tuple[ScaffoldSpec, ...] = (
     _naph("quinoline", "quinoline", "喹啉"),
     _naph("isoquinoline", "isoquinoline", "异喹啉"),
@@ -112,8 +151,55 @@ NAPH_FAMILY_SPECS: tuple[ScaffoldSpec, ...] = (
     ),
 )
 
+# 6+6 benzodiazines: same 10-atom naph labels; not yet in L4 Q_KINDS.
+BENZODIAZINE_SPECS: tuple[ScaffoldSpec, ...] = (
+    _benzodiazine("quinazoline", "quinazoline", "喹唑啉"),
+    _benzodiazine("quinoxaline", "quinoxaline", "喹喔啉"),
+)
+
+# Mono-hetero retained + Hantzsch–Widman (stem authority for kind_registry).
+MONO_HETERO_SPECS: tuple[ScaffoldSpec, ...] = (
+    _monohetero("pyridine", "pyridine", "吡啶"),
+    _monohetero("furan", "furan", "呋喃"),
+    _monohetero("thiophene", "thiophene", "噻吩"),
+    _monohetero("pyrrole", "1H-pyrrole", "吡咯"),
+    _monohetero("imidazole", "1H-imidazole", "咪唑"),
+    _monohetero("pyrazole", "1H-pyrazole", "吡唑"),
+    _monohetero("oxazole", "1,3-oxazole", "恶唑"),
+    _monohetero("thiazole", "1,3-thiazole", "噻唑"),
+    _monohetero("pyrimidine", "pyrimidine", "嘧啶"),
+    _monohetero("pyrazine", "pyrazine", "吡嗪"),
+    _monohetero("pyridazine", "pyridazine", "哒嗪"),
+    _monohetero("aziridine", "aziridine", "氮杂环丙烷"),
+    _monohetero("oxirane", "oxirane", "环氧乙烷"),
+    _monohetero("oxolane", "oxolane", "氧杂环戊烷"),
+    _monohetero("oxane", "oxane", "氧杂环己烷"),
+    _monohetero("pyrrolidine", "pyrrolidine", "吡咯烷"),
+    _monohetero("piperidine", "piperidine", "哌啶"),
+    _monohetero("morpholine", "morpholine", "吗啉"),
+    _monohetero("piperazine", "piperazine", "哌嗪"),
+    _monohetero("dioxolane", "1,3-dioxolane", "1,3-二氧戊环"),
+    _monohetero("dioxane", "1,4-dioxane", "1,4-二氧六环"),
+    _monohetero("thiolane", "thiolane", "硫杂环戊烷"),
+)
+
+# Mono / linear polycyclic carbo retained (benzene, anthracene).
+MONO_CARBO_SPECS: tuple[ScaffoldSpec, ...] = (
+    _mono_carbo("benzene", "benzene", "苯"),
+)
+
+POLY_CARBO_SPECS: tuple[ScaffoldSpec, ...] = (
+    _poly_carbo("anthracene", "anthracene", "蒽", 3, "anthracene_fixed"),
+)
+
 _ALL_SPECS: tuple[ScaffoldSpec, ...] = (
-    CARBOCYCLE_SPECS + FUSED56_SPECS + NAPH_FAMILY_SPECS
+    CARBOCYCLE_SPECS
+    + FUSED56_SPECS
+    + NAPH_FAMILY_SPECS
+    + BENZODIAZINE_SPECS
+    + MONO_HETERO_SPECS
+    + MONO_CARBO_SPECS
+    + POLY_CARBO_SPECS
 )
 _BY_ID: dict[str, ScaffoldSpec] = {s.id: s for s in _ALL_SPECS}
 
@@ -136,6 +222,11 @@ def naph_kind_ids() -> frozenset[str]:
     return frozenset(s.id for s in NAPH_FAMILY_SPECS)
 
 
+def monohetero_kind_ids() -> frozenset[str]:
+    """Kind / scaffold ids for mono-hetero retained scaffolds."""
+    return frozenset(s.id for s in MONO_HETERO_SPECS)
+
+
 def kind_ids_for(naming_class: str) -> frozenset[str]:
-    """Ids for a naming_class (fused56 / naph_family / carbocycle)."""
+    """Ids for a naming_class (fused56 / naph_family / monohetero / …)."""
     return frozenset(s.id for s in _ALL_SPECS if s.naming_class == naming_class)

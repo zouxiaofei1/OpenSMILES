@@ -52,44 +52,15 @@ _SAT_COOH = (
     "oxolanecarboxylic", "oxanecarboxylic",
     "thiolanecarboxylic", "aziridinecarboxylic",
 )
-_FUSED_FG: tuple[tuple[str, int, bool], ...] = (
-    ("quinolinecarboxylic", 13, True), ("indolecarboxylic", 13, True),
-    ("naphthalenecarboxylic", 13, True), ("indazolecarbonitrile", 8, True),
-    ("indazolecarbaldehyde", 7, True), ("benzothiophenol", 5, False),
-    ("quinolinol", 5, False), ("benzofuranamine", 3, False),
-    ("benzothiazolamine", 3, False), ("benzimidazolamine", 3, False),
-    ("benzoxazolamine", 3, False),
-)
-_HETERO_MONO: tuple[tuple[str, str, str], ...] = (
-    ("pyridine", "pyridine", "吡啶"), ("furan", "furan", "呋喃"),
-    ("thiophene", "thiophene", "噻吩"), ("pyrrole", "1H-pyrrole", "吡咯"),
-    ("imidazole", "1H-imidazole", "咪唑"), ("pyrazole", "1H-pyrazole", "吡唑"),
-    ("oxazole", "1,3-oxazole", "恶唑"), ("thiazole", "1,3-thiazole", "噻唑"),
-    ("pyrimidine", "pyrimidine", "嘧啶"), ("pyrazine", "pyrazine", "吡嗪"),
-    ("pyridazine", "pyridazine", "哒嗪"),
-    ("aziridine", "aziridine", "氮杂环丙烷"),
-    ("oxirane", "oxirane", "环氧乙烷"),
-    ("oxolane", "oxolane", "氧杂环戊烷"),
-    ("oxane", "oxane", "氧杂环己烷"),
-    ("pyrrolidine", "pyrrolidine", "吡咯烷"),
-    ("piperidine", "piperidine", "哌啶"),
-    ("morpholine", "morpholine", "吗啉"),
-    ("piperazine", "piperazine", "哌嗪"),
-    ("dioxolane", "1,3-dioxolane", "1,3-二氧戊环"),
-    ("dioxane", "1,4-dioxane", "1,4-二氧六环"),
-    ("thiolane", "thiolane", "硫杂环戊烷"),
-)
-_HETERO_FUSED: tuple[tuple[str, str, str], ...] = (
-    ("indole", "1H-indole", "吲哚"), ("indazole", "1H-indazole", "1H-吲唑"),
-    ("benzofuran", "benzofuran", "苯并呋喃"),
-    ("benzothiophene", "1-benzothiophene", "苯并[b]噻吩"),
-    ("benzothiazole", "1,3-benzothiazole", "1,3-苯并噻唑"),
-    ("benzoxazole", "1,3-benzoxazole", "1,3-苯并噁唑"),
-    ("benzimidazole", "1H-benzimidazole", "1H-苯并咪唑"),
-    ("quinoline", "quinoline", "喹啉"),
-    ("isoquinoline", "isoquinoline", "异喹啉"),
-    ("quinazoline", "quinazoline", "喹唑啉"),
-    ("quinoxaline", "quinoxaline", "喹喔啉"),
+# Fused FG kinds without Spec stems still need fg_rank registration.
+# Spec is authority when present; this table only covers residual FG tags.
+_MISC_RING_FG: tuple[tuple[str, int, str, int, bool], ...] = (
+    ("cycloalkanecarboxylic", 13, "none", 0, False),
+    ("benzenediol", 5, "none", 0, False),
+    ("pyridinol", 5, "none", 0, False),
+    ("pyridinamine", 3, "none", 0, False),
+    ("pyrimidinamine", 3, "none", 0, False),
+    ("benzenediamine", 3, "carbo", 1, False),
 )
 
 
@@ -201,34 +172,13 @@ def _load_sat_cooh() -> None:
         _add(k, fg=13, ret=True)
 
 
-def _load_fused_fg() -> None:
-    for k, fg, ret in _FUSED_FG:
-        _add(k, fg=fg, n=2, ret=ret)
-
-
 def _load_misc_ring_fg() -> None:
-    _add("cycloalkanecarboxylic", fg=13)
-    _add("benzenediol", fg=5)
-    _add("pyridinol", fg=5)
-    _add("pyridinamine", fg=3)
-    _add("pyrimidinamine", fg=3)
-    _add("benzenediamine", fg=3, ring="carbo", n=1)
+    for k, fg, ring, n, ret in _MISC_RING_FG:
+        _add(k, fg=fg, ring=ring, n=n, ret=ret)
 
 
-def _load_hetero_mono() -> None:
-    for kind, en, zh in _HETERO_MONO:
-        _add(kind, en=en, zh=zh, ring="hetero", n=1, ret=True)
-
-
-def _load_hetero_fused() -> None:
-    for kind, en, zh in _HETERO_FUSED:
-        _add(kind, en=en, zh=zh, ring="hetero", n=2, ret=True)
-
-
-def _load_carbo_rings() -> None:
-    _add("benzene", en="benzene", zh="苯", ring="carbo", n=1, ret=True)
-    _add("naphthalene", en="naphthalene", zh="萘", ring="carbo", n=2, ret=True)
-    _add("anthracene", en="anthracene", zh="蒽", ring="carbo", n=3, ret=True)
+def _load_cyclo_rings() -> None:
+    """Cyclo* kinds without stems (Spec stem is None; still need ring meta)."""
     _add("cycloalkane", ring="carbo", n=1)
     _add("cycloalkene", ring="carbo", n=1)
     _add("cyclopolyene", ring="carbo", n=1)
@@ -242,17 +192,32 @@ def _load_sat_hetero_repl() -> None:
     )
 
 
+def _spec_to_meta(sp) -> KindMeta:
+    return KindMeta(
+        sp.id, sp.stem_en, sp.stem_zh, sp.fg_rank, sp.ring, sp.n_rings,
+        sp.retained,
+    )
+
+
+def _load_from_scaffold_specs() -> None:
+    """Single stem authority: ScaffoldSpec → KindMeta (overwrite if present)."""
+    from namepredict.layer2.scaffold.specs import all_specs
+
+    for sp in all_specs():
+        if sp.stem_en is None or sp.stem_zh is None:
+            continue
+        register(_spec_to_meta(sp))
+
+
 def _bootstrap() -> None:
     _load_chain_fg()
     _load_arene_fg_names()
     _load_h5_cooh()
     _load_sat_cooh()
-    _load_fused_fg()
     _load_misc_ring_fg()
-    _load_hetero_mono()
-    _load_hetero_fused()
-    _load_carbo_rings()
+    _load_cyclo_rings()
     _load_sat_hetero_repl()
+    _load_from_scaffold_specs()  # last: Spec is stem authority
 
 
 _bootstrap()
