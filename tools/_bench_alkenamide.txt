@@ -1,0 +1,14 @@
+[07:26:54] Explicit valence for atom # 20 C, 5, is greater than permitted
+workers=19 elapsed=7.25s avg=1.79ms/row (n=4062)
+en=13.7% (558/4062) zh=35.7% (270/756) dual=13.6% (553/4062) fails=3509
+diff_vs_last: total=2 REGRESS=0 IMPROVE=0 CHANGE=2
+  [CHANGE] id:tiers-157714  smiles=ClC1=CC=C(C=C1)C1=CC(=NO1)CNC(\C=C/C1=CC(=C(C(=C1)OC)OC)OC)=O  dual fail->fail  en fail->fail  zh fail->fail
+    gold_en='(Z)-N-((5-(4-chlorophenyl)isoxazol-3-yl)methyl)-3-(3,4,5-trimethoxyphenyl)acrylamide'
+    gold_zh='(Z)-N-((5-(4-ÂÈ±½»ù)Òì¶ñßò-3-»ù)¼×»ù)-3-(3,4,5-Èý¼×Ñõ»ù±½»ù)±ûÏ©õ£°·'
+    prev_pred_en='(Z)-3-(3,4,5-trimethoxyphenyl)prop-2-enamide'  cur_pred_en='(Z)-3-(3,4,5-trimethoxyphenyl)-N-methylprop-2-enamide'
+    prev_pred_zh='(Z)-3-(3,4,5-Èý¼×Ñõ»ù±½»ù)±û-2-Ï©õ£°·'  cur_pred_zh='(Z)-3-(3,4,5-Èý¼×Ñõ»ù±½»ù)-N-¼×»ù±û-2-Ï©õ£°·'
+  [CHANGE] id:chebi-1006  smiles=COc1ccc(/C(=C/C(=O)N2CCOCC2)c2ccc(Cl)cc2)cc1OC  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(E)-3-(4-chlorophenyl)-3-(3,4-dimethoxyphenyl)-1-morpholin-4-ylprop-2-en-1-one'
+    gold_zh=''
+    prev_pred_en='(E)-3-(3,4-dimethoxyphenyl)-3-(4-chlorophenyl)prop-2-enamide'  cur_pred_en='(E)-3-(3,4-dimethoxyphenyl)-3-(4-chlorophenyl)-N,N-dimethylprop-2-enamide'
+    prev_pred_zh='(E)-3-(3,4-¶þ¼×Ñõ»ù±½»ù)-3-(4-ÂÈ±½»ù)±û-2-Ï©õ£°·'  cur_pred_zh='(E)-3-(3,4-¶þ¼×Ñõ»ù±½»ù)-3-(4-ÂÈ±½»ù)-N,N-¶þ¼×»ù±û-2-Ï©õ£°·'

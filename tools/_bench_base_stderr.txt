@@ -1,0 +1,11 @@
+[18:10:34] Explicit valence for atom # 20 C, 5, is greater than permitted
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "E:\dev\chem\benchmarks\benchmark_parallel.py", line 194, in <module>
+    main()
+  File "E:\dev\chem\benchmarks\benchmark_parallel.py", line 184, in main
+    _handle_report(report, as_json=args.json, snapshot_path=args.snapshot)
+  File "E:\dev\chem\benchmarks\benchmark.py", line 317, in _handle_report
+    print(json.dumps(_report_for_json(report, diffs), ensure_ascii=False))
+OSError: [Errno 22] Invalid argument

@@ -1,0 +1,14 @@
+[21:52:02] Explicit valence for atom # 20 C, 5, is greater than permitted
+workers=19 elapsed=5.47s avg=1.35ms/row (n=4062)
+en=15.1% (613/4062) zh=39.0% (295/756) dual=14.9% (604/4062) fails=3458
+diff_vs_last: total=2 REGRESS=0 IMPROVE=0 CHANGE=2
+  [CHANGE] id:tiers-64134  smiles=[Na+].C=CC1=CC=C(C=C1)S(=O)(=O)[O-]  dual fail->fail  en fail->fail  zh fail->fail
+    gold_en='sodium 4-styrenesulfonate'
+    gold_zh='±½ÒÒÏ©»ÇËáÄÆ'
+    prev_pred_en='methane'  cur_pred_en='ethene'
+    prev_pred_zh='¼×Íé¸ù'  cur_pred_zh='ÒÒÏ©'
+  [CHANGE] id:chebi-2243  smiles=Cc1ccc(S(=O)(=O)[O-])cc1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='4-methylbenzenesulfonate'
+    gold_zh=''
+    prev_pred_en='methane'  cur_pred_en='ethane'
+    prev_pred_zh='¼×Íé¸ù'  cur_pred_zh='ÒÒÍé'

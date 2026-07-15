@@ -1,0 +1,22 @@
+## 代码审查报告
+- **范围**: `src/namepredict/layer1/sulfonic_acid.py`（新）, `src/namepredict/layer2/sulfonic_acid.py`（新）, `src/namepredict/layer5/sulfonic_acid_names.py`（新）, `tests/unit/test_sulfonic_acid.py`（新）, `src/namepredict/layer1/analyzer.py`, `src/namepredict/layer2/fg_producers.py`, `src/namepredict/layer2/kind_registry.py`, `src/namepredict/layer2/sulfonamide.py`, `src/namepredict/layer2/sulfonate.py`, `src/namepredict/layer2/sulfonyl_chloride.py`, `src/namepredict/layer5/special_fg_names.py`, `tests/unit/test_fg_producers.py`
+- **主规则/意图**: IUPAC P-65.3 游离磺酸 / 磺酸根功能母体第一刀：`R–SO2–OH` / `R–SO2–O⁻`（C1–C4 正烷基 + 未稠合 Ph≤2 Me/halo 叶 + L0 碱金属盐），与既有酯 kind `sulfonate` 正交
+- **选题同意**: 是
+- **选题意见**: 值得做。游离磺酸是 P-65.3 主路径缺口（酯/酰氯已落地后的自然下一刀）；粒度 C1–C4 + 简单芳环与同族 `sulfonate`/`sulfonyl_chloride` 一致，非过窄「只做甲基」；长链/乙烯基叶故意拒绝可防 4-butyl/4-ethyl 假绿；与酯检测（S–O–C vs 游离 OH/O⁻）及互斥 BAD 列表无冲突。非架构轮选题合理。
+- **共识状态**: 一致（往返轮次: 0）
+- **Layer**: L1 检测 / L2 母体 / L5 词干；阴离子/盐复用 L5 `maybe_anion_names` + `maybe_metal_salt_names`；无越界
+- **structure_lint**: pass（`structure_lint: ok`）
+- **pytest**: pass（`tests/unit/test_sulfonic_acid.py` + `tests/unit/test_fg_producers.py`，42 passed）
+- **benchmark**: dual **14.9%(605) → 14.9%(606)**；fails **3457 → 3456**；**中英文双重准确: 14.9%**；REGRESS=0 IMPROVE=1 CHANGE=7（`python -m benchmarks.benchmark_parallel --data data/merged_benchmark.json --time`）
+- **体量**: 函数体超限 0 处；文件超限 0 处（L1 94 / L2 111 / L5 55 行）
+- **架构**: 无问题。kind `sulfonic_acid` 优先级 12（高于酯 `sulfonate` 11）合理；`sulfonamide`/`sulfonate`/`sulfonyl_chloride` 互斥 `has_sulfonic_acid`；无 SMILES 特判、无只 L5 糊同分
+- **化学逻辑**: 无阻断问题。L1 游离 OH/O⁻ vs 酯 O–C 分离正确；阴离子经 `…sulfonic acid` → `acid_to_anion_en/zh`（`ic acid`→`ate`，`磺酸`→`磺酸根`）与盐包装正确。已知第一刀债务（不阻断）：部分带杂环/多羟基侧链仍可走「裸烷基磺酸」路径（如 ethanesulfonic / methanesulfonic 误名），与同族模块一致，且 dual 仍 fail→fail、无 REGRESS；芳叶 ≤2 Me/halo 拒绝策略正确
+- **路径合规**: 可写范围内（仅 `src/namepredict/**` + `tests/unit/**`；未碰 `data/*` / 计分）
+- **代码质量**: 合格
+- **裁决**: PASS
+- **必须修改**（FIX 时逐条可执行）:
+  （无）
+- **回滚原因**（ROLLBACK 时）: （无）
+- **挑战要点**（CHALLENGE 时）: （无）
+- **可提交摘要**（仅 PASS 时，供 workstate）:
+  [#pending][IUPAC P-65.3] 游离磺酸/磺酸根功能母体第一刀（C1–C4 烷基 + 简单 Ph + 阴离子/碱金属盐） [+unit tests, dual 14.9%(605)→14.9%(606), fails 3457→3456, REGRESS=0]

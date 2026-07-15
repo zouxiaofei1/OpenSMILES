@@ -1,0 +1,9 @@
+[18:23:10] Explicit valence for atom # 20 C, 5, is greater than permitted
+workers=19 elapsed=6.06s avg=1.49ms/row (n=4062)
+en=14.7% (599/4062) zh=37.7% (285/756) dual=14.5% (589/4062) fails=3473
+diff_vs_last: total=1 REGRESS=0 IMPROVE=0 CHANGE=1
+  [CHANGE] id:tiers-35204  smiles=FC(C1=CC=C(C=C1)N=C=S)(F)F  dual fail->fail  en fail->ok  zh fail->fail
+    gold_en='4-(Trifluoromethyl)isothiocyanatobenzene'
+    gold_zh='4-Èı·ú¼×»ùÒìÁòÇèËá±½õ¥'
+    prev_pred_en='trifluoromethylisothiocyanatobenzene'  cur_pred_en='4-(trifluoromethyl)isothiocyanatobenzene'
+    prev_pred_zh='Èı·ú¼×»ùÒìÁòÇèËá±½õ¥'  cur_pred_zh='4-(Èı·ú¼×»ù)ÒìÁòÇèËá±½õ¥'

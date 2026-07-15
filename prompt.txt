@@ -14,7 +14,7 @@
 8.subagent有时会出问题。subagent不应更换模型。可以多尝试几次，不应自己编写代码
 9.pytest应多线程运行
 12.benchmark使用english_name和chinese_name字段
-15.**文件必须**存在src\namepredict\layer0-layer5某个文件夹里，且代码长度不超过500行
+15.**文件必须**存在src\namepredict\layer0-layer5某个文件夹里，且代码长度不超过1000行
 Layer 0: Molecule Preprocessor
 Layer 1: Structural Analyzer
 Layer 2: Parent Selector
@@ -28,8 +28,9 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 
 #工作步骤：
 0. 读取 workstate.md，了解当前进度和计划。
+0.1 workstate.md中## 其他 行的行号如果尾数为3或8，当前工作轮次为架构改进轮。使用 skills/analyzing-architecture-risk 分析项目风险，选择一重要的。跳到3.
 1. 运行**benchmark**,记录并报告当前分数，格式**中英文双重准确:[ ]%**
-2. 选择一个改进点。改进点的范围和工作量应该合理，改进点的修改代码量不应<100行。需要时可参考IUPAC原文。考虑进行#架构升级，如果还没有做。
+2. 选择一个改进点。改进点的范围不要太小，工作量应该合理，改进点的修改代码量不应<100行。需要时可参考IUPAC原文。
 3. 调用一个subagent,进行编写代码（遵守 skills/chem-tdd-skill）
 4. 调用第二个subagent（review）：**必须先阅读并全文遵守 skills/chem-code-review**。
    - 先审**选题**再审代码：代码全绿也可以反对选题；裁决 PASS|FIX|ROLLBACK|CHALLENGE

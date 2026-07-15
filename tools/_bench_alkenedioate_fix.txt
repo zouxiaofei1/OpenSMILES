@@ -1,0 +1,44 @@
+[16:04:26] Explicit valence for atom # 20 C, 5, is greater than permitted
+workers=19 elapsed=6.88s avg=1.69ms/row (n=4062)
+en=14.5% (591/4062) zh=37.3% (282/756) dual=14.4% (586/4062) fails=3476
+diff_vs_last: total=8 REGRESS=0 IMPROVE=0 CHANGE=8
+  [CHANGE] id:chebi-472  smiles=O=C(O)C1=C(O)[C@H](O)[C@@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NS(=O)(=O)O)C(O)O[C@@H]2COS(=O)(=O)O)O1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,3R,4R)-2-[(2R,3S,4R,5R)-4,6-dihydroxy-5-(sulfoamino)-2-(sulfooxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxy-3,4-dihydro-2H-pyran-6-carboxylic acid'
+    gold_zh=''
+    prev_pred_en='3-hydroxypropene'  cur_pred_en='1-hydroxypropene'
+    prev_pred_zh='3-ôÇ»ù±ûÏ©'  cur_pred_zh='1-ôÇ»ù±ûÏ©'
+  [CHANGE] id:chebi-644  smiles=C/C=C\c1cc(OC)c(OC)cc1OC  dual fail->fail  en fail->fail  zh -->-
+    gold_en='1,2,4-trimethoxy-5-[(Z)-prop-1-enyl]benzene'
+    gold_zh=''
+    prev_pred_en='(Z)-3-(2,4,5-trimethoxyphenyl)propene'  cur_pred_en='(Z)-1-(2,4,5-trimethoxyphenyl)propene'
+    prev_pred_zh='(Z)-3-(2,4,5-Èý¼×Ñõ»ù±½»ù)±ûÏ©'  cur_pred_zh='(Z)-1-(2,4,5-Èý¼×Ñõ»ù±½»ù)±ûÏ©'
+  [CHANGE] id:chebi-899  smiles=O=C(O)C1=C(O)[C@H](O)[C@@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NS(=O)(=O)O)[C@@H](O)O[C@@H]2COS(=O)(=O)O)O1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,3R,4R)-2-[(2R,3S,4R,5R,6S)-4,6-dihydroxy-5-(sulfoamino)-2-(sulfooxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxy-3,4-dihydro-2H-pyran-6-carboxylic acid'
+    gold_zh=''
+    prev_pred_en='3-hydroxypropene'  cur_pred_en='1-hydroxypropene'
+    prev_pred_zh='3-ôÇ»ù±ûÏ©'  cur_pred_zh='1-ôÇ»ù±ûÏ©'
+  [CHANGE] id:chebi-1292  smiles=CCCCCCCCCCCC(=O)O[C@@H]1[C@@H](O)[C@@H](OC(=O)/C=C/c2ccccc2)[C@H](O[C@@H]2[C@@H](O)[C@@H](OC(=O)CCCCCCCCCCC)[C@H](O[C@@H]3[C@@H](O)[C@H]4OC(=O)CCCCCCCCC[C@H](CCCCC)O[C@@H]5O[C@H](C)[C@H](O)[C@H](O)[C@H]5O[C@@H]4O[C@H]3C)O[C@H]2C)O[C@H]1C  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(2S,3R,4R,5R,6S)-6-[(2S,3R,4R,5R,6S)-5-dodecanoyloxy-4-hydroxy-2-methyl-6-[[(1R,3S,5S,6R,7R,8R,20S,22R,24R,25R,26S)-7,25,26-trihydroxy-5,24-dimethyl-10-oxo-20-pentyl-2,4,9,21,23-pentaoxatricyclo[20.4.0.03,8]hexacosan-6-yl]oxy]oxan-3-yl]oxy-4-hydroxy-2-methyl-5-[(E)-3-phenylprop-2-enoyl]oxyoxan-3-yl] dodecanoate'
+    gold_zh=''
+    prev_pred_en='(E)-3-phenylpropene'  cur_pred_en='(E)-1-phenylpropene'
+    prev_pred_zh='(E)-3-±½»ù±ûÏ©'  cur_pred_zh='(E)-1-±½»ù±ûÏ©'
+  [CHANGE] id:chebi-1593  smiles=CC(C)C/C=C/[C@@H](C)[C@H]1CC[C@@H]2[C@]1(C)CC[C@H]1[C@@]23C[C@@H](O)[C@@]2(O)C[C@@H](OS(=O)(=O)[O-])CC[C@]12CO3.[Na+]  dual fail->fail  en fail->fail  zh -->-
+    gold_en='sodium;[(1R,2R,5R,6R,9R,10R,12R,13R,15S)-12,13-dihydroxy-5-methyl-6-[(E,2R)-6-methylhept-3-en-2-yl]-19-oxapentacyclo[8.7.2.01,13.02,10.05,9]nonadecan-15-yl] sulfate'
+    gold_zh=''
+    prev_pred_en='(E)-2-methylhept-4-ene'  cur_pred_en='(E)-6-methylhept-3-ene'
+    prev_pred_zh='(E)-2-¼×»ù¸ý-4-Ï©'  cur_pred_zh='(E)-6-¼×»ù¸ý-3-Ï©'
+  [CHANGE] id:chebi-1808  smiles=O=C1OCC(Cc2ccc(O)c(O)c2)=C1c1ccc(O)cc1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='3-[(3,4-dihydroxyphenyl)methyl]-4-(4-hydroxyphenyl)-2H-furan-5-one'
+    gold_zh=''
+    prev_pred_en='1-(3,4-dihydroxyphenyl)-3-(4-hydroxyphenyl)propene'  cur_pred_en='3-(3,4-dihydroxyphenyl)-1-(4-hydroxyphenyl)propene'
+    prev_pred_zh='1-(3,4-¶þôÇ»ù±½»ù)-3-(4-ôÇ»ù±½»ù)±ûÏ©'  cur_pred_zh='3-(3,4-¶þôÇ»ù±½»ù)-1-(4-ôÇ»ù±½»ù)±ûÏ©'
+  [CHANGE] id:chebi-2337  smiles=CC(O)=N[C@@H]1[C@@H](O)[C@H](O[C@@H]2OC(C(=O)O)=C(O)[C@H](O)[C@H]2OS(=O)(=O)O)[C@@H](CO)O[C@@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,3R,4R)-2-[(2R,3S,4R,5R,6S)-5-acetamido-4,6-dihydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-4,5-dihydroxy-3-sulfooxy-3,4-dihydro-2H-pyran-6-carboxylic acid'
+    gold_zh=''
+    prev_pred_en='3-hydroxypropene'  cur_pred_en='1-hydroxypropene'
+    prev_pred_zh='3-ôÇ»ù±ûÏ©'  cur_pred_zh='1-ôÇ»ù±ûÏ©'
+  [CHANGE] id:chebi-2376  smiles=OCC1=C[C@H](N[C@H]2C[C@H](CO)[C@@H](O[C@@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,3R,4S,5S,6R)-2-[(1R,2R,3S,4S,6R)-2,3-dihydroxy-6-(hydroxymethyl)-4-[[(1S,4R,5S,6S)-4,5,6-trihydroxy-3-(hydroxymethyl)cyclohex-2-en-1-yl]amino]cyclohexyl]oxy-6-(hydroxymethyl)oxane-3,4,5-triol'
+    gold_zh=''
+    prev_pred_en='1-hydroxypropene'  cur_pred_en='3-hydroxypropene'
+    prev_pred_zh='1-ôÇ»ù±ûÏ©'  cur_pred_zh='3-ôÇ»ù±ûÏ©'

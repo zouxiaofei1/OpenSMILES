@@ -1,0 +1,19 @@
+[13:53:44] Explicit valence for atom # 20 C, 5, is greater than permitted
+workers=19 elapsed=3.64s avg=0.90ms/row (n=4062)
+en=14.4% (583/4062) zh=36.6% (277/756) dual=14.2% (578/4062) fails=3484
+diff_vs_last: total=3 REGRESS=0 IMPROVE=2 CHANGE=1
+  [IMPROVE] id:tiers-642  smiles=CC=1C(=NC(=CC1)C)C#N  dual fail->ok  en fail->ok  zh fail->ok
+    gold_en='3,6-dimethylpyridine-2-carbonitrile'
+    gold_zh='3,6-¶ş¼×»ùßÁà¤-2-¼×ëæ'
+    prev_pred_en='ethane'  cur_pred_en='3,6-dimethylpyridine-2-carbonitrile'
+    prev_pred_zh='ÒÒÍé'  cur_pred_zh='3,6-¶ş¼×»ùßÁà¤-2-¼×ëæ'
+  [CHANGE] id:tiers-48042  smiles=COC1=CC=NC=C1C#N  dual fail->fail  en fail->fail  zh fail->fail
+    gold_en='4-Methoxynicotinonitrile'
+    gold_zh='3-Çè»ù-4-¼×Ñõ»ùßÁà¤'
+    prev_pred_en='ethane'  cur_pred_en='4-methoxypyridine-3-carbonitrile'
+    prev_pred_zh='ÒÒÍé'  cur_pred_zh='4-¼×Ñõ»ùßÁà¤-3-¼×ëæ'
+  [IMPROVE] id:tiers-75071  smiles=N1N=CC2=CC=C(C=C12)C#N  dual fail->ok  en fail->ok  zh fail->ok
+    gold_en='1H-indazole-6-carbonitrile'
+    gold_zh='1H-ßÅßò-6-¼×ëæ'
+    prev_pred_en='ethane'  cur_pred_en='1H-indazole-6-carbonitrile'
+    prev_pred_zh='ÒÒÍé'  cur_pred_zh='1H-ßÅßò-6-¼×ëæ'

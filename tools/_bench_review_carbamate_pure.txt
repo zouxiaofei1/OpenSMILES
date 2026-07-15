@@ -1,0 +1,482 @@
+en=14.1% (573/4062) zh=36.1% (273/756) dual=14.0% (568/4062) fails=3494
+diff_vs_last: total=96 REGRESS=0 IMPROVE=8 CHANGE=88
+  [CHANGE] id:tiers-148773  smiles=C1(=CC=CC=C1)N(C(OC1=CC2=C(C(/C(/O2)=C/C2=CC=C(C=C2)OC)=O)C=C1)=O)C1=CC=CC=C1  dual fail->fail  en fail->fail  zh fail->fail
+    gold_en='(2Z)-2-(4-methoxybenzylidene)-3-oxo-2,3-dihydro-1-benzofuran-6-yl diphenylcarbamate'
+    gold_zh='(2Z)-2-(4-º◊—ıª˘—«‹–ª˘)-3-—ı¥˙-2,3-∂˛«‚-1-±Ω≤¢ﬂª‡´-6-ª˘ ∂˛±Ωª˘∞±ª˘º◊À·ı•'
+    prev_pred_en='methanone'  cur_pred_en='methyl phenyl(phenyl)carbamate'
+    prev_pred_zh='º◊Õ™'  cur_pred_zh='±Ωª˘(±Ωª˘)∞±ª˘º◊À·º◊ı•'
+  [CHANGE] id:tiers-107394  smiles=C(C=C)(=O)OCP(O)(O)=O  dual fail->fail  en fail->fail  zh fail->fail
+    gold_en='Acryloxymethylphosphonic acid'
+    gold_zh='±˚œ©ı£—ıª˘º◊ª˘Ï¢À·'
+    prev_pred_en='methyl prop-2-enoate'  cur_pred_en='methyl propanoate'
+    prev_pred_zh='±˚-2-œ©À·º◊ı•'  cur_pred_zh='±˚À·º◊ı•'
+  [CHANGE] id:tiers-7355  smiles=COC1=CC=C(C2=C1C(OC(N2)=O)=O)OC  dual fail->fail  en fail->fail  zh fail->fail
+    gold_en='5,8-dimethoxy-1H-3,1-benzoxazine-2,4-dione'
+    gold_zh='5,8-∂˛º◊—ıª˘-1H-±Ω≤¢[d][1,3]áf‡∫-2,4-∂˛Õ™'
+    prev_pred_en='formamide'  cur_pred_en='formic anhydride'
+    prev_pred_zh='º◊ı£∞∑'  cur_pred_zh='º◊À·Ù˚'
+  [CHANGE] id:tiers-49651  smiles=O=C(C=CC(=O)O)C=1C=CC2=C(NC(CO2)=O)C1  dual fail->fail  en fail->fail  zh fail->fail
+    gold_en='4-oxo-4-(3-oxo-3,4-dihydro-2H-1,4-benzoxazin-6-yl)-2-butenoic acid'
+    gold_zh='4-—ı¥˙-4-(3-—ı¥˙-3,4-∂˛«‚-2H-1,4-±Ω≤¢∂Ò‡∫-6-ª˘)-2-∂°œ©À·'
+    prev_pred_en='4-oxobutanoic acid'  cur_pred_en='4-oxobut-2-enoic acid'
+    prev_pred_zh='4-—ı¥˙∂°À·'  cur_pred_zh='4-—ı¥˙∂°-2-œ©À·'
+  [CHANGE] id:tiers-79323  smiles=P(=O)(OC[C@H]1CN(C(O1)=O)C1=CC(=C(C=C1)C=1C=NC(=CC1)C=1N=NNN1)F)(O)O  dual fail->fail  en fail->fail  zh fail->fail
+    gold_en='[(5R)-3-{3-Fluoro-4-[6-(2H-tetrazol-5-yl)-3-pyridinyl]phenyl}-2-oxo-1,3-oxazolidin-5-yl]methyl dihydrogen phosphate'
+    gold_zh='[(5R)-3-{3-∑˙-4-[6-(2H-ÀƒﬂÚ-5-ª˘)-3-ﬂ¡‡§ª˘]±Ωª˘}-2-—ı¥˙-1,3-áfﬂÚÕÈ-5-ª˘]º◊ª˘¡◊À·∂˛«‚ı•'
+    prev_pred_en='ethane'  cur_pred_en='ethyl methyl(phenyl)carbamate'
+    prev_pred_zh='““ÕÈ'  cur_pred_zh='º◊ª˘(±Ωª˘)∞±ª˘º◊À·““ı•'
+  [CHANGE] id:tiers-55354  smiles=C(C)(=O)C1=C(O)C=C(C(=C1O)C(C)=O)O  dual fail->fail  en fail->fail  zh fail->fail
+    gold_en='2,4-diacetylphloroglucinol'
+    gold_zh='2,4-∂˛““ı£ª˘º‰±Ω»˝∑”'
+    prev_pred_en='ethanone'  cur_pred_en='propane'
+    prev_pred_zh='““Õ™'  cur_pred_zh='±˚ÕÈ'
+  [CHANGE] id:chebi-37  smiles=Nc1nc(O)nc2c1ncn2[C@@H]1O[C@H](COP(=O)(O)O)[C@@H](O)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(2R,3S,4R,5R)-5-(6-amino-2-oxo-1H-purin-9-yl)-3,4-dihydroxyoxolan-2-yl]methyl dihydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [CHANGE] id:chebi-41  smiles=CC(C(=O)[O-])C(=O)OC(CC(=O)[O-])C[N+](C)(C)C  dual fail->fail  en fail->fail  zh -->-
+    gold_en='3-[1-carboxylato-3-(trimethylazaniumyl)propan-2-yl]oxy-2-methyl-3-oxopropanoate'
+    gold_zh=''
+    prev_pred_en='propanoate'  cur_pred_en='butanedioate'
+    prev_pred_zh='±˚À·∏˘'  cur_pred_zh='∂°∂˛À·∏˘'
+  [CHANGE] id:chebi-52  smiles=Nc1ncnc2c1ccn2[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,3R,4S,5R)-2-(4-aminopyrrolo[2,3-d]pyrimidin-7-yl)-5-(hydroxymethyl)oxolane-3,4-diol'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [CHANGE] id:chebi-67  smiles=CC/C=C\C/C=C\C[C@H](O)[C@@H](/C=C/C=C/C=C\C/C=C\CCC(=O)[O-])SC[C@H](N)C(O)=NCC(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(4Z,7Z,9E,11E,13R,14S,16Z,19Z)-13-[(2R)-2-azaniumyl-3-(carboxylatomethylamino)-3-oxopropyl]sulfanyl-14-hydroxydocosa-4,7,9,11,16,19-hexaenoate'
+    gold_zh=''
+    prev_pred_en='(13R,14S)-14-hydroxydocosanoate'  cur_pred_en=''
+    prev_pred_zh='(13R,14S)-14-Ù«ª˘∂˛ Æ∂˛À·∏˘'  cur_pred_zh=''
+  [CHANGE] id:chebi-87  smiles=CN(C)CCCSc1ccccc1[NH+]=C(O)/C=C/c1ccccc1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='dimethyl-[3-[2-[[(E)-3-phenylprop-2-enoyl]amino]phenyl]sulfanylpropyl]azanium'
+    gold_zh=''
+    prev_pred_en='3-phenylpropan-1-ol'  cur_pred_en='(E)-3-phenylprop-2-en-1-ol'
+    prev_pred_zh='3-±Ωª˘±˚-1-¥º'  cur_pred_zh='(E)-3-±Ωª˘±˚-2-œ©-1-¥º'
+  [CHANGE] id:chebi-103  smiles=CCCCCCCCCCCCCC(=O)O[C@H](CCCCCCCCCCC)CC(=O)O[C@@H]1[C@@H](N=C(O)C[C@@H](CCCCCCCCCCC)OC(=O)CCCCCCCCCCC)[C@H](OC[C@H]2O[C@H](OP(=O)(O)O[C@H]3OC[C@H](N)[C@H](O)[C@H]3O)[C@H](N=C(O)C[C@H](O)CCCCCCCCCCC)[C@@H](OC(=O)C[C@H](O)CCCCCCCCCCC)[C@@H]2O)O[C@H](CO[C@]2(C(=O)O)C[C@@H](O[C@]3(C(=O)O)C[C@@H](O)[C@@H](O)[C@@H]([C@H](O)CO)O3)[C@@H](O)[C@@H]([C@H](O)CO)O2)[C@H]1OP(=O)(O)O[C@H]1OC[C@H](N)[C@H](O)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,4R,5R,6R)-2-[(2R,4R,5R,6R)-2-[[(2R,3S,4R,5R,6R)-3-[[(2R,3R,4S,5S)-5-amino-3,4-dihydroxyoxan-2-yl]oxy-hydroxyphosphoryl]oxy-6-[[(2R,3S,4R,5R,6R)-6-[[(2R,3R,4S,5S)-5-amino-3,4-dihydroxyoxan-2-yl]oxy-hydroxyphosphoryl]oxy-3-hydroxy-5-[[(3R)-3-hydroxytetradecanoyl]amino]-4-[(3R)-3-hydroxytetradecanoyl]oxyoxan-2-yl]methoxy]-5-[[(3R)-3-dodecanoyloxytetradecanoyl]amino]-4-[(3R)-3-tetradecanoyloxytetradecanoyl]oxyoxan-2-yl]methoxy]-2-carboxy-6-[(1R)-1,2-dihydroxyethyl]-5-hydroxyoxan-4-yl]oxy-6-[(1R)-1,2-dihydroxyethyl]-4,5-dihydroxyoxane-2-carboxylic acid'
+    gold_zh=''
+    prev_pred_en='formic acid'  cur_pred_en='tetradecanedioic acid'
+    prev_pred_zh='º◊À·'  cur_pred_zh=' ÆÀƒ∂˛À·'
+  [CHANGE] id:chebi-243  smiles=C=C(C[C@H](N)C(=O)O)C(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2S)-2-amino-4-methylidenepentanedioic acid'
+    gold_zh=''
+    prev_pred_en='(2S)-2-aminopentanoic acid'  cur_pred_en=''
+    prev_pred_zh='(2S)-2-∞±ª˘ŒÏÀ·'  cur_pred_zh=''
+  [CHANGE] id:chebi-299  smiles=CC(=O)C(=O)[C@@H](O)CO  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(4S)-4,5-dihydroxypentane-2,3-dione'
+    gold_zh=''
+    prev_pred_en='(4S)-4,5-dihydroxypentan-2-one'  cur_pred_en='4,5-dihydroxypentane-2,3-dione'
+    prev_pred_zh='(4S)-4,5-∂˛Ù«ª˘ŒÏ-2-Õ™'  cur_pred_zh='4,5-∂˛Ù«ª˘ŒÏ-2,3-∂˛Õ™'
+  [CHANGE] id:chebi-352  smiles=CCCCCCCCCCCCCC(=O)O[C@H](CCCCCCCCCCC)CC(=O)O[C@@H]1[C@@H](N=C([O-])C[C@@H](CCCCCCCCCCC)OC(=O)CCCCCCCCCCC)[C@H](OC[C@H]2O[C@H](OP(=O)(O)OP(=O)([O-])O)[C@H](N=C([O-])C[C@H](O)CCCCCCCCCCC)[C@@H](OC(=O)C[C@H](O)CCCCCCCCCCC)[C@@H]2O)O[C@H](CO[C@]2(C(=O)[O-])C[C@@H](O[C@]3(C(=O)[O-])C[C@@H](O)[C@@H](O)[C@@H]([C@H](O)CO)O3)[C@@H](O[C@H]3O[C@H]([C@@H](O)CO)[C@@H](OP(=O)([O-])[O-])[C@H](O[C@H]4O[C@H]([C@@H](O)CO[C@H]5O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O)[C@@H]5O)[C@@H](OP(=O)([O-])[O-])[C@H](O[C@H]5O[C@H](CO[C@H]6O[C@H](CO)[C@H](O)[C@H](O)[C@H]6O)[C@@H](O)[C@H](O[C@H]6O[C@H](CO)[C@@H](O)[C@H](O)[C@H]6O[C@H]6O[C@H](CO[C@H]7O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O)[C@@H]7O)[C@@H](O)[C@H](O)[C@H]6O)[C@H]5O)[C@@H]4O)[C@@H]3O)[C@@H]([C@H](O)CO)O2)[C@H]1OP(=O)([O-])[O-]  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,4R,5R,6R)-2-[(2R,4R,5R,6R)-2-carboxylato-6-[(1R)-1,2-dihydroxyethyl]-5-[(2S,3S,4R,5R,6R)-6-[(1S)-1,2-dihydroxyethyl]-4-[(2R,3S,4R,5R,6R)-6-[(1S)-2-[(2S,3S,4S,5S,6R)-6-[(1S)-1,2-dihydroxyethyl]-3,4,5-trihydroxyoxan-2-yl]oxy-1-hydroxyethyl]-4-[(2R,3R,4S,5R,6R)-4-[(2R,3R,4S,5S,6R)-3-[(2R,3R,4S,5S,6R)-6-[[(2S,3S,4S,5S,6R)-6-[(1S)-1,2-dihydroxyethyl]-3,4,5-trihydroxyoxan-2-yl]oxymethyl]-3,4,5-trihydroxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-3,5-dihydroxy-6-[[(2S,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxy-3-hydroxy-5-phosphonatooxyoxan-2-yl]oxy-3-hydroxy-5-phosphonatooxyoxan-2-yl]oxy-2-[[(2R,3S,4R,5R,6R)-5-[[(3R)-3-dodecanoyloxytetradecanoyl]amino]-6-[[(2R,3S,4R,5R,6R)-3-hydroxy-5-[[(3R)-3-hydroxytetradecanoyl]amino]-4-[(3R)-3-hydroxytetradecanoyl]oxy-6-[oxido(phosphonatooxy)phosphoryl]oxyoxan-2-yl]methoxy]-3-phosphonatooxy-4-[(3R)-3-tetradecanoyloxytetradecanoyl]oxyoxan-2-yl]methoxy]oxan-4-yl]oxy-6-[(1R)-1,2-dihydroxyethyl]-4,5-dihydroxyoxane-2-carboxylate'
+    gold_zh=''
+    prev_pred_en='formate'  cur_pred_en='tetradecanedioate'
+    prev_pred_zh='º◊À·∏˘'  cur_pred_zh=' ÆÀƒ∂˛À·∏˘'
+  [CHANGE] id:chebi-393  smiles=N=C(O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl] carbamate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [CHANGE] id:chebi-430  smiles=Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OP(=O)(O)OP(=O)([O-])[O-])[C@@H](O)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-oxidophosphoryl]oxy-oxidophosphoryl] hydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [CHANGE] id:chebi-489  smiles=C/C(=C/C=O)CO  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(Z)-4-hydroxy-3-methylbut-2-enal'
+    gold_zh=''
+    prev_pred_en='butanal'  cur_pred_en='4-hydroxy-3-methylbut-2-enal'
+    prev_pred_zh='∂°»©'  cur_pred_zh='4-Ù«ª˘-3-º◊ª˘∂°-2-œ©»©'
+  [CHANGE] id:chebi-542  smiles=N=C(N)NCCCCN=c1[nH]c(=N)ccn1[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='2-[4-[[4-amino-1-[(2R,3R,4S,5R)-3,4-dihydroxy-5-(hydroxymethyl)oxolan-2-yl]pyrimidin-2-ylidene]amino]butyl]guanidine'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='butane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='∂°ÕÈ'
+  [CHANGE] id:chebi-559  smiles=CCCCCCCCCCC[C@@H](O)CC(=O)O[C@@H]1[C@@H](N=C(O)C[C@H](O)CCCCCCCCCCC)[C@H](OC[C@H]2O[C@H](OP(=O)(O)O)[C@H](N=C(O)C[C@H](O)CCCCCCCCCCC)[C@@H](OC(=O)C[C@H](O)CCCCCCCCCCC)[C@@H]2O)O[C@H](CO[C@]2(C(=O)O)C[C@@H](O[C@]3(C(=O)O)C[C@@H](O)[C@@H](O)[C@@H]([C@@H](CO)OP(=O)(O)OCCN)O3)[C@@H](O)[C@@H]([C@H](O)CO)O2)[C@H]1OP(=O)(O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,4R,5R,6S)-6-[(1R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-2-hydroxyethyl]-2-[(2R,4R,5R,6R)-2-carboxy-6-[(1R)-1,2-dihydroxyethyl]-5-hydroxy-2-[[(2R,3S,4R,5R,6R)-6-[[(2R,3S,4R,5R,6R)-3-hydroxy-5-[[(3R)-3-hydroxytetradecanoyl]amino]-4-[(3R)-3-hydroxytetradecanoyl]oxy-6-phosphonooxyoxan-2-yl]methoxy]-5-[[(3R)-3-hydroxytetradecanoyl]amino]-4-[(3R)-3-hydroxytetradecanoyl]oxy-3-phosphonooxyoxan-2-yl]methoxy]oxan-4-yl]oxy-4,5-dihydroxyoxane-2-carboxylic acid'
+    gold_zh=''
+    prev_pred_en='formic acid'  cur_pred_en='3-hydroxytetradecanedioic acid'
+    prev_pred_zh='º◊À·'  cur_pred_zh='3-Ù«ª˘ ÆÀƒ∂˛À·'
+  [CHANGE] id:chebi-648  smiles=C[N+](C)(C)C[C@@H](CC(=O)[O-])OC(=O)CCCCCCCCCCCCCCC(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(3R)-3-(15-carboxypentadecanoyloxy)-4-(trimethylazaniumyl)butanoate'
+    gold_zh=''
+    prev_pred_en='(3R)-butanoate'  cur_pred_en='hexadecanedioate'
+    prev_pred_zh='(3R)-∂°À·∏˘'  cur_pred_zh=' Æ¡˘∂˛À·∏˘'
+  [CHANGE] id:chebi-669  smiles=CCC(CCCC(=O)O)COC(=O)c1ccccc1C(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='2-(5-carboxy-2-ethylpentoxy)carbonylbenzoic acid'
+    gold_zh=''
+    prev_pred_en='heptanoic acid'  cur_pred_en='heptanedioic acid'
+    prev_pred_zh='∏˝À·'  cur_pred_zh='∏˝∂˛À·'
+  [CHANGE] id:chebi-708  smiles=O=C1c2cccc(O)c2C(=O)c2cccc(O)c21  dual fail->fail  en fail->fail  zh -->-
+    gold_en='1,5-dihydroxyanthracene-9,10-dione'
+    gold_zh=''
+    prev_pred_en='methanone'  cur_pred_en='methane'
+    prev_pred_zh='º◊Õ™'  cur_pred_zh='º◊ÕÈ'
+  [CHANGE] id:chebi-709  smiles=N=C(O)NC(=N)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='carbamoylurea'
+    gold_zh=''
+    prev_pred_en='hydroxy-N-methylmethanamine'  cur_pred_en='methane'
+    prev_pred_zh='Ù«ª˘-N-º◊ª˘º◊∞∑'  cur_pred_zh='º◊ÕÈ'
+  [IMPROVE] id:chebi-711  smiles=O=C(O)/C(Cl)=C/C(=O)C(Cl)C(=O)O  dual fail->ok  en fail->ok  zh -->-
+    gold_en='(Z)-2,5-dichloro-4-oxohex-2-enedioic acid'
+    gold_zh=''
+    prev_pred_en='2,5-dichloro-4-oxohexanoic acid'  cur_pred_en='(Z)-2,5-dichloro-4-oxohex-2-enedioic acid'
+    prev_pred_zh='2,5-∂˛¬»-4-—ı¥˙º∫À·'  cur_pred_zh='(Z)-2,5-∂˛¬»-4-—ı¥˙º∫-2-œ©∂˛À·'
+  [CHANGE] id:chebi-749  smiles=C[C@@H]1CN(C(=O)/C=C/c2ccccc2)[C@H](C)CN1C  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(E)-3-phenyl-1-[(2R,5R)-2,4,5-trimethylpiperazin-1-yl]prop-2-en-1-one'
+    gold_zh=''
+    prev_pred_en='N-ethyl-N-methyl-3-phenylpropanamide'  cur_pred_en='(E)-N-ethyl-N-methyl-3-phenylprop-2-enamide'
+    prev_pred_zh='N-““ª˘-N-º◊ª˘-3-±Ωª˘±˚ı£∞∑'  cur_pred_zh='(E)-N-““ª˘-N-º◊ª˘-3-±Ωª˘±˚-2-œ©ı£∞∑'
+  [CHANGE] id:chebi-796  smiles=NCc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=S)nc1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='5-(aminomethyl)-1-[(2R,3R,4S,5R)-3,4-dihydroxy-5-(hydroxymethyl)oxolan-2-yl]-2-sulfanylidenepyrimidin-4-one'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='aminoethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='∞±ª˘““ÕÈ'
+  [CHANGE] id:chebi-817  smiles=CC(=O)C(=O)C1CNc2[nH]c(=N)nc(O)c2N1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='1-(2-amino-4-oxo-5,6,7,8-tetrahydro-3H-pteridin-6-yl)propane-1,2-dione'
+    gold_zh=''
+    prev_pred_en='propan-2-one'  cur_pred_en='propane-1,2-dione'
+    prev_pred_zh='±˚-2-Õ™'  cur_pred_zh='±˚-1,2-∂˛Õ™'
+  [CHANGE] id:chebi-833  smiles=C[N+](C)(C)C[C@@H](CC(=O)O)OC(=O)CC(=O)[O-]  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(3R)-3-(2-carboxyacetyl)oxy-4-(trimethylazaniumyl)butanoate'
+    gold_zh=''
+    prev_pred_en='(3R)-butanoate'  cur_pred_en='butanedioate'
+    prev_pred_zh='(3R)-∂°À·∏˘'  cur_pred_zh='∂°∂˛À·∏˘'
+  [CHANGE] id:chebi-862  smiles=N=C(O)CC[C@H](N)C(O)=Nc1ccc2ccccc2c1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2S)-2-amino-N-naphthalen-2-ylpentanediamide'
+    gold_zh=''
+    prev_pred_en='(2S)-1,5-dihydroxypentan-2-amine'  cur_pred_en='(2S)-2-aminopentane-1,5-diol'
+    prev_pred_zh='(2S)-1,5-∂˛Ù«ª˘ŒÏ-2-∞∑'  cur_pred_zh='(2S)-2-∞±ª˘ŒÏÕÈ-1,5-∂˛¥º'
+  [CHANGE] id:chebi-890  smiles=N[C@@H]1[C@@H](O)[C@H](O)[C@@H](COP(=O)(O)O)O[C@@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(2R,3S,4R,5R,6S)-5-amino-3,4,6-trihydroxyoxan-2-yl]methyl dihydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [CHANGE] id:chebi-1090  smiles=C[C@H](N[C@@H](CCc1ccccc1)C(=O)O)C(=O)N1[C@H](C(=O)O)C[C@H]2CCCC[C@@H]21  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2S,3aR,7aS)-1-[(2S)-2-[[(1S)-1-carboxy-3-phenylpropyl]amino]propanoyl]-2,3,3a,4,5,6,7,7a-octahydroindole-2-carboxylic acid'
+    gold_zh=''
+    prev_pred_en='(2S)-4-phenylbutanoic acid'  cur_pred_en='pentanedioic acid'
+    prev_pred_zh='(2S)-4-±Ωª˘∂°À·'  cur_pred_zh='ŒÏ∂˛À·'
+  [CHANGE] id:chebi-1091  smiles=CC/C=C\C/C=C\C[C@H](O)[C@@H](/C=C/C=C/C=C\C/C=C\CCC(=O)O)SC[C@H](N)C(O)=NCC(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(4Z,7Z,9E,11E,13R,14S,16Z,19Z)-13-[(2R)-2-amino-3-(carboxymethylamino)-3-oxopropyl]sulfanyl-14-hydroxydocosa-4,7,9,11,16,19-hexaenoic acid'
+    gold_zh=''
+    prev_pred_en='(13R,14S)-14-hydroxydocosanoic acid'  cur_pred_en=''
+    prev_pred_zh='(13R,14S)-14-Ù«ª˘∂˛ Æ∂˛À·'  cur_pred_zh=''
+  [CHANGE] id:chebi-1122  smiles=CCN(CC)C(=O)/C(C#N)=C/c1cc(O)c(O)c([N+](=O)[O-])c1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(E)-2-cyano-3-(3,4-dihydroxy-5-nitrophenyl)-N,N-diethylprop-2-enamide'
+    gold_zh=''
+    prev_pred_en='2-(3,4-dihydroxy-5-nitrobenzyl)-N,N-diethylpropanamide'  cur_pred_en='(E)-3-(3,4-dihydroxy-5-nitrophenyl)-N,N-diethylprop-2-enamide'
+    prev_pred_zh='2-(3,4-∂˛Ù«ª˘-5-œıª˘‹–ª˘)-N,N-∂˛““ª˘±˚ı£∞∑'  cur_pred_zh='(E)-3-(3,4-∂˛Ù«ª˘-5-œıª˘±Ωª˘)-N,N-∂˛““ª˘±˚-2-œ©ı£∞∑'
+  [CHANGE] id:chebi-1153  smiles=CC(C(=O)[O-])C(=O)O[C@H](CC(=O)O)C[N+](C)(C)C  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(3R)-3-(2-carboxypropanoyloxy)-4-(trimethylazaniumyl)butanoate'
+    gold_zh=''
+    prev_pred_en='propanoate'  cur_pred_en='butanedioate'
+    prev_pred_zh='±˚À·∏˘'  cur_pred_zh='∂°∂˛À·∏˘'
+  [CHANGE] id:chebi-1245  smiles=Cn1nnc(-c2ccc(-c3ccc(N4C[C@H](COP(=O)(O)O)OC4=O)cc3F)cn2)n1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(5R)-3-[3-fluoro-4-[6-(2-methyltetrazol-5-yl)pyridin-3-yl]phenyl]-2-oxo-1,3-oxazolidin-5-yl]methyl dihydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='ethane'  cur_pred_en='ethyl methyl(phenyl)carbamate'
+    prev_pred_zh='““ÕÈ'  cur_pred_zh='º◊ª˘(±Ωª˘)∞±ª˘º◊À·““ı•'
+  [CHANGE] id:chebi-1252  smiles=CN(C)CCCSc1ccccc1N=C(O)/C=C/c1ccccc1.Cl  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(E)-N-[2-[3-(dimethylamino)propylsulfanyl]phenyl]-3-phenylprop-2-enamide;hydrochloride'
+    gold_zh=''
+    prev_pred_en='3-phenylpropan-1-ol'  cur_pred_en='(E)-3-phenylprop-2-en-1-ol'
+    prev_pred_zh='3-±Ωª˘±˚-1-¥º'  cur_pred_zh='(E)-3-±Ωª˘±˚-2-œ©-1-¥º'
+  [CHANGE] id:chebi-1311  smiles=CC(O)=N[C@H]1[C@@H](OP(=O)(O)OP(=O)(O)OC[C@H]2O[C@@H](n3ccc(O)nc3=O)[C@H](O)[C@@H]2O)O[C@H](CO)[C@@H](O)[C@@H]1O[C@H](C)C(O)=N[C@@H](C)C(O)=N[C@H](CCC(O)=NCCCC[C@@H](N)C(=O)O)C(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R)-6-[[(4R)-4-[[(2S)-2-[[(2R)-2-[(2R,3R,4R,5S,6R)-3-acetamido-2-[[[(2R,3S,4R,5R)-5-(2,4-dioxopyrimidin-1-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxy-hydroxyphosphoryl]oxy-5-hydroxy-6-(hydroxymethyl)oxan-4-yl]oxypropanoyl]amino]propanoyl]amino]-4-carboxybutanoyl]amino]-2-aminohexanoic acid'
+    gold_zh=''
+    prev_pred_en='(2R)-2-aminohexanoic acid'  cur_pred_en='2-aminohexanedioic acid'
+    prev_pred_zh='(2R)-2-∞±ª˘º∫À·'  cur_pred_zh='2-∞±ª˘º∫∂˛À·'
+  [CHANGE] id:chebi-1329  smiles=C/C=C/C=C/C=C/[C@@H](O)C/C=C/C[NH3+]  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(2E,5S,6E,8E,10E)-5-hydroxydodeca-2,6,8,10-tetraenyl]azanium'
+    gold_zh=''
+    prev_pred_en='(5S)-1-aminododecan-5-ol'  cur_pred_en='(2E,5S,6E,8E,10E)-1-aminododeca-2,6,8,10-tetraen-5-ol'
+    prev_pred_zh='(5S)-1-∞±ª˘ Æ∂˛-5-¥º'  cur_pred_zh='(2E,5S,6E,8E,10E)-1-∞±ª˘ Æ∂˛-2,6,8,10-Àƒœ©-5-¥º'
+  [CHANGE] id:chebi-1330  smiles=N=C(N)c1ccc(OCCCCCOc2ccc(C(=N)N)cc2)cc1.O=S(=O)(O)CCO.O=S(=O)(O)CCO  dual fail->fail  en fail->fail  zh -->-
+    gold_en='4-[5-(4-carbamimidoylphenoxy)pentoxy]benzenecarboximidamide;2-hydroxyethanesulfonic acid'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='pentane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='ŒÏÕÈ'
+  [CHANGE] id:chebi-1333  smiles=CCCCCCCCCCCCCCCC(O)=N[C@H](CN1CCOCC1)[C@H](O)c1ccccc1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='N-[(1R,2R)-1-hydroxy-3-morpholin-4-yl-1-phenylpropan-2-yl]hexadecanamide'
+    gold_zh=''
+    prev_pred_en='1-hydroxyhexadecane'  cur_pred_en='hexadecane'
+    prev_pred_zh='1-Ù«ª˘ Æ¡˘ÕÈ'  cur_pred_zh=' Æ¡˘ÕÈ'
+  [CHANGE] id:chebi-1335  smiles=Cc1cc(=O)c2c(O)cc3c(c2o1)C(=O)c1c(O)cc(O)cc1C3=O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='5,9,11-trihydroxy-2-methylnaphtho[3,2-h]chromene-4,7,12-trione'
+    gold_zh=''
+    prev_pred_en='methanone'  cur_pred_en='ethane'
+    prev_pred_zh='º◊Õ™'  cur_pred_zh='““ÕÈ'
+  [CHANGE] id:chebi-1348  smiles=CCCCCCCCCCC[C@@H](O)[C@@H]([NH3+])CO  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(2S,3R)-1,3-dihydroxytetradecan-2-yl]azanium'
+    gold_zh=''
+    prev_pred_en='(2S,3R)-1,3-dihydroxytetradecan-2-amine'  cur_pred_en='(2S,3R)-2-aminotetradecane-1,3-diol'
+    prev_pred_zh='(2S,3R)-1,3-∂˛Ù«ª˘ ÆÀƒ-2-∞∑'  cur_pred_zh='(2S,3R)-2-∞±ª˘ ÆÀƒÕÈ-1,3-∂˛¥º'
+  [CHANGE] id:chebi-1415  smiles=N=C(N)N[C@@H]1[C@@H](O)[C@H](O)[C@@H](OP(=O)(O)O)[C@H](NC(=N)N)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(1S,2R,3S,4S,5R,6S)-2,4-bis(diaminomethylideneazaniumyl)-3,5,6-trihydroxycyclohexyl] phosphate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='aminomethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='∞±ª˘º◊ÕÈ'
+  [CHANGE] id:chebi-1427  smiles=N=C(CN=C[O-])NC1O[C@H](COP(=O)(O)O)[C@@H](O)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(2R,3S,4R)-5-(1-amino-2-formamidoethylidene)azaniumyl-3,4-dihydroxyoxolan-2-yl]methyl phosphate'
+    gold_zh=''
+    prev_pred_en='N-methylethanamine'  cur_pred_en='ethane'
+    prev_pred_zh='N-º◊ª˘““∞∑'  cur_pred_zh='““ÕÈ'
+  [CHANGE] id:chebi-1513  smiles=N/C(C(=O)[O-])=C(/C=C\C=O)C(=O)[O-]  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(Z)-2-amino-3-[(Z)-3-oxoprop-1-enyl]but-2-enedioate'
+    gold_zh=''
+    prev_pred_en='2-aminohexanoate'  cur_pred_en=''
+    prev_pred_zh='2-∞±ª˘º∫À·∏˘'  cur_pred_zh=''
+  [CHANGE] id:chebi-1543  smiles=CO[C@@H]1[C@H](N=C(O)CCOCCOCCOCCOCN)C[C@H]2O[C@]1(C)n1c3ccccc3c3c4c(c5c6ccccc6n2c5c31)C(O)=NC4  dual fail->fail  en fail->fail  zh -->-
+    gold_en='3-[2-[2-[2-(aminomethoxy)ethoxy]ethoxy]ethoxy]-N-[(2S,3R,4R,6R)-3-methoxy-2-methyl-16-oxo-29-oxa-1,7,17-triazaoctacyclo[12.12.2.12,6.07,28.08,13.015,19.020,27.021,26]nonacosa-8,10,12,14,19,21,23,25,27-nonaen-4-yl]propanamide'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='propane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='±˚ÕÈ'
+  [CHANGE] id:chebi-1624  smiles=Cc1nc(N)c2ncn([C@@H]3O[C@H](COP(=O)(O)O)[C@@H](O)[C@H]3O)c2n1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(2R,3S,4R,5R)-5-(6-amino-2-methylpurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methyl dihydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [IMPROVE] id:chebi-1627  smiles=O=C(O)/C=C\C=C(\O)C(=O)O  dual fail->ok  en fail->ok  zh -->-
+    gold_en='(2E,4Z)-2-hydroxyhexa-2,4-dienedioic acid'
+    gold_zh=''
+    prev_pred_en='5-hydroxyhexanoic acid'  cur_pred_en='(2E,4Z)-2-hydroxyhexa-2,4-dienedioic acid'
+    prev_pred_zh='5-Ù«ª˘º∫À·'  cur_pred_zh='(2E,4Z)-2-Ù«ª˘º∫-2,4-∂˛œ©∂˛À·'
+  [CHANGE] id:chebi-1629  smiles=CC[C@H](C)[C@H](N=C(O)[C@H](Cc1ccc(O)cc1)N=C(O)[C@@H]1CCCN1C(=O)[C@H](CCCNC(=N)N)N=C(O)[C@H](CCCNC(=N)N)N=C(O)[C@@H]1CCCN1C(=O)[C@H](CCCC[NH3+])N=C(O)[C@H](CC(=N)O)N=C(O)[C@H](CCC(=O)O)N=C(O)[C@H](Cc1ccc(O)cc1)N=C(O)[C@H](CC(C)C)N=C(O)[C@@H]1CCC(O)=N1)C(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2S,3S)-2-[[(2S)-2-[[(2S)-1-[(2S)-2-[[(2S)-2-[[(2S)-1-[(2S)-2-[[(2S)-4-amino-2-[[(2S)-4-carboxylato-2-[[(2S)-3-(4-hydroxyphenyl)-2-[[(2S)-4-methyl-2-[[(2S)-5-oxopyrrolidine-2-carbonyl]amino]pentanoyl]amino]propanoyl]amino]butanoyl]amino]-4-oxobutanoyl]amino]-6-azaniumylhexanoyl]pyrrolidine-2-carbonyl]amino]-5-(diaminomethylideneazaniumyl)pentanoyl]amino]-5-(diaminomethylideneazaniumyl)pentanoyl]pyrrolidine-2-carbonyl]amino]-3-(4-hydroxyphenyl)propanoyl]amino]-3-methylpentanoate'
+    gold_zh=''
+    prev_pred_en='(4S)-5-hydroxypentanoic acid'  cur_pred_en='1-aminohexanedioic acid'
+    prev_pred_zh='(4S)-5-Ù«ª˘ŒÏÀ·'  cur_pred_zh='1-∞±ª˘º∫∂˛À·'
+  [CHANGE] id:chebi-1640  smiles=CC[C@@H](C)c1cc(=O)c2c(CO)cc3c(c2o1)C(=O)c1c(O)cccc1C3=O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='2-[(2R)-butan-2-yl]-11-hydroxy-5-(hydroxymethyl)naphtho[2,3-h]chromene-4,7,12-trione'
+    gold_zh=''
+    prev_pred_en='methanone'  cur_pred_en='3-methylbutane'
+    prev_pred_zh='º◊Õ™'  cur_pred_zh='3-º◊ª˘∂°ÕÈ'
+  [IMPROVE] id:chebi-1725  smiles=CCCCCCCCCCCCCC[C@@H](O)[C@H](O)[C@@H](N)CO  dual fail->ok  en fail->ok  zh -->-
+    gold_en='(2S,3R,4R)-2-aminooctadecane-1,3,4-triol'
+    gold_zh=''
+    prev_pred_en='(2S,3R,4R)-1,3,4-trihydroxyoctadecan-2-amine'  cur_pred_en='(2S,3R,4R)-2-aminooctadecane-1,3,4-triol'
+    prev_pred_zh='(2S,3R,4R)-1,3,4-»˝Ù«ª˘ Æ∞À-2-∞∑'  cur_pred_zh='(2S,3R,4R)-2-∞±ª˘ Æ∞ÀÕÈ-1,3,4-»˝¥º'
+  [CHANGE] id:chebi-1753  smiles=O=CCCCC/C=C\CC(=O)/C=C/C=C/C=C\[C@@H](O)CCCC(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(5S,6Z,8E,10E,14Z)-5-hydroxy-12,20-dioxoicosa-6,8,10,14-tetraenoic acid'
+    gold_zh=''
+    prev_pred_en='(5S)-5-hydroxy-12-oxoicosanoic acid'  cur_pred_en='(5S,6Z,8E,10E,14Z)-5-hydroxy-12-oxoicosa-6,8,10,14-tetraenoic acid'
+    prev_pred_zh='(5S)-5-Ù«ª˘-12-—ı¥˙∂˛ ÆÀ·'  cur_pred_zh='(5S,6Z,8E,10E,14Z)-5-Ù«ª˘-12-—ı¥˙∂˛ Æ-6,8,10,14-Àƒœ©À·'
+  [CHANGE] id:chebi-1801  smiles=O=C1c2ccccc2[C@H](O)C[C@@H]1[C@H]1C[C@@H](O)c2ccccc2C1=O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,4R)-4-hydroxy-2-[(2R,4R)-4-hydroxy-1-oxo-3,4-dihydro-2H-naphthalen-2-yl]-3,4-dihydro-2H-naphthalen-1-one'
+    gold_zh=''
+    prev_pred_en='methanone'  cur_pred_en='methane'
+    prev_pred_zh='º◊Õ™'  cur_pred_zh='º◊ÕÈ'
+  [CHANGE] id:chebi-1803  smiles=Nc1nc(Cl)nc2c1ncn2[C@H]1C[C@H](O)[C@@H](CO)O1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,3S,5R)-5-(6-amino-2-chloropurin-9-yl)-2-(hydroxymethyl)oxolan-3-ol'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [CHANGE] id:chebi-1882  smiles=NCC(O)=N[C@@H](Cc1ccccc1)C(O)=Nc1ccc2ccccc2c1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2S)-2-[(2-aminoacetyl)amino]-N-naphthalen-2-yl-3-phenylpropanamide'
+    gold_zh=''
+    prev_pred_en='hydroxyethanamine'  cur_pred_en='(2S)-butane'
+    prev_pred_zh='Ù«ª˘““∞∑'  cur_pred_zh='(2S)-∂°ÕÈ'
+  [CHANGE] id:chebi-1905  smiles=N=C(N)NCCC[C@H](N=C(O)C12CC3CC(CC(C3)C1)C2)C(O)=N[C@@H](Cc1ccccc1)C(=N)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='N-[(2S)-1-[[(2S)-1-amino-1-oxo-3-phenylpropan-2-yl]amino]-5-(diaminomethylideneamino)-1-oxopentan-2-yl]adamantane-1-carboxamide'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2S)-pentane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2S)-ŒÏÕÈ'
+  [CHANGE] id:chebi-1911  smiles=C[C@H](N[C@@H](CCc1ccccc1)C(=O)O)C(=O)N1C(=O)N(C)C[C@H]1C(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(4S)-3-[(2S)-2-[[(1S)-1-carboxy-3-phenylpropyl]amino]propanoyl]-1-methyl-2-oxoimidazolidine-4-carboxylic acid'
+    gold_zh=''
+    prev_pred_en='(2S)-4-phenylbutanoic acid'  cur_pred_en='pentanedioic acid'
+    prev_pred_zh='(2S)-4-±Ωª˘∂°À·'  cur_pred_zh='ŒÏ∂˛À·'
+  [IMPROVE] id:chebi-1972  smiles=CCCCCCCCCCC[C@@H](O)[C@@H](N)CO  dual fail->ok  en fail->ok  zh -->-
+    gold_en='(2S,3R)-2-aminotetradecane-1,3-diol'
+    gold_zh=''
+    prev_pred_en='(2S,3R)-1,3-dihydroxytetradecan-2-amine'  cur_pred_en='(2S,3R)-2-aminotetradecane-1,3-diol'
+    prev_pred_zh='(2S,3R)-1,3-∂˛Ù«ª˘ ÆÀƒ-2-∞∑'  cur_pred_zh='(2S,3R)-2-∞±ª˘ ÆÀƒÕÈ-1,3-∂˛¥º'
+  [CHANGE] id:chebi-2003  smiles=N=c1nc(O)c2c([nH]1)NCC(CNc1ccc(C(=O)N[C@@H](CCC(=O)O)C(=O)O)cc1)=N2  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2S)-2-[[4-[(2-amino-4-oxo-7,8-dihydro-3H-pteridin-6-yl)methylamino]benzoyl]amino]pentanedioic acid'
+    gold_zh=''
+    prev_pred_en='(4S)-pentanoic acid'  cur_pred_en='pentanedioic acid'
+    prev_pred_zh='(4S)-ŒÏÀ·'  cur_pred_zh='ŒÏ∂˛À·'
+  [CHANGE] id:chebi-2011  smiles=N=C(O)N[C@@H]1N=C(O)N=C1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(4R)-2,5-dioxoimidazolidin-4-yl]urea'
+    gold_zh=''
+    prev_pred_en='hydroxy-N-methylmethanamine'  cur_pred_en='methane'
+    prev_pred_zh='Ù«ª˘-N-º◊ª˘º◊∞∑'  cur_pred_zh='º◊ÕÈ'
+  [CHANGE] id:chebi-2018  smiles=N[C@H](CCOc1ccc([C@@H](N)C(O)=N[C@H]2CN([C@@H](C(=O)O)c3ccc(O)cc3)C2=O)cc1)C(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R)-2-amino-4-[4-[(1R)-1-amino-2-[[(3S)-1-[(R)-carboxy-(4-hydroxyphenyl)methyl]-2-oxoazetidin-3-yl]amino]-2-oxoethyl]phenoxy]butanoic acid'
+    gold_zh=''
+    prev_pred_en='(2R)-2-(4-hydroxyphenyl)acetic acid'  cur_pred_en='2-aminobutanedioic acid'
+    prev_pred_zh='(2R)-2-(4-Ù«ª˘±Ωª˘)““À·'  cur_pred_zh='2-∞±ª˘∂°∂˛À·'
+  [CHANGE] id:chebi-2079  smiles=Cc1cc(O)c2c(c1)C(=O)c1ccc(O)c(O)c1C2=O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='1,2,8-trihydroxy-6-methylanthracene-9,10-dione'
+    gold_zh=''
+    prev_pred_en='methanone'  cur_pred_en='ethane'
+    prev_pred_zh='º◊Õ™'  cur_pred_zh='““ÕÈ'
+  [CHANGE] id:chebi-2100  smiles=Nc1c(O)nc(O)nc1N[C@@H]1O[C@H](COP(=O)(O)O)[C@@H](O)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(2R,3S,4R,5R)-5-[(5-amino-2,4-dioxo-1H-pyrimidin-6-yl)amino]-3,4-dihydroxyoxolan-2-yl]methyl dihydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [CHANGE] id:chebi-2155  smiles=Nc1ccc([C@@H](O)[C@@H](CO)N=C(O)C(Cl)Cl)cc1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='N-[(1R,2R)-1-(4-aminophenyl)-1,3-dihydroxypropan-2-yl]-2,2-dichloroacetamide'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R,3R)-butane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R,3R)-∂°ÕÈ'
+  [CHANGE] id:chebi-2161  smiles=COc1cc([O-])cc2c1C(=O)c1c(O)cc(C)cc1C2=O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='6-hydroxy-8-methoxy-3-methyl-9,10-dioxoanthracen-1-olate'
+    gold_zh=''
+    prev_pred_en='methanone'  cur_pred_en='ethane'
+    prev_pred_zh='º◊Õ™'  cur_pred_zh='““ÕÈ'
+  [CHANGE] id:chebi-2182  smiles=CC(C)CN(C[C@@H](O)[C@H](Cc1ccccc1)N=C(O)O[C@H]1CO[C@H]2OCC[C@H]21)S(=O)(=O)c1ccc(N)cc1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(3aS,4R,6aR)-2,3,3a,4,5,6a-hexahydrofuro[2,3-b]furan-4-yl] N-[(2S,3R)-4-[(4-aminophenyl)sulfonyl-(2-methylpropyl)amino]-3-hydroxy-1-phenylbutan-2-yl]carbamate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R,3S)-pentane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R,3S)-ŒÏÕÈ'
+  [CHANGE] id:chebi-2205  smiles=Cn1cnc2c(F)c(Nc3ccc(Br)cc3F)c(C(O)=NOCCO)cc21  dual fail->fail  en fail->fail  zh -->-
+    gold_en='6-(4-bromo-2-fluoroanilino)-7-fluoro-N-(2-hydroxyethoxy)-3-methylbenzimidazole-5-carboxamide'
+    gold_zh=''
+    prev_pred_en='hydroxyethane'  cur_pred_en='ethane'
+    prev_pred_zh='Ù«ª˘““ÕÈ'  cur_pred_zh='““ÕÈ'
+  [IMPROVE] id:chebi-2226  smiles=NC(/C=C\C(=O)[O-])=C/C(=O)C(=O)[O-]  dual fail->ok  en fail->ok  zh -->-
+    gold_en='(2Z,4E)-4-amino-6-oxohepta-2,4-dienedioate'
+    gold_zh=''
+    prev_pred_en='4-amino-6-oxoheptanoate'  cur_pred_en='(2Z,4E)-4-amino-6-oxohepta-2,4-dienedioate'
+    prev_pred_zh='4-∞±ª˘-6-—ı¥˙∏˝À·∏˘'  cur_pred_zh='(2Z,4E)-4-∞±ª˘-6-—ı¥˙∏˝-2,4-∂˛œ©∂˛À·∏˘'
+  [CHANGE] id:chebi-2245  smiles=CC(C)(C)NCC(O)COc1cccc2c1CCC(O)=N2.Cl  dual fail->fail  en fail->fail  zh -->-
+    gold_en='tert-butyl-[2-hydroxy-3-[(2-oxo-3,4-dihydro-1H-quinolin-5-yl)oxy]propyl]azanium;chloride'
+    gold_zh=''
+    prev_pred_en='2-hydroxypropane'  cur_pred_en='propane'
+    prev_pred_zh='2-Ù«ª˘±˚ÕÈ'  cur_pred_zh='±˚ÕÈ'
+  [CHANGE] id:chebi-2246  smiles=CC(C)=CCC/C(C)=C/CC/C(C)=C/COP(=O)(O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(2E,6E)-3,7,11-trimethyldodeca-2,6,10-trienyl] dihydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='2,6,10-trimethyldodeca-2,6,10-triene'  cur_pred_en='2,6,10-trimethyldodecane'
+    prev_pred_zh='2,6,10-»˝º◊ª˘ Æ∂˛-2,6,10-»˝œ©'  cur_pred_zh='2,6,10-»˝º◊ª˘ Æ∂˛ÕÈ'
+  [CHANGE] id:chebi-2301  smiles=N[C@@H]1C(O)[C@H](N)[C@@H](O)C(OP(=O)(O)O)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(2S,3R,5S,6R)-3,5-diamino-2,4,6-trihydroxycyclohexyl] dihydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='aminomethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='∞±ª˘º◊ÕÈ'
+  [CHANGE] id:chebi-2310  smiles=CC(C)(C)NCC(O)c1ccc(O)c(CO)c1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='4-[2-(tert-butylamino)-1-hydroxyethyl]-2-(hydroxymethyl)phenol'
+    gold_zh=''
+    prev_pred_en='2-hydroxypropane'  cur_pred_en='propane'
+    prev_pred_zh='2-Ù«ª˘±˚ÕÈ'  cur_pred_zh='±˚ÕÈ'
+  [IMPROVE] id:chebi-2395  smiles=C/C=C/C=C/C=C/[C@@H](O)C/C=C/CN  dual fail->ok  en fail->ok  zh -->-
+    gold_en='(2E,5S,6E,8E,10E)-1-aminododeca-2,6,8,10-tetraen-5-ol'
+    gold_zh=''
+    prev_pred_en='(5S)-1-aminododecan-5-ol'  cur_pred_en='(2E,5S,6E,8E,10E)-1-aminododeca-2,6,8,10-tetraen-5-ol'
+    prev_pred_zh='(5S)-1-∞±ª˘ Æ∂˛-5-¥º'  cur_pred_zh='(2E,5S,6E,8E,10E)-1-∞±ª˘ Æ∂˛-2,6,8,10-Àƒœ©-5-¥º'
+  [CHANGE] id:chebi-2455  smiles=CN(C)c1ncnc2c1ncn2[C@@H]1O[C@H](CO)[C@@H](N)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,3R,4S,5S)-4-amino-2-[6-(dimethylamino)purin-9-yl]-5-(hydroxymethyl)oxolan-3-ol'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2S)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2S)-““ÕÈ'
+  [CHANGE] id:chebi-2501  smiles=Cc1ncc(C[n+]2csc(CCOP(=O)([O-])OP(=O)([O-])OP(=O)([O-])OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](O)[C@@H]3O)c2C)c(=N)[nH]1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[2-[3-[(4-amino-2-methylpyrimidin-5-yl)methyl]-4-methyl-1,3-thiazol-3-ium-5-yl]ethoxy-oxidophosphoryl] [[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-oxidophosphoryl] phosphate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='propane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='±˚ÕÈ'
+  [CHANGE] id:chebi-2510  smiles=NCC(O)=N[C@@H](Cc1c[nH]c2ccccc12)C(O)=Nc1ccc2ccccc2c1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2S)-2-[(2-aminoacetyl)amino]-3-(1H-indol-3-yl)-N-naphthalen-2-ylpropanamide'
+    gold_zh=''
+    prev_pred_en='hydroxyethanamine'  cur_pred_en='(2S)-butane'
+    prev_pred_zh='Ù«ª˘““∞∑'  cur_pred_zh='(2S)-∂°ÕÈ'
+  [IMPROVE] id:chebi-2540  smiles=O=C([O-])C/C=C\CC(=O)C(=O)[O-]  dual fail->ok  en fail->ok  zh -->-
+    gold_en='(Z)-6-oxohept-3-enedioate'
+    gold_zh=''
+    prev_pred_en='6-oxoheptanoate'  cur_pred_en='(Z)-6-oxohept-3-enedioate'
+    prev_pred_zh='6-—ı¥˙∏˝À·∏˘'  cur_pred_zh='(Z)-6-—ı¥˙∏˝-3-œ©∂˛À·∏˘'
+  [CHANGE] id:chebi-2593  smiles=N/C(=C/C=C\C=O)C(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2E,4Z)-2-amino-6-oxohexa-2,4-dienoic acid'
+    gold_zh=''
+    prev_pred_en='2-aminohexanoic acid'  cur_pred_en='(2E,4Z)-2-aminohexa-2,4-dienoic acid'
+    prev_pred_zh='2-∞±ª˘º∫À·'  cur_pred_zh='(2E,4Z)-2-∞±ª˘º∫-2,4-∂˛œ©À·'
+  [CHANGE] id:chebi-2731  smiles=N[C@H]1C[C@H](COP(=O)(O)O)[C@@H](O)[C@H](O)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(1R,2R,3S,4S,5S)-5-amino-2,3,4-trihydroxycyclohexyl]methyl dihydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [IMPROVE] id:chebi-2732  smiles=N#Cc1ccccc1/C=C/C(=O)O  dual fail->ok  en fail->ok  zh -->-
+    gold_en='(E)-3-(2-cyanophenyl)prop-2-enoic acid'
+    gold_zh=''
+    prev_pred_en='3-(2-cyanophenyl)propanoic acid'  cur_pred_en='(E)-3-(2-cyanophenyl)prop-2-enoic acid'
+    prev_pred_zh='3-(2-«Ëª˘±Ωª˘)±˚À·'  cur_pred_zh='(E)-3-(2-«Ëª˘±Ωª˘)±˚-2-œ©À·'
+  [CHANGE] id:chebi-2737  smiles=O=C1c2ccccc2C(=O)C1(O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='2,2-dihydroxyindene-1,3-dione'
+    gold_zh=''
+    prev_pred_en='methanone'  cur_pred_en='dihydroxymethane'
+    prev_pred_zh='º◊Õ™'  cur_pred_zh='∂˛Ù«ª˘º◊ÕÈ'
+  [CHANGE] id:chebi-2751  smiles=CCCCCCCCCCCCCC(=O)O[C@H](CCCCCCCCCCC)CC(=O)O[C@@H]1[C@@H](N=C(O)C[C@@H](CCCCCCCCCCC)OC(=O)CCCCCCCCCCC)[C@H](OC[C@H]2O[C@H](OP(=O)(O)OP(=O)(O)O)[C@H](N=C(O)C[C@H](O)CCCCCCCCCCC)[C@@H](OC(=O)C[C@H](O)CCCCCCCCCCC)[C@@H]2O)O[C@H](CO[C@]2(C(=O)O)C[C@@H](O[C@]3(C(=O)O)C[C@@H](O)[C@@H](O)[C@@H]([C@H](O)CO)O3)[C@@H](O[C@H]3O[C@H]([C@@H](O)CO)[C@@H](OP(=O)(O)O)[C@H](O[C@H]4O[C@H]([C@@H](O)CO[C@H]5O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O)[C@@H]5O)[C@@H](OP(=O)(O)O)[C@H](O[C@H]5O[C@H](CO[C@H]6O[C@H](CO)[C@H](O)[C@H](O)[C@H]6O)[C@@H](O)[C@H](O[C@H]6O[C@H](CO)[C@@H](O)[C@H](O)[C@H]6O[C@H]6O[C@H](CO[C@H]7O[C@H]([C@@H](O)CO)[C@@H](O)[C@H](O)[C@@H]7O)[C@@H](O)[C@H](O)[C@H]6O)[C@H]5O)[C@@H]4O)[C@@H]3O)[C@@H]([C@H](O)CO)O2)[C@H]1OP(=O)(O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,4R,5R,6R)-2-[(2R,4R,5R,6R)-2-carboxy-6-[(1R)-1,2-dihydroxyethyl]-5-[(2S,3S,4R,5R,6R)-6-[(1S)-1,2-dihydroxyethyl]-4-[(2R,3S,4R,5R,6R)-6-[(1S)-2-[(2S,3S,4S,5S,6R)-6-[(1S)-1,2-dihydroxyethyl]-3,4,5-trihydroxyoxan-2-yl]oxy-1-hydroxyethyl]-4-[(2R,3R,4S,5R,6R)-4-[(2R,3R,4S,5S,6R)-3-[(2R,3R,4S,5S,6R)-6-[[(2S,3S,4S,5S,6R)-6-[(1S)-1,2-dihydroxyethyl]-3,4,5-trihydroxyoxan-2-yl]oxymethyl]-3,4,5-trihydroxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-3,5-dihydroxy-6-[[(2S,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxy-3-hydroxy-5-phosphonooxyoxan-2-yl]oxy-3-hydroxy-5-phosphonooxyoxan-2-yl]oxy-2-[[(2R,3S,4R,5R,6R)-5-[[(3R)-3-dodecanoyloxytetradecanoyl]amino]-6-[[(2R,3S,4R,5R,6R)-3-hydroxy-6-[hydroxy(phosphonooxy)phosphoryl]oxy-5-[[(3R)-3-hydroxytetradecanoyl]amino]-4-[(3R)-3-hydroxytetradecanoyl]oxyoxan-2-yl]methoxy]-3-phosphonooxy-4-[(3R)-3-tetradecanoyloxytetradecanoyl]oxyoxan-2-yl]methoxy]oxan-4-yl]oxy-6-[(1R)-1,2-dihydroxyethyl]-4,5-dihydroxyoxane-2-carboxylic acid'
+    gold_zh=''
+    prev_pred_en='formic acid'  cur_pred_en='tetradecanedioic acid'
+    prev_pred_zh='º◊À·'  cur_pred_zh=' ÆÀƒ∂˛À·'
+  [CHANGE] id:chebi-2781  smiles=C=CC(C)(C=O)SC[C@H](N=C([O-])CC[C@H](N)C(=O)O)C(O)=NCC(=O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2S)-2-azaniumyl-5-[[(2R)-1-(carboxylatomethylamino)-3-(2-methyl-1-oxobut-3-en-2-yl)sulfanyl-1-oxopropan-2-yl]amino]-5-oxopentanoate'
+    gold_zh=''
+    prev_pred_en='(2S)-2-aminopentanoic acid'  cur_pred_en=''
+    prev_pred_zh='(2S)-2-∞±ª˘ŒÏÀ·'  cur_pred_zh=''
+  [CHANGE] id:chebi-2791  smiles=CC(C)C[C@H](N=C(O)CN=C(O)c1cc(Cl)ccc1Cl)B1OC(=O)C(CC(=O)O)(CC(=O)O)O1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='2-[4-(carboxymethyl)-2-[(1R)-1-[[2-[(2,5-dichlorobenzoyl)amino]acetyl]amino]-3-methylbutyl]-5-oxo-1,3,2-dioxaborolan-4-yl]acetic acid'
+    gold_zh=''
+    prev_pred_en='acetic acid'  cur_pred_en='2-methylbutanedioic acid'
+    prev_pred_zh='““À·'  cur_pred_zh='2-º◊ª˘∂°∂˛À·'
+  [CHANGE] id:chebi-2877  smiles=CCCCCCCCCCCCCC(=O)O[C@H](CCCCCCCCCCC)CC(=O)O[C@@H]1[C@@H](N=C([O-])C[C@@H](CCCCCCCCCCC)OC(=O)CCCCCCCCCCC)[C@H](OC[C@H]2O[C@H](OP(=O)(O)O[C@H]3OC[C@H](N)[C@H](O)[C@H]3O)[C@H](N=C([O-])C[C@H](O)CCCCCCCCCCC)[C@@H](OC(=O)C[C@H](O)CCCCCCCCCCC)[C@@H]2O)O[C@H](CO[C@]2(C(=O)O)C[C@@H](O[C@]3(C(=O)O)C[C@@H](O)[C@@H](O)[C@@H]([C@H](O)CO)O3)[C@@H](O)[C@@H]([C@H](O)CO)O2)[C@H]1OP(=O)(O)O[C@H]1OC[C@H](N)[C@H](O)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2R,4R,5R,6R)-2-[(2R,4R,5R,6R)-2-[[(2R,3S,4R,5R,6R)-3-[[(2R,3R,4S,5S)-5-azaniumyl-3,4-dihydroxyoxan-2-yl]oxy-oxidophosphoryl]oxy-6-[[(2R,3S,4R,5R,6R)-6-[[(2R,3R,4S,5S)-5-azaniumyl-3,4-dihydroxyoxan-2-yl]oxy-oxidophosphoryl]oxy-3-hydroxy-5-[[(3R)-3-hydroxytetradecanoyl]amino]-4-[(3R)-3-hydroxytetradecanoyl]oxyoxan-2-yl]methoxy]-5-[[(3R)-3-dodecanoyloxytetradecanoyl]amino]-4-[(3R)-3-tetradecanoyloxytetradecanoyl]oxyoxan-2-yl]methoxy]-2-carboxylato-6-[(1R)-1,2-dihydroxyethyl]-5-hydroxyoxan-4-yl]oxy-6-[(1R)-1,2-dihydroxyethyl]-4,5-dihydroxyoxane-2-carboxylate'
+    gold_zh=''
+    prev_pred_en='formic acid'  cur_pred_en='tetradecanedioic acid'
+    prev_pred_zh='º◊À·'  cur_pred_zh=' ÆÀƒ∂˛À·'
+  [CHANGE] id:chebi-2918  smiles=CN(C)CCOP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2ccc(=N)nc2O)[C@H](O)[C@@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[[(2R,3S,4R,5R)-5-(4-amino-2-oxopyrimidin-1-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl] 2-(dimethylamino)ethyl hydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='N,N-dimethylethanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='N,N-∂˛º◊ª˘““∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [CHANGE] id:chebi-2939  smiles=CNCCc1ccc(O)cc1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='4-[2-(methylamino)ethyl]phenol'
+    gold_zh=''
+    prev_pred_en='2-(4-hydroxyphenyl)-N-methylethanamine'  cur_pred_en='propane'
+    prev_pred_zh='2-(4-Ù«ª˘±Ωª˘)-N-º◊ª˘““∞∑'  cur_pred_zh='±˚ÕÈ'
+  [CHANGE] id:chebi-2957  smiles=Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OP(=O)([O-])[O-])[C@@H](O)[C@H]1O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-oxidophosphoryl] phosphate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [CHANGE] id:chebi-2985  smiles=Nc1cnn(C(=O)/C(O)=C/C=C/C(=O)O)c(=O)c1Cl  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2E,4Z)-6-(4-amino-5-chloro-6-oxopyridazin-1-yl)-5-hydroxy-6-oxohexa-2,4-dienoic acid'
+    gold_zh=''
+    prev_pred_en='5-hydroxyhexanoic acid'  cur_pred_en='(2E,4Z)-5-hydroxyhexa-2,4-dienoic acid'
+    prev_pred_zh='5-Ù«ª˘º∫À·'  cur_pred_zh='(2E,4Z)-5-Ù«ª˘º∫-2,4-∂˛œ©À·'
+  [CHANGE] id:chebi-2996  smiles=Nc1c(S(=O)(=O)[O-])cc(Nc2ccc(S(=O)(=O)[O-])c(N=c3[nH]c(Cl)nc(=Nc4cccc(S(=O)(=O)[O-])c4)[nH]3)c2)c2c1C(O)c1ccccc1C2O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='1-amino-4-[3-[[4-chloro-6-(3-sulfonatoanilino)-1,3,5-triazin-2-yl]amino]-4-sulfonatoanilino]-9,10-dihydroxy-9,10-dihydroanthracene-2-sulfonate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='aminomethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='∞±ª˘º◊ÕÈ'
+  [CHANGE] id:chebi-2998  smiles=O=C(O)CC[C@@H](C(=O)O)N1C(=O)c2ccccc2C1=O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='(2S)-2-(1,3-dioxoisoindol-2-yl)pentanedioic acid'
+    gold_zh=''
+    prev_pred_en='(4S)-pentanoic acid'  cur_pred_en='pentanedioic acid'
+    prev_pred_zh='(4S)-ŒÏÀ·'  cur_pred_zh='ŒÏ∂˛À·'
+  [CHANGE] id:chebi-3060  smiles=O=C1c2ccccc2C(=O)c2c1cc(S(=O)(=O)O)c([O-])c2O.[Na+]  dual fail->fail  en fail->fail  zh -->-
+    gold_en='sodium;3,4-dihydroxy-9,10-dioxoanthracene-2-sulfonate'
+    gold_zh=''
+    prev_pred_en='methanone'  cur_pred_en='methane'
+    prev_pred_zh='º◊Õ™'  cur_pred_zh='º◊ÕÈ'
+  [CHANGE] id:chebi-3061  smiles=N=c1nc(O)c2ncn([C@@H]3O[C@H](CO)[C@@H](O)[C@H]3OP(=O)(O)OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](O)[C@@H]3OP(=O)(O)O)c2[nH]1  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(2R,3R,4R,5R)-2-(2-amino-6-oxo-1H-purin-9-yl)-4-hydroxy-5-(hydroxymethyl)oxolan-3-yl] [(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-3-phosphonooxyoxolan-2-yl]methyl hydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='methanamine'  cur_pred_en='(2R)-ethane'
+    prev_pred_zh='º◊∞∑'  cur_pred_zh='(2R)-““ÕÈ'
+  [CHANGE] id:chebi-3104  smiles=CC(=O)[C@@H](O)[C@H](O)C(=O)COP(=O)(O)O  dual fail->fail  en fail->fail  zh -->-
+    gold_en='[(3S,4S)-3,4-dihydroxy-2,5-dioxohexyl] dihydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='(3S,4S)-3,4-dihydroxyhexan-2-one'  cur_pred_en='3,4-dihydroxyhexane-2,5-dione'
+    prev_pred_zh='(3S,4S)-3,4-∂˛Ù«ª˘º∫-2-Õ™'  cur_pred_zh='3,4-∂˛Ù«ª˘º∫-2,5-∂˛Õ™'
+  [CHANGE] id:chebi-3276  smiles=CCCCCCCCCCCCCCCC(O)=N[C@@H](COP(=O)(O)OCCN)[C@H](O)[C@H](O)CCCCCCCCCCCCCC  dual fail->fail  en fail->fail  zh -->-
+    gold_en='2-aminoethyl [(2S,3S,4R)-2-(hexadecanoylamino)-3,4-dihydroxyoctadecyl] hydrogen phosphate'
+    gold_zh=''
+    prev_pred_en='ethanamine'  cur_pred_en='(15R,16S,17S)-octadecane'
+    prev_pred_zh='““∞∑'  cur_pred_zh='(15R,16S,17S)- Æ∞ÀÕÈ'
