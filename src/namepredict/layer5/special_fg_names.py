@@ -10,25 +10,32 @@ from namepredict.layer5.hydrazine_names import hydrazine_names
 from namepredict.layer5.isocyanate_names import iso_kind_names
 from namepredict.layer5.sulfonamide_names import sulfonamide_names
 from namepredict.layer5.sulfonate_names import sulfonate_names
+from namepredict.layer5.sulfonyl_chloride_names import sulfonyl_chloride_names
 from namepredict.layer5.sulfoxide_names import sulfoxide_names
 from namepredict.layer5.urea_names import urea_names
 
 
-def _table(n: int, numbered: dict) -> dict:
+def _core_table(n: int, numbered: dict) -> dict:
     return {
         "carbamate": lambda: carbamate_names(numbered),
         "carbonate": lambda: carbonate_names(numbered),
         "urea": lambda: urea_names(numbered),
         "hydrazine": lambda: hydrazine_names(numbered),
         "diester": lambda: diester_names(n, numbered),
-        "sulfonamide": lambda: sulfonamide_names(numbered),
-        "sulfonate": lambda: sulfonate_names(numbered),
         "boronic": lambda: boronic_names(numbered),
     }
 
 
+def _s_table(numbered: dict) -> dict:
+    return {
+        "sulfonamide": lambda: sulfonamide_names(numbered),
+        "sulfonate": lambda: sulfonate_names(numbered),
+        "sulfonyl_chloride": lambda: sulfonyl_chloride_names(numbered),
+    }
+
+
 def _by_kind(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    fn = _table(n, numbered).get(kind)
+    fn = {**_core_table(n, numbered), **_s_table(numbered)}.get(kind)
     return fn() if fn else None
 
 

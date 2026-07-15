@@ -1,19 +1,19 @@
-"""L2 simple mono-sulfonate ester functional parent (P-65.3.2)."""
+"""L2 simple mono-sulfonyl chloride functional parent (P-65.3)."""
 from __future__ import annotations
 
 
-_SO_BAD = (
+_SC_BAD = (
     "has_acid", "has_ester", "has_amide", "has_nitrile", "has_acyl_chloride",
     "has_aldehyde", "has_ketone", "has_anhydride", "has_thiol",
     "has_phosphate", "has_phosphonic", "has_carbamate", "has_urea",
-    "has_sulfoxide", "has_isocyanate", "has_isothiocyanate", "has_sulfonamide",
-    "has_sulfonyl_chloride",
+    "has_sulfoxide", "has_isocyanate", "has_isothiocyanate",
+    "has_sulfonamide", "has_sulfonate",
 )
 
 
 def _mono_ok(info: dict) -> bool:
     from namepredict.layer2.parent_selector import _no_fgs
-    return len(info.get("sulfonates") or []) == 1 and _no_fgs(info, _SO_BAD)
+    return len(info.get("sulfonyl_chlorides") or []) == 1 and _no_fgs(info, _SC_BAD)
 
 
 def _arm_n(mol, c_idx: int, forbid: int) -> int:
@@ -47,22 +47,10 @@ def _alkyl_s(mol, c: int, s: int) -> dict | None:
 
 
 def _s_side(mol, e: dict) -> dict | None:
-    """S–C side: simple aryl (Ph ≤ leaves) or n-alkyl C1–C4."""
+    """S–C side: simple aryl (Ph ≤ leaves) or n-alkyl C1–C4 (+ terminal F/CF3)."""
     c, s = e["c_attach"], e["s_idx"]
     ar = _aryl_of(mol, c, s)
     return {"kind": "aryl", **ar} if ar is not None else _alkyl_s(mol, c, s)
-
-
-def _o_side(mol, e: dict) -> dict | None:
-    """O–R side: linear n-alkyl C1–C4 only (first cut)."""
-    from namepredict.layer2.alkoxy_side import classify_alkoxy
-    side = classify_alkoxy(mol, e["o_idx"], e["alkoxy_c_idx"])
-    n = side.get("alkoxy_n")
-    if n is None or not (1 <= int(n) <= 4):
-        return None
-    if not _arm_ok(mol, e["alkoxy_c_idx"], e["o_idx"]):
-        return None
-    return {"kind": "alkyl", "n": int(n)}
 
 
 def _s_chain(mol, e: dict, s: dict) -> list[int]:
@@ -72,23 +60,19 @@ def _s_chain(mol, e: dict, s: dict) -> list[int]:
     return _longest_from(mol, e["c_attach"], {e["s_idx"]}) or [e["c_attach"]]
 
 
-def _pack(info: dict, e: dict, s: dict, o: dict) -> dict:
+def _pack(info: dict, e: dict, s: dict) -> dict:
     from namepredict.layer2.parent_selector import _parent_dict
     mol = info["mol"]
-    mode = f"{s['kind']}_{o['kind']}"
     return _parent_dict(
-        _s_chain(mol, e, s), "sulfonate",
-        s_idx=e["s_idx"], c_attach=e["c_attach"], o_idx=e["o_idx"],
-        alkoxy_c_idx=e["alkoxy_c_idx"], s_side=s, o_side=o,
-        mode=mode, alkoxy_n=o["n"], mol=mol,
+        _s_chain(mol, e, s), "sulfonyl_chloride",
+        s_idx=e["s_idx"], c_attach=e["c_attach"], cl_idx=e["cl_idx"],
+        s_side=s, mode=s["kind"], mol=mol,
     )
 
 
-def _sulfonate_parent(info: dict) -> dict | None:
+def _sulfonyl_chloride_parent(info: dict) -> dict | None:
     if not _mono_ok(info):
         return None
-    e, mol = info["sulfonates"][0], info["mol"]
-    s, o = _s_side(mol, e), _o_side(mol, e)
-    if s is None or o is None:
-        return None
-    return _pack(info, e, s, o)
+    e, mol = info["sulfonyl_chlorides"][0], info["mol"]
+    s = _s_side(mol, e)
+    return None if s is None else _pack(info, e, s)

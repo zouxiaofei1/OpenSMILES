@@ -98,7 +98,7 @@ def _orient_amide(chain: list[int], parent: dict) -> list[int]:
 def _orient_nitrile(chain: list[int], parent: dict) -> list[int]:
     return _orient_to_terminal(chain, parent.get("nitrile_c_idx"))
 def _orient_acyl_chloride(chain: list[int], parent: dict) -> list[int]:
-    return _orient_to_terminal(chain, parent.get("acyl_c_idx"))
+    return _orient_to_terminal(chain, parent.get("acyl_c_idx") or parent.get("c_attach"))
 def _ene_ends_on(chain: list[int], ends: tuple[int, int] | None) -> tuple[int, int] | None:
     if not ends or ends[0] not in chain or ends[1] not in chain: return None
     return chain.index(ends[0]) + 1, chain.index(ends[1]) + 1
@@ -133,7 +133,7 @@ def _terminal_orienters() -> dict:
     return {
         "acid": _term_fn(_orient_acid), "aldehyde": _term_fn(_orient_aldehyde),
         "ester": _term_fn(_orient_ester), "amide": _term_fn(_orient_amide),
-        "nitrile": _term_fn(_orient_nitrile),
+        "nitrile": _term_fn(_orient_nitrile), "sulfonyl_chloride": ac,
         "acyl_chloride": ac, "acyl_bromide": ac,
     }
 def _carbonyl_orienters() -> dict:
