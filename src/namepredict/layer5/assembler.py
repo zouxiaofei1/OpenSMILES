@@ -244,13 +244,22 @@ def _ester_or_alkenoate(kind: str, n: int, numbered: dict) -> tuple[str, str] | 
     if top is not None:
         return top
     return _ester_names(n, numbered.get("parent") or {})
+def _ketone_or_alkenone(n: int, numbered: dict) -> tuple[str, str] | None:
+    from namepredict.layer5.unsat_acid import (
+        _has_ene, _has_yne, alkenone_from, alkynone_from,
+    )
+    if _has_yne(numbered):
+        return alkynone_from(n, numbered)
+    if _has_ene(numbered):
+        return alkenone_from(n, numbered)
+    return _ketone_names(n, numbered.get("ketone_locant"))
 def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _ester_or_alkenoate(kind, n, numbered)
     if top is not None: return top
     if kind == "dione":
         return _dione_names(n, numbered.get("ketone_locants"))
     if kind == "ketone":
-        return _ketone_names(n, numbered.get("ketone_locant"))
+        return _ketone_or_alkenone(n, numbered)
     return _cycloketone_names(n) if kind == "cycloketone" else None
 def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _acid_ald_amide(kind, n, numbered) or _nitrile_or_none(kind, n, numbered)

@@ -258,6 +258,7 @@ _ALKENAL_BAD = _UNSAT_FG_CORE + ("has_nitrile",)
 _ALKENENITRILE_BAD = _UNSAT_FG_CORE + ("has_aldehyde",)
 _ALKENOL_BAD = _UNSAT_FG_BASE + ("has_aldehyde", "has_nitrile")
 _ALKENOATE_BAD = tuple(k for k in _UNSAT_FG_BASE + ("has_nitrile",) if k != "has_ester")
+_ALKENONE_BAD = tuple(k for k in _ALKENAL_BAD + ("has_aldehyde",) if k != "has_ketone")
 def _open_chain_unsat_atoms(mol, fg_c: int, db: dict) -> bool:
     """True iff principal FG attach carbon and both C=C ends are acyclic."""
     atoms = (int(fg_c), int(db["c1"]), int(db["c2"]))
@@ -323,15 +324,14 @@ def _acid_parent(info: dict) -> dict | None:
     return None if core is None else _with_anion(info, core)
 def _ketone_parent(info: dict) -> dict | None:
     a = _try_acetophenone_parent(info)
-    if a is not None:
-        return a
+    if a is not None: return a
     if _is_simple_cycloketone(info):
         return _cyclo_fg_parent(info, "cycloketone", "ketones", "ketone_c_idx")
-    if _is_simple_alkanedione(info):
-        return _dione_parent(info)
-    if not _open_mono_fg_ok(info, "ketones"):
-        return None
-    return _fg_chain(info, "ketones", "ketone", "ketone_c_idx")
+    if _is_simple_alkanedione(info): return _dione_parent(info)
+    if not _open_mono_fg_ok(info, "ketones"): return None
+    return _unsat_or_sat(
+        info, "has_ketone", "ketones", _ALKENONE_BAD, "ketone", "ketone", "ketone_c_idx",
+    )
 def _aldehyde_parent(info: dict) -> dict | None:
     top = _try_izald(info) or _try_benzaldehyde_parent(info)
     if top is not None:

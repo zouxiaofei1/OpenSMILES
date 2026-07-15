@@ -71,6 +71,21 @@ def orient_alkenol(chain: list[int], parent: dict, subs: list, prefer_fn) -> lis
     return picked if picked is not None else orient_polyene(chain, parent, subs, prefer_fn)
 
 
+def _fg_pos(chain: list[int], c: int | None) -> int | None:
+    return None if c is None or c not in chain else chain.index(c) + 1
+
+
+def prefer_unsat_if_fg_tie(base, parent, subs, fg_key, prefer_ene_fn):
+    """When FG locant ties both ways, prefer lower ene/yne locant (P-31.1)."""
+    ends = parent.get("double_bond") or parent.get("triple_bond")
+    if not ends:
+        return base
+    rev = list(reversed(base))
+    if _fg_pos(base, parent.get(fg_key)) != _fg_pos(rev, parent.get(fg_key)):
+        return base
+    return prefer_ene_fn(base, rev, ends, subs)
+
+
 def orient_cyclopolyene(chain: list[int], parent: dict, subs: list) -> list[int]:
     """Ring polyene: lowest endocyclic ene set via locant engine (poly_unsat)."""
     from namepredict.layer4.locants.engine import choose_numbering

@@ -16,7 +16,8 @@ from namepredict.layer4.locants.adapt import (
     plan_from_chain,
 )
 from namepredict.layer4.polyene import (
-    ene_locants, orient_alkenol, orient_alkenedioic, orient_cyclopolyene, orient_polyene,
+    ene_locants, orient_alkenol, orient_alkenedioic, orient_cyclopolyene,
+    orient_polyene, prefer_unsat_if_fg_tie,
 )
 from namepredict.layer4.sat_hetero_orient import orient_sat_hetero_repl as _orient_sat_hetero_repl
 def _pos_on(chain: list[int], c: int | None) -> int | None:
@@ -44,12 +45,9 @@ def _orient_alkane(chain: list[int], substituents: list) -> list[int]:
     if not substituents or not chain:
         return chain
     return _prefer_chain(chain, list(reversed(chain)), substituents)
-def _orient_by_single_fg(
-    chain: list[int], parent: dict, substituents: list, key: str
-) -> list[int]:
+def _orient_by_single_fg(chain: list[int], parent: dict, substituents: list, key: str) -> list[int]:
     pos = _pos_on(chain, parent.get(key))
-    if pos is None:
-        return chain
+    if pos is None: return chain
     base = _maybe_reverse(chain, pos)
     rev = list(reversed(base))
     b, r = _pos_on(base, parent.get(key)), _pos_on(rev, parent.get(key))
@@ -64,7 +62,8 @@ def _orient_thiol(chain: list[int], parent: dict, substituents: list) -> list[in
 def _orient_amine(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_by_single_fg(chain, parent, substituents, "amine_c_idx")
 def _orient_ketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    return _orient_by_single_fg(chain, parent, substituents, "ketone_c_idx")
+    base = _orient_by_single_fg(chain, parent, substituents, "ketone_c_idx")
+    return prefer_unsat_if_fg_tie(base, parent, substituents, "ketone_c_idx", _prefer_ene_orient)
 def _pair_locs_on(chain: list[int], cs) -> tuple[int, ...] | None:
     if not cs: return None
     locs = sorted(chain.index(c) + 1 for c in cs if c in chain)

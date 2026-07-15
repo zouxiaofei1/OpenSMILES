@@ -253,6 +253,39 @@ def alkynol_from(n: int, numbered: dict) -> tuple[str, str] | None:
     return _alkynol_names(n, numbered.get("yne_locant"), numbered.get("oh_locant"))
 
 
+def _alkenone_names(n, ene_loc, one_loc, ez="") -> tuple[str, str] | None:
+    en, zh = ALKANE_EN.get(n), ALKANE_ZH.get(n)
+    if not en or not zh or ene_loc is None or one_loc is None:
+        return None
+    return (
+        f"{ez}{en[:-3]}-{ene_loc}-en-{one_loc}-one",
+        f"{ez}{zh_stem(zh)}-{ene_loc}-烯-{one_loc}-酮",
+    )
+
+
+def alkenone_from(n: int, numbered: dict) -> tuple[str, str] | None:
+    """but-3-en-2-one / 丁-3-烯-2-酮 with E/Z when stereo defined."""
+    return _alkenone_names(
+        n, numbered.get("ene_locant"), numbered.get("ketone_locant"),
+        ez_for_parent(numbered) or "",
+    )
+
+
+def _alkynone_names(n, yne_loc, one_loc) -> tuple[str, str] | None:
+    en, zh = ALKANE_EN.get(n), ALKANE_ZH.get(n)
+    if not en or not zh or yne_loc is None or one_loc is None:
+        return None
+    return (
+        f"{en[:-3]}-{yne_loc}-yn-{one_loc}-one",
+        f"{zh_stem(zh)}-{yne_loc}-炔-{one_loc}-酮",
+    )
+
+
+def alkynone_from(n: int, numbered: dict) -> tuple[str, str] | None:
+    """but-3-yn-2-one / 丁-3-炔-2-酮 (ketone + yne locants retained)."""
+    return _alkynone_names(n, numbered.get("yne_locant"), numbered.get("ketone_locant"))
+
+
 def ester_or_alkenoate(n: int, numbered: dict) -> tuple[str, str] | None:
     """Ester stem; unsat when yne or ene fields present."""
     parent = numbered.get("parent") or {}
