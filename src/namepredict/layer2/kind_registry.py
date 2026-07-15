@@ -20,7 +20,7 @@ _REG: dict[str, KindMeta] = {}
 # --- bootstrap tables (module-level; kept out of function bodies) ---
 _CHAIN_FG: tuple[tuple[str, int], ...] = (
     ("acid", 13), ("diacid", 13),
-    ("anhydride", 12), ("ester", 11), ("carbamate", 11),
+    ("anhydride", 12), ("ester", 11), ("diester", 11), ("carbamate", 11),
     ("acyl_chloride", 10), ("amide", 9),
     ("nitrile", 8),
     ("aldehyde", 7),

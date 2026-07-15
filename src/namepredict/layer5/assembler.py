@@ -340,11 +340,17 @@ def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if cyc is not None:
         return cyc
     return _amine_kind_names(kind, n, numbered)
-def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    from namepredict.layer5.phosphate_names import p_fg_names
+def _special_fg_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     from namepredict.layer5.carbamate_names import carbamate_names
+    from namepredict.layer5.diester_names import diester_names
     if kind == "carbamate":
         return carbamate_names(numbered)
+    return diester_names(n, numbered) if kind == "diester" else None
+def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    from namepredict.layer5.phosphate_names import p_fg_names
+    top = _special_fg_names(kind, n, numbered)
+    if top is not None:
+        return top
     top = p_fg_names(kind, n, numbered) or _hetero_names(kind, n, numbered)
     if top is not None:
         return top

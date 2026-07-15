@@ -136,7 +136,7 @@ def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str]) -> tuple[s
 def join_kind_name(
     kind: str | None, pre: tuple[str, str], names: tuple[str, str],
 ) -> tuple[str, str]:
-    if kind == "ester":
+    if kind in ("ester", "diester"):
         return join_ester_name(pre[0], pre[1], names)
     en = join_parent_name(pre[0], names[0])
     zh = join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))
