@@ -159,6 +159,7 @@
 [#a1b3524][IUPAC P-65.1.1 / P-65.6] 开链对称 dialkyl alkanedioate 二酯母体+命名（修 oxalate→ethane 坍缩） [+9 tests, dual 14.4%(584)→14.4%(585), 0 REGRESS]
 [#65eb283][IUPAC P-65.1.1 / P-31.1 / P-93] 开链对称 mono-ene 二酸二酯（最低 ene 定向 + E/Z；不对称 pent-2/hex-2） [+test_alkenedioate_diester, dual 14.4%(585)→14.4%(586), 0 REGRESS]
 [#fe0666c][IUPAC P-72.2.2.1 / P-65.1.1] L0 盐解离 + 碱金属羧酸盐功能类名（sodium …ate / …酸钠；金属前缀在 R/S·E/Z 后） [+13 tests, dual 14.4%(586)→14.5%(587), 0 REGRESS]
+[#104704a][IUPAC P-63.3] 开链简单二烷基亚砜 dialkyl sulfoxide（L1/L2/L5；修 CS(C)=O→methane） [+10 tests, dual 14.5%(587)→14.5%(588), 0 REGRESS]
 ## 其他
 - 简单 Li/Na/K 一元羧酸盐功能类名已做；多磷酸/核苷酸磷酸/复杂水合盐未做
 - 简单开链一元炔醇/炔醛/炔腈/炔酰胺已做；带复杂侧链多烯醇/多炔未做
