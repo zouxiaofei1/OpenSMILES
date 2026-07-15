@@ -6,6 +6,7 @@ fused/hetero ring parents here instead of editing a hand tuple in candidates.
 from __future__ import annotations
 
 from namepredict.layer2.anthracene import _try_anthracene_parent
+from namepredict.layer2.anthraquinone import _try_anthraquinone_parent
 from namepredict.layer2.azole13 import _try_azole13_parent
 from namepredict.layer2.benzimidazole import (
     _try_benzimidazolamine_parent,
@@ -68,6 +69,7 @@ def _try_simple_cyclopolyene(info: dict) -> dict | None:
 
 
 _RING_PRODUCERS = (
+    _try_anthraquinone_parent,
     _try_anthracene_parent,
     _try_quinazoline_parent,
     _try_quinoxaline_parent,

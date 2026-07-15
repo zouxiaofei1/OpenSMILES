@@ -10,9 +10,15 @@ from namepredict.layer4.locants.plan import NumberingPlan, locant, make_plan
 # Shared tables: single source for numbering.py (no drift).
 NAPH_LOCANTS = (1, 2, 3, 4, None, 5, 6, 7, 8, None)
 INDOLE_LOCANTS = (1, 2, 3, None, 4, 5, 6, 7, None)
+# Anthracene / 9,10-anthraquinone chain: 1..4,4a,10,10a,5..8,8a,9,9a
+ANTHRA_LOCANTS = (1, 2, 3, 4, None, 10, None, 5, 6, 7, 8, None, 9, None)
 NAPH_LABELS = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a")
 # Fused 5+6 path labels (must match scaffold.specs.FUSED56_LABELS).
 INDOLE_LABELS = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
+ANTHRA_LABELS = (
+    "1", "2", "3", "4", "4a", "10", "10a", "5", "6", "7", "8", "8a", "9", "9a",
+)
+ANTHRA_KINDS = frozenset({"anthracene", "anthraquinone"})
 
 # Single L4 data tables (contract-tested vs L2 ScaffoldSpec ids).
 FUSED56_KINDS = frozenset({
@@ -41,6 +47,8 @@ def _labels_for(kind: str | None) -> tuple[str, ...] | None:
         return NAPH_LABELS
     if kind in FUSED56_KINDS:
         return INDOLE_LABELS
+    if kind in ANTHRA_KINDS:
+        return ANTHRA_LABELS
     return None
 
 

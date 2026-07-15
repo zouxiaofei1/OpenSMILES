@@ -219,7 +219,7 @@ _PARENT_NH2_KINDS = frozenset(
         "benzenediamine",
     }
 )
-_PARENT_OXO_KINDS = frozenset({"ketone", "dione", "cycloketone"})
+_PARENT_OXO_KINDS = frozenset({"ketone", "dione", "cycloketone", "anthraquinone"})
 
 
 def _make_hydroxy(attach: int, o_idx: int) -> dict:

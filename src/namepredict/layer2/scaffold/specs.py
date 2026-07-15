@@ -91,11 +91,12 @@ def _mono_carbo(
 
 def _poly_carbo(
     sid: str, stem_en: str, stem_zh: str, n_rings: int, mode: str,
+    *, fg_rank: int = 0,
 ) -> ScaffoldSpec:
     pol = NumberingPolicy(mode=mode)
     return ScaffoldSpec(
         id=sid, naming_class="poly_carbo", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=n_rings, ring="carbo", retained=True, fg_rank=0,
+        n_rings=n_rings, ring="carbo", retained=True, fg_rank=fg_rank,
         numbering=pol,
     )
 
@@ -190,6 +191,10 @@ MONO_CARBO_SPECS: tuple[ScaffoldSpec, ...] = (
 
 POLY_CARBO_SPECS: tuple[ScaffoldSpec, ...] = (
     _poly_carbo("anthracene", "anthracene", "蒽", 3, "anthracene_fixed"),
+    _poly_carbo(
+        "anthraquinone", "9,10-anthraquinone", "蒽醌", 3, "anthracene_fixed",
+        fg_rank=6,
+    ),
 )
 
 _ALL_SPECS: tuple[ScaffoldSpec, ...] = (

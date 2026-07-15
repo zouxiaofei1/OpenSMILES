@@ -1,6 +1,11 @@
 from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+from namepredict.layer4.anthra_orient import (
+    anthra_sub_locant as _anthra_sub_locant,
+    orient_anthraquinone as _orient_anthraquinone,
+)
 from namepredict.layer4.locants.adapt import (
+    ANTHRA_KINDS as _ANTHRA_KINDS,
     FUSED56_KINDS as _FUSED56_KINDS,
     INDOLE_LOCANTS as _INDOLE_LOCANTS,
     INDOLE_ORIENT_KINDS as _INDOLE_ORIENT_KINDS,
@@ -307,6 +312,7 @@ def _fused_orienters() -> dict:
     d = {k: _orient_indole for k in _INDOLE_ORIENT_KINDS}
     d["naphthalene"] = _orient_naphthalene
     d["naphthalenecarboxylic"] = _orient_naphthalenecarboxylic
+    d["anthraquinone"] = _orient_anthraquinone
     return d
 def _arene_orienters() -> dict:
     return {
@@ -441,16 +447,18 @@ def _indole_sub_locant(chain: list[int], attach: int) -> int:
         return chain.index(attach) + 1 if attach in chain else 0
     loc = _INDOLE_LOCANTS[chain.index(attach)]
     return loc if loc is not None else chain.index(attach) + 1
-def _sub_locant(chain: list[int], attach: int, kind: str | None) -> int:
-    plan = plan_from_chain(chain, kind)
-    loc = effective_sub_locant(plan, attach) if plan else None
-    if loc is not None:
-        return loc
+def _legacy_sub_locant(chain: list[int], attach: int, kind: str | None) -> int:
     if kind in _NAPH_KINDS or kind in _Q_KINDS:
         return _naph_sub_locant(chain, attach)
     if kind in _FUSED56_KINDS:
         return _indole_sub_locant(chain, attach)
+    if kind in _ANTHRA_KINDS:
+        return _anthra_sub_locant(chain, attach)
     return chain.index(attach) + 1
+def _sub_locant(chain: list[int], attach: int, kind: str | None) -> int:
+    plan = plan_from_chain(chain, kind)
+    loc = effective_sub_locant(plan, attach) if plan else None
+    return loc if loc is not None else _legacy_sub_locant(chain, attach, kind)
 def _with_locants(chain: list[int], substituents: list, kind: str | None = None) -> list:
     return [{**s, "locant": _sub_locant(chain, s["attach_idx"], kind)} for s in substituents]
 def _unsat_locants(oriented: dict, n: int) -> dict:
@@ -476,19 +484,17 @@ def _sh_locants(oriented: dict, n: int) -> dict:
     return {"sh_locant": sh, "omit_sh_locant": _omit_sh(sh, n)}
 def _fg_locants(oriented: dict) -> dict:
     n = oriented.get("n_carbons", 0)
-    base = {
+    return {
         **_oh_am_locants(oriented, n), **_sh_locants(oriented, n),
         "ketone_locant": _ketone_locant(oriented),
         "ketone_locants": _ketone_pair_locants(oriented),
+        **_unsat_locants(oriented, n),
     }
-    return {**base, **_unsat_locants(oriented, n)}
 def _pack(oriented: dict, substituents: list) -> dict:
-    base = {"parent": oriented, "substituents": substituents}
-    return {**base, **_fg_locants(oriented)}
+    return {"parent": oriented, "substituents": substituents, **_fg_locants(oriented)}
 def number(parent: dict, substituents: list) -> dict:
     chain, kind = _orient_chain(parent, substituents), parent.get("kind")
     oriented = {**parent, "chain": chain}
     plan = plan_from_chain(chain, kind)
-    if plan is not None:
-        oriented["numbering"] = plan
+    if plan is not None: oriented["numbering"] = plan
     return _pack(oriented, _with_locants(chain, substituents, kind))
