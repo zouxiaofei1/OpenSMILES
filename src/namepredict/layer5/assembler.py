@@ -5,7 +5,7 @@ from namepredict.layer5.stems import (
     ALDEHYDE_EN, ALDEHYDE_ZH, ALKANE_EN, ALKANE_ZH, ALKOXY_EN, ALKOXY_ZH,
     AMIDE_EN, AMIDE_ZH, ESTER_ACYL_EN, ESTER_ALKYL_EN, ESTER_ALKYL_ZH,
     ETHER_SYM_EN, ETHER_SYM_ZH, NITRILE_EN, NITRILE_ZH, SULFIDE_ALKYL_EN,
-    SULFIDE_ALKYL_ZH, SULFIDE_SYM_EN, SULFIDE_SYM_ZH, maybe_anion_names, zh_stem,
+    SULFIDE_ALKYL_ZH, SULFIDE_SYM_EN, SULFIDE_SYM_ZH, maybe_anion_names, maybe_metal_salt_names, zh_stem,
 )
 from namepredict.layer5.benzene_names import (
     arene_fg_parent_names, benzene_parent_names, benzene_prefix,
@@ -496,4 +496,5 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     en, zh = join_kind_name(kind, _prefix_for(numbered, kind, n), names)
     en, zh = maybe_anion_names(numbered, en, zh)
     en, zh = apply_rs_prefix(numbered, en, zh)
+    en, zh = maybe_metal_salt_names(numbered, en, zh)
     return _ok(en, zh, time_ms, source)

@@ -222,6 +222,46 @@ def maybe_anion_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     return acid_to_anion_en(en), acid_to_anion_zh(zh)
 
 
+def _metal_en_prefix(salt: dict) -> str | None:
+    metal, n = salt.get("metal"), salt.get("n_metal") or 0
+    if not metal or n < 1:
+        return None
+    if n == 1:
+        return metal
+    mult = {2: "di", 3: "tri", 4: "tetra"}.get(n)
+    return f"{mult}{metal}" if mult else None
+
+
+def _metal_zh_suffix(salt: dict) -> str | None:
+    zh_m, n = salt.get("metal_zh"), salt.get("n_metal") or 0
+    if not zh_m or n < 1:
+        return None
+    if n == 1:
+        return zh_m
+    mult = {2: "二", 3: "三", 4: "四"}.get(n)
+    return f"{mult}{zh_m}" if mult else None
+
+
+def _salt_en(en: str, salt: dict) -> str:
+    pref = _metal_en_prefix(salt)
+    return f"{pref} {en}" if pref and en.endswith("ate") else en
+
+
+def _salt_zh(zh: str, salt: dict) -> str:
+    suf = _metal_zh_suffix(salt)
+    if not suf or not zh.endswith("酸根"):
+        return zh
+    return zh[:-1] + suf
+
+
+def maybe_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
+    """Prefix alkali metal on anion names: sodium acetate / 乙酸钠."""
+    salt = numbered.get("salt") or {}
+    if not salt.get("metal"):
+        return en, zh
+    return _salt_en(en, salt), _salt_zh(zh, salt)
+
+
 def ester_alkyl_en(n: int) -> str | None:
     retained = {
         1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl",

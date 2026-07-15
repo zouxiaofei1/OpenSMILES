@@ -4,6 +4,7 @@ import time
 
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer0.preprocessor import preprocess
+from namepredict.layer0.salt import dissociate_salt
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.parent_selector import select_parent
 from namepredict.layer3.substituent_extractor import extract_substituents
@@ -30,11 +31,16 @@ def _run_layers(mol) -> dict:
     return number(parent, subst)
 
 
+def _with_salt_meta(numbered: dict, salt: dict) -> dict:
+    return {**numbered, "salt": salt} if salt else numbered
+
+
 def _pipeline(smiles: str, t0: float) -> NameResult:
     mol = preprocess(smiles)
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
-    numbered = _run_layers(mol)
+    organic, salt = dissociate_salt(mol)
+    numbered = _with_salt_meta(_run_layers(organic), salt)
     return assemble(numbered, time_ms=_elapsed_ms(t0))
 
 
