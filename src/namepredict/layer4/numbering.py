@@ -98,20 +98,17 @@ def _ene_ends_on(chain: list[int], ends: tuple[int, int] | None) -> tuple[int, i
     return chain.index(ends[0]) + 1, chain.index(ends[1]) + 1
 def _ene_locant_of(ends: tuple[int, int] | None) -> int | None:
     return None if ends is None else min(ends)
-def _tie_break_orient(
-    base: list[int], ends0: tuple[int, int] | None, substituents: list
-) -> list[int]:
-    rev = list(reversed(base))
-    if _ene_locant_of(_ene_ends_on(base, ends0)) == _ene_locant_of(_ene_ends_on(rev, ends0)):
-        return _prefer_chain(base, rev, substituents)
-    return base
-def _orient_by_bond(
-    chain: list[int], parent: dict, substituents: list, key: str
-) -> list[int]:
+def _prefer_ene_orient(a, b, ends0, subs):
+    """Pick chain direction with lower unsaturation locant (P-31.1)."""
+    la = _ene_locant_of(_ene_ends_on(a, ends0))
+    lb = _ene_locant_of(_ene_ends_on(b, ends0))
+    if la is None: return b
+    if lb is None or la < lb: return a
+    return b if lb < la else _prefer_chain(a, b, subs)
+def _orient_by_bond(chain, parent, substituents, key):
     ends0 = parent.get(key)
-    ends = _ene_ends_on(chain, ends0)
-    if ends is None: return chain
-    return _tie_break_orient(_maybe_reverse(chain, _ene_locant_of(ends) or 1), ends0, substituents)
+    if _ene_ends_on(chain, ends0) is None: return chain
+    return _prefer_ene_orient(chain, list(reversed(chain)), ends0, substituents)
 def _orient_alkene(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_by_bond(chain, parent, substituents, "double_bond")
 def _orient_cycloalkene(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -342,15 +339,15 @@ def _orient_diacid(chain: list[int], parent: dict, substituents: list) -> list[i
         return _orient_alkenedioic(chain, parent, substituents)
     return _orient_alkane(chain, substituents)
 def _unsat_orienters() -> dict:
+    b = _orient_benzoic
     return {
         "cycloketone": _orient_cycloketone, "alkene": _orient_alkene,
-        "diacid": _orient_diacid, "polyene": _orient_polyene,
+        "diacid": _orient_diacid, "diester": _orient_diacid, "polyene": _orient_polyene,
         "cyclopolyene": orient_cyclopolyene, "cycloalkene": _orient_cycloalkene,
         "alkyne": _orient_alkyne, "cycloalkane": _orient_cycloalkane,
-        "benzene": _orient_cycloalkane, "benzoic": _orient_benzoic,
-        "benzaldehyde": _orient_benzoic, "acetophenone": _orient_benzoic,
-        "benzoate": _orient_benzoic, "benzonitrile": _orient_benzoic,
-        "benzoyl_chloride": _orient_benzoic, "cycloalkanecarboxylic": _orient_benzoic,
+        "benzene": _orient_cycloalkane, "benzoic": b, "benzaldehyde": b,
+        "acetophenone": b, "benzoate": b, "benzonitrile": b,
+        "benzoyl_chloride": b, "cycloalkanecarboxylic": b,
     }
 def _kind_orienters() -> dict:
     return {**_hetero_orienters(), **_unsat_orienters(), **_carbonyl_orienters()}

@@ -1,4 +1,4 @@
-"""Open-chain symmetric dialkyl alkanedioate parents (P-65.1.1 / P-65.6)."""
+"""Open-chain symmetric dialkyl alkane/alkenedioate parents (P-65.1.1 / P-31.1)."""
 from __future__ import annotations
 
 
@@ -15,11 +15,15 @@ def _two_esters(info: dict) -> list | None:
     return xs if len(xs) == 2 else None
 
 
-def _open_sat_ok(info: dict) -> bool:
+def _open_diester_ok(info: dict) -> bool:
+    """Open-chain diester: no ring/alkyne/polyene; mono C=C allowed."""
     from namepredict.layer2.parent_selector import _no_fgs
 
-    ring_unsat = info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne")
-    return (not ring_unsat) and _no_fgs(info, _DIESTER_BAD)
+    if info.get("has_ring") or info.get("has_alkyne"):
+        return False
+    if len(info.get("double_bonds") or []) > 1:
+        return False
+    return _no_fgs(info, _DIESTER_BAD)
 
 
 def _side_of(info: dict, e: dict) -> dict:
@@ -88,17 +92,39 @@ def _carbonyls_open(mol, c_idxs: list[int]) -> bool:
     return all(not mol.GetAtomWithIdx(int(c)).IsInRing() for c in c_idxs)
 
 
+def _cover_atoms(info: dict, c_idxs: list[int]) -> list[int]:
+    atoms = list(c_idxs)
+    for db in info.get("double_bonds") or []:
+        atoms.extend([db["c1"], db["c2"]])
+    return atoms
+
+
 def _cover_chain(info: dict, c_idxs: list[int]) -> list[int] | None:
     from namepredict.layer2.parent_selector import _best_cover_pair
 
     if not _carbonyls_open(info["mol"], c_idxs):
         return None
-    chain = _best_cover_pair(info["mol"], c_idxs)
+    chain = _best_cover_pair(info["mol"], _cover_atoms(info, c_idxs))
     return chain if chain and set(c_idxs) <= set(chain) else None
 
 
-def _diester_meta(c_idxs: list[int], alkoxy_n: int) -> dict:
-    return {"ester_c_idxs": list(c_idxs), "alkoxy_n": alkoxy_n, "symmetric": True}
+def _ene_on_chain(chain: list[int], info: dict) -> tuple[int, int] | None:
+    dbs = info.get("double_bonds") or []
+    if len(dbs) != 1:
+        return None
+    c1, c2 = dbs[0]["c1"], dbs[0]["c2"]
+    return (c1, c2) if c1 in chain and c2 in chain else None
+
+
+def _diester_meta(info: dict, c_idxs: list[int], alkoxy_n: int, chain: list[int]) -> dict:
+    meta = {
+        "ester_c_idxs": list(c_idxs), "alkoxy_n": alkoxy_n,
+        "symmetric": True, "mol": info["mol"],
+    }
+    ene = _ene_on_chain(chain, info)
+    if ene is not None:
+        meta["double_bond"] = ene
+    return meta
 
 
 def _build_parent(info: dict, esters: list, alkoxy_n: int) -> dict | None:
@@ -108,12 +134,14 @@ def _build_parent(info: dict, esters: list, alkoxy_n: int) -> dict | None:
     chain = _cover_chain(info, c_idxs)
     if not chain:
         return None
-    return _parent_dict(chain, "diester", **_diester_meta(c_idxs, alkoxy_n))
+    if info.get("has_alkene") and _ene_on_chain(chain, info) is None:
+        return None
+    return _parent_dict(chain, "diester", **_diester_meta(info, c_idxs, alkoxy_n, chain))
 
 
 def _diester_parent(info: dict) -> dict | None:
     """Symmetric open-chain diester: chain through both ester carbonyls."""
-    if not _open_sat_ok(info):
+    if not _open_diester_ok(info):
         return None
     esters = _two_esters(info)
     if esters is None:

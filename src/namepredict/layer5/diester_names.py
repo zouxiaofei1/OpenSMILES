@@ -28,14 +28,40 @@ def _alkyl_pair(parent: dict) -> tuple[str, str] | None:
     return ester_alkoxy_pair(parent)
 
 
-def diester_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """di{alkyl} {alkane}dioate / {二酸}二{烷}酯."""
-    parent = numbered.get("parent") or {}
-    if not parent.get("symmetric"):
-        return None
+def _sat_diester(n: int, parent: dict) -> tuple[str, str] | None:
     alkyl, stem = _alkyl_pair(parent), _diacid_stem(n)
     if not alkyl or not stem:
         return None
     en_a, zh_a = alkyl
     en_s, zh_s = stem
     return f"di{en_a} {en_s}", f"{zh_s}二{zh_a}酯"
+
+
+def _unsat_dioate_stem(n: int, numbered: dict) -> tuple[str, str] | None:
+    from namepredict.layer5.stereo_ez import _ez_prefix
+    from namepredict.layer5.unsat_acid import _unsat_acid_pair
+
+    return _unsat_acid_pair(
+        n, numbered.get("ene_locant"), _ez_prefix(numbered),
+        "enedioate", "烯二酸", 3,
+    )
+
+
+def _unsat_diester(n: int, numbered: dict) -> tuple[str, str] | None:
+    parent = numbered.get("parent") or {}
+    alkyl, stem = _alkyl_pair(parent), _unsat_dioate_stem(n, numbered)
+    if not alkyl or not stem:
+        return None
+    en_a, zh_a = alkyl
+    en_s, zh_s = stem
+    return f"di{en_a} {en_s}", f"{zh_s}二{zh_a}酯"
+
+
+def diester_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """di{alkyl} {alkane}dioate / {二酸}二{烷}酯; unsat adds ene locant + E/Z."""
+    parent = numbered.get("parent") or {}
+    if not parent.get("symmetric"):
+        return None
+    if parent.get("double_bond"):
+        return _unsat_diester(n, numbered)
+    return _sat_diester(n, parent)
