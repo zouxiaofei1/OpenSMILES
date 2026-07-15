@@ -170,10 +170,11 @@
 [#c14cd71][IUPAC P-68.1] 简单芳基硼酸：phenylboronic acid；卤/Me/CF3 前缀；B 位=1 [+8 tests, dual 14.7%(598)→14.7%(599), fails 3464→3463, 0 REGRESS]
 [#a2326a0][IUPAC P-65.5] 酰溴：alkanoyl/benzoyl bromide；isobutyryl bromide 保留 [+13 tests, dual 14.7%(599)→14.8%(600), fails 3463→3462, 0 REGRESS]
 [#fd00a91][IUPAC P-65.3.2] 简单磺酸酯：alkyl arenesulfonate；对甲苯磺酸丁酯 [+tests, dual 14.8%(600)→14.8%(601), fails 3462→3461, 0 REGRESS]
+[#7f06312][架构 P-44] FG 候选生产者注册表：fg_producers + kind_registry.fg_try_fns；candidates 只收集评分 [+test_fg_producers, dual 14.8%(601)持平, 0 REGRESS]
 ## 其他
+- FG/环生产者均已注册表化；unsat 仍在 candidates；heteroaryl_sub 手写 -yl 未收口
 - 简单磺酸酯第一刀：芳/烷 SO2OR(C1–C4)；盐/内酯侧链/硫酸酯未做
 - 酰卤：Cl 已有；Br 开链+苯甲酰+异丁酰保留；乙二酰二溴/氟未做
 - 简单芳基硼酸第一刀：苯硼酸+简单前缀；pinacol酯/杂芳/联芳硼酸未做
 - 简单磺酰胺第一刀：methane/benzene/N-aryl-alkyl/N-cyclo-aryl；双磺酰/N,N-二取代/杂芳磺酰胺未做
-- Phase 2.1–2.4：Spec 为 stem 权威（50 specs）；try_* 引擎仍分文件；numbering orient 仍 no-op
-- 简单肼第一刀：hydrazine/1,1-dimethyl/phenyl + HCl；酰肼/1,2-二芳基/环肼未做
+- Phase 2.1–2.4：Spec 为 stem 权威（50 specs）；环 try_* 仍分文件；numbering orient 仍 no-op
