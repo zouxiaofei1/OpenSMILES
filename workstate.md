@@ -161,9 +161,11 @@
 [#fe0666c][IUPAC P-72.2.2.1 / P-65.1.1] L0 盐解离 + 碱金属羧酸盐功能类名（sodium …ate / …酸钠；金属前缀在 R/S·E/Z 后） [+13 tests, dual 14.4%(586)→14.5%(587), 0 REGRESS]
 [#104704a][IUPAC P-63.3] 开链简单二烷基亚砜 dialkyl sulfoxide（L1/L2/L5；修 CS(C)=O→methane） [+10 tests, dual 14.5%(587)→14.5%(588), 0 REGRESS]
 [#b3dcfe6][架构 P-22.2.1 / P-25] fused56→ScaffoldSpec：benzofuran/bt/btz/box 注册+builder 常量+scaffold_id；L4 labels 契约（无 L4→L2） [+test_scaffold_fused56_specs, dual 14.5%(588)→14.5%(589), 0 REGRESS]
+[#75f1458][IUPAC P-61.9] 异氰酸酯/异硫氰酸酯：开链功能类+芳环 isocyanato 融合母体（CF3 位次；EN 括号/ZH 无） [+12 tests, dual 14.5%(589)→14.5%(590), fails 3473→3472, 0 REGRESS]
 ## 其他
 - Phase 2.1 完成：fused56 四骨架进 Spec；indole/quinoline/naph 仍硬表（Phase 2.2）
 - L2 FUSED56_LABELS 与 L4 INDOLE_LABELS 靠契约测试对齐；引擎仍在 layer2/fused56.py
+- 简单开链/芳环 mono iso(thio)cyanate 已做；喹啉异氰/甲氧基异硫氰甲烷/复杂螺环未做
 - 简单 Li/Na/K 一元羧酸盐功能类名已做；多磷酸/核苷酸磷酸/复杂水合盐未做
 - 简单开链一元炔醇/炔醛/炔腈/炔酰胺已做；带复杂侧链多烯醇/多炔未做
 - C20+ 英文用 icos/henicos 组合；中文数字自动生成
