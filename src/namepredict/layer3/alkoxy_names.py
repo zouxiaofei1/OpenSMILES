@@ -7,6 +7,7 @@ from namepredict.layer2.side_alkyl import _outer_alkoxy_n, _outer_atoms
 
 _ALKOXY_BASE_EN = {1: "methoxy", 2: "ethoxy", 3: "propoxy", 4: "butoxy"}
 _ALKOXY_BASE_ZH = {1: "甲氧基", 2: "乙氧基", 3: "丙氧基", 4: "丁氧基"}
+_BRANCHED_ALKOXY = {31: ("isopropoxy", "异丙氧基"), 41: ("isobutoxy", "异丁氧基")}
 
 
 def _peg_k1_en(n_term: int) -> str:
@@ -48,6 +49,8 @@ def _decode_alkoxy_code(code: int) -> tuple[int, int] | None:
 
 
 def _alkoxy_names(code: int) -> tuple[str, str] | None:
+    if code in _BRANCHED_ALKOXY:
+        return _BRANCHED_ALKOXY[code]
     dec = _decode_alkoxy_code(code)
     if dec is None:
         return None
@@ -60,9 +63,11 @@ def _make_alkoxy(attach: int, o_idx: int, atoms: list[int], n: int) -> dict | No
     if names is None:
         return None
     en, zh = names
+    n_c = {31: 3, 41: 4}.get(n, n)
     return {
         "kind": "alkoxy", "attach_idx": attach, "atoms": [o_idx] + atoms,
-        "n_carbons": n, "en": en, "zh": zh, "paren": n >= 12,
+        "n_carbons": n_c, "en": en, "zh": zh,
+        "paren": n >= 12 and n not in _BRANCHED_ALKOXY,
     }
 
 

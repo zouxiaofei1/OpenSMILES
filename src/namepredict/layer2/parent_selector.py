@@ -302,14 +302,27 @@ def _poly_acid_try(info: dict) -> dict | None:
     if _is_simple_alkanedioic(info): return _diacid_parent(info)
     if _is_simple_alkenedioic(info): return _alkenedioic_parent(info)
     return _try_hy_alkenoic(info, _ALKENOIC_BAD, _best_cover_pair, _parent_dict, _db_pairs)
-def _acid_parent_core(info: dict) -> dict:
+def _open_mono_acid_ok(info: dict) -> bool:
+    """Open mono-acid only if carboxyl has open-chain C arm (or bare formic)."""
+    cs = info.get("carboxyls") or []
+    if len(cs) != 1:
+        return True
+    mol, c = info["mol"], cs[0]["c_idx"]
+    if _carbon_neighbors(mol, c):
+        return True
+    return not any(n.GetAtomicNum() == 6 for n in mol.GetAtomWithIdx(c).GetNeighbors())
+def _acid_parent_core(info: dict) -> dict | None:
     top = _ring_acid_try(info) or _poly_acid_try(info)
-    if top is not None: return top
+    if top is not None:
+        return top
+    if not _open_mono_acid_ok(info):
+        return None
     return _unsat_or_sat(
         info, "has_acid", "carboxyls", _ALKENOIC_BAD, "acid", "acid", "cooh_c_idx",
     )
-def _acid_parent(info: dict) -> dict:
-    return _with_anion(info, _acid_parent_core(info))
+def _acid_parent(info: dict) -> dict | None:
+    core = _acid_parent_core(info)
+    return None if core is None else _with_anion(info, core)
 def _ketone_parent(info: dict) -> dict:
     a = _try_acetophenone_parent(info)
     if a is not None: return a

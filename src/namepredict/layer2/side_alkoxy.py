@@ -149,11 +149,62 @@ def _parse_simple_alkoxy(mol: Mol, start: int, o_idx: int) -> dict | None:
     return {"n_terminal": n, "peg_k": 0, "atoms": path, "code": n}
 
 
-def _parse_outer_alkoxy(mol: Mol, start: int, o_idx: int) -> dict | None:
-    """Linear n-alkoxy C1–C4 or PEG -(OCH2CH2)k-OR (k≤3, R=Me/Et)."""
+def _is_methyl_c(mol: Mol, idx: int, parent: int) -> bool:
+    if not _open_c_ok(mol, idx):
+        return False
+    return _fwd_heavies(mol, idx, parent) == []
+
+
+def _two_methyls_off(mol: Mol, center: int, blocked: set[int]) -> list[int] | None:
+    free = [x.GetIdx() for x in _heavies(mol.GetAtomWithIdx(center))
+            if x.GetAtomicNum() == 6 and x.GetIdx() not in blocked]
+    if len(free) != 2:
+        return None
+    if not all(_is_methyl_c(mol, m, center) for m in free):
+        return None
+    return free
+
+
+def _isopropoxy_atoms(mol: Mol, start: int, o_idx: int) -> list[int] | None:
+    """O–CHMe2: start is secondary C with two methyls."""
     if not _open_c_ok(mol, start):
         return None
-    return _parse_simple_alkoxy(mol, start, o_idx) or _walk_peg_from(mol, start, o_idx)
+    mids = _two_methyls_off(mol, start, {o_idx})
+    return [start, *mids] if mids else None
+
+
+def _isobutoxy_atoms(mol: Mol, start: int, o_idx: int) -> list[int] | None:
+    """O–CH2–CHMe2: start methylene then isopropyl branch."""
+    if not _open_c_ok(mol, start):
+        return None
+    free = [x.GetIdx() for x in _fwd_heavies(mol, start, o_idx) if x.GetAtomicNum() == 6]
+    if len(free) != 1:
+        return None
+    mid = free[0]
+    mids = _two_methyls_off(mol, mid, {start})
+    return [start, mid, *mids] if mids else None
+
+
+def _parse_branched_alkoxy(mol: Mol, start: int, o_idx: int) -> dict | None:
+    """Iso-propoxy (code 31) or iso-butoxy (code 41)."""
+    for atoms, code in (
+        (_isopropoxy_atoms(mol, start, o_idx), 31),
+        (_isobutoxy_atoms(mol, start, o_idx), 41),
+    ):
+        if atoms is not None:
+            return {"n_terminal": 0, "peg_k": 0, "atoms": atoms, "code": code}
+    return None
+
+
+def _parse_outer_alkoxy(mol: Mol, start: int, o_idx: int) -> dict | None:
+    """Linear C1–C4, iso-Pr/iso-Bu, or PEG -(OCH2CH2)k-OR (k≤3, R=Me/Et)."""
+    if not _open_c_ok(mol, start):
+        return None
+    return (
+        _parse_simple_alkoxy(mol, start, o_idx)
+        or _parse_branched_alkoxy(mol, start, o_idx)
+        or _walk_peg_from(mol, start, o_idx)
+    )
 
 
 def _outer_alkoxy_n(mol: Mol, start: int, o_idx: int) -> int:
