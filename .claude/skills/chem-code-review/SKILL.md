@@ -22,7 +22,7 @@ description: Use when reviewing namepredict code changes after an implementer su
 
 **用**：实现 subagent 改完 `src/namepredict/**` 或 `tests/unit/**` 之后；commit 前；benchmark 可疑时；主 Agent 刚选定改进点、需要第二意见时（可只做选题审查、尚无 diff）。
 
-**不用**：纯读 docs；只改 `agent_loop/` 编排；人类明确只要风格意见且声明不跑门禁（仍应提示风险）。
+**不用**：纯读 docs；只改 `agent_loop/` 编排；人类明确要求。
 
 ## 强制步骤（按序）
 
@@ -48,24 +48,24 @@ description: Use when reviewing namepredict code changes after an implementer su
 
 审查 Agent **默认带怀疑**：选题由主 Agent 提出，不享有免审特权。代码质量与选题质量 **解耦评分**。
 
-### 选题质疑清单（命中 ≥1 条应倾向 CHALLENGE）
+### 选题质疑清单（命中 ≥1 条应倾向 CHALLENGE）。选题应该足够有影响性，过小应当 CHALLENGE
 
 | 信号 | 例 | 更优方向 |
 |------|----|----------|
 | **过窄切片** | 只做 methyl，实现已是「数碳+词干」却不推广到 C_n 烷基 | 通用 monoalkyl（methyl…）同一规则一次做完 |
-| **过碎 / 违反自然规则边界** | 把同一 IUPAC 条款拆成多轮刷 commit | 一轮吃透一条主规则（仍守 S3≤3） |
-| **预期 dual 增益过低** | 仅解锁 1–2 个金标、无结构推进 | 换失败簇更大或卡主路径的规则 |
+| **过碎 / 违反自然规则边界** | 把同一 IUPAC 条款拆成多轮刷 commit | 一轮吃透一条主规则 |
+| **预期 dual 增益过低** | 无结构推进 | 换失败簇更大或卡主路径的规则 |
 | **层优先级错误** | 同分根因在 L2/L3，却选题 L5 词表 | 先结构性层 |
 | **依赖未就绪** | 取代基命名但 L2 母体仍错，测例会假绿或无意义 | 先堵母体/编号 |
 | **与 workstate 候选无对话** | 忽略已写「下一步候选」且无反驳 | 采纳候选或书面说明为何改道 |
 | **特判气质选题** | 「先让这 3 个 SMILES 过」 | 拒绝；改系统规则选题 |
 | **范围膨胀** | 名义一个点，diff 横跨多官能团多条款 | 缩回单主规则 |
 
-**不必 CHALLENGE 的情况**（可选题 PASS）：窄切片是 **最小可证伪步** 且通用化会超 S3/爆范围；或 workstate/人类已指定本轮只做该窄点；或窄点是后续通用化的必要探针且报告写明 follow-up。
+
 
 ### 反对时必须给出的内容
 
-`CHALLENGE` 不是否决情绪，必须可执行：
+`CHALLENGE` 时给出：
 
 1. **反对什么**：当前选题一句话  
 2. **为何不值 / 为何粒度错**：对应上表信号 + 与 dual/架构的关系  
@@ -139,19 +139,6 @@ description: Use when reviewing namepredict code changes after an implementer su
           → 入口函数只编排调用（仍 ≤10 行）
           → 每个 _helper 同样 ≤10 行
 ```
-
-## 化学 / IUPAC 气味（项目高发）
-
-| 气味 | 为何拒 | 正确方向 |
-|------|--------|----------|
-| 居所取代型捷径 | 用「看起来像取代」硬编码，不走母体+取代基系统逻辑 | L2 选母体 + L3 取代基 + L4 编号 |
-| 单 SMILES / 小集合映射出全名 | 等价特判；cache 仅俗名+例外且 **≤100** | 规则化；cache 走 `common_names` 计数 |
-| 仅 L5 补丁同分物 | 结构性错误被词表掩盖 | 修 L1/L2/L4 |
-| 母体链不穿主官能团碳 | 违反醇等母体选择（如 OH 碳必须在链上） | L2 链选择 / 评分 |
-| 中文位次格式错误 | 如一元醇应为 `丙-1-醇` 一类连字符规则 | L5 中文组装与既有 stems 一致 |
-| 英文位次/连字符随意 | 与 IUPAC 及 benchmark `english_name` 不一致 | 对齐 docs/iupac 与金标字段 |
-| 放宽测试匹配 | 子串、忽略位次、弱化 normalize | 坚持 `normalize_en` / `normalize_zh` |
-| 为绿删测 / 改金标 | 直接作废本轮 | 回滚；禁止碰 `data/*` |
 
 **禁止实现类**（发现即 **阻断**）：深度学习/LLM 命名；改 benchmark 数据库或计分；cache 无界增长。
 

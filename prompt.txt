@@ -9,7 +9,7 @@
 3.严格按照IUPAC规则编写，IUPAC原文完整文档 docs\iupac\
 4.临时文件写在chem\tools
 5.每一次工作都必须运行**benchmark**
-6.常见失败模式:empty,结构坍缩，母体选错，侧链选错，编号错，缺功能
+6.常见失败模式:空返回,结构错误，母体选错，侧链选错，编号错，缺功能
 7.禁止修改 benchmark和其数据库。命令中不应包含>15s的sleep
 8.subagent有时会出问题。subagent不应更换模型。可以多尝试几次，不应自己编写代码
 9.pytest应多线程运行
@@ -30,7 +30,7 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 0. 读取 workstate.md，了解当前进度和计划。
 0.1 workstate.md中## 其他 行的行号如果尾数为3或8，当前工作轮次为架构改进轮。使用 skills/analyzing-architecture-risk 分析项目风险，选择一重要的。跳到3.
 1. 运行**benchmark**,记录并报告当前分数，格式**中英文双重准确:[ ]%**
-2. 选择一个改进点。改进点的范围不要太小，工作量应该合理，改进点的修改代码量不应<100行。需要时可参考IUPAC原文。
+2. 选择一个改进点。改进点的范围要足够大，不要只做第一刀，一次尽量做完，改进点的修改代码量不应<100行。需要时可参考IUPAC原文。
 3. 调用一个subagent,进行编写代码（遵守 skills/chem-tdd-skill）
 4. 调用第二个subagent（review）：**必须先阅读并全文遵守 skills/chem-code-review**。
    - 先审**选题**再审代码：代码全绿也可以反对选题；裁决 PASS|FIX|ROLLBACK|CHALLENGE

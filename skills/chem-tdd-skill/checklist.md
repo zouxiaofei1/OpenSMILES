@@ -2,18 +2,17 @@
 
 每轮 Agent **开始改代码前**与 **请求 commit 前**各过一遍。任一项未满足不得进入下一步。
 
-## A. 开始前（读上下文）
+## A. 开始前
 
 - [ ] 已读本轮失败簇摘要与建议 Layer
-- [ ] 已打开相关 `docs/cleaned` / `docs/iupac` 条款
-- [ ] 已读 `agent_loop/memory/progress.md`（含「其他」建议）
-- [ ] 已确认本轮 **1 个主规则**，同簇同层合计 ≤ **N=3**
+- [ ] 已打开相关 `docs/iupac` 条款
+- [ ] 已选择一个 **范围足够** 的改进点
 
 ## B. 抽例
 
 - [ ] 正例 SMILES：**3–10** 个，来自失败簇
 - [ ] 负例：**≥1** 个近邻（不应被本规则误伤）
-- [ ] 期望 en/zh 来自金标或已验证正确输出；无中文金标则 `zh=None`
+- [ ] 期望 en/zh 来自benchmark原文或已验证正确输出；
 
 ## C. 测试（先红）
 
@@ -29,7 +28,7 @@
 - [ ] 仅修改允许路径：`src/namepredict/`（入口、layer0–5、cache）与 `tests/unit/`
 - [ ] 无单 SMILES 特判（`if smiles == "..."` 等）
 - [ ] 未改金标与 `benchmarks/benchmark.py`
-- [ ] 单函数 ≤10 行、单文件 ≤500 行；cache ≤100
+- [ ] 单函数 ≤10 行、单文件 ≤1000 行；cache ≤100
 - [ ] 实现后：`pytest tests/unit -q` → **全绿**
 
 ## E. 门禁命令
