@@ -253,12 +253,36 @@ def _make_nitro(attach: int, n_idx: int, o_idxs: list[int]) -> dict:
 
 
 def _extract_nitros(info: dict, parent: dict) -> list[dict]:
-    chain_set = set(parent.get("chain") or [])
-    out: list[dict] = []
-    for n in info.get("nitros") or []:
-        if n["c_idx"] in chain_set:
-            out.append(_make_nitro(n["c_idx"], n["n_idx"], n.get("o_idxs") or []))
-    return out
+    chain = set(parent.get("chain") or [])
+    return [
+        _make_nitro(n["c_idx"], n["n_idx"], n.get("o_idxs") or [])
+        for n in info.get("nitros") or [] if n["c_idx"] in chain
+    ]
+
+
+def _make_iso(kind: str, attach: int, e: dict, en: str, zh: str) -> dict:
+    return {
+        "kind": kind, "attach_idx": attach,
+        "atoms": [e["n_idx"], e["c_idx"], e["x_idx"]], "en": en, "zh": zh,
+    }
+
+
+def _extract_iso_kind(info: dict, parent: dict, key: str, kind: str, en: str, zh: str) -> list[dict]:
+    if parent.get("kind") in ("isocyanate", "isothiocyanate"):
+        return []
+    chain = set(parent.get("chain") or [])
+    return [
+        _make_iso(kind, e["r_c_idx"], e, en, zh)
+        for e in info.get(key) or [] if e["r_c_idx"] in chain
+    ]
+
+
+def _extract_isocyanates(info: dict, parent: dict) -> list[dict]:
+    a = _extract_iso_kind(info, parent, "isocyanates", "isocyanato", "isocyanato", "异氰酸根合")
+    b = _extract_iso_kind(
+        info, parent, "isothiocyanates", "isothiocyanato", "isothiocyanato", "异硫氰酸根合",
+    )
+    return a + b
 
 
 def _extract_hydroxys(info: dict, parent: dict) -> list[dict]:
@@ -443,6 +467,7 @@ def _extract_core_subs(info: dict, parent: dict) -> list:
     return (
         halo + _extract_hydroxys(info, parent) + _extract_aminos(info, parent)
         + _extract_oxos(info, parent) + _extract_nitros(info, parent)
+        + _extract_isocyanates(info, parent)
     )
 
 

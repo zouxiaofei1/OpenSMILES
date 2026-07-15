@@ -92,6 +92,22 @@ def _ring_nitro_atoms(info: dict, ring_set: set[int]) -> set[int]:
     return out
 
 
+def _ring_iso_entries(info: dict, ring_set: set[int]) -> list[dict]:
+    keys = ("isocyanates", "isothiocyanates")
+    return [e for k in keys for e in (info.get(k) or []) if e["r_c_idx"] in ring_set]
+
+
+def _ring_iso_n(info: dict, ring_set: set[int]) -> int:
+    return len(_ring_iso_entries(info, ring_set))
+
+
+def _ring_iso_atoms(info: dict, ring_set: set[int]) -> set[int]:
+    out: set[int] = set()
+    for e in _ring_iso_entries(info, ring_set):
+        out.update((e["n_idx"], e["c_idx"], e["x_idx"]))
+    return out
+
+
 def _ring_alkoxy_pair(e: dict, ring_set: set[int]) -> tuple[int, int, int] | None:
     c1, c2, o = e["c1"], e["c2"], e["o_idx"]
     if (c1 in ring_set) == (c2 in ring_set):
@@ -369,11 +385,11 @@ def _multi_benzene_ok(
 
 def _benzene_subs_ok(
     mol: Mol, ring_set: set[int], n_nitro: int = 0, n_alkoxy: int = 0,
-    exclude: set[int] | None = None, n_aryl: int = 0,
+    exclude: set[int] | None = None, n_aryl: int = 0, n_iso: int = 0,
 ) -> bool:
     h = _ring_halo_n(mol, ring_set)
     starts = _ring_side_starts(mol, ring_set, exclude)
-    n_sub = h + len(starts) + n_nitro + n_alkoxy + n_aryl
+    n_sub = h + len(starts) + n_nitro + n_alkoxy + n_aryl + n_iso
     if n_sub > 4:
         return False
     if n_sub <= 1:

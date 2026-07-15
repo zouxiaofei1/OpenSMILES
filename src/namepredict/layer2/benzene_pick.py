@@ -7,7 +7,8 @@ from namepredict.layer2.aryl_sub import (
 )
 from namepredict.layer2.ring_parent import (
     _arene_alkoxy, _benzene_subs_ok, _outside_ok, _ring_halo_n,
-    _ring_nitro_atoms, _ring_nitro_n, _ring_side_starts,
+    _ring_iso_atoms, _ring_iso_n, _ring_nitro_atoms, _ring_nitro_n,
+    _ring_side_starts,
 )
 
 
@@ -15,6 +16,7 @@ def _benzene_exclude(info: dict, ring_set: set[int]) -> set[int]:
     mol = info["mol"]
     return (
         _ring_nitro_atoms(info, ring_set)
+        | _ring_iso_atoms(info, ring_set)
         | _ring_alkoxy_atoms_local(info, ring_set)
         | _aryl_atoms(info, ring_set)
         | _phenyl_starts_set(mol, ring_set)
@@ -25,15 +27,23 @@ def _ring_alkoxy_atoms_local(info: dict, ring_set: set[int]) -> set[int]:
     return _arene_alkoxy(info, ring_set)[0]
 
 
+def _benzene_side_excl(info: dict, ring_set: set[int], alk: set[int]) -> set[int]:
+    mol = info["mol"]
+    return (
+        alk | _aryl_atoms(info, ring_set) | _phenyl_starts_set(mol, ring_set)
+        | _ring_iso_atoms(info, ring_set)
+    )
+
+
 def _benzene_ring_ok(info: dict, ring_set: set[int]) -> bool:
     mol = info["mol"]
     alk, n_alk = _arene_alkoxy(info, ring_set)
-    n_aryl = _aryl_sub_n(info, ring_set)
     if not _outside_ok(mol, ring_set, _benzene_exclude(info, ring_set)):
         return False
-    excl = alk | _aryl_atoms(info, ring_set) | _phenyl_starts_set(mol, ring_set)
+    excl = _benzene_side_excl(info, ring_set, alk)
     return _benzene_subs_ok(
-        mol, ring_set, _ring_nitro_n(info, ring_set), n_alk, excl, n_aryl,
+        mol, ring_set, _ring_nitro_n(info, ring_set), n_alk, excl,
+        _aryl_sub_n(info, ring_set), _ring_iso_n(info, ring_set),
     )
 
 

@@ -10,6 +10,8 @@ _FG_BOOL_MORE_KEYS = (
     ("has_ether", "ethers"), ("has_sulfide", "sulfides"), ("has_nitro", "nitros"),
     ("has_phosphate", "phosphates"), ("has_phosphonic", "phosphonics"),
     ("has_carbamate", "carbamates"), ("has_sulfoxide", "sulfoxides"),
+    ("has_isocyanate", "isocyanates"),
+    ("has_isothiocyanate", "isothiocyanates"),
 )
 
 def _is_single_c_oh(atom) -> bool:
@@ -63,12 +65,19 @@ def _is_carboxyl_carbon(atom) -> bool:
 def _carbon_neighbor_count(atom) -> int:
     return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6])
 
+def _amide_n_rest(n, carbon) -> list:
+    return [x for x in n.GetNeighbors()
+            if x.GetAtomicNum() != 1 and x.GetIdx() != carbon.GetIdx()]
+
+def _amide_n_single(carbon, n) -> bool:
+    b = carbon.GetOwningMol().GetBondBetweenAtoms(carbon.GetIdx(), n.GetIdx())
+    return b is not None and b.GetBondType() == BondType.SINGLE
+
 def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
     for n in carbon.GetNeighbors():
-        if n.GetAtomicNum() != 7:
+        if n.GetAtomicNum() != 7 or not _amide_n_single(carbon, n):
             continue
-        o = [x for x in n.GetNeighbors()
-             if x.GetAtomicNum() != 1 and x.GetIdx() != carbon.GetIdx()]
+        o = _amide_n_rest(n, carbon)
         if len(o) <= 2 and all(x.GetAtomicNum() == 6 for x in o):
             return n.GetIdx(), [x.GetIdx() for x in o]
     return None
@@ -193,16 +202,19 @@ def _is_ester_carbon(atom) -> bool:
     from namepredict.layer1.carbamate import _is_carbamate_carbon
     return not _is_carbamate_carbon(atom)
 
-def _is_aldehyde_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
-        return False
-    if _has_acid_o_neighbor(atom) or _carbon_neighbor_count(atom) > 1:
-        return False
+def _ald_blocked(atom) -> bool:
     if _ester_alkoxy_of(atom) is not None or _acyl_cl_of(atom) is not None:
+        return True
+    return _anhydride_o_of(atom) is not None or _amide_n_of(atom) is not None
+
+def _is_aldehyde_carbon(atom) -> bool:
+    if atom.GetAtomicNum() != 6 or atom.GetTotalDegree() < 3:
         return False
-    if _anhydride_o_of(atom) is not None:
+    if not _has_double_bonded_o(atom) or _has_acid_o_neighbor(atom):
         return False
-    return _amide_n_of(atom) is None
+    if _carbon_neighbor_count(atom) > 1:
+        return False
+    return not _ald_blocked(atom)
 
 def _is_hydroxyl_oxygen(atom) -> bool:
     if not _is_single_c_oh(atom):
@@ -253,12 +265,10 @@ def _amine_entry(atom, deg: int) -> dict:
     return {**base, "c_idxs": cs} if deg >= 2 else {**base, "c_idx": cs[0]}
 
 def _amine_entries(mol: Mol) -> list[dict]:
-    out: list[dict] = []
-    for atom in mol.GetAtoms():
-        deg = _amine_degree(atom)
-        if deg is not None:
-            out.append(_amine_entry(atom, deg))
-    return out
+    return [
+        _amine_entry(a, d) for a in mol.GetAtoms()
+        if (d := _amine_degree(a)) is not None
+    ]
 
 def _carboxyl_entry(atom) -> dict:
     return {"c_idx": atom.GetIdx(), "anion": _has_carboxylate_o_neighbor(atom)}
@@ -267,45 +277,30 @@ def _carboxyl_entries(mol: Mol) -> list[dict]:
     return [_carboxyl_entry(a) for a in mol.GetAtoms() if _is_carboxyl_carbon(a)]
 
 def _ketone_entries(mol: Mol) -> list[dict]:
-    out: list[dict] = []
-    for atom in mol.GetAtoms():
-        if _is_ketone_carbon(atom):
-            out.append({"c_idx": atom.GetIdx()})
-    return out
+    return [{"c_idx": a.GetIdx()} for a in mol.GetAtoms() if _is_ketone_carbon(a)]
 
 def _amide_entry(atom) -> dict:
     n_idx, n_cs = _amide_n_info(atom)
     return {"c_idx": atom.GetIdx(), "n_idx": n_idx, "n_c_idxs": n_cs}
 
 def _amide_entries(mol: Mol) -> list[dict]:
-    return [
-        _amide_entry(a) for a in mol.GetAtoms() if _is_amide_carbon(a)
-    ]
+    return [_amide_entry(a) for a in mol.GetAtoms() if _is_amide_carbon(a)]
 
 def _aldehyde_entries(mol: Mol) -> list[dict]:
-    out: list[dict] = []
-    for atom in mol.GetAtoms():
-        if _is_aldehyde_carbon(atom):
-            out.append({"c_idx": atom.GetIdx()})
-    return out
+    return [{"c_idx": a.GetIdx()} for a in mol.GetAtoms() if _is_aldehyde_carbon(a)]
 
 def _acyl_chloride_entries(mol: Mol) -> list[dict]:
-    out: list[dict] = []
-    for atom in mol.GetAtoms():
-        if _is_acyl_chloride_carbon(atom):
-            out.append({"c_idx": atom.GetIdx(), "cl_idx": _acyl_cl_of(atom)})
-    return out
+    return [
+        {"c_idx": a.GetIdx(), "cl_idx": _acyl_cl_of(a)}
+        for a in mol.GetAtoms() if _is_acyl_chloride_carbon(a)
+    ]
 
 def _ester_entry(atom) -> dict:
     o_idx, alkoxy_c = _ester_alkoxy_of(atom)
     return {"c_idx": atom.GetIdx(), "o_idx": o_idx, "alkoxy_c_idx": alkoxy_c}
 
 def _ester_entries(mol: Mol) -> list[dict]:
-    out: list[dict] = []
-    for atom in mol.GetAtoms():
-        if _is_ester_carbon(atom):
-            out.append(_ester_entry(atom))
-    return out
+    return [_ester_entry(a) for a in mol.GetAtoms() if _is_ester_carbon(a)]
 
 def _anhydride_other_c(oxygen, carbon) -> int:
     for n in oxygen.GetNeighbors():
@@ -429,6 +424,7 @@ def _fg_more_lists(parts: dict) -> dict:
         "aldehydes", "amines", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
         "nitros", "phosphates", "phosphonics", "carbamates", "sulfoxides",
+        "isocyanates", "isothiocyanates",
     )
     return {k: parts[k] for k in keys}
 
@@ -467,9 +463,12 @@ def _p_fg_parts(mol: Mol) -> dict:
     from namepredict.layer1.phosphate import phosphate_entries, phosphonic_entries
     from namepredict.layer1.carbamate import carbamate_entries
     from namepredict.layer1.sulfoxide import sulfoxide_entries
+    from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
     return {
         "phosphates": phosphate_entries(mol), "phosphonics": phosphonic_entries(mol),
         "carbamates": carbamate_entries(mol), "sulfoxides": sulfoxide_entries(mol),
+        "isocyanates": isocyanate_entries(mol),
+        "isothiocyanates": isothiocyanate_entries(mol),
     }
 
 def _fg_parts_b_core(mol: Mol) -> dict:

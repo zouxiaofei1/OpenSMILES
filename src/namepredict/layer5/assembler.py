@@ -343,18 +343,18 @@ def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
 def _special_fg_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     from namepredict.layer5.carbamate_names import carbamate_names
     from namepredict.layer5.diester_names import diester_names
+    from namepredict.layer5.isocyanate_names import iso_kind_names
     from namepredict.layer5.sulfoxide_names import sulfoxide_names
     if kind == "carbamate": return carbamate_names(numbered)
     if kind == "diester": return diester_names(n, numbered)
+    if kind in ("isocyanate", "isothiocyanate"): return iso_kind_names(kind, n)
     return sulfoxide_names(numbered) if kind == "sulfoxide" else None
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     from namepredict.layer5.phosphate_names import p_fg_names
-    top = _special_fg_names(kind, n, numbered)
+    top = _special_fg_names(kind, n, numbered) or p_fg_names(kind, n, numbered)
     if top is not None: return top
-    top = p_fg_names(kind, n, numbered) or _hetero_names(kind, n, numbered)
-    if top is not None: return top
-    carb = _carbonyl_names(kind, n, numbered)
-    return carb if carb is not None else _unsat_or_alkane(kind, n, numbered)
+    top = _hetero_names(kind, n, numbered) or _carbonyl_names(kind, n, numbered)
+    return top if top is not None else _unsat_or_alkane(kind, n, numbered)
 def _with_ez(pair: tuple[str, str] | None, numbered: dict) -> tuple[str, str] | None:
     if pair is None:
         return None

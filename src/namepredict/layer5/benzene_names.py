@@ -70,28 +70,39 @@ def _anisole_zh_prefix(numbered: dict, build_prefix) -> str:
     return build_prefix(renum, 6, "benzene")[1]
 
 
-def benzene_parent_names(numbered: dict) -> tuple[str, str]:
+def _retained_benzene(numbered: dict) -> tuple[str, str] | None:
     if _is_toluene(numbered):
         return "toluene", "甲苯"
     if _is_anisole(numbered):
         return "anisole", "甲氧基苯"
     if _is_xylene(numbered):
         return "xylene", "苯"
-    if _is_poly_anisole(numbered):
-        return "benzene", "苯甲醚"
-    return "benzene", "苯"
+    return ("benzene", "苯甲醚") if _is_poly_anisole(numbered) else None
+
+
+def benzene_parent_names(numbered: dict) -> tuple[str, str]:
+    from namepredict.layer5.iso_arene_names import is_fused_iso, iso_fused_parent
+    top = _retained_benzene(numbered)
+    if top is not None:
+        return top
+    return iso_fused_parent(numbered) if is_fused_iso(numbered) else ("benzene", "苯")
+
+
+def _xylene_prefix(numbered: dict) -> tuple[str, str]:
+    locs = _xylene_locants(numbered)
+    return f"{locs}-", f"{locs}-二甲基"
 
 
 def benzene_prefix(numbered: dict, build_prefix) -> tuple[str, str]:
+    from namepredict.layer5.iso_arene_names import is_fused_iso, iso_fused_prefix
     if _is_toluene(numbered) or _is_anisole(numbered):
         return "", ""
     if _is_xylene(numbered):
-        locs = _xylene_locants(numbered)
-        return f"{locs}-", f"{locs}-二甲基"
+        return _xylene_prefix(numbered)
+    if is_fused_iso(numbered):
+        return iso_fused_prefix(numbered, build_prefix)
     en_pre, zh_pre = build_prefix(numbered.get("substituents") or [], 6, "benzene")
-    if _is_poly_anisole(numbered):
-        return en_pre, _anisole_zh_prefix(numbered, build_prefix)
-    return en_pre, zh_pre
+    return (en_pre, _anisole_zh_prefix(numbered, build_prefix)) if _is_poly_anisole(numbered) else (en_pre, zh_pre)
 
 
 def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
