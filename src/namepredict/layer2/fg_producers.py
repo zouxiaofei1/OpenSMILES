@@ -13,6 +13,7 @@ from namepredict.layer2.benzenediamine import (
 )
 from namepredict.layer2.boronic import _try_boronic
 from namepredict.layer2.carbamate import _carbamate_parent
+from namepredict.layer2.carbonate import _carbonate_parent
 from namepredict.layer2.diester import _diester_parent
 from namepredict.layer2.hydrazine import _hydrazine_parent
 from namepredict.layer2.isocyanate import _try_isocyanate, _try_isothiocyanate
@@ -141,6 +142,10 @@ def _try_carbamate(info: dict) -> dict | None:
     return _carbamate_parent(info)
 
 
+def _try_carbonate(info: dict) -> dict | None:
+    return _carbonate_parent(info)
+
+
 def _try_urea(info: dict) -> dict | None:
     return _urea_parent(info)
 
@@ -164,6 +169,7 @@ _FG_PRODUCERS = (
     _try_diester,
     _try_ester,
     _try_carbamate,
+    _try_carbonate,
     _try_urea,
     _try_amide,
     _try_nitrile,

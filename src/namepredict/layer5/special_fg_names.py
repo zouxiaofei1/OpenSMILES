@@ -4,6 +4,7 @@ from __future__ import annotations
 from namepredict.layer5.acyl_halide_names import acyl_halide_names
 from namepredict.layer5.boronic_names import boronic_names
 from namepredict.layer5.carbamate_names import carbamate_names
+from namepredict.layer5.carbonate_names import carbonate_names
 from namepredict.layer5.diester_names import diester_names
 from namepredict.layer5.hydrazine_names import hydrazine_names
 from namepredict.layer5.isocyanate_names import iso_kind_names
@@ -16,6 +17,7 @@ from namepredict.layer5.urea_names import urea_names
 def _table(n: int, numbered: dict) -> dict:
     return {
         "carbamate": lambda: carbamate_names(numbered),
+        "carbonate": lambda: carbonate_names(numbered),
         "urea": lambda: urea_names(numbered),
         "hydrazine": lambda: hydrazine_names(numbered),
         "diester": lambda: diester_names(n, numbered),

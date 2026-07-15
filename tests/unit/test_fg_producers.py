@@ -22,6 +22,7 @@ _EXPECTED_FG_TRY_NAMES = (
     "_try_diester",
     "_try_ester",
     "_try_carbamate",
+    "_try_carbonate",
     "_try_urea",
     "_try_amide",
     "_try_nitrile",
@@ -53,6 +54,7 @@ _RECENT_FG_MARKERS = (
     "isocyanate",
     "sulfonate",
     "sulfoxide",
+    "carbonate",
 )
 
 # Snapshot: FG kind sets before migration (must stay identical).

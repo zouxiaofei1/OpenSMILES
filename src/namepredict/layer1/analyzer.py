@@ -9,7 +9,8 @@ _FG_BOOL_MORE_KEYS = (
     ("has_anhydride", "anhydrides"), ("has_thiol", "thiols"),
     ("has_ether", "ethers"), ("has_sulfide", "sulfides"), ("has_nitro", "nitros"),
     ("has_phosphate", "phosphates"), ("has_phosphonic", "phosphonics"),
-    ("has_carbamate", "carbamates"), ("has_sulfoxide", "sulfoxides"),
+    ("has_carbamate", "carbamates"), ("has_carbonate", "carbonates"),
+    ("has_sulfoxide", "sulfoxides"),
     ("has_isocyanate", "isocyanates"), ("has_isothiocyanate", "isothiocyanates"),
     ("has_urea", "ureas"), ("has_hydrazine", "hydrazines"),
     ("has_sulfonamide", "sulfonamides"), ("has_sulfonate", "sulfonates"),
@@ -194,7 +195,8 @@ def _is_ester_carbon(atom) -> bool:
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is None:
         return False
     from namepredict.layer1.carbamate import _is_carbamate_carbon
-    return not _is_carbamate_carbon(atom)
+    from namepredict.layer1.carbonate import _is_carbonate_carbon
+    return not _is_carbamate_carbon(atom) and not _is_carbonate_carbon(atom)
 
 def _ald_blocked(atom) -> bool:
     if _ester_alkoxy_of(atom) is not None or _acyl_hal_of(atom) is not None:
@@ -415,9 +417,9 @@ def _fg_more_lists(parts: dict) -> dict:
     keys = (
         "aldehydes", "amines", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
-        "nitros", "phosphates", "phosphonics", "carbamates", "sulfoxides",
-        "isocyanates", "isothiocyanates", "ureas", "hydrazines", "sulfonamides",
-        "sulfonates", "boronics",
+        "nitros", "phosphates", "phosphonics", "carbamates", "carbonates",
+        "sulfoxides", "isocyanates", "isothiocyanates", "ureas", "hydrazines",
+        "sulfonamides", "sulfonates", "boronics",
     )
     return {k: parts[k] for k in keys}
 
@@ -455,9 +457,11 @@ def _fg_parts_a(mol: Mol) -> dict:
 def _p_fg_a(mol: Mol) -> dict:
     from namepredict.layer1.phosphate import phosphate_entries, phosphonic_entries
     from namepredict.layer1.carbamate import carbamate_entries
+    from namepredict.layer1.carbonate import carbonate_entries
     from namepredict.layer1.sulfoxide import sulfoxide_entries
     return {"phosphates": phosphate_entries(mol), "phosphonics": phosphonic_entries(mol),
-            "carbamates": carbamate_entries(mol), "sulfoxides": sulfoxide_entries(mol)}
+            "carbamates": carbamate_entries(mol), "carbonates": carbonate_entries(mol),
+            "sulfoxides": sulfoxide_entries(mol)}
 def _p_fg_b(mol: Mol) -> dict:
     from namepredict.layer1.boronic import boronic_entries
     from namepredict.layer1.hydrazine import hydrazine_entries
