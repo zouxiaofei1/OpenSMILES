@@ -302,12 +302,12 @@ def _poly_acid_try(info: dict) -> dict | None:
     if _is_simple_alkanedioic(info): return _diacid_parent(info)
     if _is_simple_alkenedioic(info): return _alkenedioic_parent(info)
     return _try_hy_alkenoic(info, _ALKENOIC_BAD, _best_cover_pair, _parent_dict, _db_pairs)
-def _open_mono_acid_ok(info: dict) -> bool:
-    """Open mono-acid only if carboxyl has open-chain C arm (or bare formic)."""
-    cs = info.get("carboxyls") or []
-    if len(cs) != 1:
+def _open_mono_fg_ok(info: dict, ekey: str) -> bool:
+    """Open mono-FG only if FG carbon has open-chain C arm (or bare CX2)."""
+    entries = info.get(ekey) or []
+    if len(entries) != 1:
         return True
-    mol, c = info["mol"], cs[0]["c_idx"]
+    mol, c = info["mol"], entries[0]["c_idx"]
     if _carbon_neighbors(mol, c):
         return True
     return not any(n.GetAtomicNum() == 6 for n in mol.GetAtomWithIdx(c).GetNeighbors())
@@ -315,7 +315,7 @@ def _acid_parent_core(info: dict) -> dict | None:
     top = _ring_acid_try(info) or _poly_acid_try(info)
     if top is not None:
         return top
-    if not _open_mono_acid_ok(info):
+    if not _open_mono_fg_ok(info, "carboxyls"):
         return None
     return _unsat_or_sat(
         info, "has_acid", "carboxyls", _ALKENOIC_BAD, "acid", "acid", "cooh_c_idx",
@@ -323,13 +323,16 @@ def _acid_parent_core(info: dict) -> dict | None:
 def _acid_parent(info: dict) -> dict | None:
     core = _acid_parent_core(info)
     return None if core is None else _with_anion(info, core)
-def _ketone_parent(info: dict) -> dict:
+def _ketone_parent(info: dict) -> dict | None:
     a = _try_acetophenone_parent(info)
-    if a is not None: return a
+    if a is not None:
+        return a
     if _is_simple_cycloketone(info):
         return _cyclo_fg_parent(info, "cycloketone", "ketones", "ketone_c_idx")
     if _is_simple_alkanedione(info):
         return _dione_parent(info)
+    if not _open_mono_fg_ok(info, "ketones"):
+        return None
     return _fg_chain(info, "ketones", "ketone", "ketone_c_idx")
 def _aldehyde_parent(info: dict) -> dict:
     return _try_izald(info) or _try_benzaldehyde_parent(info) or _unsat_or_sat(
