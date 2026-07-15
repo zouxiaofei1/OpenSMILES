@@ -40,6 +40,7 @@ _EXPECTED_RING_TRY_NAMES = (
     "_try_sat_hetero_parent",
     "_try_simple_benzene",
     "_try_simple_cycloalkane",
+    "_try_simple_cyclopolyene",
 )
 
 

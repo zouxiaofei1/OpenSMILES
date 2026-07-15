@@ -57,7 +57,7 @@ def _ring_size(parent: dict, kind: str) -> int:
 
 def _n_unsat(parent: dict) -> int:
     kind = parent.get("kind")
-    if kind == "polyene":
+    if kind in ("polyene", "cyclopolyene"):
         return len(parent.get("double_bonds") or [])
     return 1 if kind in ("alkene", "alkyne", "cycloalkene") else 0
 

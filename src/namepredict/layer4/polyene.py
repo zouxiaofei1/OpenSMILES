@@ -69,3 +69,15 @@ def orient_alkenol(chain: list[int], parent: dict, subs: list, prefer_fn) -> lis
         return orient_polyene(chain, parent, subs, prefer_fn)
     picked = _pick_oh_orient(list(chain), list(reversed(chain)), oh)
     return picked if picked is not None else orient_polyene(chain, parent, subs, prefer_fn)
+
+
+def orient_cyclopolyene(chain: list[int], parent: dict, subs: list) -> list[int]:
+    """Ring polyene: lowest endocyclic ene set via locant engine (poly_unsat)."""
+    from namepredict.layer4.locants.engine import choose_numbering
+    bonds = parent.get("double_bonds") or []
+    attach = [s.get("attach_idx") for s in subs if s.get("attach_idx") is not None]
+    plan = choose_numbering(
+        chain, "poly_unsat", double_bonds=bonds, sub_attach=attach,
+        scaffold_id="cyclopolyene",
+    )
+    return list(plan.atom_order) if plan.atom_order else chain

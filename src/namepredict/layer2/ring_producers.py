@@ -32,6 +32,7 @@ from namepredict.layer2.naphthalene import _try_naphthalene_parent
 from namepredict.layer2.parent_selector import (
     _benzene_parent,
     _cycloalkane_parent,
+    _parent_dict,
 )
 from namepredict.layer2.pyridine import _try_pyridine_parent
 from namepredict.layer2.quinoline import (
@@ -39,8 +40,10 @@ from namepredict.layer2.quinoline import (
     _try_quinoline_parent,
 )
 from namepredict.layer2.ring_parent import (
+    _endocyclic_doubles,
     _is_simple_benzene,
     _is_simple_cycloalkane,
+    _is_simple_cyclopolyene,
 )
 from namepredict.layer2.sat_hetero import _try_sat_hetero_parent
 
@@ -51,6 +54,16 @@ def _try_simple_benzene(info: dict) -> dict | None:
 
 def _try_simple_cycloalkane(info: dict) -> dict | None:
     return _cycloalkane_parent(info) if _is_simple_cycloalkane(info) else None
+
+
+def _cyclopolyene_parent(info: dict) -> dict:
+    chain = list(info["rings"][0]["atom_ids"])
+    bonds = _endocyclic_doubles(info, set(chain))
+    return _parent_dict(chain, "cyclopolyene", double_bonds=bonds)
+
+
+def _try_simple_cyclopolyene(info: dict) -> dict | None:
+    return _cyclopolyene_parent(info) if _is_simple_cyclopolyene(info) else None
 
 
 _RING_PRODUCERS = (
@@ -77,6 +90,7 @@ _RING_PRODUCERS = (
     _try_sat_hetero_parent,
     _try_simple_benzene,
     _try_simple_cycloalkane,
+    _try_simple_cyclopolyene,
 )
 
 

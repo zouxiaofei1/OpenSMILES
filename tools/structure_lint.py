@@ -236,7 +236,7 @@ def _check_kind_registry_named_rings(root: Path) -> list[str]:
         from namepredict.layer2 import kind_registry as kr
     except Exception:
         return []
-    skip = {"cycloalkane", "cycloalkene", "benzenediamine"}
+    skip = {"cycloalkane", "cycloalkene", "cyclopolyene", "benzenediamine"}
     issues: list[str] = []
     for kind in sorted(kr.all_kinds()):
         m = kr.get(kind)

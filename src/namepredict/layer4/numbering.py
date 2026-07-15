@@ -9,7 +9,9 @@ from namepredict.layer4.locants.adapt import (
     effective_sub_locant,
     plan_from_chain,
 )
-from namepredict.layer4.polyene import ene_locants, orient_alkenol, orient_alkenedioic, orient_polyene
+from namepredict.layer4.polyene import (
+    ene_locants, orient_alkenol, orient_alkenedioic, orient_cyclopolyene, orient_polyene,
+)
 def _pos_on(chain: list[int], c: int | None) -> int | None:
     if c is None or c not in chain:
         return None
@@ -124,10 +126,8 @@ def _term_fn(fn):
     return lambda c, p, s: fn(c, p)
 def _terminal_orienters() -> dict:
     return {
-        "acid": _term_fn(_orient_acid),
-        "aldehyde": _term_fn(_orient_aldehyde),
-        "ester": _term_fn(_orient_ester),
-        "amide": _term_fn(_orient_amide),
+        "acid": _term_fn(_orient_acid), "aldehyde": _term_fn(_orient_aldehyde),
+        "ester": _term_fn(_orient_ester), "amide": _term_fn(_orient_amide),
         "nitrile": _term_fn(_orient_nitrile),
         "acyl_chloride": _term_fn(_orient_acyl_chloride),
     }
@@ -344,12 +344,12 @@ def _unsat_orienters() -> dict:
     return {
         "cycloketone": _orient_cycloketone, "alkene": _orient_alkene,
         "diacid": _orient_diacid, "polyene": _orient_polyene,
-        "cycloalkene": _orient_cycloalkene, "alkyne": _orient_alkyne,
-        "cycloalkane": _orient_cycloalkane, "benzene": _orient_cycloalkane,
-        "benzoic": _orient_benzoic, "benzaldehyde": _orient_benzoic,
-        "acetophenone": _orient_benzoic, "benzoate": _orient_benzoic,
-        "benzonitrile": _orient_benzoic, "benzoyl_chloride": _orient_benzoic,
-        "cycloalkanecarboxylic": _orient_benzoic,
+        "cyclopolyene": orient_cyclopolyene, "cycloalkene": _orient_cycloalkene,
+        "alkyne": _orient_alkyne, "cycloalkane": _orient_cycloalkane,
+        "benzene": _orient_cycloalkane, "benzoic": _orient_benzoic,
+        "benzaldehyde": _orient_benzoic, "acetophenone": _orient_benzoic,
+        "benzoate": _orient_benzoic, "benzonitrile": _orient_benzoic,
+        "benzoyl_chloride": _orient_benzoic, "cycloalkanecarboxylic": _orient_benzoic,
     }
 def _kind_orienters() -> dict:
     return {**_hetero_orienters(), **_unsat_orienters(), **_carbonyl_orienters()}

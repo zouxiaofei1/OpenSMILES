@@ -230,6 +230,7 @@ def _load_carbo_rings() -> None:
     _add("anthracene", en="anthracene", zh="蒽", ring="carbo", n=3, ret=True)
     _add("cycloalkane", ring="carbo", n=1)
     _add("cycloalkene", ring="carbo", n=1)
+    _add("cyclopolyene", ring="carbo", n=1)
 
 
 def _bootstrap() -> None:

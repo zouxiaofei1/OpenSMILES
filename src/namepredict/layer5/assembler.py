@@ -178,6 +178,9 @@ def _polyene_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
         return None
     loc = _pair_loc_str(locs)
     return f"{stem[0]}-{loc}-{me}", f"{stem[1]}-{loc}-{mz}"
+def _cyclopolyene_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
+    pair = _polyene_names(n, locs)
+    return (f"cyclo{pair[0]}", f"环{pair[1]}") if pair else None
 def _alkyne_retained(n: int) -> tuple[str, str] | None:
     if n == 2:
         return "acetylene", "乙炔"
@@ -348,6 +351,8 @@ def _alkene_or_poly(kind: str, n: int, numbered: dict) -> tuple[str, str] | None
         return _with_ez(_alkene_names(n, numbered.get("ene_locant"), omit), numbered)
     if kind == "polyene":
         return _with_ez(_polyene_names(n, numbered.get("ene_locants")), numbered)
+    if kind == "cyclopolyene":
+        return _cyclopolyene_names(n, numbered.get("ene_locants"))
     return None
 def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _alkene_or_poly(kind, n, numbered)

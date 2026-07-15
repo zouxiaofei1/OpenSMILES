@@ -199,6 +199,34 @@ def _is_simple_cycloalkene(info: dict) -> bool:
     return not _outside_carbons(mol, ring_set)
 
 
+def _endocyclic_doubles(info: dict, ring_set: set[int]) -> list[tuple[int, int]]:
+    out: list[tuple[int, int]] = []
+    for db in info.get("double_bonds") or []:
+        c1, c2 = db["c1"], db["c2"]
+        if c1 in ring_set and c2 in ring_set:
+            out.append((c1, c2))
+    return out
+
+
+def _is_cyclopolyene_core(info: dict) -> bool:
+    atom_ids = _is_carbocycle_ring(info)
+    if atom_ids is None or info.get("triple_bonds"):
+        return False
+    return _ring_double_count(info["mol"], atom_ids) >= 2
+
+
+def _is_simple_cyclopolyene(info: dict) -> bool:
+    if not _is_cyclopolyene_core(info):
+        return False
+    mol: Mol = info["mol"]
+    ring_set = set(info["rings"][0]["atom_ids"])
+    if len(_endocyclic_doubles(info, ring_set)) < 2:
+        return False
+    if not _outside_ok(mol, ring_set):
+        return False
+    return not _outside_carbons(mol, ring_set)
+
+
 def _hetero_allowed(mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
     for atom in mol.GetAtoms():
         z = atom.GetAtomicNum()
