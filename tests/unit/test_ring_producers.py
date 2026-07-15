@@ -15,8 +15,9 @@ from namepredict.layer2 import kind_registry as kr
 from namepredict.layer2.candidates import _ring_candidates
 from namepredict.namer import SMILESNNamer
 
-# Expected ordered producer __name__ snapshot (pre-migration _RING_TRY).
+# Expected ordered producer __name__ snapshot (ring_producers._RING_PRODUCERS).
 _EXPECTED_RING_TRY_NAMES = (
+    "_try_anthraquinone_parent",
     "_try_anthracene_parent",
     "_try_quinazoline_parent",
     "_try_quinoxaline_parent",
@@ -38,6 +39,7 @@ _EXPECTED_RING_TRY_NAMES = (
     "_try_azole13_parent",
     "_try_hetero5_parent",
     "_try_sat_hetero_parent",
+    "try_sat_hetero_repl",
     "_try_simple_benzene",
     "_try_simple_cycloalkane",
     "_try_simple_cyclopolyene",

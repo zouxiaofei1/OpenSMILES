@@ -165,6 +165,31 @@ def fg_try_fns() -> list:
     return list(_FG_TRY)
 
 
+# Ordered unsat parent producers (filled by layer2.unsat_producers bootstrap).
+_UNSAT_TRY: list = []
+_UNSAT_BOOTSTRAPPED = False
+
+
+def register_unsat_try(fn) -> None:
+    """Append an unsat parent producer: (info) -> parent dict | None."""
+    _UNSAT_TRY.append(fn)
+
+
+def _ensure_unsat_producers() -> None:
+    """Import unsat_producers once so unsat_try_fns works without candidates import."""
+    global _UNSAT_BOOTSTRAPPED
+    if _UNSAT_BOOTSTRAPPED:
+        return
+    from namepredict.layer2 import unsat_producers as _up  # noqa: F401
+    _UNSAT_BOOTSTRAPPED = True
+
+
+def unsat_try_fns() -> list:
+    """Return registered unsat parent try callables (order = try order)."""
+    _ensure_unsat_producers()
+    return list(_UNSAT_TRY)
+
+
 def _add(
     kind: str,
     *,

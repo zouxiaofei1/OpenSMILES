@@ -1,26 +1,22 @@
 """Layer2 parent-candidate collection (scored by layer2.scoring, P-44).
 
-FG and ring classes each try independently (no short-circuit `or`).
+FG, ring, and unsat classes each try independently (no short-circuit `or`).
 Scoring then picks the best among all viable parents so `_FG_RANK`
 actually arbitrates acid vs alcohol vs amine, etc.
 
 FG parent producers are registered in `layer2.fg_producers` →
 `kind_registry.fg_try_fns()`; ring parents in `layer2.ring_producers` →
-`kind_registry.ring_try_fns()` (not hand-written tuples here).
+`kind_registry.ring_try_fns()`; open-chain unsat hydrocarbon parents in
+`layer2.unsat_producers` → `kind_registry.unsat_try_fns()` (not hand-written
+tuples here).
 """
 from __future__ import annotations
 
 from namepredict.layer2 import kind_registry as _kr
 from namepredict.layer2.parent_selector import (
-    _alkene_parent,
-    _alkyne_parent,
     _benzene_parent,
-    _is_mono_alkene,
-    _is_mono_alkyne,
-    _is_polyene,
     _longest_chain,
     _parent_dict,
-    _polyene_parent,
 )
 from namepredict.layer2.ring_parent import (
     _is_benzene_core,
@@ -51,14 +47,7 @@ def _ring_candidates(info: dict) -> list[dict]:
 
 
 def _unsat_candidates(info: dict) -> list[dict]:
-    out: list[dict] = []
-    if _is_mono_alkyne(info):
-        out.append(_alkyne_parent(info))
-    if _is_polyene(info):
-        out.append(_polyene_parent(info))
-    if _is_mono_alkene(info):
-        out.append(_alkene_parent(info))
-    return out
+    return [c for fn in _kr.unsat_try_fns() if (c := fn(info)) is not None]
 
 
 def _dedupe_parents(cands: list[dict]) -> list[dict]:
