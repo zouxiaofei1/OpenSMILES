@@ -1,6 +1,6 @@
 from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
-from namepredict.layer4.polyene import ene_locants, orient_alkenol, orient_polyene
+from namepredict.layer4.polyene import ene_locants, orient_alkenol, orient_alkenedioic, orient_polyene
 def _pos_on(chain: list[int], c: int | None) -> int | None:
     if c is None or c not in chain:
         return None
@@ -327,10 +327,12 @@ def _hetero_orienters() -> dict:
     }
 def _orient_polyene(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return orient_polyene(chain, parent, substituents, _prefer_chain)
+def _orient_alkenedioic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return orient_alkenedioic(chain, parent, substituents, _prefer_chain, _orient_alkene)
 def _unsat_orienters() -> dict:
     return {
         "cycloketone": _orient_cycloketone, "alkene": _orient_alkene,
-        "alkenedioic": _orient_alkene, "polyene": _orient_polyene,
+        "alkenedioic": _orient_alkenedioic, "polyene": _orient_polyene,
         "cycloalkene": _orient_cycloalkene, "alkyne": _orient_alkyne,
         "cycloalkane": _orient_cycloalkane, "benzene": _orient_cycloalkane,
         "benzoic": _orient_benzoic, "benzaldehyde": _orient_benzoic,

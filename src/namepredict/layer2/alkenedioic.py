@@ -1,5 +1,6 @@
-"""Open-chain monounsaturated dicarboxylic acids (alkenedioic)."""
+"""Open-chain mono-/polyunsaturated dicarboxylic acids (alkenedioic)."""
 from __future__ import annotations
+
 
 _DIACID_BAD = (
     "has_ester", "has_amide", "has_nitrile", "has_acyl_chloride",
@@ -8,11 +9,13 @@ _DIACID_BAD = (
 
 
 def _is_open_unsat_diacid(info: dict) -> bool:
-    from namepredict.layer2.parent_selector import _is_mono_alkene, _no_fgs
+    """Open-chain diacid with ≥1 C=C and no competing higher FG."""
+    from namepredict.layer2.parent_selector import _no_fgs
 
     if info.get("has_ring") or info.get("has_alkyne"):
         return False
-    return _is_mono_alkene(info) and _no_fgs(info, _DIACID_BAD)
+    dbs = info.get("double_bonds") or []
+    return len(dbs) >= 1 and _no_fgs(info, _DIACID_BAD)
 
 
 def _is_simple_alkenedioic(info: dict) -> bool:
@@ -29,18 +32,29 @@ def _alkenedioic_atoms(info: dict) -> list[int] | None:
     cs = _c_idxs(info.get("carboxyls") or [], 2)
     if cs is None:
         return None
-    db = (info.get("double_bonds") or [None])[0]
-    if not db:
-        return None
-    return cs + [db["c1"], db["c2"]]
+    atoms = list(cs)
+    for db in info.get("double_bonds") or []:
+        atoms.extend([db["c1"], db["c2"]])
+    return atoms
+
+
+def _db_meta(info: dict) -> dict:
+    """Single C=C → double_bond; multi → double_bonds (polyene style)."""
+    from namepredict.layer2.parent_selector import _db_pairs
+
+    pairs = _db_pairs(info)
+    if len(pairs) >= 2:
+        return {"double_bonds": pairs}
+    if len(pairs) == 1:
+        return {"double_bond": pairs[0]}
+    return {}
 
 
 def _alkenedioic_meta(info: dict) -> dict:
     from namepredict.layer2.parent_selector import _c_idxs
 
-    db = info["double_bonds"][0]
     cs = _c_idxs(info.get("carboxyls") or [], 2) or []
-    return dict(cooh_c_idxs=cs, double_bond=(db["c1"], db["c2"]), mol=info["mol"])
+    return dict(cooh_c_idxs=cs, mol=info["mol"], **_db_meta(info))
 
 
 def _alkenedioic_parent(info: dict) -> dict:

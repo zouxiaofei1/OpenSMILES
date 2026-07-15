@@ -82,7 +82,28 @@ def _alkenedioic_names(n: int, locant: int | None, ez: str) -> tuple[str, str] |
     return _unsat_acid_pair(n, locant, ez, "enedioic acid", "烯二酸", 3)
 
 
+def _ene_mult_diacid(k: int) -> tuple[str, str]:
+    en = {
+        2: "dienedioic acid", 3: "trienedioic acid", 4: "tetraenedioic acid",
+    }.get(k, "")
+    zh = {2: "二烯二酸", 3: "三烯二酸", 4: "四烯二酸"}.get(k, "")
+    return en, zh
+
+
+def _polyalkenedioic_names(n: int, locs, ez: str) -> tuple[str, str] | None:
+    """hexa-2,4-dienedioic acid / 己-2,4-二烯二酸."""
+    en, zh = ALKANE_EN.get(n), ALKANE_ZH.get(n)
+    me, mz = _ene_mult_diacid(len(locs or []))
+    if not en or not zh or not me or not locs or len(locs) < 2 or n < 4:
+        return None
+    loc = ",".join(str(x) for x in locs)
+    return f"{ez}{en[:-3]}a-{loc}-{me}", f"{ez}{zh_stem(zh)}-{loc}-{mz}"
+
+
 def alkenedioic_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    locs = numbered.get("ene_locants")
+    if locs and len(locs) >= 2:
+        return _polyalkenedioic_names(n, locs, _ez_for_alkenol(numbered))
     return _alkenedioic_names(n, numbered.get("ene_locant"), _ez_prefix(numbered))
 
 

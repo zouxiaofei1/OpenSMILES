@@ -417,7 +417,7 @@ def _fg_more_lists(parts: dict) -> dict:
     keys = (
         "aldehydes", "amines", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
-        "nitros",
+        "nitros", "phosphates", "phosphonics",
     )
     return {k: parts[k] for k in keys}
 
@@ -445,6 +445,7 @@ def _fg_bools_more(lists: dict) -> dict:
         ("has_anhydride", "anhydrides"), ("has_thiol", "thiols"),
         ("has_ether", "ethers"), ("has_sulfide", "sulfides"),
         ("has_nitro", "nitros"),
+        ("has_phosphate", "phosphates"), ("has_phosphonic", "phosphonics"),
     )
     return {hk: bool(lists[lk]) for hk, lk in keys}
 
@@ -460,7 +461,13 @@ def _fg_parts_a(mol: Mol) -> dict:
         "ketones": _ketone_entries(mol),
     }
 
-def _fg_parts_b(mol: Mol) -> dict:
+def _p_fg_parts(mol: Mol) -> dict:
+    from namepredict.layer1.phosphate import phosphate_entries, phosphonic_entries
+
+    return {"phosphates": phosphate_entries(mol), "phosphonics": phosphonic_entries(mol)}
+
+
+def _fg_parts_b_core(mol: Mol) -> dict:
     return {
         "aldehydes": _aldehyde_entries(mol), "amines": _amine_entries(mol),
         "nitriles": _nitrile_entries(mol), "double_bonds": _double_bond_entries(mol),
@@ -470,6 +477,10 @@ def _fg_parts_b(mol: Mol) -> dict:
         "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
         "nitros": _nitro_entries(mol),
     }
+
+
+def _fg_parts_b(mol: Mol) -> dict:
+    return {**_fg_parts_b_core(mol), **_p_fg_parts(mol)}
 
 def _fg_parts(mol: Mol) -> dict:
     return {**_fg_parts_a(mol), **_fg_parts_b(mol)}

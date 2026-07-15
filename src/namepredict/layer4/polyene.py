@@ -40,12 +40,19 @@ def orient_polyene(chain: list[int], parent: dict, subs: list, prefer_fn) -> lis
     return _prefer(chain, list(reversed(chain)), bonds, subs, prefer_fn)
 
 
+def orient_alkenedioic(chain, parent, subs, prefer_fn, mono_fn):
+    """Multi-ene: lowest ene set; mono C=C: reuse mono alkene orienter."""
+    if parent.get("double_bonds"):
+        return orient_polyene(chain, parent, subs, prefer_fn)
+    return mono_fn(chain, parent, subs)
+
+
 def ene_locants(oriented: dict) -> list[int] | None:
     bonds = oriented.get("double_bonds")
     if not bonds:
         return None
     kind = oriented.get("kind")
-    if kind not in ("polyene", "alkenol", "alkenoic_acid"):
+    if kind not in ("polyene", "alkenol", "alkenoic_acid", "alkenedioic"):
         return None
     locs = _bond_min_locs(oriented.get("chain") or [], bonds)
     return list(locs) if locs else None

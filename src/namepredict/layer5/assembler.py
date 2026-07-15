@@ -359,13 +359,12 @@ def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return cyc
     return _amine_kind_names(kind, n, numbered)
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    top = _hetero_names(kind, n, numbered)
+    from namepredict.layer5.phosphate_names import p_fg_names
+    top = p_fg_names(kind, n, numbered) or _hetero_names(kind, n, numbered)
     if top is not None:
         return top
     carb = _carbonyl_names(kind, n, numbered)
-    if carb is not None:
-        return carb
-    return _unsat_or_alkane(kind, n, numbered)
+    return carb if carb is not None else _unsat_or_alkane(kind, n, numbered)
 def _alkene_or_poly(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alkene":
         omit = numbered.get("omit_ene_locant", False)
