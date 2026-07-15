@@ -157,6 +157,7 @@
 [#dfb7893][IUPAC P-65.1.1 / P-31.1] 开链一元炔酸/炔酸酯 alkynoic & alkynoate：L2 yne→ene→sat 挂 triple_bond + L4 yne_locant + L5 ynoic/ynoate/炔酸 [+9 tests, dual 14.3%(581)→14.4%(584), 0 REGRESS]
 [#0aa17aa][IUPAC P-31.1 / P-63.1.1 / P-66.6.1 / P-66.5.1 / P-66.1.1] 开链一元炔 FG：alkynol/alkynal/alkynenitrile/alkynamide（L2 yne 路径 + L4 位次 + L5 词干） [+14 tests, dual 14.4%→14.4% 持平, 0 REGRESS]
 [#a1b3524][IUPAC P-65.1.1 / P-65.6] 开链对称 dialkyl alkanedioate 二酯母体+命名（修 oxalate→ethane 坍缩） [+9 tests, dual 14.4%(584)→14.4%(585), 0 REGRESS]
+[#65eb283][IUPAC P-65.1.1 / P-31.1 / P-93] 开链对称 mono-ene 二酸二酯（最低 ene 定向 + E/Z；不对称 pent-2/hex-2） [+test_alkenedioate_diester, dual 14.4%(585)→14.4%(586), 0 REGRESS]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多磷酸/核苷酸磷酸未做
 - 简单开链一元炔醇/炔醛/炔腈/炔酰胺已做；带复杂侧链多烯醇/多炔未做
