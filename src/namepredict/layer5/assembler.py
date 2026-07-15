@@ -204,8 +204,9 @@ def _acid_table(n: int) -> dict:
     }
 def _unsat_aldehyde(n: int, numbered: dict) -> tuple[str, str] | None:
     from namepredict.layer5.unsat_acid import alkenal_names
-    loc = numbered.get("ene_locant")
-    return alkenal_names(n, loc) if loc is not None else None
+    if numbered.get("ene_locant") is None:
+        return None
+    return alkenal_names(n, numbered)
 def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
     from namepredict.layer5.unsat_acid import unsat_carbonyl_names
     top = unsat_carbonyl_names(kind, n, numbered or {})
@@ -219,8 +220,9 @@ def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[st
 def _nitrile_or_none(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
     if kind == "nitrile":
         from namepredict.layer5.unsat_acid import alkenenitrile_names
-        loc = (numbered or {}).get("ene_locant")
-        return alkenenitrile_names(n, loc) if loc is not None else _nitrile_names(n)
+        if (numbered or {}).get("ene_locant") is not None:
+            return alkenenitrile_names(n, numbered or {})
+        return _nitrile_names(n)
     if kind == "acyl_chloride":
         return _pair(ACYL_CHLORIDE_EN, ACYL_CHLORIDE_ZH, n)
     if kind == "anhydride":
@@ -334,12 +336,18 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return top
     carb = _carbonyl_names(kind, n, numbered)
     return carb if carb is not None else _unsat_or_alkane(kind, n, numbered)
+def _with_ez(pair: tuple[str, str] | None, numbered: dict) -> tuple[str, str] | None:
+    if pair is None:
+        return None
+    from namepredict.layer5.stereo_ez import ez_for_parent
+    ez = ez_for_parent(numbered)
+    return f"{ez}{pair[0]}", f"{ez}{pair[1]}"
 def _alkene_or_poly(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alkene":
         omit = numbered.get("omit_ene_locant", False)
-        return _alkene_names(n, numbered.get("ene_locant"), omit)
+        return _with_ez(_alkene_names(n, numbered.get("ene_locant"), omit), numbered)
     if kind == "polyene":
-        return _polyene_names(n, numbered.get("ene_locants"))
+        return _with_ez(_polyene_names(n, numbered.get("ene_locants")), numbered)
     return None
 def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _alkene_or_poly(kind, n, numbered)

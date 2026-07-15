@@ -8,6 +8,7 @@ _RS_KINDS = frozenset({
     "acid", "alcohol",
     "diol", "triol", "amine", "diamine",
     "ketone", "ester",
+    "diacid", "amide", "nitrile", "aldehyde", "thiol",
     "piperidine", "pyrrolidine", "piperazine", "morpholine",
     "oxolane", "oxane",
     "piperidinecarboxylic", "pyrrolidinecarboxylic",

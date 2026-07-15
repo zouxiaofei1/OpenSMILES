@@ -1,76 +1,14 @@
-"""Alkenoic / alkenedioic acid name assembly and E/Z stereo prefix."""
+"""Alkenoic / alkenedioic acid name assembly (E/Z via stereo_ez)."""
 from __future__ import annotations
-
-from rdkit.Chem import BondStereo, Mol
 
 from namepredict.layer5.stems import (
     ALKANE_EN, ALKANE_ZH, ESTER_ALKYL_EN, ESTER_ALKYL_ZH, zh_stem,
 )
-
-
-def _stereo_tag(st) -> str:
-    if st == BondStereo.STEREOE:
-        return "(E)-"
-    if st == BondStereo.STEREOZ:
-        return "(Z)-"
-    return ""
-
-
-def _bond_stereo(mol: Mol | None, double_bond) -> str:
-    if mol is None or not double_bond:
-        return ""
-    c1, c2 = double_bond
-    bond = mol.GetBondBetweenAtoms(int(c1), int(c2))
-    return _stereo_tag(bond.GetStereo()) if bond is not None else ""
-
-
-def _ez_prefix(numbered: dict) -> str:
-    parent = numbered.get("parent") or {}
-    return _bond_stereo(parent.get("mol"), parent.get("double_bond"))
-
-
-def _bond_min_loc(chain: list[int], pair) -> int | None:
-    if not pair or pair[0] not in chain or pair[1] not in chain:
-        return None
-    return min(chain.index(pair[0]) + 1, chain.index(pair[1]) + 1)
-
-
-def _ez_letter(tag: str) -> str:
-    """'(E)-' → 'E'; empty → ''."""
-    return tag[1] if len(tag) >= 3 and tag[0] == "(" else ""
-
-
-def _ez_bond_part(mol, chain: list[int], bond) -> tuple[int, str] | None:
-    loc = _bond_min_loc(chain, bond)
-    letter = _ez_letter(_bond_stereo(mol, bond))
-    return (loc, letter) if loc is not None and letter else None
-
-
-def _ez_parts(mol, chain: list[int], bonds) -> list[tuple[int, str]] | None:
-    parts = [_ez_bond_part(mol, chain, b) for b in bonds]
-    if any(p is None for p in parts):
-        return None
-    return sorted(parts, key=lambda x: x[0])
-
-
-def _ez_multi_prefix(numbered: dict) -> str:
-    """Multi-ene prefix: (2E,6Z)- when all bonds have stereo; else ''."""
-    parent = numbered.get("parent") or {}
-    mol, chain = parent.get("mol"), parent.get("chain") or []
-    bonds = list(parent.get("double_bonds") or [])
-    if mol is None or not bonds or not chain:
-        return ""
-    parts = _ez_parts(mol, chain, bonds)
-    if not parts:
-        return ""
-    return f"({','.join(f'{loc}{let}' for loc, let in parts)})-"
-
-
-def _ez_for_alkenol(numbered: dict) -> str:
-    parent = numbered.get("parent") or {}
-    if parent.get("double_bonds"):
-        return _ez_multi_prefix(numbered)
-    return _ez_prefix(numbered)
+from namepredict.layer5.stereo_ez import (
+    _ez_for_alkenol,
+    _ez_prefix,
+    ez_for_parent,
+)
 
 
 def _unsat_acid_pair(n, locant, ez, en_sfx, zh_sfx, min_n=2) -> tuple[str, str] | None:
@@ -169,12 +107,18 @@ def unsat_carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] |
     return alkenamide_names(n, numbered) if kind == "amide" else None
 
 
-def alkenal_names(n: int, locant: int | None) -> tuple[str, str] | None:
-    return _unsat_acid_pair(n, locant, "", "enal", "烯醛")
+def alkenal_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """non-2-enal / (E)-non-2-enal with E/Z when stereo defined."""
+    return _unsat_acid_pair(
+        n, numbered.get("ene_locant"), ez_for_parent(numbered), "enal", "烯醛",
+    )
 
 
-def alkenenitrile_names(n: int, locant: int | None) -> tuple[str, str] | None:
-    return _unsat_acid_pair(n, locant, "", "enenitrile", "烯腈")
+def alkenenitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """octadec-9-enenitrile / (Z)-… with E/Z when stereo defined."""
+    return _unsat_acid_pair(
+        n, numbered.get("ene_locant"), ez_for_parent(numbered), "enenitrile", "烯腈",
+    )
 
 
 def _ester_alkyl_pair(alkoxy_n: int) -> tuple[str, str] | None:
