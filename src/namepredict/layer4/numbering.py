@@ -1,5 +1,14 @@
 from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+from namepredict.layer4.locants.adapt import (
+    INDOLE_LOCANTS as _INDOLE_LOCANTS,
+    NAPH_LOCANTS as _NAPH_LOCANTS,
+    _FUSED56_KINDS,
+    _NAPH_KINDS,
+    _Q_KINDS,
+    effective_sub_locant,
+    plan_from_chain,
+)
 from namepredict.layer4.polyene import ene_locants, orient_alkenol, orient_alkenedioic, orient_polyene
 def _pos_on(chain: list[int], c: int | None) -> int | None:
     if c is None or c not in chain:
@@ -239,8 +248,6 @@ def _orient_pyridinamine(chain: list[int], parent: dict, substituents: list) -> 
     return _orient_pyridin_fg(chain, parent, substituents, "amine_c_idx")
 def _orient_pyridinol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_pyridin_fg(chain, parent, substituents, "oh_c_idx")
-_NAPH_LOCANTS = (1, 2, 3, 4, None, 5, 6, 7, 8, None)
-_INDOLE_LOCANTS = (1, 2, 3, None, 4, 5, 6, 7, None)
 def _naph_loc_on(chain: list[int], attach: int) -> int:
     if attach not in chain: return 99
     loc = _NAPH_LOCANTS[chain.index(attach)]
@@ -439,12 +446,11 @@ def _indole_sub_locant(chain: list[int], attach: int) -> int:
         return chain.index(attach) + 1 if attach in chain else 0
     loc = _INDOLE_LOCANTS[chain.index(attach)]
     return loc if loc is not None else chain.index(attach) + 1
-_Q_KINDS = frozenset({
-    "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
-})
-_NAPH_KINDS = frozenset({"naphthalene", "naphthalenecarboxylic"})
-_FUSED56_KINDS = frozenset(_INDOLE_ORIENT_KINDS) - _Q_KINDS
 def _sub_locant(chain: list[int], attach: int, kind: str | None) -> int:
+    plan = plan_from_chain(chain, kind)
+    loc = effective_sub_locant(plan, attach) if plan else None
+    if loc is not None:
+        return loc
     if kind in _NAPH_KINDS or kind in _Q_KINDS:
         return _naph_sub_locant(chain, attach)
     if kind in _FUSED56_KINDS:
@@ -486,6 +492,9 @@ def _pack(oriented: dict, substituents: list) -> dict:
     return {**base, **_fg_locants(oriented)}
 def number(parent: dict, substituents: list) -> dict:
     chain = _orient_chain(parent, substituents)
-    oriented = {**parent, "chain": chain}
     kind = parent.get("kind")
+    oriented = {**parent, "chain": chain}
+    plan = plan_from_chain(chain, kind)
+    if plan is not None:
+        oriented["numbering"] = plan
     return _pack(oriented, _with_locants(chain, substituents, kind))
