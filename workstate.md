@@ -138,6 +138,7 @@
 [#aa1bd6e][架构 P-31.1/P-44] 开链 mono-FG alken* 并入饱和 kind（acid/aldehyde/nitrile/ester/amide/alcohol/diacid）；ene 只靠字段 [+test_merge_alken_kinds, dual 13.8%(560) 持平]
 [#8f0fa7a][架构 P-22.2.1/P-25] fused56 1,3-benzoazole 数据化：Fused56Di13Spec 收 benzothiazole/benzoxazole 重复 [+test_fused56_13_engine, dual 13.8%(560) 持平]
 [#e0dc856][IUPAC P-92 / P-93 / P-91.2] 扩展R/S白名单(diacid/amide/nitrile/aldehyde/thiol)+抽出stereo_ez挂alkenal/alkenenitrile/alkene/polyene(partial multi) [+16 tests, dual 13.8%(560)→14.1%(574), fails 3502→3488]
+[#946becc][IUPAC P-65.1.1.1 / P-63.2.2 / P-29.3] 拒环上COOH的C1 formic假母体+芳环isopropoxy/isobutoxy claim与命名 [+10 tests, dual 14.1%(574)→14.2%(575), formic假阳 248→28, fails 3488→3487]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多磷酸/核苷酸磷酸未做
 - 炔醇/带复杂侧链多烯醇未做
