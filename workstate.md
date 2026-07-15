@@ -148,6 +148,7 @@
 [#4d3684d][架构 L4 adapt Plan] 稠环 chain→NumberingPlan；_sub_locant 优先 plan（零行为）[+tests, dual 14.2%(575)持平]
 [#a7bfd71][架构 L2 ScaffoldSpec] carbocycle Specs + builder（alkane/ene/polyene 识别；未接 namer）[+tests, dual 14.2%(575)持平]
 [#0d81b2c][架构 L4 locant engine] carbocycle_free + poly_unsat（未接 namer）[+tests, dual 14.2%(575)持平]
+[#2cb6392][IUPAC P-31.1 / P-22.1.1] cyclopolyene 母体：环己-1,3/1,4-二烯（修 methane 坍缩）[+tests, dual 14.2%(575)→14.3%(579)]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多磷酸/核苷酸磷酸未做
 - 炔醇/带复杂侧链多烯醇未做
