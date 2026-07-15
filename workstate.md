@@ -176,7 +176,9 @@
 [#8a5ba10][IUPAC P-65.3] 磺酰氯：烷/芳 SO2Cl；3,3,3-三氟丙烷磺酰氯 [+tests, dual 14.8%(603)→14.9%(604), fails 3459→3458, 0 REGRESS]
 [#d97a7d0][IUPAC P-66.4.1.2.1] 简单胍功能母体第一刀：未取代/mono N-aryl/N-arylsulfonyl [+8 tests, dual 14.9%(604)→14.9%(605), fails 3458→3457]
 [#7b27c53][架构 P-31.1/P-44] unsat 生产者迁 kind_registry（alkyne→polyene→alkene） [+test_unsat_producers, dual 14.9%(605)持平, fails 3457, 0 REGRESS]
+[#4c79b62][IUPAC P-65.3] 游离磺酸/磺酸根第一刀：C1–C4 烷基+简单 Ph(Me/halo≤2)+阴离子/碱金属盐 [+unit, dual 14.9%(605)→14.9%(606), fails 3457→3456, 0 REGRESS]
 ## 其他
+- 游离磺酸第一刀：C1–C4+简单 Ph；长链/乙烯基芳基/多羟基侧链未做；与酯 sulfonate 正交
 - FG/环/unsat 生产者均已注册表化；benzene `_benzene_candidate` 仍手写（n_unhandled 双路径）
 - heteroaryl_sub 手写 -yl 未收口；NumberingPlan 半接线
 - 胍第一刀：未取代+mono N-aryl+N-arylsulfonyl；N-alkyl/多N取代未做
