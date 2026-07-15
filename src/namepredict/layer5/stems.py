@@ -254,12 +254,24 @@ def _salt_zh(zh: str, salt: dict) -> str:
     return zh[:-1] + suf
 
 
-def maybe_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
-    """Prefix alkali metal on anion names: sodium acetate / 乙酸钠."""
-    salt = numbered.get("salt") or {}
-    if not salt.get("metal"):
+def _acid_salt_suffix(salt: dict) -> tuple[str, str] | None:
+    en_s, zh_s = salt.get("acid_salt"), salt.get("acid_salt_zh")
+    return (en_s, zh_s or en_s) if en_s else None
+
+
+def _with_acid_salt(en: str, zh: str, salt: dict) -> tuple[str, str]:
+    suf = _acid_salt_suffix(salt)
+    if suf is None:
         return en, zh
-    return _salt_en(en, salt), _salt_zh(zh, salt)
+    return f"{en};{suf[0]}", f"{zh};{suf[1]}"
+
+
+def maybe_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
+    """Apply alkali metal salt or acid-salt (HCl) suffixes."""
+    salt = numbered.get("salt") or {}
+    if salt.get("metal"):
+        return _salt_en(en, salt), _salt_zh(zh, salt)
+    return _with_acid_salt(en, zh, salt)
 
 
 def ester_alkyl_en(n: int) -> str | None:
