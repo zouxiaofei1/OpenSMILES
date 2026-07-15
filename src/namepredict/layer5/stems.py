@@ -192,6 +192,22 @@ def acyl_chloride_zh(n: int) -> str | None:
     return f"{z}酰氯" if z and n >= 3 else None
 
 
+def acyl_bromide_en(n: int) -> str | None:
+    if n == 2:
+        return "acetyl bromide"
+    s = _en_stem(n)
+    return f"{s}anoyl bromide" if s and n >= 3 else None
+
+
+def acyl_bromide_zh(n: int) -> str | None:
+    if n == 2:
+        return "乙酰溴"
+    if 3 <= n <= 10 and n in _ALKANE_ZH_BASE:
+        return f"{_ALKANE_ZH_BASE[n][0]}酰溴"
+    z = zh_num(n)
+    return f"{z}酰溴" if z and n >= 3 else None
+
+
 def ester_acyl_en(n: int) -> str | None:
     if n == 1:
         return "formate"
@@ -332,6 +348,8 @@ ESTER_ALKYL_EN = _fill(ester_alkyl_en)
 ESTER_ALKYL_ZH = _fill(ester_alkyl_zh)
 ACYL_CHLORIDE_EN = _fill(acyl_chloride_en, lo=2)
 ACYL_CHLORIDE_ZH = _fill(acyl_chloride_zh, lo=2)
+ACYL_BROMIDE_EN = _fill(acyl_bromide_en, lo=2)
+ACYL_BROMIDE_ZH = _fill(acyl_bromide_zh, lo=2)
 
 # P-63.2.2 symmetric dialkyl ether retained: dimethyl…dibutyl ether / 二…基醚
 ETHER_SYM_EN = {

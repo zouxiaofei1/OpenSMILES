@@ -21,8 +21,8 @@ _REG: dict[str, KindMeta] = {}
 _CHAIN_FG: tuple[tuple[str, int], ...] = (
     ("acid", 13), ("diacid", 13),
     ("anhydride", 12), ("ester", 11), ("diester", 11), ("carbamate", 11),
-    ("acyl_chloride", 10), ("amide", 9), ("urea", 9), ("sulfonamide", 9),
-    ("nitrile", 8),
+    ("acyl_chloride", 10), ("acyl_bromide", 10), ("amide", 9), ("urea", 9),
+    ("sulfonamide", 9), ("nitrile", 8),
     ("aldehyde", 7),
     ("ketone", 6), ("dione", 6), ("cycloketone", 6),
     ("alcohol", 5), ("diol", 5), ("triol", 5),
@@ -35,6 +35,7 @@ _CHAIN_FG: tuple[tuple[str, int], ...] = (
 _ARENE_NAMED: tuple[tuple[str, str, str, int], ...] = (
     ("benzoic", "benzoic acid", "苯甲酸", 13),
     ("benzoyl_chloride", "benzoyl chloride", "苯甲酰氯", 10),
+    ("benzoyl_bromide", "benzoyl bromide", "苯甲酰溴", 10),
     ("benzonitrile", "benzonitrile", "苯甲腈", 8),
     ("benzaldehyde", "benzaldehyde", "苯甲醛", 7),
     ("acetophenone", "acetophenone", "苯乙酮", 6),

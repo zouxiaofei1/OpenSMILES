@@ -124,11 +124,12 @@ def _orient_alkyne(chain: list[int], parent: dict, substituents: list) -> list[i
 def _term_fn(fn):
     return lambda c, p, s: fn(c, p)
 def _terminal_orienters() -> dict:
+    ac = _term_fn(_orient_acyl_chloride)
     return {
         "acid": _term_fn(_orient_acid), "aldehyde": _term_fn(_orient_aldehyde),
         "ester": _term_fn(_orient_ester), "amide": _term_fn(_orient_amide),
         "nitrile": _term_fn(_orient_nitrile),
-        "acyl_chloride": _term_fn(_orient_acyl_chloride),
+        "acyl_chloride": ac, "acyl_bromide": ac,
     }
 def _carbonyl_orienters() -> dict:
     return {**_terminal_orienters(), "ketone": _orient_ketone, "dione": _orient_dione}
@@ -343,7 +344,7 @@ def _unsat_orienters() -> dict:
         "alkyne": _orient_alkyne, "cycloalkane": _orient_cycloalkane,
         "benzene": _orient_cycloalkane, "benzoic": b, "benzaldehyde": b,
         "acetophenone": b, "benzoate": b, "benzonitrile": b,
-        "benzoyl_chloride": b, "cycloalkanecarboxylic": b,
+        "benzoyl_chloride": b, "benzoyl_bromide": b, "cycloalkanecarboxylic": b,
     }
 def _kind_orienters() -> dict:
     return {**_hetero_orienters(), **_unsat_orienters(), **_carbonyl_orienters()}

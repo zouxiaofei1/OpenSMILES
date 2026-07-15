@@ -44,19 +44,14 @@ def _has_acid_o_neighbor(carbon) -> bool:
     return _has_oh_neighbor(carbon) or _has_carboxylate_o_neighbor(carbon)
 
 def _acyl_cl_of(carbon) -> int | None:
-    for n in carbon.GetNeighbors():
-        if n.GetAtomicNum() == 17:
-            return n.GetIdx()
-    return None
+    """Compat: Cl idx only; prefer layer1.acyl_halide for Cl/Br."""
+    from namepredict.layer1.acyl_halide import acyl_hal_of
+    h = acyl_hal_of(carbon)
+    return h[0] if h is not None and h[1] == 17 else None
 
-def _is_acyl_chloride_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
-        return False
-    if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
-        return False
-    if _amide_n_of(atom) is not None:
-        return False
-    return _acyl_cl_of(atom) is not None
+def _acyl_hal_of(carbon) -> tuple[int, int] | None:
+    from namepredict.layer1.acyl_halide import acyl_hal_of
+    return acyl_hal_of(carbon)
 
 def _is_carboxyl_carbon(atom) -> bool:
     if atom.GetAtomicNum() != 6:
@@ -201,7 +196,7 @@ def _is_ester_carbon(atom) -> bool:
     return not _is_carbamate_carbon(atom)
 
 def _ald_blocked(atom) -> bool:
-    if _ester_alkoxy_of(atom) is not None or _acyl_cl_of(atom) is not None:
+    if _ester_alkoxy_of(atom) is not None or _acyl_hal_of(atom) is not None:
         return True
     return _anhydride_o_of(atom) is not None or _amide_n_of(atom) is not None
 
@@ -287,10 +282,9 @@ def _aldehyde_entries(mol: Mol) -> list[dict]:
     return [{"c_idx": a.GetIdx()} for a in mol.GetAtoms() if _is_aldehyde_carbon(a)]
 
 def _acyl_chloride_entries(mol: Mol) -> list[dict]:
-    return [
-        {"c_idx": a.GetIdx(), "cl_idx": _acyl_cl_of(a)}
-        for a in mol.GetAtoms() if _is_acyl_chloride_carbon(a)
-    ]
+    """Acyl halide entries (Cl + Br); key kept for L2/L3 compat."""
+    from namepredict.layer1.acyl_halide import acyl_halide_entries
+    return acyl_halide_entries(mol)
 
 def _ester_entry(atom) -> dict:
     o_idx, alkoxy_c = _ester_alkoxy_of(atom)

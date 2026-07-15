@@ -1,7 +1,7 @@
 from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 from namepredict.layer5.stems import (
-    ACID_EN, ACID_ZH, ACYL_CHLORIDE_EN, ACYL_CHLORIDE_ZH, ALCOHOL_EN, ALCOHOL_ZH,
+    ACID_EN, ACID_ZH, ALCOHOL_EN, ALCOHOL_ZH,
     ALDEHYDE_EN, ALDEHYDE_ZH, ALKANE_EN, ALKANE_ZH, ALKOXY_EN, ALKOXY_ZH,
     AMIDE_EN, AMIDE_ZH, ESTER_ACYL_EN, ESTER_ALKYL_EN, ESTER_ALKYL_ZH,
     ETHER_SYM_EN, ETHER_SYM_ZH, NITRILE_EN, NITRILE_ZH, SULFIDE_ALKYL_EN,
@@ -233,8 +233,6 @@ def _unsat_nitrile(n: int, numbered: dict) -> tuple[str, str] | None:
 def _nitrile_or_none(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
     if kind == "nitrile":
         return _unsat_nitrile(n, numbered or {}) or _nitrile_names(n)
-    if kind == "acyl_chloride":
-        return _pair(ACYL_CHLORIDE_EN, ACYL_CHLORIDE_ZH, n)
     if kind == "anhydride":
         return _anhydride_from_acid(n)
     return None
@@ -416,7 +414,7 @@ _KEEP_LOCANT_KINDS = frozenset({
     "acid",
     "benzoic", "benzaldehyde", "acetophenone", "pyridinecarboxylic",
     "pyridinecarbonitrile", "benzoate", "benzonitrile", "benzoyl_chloride",
-    "cycloalkanecarboxylic"}) | _H5COOH_KINDS | _SHCOOH_KINDS
+    "benzoyl_bromide", "cycloalkanecarboxylic"}) | _H5COOH_KINDS | _SHCOOH_KINDS
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
     if n_carbons <= 1 or (kind in ("cycloalkane", "benzene") and len(substituents) == 1):
         return True
@@ -475,6 +473,9 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     _skip = ("benzoate", "pyrimidinamine", "benzothiazolamine",
              "benzoxazolamine", "benzimidazolamine", "boronic")
     if kind in _skip:
+        return "", ""
+    from namepredict.layer5.acyl_halide_names import _is_isobutyryl
+    if kind == "acyl_bromide" and _is_isobutyryl(numbered):
         return "", ""
     return _build_prefix(numbered.get("substituents") or [], n, kind)
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:

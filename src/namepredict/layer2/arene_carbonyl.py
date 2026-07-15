@@ -376,11 +376,11 @@ def _try_benzonitrile_parent(info: dict) -> dict | None:
 
 def _acyl_allowed(mol: Mol, e: dict) -> set[int]:
     o_dbl = _dbl_o_idx(mol, e["c_idx"])
-    allowed = {e["cl_idx"]}
+    allowed = {e.get("hal_idx", e["cl_idx"])}
     return allowed | ({o_dbl} if o_dbl is not None else set())
 
 
-def _is_simple_benzoyl_chloride(info: dict) -> bool:
+def _is_simple_benzoyl_halide(info: dict) -> bool:
     ctx = _arene_fg_ctx(info, "has_acyl_chloride", "acyl_chlorides")
     if ctx is None:
         return False
@@ -389,18 +389,23 @@ def _is_simple_benzoyl_chloride(info: dict) -> bool:
     return _arene_subs_ok(info, mol, ring, {e["c_idx"]}, _acyl_allowed(mol, e))
 
 
+def _benzoyl_hal_kind(e: dict) -> str:
+    return "benzoyl_bromide" if int(e.get("hal_z") or 17) == 35 else "benzoyl_chloride"
+
+
 def _benzoyl_chloride_parent(info: dict) -> dict:
     ring = _pick_fg_ring(info, "acyl_chlorides") or set()
     e = info["acyl_chlorides"][0]
     return {
-        "chain": list(ring), "n_carbons": 6, "kind": "benzoyl_chloride",
+        "chain": list(ring), "n_carbons": 6, "kind": _benzoyl_hal_kind(e),
         "acyl_c_idx": e["c_idx"], "cl_idx": e["cl_idx"],
+        "hal_idx": e.get("hal_idx", e["cl_idx"]), "hal_z": e.get("hal_z", 17),
         "ring_attach_idx": _fg_ring_c(info, ring, "acyl_chlorides"),
     }
 
 
 def _try_benzoyl_chloride_parent(info: dict) -> dict | None:
-    return _benzoyl_chloride_parent(info) if _is_simple_benzoyl_chloride(info) else None
+    return _benzoyl_chloride_parent(info) if _is_simple_benzoyl_halide(info) else None
 
 
 def _try_arene_other_fg(info: dict) -> dict | None:

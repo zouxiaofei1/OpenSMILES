@@ -199,9 +199,9 @@ def _extract_alkyls(mol: Mol, chain: list[int]) -> list[dict]:
 
 
 def _filter_fg_halos(halos: list, parent: dict) -> list:
-    if parent.get("kind") != "acyl_chloride":
+    if parent.get("kind") not in ("acyl_chloride", "acyl_bromide"):
         return halos
-    cl = parent.get("cl_idx")
+    cl = parent.get("cl_idx") or parent.get("hal_idx")
     return [h for h in halos if cl not in (h.get("atoms") or [])]
 
 

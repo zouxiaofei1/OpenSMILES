@@ -1,6 +1,7 @@
 """L5 dispatch for special functional-parent names (thin assembler helper)."""
 from __future__ import annotations
 
+from namepredict.layer5.acyl_halide_names import acyl_halide_names
 from namepredict.layer5.boronic_names import boronic_names
 from namepredict.layer5.carbamate_names import carbamate_names
 from namepredict.layer5.diester_names import diester_names
@@ -30,4 +31,6 @@ def special_fg_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | Non
         return top
     if kind in ("isocyanate", "isothiocyanate"):
         return iso_kind_names(kind, n)
+    if kind in ("acyl_chloride", "acyl_bromide"):
+        return acyl_halide_names(kind, n, numbered)
     return sulfoxide_names(numbered) if kind == "sulfoxide" else None

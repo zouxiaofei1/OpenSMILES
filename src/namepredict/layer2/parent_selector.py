@@ -349,9 +349,11 @@ def _is_mono_fg(info: dict, flag: str, key: str) -> bool:
     return bool(info.get(flag)) and len(xs) == 1
 def _acyl_chloride_parent(info: dict) -> dict:
     e = info["acyl_chlorides"][0]
+    hz = int(e.get("hal_z") or 17)
+    kind = "acyl_bromide" if hz == 35 else "acyl_chloride"
     return _parent_dict(
-        _chain_through(info, e["c_idx"]), "acyl_chloride",
-        acyl_c_idx=e["c_idx"], cl_idx=e["cl_idx"],
+        _chain_through(info, e["c_idx"]), kind, acyl_c_idx=e["c_idx"],
+        cl_idx=e["cl_idx"], hal_idx=e.get("hal_idx", e["cl_idx"]), hal_z=hz,
     )
 def _acyl_chain_len(info: dict, c_idx: int) -> int:
     return len(_chain_through(info, c_idx))
