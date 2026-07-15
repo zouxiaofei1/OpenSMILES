@@ -135,6 +135,7 @@
 [#0a50ba2][IUPAC P-22.2.2 / P-14.3.4 / P-29.3] 饱和单杂环母体环上 C1–C4 n-烷基+tert-butyl（超 monomethyl） [+8 tests, dual 13.6%(553)→13.7%(557), fails 3509→3505]
 [#58d71e7][IUPAC P-65.1.1 / P-31.1 / P-67] 多不饱和二元酸根 alkadienedioate + 简单 monoalkyl dihydrogen phosphate/alkylphosphonic [+15 tests, dual 13.6%(554)→13.8%(561), fails 3508→3501]
 [#1485c94][IUPAC P-65] 简单 carbamate：L1 检 R2N–C(=O)–OR（酯排除）+ L2/L5 alkyl N-…/Boc 芳基 [+9 tests, dual 13.7%(558)→13.8%(560), fails 3504→3502]
+[#aa1bd6e][架构 P-31.1/P-44] 开链 mono-FG alken* 并入饱和 kind（acid/aldehyde/nitrile/ester/amide/alcohol/diacid）；ene 只靠字段 [+test_merge_alken_kinds, dual 13.8%(560) 持平]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多磷酸/核苷酸磷酸未做
 - 炔醇/带复杂侧链多烯醇未做
