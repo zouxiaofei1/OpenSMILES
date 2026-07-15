@@ -96,8 +96,32 @@ def _has_ene(numbered: dict) -> bool:
     )
 
 
+def _has_yne(numbered: dict) -> bool:
+    p = numbered.get("parent") or {}
+    return bool(numbered.get("yne_locant") or p.get("triple_bond"))
+
+
+def _alkynoic_pair(n, locant, en_sfx, zh_sfx, omit=False) -> tuple[str, str] | None:
+    en, zh = ALKANE_EN.get(n), ALKANE_ZH.get(n)
+    if not en or not zh or n < 2:
+        return None
+    if omit or locant is None:
+        return f"{en[:-3]}{en_sfx}", f"{zh_stem(zh)}{zh_sfx}"
+    return f"{en[:-3]}-{locant}-{en_sfx}", f"{zh_stem(zh)}-{locant}-{zh_sfx}"
+
+
+def alkynoic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """propynoic acid / but-3-ynoic acid (omit locant when n≤3)."""
+    return _alkynoic_pair(
+        n, numbered.get("yne_locant"), "ynoic acid", "炔酸",
+        numbered.get("omit_yne_locant", False),
+    )
+
+
 def unsat_carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    """Dispatch unsat acid / diacid / amide stems when parent has ene fields."""
+    """Dispatch unsat acid / diacid / amide stems (yne then ene)."""
+    if kind == "acid" and _has_yne(numbered):
+        return alkynoic_acid_names(n, numbered)
     if not _has_ene(numbered):
         return None
     if kind == "diacid":
@@ -133,6 +157,15 @@ def alkenoate_names(n, locant, parent, ez="") -> tuple[str, str] | None:
     if not alkyl or not stem:
         return None
     return f"{alkyl[0]} {ez}{stem[0]}", f"{ez}{stem[1]}{alkyl[1]}酯"
+
+
+def alkynoate_names(n, locant, parent, omit=False) -> tuple[str, str] | None:
+    from namepredict.layer5.stems import ester_alkoxy_pair
+    alkyl = ester_alkoxy_pair(parent)
+    stem = _alkynoic_pair(n, locant, "ynoate", "炔酸", omit)
+    if not alkyl or not stem:
+        return None
+    return f"{alkyl[0]} {stem[0]}", f"{stem[1]}{alkyl[1]}酯"
 
 
 def _ene_mult_ol(k: int) -> tuple[str, str]:
@@ -172,8 +205,11 @@ def alkenol_from(n: int, numbered: dict) -> tuple[str, str] | None:
 
 
 def ester_or_alkenoate(n: int, numbered: dict) -> tuple[str, str] | None:
-    """Ester stem; unsat when ene fields present."""
+    """Ester stem; unsat when yne or ene fields present."""
     parent = numbered.get("parent") or {}
+    if _has_yne(numbered):
+        omit = numbered.get("omit_yne_locant", False)
+        return alkynoate_names(n, numbered.get("yne_locant"), parent, omit)
     if _has_ene(numbered):
         return alkenoate_names(
             n, numbered.get("ene_locant"), parent, _ez_prefix(numbered),

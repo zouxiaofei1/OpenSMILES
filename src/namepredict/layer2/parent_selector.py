@@ -289,8 +289,8 @@ def _fg_chain(info: dict, ekey: str, kind: str, ckey: str, **extra) -> dict:
     c = info[ekey][0]["c_idx"]
     return _parent_dict(_chain_through(info, c), kind, **{ckey: c, **extra})
 def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
-    u = _try_unsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
-    return u or _fg_chain(info, ekey, skind, ckey, **extra)
+    from namepredict.layer2.alkynoic import ynsat_or_unsat_or_sat as _y
+    return _y(info, flag, ekey, bad, ukind, skind, ckey, **extra)
 def _with_anion(info: dict, parent: dict) -> dict:
     return {**parent, "anion": True} if any(c.get("anion") for c in info.get("carboxyls") or []) else parent
 def _ring_acid_try(info: dict) -> dict | None:

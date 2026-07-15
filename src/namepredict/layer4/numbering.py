@@ -402,12 +402,6 @@ def _ketone_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("ketone", "cycloketone"), "ketone_c_idx")
 def _ketone_pair_locants(oriented: dict) -> list[int] | None:
     return _pair_locants(oriented, ("dione",), "ketone_c_idxs")
-def _bond_locant(oriented: dict, kind: str, key: str) -> int | None:
-    if oriented.get("kind") != kind:
-        return None
-    return _ene_locant_of(
-        _ene_ends_on(oriented.get("chain") or [], oriented.get(key))
-    )
 def _has_parent_ene(oriented: dict) -> bool:
     return bool(oriented.get("double_bond") or oriented.get("double_bonds"))
 def _ene_locant(oriented: dict) -> int | None:
@@ -418,7 +412,9 @@ def _ene_locant(oriented: dict) -> int | None:
         )
     return None
 def _yne_locant(oriented: dict) -> int | None:
-    return _bond_locant(oriented, "alkyne", "triple_bond")
+    if oriented.get("kind") == "alkyne" or oriented.get("triple_bond"):
+        return _ene_locant_of(_ene_ends_on(oriented.get("chain") or [], oriented.get("triple_bond")))
+    return None
 def _omit_oh(oh_pos: int | None, n_carbons: int, kind: str | None = None, parent: dict | None = None) -> bool:
     if kind == "cycloalcohol":
         return True
