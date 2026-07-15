@@ -21,6 +21,7 @@ from namepredict.layer2.carbamate import _carbamate_parent
 from namepredict.layer2.diester import _diester_parent
 from namepredict.layer2.sulfoxide import _sulfoxide_parent
 from namepredict.layer2.isocyanate import _try_isocyanate, _try_isothiocyanate
+from namepredict.layer2.urea import _urea_parent
 from namepredict.layer2.parent_selector import (
     _acid_parent,
     _acyl_chloride_parent,
@@ -169,6 +170,10 @@ def _try_carbamate(info: dict) -> dict | None:
     return _carbamate_parent(info)
 
 
+def _try_urea(info: dict) -> dict | None:
+    return _urea_parent(info)
+
+
 def _try_benzenediamine(info: dict) -> dict | None:
     if _is_simple_benzenediamine(info):
         return _benzenediamine_parent(info)
@@ -177,7 +182,7 @@ def _try_benzenediamine(info: dict) -> dict | None:
 
 _FG_TRY = (
     _try_acid, _try_anhydride, _try_arene_other_fg, _try_acyl_chloride,
-    _try_diester, _try_ester, _try_carbamate, _try_amide, _try_nitrile, _try_aldehyde, _try_ketone,
+    _try_diester, _try_ester, _try_carbamate, _try_urea, _try_amide, _try_nitrile, _try_aldehyde, _try_ketone,
     _try_alcohol, _try_thiol, _try_benzenediamine, _try_amine,
     _try_phosphate, _try_phosphonic, _ether_parent, _sulfide_parent,
     _sulfoxide_parent, _try_isocyanate, _try_isothiocyanate,
