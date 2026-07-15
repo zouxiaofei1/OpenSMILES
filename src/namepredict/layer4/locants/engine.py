@@ -14,9 +14,13 @@ def _key(
     mode: str,
     double_bonds,
     sub_attach,
+    hetero_atoms=None,
+    hetero_z=None,
 ) -> tuple:
     return constraint_key(
-        cand, mode, double_bonds=double_bonds, sub_attach=sub_attach,
+        cand, mode,
+        double_bonds=double_bonds, sub_attach=sub_attach,
+        hetero_atoms=hetero_atoms, hetero_z=hetero_z,
     )
 
 
@@ -25,11 +29,13 @@ def _best_candidate(
     mode: str,
     double_bonds,
     sub_attach,
+    hetero_atoms=None,
+    hetero_z=None,
 ) -> list[int]:
     best = cands[0]
-    best_k = _key(best, mode, double_bonds, sub_attach)
+    best_k = _key(best, mode, double_bonds, sub_attach, hetero_atoms, hetero_z)
     for cand in cands[1:]:
-        k = _key(cand, mode, double_bonds, sub_attach)
+        k = _key(cand, mode, double_bonds, sub_attach, hetero_atoms, hetero_z)
         if k < best_k:
             best, best_k = cand, k
     return best
@@ -55,11 +61,15 @@ def choose_numbering(
     *,
     double_bonds: list[tuple[int, int]] | None = None,
     sub_attach: list[int] | None = None,
+    hetero_atoms: list[int] | None = None,
+    hetero_z: dict[int, int] | list[int] | None = None,
     scaffold_id: str = "",
 ) -> NumberingPlan:
-    """Select ring numbering plan for carbocycle_free / poly_unsat."""
+    """Select ring numbering plan (free / poly_unsat / multi_hetero)."""
     cands = candidates_for(mode, list(chain))
     if not cands:
         return _to_plan([], scaffold_id, mode, sub_attach)
-    best = _best_candidate(cands, mode, double_bonds, sub_attach)
+    best = _best_candidate(
+        cands, mode, double_bonds, sub_attach, hetero_atoms, hetero_z,
+    )
     return _to_plan(best, scaffold_id, mode, sub_attach)

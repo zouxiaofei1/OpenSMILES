@@ -1,6 +1,6 @@
-# IUPAC: P-14.4 / P-31.1
+# IUPAC: P-14.4 / P-22.2.3 / P-31.1
 # Layer: L4
-"""Ring locant engine: carbocycle_free + poly_unsat (no namer wire)."""
+"""Ring locant engine: free + poly_unsat + multi_hetero (no namer wire)."""
 from __future__ import annotations
 
 from namepredict.layer4.locants import (
@@ -11,7 +11,7 @@ from namepredict.layer4.locants import (
     ring_candidates,
 )
 from namepredict.layer4.locants.constraints import constraint_key
-from namepredict.layer4.locants.generate import labels_for
+from namepredict.layer4.locants.generate import candidates_for, labels_for
 
 
 # --- helpers (synthetic ring, no mol) ---
@@ -32,6 +32,20 @@ def _plan_poly(chain, double_bonds, sub_attach=None, scaffold_id="cyclopolyene")
         chain, "poly_unsat",
         double_bonds=double_bonds, sub_attach=sub_attach,
         scaffold_id=scaffold_id,
+    )
+
+
+def _plan_multi(
+    chain,
+    hetero_atoms,
+    hetero_z=None,
+    sub_attach=None,
+    scaffold_id="sat_hetero",
+):
+    return choose_numbering(
+        chain, "multi_hetero",
+        hetero_atoms=hetero_atoms, hetero_z=hetero_z,
+        sub_attach=sub_attach, scaffold_id=scaffold_id,
     )
 
 
@@ -187,3 +201,99 @@ def _ene_mins_order(order, bonds) -> tuple[int, ...]:
 
 def _sub_loc_for_cand(cand, atom: int) -> int:
     return list(cand).index(atom) + 1
+
+
+# --- multi_hetero: single S / O+S / diaza ---
+
+def test_multi_hetero_candidates_reuse_ring():
+    """multi_hetero reuses rot×rev candidates (no second rotation system)."""
+    chain = [0, 1, 2, 3, 4, 5]
+    assert candidates_for("multi_hetero", chain) == ring_candidates(chain)
+
+
+def test_multi_hetero_single_s_at_locant_1():
+    """6-ring, one S: hetero locant converges to 1 (fixed_hetero degenerate)."""
+    chain = [10, 11, 12, 13, 14, 15]
+    s_atom = 13  # S anywhere on ring
+    plan = _plan_multi(chain, hetero_atoms=[s_atom], hetero_z={s_atom: 16})
+    assert isinstance(plan, NumberingPlan)
+    assert locant(plan, s_atom) == "1"
+    assert plan.atom_order[0] == s_atom
+    assert "hetero" in plan.constraints_applied
+
+
+def test_multi_hetero_o_s_opposite_o1_s4():
+    """6-ring O and S opposite (1,4 relative): O=1, S=4 (O>S priority)."""
+    # atoms 0..5; O at 0, S at 3 (opposite)
+    chain = [0, 1, 2, 3, 4, 5]
+    o_atom, s_atom = 0, 3
+    plan = _plan_multi(
+        chain,
+        hetero_atoms=[o_atom, s_atom],
+        hetero_z={o_atom: 8, s_atom: 16},
+    )
+    assert int(locant(plan, o_atom)) == 1
+    assert int(locant(plan, s_atom)) == 4
+    # element priority: O before S in ordered hetero key
+    key = constraint_key(
+        plan.atom_order, "multi_hetero",
+        hetero_atoms=[o_atom, s_atom],
+        hetero_z={o_atom: 8, s_atom: 16},
+    )
+    assert key[0] == (1, 4)  # hetero locant set
+
+
+def test_multi_hetero_diaza_set_1_4():
+    """6-ring two N opposite: hetero set (1,4)."""
+    chain = [0, 1, 2, 3, 4, 5]
+    n1, n2 = 1, 4
+    plan = _plan_multi(
+        chain,
+        hetero_atoms=[n1, n2],
+        hetero_z={n1: 7, n2: 7},
+    )
+    locs = sorted(int(locant(plan, a)) for a in (n1, n2))
+    assert locs == [1, 4]
+
+
+def test_multi_hetero_sub_breaks_tie():
+    """When hetero set tied, substituent set chooses lowest sub locants."""
+    # two N opposite: (1,4) both directions; methyl on carbon next to one N
+    chain = [0, 1, 2, 3, 4, 5]
+    n1, n2, sub = 0, 3, 1
+    plan = _plan_multi(
+        chain,
+        hetero_atoms=[n1, n2],
+        hetero_z={n1: 7, n2: 7},
+        sub_attach=[sub],
+    )
+    locs = sorted(int(locant(plan, a)) for a in (n1, n2))
+    assert locs == [1, 4]
+    # sub should sit at lowest achievable among (1,4) hetero candidates
+    sub_loc = int(locant(plan, sub))
+    assert sub_loc == min(
+        _sub_loc_for_cand(c, sub)
+        for c in ring_candidates(chain)
+        if _hetero_set(c, [n1, n2]) == (1, 4)
+    )
+
+
+def test_constraint_key_multi_hetero_priority():
+    """O at lower locant beats S at lower locant when sets equal."""
+    # same hetero set (1,4); order A: O@1 S@4; order B: S@1 O@4
+    order_o1 = (0, 1, 2, 3, 4, 5)  # O=0@1, S=3@4
+    order_s1 = (3, 4, 5, 0, 1, 2)  # S=3@1, O=0@4
+    z = {0: 8, 3: 16}
+    k_o = constraint_key(
+        order_o1, "multi_hetero", hetero_atoms=[0, 3], hetero_z=z,
+    )
+    k_s = constraint_key(
+        order_s1, "multi_hetero", hetero_atoms=[0, 3], hetero_z=z,
+    )
+    assert k_o[0] == (1, 4) and k_s[0] == (1, 4)
+    assert k_o < k_s  # higher-priority element (O) lower locant wins
+
+
+def _hetero_set(order, hetero_atoms) -> tuple[int, ...]:
+    idx = {a: i + 1 for i, a in enumerate(order)}
+    return tuple(sorted(idx[a] for a in hetero_atoms))
