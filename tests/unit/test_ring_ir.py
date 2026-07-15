@@ -66,6 +66,7 @@ def test_pyridine_hetero_mono():
     assert any(z == 7 for c in s.components for _, z in c.hetero)
 
 
-def test_fingerprint_placeholder():
+def test_fingerprint_filled():
     s = _ir("c1ccccc1")[0]
-    assert s.fingerprint in ("", None)
+    assert s.fingerprint
+    assert "6" in s.fingerprint

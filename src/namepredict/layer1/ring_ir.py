@@ -1,7 +1,7 @@
 """Typed RingSystemIR from SSSR fusion topology (L1 facts only)."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from rdkit.Chem import Mol
 
@@ -90,13 +90,16 @@ def _fusions(mol: Mol, edges: list) -> tuple[FusionEdge, ...]:
 def _system_ir(
     mol: Mol, rings: list[tuple[int, ...]], system: dict,
 ) -> RingSystemIR:
-    return RingSystemIR(
+    from namepredict.layer1.ring_fingerprint import ring_fingerprint
+
+    ir = RingSystemIR(
         atom_ids=tuple(system["atom_ids"]),
         components=_components(mol, rings, system["sssr_indices"]),
         fusions=_fusions(mol, system["fusion_edges"]),
         topology=system["topology"],
         fingerprint="",
     )
+    return replace(ir, fingerprint=ring_fingerprint(ir))
 
 
 def build_ring_ir(mol: Mol) -> list[RingSystemIR]:
