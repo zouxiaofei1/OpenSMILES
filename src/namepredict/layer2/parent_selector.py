@@ -336,8 +336,13 @@ def _ketone_parent(info: dict) -> dict | None:
     if not _open_mono_fg_ok(info, "ketones"):
         return None
     return _fg_chain(info, "ketones", "ketone", "ketone_c_idx")
-def _aldehyde_parent(info: dict) -> dict:
-    return _try_izald(info) or _try_benzaldehyde_parent(info) or _unsat_or_sat(
+def _aldehyde_parent(info: dict) -> dict | None:
+    top = _try_izald(info) or _try_benzaldehyde_parent(info)
+    if top is not None:
+        return top
+    if not _open_mono_fg_ok(info, "aldehydes"):
+        return None
+    return _unsat_or_sat(
         info, "has_aldehyde", "aldehydes", _ALKENAL_BAD, "aldehyde", "aldehyde", "aldehyde_c_idx",
     )
 def _amide_parent(info: dict) -> dict:
@@ -380,7 +385,9 @@ def _ester_meta(info: dict) -> dict:
         o_idx=e["o_idx"], alkoxy_c_idx=e["alkoxy_c_idx"],
         alkoxy_n=len(_longest_from(info["mol"], e["alkoxy_c_idx"])),
     )
-def _ester_parent(info: dict) -> dict:
+def _ester_parent(info: dict) -> dict | None:
+    if not _open_mono_fg_ok(info, "esters"):
+        return None
     return _unsat_or_sat(
         info, "has_ester", "esters", _ALKENOATE_BAD, "ester", "ester",
         "ester_c_idx", **_ester_meta(info),
