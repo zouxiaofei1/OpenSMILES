@@ -151,6 +151,8 @@
 [#2cb6392][IUPAC P-31.1 / P-22.1.1] cyclopolyene 母体：环己-1,3/1,4-二烯（修 methane 坍缩）[+tests, dual 14.2%(575)→14.3%(579)]
 [#29a1525][IUPAC P-22.2.3] 饱和单环替换 stem 纯函数（EN skeletal + ZH x杂环y烷；未接 namer）[+tests, dual 14.3%(579)持平]
 [#8b32e04][IUPAC P-22.2.3 / P-14] multi_hetero 编号模式（O>S>N；未接 namer）[+tests, dual 14.3%(579)持平]
+[#b7164f7][IUPAC P-22.2.3] 饱和单环替换母体接入 namer（x杂环y烷；retained 优先）[+tests, dual 14.3%(579)→14.2%(576)]
+[#9c9ef60][IUPAC P-66.5.1 / P-22.2.1 / P-44] 修复芳腈候选门控：`_try_nitrile` 先试 heteroaryl carbonitrile（izcn|pycn），恢复 pyridine/indazole-carbonitrile [+1 test CCC#N, dual 14.2%(576)→14.2%(578), fails 3486→3484, 0 REGRESS]
 ## 其他
 - 钠盐功能类名 sodium …ate 未做；多磷酸/核苷酸磷酸未做
 - 炔醇/带复杂侧链多烯醇未做
