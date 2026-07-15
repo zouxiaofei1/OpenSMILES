@@ -23,7 +23,7 @@ _CHAIN_FG: tuple[tuple[str, int], ...] = (
     ("anhydride", 12), ("ester", 11), ("diester", 11), ("carbamate", 11), ("carbonate", 11),
     ("sulfonate", 11),
     ("acyl_chloride", 10), ("acyl_bromide", 10), ("sulfonyl_chloride", 10),
-    ("amide", 9), ("urea", 9), ("sulfonamide", 9), ("nitrile", 8),
+    ("amide", 9), ("urea", 9), ("guanidine", 9), ("sulfonamide", 9), ("nitrile", 8),
     ("aldehyde", 7),
     ("ketone", 6), ("dione", 6), ("cycloketone", 6),
     ("alcohol", 5), ("diol", 5), ("triol", 5),

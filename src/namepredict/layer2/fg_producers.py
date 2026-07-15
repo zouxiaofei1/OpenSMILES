@@ -15,6 +15,7 @@ from namepredict.layer2.boronic import _try_boronic
 from namepredict.layer2.carbamate import _carbamate_parent
 from namepredict.layer2.carbonate import _carbonate_parent
 from namepredict.layer2.diester import _diester_parent
+from namepredict.layer2.guanidine import _guanidine_parent
 from namepredict.layer2.hydrazine import _hydrazine_parent
 from namepredict.layer2.isocyanate import _try_isocyanate, _try_isothiocyanate
 from namepredict.layer2.kind_registry import register_fg_try
@@ -155,6 +156,10 @@ def _try_hydrazine(info: dict) -> dict | None:
     return _hydrazine_parent(info)
 
 
+def _try_guanidine(info: dict) -> dict | None:
+    return _guanidine_parent(info)
+
+
 def _try_benzenediamine(info: dict) -> dict | None:
     if _is_simple_benzenediamine(info):
         return _benzenediamine_parent(info)
@@ -172,6 +177,7 @@ _FG_PRODUCERS = (
     _try_carbamate,
     _try_carbonate,
     _try_urea,
+    _try_guanidine,
     _try_amide,
     _try_nitrile,
     _try_aldehyde,

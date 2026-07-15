@@ -37,15 +37,19 @@ def _is_sulfonamide_s(atom) -> bool:
     return len(_sgl_nbs(atom, 6)) == 1 and len(_sgl_nbs(atom, 7)) == 1
 
 
+def _n_rest_ok(n_atom, s_idx: int) -> bool:
+    heavies = [n for n in n_atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    if any(h.GetIdx() != s_idx and h.GetAtomicNum() not in (6,) for h in heavies):
+        return False
+    return sum(1 for h in heavies if h.GetAtomicNum() == 6) <= 1
+
+
 def _n_ok(n_atom, s_idx: int) -> bool:
     """N single-bonded only to S (+C/H); mono-N: ≤1 C outside S."""
     if n_atom.GetAtomicNum() != 7 or n_atom.GetIsAromatic():
         return False
-    heavies = [n for n in n_atom.GetNeighbors() if n.GetAtomicNum() != 1]
-    if any(h.GetIdx() != s_idx and h.GetAtomicNum() not in (6,) for h in heavies):
-        return False
-    n_c = sum(1 for h in heavies if h.GetAtomicNum() == 6)
-    return n_c <= 1
+    from namepredict.layer1.guanidine import is_guanidine_n
+    return (not is_guanidine_n(n_atom)) and _n_rest_ok(n_atom, s_idx)
 
 
 def _n_c_idxs(n_atom, s_idx: int) -> list[int]:

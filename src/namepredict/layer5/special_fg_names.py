@@ -6,6 +6,7 @@ from namepredict.layer5.boronic_names import boronic_names
 from namepredict.layer5.carbamate_names import carbamate_names
 from namepredict.layer5.carbonate_names import carbonate_names
 from namepredict.layer5.diester_names import diester_names
+from namepredict.layer5.guanidine_names import guanidine_names
 from namepredict.layer5.hydrazine_names import hydrazine_names
 from namepredict.layer5.isocyanate_names import iso_kind_names
 from namepredict.layer5.sulfonamide_names import sulfonamide_names
@@ -20,6 +21,7 @@ def _core_table(n: int, numbered: dict) -> dict:
         "carbamate": lambda: carbamate_names(numbered),
         "carbonate": lambda: carbonate_names(numbered),
         "urea": lambda: urea_names(numbered),
+        "guanidine": lambda: guanidine_names(numbered),
         "hydrazine": lambda: hydrazine_names(numbered),
         "diester": lambda: diester_names(n, numbered),
         "boronic": lambda: boronic_names(numbered),

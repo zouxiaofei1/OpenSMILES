@@ -12,7 +12,7 @@ _FG_BOOL_MORE_KEYS = (
     ("has_carbamate", "carbamates"), ("has_carbonate", "carbonates"),
     ("has_sulfoxide", "sulfoxides"),
     ("has_isocyanate", "isocyanates"), ("has_isothiocyanate", "isothiocyanates"),
-    ("has_urea", "ureas"), ("has_hydrazine", "hydrazines"),
+    ("has_urea", "ureas"), ("has_hydrazine", "hydrazines"), ("has_guanidine", "guanidines"),
     ("has_sulfonamide", "sulfonamides"), ("has_sulfonate", "sulfonates"),
     ("has_sulfonyl_chloride", "sulfonyl_chlorides"), ("has_boronic", "boronics"),
 )
@@ -240,11 +240,13 @@ def _thiol_entries(mol: Mol) -> list[dict]:
     return out
 
 def _is_amide_n(atom) -> bool:
+    """True for amide/urea/guanidine N (not amine parent)."""
+    from namepredict.layer1.guanidine import is_guanidine_n
     from namepredict.layer1.urea import _is_urea_carbon as _iu
-    return any(
-        n.GetAtomicNum() == 6 and (_has_double_bonded_o(n) or _iu(n))
-        for n in atom.GetNeighbors()
-    )
+    if is_guanidine_n(atom):
+        return True
+    return any(n.GetAtomicNum() == 6 and (_has_double_bonded_o(n) or _iu(n))
+               for n in atom.GetNeighbors())
 
 def _amine_degree(atom) -> int | None:
     if atom.GetAtomicNum() != 7 or _is_amide_n(atom) or atom.GetIsAromatic():
@@ -419,7 +421,7 @@ def _fg_more_lists(parts: dict) -> dict:
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
         "nitros", "phosphates", "phosphonics", "carbamates", "carbonates",
         "sulfoxides", "isocyanates", "isothiocyanates", "ureas", "hydrazines",
-        "sulfonamides", "sulfonates", "sulfonyl_chlorides", "boronics",
+        "guanidines", "sulfonamides", "sulfonates", "sulfonyl_chlorides", "boronics",
     )
     return {k: parts[k] for k in keys}
 
@@ -455,11 +457,13 @@ def _p_fg_a(mol: Mol) -> dict:
             "carbamates": carbamate_entries(mol), "carbonates": carbonate_entries(mol),
             "sulfoxides": sulfoxide_entries(mol)}
 def _p_fg_b1(mol: Mol) -> dict:
+    from namepredict.layer1.guanidine import guanidine_entries
     from namepredict.layer1.hydrazine import hydrazine_entries
     from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
     from namepredict.layer1.urea import urea_entries
     return {"isocyanates": isocyanate_entries(mol), "isothiocyanates": isothiocyanate_entries(mol),
-            "ureas": urea_entries(mol), "hydrazines": hydrazine_entries(mol)}
+            "ureas": urea_entries(mol), "hydrazines": hydrazine_entries(mol),
+            "guanidines": guanidine_entries(mol)}
 def _p_fg_b2(mol: Mol) -> dict:
     from namepredict.layer1.boronic import boronic_entries
     from namepredict.layer1.sulfonamide import sulfonamide_entries

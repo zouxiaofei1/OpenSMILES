@@ -24,6 +24,7 @@ _EXPECTED_FG_TRY_NAMES = (
     "_try_carbamate",
     "_try_carbonate",
     "_try_urea",
+    "_try_guanidine",
     "_try_amide",
     "_try_nitrile",
     "_try_aldehyde",
@@ -42,6 +43,7 @@ _EXPECTED_FG_TRY_NAMES = (
     "_try_isothiocyanate",
     "_sulfonamide_parent",
     "_sulfonate_parent",
+    "_sulfonyl_chloride_parent",
     "_try_boronic",
 )
 
@@ -50,6 +52,7 @@ _RECENT_FG_MARKERS = (
     "sulfonamide",
     "boronic",
     "urea",
+    "guanidine",
     "hydrazine",
     "isocyanate",
     "sulfonate",
@@ -65,6 +68,7 @@ _KIND_CASES = [
     ("OB(O)c1ccccc1", {"boronic"}),
     ("NC(=O)N", {"urea"}),
     ("NN", {"hydrazine"}),
+    ("N=C(N)N", {"guanidine"}),
     ("CC(=O)Cl", {"acyl_chloride"}),
 ]
 
