@@ -360,6 +360,9 @@ def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     return _amine_kind_names(kind, n, numbered)
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     from namepredict.layer5.phosphate_names import p_fg_names
+    from namepredict.layer5.carbamate_names import carbamate_names
+    if kind == "carbamate":
+        return carbamate_names(numbered)
     top = p_fg_names(kind, n, numbered) or _hetero_names(kind, n, numbered)
     if top is not None:
         return top

@@ -17,6 +17,7 @@ from namepredict.layer2.benzenediamine import (
     _is_simple_benzenediamine,
 )
 from namepredict.layer2.phosphate import _phosphate_parent, _phosphonic_parent
+from namepredict.layer2.carbamate import _carbamate_parent
 from namepredict.layer2.parent_selector import (
     _acid_parent,
     _acyl_chloride_parent,
@@ -148,6 +149,10 @@ def _try_phosphonic(info: dict) -> dict | None:
     return _phosphonic_parent(info)
 
 
+def _try_carbamate(info: dict) -> dict | None:
+    return _carbamate_parent(info)
+
+
 def _try_benzenediamine(info: dict) -> dict | None:
     if _is_simple_benzenediamine(info):
         return _benzenediamine_parent(info)
@@ -156,7 +161,7 @@ def _try_benzenediamine(info: dict) -> dict | None:
 
 _FG_TRY = (
     _try_acid, _try_anhydride, _try_arene_other_fg, _try_acyl_chloride,
-    _try_ester, _try_amide, _try_nitrile, _try_aldehyde, _try_ketone,
+    _try_ester, _try_carbamate, _try_amide, _try_nitrile, _try_aldehyde, _try_ketone,
     _try_alcohol, _try_thiol, _try_benzenediamine, _try_amine,
     _try_phosphate, _try_phosphonic, _ether_parent, _sulfide_parent,
 )

@@ -2,6 +2,16 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+_FG_BOOL_MORE_KEYS = (
+    ("has_aldehyde", "aldehydes"), ("has_amine", "amines"),
+    ("has_nitrile", "nitriles"), ("has_alkene", "double_bonds"),
+    ("has_alkyne", "triple_bonds"), ("has_acyl_chloride", "acyl_chlorides"),
+    ("has_anhydride", "anhydrides"), ("has_thiol", "thiols"),
+    ("has_ether", "ethers"), ("has_sulfide", "sulfides"), ("has_nitro", "nitros"),
+    ("has_phosphate", "phosphates"), ("has_phosphonic", "phosphonics"),
+    ("has_carbamate", "carbamates"),
+)
+
 def _is_single_c_oh(atom) -> bool:
     if atom.GetAtomicNum() != 8 or atom.GetTotalNumHs() < 1:
         return False
@@ -178,9 +188,10 @@ def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
 def _is_ester_carbon(atom) -> bool:
     if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
         return False
-    if _has_acid_o_neighbor(atom):
+    if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is None:
         return False
-    return _ester_alkoxy_of(atom) is not None
+    from namepredict.layer1.carbamate import _is_carbamate_carbon
+    return not _is_carbamate_carbon(atom)
 
 def _is_aldehyde_carbon(atom) -> bool:
     if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
@@ -417,7 +428,7 @@ def _fg_more_lists(parts: dict) -> dict:
     keys = (
         "aldehydes", "amines", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
-        "nitros", "phosphates", "phosphonics",
+        "nitros", "phosphates", "phosphonics", "carbamates",
     )
     return {k: parts[k] for k in keys}
 
@@ -438,16 +449,7 @@ def _fg_bools_core(lists: dict) -> dict:
     }
 
 def _fg_bools_more(lists: dict) -> dict:
-    keys = (
-        ("has_aldehyde", "aldehydes"), ("has_amine", "amines"),
-        ("has_nitrile", "nitriles"), ("has_alkene", "double_bonds"),
-        ("has_alkyne", "triple_bonds"), ("has_acyl_chloride", "acyl_chlorides"),
-        ("has_anhydride", "anhydrides"), ("has_thiol", "thiols"),
-        ("has_ether", "ethers"), ("has_sulfide", "sulfides"),
-        ("has_nitro", "nitros"),
-        ("has_phosphate", "phosphates"), ("has_phosphonic", "phosphonics"),
-    )
-    return {hk: bool(lists[lk]) for hk, lk in keys}
+    return {hk: bool(lists[lk]) for hk, lk in _FG_BOOL_MORE_KEYS}
 
 def _fg_bools(lists: dict) -> dict:
     return {**_fg_bools_core(lists), **_fg_bools_more(lists)}
@@ -463,21 +465,21 @@ def _fg_parts_a(mol: Mol) -> dict:
 
 def _p_fg_parts(mol: Mol) -> dict:
     from namepredict.layer1.phosphate import phosphate_entries, phosphonic_entries
-
-    return {"phosphates": phosphate_entries(mol), "phosphonics": phosphonic_entries(mol)}
-
+    from namepredict.layer1.carbamate import carbamate_entries
+    return {
+        "phosphates": phosphate_entries(mol), "phosphonics": phosphonic_entries(mol),
+        "carbamates": carbamate_entries(mol),
+    }
 
 def _fg_parts_b_core(mol: Mol) -> dict:
     return {
         "aldehydes": _aldehyde_entries(mol), "amines": _amine_entries(mol),
         "nitriles": _nitrile_entries(mol), "double_bonds": _double_bond_entries(mol),
-        "triple_bonds": _triple_bond_entries(mol),
-        "acyl_chlorides": _acyl_chloride_entries(mol),
+        "triple_bonds": _triple_bond_entries(mol), "acyl_chlorides": _acyl_chloride_entries(mol),
         "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
         "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
         "nitros": _nitro_entries(mol),
     }
-
 
 def _fg_parts_b(mol: Mol) -> dict:
     return {**_fg_parts_b_core(mol), **_p_fg_parts(mol)}
@@ -494,5 +496,4 @@ def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
     return {**base, **fgs, **_ring_meta(mol)}
 
 def analyze(mol: Mol) -> dict:
-    carbons = _carbon_ids(mol)
-    return _info(mol, carbons, _collect_fgs(mol))
+    return _info(mol, _carbon_ids(mol), _collect_fgs(mol))
