@@ -14,30 +14,10 @@ def _mono_ok(info: dict) -> bool:
     return len(info.get("carbamates") or []) == 1 and _no_fgs(info, _CB_BAD)
 
 
-def _methyl_count(c, o_idx: int, alkoxy_c: int) -> int:
-    n = 0
-    for nb in c.GetNeighbors():
-        if nb.GetIdx() == o_idx or nb.GetAtomicNum() != 6:
-            continue
-        heavy = [x for x in nb.GetNeighbors() if x.GetAtomicNum() != 1]
-        if len(heavy) == 1 and heavy[0].GetIdx() == alkoxy_c:
-            n += 1
-    return n
-
-
-def _is_tert_butyl_o(mol, o_idx: int, alkoxy_c: int) -> bool:
-    c = mol.GetAtomWithIdx(alkoxy_c)
-    nbs = [n for n in c.GetNeighbors() if n.GetAtomicNum() != 1]
-    return c.GetAtomicNum() == 6 and len(nbs) == 4 and _methyl_count(c, o_idx, alkoxy_c) == 3
-
-
 def _alkoxy_label(info: dict, e: dict) -> tuple[str, str, int | None]:
-    mol, o_idx, ac = info["mol"], e["o_idx"], e["alkoxy_c_idx"]
-    if _is_tert_butyl_o(mol, o_idx, ac):
-        return "tert-butyl", "叔丁", None
-    from namepredict.layer2.parent_selector import _longest_from
-    chain = _longest_from(mol, ac)
-    return "", "", len(chain) if chain else 1
+    from namepredict.layer2.alkoxy_side import classify_alkoxy
+    side = classify_alkoxy(info["mol"], e["o_idx"], e["alkoxy_c_idx"])
+    return side["alkoxy_en"], side["alkoxy_zh"], side["alkoxy_n"]
 
 
 def _arm_n(mol, c_idx: int, n_idx: int) -> int:

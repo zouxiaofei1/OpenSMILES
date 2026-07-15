@@ -297,26 +297,44 @@ def _arene_fg_ctx(
     return info["mol"], ring
 
 
+def _benzoate_alkoxy(mol: Mol, o_idx: int, ac: int) -> dict | None:
+    """Linear C1–C16 or P-65.6 special alkoxy (benzyl/tBu/iPr/Ph)."""
+    from namepredict.layer2.alkoxy_side import classify_alkoxy
+    side = classify_alkoxy(mol, o_idx, ac)
+    if side.get("alkoxy_en"):
+        return side
+    n = _simple_alkoxy_n(mol, ac, o_idx)
+    return {**side, "alkoxy_n": n} if n is not None else None
+
+
 def _is_simple_benzoate(info: dict) -> bool:
     ctx = _arene_fg_ctx(info, "has_ester", "esters")
     if ctx is None:
         return False
     mol, ring = ctx
     e = info["esters"][0]
-    if _simple_alkoxy_n(mol, e["alkoxy_c_idx"], e["o_idx"]) is None:
+    if _benzoate_alkoxy(mol, e["o_idx"], e["alkoxy_c_idx"]) is None:
         return False
     excl, allowed = _ester_exclude(mol, e)
     return _arene_subs_ok(info, mol, ring, excl, allowed)
 
 
+def _benzoate_side_fields(side: dict) -> dict:
+    return {
+        "alkoxy_n": side.get("alkoxy_n"),
+        "alkoxy_en": side.get("alkoxy_en") or "",
+        "alkoxy_zh": side.get("alkoxy_zh") or "",
+    }
+
+
 def _benzoate_parent(info: dict) -> dict:
     ring = _pick_fg_ring(info, "esters") or set()
     e, mol = info["esters"][0], info["mol"]
-    an = _simple_alkoxy_n(mol, e["alkoxy_c_idx"], e["o_idx"])
+    side = _benzoate_alkoxy(mol, e["o_idx"], e["alkoxy_c_idx"]) or {}
     return {
         "chain": list(ring), "n_carbons": 6, "kind": "benzoate",
         "ester_c_idx": e["c_idx"], "o_idx": e["o_idx"],
-        "alkoxy_c_idx": e["alkoxy_c_idx"], "alkoxy_n": an,
+        "alkoxy_c_idx": e["alkoxy_c_idx"], **_benzoate_side_fields(side),
         "ring_attach_idx": _fg_ring_c(info, ring, "esters"),
     }
 

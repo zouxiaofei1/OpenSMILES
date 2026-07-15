@@ -118,7 +118,6 @@ def _polyol_or_chain_alcohol(info: dict) -> dict | None:
     if _is_simple_alkanediol(info): return _diol_parent(info)
     return _chain_alcohol_parent(info)
 
-
 def _chain_or_unsat_alcohol(info: dict) -> dict | None:
     """Mono/poly alkenol first, else saturated polyol/alcohol."""
     poly = _try_polyalkenol(
@@ -380,11 +379,10 @@ def _nitrile_parent(info: dict) -> dict:
         "nitrile", "nitrile", "nitrile_c_idx",
     )
 def _ester_meta(info: dict) -> dict:
+    from namepredict.layer2.alkoxy_side import classify_alkoxy
     e = info["esters"][0]
-    return dict(
-        o_idx=e["o_idx"], alkoxy_c_idx=e["alkoxy_c_idx"],
-        alkoxy_n=len(_longest_from(info["mol"], e["alkoxy_c_idx"])),
-    )
+    side = classify_alkoxy(info["mol"], e["o_idx"], e["alkoxy_c_idx"])
+    return dict(o_idx=e["o_idx"], alkoxy_c_idx=e["alkoxy_c_idx"], **side)
 def _ester_parent(info: dict) -> dict | None:
     if not _open_mono_fg_ok(info, "esters"):
         return None

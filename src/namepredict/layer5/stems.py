@@ -242,6 +242,17 @@ def ester_alkyl_zh(n: int) -> str | None:
     return base.get(n) or zh_num(n)
 
 
+def ester_alkoxy_pair(parent: dict) -> tuple[str, str] | None:
+    """Prefer special alkoxy_en/zh; else linear ESTER_ALKYL by alkoxy_n."""
+    if parent.get("alkoxy_en"):
+        return parent["alkoxy_en"], parent.get("alkoxy_zh") or parent["alkoxy_en"]
+    n = parent.get("alkoxy_n")
+    if n is None:
+        return None
+    en, zh = ester_alkyl_en(n), ester_alkyl_zh(n)
+    return (en, zh) if en and zh else None
+
+
 def _fill(fn, lo: int = 1, hi: int = 35) -> dict[int, str]:
     out: dict[int, str] = {}
     for n in range(lo, hi + 1):

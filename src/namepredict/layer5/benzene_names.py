@@ -159,8 +159,9 @@ def _ester_alkyl_pair(alkoxy_n: int | None) -> tuple[str, str] | None:
 
 
 def benzoate_parent_names(numbered: dict, build_prefix) -> tuple[str, str] | None:
+    from namepredict.layer5.stems import ester_alkoxy_pair
     parent = numbered.get("parent") or {}
-    alkyl = _ester_alkyl_pair(parent.get("alkoxy_n"))
+    alkyl = ester_alkoxy_pair(parent)
     if not alkyl:
         return None
     pre_en, pre_zh = build_prefix(numbered.get("substituents") or [], 6, "benzoate")

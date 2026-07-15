@@ -126,8 +126,9 @@ def _ester_alkyl_pair(alkoxy_n: int) -> tuple[str, str] | None:
     return (en, zh) if en and zh else None
 
 
-def alkenoate_names(n, locant, alkoxy_n, ez="") -> tuple[str, str] | None:
-    alkyl = _ester_alkyl_pair(alkoxy_n) if alkoxy_n is not None else None
+def alkenoate_names(n, locant, parent, ez="") -> tuple[str, str] | None:
+    from namepredict.layer5.stems import ester_alkoxy_pair
+    alkyl = ester_alkoxy_pair(parent)
     stem = _unsat_acid_pair(n, locant, "", "enoate", "烯酸")
     if not alkyl or not stem:
         return None
@@ -175,6 +176,6 @@ def ester_or_alkenoate(n: int, numbered: dict) -> tuple[str, str] | None:
     parent = numbered.get("parent") or {}
     if _has_ene(numbered):
         return alkenoate_names(
-            n, numbered.get("ene_locant"), parent.get("alkoxy_n"), _ez_prefix(numbered),
+            n, numbered.get("ene_locant"), parent, _ez_prefix(numbered),
         )
     return None

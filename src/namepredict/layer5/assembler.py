@@ -108,10 +108,9 @@ def _ester_acyl_en(n: int) -> str | None:
 def _ester_alkyl_pair(alkoxy_n: int) -> tuple[str, str] | None:
     en, zh = ESTER_ALKYL_EN.get(alkoxy_n), ESTER_ALKYL_ZH.get(alkoxy_n)
     return (en, zh) if en and zh else None
-def _ester_names(acyl_n: int, alkoxy_n: int | None) -> tuple[str, str] | None:
-    if alkoxy_n is None:
-        return None
-    alkyl = _ester_alkyl_pair(alkoxy_n)
+def _ester_names(acyl_n: int, parent: dict) -> tuple[str, str] | None:
+    from namepredict.layer5.stems import ester_alkoxy_pair
+    alkyl = ester_alkoxy_pair(parent)
     acyl = _ester_acyl_en(acyl_n)
     acid_zh = ACID_ZH.get(acyl_n)
     if not alkyl or not acyl or not acid_zh:
@@ -238,7 +237,7 @@ def _ester_or_alkenoate(kind: str, n: int, numbered: dict) -> tuple[str, str] | 
     top = ester_or_alkenoate(n, numbered)
     if top is not None:
         return top
-    return _ester_names(n, (numbered.get("parent") or {}).get("alkoxy_n"))
+    return _ester_names(n, numbered.get("parent") or {})
 def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _ester_or_alkenoate(kind, n, numbered)
     if top is not None: return top
