@@ -133,7 +133,9 @@
 [#fc4e75d][IUPAC P-31.1 / P-65.1.1 / P-65.6] 开链 alkenoic/alkenoate 门控改「FG+C=C 不在环」允许芳基取代 [+8 tests, dual 13.4%(544)→13.6%(553), fails 3518→3509]
 [#76501fd][IUPAC P-66.1.1 / P-31.1] 开链一元 alkenamide：…-n-enamide/…-n-烯酰胺（E/Z+芳基） [+8 tests, dual 13.6%(553) 持平, fails 3509；实现方曾报 558/3504，复测未兑现]
 [#0a50ba2][IUPAC P-22.2.2 / P-14.3.4 / P-29.3] 饱和单杂环母体环上 C1–C4 n-烷基+tert-butyl（超 monomethyl） [+8 tests, dual 13.6%(553)→13.7%(557), fails 3509→3505]
+[#58d71e7][IUPAC P-65.1.1 / P-31.1 / P-67] 多不饱和二元酸根 alkadienedioate + 简单 monoalkyl dihydrogen phosphate/alkylphosphonic [+15 tests, dual 13.6%(554)→13.8%(561), fails 3508→3501]
 ## 其他
-- 钠盐功能类名 sodium …ate 未做；多羧酸根/磷酸盐未做
+- 钠盐功能类名 sodium …ate 未做；多磷酸/核苷酸磷酸未做
 - 炔醇/带复杂侧链多烯醇未做
 - C20+ 英文用 icos/henicos 组合；中文数字自动生成
+- 磷酸第一刀：仅简单烷基磷酸单酯与烷基膦酸；L1 已检 P
