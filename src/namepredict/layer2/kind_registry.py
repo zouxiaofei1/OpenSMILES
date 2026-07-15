@@ -233,6 +233,14 @@ def _load_carbo_rings() -> None:
     _add("cyclopolyene", ring="carbo", n=1)
 
 
+def _load_sat_hetero_repl() -> None:
+    # stems filled at runtime on parent (stem_en/stem_zh); placeholders for lint
+    _add(
+        "sat_hetero_repl", en="heterocycloalkane", zh="杂环烷",
+        ring="hetero", n=1, ret=False,
+    )
+
+
 def _bootstrap() -> None:
     _load_chain_fg()
     _load_arene_fg_names()
@@ -243,6 +251,7 @@ def _bootstrap() -> None:
     _load_hetero_mono()
     _load_hetero_fused()
     _load_carbo_rings()
+    _load_sat_hetero_repl()
 
 
 _bootstrap()

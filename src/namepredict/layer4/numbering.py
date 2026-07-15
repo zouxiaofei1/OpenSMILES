@@ -12,6 +12,7 @@ from namepredict.layer4.locants.adapt import (
 from namepredict.layer4.polyene import (
     ene_locants, orient_alkenol, orient_alkenedioic, orient_cyclopolyene, orient_polyene,
 )
+from namepredict.layer4.sat_hetero_orient import orient_sat_hetero_repl as _orient_sat_hetero_repl
 def _pos_on(chain: list[int], c: int | None) -> int | None:
     if c is None or c not in chain:
         return None
@@ -289,7 +290,7 @@ _SAT_HETERO_COOH = (
 def _sat_hetero_orienters() -> dict:
     d = {k: _orient_sat_hetero for k in _SAT_HETERO_PLAIN}
     d.update({k: _orient_sat_hetero_carboxylic for k in _SAT_HETERO_COOH})
-    return d
+    return {**d, "sat_hetero_repl": _orient_sat_hetero_repl}
 def _aza_orienters() -> dict:
     return {
         "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
@@ -491,8 +492,7 @@ def _pack(oriented: dict, substituents: list) -> dict:
     base = {"parent": oriented, "substituents": substituents}
     return {**base, **_fg_locants(oriented)}
 def number(parent: dict, substituents: list) -> dict:
-    chain = _orient_chain(parent, substituents)
-    kind = parent.get("kind")
+    chain, kind = _orient_chain(parent, substituents), parent.get("kind")
     oriented = {**parent, "chain": chain}
     plan = plan_from_chain(chain, kind)
     if plan is not None:

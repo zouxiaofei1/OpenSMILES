@@ -373,12 +373,18 @@ _SHCOOH_KINDS = frozenset({
     "morpholinecarboxylic", "oxolanecarboxylic", "oxanecarboxylic",
     "thiolanecarboxylic", "aziridinecarboxylic",
 })
+def _parent_stem_names(numbered: dict) -> tuple[str, str] | None:
+    parent = numbered.get("parent") or {}
+    en, zh = parent.get("stem_en"), parent.get("stem_zh")
+    return (en, zh) if en and zh else None
 def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "cycloalkane": return _cycloalkane_names(n)
     if kind == "benzene": return benzene_parent_names(numbered)
     if kind == "benzoate": return benzoate_parent_names(numbered, _build_prefix)
     if kind in _H5COOH_KINDS: return hetero5carboxylic_names(numbered)
     if kind in _SHCOOH_KINDS: return sat_hetero_carboxylic_names(numbered)
+    stem = _parent_stem_names(numbered)
+    if stem is not None: return stem
     top = pyridine_kind_names(kind, numbered, _build_prefix)
     return top if top is not None else (arene_fg_parent_names(kind) or _alkane_names(n))
 def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:

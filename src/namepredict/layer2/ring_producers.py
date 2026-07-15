@@ -46,6 +46,7 @@ from namepredict.layer2.ring_parent import (
     _is_simple_cyclopolyene,
 )
 from namepredict.layer2.sat_hetero import _try_sat_hetero_parent
+from namepredict.layer2.scaffold.builders.sat_hetero_repl import try_sat_hetero_repl
 
 
 def _try_simple_benzene(info: dict) -> dict | None:
@@ -88,6 +89,7 @@ _RING_PRODUCERS = (
     _try_azole13_parent,
     _try_hetero5_parent,
     _try_sat_hetero_parent,
+    try_sat_hetero_repl,
     _try_simple_benzene,
     _try_simple_cycloalkane,
     _try_simple_cyclopolyene,
