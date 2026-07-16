@@ -334,7 +334,11 @@ def _orient_alkenedioic(chain: list[int], parent: dict, substituents: list) -> l
 def _orient_diacid(chain: list[int], parent: dict, substituents: list) -> list[int]:
     if parent.get("double_bond") or parent.get("double_bonds"):
         return _orient_alkenedioic(chain, parent, substituents)
+    if parent.get("carboxymethyl_arms"):
+        return _orient_carboxymethyl_diacid(chain, substituents)
     return _orient_alkane(chain, substituents)
+def _orient_carboxymethyl_diacid(chain: list[int], subs: list) -> list[int]:
+    return _prefer_chain(chain, list(reversed(chain)), subs)
 def _orient_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return orient_polycarboxylic(chain, parent, _orient_pair)
 def _benzoic_orienters() -> dict:

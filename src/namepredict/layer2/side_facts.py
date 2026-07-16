@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum, auto
 
+
 from rdkit.Chem import Atom, Mol
 
 from namepredict.layer2 import aryl_sub, heteroaryl_sub, side_alkyl
@@ -52,6 +53,13 @@ class ArylLeafFact:
     child_attach: int
     child_parent: int
     extra_atom: int
+
+
+@dataclass(frozen=True)
+class CarboxymethylArm:
+    attachment: int
+    methylene: int
+    carboxyl: int
 
 
 @dataclass(frozen=True)
@@ -255,3 +263,27 @@ def naphthyl_facts(mol: Mol, parent: set[int]) -> list[HeteroarylFact]:
 def pyridinyl_facts(mol: Mol, parent: set[int]) -> list[HeteroarylFact]:
     return [_pyridinyl_fact(mol, item)
             for item in heteroaryl_sub.ring_pyridinyls(mol, parent)]
+
+
+def _arm_methylene(mol: Mol, acid: int, parent: set[int]) -> int | None:
+    outer = [n.GetIdx() for n in mol.GetAtomWithIdx(acid).GetNeighbors()
+             if n.GetAtomicNum() == 6 and n.GetIdx() not in parent]
+    return outer[0] if len(outer) == 1 else None
+
+
+def _arm_attachment(mol: Mol, methylene: int, parent: set[int]) -> int | None:
+    sites = [n.GetIdx() for n in mol.GetAtomWithIdx(methylene).GetNeighbors()
+             if n.GetIdx() in parent]
+    return sites[0] if len(sites) == 1 else None
+
+
+def _carboxymethyl_arm(mol: Mol, acid: int, parent: set[int]) -> CarboxymethylArm | None:
+    methylene = _arm_methylene(mol, acid, parent)
+    attachment = _arm_attachment(mol, methylene, parent) if methylene is not None else None
+    return None if attachment is None or methylene is None else CarboxymethylArm(attachment, methylene, acid)
+
+
+def carboxymethyl_arms(mol: Mol, chain: list[int], acids: list[int]) -> tuple[CarboxymethylArm, ...]:
+    parent = set(chain)
+    facts = (_carboxymethyl_arm(mol, acid, parent) for acid in acids)
+    return tuple(fact for fact in facts if fact is not None)

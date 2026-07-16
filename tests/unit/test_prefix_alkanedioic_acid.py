@@ -10,7 +10,11 @@ from __future__ import annotations
 
 import pytest
 
+from rdkit import Chem
+
 from namepredict.constants import normalize_en, normalize_zh
+from namepredict.layer1.analyzer import analyze
+from namepredict.layer2.carboxymethyl_diacid import carboxymethyl_diacid_parent
 from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
@@ -24,6 +28,9 @@ CASES = [
     ("O=C(O)C(=O)C(O)C(=O)O", "2-hydroxy-3-oxobutanedioic acid", "2-羟基-3-氧代丁二酸"),
     ("O=C(O)C(O)C(O)C(O)C(=O)O", "2,3,4-trihydroxypentanedioic acid", "2,3,4-三羟基戊二酸"),
     ("O=C(O)C(C)(C)C(O)C(=O)O", "3-hydroxy-2,2-dimethylbutanedioic acid", "3-羟基-2,2-二甲基丁二酸"),
+    # P-65.1.2.2.3: extra -CH2-COOH arm is a carboxymethyl prefix.
+    ("O=C(O)CC(CC(=O)O)CCCC(=O)O", "3-(carboxymethyl)heptanedioic acid", "3-(羧甲基)庚二酸"),
+    ("O=C(O)CCC(CC(=O)O)C(CC(=O)O)CC(=O)O", "3,4-bis(carboxymethyl)heptanedioic acid", "3,4-双(羧甲基)庚二酸"),
     # negative: unsubstituted diacid, mono hydroxyacid, alkyl-diacid, monoacid
     ("O=C(O)CC(=O)O", "propanedioic acid", "丙二酸"),
     ("O=C(O)C(O)C", "2-hydroxypropanoic acid", "2-羟基丙酸"),
@@ -39,3 +46,49 @@ def test_prefix_alkanedioic_acid(smiles: str, en: str, zh: str | None) -> None:
     assert normalize_en(r.en) == normalize_en(en)
     if zh is not None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
+
+
+@pytest.mark.parametrize("smiles", [
+    "O=C(O)CC(CC(=O)O)CC(O)CC(=O)O",  # complex arm-bearing polyacid
+    "O=C(O)CC(CC(=O)O)CCCC(=O)[O-]",  # partial deprotonation
+    "O=C([O-])CC(CC(=O)[O-])CCCC(=O)[O-]",  # full deprotonation: Round D
+    "O=C(O)C1CC(CC(=O)O)CCC1CC(=O)O",  # ring
+    "O=C(O)CC(CC(=O)O)CC=CC(=O)O",  # unsaturation
+])
+def test_carboxymethyl_diacid_natural_boundary(smiles: str) -> None:
+    info = analyze(Chem.MolFromSmiles(smiles))
+    assert carboxymethyl_diacid_parent(info) is None
+
+
+def test_carboxymethyl_diacid_prefers_lowest_prefix_locants() -> None:
+    r = SMILESNNamer().name("O=C(O)CC(CC(=O)O)CCCC(=O)O")
+    assert normalize_en(r.en) == "3-(carboxymethyl)heptanedioic acid"
+
+
+def test_carboxymethyl_l2_facts_are_typed_topology() -> None:
+    info = analyze(Chem.MolFromSmiles("O=C(O)CC(CC(=O)O)CCCC(=O)O"))
+    parent = carboxymethyl_diacid_parent(info)
+    assert parent is not None
+    facts = parent["carboxymethyl_arms"]
+    assert len(facts) == 1
+    assert facts[0].attachment in parent["chain"]
+    assert facts[0].methylene not in parent["chain"]
+
+
+def test_carboxymethyl_diacid_is_invariant_to_reversed_atom_order() -> None:
+    mol = Chem.MolFromSmiles("O=C(O)CC(CC(=O)O)CCCC(=O)O")
+    reversed_mol = Chem.RenumberAtoms(mol, list(reversed(range(mol.GetNumAtoms()))))
+    smiles = Chem.MolToSmiles(reversed_mol, canonical=False)
+    result = SMILESNNamer().name(smiles)
+    assert normalize_en(result.en) == "3-(carboxymethyl)heptanedioic acid"
+    assert normalize_zh(result.zh) == "3-(羧甲基)庚二酸"
+
+
+def test_carboxymethyl_diacid_anions_are_unsupported_until_round_d() -> None:
+    for smiles in (
+        "O=C(O)CC(CC(=O)O)CCCC(=O)[O-]",
+        "O=C([O-])CC(CC(=O)[O-])CCCC(=O)[O-]",
+    ):
+        result = SMILESNNamer().name(smiles)
+        assert not result.success
+        assert carboxymethyl_diacid_parent(analyze(Chem.MolFromSmiles(smiles))) is None

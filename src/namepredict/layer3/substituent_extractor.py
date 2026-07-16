@@ -434,10 +434,21 @@ def _extract_n_subs(info: dict, parent: dict) -> list[dict]:
     )
 
 
+def _extract_carboxymethyls(parent: dict) -> list[dict]:
+    facts = parent.get("carboxymethyl_arms") or ()
+    return [_carboxymethyl_sub(fact) for fact in facts]
+
+
+def _carboxymethyl_sub(fact: side_facts.CarboxymethylArm) -> dict:
+    return {"kind": "carboxymethyl", "attach_idx": fact.attachment,
+            "atoms": [fact.methylene, fact.carboxyl], "en": "carboxymethyl",
+            "zh": "羧甲基", "paren": True}
+
+
 def extract_substituents(info: dict, parent: dict) -> list:
     mol, chain = info["mol"], parent.get("chain") or []
     alkyl = _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent))
     return (
-        alkyl + _extract_core_subs(info, parent) + _extract_alkoxys(info, parent)
+        alkyl + _extract_carboxymethyls(parent) + _extract_core_subs(info, parent) + _extract_alkoxys(info, parent)
         + _extract_aryls(info, parent) + _extract_n_subs(info, parent)
     )

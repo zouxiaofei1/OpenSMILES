@@ -36,26 +36,8 @@ from namepredict.layer2.chain_walk import (
 from namepredict.layer2.polyalkenol import _polyalkenol_parent as _try_polyalkenol
 from namepredict.layer2.prefix_alkenoic import _prefix_alkenoic_parent as _try_hy_alkenoic
 from namepredict.layer2.polycarboxylic import try_polycarboxylic_parent
-def _no_fgs(info: dict, keys: tuple) -> bool:
-    return not any(info.get(k) for k in keys)
-_CORE_BAD = (
-    "has_acid", "has_ester", "has_amide", "has_nitrile",
-    "has_aldehyde", "has_ketone", "has_acyl_chloride", "has_anhydride",
-)
-_DIOL_BAD = _CORE_BAD + ("has_amine",)
-_DIACID_BAD = (  # P-65.1.2: hydroxy/amino/oxo are prefixes, not competing
-    "has_ester", "has_amide", "has_nitrile", "has_acyl_chloride",
-    "has_aldehyde", "has_anhydride",
-)
-_DIAMINE_BAD = _CORE_BAD + ("has_alcohol",)
-_DIONE_BAD = (
-    "has_acid", "has_ester", "has_amide", "has_nitrile",
-    "has_aldehyde", "has_amine", "has_alcohol", "has_acyl_chloride", "has_anhydride",
-)
-_ANHYDRIDE_BAD = (
-    "has_acid", "has_ester", "has_amide", "has_nitrile",
-    "has_aldehyde", "has_ketone", "has_amine", "has_alcohol", "has_acyl_chloride",
-)
+from namepredict.layer2.carboxymethyl_diacid import carboxymethyl_diacid_parent
+from namepredict.layer2.parent_selector_common import _ANHYDRIDE_BAD, _CORE_BAD, _DIACID_BAD, _DIAMINE_BAD, _DIOL_BAD, _DIONE_BAD, _no_fgs
 def _is_open_sat(info: dict) -> bool: return not (info.get("has_alkene") or info.get("has_alkyne"))
 def _hetero_open_chain(mol: Mol, idx: int) -> bool:
     return not mol.GetAtomWithIdx(idx).IsInRing()
@@ -242,7 +224,6 @@ def _sulfide_parent(info: dict) -> dict | None:
     return _parent_dict(
         parent, "sulfide", s_idx=e["s_idx"], alkyl_ns=(len(a1), len(a2)),
     )
-# hydroxy/amino/oxo are prefixes on alkenoic/alkanedioic (P-65.1.2)
 _ALKENOIC_BAD = _DIACID_BAD + ("has_thiol",)
 _UNSAT_FG_BASE = (
     "has_acid", "has_ester", "has_amide", "has_ketone", "has_amine",
@@ -294,6 +275,9 @@ def _ring_acid_try(info: dict) -> dict | None:
         if (b := fn(info)) is not None: return b
     return None
 def _poly_acid_try(info: dict) -> dict | None:
+    cm = carboxymethyl_diacid_parent(info)
+    if cm is not None:
+        return cm
     top = try_polycarboxylic_parent(info)
     if top is not None: return top
     if _is_simple_alkanedioic(info): return _diacid_parent(info)
