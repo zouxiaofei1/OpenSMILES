@@ -89,8 +89,8 @@
 [#e30c41a][IUPAC P-22.2.1 / P-25 / P-62.2.1] 保留母体 1,3-benzothiazole（+2-amine/CF3） [+23 tests, dual 7.8%(317)→7.8%(318), fails 3745→3744]
 [#b4f465a][IUPAC P-29.3 / P-14.3.4 / P-22.2.1 / P-63.2.2] 芳环简单侧链扩展(ω-halo n-alkyl / 2-methoxyethoxy / quinoline halo+CF3) [+7 tests, dual 7.8%(318)→8.0%(323), fails 3744→3739]
 [#82ed912][IUPAC P-22.2.1 / P-25 / P-62.2.1] 保留母体 1H-benzimidazole（+halo/methyl/CF3 + C2 胺/2-imino） [+25 tests, dual 8.0%(323)→8.0%(324), fails 3739→3738]
-[#82c88fd][IUPAC P-29.3 / P-14.3.1] 递归取代基第一刀：depth=1 未取代/单卤 phenyl·phenoxy [+7 tests, dual 8.0%(324)→8.0%(326), en 326→328, fails 3738→3736]
-[#cad0140][IUPAC P-29.3 / P-63.1.4 / P-62.2.1 / P-66.6.1 / P-65.1.1.1] 递归取代基第二刀：depth-1 phenyl/phenoxy→phenol/aniline/benzaldehyde/benzoic [+test_arene_aryl_fg, dual 8.0%(326)→8.1%(329), fails 3736→3733]
+[#82c88fd][IUPAC P-29.3 / P-14.3.1] 递归取代基：depth=1 未取代/单卤 phenyl·phenoxy [+7 tests, dual 8.0%(324)→8.0%(326), en 326→328, fails 3738→3736]
+[#cad0140][IUPAC P-29.3 / P-63.1.4 / P-62.2.1 / P-66.6.1 / P-65.1.1.1] 递归取代基：depth-1 phenyl/phenoxy→phenol/aniline/benzaldehyde/benzoic [+test_arene_aryl_fg, dual 8.0%(326)→8.1%(329), fails 3736→3733]
 [#29f4345][IUPAC P-29.3 / P-14.3.1 / P-22.2.1] 递归芳基广扩：多卤Ph/OPh≤3 + benzyl/benzyloxy + pyridine 多环aryl；FIX零卤N-Ph/混卤字母序/Bn nC=7 [+17 tests, dual 8.1%→8.1%(329), en 332]
 [#8ee4837][IUPAC P-22.2.1 / P-25 / P-62.2.1] 保留母体 1,3-benzoxazole（+halo/Me/CF3 + C2 胺） [+21 tests, dual 8.1%(329) 持平, fails 3733]
 [#313dd94][IUPAC P-63.2.2 / P-29.3] 芳环线性 propoxy/butoxy + PEG k≤3 烷氧基（L2 walk/L3 名；防误选 hexane） [+10 tests, dual 8.1%→8.1%(329)]
@@ -174,18 +174,21 @@
 [#67db2e4][IUPAC P-65.6] 有机碳酸酯：对称二烷基 + 烷基芳基；修 formate 坍缩 [+tests, dual 14.8%(601)→14.8%(602), fails 3461→3460, 0 REGRESS]
 [#cc6f5e9][IUPAC P-25 / P-64] 9,10-蒽醌：线性 anthracene + meso 二酮；2,3-二甲基蒽醌 [+tests, dual 14.8%(602)→14.8%(603), fails 3460→3459, 0 REGRESS]
 [#8a5ba10][IUPAC P-65.3] 磺酰氯：烷/芳 SO2Cl；3,3,3-三氟丙烷磺酰氯 [+tests, dual 14.8%(603)→14.9%(604), fails 3459→3458, 0 REGRESS]
-[#d97a7d0][IUPAC P-66.4.1.2.1] 简单胍功能母体第一刀：未取代/mono N-aryl/N-arylsulfonyl [+8 tests, dual 14.9%(604)→14.9%(605), fails 3458→3457]
+[#d97a7d0][IUPAC P-66.4.1.2.1] 简单胍功能母体：未取代/mono N-aryl/N-arylsulfonyl [+8 tests, dual 14.9%(604)→14.9%(605), fails 3458→3457]
 [#7b27c53][架构 P-31.1/P-44] unsat 生产者迁 kind_registry（alkyne→polyene→alkene） [+test_unsat_producers, dual 14.9%(605)持平, fails 3457, 0 REGRESS]
-[#4c79b62][IUPAC P-65.3] 游离磺酸/磺酸根第一刀：C1–C4 烷基+简单 Ph(Me/halo≤2)+阴离子/碱金属盐 [+unit, dual 14.9%(605)→14.9%(606), fails 3457→3456, 0 REGRESS]
+[#4c79b62][IUPAC P-65.3] 游离磺酸/磺酸根：C1–C4 烷基+简单 Ph(Me/halo≤2)+阴离子/碱金属盐 [+unit, dual 14.9%(605)→14.9%(606), fails 3457→3456, 0 REGRESS]
 [#e72e905][IUPAC P-64.2.1 / P-31.1] 开链一元不饱和酮 alkenone/alkynone：L2 unsat_or_sat 并酮+L4 FG-tie ene/yne 定向+L5 …-n-en-m-one/…-n-yn-m-one（E/Z） [+9 tests, dual 14.9%(606)→14.9%(607), fails 3456→3455, 0 REGRESS]
 ## 其他
-- 酮已并入 mono-FG unsat（ene/yne）；多烯酮/环外亚甲基酮/共轭芳基烯酮未做
-- 游离磺酸第一刀：C1–C4+简单 Ph；长链/乙烯基芳基/多羟基侧链未做；与酯 sulfonate 正交
-- FG/环/unsat 生产者均已注册表化；benzene `_benzene_candidate` 仍手写（n_unhandled 双路径）
-- heteroaryl_sub 手写 -yl 未收口；NumberingPlan 半接线
-- 胍第一刀：未取代+mono N-aryl+N-arylsulfonyl；N-alkyl/多N取代未做
-- 磺酰氯第一刀：烷基 C1–C4(+F/CF3)+简单芳基；磺酰氟/溴未做
-- 9,10-蒽醌第一刀：未取代+环甲基；多羟基蒽醌编号未做
-- 有机碳酸酯第一刀：dialkyl C1–C4 + alkyl-aryl(Me/halo≤2)；环状/二杂芳/无机盐未做
-- 简单磺酸酯第一刀：芳/烷 SO2OR(C1–C4)；盐/内酯侧链/硫酸酯未做
-- 酰卤：Cl 已有；Br 开链+苯甲酰+异丁酰保留；乙二酰二溴/氟未做
+### 磺酸酯（R–SO2–OR′）选题路线 — chem-brainstorm 2026-07-16
+- 靶心：功能类名 alkyl X-sulfonate / X磺酸Y酯（IUPAC 磺酸 P-65.3 + 酯类比 P-65.6 / 中文 6.5.4.2；代码注释 P-65.3.2 为历史 first-cut 标号，非 cleaned 前缀条）
+- 现状 first-cut 已有：L1 `layer1/sulfonate.py`；L2 `layer2/sulfonate.py`（S-侧 aryl|n-alkyl C1–4，O-侧 **仅** n-alkyl C1–4）；L5 `layer5/sulfonate_names.py`（甲苯磺酸 邻/间/对 中文保留）；fg_producers + kind_registry(sulfonate,11)；单元 `tests/unit/test_sulfonate.py`
+- 兄弟已覆盖（互斥门控）：sulfonic_acid / sulfonamide / sulfonyl_chloride；盐/阴离子走 sulfonic_acid
+- 命名空间缺口：① O-侧 special（benzyl/tBu/iPr/Ph，`classify_alkoxy` 已有）与更长 n-alkyl ② S-侧更长烷基/环烷基/更多芳叶 ③ 更高 FG 时 (sulfonyl)oxy 前缀 ④ 硫酸酯/磺内酯/mesyl·tosyl·triflate 缩写
+- 变体轴：O-侧复杂度=下轮主刀；S-侧=再下轮；前缀/环内/硫酸酯=远期；同源 Se/Te=勿顺手
+- 架构：四兄弟 L2/L5 同构复制 → 独立「去重轮」；禁止与羧酸酯 parent 硬合并
+- Round A（下一刀）：O-侧扩全 — 挂 `classify_alkoxy` special + n-alkyl 放宽（用 `ester_alkyl_*`）；L5 消费 alkoxy_en/zh；补 unit/负例；禁止顺带 S-侧大扩、前缀、硫酸酯、架构大拆
+- Round B：S-侧扩全（C5+ 烷基 / monocylo / 芳环叶对齐 free acid）
+- Round C：SO2 四兄弟公共抽取（_s_side/_arm/词干表）
+- 远期：prefix (methanesulfonyl)oxy；sulfate；sultone；retained mesyl/tosyl/triflate
+- 接入：L1 sulfonate_entries；L2 _sulfonate_parent / alkoxy_side.classify_alkoxy；L5 sulfonate_names / stems.ester_alkyl_*；special_fg_names；test_sulfonate
+- 禁止：一轮吞全家；无样本跨族抽象；改 benchmark 库

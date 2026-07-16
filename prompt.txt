@@ -13,6 +13,7 @@
 7.禁止修改 benchmark和其数据库。命令中不应包含>15s的sleep
 8.subagent有时会出问题。subagent不应更换模型。可以多尝试几次，不应自己编写代码
 9.pytest应多线程运行
+10.本项目虽然存在大量的benchmark步骤，但**完全允许准确率回退或持平**.本项目不欢迎导致准确率增加，但违反代码和工作流规范的更改.
 12.benchmark使用english_name和chinese_name字段
 15.**文件必须**存在src\namepredict\layer0-layer5某个文件夹里，且代码长度不超过1000行
 Layer 0: Molecule Preprocessor
@@ -30,7 +31,8 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 0. 读取 workstate.md，了解当前进度和计划。
 0.1 workstate.md中## 其他 行的行号如果尾数为3或8，当前工作轮次为架构改进轮。使用 skills/analyzing-architecture-risk 分析项目风险，选择一重要的。跳到3.
 1. 运行**benchmark**,记录并报告当前分数，格式**中英文双重准确:[ ]%**
-2. 选择一个改进点。改进点的范围要足够大，不要只做第一刀，一次尽量做完，改进点的修改代码量不应<100行。需要时可参考IUPAC原文。
+2. 如果workstate的其他中没有选题，可以使用chem-brainstorm-skill 获得一个。否则，使用这个选题进行工作
+改进点的范围要足够大，**严格禁止只做第一刀**，一次尽量做完，改进点的修改代码量不应<100行。需要时可参考IUPAC原文。
 3. 调用一个subagent,进行编写代码（遵守 skills/chem-tdd-skill）
 4. 调用第二个subagent（review）：**必须先阅读并全文遵守 skills/chem-code-review**。
    - 先审**选题**再审代码：代码全绿也可以反对选题；裁决 PASS|FIX|ROLLBACK|CHALLENGE
@@ -52,7 +54,7 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 
 
 ## 其他
-(记录任意重要内容，长度不超过20行。)
+(记录任意重要内容，长度不超过50行。)
 
 ┌──────────────────────────────────────────────────────────┐
 │                   SMILESNNamerv4 (对外接口)                 │
@@ -120,6 +122,3 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 │  └── 返回: { en, zh, name_type, meta }                   │
 │                                                          │
 └──────────────────────────────────────────────────────────┘
-
-#架构升级: 特定条件下需要升级架构
- 连续 ≥3 轮「选题」平均 Δdual < +0.1% 或 < +2 条， fail_cluster 显示失败已从「缺母体类」变成「选错母体/选错主链」；同分子多 FG、环 vs 链、保留名 vs 系统名，特化顺序调来调去都会伤另一簇，此时进行升级架构而不是增加新功能。
