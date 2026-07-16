@@ -31,6 +31,13 @@ CASES = [
     # P-65.1.2.2.3: extra -CH2-COOH arm is a carboxymethyl prefix.
     ("O=C(O)CC(CC(=O)O)CCCC(=O)O", "3-(carboxymethyl)heptanedioic acid", "3-(羧甲基)庚二酸"),
     ("O=C(O)CCC(CC(=O)O)C(CC(=O)O)CC(=O)O", "3,4-bis(carboxymethyl)heptanedioic acid", "3,4-双(羧甲基)庚二酸"),
+    # P-65.1.2.2.3: terminal -CH2CH2-COOH is 2-carboxyethyl.
+    ("O=C(O)CCC(CCC(=O)O)CCC(=O)O", "4-(2-carboxyethyl)heptanedioic acid", "4-(2-羧乙基)庚二酸"),
+    ("O=C(O)CCC(CCCC(=O)O)CCC(=O)O", "4-(3-carboxypropyl)heptanedioic acid", "4-(3-羧丙基)庚二酸"),
+    ("O=C(O)CCC(CCCCC(=O)O)CCC(=O)O", "4-(4-carboxybutyl)heptanedioic acid", "4-(4-羧丁基)庚二酸"),
+    ("O=C(O)CCC(CCC(=O)O)C(CCC(=O)O)CCC(=O)O", "4,5-bis(2-carboxyethyl)octanedioic acid", "4,5-双(2-羧乙基)辛二酸"),
+    # P-31.1: the selected diacid parent may contain an alkene.
+    ("O=C(O)CC(CC(=O)O)CC=CC(=O)O", "5-(carboxymethyl)hept-2-enedioic acid", "5-(羧甲基)庚-2-烯二酸"),
     # negative: unsubstituted diacid, mono hydroxyacid, alkyl-diacid, monoacid
     ("O=C(O)CC(=O)O", "propanedioic acid", "丙二酸"),
     ("O=C(O)C(O)C", "2-hydroxypropanoic acid", "2-羟基丙酸"),
@@ -53,11 +60,27 @@ def test_prefix_alkanedioic_acid(smiles: str, en: str, zh: str | None) -> None:
     "O=C(O)CC(CC(=O)O)CCCC(=O)[O-]",  # partial deprotonation
     "O=C([O-])CC(CC(=O)[O-])CCCC(=O)[O-]",  # full deprotonation: Round D
     "O=C(O)C1CC(CC(=O)O)CCC1CC(=O)O",  # ring
-    "O=C(O)CC(CC(=O)O)CC=CC(=O)O",  # unsaturation
+    "O=C(O)CCC(CC(C)C(=O)O)CCC(=O)O",  # branched arm
+    "O=C(O)CCC(=C=CC(=O)O)CCC(=O)O",  # multiple unsaturation
+    "O=C(O)CCC(C#CC(=O)O)CCC(=O)O",  # alkyne parent
 ])
 def test_carboxymethyl_diacid_natural_boundary(smiles: str) -> None:
     info = analyze(Chem.MolFromSmiles(smiles))
     assert carboxymethyl_diacid_parent(info) is None
+
+
+def test_carboxyalkyl_diacid_accepts_one_parent_chain_alkene() -> None:
+    result = SMILESNNamer().name("O=C(O)CC(CC(=O)O)CC=CC(=O)O")
+    assert normalize_en(result.en) == "5-(carboxymethyl)hept-2-enedioic acid"
+
+
+@pytest.mark.parametrize("smiles", [
+    "O=C(O)CCC(CC=CC(=O)O)CCC(=O)O",  # arm C=C
+    "O=C(O)CCC(C#CC(=O)O)CCC(=O)O",  # parent C#C
+    "O=C(O)CCC(C=CC=CC(=O)O)CCC(=O)O",  # two C=C
+])
+def test_carboxyalkyl_diacid_rejects_nonunique_parent_unsaturation(smiles: str) -> None:
+    assert carboxymethyl_diacid_parent(analyze(Chem.MolFromSmiles(smiles))) is None
 
 
 def test_carboxymethyl_diacid_prefers_lowest_prefix_locants() -> None:
@@ -72,7 +95,16 @@ def test_carboxymethyl_l2_facts_are_typed_topology() -> None:
     facts = parent["carboxymethyl_arms"]
     assert len(facts) == 1
     assert facts[0].attachment in parent["chain"]
-    assert facts[0].methylene not in parent["chain"]
+    assert facts[0].atoms[0] not in parent["chain"]
+
+
+def test_carboxymethyl_diacid_claims_all_carbons() -> None:
+    mol = Chem.MolFromSmiles("O=C(O)CCC(CCC(=O)O)C(CCC(=O)O)CCC(=O)O")
+    parent = carboxymethyl_diacid_parent(analyze(mol))
+    assert parent is not None
+    claimed = set(parent["chain"]) | {a.carboxyl for a in parent["carboxymethyl_arms"]}
+    claimed |= {x for a in parent["carboxymethyl_arms"] for x in a.atoms}
+    assert claimed == {a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6}
 
 
 def test_carboxymethyl_diacid_is_invariant_to_reversed_atom_order() -> None:

@@ -56,10 +56,14 @@ class ArylLeafFact:
 
 
 @dataclass(frozen=True)
-class CarboxymethylArm:
+class CarboxyalkylArm:
     attachment: int
-    methylene: int
+    atoms: tuple[int, ...]
     carboxyl: int
+
+
+# Compatibility alias for Round B1 callers.
+CarboxymethylArm = CarboxyalkylArm
 
 
 @dataclass(frozen=True)
@@ -265,25 +269,26 @@ def pyridinyl_facts(mol: Mol, parent: set[int]) -> list[HeteroarylFact]:
             for item in heteroaryl_sub.ring_pyridinyls(mol, parent)]
 
 
-def _arm_methylene(mol: Mol, acid: int, parent: set[int]) -> int | None:
-    outer = [n.GetIdx() for n in mol.GetAtomWithIdx(acid).GetNeighbors()
-             if n.GetAtomicNum() == 6 and n.GetIdx() not in parent]
-    return outer[0] if len(outer) == 1 else None
+def _arm_path(mol: Mol, acid: int, parent: set[int]) -> tuple[int, tuple[int, ...]] | None:
+    path, previous, current = [], acid, acid
+    while True:
+        nexts = [n.GetIdx() for n in mol.GetAtomWithIdx(current).GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() != previous]
+        if len(nexts) != 1: return None
+        current = nexts[0]
+        if current in parent: return (current, tuple(reversed(path))) if path else None
+        path.append(current)
+        previous = path[-2] if len(path) > 1 else acid
 
 
-def _arm_attachment(mol: Mol, methylene: int, parent: set[int]) -> int | None:
-    sites = [n.GetIdx() for n in mol.GetAtomWithIdx(methylene).GetNeighbors()
-             if n.GetIdx() in parent]
-    return sites[0] if len(sites) == 1 else None
+def _carboxyalkyl_arm(mol: Mol, acid: int, parent: set[int]) -> CarboxyalkylArm | None:
+    path = _arm_path(mol, acid, parent)
+    return CarboxyalkylArm(path[0], path[1], acid) if path else None
 
 
-def _carboxymethyl_arm(mol: Mol, acid: int, parent: set[int]) -> CarboxymethylArm | None:
-    methylene = _arm_methylene(mol, acid, parent)
-    attachment = _arm_attachment(mol, methylene, parent) if methylene is not None else None
-    return None if attachment is None or methylene is None else CarboxymethylArm(attachment, methylene, acid)
-
-
-def carboxymethyl_arms(mol: Mol, chain: list[int], acids: list[int]) -> tuple[CarboxymethylArm, ...]:
+def carboxyalkyl_arms(mol: Mol, chain: list[int], acids: list[int]) -> tuple[CarboxyalkylArm, ...]:
     parent = set(chain)
-    facts = (_carboxymethyl_arm(mol, acid, parent) for acid in acids)
+    facts = (_carboxyalkyl_arm(mol, acid, parent) for acid in acids)
     return tuple(fact for fact in facts if fact is not None)
+
+
+carboxymethyl_arms = carboxyalkyl_arms

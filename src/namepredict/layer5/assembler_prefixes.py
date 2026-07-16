@@ -47,9 +47,9 @@ def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
     s = _wrap_stem(stem, _stem_needs_paren(stem, subs, omit))
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 def _complex_mult_en(stem: str, n: int) -> str:
-    return {2: "bis", 3: "tris"}.get(n, "") if stem == "carboxymethyl" else ""
+    return {2: "bis", 3: "tris"}.get(n, "") if "carboxy" in stem else ""
 def _complex_mult_zh(stem: str, n: int) -> str:
-    return {2: "双", 3: "三"}.get(n, "") if stem == "羧甲基" else ""
+    return {2: "双", 3: "三"}.get(n, "") if "羧" in stem else ""
 def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> str:
     mult = _complex_mult_zh(zh_stem, len(subs)) or _mult_zh(len(subs))
     en = subs[0].get("en") or ""

@@ -436,13 +436,15 @@ def _extract_n_subs(info: dict, parent: dict) -> list[dict]:
 
 def _extract_carboxymethyls(parent: dict) -> list[dict]:
     facts = parent.get("carboxymethyl_arms") or ()
-    return [_carboxymethyl_sub(fact) for fact in facts]
+    return [_carboxyalkyl_sub(fact) for fact in facts]
 
 
-def _carboxymethyl_sub(fact: side_facts.CarboxymethylArm) -> dict:
-    return {"kind": "carboxymethyl", "attach_idx": fact.attachment,
-            "atoms": [fact.methylene, fact.carboxyl], "en": "carboxymethyl",
-            "zh": "羧甲基", "paren": True}
+def _carboxyalkyl_sub(fact: side_facts.CarboxyalkylArm) -> dict:
+    n = len(fact.atoms)
+    names = {1: ("carboxymethyl", "羧甲基"), 2: ("2-carboxyethyl", "2-羧乙基"), 3: ("3-carboxypropyl", "3-羧丙基"), 4: ("4-carboxybutyl", "4-羧丁基")}
+    en, zh = names.get(n, (f"{n}-carboxy{ALKYL_EN[n]}", f"{n}-羧{ALKYL_ZH[n]}"))
+    return {"kind": "carboxyalkyl", "attach_idx": fact.attachment,
+            "atoms": [*fact.atoms, fact.carboxyl], "en": en, "zh": zh, "paren": True}
 
 
 def extract_substituents(info: dict, parent: dict) -> list:
