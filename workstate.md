@@ -187,13 +187,14 @@
 [#911b79e][架构 L2/L5] parent stem 在 L2 主出口统一装配，移除 L5→L2 kind_registry 反向依赖 [+相关 99 tests, dual 15.1%(612)持平, 0 REGRESS]
 [#8531c7a][IUPAC P-65.1.1 / P-72.2.2.1] 饱和无环直链三至十羧酸/全羧酸根：L2 母体门控+L4 羧基最低位次集+L5 数据化倍数后缀 [+15 tests, dual 15.1%(612)→15.1%(613), fails 3450→3449, 0 REGRESS]
 [#1e81128][IUPAC P-31.1 / P-65.1.1 / P-93.4] 开链线性多羧酸/全羧酸根核心多 ene/yne 双语系统命名与 E/Z facts；L5 纯 facts [+7 strict bilingual cases, dual 15.1%(613)→15.1%(615), fails 3449→3447, 0 REGRESS]
+[#b6f596c][IUPAC P-65.1.2.2.3] 中性羧甲基取代烷二酸：最长双端酸母体、typed carboxymethyl 臂、最低前缀位次与双语倍数词；拒绝离子态至 Round D [+7 tests, dual 15.1%(615)持平, 0 REGRESS]
 ## 其他
 ## 选题: 多羧基化合物完整非空系统命名
 
-### 现状: Round A 已完成：开链线性多羧酸/全羧酸根现支持饱和及核心多 C=C/C≡C、1–10 倍数词头与 E/Z；其余结构仍由 `unsupported_polycarboxylic` 阻断旧候选。
+### 现状: Round A 已完成线性饱和/不饱和多羧酸；Round B1 已完成 P-65.1.2.2.3 中性 carboxymethyl + alkanedioic acid（单/多臂、确定性最长母体与最低前缀位次）。离子态、非亚甲基羧基臂和更一般支化仍由 `unsupported_polycarboxylic` 阻断。
 
 ### 做法或顺序
-Round B（下一轮）: 开链支化多羧酸；以完整碳树的 IUPAC 母体路径评分替代 `set(chain)==core`，非母体支链交 L3，保持羧基位次为首要比较项。
+Round B2（下一轮）: 扩展支化多羧酸的 `carboxy` 前缀空间（carboxyethyl 等可证实 terminal carboxyalkyl 臂）与主链内不饱和；按 P-65.1.2.2.3 保持 suffix/prefix 全量 claim，禁止将任意支化树错误命名为 tricarboxylic acid。
 Round C: 芳香及环状多羧酸；复用 ScaffoldSpec/NumberingPlan，支持 benzene-1,2,4-tricarboxylic acid 等，不把芳环压成开链 core。
 Round D: 部分质子化与混合盐；按 P-72 记录逐羧基 protonation 和 counterion stoichiometry，组装 hydrogen …carboxylate / 金属盐；与 L0 salt 分片协作，不在普通酸 L5 猜盐名。
 Round E（远期）: 多羧酸的酯/酰胺/酰卤混合衍生物与复杂环稠骨架；待逐位 characteristic-group state IR 和环 scaffold 覆盖稳定后实施。
