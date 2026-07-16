@@ -3,28 +3,13 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from namepredict.layer2.aryl_sub import (
-    _benzyl_name,
-    _benzyloxy_name,
-    _phenoxy_name,
-    _phenyl_name,
-    _ring_benzyls,
-    _ring_benzyloxys,
-    _ring_phenoxys,
-    _ring_phenyls,
+    _benzyl_name, _benzyloxy_name, _phenoxy_name, _phenyl_name,
+    _ring_benzyls, _ring_benzyloxys, _ring_phenoxys, _ring_phenyls,
 )
 from namepredict.layer2.side_alkyl import (
-    _c_neighbors,
-    _is_2_methylbutan_2_yl,
-    _is_isobutyl,
-    _is_isopentyl,
-    _is_isopropyl,
-    _is_neopentyl,
-    _is_sec_butyl,
-    _is_tert_butyl,
-    _is_trifluoromethyl,
-    _terminal_halo_z,
-    _walk_linear,
-    _walk_omega_halo,
+    _c_neighbors, _is_2_methylbutan_2_yl, _is_isobutyl, _is_isopentyl,
+    _is_isopropyl, _is_neopentyl, _is_sec_butyl, _is_tert_butyl,
+    _is_trifluoromethyl, _terminal_halo_z, _walk_linear_n, _walk_omega_halo,
 )
 from namepredict.layer3.alkoxy_names import _extract_alkoxys
 from namepredict.layer3.cycloalkyl_names import _one_cycloalkyl_side
@@ -55,40 +40,35 @@ def alkyl_alpha_key(stem: str) -> str:
     return _strip_lead_locant(_strip_n_prefix(_strip_ital_prefix(stem)))
 
 
-ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
-ALKYL_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
+# n-alkyl C1–C12 (P-29.3 / BQ P-64.2 Round B); C11+ ZH uses …烷基
+ALKYL_EN = {
+    1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl", 5: "pentyl", 6: "hexyl",
+    7: "heptyl", 8: "octyl", 9: "nonyl", 10: "decyl", 11: "undecyl", 12: "dodecyl",
+}
+ALKYL_ZH = {
+    1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基", 5: "戊基", 6: "己基",
+    7: "庚基", 8: "辛基", 9: "壬基", 10: "癸基", 11: "十一烷基", 12: "十二烷基",
+}
 HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
 HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}
-# ω-halo n-alkyl: locant = chain length (terminal carbon)
 _HALOALKYL_STEM_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
 _HALOALKYL_STEM_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
 
 
 def _side_starts(mol: Mol, chain: list[int]) -> list[tuple[int, int]]:
-    chain_set = set(chain)
-    out: list[tuple[int, int]] = []
-    for c in chain:
-        for nb in _c_neighbors(mol, c):
-            if nb not in chain_set:
-                out.append((c, nb))
-    return out
+    cs = set(chain)
+    return [(c, n) for c in chain for n in _c_neighbors(mol, c) if n not in cs]
 
 
 def _make_alkyl(attach: int, path: list[int]) -> dict:
     n = len(path)
     return {
-        "kind": "alkyl",
-        "n_carbons": n,
-        "attach_idx": attach,
-        "atoms": path,
-        "en": ALKYL_EN[n],
-        "zh": ALKYL_ZH[n],
+        "kind": "alkyl", "n_carbons": n, "attach_idx": attach,
+        "atoms": path, "en": ALKYL_EN[n], "zh": ALKYL_ZH[n],
     }
 
 
-def _make_branch(
-    attach: int, atoms: list[int], n: int, en: str, zh: str,
-) -> dict:
+def _make_branch(attach: int, atoms: list[int], n: int, en: str, zh: str) -> dict:
     return {
         "kind": "alkyl", "n_carbons": n, "attach_idx": attach,
         "atoms": atoms, "en": en, "zh": zh,
@@ -97,12 +77,8 @@ def _make_branch(
 
 def _make_cf3(attach: int, atoms: list[int]) -> dict:
     return {
-        "kind": "trifluoromethyl",
-        "n_carbons": 1,
-        "attach_idx": attach,
-        "atoms": atoms,
-        "en": "trifluoromethyl",
-        "zh": "三氟甲基",
+        "kind": "trifluoromethyl", "n_carbons": 1, "attach_idx": attach,
+        "atoms": atoms, "en": "trifluoromethyl", "zh": "三氟甲基",
     }
 
 
@@ -131,8 +107,8 @@ def _one_haloalkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> di
 
 
 def _one_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict | None:
-    path = _walk_linear(mol, start, chain_set)
-    if path:
+    path = _walk_linear_n(mol, start, chain_set, max_n=12)
+    if path and len(path) in ALKYL_EN:
         return _make_alkyl(attach, path)
     ha = _one_haloalkyl(mol, attach, start, chain_set)
     return ha if ha is not None else _one_branched(mol, attach, start, chain_set)
@@ -163,36 +139,27 @@ def _one_branched(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dic
 
 def _make_halo(attach: int, halo_idx: int, z: int) -> dict:
     return {
-        "kind": "halo",
-        "attach_idx": attach,
-        "atoms": [halo_idx],
-        "en": HALO_EN[z],
-        "zh": HALO_ZH[z],
+        "kind": "halo", "attach_idx": attach, "atoms": [halo_idx],
+        "en": HALO_EN[z], "zh": HALO_ZH[z],
     }
 
 
 def _halo_on_carbon(mol: Mol, c_idx: int) -> list[dict]:
-    atom = mol.GetAtomWithIdx(c_idx)
-    out: list[dict] = []
-    for n in atom.GetNeighbors():
-        z = n.GetAtomicNum()
-        if z in HALO_EN:
-            out.append(_make_halo(c_idx, n.GetIdx(), z))
-    return out
+    return [
+        _make_halo(c_idx, n.GetIdx(), n.GetAtomicNum())
+        for n in mol.GetAtomWithIdx(c_idx).GetNeighbors()
+        if n.GetAtomicNum() in HALO_EN
+    ]
 
 
 def _extract_halos(mol: Mol, chain: list[int]) -> list[dict]:
-    out: list[dict] = []
-    for c in chain:
-        out.extend(_halo_on_carbon(mol, c))
-    return out
+    return [h for c in chain for h in _halo_on_carbon(mol, c)]
 
 
 def _extract_alkyls(mol: Mol, chain: list[int]) -> list[dict]:
-    chain_set = set(chain)
-    out: list[dict] = []
+    cs, out = set(chain), []
     for attach, start in _side_starts(mol, chain):
-        one = _one_alkyl(mol, attach, start, chain_set)
+        one = _one_alkyl(mol, attach, start, cs)
         if one is not None:
             out.append(one)
     return out
@@ -205,50 +172,38 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
     return [h for h in halos if cl not in (h.get("atoms") or [])]
 
 
-_PARENT_OH_KINDS = frozenset(
-    {
-        "alcohol", "diol", "triol", "cycloalcohol",
-        "phenol", "benzenediol", "pyridinol", "benzothiophenol", "quinolinol",
-    }
+_PARENT_OH_KINDS = frozenset({
+    "alcohol", "diol", "triol", "cycloalcohol",
+    "phenol", "benzenediol", "pyridinol", "benzothiophenol", "quinolinol",
+})
+_PARENT_NH2_KINDS = frozenset({
+    "amine", "diamine", "cycloamine", "sec_amine", "tert_amine",
+    "aniline", "pyridinamine", "pyrimidinamine", "benzofuranamine",
+    "benzothiazolamine", "benzoxazolamine", "benzimidazolamine", "benzenediamine",
+})
+_PARENT_OXO_KINDS = frozenset(
+    {"ketone", "dione", "cycloketone", "anthraquinone", "benzoquinone"},
 )
-_PARENT_NH2_KINDS = frozenset(
-    {
-        "amine", "diamine", "cycloamine", "sec_amine", "tert_amine",
-        "aniline", "pyridinamine", "pyrimidinamine", "benzofuranamine",
-        "benzothiazolamine", "benzoxazolamine", "benzimidazolamine",
-        "benzenediamine",
-    }
-)
-_PARENT_OXO_KINDS = frozenset({"ketone", "dione", "cycloketone", "anthraquinone", "benzoquinone"})
 
 
 def _make_hydroxy(attach: int, o_idx: int) -> dict:
     return {
-        "kind": "hydroxy",
-        "attach_idx": attach,
-        "atoms": [o_idx],
-        "en": "hydroxy",
-        "zh": "羟基",
+        "kind": "hydroxy", "attach_idx": attach, "atoms": [o_idx],
+        "en": "hydroxy", "zh": "羟基",
     }
 
 
 def _make_oxo(attach: int) -> dict:
     return {
-        "kind": "oxo",
-        "attach_idx": attach,
-        "atoms": [attach],
-        "en": "oxo",
-        "zh": "氧代",
+        "kind": "oxo", "attach_idx": attach, "atoms": [attach],
+        "en": "oxo", "zh": "氧代",
     }
 
 
 def _make_nitro(attach: int, n_idx: int, o_idxs: list[int]) -> dict:
     return {
-        "kind": "nitro",
-        "attach_idx": attach,
-        "atoms": [n_idx] + list(o_idxs),
-        "en": "nitro",
-        "zh": "硝基",
+        "kind": "nitro", "attach_idx": attach, "atoms": [n_idx] + list(o_idxs),
+        "en": "nitro", "zh": "硝基",
     }
 
 
@@ -267,7 +222,9 @@ def _make_iso(kind: str, attach: int, e: dict, en: str, zh: str) -> dict:
     }
 
 
-def _extract_iso_kind(info: dict, parent: dict, key: str, kind: str, en: str, zh: str) -> list[dict]:
+def _extract_iso_kind(
+    info: dict, parent: dict, key: str, kind: str, en: str, zh: str,
+) -> list[dict]:
     if parent.get("kind") in ("isocyanate", "isothiocyanate"):
         return []
     chain = set(parent.get("chain") or [])
@@ -288,29 +245,24 @@ def _extract_isocyanates(info: dict, parent: dict) -> list[dict]:
 def _extract_hydroxys(info: dict, parent: dict) -> list[dict]:
     if parent.get("kind") in _PARENT_OH_KINDS:
         return []
-    chain_set = set(parent.get("chain") or [])
-    out: list[dict] = []
-    for h in info.get("hydroxyls") or []:
-        if h["c_idx"] in chain_set:
-            out.append(_make_hydroxy(h["c_idx"], h["o_idx"]))
-    return out
+    chain = set(parent.get("chain") or [])
+    return [
+        _make_hydroxy(h["c_idx"], h["o_idx"])
+        for h in info.get("hydroxyls") or [] if h["c_idx"] in chain
+    ]
 
 
 def _extract_aminos(info: dict, parent: dict) -> list[dict]:
     return _extract_aminos_impl(info, parent, _PARENT_NH2_KINDS)
 
 
-
-
 def _extract_oxos(info: dict, parent: dict) -> list[dict]:
     if parent.get("kind") in _PARENT_OXO_KINDS:
         return []
-    chain_set = set(parent.get("chain") or [])
-    out: list[dict] = []
-    for k in info.get("ketones") or []:
-        if k["c_idx"] in chain_set:
-            out.append(_make_oxo(k["c_idx"]))
-    return out
+    chain = set(parent.get("chain") or [])
+    return [
+        _make_oxo(k["c_idx"]) for k in info.get("ketones") or [] if k["c_idx"] in chain
+    ]
 
 
 _N_ALKYL_EN = {1: "N-methyl", 2: "N-ethyl", 3: "N-propyl", 4: "N-butyl"}
@@ -324,6 +276,8 @@ def _n_alkyl_sub(en: str, zh: str, attach: int, n: int) -> dict:
         "kind": "n_alkyl", "n_carbons": n, "attach_idx": attach,
         "atoms": [], "en": en, "zh": zh,
     }
+
+
 def _n_phenyl_sub(attach: int) -> dict:
     return {
         "kind": "n_phenyl", "n_carbons": 6, "attach_idx": attach,
@@ -352,8 +306,15 @@ def _tert_n_prefix(ns: list[int]) -> tuple[str, str] | None:
     if a == b:
         return f"N,N-di{_N_STEM_EN[a]}", f"N,N-二{_N_STEM_ZH[a]}"
     x, y = sorted(ns, key=lambda n: _N_STEM_EN[n])
-    return f"N-{_N_STEM_EN[x]}-N-{_N_STEM_EN[y]}", f"N-{_N_STEM_ZH[x]}-N-{_N_STEM_ZH[y]}"
+    return (
+        f"N-{_N_STEM_EN[x]}-N-{_N_STEM_EN[y]}",
+        f"N-{_N_STEM_ZH[x]}-N-{_N_STEM_ZH[y]}",
+    )
+
+
 _AMIDE_KINDS = frozenset({"amide"})
+
+
 def _n_alkyl_prefix(parent: dict) -> tuple[str, str, int] | None:
     kind, n = parent.get("kind"), parent.get("n_alkyl_n")
     if kind in ("sec_amine", "amide") and n in _N_ALKYL_EN:
@@ -362,21 +323,29 @@ def _n_alkyl_prefix(parent: dict) -> tuple[str, str, int] | None:
         pref = _tert_n_prefix(list(parent.get("n_alkyl_ns") or []))
         return (*pref, 0) if pref else None
     return None
+
+
 def _extract_n_alkyl(parent: dict) -> list[dict]:
     key = "amide_c_idx" if parent.get("kind") in _AMIDE_KINDS else "amine_c_idx"
     attach, pref = parent.get(key), _n_alkyl_prefix(parent)
     return [_n_alkyl_sub(*pref[:2], attach, pref[2])] if attach is not None and pref else []
+
+
 def _extract_n_phenyl(parent: dict) -> list[dict]:
     if parent.get("kind") not in _AMIDE_KINDS or not parent.get("n_phenyl"):
         return []
     attach = parent.get("amide_c_idx")
     return [_n_phenyl_sub(attach)] if attach is not None else []
+
+
 def _n_benzyl_named(info: dict, ch2: int) -> tuple[str, str, bool] | None:
     from namepredict.layer2.aryl_sub import _benzyl_name, _ch2_ph_at
     ams = info.get("amides") or []
     n_idx = ams[0]["n_idx"] if ams else -1
     ph = _ch2_ph_at(info["mol"], ch2, n_idx)
     return None if ph is None else _benzyl_name(info["mol"], ph, ch2)
+
+
 def _extract_n_benzyl(info: dict, parent: dict) -> list[dict]:
     if parent.get("kind") not in _AMIDE_KINDS or not parent.get("n_benzyl"):
         return []
@@ -387,7 +356,9 @@ def _extract_n_benzyl(info: dict, parent: dict) -> list[dict]:
     return [_n_benzyl_sub(attach, *named)] if named else []
 
 
-def _make_aryl(kind: str, attach: int, atoms: list[int], en: str, zh: str, paren: bool) -> dict:
+def _make_aryl(
+    kind: str, attach: int, atoms: list[int], en: str, zh: str, paren: bool,
+) -> dict:
     n = 7 if kind in ("benzyl", "benzyloxy") else 6
     return {
         "kind": kind, "attach_idx": attach, "atoms": atoms,
@@ -416,53 +387,46 @@ def _one_benzyloxy(mol: Mol, p: dict) -> dict:
 
 
 def _extract_phenoxys(info: dict, parent: dict) -> list[dict]:
-    mol: Mol = info["mol"]
     chain = set(parent.get("chain") or [])
-    return [_one_phenoxy(mol, p) for p in _ring_phenoxys(info, chain)]
+    return [_one_phenoxy(info["mol"], p) for p in _ring_phenoxys(info, chain)]
 
 
 def _extract_phenyls(info: dict, parent: dict) -> list[dict]:
-    mol: Mol = info["mol"]
-    chain = set(parent.get("chain") or [])
+    mol, chain = info["mol"], set(parent.get("chain") or [])
     return [_one_phenyl(mol, p) for p in _ring_phenyls(mol, chain)]
 
 
 def _extract_benzyls(info: dict, parent: dict) -> list[dict]:
-    mol: Mol = info["mol"]
-    chain = set(parent.get("chain") or [])
+    mol, chain = info["mol"], set(parent.get("chain") or [])
     return [_one_benzyl(mol, p) for p in _ring_benzyls(mol, chain)]
 
 
 def _extract_benzyloxys(info: dict, parent: dict) -> list[dict]:
-    mol: Mol = info["mol"]
     chain = set(parent.get("chain") or [])
-    return [_one_benzyloxy(mol, p) for p in _ring_benzyloxys(info, chain)]
+    return [_one_benzyloxy(info["mol"], p) for p in _ring_benzyloxys(info, chain)]
 
 
 def _aryl_outer_starts(info: dict, parent: dict) -> set[int]:
     from namepredict.layer2.heteroaryl_sub import heteroaryl_outers
-    mol: Mol = info["mol"]
-    chain = set(parent.get("chain") or [])
+    mol, chain = info["mol"], set(parent.get("chain") or [])
     ph = {p["outer_c"] for p in _ring_phenyls(mol, chain)}
     bn = {p["outer_c"] for p in _ring_benzyls(mol, chain)}
     return ph | bn | heteroaryl_outers(mol, chain)
 
 
 def _extract_alkyls_no_aryl(mol: Mol, chain: list[int], skip: set[int]) -> list[dict]:
-    chain_set = set(chain)
-    out: list[dict] = []
+    cs, out = set(chain), []
     for attach, start in _side_starts(mol, chain):
         if start in skip:
             continue
-        one = _one_alkyl(mol, attach, start, chain_set)
+        one = _one_alkyl(mol, attach, start, cs)
         if one is not None:
             out.append(one)
     return out
 
 
 def _extract_core_subs(info: dict, parent: dict) -> list:
-    mol: Mol = info["mol"]
-    chain = parent.get("chain") or []
+    mol, chain = info["mol"], parent.get("chain") or []
     halo = _filter_fg_halos(_extract_halos(mol, chain), parent)
     return (
         halo + _extract_hydroxys(info, parent) + _extract_aminos(info, parent)
@@ -473,8 +437,7 @@ def _extract_core_subs(info: dict, parent: dict) -> list:
 
 def _extract_aryls(info: dict, parent: dict) -> list[dict]:
     from namepredict.layer2.heteroaryl_sub import extract_naphthyls, extract_pyridinyls
-    chain = set(parent.get("chain") or [])
-    mol = info["mol"]
+    mol, chain = info["mol"], set(parent.get("chain") or [])
     return (
         _extract_phenoxys(info, parent) + _extract_phenyls(info, parent)
         + _extract_benzyloxys(info, parent) + _extract_benzyls(info, parent)
@@ -490,8 +453,7 @@ def _extract_n_subs(info: dict, parent: dict) -> list[dict]:
 
 
 def extract_substituents(info: dict, parent: dict) -> list:
-    mol: Mol = info["mol"]
-    chain = parent.get("chain") or []
+    mol, chain = info["mol"], parent.get("chain") or []
     alkyl = _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent))
     return (
         alkyl + _extract_core_subs(info, parent) + _extract_alkoxys(info, parent)

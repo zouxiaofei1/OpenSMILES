@@ -16,6 +16,7 @@ from namepredict.layer2.ring_parent import (
     _ring_alkoxy_ethers,
     _ring_side_starts,
 )
+from namepredict.layer2.side_alkyl import _disjoint_cover, _walk_linear_n
 
 
 def _ketone_idxs(info: dict) -> list[int]:
@@ -75,18 +76,30 @@ def _bq_exclude(info: dict, mol: Mol, ring: set[int], ket: list[int]) -> set[int
     return oset | _oh_o_set(info, ring) | _alkoxy_atom_set(info, ring)
 
 
-def _is_methyl_c(mol: Mol, s: int) -> bool:
-    return mol.GetAtomWithIdx(s).GetDegree() == 1
-
-
 def _bq_alkoxy_ok(info: dict, ring: set[int]) -> bool:
     return all(a.get("n") in (1, 2) for a in _ring_alkoxy_ethers(info, ring))
 
 
-def _bq_methyls_ok(mol: Mol, ring: set[int], exclude: set[int]) -> bool:
-    starts = _ring_side_starts(mol, ring, exclude)
-    outside = _outside_carbons(mol, ring, exclude)
-    return set(outside) == set(starts) and all(_is_methyl_c(mol, s) for s in starts)
+def _bq_side_paths(
+    mol: Mol, ring: set[int], exclude: set[int],
+) -> list[set[int]] | None:
+    """Linear n-alkyl C1–C12 paths from each ring side start, or None."""
+    blocked = ring | exclude
+    paths: list[set[int]] = []
+    for s in _ring_side_starts(mol, ring, exclude):
+        path = _walk_linear_n(mol, s, blocked, max_n=12)
+        if path is None:
+            return None
+        paths.append(set(path))
+    return paths
+
+
+def _bq_alkyls_ok(mol: Mol, ring: set[int], exclude: set[int]) -> bool:
+    paths = _bq_side_paths(mol, ring, exclude)
+    if paths is None:
+        return False
+    outside = set(_outside_carbons(mol, ring, exclude))
+    return _disjoint_cover(paths, outside)
 
 
 def _bq_subs_ok(info: dict, mol: Mol, ring: list[int], ket: list[int]) -> bool:
@@ -94,7 +107,7 @@ def _bq_subs_ok(info: dict, mol: Mol, ring: list[int], ket: list[int]) -> bool:
     exclude = _bq_exclude(info, mol, rset, ket)
     if exclude is None or not _no_hetero_outside(mol, rset, exclude):
         return False
-    return _bq_alkoxy_ok(info, rset) and _bq_methyls_ok(mol, rset, exclude)
+    return _bq_alkoxy_ok(info, rset) and _bq_alkyls_ok(mol, rset, exclude)
 
 
 _BQ_BLOCK = (

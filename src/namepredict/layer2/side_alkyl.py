@@ -134,11 +134,13 @@ def _omega_step(
     return (cur, None) if _is_omega_halo_c(mol, cur) else None
 
 
-def _walk_with(mol: Mol, start: int, chain: set[int], step_fn) -> list[int] | None:
+def _walk_with(
+    mol: Mol, start: int, chain: set[int], step_fn, max_len: int = 5,
+) -> list[int] | None:
     path: list[int] = []
     prev: int | None = None
     cur: int | None = start
-    while cur is not None and len(path) < 5:
+    while cur is not None and len(path) < max_len:
         step = step_fn(mol, cur, prev, chain, start)
         if step is None:
             return None
@@ -157,6 +159,14 @@ def _walk_omega_halo(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
 def _walk_linear(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     path = _walk_with(mol, start, chain, _advance)
     return path if path is not None and 1 <= len(path) <= 4 else None
+
+
+def _walk_linear_n(
+    mol: Mol, start: int, chain: set[int], max_n: int = 12,
+) -> list[int] | None:
+    """Linear pure n-alkyl path of length 1..max_n (C1–C12 for BQ sides)."""
+    path = _walk_with(mol, start, chain, _advance, max_len=max_n + 1)
+    return path if path is not None and 1 <= len(path) <= max_n else None
 
 
 def _is_terminal_methyl(mol: Mol, idx: int, parent: int) -> bool:
@@ -374,10 +384,7 @@ def _outside_c_atoms(mol: Mol, ring: set[int]) -> set[int]:
 
 def _linear_path_ok(mol: Mol, start: int, ring: set[int], max_n: int) -> list[int] | None:
     """Linear n-alkyl path from start of length 1..max_n, or None."""
-    path = _walk_linear(mol, start, ring)
-    if path is None or len(path) > max_n:
-        return None
-    return path
+    return _walk_linear_n(mol, start, ring, max_n=max_n)
 
 
 def _linear_n_alkyl_sides_ok(
