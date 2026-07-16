@@ -58,8 +58,6 @@ def test_partial_deprotonation_does_not_claim_polycarboxylate() -> None:
 
 @pytest.mark.parametrize("smiles,old_name", [
     ("O=C([O-])CC(C(=O)O)CC(=O)O", "pentane"),
-    (r"O=C([O-])/C=C\C(=C/C(=O)[O-])C(=O)[O-]", "hexanoate"),
-    ("O=C(O)C=C(CC(=O)O)C(=O)O", "pentanoic acid"),
     ("CC(C(C(=O)O)C(C(=O)O)C(=O)O)C", "3-methylbutanoic acid"),
 ])
 def test_unsupported_polyacids_close_ordinary_candidate_fallback(
@@ -71,12 +69,57 @@ def test_unsupported_polyacids_close_ordinary_candidate_fallback(
     assert normalize_en(result.en) != normalize_en(old_name)
 
 
-@pytest.mark.parametrize("smiles", [
-    r"O=C([O-])/C=C\C(=C/C(=O)[O-])C(=O)[O-]",  # chebi-159
-    "O=C(O)C=C(CC(=O)O)C(=O)O",  # chebi-652
+@pytest.mark.parametrize(("smiles", "en", "zh"), [
+    (
+        r"O=C([O-])/C=C\C(=C/C(=O)[O-])C(=O)[O-]",  # chebi-159
+        "(1E,3Z)-buta-1,3-diene-1,2,4-tricarboxylate",
+        "(1E,3Z)-丁-1,3-二烯-1,2,4-三羧酸根",
+    ),
+    (
+        "O=C(O)C=C(CC(=O)O)C(=O)O",  # chebi-652
+        "prop-1-ene-1,2,3-tricarboxylic acid",
+        "丙-1-烯-1,2,3-三羧酸",
+    ),
+    (
+        "O=C(O)C#CC(C(=O)O)C(=O)O",
+        "prop-1-yne-1,3,3-tricarboxylic acid",
+        "丙-1-炔-1,3,3-三羧酸",
+    ),
+    (
+        "O=C(O)C#CC#CC(C(=O)O)C(=O)O",
+        "pent-1,3-diyne-1,5,5-tricarboxylic acid",
+        "戊-1,3-二炔-1,5,5-三羧酸",
+    ),
+    (
+        "O=C(O)C=CC#CC(C(=O)O)C(=O)O",
+        "pent-1-ene-3-yne-1,5,5-tricarboxylic acid",
+        "戊-1-烯-3-炔-1,5,5-三羧酸",
+    ),
+    (
+        "O=C(O)C#CC#CC#CC(C(=O)O)C(=O)O",
+        "hept-1,3,5-triyne-1,7,7-tricarboxylic acid",
+        "庚-1,3,5-三炔-1,7,7-三羧酸",
+    ),
+    (
+        "O=C(O)C=CC=CC=CC(C(=O)O)C(=O)O",
+        "hepta-1,3,5-triene-1,7,7-tricarboxylic acid",
+        "庚-1,3,5-三烯-1,7,7-三羧酸",
+    ),
 ])
-def test_unsaturated_benchmark_polyacids_are_not_claimed(smiles: str) -> None:
-    assert try_polycarboxylic_parent(analyze(Chem.MolFromSmiles(smiles))) is None
+def test_unsaturated_polyacids_have_strict_bilingual_names(
+    smiles: str, en: str, zh: str,
+) -> None:
+    result = SMILESNNamer().name(smiles)
+    assert result.success
+    assert normalize_en(result.en) == normalize_en(en)
+    assert normalize_zh(result.zh) == normalize_zh(zh)
+
+
+def test_unsaturated_polyacid_parent_retains_all_core_unsaturation() -> None:
+    info = analyze(Chem.MolFromSmiles(r"O=C([O-])/C=C\C(=C/C(=O)[O-])C(=O)[O-]"))
+    parent = try_polycarboxylic_parent(info)
+    assert parent is not None
+    assert len(parent["double_bonds"]) == 2
 
 
 def test_chebi_785_saturated_polyacid_exact_name() -> None:

@@ -4,6 +4,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from rdkit.Chem.rdchem import Mol
+_ALKANE_NAMES = {
+    1: ("methane", "甲烷"), 2: ("ethane", "乙烷"), 3: ("propane", "丙烷"),
+    4: ("butane", "丁烷"), 5: ("pentane", "戊烷"), 6: ("hexane", "己烷"),
+    7: ("heptane", "庚烷"), 8: ("octane", "辛烷"), 9: ("nonane", "壬烷"),
+    10: ("decane", "癸烷"),
+}
+
+def _alkane_names(n: int) -> tuple[str, str] | None:
+    return _ALKANE_NAMES.get(n)
+
 
 
 @dataclass(frozen=True)
@@ -78,14 +88,27 @@ def _all_deprotonated(info: dict) -> bool:
     return bool(acids) and all(acid.get("anion") for acid in acids)
 
 
-def _has_unsaturated_core(info: dict) -> bool:
-    return bool(info.get("double_bonds") or info.get("triple_bonds"))
+def _core_bonds(info: dict, key: str, core: set[int]) -> list[tuple[int, int]]:
+    return [(b["c1"], b["c2"]) for b in info.get(key) or [] if b["c1"] in core and b["c2"] in core]
+
+
+def _bond_meta(info: dict, core: set[int]) -> dict:
+    doubles = _core_bonds(info, "double_bonds", core)
+    triples = _core_bonds(info, "triple_bonds", core)
+    return {"double_bonds": doubles, "triple_bonds": triples,
+            "double_bond": doubles[0] if len(doubles) == 1 else None,
+            "triple_bond": triples[0] if len(triples) == 1 else None}
+
+
+def _has_external_unsaturation(info: dict, core: set[int]) -> bool:
+    bonds = _core_bonds(info, "double_bonds", core) + _core_bonds(info, "triple_bonds", core)
+    return len(bonds) != len(info.get("double_bonds") or []) + len(info.get("triple_bonds") or [])
 
 
 def _polyacid_ok(info: dict) -> bool:
     acids = _carboxyl_carbons(info); mol = info["mol"]
     core = _core_carbons(mol, acids)
-    return _is_supported_count(acids) and _has_only_polyacid_fgs(info) and _is_acyclic_carbon_set(mol, core) and not _has_unsaturated_core(info)
+    return _is_supported_count(acids) and _has_only_polyacid_fgs(info) and _is_acyclic_carbon_set(mol, core) and not _has_external_unsaturation(info, core)
 
 
 def _polycarboxylic_block_reason(info: dict) -> str | None:
@@ -109,12 +132,15 @@ def try_polycarboxylic_parent(info: dict) -> dict | None:
     if eligibility is None or not eligibility.supported:
         return None
     got = _core_path(info)
-    return _parent(got, len(_carboxyl_carbons(info)), _all_deprotonated(info)) if got else None
+    return _parent(info, got, len(_carboxyl_carbons(info)), _all_deprotonated(info)) if got else None
 
 
-def _parent(got: tuple[list[int], list[int]], count: int, anion: bool) -> dict:
-    chain, attach = got
-    return {"chain": chain, "n_carbons": len(chain), "kind": "polycarboxylic", "cooh_c_idxs": attach, "acid_count": count, "anion": anion}
+def _parent(info: dict, got: tuple[list[int], list[int]], count: int, anion: bool) -> dict:
+    chain, attach = got; core = set(chain)
+    names = _alkane_names(len(chain))
+    stems = {} if names is None else {"stem_en": names[0], "stem_zh": names[1]}
+    return {"chain": chain, "n_carbons": len(chain), "kind": "polycarboxylic", "cooh_c_idxs": attach,
+            "acid_count": count, "anion": anion, "mol": info["mol"], **stems, **_bond_meta(info, core)}
 
 
 def has_partial_deprotonation(info: dict) -> bool:

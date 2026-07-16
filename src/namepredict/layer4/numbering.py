@@ -13,6 +13,7 @@ from namepredict.layer4.polyene import (
     ene_locants, orient_alkenol, orient_alkenedioic, orient_cyclopolyene,
     orient_polyene, prefer_unsat_if_fg_tie,
 )
+from namepredict.layer4.polycarboxylic import orient_polycarboxylic, polycarboxylic_facts
 from namepredict.layer4.sat_hetero_orient import orient_sat_hetero_repl as _orient_sat_hetero_repl
 def _pos_on(chain: list[int], c: int | None) -> int | None:
     if c is None or c not in chain:
@@ -335,7 +336,7 @@ def _orient_diacid(chain: list[int], parent: dict, substituents: list) -> list[i
         return _orient_alkenedioic(chain, parent, substituents)
     return _orient_alkane(chain, substituents)
 def _orient_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    return _orient_pair(chain, parent, "cooh_c_idxs", substituents)
+    return orient_polycarboxylic(chain, parent, _orient_pair)
 def _benzoic_orienters() -> dict:
     b = _orient_benzoic
     return {"benzoic": b, "benzaldehyde": b, "acetophenone": b, "benzoate": b,
@@ -406,11 +407,14 @@ def _ene_locant(oriented: dict) -> int | None:
         )
     return None
 def _yne_locant(oriented: dict) -> int | None:
+    locs = oriented.get("yne_locants") or []
+    if locs:
+        return locs[0]
     if oriented.get("kind") == "alkyne" or oriented.get("triple_bond"):
         return _ene_locant_of(_ene_ends_on(oriented.get("chain") or [], oriented.get("triple_bond")))
     return None
 def _has_parent_yne(oriented: dict) -> bool:
-    return bool(oriented.get("triple_bond"))
+    return bool(oriented.get("triple_bond") or oriented.get("triple_bonds"))
 def _omit_oh(oh_pos: int | None, n_carbons: int, kind: str | None = None, parent: dict | None = None) -> bool:
     if kind == "cycloalcohol":
         return True
@@ -470,7 +474,9 @@ def _fg_locants(oriented: dict) -> dict:
         **_unsat_locants(oriented, n),
     }
 def _pack(oriented: dict, substituents: list) -> dict:
-    return {"parent": oriented, "substituents": substituents, **_fg_locants(oriented)}
+    facts = polycarboxylic_facts(oriented) if oriented.get("kind") == "polycarboxylic" else {}
+    numbered = {"parent": {**oriented, **facts}, "substituents": substituents, **_fg_locants({**oriented, **facts})}
+    return {**numbered, **facts}
 def number(parent: dict, substituents: list) -> dict:
     chain, kind = _orient_chain(parent, substituents), parent.get("kind")
     oriented = {**parent, "chain": chain}
