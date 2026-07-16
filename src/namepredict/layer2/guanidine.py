@@ -21,8 +21,12 @@ def _aryl_of(mol, n_idx: int, c_idx: int) -> dict | None:
     if not (atom.GetIsAromatic() and atom.GetAtomicNum() == 6):
         return None
     from namepredict.layer2.aryl_sub import _phenyl_at
+    from namepredict.layer2.aryl_stem import with_aryl_names
     ph = _phenyl_at(mol, c_idx, n_idx)
-    return None if ph is None else {"aryl_c": c_idx, "n_idx": n_idx, "ph": ph}
+    if ph is None:
+        return None
+    base = {"aryl_c": c_idx, "n_idx": n_idx, "ph": ph}
+    return with_aryl_names(base, mol, c_idx, n_idx)
 
 
 def _is_so2_s(mol, s_idx: int, n_idx: int) -> bool:
@@ -36,10 +40,13 @@ def _is_so2_s(mol, s_idx: int, n_idx: int) -> bool:
 
 
 def _pack_as(n_idx: int, s_idx: int, ar: dict) -> dict:
-    return {
+    out = {
         "kind": "arylsulfonyl", "n_idx": n_idx, "s_idx": s_idx,
         "aryl_c": ar["aryl_c"], "ph": ar["ph"],
     }
+    if "en" in ar:
+        out["en"], out["zh"] = ar["en"], ar.get("zh") or ar["en"]
+    return out
 
 
 def _arylsulfonyl_of(mol, n_idx: int, s_idx: int) -> dict | None:

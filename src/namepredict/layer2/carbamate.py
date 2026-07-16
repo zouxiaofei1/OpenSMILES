@@ -25,14 +25,46 @@ def _arm_n(mol, c_idx: int, n_idx: int) -> int:
     return len(_longest_from(mol, c_idx, {n_idx}) or [c_idx])
 
 
+def _n_aryl_fields(mol, n_idx: int, c_idx: int) -> dict:
+    from namepredict.layer2.aryl_stem import aryl_en_zh
+    en, zh = aryl_en_zh(mol, c_idx, n_idx)
+    return {"n_phenyl": True, "n_aryl_c": c_idx, "n_aryl_en": en, "n_aryl_zh": zh}
+
+
 def _one_n_sub(mol, n_idx: int, c_idx: int) -> dict:
     atom = mol.GetAtomWithIdx(c_idx)
     if atom.GetIsAromatic() and atom.GetAtomicNum() == 6:
-        return {"n_phenyl": True, "n_aryl_c": c_idx}
+        return _n_aryl_fields(mol, n_idx, c_idx)
     from namepredict.layer2.aryl_sub import _ch2_ph_at
     if _ch2_ph_at(mol, c_idx, n_idx) is not None:
         return {"n_benzyl": True, "n_benzyl_ch2": c_idx}
     return {"n_alkyl_n": _arm_n(mol, c_idx, n_idx)}
+
+
+def _n_arm_label(mol, n_idx: int, c_idx: int) -> dict:
+    """One N-sub label: kind + en/zh (+n for alkyl)."""
+    atom = mol.GetAtomWithIdx(c_idx)
+    if atom.GetIsAromatic() and atom.GetAtomicNum() == 6:
+        from namepredict.layer2.aryl_stem import aryl_en_zh
+        en, zh = aryl_en_zh(mol, c_idx, n_idx)
+        return {"kind": "aryl", "en": en, "zh": zh, "c": c_idx}
+    n = _arm_n(mol, c_idx, n_idx)
+    return {"kind": "alk", "n": n, "en": None, "zh": None, "c": c_idx}
+
+
+_N_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
+_N_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
+
+
+def _one_alk_fill(lab: dict) -> dict:
+    if lab["kind"] != "alk":
+        return lab
+    n = int(lab.get("n") or 0)
+    return {**lab, "en": _N_EN.get(n, "alkyl"), "zh": _N_ZH.get(n, "烷基")}
+
+
+def _fill_alk_labels(labs: list[dict]) -> list[dict]:
+    return [_one_alk_fill(lab) for lab in labs]
 
 
 def _n_meta(info: dict, e: dict) -> dict:
@@ -42,6 +74,8 @@ def _n_meta(info: dict, e: dict) -> dict:
         out.update(_one_n_sub(mol, e["n_idx"], n_cs[0]))
     elif len(n_cs) == 2:
         out["n_alkyl_ns"] = [_arm_n(mol, c, e["n_idx"]) for c in n_cs]
+        labs = [_n_arm_label(mol, e["n_idx"], c) for c in n_cs]
+        out["n_labels"] = _fill_alk_labels(labs)
     return out
 
 

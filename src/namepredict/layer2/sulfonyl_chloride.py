@@ -33,8 +33,11 @@ def _aryl_of(mol, c_idx: int, parent: int) -> dict | None:
     if not (atom.GetIsAromatic() and atom.GetAtomicNum() == 6):
         return None
     from namepredict.layer2.aryl_sub import _phenyl_at
+    from namepredict.layer2.aryl_stem import with_aryl_names
     ph = _phenyl_at(mol, c_idx, parent)
-    return None if ph is None else {"c": c_idx, "ph": ph}
+    if ph is None:
+        return None
+    return with_aryl_names({"c": c_idx, "ph": ph}, mol, c_idx, parent)
 
 
 def _alkyl_s(mol, c: int, s: int) -> dict | None:

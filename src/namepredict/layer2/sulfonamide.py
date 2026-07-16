@@ -33,16 +33,20 @@ def _aryl_of(mol, c_idx: int, parent: int) -> dict | None:
     if not (atom.GetIsAromatic() and atom.GetAtomicNum() == 6):
         return None
     from namepredict.layer2.aryl_sub import _phenyl_at
+    from namepredict.layer2.aryl_stem import with_aryl_names
     ph = _phenyl_at(mol, c_idx, parent)
-    return None if ph is None else {"c": c_idx, "ph": ph}
+    if ph is None:
+        return None
+    return with_aryl_names({"c": c_idx, "ph": ph}, mol, c_idx, parent)
 
 
 def _cyclo_of(mol, c_idx: int, parent: int) -> dict | None:
     from namepredict.layer2.side_cycloalkyl import _is_monocycloalkyl
+    from namepredict.layer2.aryl_stem import with_cyclo_names
     ring = _is_monocycloalkyl(mol, c_idx, {parent})
     if ring is None or not (3 <= len(ring) <= 6):
         return None
-    return {"c": c_idx, "size": len(ring)}
+    return with_cyclo_names({"c": c_idx, "size": len(ring)})
 
 
 def _s_side(mol, e: dict) -> dict | None:

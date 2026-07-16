@@ -24,8 +24,12 @@ def _aryl_of(mol, n_idx: int, c_idx: int) -> dict | None:
     if not (atom.GetIsAromatic() and atom.GetAtomicNum() == 6):
         return None
     from namepredict.layer2.aryl_sub import _phenyl_at
+    from namepredict.layer2.aryl_stem import with_aryl_names
     ph = _phenyl_at(mol, c_idx, n_idx)
-    return None if ph is None else {"aryl_c": c_idx, "n_idx": n_idx, "ph": ph}
+    if ph is None:
+        return None
+    base = {"aryl_c": c_idx, "n_idx": n_idx, "ph": ph}
+    return with_aryl_names(base, mol, c_idx, n_idx)
 
 
 def _alkyl_ns(mol, n_idx: int, cs: list[int]) -> list[int] | None:

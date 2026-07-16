@@ -35,16 +35,22 @@ def _alkyl_side(mol, o_idx: int, c_idx: int) -> dict | None:
     return {"kind": "alkyl", "n": int(n), "o_idx": o_idx, "c_idx": c_idx}
 
 
+def _is_arom_c(mol, c_idx: int) -> bool:
+    atom = mol.GetAtomWithIdx(c_idx)
+    return atom.GetIsAromatic() and atom.GetAtomicNum() == 6
+
+
 def _aryl_side(mol, o_idx: int, c_idx: int) -> dict | None:
     """Unfused Ph with ≤3 Me/halo leaves (aryl_sub gate)."""
-    atom = mol.GetAtomWithIdx(c_idx)
-    if not (atom.GetIsAromatic() and atom.GetAtomicNum() == 6):
+    if not _is_arom_c(mol, c_idx):
         return None
     from namepredict.layer2.aryl_sub import _phenyl_at
+    from namepredict.layer2.aryl_stem import with_aryl_names
     ph = _phenyl_at(mol, c_idx, o_idx)
     if ph is None:
         return None
-    return {"kind": "aryl", "o_idx": o_idx, "c_idx": c_idx, "ph": ph}
+    base = {"kind": "aryl", "o_idx": o_idx, "c_idx": c_idx, "ph": ph}
+    return with_aryl_names(base, mol, c_idx, o_idx)
 
 
 def _side(mol, o_idx: int, c_idx: int) -> dict | None:
