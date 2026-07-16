@@ -57,6 +57,12 @@ def test_l5_special_fg_no_layer2_import(fname: str) -> None:
     assert hits == [], f"{fname} must not import layer2: {hits}"
 
 
+@pytest.mark.parametrize("path", sorted(_L5.glob("*.py")), ids=lambda p: p.name)
+def test_all_l5_modules_have_no_layer2_import(path: Path) -> None:
+    hits = _layer2_import_hits(path)
+    assert hits == [], f"{path.name} must not import layer2: {hits}"
+
+
 # End-to-end bilingual gold (behavior must stay flat after cut).
 _E2E = [
     # sulfonamide aryl

@@ -8,7 +8,7 @@ from namepredict.layer5.stems import (
     SULFIDE_ALKYL_ZH, SULFIDE_SYM_EN, SULFIDE_SYM_ZH, maybe_anion_names, maybe_metal_salt_names, zh_stem,
 )
 from namepredict.layer5.benzene_names import (
-    arene_fg_parent_names, benzene_parent_names, benzene_prefix,
+    benzene_parent_names, benzene_prefix,
     benzoate_parent_names, benzenediamine_names, benzenediol_names, hetero5carboxylic_names,
     join_kind_name, pyridine_kind_names, sat_hetero_carboxylic_names,
 )
@@ -397,10 +397,10 @@ def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None
     if kind == "benzoate": return benzoate_parent_names(numbered, _build_prefix)
     if kind in _H5COOH_KINDS: return hetero5carboxylic_names(numbered)
     if kind in _SHCOOH_KINDS: return sat_hetero_carboxylic_names(numbered)
-    stem = _parent_stem_names(numbered)
-    if stem is not None: return stem
     top = pyridine_kind_names(kind, numbered, _build_prefix)
-    return top if top is not None else (arene_fg_parent_names(kind) or _alkane_names(n))
+    if top is not None: return top
+    stem = _parent_stem_names(numbered)
+    return stem if stem is not None else _alkane_names(n)
 def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     unsat = _unsat_names(kind, n, numbered)
     return unsat if unsat is not None else _ring_or_alkane(kind, n, numbered)

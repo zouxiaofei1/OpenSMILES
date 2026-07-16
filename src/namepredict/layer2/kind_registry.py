@@ -111,6 +111,14 @@ def parent_names(kind: str) -> tuple[str, str] | None:
     return m.en, m.zh
 
 
+def pack_parent_stem(parent: dict, mol=None) -> dict:
+    packed = parent if parent.get("mol") is not None else {**parent, "mol": mol}
+    names = parent_names(packed.get("kind") or "")
+    if names is None or packed.get("stem_en") or packed.get("stem_zh"):
+        return packed
+    return {**packed, "stem_en": names[0], "stem_zh": names[1]}
+
+
 def all_kinds() -> frozenset[str]:
     return frozenset(_REG)
 

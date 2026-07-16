@@ -1,7 +1,6 @@
 """Retained / multi-substituted benzene parent and prefix helpers (P-22.1.3)."""
 from __future__ import annotations
 
-from namepredict.layer2.kind_registry import parent_names as _registry_parent_names
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 
 
@@ -103,10 +102,6 @@ def benzene_prefix(numbered: dict, build_prefix) -> tuple[str, str]:
         return iso_fused_prefix(numbered, build_prefix)
     en_pre, zh_pre = build_prefix(numbered.get("substituents") or [], 6, "benzene")
     return (en_pre, _anisole_zh_prefix(numbered, build_prefix)) if _is_poly_anisole(numbered) else (en_pre, zh_pre)
-
-
-def arene_fg_parent_names(kind: str) -> tuple[str, str] | None:
-    return _registry_parent_names(kind)
 
 
 def _stereo_lead(parent: str) -> tuple[str, str]:

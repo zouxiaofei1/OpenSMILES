@@ -6,7 +6,10 @@ from __future__ import annotations
 import pytest
 
 from namepredict.constants import normalize_en, normalize_zh
+from namepredict.layer1.analyzer import analyze
+from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer2 import kind_registry as kr
+from namepredict.layer2.parent_selector import select_parent
 from namepredict.layer2.scoring import _score_parent
 from namepredict.namer import SMILESNNamer
 
@@ -124,6 +127,34 @@ def test_parent_names_match_legacy_arene_fg(kind: str, names: tuple[str, str]) -
     assert kr.parent_names(kind) == names
 
 
+_FIXED_PARENT_CASES = [
+    ("Oc1ccccc1", "phenol"),
+    ("Nc1ccccc1", "aniline"),
+    ("O=C(O)c1ccccc1", "benzoic"),
+    ("n1ccccc1", "pyridine"),
+    ("c1ccc2ccccc2c1", "naphthalene"),
+]
+
+
+@pytest.mark.parametrize("smiles,kind", _FIXED_PARENT_CASES)
+def test_select_parent_preloads_registry_stem(smiles: str, kind: str) -> None:
+    mol = preprocess(smiles)
+    assert mol is not None
+    parent = select_parent(analyze(mol))
+    assert parent["kind"] == kind
+    assert (parent.get("stem_en"), parent.get("stem_zh")) == kr.parent_names(kind)
+
+
+def test_select_parent_preserves_existing_stem(monkeypatch: pytest.MonkeyPatch) -> None:
+    from namepredict.layer2 import candidates
+
+    parent = {"kind": "phenol", "stem_en": "custom", "stem_zh": "自定义", "mol": object()}
+    monkeypatch.setattr(candidates, "_collect_candidates", lambda _: [parent])
+    selected = select_parent({"mol": parent["mol"]})
+    assert selected["stem_en"] == "custom"
+    assert selected["stem_zh"] == "自定义"
+
+
 def test_all_legacy_kinds_registered() -> None:
     assert set(_LEGACY_ARENE_FG) <= set(kr.all_kinds())
 
@@ -163,11 +194,3 @@ def test_behavior_regression(smiles: str, en: str, zh: str) -> None:
     assert r.success
     assert normalize_en(r.en) == normalize_en(en)
     assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
-def test_l5_arene_fg_uses_registry() -> None:
-    from namepredict.layer5.benzene_names import arene_fg_parent_names
-
-    for kind, names in _LEGACY_ARENE_FG.items():
-        assert arene_fg_parent_names(kind) == names
-    assert arene_fg_parent_names("no_such") is None
