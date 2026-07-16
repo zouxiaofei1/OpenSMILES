@@ -179,16 +179,3 @@
 [#4c79b62][IUPAC P-65.3] 游离磺酸/磺酸根：C1–C4 烷基+简单 Ph(Me/halo≤2)+阴离子/碱金属盐 [+unit, dual 14.9%(605)→14.9%(606), fails 3457→3456, 0 REGRESS]
 [#e72e905][IUPAC P-64.2.1 / P-31.1] 开链一元不饱和酮 alkenone/alkynone：L2 unsat_or_sat 并酮+L4 FG-tie ene/yne 定向+L5 …-n-en-m-one/…-n-yn-m-one（E/Z） [+9 tests, dual 14.9%(606)→14.9%(607), fails 3456→3455, 0 REGRESS]
 ## 其他
-### 磺酸酯（R–SO2–OR′）选题路线 — chem-brainstorm 2026-07-16
-- 靶心：功能类名 alkyl X-sulfonate / X磺酸Y酯（IUPAC 磺酸 P-65.3 + 酯类比 P-65.6 / 中文 6.5.4.2；代码注释 P-65.3.2 为历史 first-cut 标号，非 cleaned 前缀条）
-- 现状 first-cut 已有：L1 `layer1/sulfonate.py`；L2 `layer2/sulfonate.py`（S-侧 aryl|n-alkyl C1–4，O-侧 **仅** n-alkyl C1–4）；L5 `layer5/sulfonate_names.py`（甲苯磺酸 邻/间/对 中文保留）；fg_producers + kind_registry(sulfonate,11)；单元 `tests/unit/test_sulfonate.py`
-- 兄弟已覆盖（互斥门控）：sulfonic_acid / sulfonamide / sulfonyl_chloride；盐/阴离子走 sulfonic_acid
-- 命名空间缺口：① O-侧 special（benzyl/tBu/iPr/Ph，`classify_alkoxy` 已有）与更长 n-alkyl ② S-侧更长烷基/环烷基/更多芳叶 ③ 更高 FG 时 (sulfonyl)oxy 前缀 ④ 硫酸酯/磺内酯/mesyl·tosyl·triflate 缩写
-- 变体轴：O-侧复杂度=下轮主刀；S-侧=再下轮；前缀/环内/硫酸酯=远期；同源 Se/Te=勿顺手
-- 架构：四兄弟 L2/L5 同构复制 → 独立「去重轮」；禁止与羧酸酯 parent 硬合并
-- Round A（下一刀）：O-侧扩全 — 挂 `classify_alkoxy` special + n-alkyl 放宽（用 `ester_alkyl_*`）；L5 消费 alkoxy_en/zh；补 unit/负例；禁止顺带 S-侧大扩、前缀、硫酸酯、架构大拆
-- Round B：S-侧扩全（C5+ 烷基 / monocylo / 芳环叶对齐 free acid）
-- Round C：SO2 四兄弟公共抽取（_s_side/_arm/词干表）
-- 远期：prefix (methanesulfonyl)oxy；sulfate；sultone；retained mesyl/tosyl/triflate
-- 接入：L1 sulfonate_entries；L2 _sulfonate_parent / alkoxy_side.classify_alkoxy；L5 sulfonate_names / stems.ester_alkyl_*；special_fg_names；test_sulfonate
-- 禁止：一轮吞全家；无样本跨族抽象；改 benchmark 库
