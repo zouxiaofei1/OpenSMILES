@@ -1,0 +1,175 @@
+# IUPAC: P-29.2
+# Layer: L2,L3
+"""Architecture contract for Layer 2 side topology facts consumed by Layer 3."""
+from __future__ import annotations
+
+import ast
+from pathlib import Path
+
+
+LAYER3 = Path(__file__).parents[2] / "src" / "namepredict" / "layer3"
+LAYER2_FACTS = LAYER3.parent / "layer2" / "side_facts.py"
+LEAF_PROTOCOL = LAYER3.parent / "layer2" / "leaves" / "protocol.py"
+
+
+def _private_layer2_imports(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    found: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("namepredict.layer2"):
+            found.extend(alias.name for alias in node.names if alias.name.startswith("_"))
+    return found
+
+
+def test_layer3_uses_no_layer2_private_side_helpers() -> None:
+    paths = tuple(LAYER3.rglob("*.py"))
+    violations = {str(path.relative_to(LAYER3)): _private_layer2_imports(path) for path in paths}
+    assert not any(violations.values()), violations
+
+
+def _all_functions(path: Path) -> list[ast.FunctionDef | ast.AsyncFunctionDef]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    return [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+
+
+def _layer2_modules(tree: ast.AST) -> list[str]:
+    direct = [alias.name for node in ast.walk(tree) if isinstance(node, ast.Import)
+              for alias in node.names if alias.name.startswith("namepredict.layer2")]
+    froms = [(node.module or "") for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)
+             and (node.module or "").startswith("namepredict.layer2")]
+    return [*direct, *froms]
+
+
+def test_layer2_import_scan_covers_both_ast_forms() -> None:
+    tree = ast.parse("import namepredict.layer2.aryl_sub\nfrom namepredict.layer2 import side_alkyl")
+    assert _layer2_modules(tree) == [
+        "namepredict.layer2.aryl_sub", "namepredict.layer2",
+    ]
+
+
+def test_layer3_imports_layer2_only_through_side_facts() -> None:
+    violations: dict[str, list[str]] = {}
+    for path in LAYER3.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        modules = _layer2_modules(tree)
+        bad = [name for name in modules if name != "namepredict.layer2.side_facts"]
+        if bad:
+            violations[str(path.relative_to(LAYER3))] = bad
+    assert not violations, violations
+
+
+def test_side_facts_has_no_string_to_enum_dispatcher() -> None:
+    tree = ast.parse(LAYER2_FACTS.read_text(encoding="utf-8"))
+    mappings = [node.value for node in tree.body if isinstance(node, ast.Assign)
+                and isinstance(node.value, ast.Dict)]
+    bad = [mapping for mapping in mappings
+           if any(isinstance(key, ast.Constant) and isinstance(key.value, str)
+                  and isinstance(value, ast.Attribute) and value.attr.isupper()
+                  for key, value in zip(mapping.keys, mapping.values))]
+    assert not bad
+
+
+def test_side_facts_does_not_dispatch_match_kind_keys() -> None:
+    tree = ast.parse(LAYER2_FACTS.read_text(encoding="utf-8"))
+    keys = [node.slice.value for node in ast.walk(tree) if isinstance(node, ast.Subscript)
+            and isinstance(node.slice, ast.Constant) and isinstance(node.slice.value, str)]
+    assert "kind" not in keys
+
+
+def test_side_facts_has_no_naming_token_maps() -> None:
+    tree = ast.parse(LAYER2_FACTS.read_text(encoding="utf-8"))
+    assigned = {target.id for node in tree.body if isinstance(node, ast.Assign)
+                for target in node.targets if isinstance(target, ast.Name)}
+    assert not {"_LEAF_KINDS", "_ALKYL_SHAPES"} & assigned
+
+
+def _enum_members(node: ast.ClassDef) -> list[ast.Assign]:
+    return [item for item in node.body if isinstance(item, ast.Assign)]
+
+
+def _is_auto_member(node: ast.Assign) -> bool:
+    value = node.value
+    return (isinstance(value, ast.Call) and isinstance(value.func, ast.Name)
+            and value.func.id == "auto" and not value.args and not value.keywords)
+
+
+def test_fact_discriminators_are_topology_enums() -> None:
+    tree = ast.parse(LAYER2_FACTS.read_text(encoding="utf-8"))
+    annotations = [ast.unparse(node.annotation) for node in ast.walk(tree)
+                   if isinstance(node, ast.AnnAssign)]
+    assert not any("Literal" in annotation for annotation in annotations)
+    protocol = ast.parse(LEAF_PROTOCOL.read_text(encoding="utf-8"))
+    enum_names = {"AlkylShape", "ArylArmKind", "HeteroarylKind", "HeteroarylLeaf"}
+    enums = {node.name: node for node in tree.body if isinstance(node, ast.ClassDef)
+             and node.name in enum_names}
+    leaf = next(node for node in protocol.body if isinstance(node, ast.ClassDef)
+                and node.name == "ArylLeafKind")
+    enums[leaf.name] = leaf
+    enum_names.add("ArylLeafKind")
+    assert set(enums) == enum_names
+    assert all([ast.unparse(base) for base in node.bases] == ["Enum"] for node in enums.values())
+    assert all(_enum_members(node) and all(map(_is_auto_member, _enum_members(node)))
+               for node in enums.values())
+    members = {item.targets[0].id for item in _enum_members(enums["AlkylShape"])}
+    named = {"ISOPROPYL", "SEC_BUTYL", "TERT_BUTYL", "ISOBUTYL",
+             "TERT_AMYL", "ISOPENTYL", "NEOPENTYL", "TRIFLUOROMETHYL"}
+    assert not members & named
+
+
+def test_side_facts_has_no_naming_dependencies() -> None:
+    tree = ast.parse(LAYER2_FACTS.read_text(encoding="utf-8"))
+    imports = [(node.module or "", alias.name) for node in ast.walk(tree)
+               if isinstance(node, ast.ImportFrom) for alias in node.names]
+    calls = [node.func.id for node in ast.walk(tree) if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Name)]
+    assert not [(module, name) for module, name in imports if name == "name_leaf"]
+    assert "name_leaf" not in calls
+
+
+def test_public_side_fact_functions_are_typed_and_explicit() -> None:
+    public = [fn for fn in _all_functions(LAYER2_FACTS) if not fn.name.startswith("_")]
+    assert all(fn.returns is not None for fn in public)
+    assert all(fn.args.vararg is None and fn.args.kwarg is None for fn in public)
+    assert all(all(arg.annotation is not None for arg in fn.args.args) for fn in public)
+
+
+def test_layer3_functions_are_explicit() -> None:
+    functions = [fn for path in LAYER3.rglob("*.py") for fn in _all_functions(path)]
+    assert all(fn.args.vararg is None and fn.args.kwarg is None for fn in functions)
+
+
+def test_side_fact_contract_has_no_public_dict_returns() -> None:
+    public = [fn for fn in _all_functions(LAYER2_FACTS) if not fn.name.startswith("_")]
+    returns = [ast.unparse(fn.returns) for fn in public]
+    assert not any("dict" in annotation for annotation in returns), returns
+
+
+def test_side_fact_contract_has_no_public_name_renderers() -> None:
+    tree = ast.parse(LAYER2_FACTS.read_text(encoding="utf-8"))
+    public = [n for n in tree.body
+              if isinstance(n, ast.FunctionDef) and not n.name.startswith("_")]
+    banned = [fn.name for fn in public if "render" in fn.name or "name" in fn.name]
+    string_tuples = [fn.name for fn in public if "tuple[str" in ast.unparse(fn.returns)]
+    assert not banned
+    assert not string_tuples
+
+
+def test_ring_leaf_contract_is_typed_topology() -> None:
+    tree = ast.parse(LAYER2_FACTS.read_text(encoding="utf-8"))
+    ring_leaf = next(n for n in tree.body if isinstance(n, ast.FunctionDef)
+                     and n.name == "ring_leaf")
+    annotation = ast.unparse(ring_leaf.returns)
+    assert "tuple" not in annotation and "dict" not in annotation
+    assert "object" not in [ast.unparse(arg.annotation) for arg in ring_leaf.args.args]
+
+
+def test_side_fact_dataclasses_expose_only_topology_fields() -> None:
+    tree = ast.parse(LAYER2_FACTS.read_text(encoding="utf-8"))
+    classes = [n for n in tree.body if isinstance(n, ast.ClassDef)]
+    forbidden = {"name", "en", "zh", "paren"}
+    for cls in classes:
+        fields = {n.target.id for n in cls.body if isinstance(n, ast.AnnAssign)
+                  and isinstance(n.target, ast.Name)}
+        assert not fields & forbidden, (cls.name, fields & forbidden)
+        methods = [n.name for n in cls.body if isinstance(n, ast.FunctionDef)]
+        assert methods == [], (cls.name, methods)

@@ -4,7 +4,7 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from namepredict.layer2.leaves.complex_h import COMPLEX_HANDLERS
-from namepredict.layer2.leaves.protocol import Match
+from namepredict.layer2.leaves.protocol import ArylLeafKind, LeafTopology, Match
 from namepredict.layer2.leaves.simple import SIMPLE_HANDLERS
 from namepredict.layer2.leaves.topo import nb_out
 
@@ -23,9 +23,22 @@ def match_leaf(mol: Mol, nb, ring_i: int, depth: int) -> tuple[Match, object] | 
     return None
 
 
-def match_leaf_kind(mol: Mol, nb, ring_i: int, depth: int = 1) -> str | None:
+def _topology(match: Match) -> LeafTopology:
+    value = match.get("z", match.get("n", 0))
+    extra = match.get("o_idx", match.get("ch2", -1))
+    return LeafTopology(match[ArylLeafKind], match["site"], frozenset(match["atoms"]), value,
+                        frozenset(match.get("child_ring", ())), match.get("child_attach", -1),
+                        match.get("child_parent", -1), extra)
+
+
+def match_leaf_topology(mol: Mol, nb, ring_i: int, depth: int) -> LeafTopology | None:
     got = match_leaf(mol, nb, ring_i, depth)
-    return None if got is None else got[0]["kind"]
+    return _topology(got[0]) if got is not None else None
+
+
+def match_leaf_kind(mol: Mol, nb, ring_i: int, depth: int = 1) -> ArylLeafKind | None:
+    got = match_leaf(mol, nb, ring_i, depth)
+    return None if got is None else got[0][ArylLeafKind]
 
 
 def name_leaf(mol: Mol, m: Match, h, depth: int) -> tuple[str, str, set[int]]:

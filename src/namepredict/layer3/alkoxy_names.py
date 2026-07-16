@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.side_alkyl import _outer_alkoxy_n, _outer_atoms
+from namepredict.layer2.side_facts import outer_alkoxy
 
 _ALKOXY_BASE_EN = {1: "methoxy", 2: "ethoxy", 3: "propoxy", 4: "butoxy"}
 _ALKOXY_BASE_ZH = {1: "甲氧基", 2: "乙氧基", 3: "丙氧基", 4: "丁氧基"}
@@ -64,11 +64,8 @@ def _make_alkoxy(attach: int, o_idx: int, atoms: list[int], n: int) -> dict | No
         return None
     en, zh = names
     n_c = {31: 3, 41: 4}.get(n, n)
-    return {
-        "kind": "alkoxy", "attach_idx": attach, "atoms": [o_idx] + atoms,
-        "n_carbons": n_c, "en": en, "zh": zh,
-        "paren": n >= 12 and n not in _BRANCHED_ALKOXY,
-    }
+    return {"kind": "alkoxy", "attach_idx": attach, "atoms": [o_idx] + atoms,
+            "n_carbons": n_c, "en": en, "zh": zh, "paren": False}
 
 
 def _alkoxy_ends(e: dict, chain_set: set[int]) -> tuple[int, int, int] | None:
@@ -86,10 +83,8 @@ def _one_ring_alkoxy(mol: Mol, e: dict, chain_set: set[int]) -> dict | None:
     o, ring_c, outer = ends
     if not mol.GetAtomWithIdx(ring_c).IsInRing() or mol.GetAtomWithIdx(outer).GetIsAromatic():
         return None
-    n = _outer_alkoxy_n(mol, outer, o)
-    if n == 0:
-        return None
-    return _make_alkoxy(ring_c, o, _outer_atoms(mol, outer, o, n), n)
+    fact = outer_alkoxy(mol, outer, o)
+    return _make_alkoxy(ring_c, o, list(fact.atoms), fact.code) if fact else None
 
 
 def _extract_alkoxys(info: dict, parent: dict) -> list[dict]:

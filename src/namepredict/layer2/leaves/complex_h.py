@@ -5,7 +5,7 @@ from rdkit.Chem import Mol
 
 from namepredict.layer2.aryl_depth2 import _nested_c6_at
 from namepredict.layer2.leaves import topo
-from namepredict.layer2.leaves.protocol import Match, make_match
+from namepredict.layer2.leaves.protocol import ArylLeafKind, Match, make_match
 from namepredict.layer2.leaves.simple import _FnHandler
 
 _MAX_DEPTH = 3
@@ -26,7 +26,7 @@ def match_phenyl(mol: Mol, nb, ring_i: int, depth: int) -> Match | None:
     if not _ph_ok(mol, ph, nb.GetIdx(), ring_i, depth + 1):
         return None
     return make_match(
-        "phenyl", set(ph), ring_i,
+        ArylLeafKind.PHENYL, set(ph), ring_i,
         child_ring=ph, child_attach=nb.GetIdx(), child_parent=ring_i,
     )
 
@@ -39,7 +39,7 @@ def match_phenoxy(mol: Mol, nb, ring_i: int, depth: int) -> Match | None:
     if ph is None or not _ph_ok(mol, ph, outer, nb.GetIdx(), depth + 1):
         return None
     return make_match(
-        "phenoxy", set(ph) | {nb.GetIdx()}, ring_i,
+        ArylLeafKind.PHENOXY, set(ph) | {nb.GetIdx()}, ring_i,
         child_ring=ph, child_attach=outer, child_parent=nb.GetIdx(), o_idx=nb.GetIdx(),
     )
 
@@ -95,7 +95,7 @@ def match_benzyl(mol: Mol, nb, ring_i: int, depth: int) -> Match | None:
     if not _ph_ok(mol, ph, outer, ch2, depth + 1):
         return None
     return make_match(
-        "benzyl", set(ph) | {ch2}, ring_i,
+        ArylLeafKind.BENZYL, set(ph) | {ch2}, ring_i,
         child_ring=ph, child_attach=outer, child_parent=ch2, ch2=ch2,
     )
 

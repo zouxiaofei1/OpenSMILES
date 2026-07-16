@@ -16,7 +16,7 @@ from namepredict.layer2.aryl_depth2 import (
     _leaf_atoms_nitro,
     _nested_c6_at,
 )
-from namepredict.layer2.leaves.protocol import make_match
+from namepredict.layer2.leaves.protocol import ArylLeafKind, make_match
 
 _HALO = frozenset({9, 17, 35, 53})
 
@@ -48,37 +48,37 @@ def nb_out(mol: Mol, i: int, ring: set[int]) -> list:
 def match_halo(mol: Mol, nb, ring_i: int, depth: int):
     if not is_halo(nb):
         return None
-    return make_match("halo", {nb.GetIdx()}, ring_i, z=nb.GetAtomicNum())
+    return make_match(ArylLeafKind.HALOGEN, {nb.GetIdx()}, ring_i, z=nb.GetAtomicNum())
 
 
 def match_me(mol: Mol, nb, ring_i: int, depth: int):
     if nb.GetAtomicNum() != 6 or not is_me_leaf(mol, nb.GetIdx(), ring_i):
         return None
-    return make_match("me", {nb.GetIdx()}, ring_i)
+    return make_match(ArylLeafKind.METHYL, {nb.GetIdx()}, ring_i)
 
 
 def match_cf3(mol: Mol, nb, ring_i: int, depth: int):
     if nb.GetAtomicNum() != 6 or not _is_cf3_leaf(mol, nb.GetIdx(), ring_i):
         return None
-    return make_match("cf3", _leaf_atoms_cf3(mol, nb.GetIdx()), ring_i)
+    return make_match(ArylLeafKind.TRIFLUOROMETHYL, _leaf_atoms_cf3(mol, nb.GetIdx()), ring_i)
 
 
 def match_nitro(mol: Mol, nb, ring_i: int, depth: int):
     if not _is_terminal_nitro(nb):
         return None
-    return make_match("nitro", _leaf_atoms_nitro(nb), ring_i)
+    return make_match(ArylLeafKind.NITRO, _leaf_atoms_nitro(nb), ring_i)
 
 
 def match_hydroxy(mol: Mol, nb, ring_i: int, depth: int):
     if not _is_terminal_oh(nb, ring_i):
         return None
-    return make_match("hydroxy", {nb.GetIdx()}, ring_i)
+    return make_match(ArylLeafKind.HYDROXY, {nb.GetIdx()}, ring_i)
 
 
 def match_amino(mol: Mol, nb, ring_i: int, depth: int):
     if not _is_terminal_nh2(nb, ring_i):
         return None
-    return make_match("amino", {nb.GetIdx()}, ring_i)
+    return make_match(ArylLeafKind.AMINO, {nb.GetIdx()}, ring_i)
 
 
 def match_alkoxy(mol: Mol, nb, ring_i: int, depth: int):
@@ -86,7 +86,7 @@ def match_alkoxy(mol: Mol, nb, ring_i: int, depth: int):
     if n is None or n not in _ALKOXY_EN:
         return None
     atoms = _leaf_atoms_alkoxy(mol, nb.GetIdx(), ring_i)
-    return make_match("alkoxy", atoms, ring_i, n=n)
+    return make_match(ArylLeafKind.ALKOXY, atoms, ring_i, n=n)
 
 
 def _open_c_only(mol: Mol, idx: int, prev: int) -> bool:
@@ -131,7 +131,7 @@ def match_n_alkyl(mol: Mol, nb, ring_i: int, depth: int):
     path = _n_alkyl_path(mol, nb.GetIdx(), ring_i)
     if path is None:
         return None
-    return make_match("n_alkyl", set(path), ring_i, n=len(path))
+    return make_match(ArylLeafKind.N_ALKYL, set(path), ring_i, n=len(path))
 
 
 def _s_me_outer(mol: Mol, s_atom, ring_i: int) -> int | None:
@@ -149,7 +149,7 @@ def match_methylthio(mol: Mol, nb, ring_i: int, depth: int):
     me = _s_me_outer(mol, nb, ring_i)
     if me is None or not is_me_leaf(mol, me, nb.GetIdx()):
         return None
-    return make_match("methylthio", {nb.GetIdx(), me}, ring_i)
+    return make_match(ArylLeafKind.METHYLSULFANYL, {nb.GetIdx(), me}, ring_i)
 
 
 def _cyano_n(nb, ring_i: int):
@@ -170,7 +170,7 @@ def match_cyano(mol: Mol, nb, ring_i: int, depth: int):
     n_atom = _cyano_n(nb, ring_i)
     if n_atom is None:
         return None
-    return make_match("cyano", {nb.GetIdx(), n_atom.GetIdx()}, ring_i)
+    return make_match(ArylLeafKind.CYANO, {nb.GetIdx(), n_atom.GetIdx()}, ring_i)
 
 
 def nested_ph(mol: Mol, nb, ring_i: int) -> set[int] | None:

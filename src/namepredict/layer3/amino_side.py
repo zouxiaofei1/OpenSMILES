@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from rdkit.Chem import Mol
+import namepredict.layer2.side_facts as side_facts
+from namepredict.layer3.aryl_names import aryl_arm_name
 
 
 def _make_amino(attach: int, n_idx: int, en: str = "amino", zh: str = "氨基",
@@ -14,15 +16,16 @@ def _make_amino(attach: int, n_idx: int, en: str = "amino", zh: str = "氨基",
 
 
 def _n_aryl_named(mol: Mol, start: int, n_idx: int, is_ch2: bool):
-    from namepredict.layer2.aryl_sub import (
-        _benzyl_name, _ch2_ph_at, _halo_atoms_on, _phenyl_at, _phenyl_name,
-    )
-    ph = _ch2_ph_at(mol, start, n_idx) if is_ch2 else _phenyl_at(mol, start, n_idx)
-    if ph is None:
+    ring = side_facts.benzyl_ring(mol, start, n_idx) if is_ch2 else side_facts.phenyl_ring(mol, start, n_idx)
+    if ring is None:
         return None
-    en0, zh0, _ = (_benzyl_name if is_ch2 else _phenyl_name)(mol, ph, start)
-    base = [n_idx, start, *ph] if is_ch2 else [n_idx, *ph]
-    return f"({en0})amino", f"({zh0})氨基", base + list(_halo_atoms_on(mol, ph))
+    kind = (side_facts.ArylArmKind.METHYLENE_C if is_ch2
+            else side_facts.ArylArmKind.DIRECT_C)
+    atoms = (start, *ring) if is_ch2 else tuple(ring)
+    fact = side_facts.ArylArmFact(kind, n_idx, start, start if is_ch2 else None, ring, atoms)
+    en0, zh0, _ = aryl_arm_name(mol, fact)
+    base = [n_idx, *atoms]
+    return f"({en0})amino", f"({zh0})氨基", base + list(side_facts.aryl_leaves(mol, ring))
 
 
 def _sec_n_side_name(mol: Mol, start: int, n_idx: int):
