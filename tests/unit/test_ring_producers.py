@@ -19,6 +19,7 @@ from namepredict.namer import SMILESNNamer
 _EXPECTED_RING_TRY_NAMES = (
     "_try_anthraquinone_parent",
     "_try_benzoquinone_parent",
+    "_try_ortho_benzoquinone_parent",
     "_try_anthracene_parent",
     "_try_quinazoline_parent",
     "_try_quinoxaline_parent",

@@ -76,8 +76,12 @@ CASES = [
     ("c1ccccc1", "benzene", "苯"),
     # open-chain dione stays alkanedione
     ("CC(=O)CC(=O)C", "pentane-2,4-dione", "戊-2,4-二酮"),
-    # 1,2-quinone out of scope: must not be claimed as 1,4-BQ PIN
-    ("O=C1C=CC=CC1=O", "methanone", "甲酮"),
+    # 1,2-quinone is separate kind (ortho_benzoquinone); not 1,4-BQ PIN
+    (
+        "O=C1C=CC=CC1=O",
+        "cyclohexa-3,5-diene-1,2-dione",
+        "环己-3,5-二烯-1,2-二酮",
+    ),
 ]
 
 

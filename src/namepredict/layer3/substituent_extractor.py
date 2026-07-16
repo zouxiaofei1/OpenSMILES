@@ -182,7 +182,10 @@ _PARENT_NH2_KINDS = frozenset({
     "benzothiazolamine", "benzoxazolamine", "benzimidazolamine", "benzenediamine",
 })
 _PARENT_OXO_KINDS = frozenset(
-    {"ketone", "dione", "cycloketone", "anthraquinone", "benzoquinone"},
+    {
+        "ketone", "dione", "cycloketone", "anthraquinone",
+        "benzoquinone", "ortho_benzoquinone",
+    },
 )
 
 

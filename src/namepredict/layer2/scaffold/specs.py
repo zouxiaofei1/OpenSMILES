@@ -202,6 +202,10 @@ MONO_CARBO_SPECS: tuple[ScaffoldSpec, ...] = (
         "benzoquinone", "cyclohexa-2,5-diene-1,4-dione", "环己-2,5-二烯-1,4-二酮",
         fg_rank=6, retained=False,
     ),
+    _mono_carbo_fg(
+        "ortho_benzoquinone", "cyclohexa-3,5-diene-1,2-dione", "环己-3,5-二烯-1,2-二酮",
+        fg_rank=6, retained=False,
+    ),
 )
 
 POLY_CARBO_SPECS: tuple[ScaffoldSpec, ...] = (

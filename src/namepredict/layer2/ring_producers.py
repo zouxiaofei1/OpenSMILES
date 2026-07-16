@@ -9,6 +9,7 @@ from namepredict.layer2.anthracene import _try_anthracene_parent
 from namepredict.layer2.anthraquinone import _try_anthraquinone_parent
 from namepredict.layer2.azole13 import _try_azole13_parent
 from namepredict.layer2.benzoquinone import _try_benzoquinone_parent
+from namepredict.layer2.ortho_benzoquinone import _try_ortho_benzoquinone_parent
 from namepredict.layer2.benzimidazole import (
     _try_benzimidazolamine_parent,
     _try_benzimidazole_parent,
@@ -72,6 +73,7 @@ def _try_simple_cyclopolyene(info: dict) -> dict | None:
 _RING_PRODUCERS = (
     _try_anthraquinone_parent,
     _try_benzoquinone_parent,
+    _try_ortho_benzoquinone_parent,
     _try_anthracene_parent,
     _try_quinazoline_parent,
     _try_quinoxaline_parent,
