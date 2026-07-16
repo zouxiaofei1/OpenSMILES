@@ -322,15 +322,15 @@ def _arene_orienters() -> dict:
         **_fused_orienters(), **_aza_orienters(), **_sat_hetero_orienters(),
     }
 def _hetero_orienters() -> dict:
+    bq = lambda c, p, s: _orient_ring_pair(c, p, "ketone_c_idxs", s)
     return {
         "alcohol": _orient_alcohol, "thiol": _orient_thiol,
         "diol": _orient_polyol, "triol": _orient_polyol, "diamine": _orient_diamine,
         "cycloalcohol": _orient_cycloalcohol, "phenol": _orient_cycloalcohol,
-        "boronic": _orient_boronic, "benzenediol": _orient_benzenediol,
-        "benzenediamine": _orient_benzenediamine,
-        "cycloamine": _orient_cycloamine, "aniline": _orient_cycloamine,
-        "amine": _orient_amine, "sec_amine": _orient_amine, "tert_amine": _orient_amine,
-        **_arene_orienters(),
+        "boronic": _orient_boronic, "benzenediol": _orient_benzenediol, "benzoquinone": bq,
+        "benzenediamine": _orient_benzenediamine, "cycloamine": _orient_cycloamine,
+        "aniline": _orient_cycloamine, "amine": _orient_amine,
+        "sec_amine": _orient_amine, "tert_amine": _orient_amine, **_arene_orienters(),
     }
 def _orient_polyene(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return orient_polyene(chain, parent, substituents, _prefer_chain)
@@ -400,7 +400,7 @@ def _amine_locant(oriented: dict) -> int | None:
 def _ketone_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("ketone", "cycloketone"), "ketone_c_idx")
 def _ketone_pair_locants(oriented: dict) -> list[int] | None:
-    return _pair_locants(oriented, ("dione",), "ketone_c_idxs")
+    return _pair_locants(oriented, ("dione", "benzoquinone"), "ketone_c_idxs")
 def _has_parent_ene(oriented: dict) -> bool:
     return bool(oriented.get("double_bond") or oriented.get("double_bonds"))
 def _ene_locant(oriented: dict) -> int | None:

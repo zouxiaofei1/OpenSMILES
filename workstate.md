@@ -178,4 +178,34 @@
 [#7b27c53][架构 P-31.1/P-44] unsat 生产者迁 kind_registry（alkyne→polyene→alkene） [+test_unsat_producers, dual 14.9%(605)持平, fails 3457, 0 REGRESS]
 [#4c79b62][IUPAC P-65.3] 游离磺酸/磺酸根：C1–C4 烷基+简单 Ph(Me/halo≤2)+阴离子/碱金属盐 [+unit, dual 14.9%(605)→14.9%(606), fails 3457→3456, 0 REGRESS]
 [#e72e905][IUPAC P-64.2.1 / P-31.1] 开链一元不饱和酮 alkenone/alkynone：L2 unsat_or_sat 并酮+L4 FG-tie ene/yne 定向+L5 …-n-en-m-one/…-n-yn-m-one（E/Z） [+9 tests, dual 14.9%(606)→14.9%(607), fails 3456→3455, 0 REGRESS]
+[#pending][IUPAC P-64.2] 1,4-苯醌 PIN cyclohexa-2,5-diene-1,4-dione：L2 门控+L4 酮对定向+L5 scaffold 词干 [+10 tests, dual 14.9%(607)→15.0%(610), fails 3455→3452, 0 REGRESS]
 ## 其他
+## 选题路线: 1,4-苯醌 / cyclohexa-2,5-diene-1,4-dione (P-64.2)
+
+### 现状
+- dual **15.0%(610/4062)**；Round A 已完成（未取代/四氯/四羟/羟·甲氧·甲）
+- 金标 8 条命中 3；余 5 为长烷基/氮杂/吲哚/甾体侧链 → Round B/C 或远期
+- PIN=`cyclohexa-2,5-diene-1,4-dione`（1,4-benzoquinone 仅 general）
+
+### 顺序
+Round A: **DONE** 1,4-二酮单环 first-cut（halo/OH/Me/alkoxy C1–C2）
+Round B: 编号与多取代放宽（全卤/全羟/混取代；环上更多简单前缀；仍拒稠环）
+Round C: 1,2-苯醌 + 1,4-萘醌（P-64 同族）
+远期: 复杂 N-杂/indolyl/甾体侧链递归
+
+### 接入（Round B）
+- `layer2/benzoquinone.py` 门控放宽；`layer4` 最低位次集；`layer3` 前缀
+- 禁止：居所表；硬编码 chloranil；改 benchmark；函数>10 行
+- PIN：cyclohexa-3,5-diene-1,2-dione / naphthalene-1,4-dione；接 anthra 编号经验
+- 触发：A/B 稳定且 fails 中仍有 quinone 簇
+
+Round D（可并行另题，不阻塞醌）: **alkylsulfonyl 前缀叶** P-63.6/P-65.3
+- methylsulfonyl/methanesulfonyl 作 L3 leaf（对标 `leaves/simple.py` methylthio/CF3）；先挂 aniline/benzene/phenol
+- 金标锚：2,6-dichloro-4-(methanesulfonyl)aniline（现 methanamine）
+- 远期：乙/苯磺酰前缀；对称 dialkyl sulfone 功能类（对标 sulfoxide；bench 纯 sulfone 金标极稀）
+
+Round E（远期杂芳）: 1,2-oxazole/isoxazole（P-22.2.1）
+- 对标 `azole13.py`（1,3-oxazole 已有）；O–N 邻位 dist=1；未取代+单卤/单甲/3-胺
+- 触发：杂芳缺口优先于醌扩族时
+
+------------------------------------

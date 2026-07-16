@@ -184,9 +184,24 @@ MONO_HETERO_SPECS: tuple[ScaffoldSpec, ...] = (
     _monohetero("thiolane", "thiolane", "硫杂环戊烷"),
 )
 
+def _mono_carbo_fg(
+    sid: str, stem_en: str, stem_zh: str, *, fg_rank: int, retained: bool = False,
+) -> ScaffoldSpec:
+    pol = NumberingPolicy(mode="fixed_roles")
+    return ScaffoldSpec(
+        id=sid, naming_class="mono_carbo", stem_en=stem_en, stem_zh=stem_zh,
+        n_rings=1, ring="carbo", retained=retained, fg_rank=fg_rank,
+        numbering=pol,
+    )
+
+
 # Mono / linear polycyclic carbo retained (benzene, anthracene).
 MONO_CARBO_SPECS: tuple[ScaffoldSpec, ...] = (
     _mono_carbo("benzene", "benzene", "苯"),
+    _mono_carbo_fg(
+        "benzoquinone", "cyclohexa-2,5-diene-1,4-dione", "环己-2,5-二烯-1,4-二酮",
+        fg_rank=6, retained=False,
+    ),
 )
 
 POLY_CARBO_SPECS: tuple[ScaffoldSpec, ...] = (
