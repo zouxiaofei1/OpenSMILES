@@ -1,0 +1,95 @@
+# IUPAC: P-65.1.1 / P-72.2.2.1
+# Layer: L2,L4,L5
+"""Open-chain tricarboxylic acids and their fully deprotonated anions."""
+from __future__ import annotations
+
+import pytest
+from rdkit import Chem
+
+from namepredict.constants import normalize_en, normalize_zh
+from namepredict.layer1.analyzer import analyze
+from namepredict.layer2.polycarboxylic import try_polycarboxylic_parent
+from namepredict.layer4.numbering import _orient_polycarboxylic
+from namepredict.namer import SMILESNNamer
+
+CASES = [
+    (
+        "O=C(O)CC(C(=O)O)CC(=O)O",
+        "propane-1,2,3-tricarboxylic acid",
+        "丙烷-1,2,3-三羧酸",
+    ),
+    (
+        "O=C([O-])CC(C(=O)[O-])CC(=O)[O-]",
+        "propane-1,2,3-tricarboxylate",
+        "丙烷-1,2,3-三羧酸根",
+    ),
+    (
+        "O=C(O)C(O)(CC(=O)O)CC(=O)O",
+        "2-hydroxypropane-1,2,3-tricarboxylic acid",
+        "2-羟基丙烷-1,2,3-三羧酸",
+    ),
+    (
+        "O=C(O)C(C(=O)O)C(C(=O)O)C(=O)O",
+        "ethane-1,1,2,2-tetracarboxylic acid",
+        "乙烷-1,1,2,2-四羧酸",
+    ),
+]
+
+
+@pytest.mark.parametrize("smiles,en,zh", CASES)
+def test_open_chain_tricarboxylic_names(smiles: str, en: str, zh: str) -> None:
+    result = SMILESNNamer().name(smiles)
+    assert result.success
+    assert normalize_en(result.en) == normalize_en(en)
+    assert normalize_zh(result.zh) == normalize_zh(zh)
+
+
+def test_tricarboxylate_does_not_fall_back_to_monoacid() -> None:
+    result = SMILESNNamer().name("O=C([O-])CC(C(=O)[O-])CC(=O)[O-]")
+    assert result.success
+    assert "acetate" not in normalize_en(result.en)
+    assert "hexanoate" not in normalize_en(result.en)
+
+
+def test_partial_deprotonation_does_not_claim_polycarboxylate() -> None:
+    result = SMILESNNamer().name("O=C([O-])CC(C(=O)O)CC(=O)O")
+    assert "tricarboxylate" not in normalize_en(result.en)
+
+
+@pytest.mark.parametrize("smiles,old_name", [
+    ("O=C([O-])CC(C(=O)O)CC(=O)O", "pentane"),
+    (r"O=C([O-])/C=C\C(=C/C(=O)[O-])C(=O)[O-]", "hexanoate"),
+    ("O=C(O)C=C(CC(=O)O)C(=O)O", "pentanoic acid"),
+    ("CC(C(C(=O)O)C(C(=O)O)C(=O)O)C", "3-methylbutanoic acid"),
+])
+def test_unsupported_polyacids_close_ordinary_candidate_fallback(
+    smiles: str, old_name: str,
+) -> None:
+    result = SMILESNNamer().name(smiles)
+    assert not result.success
+    assert result.meta["reason"] == "unsupported"
+    assert normalize_en(result.en) != normalize_en(old_name)
+
+
+@pytest.mark.parametrize("smiles", [
+    r"O=C([O-])/C=C\C(=C/C(=O)[O-])C(=O)[O-]",  # chebi-159
+    "O=C(O)C=C(CC(=O)O)C(=O)O",  # chebi-652
+])
+def test_unsaturated_benchmark_polyacids_are_not_claimed(smiles: str) -> None:
+    assert try_polycarboxylic_parent(analyze(Chem.MolFromSmiles(smiles))) is None
+
+
+def test_chebi_785_saturated_polyacid_exact_name() -> None:
+    result = SMILESNNamer().name("O=C([O-])CCC(C(=O)[O-])C(O)C(=O)[O-]")
+    assert normalize_en(result.en) == normalize_en("1-hydroxybutane-1,2,4-tricarboxylate")
+
+
+def test_branched_carbon_skeleton_is_not_claimed() -> None:
+    info = analyze(Chem.MolFromSmiles("CC(C(C(=O)O)C(C(=O)O)C(=O)O)C"))
+    assert try_polycarboxylic_parent(info) is None
+
+
+def test_polyacid_orientation_uses_lowest_carboxyl_locant_set() -> None:
+    chain = [10, 11, 12, 13]
+    parent = {"cooh_c_idxs": [11, 12, 13]}
+    assert _orient_polycarboxylic(chain, parent, []) == list(reversed(chain))

@@ -23,6 +23,7 @@ from namepredict.layer2.ring_parent import (
     _is_simple_benzene,
 )
 from namepredict.layer2.scoring import _pick_best
+from namepredict.layer2.polycarboxylic import polycarboxylic_eligibility
 
 
 def _benzene_candidate(info: dict) -> dict | None:
@@ -63,6 +64,10 @@ def _dedupe_parents(cands: list[dict]) -> list[dict]:
 
 
 def _collect_candidates(info: dict) -> list[dict]:
+    eligibility = polycarboxylic_eligibility(info)
+    if eligibility is not None and not eligibility.supported:
+        return [{"kind": "unsupported_polycarboxylic", "chain": [], "n_carbons": 0,
+                 "unsupported_reason": eligibility.reason}]
     raw = (
         _fg_candidates(info) + _ring_candidates(info)
         + [_benzene_candidate(info)] + _unsat_candidates(info)

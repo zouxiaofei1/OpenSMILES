@@ -97,6 +97,7 @@ def _diacid_names(n: int) -> tuple[str, str] | None:
     if n == 2:
         return "oxalic acid", "草酸"
     return _diacid_from_alkane(n)
+from namepredict.layer5.polycarboxylic import polycarboxylic_names as _polycarboxylic_names
 def _aldehyde_names(n: int) -> tuple[str, str] | None:
     return _pair(ALDEHYDE_EN, ALDEHYDE_ZH, n)
 def _amide_names(n: int) -> tuple[str, str] | None:
@@ -117,7 +118,6 @@ def _ester_names(acyl_n: int, parent: dict) -> tuple[str, str] | None:
         return None
     return f"{alkyl[0]} {acyl}", f"{acid_zh}{alkyl[1]}酯"
 def _ketone_plain(n: int) -> tuple[str, str] | None:
-    """ethanone / propanone form (no locant; used when n≤2)."""
     plain = _alkane_names(n)
     if not plain:
         return None
@@ -212,6 +212,7 @@ def _unsat_aldehyde(n: int, numbered: dict) -> tuple[str, str] | None:
         return None
     return alkenal_names(n, numbered)
 def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
+    if kind == "polycarboxylic": return _polycarboxylic_names(n, numbered or {})
     from namepredict.layer5.unsat_acid import unsat_carbonyl_names
     top = unsat_carbonyl_names(kind, n, numbered or {})
     if top is not None: return top
@@ -434,7 +435,6 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     if any(s.get("paren") or (s.get("en") or "")[:1] == "(" for s in substituents):
         return False
     return n_carbons == 2 and len(substituents) == 1
-
 def _stem_needs_paren(stem: str, subs: list, omit: bool) -> bool:
     """Paren: explicit flag, leading-locant stems, or multi CF3 (EN)."""
     if any(s.get("paren") for s in subs):

@@ -35,6 +35,7 @@ from namepredict.layer2.chain_walk import (
 )
 from namepredict.layer2.polyalkenol import _polyalkenol_parent as _try_polyalkenol
 from namepredict.layer2.prefix_alkenoic import _prefix_alkenoic_parent as _try_hy_alkenoic
+from namepredict.layer2.polycarboxylic import try_polycarboxylic_parent
 def _no_fgs(info: dict, keys: tuple) -> bool:
     return not any(info.get(k) for k in keys)
 _CORE_BAD = (
@@ -57,10 +58,8 @@ _ANHYDRIDE_BAD = (
 )
 def _is_open_sat(info: dict) -> bool: return not (info.get("has_alkene") or info.get("has_alkyne"))
 def _hetero_open_chain(mol: Mol, idx: int) -> bool:
-    """True iff hetero atom is not in a ring (open-chain ether/amine/sulfide)."""
     return not mol.GetAtomWithIdx(idx).IsInRing()
 def _is_simple_n(info: dict, bad: tuple, ekey: str, n: int) -> bool:
-    """Poly-FG only when exactly n *aliphatic* attachment carbons."""
     return (
         _is_open_sat(info) and _no_fgs(info, bad)
         and _aliph_c_idxs(info, ekey, n) is not None
@@ -106,7 +105,6 @@ def _ring_alcohol_parent(info: dict) -> dict | None:
 def _oh_c_in_ring(info: dict, c_idx: int) -> bool:
     return info["mol"].GetAtomWithIdx(int(c_idx)).IsInRing()
 def _chain_alcohol_parent(info: dict) -> dict | None:
-    """Mono aliphatic OH → alcohol parent (ignore aromatic phenolic OH)."""
     aliph = _aliphatic_entries(info, "hydroxyls")
     if len(aliph) != 1 or _oh_c_in_ring(info, aliph[0]["c_idx"]):
         return None
@@ -117,9 +115,7 @@ def _polyol_or_chain_alcohol(info: dict) -> dict | None:
     if _is_simple_alkanetriol(info): return _triol_parent(info)
     if _is_simple_alkanediol(info): return _diol_parent(info)
     return _chain_alcohol_parent(info)
-
 def _chain_or_unsat_alcohol(info: dict) -> dict | None:
-    """Yne then poly/mono ene then saturated polyol/alcohol."""
     from namepredict.layer2.alkynoic import chain_or_unsat_alcohol as _c
     b = _ALKENOL_BAD
     return _c(
@@ -129,7 +125,6 @@ def _chain_or_unsat_alcohol(info: dict) -> dict | None:
         lambda: _polyol_or_chain_alcohol(info),
     )
 def _alcohol_parent(info: dict) -> dict | None:
-    """Ring OH; yne/ene/polyol/sat alcohol."""
     ring = _ring_alcohol_parent(info)
     return ring if ring is not None else _chain_or_unsat_alcohol(info)
 def _thiol_parent(info: dict) -> dict:
@@ -290,7 +285,8 @@ def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
     from namepredict.layer2.alkynoic import ynsat_or_unsat_or_sat as _y
     return _y(info, flag, ekey, bad, ukind, skind, ckey, **extra)
 def _with_anion(info: dict, parent: dict) -> dict:
-    return {**parent, "anion": True} if any(c.get("anion") for c in info.get("carboxyls") or []) else parent
+    acids = info.get("carboxyls") or []
+    return {**parent, "anion": True} if acids and all(c.get("anion") for c in acids) else parent
 def _ring_acid_try(info: dict) -> dict | None:
     for fn in (_try_shcooh, _try_h5cooh, _try_indcooh, _try_naphcooh, _try_qcooh,
                _try_pyridinecarboxylic_parent, _try_benzoic_parent,
@@ -298,6 +294,8 @@ def _ring_acid_try(info: dict) -> dict | None:
         if (b := fn(info)) is not None: return b
     return None
 def _poly_acid_try(info: dict) -> dict | None:
+    top = try_polycarboxylic_parent(info)
+    if top is not None: return top
     if _is_simple_alkanedioic(info): return _diacid_parent(info)
     if _is_simple_alkenedioic(info): return _alkenedioic_parent(info)
     return _try_hy_alkenoic(info, _ALKENOIC_BAD, _best_cover_pair, _parent_dict, _db_pairs)
