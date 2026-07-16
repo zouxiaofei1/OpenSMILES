@@ -178,7 +178,7 @@
 [#7b27c53][架构 P-31.1/P-44] unsat 生产者迁 kind_registry（alkyne→polyene→alkene） [+test_unsat_producers, dual 14.9%(605)持平, fails 3457, 0 REGRESS]
 [#4c79b62][IUPAC P-65.3] 游离磺酸/磺酸根：C1–C4 烷基+简单 Ph(Me/halo≤2)+阴离子/碱金属盐 [+unit, dual 14.9%(605)→14.9%(606), fails 3457→3456, 0 REGRESS]
 [#e72e905][IUPAC P-64.2.1 / P-31.1] 开链一元不饱和酮 alkenone/alkynone：L2 unsat_or_sat 并酮+L4 FG-tie ene/yne 定向+L5 …-n-en-m-one/…-n-yn-m-one（E/Z） [+9 tests, dual 14.9%(606)→14.9%(607), fails 3456→3455, 0 REGRESS]
-[#pending][IUPAC P-64.2] 1,4-苯醌 PIN cyclohexa-2,5-diene-1,4-dione：L2 门控+L4 酮对定向+L5 scaffold 词干 [+10 tests, dual 14.9%(607)→15.0%(610), fails 3455→3452, 0 REGRESS]
+[#1307d61][IUPAC P-64.2] 1,4-苯醌 PIN cyclohexa-2,5-diene-1,4-dione：L2 门控+L4 酮对定向+L5 scaffold 词干 [+10 tests, dual 14.9%(607)→15.0%(610), fails 3455→3452, 0 REGRESS]
 ## 其他
 ## 选题路线: 1,4-苯醌 / cyclohexa-2,5-diene-1,4-dione (P-64.2)
 
