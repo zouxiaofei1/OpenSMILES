@@ -182,40 +182,6 @@
 [#ec2e951][IUPAC P-64.2] 1,4-BQ Round B：环上 n-烷基 C1–C12 + L3 ALKYL 词干至 dodecyl [+5 tests, dual 15.0%(610)→15.0%(611), fails 3452→3451, 0 REGRESS]
 [#575f5de][架构 L4] 收口 fused 位次双轨：统一 `_atom_locant`→plan；删 legacy naph/indole/anthra helpers [+locant_adapt, dual 15.0%(611)持平, 0 REGRESS]
 [#0957698][IUPAC P-64.2] 1,2-苯醌 PIN cyclohexa-3,5-diene-1,2-dione：ortho 门控+L3/L4 接线 [+ortho_bq tests, dual 15.0%(611)→15.1%(612), fails 3451→3450, 0 REGRESS]
+[#833dbd8][架构 L5 纯度] special FG 芳基/环烷基词干预计算于 L2 pack；切断 8×L5→L2 私有 re-walk（aryl_stem+aryl_helpers） [+test_l5_no_layer2_private, dual 15.1%(612)持平, fails 3450, 0 REGRESS]
 ## 其他
-## 选题路线: 1,4/1,2-苯醌 / P-64.2
-
-### 现状
-- dual **15.1%(612/4062)**；Round A+B+C(ortho) 已完成；架构 L4 位次双轨 **DONE**
-- 1,4 金标含 undecyl；1,2 金标 4-hydroxy-5-methyl 已兑现
-- 余：1,2-萘醌金标（4-hydroxynaphthalene-1,2-dione 等）；复杂 N-杂/吲哚侧链 → 远期
-- PIN 1,4=`cyclohexa-2,5-diene-1,4-dione`；1,2=`cyclohexa-3,5-diene-1,2-dione`
-
-### 顺序
-Round A: **DONE** 1,4-二酮单环 first-cut（halo/OH/Me/alkoxy C1–C2）
-Round B: **DONE** 环上 n-烷基 C1–C12 + 混取代（halo/OH/alkoxy）；仍拒稠环/胺侧链
-Round C-ortho: **DONE** 1,2-苯醌 first-cut（同取代门控，dist==1）
-Round C-naph: 1,2/1,4-萘醌（P-64 同族；接 anthra 编号）
-远期: 复杂 N-杂/indolyl/甾体侧链递归
-
-### 接入（Round C-naph）
-- `layer2` 萘醌 fused 二酮门控；L4 位次；L5 词干 naphthalene-1,2/1,4-dione
-- 禁止：居所表；硬编码；改 benchmark；函数>10 行
-- 金标锚：4-hydroxynaphthalene-1,2-dione（现 methanone）
-- 触发：ortho 稳定且 fails 中仍有 naphthoquinone 簇
-
-Round D（可并行另题，不阻塞醌）: **alkylsulfonyl 前缀叶** P-63.6/P-65.3
-- methylsulfonyl/methanesulfonyl 作 L3 leaf（对标 `leaves/simple.py` methylthio/CF3）；先挂 aniline/benzene/phenol
-- 金标锚：2,6-dichloro-4-(methanesulfonyl)aniline（现 methanamine）
-- 远期：乙/苯磺酰前缀；对称 dialkyl sulfone 功能类（对标 sulfoxide；bench 纯 sulfone 金标极稀）
-
-Round E（远期杂芳）: 1,2-oxazole/isoxazole（P-22.2.1）
-- 对标 `azole13.py`（1,3-oxazole 已有）；O–N 邻位 dist=1；未取代+单卤/单甲/3-胺
-- 触发：杂芳缺口优先于醌扩族时
-
-### 架构债（下一架构轮候选）
-- P1: L5→L2 `_phenyl_at/_phenyl_name` 私有穿透（≥8 文件）→ 公开薄 API 或迁 L3
-- P1: L2 胖层 ~63% LOC / 同构 fused 模块；ScaffoldSpec 半接线
-- P2: docs/ARCHITECTURE.md 与 layer0–5 流水线漂移
-
-------------------------------------
+残债（架构）: scaffold match.py/sub_rules 仍缺；retained_registry 仅 4 拓扑 vs Spec 多；L3 仍 import L2 私有 side walk；L2 占~63% LOC 组合轴未消。L5 benzene_names→kind_registry 公开表保留。
