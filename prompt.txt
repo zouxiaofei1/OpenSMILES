@@ -32,10 +32,9 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 0. 读取 workstate.md，了解当前进度和计划。
 0.1 workstate.md中## 其他 行的行号如果尾数为3或8，当前工作轮次为架构改进轮。使用 skills/analyzing-architecture-risk 分析项目风险，选择一重要的。跳到3.
 1. 运行**benchmark**,记录并报告当前分数，格式**中英文双重准确:[ ]%**
-2. 如果workstate的其他中没有选题，可以使用chem-brainstorm-skill 获得一个。否则，使用这个选题进行工作
-改进点的范围要足够大，一次尽量做完，改进点的修改代码量不应<100行。需要时可参考IUPAC原文。
+2. 如果workstate的其他中没有选题，调用一个subagent,使用chem-brainstorm-skill 获得选题和完整的选题计划。否则进行工作。
 3. 调用一个subagent,进行编写代码（遵守 skills/chem-tdd-skill）
-4. 调用第二个subagent（review）：**必须先阅读并全文遵守 skills/chem-code-review**。
+4. 调用另一个subagent（review）：**必须先阅读并全文遵守 skills/chem-code-review**。
    - 先审**选题**再审代码：代码全绿也可以反对选题；裁决 PASS|FIX|ROLLBACK|CHALLENGE
    - 每个方法不得超过10行，超限则拆分；不应有架构性问题；输出审查报告
 4.1. review 运行**benchmark**（有 diff 时），分数回退不得>0.5%,否则 ROLLBACK（见 chem-code-review）
