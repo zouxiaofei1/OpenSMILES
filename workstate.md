@@ -179,3 +179,10 @@
 [#4c79b62][IUPAC P-65.3] 游离磺酸/磺酸根：C1–C4 烷基+简单 Ph(Me/halo≤2)+阴离子/碱金属盐 [+unit, dual 14.9%(605)→14.9%(606), fails 3457→3456, 0 REGRESS]
 [#e72e905][IUPAC P-64.2.1 / P-31.1] 开链一元不饱和酮 alkenone/alkynone：L2 unsat_or_sat 并酮+L4 FG-tie ene/yne 定向+L5 …-n-en-m-one/…-n-yn-m-one（E/Z） [+9 tests, dual 14.9%(606)→14.9%(607), fails 3456→3455, 0 REGRESS]
 ## 其他
+### 下一刀（本轮）
+- **靶心**: 开链 sulfanyl / n-alkylsulfanyl 前缀（IUPAC P-63.1.5 / P-63.2 / P-29.3）
+- **范围**: 更高优先级 FG 为母体时，链上 –SH → sulfanyl/巯基；链上 RS–（R=C1–C4 正烷基）→ methylsulfanyl…butylsulfanyl / 甲硫基…丁硫基
+- **主 Layer**: L3 提取（仿 hydroxy/amino）；L4 位次通用；L5 前缀组装通用。L1 已有 thiols/sulfides
+- **代表例**: 2-methylsulfanylacetic acid；3-methylsulfanylpropan-1-amine；2-amino-3-sulfanylpropanoic acid；(2S)-1-sulfanylpropan-2-ol；2-amino-4-ethylsulfanylbutanoic acid
+- **禁止顺带**: 芳环 sulfanyl（2-sulfanylbenzoic）；sulfanylidene；disulfanyl；开链 alkoxy 前缀（下轮）；环内硫/杂环 thione
+- **benchmark 基线**: dual 14.9% (607/4062)
