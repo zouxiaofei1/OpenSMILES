@@ -184,5 +184,6 @@
 [#0957698][IUPAC P-64.2] 1,2-苯醌 PIN cyclohexa-3,5-diene-1,2-dione：ortho 门控+L3/L4 接线 [+ortho_bq tests, dual 15.0%(611)→15.1%(612), fails 3451→3450, 0 REGRESS]
 [#833dbd8][架构 L5 纯度] special FG 芳基/环烷基词干预计算于 L2 pack；切断 8×L5→L2 私有 re-walk（aryl_stem+aryl_helpers） [+test_l5_no_layer2_private, dual 15.1%(612)持平, fails 3450, 0 REGRESS]
 [#0fe9d55][架构 L2/L3] typed side topology facts contract；L3 仅经 side_facts 消费 L2，命名渲染归 L3 [+14 contract tests, dual 15.1%(612)→15.1%(612), 0 REGRESS]
+[#911b79e][架构 L2/L5] parent stem 在 L2 主出口统一装配，移除 L5→L2 kind_registry 反向依赖 [+相关 99 tests, dual 15.1%(612)持平, 0 REGRESS]
 ## 其他
-残债（架构）: scaffold match.py/sub_rules 仍缺；retained_registry 仅 4 拓扑 vs Spec 多；L2 占~63% LOC 组合轴未消。L5 benzene_names→kind_registry 公开表保留。
+残债（架构）: scaffold match.py/sub_rules 仍缺；retained_registry 仅 4 拓扑 vs Spec 多；L2 占~63% LOC 组合轴未消。
