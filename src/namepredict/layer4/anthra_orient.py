@@ -24,13 +24,6 @@ def _pick_anthra_chain(cands: list, key_fn) -> list[int]:
     return best
 
 
-def anthra_sub_locant(chain: list[int], attach: int) -> int:
-    if attach not in chain or len(chain) != 14:
-        return chain.index(attach) + 1 if attach in chain else 0
-    loc = ANTHRA_LOCANTS[chain.index(attach)]
-    return loc if loc is not None else chain.index(attach) + 1
-
-
 def orient_anthraquinone(chain: list[int], parent: dict, substituents: list) -> list[int]:
     cands = parent.get("anthra_chains") or [chain]
     if not cands:

@@ -1,17 +1,11 @@
 from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 from namepredict.layer4.anthra_orient import (
-    anthra_sub_locant as _anthra_sub_locant,
     orient_anthraquinone as _orient_anthraquinone,
 )
 from namepredict.layer4.locants.adapt import (
-    ANTHRA_KINDS as _ANTHRA_KINDS,
-    FUSED56_KINDS as _FUSED56_KINDS,
-    INDOLE_LOCANTS as _INDOLE_LOCANTS,
     INDOLE_ORIENT_KINDS as _INDOLE_ORIENT_KINDS,
-    NAPH_KINDS as _NAPH_KINDS,
     NAPH_LOCANTS as _NAPH_LOCANTS,
-    Q_KINDS as _Q_KINDS,
     effective_sub_locant,
     plan_from_chain,
 )
@@ -361,19 +355,25 @@ def _orient_chain(parent: dict, substituents: list) -> list[int]:
     if not chain:
         return chain
     return _orient_by_kind(parent.get("kind"), chain, parent, substituents)
+def _atom_locant(chain: list[int], atom: int | None, kind: str | None) -> int | None:
+    """Fused via plan/effective; else chain.index+1. Missing atom → None."""
+    if atom is None or atom not in chain:
+        return None
+    plan = plan_from_chain(chain, kind)
+    loc = effective_sub_locant(plan, atom) if plan else None
+    return loc if loc is not None else chain.index(atom) + 1
 def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
     if oriented.get("kind") not in kinds:
         return None
-    return _pos_on(oriented.get("chain") or [], oriented.get(key))
+    return _atom_locant(oriented.get("chain") or [], oriented.get(key), oriented.get("kind"))
+_OH_KINDS = ("alcohol", "cycloalcohol", "pyridinol", "quinolinol", "benzothiophenol")
+_AMINE_KINDS = (
+    "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
+    "pyrimidinamine", "benzofuranamine", "benzothiazolamine",
+    "benzoxazolamine", "benzimidazolamine",
+)
 def _oh_locant(oriented: dict) -> int | None:
-    kind, chain, a = oriented.get("kind"), oriented.get("chain") or [], oriented.get("oh_c_idx")
-    if kind == "quinolinol" and a is not None:
-        return _naph_sub_locant(chain, a)
-    if kind == "benzothiophenol" and a is not None:
-        return _indole_sub_locant(chain, a)
-    return _fg_locant(
-        oriented, ("alcohol", "cycloalcohol", "pyridinol"), "oh_c_idx",
-    )
+    return _fg_locant(oriented, _OH_KINDS, "oh_c_idx")
 def _sh_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("thiol",), "sh_c_idx")
 def _pair_locants(oriented: dict, kinds, key: str) -> list[int] | None:
@@ -385,17 +385,7 @@ def _oh_locants(oriented: dict) -> list[int] | None:
     return _pair_locants(oriented, ("diol", "triol", "benzenediol"), "oh_c_idxs")
 def _amine_pair_locants(oriented: dict) -> list[int] | None:
     return _pair_locants(oriented, ("diamine", "benzenediamine"), "amine_c_idxs")
-_FUSED_AM = (
-    "benzofuranamine", "benzothiazolamine", "benzoxazolamine", "benzimidazolamine",
-)
-_AMINE_KINDS = (
-    "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
-    "pyrimidinamine",
-) + _FUSED_AM
 def _amine_locant(oriented: dict) -> int | None:
-    if oriented.get("kind") in _FUSED_AM:
-        chain, a = oriented.get("chain") or [], oriented.get("amine_c_idx")
-        return _indole_sub_locant(chain, a) if a is not None else None
     return _fg_locant(oriented, _AMINE_KINDS, "amine_c_idx")
 def _ketone_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("ketone", "cycloketone"), "ketone_c_idx")
@@ -436,28 +426,9 @@ def _omit_unsat(n_carbons: int, kind: str | None = None, parent: dict | None = N
     if parent and _has_parent_ene(parent) and kind != "alkene":
         return False
     return n_carbons <= 3
-def _naph_sub_locant(chain: list[int], attach: int) -> int:
-    if attach not in chain or len(chain) != 10:
-        return chain.index(attach) + 1 if attach in chain else 0
-    loc = _NAPH_LOCANTS[chain.index(attach)]
-    return loc if loc is not None else chain.index(attach) + 1
-def _indole_sub_locant(chain: list[int], attach: int) -> int:
-    if attach not in chain or len(chain) != 9:
-        return chain.index(attach) + 1 if attach in chain else 0
-    loc = _INDOLE_LOCANTS[chain.index(attach)]
-    return loc if loc is not None else chain.index(attach) + 1
-def _legacy_sub_locant(chain: list[int], attach: int, kind: str | None) -> int:
-    if kind in _NAPH_KINDS or kind in _Q_KINDS:
-        return _naph_sub_locant(chain, attach)
-    if kind in _FUSED56_KINDS:
-        return _indole_sub_locant(chain, attach)
-    if kind in _ANTHRA_KINDS:
-        return _anthra_sub_locant(chain, attach)
-    return chain.index(attach) + 1
 def _sub_locant(chain: list[int], attach: int, kind: str | None) -> int:
-    plan = plan_from_chain(chain, kind)
-    loc = effective_sub_locant(plan, attach) if plan else None
-    return loc if loc is not None else _legacy_sub_locant(chain, attach, kind)
+    loc = _atom_locant(chain, attach, kind)
+    return 0 if loc is None else loc
 def _with_locants(chain: list[int], substituents: list, kind: str | None = None) -> list:
     return [{**s, "locant": _sub_locant(chain, s["attach_idx"], kind)} for s in substituents]
 def _unsat_locants(oriented: dict, n: int) -> dict:
