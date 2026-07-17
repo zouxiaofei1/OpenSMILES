@@ -190,6 +190,7 @@
 [#b6f596c][IUPAC P-65.1.2.2.3] 中性羧甲基取代烷二酸：最长双端酸母体、typed carboxymethyl 臂、最低前缀位次与双语倍数词；拒绝离子态至 Round D [+7 tests, dual 15.1%(615)持平, 0 REGRESS]
 [#a934afd][IUPAC P-65.1.2.2.3 / P-31.1] C1–C4 线性 terminal carboxyalkyl 取代烷二酸：全量 claim、多臂与最低位次；仅支持唯一主链 C=C，拒绝侧臂不饱和/炔键/多重不饱和 [+相关54 tests, dual 15.1%(615)持平, 0 REGRESS]
 [#3f72a9f][IUPAC P-65.1.1 / P-65.1.2] 中性未稠合 benzene 二/三羧酸系统命名；专属 unsupported 门控限定为直接 COOH–benzene 连接，保留 benzoic 与 benzyl 开链二酸路径 [+15 feature tests, dual 15.1%(615)持平, 0 REGRESS]
+[#4d71e66][架构 L2 candidate gating] GateScope 与 principal/dependency registry 区分 PASS/scoped/global reject，阻止 polyacid fallback 绕过并保留独立 principal candidates [+focused 51 tests, dual 15.1%(615)持平, 0 REGRESS]
 ## 其他
 ## 选题: 多羧基化合物完整非空系统命名
 
