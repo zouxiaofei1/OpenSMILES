@@ -56,6 +56,14 @@ _SAT_COOH = (
     "oxolanecarboxylic", "oxanecarboxylic",
     "thiolanecarboxylic", "aziridinecarboxylic",
 )
+# Lactone/lactam pseudoketones (P-65.6.3.5.1 / P-66.1.5.1); fg_rank = ketone.
+# Stems are placeholders; L5 builds locanted names from base_kind.
+_SAT_ONE = (
+    ("oxolanone", "oxolanone", "氧杂环戊烷酮"),
+    ("oxanone", "oxanone", "氧杂环己烷酮"),
+    ("pyrrolidinone", "pyrrolidinone", "吡咯烷酮"),
+    ("piperidinone", "piperidinone", "哌啶酮"),
+)
 # Fused FG kinds without Spec stems still need fg_rank registration.
 # Spec is authority when present; this table only covers residual FG tags.
 _MISC_RING_FG: tuple[tuple[str, int, str, int, bool, str | None, str | None], ...] = (
@@ -253,6 +261,12 @@ def _load_sat_cooh() -> None:
         _add(k, fg=13, ret=True)
 
 
+def _load_sat_one() -> None:
+    """Lactone/lactam kinds: ketone-class rank; hetero ring meta."""
+    for k, en, zh in _SAT_ONE:
+        _add(k, en=en, zh=zh, fg=6, ring="hetero", n=1, ret=True)
+
+
 def _load_misc_ring_fg() -> None:
     for k, fg, ring, n, ret, en, zh in _MISC_RING_FG:
         _add(k, en=en, zh=zh, fg=fg, ring=ring, n=n, ret=ret)
@@ -295,6 +309,7 @@ def _bootstrap() -> None:
     _load_arene_fg_names()
     _load_h5_cooh()
     _load_sat_cooh()
+    _load_sat_one()
     _load_misc_ring_fg()
     _load_cyclo_rings()
     _load_sat_hetero_repl()

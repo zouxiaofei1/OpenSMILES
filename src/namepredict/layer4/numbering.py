@@ -8,7 +8,7 @@ from namepredict.layer4.polyene import (
     orient_cyclopolyene, orient_polyene, orient_ring_fg_ene, prefer_unsat_if_fg_tie,
 )
 from namepredict.layer4.polycarboxylic import orient_polycarboxylic, polycarboxylic_facts
-from namepredict.layer4.sat_hetero_orient import orient_sat_hetero_repl as _orient_sat_hetero_repl
+from namepredict.layer4.sat_hetero_orient import sat_hetero_orienters as _sat_hetero_orienters
 from namepredict.layer4.omit_locants import (
     omit_amine as _omit_amine, omit_ketone as _omit_ketone, omit_sh as _omit_sh,
 )
@@ -203,12 +203,6 @@ def _orient_pyridine(chain: list[int], parent: dict, substituents: list) -> list
     return _orient_ring_fixed(chain, parent, substituents, "n_idx")
 def _orient_hetero5(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fixed(chain, parent, substituents, "hetero_idx")
-def _orient_sat_hetero(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    """Mono hetero = 1; di-hetero use pair locs (O before N for morpholine)."""
-    hs = parent.get("hetero_idxs") or []
-    if len(hs) >= 2:
-        return _orient_ring_pair(chain, parent, "hetero_idxs", substituents)
-    return _orient_ring_fixed(chain, parent, substituents, "hetero_idx")
 def _n_loc_on(chain: list[int], n: int | None) -> int:
     return chain.index(n) + 1 if n is not None and n in chain else 99
 def _orient_imidazole(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -230,16 +224,6 @@ def _orient_pyridinecarboxylic(chain: list[int], parent: dict, substituents: lis
 def _orient_hetero5carboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     """Hetero fixed as 1; COOH attach as virtual sub for direction."""
     return _orient_hetero5(chain, parent, _virtual_cooh_subs(parent, substituents))
-def _orient_fixed_hetero(chain, parent, subs, h):
-    return _orient_ring_fixed(chain, {**parent, "hetero_idx": h}, subs, "hetero_idx")
-def _orient_sat_hetero_carboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    """Hetero=1; asym dihetero fix first (O); sym try both for lowest COOH."""
-    hs, virt = parent.get("hetero_idxs") or [], _virtual_cooh_subs(parent, substituents)
-    if len(hs) < 2 or parent.get("hetero_asym"):
-        return _orient_fixed_hetero(chain, parent, virt, hs[0] if hs else None)
-    a = _orient_fixed_hetero(chain, parent, virt, hs[0])
-    b = _orient_fixed_hetero(chain, parent, virt, hs[1])
-    return _prefer_chain(a, b, virt)
 def _orient_diazolecarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_imidazole(chain, parent, substituents)
 def _orient_pyridin_fg(chain: list[int], parent: dict, substituents: list, key: str) -> list[int]:
@@ -280,19 +264,6 @@ def _orient_naphthalenecarboxylic(chain: list[int], parent: dict, substituents: 
     return _pick_naph_chain(cands, key)
 def _orient_indole(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return chain
-_SAT_HETERO_PLAIN = (
-    "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
-    "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane",
-)
-_SAT_HETERO_COOH = (
-    "piperidinecarboxylic", "pyrrolidinecarboxylic", "piperazinecarboxylic",
-    "morpholinecarboxylic", "oxolanecarboxylic", "oxanecarboxylic",
-    "thiolanecarboxylic", "aziridinecarboxylic",
-)
-def _sat_hetero_orienters() -> dict:
-    d = {k: _orient_sat_hetero for k in _SAT_HETERO_PLAIN}
-    d.update({k: _orient_sat_hetero_carboxylic for k in _SAT_HETERO_COOH})
-    return {**d, "sat_hetero_repl": _orient_sat_hetero_repl}
 def _aza_orienters() -> dict:
     return {
         "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,

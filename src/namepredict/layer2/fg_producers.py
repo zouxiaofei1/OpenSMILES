@@ -47,6 +47,7 @@ from namepredict.layer2.sulfoxide import _sulfoxide_parent
 from namepredict.layer2.urea import _urea_parent
 from namepredict.layer2.cyclo_polycarboxylic import _try_cycloalkane_polycarboxylic
 from namepredict.layer2.cyclo_carboxylic import _try_cycloalkane_exocyclic_fg
+from namepredict.layer2.sat_hetero_one import _try_sat_hetero_one_parent
 
 
 def _try_acid(info: dict) -> dict | None:
@@ -77,16 +78,23 @@ def _try_diester(info: dict) -> dict | None:
     return _diester_parent(info)
 
 
+def _try_lactone_or(info: dict, open_fn) -> dict | None:
+    """Prefer sat_hetero lactone/lactam over open-chain ester/amide collapse."""
+    if (c := _try_sat_hetero_one_parent(info)) is not None:
+        return c
+    return _try_cyclo_exo_or(info, open_fn)
+
+
 def _try_ester(info: dict) -> dict | None:
     if not _is_mono_fg(info, "has_ester", "esters"):
         return None
-    return _try_cyclo_exo_or(info, lambda: _ester_parent(info))
+    return _try_lactone_or(info, lambda: _ester_parent(info))
 
 
 def _try_amide(info: dict) -> dict | None:
     if not _is_mono_fg(info, "has_amide", "amides"):
         return None
-    return _try_cyclo_exo_or(info, lambda: _amide_parent(info))
+    return _try_lactone_or(info, lambda: _amide_parent(info))
 
 
 def _is_aryl_nitrile_c(mol, c_idx: int) -> bool:

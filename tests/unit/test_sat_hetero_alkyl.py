@@ -27,10 +27,17 @@ CASES = [
     ("C(C)(C)(C)C1CNCC1", "3-tert-butylpyrrolidine", "3-叔丁基吡咯烷"),
     # positive: monohalo regression
     ("ClC1CCNCC1", "4-chloropiperidine", "4-氯哌啶"),
+    # positive: multi-alkyl SMILES-invariant alpha (locant set tie → stem order)
+    # ethyl < methyl alphabetically → lower locant on ethyl (P-14.5 / P-14.3.5)
+    ("CC1CCC(CC)O1", "2-ethyl-5-methyloxolane", "2-乙基-5-甲基氧杂环戊烷"),
+    ("CCC1CCC(C)O1", "2-ethyl-5-methyloxolane", "2-乙基-5-甲基氧杂环戊烷"),
+    ("CC1CNCC(CC)C1", "3-ethyl-5-methylpiperidine", "3-乙基-5-甲基哌啶"),
     # negative: unsubstituted parent must stay bare name
     ("C1CCNCC1", "piperidine", "哌啶"),
     # negative: open-chain amide, not sat-hetero
     ("CC(=O)N", "acetamide", "乙酰胺"),
+    # negative: plain mono-alkyl must keep lowest set (not alpha-flip)
+    ("CC1CCCO1", "2-methyloxolane", "2-甲基氧杂环戊烷"),
 ]
 
 
