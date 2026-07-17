@@ -263,17 +263,31 @@ def _mono_oh_on_ring(info: dict, ring_set: set[int]) -> dict | None:
     return oh
 
 
-def _is_simple_cycloalcohol(info: dict) -> bool:
+def _cyclo_fg_sides_ok(mol: Mol, ring_set: set[int]) -> bool:
+    """Outside C must be fully covered by claimable alkyl side probes."""
+    starts = _ring_side_starts(mol, ring_set)
+    outside = set(_outside_carbons(mol, ring_set))
+    if not starts:
+        return not outside
+    sets = _side_sets(mol, ring_set, starts)
+    return sets is not None and _disjoint_cover(sets, outside)
+
+
+def _cyclo_fg_parent_ok(info: dict, allowed: set[int]) -> bool:
+    """Sat mono carbocycle FG parent: FG heteros + ring halo; claimable sides."""
     if not _is_cycloalkane_core(info):
         return False
     mol: Mol = info["mol"]
     ring_set = set(info["rings"][0]["atom_ids"])
+    if not _hetero_or_ring_halo(mol, ring_set, allowed):
+        return False
+    return _cyclo_fg_sides_ok(mol, ring_set)
+
+
+def _is_simple_cycloalcohol(info: dict) -> bool:
+    ring_set = set((info.get("rings") or [{}])[0].get("atom_ids") or [])
     oh = _mono_oh_on_ring(info, ring_set)
-    if oh is None:
-        return False
-    if not _hetero_allowed(mol, ring_set, {oh["o_idx"]}):
-        return False
-    return not _outside_carbons(mol, ring_set)
+    return bool(oh) and _cyclo_fg_parent_ok(info, {oh["o_idx"]})
 
 
 def _mono_amine_on_ring(info: dict, ring_set: set[int]) -> dict | None:
@@ -288,16 +302,9 @@ def _mono_amine_on_ring(info: dict, ring_set: set[int]) -> dict | None:
 
 
 def _is_simple_cycloamine(info: dict) -> bool:
-    if not _is_cycloalkane_core(info):
-        return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
+    ring_set = set((info.get("rings") or [{}])[0].get("atom_ids") or [])
     am = _mono_amine_on_ring(info, ring_set)
-    if am is None:
-        return False
-    if not _hetero_allowed(mol, ring_set, {am["n_idx"]}):
-        return False
-    return not _outside_carbons(mol, ring_set)
+    return bool(am) and _cyclo_fg_parent_ok(info, {am["n_idx"]})
 
 
 def _dbl_o_idx(mol: Mol, c_idx: int) -> int | None:
@@ -329,14 +336,12 @@ def _ketone_o_allowed(mol: Mol, ring_set: set[int], ket: dict) -> bool:
 
 
 def _is_simple_cycloketone(info: dict) -> bool:
-    if not _is_cycloalkane_core(info):
-        return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
+    ring_set = set((info.get("rings") or [{}])[0].get("atom_ids") or [])
     ket = _mono_ketone_on_ring(info, ring_set)
-    if ket is None or not _ketone_o_allowed(mol, ring_set, ket):
+    if ket is None:
         return False
-    return not _outside_carbons(mol, ring_set)
+    o_idx = _dbl_o_idx(info["mol"], ket["c_idx"])
+    return o_idx is not None and _cyclo_fg_parent_ok(info, {o_idx})
 
 
 def _is_benzene_core(info: dict) -> bool:

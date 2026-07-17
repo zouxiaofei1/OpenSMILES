@@ -9,6 +9,9 @@ from namepredict.layer4.polyene import (
 )
 from namepredict.layer4.polycarboxylic import orient_polycarboxylic, polycarboxylic_facts
 from namepredict.layer4.sat_hetero_orient import orient_sat_hetero_repl as _orient_sat_hetero_repl
+from namepredict.layer4.omit_locants import (
+    omit_amine as _omit_amine, omit_ketone as _omit_ketone, omit_sh as _omit_sh,
+)
 def _pos_on(chain: list[int], c: int | None) -> int | None:
     if c is None or c not in chain:
         return None
@@ -427,26 +430,13 @@ def _yne_locant(oriented: dict) -> int | None:
     return None
 def _has_parent_yne(oriented: dict) -> bool:
     return bool(oriented.get("triple_bond") or oriented.get("triple_bonds"))
-def _omit_oh(oh_pos: int | None, n_carbons: int, kind: str | None = None, parent: dict | None = None) -> bool:
-    if kind == "cycloalcohol":
-        return True
-    if kind == "alcohol" and parent and (_has_parent_ene(parent) or _has_parent_yne(parent)):
-        return False
-    return oh_pos == 1 and n_carbons <= 2
-def _omit_sh(sh_pos: int | None, n_carbons: int) -> bool:
-    return sh_pos == 1 and n_carbons <= 2
-def _omit_amine(am_pos: int | None, n_carbons: int, kind: str | None = None) -> bool:
-    if kind == "cycloamine":
-        return True
-    return am_pos == 1 and n_carbons <= 2
-def _omit_unsat(n_carbons: int, kind: str | None = None, parent: dict | None = None) -> bool:
-    if kind == "cycloalkene":
-        return True
-    if kind == "alcohol" and parent and _has_parent_yne(parent):
-        return False
-    if parent and _has_parent_ene(parent) and kind != "alkene":
-        return False
-    return n_carbons <= 3
+def _omit_oh(oh_pos, n_carbons, kind=None, parent=None, n_subs=0):
+    from namepredict.layer4.omit_locants import omit_oh as _core
+    return _core(oh_pos, n_carbons, kind, parent, n_subs,
+                 has_ene=_has_parent_ene, has_yne=_has_parent_yne)
+def _omit_unsat(n_carbons, kind=None, parent=None):
+    from namepredict.layer4.omit_locants import omit_unsat as _core
+    return _core(n_carbons, kind, parent, has_ene=_has_parent_ene, has_yne=_has_parent_yne)
 def _sub_locant(chain: list[int], attach: int, kind: str | None, facts=None) -> int:
     loc = _atom_locant(chain, attach, kind, facts)
     return 0 if loc is None else loc
@@ -461,14 +451,14 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "yne_locant": _yne_locant(oriented),
         "omit_yne_locant": _omit_unsat(n, kind, oriented),
     }
-def _oh_am_locants(oriented: dict, n: int) -> dict:
+def _oh_am_locants(oriented: dict, n: int, n_subs: int = 0) -> dict:
     oh, am = _oh_locant(oriented), _amine_locant(oriented)
     kind = oriented.get("kind")
     return {
         "oh_locant": oh, "oh_locants": _oh_locants(oriented),
-        "omit_oh_locant": _omit_oh(oh, n, kind, oriented),
+        "omit_oh_locant": _omit_oh(oh, n, kind, oriented, n_subs),
         "amine_locant": am, "amine_locants": _amine_pair_locants(oriented),
-        "omit_amine_locant": _omit_amine(am, n, kind),
+        "omit_amine_locant": _omit_amine(am, n, kind, n_subs),
     }
 def _sh_locants(oriented: dict, n: int) -> dict:
     sh = _sh_locant(oriented)
@@ -476,12 +466,13 @@ def _sh_locants(oriented: dict, n: int) -> dict:
 def _cooh_locants(oriented: dict) -> list[int] | None:
     if oriented.get("kind") not in {"polycarboxylic", "benzene_polycarboxylic", "cycloalkane_polycarboxylic"}: return None
     return _pair_locs_on(oriented.get("chain") or [], oriented.get("cooh_c_idxs"))
-def _fg_locants(oriented: dict) -> dict:
+def _fg_locants(oriented: dict, n_subs: int = 0) -> dict:
     n = oriented.get("n_carbons", 0)
     return {
-        **_oh_am_locants(oriented, n), **_sh_locants(oriented, n),
+        **_oh_am_locants(oriented, n, n_subs), **_sh_locants(oriented, n),
         "ketone_locant": _ketone_locant(oriented),
         "ketone_locants": _ketone_pair_locants(oriented),
+        "omit_ketone_locant": _omit_ketone(oriented.get("kind"), n_subs),
         "cooh_locants": _cooh_locants(oriented),
         **_unsat_locants(oriented, n),
     }
@@ -489,7 +480,11 @@ def _pack(oriented: dict, substituents: list) -> dict:
     from namepredict.layer4.cyclo_relative_stereo import relative_stereo_facts
     facts = polycarboxylic_facts(oriented) if oriented.get("kind") == "polycarboxylic" else {}
     facts = {**facts, **relative_stereo_facts(oriented)}
-    return {"parent": {**oriented, **facts}, "substituents": substituents, **_fg_locants({**oriented, **facts}), **facts}
+    n_subs = len(substituents or [])
+    return {
+        "parent": {**oriented, **facts}, "substituents": substituents,
+        **_fg_locants({**oriented, **facts}, n_subs), **facts,
+    }
 def number(parent: dict, substituents: list) -> dict:
     chain, kind = _orient_chain(parent, substituents), parent.get("kind")
     if parent.get("numbering_scaffold_required") and not parent.get("numbering_scaffold"):

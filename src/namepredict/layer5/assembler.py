@@ -28,12 +28,30 @@ def _cycloalkane_names(n: int) -> tuple[str, str] | None:
     return _cyclo_from_alkane(n, lambda e: f"cyclo{e}", lambda z: f"环{z}")
 def _cycloalkene_names(n: int) -> tuple[str, str] | None:
     return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-3]}ene", lambda z: f"环{zh_stem(z)}烯")
-def _cycloalcohol_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}ol", lambda z: f"环{zh_stem(z)}醇")
-def _cycloketone_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}one", lambda z: f"环{zh_stem(z)}酮")
-def _cycloamine_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}amine", lambda z: f"环{zh_stem(z)}胺")
+def _cyclo_fg_with_loc(
+    n: int, loc: int | None, omit: bool, en_suf: str, zh_suf: str,
+) -> tuple[str, str] | None:
+    """Unsub: cyclohexanol; sub: cyclohexan-1-ol (keep FG@1)."""
+    plain = _alkane_names(n)
+    if not plain or n < 3:
+        return None
+    en, zh = plain
+    stem_en, stem_zh = f"cyclo{en[:-1]}", f"环{zh_stem(zh)}"
+    if omit or loc is None:
+        return f"{stem_en}{en_suf}", f"{stem_zh}{zh_suf}"
+    return f"{stem_en}-{loc}-{en_suf}", f"{stem_zh}-{loc}-{zh_suf}"
+def _cycloalcohol_names(
+    n: int, loc: int | None = None, omit: bool = True,
+) -> tuple[str, str] | None:
+    return _cyclo_fg_with_loc(n, loc, omit, "ol", "醇")
+def _cycloketone_names(
+    n: int, loc: int | None = None, omit: bool = True,
+) -> tuple[str, str] | None:
+    return _cyclo_fg_with_loc(n, loc, omit, "one", "酮")
+def _cycloamine_names(
+    n: int, loc: int | None = None, omit: bool = True,
+) -> tuple[str, str] | None:
+    return _cyclo_fg_with_loc(n, loc, omit, "amine", "胺")
 def _cycloalkanecarboxylic_names(n: int) -> tuple[str, str] | None:
     return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}ecarboxylic acid", lambda z: f"环{z}甲酸")
 def _omit_term_locant(n: int, loc: int | None, omit: bool) -> bool:
@@ -262,21 +280,29 @@ def _ketone_or_alkenone(n: int, numbered: dict) -> tuple[str, str] | None:
     if _has_ene(numbered):
         return alkenone_from(n, numbered)
     return _ketone_names(n, numbered.get("ketone_locant"))
+def _cycloketone_from(n: int, numbered: dict) -> tuple[str, str] | None:
+    return _cycloketone_names(
+        n, numbered.get("ketone_locant"), numbered.get("omit_ketone_locant", True),
+    )
 def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _ester_or_alkenoate(kind, n, numbered)
     if top is not None: return top
-    if kind == "dione":
-        return _dione_names(n, numbered.get("ketone_locants"))
-    if kind == "ketone":
-        return _ketone_or_alkenone(n, numbered)
-    return _cycloketone_names(n) if kind == "cycloketone" else None
+    if kind == "dione": return _dione_names(n, numbered.get("ketone_locants"))
+    if kind == "ketone": return _ketone_or_alkenone(n, numbered)
+    return _cycloketone_from(n, numbered) if kind == "cycloketone" else None
 def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _acid_ald_amide(kind, n, numbered) or _nitrile_or_none(kind, n, numbered)
     return top if top is not None else _ester_ketone(kind, n, numbered)
-def _cyclo_hetero_names(kind: str, n: int) -> tuple[str, str] | None:
+def _cyclo_hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "cycloalcohol":
-        return _cycloalcohol_names(n)
-    return _cycloamine_names(n) if kind == "cycloamine" else None
+        return _cycloalcohol_names(
+            n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", True),
+        )
+    if kind != "cycloamine":
+        return None
+    return _cycloamine_names(
+        n, numbered.get("amine_locant"), numbered.get("omit_amine_locant", True),
+    )
 def _alcohol_or_alkenol(n: int, numbered: dict) -> tuple[str, str] | None:
     from namepredict.layer5.unsat_acid import (
         _has_ene, _has_yne, alkenol_from, alkynol_from,
@@ -352,7 +378,7 @@ def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _oh_kind_names(kind, n, numbered)
     if top is not None:
         return top
-    cyc = _cyclo_hetero_names(kind, n)
+    cyc = _cyclo_hetero_names(kind, n, numbered)
     if cyc is not None:
         return cyc
     return _amine_kind_names(kind, n, numbered)
