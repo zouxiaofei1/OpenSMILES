@@ -198,23 +198,24 @@
 [#1919e1b][架构 L2 parent_core] 切断 producer→parent_selector 私有 hub；helper 迁 parent_core + AST 契约 [+90 contract tests, dual 15.1%→15.1%, 0 REGRESS]
 [#2e7078d][IUPAC P-63.1.2 / P-64.2.1 / P-14.3.4] 饱和单碳环二元醇/二元酮 cycloalkanediol/dione [+16 tests, dual 15.1%→15.1%, REGRESS=0]
 [#ac04c87][IUPAC P-31.1 / P-22.1.1 / P-63.1.1 / P-64.2.1 / P-14.3.4] 单环烯烃烷基/卤素 + 环烯烃醇/酮 [+18 cases test_sub_cycloalkene_fg, dual 15.1%→15.1%, REGRESS=0]
+[#e3cc77b][IUPAC P-66.6.1/P-66.5.1/P-66.1.1/P-65.6/P-65.5] 环烷甲酸型 FG 横扩 carbaldehyde/carbonitrile/carboxamide/carboxylate/carbonyl halide [+16 tests, dual 15.1%→15.1%, REGRESS=0]
 ## 其他
 
-## 选题: 单环烯烃 + 后续路线
+## 选题: 环烷甲酸型 FG + 后续路线
 
 ### 现状
-- Round C **已完成** `#ac04c87`；dual 15.1%(615/4062) 持平，REGRESS=0
-- 已通：`1-methylcyclohexene` / `cyclohex-2-en-1-ol` / `cyclohex-2-en-1-one`；隔离未取代 cyclohexene、饱和 mono cyclo FG、开链 alkenol/one
-- L2 `cyclo_ene_fg.py` + 放宽 `_is_simple_cycloalkene`；L4 `orient_cycloalkene`/`orient_ring_fg_ene`；L5 `cyclo…-a-en-b-ol/one`；测试 `test_sub_cycloalkene_fg.py`
-- Round B `#2e7078d` / Arch `#1919e1b` 已完成；下一功能：Round D
-- 备注：`ring_parent`/`numbering`/`assembler` 贴 500 行上限，后续优先拆分
+- Round D **已完成** `#e3cc77b`；dual 15.1%(615/4062) 持平，REGRESS=0
+- 已通：`cyclohexanecarbaldehyde` / `carbonitrile` / `carboxamide` / `methyl …carboxylate` / `…carbonyl chloride`（+ 2-甲基/2-氯）；隔离开链 mono FG、苯系、既有环烷甲酸
+- L2 泛化 `cyclo_carboxylic.py` + `fg_producers` 优先环外；L5 `cyclo_exo_fg_names.py`；测试 `test_cycloalkane_exocyclic_fg.py`
+- Round C `#ac04c87` / B `#2e7078d` / Arch `#1919e1b` 已完成；下一功能：Round E
+- 备注：`numbering.py` 贴 500 行；L4 `startswith("cycloalkane")` 兜底与 assembler 酸双路径为非阻断债
 
 ### 做法或顺序
 Round Arch: **已完成** — L2 `parent_core` 契约（commit 1919e1b）
 Round B: **已完成** — 饱和单碳环二元醇/二元酮（commit 2e7078d）
 Round C: **已完成** — 单环烯烃烷基/卤素 + 环烯烃醇/酮（commit ac04c87）
+Round D: **已完成** — 环烷甲酸型 FG 横扩（commit e3cc77b）
 
-Round D: **待做** — 环烷甲酸型 FG 横扩（carbaldehyde/carbonitrile/carboxamide/…）
-Round E: 内酯/内酰胺（oxolan-2-one / pyrrolidin-2-one）
+Round E: **待做** — 内酯/内酰胺（oxolan-2-one / pyrrolidin-2-one）
 
 ------------------------------------
