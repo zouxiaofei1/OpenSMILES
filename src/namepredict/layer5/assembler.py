@@ -284,10 +284,26 @@ def _cycloketone_from(n: int, numbered: dict) -> tuple[str, str] | None:
     return _cycloketone_names(
         n, numbered.get("ketone_locant"), numbered.get("omit_ketone_locant", True),
     )
+def _cyclo_poly_fg_names(
+    n: int, locs: list[int] | None, en_suf: str, zh_suf: str, need: int,
+) -> tuple[str, str] | None:
+    """cyclohexane-1,2-diol / 环己烷-1,2-二醇 style poly FG on cycloalkane."""
+    plain = _alkane_names(n)
+    if not plain or not locs or len(locs) != need or n < 3:
+        return None
+    en, zh = plain
+    loc = _pair_loc_str(locs)
+    return f"cyclo{en}-{loc}-{en_suf}", f"环{zh}-{loc}-{zh_suf}"
+def _cycloalkanediol_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
+    return _cyclo_poly_fg_names(n, locs, "diol", "二醇", 2)
+def _cycloalkanedione_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
+    return _cyclo_poly_fg_names(n, locs, "dione", "二酮", 2)
 def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _ester_or_alkenoate(kind, n, numbered)
     if top is not None: return top
     if kind == "dione": return _dione_names(n, numbered.get("ketone_locants"))
+    if kind == "cycloalkanedione":
+        return _cycloalkanedione_names(n, numbered.get("ketone_locants"))
     if kind == "ketone": return _ketone_or_alkenone(n, numbered)
     return _cycloketone_from(n, numbered) if kind == "cycloketone" else None
 def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
@@ -319,6 +335,8 @@ def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return _thiol_names(n, numbered.get("sh_locant"), numbered.get("omit_sh_locant", False))
     if kind == "benzenediol":
         return benzenediol_names(numbered.get("oh_locants"))
+    if kind == "cycloalkanediol":
+        return _cycloalkanediol_names(n, numbered.get("oh_locants"))
     return _polyol_names(n, numbered.get("oh_locants"), kind) if kind in ("diol", "triol") else None
 def _amine_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "diamine":

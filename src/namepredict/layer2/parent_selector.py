@@ -24,6 +24,7 @@ from namepredict.layer2.pyridine import (
     _try_pyridinecarbonitrile_parent as _try_pycn, _try_pyridinecarboxylic_parent, _try_pyridin_fg_parent)
 from namepredict.layer2.phenol_aniline import (
     _aniline_parent, _is_simple_aniline, _is_simple_phenol, _phenol_parent)
+from namepredict.layer2.cyclo_poly_fg import try_cycloalkanediol, try_cycloalkanedione
 from namepredict.layer2.ring_parent import (
     _benzenediol_parent, _endocyclic_double, _is_simple_benzene, _is_simple_benzenediol,
     _is_simple_cycloalcohol, _is_simple_cycloalkane, _is_simple_cycloalkene,
@@ -83,6 +84,8 @@ def _ring_alcohol_parent(info: dict) -> dict | None:
     top = _try_qol(info) or _try_btol(info) or _try_pyridin_fg_parent(info)
     if top is not None: return top
     if _is_simple_phenol(info): return _phenol_parent(info)
+    cyc = try_cycloalkanediol(info)
+    if cyc is not None: return cyc
     return _ring_fg_try(info, ((_is_simple_cycloalcohol, "cycloalcohol"),),
                         "hydroxyls", "oh_c_idx")
 def _oh_c_in_ring(info: dict, c_idx: int) -> bool:
@@ -264,12 +267,17 @@ def _acid_parent_core(info: dict) -> dict | None:
 def _acid_parent(info: dict) -> dict | None:
     core = _acid_parent_core(info)
     return None if core is None else _with_anion(info, core)
+def _ring_or_poly_ketone(info: dict) -> dict | None:
+    cyc = try_cycloalkanedione(info)
+    if cyc is not None: return cyc
+    if _is_simple_cycloketone(info):
+        return _cyclo_fg_parent(info, "cycloketone", "ketones", "ketone_c_idx")
+    return _dione_parent(info) if _is_simple_alkanedione(info) else None
 def _ketone_parent(info: dict) -> dict | None:
     a = _try_acetophenone_parent(info)
     if a is not None: return a
-    if _is_simple_cycloketone(info):
-        return _cyclo_fg_parent(info, "cycloketone", "ketones", "ketone_c_idx")
-    if _is_simple_alkanedione(info): return _dione_parent(info)
+    top = _ring_or_poly_ketone(info)
+    if top is not None: return top
     if not _open_mono_fg_ok(info, "ketones"): return None
     return _unsat_or_sat(
         info, "has_ketone", "ketones", _ALKENONE_BAD, "ketone", "ketone", "ketone_c_idx",

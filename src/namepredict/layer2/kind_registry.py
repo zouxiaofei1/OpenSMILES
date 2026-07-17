@@ -62,6 +62,8 @@ _MISC_RING_FG: tuple[tuple[str, int, str, int, bool, str | None, str | None], ..
     ("cycloalkanecarboxylic", 13, "none", 0, False, None, None),
     ("cycloalkane_polycarboxylic", 13, "carbo", 1, False, None, None),
     ("benzenediol", 5, "none", 0, False, None, None),
+    ("cycloalkanediol", 5, "none", 0, False, None, None),
+    ("cycloalkanedione", 6, "none", 0, False, None, None),
     ("pyridinol", 5, "none", 0, False, None, None),
     ("pyridinamine", 3, "none", 0, False, None, None),
     ("pyrimidinamine", 3, "none", 0, False, None, None),
