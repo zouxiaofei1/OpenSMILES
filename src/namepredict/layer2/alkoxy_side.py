@@ -89,7 +89,7 @@ def _benzyl_ph_attach(mol, ch2_idx: int, o_idx: int) -> int | None:
 
 
 def _linear_n(mol, start: int) -> int:
-    from namepredict.layer2.parent_selector import _longest_from
+    from namepredict.layer2.parent_core import _longest_from
     chain = _longest_from(mol, start)
     return len(chain) if chain else 1
 

@@ -10,7 +10,7 @@ _CB_BAD = (
 
 
 def _mono_ok(info: dict) -> bool:
-    from namepredict.layer2.parent_selector import _no_fgs
+    from namepredict.layer2.parent_core import _no_fgs
     return len(info.get("carbamates") or []) == 1 and _no_fgs(info, _CB_BAD)
 
 
@@ -21,7 +21,7 @@ def _alkoxy_label(info: dict, e: dict) -> tuple[str, str, int | None]:
 
 
 def _arm_n(mol, c_idx: int, n_idx: int) -> int:
-    from namepredict.layer2.parent_selector import _longest_from
+    from namepredict.layer2.parent_core import _longest_from
     return len(_longest_from(mol, c_idx, {n_idx}) or [c_idx])
 
 
@@ -91,7 +91,7 @@ def _parent_meta(info: dict, e: dict) -> dict:
 def _parent_chain(info: dict, e: dict, n: int | None) -> list[int]:
     if not n:
         return [e["c_idx"]]
-    from namepredict.layer2.parent_selector import _longest_from
+    from namepredict.layer2.parent_core import _longest_from
     return _longest_from(info["mol"], e["alkoxy_c_idx"]) or [e["c_idx"]]
 
 
@@ -100,5 +100,5 @@ def _carbamate_parent(info: dict) -> dict | None:
         return None
     e = info["carbamates"][0]
     meta = _parent_meta(info, e)
-    from namepredict.layer2.parent_selector import _parent_dict
+    from namepredict.layer2.parent_core import _parent_dict
     return _parent_dict(_parent_chain(info, e, meta.get("alkoxy_n")), "carbamate", **meta)

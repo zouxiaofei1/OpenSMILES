@@ -32,10 +32,10 @@ from namepredict.layer2.indazole import _try_indazole_parent
 from namepredict.layer2.indole import _try_indole_parent
 from namepredict.layer2.kind_registry import register_ring_try
 from namepredict.layer2.naphthalene import _try_naphthalene_parent
+from namepredict.layer2.parent_core import _parent_dict
 from namepredict.layer2.parent_selector import (
     _benzene_parent,
     _cycloalkane_parent,
-    _parent_dict,
 )
 from namepredict.layer2.pyridine import _try_pyridine_parent
 from namepredict.layer2.quinoline import (

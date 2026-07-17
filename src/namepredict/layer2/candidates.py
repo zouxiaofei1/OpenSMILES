@@ -13,11 +13,8 @@ tuples here).
 from __future__ import annotations
 
 from namepredict.layer2 import kind_registry as _kr
-from namepredict.layer2.parent_selector import (
-    _benzene_parent,
-    _longest_chain,
-    _parent_dict,
-)
+from namepredict.layer2.parent_core import _longest_chain, _parent_dict
+from namepredict.layer2.parent_selector import _benzene_parent
 from namepredict.layer2.ring_parent import (
     _is_benzene_core,
     _is_simple_benzene,

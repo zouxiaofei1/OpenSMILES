@@ -31,17 +31,19 @@ from namepredict.layer2.ring_parent import (
 from namepredict.layer2.scoring import _pick_best
 from namepredict.layer2.aliph_fg import _aliph_c_idxs, _aliphatic_entries, _c_idxs
 from namepredict.layer2.chain_walk import (
-    _better, _best_arm_away, _carbon_neighbors, _chain_through, _chain_through_bond,
-    _chain_through_two, _longest_chain, _longest_from,
+    _carbon_neighbors, _chain_through, _chain_through_bond,
+    _longest_chain, _longest_from,
 )
 from namepredict.layer2.polyalkenol import _polyalkenol_parent as _try_polyalkenol
 from namepredict.layer2.prefix_alkenoic import _prefix_alkenoic_parent as _try_hy_alkenoic
 from namepredict.layer2.polycarboxylic import try_polycarboxylic_parent
 from namepredict.layer2.carboxymethyl_diacid import carboxymethyl_diacid_parent
 from namepredict.layer2.parent_selector_common import _ANHYDRIDE_BAD, _CORE_BAD, _DIACID_BAD, _DIAMINE_BAD, _DIOL_BAD, _DIONE_BAD, _no_fgs
-def _is_open_sat(info: dict) -> bool: return not (info.get("has_alkene") or info.get("has_alkyne"))
-def _hetero_open_chain(mol: Mol, idx: int) -> bool:
-    return not mol.GetAtomWithIdx(idx).IsInRing()
+from namepredict.layer2.parent_core import (
+    _arm_ok, _best_cover_pair, _covers, _db_pairs, _fg_chain, _hetero_open_chain,
+    _is_mono_alkene, _is_mono_alkyne, _is_mono_fg, _is_open_sat, _parent_dict,
+    _try_unsat_fg, _unsat_or_sat,
+)
 def _is_simple_n(info: dict, bad: tuple, ekey: str, n: int) -> bool:
     return (
         _is_open_sat(info) and _no_fgs(info, bad)
@@ -71,8 +73,6 @@ def _is_simple_alkanedione(info: dict) -> bool:
     return _is_simple_n(info, _DIONE_BAD, "ketones", 2)
 def _dione_parent(info: dict) -> dict:
     return _cover_parent(info, "ketones", 2, "dione", "ketone_c_idxs")
-def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
-    return {"chain": chain, "n_carbons": len(chain), "kind": kind, **kw}
 def _ring_fg_try(info: dict, pairs, ekey: str, ckey: str) -> dict | None:
     for pred, kind in pairs:
         if pred(info):
@@ -112,18 +112,6 @@ def _alcohol_parent(info: dict) -> dict | None:
     return ring if ring is not None else _chain_or_unsat_alcohol(info)
 def _thiol_parent(info: dict) -> dict:
     return _fg_chain(info, "thiols", "thiol", "sh_c_idx")
-def _side_carbons(mol: Mol, start: int, forbid: set[int]) -> set[int]:
-    seen, stack = set(), [start]
-    while stack:
-        cur = stack.pop()
-        if cur not in seen and cur not in forbid:
-            seen.add(cur)
-            stack.extend(_carbon_neighbors(mol, cur))
-    return seen
-def _arm_ok(mol: Mol, arm: list[int], n_idx: int) -> bool:
-    if not arm or len(arm) > 4 or mol.GetAtomWithIdx(arm[0]).GetIsAromatic():
-        return False
-    return len(_side_carbons(mol, arm[0], {n_idx})) == len(arm)
 def _arm_has_aryl(mol: Mol, arm: list[int]) -> bool:
     """True if any arm carbon is bonded to an aromatic carbon outside the arm."""
     arm_set = set(arm)
@@ -236,36 +224,6 @@ _ALKENENITRILE_BAD = _UNSAT_FG_CORE + ("has_aldehyde",)
 _ALKENOL_BAD = _UNSAT_FG_BASE + ("has_aldehyde", "has_nitrile")
 _ALKENOATE_BAD = tuple(k for k in _UNSAT_FG_BASE + ("has_nitrile",) if k != "has_ester")
 _ALKENONE_BAD = tuple(k for k in _ALKENAL_BAD + ("has_aldehyde",) if k != "has_ketone")
-def _open_chain_unsat_atoms(mol, fg_c: int, db: dict) -> bool:
-    """True iff principal FG attach carbon and both C=C ends are acyclic."""
-    atoms = (int(fg_c), int(db["c1"]), int(db["c2"]))
-    return all(not mol.GetAtomWithIdx(a).IsInRing() for a in atoms)
-def _ok_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple) -> bool:
-    """Mono open-chain unsat FG: FG carbon + C=C ends not in ring (aryl OK)."""
-    if info.get("has_alkyne") or not _is_mono_fg(info, flag, ekey) or not _is_mono_alkene(info):
-        return False
-    c, db, mol = info[ekey][0]["c_idx"], info["double_bonds"][0], info["mol"]
-    return _open_chain_unsat_atoms(mol, c, db) and _no_fgs(info, bad)
-def _unsat_cover_atoms(info, c_idx: int, db: dict) -> list[int]:
-    atoms = {c_idx, db["c1"], db["c2"]}
-    for key in ("hydroxyls", "ketones", "amines"):
-        for e in _aliphatic_entries(info, key):
-            atoms.add(e["c_idx"])
-    return list(atoms)
-def _try_unsat_fg(info, flag, ekey, bad, kind, ckey, **extra) -> dict | None:
-    if not _ok_unsat_fg(info, flag, ekey, bad):
-        return None
-    c_idx, db = info[ekey][0]["c_idx"], info["double_bonds"][0]
-    chain = _best_cover_pair(info["mol"], _unsat_cover_atoms(info, c_idx, db))
-    if not chain or c_idx not in chain:
-        return None
-    return _parent_dict(chain, kind, **{ckey: c_idx, "double_bond": (db["c1"], db["c2"]), "mol": info["mol"], **extra})
-def _fg_chain(info: dict, ekey: str, kind: str, ckey: str, **extra) -> dict:
-    c = info[ekey][0]["c_idx"]
-    return _parent_dict(_chain_through(info, c), kind, **{ckey: c, **extra})
-def _unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
-    from namepredict.layer2.alkynoic import ynsat_or_unsat_or_sat as _y
-    return _y(info, flag, ekey, bad, ukind, skind, ckey, **extra)
 def _with_anion(info: dict, parent: dict) -> dict:
     acids = info.get("carboxyls") or []
     return {**parent, "anion": True} if acids and all(c.get("anion") for c in acids) else parent
@@ -328,9 +286,6 @@ def _aldehyde_parent(info: dict) -> dict | None:
 def _amide_parent(info: dict) -> dict:
     from namepredict.layer2.alkenamide import _amide_parent as _ap
     return _ap(info)
-def _is_mono_fg(info: dict, flag: str, key: str) -> bool:
-    xs = info.get(key) or []
-    return bool(info.get(flag)) and len(xs) == 1
 def _acyl_chloride_parent(info: dict) -> dict:
     e = info["acyl_chlorides"][0]
     hz = int(e.get("hal_z") or 17)
@@ -385,10 +340,6 @@ def _alkyne_parent(info: dict) -> dict:
     c1, c2 = tb["c1"], tb["c2"]
     chain = _chain_through_bond(info["mol"], c1, c2)
     return _parent_dict(chain, "alkyne", triple_bond=(c1, c2))
-def _is_mono_alkene(info: dict) -> bool:
-    return bool(info.get("has_alkene")) and len(info.get("double_bonds") or []) == 1
-def _is_mono_alkyne(info: dict) -> bool:
-    return len(info.get("triple_bonds") or []) == 1 and not (info.get("double_bonds") or [])
 def _no_main_fg(info: dict) -> bool:
     return _no_fgs(info, _CORE_BAD + ("has_amine", "has_alcohol"))
 def _is_polyene(info: dict) -> bool:
@@ -402,25 +353,12 @@ def _db_atoms(info: dict) -> list[int]:
         atoms.add(db["c1"])
         atoms.add(db["c2"])
     return list(atoms)
-def _covers(chain: list[int], atoms: list[int]) -> bool:
-    s = set(chain)
-    return all(a in s for a in atoms)
-def _best_cover_pair(mol: Mol, atoms: list[int]) -> list[int]:
-    best: list[int] = []
-    for i, a in enumerate(atoms):
-        for b in atoms[i + 1 :]:
-            chain = _chain_through_two(mol, a, b)
-            if _covers(chain, atoms) and _better(mol, chain, best):
-                best = chain
-    return best
 def _polyene_chain(info: dict) -> list[int]:
     mol, atoms = info["mol"], _db_atoms(info)
     chain = _longest_chain(mol)
     if _covers(chain, atoms):
         return chain
     return _best_cover_pair(mol, atoms) or chain
-def _db_pairs(info: dict) -> list[tuple[int, int]]:
-    return [(db["c1"], db["c2"]) for db in info.get("double_bonds") or []]
 def _polyene_parent(info: dict) -> dict:
     chain = _polyene_chain(info)
     return _parent_dict(chain, "polyene", double_bonds=_db_pairs(info))

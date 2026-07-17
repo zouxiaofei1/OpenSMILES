@@ -12,7 +12,7 @@ _GU_BAD = (
 
 
 def _mono_ok(info: dict) -> bool:
-    from namepredict.layer2.parent_selector import _no_fgs
+    from namepredict.layer2.parent_core import _no_fgs
     return len(info.get("guanidines") or []) == 1 and _no_fgs(info, _GU_BAD)
 
 
@@ -95,7 +95,7 @@ def _pick_sub(sides: list[dict]) -> dict | None:
 
 
 def _pack_parent(info: dict, e: dict, sides: list[dict]) -> dict:
-    from namepredict.layer2.parent_selector import _parent_dict
+    from namepredict.layer2.parent_core import _parent_dict
     sub = _pick_sub(sides)
     return _parent_dict(
         [e["c_idx"]], "guanidine",

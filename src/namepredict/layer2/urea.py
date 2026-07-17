@@ -10,12 +10,12 @@ _UREA_BAD = (
 
 
 def _mono_ok(info: dict) -> bool:
-    from namepredict.layer2.parent_selector import _no_fgs
+    from namepredict.layer2.parent_core import _no_fgs
     return len(info.get("ureas") or []) == 1 and _no_fgs(info, _UREA_BAD)
 
 
 def _arm_n(mol, c_idx: int, n_idx: int) -> int:
-    from namepredict.layer2.parent_selector import _longest_from
+    from namepredict.layer2.parent_core import _longest_from
     return len(_longest_from(mol, c_idx, {n_idx}) or [c_idx])
 
 
@@ -89,7 +89,7 @@ def _sides_ok(info: dict, e: dict) -> tuple[dict, dict] | None:
 
 
 def _pack_parent(info: dict, e: dict, n1: dict, n3: dict) -> dict:
-    from namepredict.layer2.parent_selector import _parent_dict
+    from namepredict.layer2.parent_core import _parent_dict
     return _parent_dict(
         [e["c_idx"]], "urea",
         c_idx=e["c_idx"], o_idx=e["o_idx"], mol=info["mol"],

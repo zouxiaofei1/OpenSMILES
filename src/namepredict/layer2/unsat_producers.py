@@ -7,11 +7,10 @@ tuple in candidates. Keep try order stable: alkyne → polyene → alkene.
 from __future__ import annotations
 
 from namepredict.layer2.kind_registry import register_unsat_try
+from namepredict.layer2.parent_core import _is_mono_alkene, _is_mono_alkyne
 from namepredict.layer2.parent_selector import (
     _alkene_parent,
     _alkyne_parent,
-    _is_mono_alkene,
-    _is_mono_alkyne,
     _is_polyene,
     _polyene_parent,
 )

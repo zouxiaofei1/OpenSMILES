@@ -12,7 +12,7 @@ _SA_BAD = (
 
 
 def _mono_ok(info: dict) -> bool:
-    from namepredict.layer2.parent_selector import _no_fgs
+    from namepredict.layer2.parent_core import _no_fgs
     return len(info.get("sulfonamides") or []) == 1 and _no_fgs(info, _SA_BAD)
 
 
@@ -23,7 +23,7 @@ def _arm_n(mol, c_idx: int, forbid: int) -> int:
 
 def _arm_ok(mol, c_idx: int, forbid: int) -> bool:
     from namepredict.layer2.chain_walk import _longest_from
-    from namepredict.layer2.parent_selector import _arm_ok as _ok
+    from namepredict.layer2.parent_core import _arm_ok as _ok
     arm = _longest_from(mol, c_idx, {forbid}) or [c_idx]
     return _ok(mol, arm, forbid)
 
@@ -96,7 +96,7 @@ def _s_chain(mol, e: dict, s: dict) -> list[int]:
 
 
 def _pack(info: dict, e: dict, s: dict, n: dict, mode: str) -> dict:
-    from namepredict.layer2.parent_selector import _parent_dict
+    from namepredict.layer2.parent_core import _parent_dict
     mol = info["mol"]
     return _parent_dict(
         _s_chain(mol, e, s), "sulfonamide",

@@ -14,9 +14,7 @@ def _open_chain_ynsat_atoms(mol, fg_c: int, tb: dict) -> bool:
 
 def _ok_ynsat_fg(info: dict, flag: str, ekey: str, bad: tuple) -> bool:
     """Mono open-chain yne FG: FG carbon + C≡C ends not in ring."""
-    from namepredict.layer2.parent_selector import (
-        _is_mono_alkyne, _is_mono_fg, _no_fgs,
-    )
+    from namepredict.layer2.parent_core import _is_mono_alkyne, _is_mono_fg, _no_fgs
     if not _is_mono_fg(info, flag, ekey) or not _is_mono_alkyne(info):
         return False
     c, tb, mol = info[ekey][0]["c_idx"], info["triple_bonds"][0], info["mol"]
@@ -28,7 +26,7 @@ def _ynsat_cover_atoms(info, c_idx: int, tb: dict) -> list[int]:
 
 
 def _try_ynsat_fg(info, flag, ekey, bad, kind, ckey, **extra) -> dict | None:
-    from namepredict.layer2.parent_selector import _best_cover_pair, _parent_dict
+    from namepredict.layer2.parent_core import _best_cover_pair, _parent_dict
     if not _ok_ynsat_fg(info, flag, ekey, bad):
         return None
     c_idx, tb = info[ekey][0]["c_idx"], info["triple_bonds"][0]
@@ -41,7 +39,7 @@ def _try_ynsat_fg(info, flag, ekey, bad, kind, ckey, **extra) -> dict | None:
 
 def ynsat_or_unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
     """Try mono-yne FG parent, then mono-ene, then saturated chain."""
-    from namepredict.layer2.parent_selector import _fg_chain, _try_unsat_fg
+    from namepredict.layer2.parent_core import _fg_chain, _try_unsat_fg
     y = _try_ynsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
     if y is not None:
         return y

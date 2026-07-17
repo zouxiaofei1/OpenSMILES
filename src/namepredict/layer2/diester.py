@@ -17,7 +17,7 @@ def _two_esters(info: dict) -> list | None:
 
 def _open_diester_ok(info: dict) -> bool:
     """Open-chain diester: no ring/alkyne/polyene; mono C=C allowed."""
-    from namepredict.layer2.parent_selector import _no_fgs
+    from namepredict.layer2.parent_core import _no_fgs
 
     if info.get("has_ring") or info.get("has_alkyne"):
         return False
@@ -100,7 +100,7 @@ def _cover_atoms(info: dict, c_idxs: list[int]) -> list[int]:
 
 
 def _cover_chain(info: dict, c_idxs: list[int]) -> list[int] | None:
-    from namepredict.layer2.parent_selector import _best_cover_pair
+    from namepredict.layer2.parent_core import _best_cover_pair
 
     if not _carbonyls_open(info["mol"], c_idxs):
         return None
@@ -128,7 +128,7 @@ def _diester_meta(info: dict, c_idxs: list[int], alkoxy_n: int, chain: list[int]
 
 
 def _build_parent(info: dict, esters: list, alkoxy_n: int) -> dict | None:
-    from namepredict.layer2.parent_selector import _parent_dict
+    from namepredict.layer2.parent_core import _parent_dict
 
     c_idxs = [esters[0]["c_idx"], esters[1]["c_idx"]]
     chain = _cover_chain(info, c_idxs)

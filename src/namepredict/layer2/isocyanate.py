@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 from namepredict.layer2.chain_walk import _chain_through
-from namepredict.layer2.parent_selector import (
-    _is_mono_fg, _is_open_sat, _no_fgs, _parent_dict,
+from namepredict.layer2.parent_core import (
+    _is_mono_fg,
+    _is_open_sat,
+    _no_fgs,
+    _parent_dict,
 )
 
 _ISO_BAD = (

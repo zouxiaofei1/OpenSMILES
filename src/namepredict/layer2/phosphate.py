@@ -10,7 +10,7 @@ _P_BAD = (
 
 
 def _simple_p_ok(info: dict) -> bool:
-    from namepredict.layer2.parent_selector import _no_fgs
+    from namepredict.layer2.parent_core import _no_fgs
 
     if info.get("has_ring") or info.get("has_alkene") or info.get("has_alkyne"):
         return False
@@ -18,7 +18,7 @@ def _simple_p_ok(info: dict) -> bool:
 
 
 def _alkyl_chain(info: dict, c_idx: int) -> list[int]:
-    from namepredict.layer2.parent_selector import _longest_from
+    from namepredict.layer2.parent_core import _longest_from
 
     return _longest_from(info["mol"], c_idx)
 
@@ -39,7 +39,7 @@ def _chain_or_none(info: dict, c_idx: int) -> list[int] | None:
 
 
 def _phos_dict(chain, kind, **kw):
-    from namepredict.layer2.parent_selector import _parent_dict
+    from namepredict.layer2.parent_core import _parent_dict
 
     return _parent_dict(chain, kind, **kw)
 

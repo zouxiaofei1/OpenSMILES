@@ -15,7 +15,7 @@ _ALKENAMIDE_BAD = (
 
 
 def _amide_n_alkyl(mol: Mol, am: dict, cs: list[int]) -> dict:
-    from namepredict.layer2.parent_selector import _arm_ok
+    from namepredict.layer2.parent_core import _arm_ok
     arms = [_longest_from(mol, c, set()) for c in cs]
     if not all(_arm_ok(mol, a, am["n_idx"]) for a in arms):
         return {}
@@ -53,7 +53,7 @@ def _amide_n_meta(info: dict) -> dict:
 
 
 def _amide_parent(info: dict) -> dict:
-    from namepredict.layer2.parent_selector import _unsat_or_sat
+    from namepredict.layer2.parent_core import _unsat_or_sat
     return _unsat_or_sat(
         info, "has_amide", "amides", _ALKENAMIDE_BAD, "amide", "amide",
         "amide_c_idx", **_amide_n_meta(info),

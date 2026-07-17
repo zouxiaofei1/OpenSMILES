@@ -10,7 +10,7 @@ _DIACID_BAD = (
 
 def _is_open_unsat_diacid(info: dict) -> bool:
     """Open-chain diacid with ≥1 C=C and no competing higher FG."""
-    from namepredict.layer2.parent_selector import _no_fgs
+    from namepredict.layer2.parent_core import _no_fgs
 
     if info.get("has_ring") or info.get("has_alkyne"):
         return False
@@ -19,7 +19,7 @@ def _is_open_unsat_diacid(info: dict) -> bool:
 
 
 def _is_simple_alkenedioic(info: dict) -> bool:
-    from namepredict.layer2.parent_selector import _c_idxs
+    from namepredict.layer2.parent_core import _c_idxs
 
     if not _is_open_unsat_diacid(info):
         return False
@@ -27,7 +27,7 @@ def _is_simple_alkenedioic(info: dict) -> bool:
 
 
 def _alkenedioic_atoms(info: dict) -> list[int] | None:
-    from namepredict.layer2.parent_selector import _c_idxs
+    from namepredict.layer2.parent_core import _c_idxs
 
     cs = _c_idxs(info.get("carboxyls") or [], 2)
     if cs is None:
@@ -40,7 +40,7 @@ def _alkenedioic_atoms(info: dict) -> list[int] | None:
 
 def _db_meta(info: dict) -> dict:
     """Single C=C → double_bond; multi → double_bonds (polyene style)."""
-    from namepredict.layer2.parent_selector import _db_pairs
+    from namepredict.layer2.parent_core import _db_pairs
 
     pairs = _db_pairs(info)
     if len(pairs) >= 2:
@@ -51,14 +51,14 @@ def _db_meta(info: dict) -> dict:
 
 
 def _alkenedioic_meta(info: dict) -> dict:
-    from namepredict.layer2.parent_selector import _c_idxs
+    from namepredict.layer2.parent_core import _c_idxs
 
     cs = _c_idxs(info.get("carboxyls") or [], 2) or []
     return dict(cooh_c_idxs=cs, mol=info["mol"], **_db_meta(info))
 
 
 def _alkenedioic_parent(info: dict) -> dict:
-    from namepredict.layer2.parent_selector import _best_cover_pair, _parent_dict
+    from namepredict.layer2.parent_core import _best_cover_pair, _parent_dict
 
     atoms = _alkenedioic_atoms(info) or []
     chain = _best_cover_pair(info["mol"], atoms)

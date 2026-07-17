@@ -10,7 +10,7 @@ _SULFOXIDE_BAD = (
 
 
 def _simple_ok(info: dict) -> bool:
-    from namepredict.layer2.parent_selector import _is_open_sat, _no_fgs
+    from namepredict.layer2.parent_core import _is_open_sat, _no_fgs
 
     if info.get("has_ring"):
         return False
@@ -19,7 +19,7 @@ def _simple_ok(info: dict) -> bool:
 
 def _arm_pair(info: dict, e: dict) -> tuple[list[int], list[int]] | None:
     from namepredict.layer2.chain_walk import _longest_from
-    from namepredict.layer2.parent_selector import _arm_ok, _hetero_open_chain
+    from namepredict.layer2.parent_core import _arm_ok, _hetero_open_chain
 
     mol, s_idx = info["mol"], e["s_idx"]
     if not _hetero_open_chain(mol, s_idx):
@@ -31,7 +31,7 @@ def _arm_pair(info: dict, e: dict) -> tuple[list[int], list[int]] | None:
 
 
 def _make_parent(a1: list[int], a2: list[int], s_idx: int) -> dict:
-    from namepredict.layer2.parent_selector import _parent_dict
+    from namepredict.layer2.parent_core import _parent_dict
 
     parent = a1 if len(a1) >= len(a2) else a2
     return _parent_dict(parent, "sulfoxide", s_idx=s_idx, alkyl_ns=(len(a1), len(a2)))

@@ -19,6 +19,7 @@ from namepredict.layer2.guanidine import _guanidine_parent
 from namepredict.layer2.hydrazine import _hydrazine_parent
 from namepredict.layer2.isocyanate import _try_isocyanate, _try_isothiocyanate
 from namepredict.layer2.kind_registry import register_fg_try
+from namepredict.layer2.parent_core import _is_mono_fg
 from namepredict.layer2.parent_selector import (
     _acid_parent,
     _acyl_chloride_parent,
@@ -29,7 +30,6 @@ from namepredict.layer2.parent_selector import (
     _anhydride_parent,
     _ester_parent,
     _ether_parent,
-    _is_mono_fg,
     _is_sym_anhydride,
     _ketone_parent,
     _nitrile_parent,

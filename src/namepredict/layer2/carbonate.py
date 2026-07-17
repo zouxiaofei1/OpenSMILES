@@ -12,13 +12,13 @@ _CB_BAD = (
 
 
 def _mono_ok(info: dict) -> bool:
-    from namepredict.layer2.parent_selector import _no_fgs
+    from namepredict.layer2.parent_core import _no_fgs
     return len(info.get("carbonates") or []) == 1 and _no_fgs(info, _CB_BAD)
 
 
 def _arm_ok(mol, c_idx: int, o_idx: int) -> bool:
     from namepredict.layer2.chain_walk import _longest_from
-    from namepredict.layer2.parent_selector import _arm_ok as _ok
+    from namepredict.layer2.parent_core import _arm_ok as _ok
     arm = _longest_from(mol, c_idx, {o_idx}) or [c_idx]
     return _ok(mol, arm, o_idx)
 
@@ -81,7 +81,7 @@ def _chain_of(mol, e: dict, s1: dict, s2: dict) -> list[int]:
 
 
 def _pack(info: dict, e: dict, s1: dict, s2: dict, mode: str) -> dict:
-    from namepredict.layer2.parent_selector import _parent_dict
+    from namepredict.layer2.parent_core import _parent_dict
     mol = info["mol"]
     return _parent_dict(
         _chain_of(mol, e, s1, s2), "carbonate",
