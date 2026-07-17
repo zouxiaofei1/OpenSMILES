@@ -18,12 +18,14 @@ def _pair_loc_str(locs: list[int]) -> str:
 
 def cycloalkane_polycarboxylic_names(n: int, numbered: dict) -> tuple[str, str] | None:
     parent, locs = numbered.get("parent") or {}, numbered.get("cooh_locants") or []
-    count = parent.get("acid_count")
-    if count not in (2, 3) or len(locs) != count: return None
-    stem = (parent.get("stem_en"), parent.get("stem_zh"))
-    if not all(stem): return None
+    count, stem = parent.get("acid_count"), (parent.get("stem_en"), parent.get("stem_zh"))
+    if count not in (2, 3) or len(locs) != count or not all(stem): return None
     loc, mult = _pair_loc_str(locs), (MULT_EN[count], MULT_ZH[count])
-    return f"{stem[0]}-{loc}-{mult[0]}carboxylic acid", f"{stem[1]}-{loc}-{mult[1]}甲酸"
+    en, zh = f"{stem[0]}-{loc}-{mult[0]}carboxylic acid", f"{stem[1]}-{loc}-{mult[1]}甲酸"
+    relative = parent.get("relative_stereo_prefix")
+    if relative: return f"{relative}-{en}", f"{'顺' if relative == 'cis' else '反'}-{zh}"
+    relative = parent.get("relative_stereo_locants")
+    return (f"{relative}-{en}", f"{relative}-{zh}") if relative else (en, zh)
 
 
 def polycarboxylic_names(n: int, numbered: dict) -> tuple[str, str] | None:

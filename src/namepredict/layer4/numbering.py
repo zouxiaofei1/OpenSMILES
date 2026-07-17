@@ -176,7 +176,6 @@ def _orient_ring_pair(chain: list[int], parent: dict, key: str, subs: list) -> l
     return best
 def _orient_benzene_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "cooh_c_idxs", substituents)
-
 def _orient_cycloalkane_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     plan = choose_numbering(chain, "polyacid", double_bonds=parent.get("cooh_c_idxs"), sub_attach=[s["attach_idx"] for s in substituents], scaffold_id=parent.get("scaffold_id") or "")
     return list(plan.atom_order)
@@ -487,7 +486,9 @@ def _fg_locants(oriented: dict) -> dict:
         **_unsat_locants(oriented, n),
     }
 def _pack(oriented: dict, substituents: list) -> dict:
+    from namepredict.layer4.cyclo_relative_stereo import relative_stereo_facts
     facts = polycarboxylic_facts(oriented) if oriented.get("kind") == "polycarboxylic" else {}
+    facts = {**facts, **relative_stereo_facts(oriented)}
     return {"parent": {**oriented, **facts}, "substituents": substituents, **_fg_locants({**oriented, **facts}), **facts}
 def number(parent: dict, substituents: list) -> dict:
     chain, kind = _orient_chain(parent, substituents), parent.get("kind")

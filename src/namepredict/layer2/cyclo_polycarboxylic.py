@@ -38,9 +38,22 @@ def _has_stereo(mol: Mol) -> bool:
     return any(a.GetChiralTag().name != "CHI_UNSPECIFIED" for a in mol.GetAtoms())
 
 
+def _relative_stereo(info: dict, ring: set[int], acids: list[dict]):
+    from namepredict.layer1.ring_relative_stereo import ring_relative_stereo
+    mol = info["mol"]; order = next((list(r) for r in mol.GetRingInfo().AtomRings() if set(r) == ring), None)
+    if order is None: return None
+    acid_ids, ligands = {a["c_idx"] for a in acids}, {}
+    for atom_id in ring:
+        external = [n.GetIdx() for n in mol.GetAtomWithIdx(atom_id).GetNeighbors() if n.GetIdx() not in ring]
+        if external: ligands[atom_id] = next((x for x in external if x in acid_ids), external[0])
+    return ring_relative_stereo(mol, order, ligands)
+
+
 def _is_cycloalkane_polycarboxylic(info: dict) -> bool:
     ring, acids = _acid_ring(info), info.get("carboxyls") or []
-    if ring is None or _has_stereo(info["mol"]) or any(a.get("anion") for a in acids): return False
+    if ring is None or any(a.get("anion") for a in acids): return False
+    stereo = _relative_stereo(info, ring, acids)
+    if stereo is None or stereo.invalid: return False
     allowed = set().union(*(_cooh_oxygen_idxs(info["mol"], a["c_idx"]) for a in acids))
     if not _hetero_or_ring_halo(info["mol"], ring, allowed): return False
     return _ring_halo_n(info["mol"], ring) <= 1 and _alkyl_ok(info["mol"], ring, acids)
@@ -49,12 +62,12 @@ def _is_cycloalkane_polycarboxylic(info: dict) -> bool:
 def _cycloalkane_polycarboxylic_parent(info: dict) -> dict:
     ring, spec = _acid_ring(info) or set(), get_spec("cycloalkane_polycarboxylic")
     stems = cycloalkane_polyacid_stem(len(ring)) or (spec.stem_en, spec.stem_zh)
-    attaches = [_attach(info["mol"], ring, acid) for acid in info["carboxyls"]]
+    attaches, stereo = [_attach(info["mol"], ring, acid) for acid in info["carboxyls"]], _relative_stereo(info, ring, info["carboxyls"])
     return {
         "chain": list(ring), "n_carbons": len(ring),
         "kind": "cycloalkane_polycarboxylic", "scaffold_id": spec.id,
         "stem_en": stems[0], "stem_zh": stems[1], "cooh_c_idxs": attaches,
-        "acid_count": len(attaches),
+        "acid_count": len(attaches), "relative_stereo": stereo,
         "numbering_scaffold": numbering_scaffold_facts(spec.id, len(ring)),
     }
 

@@ -1,0 +1,41 @@
+"""L1 typed graph facts for relative faces on a simple saturated ring."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from rdkit.Chem import ChiralType, Mol
+
+
+@dataclass(frozen=True)
+class RingRelativeStereoIR:
+    """Face signs keyed by ring atom; ``None`` means no explicit stereo."""
+    faces: tuple[tuple[int, int], ...] = ()
+    invalid: bool = False
+
+
+def _parity(source: list[int], target: list[int]) -> int:
+    positions = {value: i for i, value in enumerate(source)}
+    order = [positions[value] for value in target]
+    return -1 if sum(order[i] > order[j] for i in range(len(order)) for j in range(i + 1, len(order))) % 2 else 1
+
+
+def _face(mol: Mol, atom_id: int, ring_order: list[int], ligand: int) -> int | None:
+    atom = mol.GetAtomWithIdx(atom_id); tag = atom.GetChiralTag()
+    if tag not in (ChiralType.CHI_TETRAHEDRAL_CW, ChiralType.CHI_TETRAHEDRAL_CCW): return None
+    index = ring_order.index(atom_id); previous, following = ring_order[index - 1], ring_order[(index + 1) % len(ring_order)]
+    actual, target = [n.GetIdx() for n in atom.GetNeighbors()] + [-1], [ligand, previous, following, -1]
+    if set(actual) != set(target): return None
+    handed = 1 if tag == ChiralType.CHI_TETRAHEDRAL_CW else -1
+    return handed * _parity(actual, target)
+
+
+def ring_relative_stereo(mol: Mol, ring_order: list[int], ligands: dict[int, int]) -> RingRelativeStereoIR:
+    """Derive graph-defined ring face signs without CIP labels or conformers."""
+    tagged = [a.GetIdx() for a in mol.GetAtoms() if a.GetChiralTag() != ChiralType.CHI_UNSPECIFIED]
+    if any(atom not in ligands for atom in tagged) or len(ligands) > 3: return RingRelativeStereoIR(invalid=bool(tagged))
+    faces = []
+    for atom, ligand in ligands.items():
+        face = _face(mol, atom, ring_order, ligand)
+        if face is None and tagged: return RingRelativeStereoIR(invalid=True)
+        if face is not None: faces.append((atom, face))
+    if tagged and len(faces) != len(ligands): return RingRelativeStereoIR(invalid=True)
+    return RingRelativeStereoIR(tuple(sorted(faces)))

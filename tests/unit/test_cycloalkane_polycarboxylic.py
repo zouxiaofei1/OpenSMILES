@@ -81,3 +81,37 @@ def test_benzene_polyacid_bypasses_cycloalkane_scope() -> None:
     result = SMILESNNamer().name("O=C(O)c1ccccc1C(=O)O")
     assert result.success
     assert normalize_en(result.en) == normalize_en("benzene-1,2-dicarboxylic acid")
+
+
+@pytest.mark.parametrize(("smiles", "en", "zh"), [
+    ("O=C(O)[C@H]1CCC[C@H](C(=O)O)C1", "trans-cyclohexane-1,3-dicarboxylic acid", "反-环己烷-1,3-二甲酸"),
+    ("O=C(O)[C@H]1CCC[C@@H](C(=O)O)C1", "cis-cyclohexane-1,3-dicarboxylic acid", "顺-环己烷-1,3-二甲酸"),
+])
+def test_cyclo_polyacid_two_site_relative_stereo(smiles: str, en: str, zh: str) -> None:
+    result = SMILESNNamer().name(smiles)
+    assert result.success
+    assert normalize_en(result.en) == normalize_en(en)
+    assert normalize_zh(result.zh) == normalize_zh(zh)
+
+
+def test_cyclo_polyacid_three_site_relative_stereo_uses_plan_locants() -> None:
+    result = SMILESNNamer().name("O=C(O)[C@H]1[C@@H](C(=O)O)C[C@H](C(=O)O)CC1")
+    assert result.success
+    assert normalize_en(result.en) == normalize_en("1r,2c,4t-cyclohexane-1,2,4-tricarboxylic acid")
+    assert normalize_zh(result.zh) == normalize_zh("1r,2c,4t-环己烷-1,2,4-三甲酸")
+
+
+def test_cyclo_polyacid_relative_name_is_enantiomer_invariant() -> None:
+    names = [SMILESNNamer().name(s).en for s in (
+        "O=C(O)[C@H]1CCC[C@@H](C(=O)O)C1",
+        "O=C(O)[C@@H]1CCC[C@H](C(=O)O)C1",
+    )]
+    assert names == ["cis-cyclohexane-1,3-dicarboxylic acid"] * 2
+
+
+@pytest.mark.parametrize("smiles", [
+    "O=C(O)[C@H]1CCCCC1C(=O)O",
+    "O=C(O)[C@H]1CCC[C@H](C(=O)O)C1Cl",
+])
+def test_cyclo_polyacid_incomplete_or_out_of_scope_stereo_is_rejected(smiles: str) -> None:
+    assert not SMILESNNamer().name(smiles).success
