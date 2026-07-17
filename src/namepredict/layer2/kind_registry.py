@@ -113,12 +113,22 @@ def parent_names(kind: str) -> tuple[str, str] | None:
     return m.en, m.zh
 
 
+def _attach_numbering_scaffold(packed: dict) -> dict:
+    from namepredict.layer2.scaffold.specs import numbering_scaffold_facts
+    facts = numbering_scaffold_facts(
+        packed.get("scaffold_id") or packed.get("kind"), len(packed.get("chain") or ()),
+    )
+    return packed if facts is None else {
+        **packed, "numbering_scaffold": facts, "numbering_scaffold_required": True,
+    }
+
+
 def pack_parent_stem(parent: dict, mol=None) -> dict:
     packed = parent if parent.get("mol") is not None else {**parent, "mol": mol}
     names = parent_names(packed.get("kind") or "")
-    if names is None or packed.get("stem_en") or packed.get("stem_zh"):
-        return packed
-    return {**packed, "stem_en": names[0], "stem_zh": names[1]}
+    if names is not None and not (packed.get("stem_en") or packed.get("stem_zh")):
+        packed = {**packed, "stem_en": names[0], "stem_zh": names[1]}
+    return _attach_numbering_scaffold(packed)
 
 
 def all_kinds() -> frozenset[str]:

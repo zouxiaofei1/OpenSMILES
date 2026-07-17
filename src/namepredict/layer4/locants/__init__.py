@@ -4,6 +4,7 @@ from __future__ import annotations
 from namepredict.layer4.locants.adapt import (
     effective_sub_locant,
     plan_from_chain,
+    plan_from_parent,
 )
 from namepredict.layer4.locants.engine import choose_numbering
 from namepredict.layer4.locants.generate import labels_for, ring_candidates
@@ -23,5 +24,6 @@ __all__ = [
     "locant_int",
     "make_plan",
     "plan_from_chain",
+    "plan_from_parent",
     "ring_candidates",
 ]

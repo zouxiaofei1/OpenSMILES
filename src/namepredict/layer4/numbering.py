@@ -1,14 +1,7 @@
 from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
-from namepredict.layer4.anthra_orient import (
-    orient_anthraquinone as _orient_anthraquinone,
-)
-from namepredict.layer4.locants.adapt import (
-    INDOLE_ORIENT_KINDS as _INDOLE_ORIENT_KINDS,
-    NAPH_LOCANTS as _NAPH_LOCANTS,
-    effective_sub_locant,
-    plan_from_chain,
-)
+from namepredict.layer4.anthra_orient import orient_anthraquinone as _orient_anthraquinone
+from namepredict.layer4.locants.adapt import effective_sub_locant, plan_from_chain
 from namepredict.layer4.locants.engine import choose_numbering
 from namepredict.layer4.polyene import (
     ene_locants, orient_alkenol, orient_alkenedioic, orient_cyclopolyene,
@@ -259,7 +252,7 @@ def _orient_pyridinol(chain: list[int], parent: dict, substituents: list) -> lis
     return _orient_pyridin_fg(chain, parent, substituents, "oh_c_idx")
 def _naph_loc_on(chain: list[int], attach: int) -> int:
     if attach not in chain: return 99
-    loc = _NAPH_LOCANTS[chain.index(attach)]
+    loc = (1, 2, 3, 4, None, 5, 6, 7, 8, None)[chain.index(attach)]
     return 99 if loc is None else loc
 def _naph_loc_key(chain: list[int], substituents: list) -> tuple:
     locs = sorted(_naph_loc_on(chain, s["attach_idx"]) for s in substituents)
@@ -310,8 +303,14 @@ def _aza_orienters() -> dict:
         "pyrazolecarboxylic": _orient_diazolecarboxylic,
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
         "pyridazine": _orient_diazine, "pyrimidinamine": _orient_pyrimidinamine}
+_FIXED_FUSED = (
+    "indole", "indolecarboxylic", "indazole", "indazolecarbonitrile", "indazolecarbaldehyde",
+    "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol", "benzothiazole",
+    "benzothiazolamine", "benzoxazole", "benzoxazolamine", "benzimidazole", "benzimidazolamine",
+    "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
+)
 def _fused_orienters() -> dict:
-    d = {k: _orient_indole for k in _INDOLE_ORIENT_KINDS}
+    d = {kind: _orient_indole for kind in _FIXED_FUSED}
     d["naphthalene"] = _orient_naphthalene
     d["naphthalenecarboxylic"] = _orient_naphthalenecarboxylic
     d["anthraquinone"] = _orient_anthraquinone
@@ -373,17 +372,17 @@ def _orient_chain(parent: dict, substituents: list) -> list[int]:
     if not chain:
         return chain
     return _orient_by_kind(parent.get("kind"), chain, parent, substituents)
-def _atom_locant(chain: list[int], atom: int | None, kind: str | None) -> int | None:
-    """Fused via plan/effective; else chain.index+1. Missing atom → None."""
+def _atom_locant(chain: list[int], atom: int | None, kind: str | None, facts=None, required=False) -> int | None:
+    """Scaffold facts use a plan; otherwise retain ordinary chain numbering."""
     if atom is None or atom not in chain:
         return None
-    plan = plan_from_chain(chain, kind)
+    plan = plan_from_chain(chain, kind, facts, required=required)
     loc = effective_sub_locant(plan, atom) if plan else None
     return loc if loc is not None else chain.index(atom) + 1
 def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
     if oriented.get("kind") not in kinds:
         return None
-    return _atom_locant(oriented.get("chain") or [], oriented.get(key), oriented.get("kind"))
+    return _atom_locant(oriented.get("chain") or [], oriented.get(key), oriented.get("kind"), oriented.get("numbering_scaffold"), oriented.get("numbering_scaffold_required", False))
 _OH_KINDS = ("alcohol", "cycloalcohol", "pyridinol", "quinolinol", "benzothiophenol")
 _AMINE_KINDS = (
     "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
@@ -449,11 +448,11 @@ def _omit_unsat(n_carbons: int, kind: str | None = None, parent: dict | None = N
     if parent and _has_parent_ene(parent) and kind != "alkene":
         return False
     return n_carbons <= 3
-def _sub_locant(chain: list[int], attach: int, kind: str | None) -> int:
-    loc = _atom_locant(chain, attach, kind)
+def _sub_locant(chain: list[int], attach: int, kind: str | None, facts=None) -> int:
+    loc = _atom_locant(chain, attach, kind, facts)
     return 0 if loc is None else loc
-def _with_locants(chain: list[int], substituents: list, kind: str | None = None) -> list:
-    return [{**s, "locant": _sub_locant(chain, s["attach_idx"], kind)} for s in substituents]
+def _with_locants(chain: list[int], substituents: list, kind: str | None = None, facts=None) -> list:
+    return [{**s, "locant": _sub_locant(chain, s["attach_idx"], kind, facts)} for s in substituents]
 def _unsat_locants(oriented: dict, n: int) -> dict:
     kind = oriented.get("kind")
     return {
@@ -489,11 +488,12 @@ def _fg_locants(oriented: dict) -> dict:
     }
 def _pack(oriented: dict, substituents: list) -> dict:
     facts = polycarboxylic_facts(oriented) if oriented.get("kind") == "polycarboxylic" else {}
-    numbered = {"parent": {**oriented, **facts}, "substituents": substituents, **_fg_locants({**oriented, **facts})}
-    return {**numbered, **facts}
+    return {"parent": {**oriented, **facts}, "substituents": substituents, **_fg_locants({**oriented, **facts}), **facts}
 def number(parent: dict, substituents: list) -> dict:
     chain, kind = _orient_chain(parent, substituents), parent.get("kind")
+    if parent.get("numbering_scaffold_required") and not parent.get("numbering_scaffold"):
+        raise ValueError("numbering_scaffold facts required for selected scaffold")
     oriented = {**parent, "chain": chain}
-    plan = plan_from_chain(chain, oriented.get("scaffold_id") or kind)
+    plan = plan_from_chain(chain, oriented.get("scaffold_id") or kind, oriented.get("numbering_scaffold"), required=oriented.get("numbering_scaffold_required", False))
     if plan is not None: oriented["numbering"] = plan
-    return _pack(oriented, _with_locants(chain, substituents, kind))
+    return _pack(oriented, _with_locants(chain, substituents, kind, oriented.get("numbering_scaffold")))

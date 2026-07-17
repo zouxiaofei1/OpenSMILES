@@ -19,16 +19,9 @@ from namepredict.layer2.scaffold.specs import (
     get_spec,
     kind_ids_for,
     naph_kind_ids,
+    numbering_scaffold_facts,
 )
-from namepredict.layer4.locants.adapt import (
-    FUSED56_KINDS,
-    INDOLE_LABELS,
-    INDOLE_ORIENT_KINDS,
-    NAPH_KINDS,
-    NAPH_LABELS as L4_NAPH_LABELS,
-    Q_KINDS,
-    plan_from_chain,
-)
+from namepredict.layer4.locants.adapt import plan_from_chain
 from namepredict.namer import SMILESNNamer
 
 _F56_LABELS = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
@@ -93,8 +86,8 @@ def test_retained_fused_specs_registered(sid: str, nclass: str, n_labs: int) -> 
 
 
 def test_labels_constants() -> None:
-    assert FUSED56_LABELS == _F56_LABELS == INDOLE_LABELS
-    assert NAPH_LABELS == _NAPH_LABELS == L4_NAPH_LABELS
+    assert FUSED56_LABELS == _F56_LABELS
+    assert NAPH_LABELS == _NAPH_LABELS
     assert len(NAPH_LABELS) == 10
     assert "4a" in NAPH_LABELS and "8a" in NAPH_LABELS
 
@@ -123,21 +116,21 @@ def test_negative_not_wrong_class(kind: str, nclass: str | None) -> None:
 
 
 def test_plan_from_chain_indole_9() -> None:
-    plan = plan_from_chain(list(range(9)), "indole")
+    plan = plan_from_chain(list(range(9)), "indole", numbering_scaffold_facts("indole", 9))
     assert plan is not None
     assert plan.labels == _F56_LABELS
     assert plan.scaffold_id == "indole"
 
 
 def test_plan_from_chain_quinoline_10() -> None:
-    plan = plan_from_chain(list(range(10)), "quinoline")
+    plan = plan_from_chain(list(range(10)), "quinoline", numbering_scaffold_facts("quinoline", 10))
     assert plan is not None
     assert plan.labels == _NAPH_LABELS
     assert plan.scaffold_id == "quinoline"
 
 
 def test_plan_from_chain_naphthalene_10() -> None:
-    plan = plan_from_chain(list(range(10)), "naphthalene")
+    plan = plan_from_chain(list(range(10)), "naphthalene", numbering_scaffold_facts("naphthalene", 10))
     assert plan is not None
     assert plan.labels == _NAPH_LABELS
 
@@ -172,29 +165,3 @@ def test_e2e_retained_names_stable(smiles, kind, en, zh) -> None:
     assert normalize_en(r.en) == normalize_en(en)
     if zh is not None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
-def test_l2_l4_fused56_kind_contract() -> None:
-    """L2 Spec fused56 ids must equal L4 FUSED56_KINDS (no L4→L2 import)."""
-    assert fused56_kind_ids() == FUSED56_KINDS
-    assert "indole" in FUSED56_KINDS
-    assert "quinoline" not in FUSED56_KINDS
-
-
-def test_l2_l4_naph_kind_contract() -> None:
-    """L2 Spec naph_family ids must equal L4 NAPH_KINDS ∪ Q_KINDS."""
-    assert naph_kind_ids() == (NAPH_KINDS | Q_KINDS)
-    assert "quinoline" in Q_KINDS
-    assert "naphthalene" in NAPH_KINDS
-
-
-def test_l4_orient_kinds_union() -> None:
-    """INDOLE_ORIENT_KINDS = fused56 + quinoline family (fixed chain orient)."""
-    expect = frozenset(FUSED56_KINDS | Q_KINDS)
-    assert frozenset(INDOLE_ORIENT_KINDS) == expect
-    assert "naphthalene" not in expect  # naph uses dedicated orienter
-
-
-def test_l2_l4_labels_contract() -> None:
-    assert FUSED56_LABELS == INDOLE_LABELS
-    assert NAPH_LABELS == L4_NAPH_LABELS

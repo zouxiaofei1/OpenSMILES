@@ -8,6 +8,7 @@ from dataclasses import dataclass
 class NumberingPolicy:
     mode: str
     standard_path: tuple = ()
+    materialize_plan: bool = True
     anchors: tuple[str, ...] = ()
     substitutable: frozenset[str] = frozenset()
 
@@ -34,6 +35,9 @@ FUSED56_LABELS: tuple[str, ...] = (
 # Naphthalene / quinoline family path labels (P-25): 1…4a…8a.
 NAPH_LABELS: tuple[str, ...] = (
     "1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a",
+)
+ANTHRA_LABELS: tuple[str, ...] = (
+    "1", "2", "3", "4", "4a", "10", "10a", "5", "6", "7", "8", "8a", "9", "9a",
 )
 
 
@@ -93,7 +97,9 @@ def _poly_carbo(
     sid: str, stem_en: str, stem_zh: str, n_rings: int, mode: str,
     *, fg_rank: int = 0,
 ) -> ScaffoldSpec:
-    pol = NumberingPolicy(mode=mode)
+    pol = NumberingPolicy(
+        mode=mode, standard_path=ANTHRA_LABELS if mode == "anthracene_fixed" else (),
+    )
     return ScaffoldSpec(
         id=sid, naming_class="poly_carbo", stem_en=stem_en, stem_zh=stem_zh,
         n_rings=n_rings, ring="carbo", retained=True, fg_rank=fg_rank,
@@ -102,8 +108,10 @@ def _poly_carbo(
 
 
 def _benzodiazine(sid: str, stem_en: str, stem_zh: str) -> ScaffoldSpec:
-    """6+6 diazine; 10-atom path uses naph labels (not yet in L4 Q_KINDS)."""
-    pol = NumberingPolicy(mode="naph_family", standard_path=NAPH_LABELS)
+    """6+6 diazine labels are specified but no producer emits a plan yet."""
+    pol = NumberingPolicy(
+        mode="naph_family", standard_path=NAPH_LABELS, materialize_plan=False,
+    )
     return ScaffoldSpec(
         id=sid, naming_class="benzodiazine", stem_en=stem_en, stem_zh=stem_zh,
         n_rings=2, ring="hetero", retained=True, fg_rank=0, numbering=pol,
@@ -249,6 +257,19 @@ def get_spec(spec_id: str) -> ScaffoldSpec | None:
 
 def all_specs() -> tuple[ScaffoldSpec, ...]:
     return _ALL_SPECS
+
+
+def numbering_scaffold_facts(spec_id: str | None, atom_count: int) -> dict | None:
+    """Materialize pure parent facts; ``relative_stereo`` reserves ring-face constraints."""
+    spec = get_spec(spec_id or "")
+    if spec is None or not spec.numbering.materialize_plan:
+        return None
+    labels = spec.numbering.standard_path
+    if spec.id in {"cycloalkane", "cycloalkane_polycarboxylic"}:
+        labels = tuple(str(i) for i in range(1, atom_count + 1)) if 3 <= atom_count <= 10 else ()
+    return None if not labels or len(labels) != atom_count else {
+        "scaffold_id": spec.id, "labels": labels, "relative_stereo": None,
+    }
 
 
 def fused56_kind_ids() -> frozenset[str]:

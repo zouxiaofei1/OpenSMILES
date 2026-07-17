@@ -20,6 +20,7 @@ from namepredict.layer2.scaffold.specs import (
     all_specs,
     get_spec,
 )
+from namepredict.layer2.scaffold.specs import numbering_scaffold_facts
 from namepredict.layer4.locants.adapt import plan_from_chain
 from namepredict.namer import SMILESNNamer
 
@@ -114,14 +115,14 @@ def test_btz_parent_scaffold_id() -> None:
 
 def test_plan_from_chain_uses_spec_labels() -> None:
     chain = list(range(9))
-    plan = plan_from_chain(chain, "benzofuran")
+    plan = plan_from_chain(chain, "benzofuran", numbering_scaffold_facts("benzofuran", len(chain)))
     assert plan is not None
     assert plan.labels == _EXPECTED_LABELS
     assert plan.scaffold_id == "benzofuran"
 
 
 def test_plan_from_chain_benzene_none() -> None:
-    assert plan_from_chain(list(range(6)), "benzene") is None
+    assert plan_from_chain(list(range(6)), "benzene", numbering_scaffold_facts("benzene", 6)) is None
 
 
 def test_scaffold_id_helpers() -> None:
@@ -130,8 +131,7 @@ def test_scaffold_id_helpers() -> None:
     assert scaffold_id_for_kind("benzene") is None
 
 
-def test_l2_l4_fused56_labels_contract() -> None:
-    """L2 Spec path and L4 adapt tables must stay equal (no L4→L2 import)."""
-    from namepredict.layer4.locants.adapt import INDOLE_LABELS
-
-    assert FUSED56_LABELS == INDOLE_LABELS == _EXPECTED_LABELS
+def test_l2_fused56_labels_are_parent_plan_authority() -> None:
+    facts = numbering_scaffold_facts("benzofuran", len(_EXPECTED_LABELS))
+    assert facts is not None
+    assert FUSED56_LABELS == facts["labels"] == _EXPECTED_LABELS

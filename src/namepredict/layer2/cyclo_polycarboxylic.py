@@ -7,7 +7,9 @@ from namepredict.layer2.arene_carbonyl import _cooh_oxygen_idxs
 from namepredict.layer2.cyclo_pick import _cyclo_parent_candidates
 from namepredict.layer2.ring_parent import _hetero_or_ring_halo, _outside_carbons, _ring_halo_n, _ring_side_starts
 from namepredict.layer2.side_alkyl import _walk_linear
-from namepredict.layer2.scaffold.specs import cycloalkane_polyacid_stem, get_spec
+from namepredict.layer2.scaffold.specs import (
+    cycloalkane_polyacid_stem, get_spec, numbering_scaffold_facts,
+)
 
 
 def _attach(mol: Mol, ring: set[int], acid: dict) -> int | None:
@@ -48,7 +50,13 @@ def _cycloalkane_polycarboxylic_parent(info: dict) -> dict:
     ring, spec = _acid_ring(info) or set(), get_spec("cycloalkane_polycarboxylic")
     stems = cycloalkane_polyacid_stem(len(ring)) or (spec.stem_en, spec.stem_zh)
     attaches = [_attach(info["mol"], ring, acid) for acid in info["carboxyls"]]
-    return {"chain": list(ring), "n_carbons": len(ring), "kind": "cycloalkane_polycarboxylic", "scaffold_id": spec.id, "stem_en": stems[0], "stem_zh": stems[1], "cooh_c_idxs": attaches, "acid_count": len(attaches)}
+    return {
+        "chain": list(ring), "n_carbons": len(ring),
+        "kind": "cycloalkane_polycarboxylic", "scaffold_id": spec.id,
+        "stem_en": stems[0], "stem_zh": stems[1], "cooh_c_idxs": attaches,
+        "acid_count": len(attaches),
+        "numbering_scaffold": numbering_scaffold_facts(spec.id, len(ring)),
+    }
 
 
 def _try_cycloalkane_polycarboxylic(info: dict) -> dict | None:
