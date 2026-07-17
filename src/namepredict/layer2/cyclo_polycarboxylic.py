@@ -44,7 +44,7 @@ def _relative_stereo(info: dict, ring: set[int], acids: list[dict]):
     if order is None: return None
     acid_ids, ligands = {a["c_idx"] for a in acids}, {}
     for atom_id in ring:
-        external = [n.GetIdx() for n in mol.GetAtomWithIdx(atom_id).GetNeighbors() if n.GetIdx() not in ring]
+        external = [n.GetIdx() for n in mol.GetAtomWithIdx(atom_id).GetNeighbors() if n.GetIdx() not in ring and n.GetAtomicNum() != 1]
         if external: ligands[atom_id] = next((x for x in external if x in acid_ids), external[0])
     return ring_relative_stereo(mol, order, ligands)
 

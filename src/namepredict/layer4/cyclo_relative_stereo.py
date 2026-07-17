@@ -10,7 +10,7 @@ def _ordered(oriented: dict):
 
 def _locants(ordered, plan) -> str:
     reference = ordered[0][1]
-    return ",".join(f"{plan.atom_to_label[atom]}{'r' if i == 0 else ('c' if face == reference else 't')}" for i, (atom, face) in enumerate(ordered))
+    return ",".join(f"{plan.atom_to_label[atom]}-{'r' if i == 0 else ('c' if face == reference else 't')}" for i, (atom, face) in enumerate(ordered))
 
 
 def relative_stereo_facts(oriented: dict) -> dict:

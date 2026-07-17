@@ -3,8 +3,11 @@
 """RingSystemIR: typed SSSR fusion topology (benzene / naphthalene / indole)."""
 from __future__ import annotations
 
+from rdkit import Chem
+
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.ring_ir import RingSystemIR, build_ring_ir
+from namepredict.layer1.ring_relative_stereo import ring_relative_stereo
 
 
 def _ir(smiles: str) -> list[RingSystemIR]:
@@ -70,3 +73,18 @@ def test_fingerprint_filled():
     s = _ir("c1ccccc1")[0]
     assert s.fingerprint
     assert "6" in s.fingerprint
+
+
+def test_relative_faces_are_implicit_explicit_h_and_ring_order_invariant() -> None:
+    implicit = preprocess("O=C(O)[C@H]1CCC[C@@H](C(=O)O)C1")
+    explicit = Chem.AddHs(implicit)
+    assert implicit is not None and explicit is not None
+    def faces(mol):
+        ring = list(mol.GetRingInfo().AtomRings()[0])
+        ligands = {a: next(n.GetIdx() for n in mol.GetAtomWithIdx(a).GetNeighbors() if n.GetIdx() not in ring and n.GetAtomicNum() != 1) for a in ring if any(n.GetIdx() not in ring and n.GetAtomicNum() != 1 for n in mol.GetAtomWithIdx(a).GetNeighbors())}
+        return ring_relative_stereo(mol, ring, ligands).faces
+    assert faces(implicit)
+    assert faces(implicit) == faces(explicit)
+    ring = list(implicit.GetRingInfo().AtomRings()[0])
+    ligands = {a: next(n.GetIdx() for n in implicit.GetAtomWithIdx(a).GetNeighbors() if n.GetIdx() not in ring) for a in ring if any(n.GetIdx() not in ring for n in implicit.GetAtomWithIdx(a).GetNeighbors())}
+    assert ring_relative_stereo(implicit, ring, ligands).faces == ring_relative_stereo(implicit, list(reversed(ring)), ligands).faces

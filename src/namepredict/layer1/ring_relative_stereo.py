@@ -18,14 +18,22 @@ def _parity(source: list[int], target: list[int]) -> int:
     return -1 if sum(order[i] > order[j] for i in range(len(order)) for j in range(i + 1, len(order))) % 2 else 1
 
 
+def _orientation(ring_order: list[int]) -> int:
+    start = ring_order.index(min(ring_order))
+    rotated = ring_order[start:] + ring_order[:start]
+    return 1 if rotated[1] < rotated[-1] else -1
+
+
 def _face(mol: Mol, atom_id: int, ring_order: list[int], ligand: int) -> int | None:
     atom = mol.GetAtomWithIdx(atom_id); tag = atom.GetChiralTag()
     if tag not in (ChiralType.CHI_TETRAHEDRAL_CW, ChiralType.CHI_TETRAHEDRAL_CCW): return None
     index = ring_order.index(atom_id); previous, following = ring_order[index - 1], ring_order[(index + 1) % len(ring_order)]
-    actual, target = [n.GetIdx() for n in atom.GetNeighbors()] + [-1], [ligand, previous, following, -1]
+    actual = [-1 if n.GetAtomicNum() == 1 else n.GetIdx() for n in atom.GetNeighbors()]
+    if atom.GetNumExplicitHs() + atom.GetNumImplicitHs() and -1 not in actual: actual.append(-1)
+    target = [ligand, previous, following, -1]
     if set(actual) != set(target): return None
     handed = 1 if tag == ChiralType.CHI_TETRAHEDRAL_CW else -1
-    return handed * _parity(actual, target)
+    return handed * _parity(actual, target) * _orientation(ring_order)
 
 
 def ring_relative_stereo(mol: Mol, ring_order: list[int], ligands: dict[int, int]) -> RingRelativeStereoIR:

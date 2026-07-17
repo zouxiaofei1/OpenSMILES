@@ -97,8 +97,8 @@ def test_cyclo_polyacid_two_site_relative_stereo(smiles: str, en: str, zh: str) 
 def test_cyclo_polyacid_three_site_relative_stereo_uses_plan_locants() -> None:
     result = SMILESNNamer().name("O=C(O)[C@H]1[C@@H](C(=O)O)C[C@H](C(=O)O)CC1")
     assert result.success
-    assert normalize_en(result.en) == normalize_en("1r,2c,4t-cyclohexane-1,2,4-tricarboxylic acid")
-    assert normalize_zh(result.zh) == normalize_zh("1r,2c,4t-环己烷-1,2,4-三甲酸")
+    assert normalize_en(result.en) == normalize_en("1-r,2-c,4-t-cyclohexane-1,2,4-tricarboxylic acid")
+    assert normalize_zh(result.zh) == normalize_zh("1-r,2-c,4-t-环己烷-1,2,4-三甲酸")
 
 
 def test_cyclo_polyacid_relative_name_is_enantiomer_invariant() -> None:
