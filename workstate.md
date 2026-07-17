@@ -192,6 +192,7 @@
 [#3f72a9f][IUPAC P-65.1.1 / P-65.1.2] 中性未稠合 benzene 二/三羧酸系统命名；专属 unsupported 门控限定为直接 COOH–benzene 连接，保留 benzoic 与 benzyl 开链二酸路径 [+15 feature tests, dual 15.1%(615)持平, 0 REGRESS]
 [#4d71e66][架构 L2 candidate gating] GateScope 与 principal/dependency registry 区分 PASS/scoped/global reject，阻止 polyacid fallback 绕过并保留独立 principal candidates [+focused 51 tests, dual 15.1%(615)持平, 0 REGRESS]
 [#6aa3f0d][IUPAC P-65.1.1 / P-65.1.2] 中性未稠合饱和单碳环 C3–C10 二/三甲酸：ScaffoldSpec stem、NumberingPlan 羧基优先编号、单个 halo/n-alkyl 取代及完整拒绝边界 [+103 tests, dual 15.1%(615)持平, 0 REGRESS]
+[#792a2b3][架构 L2/L4 numbering facts] ScaffoldSpec 编号标签物化为 parent facts，L4 仅消费 NumberingPlan facts；required facts 缺失显式失败，移除 kind 白名单静默降级 [+397 focused tests, dual 15.1%(615)持平, 0 REGRESS]
 ## 其他
 ## 选题: 多羧基化合物完整非空系统命名
 
