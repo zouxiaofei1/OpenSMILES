@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.layer2.candidate_gate import CandidateGate, GateScope, GateStatus, pass_gate, scoped_reject
+
 from namepredict.layer2.aryl_sub import (
     _aryl_atoms,
     _aryl_exclude,
@@ -450,13 +452,23 @@ def _has_benzene_polyacid_attachment(info: dict) -> bool:
     return False
 
 
-def benzene_polycarboxylic_eligibility(info: dict) -> bool | None:
-    """Classify multiacids only when directly attached to unfused benzene."""
+def benzene_polycarboxylic_gate(info: dict) -> CandidateGate:
+    """Gate only direct multiacid attachments on an unfused benzene core."""
+    scope = GateScope.BENZENE_POLYCARBOXYLIC
     if not _is_benzene_core(info) or not _benzene_polyacid_like(info):
-        return None
+        return pass_gate(scope)
     if not _has_benzene_polyacid_attachment(info):
-        return None
-    return _is_benzene_polycarboxylic(info)
+        return pass_gate(scope)
+    if _is_benzene_polycarboxylic(info):
+        return pass_gate(scope)
+    return scoped_reject(scope, "unsupported_benzene_polyacid")
+
+
+def benzene_polycarboxylic_eligibility(info: dict) -> bool | None:
+    """Compatibility projection of the typed benzene gate."""
+    gate = benzene_polycarboxylic_gate(info)
+    in_scope = _is_benzene_core(info) and _benzene_polyacid_like(info)
+    return None if not in_scope or not _has_benzene_polyacid_attachment(info) else gate.status is GateStatus.PASS
 
 
 def _try_benzene_polycarboxylic(info: dict) -> dict | None:

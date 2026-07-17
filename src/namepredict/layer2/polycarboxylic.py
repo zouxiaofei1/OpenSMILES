@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from rdkit.Chem.rdchem import Mol
+from namepredict.layer2.candidate_gate import CandidateGate, GateScope, GateStatus, pass_gate, scoped_reject
 _ALKANE_NAMES = {
     1: ("methane", "甲烷"), 2: ("ethane", "乙烷"), 3: ("propane", "丙烷"),
     4: ("butane", "丁烷"), 5: ("pentane", "戊烷"), 6: ("hexane", "己烷"),
@@ -119,20 +120,37 @@ def _polycarboxylic_block_reason(info: dict) -> str | None:
     return None
 
 
-def polycarboxylic_eligibility(info: dict) -> PolycarboxylicEligibility | None:
-    """Classify >=3-carboxyl structures before candidate production."""
-    if len(_carboxyl_carbons(info)) < 3:
-        return None
+def _open_polyacid_scope(info: dict, acids: set[int]) -> bool:
+    core = _core_carbons(info["mol"], acids)
+    return len(acids) >= 3 and _is_acyclic_carbon_set(info["mol"], core)
+
+
+def polycarboxylic_gate(info: dict) -> CandidateGate:
+    """Gate only structures in the open-chain >=3-acid producer scope."""
     acids = _carboxyl_carbons(info)
-    if len(acids) == 3 and not _is_acyclic_carbon_set(info["mol"], _core_carbons(info["mol"], acids)):
-        return None
+    if not _open_polyacid_scope(info, acids):
+        return pass_gate(GateScope.OPEN_CHAIN_POLYCARBOXYLIC)
     reason = _polycarboxylic_block_reason(info)
-    return PolycarboxylicEligibility(reason is None, reason)
+    return pass_gate(GateScope.OPEN_CHAIN_POLYCARBOXYLIC) if reason is None else scoped_reject(
+        GateScope.OPEN_CHAIN_POLYCARBOXYLIC, reason,
+    )
+
+
+def polycarboxylic_eligibility(info: dict) -> PolycarboxylicEligibility | None:
+    """Compatibility projection of the typed open-chain gate."""
+    acids = _carboxyl_carbons(info)
+    if not _open_polyacid_scope(info, acids):
+        return None
+    gate = polycarboxylic_gate(info)
+    return PolycarboxylicEligibility(gate.status is GateStatus.PASS, gate.reason)
 
 
 def try_polycarboxylic_parent(info: dict) -> dict | None:
-    eligibility = polycarboxylic_eligibility(info)
-    if eligibility is None or not eligibility.supported:
+    acids = _carboxyl_carbons(info)
+    if not _open_polyacid_scope(info, acids):
+        return None
+    gate = polycarboxylic_gate(info)
+    if gate.status is not GateStatus.PASS:
         return None
     got = _core_path(info)
     return _parent(info, got, len(_carboxyl_carbons(info)), _all_deprotonated(info)) if got else None

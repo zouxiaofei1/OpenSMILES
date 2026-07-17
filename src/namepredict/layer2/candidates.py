@@ -23,9 +23,10 @@ from namepredict.layer2.ring_parent import (
     _is_simple_benzene,
 )
 from namepredict.layer2.scoring import _pick_best
-from namepredict.layer2.arene_carbonyl import benzene_polycarboxylic_eligibility
-from namepredict.layer2.polycarboxylic import polycarboxylic_eligibility
+from namepredict.layer2.arene_carbonyl import benzene_polycarboxylic_gate
+from namepredict.layer2.candidate_gate import CandidateGate, GateScope, gate_result
 from namepredict.layer2.carboxymethyl_diacid import is_carboxymethyl_diacid
+from namepredict.layer2.polycarboxylic import polycarboxylic_gate
 
 
 def _benzene_candidate(info: dict) -> dict | None:
@@ -70,25 +71,40 @@ def _unsupported_polyacid(reason: str | None) -> list[dict]:
              "unsupported_reason": reason}]
 
 
-def _polyacid_block(info: dict) -> list[dict] | None:
-    benzene_ok = benzene_polycarboxylic_eligibility(info)
-    if benzene_ok is False:
-        return _unsupported_polyacid("unsupported_benzene_polyacid")
-    eligibility = polycarboxylic_eligibility(info)
-    if eligibility is not None and not eligibility.supported and not is_carboxymethyl_diacid(info):
-        return _unsupported_polyacid(eligibility.reason)
-    return None
+def _polyacid_gates(info: dict) -> list[CandidateGate]:
+    gates = [benzene_polycarboxylic_gate(info), polycarboxylic_gate(info)]
+    return gates if not is_carboxymethyl_diacid(info) else gates[:1]
+
+
+_CANDIDATE_POLICIES = {
+    "acid": ((GateScope.OPEN_CHAIN_POLYCARBOXYLIC, GateScope.BENZENE_POLYCARBOXYLIC), False),
+    "alkane": ((GateScope.OPEN_CHAIN_POLYCARBOXYLIC, GateScope.BENZENE_POLYCARBOXYLIC), False),
+    "benzene": ((GateScope.BENZENE_POLYCARBOXYLIC,), False),
+    "benzene_polycarboxylic": ((GateScope.BENZENE_POLYCARBOXYLIC,), True),
+    "benzoic": ((), True),
+    "diacid": ((GateScope.BENZENE_POLYCARBOXYLIC,), False),
+    "polycarboxylic": ((GateScope.OPEN_CHAIN_POLYCARBOXYLIC,), True),
+}
+
+
+def _policy_fields(candidate: dict) -> dict:
+    dependencies, principal = _CANDIDATE_POLICIES.get(candidate.get("kind"), ((), False))
+    return {"gate_dependencies": dependencies, "gate_principal": principal}
+
+
+def _owned_candidate(candidate: dict) -> dict:
+    return {**candidate, **_policy_fields(candidate)}
+
+
+def _candidate_result(info: dict, raw: list[dict]) -> list[dict]:
+    kept, reason = gate_result(_polyacid_gates(info), [_owned_candidate(c) for c in raw])
+    return _unsupported_polyacid(reason) if reason is not None else kept
 
 
 def _collect_candidates(info: dict) -> list[dict]:
-    if (blocked := _polyacid_block(info)) is not None:
-        return blocked
-    raw = (
-        _fg_candidates(info) + _ring_candidates(info)
-        + [_benzene_candidate(info)] + _unsat_candidates(info)
-        + [_alkane_fallback(info)]
-    )
-    return _dedupe_parents([c for c in raw if c is not None])
+    raw = _fg_candidates(info) + _ring_candidates(info) + [_benzene_candidate(info)]
+    raw += _unsat_candidates(info) + [_alkane_fallback(info)]
+    return _dedupe_parents(_candidate_result(info, [c for c in raw if c is not None]))
 
 
 def _fg_parent(info: dict) -> dict | None:
