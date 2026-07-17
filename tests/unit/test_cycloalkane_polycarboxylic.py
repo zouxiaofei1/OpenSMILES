@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import pytest
+from rdkit import Chem
 
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer2.cyclo_polycarboxylic import _try_cycloalkane_polycarboxylic
@@ -115,3 +116,28 @@ def test_cyclo_polyacid_relative_name_is_enantiomer_invariant() -> None:
 ])
 def test_cyclo_polyacid_incomplete_or_out_of_scope_stereo_is_rejected(smiles: str) -> None:
     assert not SMILESNNamer().name(smiles).success
+
+
+def test_cyclo_polyacid_relative_name_is_smiles_order_invariant() -> None:
+    source = "O=C(O)[C@H]1CCC[C@@H](C(=O)O)C1"
+    mol = Chem.MolFromSmiles(source)
+    assert mol is not None
+    expected = SMILESNNamer().name(source)
+    assert expected.success
+    variants = [Chem.MolToSmiles(mol, canonical=True), Chem.MolToSmiles(mol, canonical=False)]
+    variants.extend(Chem.MolToSmiles(mol, doRandom=True) for _ in range(12))
+    for smiles in variants:
+        result = SMILESNNamer().name(smiles)
+        assert result.success
+        assert (normalize_en(result.en), normalize_zh(result.zh)) == (normalize_en(expected.en), normalize_zh(expected.zh))
+
+
+@pytest.mark.parametrize("smiles", [
+    "O=C(O)[C@H]1CCC[C@H](C(=O)O)[C@H](Cl)C1",
+    "O=C(O)[C@H]1CCC[C@H](C(=O)O)[C@H](CCCC)C1",
+])
+def test_cyclo_polyacid_complete_halo_or_n_alkyl_stereo_is_named(smiles: str) -> None:
+    result = SMILESNNamer().name(smiles)
+    assert result.success
+    assert "cyclo" in result.en
+    assert any(token in result.en for token in ("cis-", "trans-", "-r,"))
