@@ -40,13 +40,31 @@ def _cyclo_fg_with_loc(
     if omit or loc is None:
         return f"{stem_en}{en_suf}", f"{stem_zh}{zh_suf}"
     return f"{stem_en}-{loc}-{en_suf}", f"{stem_zh}-{loc}-{zh_suf}"
+def _cyclo_ene_fg_names(
+    n: int, ene_loc: int | None, fg_loc: int | None, en_suf: str, zh_suf: str,
+) -> tuple[str, str] | None:
+    """cyclohex-2-en-1-ol / 环己-2-烯-1-醇 (FG@1 + endocyclic ene)."""
+    plain = _alkane_names(n)
+    if not plain or n < 3 or ene_loc is None or fg_loc is None:
+        return None
+    en, zh = plain
+    return (
+        f"cyclo{en[:-3]}-{ene_loc}-en-{fg_loc}-{en_suf}",
+        f"环{zh_stem(zh)}-{ene_loc}-烯-{fg_loc}-{zh_suf}",
+    )
 def _cycloalcohol_names(
     n: int, loc: int | None = None, omit: bool = True,
+    ene_loc: int | None = None,
 ) -> tuple[str, str] | None:
+    if ene_loc is not None:
+        return _cyclo_ene_fg_names(n, ene_loc, loc, "ol", "醇")
     return _cyclo_fg_with_loc(n, loc, omit, "ol", "醇")
 def _cycloketone_names(
     n: int, loc: int | None = None, omit: bool = True,
+    ene_loc: int | None = None,
 ) -> tuple[str, str] | None:
+    if ene_loc is not None:
+        return _cyclo_ene_fg_names(n, ene_loc, loc, "one", "酮")
     return _cyclo_fg_with_loc(n, loc, omit, "one", "酮")
 def _cycloamine_names(
     n: int, loc: int | None = None, omit: bool = True,
@@ -283,6 +301,7 @@ def _ketone_or_alkenone(n: int, numbered: dict) -> tuple[str, str] | None:
 def _cycloketone_from(n: int, numbered: dict) -> tuple[str, str] | None:
     return _cycloketone_names(
         n, numbered.get("ketone_locant"), numbered.get("omit_ketone_locant", True),
+        ene_loc=_ene_loc_kept(numbered),
     )
 def _cyclo_poly_fg_names(
     n: int, locs: list[int] | None, en_suf: str, zh_suf: str, need: int,
@@ -309,10 +328,13 @@ def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
 def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _acid_ald_amide(kind, n, numbered) or _nitrile_or_none(kind, n, numbered)
     return top if top is not None else _ester_ketone(kind, n, numbered)
+def _ene_loc_kept(numbered: dict) -> int | None:
+    return None if numbered.get("omit_ene_locant") else numbered.get("ene_locant")
 def _cyclo_hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "cycloalcohol":
         return _cycloalcohol_names(
             n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", True),
+            ene_loc=_ene_loc_kept(numbered),
         )
     if kind != "cycloamine":
         return None

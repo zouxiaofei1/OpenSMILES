@@ -4,8 +4,8 @@ from namepredict.layer4.anthra_orient import orient_anthraquinone as _orient_ant
 from namepredict.layer4.locants.adapt import effective_sub_locant, plan_from_chain
 from namepredict.layer4.locants.engine import choose_numbering
 from namepredict.layer4.polyene import (
-    ene_locants, orient_alkenol, orient_alkenedioic, orient_cyclopolyene,
-    orient_polyene, prefer_unsat_if_fg_tie,
+    ene_locants, orient_alkenol, orient_alkenedioic, orient_cycloalkene,
+    orient_cyclopolyene, orient_polyene, orient_ring_fg_ene, prefer_unsat_if_fg_tie,
 )
 from namepredict.layer4.polycarboxylic import orient_polycarboxylic, polycarboxylic_facts
 from namepredict.layer4.sat_hetero_orient import orient_sat_hetero_repl as _orient_sat_hetero_repl
@@ -109,12 +109,7 @@ def _orient_by_bond(chain, parent, substituents, key):
 def _orient_alkene(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_by_bond(chain, parent, substituents, "double_bond")
 def _orient_cycloalkene(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    ends = parent.get("double_bond")
-    if not ends or ends[0] not in chain: return chain
-    base = _rotate_to_front(chain, ends[0])
-    if len(base) > 1 and base[1] != ends[1]:
-        base = _rotate_to_front(list(reversed(chain)), ends[0])
-    return base
+    return orient_cycloalkene(chain, parent, substituents, _prefer_chain)
 def _orient_alkyne(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_by_bond(chain, parent, substituents, "triple_bond")
 def _term_fn(fn):
@@ -156,8 +151,12 @@ def _orient_ring_fixed(
     base = _rotate_to_front(chain, c)
     rev = _rotate_to_front(list(reversed(chain)), c)
     return _prefer_chain(base, rev, substituents)
+def _orient_ring_fg_ene(chain, parent, substituents, key):
+    return orient_ring_fg_ene(
+        chain, parent, substituents, key, _prefer_chain, _prefer_ene_orient,
+    )
 def _orient_cycloalcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    return _orient_ring_fixed(chain, parent, substituents, "oh_c_idx")
+    return _orient_ring_fg_ene(chain, parent, substituents, "oh_c_idx")
 def _orient_boronic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fixed(chain, parent, substituents, "c_attach")
 def _better_ring_pair(best, best_locs, cand, cs, subs):
@@ -195,7 +194,7 @@ def _orient_pyrimidinamine(chain: list[int], parent: dict, substituents: list) -
         virtual = virtual + [{"attach_idx": attach, "en": ""}]
     return _orient_diazine(chain, parent, virtual)
 def _orient_cycloketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    return _orient_ring_fixed(chain, parent, substituents, "ketone_c_idx")
+    return _orient_ring_fg_ene(chain, parent, substituents, "ketone_c_idx")
 def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fixed(chain, parent, substituents, "amine_c_idx")
 def _orient_benzoic(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -470,13 +469,15 @@ def _sh_locants(oriented: dict, n: int) -> dict:
 def _cooh_locants(oriented: dict) -> list[int] | None:
     if oriented.get("kind") not in {"polycarboxylic", "benzene_polycarboxylic", "cycloalkane_polycarboxylic"}: return None
     return _pair_locs_on(oriented.get("chain") or [], oriented.get("cooh_c_idxs"))
+def _omit_ket_loc(oriented: dict, n_subs: int) -> bool:
+    return _omit_ketone(oriented.get("kind"), n_subs, oriented, has_ene=_has_parent_ene)
 def _fg_locants(oriented: dict, n_subs: int = 0) -> dict:
     n = oriented.get("n_carbons", 0)
     return {
         **_oh_am_locants(oriented, n, n_subs), **_sh_locants(oriented, n),
         "ketone_locant": _ketone_locant(oriented),
         "ketone_locants": _ketone_pair_locants(oriented),
-        "omit_ketone_locant": _omit_ketone(oriented.get("kind"), n_subs),
+        "omit_ketone_locant": _omit_ket_loc(oriented, n_subs),
         "cooh_locants": _cooh_locants(oriented),
         **_unsat_locants(oriented, n),
     }

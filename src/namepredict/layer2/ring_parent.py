@@ -204,6 +204,7 @@ def _endocyclic_double(info: dict, ring_set: set[int]) -> tuple[int, int] | None
 
 
 def _is_simple_cycloalkene(info: dict) -> bool:
+    """Mono endocyclic C=C carbocycle; claimable n-alkyl / ring halo sides OK."""
     if not _is_cycloalkene_core(info):
         return False
     mol: Mol = info["mol"]
@@ -212,7 +213,7 @@ def _is_simple_cycloalkene(info: dict) -> bool:
         return False
     if not _outside_ok(mol, ring_set):
         return False
-    return not _outside_carbons(mol, ring_set)
+    return _cyclo_fg_sides_ok(mol, ring_set)
 
 
 def _endocyclic_doubles(info: dict, ring_set: set[int]) -> list[tuple[int, int]]:
@@ -279,6 +280,19 @@ def _cyclo_fg_parent_ok(info: dict, allowed: set[int]) -> bool:
         return False
     mol: Mol = info["mol"]
     ring_set = set(info["rings"][0]["atom_ids"])
+    if not _hetero_or_ring_halo(mol, ring_set, allowed):
+        return False
+    return _cyclo_fg_sides_ok(mol, ring_set)
+
+
+def _cyclo_ene_fg_ok(info: dict, allowed: set[int]) -> bool:
+    """Mono cycloalkene + FG heteros/halo; claimable alkyl sides."""
+    if not _is_cycloalkene_core(info):
+        return False
+    mol: Mol = info["mol"]
+    ring_set = set(info["rings"][0]["atom_ids"])
+    if _endocyclic_double(info, ring_set) is None:
+        return False
     if not _hetero_or_ring_halo(mol, ring_set, allowed):
         return False
     return _cyclo_fg_sides_ok(mol, ring_set)

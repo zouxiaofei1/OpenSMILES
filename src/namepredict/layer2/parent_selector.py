@@ -25,6 +25,9 @@ from namepredict.layer2.pyridine import (
 from namepredict.layer2.phenol_aniline import (
     _aniline_parent, _is_simple_aniline, _is_simple_phenol, _phenol_parent)
 from namepredict.layer2.cyclo_poly_fg import try_cycloalkanediol, try_cycloalkanedione
+from namepredict.layer2.cyclo_ene_fg import (
+    _is_simple_cycloalkenol, _is_simple_cycloalkenone,
+)
 from namepredict.layer2.ring_parent import (
     _benzenediol_parent, _endocyclic_double, _is_simple_benzene, _is_simple_benzenediol,
     _is_simple_cycloalcohol, _is_simple_cycloalkane, _is_simple_cycloalkene,
@@ -86,6 +89,8 @@ def _ring_alcohol_parent(info: dict) -> dict | None:
     if _is_simple_phenol(info): return _phenol_parent(info)
     cyc = try_cycloalkanediol(info)
     if cyc is not None: return cyc
+    if _is_simple_cycloalkenol(info):
+        return _cyclo_ene_fg_parent(info, "cycloalcohol", "hydroxyls", "oh_c_idx")
     return _ring_fg_try(info, ((_is_simple_cycloalcohol, "cycloalcohol"),),
                         "hydroxyls", "oh_c_idx")
 def _oh_c_in_ring(info: dict, c_idx: int) -> bool:
@@ -270,6 +275,8 @@ def _acid_parent(info: dict) -> dict | None:
 def _ring_or_poly_ketone(info: dict) -> dict | None:
     cyc = try_cycloalkanedione(info)
     if cyc is not None: return cyc
+    if _is_simple_cycloalkenone(info):
+        return _cyclo_ene_fg_parent(info, "cycloketone", "ketones", "ketone_c_idx")
     if _is_simple_cycloketone(info):
         return _cyclo_fg_parent(info, "cycloketone", "ketones", "ketone_c_idx")
     return _dione_parent(info) if _is_simple_alkanedione(info) else None
@@ -382,6 +389,10 @@ def _cycloalkene_parent(info: dict) -> dict:
     c = _ring_atoms(info); return _parent_dict(c, "cycloalkene", double_bond=_endocyclic_double(info, set(c)))
 def _cyclo_fg_parent(info: dict, kind: str, ekey: str, ckey: str) -> dict:
     return _parent_dict(_ring_atoms(info), kind, **{ckey: info[ekey][0]["c_idx"]})
+def _cyclo_ene_fg_parent(info: dict, kind: str, ekey: str, ckey: str) -> dict:
+    c = _ring_atoms(info)
+    db = _endocyclic_double(info, set(c))
+    return _parent_dict(c, kind, double_bond=db, **{ckey: info[ekey][0]["c_idx"]})
 def _pick_mono(info: dict, flag: str, key: str, fn):
     return fn(info) if _is_mono_fg(info, flag, key) else None
 def _chain_carbonyl_fg(info: dict) -> dict | None:

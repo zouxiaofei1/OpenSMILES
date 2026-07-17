@@ -96,3 +96,53 @@ def orient_cyclopolyene(chain: list[int], parent: dict, subs: list) -> list[int]
         scaffold_id="cyclopolyene",
     )
     return list(plan.atom_order) if plan.atom_order else chain
+
+
+def _rotate_to(chain: list[int], atom: int) -> list[int]:
+    if atom not in chain:
+        return chain
+    i = chain.index(atom)
+    return chain[i:] + chain[:i]
+
+
+def _ene_base_from(chain: list[int], a: int, b: int) -> list[int] | None:
+    base = _rotate_to(chain, a)
+    if len(base) > 1 and base[1] != b:
+        base = _rotate_to(list(reversed(chain)), a)
+    return base if len(base) > 1 and base[1] == b else None
+
+
+def _cyclo_ene_bases(chain: list[int], ends: tuple) -> list[list[int]]:
+    """Ring bases with C=C as 1–2, starting from either end."""
+    out: list[list[int]] = []
+    for a, b in (ends, (ends[1], ends[0])):
+        base = _ene_base_from(chain, a, b) if a in chain else None
+        if base is not None:
+            out.append(base)
+    return out
+
+
+def orient_cycloalkene(chain: list[int], parent: dict, subs: list, prefer_fn) -> list[int]:
+    """Double bond at 1–2; choose direction by lowest substituent set."""
+    ends = parent.get("double_bond")
+    if not ends or ends[0] not in chain:
+        return chain
+    bases = _cyclo_ene_bases(chain, ends)
+    best = bases[0] if bases else chain
+    for cand in bases[1:]:
+        best = prefer_fn(best, cand, subs)
+    return best
+
+
+def orient_ring_fg_ene(
+    chain: list[int], parent: dict, subs: list, key: str, prefer_fn, prefer_ene_fn,
+) -> list[int]:
+    """FG@1 both directions; prefer lower ene locant, then sub set."""
+    c = parent.get(key)
+    if c is None or c not in chain:
+        return chain
+    base, rev = _rotate_to(chain, c), _rotate_to(list(reversed(chain)), c)
+    ends = parent.get("double_bond")
+    if ends:
+        return prefer_ene_fn(base, rev, ends, subs)
+    return prefer_fn(base, rev, subs)
