@@ -23,14 +23,14 @@ _KEEP_LOCANT_KINDS = frozenset({
     "acid",
     "benzoic", "benzaldehyde", "acetophenone", "pyridinecarboxylic",
     "pyridinecarbonitrile", "benzoate", "benzonitrile", "benzoyl_chloride",
-    "benzoyl_bromide", "cycloalkanecarboxylic", "cycloalkanecarbaldehyde",
+    "benzoyl_bromide", "benzamide", "cycloalkanecarboxylic", "cycloalkanecarbaldehyde",
     "cycloalkanecarbonitrile", "cycloalkanecarboxamide",
     "cycloalkanecarboxylate", "cycloalkanecarbonyl_chloride",
     "cycloalkanecarbonyl_bromide"}) | _H5COOH_KINDS | _SHCOOH_KINDS
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
     if n_carbons <= 1 or (kind in ("cycloalkane", "benzene") and len(substituents) == 1):
         return True
-    if kind in ("sec_amine", "tert_amine", "amide"):
+    if kind in ("sec_amine", "tert_amine", "amide", "benzamide"):
         return {s.get("kind") for s in substituents} <= {"n_alkyl", "n_phenyl", "n_benzyl"}
     if kind in _KEEP_LOCANT_KINDS or kind == "ketone":
         return False

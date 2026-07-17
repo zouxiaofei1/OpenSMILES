@@ -325,7 +325,8 @@ def _orient_polycarboxylic(chain: list[int], parent: dict, substituents: list) -
 def _benzoic_orienters() -> dict:
     b = _orient_benzoic
     return {"benzoic": b, "benzaldehyde": b, "acetophenone": b, "benzoate": b,
-            "benzonitrile": b, "benzoyl_chloride": b, "benzoyl_bromide": b}
+            "benzonitrile": b, "benzoyl_chloride": b, "benzoyl_bromide": b,
+            "benzamide": b}
 def _cyclo_exo_orienters() -> dict:
     """Monocyclic cycloalkane + one exocyclic carbonyl FG (ring_attach_idx = 1)."""
     b = _orient_benzoic

@@ -475,9 +475,16 @@ def _try_benzene_polycarboxylic(info: dict) -> dict | None:
     return _benzene_polycarboxylic_parent(info) if _is_benzene_polycarboxylic(info) else None
 
 
+def _try_benzamide_parent(info: dict) -> dict | None:
+    """Retained Ph–C(=O)–N parent (implementation in benzamide module)."""
+    from namepredict.layer2.benzamide import _try_benzamide_parent as _try
+    return _try(info)
+
+
 def _try_arene_other_fg(info: dict) -> dict | None:
     for fn in (
         _try_benzoyl_chloride_parent, _try_benzoate_parent, _try_benzonitrile_parent,
+        _try_benzamide_parent,
     ):
         if (p := fn(info)) is not None:
             return p

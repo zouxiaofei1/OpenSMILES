@@ -23,7 +23,7 @@ CASES = [
     ("CC(=O)NC", "N-methylacetamide", "N-甲基乙酰胺"),
     ("CC(=O)N(C)C", "N,N-dimethylacetamide", "N,N-二甲基乙酰胺"),
     ("CC(=O)N", "acetamide", "乙酰胺"),
-    ("c1ccc(C(=O)N)cc1", "heptanamide", "庚酰胺"),
+    ("c1ccc(C(=O)N)cc1", "benzamide", "苯甲酰胺"),
 ]
 
 

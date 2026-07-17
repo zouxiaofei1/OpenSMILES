@@ -307,22 +307,26 @@ def _tert_n_prefix(ns: list[int]) -> tuple[str, str] | None:
     return f"N-{_N_STEM_EN[x]}-N-{_N_STEM_EN[y]}", f"N-{_N_STEM_ZH[x]}-N-{_N_STEM_ZH[y]}"
 
 
-_AMIDE_KINDS = frozenset({"amide"})
+_AMIDE_KINDS = frozenset({"amide", "benzamide"})
 
 
 def _n_alkyl_prefix(parent: dict) -> tuple[str, str, int] | None:
     kind, n = parent.get("kind"), parent.get("n_alkyl_n")
-    if kind in ("sec_amine", "amide") and n in _N_ALKYL_EN:
+    if kind in ("sec_amine", "amide", "benzamide") and n in _N_ALKYL_EN:
         return _N_ALKYL_EN[n], _N_ALKYL_ZH[n], n
-    if kind in ("tert_amine", "amide"):
+    if kind in ("tert_amine", "amide", "benzamide"):
         pref = _tert_n_prefix(list(parent.get("n_alkyl_ns") or []))
         return (*pref, 0) if pref else None
     return None
 
 
 def _extract_n_alkyl(parent: dict) -> list[dict]:
-    key = "amide_c_idx" if parent.get("kind") in _AMIDE_KINDS else "amine_c_idx"
-    attach, pref = parent.get(key), _n_alkyl_prefix(parent)
+    kind = parent.get("kind")
+    key = "amide_c_idx" if kind in _AMIDE_KINDS else "amine_c_idx"
+    attach = parent.get(key)
+    if kind == "benzamide":
+        attach = parent.get("ring_attach_idx", attach)
+    pref = _n_alkyl_prefix(parent)
     return [_n_alkyl_sub(*pref[:2], attach, pref[2])] if attach is not None and pref else []
 
 
@@ -330,6 +334,8 @@ def _extract_n_phenyl(parent: dict) -> list[dict]:
     if parent.get("kind") not in _AMIDE_KINDS or not parent.get("n_phenyl"):
         return []
     attach = parent.get("amide_c_idx")
+    if parent.get("kind") == "benzamide":
+        attach = parent.get("ring_attach_idx", attach)
     return [_n_phenyl_sub(attach)] if attach is not None else []
 
 

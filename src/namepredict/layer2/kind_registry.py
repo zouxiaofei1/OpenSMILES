@@ -38,6 +38,7 @@ _ARENE_NAMED: tuple[tuple[str, str, str, int], ...] = (
     ("benzene_polycarboxylic", "benzene", "苯", 13),
     ("benzoyl_chloride", "benzoyl chloride", "苯甲酰氯", 10),
     ("benzoyl_bromide", "benzoyl bromide", "苯甲酰溴", 10),
+    ("benzamide", "benzamide", "苯甲酰胺", 9),
     ("benzonitrile", "benzonitrile", "苯甲腈", 8),
     ("benzaldehyde", "benzaldehyde", "苯甲醛", 7),
     ("acetophenone", "acetophenone", "苯乙酮", 6),
