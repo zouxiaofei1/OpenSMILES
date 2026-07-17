@@ -61,6 +61,12 @@ _SAT_COOH = (
 _MISC_RING_FG: tuple[tuple[str, int, str, int, bool, str | None, str | None], ...] = (
     ("cycloalkanecarboxylic", 13, "none", 0, False, None, None),
     ("cycloalkane_polycarboxylic", 13, "carbo", 1, False, None, None),
+    ("cycloalkanecarbaldehyde", 7, "none", 0, False, None, None),
+    ("cycloalkanecarbonitrile", 8, "none", 0, False, None, None),
+    ("cycloalkanecarboxamide", 9, "none", 0, False, None, None),
+    ("cycloalkanecarboxylate", 11, "none", 0, False, None, None),
+    ("cycloalkanecarbonyl_chloride", 10, "none", 0, False, None, None),
+    ("cycloalkanecarbonyl_bromide", 10, "none", 0, False, None, None),
     ("benzenediol", 5, "none", 0, False, None, None),
     ("cycloalkanediol", 5, "none", 0, False, None, None),
     ("cycloalkanedione", 6, "none", 0, False, None, None),

@@ -354,8 +354,7 @@ def _orient_polycarboxylic(chain: list[int], parent: dict, substituents: list) -
 def _benzoic_orienters() -> dict:
     b = _orient_benzoic
     return {"benzoic": b, "benzaldehyde": b, "acetophenone": b, "benzoate": b,
-            "benzonitrile": b, "benzoyl_chloride": b, "benzoyl_bromide": b,
-            "cycloalkanecarboxylic": b}
+            "benzonitrile": b, "benzoyl_chloride": b, "benzoyl_bromide": b}
 def _unsat_orienters() -> dict:
     bq = _orient_ring_ketone_pair
     return {"cycloketone": _orient_cycloketone, "cycloalkanedione": bq,
@@ -371,6 +370,7 @@ def _kind_orienters() -> dict:
     return {**_hetero_orienters(), **_unsat_orienters(), **_carbonyl_orienters()}
 def _orient_by_kind(kind: str, chain: list[int], parent: dict, subs: list) -> list[int]:
     fn = _kind_orienters().get(kind)
+    if fn is None and str(kind or "").startswith("cycloalkane"): fn = _orient_benzoic
     return _orient_alkane(chain, subs) if fn is None else fn(chain, parent, subs)
 def _orient_chain(parent: dict, substituents: list) -> list[int]:
     chain = list(parent.get("chain") or [])

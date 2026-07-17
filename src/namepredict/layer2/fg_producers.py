@@ -46,6 +46,7 @@ from namepredict.layer2.sulfonyl_chloride import _sulfonyl_chloride_parent
 from namepredict.layer2.sulfoxide import _sulfoxide_parent
 from namepredict.layer2.urea import _urea_parent
 from namepredict.layer2.cyclo_polycarboxylic import _try_cycloalkane_polycarboxylic
+from namepredict.layer2.cyclo_carboxylic import _try_cycloalkane_exocyclic_fg
 
 
 def _try_acid(info: dict) -> dict | None:
@@ -58,11 +59,18 @@ def _try_anhydride(info: dict) -> dict | None:
     return _anhydride_parent(info) if _is_sym_anhydride(info) else None
 
 
+def _try_cyclo_exo_or(info: dict, open_fn) -> dict | None:
+    """Prefer cycloalkane exocyclic FG parent over open-chain formic collapse."""
+    if (c := _try_cycloalkane_exocyclic_fg(info)) is not None:
+        return c
+    return open_fn()
+
+
 def _try_acyl_chloride(info: dict) -> dict | None:
     """Acyl chloride / bromide (kind set inside parent by halogen)."""
-    if _is_mono_fg(info, "has_acyl_chloride", "acyl_chlorides"):
-        return _acyl_chloride_parent(info)
-    return None
+    if not _is_mono_fg(info, "has_acyl_chloride", "acyl_chlorides"):
+        return None
+    return _try_cyclo_exo_or(info, lambda: _acyl_chloride_parent(info))
 
 
 def _try_diester(info: dict) -> dict | None:
@@ -70,15 +78,15 @@ def _try_diester(info: dict) -> dict | None:
 
 
 def _try_ester(info: dict) -> dict | None:
-    if _is_mono_fg(info, "has_ester", "esters"):
-        return _ester_parent(info)
-    return None
+    if not _is_mono_fg(info, "has_ester", "esters"):
+        return None
+    return _try_cyclo_exo_or(info, lambda: _ester_parent(info))
 
 
 def _try_amide(info: dict) -> dict | None:
-    if _is_mono_fg(info, "has_amide", "amides"):
-        return _amide_parent(info)
-    return None
+    if not _is_mono_fg(info, "has_amide", "amides"):
+        return None
+    return _try_cyclo_exo_or(info, lambda: _amide_parent(info))
 
 
 def _is_aryl_nitrile_c(mol, c_idx: int) -> bool:
@@ -101,13 +109,13 @@ def _try_nitrile(info: dict) -> dict | None:
     nit = info["nitriles"][0]
     if _is_aryl_nitrile_c(info["mol"], nit["c_idx"]):
         return None  # Ar–CN leaf; benzonitrile via arene path
-    return _nitrile_parent(info)
+    return _try_cyclo_exo_or(info, lambda: _nitrile_parent(info))
 
 
 def _try_aldehyde(info: dict) -> dict | None:
-    if info.get("has_aldehyde") and info.get("aldehydes"):
-        return _aldehyde_parent(info)
-    return None
+    if not (info.get("has_aldehyde") and info.get("aldehydes")):
+        return None
+    return _try_cyclo_exo_or(info, lambda: _aldehyde_parent(info))
 
 
 def _try_ketone(info: dict) -> dict | None:

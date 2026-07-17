@@ -5,6 +5,7 @@ from namepredict.layer5.acyl_halide_names import acyl_halide_names
 from namepredict.layer5.boronic_names import boronic_names
 from namepredict.layer5.carbamate_names import carbamate_names
 from namepredict.layer5.carbonate_names import carbonate_names
+from namepredict.layer5.cyclo_exo_fg_names import cyclo_exo_fg_names
 from namepredict.layer5.diester_names import diester_names
 from namepredict.layer5.guanidine_names import guanidine_names
 from namepredict.layer5.hydrazine_names import hydrazine_names
@@ -43,12 +44,14 @@ def _by_kind(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     return fn() if fn else None
 
 
-def special_fg_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    top = _by_kind(kind, n, numbered)
-    if top is not None:
-        return top
+def _tail(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind in ("isocyanate", "isothiocyanate"):
         return iso_kind_names(kind, n)
     if kind in ("acyl_chloride", "acyl_bromide"):
         return acyl_halide_names(kind, n, numbered)
     return sulfoxide_names(numbered) if kind == "sulfoxide" else None
+
+
+def special_fg_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    top = cyclo_exo_fg_names(kind, n, numbered) or _by_kind(kind, n, numbered)
+    return top if top is not None else _tail(kind, n, numbered)
