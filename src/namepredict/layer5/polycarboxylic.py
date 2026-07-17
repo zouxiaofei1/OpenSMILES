@@ -4,6 +4,15 @@ from __future__ import annotations
 MULT_EN = {2: "di", 3: "tri", 4: "tetra", 5: "penta", 6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
 MULT_ZH = {2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
 
+def benzene_polycarboxylic_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    parent, locs = numbered.get("parent") or {}, numbered.get("cooh_locants") or []
+    count = parent.get("acid_count")
+    if count not in (2, 3) or len(locs) != count: return None
+    en_mult, zh_mult = MULT_EN[count], MULT_ZH[count]
+    loc = _pair_loc_str(locs)
+    return f"benzene-{loc}-{en_mult}carboxylic acid", f"苯-{loc}-{zh_mult}羧酸"
+
+
 def _pair_loc_str(locs: list[int]) -> str:
     return ",".join(map(str, locs))
 

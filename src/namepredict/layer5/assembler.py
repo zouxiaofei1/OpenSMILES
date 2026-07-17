@@ -96,7 +96,10 @@ def _diacid_names(n: int) -> tuple[str, str] | None:
     if n == 2:
         return "oxalic acid", "草酸"
     return _diacid_from_alkane(n)
-from namepredict.layer5.polycarboxylic import polycarboxylic_names as _polycarboxylic_names
+from namepredict.layer5.polycarboxylic import (
+    benzene_polycarboxylic_names as _benzene_polycarboxylic_names,
+    polycarboxylic_names as _polycarboxylic_names,
+)
 def _aldehyde_names(n: int) -> tuple[str, str] | None:
     return _pair(ALDEHYDE_EN, ALDEHYDE_ZH, n)
 def _amide_names(n: int) -> tuple[str, str] | None:
@@ -210,8 +213,11 @@ def _unsat_aldehyde(n: int, numbered: dict) -> tuple[str, str] | None:
     if numbered.get("ene_locant") is None:
         return None
     return alkenal_names(n, numbered)
+def _polyacid_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    return _polycarboxylic_names(n, numbered) if kind == "polycarboxylic" else _benzene_polycarboxylic_names(n, numbered)
+
 def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[str, str] | None:
-    if kind == "polycarboxylic": return _polycarboxylic_names(n, numbered or {})
+    if kind in {"polycarboxylic", "benzene_polycarboxylic"}: return _polyacid_names(kind, n, numbered or {})
     from namepredict.layer5.unsat_acid import unsat_carbonyl_names
     top = unsat_carbonyl_names(kind, n, numbered or {})
     if top is not None: return top

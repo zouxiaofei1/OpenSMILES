@@ -2,7 +2,8 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 from namepredict.layer2.alkenedioic import _alkenedioic_parent, _is_simple_alkenedioic
 from namepredict.layer2.arene_carbonyl import (
-    _try_acetophenone_parent, _try_arene_other_fg, _try_benzaldehyde_parent, _try_benzoic_parent,
+    _try_acetophenone_parent, _try_arene_other_fg, _try_benzaldehyde_parent,
+    _try_benzene_polycarboxylic, _try_benzoic_parent,
 )
 from namepredict.layer2.cyclo_carboxylic import _try_cycloalkanecarboxylic_parent
 from namepredict.layer2.hetero5_carboxylic import _try_hetero5carboxylic_parent as _try_h5cooh
@@ -270,7 +271,8 @@ def _with_anion(info: dict, parent: dict) -> dict:
     return {**parent, "anion": True} if acids and all(c.get("anion") for c in acids) else parent
 def _ring_acid_try(info: dict) -> dict | None:
     for fn in (_try_shcooh, _try_h5cooh, _try_indcooh, _try_naphcooh, _try_qcooh,
-               _try_pyridinecarboxylic_parent, _try_benzoic_parent,
+               _try_pyridinecarboxylic_parent, _try_benzene_polycarboxylic,
+               _try_benzoic_parent,
                _try_cycloalkanecarboxylic_parent):
         if (b := fn(info)) is not None: return b
     return None

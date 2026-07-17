@@ -23,6 +23,7 @@ from namepredict.layer2.ring_parent import (
     _is_simple_benzene,
 )
 from namepredict.layer2.scoring import _pick_best
+from namepredict.layer2.arene_carbonyl import benzene_polycarboxylic_eligibility
 from namepredict.layer2.polycarboxylic import polycarboxylic_eligibility
 from namepredict.layer2.carboxymethyl_diacid import is_carboxymethyl_diacid
 
@@ -64,11 +65,24 @@ def _dedupe_parents(cands: list[dict]) -> list[dict]:
     return out
 
 
-def _collect_candidates(info: dict) -> list[dict]:
+def _unsupported_polyacid(reason: str | None) -> list[dict]:
+    return [{"kind": "unsupported_polycarboxylic", "chain": [], "n_carbons": 0,
+             "unsupported_reason": reason}]
+
+
+def _polyacid_block(info: dict) -> list[dict] | None:
+    benzene_ok = benzene_polycarboxylic_eligibility(info)
+    if benzene_ok is False:
+        return _unsupported_polyacid("unsupported_benzene_polyacid")
     eligibility = polycarboxylic_eligibility(info)
     if eligibility is not None and not eligibility.supported and not is_carboxymethyl_diacid(info):
-        return [{"kind": "unsupported_polycarboxylic", "chain": [], "n_carbons": 0,
-                 "unsupported_reason": eligibility.reason}]
+        return _unsupported_polyacid(eligibility.reason)
+    return None
+
+
+def _collect_candidates(info: dict) -> list[dict]:
+    if (blocked := _polyacid_block(info)) is not None:
+        return blocked
     raw = (
         _fg_candidates(info) + _ring_candidates(info)
         + [_benzene_candidate(info)] + _unsat_candidates(info)

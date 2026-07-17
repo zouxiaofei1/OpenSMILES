@@ -123,6 +123,9 @@ def polycarboxylic_eligibility(info: dict) -> PolycarboxylicEligibility | None:
     """Classify >=3-carboxyl structures before candidate production."""
     if len(_carboxyl_carbons(info)) < 3:
         return None
+    acids = _carboxyl_carbons(info)
+    if len(acids) == 3 and not _is_acyclic_carbon_set(info["mol"], _core_carbons(info["mol"], acids)):
+        return None
     reason = _polycarboxylic_block_reason(info)
     return PolycarboxylicEligibility(reason is None, reason)
 

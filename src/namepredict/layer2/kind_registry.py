@@ -35,6 +35,7 @@ _CHAIN_FG: tuple[tuple[str, int], ...] = (
 )
 _ARENE_NAMED: tuple[tuple[str, str, str, int], ...] = (
     ("benzoic", "benzoic acid", "苯甲酸", 13),
+    ("benzene_polycarboxylic", "benzene", "苯", 13),
     ("benzoyl_chloride", "benzoyl chloride", "苯甲酰氯", 10),
     ("benzoyl_bromide", "benzoyl bromide", "苯甲酰溴", 10),
     ("benzonitrile", "benzonitrile", "苯甲腈", 8),

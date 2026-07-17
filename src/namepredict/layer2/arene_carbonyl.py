@@ -408,6 +408,61 @@ def _try_benzoyl_chloride_parent(info: dict) -> dict | None:
     return _benzoyl_chloride_parent(info) if _is_simple_benzoyl_halide(info) else None
 
 
+def _benzene_polyacid_attach(info: dict, ring: set[int], acid: dict) -> int | None:
+    nbs = _ring_c_neighbors(info["mol"], acid["c_idx"], ring)
+    return nbs[0] if len(nbs) == 1 else None
+
+
+def _benzene_polyacid_ring(info: dict) -> set[int] | None:
+    acids = info.get("carboxyls") or []
+    if len(acids) not in (2, 3) or not _is_benzene_core(info):
+        return None
+    ring = _exocyclic_fg_ring(info["mol"], acids[0]["c_idx"])
+    return ring if ring and all(_benzene_polyacid_attach(info, ring, acid) is not None for acid in acids) else None
+
+
+def _is_benzene_polycarboxylic(info: dict) -> bool:
+    if _arene_fg_conflict(info, "has_aldehyde", "has_ketone") or any(
+        acid.get("anion") for acid in info["carboxyls"]
+    ):
+        return False
+    return _benzene_polyacid_ring(info) is not None
+
+
+def _benzene_polycarboxylic_parent(info: dict) -> dict:
+    ring = _benzene_polyacid_ring(info) or set()
+    attaches = [_benzene_polyacid_attach(info, ring, acid) for acid in info["carboxyls"]]
+    return {"chain": list(ring), "n_carbons": 6, "kind": "benzene_polycarboxylic",
+            "cooh_c_idxs": attaches, "acid_count": len(attaches)}
+
+
+def _benzene_polyacid_like(info: dict) -> bool:
+    acids = info.get("carboxyls") or []
+    derivatives = sum(len(info.get(key) or []) for key in ("esters", "amides", "acyl_chlorides"))
+    return len(acids) >= 2 or bool(acids and derivatives)
+
+
+def _has_benzene_polyacid_attachment(info: dict) -> bool:
+    for acid in info.get("carboxyls") or []:
+        ring = _exocyclic_fg_ring(info["mol"], acid["c_idx"])
+        if ring and _benzene_polyacid_attach(info, ring, acid) is not None:
+            return True
+    return False
+
+
+def benzene_polycarboxylic_eligibility(info: dict) -> bool | None:
+    """Classify multiacids only when directly attached to unfused benzene."""
+    if not _is_benzene_core(info) or not _benzene_polyacid_like(info):
+        return None
+    if not _has_benzene_polyacid_attachment(info):
+        return None
+    return _is_benzene_polycarboxylic(info)
+
+
+def _try_benzene_polycarboxylic(info: dict) -> dict | None:
+    return _benzene_polycarboxylic_parent(info) if _is_benzene_polycarboxylic(info) else None
+
+
 def _try_arene_other_fg(info: dict) -> dict | None:
     for fn in (
         _try_benzoyl_chloride_parent, _try_benzoate_parent, _try_benzonitrile_parent,

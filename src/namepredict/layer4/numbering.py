@@ -180,6 +180,9 @@ def _orient_ring_pair(chain: list[int], parent: dict, key: str, subs: list) -> l
     for cand in _ring_candidates(chain):
         best, best_locs = _better_ring_pair(best, best_locs, cand, cs, subs)
     return best
+def _orient_benzene_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    return _orient_ring_pair(chain, parent, "cooh_c_idxs", substituents)
+
 def _orient_benzenediol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "oh_c_idxs", substituents)
 def _orient_benzenediamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -349,7 +352,8 @@ def _benzoic_orienters() -> dict:
 def _unsat_orienters() -> dict:
     return {"cycloketone": _orient_cycloketone, "alkene": _orient_alkene,
             "diacid": _orient_diacid, "diester": _orient_diacid,
-            "polycarboxylic": _orient_polycarboxylic, "polyene": _orient_polyene,
+            "polycarboxylic": _orient_polycarboxylic,
+            "benzene_polycarboxylic": _orient_benzene_polycarboxylic, "polyene": _orient_polyene,
             "cyclopolyene": orient_cyclopolyene, "cycloalkene": _orient_cycloalkene,
             "alkyne": _orient_alkyne, "cycloalkane": _orient_cycloalkane,
             "benzene": _orient_cycloalkane, **_benzoic_orienters()}
@@ -466,7 +470,7 @@ def _sh_locants(oriented: dict, n: int) -> dict:
     sh = _sh_locant(oriented)
     return {"sh_locant": sh, "omit_sh_locant": _omit_sh(sh, n)}
 def _cooh_locants(oriented: dict) -> list[int] | None:
-    if oriented.get("kind") != "polycarboxylic": return None
+    if oriented.get("kind") not in {"polycarboxylic", "benzene_polycarboxylic"}: return None
     return _pair_locs_on(oriented.get("chain") or [], oriented.get("cooh_c_idxs"))
 def _fg_locants(oriented: dict) -> dict:
     n = oriented.get("n_carbons", 0)
