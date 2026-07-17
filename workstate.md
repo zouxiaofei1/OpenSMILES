@@ -197,22 +197,24 @@
 [#080bdca][IUPAC P-63.1.1/P-64.2.1/P-62.2.1 / P-14.3.4] 单环饱和一元醇/酮/胺环上 halo·n-alkyl 取代 [+18 cases test_sub_cyclo_fg, dual 15.1%持平]
 [#1919e1b][架构 L2 parent_core] 切断 producer→parent_selector 私有 hub；helper 迁 parent_core + AST 契约 [+90 contract tests, dual 15.1%→15.1%, 0 REGRESS]
 [#2e7078d][IUPAC P-63.1.2 / P-64.2.1 / P-14.3.4] 饱和单碳环二元醇/二元酮 cycloalkanediol/dione [+16 tests, dual 15.1%→15.1%, REGRESS=0]
+[#ac04c87][IUPAC P-31.1 / P-22.1.1 / P-63.1.1 / P-64.2.1 / P-14.3.4] 单环烯烃烷基/卤素 + 环烯烃醇/酮 [+18 cases test_sub_cycloalkene_fg, dual 15.1%→15.1%, REGRESS=0]
 ## 其他
 
-## 选题: 饱和单碳环二元醇/二元酮 + 后续路线
+## 选题: 单环烯烃 + 后续路线
 
 ### 现状
-- Round B **已完成** `#2e7078d`；dual 15.1%(615/4062) 持平，REGRESS=0
-- 已通：`cycloalkanediol`/`cycloalkanedione`（C3–C10，1,2/1,3/1,4 + 简单 halo/n-alkyl）；隔离 benzenediol/mono cyclo/开链 diol·dione
-- L2 `cyclo_poly_fg.py` + L4 `_orient_ring_pair` + L5 `cyclo…-a,b-diol/dione`；测试 `test_cycloalkanediol_dione.py`
-- Round Arch 已完成 `#1919e1b`；下一功能：Round C
+- Round C **已完成** `#ac04c87`；dual 15.1%(615/4062) 持平，REGRESS=0
+- 已通：`1-methylcyclohexene` / `cyclohex-2-en-1-ol` / `cyclohex-2-en-1-one`；隔离未取代 cyclohexene、饱和 mono cyclo FG、开链 alkenol/one
+- L2 `cyclo_ene_fg.py` + 放宽 `_is_simple_cycloalkene`；L4 `orient_cycloalkene`/`orient_ring_fg_ene`；L5 `cyclo…-a-en-b-ol/one`；测试 `test_sub_cycloalkene_fg.py`
+- Round B `#2e7078d` / Arch `#1919e1b` 已完成；下一功能：Round D
+- 备注：`ring_parent`/`numbering`/`assembler` 贴 500 行上限，后续优先拆分
 
 ### 做法或顺序
 Round Arch: **已完成** — L2 `parent_core` 契约（commit 1919e1b）
 Round B: **已完成** — 饱和单碳环二元醇/二元酮（commit 2e7078d）
+Round C: **已完成** — 单环烯烃烷基/卤素 + 环烯烃醇/酮（commit ac04c87）
 
-Round C: **待做** — 单环烯烃烷基取代 + 环烯烃醇/环烯酮
-Round D: 环烷甲酸型 FG 横扩（carbaldehyde/carbonitrile/carboxamide/…）
+Round D: **待做** — 环烷甲酸型 FG 横扩（carbaldehyde/carbonitrile/carboxamide/…）
 Round E: 内酯/内酰胺（oxolan-2-one / pyrrolidin-2-one）
 
 ------------------------------------
