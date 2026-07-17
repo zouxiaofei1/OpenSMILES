@@ -132,12 +132,12 @@ def test_cyclo_polyacid_relative_name_is_smiles_order_invariant() -> None:
         assert (normalize_en(result.en), normalize_zh(result.zh)) == (normalize_en(expected.en), normalize_zh(expected.zh))
 
 
-@pytest.mark.parametrize("smiles", [
-    "O=C(O)[C@H]1CCC[C@H](C(=O)O)[C@H](Cl)C1",
-    "O=C(O)[C@H]1CCC[C@H](C(=O)O)[C@H](CCCC)C1",
+@pytest.mark.parametrize(("smiles", "en", "zh"), [
+    ("O=C(O)[C@H]1CCC[C@H](C(=O)O)[C@H](Cl)C1", "2-chloro-1-r,2-c,4-t-cycloheptane-1,4-dicarboxylic acid", "2-氯-1-r,2-c,4-t-环庚烷-1,4-二甲酸"),
+    ("O=C(O)[C@H]1CCC[C@H](C(=O)O)[C@H](CCCC)C1", "2-butyl-1-r,2-c,4-t-cycloheptane-1,4-dicarboxylic acid", "2-丁基-1-r,2-c,4-t-环庚烷-1,4-二甲酸"),
 ])
-def test_cyclo_polyacid_complete_halo_or_n_alkyl_stereo_is_named(smiles: str) -> None:
+def test_cyclo_polyacid_complete_halo_or_n_alkyl_stereo_is_named(smiles: str, en: str, zh: str) -> None:
     result = SMILESNNamer().name(smiles)
     assert result.success
-    assert "cyclo" in result.en
-    assert any(token in result.en for token in ("cis-", "trans-", "-r,"))
+    assert normalize_en(result.en) == normalize_en(en)
+    assert normalize_zh(result.zh) == normalize_zh(zh)

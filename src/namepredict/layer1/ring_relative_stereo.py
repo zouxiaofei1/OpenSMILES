@@ -29,11 +29,17 @@ def _face(mol: Mol, atom_id: int, ring_order: list[int], ligand: int) -> int | N
     if tag not in (ChiralType.CHI_TETRAHEDRAL_CW, ChiralType.CHI_TETRAHEDRAL_CCW): return None
     index = ring_order.index(atom_id); previous, following = ring_order[index - 1], ring_order[(index + 1) % len(ring_order)]
     actual = [-1 if n.GetAtomicNum() == 1 else n.GetIdx() for n in atom.GetNeighbors()]
-    if atom.GetNumExplicitHs() + atom.GetNumImplicitHs() and -1 not in actual: actual.append(-1)
+    if atom.GetNumExplicitHs() + atom.GetNumImplicitHs() and -1 not in actual: actual = [-1] + actual
     target = [ligand, previous, following, -1]
     if set(actual) != set(target): return None
     handed = 1 if tag == ChiralType.CHI_TETRAHEDRAL_CW else -1
     return handed * _parity(actual, target) * _orientation(ring_order)
+
+
+def _relative_faces(faces: list[tuple[int, int]]) -> tuple[tuple[int, int], ...]:
+    ordered = sorted(faces)
+    reference = ordered[0][1] if ordered else 1
+    return tuple((atom, face * reference) for atom, face in ordered)
 
 
 def ring_relative_stereo(mol: Mol, ring_order: list[int], ligands: dict[int, int]) -> RingRelativeStereoIR:
@@ -46,4 +52,4 @@ def ring_relative_stereo(mol: Mol, ring_order: list[int], ligands: dict[int, int
         if face is None and tagged: return RingRelativeStereoIR(invalid=True)
         if face is not None: faces.append((atom, face))
     if tagged and len(faces) != len(ligands): return RingRelativeStereoIR(invalid=True)
-    return RingRelativeStereoIR(tuple(sorted(faces)))
+    return RingRelativeStereoIR(_relative_faces(faces))
