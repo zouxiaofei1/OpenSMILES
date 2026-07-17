@@ -195,41 +195,23 @@
 [#792a2b3][架构 L2/L4 numbering facts] ScaffoldSpec 编号标签物化为 parent facts，L4 仅消费 NumberingPlan facts；required facts 缺失显式失败，移除 kind 白名单静默降级 [+397 focused tests, dual 15.1%(615)持平, 0 REGRESS]
 [#c7c1e69][IUPAC P-65.1.1 / P-65.1.2 / 环面相对立体] cyclo polyacid 共用 relative-face IR：RDKit implicit/explicit-H parity，NumberingPlan 对齐 cis/trans 与 r/c/t；SMILES/ring-order/镜像不变 [+43 related tests, dual 15.1%(615)持平, 0 REGRESS]
 [#080bdca][IUPAC P-63.1.1/P-64.2.1/P-62.2.1 / P-14.3.4] 单环饱和一元醇/酮/胺环上 halo·n-alkyl 取代 [+18 cases test_sub_cyclo_fg, dual 15.1%持平]
+[#1919e1b][架构 L2 parent_core] 切断 producer→parent_selector 私有 hub；helper 迁 parent_core + AST 契约 [+90 contract tests, dual 15.1%→15.1%, 0 REGRESS]
 ## 其他
 
-## 选题: 单环饱和一元醇/酮/胺的环上简单取代 (halo / n-alkyl)
+## 选题: [架构] L2 parent_core 契约 — 切断 producer→parent_selector 私有 hub
 
 ### 现状
-- Round A **已完成** `#080bdca`；dual 15.1%(615/4062) 持平，REGRESS=0
-- 已通：有取代时 `2-methylcyclohexan-1-ol/one/amine`；无取代仍 omit（cyclohexanol 等）
-- L2 `_cyclo_fg_parent_ok` + L4 `omit_locants` + L5 `_cyclo_fg_with_loc`；测试 `tests/unit/test_sub_cyclo_fg.py`
-- 下一可做：Round B（见下）
+- Round Arch **已完成** `#1919e1b`；dual 15.1%(615/4062) 持平，REGRESS=0
+- 已通：`parent_core` 为 helper 权威源；21 producer 改 import；`test_l2_parent_core_contract` 90 pass；illegal helper import=0
+- `parent_selector` 保留 FG try + `select_parent` + thin re-export（~484→422 行）
+- 下一功能可做：Round B（见下）；下一架构可考虑 carbocycle builder 接线或 L4 orienter 拆文件
 
 ### 做法或顺序
-Round A: **已完成** — 饱和单碳环一元醇/酮/胺 + 环上简单 halo/n-alkyl（commit 080bdca）
+Round Arch: **已完成** — L2 `parent_core` 契约（commit 1919e1b）
 
 Round B: **待做** — 饱和单碳环二元醇/二元酮（cycloalkanediol / cycloalkanedione）
-- 范围：环上恰 2×OH 或 2×酮；最低位次对；可带简单 halo/n-alkyl
-- 触发：Round A 绿 + 有 diol/dione 样本/探针
-- 接入：新 kind 或扩展 poly FG 环路径；L4 `_orient_ring_pair`；L5 poly 后缀；禁与 benzenediol 混淆
-- 远期完成条件：C3–C10 1,2/1,3/1,4 位型 + 简单取代双语 PIN
-
-Round C: 单环烯烃烷基取代 + 环烯醇/环烯酮
-- 范围：`1-methylcyclohexene`；`cyclohex-2-en-1-ol/one`（ene 位次 + FG 位次；可后接 E/Z 若需要）
-- 触发：Round A 稳定；`_is_simple_cycloalkene` 仍拒 outside C
-- 接入：`ring_parent._is_simple_cycloalkene`；L4 ene+FG 定向；禁芳香/多烯先并
-- 远期：多取代环烯、环多烯带 FG
-
-Round D: 环烷「甲酸型」FG 横扩 — carbaldehyde / carbonitrile / carboxamide / carboxylate / carbonyl halide
-- 范围：对齐 `cycloalkanecarboxylic` 的环外羰基类（`cyclohexanecarbaldehyde` PIN 已见于 P-66.6.1.1.3）；当前探针多错成 ethane / formonitrile / formamide
-- 触发：carboxylic 多取代若需先扩（4,4-dimethyl 现仍 ethane）可并本轮前半
-- 接入：`cyclo_carboxylic.py` 泛化或平行 try；L1 已有醛/腈/酰胺/酯/酰卤检测；禁与开链 formic 假母体回潮
-- 远期：环烯甲酸、多取代+立体
-
-Round E: 内酯/内酰胺（oxolan-2-one / pyrrolidin-2-one 等）
-- 范围：饱和单杂环 + 环内酯/酰胺羰基；Hantzsch–Widman 或 retained 路径（PIN `oxolan-2-one`）
-- 触发：Round D 后；与 `sat_hetero` scaffold 衔接时启动
-- 接入：`sat_hetero` / scaffold registry；新 kind；禁当开链 ester/amide
-- 远期：取代内酯、不饱和内酯、硫代内酯
+Round C: 单环烯烃烷基取代 + 环烯烃醇/环烯酮
+Round D: 环烷甲酸型 FG 横扩（carbaldehyde/carbonitrile/carboxamide/…）
+Round E: 内酯/内酰胺（oxolan-2-one / pyrrolidin-2-one）
 
 ------------------------------------
