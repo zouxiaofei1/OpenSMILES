@@ -191,13 +191,14 @@
 [#a934afd][IUPAC P-65.1.2.2.3 / P-31.1] C1–C4 线性 terminal carboxyalkyl 取代烷二酸：全量 claim、多臂与最低位次；仅支持唯一主链 C=C，拒绝侧臂不饱和/炔键/多重不饱和 [+相关54 tests, dual 15.1%(615)持平, 0 REGRESS]
 [#3f72a9f][IUPAC P-65.1.1 / P-65.1.2] 中性未稠合 benzene 二/三羧酸系统命名；专属 unsupported 门控限定为直接 COOH–benzene 连接，保留 benzoic 与 benzyl 开链二酸路径 [+15 feature tests, dual 15.1%(615)持平, 0 REGRESS]
 [#4d71e66][架构 L2 candidate gating] GateScope 与 principal/dependency registry 区分 PASS/scoped/global reject，阻止 polyacid fallback 绕过并保留独立 principal candidates [+focused 51 tests, dual 15.1%(615)持平, 0 REGRESS]
+[#6aa3f0d][IUPAC P-65.1.1 / P-65.1.2] 中性未稠合饱和单碳环 C3–C10 二/三甲酸：ScaffoldSpec stem、NumberingPlan 羧基优先编号、单个 halo/n-alkyl 取代及完整拒绝边界 [+103 tests, dual 15.1%(615)持平, 0 REGRESS]
 ## 其他
 ## 选题: 多羧基化合物完整非空系统命名
 
-### 现状: Round A 已完成线性饱和/不饱和多羧酸；Round B 已完成中性 C1–C4 线性 terminal carboxyalkyl + alkanedioic acid；Round C1 已完成中性未稠合 benzene 二/三羧酸及最低环位次。离子态、C5+ 侧臂、侧臂不饱和、脂环多羧酸及更一般支化仍由 `unsupported_polycarboxylic` 阻断。
+### 现状: Round A 已完成线性饱和/不饱和多羧酸；Round B 已完成中性 C1–C4 线性 terminal carboxyalkyl + alkanedioic acid；Round C1 已完成中性未稠合 benzene 二/三羧酸；Round C2 已完成中性未稠合饱和单碳环 C3–C10 二/三甲酸、单个简单取代与最低位次。离子态、C5+ 侧臂、侧臂不饱和、相对环立体及更一般支化仍由 `unsupported_polycarboxylic` 阻断。
 
 ### 做法或顺序
-Round C2（后续）: 脂环多羧酸作为独立自然规则；复用 ScaffoldSpec/NumberingPlan，处理 cycloalkane 环尺寸、最低位次及 cis/trans，禁止复用 benzene aromatic matcher，也不把环压成开链 core。
+Round C3（后续）: 脂环多羧酸 cis/trans 与 r/c/t 相对构型；先在 L1/L2 建立环面相对立体 IR，再由 L4 将 descriptor 与 NumberingPlan 对齐，禁止仅凭 SMILES 手性标签在 L5 猜构型。
 Round D: 部分质子化与混合盐；按 P-72 记录逐羧基 protonation 和 counterion stoichiometry，组装 hydrogen …carboxylate / 金属盐；与 L0 salt 分片协作，不在普通酸 L5 猜盐名。
 Round E（远期）: 多羧酸的酯/酰胺/酰卤混合衍生物与复杂环稠骨架；待逐位 characteristic-group state IR 和环 scaffold 覆盖稳定后实施。
 ------------------------------------
