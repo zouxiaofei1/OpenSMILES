@@ -70,6 +70,12 @@ def test_oxolane_meta() -> None:
     assert kr.parent_names("oxolane") == ("oxolane", "氧杂环戊烷")
 
 
+
+
+def test_cycloalkane_polycarboxylic_meta_has_authoritative_base_stem() -> None:
+    assert kr.parent_names("cycloalkane_polycarboxylic") == ("cycloalkane", "环烷烃")
+
+
 def test_anthracene_meta() -> None:
     m = kr.get("anthracene")
     assert m is not None

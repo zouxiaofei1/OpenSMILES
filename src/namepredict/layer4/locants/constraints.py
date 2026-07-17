@@ -165,12 +165,16 @@ def _carbo_or_poly_key(order, mode, double_bonds, sub_attach) -> tuple:
     stable = _stable_tie(order)
     if mode == "poly_unsat":
         return (_ene_loc_set(order, double_bonds), subs, stable)
+    if mode == "polyacid":
+        return (_sub_loc_set(order, double_bonds), subs, stable)
     return (subs, stable)
 
 
 def constraints_applied(mode: str) -> tuple[str, ...]:
     if mode == "poly_unsat":
         return ("unsaturation", "substituent")
+    if mode == "polyacid":
+        return ("carboxyl", "substituent")
     if mode == "carbocycle_free":
         return ("substituent",)
     if mode == "multi_hetero":

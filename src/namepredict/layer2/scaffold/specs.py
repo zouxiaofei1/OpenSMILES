@@ -114,6 +114,7 @@ CARBOCYCLE_SPECS: tuple[ScaffoldSpec, ...] = (
     _carbo("cycloalkane", "carbocycle_free"),
     _carbo("cycloalkene", "carbocycle_free"),
     _carbo("cyclopolyene", "poly_unsat"),
+    ScaffoldSpec("cycloalkane_polycarboxylic", "carbocycle", "cycloalkane", "环烷烃", 1, "carbo", False, 13, NumberingPolicy("carbocycle_free")),
 )
 
 # O/S 5+6 retained (prior Phase 2.1) + aza 5+6 (indole / indazole / bim).
@@ -228,8 +229,22 @@ _ALL_SPECS: tuple[ScaffoldSpec, ...] = (
 _BY_ID: dict[str, ScaffoldSpec] = {s.id: s for s in _ALL_SPECS}
 
 
+_CYCLOALKANE_STEMS = {
+    3: ("cyclopropane", "环丙烷"), 4: ("cyclobutane", "环丁烷"),
+    5: ("cyclopentane", "环戊烷"), 6: ("cyclohexane", "环己烷"),
+    7: ("cycloheptane", "环庚烷"), 8: ("cyclooctane", "环辛烷"),
+    9: ("cyclononane", "环壬烷"), 10: ("cyclodecane", "环癸烷"),
+}
+
+
+def cycloalkane_polyacid_stem(n: int) -> tuple[str, str] | None:
+    """Parameterized C3–C10 stem facts for the cyclo polyacid ScaffoldSpec."""
+    return _CYCLOALKANE_STEMS.get(n)
+
+
 def get_spec(spec_id: str) -> ScaffoldSpec | None:
     return _BY_ID.get(spec_id)
+
 
 
 def all_specs() -> tuple[ScaffoldSpec, ...]:

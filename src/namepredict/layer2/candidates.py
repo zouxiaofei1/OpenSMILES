@@ -27,6 +27,7 @@ from namepredict.layer2.arene_carbonyl import benzene_polycarboxylic_gate
 from namepredict.layer2.candidate_gate import CandidateGate, GateScope, gate_result
 from namepredict.layer2.carboxymethyl_diacid import is_carboxymethyl_diacid
 from namepredict.layer2.polycarboxylic import polycarboxylic_gate
+from namepredict.layer2.cyclo_polycarboxylic import cycloalkane_polycarboxylic_gate
 
 
 def _benzene_candidate(info: dict) -> dict | None:
@@ -72,15 +73,16 @@ def _unsupported_polyacid(reason: str | None) -> list[dict]:
 
 
 def _polyacid_gates(info: dict) -> list[CandidateGate]:
-    gates = [benzene_polycarboxylic_gate(info), polycarboxylic_gate(info)]
+    gates = [benzene_polycarboxylic_gate(info), polycarboxylic_gate(info), cycloalkane_polycarboxylic_gate(info)]
     return gates if not is_carboxymethyl_diacid(info) else gates[:1]
 
 
 _CANDIDATE_POLICIES = {
-    "acid": ((GateScope.OPEN_CHAIN_POLYCARBOXYLIC, GateScope.BENZENE_POLYCARBOXYLIC), False),
-    "alkane": ((GateScope.OPEN_CHAIN_POLYCARBOXYLIC, GateScope.BENZENE_POLYCARBOXYLIC), False),
+    "acid": ((GateScope.OPEN_CHAIN_POLYCARBOXYLIC, GateScope.BENZENE_POLYCARBOXYLIC, GateScope.CYCLOALKANE_POLYCARBOXYLIC), False),
+    "alkane": ((GateScope.OPEN_CHAIN_POLYCARBOXYLIC, GateScope.BENZENE_POLYCARBOXYLIC, GateScope.CYCLOALKANE_POLYCARBOXYLIC), False),
     "benzene": ((GateScope.BENZENE_POLYCARBOXYLIC,), False),
     "benzene_polycarboxylic": ((GateScope.BENZENE_POLYCARBOXYLIC,), True),
+    "cycloalkane_polycarboxylic": ((GateScope.CYCLOALKANE_POLYCARBOXYLIC,), True),
     "benzoic": ((), True),
     "diacid": ((GateScope.BENZENE_POLYCARBOXYLIC,), False),
     "polycarboxylic": ((GateScope.OPEN_CHAIN_POLYCARBOXYLIC,), True),

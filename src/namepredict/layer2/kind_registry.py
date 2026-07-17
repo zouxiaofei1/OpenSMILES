@@ -58,13 +58,14 @@ _SAT_COOH = (
 )
 # Fused FG kinds without Spec stems still need fg_rank registration.
 # Spec is authority when present; this table only covers residual FG tags.
-_MISC_RING_FG: tuple[tuple[str, int, str, int, bool], ...] = (
-    ("cycloalkanecarboxylic", 13, "none", 0, False),
-    ("benzenediol", 5, "none", 0, False),
-    ("pyridinol", 5, "none", 0, False),
-    ("pyridinamine", 3, "none", 0, False),
-    ("pyrimidinamine", 3, "none", 0, False),
-    ("benzenediamine", 3, "carbo", 1, False),
+_MISC_RING_FG: tuple[tuple[str, int, str, int, bool, str | None, str | None], ...] = (
+    ("cycloalkanecarboxylic", 13, "none", 0, False, None, None),
+    ("cycloalkane_polycarboxylic", 13, "carbo", 1, False, None, None),
+    ("benzenediol", 5, "none", 0, False, None, None),
+    ("pyridinol", 5, "none", 0, False, None, None),
+    ("pyridinamine", 3, "none", 0, False, None, None),
+    ("pyrimidinamine", 3, "none", 0, False, None, None),
+    ("benzenediamine", 3, "carbo", 1, False, None, None),
 )
 
 
@@ -235,8 +236,8 @@ def _load_sat_cooh() -> None:
 
 
 def _load_misc_ring_fg() -> None:
-    for k, fg, ring, n, ret in _MISC_RING_FG:
-        _add(k, fg=fg, ring=ring, n=n, ret=ret)
+    for k, fg, ring, n, ret, en, zh in _MISC_RING_FG:
+        _add(k, en=en, zh=zh, fg=fg, ring=ring, n=n, ret=ret)
 
 
 def _load_cyclo_rings() -> None:

@@ -9,6 +9,7 @@ from namepredict.layer4.locants.adapt import (
     effective_sub_locant,
     plan_from_chain,
 )
+from namepredict.layer4.locants.engine import choose_numbering
 from namepredict.layer4.polyene import (
     ene_locants, orient_alkenol, orient_alkenedioic, orient_cyclopolyene,
     orient_polyene, prefer_unsat_if_fg_tie,
@@ -183,6 +184,10 @@ def _orient_ring_pair(chain: list[int], parent: dict, key: str, subs: list) -> l
 def _orient_benzene_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "cooh_c_idxs", substituents)
 
+def _orient_cycloalkane_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    plan = choose_numbering(chain, "polyacid", double_bonds=parent.get("cooh_c_idxs"), sub_attach=[s["attach_idx"] for s in substituents], scaffold_id=parent.get("scaffold_id") or "")
+    return list(plan.atom_order)
+
 def _orient_benzenediol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "oh_c_idxs", substituents)
 def _orient_benzenediamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -353,7 +358,8 @@ def _unsat_orienters() -> dict:
     return {"cycloketone": _orient_cycloketone, "alkene": _orient_alkene,
             "diacid": _orient_diacid, "diester": _orient_diacid,
             "polycarboxylic": _orient_polycarboxylic,
-            "benzene_polycarboxylic": _orient_benzene_polycarboxylic, "polyene": _orient_polyene,
+            "benzene_polycarboxylic": _orient_benzene_polycarboxylic,
+            "cycloalkane_polycarboxylic": _orient_cycloalkane_polycarboxylic, "polyene": _orient_polyene,
             "cyclopolyene": orient_cyclopolyene, "cycloalkene": _orient_cycloalkene,
             "alkyne": _orient_alkyne, "cycloalkane": _orient_cycloalkane,
             "benzene": _orient_cycloalkane, **_benzoic_orienters()}
@@ -470,7 +476,7 @@ def _sh_locants(oriented: dict, n: int) -> dict:
     sh = _sh_locant(oriented)
     return {"sh_locant": sh, "omit_sh_locant": _omit_sh(sh, n)}
 def _cooh_locants(oriented: dict) -> list[int] | None:
-    if oriented.get("kind") not in {"polycarboxylic", "benzene_polycarboxylic"}: return None
+    if oriented.get("kind") not in {"polycarboxylic", "benzene_polycarboxylic", "cycloalkane_polycarboxylic"}: return None
     return _pair_locs_on(oriented.get("chain") or [], oriented.get("cooh_c_idxs"))
 def _fg_locants(oriented: dict) -> dict:
     n = oriented.get("n_carbons", 0)
@@ -488,6 +494,6 @@ def _pack(oriented: dict, substituents: list) -> dict:
 def number(parent: dict, substituents: list) -> dict:
     chain, kind = _orient_chain(parent, substituents), parent.get("kind")
     oriented = {**parent, "chain": chain}
-    plan = plan_from_chain(chain, kind)
+    plan = plan_from_chain(chain, oriented.get("scaffold_id") or kind)
     if plan is not None: oriented["numbering"] = plan
     return _pack(oriented, _with_locants(chain, substituents, kind))

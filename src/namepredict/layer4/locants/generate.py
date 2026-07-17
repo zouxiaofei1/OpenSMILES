@@ -21,6 +21,6 @@ def labels_for(n: int) -> tuple[str, ...]:
 
 def candidates_for(mode: str, chain: list[int]) -> list[list[int]]:
     """Dispatch candidate generation by NumberingPolicy mode."""
-    if mode in ("carbocycle_free", "poly_unsat", "multi_hetero"):
+    if mode in ("carbocycle_free", "poly_unsat", "polyacid", "multi_hetero"):
         return ring_candidates(chain)
     return [list(chain)]

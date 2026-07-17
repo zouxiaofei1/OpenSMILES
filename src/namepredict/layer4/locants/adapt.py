@@ -41,8 +41,9 @@ _NAPH_KINDS = NAPH_KINDS
 _INDOLE_ORIENT_KINDS = INDOLE_ORIENT_KINDS
 
 
-def _labels_for(kind: str | None) -> tuple[str, ...] | None:
+def _labels_for(kind: str | None, n: int) -> tuple[str, ...] | None:
     """Resolve labels from L4 tables only (no L2 import)."""
+    if kind in {"cycloalkane", "cycloalkane_polycarboxylic"} and 3 <= n <= 10: return tuple(map(str, range(1, n + 1)))
     if kind in NAPH_KINDS or kind in Q_KINDS:
         return NAPH_LABELS
     if kind in FUSED56_KINDS:
@@ -53,8 +54,8 @@ def _labels_for(kind: str | None) -> tuple[str, ...] | None:
 
 
 def plan_from_chain(chain: list[int], kind: str | None) -> NumberingPlan | None:
-    """Build NumberingPlan from oriented fused chain; None if not retained fused."""
-    labs = _labels_for(kind)
+    """Build NumberingPlan from oriented retained or cycloalkane chain."""
+    labs = _labels_for(kind, len(chain))
     if labs is None or len(chain) != len(labs):
         return None
     return make_plan(kind or "", tuple(chain), labs)

@@ -16,6 +16,16 @@ def benzene_polycarboxylic_names(n: int, numbered: dict) -> tuple[str, str] | No
 def _pair_loc_str(locs: list[int]) -> str:
     return ",".join(map(str, locs))
 
+def cycloalkane_polycarboxylic_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    parent, locs = numbered.get("parent") or {}, numbered.get("cooh_locants") or []
+    count = parent.get("acid_count")
+    if count not in (2, 3) or len(locs) != count: return None
+    stem = (parent.get("stem_en"), parent.get("stem_zh"))
+    if not all(stem): return None
+    loc, mult = _pair_loc_str(locs), (MULT_EN[count], MULT_ZH[count])
+    return f"{stem[0]}-{loc}-{mult[0]}carboxylic acid", f"{stem[1]}-{loc}-{mult[1]}甲酸"
+
+
 def polycarboxylic_names(n: int, numbered: dict) -> tuple[str, str] | None:
     """Assemble only the facts materialized by Layer 4."""
     parent, locs = numbered.get("parent") or {}, numbered.get("cooh_locants") or []

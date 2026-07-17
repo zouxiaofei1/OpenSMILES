@@ -45,6 +45,7 @@ from namepredict.layer2.sulfonic_acid import _sulfonic_acid_parent
 from namepredict.layer2.sulfonyl_chloride import _sulfonyl_chloride_parent
 from namepredict.layer2.sulfoxide import _sulfoxide_parent
 from namepredict.layer2.urea import _urea_parent
+from namepredict.layer2.cyclo_polycarboxylic import _try_cycloalkane_polycarboxylic
 
 
 def _try_acid(info: dict) -> dict | None:
@@ -169,6 +170,7 @@ def _try_benzenediamine(info: dict) -> dict | None:
 
 # Order = historical candidates._FG_TRY; do not reorder without dual check.
 _FG_PRODUCERS = (
+    _try_cycloalkane_polycarboxylic,
     _try_acid,
     _try_anhydride,
     _try_arene_other_fg,
