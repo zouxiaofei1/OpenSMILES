@@ -196,21 +196,22 @@
 [#c7c1e69][IUPAC P-65.1.1 / P-65.1.2 / 环面相对立体] cyclo polyacid 共用 relative-face IR：RDKit implicit/explicit-H parity，NumberingPlan 对齐 cis/trans 与 r/c/t；SMILES/ring-order/镜像不变 [+43 related tests, dual 15.1%(615)持平, 0 REGRESS]
 [#080bdca][IUPAC P-63.1.1/P-64.2.1/P-62.2.1 / P-14.3.4] 单环饱和一元醇/酮/胺环上 halo·n-alkyl 取代 [+18 cases test_sub_cyclo_fg, dual 15.1%持平]
 [#1919e1b][架构 L2 parent_core] 切断 producer→parent_selector 私有 hub；helper 迁 parent_core + AST 契约 [+90 contract tests, dual 15.1%→15.1%, 0 REGRESS]
+[#2e7078d][IUPAC P-63.1.2 / P-64.2.1 / P-14.3.4] 饱和单碳环二元醇/二元酮 cycloalkanediol/dione [+16 tests, dual 15.1%→15.1%, REGRESS=0]
 ## 其他
 
-## 选题: [架构] L2 parent_core 契约 — 切断 producer→parent_selector 私有 hub
+## 选题: 饱和单碳环二元醇/二元酮 + 后续路线
 
 ### 现状
-- Round Arch **已完成** `#1919e1b`；dual 15.1%(615/4062) 持平，REGRESS=0
-- 已通：`parent_core` 为 helper 权威源；21 producer 改 import；`test_l2_parent_core_contract` 90 pass；illegal helper import=0
-- `parent_selector` 保留 FG try + `select_parent` + thin re-export（~484→422 行）
-- 下一功能可做：Round B（见下）；下一架构可考虑 carbocycle builder 接线或 L4 orienter 拆文件
+- Round B **已完成** `#2e7078d`；dual 15.1%(615/4062) 持平，REGRESS=0
+- 已通：`cycloalkanediol`/`cycloalkanedione`（C3–C10，1,2/1,3/1,4 + 简单 halo/n-alkyl）；隔离 benzenediol/mono cyclo/开链 diol·dione
+- L2 `cyclo_poly_fg.py` + L4 `_orient_ring_pair` + L5 `cyclo…-a,b-diol/dione`；测试 `test_cycloalkanediol_dione.py`
+- Round Arch 已完成 `#1919e1b`；下一功能：Round C
 
 ### 做法或顺序
 Round Arch: **已完成** — L2 `parent_core` 契约（commit 1919e1b）
+Round B: **已完成** — 饱和单碳环二元醇/二元酮（commit 2e7078d）
 
-Round B: **待做** — 饱和单碳环二元醇/二元酮（cycloalkanediol / cycloalkanedione）
-Round C: 单环烯烃烷基取代 + 环烯烃醇/环烯酮
+Round C: **待做** — 单环烯烃烷基取代 + 环烯烃醇/环烯酮
 Round D: 环烷甲酸型 FG 横扩（carbaldehyde/carbonitrile/carboxamide/…）
 Round E: 内酯/内酰胺（oxolan-2-one / pyrrolidin-2-one）
 
