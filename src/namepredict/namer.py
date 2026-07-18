@@ -40,9 +40,15 @@ def _chain_meta(numbered: dict) -> dict:
     return {"parent_chain": list(parent.get("chain") or []), "parent_kind": parent.get("kind")}
 
 
-def _name_mol(mol, *, depth: int = 0, cache: CommonNameCache | None = None) -> NameResult:
-    """Run L1–L5 from mol. depth>0 disables cache write (caller must not put)."""
-    t0 = time.perf_counter()
+def _name_mol(
+    mol,
+    *,
+    depth: int = 0,
+    cache: CommonNameCache | None = None,
+    t0: float | None = None,
+) -> NameResult:
+    """Run L1–L5 from mol. depth>0: callers must not cache.put."""
+    t0 = t0 if t0 is not None else time.perf_counter()
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
     organic, salt = dissociate_salt(mol)
@@ -56,7 +62,7 @@ def _pipeline(smiles: str, t0: float) -> NameResult:
     mol = preprocess(smiles)
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
-    return _name_mol(mol, depth=0)
+    return _name_mol(mol, depth=0, t0=t0)
 
 
 def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
