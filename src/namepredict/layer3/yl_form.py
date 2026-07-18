@@ -41,15 +41,21 @@ def _yl_en(en: str, k: int) -> str:
     return hit[0] if hit is not None else f"{_drop_terminal_e(en)}-{k}-yl"
 
 
+def _mirror_azole_locants_zh(zh: str, en: str) -> str:
+    """Insert 1,3- into ZH azole stems when EN has 1,3- but free ZH omits it."""
+    pre = _hetero_locant_prefix(en)
+    if pre and not zh.startswith(pre):
+        return pre + zh
+    if "1,3-thiazole" in en and "1,3-噻唑" not in zh and zh.endswith("噻唑"):
+        return zh[: -len("噻唑")] + "-1,3-噻唑" if zh != "噻唑" else "1,3-噻唑"
+    return zh
+
+
 def _yl_zh(zh: str, k: int, en: str) -> str:
     hit = _RETAINED.get(en)
     if hit is not None:
         return hit[1]
-    # Free ZH may omit hetero locants (噻唑 vs 1,3-thiazole); mirror EN prefix.
-    pre = _hetero_locant_prefix(en)
-    if pre and not zh.startswith(pre):
-        zh = pre + zh
-    return f"{zh}-{k}-基"
+    return f"{_mirror_azole_locants_zh(zh, en)}-{k}-基"
 
 
 def yl_form(

@@ -23,6 +23,11 @@ MVP = [
         "4-methoxy-N-(1,3-thiazol-2-yl)benzamide",
         "4-甲氧基-N-(1,3-噻唑-2-基)苯甲酰胺",
     ),
+    (
+        "c1ccccc1C(=O)Nc2nc(C)cs2",
+        "N-(4-methyl-1,3-thiazol-2-yl)benzamide",
+        "N-(4-甲基-1,3-噻唑-2-基)苯甲酰胺",
+    ),
 ]
 
 REGRESS = [
