@@ -202,4 +202,5 @@
 [#350d3ff][IUPAC P-65.6.3.5.1 / P-66.1.5.1 / P-14.5] 饱和单杂环内酯/内酰胺假酮 PIN + L4 sat_hetero 字母序次级键修复 [+test_sat_hetero_one / alkyl alpha cases, dual 15.1%→15.2% (615→616), REGRESS=0]
 [#19336ef][架构 L4] cycloalkane* orient 显式表（删 startswith 兜底） [+21 contract tests, dual 15.2%持平, REGRESS=0]
 [#296f966][IUPAC P-66.1.1 / P-65.1.1.1] 简单 benzamide 保留母体（环前缀+N-C1–C4/N-phenyl；堵 formamide 坍缩） [+16 tests, dual 15.2%持平, REGRESS=0]
+[#216e792][IUPAC P-25 / P-22.2.1 / P-65.6.3 / P-29.3] retained chromen-2-one + prenyl side [+11 tests, dual 15.9%→16.0%]
 ## 其他
