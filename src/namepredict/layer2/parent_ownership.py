@@ -66,11 +66,21 @@ def _acid_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     return out
 
 
+def _aldehyde_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    c_idx = parent.get("aldehyde_c_idx")
+    if c_idx is None:
+        return set()
+    out = {int(c_idx)}
+    return _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
+
+
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
-    kind = parent.get("kind")
+    """FG ownership is field-driven so all amide/aldehyde kinds own their atoms."""
     out: set[int] = set()
-    if kind in ("benzamide", "amide"):
+    if parent.get("amide_c_idx") is not None:
         out |= _amide_fg_atoms(mol, parent)
+    if parent.get("aldehyde_c_idx") is not None:
+        out |= _aldehyde_fg_atoms(mol, parent)
     out |= _acid_fg_atoms(mol, parent)
     return out
 

@@ -23,13 +23,73 @@ class SubstituentBackend(Protocol):
     def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None: ...
 
 
+def _retained_hit(claim: ClaimedBlock, en: str, zh: str, paren: bool) -> SubstituentName:
+    return SubstituentName(
+        claim=claim, en=en, zh=zh, requires_parentheses=paren, backend="retained",
+    )
+
+
+def _try_cycloalkyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
+    from namepredict.layer2.side_cycloalkyl import _cycloalkyl_names, _is_monocycloalkyl
+
+    parent = {claim.attach_parent}
+    atoms = _is_monocycloalkyl(mol, claim.root, parent)
+    if atoms is None or set(atoms) != set(claim.atoms):
+        return None
+    names = _cycloalkyl_names(len(atoms))
+    return None if names is None else _retained_hit(claim, names[0], names[1], False)
+
+
+def _try_sub_phenyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
+    from namepredict.layer2.aryl_sub import _phenyl_at
+    from namepredict.layer3.ring_namer import recursive_ph_name
+
+    ph = _phenyl_at(mol, claim.root, claim.attach_parent)
+    if ph is None:
+        return None
+    en, zh, paren, atoms = recursive_ph_name(
+        mol, ph, claim.root, claim.attach_parent,
+    )
+    if set(atoms) != set(claim.atoms) or not en:
+        return None
+    return _retained_hit(claim, en, zh, paren)
+
+
+def _try_methoxy(mol, claim: ClaimedBlock) -> SubstituentName | None:
+    """O–CH3 side attached at claim.attach_parent (ether O or chain C via O root)."""
+    atoms = set(claim.atoms)
+    if len(atoms) != 2:
+        return None
+    o_idx = claim.root if mol.GetAtomWithIdx(claim.root).GetAtomicNum() == 8 else None
+    if o_idx is None:
+        o_idx = next((i for i in atoms if mol.GetAtomWithIdx(i).GetAtomicNum() == 8), None)
+    if o_idx is None:
+        return None
+    c_idxs = [i for i in atoms if i != o_idx]
+    if len(c_idxs) != 1 or mol.GetAtomWithIdx(c_idxs[0]).GetAtomicNum() != 6:
+        return None
+    c = mol.GetAtomWithIdx(c_idxs[0])
+    heavies = [n for n in c.GetNeighbors() if n.GetAtomicNum() != 1]
+    if len(heavies) != 1 or heavies[0].GetIdx() != o_idx:
+        return None
+    return _retained_hit(claim, "methoxy", "甲氧基", False)
+
+
+def _retained_name(mol, claim: ClaimedBlock) -> SubstituentName | None:
+    return (
+        _try_cycloalkyl(mol, claim)
+        or _try_sub_phenyl(mol, claim)
+        or _try_methoxy(mol, claim)
+    )
+
+
 class RetainedBackend:
-    """True simple leaves; Task 4 default is no-op (order tests use fakes)."""
+    """Retained simple leaves: cycloalkyl, substituted phenyl, methoxy."""
 
     name = "retained"
 
     def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None:
-        return None
+        return _retained_name(mol, claim)
 
 
 def _rooted_tree_name(mol, claim: ClaimedBlock) -> SubstituentName | None:

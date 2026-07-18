@@ -477,10 +477,68 @@ def _carboxyalkyl_sub(fact: side_facts.CarboxyalkylArm) -> dict:
             "atoms": [*fact.atoms, fact.carboxyl], "en": en, "zh": zh, "paren": True}
 
 
+def _claim_kind(slot_value: str) -> str:
+    return {
+        "ether_o": "alkoxy",
+        "amide_n": "n_block",
+        "ring_c": "alkyl",
+        "chain_c": "alkyl",
+    }.get(slot_value, "side")
+
+
+def _sub_from_named(named) -> dict:
+    claim = named.claim
+    kind = _claim_kind(claim.slot.value)
+    if named.en in ("methoxy", "ethoxy", "propoxy", "butoxy"):
+        kind = "alkoxy"
+    return {
+        "kind": kind,
+        "n_carbons": sum(1 for _ in claim.atoms),
+        "attach_idx": claim.attach_parent,
+        "atoms": sorted(claim.atoms),
+        "en": named.en,
+        "zh": named.zh,
+        "paren": named.requires_parentheses,
+        "backend": named.backend,
+    }
+
+
+def _covered_atoms(subs: list[dict]) -> set[int]:
+    out: set[int] = set()
+    for s in subs:
+        out.update(s.get("atoms") or [])
+    return out
+
+
+def _extract_claimed_sides(info: dict, parent: dict, existing: list[dict]) -> list[dict]:
+    """Name ownership-boundary claims not already covered by legacy extractors."""
+    from namepredict.layer2.claimable_block import SideSlot, iter_claims
+    from namepredict.layer3.substituent_namer import SubstituentNamer
+
+    owned = parent.get("owned_atoms")
+    if owned is None:
+        return []
+    mol, namer, covered = info["mol"], SubstituentNamer(), _covered_atoms(existing)
+    out: list[dict] = []
+    for claim in iter_claims(mol, owned):
+        if claim.slot == SideSlot.AMIDE_N:
+            continue  # N handled by _extract_n_subs / n_block
+        if set(claim.atoms) & covered:
+            continue
+        named = namer.name(mol, claim, depth=0)
+        if named is None:
+            continue
+        out.append(_sub_from_named(named))
+        covered |= set(named.claim.atoms)
+    return out
+
+
 def extract_substituents(info: dict, parent: dict) -> list:
     mol, chain = info["mol"], parent.get("chain") or []
     alkyl = _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent))
-    return (
-        alkyl + _extract_carboxymethyls(parent) + _extract_core_subs(info, parent) + _extract_alkoxys(info, parent)
-        + _extract_aryls(info, parent) + _extract_n_subs(info, parent)
+    base = (
+        alkyl + _extract_carboxymethyls(parent) + _extract_core_subs(info, parent)
+        + _extract_alkoxys(info, parent) + _extract_aryls(info, parent)
+        + _extract_n_subs(info, parent)
     )
+    return base + _extract_claimed_sides(info, parent, base)

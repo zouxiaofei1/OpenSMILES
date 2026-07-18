@@ -14,20 +14,46 @@ _ALKENAMIDE_BAD = (
 )
 
 
-def _amide_n_alkyl(mol: Mol, am: dict, cs: list[int]) -> dict:
+def _simple_n_alkyl_arm(mol: Mol, arm: list[int], n_idx: int) -> bool:
+    """Simple N-alkyl: entirely acyclic, saturated, non-aromatic C arm."""
     from namepredict.layer2.parent_core import _arm_ok
+    if not _arm_ok(mol, arm, n_idx):
+        return False
+    return all(
+        not mol.GetAtomWithIdx(i).IsInRing()
+        and not mol.GetAtomWithIdx(i).GetIsAromatic()
+        for i in arm
+    )
+
+
+def _amide_n_alkyl(mol: Mol, am: dict, cs: list[int]) -> dict:
     arms = [_longest_from(mol, c, set()) for c in cs]
-    if not all(_arm_ok(mol, a, am["n_idx"]) for a in arms):
+    if not all(_simple_n_alkyl_arm(mol, a, am["n_idx"]) for a in arms):
         return {}
     if len(arms) == 1:
         return {"n_alkyl_n": len(arms[0])}
     return {"n_alkyl_ns": [len(a) for a in arms]} if arms else {}
 
 
+def _plain_n_phenyl(mol: Mol, c_idx: int, n_idx: int) -> bool:
+    """Unsubstituted phenyl only — no external ring substituents."""
+    from namepredict.layer2.aryl_sub import _halo_list, _me_sites, _nb_outside, _phenyl_at
+    if not _unsub_phenyl_at(mol, c_idx, n_idx):
+        return False
+    ph = _phenyl_at(mol, c_idx, n_idx)
+    if ph is None or _me_sites(mol, ph) or _halo_list(mol, ph):
+        return False
+    for i in ph:
+        for nb in _nb_outside(mol, i, ph):
+            if not (i == c_idx and nb.GetIdx() == n_idx):
+                return False
+    return True
+
+
 def _amide_n_phenyl(mol: Mol, am: dict, cs: list[int]) -> dict:
     if len(cs) != 1:
         return {}
-    return {"n_phenyl": True} if _unsub_phenyl_at(mol, cs[0], am["n_idx"]) else {}
+    return {"n_phenyl": True} if _plain_n_phenyl(mol, cs[0], am["n_idx"]) else {}
 
 
 def _amide_n_benzyl(mol: Mol, am: dict, cs: list[int]) -> dict:
