@@ -35,13 +35,28 @@ def _with_salt_meta(numbered: dict, salt: dict) -> dict:
     return {**numbered, "salt": salt} if salt else numbered
 
 
-def _pipeline(smiles: str, t0: float) -> NameResult:
-    mol = preprocess(smiles)
+def _chain_meta(numbered: dict) -> dict:
+    parent = numbered.get("parent") or {}
+    return {"parent_chain": list(parent.get("chain") or []), "parent_kind": parent.get("kind")}
+
+
+def _name_mol(mol, *, depth: int = 0, cache: CommonNameCache | None = None) -> NameResult:
+    """Run L1–L5 from mol. depth>0 disables cache write (caller must not put)."""
+    t0 = time.perf_counter()
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
     organic, salt = dissociate_salt(mol)
     numbered = _with_salt_meta(_run_layers(organic), salt)
-    return assemble(numbered, time_ms=_elapsed_ms(t0))
+    result = assemble(numbered, time_ms=_elapsed_ms(t0))
+    result.meta = {**(result.meta or {}), **_chain_meta(numbered), "depth": depth}
+    return result
+
+
+def _pipeline(smiles: str, t0: float) -> NameResult:
+    mol = preprocess(smiles)
+    if mol is None:
+        return _fail(_elapsed_ms(t0), "parse")
+    return _name_mol(mol, depth=0)
 
 
 def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
