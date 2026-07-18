@@ -23,6 +23,19 @@ def _drop_terminal_e(en: str) -> str:
     return en[:-1] if en.endswith("e") else en
 
 
+def _hetero_locant_prefix(en: str) -> str:
+    """Leading heteroatom locants from free EN: '1,3-thiazole' → '1,3-'."""
+    i = 0
+    n = len(en)
+    while i < n and en[i].isdigit():
+        i += 1
+        while i < n and en[i] == ",":
+            i += 1
+            while i < n and en[i].isdigit():
+                i += 1
+    return en[: i + 1] if i and i < n and en[i] == "-" else ""
+
+
 def _yl_en(en: str, k: int) -> str:
     hit = _RETAINED.get(en)
     return hit[0] if hit is not None else f"{_drop_terminal_e(en)}-{k}-yl"
@@ -30,7 +43,13 @@ def _yl_en(en: str, k: int) -> str:
 
 def _yl_zh(zh: str, k: int, en: str) -> str:
     hit = _RETAINED.get(en)
-    return hit[1] if hit is not None else f"{zh}-{k}-基"
+    if hit is not None:
+        return hit[1]
+    # Free ZH may omit hetero locants (噻唑 vs 1,3-thiazole); mirror EN prefix.
+    pre = _hetero_locant_prefix(en)
+    if pre and not zh.startswith(pre):
+        zh = pre + zh
+    return f"{zh}-{k}-基"
 
 
 def yl_form(

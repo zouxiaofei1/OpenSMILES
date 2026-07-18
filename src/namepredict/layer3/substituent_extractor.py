@@ -22,15 +22,29 @@ def _strip_n_prefix(stem: str) -> str:
 
 
 def _strip_lead_locant(stem: str) -> str:
+    """Strip one leading locant set: '4-', '1,3-', '1,1,1-' (P-14.5)."""
     i = 0
-    while i < len(stem) and stem[i].isdigit():
+    n = len(stem)
+    while i < n and stem[i].isdigit():
         i += 1
-    return stem[i + 1 :] if i and i < len(stem) and stem[i] == "-" else stem
+        while i < n and stem[i] == ",":
+            i += 1
+            while i < n and stem[i].isdigit():
+                i += 1
+    return stem[i + 1 :] if i and i < n and stem[i] == "-" else stem
+
+
+def _strip_outer_parens(stem: str) -> str:
+    if len(stem) >= 2 and stem[0] == "(" and stem[-1] == ")":
+        return stem[1:-1]
+    return stem
 
 
 def alkyl_alpha_key(stem: str) -> str:
-    """Alphanumerical-order key: sec-/tert-/N-/leading locants ignored (P-14.5)."""
-    return _strip_lead_locant(_strip_n_prefix(_strip_ital_prefix(stem)))
+    """Alphanumerical-order key: sec-/tert-/N-/parens/leading locants ignored (P-14.5)."""
+    s = _strip_n_prefix(_strip_ital_prefix(stem))
+    s = _strip_outer_parens(s)
+    return _strip_lead_locant(s)
 
 
 # n-alkyl C1–C12 (P-29.3 / BQ P-64.2 Round B); C11+ ZH uses …烷基
@@ -438,6 +452,12 @@ def _extract_aryls(info: dict, parent: dict) -> list[dict]:
 
 
 def _extract_n_subs(info: dict, parent: dict) -> list[dict]:
+    from namepredict.layer3.n_block_extract import extract_n_blocks
+
+    # Mutual exclusion: n_block claims complex N; skip simple n_alkyl/phenyl/benzyl.
+    n_blocks = extract_n_blocks(info, parent)
+    if n_blocks:
+        return n_blocks
     return (
         _extract_n_alkyl(parent) + _extract_n_phenyl(parent)
         + _extract_n_benzyl(info, parent)

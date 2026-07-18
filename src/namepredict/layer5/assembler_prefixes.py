@@ -31,7 +31,9 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     if n_carbons <= 1 or (kind in ("cycloalkane", "benzene") and len(substituents) == 1):
         return True
     if kind in ("sec_amine", "tert_amine", "amide", "benzamide"):
-        return {s.get("kind") for s in substituents} <= {"n_alkyl", "n_phenyl", "n_benzyl"}
+        return {s.get("kind") for s in substituents} <= {
+            "n_alkyl", "n_phenyl", "n_benzyl", "n_block",
+        }
     if kind in _KEEP_LOCANT_KINDS or kind == "ketone":
         return False
     if any(s.get("paren") or (s.get("en") or "")[:1] == "(" for s in substituents):
@@ -64,7 +66,7 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False
 def _sorted_stems(groups: dict[str, list]) -> list[str]: return sorted((k for k in groups if k), key=alkyl_alpha_key)
 def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> tuple[str, str]:
     zh_stem = subs[0].get("zh") or ""
-    if (subs[0].get("kind") or "") in ("n_alkyl", "n_phenyl", "n_benzyl"):
+    if (subs[0].get("kind") or "") in ("n_alkyl", "n_phenyl", "n_benzyl", "n_block"):
         omit = True
     return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit, paren_cf3)
 def _collect_parts(groups: dict[str, list], omit: bool, paren_cf3: bool = False) -> tuple[list[str], list[str]]:
