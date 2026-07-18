@@ -6,6 +6,11 @@ Usage:
 """
 
 from __future__ import annotations
+try:
+    from rdkit import RDLogger
+    RDLogger.DisableLog("rdApp.*")
+except Exception:
+    pass
 
 import argparse
 import json
@@ -13,7 +18,7 @@ import os
 import sys
 import time
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +48,11 @@ _WORKER_NAMER: Any = None
 def _init_worker() -> None:
     """Create one SMILESNNamer per worker process (avoids pickling namer)."""
     global _WORKER_NAMER
+    try:
+        from rdkit import RDLogger
+        RDLogger.DisableLog("rdApp.*")
+    except Exception:
+        pass
     from namepredict.namer import SMILESNNamer
 
     _WORKER_NAMER = SMILESNNamer()
@@ -50,8 +60,11 @@ def _init_worker() -> None:
 
 def _score_row(row: dict[str, Any]) -> tuple[dict[str, Any], str, str, dict[str, Any]]:
     """Score one gold row in a worker. Returns (score, pred_en, pred_zh, row)."""
-    result = _WORKER_NAMER.name(str(row.get("smiles") or ""))
-    pred_en, pred_zh = result.en or "", result.zh or ""
+    try:
+        result = _WORKER_NAMER.name(str(row.get("smiles") or ""))
+        pred_en, pred_zh = result.en or "", result.zh or ""
+    except Exception:
+        pred_en, pred_zh = "", ""
     score = score_record(pred_en, pred_zh, row)
     return score, pred_en, pred_zh, row
 
@@ -68,6 +81,71 @@ def _chunksize(n_rows: int, workers: int) -> int:
         return 1
     # Aim for ~4–8 task batches per worker.
     return max(1, n_rows // (workers * 6))
+
+
+_PROGRESS_EVERY = 100
+
+
+def _progress_bar(done: int, total: int, width: int = 28) -> str:
+    if total <= 0:
+        return f"[{'?' * width}] 0/0"
+    frac = min(1.0, done / total)
+    filled = int(width * frac)
+    bar = "#" * filled + "-" * (width - filled)
+    return f"[{bar}] {done}/{total} ({100.0 * frac:.1f}%)"
+
+
+def _fmt_acc(ok: int, n: int) -> str:
+    pct = 0.0 if n == 0 else 100.0 * ok / n
+    return f"{ok}/{n} ({pct:.1f}%)"
+
+
+def _print_progress(done: int, total: int, t0: float, bucket: dict[str, int]) -> None:
+    """Print bar + running EN/ZH/dual accuracy so far (preview)."""
+    elapsed = time.perf_counter() - t0
+    rate = (done / elapsed) if elapsed > 0 else 0.0
+    eta = ((total - done) / rate) if rate > 0 else 0.0
+    en = _fmt_acc(bucket["ok_en"], bucket["n_en"])
+    zh = _fmt_acc(bucket["ok_zh"], bucket["n_zh"])
+    dual = _fmt_acc(bucket["ok_dual"], bucket["n_dual"])
+    print(
+        f"progress {_progress_bar(done, total)}  "
+        f"{rate:.1f} row/s  elapsed={elapsed:.1f}s  eta={eta:.1f}s\n"
+        f"  so far  EN={en}  ZH={zh}  dual={dual}",
+        flush=True,
+    )
+
+
+def _collect_with_progress(iterable, total: int, t0: float | None = None):
+    """Drain scored rows; every 100 print bar + running EN/ZH/dual accuracy."""
+    t0 = time.perf_counter() if t0 is None else t0
+    results: list[tuple[dict[str, Any], str, str, dict[str, Any]]] = []
+    bucket = _empty_bucket()
+    for i, item in enumerate(iterable, 1):
+        results.append(item)
+        _tally(bucket, item[0])
+        if i % _PROGRESS_EVERY == 0 or i == total:
+            _print_progress(i, total, t0, bucket)
+    return results
+
+
+def _pool_results_with_progress(
+    pool: ProcessPoolExecutor,
+    rows: list[dict[str, Any]],
+    t0: float,
+) -> list[tuple[dict[str, Any], str, str, dict[str, Any]]]:
+    """Submit all rows; collect via as_completed and print every 100."""
+    total = len(rows)
+    futures = [pool.submit(_score_row, row) for row in rows]
+    results: list[tuple[dict[str, Any], str, str, dict[str, Any]]] = []
+    bucket = _empty_bucket()
+    for i, fut in enumerate(as_completed(futures), 1):
+        item = fut.result()
+        results.append(item)
+        _tally(bucket, item[0])
+        if i % _PROGRESS_EVERY == 0 or i == total:
+            _print_progress(i, total, t0, bucket)
+    return results
 
 
 def _aggregate(
@@ -96,18 +174,22 @@ def run_benchmark_parallel(
 ) -> dict[str, Any]:
     """Run namer on gold JSON with a process pool; same report shape as sequential."""
     rows = _load_rows(Path(data_path), limit)
+    n_rows = len(rows)
     n_workers = max(1, workers if workers is not None else _default_workers())
-    if n_workers == 1 or len(rows) <= 1:
+    t0 = time.perf_counter()
+    print(f"benchmark start: n={n_rows} workers={n_workers}", flush=True)
+    if n_workers == 1 or n_rows <= 1:
         # Sequential path reuses one process (no pool overhead).
         _init_worker()
-        return _aggregate([_score_row(r) for r in rows])
+        results = _collect_with_progress((_score_row(r) for r in rows), n_rows, t0)
+        return _aggregate(results)
 
-    chunksize = _chunksize(len(rows), n_workers)
     with ProcessPoolExecutor(
         max_workers=n_workers,
         initializer=_init_worker,
     ) as pool:
-        results = list(pool.map(_score_row, rows, chunksize=chunksize))
+        # ProcessPoolExecutor has no imap; use submit + as_completed for progress.
+        results = _pool_results_with_progress(pool, rows, t0)
     return _aggregate(results)
 
 

@@ -101,12 +101,13 @@ def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _ketone_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Ketone carbonyl C + double-bonded O."""
+    """Ketone carbonyl C + double-bonded O (+ acetyl methyl when present)."""
     c_idx = parent.get("ketone_c_idx")
     if c_idx is None:
         return set()
     out = {int(c_idx)}
-    return _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
+    _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
+    return _add_opt(out, parent.get("acetyl_methyl_idx"))
 
 
 def _amine_fg_atoms(mol: Mol, parent: dict) -> set[int]:
@@ -121,18 +122,87 @@ def _amine_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     return out
 
 
-def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
-    """FG ownership is field-driven so all amide/aldehyde kinds own their atoms."""
+def _nitrile_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Nitrile/benzonitrile: CN carbon + triple-bonded N."""
+    c_idx = parent.get("nitrile_c_idx")
+    if c_idx is None:
+        return set()
+    out = {int(c_idx)}
+    for n in mol.GetAtomWithIdx(int(c_idx)).GetNeighbors():
+        if n.GetAtomicNum() == 7:
+            out.add(n.GetIdx())
+    return out
+
+
+def _thiol_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Thiol: attachment carbon + SH sulfur."""
+    c_idx = parent.get("sh_c_idx")
+    if c_idx is None:
+        return set()
+    out = {int(c_idx)}
+    for n in mol.GetAtomWithIdx(int(c_idx)).GetNeighbors():
+        if n.GetAtomicNum() == 16:
+            out.add(n.GetIdx())
+    return out
+
+
+def _ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Ester/benzoate: carbonyl C + both oxygens + alkoxy carbon arm."""
+    c_idx = parent.get("ester_c_idx")
+    if c_idx is None:
+        return set()
+    out = {int(c_idx)}
+    _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
+    o_idx, alkoxy_c = parent.get("o_idx"), parent.get("alkoxy_c_idx")
+    if o_idx is None:
+        return out
+    out.add(int(o_idx))
+    if alkoxy_c is not None:
+        out |= _ether_arm_atoms(mol, int(o_idx), int(alkoxy_c))
+    return out
+
+
+def _anhydride_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Anhydride: both acyl carbons + bridge O + both carbonyl oxygens."""
     out: set[int] = set()
-    if parent.get("amide_c_idx") is not None:
-        out |= _amide_fg_atoms(mol, parent)
-    if parent.get("aldehyde_c_idx") is not None:
-        out |= _aldehyde_fg_atoms(mol, parent)
-    out |= _acid_fg_atoms(mol, parent)
-    out |= _ether_fg_atoms(mol, parent)
-    out |= _hydroxy_fg_atoms(mol, parent)
-    out |= _ketone_fg_atoms(mol, parent)
-    out |= _amine_fg_atoms(mol, parent)
+    for key in ("acyl_c_idx", "other_acyl_c_idx"):
+        c = parent.get(key)
+        if c is None:
+            continue
+        out.add(int(c))
+        _add_opt(out, _dbl_o_idx(mol, int(c)))
+    return _add_opt(out, parent.get("o_idx"))
+
+
+def _acyl_chloride_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Acyl chloride: acyl C + carbonyl O + Cl."""
+    c_idx = parent.get("acyl_c_idx")
+    if c_idx is None:
+        return set()
+    out = {int(c_idx)}
+    _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
+    return _add_opt(out, parent.get("cl_idx") if parent.get("cl_idx") is not None else parent.get("hal_idx"))
+
+
+def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
+    """FG ownership is field-driven: own every heavy atom of the principal FG."""
+    parts = (
+        _amide_fg_atoms(mol, parent) if parent.get("amide_c_idx") is not None else set(),
+        _aldehyde_fg_atoms(mol, parent) if parent.get("aldehyde_c_idx") is not None else set(),
+        _acid_fg_atoms(mol, parent),
+        _ether_fg_atoms(mol, parent),
+        _hydroxy_fg_atoms(mol, parent),
+        _ketone_fg_atoms(mol, parent),
+        _amine_fg_atoms(mol, parent),
+        _nitrile_fg_atoms(mol, parent),
+        _thiol_fg_atoms(mol, parent),
+        _ester_fg_atoms(mol, parent),
+        _anhydride_fg_atoms(mol, parent),
+        _acyl_chloride_fg_atoms(mol, parent),
+    )
+    out: set[int] = set()
+    for part in parts:
+        out |= part
     return out
 
 

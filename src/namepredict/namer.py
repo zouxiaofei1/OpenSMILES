@@ -73,32 +73,89 @@ def _ok_result(numbered: dict, *, depth: int, t0: float) -> NameResult | None:
     return result
 
 
+def _chain_set(parent: dict) -> set[int]:
+    return set(parent.get("chain") or [])
+
+
+def _remap_attach(parent: dict, s: dict) -> dict:
+    """Ensure attach_idx is on parent chain for L4 orient (ring FG attach)."""
+    chain = _chain_set(parent)
+    attach = s.get("attach_idx")
+    if attach in chain:
+        return s
+    for key in ("ring_attach_idx", "amide_c_idx", "ketone_c_idx", "oh_c_idx"):
+        alt = parent.get(key)
+        if alt in chain:
+            return {**s, "attach_idx": alt}
+    return s
+
+
+def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
+    chain = _chain_set(parent)
+    out: list[dict] = []
+    for s in subst:
+        s2 = _remap_attach(parent, s)
+        if s2.get("attach_idx") in chain:
+            out.append(s2)
+    return out
+
+
 def _assemble_candidate(parent, subst, *, depth: int, t0: float) -> NameResult | None:
-    return _ok_result(number(parent, subst), depth=depth, t0=t0)
+    try:
+        numbered = number(parent, _subs_for_numbering(parent, subst))
+    except (ValueError, KeyError, TypeError):
+        return None
+    return _ok_result(numbered, depth=depth, t0=t0)
 
 
 def try_candidate(
-    info: dict, parent: dict, *, depth: int = 0, t0: float | None = None,
+    info: dict,
+    parent: dict,
+    *,
+    depth: int = 0,
+    t0: float | None = None,
+    require_complete: bool = True,
 ) -> NameResult | None:
-    """Finalize ownership, extract, require complete ledger, then number/assemble."""
+    """Finalize ownership, extract, optionally require complete ledger, then assemble."""
     t0 = t0 if t0 is not None else time.perf_counter()
     mol = info["mol"]
     parent = finalize_parent_ownership(parent, mol)
     subst = extract_substituents(info, parent)
-    if not _ledger_complete(mol, parent["owned_atoms"], subst):
+    complete = _ledger_complete(mol, parent["owned_atoms"], subst)
+    if require_complete and not complete:
         return None
-    return _assemble_candidate(parent, subst, depth=depth, t0=t0)
+    hit = _assemble_candidate(parent, subst, depth=depth, t0=t0)
+    if hit is None:
+        return None
+    hit.meta = {**(hit.meta or {}), "coverage_complete": complete}
+    return hit
 
 
 def _run_candidates(info: dict, *, depth: int, t0: float) -> NameResult:
+    """Prefer complete-coverage candidates; if none, fall back to any assemblable name.
+
+    Empty-name path removed: do not return success=False with blank en when a
+    partial assembly is available from any ranked candidate.
+    """
     attempts: list[dict] = []
     cands = list(iter_parent_candidates(info)) or [select_parent(info)]
+    # Pass 1: complete ledger only (high quality).
     for parent in cands:
-        hit = try_candidate(info, parent, depth=depth, t0=t0)
-        if hit is not None and hit.success:
+        hit = try_candidate(info, parent, depth=depth, t0=t0, require_complete=True)
+        if hit is not None and hit.success and hit.en:
             return hit
         attempts.append({"kind": parent.get("kind"), "reason": "incomplete_or_unnamed"})
-    return _fail(_elapsed_ms(t0), "no_complete_candidate", attempts=attempts)
+    # Pass 2: no coverage gate — best-effort non-empty assembly (kills empty path).
+    for parent in cands:
+        hit = try_candidate(info, parent, depth=depth, t0=t0, require_complete=False)
+        if hit is not None and hit.success and hit.en:
+            hit.meta = {
+                **(hit.meta or {}),
+                "fallback": "no_coverage_gate",
+                "attempts": attempts,
+            }
+            return hit
+    return _fail(_elapsed_ms(t0), "no_assemblable_candidate", attempts=attempts)
 
 
 def _name_mol(
