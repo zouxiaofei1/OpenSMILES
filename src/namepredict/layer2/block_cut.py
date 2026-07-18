@@ -5,46 +5,14 @@ from collections import deque
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.ring_parent import _dbl_o_idx
-
-
-def _chain_atoms(parent: dict) -> set[int]:
-    return set(parent.get("chain") or [])
-
-
-def _amide_n_from_c(mol: Mol, c_idx: int) -> int | None:
-    carbon = mol.GetAtomWithIdx(c_idx)
-    for n in carbon.GetNeighbors():
-        if n.GetAtomicNum() == 7:
-            return n.GetIdx()
-    return None
-
-
-def _add_opt(out: set[int], idx: int | None) -> set[int]:
-    if idx is not None:
-        out.add(idx)
-    return out
-
-
-def _amide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    c_idx = parent.get("amide_c_idx")
-    if c_idx is None:
-        return set()
-    out = {c_idx}
-    _add_opt(out, _dbl_o_idx(mol, c_idx))
-    return _add_opt(out, _amide_n_from_c(mol, c_idx))
-
-
-def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
-    kind = parent.get("kind")
-    if kind in ("benzamide", "amide"):
-        return _amide_fg_atoms(mol, parent)
-    return set()
-
 
 def parent_atom_set(parent: dict, mol: Mol) -> frozenset[int]:
-    """Union chain + kind-specific FG atoms (amide C/N/O for benzamide/amide)."""
-    return frozenset(_chain_atoms(parent) | _kind_fg_atoms(parent, mol))
+    """Compatibility adapter: prefer terminal owned_atoms; else finalize once."""
+    owned = parent.get("owned_atoms")
+    if isinstance(owned, frozenset):
+        return owned
+    from namepredict.layer2.parent_ownership import finalize_parent_ownership
+    return finalize_parent_ownership(parent, mol)["owned_atoms"]
 
 
 def _is_heavy_out(atom, parent_atoms: frozenset[int]) -> bool:
