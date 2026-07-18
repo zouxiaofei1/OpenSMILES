@@ -23,15 +23,34 @@ def _amide_n_carbons(mol: Mol, am: dict) -> set[int]:
     return out
 
 
-def _amide_pack_benz(mol: Mol, am: dict) -> tuple[set[int], set[int]]:
+def _n_block_atoms(mol: Mol, am: dict, meta: dict, ring: set[int]) -> set[int]:
+    """Full N-block atoms via cut_block (ring + amide core as parent boundary)."""
+    from namepredict.layer2.block_cut import cut_block
+    root = meta.get("n_block_root")
+    if root is None:
+        return set()
+    o = _dbl_o_idx(mol, am["c_idx"])
+    core = frozenset(ring | {am["c_idx"], am["n_idx"]} | ({o} if o is not None else set()))
+    block = cut_block(mol, root, core)
+    return set(block) if block else set()
+
+
+def _amide_pack_benz(
+    mol: Mol, am: dict, meta: dict | None = None, ring: set[int] | None = None,
+) -> tuple[set[int], set[int]]:
     """(exclude carbons, allowed heteros) for Ph–C(=O)–N."""
     o_dbl = _dbl_o_idx(mol, am["c_idx"])
     allowed = {am["n_idx"]} | ({o_dbl} if o_dbl is not None else set())
-    return {am["c_idx"]} | _amide_n_carbons(mol, am), allowed
+    excl = {am["c_idx"]} | _amide_n_carbons(mol, am)
+    if meta and meta.get("n_block") and ring is not None:
+        block = _n_block_atoms(mol, am, meta, ring)
+        excl |= block
+        allowed |= block
+    return excl, allowed
 
 
 def _benzamide_n_ok(info: dict) -> bool:
-    """Primary or L3-simple N (C1–C4 alkyl / N,N / N-phenyl); reject complex N."""
+    """Primary or L3-simple N (C1–C4 alkyl / N,N / N-phenyl) or claimable n_block."""
     from namepredict.layer2.alkenamide import _amide_n_meta
     ams = info.get("amides") or []
     if len(ams) != 1:
@@ -44,11 +63,13 @@ def _benzamide_n_ok(info: dict) -> bool:
 
 
 def _is_simple_benzamide(info: dict) -> bool:
+    from namepredict.layer2.alkenamide import _amide_n_meta
     ctx = _arene_fg_ctx(info, "has_amide", "amides")
     if ctx is None or not _benzamide_n_ok(info):
         return False
     mol, ring = ctx
-    excl, allowed = _amide_pack_benz(mol, info["amides"][0])
+    meta = _amide_n_meta(info)
+    excl, allowed = _amide_pack_benz(mol, info["amides"][0], meta, ring)
     return _arene_subs_ok(info, mol, ring, excl, allowed)
 
 

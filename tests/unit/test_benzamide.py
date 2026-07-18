@@ -55,3 +55,29 @@ def test_benzamide_not_formamide_collapse() -> None:
     assert en == "benzamide"
     assert "formamide" not in en
     assert "phenyl" not in en
+
+
+def test_benzamide_parent_accepts_n_thiazole() -> None:
+    """Complex N-heteroaryl: L2 topology claim → n_block on benzamide parent."""
+    from namepredict.layer0.preprocessor import preprocess
+    from namepredict.layer1.analyzer import analyze
+    from namepredict.layer2.parent_selector import select_parent
+
+    mol = preprocess("c1ccccc1C(=O)Nc2nccs2")
+    parent = select_parent(analyze(mol))
+    assert parent["kind"] == "benzamide"
+    assert parent.get("n_block") is True
+    assert parent.get("n_block_root") is not None
+
+
+def test_benzamide_parent_accepts_n_pyridine() -> None:
+    """N-pyridin-2-yl also claims n_block (not simple phenyl)."""
+    from namepredict.layer0.preprocessor import preprocess
+    from namepredict.layer1.analyzer import analyze
+    from namepredict.layer2.parent_selector import select_parent
+
+    mol = preprocess("c1ccccc1C(=O)Nc2ncccc2")
+    parent = select_parent(analyze(mol))
+    assert parent["kind"] == "benzamide"
+    assert parent.get("n_block") is True
+    assert parent.get("n_block_root") is not None

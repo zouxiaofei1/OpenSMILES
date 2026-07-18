@@ -40,6 +40,23 @@ def _amide_n_benzyl(mol: Mol, am: dict, cs: list[int]) -> dict:
     return {"n_benzyl": True, "n_benzyl_ch2": ch2} if ph is not None else {}
 
 
+def _amide_core_atoms(mol: Mol, am: dict) -> frozenset[int]:
+    """Amide C + N + dbl O (parent core for N-block cut before parent exists)."""
+    from namepredict.layer2.ring_parent import _dbl_o_idx
+    o = _dbl_o_idx(mol, am["c_idx"])
+    return frozenset({am["c_idx"], am["n_idx"]} | ({o} if o is not None else set()))
+
+
+def _amide_n_block(mol: Mol, am: dict, cs: list[int]) -> dict:
+    """Single N–C with non-empty cut_block → topology claim for complex N."""
+    from namepredict.layer2.block_cut import cut_block
+    if len(cs) != 1:
+        return {}
+    root = cs[0]
+    block = cut_block(mol, root, _amide_core_atoms(mol, am))
+    return {"n_block": True, "n_block_root": root} if block else {}
+
+
 def _amide_n_meta(info: dict) -> dict:
     ams = info.get("amides") or []
     if len(ams) != 1:
@@ -49,6 +66,7 @@ def _amide_n_meta(info: dict) -> dict:
         _amide_n_benzyl(mol, am, cs)
         or _amide_n_phenyl(mol, am, cs)
         or _amide_n_alkyl(mol, am, cs)
+        or _amide_n_block(mol, am, cs)
     )
 
 
