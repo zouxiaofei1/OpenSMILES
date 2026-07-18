@@ -149,8 +149,32 @@ def unsat_carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] |
     return _yne_carbonyl(kind, n, numbered) or _ene_carbonyl(kind, n, numbered)
 
 
+def _ene_mult_al(k: int) -> tuple[str, str]:
+    en = {
+        2: "dienal", 3: "trienal", 4: "tetraenal",
+        5: "pentaenal", 6: "hexaenal",
+    }.get(k, "")
+    zh = {
+        2: "二烯醛", 3: "三烯醛", 4: "四烯醛", 5: "五烯醛", 6: "六烯醛",
+    }.get(k, "")
+    return en, zh
+
+
+def _polyalkenal_names(n: int, locs, ez: str) -> tuple[str, str] | None:
+    """penta-2,4-dienal / 戊-2,4-二烯醛."""
+    en, zh = ALKANE_EN.get(n), ALKANE_ZH.get(n)
+    me, mz = _ene_mult_al(len(locs or []))
+    if not en or not zh or not me or not locs or len(locs) < 2 or n < 4:
+        return None
+    loc = ",".join(str(x) for x in locs)
+    return f"{ez}{en[:-3]}a-{loc}-{me}", f"{ez}{zh_stem(zh)}-{loc}-{mz}"
+
+
 def alkenal_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """non-2-enal / (E)-non-2-enal with E/Z when stereo defined."""
+    """non-2-enal / penta-2,4-dienal with E/Z when stereo defined."""
+    locs = numbered.get("ene_locants")
+    if locs and len(locs) >= 2:
+        return _polyalkenal_names(n, locs, ez_for_parent(numbered))
     return _unsat_acid_pair(
         n, numbered.get("ene_locant"), ez_for_parent(numbered), "enal", "烯醛",
     )

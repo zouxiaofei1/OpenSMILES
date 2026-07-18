@@ -247,7 +247,8 @@ def _unsat_aldehyde(n: int, numbered: dict) -> tuple[str, str] | None:
     from namepredict.layer5.unsat_acid import _has_yne, alkenal_names, alkynal_names
     if _has_yne(numbered):
         return alkynal_names(n, numbered)
-    if numbered.get("ene_locant") is None:
+    locs = numbered.get("ene_locants") or []
+    if numbered.get("ene_locant") is None and len(locs) < 2:
         return None
     return alkenal_names(n, numbered)
 def _polyacid_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
