@@ -161,6 +161,9 @@ def _extract_alkyls(mol: Mol, chain: list[int]) -> list[dict]:
 
 
 def _filter_fg_halos(halos: list, parent: dict) -> list:
+    # Functional-class ether arms already encode F (e.g. HFIP); do not re-prefix.
+    if parent.get("kind") == "ether" and parent.get("ether_arms"):
+        return []
     if parent.get("kind") not in ("acyl_chloride", "acyl_bromide"):
         return halos
     cl = parent.get("cl_idx") or parent.get("hal_idx")

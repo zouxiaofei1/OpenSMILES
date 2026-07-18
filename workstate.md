@@ -203,35 +203,3 @@
 [#19336ef][架构 L4] cycloalkane* orient 显式表（删 startswith 兜底） [+21 contract tests, dual 15.2%持平, REGRESS=0]
 [#296f966][IUPAC P-66.1.1 / P-65.1.1.1] 简单 benzamide 保留母体（环前缀+N-C1–C4/N-phenyl；堵 formamide 坍缩） [+16 tests, dual 15.2%持平, REGRESS=0]
 ## 其他
-
-## 选题: [IUPAC P-66.1.1 / P-65.1.1.1] 芳环·杂芳环外接甲酰胺保留母体（benzamide / heteroaryl carboxamide）
-
-### 现状
-- Round A **已完成** `#296f966`；dual **15.2% (616/4062)** 持平，REGRESS=0
-- 已通：`benzamide` / `苯甲酰胺` + 环上≤3 简单前缀 + N–H/N-C1–C4/N,N/N-phenyl；堵 Ar–CONR2 → formamide 坍缩
-- L2 `benzamide.py` 挂 `arene_carbonyl`；kind fg_rank=9 retained；L4 benzoic orient；L3 消费 N-前缀；测试 `test_benzamide.py`
-- 下一功能：Round B pyridinecarboxamide；Round C 五元杂芳 carboxamide；Round D diazine/稠环/宽 N（远期）
-- 远期架构债：assembler 酸死路径；try_carbocycle→ring_producers；ARCHITECTURE 对齐 layer0–5
-
-### 做法或顺序
-Round A: **已完成** — 简单 benzamide 保留母体（commit 296f966）
-
-Round B: **待做** — **pyridinecarboxamide**（+ 简单 N-烷基）
-- 范围：未稠合吡啶 + 单环外接 –CONH2；环上简单前缀对齐 pyridinecarboxylic；N-H / N-C1–C4；PIN `pyridine-n-carboxamide` / `吡啶-n-甲酰胺`
-- 接入：`layer2/pyridine.py`；L5 pyridinecarboxylic 兄弟；kind_registry
-- 触发：Round A 合入且 REGRESS=0
-- 禁止：稠环 quinolinecarboxamide、多酰胺、N-杂芳复杂臂
-
-Round C: **下轮** — **五元杂芳 carboxamide** 横扩
-- 范围：furan / thiophene / 1H-pyrrole / imidazole / pyrazole 单 –CONH2；对齐 `hetero5_carboxylic`
-- 接入：`layer2/hetero5_carboxylic.py`；L5 hetero5 names；kind_registry
-- 触发：Round B 稳定
-
-Round D: **远期** — diazine / 稠环 / 更宽 N-取代
-- 范围：pyrazine·pyrimidine·pyridazine-carboxamide；indole/quinoline；N-苄基/N-杂芳
-- 触发：Round C 后 dual 可聚类失败或显式需求
-
-架构债（并行、非本族）：assembler 酸死路径删除；try_carbocycle 接入 ring_producers；ARCHITECTURE 对齐 layer0–5
-
-------------------------------------
-

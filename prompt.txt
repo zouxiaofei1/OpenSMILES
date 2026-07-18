@@ -32,7 +32,15 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 0. 读取 workstate.md，了解当前进度和计划。
 0.1 workstate.md中## 其他 行的行号如果尾数为3或8，当前工作轮次为架构改进轮。使用 skills/analyzing-architecture-risk 分析项目风险，选择一重要的。跳到3.
 1. 运行**benchmark**,记录并报告当前分数，格式**中英文双重准确:[ ]%**
-2. 如果workstate的其他中没有选题，调用一个subagent,使用chem-brainstorm-skill 获得选题和完整的选题计划。否则进行工作。
+2. 如果workstate的其他中没有选题，使用错误驱动方式进行选题。否则进行工作。
+选题流程:
+2.1.随机选一个错的分子，选中后不要换题目。
+2.2.现在命名情况如何?是否能一轮修好?
+2.3 如果完全fail/坍缩/母体错且分子复杂，尝试命中母体
+2.4 如果核心正确，且取代基未命名完全，尝试命名全取代基。
+2.5 如果取代基很复杂，一次无法命名完全，可以做基础设施，命名其中的一部分。
+2.6 如果较为简单，则一次完全命名。
+
 3. 调用一个subagent,进行编写代码（遵守 skills/chem-tdd-skill）
 4. 调用另一个subagent（review）：**必须先阅读并全文遵守 skills/chem-code-review**。
    - 先审**选题**再审代码：代码全绿也可以反对选题；裁决 PASS|FIX|ROLLBACK|CHALLENGE

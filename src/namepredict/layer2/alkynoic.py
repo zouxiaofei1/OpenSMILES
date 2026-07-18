@@ -38,13 +38,15 @@ def _try_ynsat_fg(info, flag, ekey, bad, kind, ckey, **extra) -> dict | None:
 
 
 def ynsat_or_unsat_or_sat(info, flag, ekey, bad, ukind, skind, ckey, **extra):
-    """Try mono-yne FG parent, then mono-ene, then saturated chain."""
-    from namepredict.layer2.parent_core import _fg_chain, _try_unsat_fg
-    y = _try_ynsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
-    if y is not None:
-        return y
-    u = _try_unsat_fg(info, flag, ekey, bad, ukind, ckey, **extra)
-    return u or _fg_chain(info, ekey, skind, ckey, **extra)
+    """Try mono-yne FG parent, then multi-ene, then mono-ene, then saturated."""
+    from namepredict.layer2.parent_core import (
+        _fg_chain, _try_polyunsat_fg, _try_unsat_fg,
+    )
+    for fn in (_try_ynsat_fg, _try_polyunsat_fg, _try_unsat_fg):
+        p = fn(info, flag, ekey, bad, ukind, ckey, **extra)
+        if p is not None:
+            return p
+    return _fg_chain(info, ekey, skind, ckey, **extra)
 
 
 def try_ynsat_alcohol(info, bad) -> dict | None:

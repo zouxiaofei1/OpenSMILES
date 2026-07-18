@@ -179,27 +179,10 @@ def _amine_parent(info: dict) -> dict:
     return _tert_amine_parent(info) or _sec_amine_parent(info) or _primary_amine_parent(info)
 _ETHER_BAD = _CORE_BAD + ("has_amine", "has_alcohol", "has_thiol", "has_sulfide")
 _SULFIDE_BAD = _CORE_BAD + ("has_amine", "has_alcohol", "has_thiol", "has_ether")
-def _ether_arms(info: dict) -> tuple[list[int], list[int], dict] | None:
-    ets = info.get("ethers") or []
-    if len(ets) != 1:
-        return None
-    e, mol = ets[0], info["mol"]
-    o_idx, cs = e["o_idx"], [e["c1"], e["c2"]]
-    if not _hetero_open_chain(mol, o_idx):
-        return None
-    arms = [_longest_from(mol, c, set()) for c in cs]
-    return (arms[0], arms[1], e) if all(_arm_ok(mol, a, o_idx) for a in arms) else None
 def _ether_parent(info: dict) -> dict | None:
-    if not _is_open_sat(info) or not _no_fgs(info, _ETHER_BAD):
-        return None
-    got = _ether_arms(info)
-    if got is None:
-        return None
-    a1, a2, e = got
-    parent, short = (a1, a2) if len(a1) >= len(a2) else (a2, a1)
-    return _parent_dict(
-        parent, "ether", ether_c_idx=parent[0], o_idx=e["o_idx"], alkoxy_n=len(short),
-    )
+    """Dialkyl ether parent (linear + isopropyl/HFIP specials)."""
+    from namepredict.layer2.ether_parent import _ether_parent as _try
+    return _try(info)
 def _sulfide_arms(info: dict) -> tuple[list[int], list[int], dict] | None:
     sfs = info.get("sulfides") or []
     if len(sfs) != 1:

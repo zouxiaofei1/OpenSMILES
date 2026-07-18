@@ -294,9 +294,13 @@ def _ketone_or_alkenone(n: int, numbered: dict) -> tuple[str, str] | None:
         _has_ene, _has_yne, alkenone_from, alkynone_from,
     )
     if _has_yne(numbered):
-        return alkynone_from(n, numbered)
+        top = alkynone_from(n, numbered)
+        if top is not None:
+            return top
     if _has_ene(numbered):
-        return alkenone_from(n, numbered)
+        top = alkenone_from(n, numbered)
+        if top is not None:
+            return top
     return _ketone_names(n, numbered.get("ketone_locant"))
 def _cycloketone_from(n: int, numbered: dict) -> tuple[str, str] | None:
     return _cycloketone_names(
@@ -346,9 +350,13 @@ def _alcohol_or_alkenol(n: int, numbered: dict) -> tuple[str, str] | None:
         _has_ene, _has_yne, alkenol_from, alkynol_from,
     )
     if _has_yne(numbered):
-        return alkynol_from(n, numbered)
+        top = alkynol_from(n, numbered)
+        if top is not None:
+            return top
     if _has_ene(numbered):
-        return alkenol_from(n, numbered)
+        top = alkenol_from(n, numbered)
+        if top is not None:
+            return top
     return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
 def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "alcohol":
@@ -381,8 +389,33 @@ def _asym_ether_names(parent_n: int, alkoxy_n: int) -> tuple[str, str] | None:
     if parent_n <= 2:
         return f"{en_pre}{en_p}", f"{zh_pre}{zh_p}"
     return f"1-{en_pre}{en_p}", f"1-{zh_pre}{zh_p}"
+# Functional-class ether arms: (tag, n) → (en radical, zh radical without 基)
+_ETHER_ARM_EN = {
+    ("n", 1): "methyl", ("n", 2): "ethyl", ("n", 3): "propyl", ("n", 4): "butyl",
+    ("ipr", 0): "isopropyl", ("hfip", 0): "hexafluoroisopropyl",
+}
+_ETHER_ARM_ZH = {
+    ("n", 1): "甲", ("n", 2): "乙", ("n", 3): "丙", ("n", 4): "丁",
+    ("ipr", 0): "异丙", ("hfip", 0): "六氟异丙",
+}
+def _ether_arm_pair(tag: str, n: int) -> tuple[str, str] | None:
+    key = (tag, int(n))
+    en, zh = _ETHER_ARM_EN.get(key), _ETHER_ARM_ZH.get(key)
+    return (en, zh) if en and zh else None
+def _func_ether_names(arms) -> tuple[str, str] | None:
+    """hexafluoroisopropyl methyl ether / 六氟异丙基甲醚 (alpha EN)."""
+    if not arms or len(arms) != 2:
+        return None
+    pairs = [_ether_arm_pair(t, n) for t, n in arms]
+    if any(p is None for p in pairs):
+        return None
+    a, b = sorted(pairs, key=lambda x: x[0])
+    return f"{a[0]} {b[0]} ether", f"{a[1]}基{b[1]}醚"
 def _ether_names(n: int, numbered: dict) -> tuple[str, str] | None:
     parent = numbered.get("parent") or {}
+    arms = parent.get("ether_arms")
+    if arms is not None:
+        return _func_ether_names(arms)
     alkoxy_n = parent.get("alkoxy_n")
     if alkoxy_n is None:
         return None

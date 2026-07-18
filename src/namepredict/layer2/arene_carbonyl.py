@@ -277,11 +277,35 @@ def _ester_alkoxy_arm(mol: Mol, start: int, o_idx: int) -> set[int]:
     return arm
 
 
+def _bfs_side(mol: Mol, start: int, ban: set[int]) -> set[int]:
+    """Heavy-atom component from start, not crossing ban."""
+    from collections import deque
+    seen: set[int] = set()
+    q: deque[int] = deque([start])
+    while q:
+        i = q.popleft()
+        if i in seen or i in ban:
+            continue
+        seen.add(i)
+        for n in mol.GetAtomWithIdx(i).GetNeighbors():
+            if n.GetAtomicNum() != 1:
+                q.append(n.GetIdx())
+    return seen
+
+
+def _ester_o_side(mol: Mol, e: dict) -> set[int]:
+    """Full alcohol-side component beyond ester O (linear or polycyclic)."""
+    linear = _ester_alkoxy_arm(mol, e["alkoxy_c_idx"], e["o_idx"])
+    if linear and _simple_alkoxy_n(mol, e["alkoxy_c_idx"], e["o_idx"]) is not None:
+        return linear
+    return _bfs_side(mol, e["alkoxy_c_idx"], {e["o_idx"]})
+
+
 def _ester_exclude(mol: Mol, e: dict) -> tuple[set[int], set[int]]:
     fg_c, o_idx, ac = e["c_idx"], e["o_idx"], e["alkoxy_c_idx"]
     o_dbl = _dbl_o_idx(mol, fg_c)
     allowed = {o_idx, ac} | ({o_dbl} if o_dbl is not None else set())
-    exclude = {fg_c} | _ester_alkoxy_arm(mol, ac, o_idx)
+    exclude = {fg_c, o_idx} | _ester_o_side(mol, e) | ({o_dbl} if o_dbl is not None else set())
     return exclude, allowed | exclude
 
 
@@ -307,6 +331,25 @@ def _benzoate_alkoxy(mol: Mol, o_idx: int, ac: int) -> dict | None:
         return side
     n = _simple_alkoxy_n(mol, ac, o_idx)
     return {**side, "alkoxy_n": n} if n is not None else None
+
+
+def _ph_ring_plain(mol: Mol, ring: set[int], excl: set[int]) -> bool:
+    """Benzene ring has no unclaimed outside heavy attachments."""
+    from namepredict.layer2.ring_parent import _outside_ok
+    return _outside_ok(mol, ring, excl)
+
+
+def _complex_benzoate_ok(info: dict) -> bool:
+    """Ph–C(=O)–O–R: clean Ph, any alcohol-side R (not simple linear/special)."""
+    ctx = _arene_fg_ctx(info, "has_ester", "esters")
+    if ctx is None:
+        return False
+    mol, ring = ctx
+    e = info["esters"][0]
+    if _benzoate_alkoxy(mol, e["o_idx"], e["alkoxy_c_idx"]) is not None:
+        return False  # simple path owns these
+    excl, allowed = _ester_exclude(mol, e)
+    return _ph_ring_plain(mol, ring, allowed | excl)
 
 
 def _is_simple_benzoate(info: dict) -> bool:
@@ -341,8 +384,17 @@ def _benzoate_parent(info: dict) -> dict:
     }
 
 
+def _complex_benzoate_parent(info: dict) -> dict:
+    """Benzoate with unresolved O-alkyl; L5 emits bare benzoate until named."""
+    p = _benzoate_parent(info)
+    p["alkoxy_complex"] = True
+    return p
+
+
 def _try_benzoate_parent(info: dict) -> dict | None:
-    return _benzoate_parent(info) if _is_simple_benzoate(info) else None
+    if _is_simple_benzoate(info):
+        return _benzoate_parent(info)
+    return _complex_benzoate_parent(info) if _complex_benzoate_ok(info) else None
 
 
 def _nitrile_n_idx(mol: Mol, c_idx: int) -> int | None:

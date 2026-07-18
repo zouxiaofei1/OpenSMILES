@@ -168,9 +168,13 @@ def benzoate_parent_names(numbered: dict, build_prefix) -> tuple[str, str] | Non
     from namepredict.layer5.stems import ester_alkoxy_pair
     parent = numbered.get("parent") or {}
     alkyl = ester_alkoxy_pair(parent)
+    pre_en, pre_zh = build_prefix(numbered.get("substituents") or [], 6, "benzoate")
+    # Complex O-alkyl: parent hit only (alkyl radical not yet named).
+    if not alkyl and parent.get("alkoxy_complex"):
+        en = f"{pre_en}benzoate" if pre_en else "benzoate"
+        return en, f"{pre_zh}苯甲酸酯"
     if not alkyl:
         return None
-    pre_en, pre_zh = build_prefix(numbered.get("substituents") or [], 6, "benzoate")
     en = f"{alkyl[0]} {pre_en}benzoate" if pre_en else f"{alkyl[0]} benzoate"
     return en, f"{pre_zh}苯甲酸{alkyl[1]}酯"
 
