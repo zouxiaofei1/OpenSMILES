@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from namepredict.layer2.submol_build import build_cut_submol
 from namepredict.layer3.yl_form import yl_form
-from namepredict.namer import _name_mol
 
 
 def _locant_from_result(result, attach_new: int) -> int | None:
@@ -17,6 +16,8 @@ def _locant_from_result(result, attach_new: int) -> int | None:
 
 
 def _yl_from_sub(sub, *, depth: int) -> tuple[str, str, bool] | None:
+    from namepredict.namer import _name_mol
+
     result = _name_mol(sub.mol, depth=depth)
     if not result.success or not result.en:
         return None

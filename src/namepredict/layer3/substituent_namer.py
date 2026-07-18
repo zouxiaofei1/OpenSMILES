@@ -47,30 +47,32 @@ def _try_sub_phenyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
     ph = _phenyl_at(mol, claim.root, claim.attach_parent)
     if ph is None:
         return None
-    en, zh, paren, atoms = recursive_ph_name(
-        mol, ph, claim.root, claim.attach_parent,
-    )
-    if set(atoms) != set(claim.atoms) or not en:
-        return None
-    return _retained_hit(claim, en, zh, paren)
+    en, zh, paren, atoms = recursive_ph_name(mol, ph, claim.root, claim.attach_parent)
+    return None if set(atoms) != set(claim.atoms) or not en else _retained_hit(claim, en, zh, paren)
+
+
+def _methoxy_o(mol, claim: ClaimedBlock) -> int | None:
+    if mol.GetAtomWithIdx(claim.root).GetAtomicNum() == 8:
+        return claim.root
+    return next((i for i in claim.atoms if mol.GetAtomWithIdx(i).GetAtomicNum() == 8), None)
+
+
+def _is_plain_methyl_on_o(mol, o_idx: int, c_idx: int) -> bool:
+    if mol.GetAtomWithIdx(c_idx).GetAtomicNum() != 6:
+        return False
+    heavies = [n for n in mol.GetAtomWithIdx(c_idx).GetNeighbors() if n.GetAtomicNum() != 1]
+    return len(heavies) == 1 and heavies[0].GetIdx() == o_idx
 
 
 def _try_methoxy(mol, claim: ClaimedBlock) -> SubstituentName | None:
     """O–CH3 side attached at claim.attach_parent (ether O or chain C via O root)."""
-    atoms = set(claim.atoms)
-    if len(atoms) != 2:
+    if len(claim.atoms) != 2:
         return None
-    o_idx = claim.root if mol.GetAtomWithIdx(claim.root).GetAtomicNum() == 8 else None
-    if o_idx is None:
-        o_idx = next((i for i in atoms if mol.GetAtomWithIdx(i).GetAtomicNum() == 8), None)
+    o_idx = _methoxy_o(mol, claim)
     if o_idx is None:
         return None
-    c_idxs = [i for i in atoms if i != o_idx]
-    if len(c_idxs) != 1 or mol.GetAtomWithIdx(c_idxs[0]).GetAtomicNum() != 6:
-        return None
-    c = mol.GetAtomWithIdx(c_idxs[0])
-    heavies = [n for n in c.GetNeighbors() if n.GetAtomicNum() != 1]
-    if len(heavies) != 1 or heavies[0].GetIdx() != o_idx:
+    c_idxs = [i for i in claim.atoms if i != o_idx]
+    if len(c_idxs) != 1 or not _is_plain_methyl_on_o(mol, o_idx, c_idxs[0]):
         return None
     return _retained_hit(claim, "methoxy", "甲氧基", False)
 

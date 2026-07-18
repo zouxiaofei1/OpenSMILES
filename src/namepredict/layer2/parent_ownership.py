@@ -74,6 +74,32 @@ def _aldehyde_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     return _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
 
 
+def _ether_arm_atoms(mol: Mol, o_idx: int, c_idx: int) -> set[int]:
+    from namepredict.layer2.chain_walk import _longest_from
+    return {c_idx, *_longest_from(mol, c_idx, {o_idx})}
+
+
+def _ether_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Ether O + both carbon arms (short arm not always in chain)."""
+    if parent.get("kind") != "ether" or parent.get("o_idx") is None:
+        return set()
+    o_idx = int(parent["o_idx"])
+    out = {o_idx}
+    for n in mol.GetAtomWithIdx(o_idx).GetNeighbors():
+        if n.GetAtomicNum() == 6:
+            out |= _ether_arm_atoms(mol, o_idx, n.GetIdx())
+    return out
+
+
+def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Alcohol/phenol: attachment carbon + OH oxygen."""
+    c_idx = parent.get("oh_c_idx")
+    if c_idx is None:
+        return set()
+    out = {int(c_idx)}
+    return _add_opt(out, _single_o_idx(mol, int(c_idx)))
+
+
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
     """FG ownership is field-driven so all amide/aldehyde kinds own their atoms."""
     out: set[int] = set()
@@ -82,6 +108,8 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
     if parent.get("aldehyde_c_idx") is not None:
         out |= _aldehyde_fg_atoms(mol, parent)
     out |= _acid_fg_atoms(mol, parent)
+    out |= _ether_fg_atoms(mol, parent)
+    out |= _hydroxy_fg_atoms(mol, parent)
     return out
 
 
