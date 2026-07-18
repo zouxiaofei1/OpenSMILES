@@ -352,7 +352,8 @@ def _probe_1_cycloalkylethyl(mol: Mol, start: int, chain: set[int]) -> list[int]
     return _is_1_cycloalkylethyl(mol, start, chain)
 
 
-_SIDE_PROBES = (
+# Topology-only side recognition for parent gates (not a naming-mode table).
+_TOPOLOGY_SIDE_PROBES = (
     _walk_linear,
     _walk_omega_halo,
     _is_isopropyl,
@@ -378,7 +379,7 @@ def _first_side(mol: Mol, start: int, chain: set[int], probes) -> list[int] | No
 
 
 def _side_atoms(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
-    return _first_side(mol, start, chain, _SIDE_PROBES)
+    return _first_side(mol, start, chain, _TOPOLOGY_SIDE_PROBES)
 
 
 def _side_covers(

@@ -100,6 +100,27 @@ def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     return _add_opt(out, _single_o_idx(mol, int(c_idx)))
 
 
+def _ketone_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Ketone carbonyl C + double-bonded O."""
+    c_idx = parent.get("ketone_c_idx")
+    if c_idx is None:
+        return set()
+    out = {int(c_idx)}
+    return _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
+
+
+def _amine_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Aniline/amine: ring/chain attachment C + amine N (primary)."""
+    c_idx = parent.get("amine_c_idx")
+    if c_idx is None:
+        return set()
+    out = {int(c_idx)}
+    for n in mol.GetAtomWithIdx(int(c_idx)).GetNeighbors():
+        if n.GetAtomicNum() == 7:
+            out.add(n.GetIdx())
+    return out
+
+
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
     """FG ownership is field-driven so all amide/aldehyde kinds own their atoms."""
     out: set[int] = set()
@@ -110,6 +131,8 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
     out |= _acid_fg_atoms(mol, parent)
     out |= _ether_fg_atoms(mol, parent)
     out |= _hydroxy_fg_atoms(mol, parent)
+    out |= _ketone_fg_atoms(mol, parent)
+    out |= _amine_fg_atoms(mol, parent)
     return out
 
 
