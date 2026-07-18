@@ -32,13 +32,27 @@ class RetainedBackend:
         return None
 
 
+def _rooted_tree_name(mol, claim: ClaimedBlock) -> SubstituentName | None:
+    from namepredict.layer2.side_alkyl_sys import build_rooted_alkyl_tree
+    from namepredict.layer3.alkyl_sys_names import name_rooted_alkyl
+
+    tree = build_rooted_alkyl_tree(mol, root=claim.root, atoms=claim.atoms)
+    hit = None if tree is None else name_rooted_alkyl(tree)
+    if hit is None or not hit[0] or not hit[1]:
+        return None
+    en, zh, paren = hit
+    return SubstituentName(
+        claim=claim, en=en, zh=zh, requires_parentheses=paren, backend="rooted_tree",
+    )
+
+
 class RootedTreeBackend:
-    """Saturated-carbon rooted tree — filled in Task 5; stub returns None."""
+    """Pure saturated-carbon rooted tree (max_atoms=12, max_depth=3)."""
 
     name = "rooted_tree"
 
     def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None:
-        return None
+        return _rooted_tree_name(mol, claim)
 
 
 class RecursiveBackend:
