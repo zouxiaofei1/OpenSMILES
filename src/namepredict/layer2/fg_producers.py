@@ -48,6 +48,7 @@ from namepredict.layer2.urea import _urea_parent
 from namepredict.layer2.cyclo_polycarboxylic import _try_cycloalkane_polycarboxylic
 from namepredict.layer2.cyclo_carboxylic import _try_cycloalkane_exocyclic_fg
 from namepredict.layer2.sat_hetero_one import _try_sat_hetero_one_parent
+from namepredict.layer2.chromenone import _try_chromenone_parent
 
 
 def _try_acid(info: dict) -> dict | None:
@@ -79,7 +80,9 @@ def _try_diester(info: dict) -> dict | None:
 
 
 def _try_lactone_or(info: dict, open_fn) -> dict | None:
-    """Prefer sat_hetero lactone/lactam over open-chain ester/amide collapse."""
+    """Prefer fused/sat lactone/lactam over open-chain ester/amide collapse."""
+    if (c := _try_chromenone_parent(info)) is not None:
+        return c
     if (c := _try_sat_hetero_one_parent(info)) is not None:
         return c
     return _try_cyclo_exo_or(info, open_fn)

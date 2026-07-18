@@ -146,7 +146,7 @@ FUSED56_SPECS: tuple[ScaffoldSpec, ...] = (
     ),
 )
 
-# Quinoline / isoquinoline / naphthalene (10-atom path; L4 NAPH∪Q contract).
+# Quinoline / isoquinoline / naphthalene / chromen-2-one (10-atom path).
 NAPH_FAMILY_SPECS: tuple[ScaffoldSpec, ...] = (
     _naph("quinoline", "quinoline", "喹啉"),
     _naph("isoquinoline", "isoquinoline", "异喹啉"),
@@ -159,6 +159,8 @@ NAPH_FAMILY_SPECS: tuple[ScaffoldSpec, ...] = (
         "naphthalenecarboxylic", "naphthalenecarboxylic", "萘羧酸",
         ring="carbo", fg_rank=13,
     ),
+    # Coumarin lactone retained: EN chromen-2-one; ZH 香豆素 (ketone-class rank).
+    _naph("chromenone", "chromen-2-one", "香豆素", fg_rank=6),
 )
 
 # 6+6 benzodiazines: same 10-atom naph labels; not yet in L4 Q_KINDS.

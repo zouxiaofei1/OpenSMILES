@@ -22,6 +22,7 @@ class AlkylShape(Enum):
     C5_ASYMMETRIC_ROOT_BRANCH = auto()
     C5_BRANCH_NEAR_LEAF = auto()
     C5_DOUBLE_BRANCH_AFTER_ROOT = auto()
+    C5_PRENYL = auto()
     C1_THREE_HALOGEN_LEAVES = auto()
 
 
@@ -114,6 +115,7 @@ _SHAPE_MATCHERS = {
     AlkylShape.C4_TRIPLE_BRANCH_AT_ROOT: side_alkyl._is_tert_butyl,
     AlkylShape.C4_BRANCH_AFTER_ROOT: side_alkyl._is_isobutyl,
     AlkylShape.C5_ASYMMETRIC_ROOT_BRANCH: side_alkyl._is_2_methylbutan_2_yl,
+    AlkylShape.C5_PRENYL: side_alkyl._is_prenyl,
     AlkylShape.C5_BRANCH_NEAR_LEAF: side_alkyl._is_isopentyl,
     AlkylShape.C5_DOUBLE_BRANCH_AFTER_ROOT: side_alkyl._is_neopentyl,
     AlkylShape.C1_THREE_HALOGEN_LEAVES: side_alkyl._is_trifluoromethyl,

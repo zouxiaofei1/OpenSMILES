@@ -22,6 +22,7 @@ from namepredict.layer2.benzofuran import _try_benzofuran_parent
 from namepredict.layer2.benzothiazole import _try_benzothiazole_parent
 from namepredict.layer2.benzothiophene import _try_benzothiophene_parent
 from namepredict.layer2.benzoxazole import _try_benzoxazole_parent
+from namepredict.layer2.chromenone import _try_chromenone_parent
 from namepredict.layer2.heteroarene5 import (
     _try_diazine_parent,
     _try_hetero5_parent,
@@ -75,6 +76,7 @@ _RING_PRODUCERS = (
     _try_benzoquinone_parent,
     _try_ortho_benzoquinone_parent,
     _try_anthracene_parent,
+    _try_chromenone_parent,
     _try_quinazoline_parent,
     _try_quinoxaline_parent,
     _try_naphthalene_parent,

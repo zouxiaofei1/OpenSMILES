@@ -116,6 +116,7 @@ _BRANCH_CHECKS = (
     (side_facts.AlkylShape.C4_BRANCH_AFTER_ROOT, 4, "isobutyl", "异丁基"),
     (side_facts.AlkylShape.C4_BRANCH_AT_SECOND, 4, "sec-butyl", "仲丁基"),
     (side_facts.AlkylShape.C5_DOUBLE_BRANCH_AFTER_ROOT, 5, "neopentyl", "新戊基"),
+    (side_facts.AlkylShape.C5_PRENYL, 5, "3-methylbut-2-enyl", "3-甲基丁-2-烯基"),
     (side_facts.AlkylShape.C5_BRANCH_NEAR_LEAF, 5, "isopentyl", "异戊基"),
 )
 

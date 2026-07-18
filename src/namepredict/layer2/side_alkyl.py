@@ -311,6 +311,37 @@ def _is_isopentyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     return [start, mid, outer, *mids] if mids else None
 
 
+def _has_double(mol: Mol, a: int, b: int) -> bool:
+    bond = mol.GetBondBetweenAtoms(a, b)
+    return bond is not None and bond.GetBondType().name == "DOUBLE"
+
+
+def _one_pure_free(mol: Mol, idx: int, blocked: set[int]) -> int | None:
+    free = _free_c(mol, idx, blocked)
+    if len(free) != 1 or not _is_pure_alkyl_c(mol, free[0]):
+        return None
+    return free[0]
+
+
+def _prenyl_outer(mol: Mol, mid: int, start: int) -> int | None:
+    free = _free_c(mol, mid, {start})
+    if len(free) != 1 or not _has_double(mol, mid, free[0]):
+        return None
+    return free[0]
+
+
+def _is_prenyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    """Ring–CH2–CH=C(CH3)2 (3-methylbut-2-enyl)."""
+    if not _is_pure_alkyl_c(mol, start):
+        return None
+    mid = _one_pure_free(mol, start, chain)
+    outer = _prenyl_outer(mol, mid, start) if mid is not None else None
+    if mid is None or outer is None:
+        return None
+    mids = _two_methyls(mol, outer, {mid})
+    return [start, mid, outer, *mids] if mids else None
+
+
 def _probe_monocycloalkyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     from namepredict.layer2.side_cycloalkyl import _is_monocycloalkyl
     return _is_monocycloalkyl(mol, start, chain)
@@ -330,6 +361,7 @@ _SIDE_PROBES = (
     _is_isobutyl,
     _is_sec_butyl,
     _is_neopentyl,
+    _is_prenyl,
     _is_isopentyl,
     _is_trifluoromethyl,
     _probe_1_cycloalkylethyl,
