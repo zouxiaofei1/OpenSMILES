@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tee .superpowers/sdd/task-10-base.sha)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(python -m benchmarks.benchmark --data data/merged_benchmark.json)",
+      "Skill(loop)",
+      "Bash(unzip -p ketcher-core.zip dist/application/ketcher.d.ts)",
+      "Bash(tar -xOf ketcher-standalone-3.7.0.tgz package/dist/index.d.ts)",
+      "Bash(python -m benchmarks.benchmark --data data/merged_benchmark.json --fail-report tools/_fail_report.json)",
+      "Bash(python -c ' *)",
+      "Bash(uvicorn server.app:app *)",
+      "Bash(python *)",
+      "Bash(description)",
+      "Read(//c/Users/ABC/.agents/skills/subagent-driven-development/scripts/**)",
+      "Read(//c/Users/ABC/.agents/skills/subagent-driven-development/**)",
+      "Bash(PYTHONPATH=src python *)",
+      "Skill(claude-api)",
+      "Bash(git -C /e/dev/chem status --short)",
+      "Bash(git -C /e/dev/chem rev-parse --show-toplevel)",
+      "Bash(python -)",
+      "Bash(PYTHONIOENCODING=utf-8 python *)",
+      "Bash(git -C E:/dev/chem/.claude/worktrees/agent-a8dff0f4a7ffeacf2 diff --check)",
+      "Bash(git -C E:/dev/chem/.claude/worktrees/agent-a8dff0f4a7ffeacf2 diff --stat)",
+      "Bash(git -C E:/dev/chem/.claude/worktrees/agent-a8dff0f4a7ffeacf2 status --short)",
+      "Bash(git -C E:/dev/chem status --short)",
+      "Bash(git -C E:/dev/chem diff --stat)",
+      "Bash(git -C E:/dev/chem diff -- src/namepredict/layer3/n_block_extract.py src/namepredict/layer2/claimable_block.py tests/unit)"
+    ]
+  }
+}
