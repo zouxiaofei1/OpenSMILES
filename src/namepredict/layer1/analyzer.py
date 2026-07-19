@@ -15,7 +15,8 @@ _FG_BOOL_MORE_KEYS = (
     ("has_urea", "ureas"), ("has_hydrazine", "hydrazines"), ("has_guanidine", "guanidines"),
     ("has_sulfonamide", "sulfonamides"), ("has_sulfonate", "sulfonates"),
     ("has_sulfonyl_chloride", "sulfonyl_chlorides"),
-    ("has_sulfonic_acid", "sulfonic_acids"), ("has_boronic", "boronics"),
+    ("has_sulfonic_acid", "sulfonic_acids"), ("has_sulfone", "sulfones"),
+    ("has_boronic", "boronics"),
 )
 
 def _is_single_c_oh(atom) -> bool:
@@ -401,21 +402,6 @@ def _ring_meta(mol: Mol) -> dict:
 def _carbon_ids(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
 
-def _fg_core_lists(
-    hydroxyls: list[dict],
-    carboxyls: list[dict],
-    esters: list[dict],
-    amides: list[dict],
-    ketones: list[dict],
-) -> dict:
-    return {
-        "hydroxyls": hydroxyls,
-        "carboxyls": carboxyls,
-        "esters": esters,
-        "amides": amides,
-        "ketones": ketones,
-    }
-
 def _fg_more_lists(parts: dict) -> dict:
     keys = (
         "aldehydes", "amines", "nitriles", "double_bonds", "triple_bonds",
@@ -423,25 +409,22 @@ def _fg_more_lists(parts: dict) -> dict:
         "nitros", "phosphates", "phosphonics", "carbamates", "carbonates",
         "sulfoxides", "isocyanates", "isothiocyanates", "ureas", "hydrazines",
         "guanidines", "sulfonamides", "sulfonates", "sulfonyl_chlorides",
-        "sulfonic_acids", "boronics",
+        "sulfonic_acids", "sulfones", "boronics",
     )
     return {k: parts[k] for k in keys}
 def _fg_lists(parts: dict) -> dict:
-    core = _fg_core_lists(
-        parts["hydroxyls"], parts["carboxyls"], parts["esters"],
-        parts["amides"], parts["ketones"],
-    )
-    return {**core, **_fg_more_lists(parts)}
-def _fg_bools_core(lists: dict) -> dict:
     return {
+        "hydroxyls": parts["hydroxyls"], "carboxyls": parts["carboxyls"],
+        "esters": parts["esters"], "amides": parts["amides"],
+        "ketones": parts["ketones"], **_fg_more_lists(parts)}
+def _fg_bools(lists: dict) -> dict:
+    core = {
         "has_alcohol": bool(lists["hydroxyls"]), "has_acid": bool(lists["carboxyls"]),
         "has_ester": bool(lists["esters"]), "has_amide": bool(lists["amides"]),
         "has_ketone": bool(lists["ketones"]),
     }
-def _fg_bools_more(lists: dict) -> dict:
-    return {hk: bool(lists[lk]) for hk, lk in _FG_BOOL_MORE_KEYS}
-def _fg_bools(lists: dict) -> dict:
-    return {**_fg_bools_core(lists), **_fg_bools_more(lists)}
+    more = {hk: bool(lists[lk]) for hk, lk in _FG_BOOL_MORE_KEYS}
+    return {**core, **more}
 def _fg_parts_a(mol: Mol) -> dict:
     return {
         "hydroxyls": _hydroxyl_entries(mol), "carboxyls": _carboxyl_entries(mol),
@@ -468,11 +451,13 @@ def _p_fg_b2(mol: Mol) -> dict:
     from namepredict.layer1.boronic import boronic_entries
     from namepredict.layer1.sulfonamide import sulfonamide_entries
     from namepredict.layer1.sulfonate import sulfonate_entries
+    from namepredict.layer1.sulfone import sulfone_entries
     from namepredict.layer1.sulfonic_acid import sulfonic_acid_entries
     from namepredict.layer1.sulfonyl_chloride import sulfonyl_chloride_entries
     return {"sulfonamides": sulfonamide_entries(mol), "sulfonates": sulfonate_entries(mol),
             "sulfonyl_chlorides": sulfonyl_chloride_entries(mol),
-            "sulfonic_acids": sulfonic_acid_entries(mol), "boronics": boronic_entries(mol)}
+            "sulfonic_acids": sulfonic_acid_entries(mol), "sulfones": sulfone_entries(mol),
+            "boronics": boronic_entries(mol)}
 def _p_fg_b(mol: Mol) -> dict:
     return {**_p_fg_b1(mol), **_p_fg_b2(mol)}
 def _p_fg_parts(mol: Mol) -> dict:

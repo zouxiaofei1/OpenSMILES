@@ -41,6 +41,7 @@ from namepredict.layer2.parent_selector import (
 from namepredict.layer2.phosphate import _phosphate_parent, _phosphonic_parent
 from namepredict.layer2.sulfonamide import _sulfonamide_parent
 from namepredict.layer2.sulfonate import _sulfonate_parent
+from namepredict.layer2.sulfone import _sulfone_parent
 from namepredict.layer2.sulfonic_acid import _sulfonic_acid_parent
 from namepredict.layer2.sulfonyl_chloride import _sulfonyl_chloride_parent
 from namepredict.layer2.sulfoxide import _sulfoxide_parent
@@ -187,6 +188,12 @@ def _try_benzenediamine(info: dict) -> dict | None:
     return None
 
 
+def _try_sulfone(info: dict) -> dict | None:
+    if info.get("has_sulfone") and info.get("sulfones"):
+        return _sulfone_parent(info)
+    return None
+
+
 # Order = historical candidates._FG_TRY; do not reorder without dual check.
 _FG_PRODUCERS = (
     _try_cycloalkane_polycarboxylic,
@@ -214,6 +221,7 @@ _FG_PRODUCERS = (
     _ether_parent,
     _sulfide_parent,
     _sulfoxide_parent,
+    _try_sulfone,
     _try_isocyanate,
     _try_isothiocyanate,
     _sulfonamide_parent,

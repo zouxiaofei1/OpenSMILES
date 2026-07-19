@@ -62,24 +62,49 @@ def _s_side(mol, e: dict) -> dict | None:
     return {"kind": "alkyl", "n": n} if 1 <= n <= 4 else None
 
 
+def _n_c_side_alkyl(mol, n_idx: int, c: int) -> dict | None:
+    if mol.GetAtomWithIdx(c).IsInRing() or mol.GetAtomWithIdx(c).GetIsAromatic():
+        return None
+    if not _arm_ok(mol, c, n_idx):
+        return None
+    n = _arm_n(mol, c, n_idx)
+    return {"kind": "alkyl", "n": n} if 1 <= n <= 4 else None
+
+
 def _n_c_side(mol, n_idx: int, c: int) -> dict | None:
     ar = _aryl_of(mol, c, n_idx)
     if ar is not None:
         return {"kind": "aryl", **ar}
     cy = _cyclo_of(mol, c, n_idx)
-    return {"kind": "cyclo", **cy} if cy is not None else None
+    if cy is not None:
+        return {"kind": "cyclo", **cy}
+    return _n_c_side_alkyl(mol, n_idx, c)
+
+
+def _n_side_dialkyl(mol, n_idx: int, cs: list) -> dict | None:
+    s1 = _n_c_side(mol, n_idx, cs[0])
+    s2 = _n_c_side(mol, n_idx, cs[1])
+    if s1 and s2 and s1.get("kind") == "alkyl" and s2.get("kind") == "alkyl":
+        return {"kind": "n_n_dialkyl", "ns": sorted([s1["n"], s2["n"]], reverse=True)}
+    return None
 
 
 def _n_side(mol, e: dict) -> dict | None:
     n_idx, cs = e["n_idx"], list(e.get("n_c_idxs") or [])
     if not cs:
         return {"kind": "h"}
-    return _n_c_side(mol, n_idx, cs[0]) if len(cs) == 1 else None
+    if len(cs) == 1:
+        return _n_c_side(mol, n_idx, cs[0])
+    if len(cs) == 2:
+        return _n_side_dialkyl(mol, n_idx, cs)
+    return None
 
 
 _MODE_MAP = {
     ("alkyl", "h"): "alkyl", ("aryl", "h"): "aryl",
     ("alkyl", "aryl"): "n_aryl_alkyl", ("aryl", "cyclo"): "n_cyclo_aryl",
+    ("alkyl", "alkyl"): "n_alkyl",
+    ("alkyl", "n_n_dialkyl"): "n_n_dialkyl",
 }
 
 
