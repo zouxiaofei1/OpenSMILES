@@ -214,8 +214,7 @@
 [#4293255][IUPAC P-63.1.4 / P-62.2.1] 稠环芳烃FG母体基础设施：_try_arene_fg_parent数据驱动(OH/NH2 on fused rings)，_FG_SPEC/_SCAFFOLD_DETECT/_ARENE_FG_KINDS三表解耦；naphthalenol/naphthalenediol/naphthalenamine/quinolinediol四个新kind贯通L2-L5 [+17 tests, dual 15.3%持平, 0 REGRESS]
 [#05a2556][IUPAC P-65.3] 磺酰胺/砜主官能团基础设施：N-alkyl/N,N-dialkyl sulfonamide L1放宽N上碳数+L2 mode分类+L5命名组装；sulfone新FG(rank=6) L1检测→L2母体→L5 dialkyl sulfone/二烷基砜 [+20 tests, dual 15.3%持平, 0 REGRESS]
 [#c040df0][IUPAC P-23] 桥环母体von Baeyer Round1：L1桥环拓扑检测(区分fused/spiro/bridged)+L2_bridged_parent识别饱和全碳双环+L4 von Baeyer编号(桥头→最长桥→次长)+L5 bicyclo[x.y.z]alkane/双环[x.y.z]烷 [+18 tests, dual 15.3%持平, 0 REGRESS]
+[#1aa5e16][IUPAC P-65.6] 二酯母体原子所有权：修复二酯烷氧基臂未归母体导致的幻影取代基前缀（methoxy/ethoxy）；单/二酯 dispatch 重构（_single_ester_fg_atoms/_diester_fg_atoms） [+2 tests, dual 15.3%→15.4%, 0 REGRESS]
+[#fbc9fe6][IUPAC P-66.6.1/P-66.5.1] 扩展arene_fg_parent CHO/CN：数据驱动引擎泛化（extra_atoms_fn+self_allow字段）；萘/喹啉 carbaldehyde+carbonitrile四新kind贯通L2/L4/L5；OH/NH2既有行为零破坏 [+0 REGRESS, dual 15.4%持平]
+[#3ec3b98][IUPAC P-31.1/P-63.1.1] 不饱和多元醇官能母体：alkenediol/alkynediol/polyenediol/alkenetriol L2母体+L5组装；取代基式(dihydroxy)→官能母体(diol)；不饱和度从丢失→恢复 [+4 IMPROVE, dual 15.4%持平, 0 REGRESS]
 ## 其他
-Round 2 并行三选题(架构轮)：选题1稠环FG→选题3磺酰胺/砜→选题4桥环。均为infra轮(建管道未通水)，55 tests/0 REGRESS。
-稠环FG后续：扩展_SCAFFOLD_DETECT(indole/benzofuran等)+_FG_SPEC(CHO/CN/COOH)+清理legacy~2352行。
-磺酰胺后续：功能类命名(X-sulfonyl-Y)+芳基砜；benchmark无简单磺酰胺SMILES故无增益。
-桥环后续：杂原子桥(aza/oxa)+不饱和+FG整合；benchmark金标名为空无法计分。
