@@ -116,12 +116,15 @@ def _sulfonic_acid_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Alcohol/phenol: attachment carbon + OH oxygen."""
-    c_idx = parent.get("oh_c_idx")
-    if c_idx is None:
+    """Alcohol/diol/triol: attachment carbon(s) + OH oxygen(s)."""
+    c_idxs = parent.get("oh_c_idxs") or ([parent.get("oh_c_idx")] if parent.get("oh_c_idx") is not None else [])
+    if not c_idxs:
         return set()
-    out = {int(c_idx)}
-    return _add_opt(out, _single_o_idx(mol, int(c_idx)))
+    out: set[int] = set()
+    for c in c_idxs:
+        out.add(int(c))
+        _add_opt(out, _single_o_idx(mol, int(c)))
+    return out
 
 
 def _ketone_fg_atoms(mol: Mol, parent: dict) -> set[int]:

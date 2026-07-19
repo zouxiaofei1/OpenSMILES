@@ -56,14 +56,14 @@ def _cover_parent(info: dict, ekey: str, n: int, kind: str, key: str) -> dict:
     atoms = _aliph_c_idxs(info, ekey, n) or _c_idxs(info.get(ekey) or [], n) or []
     chain = _best_cover_pair(info["mol"], atoms) or _longest_chain(info["mol"])
     return _parent_dict(chain, kind, **{key: atoms})
-def _is_simple_alkanediol(info: dict) -> bool:
-    return _is_simple_n(info, _DIOL_BAD, "hydroxyls", 2)
-def _diol_parent(info: dict) -> dict:
-    return _cover_parent(info, "hydroxyls", 2, "diol", "oh_c_idxs")
-def _is_simple_alkanetriol(info: dict) -> bool:
-    return _is_simple_n(info, _DIOL_BAD, "hydroxyls", 3)
-def _triol_parent(info: dict) -> dict:
-    return _cover_parent(info, "hydroxyls", 3, "triol", "oh_c_idxs")
+def _polyol_kind(n: int) -> str:
+    return {1: "alcohol", 2: "diol", 3: "triol"}.get(n, "polyol")
+def _polyol_parent(info: dict, n: int) -> dict | None:
+    if not _is_simple_n(info, _DIOL_BAD, "hydroxyls", n):
+        return None
+    p = _cover_parent(info, "hydroxyls", n, _polyol_kind(n), "oh_c_idxs")
+    p["n_oh"] = n
+    return p
 def _is_simple_alkanedioic(info: dict) -> bool:
     return _is_simple_n(info, _DIACID_BAD, "carboxyls", 2)
 def _diacid_parent(info: dict) -> dict:
@@ -98,12 +98,13 @@ def _chain_alcohol_parent(info: dict) -> dict | None:
     aliph = _aliphatic_entries(info, "hydroxyls")
     if len(aliph) != 1 or _oh_c_in_ring(info, aliph[0]["c_idx"]):
         return None
-    return _parent_dict(
-        _chain_through(info, aliph[0]["c_idx"]), "alcohol", oh_c_idx=aliph[0]["c_idx"],
-    )
+    c = aliph[0]["c_idx"]
+    return _parent_dict(_chain_through(info, c), "alcohol", oh_c_idx=c, oh_c_idxs=[c], n_oh=1)
 def _polyol_or_chain_alcohol(info: dict) -> dict | None:
-    if _is_simple_alkanetriol(info): return _triol_parent(info)
-    if _is_simple_alkanediol(info): return _diol_parent(info)
+    for n in (3, 2):
+        p = _polyol_parent(info, n)
+        if p is not None:
+            return p
     return _chain_alcohol_parent(info)
 def _chain_or_unsat_alcohol(info: dict) -> dict | None:
     from namepredict.layer2.alkynoic import chain_or_unsat_alcohol as _c

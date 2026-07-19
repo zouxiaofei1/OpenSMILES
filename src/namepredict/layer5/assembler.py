@@ -104,6 +104,8 @@ def _poly_fg_names(
 def _diamine_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
     return _poly_fg_names(n, locs, "diamine", "二胺", 2)
 def _polyol_names(n: int, locs: list[int] | None, kind: str) -> tuple[str, str] | None:
+    if kind == "alcohol":
+        return _alcohol_names(n, locs[0] if locs else None, False)
     m = {"diol": ("diol", "二醇", 2), "triol": ("triol", "三醇", 3)}.get(kind)
     return _poly_fg_names(n, locs, *m) if m else None
 def _amine_names(n: int, am_locant: int | None, omit: bool) -> tuple[str, str] | None:

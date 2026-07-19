@@ -48,6 +48,9 @@ def _orient_by_single_fg(chain: list[int], parent: dict, substituents: list, key
     return base
 def _orient_alcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     if parent.get("double_bonds"): return orient_alkenol(chain, parent, substituents, _prefer_chain)
+    cs = parent.get("oh_c_idxs")
+    if cs is not None:
+        return _orient_pair(chain, parent, "oh_c_idxs", substituents)
     return _orient_by_single_fg(chain, parent, substituents, "oh_c_idx")
 def _orient_thiol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_by_single_fg(chain, parent, substituents, "sh_c_idx")
@@ -384,7 +387,7 @@ def _pair_locants(oriented: dict, kinds, key: str) -> list[int] | None:
     locs = _pair_locs_on(oriented.get("chain") or [], oriented.get(key))
     return list(locs) if locs else None
 def _oh_locants(oriented: dict) -> list[int] | None:
-    return _pair_locants(oriented, ("diol", "triol", "benzenediol", "cycloalkanediol"), "oh_c_idxs")
+    return _pair_locants(oriented, ("alcohol", "diol", "triol", "benzenediol", "cycloalkanediol"), "oh_c_idxs")
 def _amine_pair_locants(oriented: dict) -> list[int] | None:
     return _pair_locants(oriented, ("diamine", "benzenediamine"), "amine_c_idxs")
 def _amine_locant(oriented: dict) -> int | None:
