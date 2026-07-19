@@ -206,4 +206,5 @@
 [#3cb5513][IUPAC P-66.6.1 / P-31.1 / P-93.4] 开链多烯醛 polyalkenal：L5 消费 ene_locants 组装 …dienal/…二烯醛 [+6 cases test_polyalkenal, dual 16.0%(650)→16.0%(651), REGRESS=0 IMPROVE=1 citral]
 [#779f5b4][Universal Claimable-Block] 共享 typed 路径已主线：owned_atoms 终态 + ClaimedBlock + CoverageLedger 门控 + SubstituentNamer(retained→rooted_tree→recursive) + 候选重试；类级红测 N-cycloheptyl/dimethylphenyl/2-methoxybutane/2-(2-methylbutyl)hexanoic/(2-methylbutyl)benzene 全绿。fused-scaffold 递归附录仍为可选下游。systematic_alkyl/claimable_side 生产路径已清零；_SIDE_PROBES 改名 _TOPOLOGY_SIDE_PROBES（仅拓扑门控，非命名 mode）。
 [#acbe92a][IUPAC P-63.1.1 / P-29.3] 保留前缀 methylsulfanyl/甲硫基 L3 RetainedBackend 叶节点 [+4 tests, dual 15.0%持平, 0 REGRESS]
+[#2f1a669][IUPAC P-65.3.2.5] sulfo/磺基取代基前缀：L3 _try_registry_leaf通用叶节点匹配+L2 sulfonic_acid FG原子所有权，sulfo校验终端氧+1OH排除磺酸酯/磺酸根 [+3 tests, dual 14.7%→14.8%, +5 EN, -5 fails]
 ## 其他
