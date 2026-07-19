@@ -281,6 +281,11 @@ def _load_cyclo_rings() -> None:
     _add("cyclopolyene", ring="carbo", n=1)
 
 
+def _load_bridged() -> None:
+    """Bridged (von Baeyer) bicyclic parent kind."""
+    _add("bridged", ring="carbo", n=2)
+
+
 def _load_sat_hetero_repl() -> None:
     # stems filled at runtime on parent (stem_en/stem_zh); placeholders for lint
     _add(
@@ -314,6 +319,7 @@ def _bootstrap() -> None:
     _load_sat_one()
     _load_misc_ring_fg()
     _load_cyclo_rings()
+    _load_bridged()
     _load_sat_hetero_repl()
     _load_from_scaffold_specs()  # last: Spec is stem authority
 

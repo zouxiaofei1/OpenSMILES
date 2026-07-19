@@ -509,9 +509,17 @@ def _spiro_names(n: int, numbered: dict) -> tuple[str, str] | None:
     if stem and alk:
         return f"{stem[0]}{alk[0]}", f"{stem[1]}{alk[1]}"
     return None
+def _bridged_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """bicyclo[2.2.1]heptane / 双环[2.2.1]庚烷."""
+    stem = _parent_stem_names(numbered)
+    alk = _alkane_names(n)
+    if stem and alk:
+        return f"{stem[0]}{alk[0]}", f"{stem[1]}{alk[1]}"
+    return None
 def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "cycloalkane": return _cycloalkane_names(n)
     if kind == "benzene": return benzene_parent_names(numbered)
+    if kind == "bridged": return _bridged_names(n, numbered)
     if kind == "spiro": return _spiro_names(n, numbered)
     if kind == "benzoate": return benzoate_parent_names(numbered, _build_prefix)
     if kind in _H5COOH_KINDS: return hetero5carboxylic_names(numbered)
