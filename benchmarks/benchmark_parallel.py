@@ -14,11 +14,12 @@ except Exception:
 
 import argparse
 import json
+import multiprocessing as mp
 import os
 import sys
 import time
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +68,61 @@ def _score_row(row: dict[str, Any]) -> tuple[dict[str, Any], str, str, dict[str,
         pred_en, pred_zh = "", ""
     score = score_record(pred_en, pred_zh, row)
     return score, pred_en, pred_zh, row
+
+
+def _score_row_process(row: dict[str, Any], conn, score_func) -> None:
+    """Run one row in an isolated process so a timeout can terminate it."""
+    try:
+        if score_func is _score_row:
+            _init_worker()
+        conn.send(("ready", None))
+        conn.send(("result", score_func(row)))
+    except BaseException as exc:
+        conn.send(("error", f"{type(exc).__name__}: {exc}"))
+    finally:
+        conn.close()
+
+
+def _run_row_with_timeout(
+    index: int,
+    row: dict[str, Any],
+    timeout: float,
+    *,
+    score_func=_score_row,
+) -> tuple[tuple[dict[str, Any], str, str, dict[str, Any]], int | None]:
+    """Score one row in a killable process and report its index on timeout."""
+    parent_conn, child_conn = mp.Pipe(duplex=False)
+    process = mp.Process(target=_score_row_process, args=(row, child_conn, score_func))
+    process.start()
+    child_conn.close()
+    timeout_index: int | None = None
+    try:
+        if not parent_conn.poll(30):
+            print(f"startup timeout index={index}", file=sys.stderr, flush=True)
+        else:
+            kind, payload = parent_conn.recv()
+            if kind == "ready" and parent_conn.poll(timeout):
+                kind, payload = parent_conn.recv()
+            elif kind == "ready":
+                kind = "timeout"
+            if kind == "result":
+                process.join(timeout=1)
+                return payload, None
+            if kind == "error":
+                print(f"worker error index={index} error={payload}", file=sys.stderr, flush=True)
+            elif kind == "timeout":
+                timeout_index = index
+        if process.is_alive():
+            process.terminate()
+        process.join()
+        pred_en = pred_zh = ""
+        item = (score_record(pred_en, pred_zh, row), pred_en, pred_zh, row)
+        return item, timeout_index
+    finally:
+        parent_conn.close()
+        if process.is_alive():
+            process.terminate()
+            process.join()
 
 
 def _default_workers() -> int:
@@ -129,22 +185,39 @@ def _collect_with_progress(iterable, total: int, t0: float | None = None):
     return results
 
 
+def _print_timeouts(indexes: list[int], timeout: float) -> None:
+    if not indexes:
+        return
+    joined = ",".join(str(index) for index in indexes)
+    print(f"timeout index={joined} after={timeout:g}s", file=sys.stderr, flush=True)
+
+
 def _pool_results_with_progress(
-    pool: ProcessPoolExecutor,
     rows: list[dict[str, Any]],
+    workers: int,
+    timeout: float,
     t0: float,
 ) -> list[tuple[dict[str, Any], str, str, dict[str, Any]]]:
-    """Submit all rows; collect via as_completed and print every 100."""
+    """Run killable row processes concurrently and print progress."""
     total = len(rows)
-    futures = [pool.submit(_score_row, row) for row in rows]
+    indexed_rows = list(enumerate(rows))
     results: list[tuple[dict[str, Any], str, str, dict[str, Any]]] = []
     bucket = _empty_bucket()
-    for i, fut in enumerate(as_completed(futures), 1):
-        item = fut.result()
-        results.append(item)
-        _tally(bucket, item[0])
-        if i % _PROGRESS_EVERY == 0 or i == total:
-            _print_progress(i, total, t0, bucket)
+    timeout_indexes: list[int] = []
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [
+            pool.submit(_run_row_with_timeout, index, row, timeout)
+            for index, row in indexed_rows
+        ]
+        for i, fut in enumerate(as_completed(futures), 1):
+            item, timeout_index = fut.result()
+            if timeout_index is not None:
+                timeout_indexes.append(timeout_index)
+            results.append(item)
+            _tally(bucket, item[0])
+            if i % _PROGRESS_EVERY == 0 or i == total:
+                _print_progress(i, total, t0, bucket)
+    _print_timeouts(timeout_indexes, timeout)
     return results
 
 
@@ -171,6 +244,7 @@ def run_benchmark_parallel(
     data_path: str | Path,
     limit: int | None = None,
     workers: int | None = None,
+    timeout: float = 1.0,
 ) -> dict[str, Any]:
     """Run namer on gold JSON with a process pool; same report shape as sequential."""
     rows = _load_rows(Path(data_path), limit)
@@ -178,18 +252,10 @@ def run_benchmark_parallel(
     n_workers = max(1, workers if workers is not None else _default_workers())
     t0 = time.perf_counter()
     print(f"benchmark start: n={n_rows} workers={n_workers}", flush=True)
-    if n_workers == 1 or n_rows <= 1:
-        # Sequential path reuses one process (no pool overhead).
-        _init_worker()
-        results = _collect_with_progress((_score_row(r) for r in rows), n_rows, t0)
-        return _aggregate(results)
+    if n_rows == 0:
+        return _aggregate([])
 
-    with ProcessPoolExecutor(
-        max_workers=n_workers,
-        initializer=_init_worker,
-    ) as pool:
-        # ProcessPoolExecutor has no imap; use submit + as_completed for progress.
-        results = _pool_results_with_progress(pool, rows, t0)
+    results = _pool_results_with_progress(rows, n_workers, timeout, t0)
     return _aggregate(results)
 
 
@@ -205,6 +271,12 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help=f"Process pool size (default: cpu_count-1 = {_default_workers()})",
+    )
+    p.add_argument(
+        "--timeout",
+        type=float,
+        default=1.0,
+        help="Per-row hard timeout in seconds (default: 1.0)",
     )
     p.add_argument(
         "--time",
@@ -233,6 +305,7 @@ def main(argv: list[str] | None = None) -> None:
             args.data,
             limit=args.limit,
             workers=args.workers,
+            timeout=args.timeout,
         )
     except FileNotFoundError as exc:
         print(f"error: {exc}", file=sys.stderr)

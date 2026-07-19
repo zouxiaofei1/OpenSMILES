@@ -4,16 +4,17 @@
 **方法约束**: 不得使用深度学习模型，不得全部使用缓存系统，只能缓存俗名和例外，目前最多缓存**100**个
 
 ##特别注意
-1.data\merged_benchmark.json 是**Benchmark数据库**
-2.Benchmark脚本运行方式:python -m benchmarks.benchmark_parallel --data data/merged_benchmark.json --time
+1.data\merged_benchmark_shuffled.json 是**Benchmark数据库**
+2.Benchmark脚本运行方式:python -m benchmarks.benchmark_parallel --data data/merged_benchmark_shuffled.json --time  --timeout 1 
+2.1 **现在程序较慢，不推荐一次任务中多次运行完整benchmark，可加 --limit 500抽样，或单独运行修改的部分**
 3.严格按照IUPAC规则编写，IUPAC原文完整文档 docs\iupac\
 4.临时文件写在chem\tools
-5.每一次工作都必须运行**benchmark**
+5.每一次任务都必须运行**benchmark**
 6.常见失败模式:空返回,结构错误，母体选错，侧链选错，编号错，缺功能
 7.禁止修改 benchmark和其数据库。命令中不应包含>15s的sleep
 8.subagent有时会出问题。subagent不应更换模型。可以多尝试几次，不应自己编写代码
-9.pytest应多线程运行
-10.本项目虽然存在大量的benchmark步骤，但**完全允许准确率回退或持平**.本项目不欢迎导致准确率增加，但违反代码和工作流规范的更改.
+9.pytest应多线程运行pytest -n auto
+10.本项目虽然存在benchmark步骤，但**完全允许准确率回退或持平**.本项目不欢迎导致准确率增加，但违反代码和工作流规范的更改.
 11.不允许说下一刀，说下一轮
 12.benchmark使用english_name和chinese_name字段
 15.**文件必须**存在src\namepredict\layer0-layer5某个文件夹里，且代码长度不超过1000行
@@ -30,7 +31,7 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 
 #工作步骤：
 0. 读取 workstate.md，了解当前进度和计划。
-0.1 workstate.md中## 其他 行的行号如果尾数为3或8，当前工作轮次为架构改进轮。使用 skills/analyzing-architecture-risk 分析项目风险，选择一重要的。跳到3.
+0.1 workstate.md中## 其他 行的行号如果尾数为3或8偶数，当前工作轮次为架构改进轮；可以使用 skills/analyzing-architecture-risk 分析项目风险；如果程序速度较慢，也可以优化程序性能。跳到3.
 1. 运行**benchmark**,记录并报告当前分数，格式**中英文双重准确:[ ]%**
 2. 如果workstate的其他中没有选题，使用错误驱动方式进行选题。否则进行工作。
 选题流程:

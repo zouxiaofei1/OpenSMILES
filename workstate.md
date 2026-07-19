@@ -1,5 +1,4 @@
 ##日志
-[#779f5b4][Universal Claimable-Block] 共享 typed 路径已主线：owned_atoms 终态 + ClaimedBlock + CoverageLedger 门控 + SubstituentNamer(retained→rooted_tree→recursive) + 候选重试；类级红测 N-cycloheptyl/dimethylphenyl/2-methoxybutane/2-(2-methylbutyl)hexanoic/(2-methylbutyl)benzene 全绿。fused-scaffold 递归附录仍为可选下游。systematic_alkyl/claimable_side 生产路径已清零；_SIDE_PROBES 改名 _TOPOLOGY_SIDE_PROBES（仅拓扑门控，非命名 mode）。
 [#243ece8][IUPAC P-15.1.7 / 中文位次格式] 一元醇中文位次补连字符(丙-1-醇) [+3 zh dual, benchmark dual 0.3%→0.4%]
 [#143333f][IUPAC P-44 母体链选择] 醇母体最长链穿过OH碳(propan-2-ol/butan-2-ol) [+5 dual, benchmark dual 0.4%→0.5%]
 [#3352d9a][IUPAC P-29.3.1] 通用直链单烷基C1–C4侧链前缀贯通L3/L4/L5 [+10 tests, dual 0.5%→0.9%]
@@ -205,4 +204,5 @@
 [#296f966][IUPAC P-66.1.1 / P-65.1.1.1] 简单 benzamide 保留母体（环前缀+N-C1–C4/N-phenyl；堵 formamide 坍缩） [+16 tests, dual 15.2%持平, REGRESS=0]
 [#216e792][IUPAC P-25 / P-22.2.1 / P-65.6.3 / P-29.3] retained chromen-2-one + prenyl side [+11 tests, dual 15.9%→16.0%]
 [#3cb5513][IUPAC P-66.6.1 / P-31.1 / P-93.4] 开链多烯醛 polyalkenal：L5 消费 ene_locants 组装 …dienal/…二烯醛 [+6 cases test_polyalkenal, dual 16.0%(650)→16.0%(651), REGRESS=0 IMPROVE=1 citral]
+[#779f5b4][Universal Claimable-Block] 共享 typed 路径已主线：owned_atoms 终态 + ClaimedBlock + CoverageLedger 门控 + SubstituentNamer(retained→rooted_tree→recursive) + 候选重试；类级红测 N-cycloheptyl/dimethylphenyl/2-methoxybutane/2-(2-methylbutyl)hexanoic/(2-methylbutyl)benzene 全绿。fused-scaffold 递归附录仍为可选下游。systematic_alkyl/claimable_side 生产路径已清零；_SIDE_PROBES 改名 _TOPOLOGY_SIDE_PROBES（仅拓扑门控，非命名 mode）。
 ## 其他

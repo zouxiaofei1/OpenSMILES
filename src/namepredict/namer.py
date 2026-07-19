@@ -108,6 +108,14 @@ def _assemble_candidate(parent, subst, *, depth: int, t0: float) -> NameResult |
     return _ok_result(numbered, depth=depth, t0=t0)
 
 
+def _prepare_candidate(info: dict, parent: dict) -> tuple[dict, list[dict], bool]:
+    mol = info["mol"]
+    parent = finalize_parent_ownership(parent, mol)
+    subst = extract_substituents(info, parent)
+    complete = _ledger_complete(mol, parent["owned_atoms"], subst)
+    return parent, subst, complete
+
+
 def try_candidate(
     info: dict,
     parent: dict,
@@ -118,10 +126,7 @@ def try_candidate(
 ) -> NameResult | None:
     """Finalize ownership, extract, optionally require complete ledger, then assemble."""
     t0 = t0 if t0 is not None else time.perf_counter()
-    mol = info["mol"]
-    parent = finalize_parent_ownership(parent, mol)
-    subst = extract_substituents(info, parent)
-    complete = _ledger_complete(mol, parent["owned_atoms"], subst)
+    parent, subst, complete = _prepare_candidate(info, parent)
     if require_complete and not complete:
         return None
     hit = _assemble_candidate(parent, subst, depth=depth, t0=t0)
@@ -138,19 +143,25 @@ def _run_candidates(info: dict, *, depth: int, t0: float) -> NameResult:
     partial assembly is available from any ranked candidate.
     """
     attempts: list[dict] = []
+    prepared: list[tuple[dict, list[dict], bool, NameResult | None]] = []
     cands = list(iter_parent_candidates(info)) or [select_parent(info)]
-    # Pass 1: complete ledger only (high quality).
-    for parent in cands:
-        hit = try_candidate(info, parent, depth=depth, t0=t0, require_complete=True)
+    # Pass 1: complete ledger only (high quality), retaining work for fallback.
+    for candidate in cands:
+        parent, subst, complete = _prepare_candidate(info, candidate)
+        hit = _assemble_candidate(parent, subst, depth=depth, t0=t0) if complete else None
+        prepared.append((parent, subst, complete, hit))
         if hit is not None and hit.success and hit.en:
+            hit.meta = {**(hit.meta or {}), "coverage_complete": True}
             return hit
         attempts.append({"kind": parent.get("kind"), "reason": "incomplete_or_unnamed"})
-    # Pass 2: no coverage gate — best-effort non-empty assembly (kills empty path).
-    for parent in cands:
-        hit = try_candidate(info, parent, depth=depth, t0=t0, require_complete=False)
+    # Pass 2: assemble the retained extraction without repeating L3 work.
+    for parent, subst, complete, hit in prepared:
+        if not complete:
+            hit = _assemble_candidate(parent, subst, depth=depth, t0=t0)
         if hit is not None and hit.success and hit.en:
             hit.meta = {
                 **(hit.meta or {}),
+                "coverage_complete": complete,
                 "fallback": "no_coverage_gate",
                 "attempts": attempts,
             }
