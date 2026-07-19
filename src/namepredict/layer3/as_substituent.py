@@ -10,9 +10,18 @@ from namepredict.layer3.yl_form import yl_form
 
 def _locant_from_result(result, attach_new: int) -> int | None:
     chain = (result.meta or {}).get("parent_chain") or []
-    if attach_new not in chain:
+    if attach_new in chain:
+        return chain.index(attach_new) + 1
+    return None
+
+
+def _locant_via_hetero(mol, attach_new: int, chain: list[int]) -> int | None:
+    """When attach is a heteroatom (O/S/N) not in chain, use its chain-neighbor."""
+    a = mol.GetAtomWithIdx(attach_new)
+    if a.GetAtomicNum() not in (8, 16, 7):
         return None
-    return chain.index(attach_new) + 1
+    c_nbrs = [n.GetIdx() for n in a.GetNeighbors() if n.GetIdx() in chain]
+    return chain.index(c_nbrs[0]) + 1 if len(c_nbrs) == 1 else None
 
 
 def _yl_from_sub(sub, *, depth: int, name_mode: str = "general") -> tuple[str, str, bool] | None:
@@ -22,6 +31,8 @@ def _yl_from_sub(sub, *, depth: int, name_mode: str = "general") -> tuple[str, s
     if not result.success or not result.en:
         return None
     loc = _locant_from_result(result, sub.attach_new)
+    if loc is None:
+        loc = _locant_via_hetero(sub.mol, sub.attach_new, (result.meta or {}).get("parent_chain") or [])
     return None if loc is None else yl_form(result.en, result.zh, loc)
 
 

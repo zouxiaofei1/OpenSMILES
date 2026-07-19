@@ -207,4 +207,4 @@
 [#779f5b4][Universal Claimable-Block] 共享 typed 路径已主线：owned_atoms 终态 + ClaimedBlock + CoverageLedger 门控 + SubstituentNamer(retained→rooted_tree→recursive) + 候选重试；类级红测 N-cycloheptyl/dimethylphenyl/2-methoxybutane/2-(2-methylbutyl)hexanoic/(2-methylbutyl)benzene 全绿。fused-scaffold 递归附录仍为可选下游。systematic_alkyl/claimable_side 生产路径已清零；_SIDE_PROBES 改名 _TOPOLOGY_SIDE_PROBES（仅拓扑门控，非命名 mode）。
 [#acbe92a][IUPAC P-63.1.1 / P-29.3] 保留前缀 methylsulfanyl/甲硫基 L3 RetainedBackend 叶节点 [+4 tests, dual 15.0%持平, 0 REGRESS]
 ## 其他
-CH3S- (methylsulfanyl) 并入 L3 RetainedBackend，镜像 methoxy 模式。选题 CSCCCN: propan-1-amine→3-methylsulfanylpropan-1-amine。
+选题 yl_form P-63.2.2/P-63.2.1/P-62.2: 修递归管道最终步 yl_form(FG后缀→前缀)，使 alcohol→alkoxy/thiol→alkylsulfanyl/amine→alkylamino。修一处通全部O/S/N链接取代基(直链/支链)。删 _try_methoxy/_try_methylsulfanyl 硬编码特判。
