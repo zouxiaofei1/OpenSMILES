@@ -208,5 +208,7 @@
 [#acbe92a][IUPAC P-63.1.1 / P-29.3] 保留前缀 methylsulfanyl/甲硫基 L3 RetainedBackend 叶节点 [+4 tests, dual 15.0%持平, 0 REGRESS]
 [#2f1a669][IUPAC P-65.3.2.5] sulfo/磺基取代基前缀：L3 _try_registry_leaf通用叶节点匹配+L2 sulfonic_acid FG原子所有权，sulfo校验终端氧+1OH排除磺酸酯/磺酸根 [+3 tests, dual 14.7%→14.8%, +5 EN, -5 fails]
 [#9d8e028][IUPAC P-29.3.6 / P-14.5 / P-65.3] Round 1 并行三选题: (A)复合氨基前缀括号yl_form (B)磺酰基/亚磺酰基系列methylsulfinyl·methylsulfonyl·tosyl·triflyl L3 explicit try functions (C)指示氢字母序_strip_lead_locant剥除1H-/2H-/3H- [+13 tests, dual 14.8%→15.0%, +9 EN, -9 fails, 0 REGRESS]
-[#pending][IUPAC P-66.1.1.1.1] 丙烯酰胺保留名：alkenamide_names() n=3+ene_locant=2时输出acrylamide/丙烯酰胺(非pin模式)；name_mode贯通_ok_result→_assemble_candidate管线；pin模式保留prop-2-enamide系统名 [+1 test, dual 15.0%持平, +1 EN, -0 fails, 0 REGRESS]
+[#fcecb3f][架构 P-63.1.1] polyol(n=1,2,3)统一基础设施：alcohol/diol/triol→_polyol_kind(n)+_polyol_parent(info,n)泛化为二函数；_chain_alcohol_parent补齐oh_c_idxs/n_oh字段；修复_hydroxy_fg_atoms多OH原子所有权 [+11 dual, 15.0%→15.3%, -11 fails, 0 REGRESS]
+[#e6bcc52][IUPAC P-24.2.1] Spiro基础设施Round1：L1_merge_spiro合并共享1原子单环系统+L2_try_spiro_parent识别饱和全碳双组分单螺环母体+L5_spiro_names词干(spiro[4.5]decane/螺[4.5]癸烷) [+15 tests, dual持平, 0 REGRESS]
+[#76a1ae2][IUPAC P-66.1.1.1.1] 丙烯酰胺保留名：alkenamide_names() n=3+ene_locant=2时输出acrylamide/丙烯酰胺(非pin)；name_mode贯通_ok_result→_assemble_candidate管线；pin模式保留prop-2-enamide系统名 [+3 tests, +1 EN, dual持平, 0 REGRESS]
 ## 其他
