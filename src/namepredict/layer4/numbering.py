@@ -339,17 +339,38 @@ def _cyclo_exo_orienters() -> dict:
         "cycloalkanecarboxylate": b, "cycloalkanecarbonyl_chloride": b,
         "cycloalkanecarbonyl_bromide": b,
     }
+def _append_bridge_paths(order: list[int], paths: list[list[int]], b: int) -> None:
+    """Append bridge paths to order, alternating direction; append b after first path."""
+    for i, path in enumerate(paths):
+        order.extend(path if i % 2 == 0 else list(reversed(path)))
+        if i == 0:
+            order.append(b)
+
+
+def _orient_bridged(chain: list[int], parent: dict, substituents: list) -> list[int]:
+    """von Baeyer numbering: bh1, longest bridge → bh2, next longest ← bh1, ..."""
+    bh, paths = parent.get("bridgeheads"), parent.get("bridge_paths")
+    if not bh or len(bh) < 2 or not paths:
+        return chain
+    order = [bh[0]]
+    _append_bridge_paths(order, paths, bh[1])
+    return order
+
+
+def _bridged_orienters() -> dict:
+    return {"bridged": _orient_bridged}
+
+
 def _unsat_orienters() -> dict:
     bq = _orient_ring_ketone_pair
     return {"cycloketone": _orient_cycloketone, "cycloalkanedione": bq,
-            "alkene": _orient_alkene,
-            "diacid": _orient_diacid, "diester": _orient_diacid,
+            "alkene": _orient_alkene, "diacid": _orient_diacid, "diester": _orient_diacid,
             "polycarboxylic": _orient_polycarboxylic,
             "benzene_polycarboxylic": _orient_benzene_polycarboxylic,
             "cycloalkane_polycarboxylic": _orient_cycloalkane_polycarboxylic, "polyene": _orient_polyene,
             "cyclopolyene": orient_cyclopolyene, "cycloalkene": _orient_cycloalkene,
-            "alkyne": _orient_alkyne, "cycloalkane": _orient_cycloalkane,
-            "benzene": _orient_cycloalkane, **_benzoic_orienters(), **_cyclo_exo_orienters()}
+            "alkyne": _orient_alkyne, "cycloalkane": _orient_cycloalkane, "benzene": _orient_cycloalkane,
+            **_benzoic_orienters(), **_cyclo_exo_orienters(), **_bridged_orienters()}
 def _kind_orienters() -> dict:
     return {**_hetero_orienters(), **_unsat_orienters(), **_carbonyl_orienters()}
 def _orient_by_kind(kind: str, chain: list[int], parent: dict, subs: list) -> list[int]:
