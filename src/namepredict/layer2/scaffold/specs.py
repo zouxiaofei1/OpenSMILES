@@ -107,14 +107,16 @@ def _poly_carbo(
     )
 
 
-def _benzodiazine(sid: str, stem_en: str, stem_zh: str) -> ScaffoldSpec:
+def _benzodiazine(
+    sid: str, stem_en: str, stem_zh: str, *, fg_rank: int = 0,
+) -> ScaffoldSpec:
     """6+6 diazine labels are specified but no producer emits a plan yet."""
     pol = NumberingPolicy(
         mode="naph_family", standard_path=NAPH_LABELS, materialize_plan=False,
     )
     return ScaffoldSpec(
         id=sid, naming_class="benzodiazine", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=2, ring="hetero", retained=True, fg_rank=0, numbering=pol,
+        n_rings=2, ring="hetero", retained=True, fg_rank=fg_rank, numbering=pol,
     )
 
 
@@ -176,6 +178,7 @@ NAPH_FAMILY_SPECS: tuple[ScaffoldSpec, ...] = (
 # 6+6 benzodiazines: same 10-atom naph labels; not yet in L4 Q_KINDS.
 BENZODIAZINE_SPECS: tuple[ScaffoldSpec, ...] = (
     _benzodiazine("quinazoline", "quinazoline", "喹唑啉"),
+    _benzodiazine("quinazolinamine", "quinazolinamine", "喹唑啉胺", fg_rank=3),
     _benzodiazine("quinoxaline", "quinoxaline", "喹喔啉"),
 )
 
@@ -187,8 +190,10 @@ MONO_HETERO_SPECS: tuple[ScaffoldSpec, ...] = (
     _monohetero("pyrrole", "1H-pyrrole", "吡咯"),
     _monohetero("imidazole", "1H-imidazole", "咪唑"),
     _monohetero("pyrazole", "1H-pyrazole", "吡唑"),
+    _monohetero("pyrazolamine", "pyrazolamine", "吡唑胺", fg_rank=3),
     _monohetero("oxazole", "1,3-oxazole", "恶唑"),
     _monohetero("thiazole", "1,3-thiazole", "噻唑"),
+    _monohetero("thiazolamine", "thiazolamine", "噻唑胺", fg_rank=3),
     _monohetero("pyrimidine", "pyrimidine", "嘧啶"),
     _monohetero("pyrazine", "pyrazine", "吡嗪"),
     _monohetero("pyridazine", "pyridazine", "哒嗪"),

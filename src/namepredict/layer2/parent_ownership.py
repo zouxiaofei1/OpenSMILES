@@ -138,14 +138,16 @@ def _ketone_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _amine_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Aniline/amine: ring/chain attachment C + amine N (primary)."""
-    c_idx = parent.get("amine_c_idx")
-    if c_idx is None:
+    """Aniline/amine: ring/chain attachment C(s) + amine N(s)."""
+    c_idxs = parent.get("amine_c_idxs") or ([parent.get("amine_c_idx")] if parent.get("amine_c_idx") is not None else [])
+    if not c_idxs:
         return set()
-    out = {int(c_idx)}
-    for n in mol.GetAtomWithIdx(int(c_idx)).GetNeighbors():
-        if n.GetAtomicNum() == 7:
-            out.add(n.GetIdx())
+    out: set[int] = set()
+    for c in c_idxs:
+        out.add(int(c))
+        for n in mol.GetAtomWithIdx(int(c)).GetNeighbors():
+            if n.GetAtomicNum() == 7:
+                out.add(n.GetIdx())
     return out
 
 

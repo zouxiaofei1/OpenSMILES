@@ -495,6 +495,9 @@ _ARENE_FG_STEM: dict[str, tuple[str, str, str, str]] = {
     "naphthalenediol": ("naphthalene", "萘", "diol", "二酚"),
     "naphthalenamine": ("naphthalen", "萘", "amine", "胺"),
     "quinolinediol": ("quinoline", "喹啉", "diol", "二酚"),
+    "pyrazolamine": ("pyrazol", "吡唑", "amine", "胺"),
+    "thiazolamine": ("thiazol", "噻唑", "amine", "胺"),
+    "quinazolinamine": ("quinazolin", "喹唑啉", "amine", "胺"),
 }
 
 
@@ -540,6 +543,9 @@ _PYRIDINE_KIND_FN = {
     "naphthalenediol": lambda n: _arene_fg_parent_names("naphthalenediol", n),
     "naphthalenamine": lambda n: _arene_fg_parent_names("naphthalenamine", n),
     "quinolinediol": lambda n: _arene_fg_parent_names("quinolinediol", n),
+    "pyrazolamine": lambda n: _arene_fg_parent_names("pyrazolamine", n),
+    "thiazolamine": lambda n: _arene_fg_parent_names("thiazolamine", n),
+    "quinazolinamine": lambda n: _arene_fg_parent_names("quinazolinamine", n),
     # CHO/CN on naphthalene/quinoline
     "naphthalenecarbaldehyde": naphthalenecarbaldehyde_names,
     "quinolinecarbaldehyde": quinolinecarbaldehyde_names,

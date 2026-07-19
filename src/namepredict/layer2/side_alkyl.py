@@ -464,6 +464,16 @@ def _linear_path_ok(mol: Mol, start: int, ring: set[int], max_n: int) -> list[in
     return _walk_linear_n(mol, start, ring, max_n=max_n)
 
 
+def _walk_omega_halo_n(
+    mol: Mol, start: int, chain: set[int], max_n: int,
+) -> list[int] | None:
+    """Omega-halo n-alkyl path of length 1..max_n, or None."""
+    path = _walk_with(mol, start, chain, _omega_step, max_len=max_n + 1)
+    if path is None or not (1 <= len(path) <= max_n):
+        return None
+    return path if _is_omega_halo_c(mol, path[-1]) else None
+
+
 def _linear_n_alkyl_sides_ok(
     mol: Mol, ring: set[int], starts: list[int], max_n: int,
 ) -> bool:
@@ -473,6 +483,23 @@ def _linear_n_alkyl_sides_ok(
     paths: list[set[int]] = []
     for s in starts:
         path = _linear_path_ok(mol, s, ring, max_n)
+        if path is None:
+            return False
+        paths.append(set(path))
+    return _disjoint_cover(paths, _outside_c_atoms(mol, ring))
+
+
+def _linear_or_omega_halo_sides_ok(
+    mol: Mol, ring: set[int], starts: list[int], max_n: int,
+) -> bool:
+    """True when every ring side start is linear n-alkyl or omega-halo C1–max_n."""
+    if not starts:
+        return not _outside_c_atoms(mol, ring)
+    paths: list[set[int]] = []
+    for s in starts:
+        path = _linear_path_ok(mol, s, ring, max_n)
+        if path is None:
+            path = _walk_omega_halo_n(mol, s, ring, max_n)
         if path is None:
             return False
         paths.append(set(path))

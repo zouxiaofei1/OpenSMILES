@@ -28,7 +28,7 @@ _CHAIN_FG: tuple[tuple[str, int], ...] = (
     ("ketone", 6), ("dione", 6), ("cycloketone", 6),
     ("alcohol", 5), ("diol", 5), ("triol", 5),
     ("cycloalcohol", 5), ("thiol", 4),
-    ("amine", 3), ("diamine", 3), ("sec_amine", 3), ("tert_amine", 3),
+    ("amine", 3), ("diamine", 3), ("triamine", 3), ("tetraamine", 3), ("sec_amine", 3), ("tert_amine", 3),
     ("cycloamine", 3), ("hydrazine", 4), ("phosphate", 2), ("phosphonic", 2),
     ("ether", 2), ("sulfide", 2), ("sulfoxide", 2),
     ("isocyanate", 8), ("isothiocyanate", 8),

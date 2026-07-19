@@ -101,8 +101,9 @@ def _poly_fg_names(
     en, zh = plain
     loc = _pair_loc_str(locs)
     return f"{en}-{loc}-{en_suf}", f"{zh}-{loc}-{zh_suf}"
-def _diamine_names(n: int, locs: list[int] | None) -> tuple[str, str] | None:
-    return _poly_fg_names(n, locs, "diamine", "二胺", 2)
+def _polyamine_names(n: int, locs: list[int] | None, kind: str) -> tuple[str, str] | None:
+    m = {"diamine": ("diamine", "二胺", 2), "triamine": ("triamine", "三胺", 3), "tetraamine": ("tetraamine", "四胺", 4)}.get(kind)
+    return _poly_fg_names(n, locs, *m) if m else None
 def _polyol_names(n: int, locs: list[int] | None, kind: str) -> tuple[str, str] | None:
     if kind == "alcohol":
         return _alcohol_names(n, locs[0] if locs else None, False)
@@ -403,8 +404,8 @@ def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return _unsat_polyol_names(n, numbered) or _polyol_names(n, numbered.get("oh_locants"), kind)
     return None
 def _amine_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    if kind == "diamine":
-        return _diamine_names(n, numbered.get("amine_locants"))
+    if kind in ("diamine", "triamine", "tetraamine"):
+        return _polyamine_names(n, numbered.get("amine_locants"), kind)
     if kind == "benzenediamine":
         return benzenediamine_names(numbered.get("amine_locants"))
     if kind not in ("amine", "sec_amine", "tert_amine"):

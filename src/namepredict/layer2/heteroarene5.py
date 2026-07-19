@@ -17,7 +17,7 @@ from namepredict.layer2.ring_parent import (
     _ring_nitro_n,
     _ring_side_starts,
 )
-from namepredict.layer2.side_alkyl import _linear_n_alkyl_sides_ok
+from namepredict.layer2.side_alkyl import _linear_or_omega_halo_sides_ok
 from namepredict.layer2.aryl_sub import _aryl_atoms, _aryl_exclude, _aryl_sub_n
 
 # Z of ring hetero → parent kind (5-membered mono)
@@ -133,7 +133,7 @@ def _hetero5_subs_ok(info: dict, mol: Mol, ring: set[int]) -> bool:
     starts = _ring_side_starts(mol, ring, excl)
     if h + len(starts) + n_aryl > 2:
         return False
-    return True if not starts else _linear_n_alkyl_sides_ok(mol, ring, starts, 2)
+    return True if not starts else _linear_or_omega_halo_sides_ok(mol, ring, starts, 2)
 
 
 def _h5_ring_ok(info: dict, ring: list[int]) -> bool:

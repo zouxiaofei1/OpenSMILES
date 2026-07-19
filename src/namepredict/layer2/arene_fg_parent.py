@@ -49,6 +49,39 @@ def _detect_quinoline(info: dict) -> tuple | None:
     return _ring_set(parts), _build_chain(info, parts)
 
 
+def _detect_pyrazole(info: dict):
+    """Return (ring_atoms, chain, meta) for pyrazole-amine parent."""
+    from namepredict.layer2.heteroarene5 import _pyrazole_n_pair
+    pair = _pyrazole_n_pair(info)
+    if pair is None: return None
+    nh, n = pair
+    ring = list(info["rings"][0]["atom_ids"])
+    chain = [nh] + [i for i in ring if i != nh]
+    return set(ring), chain, {"nh_idx": nh, "n_idx": n}
+
+
+def _detect_thiazole(info: dict):
+    """Return (ring_atoms, chain, meta) for thiazole-amine parent."""
+    from namepredict.layer2.azole13 import _azole13_hetero_pair
+    pair = _azole13_hetero_pair(info)
+    if pair is None: return None
+    h, n = pair
+    ring = list(info["rings"][0]["atom_ids"])
+    chain = [h] + [i for i in ring if i != h]
+    return set(ring), chain, {"hetero_idx": h, "n_idx": n}
+
+
+def _detect_quinazoline(info: dict):
+    """Return (ring_atoms, chain, meta) for quinazoline-amine parent."""
+    from namepredict.layer2.benzodiazine import _qz_core, _n1
+    core = _qz_core(info)
+    if core is None: return None
+    atoms, ns, bridge = core
+    n1_idx = _n1(info["mol"], ns, bridge)
+    chain = [n1_idx] + [i for i in sorted(atoms) if i != n1_idx]
+    return atoms, chain, {"n_idxs": ns}
+
+
 _FG_BLOCK_KEYS = (
     "has_acid", "has_aldehyde", "has_ketone", "has_ester",
     "has_amide", "has_nitrile", "has_acyl_chloride", "has_anhydride",
@@ -91,6 +124,9 @@ _FG_SPEC: dict[str, dict] = {
 _SCAFFOLD_DETECT = {
     "naphthalene": (_detect_naphthalene, "naphthalene"),
     "quinoline": (_detect_quinoline, "quinoline"),
+    "pyrazole": (_detect_pyrazole, "pyrazole"),
+    "thiazole": (_detect_thiazole, "thiazole"),
+    "quinazoline": (_detect_quinazoline, "quinazoline"),
 }
 
 _ARENE_FG_KINDS: dict[tuple, str] = {
@@ -102,6 +138,9 @@ _ARENE_FG_KINDS: dict[tuple, str] = {
     ("quinoline", "CHO", 1): "quinolinecarbaldehyde",
     ("naphthalene", "CN", 1): "naphthalenecarbonitrile",
     ("quinoline", "CN", 1): "quinolinecarbonitrile",
+    ("pyrazole", "NH2", 1): "pyrazolamine",
+    ("thiazole", "NH2", 1): "thiazolamine",
+    ("quinazoline", "NH2", 1): "quinazolinamine",
 }
 
 
@@ -135,13 +174,16 @@ def _arene_fg_subs_ok(
 
 
 def _resolve_arene_core(info, scaffold_id, fg_type):
-    """(ring_atoms, chain, spec) or None."""
+    """(ring_atoms, chain, spec, [meta]) or None."""
     spec = _FG_SPEC.get(fg_type)
     if spec is None: return None
     entry = _SCAFFOLD_DETECT.get(scaffold_id)
     if entry is None: return None
     core = entry[0](info)
     if core is None: return None
+    if len(core) == 3:
+        ring_atoms, chain, meta = core
+        return (ring_atoms, chain, spec, meta) if chain else None
     ring_atoms, chain = core
     return (ring_atoms, chain, spec) if chain else None
 
@@ -200,15 +242,23 @@ def _assemble_fg_parent(chain, kind, spec, fg_idxs, n_fg, ring_attach=None):
 
 def _try_arene_fg_parent(info, scaffold_id, fg_type, n_fg=1):
     """Generalized: FG on aromatic ring -> systematic parent dict."""
-    if (resolved := _resolve_arene_core(info, scaffold_id, fg_type)) is None: return None
-    ring_atoms, chain, spec = resolved
+    resolved = _resolve_arene_core(info, scaffold_id, fg_type)
+    if resolved is None: return None
+    if len(resolved) == 4:
+        ring_atoms, chain, spec, meta = resolved
+    else:
+        ring_atoms, chain, spec = resolved
+        meta = {}
     if (on_ring := _check_fg_count(info, spec, ring_atoms, n_fg)) is None: return None
     fg_idxs_set, fg_idxs_list = {e[spec["ckey"]] for e in on_ring}, [e[spec["ckey"]] for e in on_ring]
     if not _gate_scaffold_fg(info, fg_type, ring_atoms, fg_idxs_set, spec): return None
     kind = _ARENE_FG_KINDS.get((scaffold_id, fg_type, n_fg))
     if kind is None: return None
-    return _assemble_fg_parent(chain, kind, spec, fg_idxs_list, n_fg,
-                                _arene_fg_attach(info, spec, on_ring, ring_atoms))
+    parent = _assemble_fg_parent(chain, kind, spec, fg_idxs_list, n_fg,
+                                  _arene_fg_attach(info, spec, on_ring, ring_atoms))
+    if meta:
+        parent.update(meta)
+    return parent
 
 
 # ---- Thin wrappers for per-scaffold FG parents ----
@@ -239,5 +289,13 @@ def _try_arene_fg_aldehyde(info: dict) -> dict | None:
 def _try_arene_fg_nitrile(info: dict) -> dict | None:
     for sid in ("naphthalene", "quinoline"):
         if (p := _try_arene_fg_parent(info, sid, "CN")) is not None:
+            return p
+    return None
+
+
+def _try_arene_fg_amine(info: dict) -> dict | None:
+    """Generalized: NH2 on aromatic ring -> amine parent (naphthalene / heterocycles)."""
+    for sid in ("naphthalene", "pyrazole", "thiazole", "quinazoline"):
+        if (p := _try_arene_fg_parent(info, sid, "NH2")) is not None:
             return p
     return None

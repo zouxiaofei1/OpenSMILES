@@ -19,7 +19,7 @@ from namepredict.layer2.ring_parent import (
     _ring_halo_n,
     _ring_side_starts,
 )
-from namepredict.layer2.side_alkyl import _linear_n_alkyl_sides_ok
+from namepredict.layer2.side_alkyl import _linear_or_omega_halo_sides_ok
 
 # O/S atomic number → kind
 _AZOLE13_KIND = {8: "oxazole", 16: "thiazole"}
@@ -66,7 +66,7 @@ def _azole13_subs_ok(mol: Mol, ring: set[int]) -> bool:
     h, starts = _ring_halo_n(mol, ring), _ring_side_starts(mol, ring)
     if h + len(starts) > 2:
         return False
-    return _linear_n_alkyl_sides_ok(mol, ring, starts, 3)
+    return _linear_or_omega_halo_sides_ok(mol, ring, starts, 3)
 
 
 def _is_simple_azole13(info: dict) -> bool:

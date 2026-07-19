@@ -273,6 +273,7 @@ def _aza_orienters() -> dict:
         "pyridinecarbonitrile": _orient_pyridinecarboxylic,
         "pyridinamine": _orient_pyridinamine, "pyridinol": _orient_pyridinol,
         "imidazole": _orient_imidazole, "pyrazole": _orient_imidazole,
+        "pyrazolamine": _orient_imidazole,
         "oxazole": _orient_imidazole, "thiazole": _orient_imidazole,
         "imidazolecarboxylic": _orient_diazolecarboxylic,
         "pyrazolecarboxylic": _orient_diazolecarboxylic,
@@ -284,6 +285,7 @@ _FIXED_FUSED = (
     "benzothiazolamine", "benzoxazole", "benzoxazolamine", "benzimidazole", "benzimidazolamine",
     "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
     "quinolinecarbaldehyde", "quinolinecarbonitrile", "chromenone",
+    "quinazoline", "quinazolinamine",
 )
 def _fused_orienters() -> dict:
     d = {kind: _orient_indole for kind in _FIXED_FUSED}
@@ -296,6 +298,7 @@ def _fused_orienters() -> dict:
 def _arene_orienters() -> dict:
     return {
         "furan": _orient_hetero5, "thiophene": _orient_hetero5, "pyrrole": _orient_hetero5,
+        "thiazolamine": _orient_hetero5,
         "furancarboxylic": _orient_hetero5carboxylic,
         "thiophenecarboxylic": _orient_hetero5carboxylic,
         "pyrrolecarboxylic": _orient_hetero5carboxylic,
@@ -307,7 +310,7 @@ def _hetero_orienters() -> dict:
     bq, di = _orient_ring_ketone_pair, _orient_benzenediol
     return {
         "alcohol": _orient_alcohol, "thiol": _orient_thiol,
-        "diol": _orient_polyol, "triol": _orient_polyol, "diamine": _orient_diamine,
+        "diol": _orient_polyol, "triol": _orient_polyol, "diamine": _orient_diamine, "triamine": _orient_diamine, "tetraamine": _orient_diamine,
         "cycloalcohol": _orient_cycloalcohol, "phenol": _orient_cycloalcohol,
         "boronic": _orient_boronic, "benzenediol": di, "cycloalkanediol": di,
         "benzoquinone": bq, "ortho_benzoquinone": bq, "amine": _orient_amine,
@@ -400,6 +403,7 @@ _AMINE_KINDS = (
     "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
     "pyrimidinamine", "benzofuranamine", "benzothiazolamine",
     "benzoxazolamine", "benzimidazolamine", "naphthalenamine",
+    "pyrazolamine", "thiazolamine", "quinazolinamine",
 )
 def _oh_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, _OH_KINDS, "oh_c_idx")
@@ -428,7 +432,7 @@ def _oh_locants(oriented: dict) -> list[int] | None:
         return _scaffold_pair_locants(oriented, "oh_c_idxs")
     return _pair_locants(oriented, ("alcohol", "diol", "triol", "benzenediol", "cycloalkanediol"), "oh_c_idxs")
 def _amine_pair_locants(oriented: dict) -> list[int] | None:
-    return _pair_locants(oriented, ("diamine", "benzenediamine"), "amine_c_idxs")
+    return _pair_locants(oriented, ("diamine", "triamine", "tetraamine", "benzenediamine"), "amine_c_idxs")
 def _amine_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, _AMINE_KINDS, "amine_c_idx")
 def _ketone_locant(oriented: dict) -> int | None:

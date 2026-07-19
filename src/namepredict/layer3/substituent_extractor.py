@@ -200,10 +200,10 @@ _PARENT_OH_KINDS = frozenset({
     "naphthalenol", "naphthalenediol", "quinolinediol",
 })
 _PARENT_NH2_KINDS = frozenset({
-    "amine", "diamine", "cycloamine", "sec_amine", "tert_amine",
+    "amine", "diamine", "triamine", "tetraamine", "cycloamine", "sec_amine", "tert_amine",
     "aniline", "pyridinamine", "pyrimidinamine", "benzofuranamine",
     "benzothiazolamine", "benzoxazolamine", "benzimidazolamine", "benzenediamine",
-    "naphthalenamine",
+    "naphthalenamine", "pyrazolamine", "thiazolamine", "quinazolinamine",
 })
 _PARENT_OXO_KINDS = frozenset(
     {

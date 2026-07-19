@@ -6,7 +6,7 @@ from namepredict.layer2.arene_carbonyl import (
     _try_benzene_polycarboxylic, _try_benzoic_parent,
 )
 from namepredict.layer2.arene_fg_parent import (
-    _try_arene_fg_aldehyde, _try_arene_fg_nitrile,
+    _try_arene_fg_aldehyde, _try_arene_fg_amine, _try_arene_fg_nitrile,
     _try_naphthalenediol_parent, _try_naphthalenol_parent,
     _try_quinolinediol_parent,
 )
@@ -73,10 +73,14 @@ def _is_simple_alkanedioic(info: dict) -> bool:
     return _is_simple_n(info, _DIACID_BAD, "carboxyls", 2)
 def _diacid_parent(info: dict) -> dict:
     return _cover_parent(info, "carboxyls", 2, "diacid", "cooh_c_idxs")
-def _is_simple_alkanediamine(info: dict) -> bool:
-    return _is_simple_n(info, _DIAMINE_BAD, "amines", 2)
-def _diamine_parent(info: dict) -> dict:
-    return _cover_parent(info, "amines", 2, "diamine", "amine_c_idxs")
+def _polyamine_kind(n: int) -> str:
+    return {1: "amine", 2: "diamine", 3: "triamine", 4: "tetraamine"}.get(n, "polyamine")
+def _polyamine_parent(info: dict, n: int) -> dict | None:
+    if not _is_simple_n(info, _DIAMINE_BAD, "amines", n):
+        return None
+    p = _cover_parent(info, "amines", n, _polyamine_kind(n), "amine_c_idxs")
+    p["n_amine"] = n
+    return p
 def _is_simple_alkanedione(info: dict) -> bool:
     return _is_simple_n(info, _DIONE_BAD, "ketones", 2)
 def _dione_parent(info: dict) -> dict:
@@ -159,9 +163,8 @@ def _ring_fg_try(info: dict, pairs, ekey: str, ckey: str) -> dict | None:
             return _cyclo_fg_parent(info, kind, ekey, ckey)
     return None
 def _try_arene_amine(info: dict) -> dict | None:
-    """Generalized arene FG amine parents (NH2 on fused aromatic rings)."""
-    from namepredict.layer2.arene_fg_parent import _try_naphthalenamine_parent
-    return _try_naphthalenamine_parent(info)
+    """Generalized arene FG amine parents (NH2 on fused/monocyclic aromatic rings)."""
+    return _try_arene_fg_amine(info)
 
 
 def _ring_alcohol_parent(info: dict) -> dict | None:
@@ -260,7 +263,10 @@ def _ring_amine_parent(info: dict) -> dict | None:
 def _amine_parent(info: dict) -> dict:
     ring = _ring_amine_parent(info)
     if ring is not None: return ring
-    if _is_simple_alkanediamine(info): return _diamine_parent(info)
+    for n in (4, 3, 2):
+        p = _polyamine_parent(info, n)
+        if p is not None:
+            return p
     return _tert_amine_parent(info) or _sec_amine_parent(info) or _primary_amine_parent(info)
 _ETHER_BAD = _CORE_BAD + ("has_amine", "has_alcohol", "has_thiol", "has_sulfide")
 _SULFIDE_BAD = _CORE_BAD + ("has_amine", "has_alcohol", "has_thiol", "has_ether")
