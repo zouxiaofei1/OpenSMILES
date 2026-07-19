@@ -16,11 +16,14 @@ from namepredict.namer import SMILESNNamer
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
     # positive: acyclic mono-alkenamides
-    ("NC(=O)C=C", "prop-2-enamide", "丙-2-烯酰胺"),
+    # P-66.1.1 / P-31.1: prop-2-enamide → retained acrylamide (IUPAC P-66.1.1.1.1)
+    ("NC(=O)C=C", "acrylamide", "丙烯酰胺"),
     ("NC(=O)/C=C/C", "(E)-but-2-enamide", "(E)-丁-2-烯酰胺"),
     ("NC(=O)CC=C", "but-3-enamide", "丁-3-烯酰胺"),
-    ("NC(=O)/C=C/c1ccccc1", "(E)-3-phenylprop-2-enamide", "(E)-3-苯基丙-2-烯酰胺"),
+    ("NC(=O)/C=C/c1ccccc1", "(E)-3-phenylacrylamide", "(E)-3-苯基丙烯酰胺"),
     (r"CCCCCCCC/C=C\CCCCCCCC(=O)N", "(Z)-octadec-9-enamide", "(Z)-十八-9-烯酰胺"),
+    # positive: N-substituted acrylamide (retained base)
+    ("CNC(=O)C=C", "N-methylacrylamide", "N-甲基丙烯酰胺"),
     # negative: saturated amides must stay saturated
     ("CC(=O)N", "acetamide", "乙酰胺"),
     ("NC(=O)CCC", "butanamide", "丁酰胺"),

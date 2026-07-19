@@ -82,7 +82,10 @@ def alkenoic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
 
 
 def alkenamide_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """prop-2-enamide / (E)-but-2-enamide with E/Z when stereo defined."""
+    """acrylamide (retained) / (E)-but-2-enamide with E/Z when stereo defined."""
+    if n == 3 and numbered.get("ene_locant") == 2 and numbered.get("name_mode") != "pin":
+        ez = _ez_prefix(numbered)
+        return f"{ez}acrylamide", f"{ez}丙烯酰胺"
     return _unsat_acid_pair(
         n, numbered.get("ene_locant"), _ez_prefix(numbered), "enamide", "烯酰胺",
     )
