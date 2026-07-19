@@ -197,11 +197,13 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
 _PARENT_OH_KINDS = frozenset({
     "alcohol", "diol", "triol", "cycloalcohol", "cycloalkanediol",
     "phenol", "benzenediol", "pyridinol", "benzothiophenol", "quinolinol",
+    "naphthalenol", "naphthalenediol", "quinolinediol",
 })
 _PARENT_NH2_KINDS = frozenset({
     "amine", "diamine", "cycloamine", "sec_amine", "tert_amine",
     "aniline", "pyridinamine", "pyrimidinamine", "benzofuranamine",
     "benzothiazolamine", "benzoxazolamine", "benzimidazolamine", "benzenediamine",
+    "naphthalenamine",
 })
 _PARENT_OXO_KINDS = frozenset(
     {

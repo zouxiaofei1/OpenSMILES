@@ -5,6 +5,10 @@ from namepredict.layer2.arene_carbonyl import (
     _try_acetophenone_parent, _try_arene_other_fg, _try_benzaldehyde_parent,
     _try_benzene_polycarboxylic, _try_benzoic_parent,
 )
+from namepredict.layer2.arene_fg_parent import (
+    _try_naphthalenediol_parent, _try_naphthalenol_parent,
+    _try_quinolinediol_parent,
+)
 from namepredict.layer2.cyclo_carboxylic import _try_cycloalkanecarboxylic_parent
 from namepredict.layer2.hetero5_carboxylic import _try_hetero5carboxylic_parent as _try_h5cooh
 from namepredict.layer2.sat_hetero_carboxylic import _try_sat_hetero_carboxylic_parent as _try_shcooh
@@ -81,17 +85,22 @@ def _ring_fg_try(info: dict, pairs, ekey: str, ckey: str) -> dict | None:
         if pred(info):
             return _cyclo_fg_parent(info, kind, ekey, ckey)
     return None
+def _try_arene_amine(info: dict) -> dict | None:
+    """Generalized arene FG amine parents (NH2 on fused aromatic rings)."""
+    from namepredict.layer2.arene_fg_parent import _try_naphthalenamine_parent
+    return _try_naphthalenamine_parent(info)
+
+
 def _ring_alcohol_parent(info: dict) -> dict | None:
     if _is_simple_benzenediol(info): return _benzenediol_parent(info)
-    top = _try_qol(info) or _try_btol(info) or _try_pyridin_fg_parent(info)
-    if top is not None: return top
-    if _is_simple_phenol(info): return _phenol_parent(info)
-    cyc = try_cycloalkanediol(info)
-    if cyc is not None: return cyc
-    if _is_simple_cycloalkenol(info):
-        return _cyclo_ene_fg_parent(info, "cycloalcohol", "hydroxyls", "oh_c_idx")
-    return _ring_fg_try(info, ((_is_simple_cycloalcohol, "cycloalcohol"),),
-                        "hydroxyls", "oh_c_idx")
+    return (_try_qol(info) or _try_btol(info) or _try_pyridin_fg_parent(info)
+            or _try_naphthalenol_parent(info) or _try_naphthalenediol_parent(info)
+            or _try_quinolinediol_parent(info)
+            or (_phenol_parent(info) if _is_simple_phenol(info) else None)
+            or try_cycloalkanediol(info)
+            or (_cyclo_ene_fg_parent(info, "cycloalcohol", "hydroxyls", "oh_c_idx")
+                if _is_simple_cycloalkenol(info) else
+                _ring_fg_try(info, ((_is_simple_cycloalcohol, "cycloalcohol"),), "hydroxyls", "oh_c_idx")))
 def _oh_c_in_ring(info: dict, c_idx: int) -> bool:
     return info["mol"].GetAtomWithIdx(int(c_idx)).IsInRing()
 def _chain_alcohol_parent(info: dict) -> dict | None:
@@ -171,6 +180,8 @@ def _ring_amine_parent(info: dict) -> dict | None:
            or _try_pyrimidinamine_parent(info) or _try_pyridin_fg_parent(info))
     if top is not None: return top
     if _is_simple_aniline(info): return _aniline_parent(info)
+    top = _try_arene_amine(info)
+    if top is not None: return top
     return _ring_fg_try(info, ((_is_simple_cycloamine, "cycloamine"),), "amines", "amine_c_idx")
 def _amine_parent(info: dict) -> dict:
     ring = _ring_amine_parent(info)

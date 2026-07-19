@@ -371,11 +371,11 @@ def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
     if oriented.get("kind") not in kinds:
         return None
     return _atom_locant(oriented.get("chain") or [], oriented.get(key), oriented.get("kind"), oriented.get("numbering_scaffold"), oriented.get("numbering_scaffold_required", False))
-_OH_KINDS = ("alcohol", "cycloalcohol", "pyridinol", "quinolinol", "benzothiophenol")
+_OH_KINDS = ("alcohol", "cycloalcohol", "pyridinol", "quinolinol", "benzothiophenol", "naphthalenol")
 _AMINE_KINDS = (
     "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
     "pyrimidinamine", "benzofuranamine", "benzothiazolamine",
-    "benzoxazolamine", "benzimidazolamine",
+    "benzoxazolamine", "benzimidazolamine", "naphthalenamine",
 )
 def _oh_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, _OH_KINDS, "oh_c_idx")
@@ -386,7 +386,22 @@ def _pair_locants(oriented: dict, kinds, key: str) -> list[int] | None:
         return None
     locs = _pair_locs_on(oriented.get("chain") or [], oriented.get(key))
     return list(locs) if locs else None
+
+
+def _scaffold_pair_locants(oriented: dict, key: str) -> list[int] | None:
+    """Multi-FG locants with scaffold-aware numbering (fused rings)."""
+    chain = oriented.get("chain") or []
+    cs = oriented.get(key)
+    if not cs or not chain:
+        return None
+    kind = oriented.get("kind")
+    facts = oriented.get("numbering_scaffold")
+    required = oriented.get("numbering_scaffold_required", False)
+    locs = [_atom_locant(chain, c, kind, facts, required) for c in cs if c in chain]
+    return sorted(locs) if len(locs) == len(cs) and all(l is not None for l in locs) else None
 def _oh_locants(oriented: dict) -> list[int] | None:
+    if oriented.get("kind") in ("naphthalenediol", "quinolinediol"):
+        return _scaffold_pair_locants(oriented, "oh_c_idxs")
     return _pair_locants(oriented, ("alcohol", "diol", "triol", "benzenediol", "cycloalkanediol"), "oh_c_idxs")
 def _amine_pair_locants(oriented: dict) -> list[int] | None:
     return _pair_locants(oriented, ("diamine", "benzenediamine"), "amine_c_idxs")

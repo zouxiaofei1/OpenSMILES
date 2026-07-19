@@ -460,6 +460,40 @@ def naphthalenecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
     return f"naphthalene-{loc}-carboxylic acid", f"萘-{loc}-甲酸"
 
 
+# --- Generalized arene FG parent names (P-63.1.4 / P-62.2.1) ---
+
+_ARENE_FG_STEM: dict[str, tuple[str, str, str, str]] = {
+    "naphthalenol": ("naphthalen", "萘", "ol", "酚"),
+    "naphthalenediol": ("naphthalene", "萘", "diol", "二酚"),
+    "naphthalenamine": ("naphthalen", "萘", "amine", "胺"),
+    "quinolinediol": ("quinoline", "喹啉", "diol", "二酚"),
+}
+
+
+def _arene_fg_mono_names(stem_en, stem_zh, suf_en, suf_zh, numbered, kind):
+    """Mono-FG arene naming: {stem}-{locant}-{suffix}."""
+    loc = numbered.get("oh_locant") if suf_en == "ol" else numbered.get("amine_locant")
+    return (f"{stem_en}-{loc}-{suf_en}", f"{stem_zh}-{loc}-{suf_zh}") if loc else None
+
+
+def _arene_fg_poly_names(stem_en, stem_zh, suf_en, suf_zh, numbered):
+    """Poly-FG arene naming: {stem}-{locants}-{suffix}."""
+    locs = numbered.get("oh_locants")
+    if locs is None: return None
+    loc_str = ",".join(str(x) for x in locs)
+    return f"{stem_en}-{loc_str}-{suf_en}", f"{stem_zh}-{loc_str}-{suf_zh}"
+
+
+def _arene_fg_parent_names(kind: str, numbered: dict) -> tuple[str, str] | None:
+    """Generalized arene FG parent: {stem}-{locants}-{suffix}."""
+    stem = _ARENE_FG_STEM.get(kind)
+    if stem is None: return None
+    stem_en, stem_zh, suf_en, suf_zh = stem
+    if suf_en in ("ol", "amine"):
+        return _arene_fg_mono_names(stem_en, stem_zh, suf_en, suf_zh, numbered, kind)
+    return _arene_fg_poly_names(stem_en, stem_zh, suf_en, suf_zh, numbered)
+
+
 _PYRIDINE_KIND_FN = {
     "pyridinecarboxylic": pyridinecarboxylic_names,
     "pyridinecarbonitrile": pyridinecarbonitrile_names,
@@ -473,6 +507,11 @@ _PYRIDINE_KIND_FN = {
     "indazolecarbaldehyde": indazolecarbaldehyde_names,
     "indolecarboxylic": indolecarboxylic_names,
     "naphthalenecarboxylic": naphthalenecarboxylic_names,
+    # Generalized arene FG parents
+    "naphthalenol": lambda n: _arene_fg_parent_names("naphthalenol", n),
+    "naphthalenediol": lambda n: _arene_fg_parent_names("naphthalenediol", n),
+    "naphthalenamine": lambda n: _arene_fg_parent_names("naphthalenamine", n),
+    "quinolinediol": lambda n: _arene_fg_parent_names("quinolinediol", n),
 }
 
 
