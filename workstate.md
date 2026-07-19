@@ -208,4 +208,5 @@
 [#acbe92a][IUPAC P-63.1.1 / P-29.3] 保留前缀 methylsulfanyl/甲硫基 L3 RetainedBackend 叶节点 [+4 tests, dual 15.0%持平, 0 REGRESS]
 [#2f1a669][IUPAC P-65.3.2.5] sulfo/磺基取代基前缀：L3 _try_registry_leaf通用叶节点匹配+L2 sulfonic_acid FG原子所有权，sulfo校验终端氧+1OH排除磺酸酯/磺酸根 [+3 tests, dual 14.7%→14.8%, +5 EN, -5 fails]
 [#9d8e028][IUPAC P-29.3.6 / P-14.5 / P-65.3] Round 1 并行三选题: (A)复合氨基前缀括号yl_form (B)磺酰基/亚磺酰基系列methylsulfinyl·methylsulfonyl·tosyl·triflyl L3 explicit try functions (C)指示氢字母序_strip_lead_locant剥除1H-/2H-/3H- [+13 tests, dual 14.8%→15.0%, +9 EN, -9 fails, 0 REGRESS]
+[#pending][IUPAC P-66.1.1.1.1] 丙烯酰胺保留名：alkenamide_names() n=3+ene_locant=2时输出acrylamide/丙烯酰胺(非pin模式)；name_mode贯通_ok_result→_assemble_candidate管线；pin模式保留prop-2-enamide系统名 [+1 test, dual 15.0%持平, +1 EN, -0 fails, 0 REGRESS]
 ## 其他

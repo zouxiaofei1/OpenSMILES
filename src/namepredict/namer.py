@@ -65,7 +65,8 @@ def _ledger_complete(mol, owned, subst: list[dict]) -> bool:
     return build_coverage_ledger(mol, owned_atoms=owned, names=names).complete
 
 
-def _ok_result(numbered: dict, *, depth: int, t0: float) -> NameResult | None:
+def _ok_result(numbered: dict, *, depth: int, t0: float, name_mode: str = "general") -> NameResult | None:
+    numbered["name_mode"] = name_mode
     result = assemble(numbered, time_ms=_elapsed_ms(t0))
     if not result.success or not result.en:
         return None
@@ -100,12 +101,12 @@ def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
     return out
 
 
-def _assemble_candidate(parent, subst, *, depth: int, t0: float) -> NameResult | None:
+def _assemble_candidate(parent, subst, *, depth: int, t0: float, name_mode: str = "general") -> NameResult | None:
     try:
         numbered = number(parent, _subs_for_numbering(parent, subst))
     except (ValueError, KeyError, TypeError):
         return None
-    return _ok_result(numbered, depth=depth, t0=t0)
+    return _ok_result(numbered, depth=depth, t0=t0, name_mode=name_mode)
 
 
 def _prepare_candidate(info: dict, parent: dict, *, name_mode: str = "general") -> tuple[dict, list[dict], bool]:
@@ -159,7 +160,7 @@ def _run_candidates(info: dict, *, depth: int, t0: float, name_mode: str = "gene
     # Pass 1: complete ledger only (high quality), retaining work for fallback.
     for candidate in cands:
         parent, subst, complete = _prepare_candidate(info, candidate, name_mode=name_mode)
-        hit = _assemble_candidate(parent, subst, depth=depth, t0=t0) if complete else None
+        hit = _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode) if complete else None
         prepared.append((parent, subst, complete, hit))
         if hit is not None and hit.success and hit.en:
             hit.meta = {**(hit.meta or {}), "coverage_complete": True}
@@ -168,7 +169,7 @@ def _run_candidates(info: dict, *, depth: int, t0: float, name_mode: str = "gene
     # Pass 2: assemble the retained extraction without repeating L3 work.
     for parent, subst, complete, hit in prepared:
         if not complete:
-            hit = _assemble_candidate(parent, subst, depth=depth, t0=t0)
+            hit = _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)
         if hit is not None and hit.success and hit.en:
             hit.meta = {
                 **(hit.meta or {}),
