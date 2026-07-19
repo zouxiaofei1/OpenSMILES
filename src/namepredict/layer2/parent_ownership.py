@@ -91,6 +91,30 @@ def _ether_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     return out
 
 
+def _sulfide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Sulfide S + both carbon arms (short arm not always in chain)."""
+    if parent.get("kind") != "sulfide" or parent.get("s_idx") is None:
+        return set()
+    s_idx = int(parent["s_idx"])
+    out = {s_idx}
+    for n in mol.GetAtomWithIdx(s_idx).GetNeighbors():
+        if n.GetAtomicNum() == 6:
+            out |= _ether_arm_atoms(mol, s_idx, n.GetIdx())
+    return out
+
+
+def _sulfonic_acid_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Sulfonic acid S + all O neighbours."""
+    s_idx = parent.get("s_idx")
+    if s_idx is None:
+        return set()
+    out = {int(s_idx)}
+    for n in mol.GetAtomWithIdx(int(s_idx)).GetNeighbors():
+        if n.GetAtomicNum() == 8:
+            out.add(n.GetIdx())
+    return out
+
+
 def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     """Alcohol/phenol: attachment carbon + OH oxygen."""
     c_idx = parent.get("oh_c_idx")
@@ -191,6 +215,8 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
         _aldehyde_fg_atoms(mol, parent) if parent.get("aldehyde_c_idx") is not None else set(),
         _acid_fg_atoms(mol, parent),
         _ether_fg_atoms(mol, parent),
+        _sulfide_fg_atoms(mol, parent),
+        _sulfonic_acid_fg_atoms(mol, parent),
         _hydroxy_fg_atoms(mol, parent),
         _ketone_fg_atoms(mol, parent),
         _amine_fg_atoms(mol, parent),

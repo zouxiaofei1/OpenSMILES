@@ -15,6 +15,7 @@
 9.pytest应多线程运行pytest -n auto
 10.本项目虽然存在benchmark步骤，但**完全允许准确率回退或持平**.本项目不欢迎导致准确率增加，但违反代码和工作流规范的更改.
 12.benchmark使用english_name和chinese_name字段
+13.如果要新增取代基，阅读layer3\retained_substituents.py并接入注册表
 15.**文件必须**存在src\namepredict\layer0-layer5某个文件夹里，且代码长度不超过1000行
 Layer 0: Molecule Preprocessor
 Layer 1: Structural Analyzer
@@ -33,7 +34,7 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 1. 运行**benchmark**,记录并报告当前分数，格式**中英文双重准确:[ ]%**
 2. 如果workstate的其他中没有选题，使用错误驱动方式进行选题。否则进行工作。
 选题流程:
-2.1.随机选一个错的分子，选中后不要换题目。
+2.1.从benchmark数据库中随机选一个错的分子，选中后不要换题目。
 2.2.现在命名情况如何?是否能一轮修好?
 2.3 如果完全fail/坍缩/母体错且分子复杂，尝试命中母体
 2.4 如果核心正确，且取代基未命名完全，尝试命名全取代基。

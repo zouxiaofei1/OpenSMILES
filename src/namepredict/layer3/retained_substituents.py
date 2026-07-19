@@ -5,7 +5,8 @@ and "pin" (Preferred IUPAC Names).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from enum import Enum
 
 
@@ -30,6 +31,17 @@ class RetainedSubstituent:
     leaf_atoms: tuple[int, ...] | None = None
     leaf_root_z: int | None = None
     leaf_bond_order: float | None = None
+    validate: Callable[..., bool] | None = field(default=None)
+
+
+def _validate_sulfo(mol, claim) -> bool:
+    """Sulfo: all O neighbours of root S must be terminal, exactly one OH."""
+    s_idx = claim.root
+    o_atoms = [n for n in mol.GetAtomWithIdx(s_idx).GetNeighbors() if n.GetAtomicNum() == 8]
+    for o in o_atoms:
+        if any(nn.GetAtomicNum() != 1 for nn in o.GetNeighbors() if nn.GetIdx() != s_idx):
+            return False
+    return sum(1 for o in o_atoms if o.GetTotalNumHs() == 1) == 1
 
 
 def _build() -> dict[str, RetainedSubstituent]:
@@ -192,6 +204,12 @@ def _build() -> dict[str, RetainedSubstituent]:
         "methylsulfonyl": RetainedSubstituent(
             "methylsulfonyl", "甲磺酰基",
             "methanesulfonyl", "甲磺酰基", P, "P-65.3.2",
+        ),
+        "sulfo": RetainedSubstituent(
+            "sulfo", "磺基",
+            "sulfo", "磺基", P, "P-65.3.2.5",
+            leaf_atoms=(8, 8, 8, 16), leaf_root_z=16,
+            validate=_validate_sulfo,
         ),
         "mesyl": RetainedSubstituent(
             "mesyl", "甲磺酰基",

@@ -28,6 +28,7 @@ EXPECTED_KEYS = {
     # heteroatom — S
     "methylsulfanyl", "ethylsulfanyl", "sulfanyl",
     "methylsulfinyl", "methylsulfonyl",
+    "sulfo",
     "mesyl", "tosyl", "triflyl",
     # heteroatom — N
     "nitroso", "azido", "hydrazinyl", "anilino",
@@ -129,7 +130,7 @@ def test_haloalkyl_pin_level_uses_same_name():
 
 # ── leaf_atoms topology fingerprints ──
 
-LEAF_KEYS = {"nitroso", "azido", "cyano", "isocyano"}
+LEAF_KEYS = {"nitroso", "azido", "cyano", "isocyano", "sulfo"}
 
 
 def test_leaf_entries_have_atoms_and_non_empty():
@@ -158,6 +159,12 @@ def test_nitroso_leaf_topology():
     e = get_retained("nitroso")
     assert e.leaf_atoms == (7, 8)
     assert e.leaf_root_z == 7  # N is root
+
+
+def test_sulfo_leaf_topology():
+    e = get_retained("sulfo")
+    assert e.leaf_atoms == (8, 8, 8, 16)  # 3xO + S
+    assert e.leaf_root_z == 16  # S is root
 
 
 # ── heteroaryl general-only (P-57.1.5.3) ──

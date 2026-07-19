@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, Sequence
 
+from rdkit.Chem import BondType
+
 from namepredict.layer2.claimable_block import ClaimedBlock
 from namepredict.layer3.as_substituent import name_as_substituent
 
@@ -103,6 +105,34 @@ def _try_methylsulfanyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
     return _retained_hit(claim, "methylsulfanyl", "甲硫基", False)
 
 
+def _try_registry_leaf(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
+    """Match claim against registry entries that have leaf_atoms topology fingerprint."""
+    from namepredict.layer3.retained_substituents import _REGISTRY, resolve_name
+
+    claim_z = sorted(mol.GetAtomWithIdx(i).GetAtomicNum() for i in claim.atoms)
+    root_z = mol.GetAtomWithIdx(claim.root).GetAtomicNum()
+    _BO = {BondType.SINGLE: 1.0, BondType.DOUBLE: 2.0, BondType.TRIPLE: 3.0, BondType.AROMATIC: 1.5}
+
+    for key, entry in _REGISTRY.items():
+        if entry.leaf_atoms is None:
+            continue
+        if tuple(claim_z) != entry.leaf_atoms:
+            continue
+        if entry.leaf_root_z is not None and root_z != entry.leaf_root_z:
+            continue
+        if entry.leaf_bond_order is not None:
+            if len(claim.atoms) != 2:
+                continue
+            bond = mol.GetBondBetweenAtoms(*claim.atoms)
+            if bond is None or _BO.get(bond.GetBondType()) != entry.leaf_bond_order:
+                continue
+        if entry.validate is not None and not entry.validate(mol, claim):
+            continue
+        en, zh = resolve_name(key, name_mode=name_mode)
+        return _retained_hit(claim, en, zh, False)
+    return None
+
+
 _ALKENYL_CHECKS = (
     ("vinyl",),
     ("allyl",),
@@ -130,7 +160,8 @@ def _try_alkenyl_retained(mol, claim: ClaimedBlock, *, name_mode: str = "general
 
 def _retained_name(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
     return (
-        _try_cycloalkyl(mol, claim)
+        _try_registry_leaf(mol, claim, name_mode=name_mode)
+        or _try_cycloalkyl(mol, claim)
         or _try_sub_phenyl(mol, claim)
         or _try_alkenyl_retained(mol, claim, name_mode=name_mode)
         or _try_methoxy(mol, claim)
