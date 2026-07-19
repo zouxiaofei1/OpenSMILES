@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import time
 
+from rdkit.Chem import MolToSmiles
+
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer0.salt import dissociate_salt
@@ -15,6 +17,21 @@ from namepredict.layer3.substituent_namer import SubstituentName
 from namepredict.layer4.numbering import number
 from namepredict.layer5.assembler import assemble
 from namepredict.types import NameResult
+
+_ANALYZE_CACHE: dict[str, dict] = {}
+_ANALYZE_CACHE_MAX = 500
+
+
+def _cached_analyze(mol) -> dict:
+    """Return cached analyze result, computing if needed (keyed by SMILES)."""
+    key = MolToSmiles(mol)
+    if key in _ANALYZE_CACHE:
+        return _ANALYZE_CACHE[key]
+    if len(_ANALYZE_CACHE) >= _ANALYZE_CACHE_MAX:
+        _ANALYZE_CACHE.clear()
+    result = analyze(mol)
+    _ANALYZE_CACHE[key] = result
+    return result
 
 
 def _fail(time_ms: float = 0.0, reason: str = "parse", **meta) -> NameResult:
@@ -111,6 +128,10 @@ def _assemble_candidate(parent, subst, *, depth: int, t0: float) -> NameResult |
 def _prepare_candidate(info: dict, parent: dict) -> tuple[dict, list[dict], bool]:
     mol = info["mol"]
     parent = finalize_parent_ownership(parent, mol)
+    if not parent.get("owned_atoms"):
+        return parent, [], False
+    if not parent.get("chain") and not info.get("has_ring"):
+        return parent, [], False
     subst = extract_substituents(info, parent)
     complete = _ledger_complete(mol, parent["owned_atoms"], subst)
     return parent, subst, complete
@@ -141,10 +162,16 @@ def _run_candidates(info: dict, *, depth: int, t0: float) -> NameResult:
 
     Empty-name path removed: do not return success=False with blank en when a
     partial assembly is available from any ranked candidate.
+
+    At depth > 0 (recursive substituent naming), only the default parent is tried
+    to avoid combinatorial candidate explosion in nested submol naming.
     """
     attempts: list[dict] = []
     prepared: list[tuple[dict, list[dict], bool, NameResult | None]] = []
-    cands = list(iter_parent_candidates(info)) or [select_parent(info)]
+    if depth > 0:
+        cands = [select_parent(info)]
+    else:
+        cands = list(iter_parent_candidates(info)) or [select_parent(info)]
     # Pass 1: complete ledger only (high quality), retaining work for fallback.
     for candidate in cands:
         parent, subst, complete = _prepare_candidate(info, candidate)
@@ -181,7 +208,7 @@ def _name_mol(
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
     organic, salt = dissociate_salt(mol)
-    result = _run_candidates(analyze(organic), depth=depth, t0=t0)
+    result = _run_candidates(_cached_analyze(organic), depth=depth, t0=t0)
     if salt and result.success:
         result.meta = {**(result.meta or {}), "salt": salt}
     return result
