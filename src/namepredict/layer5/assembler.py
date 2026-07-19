@@ -108,6 +108,39 @@ def _polyol_names(n: int, locs: list[int] | None, kind: str) -> tuple[str, str] 
         return _alcohol_names(n, locs[0] if locs else None, False)
     m = {"diol": ("diol", "二醇", 2), "triol": ("triol", "三醇", 3)}.get(kind)
     return _poly_fg_names(n, locs, *m) if m else None
+def _unsat_polyol_ok(numbered: dict) -> tuple | None:
+    locs = numbered.get("oh_locants")
+    kind = (numbered.get("parent") or {}).get("kind", "")
+    if not locs or kind not in ("diol", "triol"): return None
+    ene, yne = numbered.get("ene_locant"), numbered.get("yne_locant")
+    enes = numbered.get("ene_locants")
+    if ene or yne or (enes and len(enes) >= 2): return (locs, kind, ene, yne, enes)
+    return None
+def _monoene_polyol_name(plain, ene, loc, suf, omit: bool = False) -> tuple[str, str]:
+    en, zh = plain
+    if omit: return f"{en[:-3]}ene-{loc}-{suf[0]}", f"{zh}烯-{loc}-{suf[1]}"
+    return f"{en[:-3]}-{ene}-ene-{loc}-{suf[0]}", f"{zh}-{ene}-烯-{loc}-{suf[1]}"
+def _monoyne_polyol_name(plain, yne, loc, suf, omit: bool = False) -> tuple[str, str]:
+    en, zh = plain
+    if omit: return f"{en[:-3]}yne-{loc}-{suf[0]}", f"{zh}炔-{loc}-{suf[1]}"
+    return f"{en[:-3]}-{yne}-yne-{loc}-{suf[0]}", f"{zh}-{yne}-炔-{loc}-{suf[1]}"
+def _polyene_polyol_name(plain, enes, loc, suf) -> tuple[str, str]:
+    en, zh, n = plain[0], plain[1], len(enes)
+    el = _pair_loc_str(enes)
+    me, mz = {2: "diene", 3: "triene"}.get(n, ""), {2: "二烯", 3: "三烯"}.get(n, "")
+    return f"{en[:-3]}a-{el}-{me}-{loc}-{suf[0]}", f"{zh}-{el}-{mz}-{loc}-{suf[1]}"
+def _unsat_polyol_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """but-2-ene-1,4-diol / hexa-2,4-diene-1,6-diol — ene/yne before polyol suffix."""
+    u = _unsat_polyol_ok(numbered)
+    if u is None: return None
+    locs, kind, ene, yne, enes = u
+    plain, suf = _alkane_names(n), {"diol": ("diol", "二醇"), "triol": ("triol", "三醇")}.get(kind)
+    if not plain or not suf: return None
+    loc = _pair_loc_str(locs)
+    if enes and len(enes) >= 2: return _polyene_polyol_name(plain, enes, loc, suf)
+    if ene is not None:
+        return _monoene_polyol_name(plain, ene, loc, suf, numbered.get("omit_ene_locant", False))
+    return _monoyne_polyol_name(plain, yne, loc, suf, numbered.get("omit_yne_locant", False))
 def _amine_names(n: int, am_locant: int | None, omit: bool) -> tuple[str, str] | None:
     plain = _alkane_names(n)
     if not plain:
@@ -362,15 +395,13 @@ def _alcohol_or_alkenol(n: int, numbered: dict) -> tuple[str, str] | None:
             return top
     return _alcohol_names(n, numbered.get("oh_locant"), numbered.get("omit_oh_locant", False))
 def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    if kind == "alcohol":
-        return _alcohol_or_alkenol(n, numbered)
-    if kind == "thiol":
-        return _thiol_names(n, numbered.get("sh_locant"), numbered.get("omit_sh_locant", False))
-    if kind == "benzenediol":
-        return benzenediol_names(numbered.get("oh_locants"))
-    if kind == "cycloalkanediol":
-        return _cycloalkanediol_names(n, numbered.get("oh_locants"))
-    return _polyol_names(n, numbered.get("oh_locants"), kind) if kind in ("diol", "triol") else None
+    if kind == "alcohol": return _alcohol_or_alkenol(n, numbered)
+    if kind == "thiol": return _thiol_names(n, numbered.get("sh_locant"), numbered.get("omit_sh_locant", False))
+    if kind == "benzenediol": return benzenediol_names(numbered.get("oh_locants"))
+    if kind == "cycloalkanediol": return _cycloalkanediol_names(n, numbered.get("oh_locants"))
+    if kind in ("diol", "triol"):
+        return _unsat_polyol_names(n, numbered) or _polyol_names(n, numbered.get("oh_locants"), kind)
+    return None
 def _amine_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "diamine":
         return _diamine_names(n, numbered.get("amine_locants"))

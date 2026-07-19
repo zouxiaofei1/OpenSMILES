@@ -81,6 +81,78 @@ def _is_simple_alkanedione(info: dict) -> bool:
     return _is_simple_n(info, _DIONE_BAD, "ketones", 2)
 def _dione_parent(info: dict) -> dict:
     return _cover_parent(info, "ketones", 2, "dione", "ketone_c_idxs")
+def _has_n_oh(info: dict, n: int) -> bool:
+    ohs = _aliphatic_entries(info, "hydroxyls"); return len(ohs) == n
+def _alkenediol_good(info: dict, bad: tuple) -> bool:
+    dbs = info.get("double_bonds") or []
+    return (_has_n_oh(info, 2) and len(dbs) == 1
+            and not info.get("has_alkyne") and _no_fgs(info, bad))
+def _polyenediol_good(info: dict, bad: tuple) -> bool:
+    dbs = info.get("double_bonds") or []
+    return (_has_n_oh(info, 2) and len(dbs) >= 2
+            and not info.get("has_alkyne") and _no_fgs(info, bad))
+def _alkynediol_good(info: dict, bad: tuple) -> bool:
+    tbs = info.get("triple_bonds") or []
+    return (_has_n_oh(info, 2) and len(tbs) == 1
+            and not info.get("has_alkene") and _no_fgs(info, bad))
+def _alkenetriol_good(info: dict, bad: tuple) -> bool:
+    dbs = info.get("double_bonds") or []
+    return (_has_n_oh(info, 3) and len(dbs) == 1
+            and not info.get("has_alkyne") and _no_fgs(info, bad))
+def _uniq_atoms(*lists) -> list[int]:
+    """Deduplicated atom id list preserving first-occurrence order."""
+    seen: set[int] = set()
+    out: list[int] = []
+    for x in lists:
+        for a in x:
+            if a not in seen:
+                seen.add(a); out.append(a)
+    return out
+def _try_alkenediol_parent(info: dict, bad: tuple) -> dict | None:
+    """Diol + one C=C → kind='diol' with double_bond."""
+    if not _alkenediol_good(info, bad): return None
+    oh_ids = _aliph_c_idxs(info, "hydroxyls", 2)
+    if not oh_ids: return None
+    db = info["double_bonds"][0]
+    chain = _best_cover_pair(info["mol"], _uniq_atoms(oh_ids, [db["c1"], db["c2"]]))
+    return (_parent_dict(chain, "diol", oh_c_idxs=oh_ids,
+                         double_bond=(db["c1"], db["c2"]), n_oh=2)
+            if chain else None)
+def _try_polyenediol_parent(info: dict, bad: tuple) -> dict | None:
+    """Diol + 2+ C=C → kind='diol' with double_bonds."""
+    if not _polyenediol_good(info, bad): return None
+    oh_ids = _aliph_c_idxs(info, "hydroxyls", 2)
+    if not oh_ids: return None
+    dbs_c = [c for db in info.get("double_bonds") or [] for c in (db["c1"], db["c2"])]
+    chain = _best_cover_pair(info["mol"], _uniq_atoms(oh_ids, dbs_c))
+    return (_parent_dict(chain, "diol", oh_c_idxs=oh_ids,
+                         double_bonds=_db_pairs(info), n_oh=2)
+            if chain else None)
+def _try_alkynediol_parent(info: dict, bad: tuple) -> dict | None:
+    """Diol + one C≡C → kind='diol' with triple_bond."""
+    if not _alkynediol_good(info, bad): return None
+    oh_ids = _aliph_c_idxs(info, "hydroxyls", 2)
+    if not oh_ids: return None
+    tb = info["triple_bonds"][0]
+    chain = _best_cover_pair(info["mol"], _uniq_atoms(oh_ids, [tb["c1"], tb["c2"]]))
+    return (_parent_dict(chain, "diol", oh_c_idxs=oh_ids,
+                         triple_bond=(tb["c1"], tb["c2"]), n_oh=2)
+            if chain else None)
+def _try_alkenetriol_parent(info: dict, bad: tuple) -> dict | None:
+    """Triol + one C=C → kind='triol' with double_bond."""
+    if not _alkenetriol_good(info, bad): return None
+    oh_ids = _aliph_c_idxs(info, "hydroxyls", 3)
+    if not oh_ids: return None
+    db = info["double_bonds"][0]
+    chain = _best_cover_pair(info["mol"], _uniq_atoms(oh_ids, [db["c1"], db["c2"]]))
+    return (_parent_dict(chain, "triol", oh_c_idxs=oh_ids,
+                         double_bond=(db["c1"], db["c2"]), n_oh=3)
+            if chain else None)
+def _try_unsat_polyol(info: dict, bad: tuple) -> dict | None:
+    return (_try_alkenediol_parent(info, bad)
+            or _try_alkynediol_parent(info, bad)
+            or _try_polyenediol_parent(info, bad)
+            or _try_alkenetriol_parent(info, bad))
 def _ring_fg_try(info: dict, pairs, ekey: str, ckey: str) -> dict | None:
     for pred, kind in pairs:
         if pred(info):
@@ -119,7 +191,8 @@ def _polyol_or_chain_alcohol(info: dict) -> dict | None:
 def _chain_or_unsat_alcohol(info: dict) -> dict | None:
     from namepredict.layer2.alkynoic import chain_or_unsat_alcohol as _c
     b = _ALKENOL_BAD
-    return _c(
+    up = _try_unsat_polyol(info, b)
+    return up if up is not None else _c(
         info, b,
         lambda: _try_polyalkenol(info, b, _best_cover_pair, _parent_dict, _db_pairs),
         lambda: _try_unsat_fg(info, "has_alcohol", "hydroxyls", b, "alcohol", "oh_c_idx"),
