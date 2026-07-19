@@ -21,6 +21,7 @@ _EXPECTED_RING_TRY_NAMES = (
     "_try_benzoquinone_parent",
     "_try_ortho_benzoquinone_parent",
     "_try_anthracene_parent",
+    "_try_chromenone_parent",
     "_try_quinazoline_parent",
     "_try_quinoxaline_parent",
     "_try_naphthalene_parent",
@@ -45,6 +46,7 @@ _EXPECTED_RING_TRY_NAMES = (
     "_try_simple_benzene",
     "_try_simple_cycloalkane",
     "_try_simple_cyclopolyene",
+    "_try_spiro_parent",
 )
 
 

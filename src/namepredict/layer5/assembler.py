@@ -502,9 +502,17 @@ def _parent_stem_names(numbered: dict) -> tuple[str, str] | None:
     parent = numbered.get("parent") or {}
     en, zh = parent.get("stem_en"), parent.get("stem_zh")
     return (en, zh) if en and zh else None
+def _spiro_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """spiro[4.5]decane / 螺[4.5]癸烷."""
+    stem = _parent_stem_names(numbered)
+    alk = _alkane_names(n)
+    if stem and alk:
+        return f"{stem[0]}{alk[0]}", f"{stem[1]}{alk[1]}"
+    return None
 def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "cycloalkane": return _cycloalkane_names(n)
     if kind == "benzene": return benzene_parent_names(numbered)
+    if kind == "spiro": return _spiro_names(n, numbered)
     if kind == "benzoate": return benzoate_parent_names(numbered, _build_prefix)
     if kind in _H5COOH_KINDS: return hetero5carboxylic_names(numbered)
     if kind in _SHCOOH_KINDS: return sat_hetero_carboxylic_names(numbered)
