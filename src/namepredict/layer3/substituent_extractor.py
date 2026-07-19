@@ -22,7 +22,7 @@ def _strip_n_prefix(stem: str) -> str:
 
 
 def _strip_lead_locant(stem: str) -> str:
-    """Strip one leading locant set: '4-', '1,3-', '1,1,1-' (P-14.5)."""
+    """Strip one leading locant set: '4-', '1,3-', '1,1,1-', '1H-' (P-14.5)."""
     i = 0
     n = len(stem)
     while i < n and stem[i].isdigit():
@@ -31,6 +31,9 @@ def _strip_lead_locant(stem: str) -> str:
             i += 1
             while i < n and stem[i].isdigit():
                 i += 1
+    # Indicated-hydrogen prefix: 1H-, 2H-, 3H- (P-14.5 / P-65.3.2.5)
+    if i and i + 1 < n and stem[i] == "H" and stem[i + 1] == "-":
+        i += 1
     return stem[i + 1 :] if i and i < n and stem[i] == "-" else stem
 
 

@@ -214,3 +214,40 @@ def test_oxamoyl_pin():
     e = get_retained("oxamoyl")
     assert e.level == IupacLevel.PIN
     assert resolve_name("oxamoyl", name_mode="general") == ("oxamoyl", "草氨酰基")
+
+
+# ── integration: 5 sulfur substituent prefixes ──
+
+_SULFUR_PREFIX_CASES = [
+    # (smiles, expected_en_fragment, label)
+    ("CS(=O)CC[C@H](N)C(=O)O", "methylsulfinyl", "methylsulfinyl on amino acid"),
+    ("CS(=O)(=O)CC[C@H](N)C(=O)O", "methylsulfonyl", "methylsulfonyl on amino acid (benchmark fix)"),
+    ("CS(=O)(=O)C", "methylsulfonyl", "dimethyl sulfone → methylsulfonyl prefix"),
+    ("O=S(=O)(C(F)(F)F)CC[C@H](N)C(=O)O", "triflyl", "triflyl on amino acid"),
+    ("Cc1ccc(S(=O)(=O)CC[C@H](N)C(=O)O)cc1", "tosyl", "tosyl on amino acid"),
+    ("CS(=O)(=O)c1ccc(C(=O)c2c(Sc3ccccc3)C3CCC(C3)C2=O)c(Cl)c1", "methylsulfonyl", "methylsulfonyl aryl ketone"),
+]
+
+
+@pytest.mark.parametrize("smiles,expected_fragment,label", _SULFUR_PREFIX_CASES)
+def test_sulfur_prefix_naming(smiles, expected_fragment, label):
+    from namepredict.namer import SMILESNNamer
+    r = SMILESNNamer(name_mode="general").name(smiles)
+    assert r.success, f"{label}: naming failed"
+    assert expected_fragment in r.en, f"{label}: expected '{expected_fragment}' in '{r.en}'"
+
+
+def test_methylsulfanyl_unchanged():
+    """Plain thioether should still give methylsulfanyl, not a sulfonyl variant."""
+    from namepredict.namer import SMILESNNamer
+    r = SMILESNNamer(name_mode="general").name("CC(C)SC")
+    assert r.success
+    assert "methylsulfanyl" in r.en
+
+
+def test_sulfonate_not_falsely_tosyl():
+    """Butyl tosylate must remain sulfonate parent, not tosyl substituent."""
+    from namepredict.namer import SMILESNNamer
+    r = SMILESNNamer(name_mode="general").name("CC1=CC=C(C=C1)S(=O)(=O)OCCCC")
+    assert r.success
+    assert "4-methylbenzenesulfonate" in r.en

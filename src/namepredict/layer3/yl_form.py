@@ -173,5 +173,8 @@ def yl_form(
     """
     fg = _try_fg_prefix(en, zh)
     if fg is not None:
-        return fg[0], fg[1], False
+        # P-29.3.6: compound prefixes (methylamino=CH3-NH-, not plain amino)
+        # need parentheses to distinguish from two separate substituents.
+        need_paren = fg[0].endswith("amino") and fg[0] != "amino"
+        return fg[0], fg[1], need_paren
     return _yl_en(en, attach_locant), _yl_zh(zh, attach_locant, en), paren

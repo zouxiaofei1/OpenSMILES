@@ -102,7 +102,91 @@ def _try_methylsulfanyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
     c_idxs = [i for i in claim.atoms if i != s_idx]
     if len(c_idxs) != 1 or not _is_plain_methyl_on_s(mol, s_idx, c_idxs[0]):
         return None
+    # Reject if S has any =O neighbour (sulfinyl/sulfonyl territory)
+    if _s_dbl_o(mol, s_idx) != 0:
+        return None
     return _retained_hit(claim, "methylsulfanyl", "甲硫基", False)
+
+
+def _s_dbl_o(mol, s_idx: int) -> int:
+    """Count doubly-bonded oxygen neighbours on sulfur."""
+    return sum(1 for n in mol.GetAtomWithIdx(s_idx).GetNeighbors()
+               if n.GetAtomicNum() == 8
+               and mol.GetBondBetweenAtoms(s_idx, n.GetIdx()).GetBondType() == BondType.DOUBLE)
+
+
+def _try_methylsulfinyl(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
+    """CH3–S(=O)– : S with methyl and exactly 1 oxo neighbour."""
+    s_idx = _methylsulfanyl_s(mol, claim)
+    if s_idx is None:
+        return None
+    c_idx = next((i for i in claim.atoms if i != s_idx
+                  and mol.GetAtomWithIdx(i).GetAtomicNum() == 6), None)
+    if c_idx is None or not _is_plain_methyl_on_s(mol, s_idx, c_idx):
+        return None
+    if _s_dbl_o(mol, s_idx) != 1:
+        return None
+    from namepredict.layer3.retained_substituents import resolve_name
+    en, zh = resolve_name("methylsulfinyl", name_mode=name_mode)
+    return _retained_hit(claim, en, zh, False)
+
+
+def _try_methylsulfonyl(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
+    """CH3–S(=O)(=O)– PIN name 'methylsulfonyl'."""
+    s_idx = _methylsulfanyl_s(mol, claim)
+    if s_idx is None:
+        return None
+    c_idx = next((i for i in claim.atoms if i != s_idx
+                  and mol.GetAtomWithIdx(i).GetAtomicNum() == 6), None)
+    if c_idx is None or not _is_plain_methyl_on_s(mol, s_idx, c_idx):
+        return None
+    if _s_dbl_o(mol, s_idx) != 2:
+        return None
+    from namepredict.layer3.retained_substituents import resolve_name
+    en, zh = resolve_name("methylsulfonyl", name_mode=name_mode)
+    return _retained_hit(claim, en, zh, False)
+
+
+def _try_tosyl(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
+    """4-methylphenyl–S(=O)(=O)– retained name 'tosyl'."""
+    if mol.GetAtomWithIdx(claim.root).GetAtomicNum() != 16:
+        return None
+    s_idx = claim.root
+    if _s_dbl_o(mol, s_idx) != 2:
+        return None
+    # Aromatic C must be in-claim (not parent-owned)
+    arom_c = [n for n in mol.GetAtomWithIdx(s_idx).GetNeighbors()
+              if n.GetAtomicNum() == 6 and n.GetIsAromatic()
+              and n.GetIdx() in claim.atoms]
+    if len(arom_c) != 1:
+        return None
+    # Require at least 6 aromatic ring carbons in claim
+    ring_c = [i for i in claim.atoms
+              if mol.GetAtomWithIdx(i).GetIsAromatic() and mol.GetAtomWithIdx(i).GetAtomicNum() == 6]
+    if len(ring_c) < 6:
+        return None
+    from namepredict.layer3.retained_substituents import resolve_name
+    en, zh = resolve_name("tosyl", name_mode=name_mode)
+    return _retained_hit(claim, en, zh, False)
+
+
+def _try_triflyl(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
+    """CF3–S(=O)(=O)– retained name 'triflyl'."""
+    if mol.GetAtomWithIdx(claim.root).GetAtomicNum() != 16:
+        return None
+    # Triflyl needs at least S+2O+C+3F = 7 atoms
+    if len(claim.atoms) < 5:
+        return None
+    s_idx = claim.root
+    if _s_dbl_o(mol, s_idx) != 2:
+        return None
+    c_nb = [n for n in mol.GetAtomWithIdx(s_idx).GetNeighbors() if n.GetAtomicNum() == 6
+            and sum(1 for nn in n.GetNeighbors() if nn.GetAtomicNum() == 9) == 3]
+    if len(c_nb) != 1:
+        return None
+    from namepredict.layer3.retained_substituents import resolve_name
+    en, zh = resolve_name("triflyl", name_mode=name_mode)
+    return _retained_hit(claim, en, zh, False)
 
 
 def _try_registry_leaf(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
@@ -166,6 +250,10 @@ def _retained_name(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> S
         or _try_alkenyl_retained(mol, claim, name_mode=name_mode)
         or _try_methoxy(mol, claim)
         or _try_methylsulfanyl(mol, claim)
+        or _try_methylsulfinyl(mol, claim, name_mode=name_mode)
+        or _try_methylsulfonyl(mol, claim, name_mode=name_mode)
+        or _try_tosyl(mol, claim, name_mode=name_mode)
+        or _try_triflyl(mol, claim, name_mode=name_mode)
     )
 
 
