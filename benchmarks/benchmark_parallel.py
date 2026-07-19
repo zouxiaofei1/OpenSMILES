@@ -14,12 +14,11 @@ except Exception:
 
 import argparse
 import json
-import multiprocessing as mp
 import os
 import sys
 import time
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -68,61 +67,6 @@ def _score_row(row: dict[str, Any]) -> tuple[dict[str, Any], str, str, dict[str,
         pred_en, pred_zh = "", ""
     score = score_record(pred_en, pred_zh, row)
     return score, pred_en, pred_zh, row
-
-
-def _score_row_process(row: dict[str, Any], conn, score_func) -> None:
-    """Run one row in an isolated process so a timeout can terminate it."""
-    try:
-        if score_func is _score_row:
-            _init_worker()
-        conn.send(("ready", None))
-        conn.send(("result", score_func(row)))
-    except BaseException as exc:
-        conn.send(("error", f"{type(exc).__name__}: {exc}"))
-    finally:
-        conn.close()
-
-
-def _run_row_with_timeout(
-    index: int,
-    row: dict[str, Any],
-    timeout: float,
-    *,
-    score_func=_score_row,
-) -> tuple[tuple[dict[str, Any], str, str, dict[str, Any]], int | None]:
-    """Score one row in a killable process and report its index on timeout."""
-    parent_conn, child_conn = mp.Pipe(duplex=False)
-    process = mp.Process(target=_score_row_process, args=(row, child_conn, score_func))
-    process.start()
-    child_conn.close()
-    timeout_index: int | None = None
-    try:
-        if not parent_conn.poll(30):
-            print(f"startup timeout index={index}", file=sys.stderr, flush=True)
-        else:
-            kind, payload = parent_conn.recv()
-            if kind == "ready" and parent_conn.poll(timeout):
-                kind, payload = parent_conn.recv()
-            elif kind == "ready":
-                kind = "timeout"
-            if kind == "result":
-                process.join(timeout=1)
-                return payload, None
-            if kind == "error":
-                print(f"worker error index={index} error={payload}", file=sys.stderr, flush=True)
-            elif kind == "timeout":
-                timeout_index = index
-        if process.is_alive():
-            process.terminate()
-        process.join()
-        pred_en = pred_zh = ""
-        item = (score_record(pred_en, pred_zh, row), pred_en, pred_zh, row)
-        return item, timeout_index
-    finally:
-        parent_conn.close()
-        if process.is_alive():
-            process.terminate()
-            process.join()
 
 
 def _default_workers() -> int:
@@ -198,21 +142,23 @@ def _pool_results_with_progress(
     timeout: float,
     t0: float,
 ) -> list[tuple[dict[str, Any], str, str, dict[str, Any]]]:
-    """Run killable row processes concurrently and print progress."""
+    """Run rows on persistent process pool with per-row timeout; report progress."""
     total = len(rows)
-    indexed_rows = list(enumerate(rows))
     results: list[tuple[dict[str, Any], str, str, dict[str, Any]]] = []
     bucket = _empty_bucket()
     timeout_indexes: list[int] = []
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = [
-            pool.submit(_run_row_with_timeout, index, row, timeout)
-            for index, row in indexed_rows
-        ]
+
+    with ProcessPoolExecutor(max_workers=workers, initializer=_init_worker) as pool:
+        futures = {pool.submit(_score_row, row): i for i, row in enumerate(rows)}
         for i, fut in enumerate(as_completed(futures), 1):
-            item, timeout_index = fut.result()
-            if timeout_index is not None:
-                timeout_indexes.append(timeout_index)
+            idx = futures[fut]
+            try:
+                item = fut.result(timeout=timeout)
+            except Exception:
+                row = rows[idx]
+                score = score_record("", "", row)
+                item = (score, "", "", row)
+                timeout_indexes.append(idx)
             results.append(item)
             _tally(bucket, item[0])
             if i % _PROGRESS_EVERY == 0 or i == total:

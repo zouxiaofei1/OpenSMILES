@@ -15,10 +15,10 @@ def _locant_from_result(result, attach_new: int) -> int | None:
     return chain.index(attach_new) + 1
 
 
-def _yl_from_sub(sub, *, depth: int) -> tuple[str, str, bool] | None:
+def _yl_from_sub(sub, *, depth: int, name_mode: str = "general") -> tuple[str, str, bool] | None:
     from namepredict.namer import _name_mol
 
-    result = _name_mol(sub.mol, depth=depth)
+    result = _name_mol(sub.mol, depth=depth, name_mode=name_mode)
     if not result.success or not result.en:
         return None
     loc = _locant_from_result(result, sub.attach_new)
@@ -26,10 +26,10 @@ def _yl_from_sub(sub, *, depth: int) -> tuple[str, str, bool] | None:
 
 
 def name_as_substituent(
-    mol, attach_old: int, atoms, *, depth: int = 0, max_depth: int = 4,
+    mol, attach_old: int, atoms, *, depth: int = 0, max_depth: int = 4, name_mode: str = "general",
 ) -> tuple[str, str, bool] | None:
     """Cut atoms at attach_old, free-name the submol, emit -yl dual names."""
     if depth >= max_depth:
         return None
     sub = build_cut_submol(mol, frozenset(atoms), attach_old)
-    return None if sub is None else _yl_from_sub(sub, depth=depth + 1)
+    return None if sub is None else _yl_from_sub(sub, depth=depth + 1, name_mode=name_mode)

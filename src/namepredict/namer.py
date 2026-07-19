@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import time
 
-from rdkit.Chem import MolToSmiles
-
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer0.salt import dissociate_salt
@@ -17,21 +15,6 @@ from namepredict.layer3.substituent_namer import SubstituentName
 from namepredict.layer4.numbering import number
 from namepredict.layer5.assembler import assemble
 from namepredict.types import NameResult
-
-_ANALYZE_CACHE: dict[str, dict] = {}
-_ANALYZE_CACHE_MAX = 500
-
-
-def _cached_analyze(mol) -> dict:
-    """Return cached analyze result, computing if needed (keyed by SMILES)."""
-    key = MolToSmiles(mol)
-    if key in _ANALYZE_CACHE:
-        return _ANALYZE_CACHE[key]
-    if len(_ANALYZE_CACHE) >= _ANALYZE_CACHE_MAX:
-        _ANALYZE_CACHE.clear()
-    result = analyze(mol)
-    _ANALYZE_CACHE[key] = result
-    return result
 
 
 def _fail(time_ms: float = 0.0, reason: str = "parse", **meta) -> NameResult:
@@ -125,14 +108,14 @@ def _assemble_candidate(parent, subst, *, depth: int, t0: float) -> NameResult |
     return _ok_result(numbered, depth=depth, t0=t0)
 
 
-def _prepare_candidate(info: dict, parent: dict) -> tuple[dict, list[dict], bool]:
+def _prepare_candidate(info: dict, parent: dict, *, name_mode: str = "general") -> tuple[dict, list[dict], bool]:
     mol = info["mol"]
     parent = finalize_parent_ownership(parent, mol)
     if not parent.get("owned_atoms"):
         return parent, [], False
     if not parent.get("chain") and not info.get("has_ring"):
         return parent, [], False
-    subst = extract_substituents(info, parent)
+    subst = extract_substituents(info, parent, name_mode=name_mode)
     complete = _ledger_complete(mol, parent["owned_atoms"], subst)
     return parent, subst, complete
 
@@ -144,10 +127,11 @@ def try_candidate(
     depth: int = 0,
     t0: float | None = None,
     require_complete: bool = True,
+    name_mode: str = "general",
 ) -> NameResult | None:
     """Finalize ownership, extract, optionally require complete ledger, then assemble."""
     t0 = t0 if t0 is not None else time.perf_counter()
-    parent, subst, complete = _prepare_candidate(info, parent)
+    parent, subst, complete = _prepare_candidate(info, parent, name_mode=name_mode)
     if require_complete and not complete:
         return None
     hit = _assemble_candidate(parent, subst, depth=depth, t0=t0)
@@ -157,7 +141,7 @@ def try_candidate(
     return hit
 
 
-def _run_candidates(info: dict, *, depth: int, t0: float) -> NameResult:
+def _run_candidates(info: dict, *, depth: int, t0: float, name_mode: str = "general") -> NameResult:
     """Prefer complete-coverage candidates; if none, fall back to any assemblable name.
 
     Empty-name path removed: do not return success=False with blank en when a
@@ -174,7 +158,7 @@ def _run_candidates(info: dict, *, depth: int, t0: float) -> NameResult:
         cands = list(iter_parent_candidates(info)) or [select_parent(info)]
     # Pass 1: complete ledger only (high quality), retaining work for fallback.
     for candidate in cands:
-        parent, subst, complete = _prepare_candidate(info, candidate)
+        parent, subst, complete = _prepare_candidate(info, candidate, name_mode=name_mode)
         hit = _assemble_candidate(parent, subst, depth=depth, t0=t0) if complete else None
         prepared.append((parent, subst, complete, hit))
         if hit is not None and hit.success and hit.en:
@@ -202,23 +186,24 @@ def _name_mol(
     depth: int = 0,
     cache: CommonNameCache | None = None,
     t0: float | None = None,
+    name_mode: str = "general",
 ) -> NameResult:
     """Run L1–L5 from mol with coverage-gated candidate retry."""
     t0 = t0 if t0 is not None else time.perf_counter()
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
     organic, salt = dissociate_salt(mol)
-    result = _run_candidates(_cached_analyze(organic), depth=depth, t0=t0)
+    result = _run_candidates(analyze(organic), depth=depth, t0=t0, name_mode=name_mode)
     if salt and result.success:
         result.meta = {**(result.meta or {}), "salt": salt}
     return result
 
 
-def _pipeline(smiles: str, t0: float) -> NameResult:
+def _pipeline(smiles: str, t0: float, *, name_mode: str = "general") -> NameResult:
     mol = preprocess(smiles)
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
-    return _name_mol(mol, depth=0, t0=t0)
+    return _name_mol(mol, depth=0, t0=t0, name_mode=name_mode)
 
 
 def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
@@ -228,20 +213,21 @@ def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
         pass
 
 
-def _name_uncached(smiles: str, t0: float) -> NameResult:
-    return _pipeline(smiles, t0)
+def _name_uncached(smiles: str, t0: float, *, name_mode: str = "general") -> NameResult:
+    return _pipeline(smiles, t0, name_mode=name_mode)
 
 
 class SMILESNNamer:
-    def __init__(self, cache: CommonNameCache | None = None) -> None:
+    def __init__(self, cache: CommonNameCache | None = None, *, name_mode: str = "general") -> None:
         self.cache = cache if cache is not None else CommonNameCache()
+        self._name_mode = name_mode
 
     def name(self, smiles: str) -> NameResult:
         t0 = time.perf_counter()
         hit = self.cache.get(smiles)
         if hit is not None:
             return hit
-        result = _name_uncached(smiles, t0)
+        result = _name_uncached(smiles, t0, name_mode=self._name_mode)
         if result.success:
             _cache_put(self.cache, smiles, result)
         return result

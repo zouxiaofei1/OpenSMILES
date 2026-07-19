@@ -342,6 +342,47 @@ def _is_prenyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     return [start, mid, outer, *mids] if mids else None
 
 
+def _is_vinyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    """Parent–CH=CH2 (start is sp2 C with double bond to terminal =CH2)."""
+    free = _free_c(mol, start, chain)
+    if len(free) != 1:
+        return None
+    v = free[0]
+    if not _has_double(mol, start, v):
+        return None
+    v_heavies = [n.GetIdx() for n in mol.GetAtomWithIdx(v).GetNeighbors() if n.GetAtomicNum() > 1]
+    return [start, v] if v_heavies == [start] else None
+
+
+def _is_allyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    """Parent–CH2–CH=CH2 (start saturated, mid sp2, end =CH2)."""
+    if not _is_pure_alkyl_c(mol, start):
+        return None
+    mid = _one_pure_free(mol, start, chain)
+    if mid is None:
+        return None
+    end_candidates = _free_c(mol, mid, {start})
+    if len(end_candidates) != 1:
+        return None
+    end = end_candidates[0]
+    return [start, mid, end] if _has_double(mol, mid, end) else None
+
+
+def _is_isopropenyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
+    """Parent–C(CH3)=CH2 (start sp2 =C< with one =CH2 and one –CH3)."""
+    free = _free_c(mol, start, chain)
+    if len(free) != 2:
+        return None
+    dbl = [c for c in free if _has_double(mol, start, c)]
+    sgl = [c for c in free if not _has_double(mol, start, c)]
+    if len(dbl) != 1 or len(sgl) != 1:
+        return None
+    if not _is_terminal_methyl(mol, sgl[0], start):
+        return None
+    dbl_heavies = [n.GetIdx() for n in mol.GetAtomWithIdx(dbl[0]).GetNeighbors() if n.GetAtomicNum() > 1]
+    return [start, dbl[0], sgl[0]] if dbl_heavies == [start] else None
+
+
 def _probe_monocycloalkyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     from namepredict.layer2.side_cycloalkyl import _is_monocycloalkyl
     return _is_monocycloalkyl(mol, start, chain)
@@ -356,6 +397,9 @@ def _probe_1_cycloalkylethyl(mol: Mol, start: int, chain: set[int]) -> list[int]
 _TOPOLOGY_SIDE_PROBES = (
     _walk_linear,
     _walk_omega_halo,
+    _is_vinyl,
+    _is_allyl,
+    _is_isopropenyl,
     _is_isopropyl,
     _is_tert_butyl,
     _is_2_methylbutan_2_yl,

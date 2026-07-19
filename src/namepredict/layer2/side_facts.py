@@ -15,6 +15,9 @@ from namepredict.layer2.leaves.topo import nb_out
 
 
 class AlkylShape(Enum):
+    C2_VINYL = auto()
+    C3_ALLYL = auto()
+    C3_ISOPROPENYL = auto()
     C3_BRANCH_AT_ROOT = auto()
     C4_BRANCH_AT_SECOND = auto()
     C4_TRIPLE_BRANCH_AT_ROOT = auto()
@@ -110,6 +113,9 @@ class HeteroarylFact:
 
 
 _SHAPE_MATCHERS = {
+    AlkylShape.C2_VINYL: side_alkyl._is_vinyl,
+    AlkylShape.C3_ALLYL: side_alkyl._is_allyl,
+    AlkylShape.C3_ISOPROPENYL: side_alkyl._is_isopropenyl,
     AlkylShape.C3_BRANCH_AT_ROOT: side_alkyl._is_isopropyl,
     AlkylShape.C4_BRANCH_AT_SECOND: side_alkyl._is_sec_butyl,
     AlkylShape.C4_TRIPLE_BRANCH_AT_ROOT: side_alkyl._is_tert_butyl,

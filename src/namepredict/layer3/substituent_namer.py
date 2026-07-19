@@ -103,10 +103,36 @@ def _try_methylsulfanyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
     return _retained_hit(claim, "methylsulfanyl", "甲硫基", False)
 
 
-def _retained_name(mol, claim: ClaimedBlock) -> SubstituentName | None:
+_ALKENYL_CHECKS = (
+    ("vinyl",),
+    ("allyl",),
+    ("isopropenyl",),
+)
+
+
+def _try_alkenyl_retained(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
+    from namepredict.layer2 import side_facts
+    from namepredict.layer3.retained_substituents import resolve_name
+
+    SHAPES = {
+        "vinyl": side_facts.AlkylShape.C2_VINYL,
+        "allyl": side_facts.AlkylShape.C3_ALLYL,
+        "isopropenyl": side_facts.AlkylShape.C3_ISOPROPENYL,
+    }
+    root, parent = claim.root, {claim.attach_parent}
+    for (key,) in _ALKENYL_CHECKS:
+        fact = side_facts.alkyl_shape(mol, root, parent, SHAPES[key])
+        if fact and set(fact.atoms) == set(claim.atoms):
+            en, zh = resolve_name(key, name_mode=name_mode)
+            return _retained_hit(claim, en, zh, False)
+    return None
+
+
+def _retained_name(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
     return (
         _try_cycloalkyl(mol, claim)
         or _try_sub_phenyl(mol, claim)
+        or _try_alkenyl_retained(mol, claim, name_mode=name_mode)
         or _try_methoxy(mol, claim)
         or _try_methylsulfanyl(mol, claim)
     )
@@ -117,8 +143,11 @@ class RetainedBackend:
 
     name = "retained"
 
+    def __init__(self, *, name_mode: str = "general") -> None:
+        self._name_mode = name_mode
+
     def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None:
-        return _retained_name(mol, claim)
+        return _retained_name(mol, claim, name_mode=self._name_mode)
 
 
 def _rooted_tree_name(mol, claim: ClaimedBlock) -> SubstituentName | None:
@@ -140,6 +169,9 @@ class RootedTreeBackend:
 
     name = "rooted_tree"
 
+    def __init__(self, *, name_mode: str = "general") -> None:
+        self._name_mode = name_mode
+
     def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None:
         return _rooted_tree_name(mol, claim)
 
@@ -149,8 +181,11 @@ class RecursiveBackend:
 
     name = "recursive"
 
+    def __init__(self, *, name_mode: str = "general") -> None:
+        self._name_mode = name_mode
+
     def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None:
-        hit = name_as_substituent(mol, claim.root, claim.atoms, depth=depth)
+        hit = name_as_substituent(mol, claim.root, claim.atoms, depth=depth, name_mode=self._name_mode)
         return None if hit is None else _from_yl(claim, hit)
 
 
@@ -163,13 +198,13 @@ def _from_yl(claim: ClaimedBlock, hit: tuple[str, str, bool]) -> SubstituentName
     )
 
 
-def _default_backends() -> list[SubstituentBackend]:
-    return [RetainedBackend(), RootedTreeBackend(), RecursiveBackend()]
+def _default_backends(name_mode: str = "general") -> list[SubstituentBackend]:
+    return [RetainedBackend(name_mode=name_mode), RootedTreeBackend(name_mode=name_mode), RecursiveBackend(name_mode=name_mode)]
 
 
 class SubstituentNamer:
-    def __init__(self, backends: Sequence[SubstituentBackend] | None = None) -> None:
-        self._backends = list(backends) if backends is not None else _default_backends()
+    def __init__(self, backends: Sequence[SubstituentBackend] | None = None, *, name_mode: str = "general") -> None:
+        self._backends = list(backends) if backends is not None else _default_backends(name_mode)
 
     def name(self, mol, claim: ClaimedBlock, *, depth: int = 0) -> SubstituentName | None:
         for backend in self._backends:

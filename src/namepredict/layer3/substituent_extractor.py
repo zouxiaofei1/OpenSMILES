@@ -114,31 +114,37 @@ def _one_haloalkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> di
     return _make_haloalkyl(attach, path, z) if z else None
 
 
-def _one_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict | None:
+def _one_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int], *, name_mode: str = "general") -> dict | None:
     fact = side_facts.linear_alkyl(mol, start, chain_set, 12)
     path = list(fact.atoms) if fact else None
     if path and len(path) in ALKYL_EN:
         return _make_alkyl(attach, path)
     ha = _one_haloalkyl(mol, attach, start, chain_set)
-    return ha if ha is not None else _one_branched(mol, attach, start, chain_set)
+    return ha if ha is not None else _one_branched(mol, attach, start, chain_set, name_mode=name_mode)
 
 
 _BRANCH_CHECKS = (
-    (side_facts.AlkylShape.C3_BRANCH_AT_ROOT, 3, "isopropyl", "异丙基"),
-    (side_facts.AlkylShape.C4_TRIPLE_BRANCH_AT_ROOT, 4, "tert-butyl", "叔丁基"),
-    (side_facts.AlkylShape.C5_ASYMMETRIC_ROOT_BRANCH, 5, "2-methylbutan-2-yl", "2-甲基丁-2-基"),
-    (side_facts.AlkylShape.C4_BRANCH_AFTER_ROOT, 4, "isobutyl", "异丁基"),
-    (side_facts.AlkylShape.C4_BRANCH_AT_SECOND, 4, "sec-butyl", "仲丁基"),
-    (side_facts.AlkylShape.C5_DOUBLE_BRANCH_AFTER_ROOT, 5, "neopentyl", "新戊基"),
-    (side_facts.AlkylShape.C5_PRENYL, 5, "3-methylbut-2-enyl", "3-甲基丁-2-烯基"),
-    (side_facts.AlkylShape.C5_BRANCH_NEAR_LEAF, 5, "isopentyl", "异戊基"),
+    (side_facts.AlkylShape.C2_VINYL, 2, "vinyl"),
+    (side_facts.AlkylShape.C3_ALLYL, 3, "allyl"),
+    (side_facts.AlkylShape.C3_ISOPROPENYL, 3, "isopropenyl"),
+    (side_facts.AlkylShape.C3_BRANCH_AT_ROOT, 3, "isopropyl"),
+    (side_facts.AlkylShape.C4_TRIPLE_BRANCH_AT_ROOT, 4, "tert-butyl"),
+    (side_facts.AlkylShape.C5_ASYMMETRIC_ROOT_BRANCH, 5, "2-methylbutan-2-yl"),
+    (side_facts.AlkylShape.C4_BRANCH_AFTER_ROOT, 4, "isobutyl"),
+    (side_facts.AlkylShape.C4_BRANCH_AT_SECOND, 4, "sec-butyl"),
+    (side_facts.AlkylShape.C5_DOUBLE_BRANCH_AFTER_ROOT, 5, "neopentyl"),
+    (side_facts.AlkylShape.C5_PRENYL, 5, "3-methylbut-2-enyl"),
+    (side_facts.AlkylShape.C5_BRANCH_NEAR_LEAF, 5, "isopentyl"),
 )
 
 
-def _one_branched(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict | None:
-    for shape, n, en, zh in _BRANCH_CHECKS:
+def _one_branched(mol: Mol, attach: int, start: int, chain_set: set[int], *, name_mode: str = "general") -> dict | None:
+    from namepredict.layer3.retained_substituents import resolve_name
+
+    for shape, n, key in _BRANCH_CHECKS:
         fact = side_facts.alkyl_shape(mol, start, chain_set, shape)
         if fact:
+            en, zh = resolve_name(key, name_mode=name_mode)
             return _make_branch(attach, list(fact.atoms), n, en, zh)
     cyc = _one_cycloalkyl_side(mol, attach, start, chain_set)
     if cyc is not None:
@@ -364,12 +370,12 @@ def _aryl_outer_starts(info: dict, parent: dict) -> set[int]:
     return aromatic | side_facts.heteroaryl_outers(mol, chain)
 
 
-def _extract_alkyls_no_aryl(mol: Mol, chain: list[int], skip: set[int]) -> list[dict]:
+def _extract_alkyls_no_aryl(mol: Mol, chain: list[int], skip: set[int], *, name_mode: str = "general") -> list[dict]:
     cs, out = set(chain), []
     for attach, start in _side_starts(mol, chain):
         if start in skip:
             continue
-        one = _one_alkyl(mol, attach, start, cs)
+        one = _one_alkyl(mol, attach, start, cs, name_mode=name_mode)
         if one is not None:
             out.append(one)
     return out
@@ -420,14 +426,14 @@ def _carboxyalkyl_sub(fact: side_facts.CarboxyalkylArm) -> dict:
             "atoms": [*fact.atoms, fact.carboxyl], "en": en, "zh": zh, "paren": True}
 
 
-def extract_substituents(info: dict, parent: dict) -> list:
+def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general") -> list:
     from namepredict.layer3.claim_extract import extract_claimed_sides
 
     mol, chain = info["mol"], parent.get("chain") or []
-    alkyl = _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent))
+    alkyl = _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent), name_mode=name_mode)
     base = (
         alkyl + _extract_carboxymethyls(parent) + _extract_core_subs(info, parent)
         + _extract_alkoxys(info, parent) + _extract_aryls(info, parent)
         + _extract_n_subs(info, parent)
     )
-    return base + extract_claimed_sides(info, parent, base)
+    return base + extract_claimed_sides(info, parent, base, name_mode=name_mode)
