@@ -173,20 +173,49 @@ def _thiol_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     return out
 
 
-def _ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Ester/benzoate: carbonyl C + both oxygens + alkoxy carbon arm."""
+def _add_ester_alkoxy_arm(mol: Mol, c_idx: int, dbl_o: int | None, out: set[int]) -> None:
+    """Find ester -O- neighbor of c_idx and walk its alkoxy arm."""
+    for n in mol.GetAtomWithIdx(c_idx).GetNeighbors():
+        if n.GetAtomicNum() != 8 or n.GetIdx() == dbl_o:
+            continue
+        out.add(n.GetIdx())
+        for nn in n.GetNeighbors():
+            if nn.GetIdx() != c_idx and nn.GetAtomicNum() == 6:
+                out |= _ether_arm_atoms(mol, n.GetIdx(), nn.GetIdx())
+
+
+def _one_ester_fg(mol: Mol, c_idx: int, out: set[int]) -> None:
+    """Add one ester carbonyl C + =O + -O- + alkoxy arm to out."""
+    out.add(int(c_idx))
+    dbl_o = _dbl_o_idx(mol, int(c_idx))
+    _add_opt(out, dbl_o)
+    _add_ester_alkoxy_arm(mol, int(c_idx), dbl_o, out)
+
+
+def _single_ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Mono-ester/benzoate: carbonyl C + =O + -O- + alkoxy arm."""
     c_idx = parent.get("ester_c_idx")
     if c_idx is None:
         return set()
-    out = {int(c_idx)}
-    _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
-    o_idx, alkoxy_c = parent.get("o_idx"), parent.get("alkoxy_c_idx")
-    if o_idx is None:
-        return out
-    out.add(int(o_idx))
-    if alkoxy_c is not None:
-        out |= _ether_arm_atoms(mol, int(o_idx), int(alkoxy_c))
+    out: set[int] = set()
+    _one_ester_fg(mol, c_idx, out)
     return out
+
+
+def _diester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Diester: both ester carbonyls + O atoms + alkoxy arms."""
+    c_idxs = parent.get("ester_c_idxs")
+    if not c_idxs:
+        return set()
+    out: set[int] = set()
+    for c in c_idxs:
+        _one_ester_fg(mol, c, out)
+    return out
+
+
+def _ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """Ester/benzoate/diester: dispatch to mono or diester handler."""
+    return _single_ester_fg_atoms(mol, parent) or _diester_fg_atoms(mol, parent)
 
 
 def _anhydride_fg_atoms(mol: Mol, parent: dict) -> set[int]:
