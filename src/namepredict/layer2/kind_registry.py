@@ -32,6 +32,7 @@ _CHAIN_FG: tuple[tuple[str, int], ...] = (
     ("cycloamine", 3), ("hydrazine", 4), ("phosphate", 2), ("phosphonic", 2),
     ("ether", 2), ("sulfide", 2), ("sulfoxide", 2),
     ("isocyanate", 8), ("isothiocyanate", 8),
+    ("sulfone", 6),
 )
 _ARENE_NAMED: tuple[tuple[str, str, str, int], ...] = (
     ("benzoic", "benzoic acid", "苯甲酸", 13),

@@ -41,7 +41,7 @@ def _n_rest_ok(n_atom, s_idx: int) -> bool:
     heavies = [n for n in n_atom.GetNeighbors() if n.GetAtomicNum() != 1]
     if any(h.GetIdx() != s_idx and h.GetAtomicNum() not in (6,) for h in heavies):
         return False
-    return sum(1 for h in heavies if h.GetAtomicNum() == 6) <= 1
+    return sum(1 for h in heavies if h.GetAtomicNum() == 6) <= 2
 
 
 def _n_ok(n_atom, s_idx: int) -> bool:

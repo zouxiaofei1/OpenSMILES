@@ -59,11 +59,49 @@ def _n_cyclo_aryl(parent: dict) -> tuple[str, str] | None:
     return _with_n_pref(pe, pz, cy_en, cy_zh, be, bz)
 
 
+_N_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
+_N_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
+
+
+def _n_alkyl_stem(n: int) -> tuple[str, str] | None:
+    en, zh = _N_EN.get(n), _N_ZH.get(n)
+    return (en, zh) if en and zh else None
+
+
+def _n_alkyl_names(parent: dict) -> tuple[str, str] | None:
+    s, n = parent.get("s_side") or {}, parent.get("n_side") or {}
+    stem = _alkyl_stem(int(s.get("n") or 0))
+    n_stem = _n_alkyl_stem(int(n.get("n") or 0))
+    if stem is None or n_stem is None:
+        return None
+    return f"N-{n_stem[0]}{stem[0]}", f"N-{n_stem[1]}{stem[1]}"
+
+
+def _n_n_name_en_zh(ns, n1, n2, stem):
+    if ns[0] == ns[1]:
+        return f"N,N-di{n1[0]}{stem[0]}", f"N,N-二{n1[1]}{stem[1]}"
+    return f"N-{n1[0]}-N-{n2[0]}{stem[0]}", f"N-{n1[1]}-N-{n2[1]}{stem[1]}"
+
+
+def _n_n_dialkyl_names(parent: dict) -> tuple[str, str] | None:
+    s, n = parent.get("s_side") or {}, parent.get("n_side") or {}
+    stem = _alkyl_stem(int(s.get("n") or 0))
+    ns = n.get("ns") or []
+    if len(ns) != 2 or stem is None:
+        return None
+    n1, n2 = _n_alkyl_stem(ns[0]), _n_alkyl_stem(ns[1])
+    if n1 is None or n2 is None:
+        return None
+    return _n_n_name_en_zh(ns, n1, n2, stem)
+
+
 _MODE = {
     "alkyl": _alkyl_names,
     "aryl": _aryl_stem,
     "n_aryl_alkyl": _n_aryl_alkyl,
     "n_cyclo_aryl": _n_cyclo_aryl,
+    "n_alkyl": _n_alkyl_names,
+    "n_n_dialkyl": _n_n_dialkyl_names,
 }
 
 
