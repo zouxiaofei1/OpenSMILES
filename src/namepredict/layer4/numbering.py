@@ -282,12 +282,15 @@ _FIXED_FUSED = (
     "indole", "indolecarboxylic", "indazole", "indazolecarbonitrile", "indazolecarbaldehyde",
     "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol", "benzothiazole",
     "benzothiazolamine", "benzoxazole", "benzoxazolamine", "benzimidazole", "benzimidazolamine",
-    "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic", "chromenone",
+    "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
+    "quinolinecarbaldehyde", "quinolinecarbonitrile", "chromenone",
 )
 def _fused_orienters() -> dict:
     d = {kind: _orient_indole for kind in _FIXED_FUSED}
     d["naphthalene"] = _orient_naphthalene
     d["naphthalenecarboxylic"] = _orient_naphthalenecarboxylic
+    d["naphthalenecarbaldehyde"] = _orient_naphthalenecarboxylic
+    d["naphthalenecarbonitrile"] = _orient_naphthalenecarboxylic
     d["anthraquinone"] = _orient_anthraquinone
     return d
 def _arene_orienters() -> dict:
