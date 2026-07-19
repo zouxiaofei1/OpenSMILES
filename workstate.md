@@ -211,4 +211,11 @@
 [#fcecb3f][架构 P-63.1.1] polyol(n=1,2,3)统一基础设施：alcohol/diol/triol→_polyol_kind(n)+_polyol_parent(info,n)泛化为二函数；_chain_alcohol_parent补齐oh_c_idxs/n_oh字段；修复_hydroxy_fg_atoms多OH原子所有权 [+11 dual, 15.0%→15.3%, -11 fails, 0 REGRESS]
 [#e6bcc52][IUPAC P-24.2.1] Spiro基础设施Round1：L1_merge_spiro合并共享1原子单环系统+L2_try_spiro_parent识别饱和全碳双组分单螺环母体+L5_spiro_names词干(spiro[4.5]decane/螺[4.5]癸烷) [+15 tests, dual持平, 0 REGRESS]
 [#76a1ae2][IUPAC P-66.1.1.1.1] 丙烯酰胺保留名：alkenamide_names() n=3+ene_locant=2时输出acrylamide/丙烯酰胺(非pin)；name_mode贯通_ok_result→_assemble_candidate管线；pin模式保留prop-2-enamide系统名 [+3 tests, +1 EN, dual持平, 0 REGRESS]
+[#4293255][IUPAC P-63.1.4 / P-62.2.1] 稠环芳烃FG母体基础设施：_try_arene_fg_parent数据驱动(OH/NH2 on fused rings)，_FG_SPEC/_SCAFFOLD_DETECT/_ARENE_FG_KINDS三表解耦；naphthalenol/naphthalenediol/naphthalenamine/quinolinediol四个新kind贯通L2-L5 [+17 tests, dual 15.3%持平, 0 REGRESS]
+[#05a2556][IUPAC P-65.3] 磺酰胺/砜主官能团基础设施：N-alkyl/N,N-dialkyl sulfonamide L1放宽N上碳数+L2 mode分类+L5命名组装；sulfone新FG(rank=6) L1检测→L2母体→L5 dialkyl sulfone/二烷基砜 [+20 tests, dual 15.3%持平, 0 REGRESS]
+[#c040df0][IUPAC P-23] 桥环母体von Baeyer Round1：L1桥环拓扑检测(区分fused/spiro/bridged)+L2_bridged_parent识别饱和全碳双环+L4 von Baeyer编号(桥头→最长桥→次长)+L5 bicyclo[x.y.z]alkane/双环[x.y.z]烷 [+18 tests, dual 15.3%持平, 0 REGRESS]
 ## 其他
+Round 2 并行三选题(架构轮)：选题1稠环FG→选题3磺酰胺/砜→选题4桥环。均为infra轮(建管道未通水)，55 tests/0 REGRESS。
+稠环FG后续：扩展_SCAFFOLD_DETECT(indole/benzofuran等)+_FG_SPEC(CHO/CN/COOH)+清理legacy~2352行。
+磺酰胺后续：功能类命名(X-sulfonyl-Y)+芳基砜；benchmark无简单磺酰胺SMILES故无增益。
+桥环后续：杂原子桥(aza/oxa)+不饱和+FG整合；benchmark金标名为空无法计分。
