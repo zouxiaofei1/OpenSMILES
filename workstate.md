@@ -217,4 +217,6 @@
 [#1aa5e16][IUPAC P-65.6] 二酯母体原子所有权：修复二酯烷氧基臂未归母体导致的幻影取代基前缀（methoxy/ethoxy）；单/二酯 dispatch 重构（_single_ester_fg_atoms/_diester_fg_atoms） [+2 tests, dual 15.3%→15.4%, 0 REGRESS]
 [#fbc9fe6][IUPAC P-66.6.1/P-66.5.1] 扩展arene_fg_parent CHO/CN：数据驱动引擎泛化（extra_atoms_fn+self_allow字段）；萘/喹啉 carbaldehyde+carbonitrile四新kind贯通L2/L4/L5；OH/NH2既有行为零破坏 [+0 REGRESS, dual 15.4%持平]
 [#3ec3b98][IUPAC P-31.1/P-63.1.1] 不饱和多元醇官能母体：alkenediol/alkynediol/polyenediol/alkenetriol L2母体+L5组装；取代基式(dihydroxy)→官能母体(diol)；不饱和度从丢失→恢复 [+4 IMPROVE, dual 15.4%持平, 0 REGRESS]
+[#0a74729][并行三选题 Round 4] (A)IUPAC P-29.3/P-22.2.1 五元杂芳ω-卤代烷基侧链母体修复(噻吩/呋喃/吡咯+CH₂Cl/CH₂Br) (B)数据驱动arene_fg_parent扩展pyrazole/thiazole/quinazoline+NH₂杂环胺母体 (C)多胺polyamine统一基础设施(triamine/tetraamine)遵循polyol泛型模式+修复diamine原子所有权bug [+4 EN, +3 ZH, +4 dual(15.4%→15.5%), -4 fails, 0 REGRESS]
+
 ## 其他
