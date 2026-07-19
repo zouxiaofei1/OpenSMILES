@@ -31,7 +31,7 @@ namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他
 
 #工作步骤：
 0. 读取 workstate.md，了解当前进度和计划。
-0.1 workstate.md中## 其他 行的行号如果尾数为3或8偶数，当前工作轮次为架构改进轮；可以使用 skills/analyzing-architecture-risk 分析项目风险；如果程序速度较慢，也可以优化程序性能。跳到3.
+0.1 workstate.md中## 其他 行的行号如果尾数为偶数，当前工作轮次为架构改进轮；可以使用 skills/analyzing-architecture-risk 分析项目风险；如果程序速度较慢，如benchmark耗时超过30s,则无论是说明轮次，进行优化程序性能。跳到3.
 1. 运行**benchmark**,记录并报告当前分数，格式**中英文双重准确:[ ]%**
 2. 如果workstate的其他中没有选题，使用错误驱动方式进行选题。否则进行工作。
 选题流程:
