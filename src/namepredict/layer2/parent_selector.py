@@ -6,6 +6,7 @@ from namepredict.layer2.arene_carbonyl import (
     _try_benzene_polycarboxylic, _try_benzoic_parent,
 )
 from namepredict.layer2.arene_fg_parent import (
+    _try_arene_fg_aldehyde, _try_arene_fg_nitrile,
     _try_naphthalenediol_parent, _try_naphthalenol_parent,
     _try_quinolinediol_parent,
 )
@@ -284,7 +285,7 @@ def _ketone_parent(info: dict) -> dict | None:
         info, "has_ketone", "ketones", _ALKENONE_BAD, "ketone", "ketone", "ketone_c_idx",
     )
 def _aldehyde_parent(info: dict) -> dict | None:
-    top = _try_izald(info) or _try_benzaldehyde_parent(info)
+    top = _try_izald(info) or _try_arene_fg_aldehyde(info) or _try_benzaldehyde_parent(info)
     if top is not None:
         return top
     if not _open_mono_fg_ok(info, "aldehydes"):
@@ -321,10 +322,11 @@ def _anhydride_parent(info: dict) -> dict:
         acyl_c_idx=e["c1_idx"], o_idx=e["o_idx"], other_acyl_c_idx=e["c2_idx"],
     )
 def _nitrile_parent(info: dict) -> dict:
-    return _try_izcn(info) or _try_pycn(info) or _unsat_or_sat(
-        info, "has_nitrile", "nitriles", _ALKENENITRILE_BAD,
-        "nitrile", "nitrile", "nitrile_c_idx",
-    )
+    return (_try_izcn(info) or _try_pycn(info) or _try_arene_fg_nitrile(info)
+            or _unsat_or_sat(
+                info, "has_nitrile", "nitriles", _ALKENENITRILE_BAD,
+                "nitrile", "nitrile", "nitrile_c_idx",
+            ))
 def _ester_meta(info: dict) -> dict:
     from namepredict.layer2.alkoxy_side import classify_alkoxy
     e = info["esters"][0]

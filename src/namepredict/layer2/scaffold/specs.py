@@ -164,6 +164,11 @@ NAPH_FAMILY_SPECS: tuple[ScaffoldSpec, ...] = (
     _naph("naphthalenediol", "naphthalenediol", "萘二酚", ring="carbo", fg_rank=5),
     _naph("naphthalenamine", "naphthalenamine", "萘胺", ring="carbo", fg_rank=3),
     _naph("quinolinediol", "quinolinediol", "喹啉二酚", fg_rank=5),
+    # Arene FG parents: CHO/CN on fused rings (P-66.6.1 / P-66.5.1).
+    _naph("naphthalenecarbaldehyde", "naphthalenecarbaldehyde", "萘甲醛", ring="carbo", fg_rank=7),
+    _naph("quinolinecarbaldehyde", "quinolinecarbaldehyde", "喹啉甲醛", fg_rank=7),
+    _naph("naphthalenecarbonitrile", "naphthalenecarbonitrile", "萘甲腈", ring="carbo", fg_rank=8),
+    _naph("quinolinecarbonitrile", "quinolinecarbonitrile", "喹啉甲腈", fg_rank=8),
     # Coumarin lactone retained: EN chromen-2-one; ZH 香豆素 (ketone-class rank).
     _naph("chromenone", "chromen-2-one", "香豆素", fg_rank=6),
 )

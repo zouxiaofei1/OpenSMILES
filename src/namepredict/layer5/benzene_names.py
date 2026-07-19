@@ -460,6 +460,34 @@ def naphthalenecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
     return f"naphthalene-{loc}-carboxylic acid", f"萘-{loc}-甲酸"
 
 
+def naphthalenecarbaldehyde_names(numbered: dict) -> tuple[str, str] | None:
+    loc = _q_cooh_loc(numbered)
+    if loc is None:
+        return None
+    return f"naphthalene-{loc}-carbaldehyde", f"萘-{loc}-甲醛"
+
+
+def quinolinecarbaldehyde_names(numbered: dict) -> tuple[str, str] | None:
+    loc = _q_cooh_loc(numbered)
+    if loc is None:
+        return None
+    return f"quinoline-{loc}-carbaldehyde", f"喹啉-{loc}-甲醛"
+
+
+def naphthalenecarbonitrile_names(numbered: dict) -> tuple[str, str] | None:
+    loc = _q_cooh_loc(numbered)
+    if loc is None:
+        return None
+    return f"naphthalene-{loc}-carbonitrile", f"萘-{loc}-甲腈"
+
+
+def quinolinecarbonitrile_names(numbered: dict) -> tuple[str, str] | None:
+    loc = _q_cooh_loc(numbered)
+    if loc is None:
+        return None
+    return f"quinoline-{loc}-carbonitrile", f"喹啉-{loc}-甲腈"
+
+
 # --- Generalized arene FG parent names (P-63.1.4 / P-62.2.1) ---
 
 _ARENE_FG_STEM: dict[str, tuple[str, str, str, str]] = {
@@ -512,6 +540,11 @@ _PYRIDINE_KIND_FN = {
     "naphthalenediol": lambda n: _arene_fg_parent_names("naphthalenediol", n),
     "naphthalenamine": lambda n: _arene_fg_parent_names("naphthalenamine", n),
     "quinolinediol": lambda n: _arene_fg_parent_names("quinolinediol", n),
+    # CHO/CN on naphthalene/quinoline
+    "naphthalenecarbaldehyde": naphthalenecarbaldehyde_names,
+    "quinolinecarbaldehyde": quinolinecarbaldehyde_names,
+    "naphthalenecarbonitrile": naphthalenecarbonitrile_names,
+    "quinolinecarbonitrile": quinolinecarbonitrile_names,
 }
 
 

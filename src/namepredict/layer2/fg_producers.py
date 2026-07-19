@@ -7,6 +7,7 @@ candidates. Keep try order stable — scoring (_FG_RANK) arbitrates, not or.
 from __future__ import annotations
 
 from namepredict.layer2.arene_carbonyl import _try_arene_other_fg
+from namepredict.layer2.arene_fg_parent import _try_arene_fg_nitrile
 from namepredict.layer2.benzenediamine import (
     _benzenediamine_parent,
     _is_simple_benzenediamine,
@@ -118,6 +119,8 @@ def _try_nitrile(info: dict) -> dict | None:
         return None
     if (h := _try_heteroaryl_carbonitrile(info)) is not None:
         return h
+    if (af := _try_arene_fg_nitrile(info)) is not None:
+        return af  # naphthalenecarbonitrile / quinolinecarbonitrile
     nit = info["nitriles"][0]
     if _is_aryl_nitrile_c(info["mol"], nit["c_idx"]):
         return None  # Ar–CN leaf; benzonitrile via arene path
