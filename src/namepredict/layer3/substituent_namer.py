@@ -77,11 +77,38 @@ def _try_methoxy(mol, claim: ClaimedBlock) -> SubstituentName | None:
     return _retained_hit(claim, "methoxy", "甲氧基", False)
 
 
+def _methylsulfanyl_s(mol, claim: ClaimedBlock) -> int | None:
+    if mol.GetAtomWithIdx(claim.root).GetAtomicNum() == 16:
+        return claim.root
+    return next((i for i in claim.atoms if mol.GetAtomWithIdx(i).GetAtomicNum() == 16), None)
+
+
+def _is_plain_methyl_on_s(mol, s_idx: int, c_idx: int) -> bool:
+    if mol.GetAtomWithIdx(c_idx).GetAtomicNum() != 6:
+        return False
+    heavies = [n for n in mol.GetAtomWithIdx(c_idx).GetNeighbors() if n.GetAtomicNum() != 1]
+    return len(heavies) == 1 and heavies[0].GetIdx() == s_idx
+
+
+def _try_methylsulfanyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
+    """CH3–S side attached at claim.attach_parent (thioether S or chain C via S root)."""
+    if len(claim.atoms) != 2:
+        return None
+    s_idx = _methylsulfanyl_s(mol, claim)
+    if s_idx is None:
+        return None
+    c_idxs = [i for i in claim.atoms if i != s_idx]
+    if len(c_idxs) != 1 or not _is_plain_methyl_on_s(mol, s_idx, c_idxs[0]):
+        return None
+    return _retained_hit(claim, "methylsulfanyl", "甲硫基", False)
+
+
 def _retained_name(mol, claim: ClaimedBlock) -> SubstituentName | None:
     return (
         _try_cycloalkyl(mol, claim)
         or _try_sub_phenyl(mol, claim)
         or _try_methoxy(mol, claim)
+        or _try_methylsulfanyl(mol, claim)
     )
 
 
