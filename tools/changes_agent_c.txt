@@ -1,0 +1,4 @@
+/e/chem/.claude/worktrees/agent-c
+workers=31 elapsed=4.40s avg=1.08ms/row (n=4062)
+en=15.7% (639/4062) zh=38.0% (287/756) dual=15.5% (629/4062) fails=3433
+diff_vs_last: none (same as last run, or no previous snapshot)

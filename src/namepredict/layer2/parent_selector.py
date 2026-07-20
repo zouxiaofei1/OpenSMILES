@@ -251,6 +251,12 @@ def _primary_amine_parent(info: dict) -> dict:
     if prim is None:
         prim = next((a for a in info.get("amines") or [] if "c_idx" in a), None)
     if prim is None: return _parent_dict(_longest_chain(info["mol"]), "alkane")
+    # Gate: reject open-chain parent when amine carbon is in a ring
+    # (mirrors _oh_c_in_ring gate in _chain_alcohol_parent, and _open_mono_fg_ok
+    # gate for carboxyls/ketones/aldehydes/esters — prevents ring-NH₂ collapsing
+    # to methanamine via a single-atom _chain_through result).
+    if info["mol"].GetAtomWithIdx(prim["c_idx"]).IsInRing():
+        return _parent_dict(_longest_chain(info["mol"]), "alkane")
     return _parent_dict(_chain_through(info, prim["c_idx"]), "amine", amine_c_idx=prim["c_idx"])
 def _ring_amine_parent(info: dict) -> dict | None:
     top = (_try_btzam(info) or _try_boxam(info) or _try_bimam(info) or _try_bfam(info)
