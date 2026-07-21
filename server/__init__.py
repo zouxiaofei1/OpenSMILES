@@ -1,1 +1,1 @@
-"""FastAPI control plane for agent loop, sessions, namer, and SSE."""
+"""FastAPI control plane for namer."""

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ChemAgent Console</title>
+  <title>ChemAgent Namer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -20,316 +20,99 @@
             <path d="M8.5 2h7" />
             <path d="M7 16h10" />
           </svg>
-          <span class="logo-text">ChemAgent</span>
-        </div>
-        <div id="status-pill" class="status-pill status-stopped" role="status" aria-live="polite">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span id="status-text">已停止</span>
-        </div>
-        <div class="kpi-inline" title="last dual / best dual">
-          <span class="kpi-label">dual</span>
-          <span id="kpi-dual" class="kpi-value mono">—</span>
-          <span class="kpi-sep">/</span>
-          <span id="kpi-best" class="kpi-value mono muted-text">—</span>
-        </div>
-        <div class="kpi-inline" title="iteration / K">
-          <span class="kpi-label">iter</span>
-          <span id="kpi-iter" class="kpi-value mono">0</span>
-          <span class="kpi-sep">/</span>
-          <span class="kpi-label">K</span>
-          <span id="kpi-k" class="kpi-value mono muted-text">5</span>
-        </div>
-      </div>
-      <div class="topbar-right">
-        <div id="sse-banner" class="sse-banner hidden" role="alert">SSE 断线 · 重连中…</div>
-        <div class="controls" role="group" aria-label="Loop controls">
-          <button type="button" id="btn-start" class="btn btn-primary" aria-label="Start loop">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polygon points="6 3 20 12 6 21 6 3" />
-            </svg>
-            <span>Start</span>
-          </button>
-          <button type="button" id="btn-pause" class="btn btn-secondary" aria-label="Pause loop">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="14" y="4" width="4" height="16" rx="1" />
-              <rect x="6" y="4" width="4" height="16" rx="1" />
-            </svg>
-            <span>Pause</span>
-          </button>
-          <button type="button" id="btn-stop" class="btn btn-destructive" aria-label="Stop loop">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="4" y="4" width="16" height="16" rx="2" />
-            </svg>
-            <span>Stop</span>
-          </button>
+          <span class="logo-text">ChemAgent Namer</span>
         </div>
       </div>
     </header>
 
-    <div class="shell">
-      <!-- Left Sidebar -->
-      <aside class="sidebar" aria-label="Sessions">
-        <div class="sidebar-head">
-          <h2 class="sidebar-title">Sessions</h2>
-          <span id="session-count" class="badge">0</span>
-        </div>
-        <div id="session-list" class="session-list" role="listbox" aria-label="Session list">
-          <div class="empty-state" id="session-empty">
-            <p class="empty-title">暂无循环 · 点击 Start 开始</p>
-            <p class="empty-sub">循环启动后，每轮 session 会显示在此</p>
+    <!-- Main -->
+    <main class="main" role="main">
+      <div id="namer-layout" class="namer-layout">
+        <div class="card namer-structure-card">
+          <div class="card-head row-between">
+            <h3 class="card-title">Structure</h3>
+            <div class="namer-structure-actions">
+              <button type="button" id="btn-load-smiles" class="btn btn-secondary btn-sm" disabled>
+                从 SMILES 载入
+              </button>
+              <button type="button" id="btn-clear-ketcher" class="btn btn-ghost btn-sm" disabled>
+                清空画板
+              </button>
+            </div>
+          </div>
+          <div class="ketcher-wrap">
+            <iframe
+              id="ketcher-frame"
+              class="ketcher-frame"
+              title="Ketcher molecule editor"
+              src="about:blank"
+            ></iframe>
+            <div id="ketcher-fallback" class="ketcher-fallback" hidden style="display: none">
+              <p class="empty-title">Ketcher 不可用</p>
+              <p id="ketcher-fallback-msg" class="empty-sub">请将构建产物放到 <code>web/vendor/ketcher/</code>，或运行 <code>bash tools/build_ketcher_vendor.sh</code>。文本 SMILES 命名仍可用。</p>
+              <p class="empty-sub muted-text small">首次加载约 35MB；若刚更新过 vendor，请硬刷新（Ctrl+F5）或点重试。</p>
+              <button type="button" id="btn-retry-ketcher" class="btn btn-secondary btn-sm" style="margin-top: 0.75rem">
+                重试加载画板
+              </button>
+            </div>
           </div>
         </div>
-        <div class="sidebar-foot">
-          <h3 class="sidebar-subtitle">Fail clusters</h3>
-          <div id="fail-clusters" class="fail-clusters">
-            <p class="muted-text small">选择 session 查看簇摘要</p>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Main -->
-      <main class="main" role="main">
-        <nav class="tabs" role="tablist" aria-label="Console tabs">
-          <button type="button" class="tab active" role="tab" aria-selected="true" data-tab="overview" id="tab-overview">Overview</button>
-          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="cycle" id="tab-cycle">Cycle</button>
-          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="prompt" id="tab-prompt">Prompt</button>
-          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="bench" id="tab-bench">Bench</button>
-          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="namer" id="tab-namer">Namer</button>
-          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="logs" id="tab-logs">Logs</button>
-        </nav>
-
-        <div class="tab-panels">
-          <!-- Overview -->
-          <section id="panel-overview" class="tab-panel active" role="tabpanel" aria-labelledby="tab-overview">
-            <div class="kpi-grid">
-              <div class="card kpi-card">
-                <div class="kpi-card-label">Last dual</div>
-                <div id="ov-dual" class="kpi-card-value mono">—</div>
-              </div>
-              <div class="card kpi-card">
-                <div class="kpi-card-label">Best dual</div>
-                <div id="ov-best" class="kpi-card-value mono">—</div>
-              </div>
-              <div class="card kpi-card">
-                <div class="kpi-card-label">Target</div>
-                <div id="ov-target" class="kpi-card-value mono">—</div>
-              </div>
-              <div class="card kpi-card">
-                <div class="kpi-card-label">No improve</div>
-                <div id="ov-no-improve" class="kpi-card-value mono">—</div>
-              </div>
-              <div class="card kpi-card">
-                <div class="kpi-card-label">Iteration</div>
-                <div id="ov-iter" class="kpi-card-value mono">—</div>
-              </div>
-              <div class="card kpi-card">
-                <div class="kpi-card-label">Last cluster</div>
-                <div id="ov-cluster" class="kpi-card-value mono small-value">—</div>
-              </div>
-            </div>
-            <div class="card chart-card">
-              <div class="card-head">
-                <h3 class="card-title">Dual trend</h3>
-                <span class="muted-text small">by session</span>
-              </div>
-              <div class="chart-wrap">
-                <svg id="dual-chart" class="dual-chart" viewBox="0 0 600 160" preserveAspectRatio="none" role="img" aria-label="Dual accuracy trend"></svg>
-                <p id="chart-empty" class="chart-empty muted-text">尚无数据点</p>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-head">
-                <h3 class="card-title">State</h3>
-              </div>
-              <pre id="ov-state-json" class="code-block mono">{}</pre>
-            </div>
-          </section>
-
-          <!-- Cycle -->
-          <section id="panel-cycle" class="tab-panel" role="tabpanel" aria-labelledby="tab-cycle" hidden>
-            <div id="cycle-empty" class="panel-empty">
-              <p class="empty-title">未选择 session</p>
-              <p class="empty-sub">从左侧列表点击一轮循环查看详情</p>
-            </div>
-            <div id="cycle-content" class="hidden">
-              <div class="meta-row">
-                <span class="badge" id="cycle-status-badge">—</span>
-                <span class="mono" id="cycle-iter">#—</span>
-                <span class="muted-text" id="cycle-decision">—</span>
-              </div>
-              <div class="grid-2">
-                <div class="card">
-                  <h3 class="card-title">Bench before → after</h3>
-                  <dl class="kv" id="cycle-bench"></dl>
-                </div>
-                <div class="card">
-                  <h3 class="card-title">Gate</h3>
-                  <dl class="kv" id="cycle-gate"></dl>
-                </div>
-              </div>
-              <div class="card">
-                <h3 class="card-title">Cluster / Layers</h3>
-                <pre id="cycle-cluster" class="code-block mono">—</pre>
-              </div>
-              <div class="card">
-                <h3 class="card-title">Log excerpt</h3>
-                <pre id="cycle-log" class="code-block mono">—</pre>
-              </div>
-            </div>
-          </section>
-
-          <!-- Prompt -->
-          <section id="panel-prompt" class="tab-panel" role="tabpanel" aria-labelledby="tab-prompt" hidden>
-            <div id="prompt-empty" class="panel-empty">
-              <p class="empty-title">无 prompt</p>
-              <p class="empty-sub">选择含 prompt_path 的 session，或等待循环写入</p>
-            </div>
-            <div id="prompt-content" class="hidden">
-              <div class="card-head row-between">
-                <div>
-                  <h3 class="card-title">Cycle prompt</h3>
-                  <p id="prompt-path" class="muted-text small mono"></p>
-                </div>
-                <button type="button" id="btn-copy-prompt" class="btn btn-secondary btn-sm" aria-label="Copy prompt">
-                  复制
+        <div class="namer-side">
+          <div class="card namer-card">
+            <h3 class="card-title">SMILES Namer</h3>
+            <form id="namer-form" class="namer-form" autocomplete="off">
+              <label class="field-label" for="smiles-input">SMILES</label>
+              <div class="namer-row">
+                <input
+                  id="smiles-input"
+                  name="smiles"
+                  class="input mono"
+                  type="text"
+                  placeholder="e.g. CCO"
+                  required
+                  spellcheck="false"
+                  aria-describedby="namer-error live-name-hint"
+                />
+                <button type="submit" id="btn-name" class="btn btn-primary" aria-label="Name SMILES">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
+                    <path d="M8.5 2h7" />
+                    <path d="M7 16h10" />
+                  </svg>
+                  <span>Name</span>
                 </button>
               </div>
-              <pre id="prompt-body" class="code-block mono prompt-body">—</pre>
-            </div>
-          </section>
-
-          <!-- Bench -->
-          <section id="panel-bench" class="tab-panel" role="tabpanel" aria-labelledby="tab-bench" hidden>
-            <div id="bench-empty" class="panel-empty">
-              <p class="empty-title">无 bench 数据</p>
-              <p class="empty-sub">选择 session 查看 dual / en / zh / fails</p>
-            </div>
-            <div id="bench-content" class="hidden">
-              <div class="grid-2">
-                <div class="card">
-                  <h3 class="card-title">Before</h3>
-                  <dl class="kv" id="bench-before"></dl>
-                </div>
-                <div class="card">
-                  <h3 class="card-title">After</h3>
-                  <dl class="kv" id="bench-after"></dl>
-                </div>
+              <label class="live-toggle">
+                <input type="checkbox" id="live-name-toggle" />
+                <span>实时命名</span>
+              </label>
+              <p id="live-name-hint" class="muted-text small">结构变化后约 0.7s 自动命名（默认关）</p>
+              <p id="namer-error" class="field-error" role="alert" hidden></p>
+            </form>
+            <div id="namer-result" class="namer-result hidden" aria-live="polite">
+              <div class="result-head">
+                <span id="namer-success" class="badge">—</span>
+                <span id="namer-time" class="muted-text small mono"></span>
               </div>
-              <div class="card">
-                <h3 class="card-title">Notes</h3>
-                <p class="muted-text small">完整失败样本需 session 含 fails 列表；当前 API 仅提供摘要字段。</p>
-              </div>
+              <dl class="kv">
+                <div><dt>en</dt><dd id="namer-en" class="mono">—</dd></div>
+                <div><dt>zh</dt><dd id="namer-zh" class="mono">—</dd></div>
+                <div><dt>source</dt><dd id="namer-source" class="mono">—</dd></div>
+              </dl>
             </div>
-          </section>
-
-          <!-- Namer -->
-          <section id="panel-namer" class="tab-panel" role="tabpanel" aria-labelledby="tab-namer" hidden>
-            <div id="namer-layout" class="namer-layout">
-              <div class="card namer-structure-card">
-                <div class="card-head row-between">
-                  <h3 class="card-title">Structure</h3>
-                  <div class="namer-structure-actions">
-                    <button type="button" id="btn-load-smiles" class="btn btn-secondary btn-sm" disabled>
-                      从 SMILES 载入
-                    </button>
-                    <button type="button" id="btn-clear-ketcher" class="btn btn-ghost btn-sm" disabled>
-                      清空画板
-                    </button>
-                  </div>
-                </div>
-                <div class="ketcher-wrap">
-                  <iframe
-                    id="ketcher-frame"
-                    class="ketcher-frame"
-                    title="Ketcher molecule editor"
-                    src="about:blank"
-                  ></iframe>
-                  <div id="ketcher-fallback" class="ketcher-fallback" hidden style="display: none">
-                    <p class="empty-title">Ketcher 不可用</p>
-                    <p id="ketcher-fallback-msg" class="empty-sub">请将构建产物放到 <code>web/vendor/ketcher/</code>，或运行 <code>bash tools/build_ketcher_vendor.sh</code>。文本 SMILES 命名仍可用。</p>
-                    <p class="empty-sub muted-text small">首次加载约 35MB；若刚更新过 vendor，请硬刷新（Ctrl+F5）或点重试。</p>
-                    <button type="button" id="btn-retry-ketcher" class="btn btn-secondary btn-sm" style="margin-top: 0.75rem">
-                      重试加载画板
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div class="namer-side">
-                <div class="card namer-card">
-                  <h3 class="card-title">SMILES Namer</h3>
-                  <form id="namer-form" class="namer-form" autocomplete="off">
-                    <label class="field-label" for="smiles-input">SMILES</label>
-                    <div class="namer-row">
-                      <input
-                        id="smiles-input"
-                        name="smiles"
-                        class="input mono"
-                        type="text"
-                        placeholder="e.g. CCO"
-                        required
-                        spellcheck="false"
-                        aria-describedby="namer-error live-name-hint"
-                      />
-                      <button type="submit" id="btn-name" class="btn btn-primary" aria-label="Name SMILES">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
-                          <path d="M8.5 2h7" />
-                          <path d="M7 16h10" />
-                        </svg>
-                        <span>Name</span>
-                      </button>
-                    </div>
-                    <label class="live-toggle">
-                      <input type="checkbox" id="live-name-toggle" />
-                      <span>实时命名</span>
-                    </label>
-                    <p id="live-name-hint" class="muted-text small">结构变化后约 0.7s 自动命名（默认关）</p>
-                    <p id="namer-error" class="field-error" role="alert" hidden></p>
-                  </form>
-                  <div id="namer-result" class="namer-result hidden" aria-live="polite">
-                    <div class="result-head">
-                      <span id="namer-success" class="badge">—</span>
-                      <span id="namer-time" class="muted-text small mono"></span>
-                    </div>
-                    <dl class="kv">
-                      <div><dt>en</dt><dd id="namer-en" class="mono">—</dd></div>
-                      <div><dt>zh</dt><dd id="namer-zh" class="mono">—</dd></div>
-                      <div><dt>source</dt><dd id="namer-source" class="mono">—</dd></div>
-                    </dl>
-                  </div>
-                </div>
-                <div class="card">
-                  <div class="card-head row-between">
-                    <h3 class="card-title">Recent (20)</h3>
-                    <button type="button" id="btn-clear-history" class="btn btn-ghost btn-sm">清空</button>
-                  </div>
-                  <ul id="namer-history" class="history-list">
-                    <li class="muted-text small">尚无命名记录</li>
-                  </ul>
-                </div>
-              </div>
+          </div>
+          <div class="card">
+            <div class="card-head row-between">
+              <h3 class="card-title">Recent (20)</h3>
+              <button type="button" id="btn-clear-history" class="btn btn-ghost btn-sm">清空</button>
             </div>
-          </section>
-
-          <!-- Logs -->
-          <section id="panel-logs" class="tab-panel" role="tabpanel" aria-labelledby="tab-logs" hidden>
-            <div class="card logs-card">
-              <div class="card-head row-between">
-                <h3 class="card-title">Event stream</h3>
-                <div class="logs-actions">
-                  <label class="check-label">
-                    <input type="checkbox" id="logs-autoscroll" checked />
-                    自动滚底
-                  </label>
-                  <button type="button" id="btn-clear-logs" class="btn btn-ghost btn-sm">清空</button>
-                </div>
-              </div>
-              <pre id="log-stream" class="log-stream mono" aria-live="polite"></pre>
-            </div>
-          </section>
+            <ul id="namer-history" class="history-list">
+              <li class="muted-text small">尚无命名记录</li>
+            </ul>
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   </div>
   <script src="/js/namer-ketcher.js"></script>
   <script src="/js/app.js" defer></script>
