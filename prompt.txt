@@ -24,7 +24,7 @@ Layer 3: Substituent Extractor
 Layer 4: Numbering Engine
 Layer 5: Name Assembler
 不得在一个layer文件夹内混入另一个layer文件
-namepredict目录下，你只允许修改入口点,layer0-layer5文件夹,其他文件只读。
+namepredict目录下，只允许修改入口点,layer0-layer5文件夹,其他文件只读。
 - 函数式编程:每个方法不得超过10行，方法输入输出尽量只有一个，复用已有的方法
 
 
