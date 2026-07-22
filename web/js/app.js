@@ -12,14 +12,18 @@
     benchmarkRunResult: "/api/v1/benchmark-run/result",
   };
 
+  const LIVE_NAME_DEBOUNCE_MS = 20;
+
   const state = {
     namerHistory: [],
-    liveNameEnabled: false,
+    liveNameEnabled: true,
     ketcherReady: false,
     lastNamedSmiles: "",
     nameReqSeq: 0,
     ketcherBridge: null,
     liveDebounceTimer: null,
+    liveSmilesTimer: null,
+    suppressSmilesLive: false,
     // benchmark
     currentPage: "namer",
     bmRows: [],
@@ -206,10 +210,40 @@
       if (CK && CK.shouldSkipLiveName(true, smiles, state.lastNamedSmiles)) return;
       if (smiles) {
         const input = $("smiles-input");
-        if (input) input.value = smiles;
+        if (input) {
+          state.suppressSmilesLive = true;
+          input.value = smiles;
+        }
       }
       await runName(smiles, { fromLive: true });
-    }, 700);
+    }, LIVE_NAME_DEBOUNCE_MS);
+  }
+
+  function scheduleLiveSmilesName() {
+    if (!state.liveNameEnabled) return;
+    if (state.suppressSmilesLive) {
+      state.suppressSmilesLive = false;
+      return;
+    }
+    if (state.liveSmilesTimer) clearTimeout(state.liveSmilesTimer);
+    state.liveSmilesTimer = setTimeout(async () => {
+      state.liveSmilesTimer = null;
+      if (!state.liveNameEnabled) return;
+      const smiles = (($("smiles-input") && $("smiles-input").value) || "").trim();
+      if (!smiles) return;
+      const CK = window.ChemNamerKetcher;
+      if (CK && CK.shouldSkipLiveName(true, smiles, state.lastNamedSmiles)) return;
+      // Load SMILES into Ketcher (onChange will debounce but shouldSkipLiveName will skip)
+      if (state.ketcherBridge && state.ketcherBridge.isReady()) {
+        try {
+          await state.ketcherBridge.setMolecule(smiles);
+        } catch (_) {
+          /* ignore ketcher load errors during live input */
+        }
+      }
+      // Run naming
+      await runName(smiles, { fromLive: true });
+    }, LIVE_NAME_DEBOUNCE_MS);
   }
 
   function renderNamerHistory() {
@@ -586,6 +620,10 @@
         if (!state.ketcherBridge || !state.ketcherBridge.isReady()) return;
         try {
           await state.ketcherBridge.clear();
+          // Also clear the SMILES input
+          const input = $("smiles-input");
+          if (input) input.value = "";
+          setNamerError("");
         } catch (err) {
           setNamerError(err.message || "清空失败");
         }
@@ -597,10 +635,22 @@
     $("live-name-toggle") &&
       $("live-name-toggle").addEventListener("change", (ev) => {
         state.liveNameEnabled = !!(ev.target && ev.target.checked);
-        if (!state.liveNameEnabled && state.liveDebounceTimer) {
-          clearTimeout(state.liveDebounceTimer);
-          state.liveDebounceTimer = null;
+        if (!state.liveNameEnabled) {
+          if (state.liveDebounceTimer) {
+            clearTimeout(state.liveDebounceTimer);
+            state.liveDebounceTimer = null;
+          }
+          if (state.liveSmilesTimer) {
+            clearTimeout(state.liveSmilesTimer);
+            state.liveSmilesTimer = null;
+          }
         }
+      });
+
+    // Live SMILES input: when user edits the SMILES text box, auto-name + load into Ketcher
+    $("smiles-input") &&
+      $("smiles-input").addEventListener("input", () => {
+        scheduleLiveSmilesName();
       });
 
     // Tab switching

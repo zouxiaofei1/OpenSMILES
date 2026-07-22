@@ -239,7 +239,17 @@
       if (!isReady()) return "";
       try {
         const s = await ketcher.getSmiles();
-        return (s || "").trim();
+        const trimmed = (s || "").trim();
+        // Workaround for Indigo bug: highly symmetric aromatics (e.g. benzene)
+        // occasionally produce duplicated SMILES like "C1C=CC=CC=1.C1C=CC=CC=1".
+        // When every fragment is identical, keep only the first one.
+        if (trimmed.includes(".")) {
+          const parts = trimmed.split(".");
+          if (parts.length > 1 && parts.every(function (p) { return p === parts[0]; })) {
+            return parts[0];
+          }
+        }
+        return trimmed;
       } catch (_) {
         return "";
       }
