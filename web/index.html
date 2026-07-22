@@ -6,7 +6,6 @@
   <title>ChemAgent Namer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/app.css" />
 </head>
 <body>
@@ -163,7 +162,10 @@
             <tbody id="bm-tbody"></tbody>
           </table>
           <div id="bm-empty" class="empty-state" hidden>无匹配行</div>
-          <div id="bm-loading" class="empty-state">加载中…</div>
+          <div id="bm-loading" class="empty-state" style="display:none">
+            <div class="skeleton" style="width:100%;height:200px;border-radius:var(--radius)"></div>
+            <p style="margin-top:12px">加载中…</p>
+          </div>
         </div>
         <footer class="bm-footer">
           正确命名 = benchmark 金标 english_name / chinese_name。

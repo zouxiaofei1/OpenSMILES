@@ -242,7 +242,11 @@
   function showNamerResult(result) {
     const box = $("namer-result");
     if (!box) return;
+    // Force re-trigger reveal animation
     box.classList.remove("hidden");
+    box.style.animation = "none";
+    box.offsetHeight; // force reflow
+    box.style.animation = "";
     const badge = $("namer-success");
     if (badge) {
       badge.textContent = result.success ? "success" : "failed";
@@ -305,11 +309,28 @@
       .replace(/"/g, "&quot;");
   }
 
+  function showBmSkeleton() {
+    var tbody = bm$("tbody");
+    if (!tbody) return;
+    var html = "";
+    for (var i = 0; i < 8; i++) {
+      html +=
+        '<tr class="skeleton-row">' +
+        '<td><div class="skeleton skeleton-cell" style="width:80%"></div></td>' +
+        '<td><div class="skeleton skeleton-cell" style="width:90%"></div><div class="skeleton skeleton-cell" style="width:60%;margin-top:6px"></div></td>' +
+        '<td><div class="skeleton skeleton-cell" style="width:85%"></div><div class="skeleton skeleton-cell" style="width:55%;margin-top:6px"></div></td>' +
+        '<td><div class="skeleton skeleton-cell" style="width:100%;height:126px"></div></td>' +
+        "</tr>";
+    }
+    tbody.innerHTML = html;
+  }
+
   async function loadBenchmark() {
     var loading = bm$("loading");
     var empty = bm$("empty");
-    if (loading) loading.hidden = false;
+    if (loading) { loading.hidden = false; loading.style.display = ""; }
     if (empty) empty.hidden = true;
+    showBmSkeleton();
     try {
       var data = await api(API.benchmarkPreview);
       state.bmRows = (data && data.rows) || [];
@@ -319,7 +340,7 @@
       state.bmGenerating = !!(data && data.generating);
       state.bmGenDone = (data && data.gen_done) || 0;
       state.bmGenTotal = (data && data.gen_total) || 0;
-      if (loading) loading.hidden = true;
+      if (loading) { loading.hidden = true; loading.style.display = "none"; }
       renderBenchmark();
       // Auto-poll if generation is running or data is stale
       if (state.bmGenerating || (data && data.stale && state.bmRows.length === 0)) {
@@ -330,11 +351,12 @@
         refreshBenchmark();
       }
     } catch (err) {
-      if (loading) loading.hidden = true;
+      if (loading) { loading.hidden = true; loading.style.display = "none"; }
       if (empty) {
         empty.hidden = false;
         empty.textContent = "加载失败: " + (err.message || String(err));
       }
+      if (bm$("tbody")) bm$("tbody").innerHTML = "";
     }
   }
 
