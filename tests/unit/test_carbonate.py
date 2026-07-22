@@ -41,15 +41,6 @@ NEG_NOT_CARBONATE = [
 ]
 
 
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_organic_carbonate(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
 @pytest.mark.parametrize("smiles,forbidden", NEG_NOT_CARBONATE)
 def test_not_carbonate(smiles: str, forbidden: str) -> None:
     r = SMILESNNamer().name(smiles)

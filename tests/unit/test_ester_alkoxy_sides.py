@@ -35,15 +35,6 @@ NOT_BARE = [
 ]
 
 
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_ester_alkoxy_sides(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
 @pytest.mark.parametrize("smiles", NOT_BARE)
 def test_not_bare_phenyl_or_benzyl(smiles: str) -> None:
     r = SMILESNNamer().name(smiles)

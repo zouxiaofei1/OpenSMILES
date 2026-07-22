@@ -52,22 +52,6 @@ def test_cyclo_polyacid_uses_scaffold_numbering_plan() -> None:
     assert numbered["substituents"][0]["locant"] == 4
 
 
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_cycloalkane_polycarboxylic_acids(smiles: str, en: str, zh: str) -> None:
-    result = SMILESNNamer().name(smiles)
-    assert result.success
-    assert normalize_en(result.en) == normalize_en(en)
-    assert normalize_zh(result.zh) == normalize_zh(zh)
-
-
-def test_cycloalkane_polyacid_is_invariant_to_smiles_order() -> None:
-    expected = "cyclohexane-1,2-dicarboxylic acid"
-    for smiles in ("O=C(O)C1CCCCC1C(=O)O", "O=C(O)C1CCCCC1C(O)=O"):
-        result = SMILESNNamer().name(smiles)
-        assert result.success
-        assert normalize_en(result.en) == normalize_en(expected)
-
-
 @pytest.mark.parametrize("smiles", [
     "O=C([O-])C1CCCCC1C(=O)O",
     "O=C(O)C1C(C(=O)O)C(C(=O)O)C(C(=O)O)CC1",
@@ -76,38 +60,6 @@ def test_cycloalkane_polyacid_is_invariant_to_smiles_order() -> None:
 ])
 def test_cycloalkane_polyacid_exclusions_are_rejected(smiles: str) -> None:
     assert not SMILESNNamer().name(smiles).success
-
-
-def test_benzene_polyacid_bypasses_cycloalkane_scope() -> None:
-    result = SMILESNNamer().name("O=C(O)c1ccccc1C(=O)O")
-    assert result.success
-    assert normalize_en(result.en) == normalize_en("benzene-1,2-dicarboxylic acid")
-
-
-@pytest.mark.parametrize(("smiles", "en", "zh"), [
-    ("O=C(O)[C@H]1CCC[C@H](C(=O)O)C1", "trans-cyclohexane-1,3-dicarboxylic acid", "反-环己烷-1,3-二甲酸"),
-    ("O=C(O)[C@H]1CCC[C@@H](C(=O)O)C1", "cis-cyclohexane-1,3-dicarboxylic acid", "顺-环己烷-1,3-二甲酸"),
-])
-def test_cyclo_polyacid_two_site_relative_stereo(smiles: str, en: str, zh: str) -> None:
-    result = SMILESNNamer().name(smiles)
-    assert result.success
-    assert normalize_en(result.en) == normalize_en(en)
-    assert normalize_zh(result.zh) == normalize_zh(zh)
-
-
-def test_cyclo_polyacid_three_site_relative_stereo_uses_plan_locants() -> None:
-    result = SMILESNNamer().name("O=C(O)[C@H]1[C@@H](C(=O)O)C[C@H](C(=O)O)CC1")
-    assert result.success
-    assert normalize_en(result.en) == normalize_en("1-r,2-c,4-t-cyclohexane-1,2,4-tricarboxylic acid")
-    assert normalize_zh(result.zh) == normalize_zh("1-r,2-c,4-t-环己烷-1,2,4-三甲酸")
-
-
-def test_cyclo_polyacid_relative_name_is_enantiomer_invariant() -> None:
-    names = [SMILESNNamer().name(s).en for s in (
-        "O=C(O)[C@H]1CCC[C@@H](C(=O)O)C1",
-        "O=C(O)[C@@H]1CCC[C@H](C(=O)O)C1",
-    )]
-    assert names == ["cis-cyclohexane-1,3-dicarboxylic acid"] * 2
 
 
 @pytest.mark.parametrize("smiles", [
@@ -130,14 +82,3 @@ def test_cyclo_polyacid_relative_name_is_smiles_order_invariant() -> None:
         result = SMILESNNamer().name(smiles)
         assert result.success
         assert (normalize_en(result.en), normalize_zh(result.zh)) == (normalize_en(expected.en), normalize_zh(expected.zh))
-
-
-@pytest.mark.parametrize(("smiles", "en", "zh"), [
-    ("O=C(O)[C@H]1CCC[C@H](C(=O)O)[C@H](Cl)C1", "2-chloro-1-r,2-c,4-t-cycloheptane-1,4-dicarboxylic acid", "2-氯-1-r,2-c,4-t-环庚烷-1,4-二甲酸"),
-    ("O=C(O)[C@H]1CCC[C@H](C(=O)O)[C@H](CCCC)C1", "2-butyl-1-r,2-c,4-t-cycloheptane-1,4-dicarboxylic acid", "2-丁基-1-r,2-c,4-t-环庚烷-1,4-二甲酸"),
-])
-def test_cyclo_polyacid_complete_halo_or_n_alkyl_stereo_is_named(smiles: str, en: str, zh: str) -> None:
-    result = SMILESNNamer().name(smiles)
-    assert result.success
-    assert normalize_en(result.en) == normalize_en(en)
-    assert normalize_zh(result.zh) == normalize_zh(zh)

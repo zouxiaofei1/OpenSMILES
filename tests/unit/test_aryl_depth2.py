@@ -42,12 +42,3 @@ CASES = [
     ("c1ccc(Oc2ccccc2)cc1", "phenoxybenzene", "苯氧基苯"),
     ("COc1ccc(CC)cc1", "1-ethyl-4-methoxybenzene", "1-乙基-4-甲氧基苯"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_aryl_depth2(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)

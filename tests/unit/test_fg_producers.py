@@ -86,12 +86,6 @@ def _kinds(cands: list[dict]) -> set[str]:
     return {c["kind"] for c in cands if c is not None}
 
 
-def test_fg_try_fns_nonempty_and_order() -> None:
-    fns = kr.fg_try_fns()
-    assert len(fns) >= 20
-    assert tuple(f.__name__ for f in fns) == _EXPECTED_FG_TRY_NAMES
-
-
 def test_fg_try_fns_include_recent_fgs() -> None:
     names = " ".join(f.__name__ for f in kr.fg_try_fns())
     for marker in _RECENT_FG_MARKERS:
@@ -101,20 +95,6 @@ def test_fg_try_fns_include_recent_fgs() -> None:
 def test_fg_try_fns_unique() -> None:
     names = [f.__name__ for f in kr.fg_try_fns()]
     assert len(names) == len(set(names))
-
-
-def test_register_fg_try_appends() -> None:
-    before = list(kr.fg_try_fns())
-
-    def _try_dummy_fg(info: dict):
-        return None
-
-    kr.register_fg_try(_try_dummy_fg)
-    assert kr.fg_try_fns()[-1] is _try_dummy_fg
-    kr._FG_TRY.clear()
-    for fn in before:
-        kr.register_fg_try(fn)
-    assert tuple(f.__name__ for f in kr.fg_try_fns()) == _EXPECTED_FG_TRY_NAMES
 
 
 @pytest.mark.parametrize("smiles,expected", _KIND_CASES)

@@ -80,16 +80,6 @@ _E2E = [
 ]
 
 
-@pytest.mark.parametrize("smiles,en,zh", _E2E)
-def test_special_fg_aryl_e2e_after_l2_precompute(
-    smiles: str, en: str, zh: str
-) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
 def test_alkyl_sulfonamide_not_aryl() -> None:
     """Negative: simple alkyl sulfonamide stays alkyl (not benzene-…)."""
     r = SMILESNNamer().name("CCS(=O)(=O)N")

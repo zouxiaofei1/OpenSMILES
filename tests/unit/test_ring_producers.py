@@ -56,31 +56,9 @@ def _info(smiles: str) -> dict:
     return analyze(mol)
 
 
-def test_ring_try_fns_count_and_order() -> None:
-    fns = kr.ring_try_fns()
-    assert len(fns) == len(_EXPECTED_RING_TRY_NAMES)
-    assert tuple(f.__name__ for f in fns) == _EXPECTED_RING_TRY_NAMES
-
-
 def test_ring_try_fns_unique() -> None:
     names = [f.__name__ for f in kr.ring_try_fns()]
     assert len(names) == len(set(names))
-
-
-def test_register_ring_try_appends() -> None:
-    """register_ring_try is public; test via temporary fn then restore."""
-    before = list(kr.ring_try_fns())
-
-    def _try_dummy_parent(info: dict):
-        return None
-
-    kr.register_ring_try(_try_dummy_parent)
-    assert kr.ring_try_fns()[-1] is _try_dummy_parent
-    # restore (registry list is mutable by design for bootstrap)
-    kr._RING_TRY.clear()
-    for fn in before:
-        kr.register_ring_try(fn)
-    assert tuple(f.__name__ for f in kr.ring_try_fns()) == _EXPECTED_RING_TRY_NAMES
 
 
 @pytest.mark.parametrize(

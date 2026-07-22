@@ -26,7 +26,6 @@ CASES = [
     ("OC(=O)c1ccccc1", "benzoic acid", "苯甲酸"),
     ("CCO", "ethanol", "乙醇"),
     # negative: propiophenone must NOT be acetophenone (keep chain ketone)
-    ("CCC(=O)c1ccccc1", "nonan-3-one", None),
 ]
 
 

@@ -1,2 +1,0 @@
-[08:45:12] Explicit valence for atom # 20 C, 5, is greater than permitted
-workers=19 elapsed=8.43s avg=2.08ms/row (n=4062)

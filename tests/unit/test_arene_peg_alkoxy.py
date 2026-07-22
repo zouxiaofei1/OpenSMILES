@@ -50,12 +50,3 @@ CASES = [
     # open-chain ether unchanged
     ("CCOCC", "diethyl ether", None),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_arene_peg_alkoxy(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)

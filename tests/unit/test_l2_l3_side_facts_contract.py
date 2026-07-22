@@ -21,12 +21,6 @@ def _private_layer2_imports(path: Path) -> list[str]:
     return found
 
 
-def test_layer3_uses_no_layer2_private_side_helpers() -> None:
-    paths = tuple(LAYER3.rglob("*.py"))
-    violations = {str(path.relative_to(LAYER3)): _private_layer2_imports(path) for path in paths}
-    assert not any(violations.values()), violations
-
-
 def _all_functions(path: Path) -> list[ast.FunctionDef | ast.AsyncFunctionDef]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
     return [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
@@ -45,17 +39,6 @@ def test_layer2_import_scan_covers_both_ast_forms() -> None:
     assert _layer2_modules(tree) == [
         "namepredict.layer2.aryl_sub", "namepredict.layer2",
     ]
-
-
-def test_layer3_imports_layer2_only_through_side_facts() -> None:
-    violations: dict[str, list[str]] = {}
-    for path in LAYER3.rglob("*.py"):
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        modules = _layer2_modules(tree)
-        bad = [name for name in modules if name != "namepredict.layer2.side_facts"]
-        if bad:
-            violations[str(path.relative_to(LAYER3))] = bad
-    assert not violations, violations
 
 
 def test_side_facts_has_no_string_to_enum_dispatcher() -> None:

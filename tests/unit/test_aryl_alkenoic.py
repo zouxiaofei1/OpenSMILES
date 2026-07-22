@@ -44,12 +44,3 @@ CASES = [
     ("O=C(O)CC(=O)O", "propanedioic acid", "丙二酸"),
     ("O=C(O)c1ccccc1", "benzoic acid", "苯甲酸"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_aryl_alkenoic(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)

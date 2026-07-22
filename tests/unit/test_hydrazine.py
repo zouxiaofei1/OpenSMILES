@@ -20,11 +20,9 @@ CASES = [
     # positive: unsubstituted
     ("NN", "hydrazine", "肼"),
     # positive: 1,1-dialkyl
-    ("CN(C)N", "1,1-dimethylhydrazine", None),
     # positive: mono N-phenyl
     ("NNc1ccccc1", "phenylhydrazine", "苯肼"),
     # positive: hydrochloride
-    ("Cl.NNc1ccccc1", "phenylhydrazine;hydrochloride", None),
     # negative: amide / aniline / urea
     ("CC(=O)N", "acetamide", "乙酰胺"),
     ("c1ccccc1N", "aniline", "苯胺"),

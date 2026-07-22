@@ -1,3 +1,0 @@
-[17:41:51] Explicit valence for atom # 20 C, 5, is greater than permitted
-en=10.6% (430/4062) zh=35.1% (265/756) dual=10.5% (426/4062) fails=3636
-diff_vs_last: none (same as last run, or no previous snapshot)

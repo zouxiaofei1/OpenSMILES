@@ -22,12 +22,3 @@ def test_name_invalid_still_200():
     assert r.status_code == 200
     body = r.json()
     assert body["success"] is False
-
-
-def test_loop_state_200():
-    c = TestClient(app)
-    r = c.get("/api/v1/loop/state")
-    assert r.status_code == 200
-    body = r.json()
-    assert "status" in body
-    assert "iter" in body

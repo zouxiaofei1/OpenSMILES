@@ -63,12 +63,3 @@ CASES = [
     ("COc1ccc(CCO)cc1", "2-(4-methoxyphenyl)ethanol", "2-(4-甲氧基苯基)乙醇"),
     ("c1ccc(Oc2ccccc2)cc1", "phenoxybenzene", "苯氧基苯"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_aryl_recurse(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)

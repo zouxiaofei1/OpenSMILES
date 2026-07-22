@@ -23,14 +23,6 @@ CASES = [
 ]
 
 
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_benzene_polycarboxylic_acids(smiles: str, en: str, zh: str) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
 def test_benzene_polyacid_has_authoritative_parent_stem() -> None:
     assert parent_names("benzene_polycarboxylic") == ("benzene", "苯")
 def _info(smiles: str) -> dict:

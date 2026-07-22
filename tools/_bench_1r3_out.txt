@@ -1,9 +1,0 @@
-[13:27:04] Explicit valence for atom # 20 C, 5, is greater than permitted
-workers=19 elapsed=6.37s avg=1.57ms/row (n=4062)
-en=14.3% (581/4062) zh=36.4% (275/756) dual=14.2% (576/4062) fails=3486
-diff_vs_last: total=1 REGRESS=0 IMPROVE=0 CHANGE=1
-  [CHANGE] id:chebi-2275  smiles=CC1OC(C)OC(C)O1  dual fail->fail  en fail->fail  zh -->-
-    gold_en='2,4,6-trimethyl-1,3,5-trioxane'
-    gold_zh=''
-    prev_pred_en='ethane'  cur_pred_en='2,4,6-trimethyl-1,3,5-trioxacyclohexane'
-    prev_pred_zh='乙烷'  cur_pred_zh='2,4,6-三甲基-1,3,5-三氧杂环己烷'

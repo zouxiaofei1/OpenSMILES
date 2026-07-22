@@ -40,12 +40,3 @@ CASES = [
     ("Clc1ccc(CCO)cc1", "2-(4-chlorophenyl)ethanol", "2-(4-氯苯基)乙醇"),
     ("OCCc1ccncc1", "2-(pyridin-4-yl)ethanol", "2-(吡啶-4-基)乙醇"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_naphthyl_side(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)

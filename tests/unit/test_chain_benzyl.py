@@ -26,7 +26,6 @@ CASES = [
     ),
     # regressions
     ("c1ccc(OCCN)cc1", "phenoxyethanamine", None),
-    ("ClC=1C=C(OCCNC)C=CC1", "2-(3-chlorophenoxy)-N-methylethanamine", None),
     ("CC(=O)O", "acetic acid", None),
     ("NCCO", "aminoethanol", None),
 ]

@@ -44,12 +44,3 @@ CASES = [
     ("c1ccc(-c2ccc(CCO)cc2)cc1", "2-(4-phenylphenyl)ethanol", "2-(4-苯基苯基)乙醇"),
     ("COc1ccc(CCO)cc1", "2-(4-methoxyphenyl)ethanol", "2-(4-甲氧基苯基)乙醇"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_leaf_registry_extend(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)

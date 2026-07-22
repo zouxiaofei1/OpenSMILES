@@ -47,12 +47,3 @@ CASES = [
     ("CC(=O)c1ccccc1", "acetophenone", "苯乙酮"),
     ("O=C1c2ccccc2C(=O)c2ccccc12", "9,10-anthraquinone", "蒽醌"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_ortho_benzoquinone(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)

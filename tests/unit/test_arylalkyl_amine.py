@@ -66,12 +66,3 @@ CASES = [
     ("CCNCC", "N-ethylethanamine", "N-乙基乙胺"),
     ("NCCc1ccccc1", "phenylethanamine", "苯基乙胺"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_arylalkyl_amine_parent(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)

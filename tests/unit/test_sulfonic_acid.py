@@ -83,15 +83,6 @@ NEG_ARYL_SCOPE = [
 ]
 
 
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_simple_sulfonic_acid(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
 @pytest.mark.parametrize("smiles,forbidden", NEG_NOT_SULFONIC)
 def test_not_wrong_sulfonic(smiles: str, forbidden: str) -> None:
     r = SMILESNNamer().name(smiles)

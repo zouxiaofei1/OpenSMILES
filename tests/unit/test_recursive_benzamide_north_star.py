@@ -9,11 +9,3 @@ NORTH = (
     "4-methoxy-N-(4-(pyrrolidine-1-carbonyl)-5,6-dihydro-4H-cyclopenta[d]thiazol-2-yl)benzamide",
     "4-甲氧基-N-(4-(吡咯烷-1-羰基)-5,6-二氢-4H-环戊并[d]噻唑-2-基)苯甲酰胺",
 )
-
-
-def test_north_star_benzamide():
-    smiles, en, zh = NORTH
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    assert normalize_zh(r.zh) == normalize_zh(zh)

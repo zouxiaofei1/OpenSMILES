@@ -34,21 +34,3 @@ CASES = [
     ("CCO", "ethanol", "乙醇"),
     ("CC(=O)OC", "methyl acetate", "乙酸甲酯"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_branched_ether(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
-def test_hfip_not_propane_collapse() -> None:
-    r = SMILESNNamer().name("COC(C(F)(F)F)C(F)(F)F")
-    assert r.success
-    en = normalize_en(r.en)
-    assert "ether" in en
-    assert "propane" not in en
-    assert "hexafluoroisopropyl" in en

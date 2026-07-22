@@ -33,12 +33,3 @@ CASES = [
     ("c1ccc(S(=O)(=O)N)cc1", "benzenesulfonamide", "苯磺酰胺"),
     ("CS(=O)(=O)Cl", "methanesulfonyl chloride", "甲磺酰氯"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_guanidine(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)

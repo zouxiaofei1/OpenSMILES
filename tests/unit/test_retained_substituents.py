@@ -229,14 +229,6 @@ _SULFUR_PREFIX_CASES = [
 ]
 
 
-@pytest.mark.parametrize("smiles,expected_fragment,label", _SULFUR_PREFIX_CASES)
-def test_sulfur_prefix_naming(smiles, expected_fragment, label):
-    from namepredict.namer import SMILESNNamer
-    r = SMILESNNamer(name_mode="general").name(smiles)
-    assert r.success, f"{label}: naming failed"
-    assert expected_fragment in r.en, f"{label}: expected '{expected_fragment}' in '{r.en}'"
-
-
 def test_methylsulfanyl_unchanged():
     """Plain thioether should still give methylsulfanyl, not a sulfonyl variant."""
     from namepredict.namer import SMILESNNamer

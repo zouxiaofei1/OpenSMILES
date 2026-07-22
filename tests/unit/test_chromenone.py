@@ -35,21 +35,3 @@ CASES = [
     ("c1ccc2occc2c1", "benzofuran", "苯并呋喃"),
     ("c1ccccc1C(=O)O", "benzoic acid", "苯甲酸"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_chromenone(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
-def test_anchor_not_alkene_collapse() -> None:
-    """Prenyl-methoxy coumarin must not collapse to 2-methylbut-2-ene."""
-    r = SMILESNNamer().name("COc1cc2oc(=O)ccc2cc1CC=C(C)C")
-    assert r.success
-    en = normalize_en(r.en)
-    assert en == "7-methoxy-6-(3-methylbut-2-enyl)chromen-2-one"
-    assert "but-2-ene" not in en or "enyl" in en

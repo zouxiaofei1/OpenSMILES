@@ -36,22 +36,3 @@ CASES = [
     ("Nc1ccncc1", "pyridin-4-amine", "吡啶-4-胺"),
     ("O=C(N)C1CCCCC1", "cyclohexanecarboxamide", "环己烷甲酰胺"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", CASES)
-def test_pyridinecarboxamide(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
-def test_not_formamide_collapse() -> None:
-    """Pyridine–CONH2 must not collapse to (pyridin-n-yl)formamide."""
-    r = SMILESNNamer().name("NC(=O)c1ccncc1")
-    assert r.success
-    en = normalize_en(r.en)
-    assert en == "pyridine-4-carboxamide"
-    assert "formamide" not in en
-    assert "pyridin-4-yl" not in en

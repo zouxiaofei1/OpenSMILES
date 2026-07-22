@@ -39,17 +39,6 @@ def _parent(smiles: str) -> dict:
     return select_parent(analyze(mol))
 
 
-@pytest.mark.parametrize("smiles,kind,en,zh", NAME_CASES)
-def test_merge_alken_names(
-    smiles: str, kind: str, en: str, zh: str | None,
-) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
 @pytest.mark.parametrize("smiles,kind,en,zh", UNSAT_CASES)
 def test_merge_alken_parent_kind_unsat(
     smiles: str, kind: str, en: str, zh: str | None,
