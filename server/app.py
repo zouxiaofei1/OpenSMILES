@@ -13,10 +13,12 @@ from starlette.types import Scope
 
 from server.routes_name import router as name_router
 from server.routes_benchmark import router as benchmark_router
+from server.routes_benchmark_run import router as benchmark_run_router
 
 app = FastAPI(title="ChemAgent Namer", version="0.1.0")
 app.include_router(name_router)
 app.include_router(benchmark_router)
+app.include_router(benchmark_run_router)
 
 
 @app.get("/health")

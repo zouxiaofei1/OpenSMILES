@@ -29,6 +29,7 @@ CACHE = ROOT / "tools" / "benchmark_pred_preview_data.json"
 _proc: subprocess.Popen | None = None
 _proc_lock = threading.Lock()
 _gen_total = 0
+_captured: list[str] = []  # last stdout lines for diagnostics
 
 
 def _read_cache() -> list[dict]:
@@ -79,28 +80,52 @@ def get_benchmark_preview() -> dict[str, Any]:
 
 
 @router.post("/benchmark-preview/refresh")
-def refresh_benchmark_preview() -> dict[str, Any]:
-    """Start background subprocess to generate benchmark cache."""
-    global _proc, _gen_total
+def refresh_benchmark_preview(force: bool = False) -> dict[str, Any]:
+    """Start background subprocess to generate benchmark cache.
 
-    if _proc is not None and _proc.poll() is None:
-        return {
-            "ok": False,
-            "error": "generation already in progress",
-            "total": _gen_total,
-        }
+    Set force=true to kill any stuck generation and restart.
+    """
+    global _proc, _gen_total, _captured
+
+    # Check for a running process
+    if _proc is not None:
+        if _proc.poll() is None:
+            if force:
+                # Kill the stuck process and clean up
+                try:
+                    _proc.kill()
+                except Exception:
+                    pass
+                _proc = None
+                _captured = []
+            else:
+                return {
+                    "ok": False,
+                    "error": "generation already in progress (use force=true to reset)",
+                    "total": _gen_total,
+                }
+        else:
+            # Process already dead — clean up the stale reference
+            _proc = None
+            _captured = []
 
     src_total = _source_total()
     if src_total == 0:
         return {"ok": False, "error": f"source data not found or empty: {SOURCE}"}
 
     _gen_total = src_total
+    _captured = []
 
     # Build a small inline script that does the generation
     script = f'''
 import json, sys, time
 from pathlib import Path
 sys.path.insert(0, r"{ROOT / 'src'}")
+
+# Suppress RDKit C++ warnings — they flood stderr and block the pipe buffer
+from rdkit import RDLogger
+RDLogger.logger().setLevel(RDLogger.ERROR)
+
 from namepredict.namer import SMILESNNamer
 from namepredict.constants import normalize_en, normalize_zh
 SOURCE = Path(r"{SOURCE}")
@@ -147,12 +172,24 @@ print(f"DONE {{total}} rows {{elapsed:.1f}}s dual_ok={{n_ok}}", flush=True)
         _proc = subprocess.Popen(
             [sys.executable, "-c", script],
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.DEVNULL,  # RDKit warnings go to stderr; suppress to avoid pipe blocking
             text=True,
         )
     except Exception as exc:
         _proc = None
         return {"ok": False, "error": str(exc)}
+
+    # Drain stdout in a daemon thread so the pipe buffer never blocks the child
+    def _drain() -> None:
+        if _proc is None or _proc.stdout is None:
+            return
+        try:
+            for line in _proc.stdout:
+                _captured.append(line)
+        except Exception:
+            pass
+
+    threading.Thread(target=_drain, daemon=True).start()
 
     return {"ok": True, "started": True, "total": src_total}
 
@@ -163,17 +200,29 @@ def benchmark_status() -> dict[str, Any]:
     global _proc
     done = len(_read_cache())
     total = _gen_total or _source_total()
+
     proc_running = _proc is not None and _proc.poll() is None
-    # Consider done if either the process exited or the cache is complete
+    proc_exited = _proc is not None and _proc.poll() is not None
+
+    # If the process exited but cache is incomplete, it failed
     running = proc_running and done < total
+
     error = None
-    if _proc is not None and _proc.poll() is not None:
+    if proc_exited:
         if _proc.poll() != 0:
-            out = _proc.stdout.read() if _proc.stdout else ""
-            error = out[-500:] if out else f"exit code {_proc.poll()}"
+            tail = "".join(_captured[-10:]) if _captured else ""
+            error = tail[-500:] if tail else f"exit code {_proc.poll()}"
+        # If process exited successfully but done < total, something went wrong
+        elif done < total:
+            error = "process exited successfully but cache is incomplete"
+
+    # If no process running and cache incomplete, generation is stale/stuck
+    stuck = not proc_running and not proc_exited and done < total and done > 0
+
     return {
         "running": running,
         "done": done,
         "total": total,
         "error": error,
+        "stuck": stuck,
     }
