@@ -3,7 +3,10 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
-from namepredict.constants import Br, C, Cl, H, N, O, HALO_Z as _HAL_Z
+from namepredict.constants import Br, C, Cl, H, N, O
+
+# acyl halide detection only covers Cl/Br (P-65.5); F/I are not handled downstream
+_HAL_Z = frozenset({Cl, Br})
 
 
 def _dbl_o_on(bond, carbon) -> bool:

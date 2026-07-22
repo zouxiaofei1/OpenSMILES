@@ -203,7 +203,8 @@ def _check_fg_count(info, spec, ring_atoms, n_fg):
         on_ring = [e for e in fg_entries
                    if _rg_attach(mol, e[spec["ckey"]], ring_atoms) is not None]
     else:
-        on_ring = [e for e in fg_entries if e[spec["ckey"]] in ring_atoms]
+        ckey = spec["ckey"]
+        on_ring = [e for e in fg_entries if ckey in e and e[ckey] in ring_atoms]
     if len(on_ring) != n_fg or len(on_ring) != len(fg_entries): return None
     return on_ring
 
@@ -216,7 +217,8 @@ def _gate_scaffold_fg(info, fg_type, ring_atoms, fg_idxs, spec):
     if spec.get("extra_atoms_fn"):
         allowed = _fg_allowed_atoms(fg_entries, spec, mol)
     else:
-        on_ring = [e for e in fg_entries if e[spec["ckey"]] in ring_atoms]
+        ckey = spec["ckey"]
+        on_ring = [e for e in fg_entries if ckey in e and e[ckey] in ring_atoms]
         allowed = _fg_allowed_atoms(on_ring, spec)
     return _arene_fg_subs_ok(info, mol, ring_atoms, fg_idxs, allowed)
 

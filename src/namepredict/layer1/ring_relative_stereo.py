@@ -4,6 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from rdkit.Chem import ChiralType, Mol
 
+from namepredict.constants import H
+
 
 @dataclass(frozen=True)
 class RingRelativeStereoIR:

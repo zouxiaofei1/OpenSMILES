@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.constants import C, H
+from namepredict.constants import C, H, N
 
 from namepredict.layer2.aryl_depth2 import (
     _d2_pref_parts,

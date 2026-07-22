@@ -46,7 +46,7 @@ from namepredict.layer2.polyalkenol import _polyalkenol_parent as _try_polyalken
 from namepredict.layer2.prefix_alkenoic import _prefix_alkenoic_parent as _try_hy_alkenoic
 from namepredict.layer2.polycarboxylic import try_polycarboxylic_parent
 from namepredict.layer2.carboxymethyl_diacid import carboxymethyl_diacid_parent
-from namepredict.constants import Br, Cl
+from namepredict.constants import Br, C, Cl
 from namepredict.layer2.parent_selector_common import _ANHYDRIDE_BAD, _CORE_BAD, _DIACID_BAD, _DIAMINE_BAD, _DIOL_BAD, _DIONE_BAD, _no_fgs
 from namepredict.layer2.parent_core import (
     _arm_ok, _best_cover_pair, _covers, _db_pairs, _fg_chain, _hetero_open_chain,

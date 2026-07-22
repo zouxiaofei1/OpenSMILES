@@ -16,18 +16,6 @@ Layer2 是 NamePredict 六层流水线中体量最大、逻辑最复杂的一层
 | **输入 (info)** | `dict` | `mol` (RDKit Mol), `rings`, `carboxyls`, `esters`, `ketones`, `hydroxyls`, `amines`, `double_bonds`, `triple_bonds`, `has_acid`, `has_ketone`, `has_alcohol` ... 共 30+ 布尔标志 |
 | **输出 (parent)** | `dict` | `chain` (原子序号列表), `kind` (母体类型), `n_carbons`, `owned_atoms` (frozenset), `stem_en`, `stem_zh`, 以及 FG 专属字段如 `cooh_c_idx`, `double_bond` 等 |
 
-### 为什么占 60% 代码量
-
-IUPAC 母体选择是一个组合化学空间问题。对于任意有机分子，母体候选类别可达数十种：
-
-- **链状母体:** 烷烃、烯烃、炔烃、多烯，以及叠加羧酸/醛/酮/醇/胺/腈/酯/酰胺/酰氯/酸酐/硫醇/硫醚/醚等几十种官能团。
-- **环状母体:** 环烷烃、环烯烃、苯、萘、蒽、吡啶、吲哚、喹啉、苯并呋喃、苯并噻吩、苯并咪唑、饱和杂环 (Hantzsch-Widman)、桥环 (von Baeyer)、螺环 等数十种环系骨架。
-- **FG-环组合:** 苯甲酸、苯甲醛、苯乙酮、萘甲酸、吡啶甲酸、环己烷甲酸、杂环胺类 等数百种"保留名"组合。
-
-每种候选均有独立的判定逻辑（分子是否满足该母体条件），且需正确排序优先级。Layer2 用 **候选生成 + 独立评分 + 统一排序** 的架构应对这一复杂性，每个类别对应一个或多个源文件。
-
----
-
 ## 核心逻辑
 
 ### 候选生成架构
