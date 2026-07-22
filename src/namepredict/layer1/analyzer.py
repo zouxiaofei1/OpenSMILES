@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, Cl, H, N, O, S
+
 _FG_BOOL_MORE_KEYS = (
     ("has_aldehyde", "aldehydes"), ("has_amine", "amines"),
     ("has_nitrile", "nitriles"), ("has_alkene", "double_bonds"),
@@ -20,14 +22,14 @@ _FG_BOOL_MORE_KEYS = (
 )
 
 def _is_single_c_oh(atom) -> bool:
-    if atom.GetAtomicNum() != 8 or atom.GetTotalNumHs() < 1:
+    if atom.GetAtomicNum() != O or atom.GetTotalNumHs() < 1:
         return False
-    return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) == 1
+    return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == C]) == 1
 
 def _dbl_o_on(bond, carbon) -> bool:
     if bond.GetBondType() != BondType.DOUBLE:
         return False
-    return bond.GetOtherAtom(carbon).GetAtomicNum() == 8
+    return bond.GetOtherAtom(carbon).GetAtomicNum() == O
 
 def _has_double_bonded_o(carbon) -> bool:
     return any(_dbl_o_on(b, carbon) for b in carbon.GetBonds())
@@ -37,7 +39,7 @@ def _has_oh_neighbor(carbon) -> bool:
 
 def _is_carboxylate_o(atom) -> bool:
     """Single-bonded O- on a carboxylate (C(=O)[O-])."""
-    if atom.GetAtomicNum() != 8 or atom.GetFormalCharge() != -1:
+    if atom.GetAtomicNum() != O or atom.GetFormalCharge() != -1:
         return False
     return atom.GetTotalDegree() == 1 and atom.GetTotalNumHs() == 0
 
@@ -58,16 +60,16 @@ def _acyl_hal_of(carbon) -> tuple[int, int] | None:
     return acyl_hal_of(carbon)
 
 def _is_carboxyl_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6:
+    if atom.GetAtomicNum() != C:
         return False
     return _has_double_bonded_o(atom) and _has_acid_o_neighbor(atom)
 
 def _carbon_neighbor_count(atom) -> int:
-    return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6])
+    return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == C])
 
 def _amide_n_rest(n, carbon) -> list:
     return [x for x in n.GetNeighbors()
-            if x.GetAtomicNum() != 1 and x.GetIdx() != carbon.GetIdx()]
+            if x.GetAtomicNum() != H and x.GetIdx() != carbon.GetIdx()]
 
 def _amide_n_single(carbon, n) -> bool:
     b = carbon.GetOwningMol().GetBondBetweenAtoms(carbon.GetIdx(), n.GetIdx())
@@ -75,10 +77,10 @@ def _amide_n_single(carbon, n) -> bool:
 
 def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
     for n in carbon.GetNeighbors():
-        if n.GetAtomicNum() != 7 or not _amide_n_single(carbon, n):
+        if n.GetAtomicNum() != N or not _amide_n_single(carbon, n):
             continue
         o = _amide_n_rest(n, carbon)
-        if len(o) <= 2 and all(x.GetAtomicNum() == 6 for x in o):
+        if len(o) <= 2 and all(x.GetAtomicNum() == C for x in o):
             return n.GetIdx(), [x.GetIdx() for x in o]
     return None
 
@@ -87,7 +89,7 @@ def _amide_n_of(carbon) -> int | None:
     return info[0] if info else None
 
 def _is_amide_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
+    if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
         return False
@@ -95,7 +97,7 @@ def _is_amide_carbon(atom) -> bool:
     return _amide_n_info(atom) is not None and not _iu(atom)
 
 def _is_ketone_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
+    if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom) or _carbon_neighbor_count(atom) != 2:
         return False
@@ -103,14 +105,14 @@ def _is_ketone_carbon(atom) -> bool:
 
 def _alkoxy_c_of(oxygen, carbonyl) -> int | None:
     for n in oxygen.GetNeighbors():
-        if n.GetAtomicNum() == 6 and n.GetIdx() != carbonyl.GetIdx():
+        if n.GetAtomicNum() == C and n.GetIdx() != carbonyl.GetIdx():
             return n.GetIdx()
     return None
 
 def _is_anhydride_bridge_o(oxygen) -> bool:
-    if oxygen.GetAtomicNum() != 8 or oxygen.GetTotalNumHs() != 0:
+    if oxygen.GetAtomicNum() != O or oxygen.GetTotalNumHs() != 0:
         return False
-    cs = [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() == 6]
+    cs = [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() == C]
     if len(cs) != 2:
         return False
     return all(_has_double_bonded_o(c) and not _has_acid_o_neighbor(c) for c in cs)
@@ -122,10 +124,10 @@ def _anhydride_o_of(carbon) -> int | None:
     return None
 
 def _ether_cs(oxygen) -> list:
-    return [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() == 6]
+    return [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() == C]
 
 def _is_ether_oxygen(atom) -> bool:
-    if atom.GetAtomicNum() != 8 or atom.GetTotalNumHs() != 0:
+    if atom.GetAtomicNum() != O or atom.GetTotalNumHs() != 0:
         return False
     if _is_anhydride_bridge_o(atom):
         return False
@@ -141,10 +143,10 @@ def _ether_entries(mol: Mol) -> list[dict]:
     return [_ether_entry(a) for a in mol.GetAtoms() if _is_ether_oxygen(a)]
 
 def _sulfide_cs(sulfur) -> list:
-    return [n for n in sulfur.GetNeighbors() if n.GetAtomicNum() == 6]
+    return [n for n in sulfur.GetNeighbors() if n.GetAtomicNum() == C]
 
 def _is_sulfide_sulfur(atom) -> bool:
-    if atom.GetAtomicNum() != 16 or atom.GetTotalNumHs() != 0:
+    if atom.GetAtomicNum() != S or atom.GetTotalNumHs() != 0:
         return False
     if atom.GetTotalDegree() != 2:
         return False
@@ -159,24 +161,24 @@ def _sulfide_entries(mol: Mol) -> list[dict]:
     return [_sulfide_entry(a) for a in mol.GetAtoms() if _is_sulfide_sulfur(a)]
 
 def _is_nitro_nitrogen(atom) -> bool:
-    if atom.GetAtomicNum() != 7 or atom.GetFormalCharge() != 1:
+    if atom.GetAtomicNum() != N or atom.GetFormalCharge() != 1:
         return False
-    nbs = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
-    os_ = [n for n in nbs if n.GetAtomicNum() == 8]
-    cs = [n for n in nbs if n.GetAtomicNum() == 6]
+    nbs = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
+    os_ = [n for n in nbs if n.GetAtomicNum() == O]
+    cs = [n for n in nbs if n.GetAtomicNum() == C]
     return len(nbs) == 3 and len(os_) == 2 and len(cs) == 1
 
 def _nitro_entry(atom) -> dict:
     nbs = list(atom.GetNeighbors())
-    o_idxs = [n.GetIdx() for n in nbs if n.GetAtomicNum() == 8]
-    c_idx = next(n.GetIdx() for n in nbs if n.GetAtomicNum() == 6)
+    o_idxs = [n.GetIdx() for n in nbs if n.GetAtomicNum() == O]
+    c_idx = next(n.GetIdx() for n in nbs if n.GetAtomicNum() == C)
     return {"n_idx": atom.GetIdx(), "c_idx": c_idx, "o_idxs": o_idxs}
 
 def _nitro_entries(mol: Mol) -> list[dict]:
     return [_nitro_entry(a) for a in mol.GetAtoms() if _is_nitro_nitrogen(a)]
 
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
-    if oxygen.GetAtomicNum() != 8 or oxygen.GetTotalNumHs() != 0:
+    if oxygen.GetAtomicNum() != O or oxygen.GetTotalNumHs() != 0:
         return False
     if _is_anhydride_bridge_o(oxygen):
         return False
@@ -192,7 +194,7 @@ def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
     return None
 
 def _is_ester_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
+    if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is None:
         return False
@@ -206,7 +208,7 @@ def _ald_blocked(atom) -> bool:
     return _anhydride_o_of(atom) is not None or _amide_n_of(atom) is not None
 
 def _is_aldehyde_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6 or atom.GetTotalDegree() < 3:
+    if atom.GetAtomicNum() != C or atom.GetTotalDegree() < 3:
         return False
     if not _has_double_bonded_o(atom) or _has_acid_o_neighbor(atom):
         return False
@@ -223,7 +225,7 @@ def _is_hydroxyl_oxygen(atom) -> bool:
     return True
 
 def _carbon_neighbor(atom):
-    return next(n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6)
+    return next(n for n in atom.GetNeighbors() if n.GetAtomicNum() == C)
 
 def _hydroxyl_entry(atom) -> dict:
     return {"o_idx": atom.GetIdx(), "c_idx": _carbon_neighbor(atom).GetIdx()}
@@ -234,7 +236,7 @@ def _hydroxyl_entries(mol: Mol) -> list[dict]:
 def _thiol_entries(mol: Mol) -> list[dict]:
     out: list[dict] = []
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 16 or atom.GetTotalNumHs() < 1:
+        if atom.GetAtomicNum() != S or atom.GetTotalNumHs() < 1:
             continue
         if _carbon_neighbor_count(atom) != 1:
             continue
@@ -247,11 +249,11 @@ def _is_amide_n(atom) -> bool:
     from namepredict.layer1.urea import _is_urea_carbon as _iu
     if is_guanidine_n(atom):
         return True
-    return any(n.GetAtomicNum() == 6 and (_has_double_bonded_o(n) or _iu(n))
+    return any(n.GetAtomicNum() == C and (_has_double_bonded_o(n) or _iu(n))
                for n in atom.GetNeighbors())
 
 def _amine_degree(atom) -> int | None:
-    if atom.GetAtomicNum() != 7 or _is_amide_n(atom) or atom.GetIsAromatic():
+    if atom.GetAtomicNum() != N or _is_amide_n(atom) or atom.GetIsAromatic():
         return None
     n_c, n_h = _carbon_neighbor_count(atom), atom.GetTotalNumHs()
     if n_c == 1 and n_h >= 2:
@@ -259,7 +261,7 @@ def _amine_degree(atom) -> int | None:
     return 2 if n_c == 2 and n_h == 1 else (3 if n_c == 3 and n_h == 0 else None)
 
 def _amine_entry(atom, deg: int) -> dict:
-    cs = [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
+    cs = [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == C]
     base = {"n_idx": atom.GetIdx(), "degree": deg}
     return {**base, "c_idxs": cs} if deg >= 2 else {**base, "c_idx": cs[0]}
 
@@ -302,7 +304,7 @@ def _ester_entries(mol: Mol) -> list[dict]:
 
 def _anhydride_other_c(oxygen, carbon) -> int:
     for n in oxygen.GetNeighbors():
-        if n.GetAtomicNum() == 6 and n.GetIdx() != carbon.GetIdx():
+        if n.GetAtomicNum() == C and n.GetIdx() != carbon.GetIdx():
             return n.GetIdx()
     return carbon.GetIdx()
 
@@ -314,7 +316,7 @@ def _anhydride_entry(atom) -> dict:
     return {"o_idx": o_idx, "c1_idx": c1, "c2_idx": c2}
 
 def _is_anhydride_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
+    if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom):
         return False
@@ -339,13 +341,13 @@ def _is_cc_double(bond) -> bool:
     if bond.GetBondType() != BondType.DOUBLE or bond.GetIsAromatic():
         return False
     a, b = bond.GetBeginAtom(), bond.GetEndAtom()
-    return a.GetAtomicNum() == 6 and b.GetAtomicNum() == 6
+    return a.GetAtomicNum() == C and b.GetAtomicNum() == C
 
 def _is_cc_triple(bond) -> bool:
     if bond.GetBondType() != BondType.TRIPLE:
         return False
     a, b = bond.GetBeginAtom(), bond.GetEndAtom()
-    return a.GetAtomicNum() == 6 and b.GetAtomicNum() == 6
+    return a.GetAtomicNum() == C and b.GetAtomicNum() == C
 
 def _bond_entry(bond) -> dict:
     a, b = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
@@ -373,8 +375,8 @@ def _is_cn_triple(bond) -> bool:
 
 def _nitrile_entry(bond) -> dict:
     a, b = bond.GetBeginAtom(), bond.GetEndAtom()
-    c = a if a.GetAtomicNum() == 6 else b
-    n = b if a.GetAtomicNum() == 6 else a
+    c = a if a.GetAtomicNum() == C else b
+    n = b if a.GetAtomicNum() == C else a
     return {"c_idx": c.GetIdx(), "n_idx": n.GetIdx()}
 
 def _nitrile_entries(mol: Mol) -> list[dict]:
@@ -400,7 +402,7 @@ def _ring_meta(mol: Mol) -> dict:
     }
 
 def _carbon_ids(mol: Mol) -> list[int]:
-    return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
+    return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
 
 def _fg_more_lists(parts: dict) -> dict:
     keys = (

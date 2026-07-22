@@ -53,8 +53,7 @@ CYCLO_ZH: dict[int, str] = {
     12: "环十二烷",
 }
 
-MULT_EN: dict[int, str] = {1: "", 2: "di", 3: "tri", 4: "tetra", 5: "penta"}
-MULT_ZH: dict[int, str] = {1: "", 2: "二", 3: "三", 4: "四", 5: "五"}
+from namepredict.constants import MULT_EN, MULT_ZH
 
 
 def a_prefix_en(z: int) -> str | None:

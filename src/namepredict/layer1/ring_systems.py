@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.constants import C
+
 
 def _sssr(mol: Mol) -> list[tuple[int, ...]]:
     return list(mol.GetRingInfo().AtomRings())
@@ -100,7 +102,7 @@ def _hetero_atoms(mol: Mol, atom_ids: set[int]) -> list[dict]:
     out: list[dict] = []
     for i in sorted(atom_ids):
         z = mol.GetAtomWithIdx(i).GetAtomicNum()
-        if z != 6:
+        if z != C:
             out.append({"idx": i, "Z": z})
     return out
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, H, O, S
+
 
 def _dbl_o_nbs(sulfur) -> list:
     out = []
@@ -10,7 +12,7 @@ def _dbl_o_nbs(sulfur) -> list:
         if b.GetBondType() != BondType.DOUBLE:
             continue
         other = b.GetOtherAtom(sulfur)
-        if other.GetAtomicNum() == 8:
+        if other.GetAtomicNum() == O:
             out.append(other)
     return out
 
@@ -28,35 +30,35 @@ def _sgl_nbs(sulfur, z: int) -> list:
 
 def _s_core_ok(atom) -> bool:
     """Neutral tetracoordinate S with no H."""
-    if atom.GetAtomicNum() != 16 or atom.GetTotalNumHs() != 0:
+    if atom.GetAtomicNum() != S or atom.GetTotalNumHs() != 0:
         return False
     return atom.GetTotalDegree() == 4 and atom.GetFormalCharge() == 0
 
 
 def _is_free_oh_o(oxygen, s_idx: int) -> bool:
     """S–OH: neutral O with H, single heavy neighbor S (not ester-O–C)."""
-    if oxygen.GetAtomicNum() != 8 or oxygen.GetFormalCharge() != 0:
+    if oxygen.GetAtomicNum() != O or oxygen.GetFormalCharge() != 0:
         return False
     if oxygen.GetTotalNumHs() < 1:
         return False
-    heavies = [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() != 1]
+    heavies = [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() != H]
     return len(heavies) == 1 and heavies[0].GetIdx() == s_idx
 
 
 def _is_anion_o(oxygen, s_idx: int) -> bool:
     """S–O⁻: charged O, degree 1, only neighbor S."""
-    if oxygen.GetAtomicNum() != 8 or oxygen.GetFormalCharge() != -1:
+    if oxygen.GetAtomicNum() != O or oxygen.GetFormalCharge() != -1:
         return False
     if oxygen.GetTotalDegree() != 1 or oxygen.GetTotalNumHs() != 0:
         return False
-    heavies = [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() != 1]
+    heavies = [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() != H]
     return len(heavies) == 1 and heavies[0].GetIdx() == s_idx
 
 
 def _free_o_of(atom) -> tuple | None:
     """Return (oxygen, is_anion) for free OH or O⁻ on S; else None."""
     s_idx = atom.GetIdx()
-    for o in _sgl_nbs(atom, 8):
+    for o in _sgl_nbs(atom, O):
         if _is_free_oh_o(o, s_idx):
             return o, False
         if _is_anion_o(o, s_idx):
@@ -68,7 +70,7 @@ def _is_sulfonic_s(atom) -> bool:
     """S with two =O, one C, one free OH/O⁻ (not ester/amide/Cl/sulfone)."""
     if not _s_core_ok(atom) or len(_dbl_o_nbs(atom)) != 2:
         return False
-    if len(_sgl_nbs(atom, 6)) != 1 or len(_sgl_nbs(atom, 8)) != 1:
+    if len(_sgl_nbs(atom, C)) != 1 or len(_sgl_nbs(atom, O)) != 1:
         return False
     return _free_o_of(atom) is not None
 
@@ -87,7 +89,7 @@ def _entry_for(atom) -> dict | None:
     o_pair = _free_o_of(atom)
     if o_pair is None:
         return None
-    return _pack_entry(atom, _sgl_nbs(atom, 6)[0], o_pair)
+    return _pack_entry(atom, _sgl_nbs(atom, C)[0], o_pair)
 
 
 def sulfonic_acid_entries(mol: Mol) -> list[dict]:

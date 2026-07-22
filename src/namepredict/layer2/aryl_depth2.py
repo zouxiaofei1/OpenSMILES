@@ -11,8 +11,7 @@ from namepredict.layer2.side_alkyl import _is_cf3_carbon
 
 _ALKOXY_EN = {1: "methoxy", 2: "ethoxy", 3: "propoxy", 4: "butoxy"}
 _ALKOXY_ZH = {1: "甲氧基", 2: "乙氧基", 3: "丙氧基", 4: "丁氧基"}
-_MULT_EN = {1: "", 2: "di", 3: "tri"}
-_MULT_ZH = {1: "", 2: "二", 3: "三"}
+from namepredict.constants import MULT_EN as _MULT_EN, MULT_ZH as _MULT_ZH
 
 
 def _heavies(atom) -> list:

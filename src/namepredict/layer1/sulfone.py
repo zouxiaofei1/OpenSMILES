@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, O, S
+
 
 def _dbl_o_nbs(sulfur) -> list:
     out = []
@@ -10,7 +12,7 @@ def _dbl_o_nbs(sulfur) -> list:
         if b.GetBondType() != BondType.DOUBLE:
             continue
         other = b.GetOtherAtom(sulfur)
-        if other.GetAtomicNum() == 8:
+        if other.GetAtomicNum() == O:
             out.append(other)
     return out
 
@@ -28,7 +30,7 @@ def _sgl_nbs(sulfur, z: int) -> list:
 
 def _is_sulfone_s(atom) -> bool:
     """S with two =O and two C single bonds (not sulfoxide/sulfonamide/acid)."""
-    if atom.GetAtomicNum() != 16 or atom.GetTotalNumHs() != 0:
+    if atom.GetAtomicNum() != S or atom.GetTotalNumHs() != 0:
         return False
     if atom.GetTotalDegree() != 4 or atom.GetFormalCharge() != 0:
         return False

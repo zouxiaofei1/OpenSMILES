@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, H, N, O
+
 
 def _bond(a, b):
     return a.GetOwningMol().GetBondBetweenAtoms(a.GetIdx(), b.GetIdx())
@@ -14,7 +16,7 @@ def _bt(a, b):
 
 
 def _heavies(atom):
-    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
 
 
 def _n_rest(n, carbon):
@@ -22,16 +24,16 @@ def _n_rest(n, carbon):
 
 
 def _n_ok(n, carbon) -> bool:
-    if n.GetAtomicNum() != 7:
+    if n.GetAtomicNum() != N:
         return False
     rest = _n_rest(n, carbon)
-    return len(rest) <= 2 and all(x.GetAtomicNum() == 6 for x in rest)
+    return len(rest) <= 2 and all(x.GetAtomicNum() == C for x in rest)
 
 
 def _dbl_o(carbon):
     return next(
         (n for n in carbon.GetNeighbors()
-         if n.GetAtomicNum() == 8 and _bt(carbon, n) == BondType.DOUBLE),
+         if n.GetAtomicNum() == O and _bt(carbon, n) == BondType.DOUBLE),
         None,
     )
 
@@ -39,7 +41,7 @@ def _dbl_o(carbon):
 def _sgl_oh(carbon):
     return next(
         (n for n in carbon.GetNeighbors()
-         if n.GetAtomicNum() == 8 and n.GetTotalNumHs() >= 1
+         if n.GetAtomicNum() == O and n.GetTotalNumHs() >= 1
          and _bt(carbon, n) == BondType.SINGLE),
         None,
     )
@@ -47,7 +49,7 @@ def _sgl_oh(carbon):
 
 def _n_pair(carbon, want_dbl: bool) -> list | None:
     """Two N neighbors: keto both single; enol one double + one single."""
-    ns = [n for n in carbon.GetNeighbors() if n.GetAtomicNum() == 7]
+    ns = [n for n in carbon.GetNeighbors() if n.GetAtomicNum() == N]
     if len(ns) != 2:
         return None
     bts = {_bt(carbon, n) for n in ns}
@@ -95,7 +97,7 @@ def _enol_entry(carbon) -> dict | None:
 
 
 def _is_urea_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6:
+    if atom.GetAtomicNum() != C:
         return False
     return _keto_entry(atom) is not None or _enol_entry(atom) is not None
 
@@ -110,9 +112,9 @@ def urea_entries(mol: Mol) -> list[dict]:
 
 def is_urea_oh(atom) -> bool:
     """True if atom is enol-OH oxygen of a urea carbon."""
-    if atom.GetAtomicNum() != 8 or atom.GetTotalNumHs() < 1:
+    if atom.GetAtomicNum() != O or atom.GetTotalNumHs() < 1:
         return False
     for n in atom.GetNeighbors():
-        if n.GetAtomicNum() == 6 and _enol_entry(n) is not None:
+        if n.GetAtomicNum() == C and _enol_entry(n) is not None:
             return True
     return False

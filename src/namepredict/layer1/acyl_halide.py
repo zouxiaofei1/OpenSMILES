@@ -3,13 +3,13 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
-_HAL_Z = frozenset({17, 35})
+from namepredict.constants import Br, C, Cl, H, N, O, HALO_Z as _HAL_Z
 
 
 def _dbl_o_on(bond, carbon) -> bool:
     if bond.GetBondType() != BondType.DOUBLE:
         return False
-    return bond.GetOtherAtom(carbon).GetAtomicNum() == 8
+    return bond.GetOtherAtom(carbon).GetAtomicNum() == O
 
 
 def _has_double_bonded_o(carbon) -> bool:
@@ -17,13 +17,13 @@ def _has_double_bonded_o(carbon) -> bool:
 
 
 def _is_single_c_oh(atom) -> bool:
-    if atom.GetAtomicNum() != 8 or atom.GetTotalNumHs() < 1:
+    if atom.GetAtomicNum() != O or atom.GetTotalNumHs() < 1:
         return False
-    return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) == 1
+    return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == C]) == 1
 
 
 def _is_carboxylate_o(atom) -> bool:
-    if atom.GetAtomicNum() != 8 or atom.GetFormalCharge() != -1:
+    if atom.GetAtomicNum() != O or atom.GetFormalCharge() != -1:
         return False
     return atom.GetTotalDegree() == 1 and atom.GetTotalNumHs() == 0
 
@@ -36,13 +36,13 @@ def _has_acid_o_neighbor(carbon) -> bool:
 
 def _alkoxy_c_of(oxygen, carbonyl) -> int | None:
     for n in oxygen.GetNeighbors():
-        if n.GetAtomicNum() == 6 and n.GetIdx() != carbonyl.GetIdx():
+        if n.GetAtomicNum() == C and n.GetIdx() != carbonyl.GetIdx():
             return n.GetIdx()
     return None
 
 
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
-    if oxygen.GetAtomicNum() != 8 or oxygen.GetTotalNumHs() != 0:
+    if oxygen.GetAtomicNum() != O or oxygen.GetTotalNumHs() != 0:
         return False
     if oxygen.GetFormalCharge() != 0:
         return False
@@ -62,7 +62,7 @@ def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
 def _amide_n_rest(n, carbon) -> list:
     return [
         x for x in n.GetNeighbors()
-        if x.GetAtomicNum() != 1 and x.GetIdx() != carbon.GetIdx()
+        if x.GetAtomicNum() != H and x.GetIdx() != carbon.GetIdx()
     ]
 
 
@@ -73,10 +73,10 @@ def _amide_n_single(carbon, n) -> bool:
 
 def _amide_n_of(carbon) -> int | None:
     for n in carbon.GetNeighbors():
-        if n.GetAtomicNum() != 7 or not _amide_n_single(carbon, n):
+        if n.GetAtomicNum() != N or not _amide_n_single(carbon, n):
             continue
         o = _amide_n_rest(n, carbon)
-        if len(o) <= 2 and all(x.GetAtomicNum() == 6 for x in o):
+        if len(o) <= 2 and all(x.GetAtomicNum() == C for x in o):
             return n.GetIdx()
     return None
 
@@ -91,7 +91,7 @@ def _acyl_hal_of(carbon) -> tuple[int, int] | None:
 
 
 def _is_acyl_halide_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6 or not _has_double_bonded_o(atom):
+    if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
         return False

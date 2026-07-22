@@ -13,8 +13,7 @@ _CHAIN_ZH = {
 }
 _BRANCH_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
 _BRANCH_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
-_MULT_EN = {2: "di", 3: "tri", 4: "tetra"}
-_MULT_ZH = {2: "二", 3: "三", 4: "四"}
+from namepredict.constants import MULT_EN as _MULT_EN, MULT_ZH as _MULT_ZH
 
 
 def _paths_from(tree: RootedAlkylTree, node: int) -> list[list[int]]:

@@ -3,9 +3,11 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import B, C, H, O
+
 
 def _heavies(atom):
-    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
 
 
 def _bond_type(a, b):
@@ -19,7 +21,7 @@ def _is_sgl(a, b) -> bool:
 
 def _is_oh_on_b(oxygen, boron) -> bool:
     """Neutral O–H single-bonded only to B (not ether/oxide)."""
-    if oxygen.GetAtomicNum() != 8 or oxygen.GetFormalCharge() != 0:
+    if oxygen.GetAtomicNum() != O or oxygen.GetFormalCharge() != 0:
         return False
     if oxygen.GetTotalNumHs() < 1 or oxygen.GetTotalDegree() != 2:
         return False
@@ -31,12 +33,12 @@ def _oh_nbs(boron) -> list:
 
 
 def _c_nbs(boron) -> list:
-    return [n for n in boron.GetNeighbors() if n.GetAtomicNum() == 6]
+    return [n for n in boron.GetNeighbors() if n.GetAtomicNum() == C]
 
 
 def _is_boronic_b(atom) -> bool:
     """Tricoordinate neutral B with two OH and one C."""
-    if atom.GetAtomicNum() != 5 or atom.GetFormalCharge() != 0:
+    if atom.GetAtomicNum() != B or atom.GetFormalCharge() != 0:
         return False
     if atom.GetTotalDegree() != 3 or len(_heavies(atom)) != 3:
         return False

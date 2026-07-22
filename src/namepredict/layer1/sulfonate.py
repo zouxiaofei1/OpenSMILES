@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, H, O, S
+
 
 def _dbl_o_nbs(sulfur) -> list:
     out = []
@@ -10,7 +12,7 @@ def _dbl_o_nbs(sulfur) -> list:
         if b.GetBondType() != BondType.DOUBLE:
             continue
         other = b.GetOtherAtom(sulfur)
-        if other.GetAtomicNum() == 8:
+        if other.GetAtomicNum() == O:
             out.append(other)
     return out
 
@@ -27,18 +29,18 @@ def _sgl_nbs(sulfur, z: int) -> list:
 
 
 def _o_heavies(oxygen) -> list:
-    return [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() != 1]
+    return [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() != H]
 
 
 def _o_links_s_c(heavies, s_idx: int) -> bool:
     has_s = any(h.GetIdx() == s_idx for h in heavies)
-    has_c = any(h.GetAtomicNum() == 6 and h.GetIdx() != s_idx for h in heavies)
+    has_c = any(h.GetAtomicNum() == C and h.GetIdx() != s_idx for h in heavies)
     return has_s and has_c
 
 
 def _is_ester_o(oxygen, s_idx: int) -> bool:
     """Single O bonded to S and exactly one C; not OH / O- / N."""
-    if oxygen.GetAtomicNum() != 8 or oxygen.GetFormalCharge() != 0:
+    if oxygen.GetAtomicNum() != O or oxygen.GetFormalCharge() != 0:
         return False
     if oxygen.GetTotalNumHs() != 0 or oxygen.GetTotalDegree() != 2:
         return False
@@ -48,22 +50,22 @@ def _is_ester_o(oxygen, s_idx: int) -> bool:
 
 def _alkoxy_c_of(oxygen, s_idx: int) -> int | None:
     for n in oxygen.GetNeighbors():
-        if n.GetAtomicNum() == 6 and n.GetIdx() != s_idx:
+        if n.GetAtomicNum() == C and n.GetIdx() != s_idx:
             return n.GetIdx()
     return None
 
 
 def _is_sulfonate_s(atom) -> bool:
     """S with two =O, one C, one ester-O (not amide/Cl/OH/salt)."""
-    if atom.GetAtomicNum() != 16 or atom.GetTotalNumHs() != 0:
+    if atom.GetAtomicNum() != S or atom.GetTotalNumHs() != 0:
         return False
     if atom.GetTotalDegree() != 4 or atom.GetFormalCharge() != 0:
         return False
     if len(_dbl_o_nbs(atom)) != 2:
         return False
-    if len(_sgl_nbs(atom, 6)) != 1:
+    if len(_sgl_nbs(atom, C)) != 1:
         return False
-    return len(_sgl_nbs(atom, 8)) == 1
+    return len(_sgl_nbs(atom, O)) == 1
 
 
 def _pack_entry(atom, c, o) -> dict | None:
@@ -82,7 +84,7 @@ def _pack_entry(atom, c, o) -> dict | None:
 def _entry_for(atom) -> dict | None:
     if not _is_sulfonate_s(atom):
         return None
-    return _pack_entry(atom, _sgl_nbs(atom, 6)[0], _sgl_nbs(atom, 8)[0])
+    return _pack_entry(atom, _sgl_nbs(atom, C)[0], _sgl_nbs(atom, O)[0])
 
 
 def sulfonate_entries(mol: Mol) -> list[dict]:

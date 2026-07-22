@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.constants import C, H, N, O
+
 
 def _bond_name(a, b) -> str:
     bond = a.GetOwningMol().GetBondBetweenAtoms(a.GetIdx(), b.GetIdx())
@@ -11,7 +13,7 @@ def _bond_name(a, b) -> str:
 
 def _has_dbl_o(carbon) -> bool:
     return any(
-        n.GetAtomicNum() == 8 and _bond_name(carbon, n) == "DOUBLE"
+        n.GetAtomicNum() == O and _bond_name(carbon, n) == "DOUBLE"
         for n in carbon.GetNeighbors()
     )
 
@@ -19,7 +21,7 @@ def _has_dbl_o(carbon) -> bool:
 def _sgl_o_nbs(carbon):
     return [
         n for n in carbon.GetNeighbors()
-        if n.GetAtomicNum() == 8 and n.GetTotalNumHs() == 0
+        if n.GetAtomicNum() == O and n.GetTotalNumHs() == 0
         and _bond_name(carbon, n) == "SINGLE"
     ]
 
@@ -27,7 +29,7 @@ def _sgl_o_nbs(carbon):
 def _alkoxy_of(carbon) -> tuple[int, int] | None:
     for n in _sgl_o_nbs(carbon):
         cs = [x for x in n.GetNeighbors()
-              if x.GetAtomicNum() == 6 and x.GetIdx() != carbon.GetIdx()]
+              if x.GetAtomicNum() == C and x.GetIdx() != carbon.GetIdx()]
         if len(cs) == 1:
             return n.GetIdx(), cs[0].GetIdx()
     return None
@@ -35,26 +37,26 @@ def _alkoxy_of(carbon) -> tuple[int, int] | None:
 
 def _n_rest(n, carbon):
     return [x for x in n.GetNeighbors()
-            if x.GetAtomicNum() != 1 and x.GetIdx() != carbon.GetIdx()]
+            if x.GetAtomicNum() != H and x.GetIdx() != carbon.GetIdx()]
 
 
 def _n_info(carbon) -> tuple[int, list[int]] | None:
     for n in carbon.GetNeighbors():
-        if n.GetAtomicNum() != 7 or _bond_name(carbon, n) != "SINGLE":
+        if n.GetAtomicNum() != N or _bond_name(carbon, n) != "SINGLE":
             continue
         rest = _n_rest(n, carbon)
-        if len(rest) <= 2 and all(x.GetAtomicNum() == 6 for x in rest):
+        if len(rest) <= 2 and all(x.GetAtomicNum() == C for x in rest):
             return n.GetIdx(), [x.GetIdx() for x in rest]
     return None
 
 
 def _has_cooh_oh(atom) -> bool:
-    return any(n.GetAtomicNum() == 8 and n.GetTotalNumHs() >= 1
+    return any(n.GetAtomicNum() == O and n.GetTotalNumHs() >= 1
                for n in atom.GetNeighbors())
 
 
 def _is_carbamate_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6 or not _has_dbl_o(atom) or _has_cooh_oh(atom):
+    if atom.GetAtomicNum() != C or not _has_dbl_o(atom) or _has_cooh_oh(atom):
         return False
     return _alkoxy_of(atom) is not None and _n_info(atom) is not None
 

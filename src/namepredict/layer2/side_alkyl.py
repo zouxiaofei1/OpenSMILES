@@ -3,17 +3,17 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-_HALO_Z = frozenset({9, 17, 35, 53})
+from namepredict.constants import C, F, H, HALO_Z as _HALO_Z
 
 
 def _c_neighbors(mol: Mol, idx: int) -> list[int]:
     atom = mol.GetAtomWithIdx(idx)
-    return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
+    return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == C]
 
 
 def _f_neighbors(mol: Mol, idx: int) -> list[int]:
     atom = mol.GetAtomWithIdx(idx)
-    return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 9]
+    return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == F]
 
 
 def _free_c(mol: Mol, idx: int, blocked: set[int]) -> list[int]:
@@ -22,38 +22,38 @@ def _free_c(mol: Mol, idx: int, blocked: set[int]) -> list[int]:
 
 def _is_pure_alkyl_c(mol: Mol, idx: int) -> bool:
     atom = mol.GetAtomWithIdx(idx)
-    if atom.GetAtomicNum() != 6 or atom.IsInRing():
+    if atom.GetAtomicNum() != C or atom.IsInRing():
         return False
     return all(n.GetAtomicNum() in (1, 6) for n in atom.GetNeighbors())
 
 
 def _is_cf3_carbon(mol: Mol, idx: int) -> bool:
     atom = mol.GetAtomWithIdx(idx)
-    if atom.GetAtomicNum() != 6 or atom.IsInRing():
+    if atom.GetAtomicNum() != C or atom.IsInRing():
         return False
-    nbs = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
-    return len(nbs) == 4 and sum(n.GetAtomicNum() == 9 for n in nbs) == 3
+    nbs = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
+    return len(nbs) == 4 and sum(n.GetAtomicNum() == F for n in nbs) == 3
 
 
 def _is_cf3_fluoro(atom) -> bool:
-    if atom.GetAtomicNum() != 9:
+    if atom.GetAtomicNum() != F:
         return False
-    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
-    if len(heavies) != 1 or heavies[0].GetAtomicNum() != 6:
+    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
+    if len(heavies) != 1 or heavies[0].GetAtomicNum() != C:
         return False
     c = heavies[0]
     if c.IsInRing():
         return False
-    nbs = [n for n in c.GetNeighbors() if n.GetAtomicNum() != 1]
-    return len(nbs) == 4 and sum(n.GetAtomicNum() == 9 for n in nbs) == 3
+    nbs = [n for n in c.GetNeighbors() if n.GetAtomicNum() != H]
+    return len(nbs) == 4 and sum(n.GetAtomicNum() == F for n in nbs) == 3
 
 
 def _is_side_halo(atom) -> bool:
     """Terminal halogen on a non-ring carbon (ω-haloalkyl)."""
     if atom.GetAtomicNum() not in _HALO_Z:
         return False
-    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
-    if len(heavies) != 1 or heavies[0].GetAtomicNum() != 6:
+    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
+    if len(heavies) != 1 or heavies[0].GetAtomicNum() != C:
         return False
     return not heavies[0].IsInRing()
 
@@ -61,7 +61,7 @@ def _is_side_halo(atom) -> bool:
 def _terminal_halo_z(mol: Mol, idx: int) -> int | None:
     """Atomic number of the single terminal halo on carbon, else None."""
     atom = mol.GetAtomWithIdx(idx)
-    if atom.GetAtomicNum() != 6 or atom.IsInRing():
+    if atom.GetAtomicNum() != C or atom.IsInRing():
         return None
     halos = [n for n in atom.GetNeighbors() if n.GetAtomicNum() in _HALO_Z]
     if len(halos) != 1:
@@ -455,7 +455,7 @@ def _disjoint_cover(sets: list[set[int]], outside: set[int]) -> bool:
 def _outside_c_atoms(mol: Mol, ring: set[int]) -> set[int]:
     return {
         a.GetIdx() for a in mol.GetAtoms()
-        if a.GetAtomicNum() == 6 and a.GetIdx() not in ring
+        if a.GetAtomicNum() == C and a.GetIdx() not in ring
     }
 
 

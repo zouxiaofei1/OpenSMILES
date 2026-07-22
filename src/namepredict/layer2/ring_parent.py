@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.constants import Br, C, Cl, F, H, I, O
+
 from namepredict.layer2.aryl_sub import (
     _arom_c6_ring_lists, _is_unfused_benzene_ring, _unsub_phenyl_at,
 )
@@ -12,7 +14,7 @@ from namepredict.layer2.side_alkyl import (
 
 
 def _all_carbons_are_c(mol: Mol, atom_ids: tuple) -> bool:
-    return all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atom_ids)
+    return all(mol.GetAtomWithIdx(i).GetAtomicNum() == C for i in atom_ids)
 
 
 def _bond_between(mol: Mol, a: int, b: int):
@@ -36,7 +38,7 @@ def _outside_carbons(
     return [
         a.GetIdx()
         for a in mol.GetAtoms()
-        if a.GetAtomicNum() == 6
+        if a.GetAtomicNum() == C
         and a.GetIdx() not in ring_set
         and a.GetIdx() not in skip
     ]
@@ -66,16 +68,16 @@ def _ring_side_starts(
     starts: list[int] = []
     for r in ring_set:
         for n in mol.GetAtomWithIdx(r).GetNeighbors():
-            if n.GetAtomicNum() == 6 and n.GetIdx() not in ring_set:
+            if n.GetAtomicNum() == C and n.GetIdx() not in ring_set:
                 if n.GetIdx() not in skip:
                     starts.append(n.GetIdx())
     return starts
 
 
 def _is_ring_halo(atom, ring_set: set[int]) -> bool:
-    if atom.GetAtomicNum() not in (9, 17, 35, 53):
+    if atom.GetAtomicNum() not in (F, Cl, Br, I):
         return False
-    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
     return len(heavies) == 1 and heavies[0].GetIdx() in ring_set
 
 
@@ -327,7 +329,7 @@ def _dbl_o_idx(mol: Mol, c_idx: int) -> int | None:
         if bond.GetBondType().name != "DOUBLE":
             continue
         other = bond.GetOtherAtom(carbon)
-        if other.GetAtomicNum() == 8:
+        if other.GetAtomicNum() == O:
             return other.GetIdx()
     return None
 

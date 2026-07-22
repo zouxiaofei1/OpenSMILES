@@ -3,9 +3,7 @@ from __future__ import annotations
 
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 from namepredict.layer5.benzene_names import benzene_prefix
-
-MULT_EN = {2: "di", 3: "tri", 4: "tetra", 5: "penta", 6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
-MULT_ZH = {2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
+from namepredict.constants import MULT_EN, MULT_ZH
 _H5COOH_KINDS = frozenset({"furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic", "imidazolecarboxylic", "pyrazolecarboxylic"})
 _SHCOOH_KINDS = frozenset({"piperidinecarboxylic", "pyrrolidinecarboxylic", "piperazinecarboxylic", "morpholinecarboxylic", "oxolanecarboxylic", "oxanecarboxylic", "thiolanecarboxylic", "aziridinecarboxylic"})
 

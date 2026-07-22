@@ -28,7 +28,7 @@ def _face(mol: Mol, atom_id: int, ring_order: list[int], ligand: int) -> int | N
     atom = mol.GetAtomWithIdx(atom_id); tag = atom.GetChiralTag()
     if tag not in (ChiralType.CHI_TETRAHEDRAL_CW, ChiralType.CHI_TETRAHEDRAL_CCW): return None
     index = ring_order.index(atom_id); previous, following = ring_order[index - 1], ring_order[(index + 1) % len(ring_order)]
-    actual = [-1 if n.GetAtomicNum() == 1 else n.GetIdx() for n in atom.GetNeighbors()]
+    actual = [-1 if n.GetAtomicNum() == H else n.GetIdx() for n in atom.GetNeighbors()]
     if atom.GetNumExplicitHs() + atom.GetNumImplicitHs() and -1 not in actual: actual = [-1] + actual
     target = [ligand, previous, following, -1]
     if set(actual) != set(target): return None

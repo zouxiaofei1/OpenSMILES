@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.constants import C, H
+
 from namepredict.layer2.aryl_depth2 import (
     _d2_pref_parts,
     _d2_sites,
@@ -16,11 +18,8 @@ from namepredict.layer2.aryl_depth2 import (
 from namepredict.layer2.leaves.registry import match_leaf_kind as _recurse_leaf_kind
 from namepredict.layer2.leaves.ring_namer import recursive_ph_name as _recursive_ph_name
 
-_HALO = frozenset({9, 17, 35, 53})
-_HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
-_HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}
-_MULT_EN = {1: "", 2: "di", 3: "tri"}
-_MULT_ZH = {1: "", 2: "二", 3: "三"}
+from namepredict.constants import HALO_Z as _HALO, HALO_EN as _HALO_EN, HALO_ZH as _HALO_ZH
+from namepredict.constants import MULT_EN as _MULT_EN, MULT_ZH as _MULT_ZH
 
 
 def _is_arom_c6(mol: Mol, atoms) -> bool:
@@ -28,7 +27,7 @@ def _is_arom_c6(mol: Mol, atoms) -> bool:
         return False
     return all(
         mol.GetAtomWithIdx(i).GetIsAromatic()
-        and mol.GetAtomWithIdx(i).GetAtomicNum() == 6
+        and mol.GetAtomWithIdx(i).GetAtomicNum() == C
         for i in atoms
     )
 
@@ -43,28 +42,28 @@ def _c6_rings_at(mol: Mol, c_idx: int) -> list[set[int]]:
 def _nb_outside(mol: Mol, i: int, ring: set[int]):
     return [
         n for n in mol.GetAtomWithIdx(i).GetNeighbors()
-        if n.GetAtomicNum() != 1 and n.GetIdx() not in ring
+        if n.GetAtomicNum() != H and n.GetIdx() not in ring
     ]
 
 
 def _is_terminal_halo(atom) -> bool:
     if atom.GetAtomicNum() not in _HALO:
         return False
-    return sum(1 for n in atom.GetNeighbors() if n.GetAtomicNum() != 1) == 1
+    return sum(1 for n in atom.GetNeighbors() if n.GetAtomicNum() != H) == 1
 
 
 def _is_terminal_me_leaf(mol: Mol, c_idx: int, ring_c: int) -> bool:
     """Methyl leaf on Ph: C only bonded to ring carbon (+H)."""
     atom = mol.GetAtomWithIdx(c_idx)
-    if atom.GetAtomicNum() != 6 or atom.IsInRing() or atom.GetIsAromatic():
+    if atom.GetAtomicNum() != C or atom.IsInRing() or atom.GetIsAromatic():
         return False
-    return all(n.GetIdx() == ring_c or n.GetAtomicNum() == 1 for n in atom.GetNeighbors())
+    return all(n.GetIdx() == ring_c or n.GetAtomicNum() == H for n in atom.GetNeighbors())
 
 
 def _side_leaf_kind(mol: Mol, nb, ring_i: int) -> str | None:
     if _is_terminal_halo(nb):
         return "halo"
-    if nb.GetAtomicNum() == 6 and _is_terminal_me_leaf(mol, nb.GetIdx(), ring_i):
+    if nb.GetAtomicNum() == C and _is_terminal_me_leaf(mol, nb.GetIdx(), ring_i):
         return "me"
     return _recurse_leaf_kind(mol, nb, ring_i)
 
@@ -108,7 +107,7 @@ def _me_sites(mol: Mol, ring: set[int]) -> list[int]:
     sites: list[int] = []
     for i in ring:
         for nb in _nb_outside(mol, i, ring):
-            if nb.GetAtomicNum() == 6 and _is_terminal_me_leaf(mol, nb.GetIdx(), i):
+            if nb.GetAtomicNum() == C and _is_terminal_me_leaf(mol, nb.GetIdx(), i):
                 sites.append(i)
     return sites
 
@@ -241,7 +240,7 @@ def _phenyl_name(mol: Mol, ph: set[int], attach: int) -> tuple[str, str, bool]:
 
 def _arm_parent_of(mol: Mol, ph: set[int], attach: int) -> int:
     for n in mol.GetAtomWithIdx(attach).GetNeighbors():
-        if n.GetAtomicNum() != 1 and n.GetIdx() not in ph:
+        if n.GetAtomicNum() != H and n.GetIdx() not in ph:
             return n.GetIdx()
     return -1
 
@@ -268,11 +267,11 @@ def _benzyloxy_name(mol: Mol, ph: set[int], ch2: int) -> tuple[str, str, bool]:
 
 
 def _heavies(atom) -> list:
-    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
 
 
 def _is_open_ch2(atom) -> bool:
-    return atom.GetAtomicNum() == 6 and not atom.GetIsAromatic() and not atom.IsInRing()
+    return atom.GetAtomicNum() == C and not atom.GetIsAromatic() and not atom.IsInRing()
 
 
 def _other_heavy(atom, parent: int) -> int | None:
@@ -373,7 +372,7 @@ def _side_c_starts(mol: Mol, parent: set[int]) -> list[int]:
         n.GetIdx()
         for r in parent
         for n in mol.GetAtomWithIdx(r).GetNeighbors()
-        if n.GetAtomicNum() == 6 and n.GetIdx() not in parent
+        if n.GetAtomicNum() == C and n.GetIdx() not in parent
     ]
 
 
@@ -401,7 +400,7 @@ def _simple_leaf_atoms(mol: Mol, ph: set[int]) -> set[int]:
         for nb in _nb_outside(mol, i, ph):
             if _is_terminal_halo(nb):
                 out.add(nb.GetIdx())
-            elif nb.GetAtomicNum() == 6 and _is_terminal_me_leaf(mol, nb.GetIdx(), i):
+            elif nb.GetAtomicNum() == C and _is_terminal_me_leaf(mol, nb.GetIdx(), i):
                 out.add(nb.GetIdx())
     return out
 
@@ -462,7 +461,7 @@ def _phenyl_starts_set(mol: Mol, parent: set[int]) -> set[int]:
 
 def _unsub_phenyl_at(mol: Mol, c_idx: int, n_idx: int) -> bool:
     """True if c_idx is sole N-attachment of unsubstituted phenyl (amide N-Ph)."""
-    if mol.GetAtomWithIdx(n_idx).GetAtomicNum() != 7:
+    if mol.GetAtomWithIdx(n_idx).GetAtomicNum() != N:
         return False
     ph = _phenyl_at(mol, c_idx, n_idx)
     return ph is not None and not _halo_list(mol, ph)
@@ -485,7 +484,7 @@ def _exocyclic_fg_ring(mol: Mol, fg_c: int) -> set[int] | None:
     """Unfused C6 attached to exocyclic FG carbon (COOH/CHO/CN/...)."""
     nbs = [
         n.GetIdx() for n in mol.GetAtomWithIdx(fg_c).GetNeighbors()
-        if n.GetAtomicNum() == 6 and n.GetIsAromatic()
+        if n.GetAtomicNum() == C and n.GetIsAromatic()
     ]
     return _unfused_c6_at(mol, nbs[0]) if len(nbs) == 1 else None
 

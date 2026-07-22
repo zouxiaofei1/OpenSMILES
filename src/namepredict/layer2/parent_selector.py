@@ -46,6 +46,7 @@ from namepredict.layer2.polyalkenol import _polyalkenol_parent as _try_polyalken
 from namepredict.layer2.prefix_alkenoic import _prefix_alkenoic_parent as _try_hy_alkenoic
 from namepredict.layer2.polycarboxylic import try_polycarboxylic_parent
 from namepredict.layer2.carboxymethyl_diacid import carboxymethyl_diacid_parent
+from namepredict.constants import Br, Cl
 from namepredict.layer2.parent_selector_common import _ANHYDRIDE_BAD, _CORE_BAD, _DIACID_BAD, _DIAMINE_BAD, _DIOL_BAD, _DIONE_BAD, _no_fgs
 from namepredict.layer2.parent_core import (
     _arm_ok, _best_cover_pair, _covers, _db_pairs, _fg_chain, _hetero_open_chain,
@@ -211,7 +212,7 @@ def _arm_has_aryl(mol: Mol, arm: list[int]) -> bool:
     arm_set = set(arm)
     for i in arm:
         for n in mol.GetAtomWithIdx(i).GetNeighbors():
-            if n.GetIdx() not in arm_set and n.GetAtomicNum() == 6 and n.GetIsAromatic():
+            if n.GetIdx() not in arm_set and n.GetAtomicNum() == C and n.GetIsAromatic():
                 return True
     return False
 def _pick_amine_arms(mol: Mol, arms: list[list[int]]) -> tuple[list[int], list[list[int]]]:
@@ -339,7 +340,7 @@ def _open_mono_fg_ok(info: dict, ekey: str) -> bool:
     mol, c = info["mol"], entries[0]["c_idx"]
     if _carbon_neighbors(mol, c):
         return True
-    return not any(n.GetAtomicNum() == 6 for n in mol.GetAtomWithIdx(c).GetNeighbors())
+    return not any(n.GetAtomicNum() == C for n in mol.GetAtomWithIdx(c).GetNeighbors())
 def _acid_parent_core(info: dict) -> dict | None:
     top = _ring_acid_try(info) or _poly_acid_try(info)
     if top is not None:
@@ -383,8 +384,8 @@ def _amide_parent(info: dict) -> dict:
     return _ap(info)
 def _acyl_chloride_parent(info: dict) -> dict:
     e = info["acyl_chlorides"][0]
-    hz = int(e.get("hal_z") or 17)
-    kind = "acyl_bromide" if hz == 35 else "acyl_chloride"
+    hz = int(e.get("hal_z") or Cl)
+    kind = "acyl_bromide" if hz == Br else "acyl_chloride"
     return _parent_dict(
         _chain_through(info, e["c_idx"]), kind, acyl_c_idx=e["c_idx"],
         cl_idx=e["cl_idx"], hal_idx=e.get("hal_idx", e["cl_idx"]), hal_z=hz,

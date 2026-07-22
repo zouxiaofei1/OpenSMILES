@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, H, N, O, S
+
 
 def _bond_type(a, b):
     bond = a.GetOwningMol().GetBondBetweenAtoms(a.GetIdx(), b.GetIdx())
@@ -18,7 +20,7 @@ def _is_sgl(a, b) -> bool:
 
 
 def _heavies(atom):
-    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
 
 
 def _pick_z(nbs, z: int):
@@ -27,12 +29,12 @@ def _pick_z(nbs, z: int):
 
 def _cumul_pair(carbon, x_z: int):
     """(N, X) if carbon is digonal N=C=X; else None."""
-    if carbon.GetAtomicNum() != 6 or carbon.GetTotalDegree() != 2:
+    if carbon.GetAtomicNum() != C or carbon.GetTotalDegree() != 2:
         return None
     nbs = _heavies(carbon)
     if len(nbs) != 2:
         return None
-    n, x = _pick_z(nbs, 7), _pick_z(nbs, x_z)
+    n, x = _pick_z(nbs, N), _pick_z(nbs, x_z)
     if n is None or x is None or not (_is_dbl(carbon, n) and _is_dbl(carbon, x)):
         return None
     return n, x
@@ -43,13 +45,13 @@ def _r_of_iso_n(n_atom, carbon) -> int | None:
     for n in _heavies(n_atom):
         if n.GetIdx() == carbon.GetIdx():
             continue
-        if n.GetAtomicNum() == 6 and _is_sgl(n_atom, n):
+        if n.GetAtomicNum() == C and _is_sgl(n_atom, n):
             return n.GetIdx()
     return None
 
 
 def _iso_n_ok(n_atom, carbon) -> bool:
-    if n_atom.GetAtomicNum() != 7 or n_atom.GetTotalDegree() != 2:
+    if n_atom.GetAtomicNum() != N or n_atom.GetTotalDegree() != 2:
         return False
     return _r_of_iso_n(n_atom, carbon) is not None
 
@@ -77,8 +79,8 @@ def _entries(mol: Mol, x_z: int) -> list[dict]:
 
 
 def isocyanate_entries(mol: Mol) -> list[dict]:
-    return _entries(mol, 8)
+    return _entries(mol, O)
 
 
 def isothiocyanate_entries(mol: Mol) -> list[dict]:
-    return _entries(mol, 16)
+    return _entries(mol, S)

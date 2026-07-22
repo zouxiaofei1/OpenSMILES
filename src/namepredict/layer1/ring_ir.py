@@ -7,6 +7,8 @@ from rdkit.Chem import Mol
 
 from namepredict.layer1.ring_systems import build_ring_systems
 
+from namepredict.constants import C
+
 
 @dataclass(frozen=True)
 class RingComponent:

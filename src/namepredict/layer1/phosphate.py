@@ -3,16 +3,18 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, O, P
+
 
 def _is_p_oxo(atom) -> bool:
-    if atom.GetAtomicNum() != 15:
+    if atom.GetAtomicNum() != P:
         return False
     dbl = [b for b in atom.GetBonds() if b.GetBondType() == BondType.DOUBLE]
-    return len(dbl) == 1 and dbl[0].GetOtherAtom(atom).GetAtomicNum() == 8
+    return len(dbl) == 1 and dbl[0].GetOtherAtom(atom).GetAtomicNum() == O
 
 
 def _oh_like_o(atom, p_idx: int) -> bool:
-    if atom.GetAtomicNum() != 8 or atom.GetIdx() == p_idx:
+    if atom.GetAtomicNum() != O or atom.GetIdx() == p_idx:
         return False
     if atom.GetFormalCharge() == -1 and atom.GetTotalDegree() == 1:
         return True
@@ -20,10 +22,10 @@ def _oh_like_o(atom, p_idx: int) -> bool:
 
 
 def _alkoxy_c(oxygen, p_idx: int) -> int | None:
-    if oxygen.GetAtomicNum() != 8:
+    if oxygen.GetAtomicNum() != O:
         return None
     cs = [n.GetIdx() for n in oxygen.GetNeighbors()
-          if n.GetAtomicNum() == 6 and n.GetIdx() != p_idx]
+          if n.GetAtomicNum() == C and n.GetIdx() != p_idx]
     return cs[0] if len(cs) == 1 else None
 
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.constants import C, N, O
+
 
 def _bond_name(a, b) -> str:
     bond = a.GetOwningMol().GetBondBetweenAtoms(a.GetIdx(), b.GetIdx())
@@ -11,27 +13,27 @@ def _bond_name(a, b) -> str:
 
 def _has_dbl_o(carbon) -> bool:
     return any(
-        n.GetAtomicNum() == 8 and _bond_name(carbon, n) == "DOUBLE"
+        n.GetAtomicNum() == O and _bond_name(carbon, n) == "DOUBLE"
         for n in carbon.GetNeighbors()
     )
 
 
 def _has_cooh_oh(atom) -> bool:
     return any(
-        n.GetAtomicNum() == 8 and n.GetTotalNumHs() >= 1 for n in atom.GetNeighbors()
+        n.GetAtomicNum() == O and n.GetTotalNumHs() >= 1 for n in atom.GetNeighbors()
     )
 
 
 def _alkoxy_c_of(oxygen, carbon) -> int | None:
     cs = [
         x for x in oxygen.GetNeighbors()
-        if x.GetAtomicNum() == 6 and x.GetIdx() != carbon.GetIdx()
+        if x.GetAtomicNum() == C and x.GetIdx() != carbon.GetIdx()
     ]
     return cs[0].GetIdx() if len(cs) == 1 else None
 
 
 def _is_ester_o(oxygen, carbon) -> bool:
-    if oxygen.GetAtomicNum() != 8 or oxygen.GetTotalNumHs() != 0:
+    if oxygen.GetAtomicNum() != O or oxygen.GetTotalNumHs() != 0:
         return False
     return _bond_name(carbon, oxygen) == "SINGLE" and _alkoxy_c_of(oxygen, carbon) is not None
 
@@ -47,11 +49,11 @@ def _ester_o_arms(carbon) -> list[tuple[int, int]]:
 
 
 def _has_n_on(carbon) -> bool:
-    return any(n.GetAtomicNum() == 7 for n in carbon.GetNeighbors())
+    return any(n.GetAtomicNum() == N for n in carbon.GetNeighbors())
 
 
 def _is_carbonate_carbon(atom) -> bool:
-    if atom.GetAtomicNum() != 6 or not _has_dbl_o(atom) or _has_cooh_oh(atom):
+    if atom.GetAtomicNum() != C or not _has_dbl_o(atom) or _has_cooh_oh(atom):
         return False
     if _has_n_on(atom):
         return False

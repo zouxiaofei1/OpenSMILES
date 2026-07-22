@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, H, N, O
+
 
 def _bond(a, b):
     return a.GetOwningMol().GetBondBetweenAtoms(a.GetIdx(), b.GetIdx())
@@ -14,32 +16,32 @@ def _is_sgl(a, b) -> bool:
 
 
 def _heavies(atom):
-    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
 
 
 def _rest_cs(n, other_n):
     """Carbon substituents on N excluding the hydrazine partner N."""
     return [
         x for x in _heavies(n)
-        if x.GetIdx() != other_n.GetIdx() and x.GetAtomicNum() == 6
+        if x.GetIdx() != other_n.GetIdx() and x.GetAtomicNum() == C
     ]
 
 
 def _rest_ok(n, other_n) -> bool:
     """N may only carry H and C (no O/N etc. beyond partner)."""
     rest = [x for x in _heavies(n) if x.GetIdx() != other_n.GetIdx()]
-    return all(x.GetAtomicNum() == 6 for x in rest)
+    return all(x.GetAtomicNum() == C for x in rest)
 
 
 def _n_ok(n, other) -> bool:
-    if n.GetAtomicNum() != 7 or n.GetIsAromatic() or n.IsInRing():
+    if n.GetAtomicNum() != N or n.GetIsAromatic() or n.IsInRing():
         return False
     return _rest_ok(n, other)
 
 
 def _has_dbl_o(carbon) -> bool:
     for o in carbon.GetNeighbors():
-        if o.GetAtomicNum() != 8:
+        if o.GetAtomicNum() != O:
             continue
         b = _bond(carbon, o)
         if b is not None and b.GetBondType() == BondType.DOUBLE:
@@ -50,7 +52,7 @@ def _has_dbl_o(carbon) -> bool:
 def _is_amide_like(n) -> bool:
     """True if N is attached to C(=O) (amide / urea / hydrazide)."""
     return any(
-        c.GetAtomicNum() == 6 and _has_dbl_o(c) for c in n.GetNeighbors()
+        c.GetAtomicNum() == C and _has_dbl_o(c) for c in n.GetNeighbors()
     )
 
 
@@ -71,7 +73,7 @@ def _pack(n1, n2) -> dict:
 
 def _entry_for_bond(bond) -> dict | None:
     a, b = bond.GetBeginAtom(), bond.GetEndAtom()
-    if a.GetAtomicNum() != 7 or b.GetAtomicNum() != 7:
+    if a.GetAtomicNum() != N or b.GetAtomicNum() != N:
         return None
     if not _pair_ok(a, b):
         return None

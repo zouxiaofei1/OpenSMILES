@@ -9,8 +9,7 @@ _ALKANE_NAMES = {
     7: ("heptane", "庚烷"), 8: ("octane", "辛烷"), 9: ("nonane", "壬烷"),
     10: ("decane", "癸烷"),
 }
-_MULT_EN = {1: "", 2: "di", 3: "tri", 4: "tetra", 5: "penta", 6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
-_MULT_ZH = {1: "", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
+from namepredict.constants import MULT_EN as _MULT_EN, MULT_ZH as _MULT_ZH
 
 def _bond_locs(chain: list[int], bonds) -> list[int]:
     return sorted(min(chain.index(a) + 1, chain.index(b) + 1) for a, b in bonds)

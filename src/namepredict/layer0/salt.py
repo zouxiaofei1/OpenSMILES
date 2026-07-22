@@ -7,8 +7,10 @@ from __future__ import annotations
 from rdkit import Chem
 from rdkit.Chem import Mol
 
+from namepredict.constants import Cl, K, Li, Na, O
+
 # atomic number → English metal name (IUPAC functional class salt)
-_ALKALI_EN = {3: "lithium", 11: "sodium", 19: "potassium"}
+_ALKALI_EN = {Li: "lithium", Na: "sodium", K: "potassium"}
 _METAL_ZH = {"lithium": "锂", "sodium": "钠", "potassium": "钾"}
 
 
@@ -25,7 +27,7 @@ def _is_water(mol: Mol) -> bool:
     if mol.GetNumAtoms() != 1:
         return False
     a = mol.GetAtomWithIdx(0)
-    return a.GetAtomicNum() == 8 and a.GetFormalCharge() == 0 and a.GetTotalNumHs() == 2
+    return a.GetAtomicNum() == O and a.GetFormalCharge() == 0 and a.GetTotalNumHs() == 2
 
 
 def _is_hcl_frag(mol: Mol) -> bool:
@@ -33,7 +35,7 @@ def _is_hcl_frag(mol: Mol) -> bool:
     if mol.GetNumAtoms() != 1:
         return False
     a = mol.GetAtomWithIdx(0)
-    if a.GetAtomicNum() != 17:
+    if a.GetAtomicNum() != Cl:
         return False
     if a.GetFormalCharge() == -1 and a.GetTotalNumHs() == 0:
         return True

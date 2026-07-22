@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, Cl, H, O, S
+
 
 def _dbl_o_nbs(sulfur) -> list:
     out = []
@@ -10,7 +12,7 @@ def _dbl_o_nbs(sulfur) -> list:
         if b.GetBondType() != BondType.DOUBLE:
             continue
         other = b.GetOtherAtom(sulfur)
-        if other.GetAtomicNum() == 8:
+        if other.GetAtomicNum() == O:
             out.append(other)
     return out
 
@@ -28,15 +30,15 @@ def _sgl_nbs(sulfur, z: int) -> list:
 
 def _is_cl_leaf(atom) -> bool:
     """Terminal Cl single-bonded only to S (not C–Cl)."""
-    if atom.GetAtomicNum() != 17 or atom.GetFormalCharge() != 0:
+    if atom.GetAtomicNum() != Cl or atom.GetFormalCharge() != 0:
         return False
-    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
-    return len(heavies) == 1 and heavies[0].GetAtomicNum() == 16
+    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
+    return len(heavies) == 1 and heavies[0].GetAtomicNum() == S
 
 
 def _s_core_ok(atom) -> bool:
     """Neutral tetracoordinate S with no H."""
-    if atom.GetAtomicNum() != 16 or atom.GetTotalNumHs() != 0:
+    if atom.GetAtomicNum() != S or atom.GetTotalNumHs() != 0:
         return False
     return atom.GetTotalDegree() == 4 and atom.GetFormalCharge() == 0
 
@@ -45,15 +47,15 @@ def _is_sulfonyl_chloride_s(atom) -> bool:
     """S with two =O, one C, one Cl (not amide/ester/OH/sulfone)."""
     if not _s_core_ok(atom) or len(_dbl_o_nbs(atom)) != 2:
         return False
-    if len(_sgl_nbs(atom, 6)) != 1:
+    if len(_sgl_nbs(atom, C)) != 1:
         return False
-    cls = _sgl_nbs(atom, 17)
+    cls = _sgl_nbs(atom, Cl)
     return len(cls) == 1 and _is_cl_leaf(cls[0])
 
 
 def _pack_entry(atom) -> dict:
-    c = _sgl_nbs(atom, 6)[0]
-    cl = _sgl_nbs(atom, 17)[0]
+    c = _sgl_nbs(atom, C)[0]
+    cl = _sgl_nbs(atom, Cl)[0]
     return {
         "s_idx": atom.GetIdx(), "c_attach": c.GetIdx(), "cl_idx": cl.GetIdx(),
     }

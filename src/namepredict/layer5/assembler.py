@@ -12,8 +12,7 @@ from namepredict.layer5.benzene_names import (
     join_kind_name, pyridine_kind_names, sat_hetero_carboxylic_names,
 )
 from namepredict.types import NameResult
-MULT_EN = {2: "di", 3: "tri", 4: "tetra", 5: "penta", 6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
-MULT_ZH = {2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
+from namepredict.constants import MULT_EN, MULT_ZH
 def _fail(meta: dict | None = None) -> NameResult: return NameResult(en="", zh="", success=False, source="iupac", meta=meta or {})
 def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult: return NameResult(en=en, zh=zh, success=True, source=source, time_ms=time_ms)
 def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:

@@ -63,10 +63,7 @@ def name_leaf(mol: Mol, fact: Match, depth: int) -> tuple[str, str, set[int]]:
     en, zh = _simple_name(fact)
     return en, zh, set(fact.atoms)
 
-_HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
-_HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}
-_MULT_EN = {1: "", 2: "di", 3: "tri"}
-_MULT_ZH = {1: "", 2: "二", 3: "三"}
+from namepredict.constants import HALO_EN as _HALO_EN, HALO_ZH as _HALO_ZH, MULT_EN as _MULT_EN, MULT_ZH as _MULT_ZH
 
 
 def _ring_nbrs(mol: Mol, i: int, ring: set[int]) -> list[int]:

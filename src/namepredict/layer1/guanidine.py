@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, H, N, S
+
 
 def _bond(a, b):
     return a.GetOwningMol().GetBondBetweenAtoms(a.GetIdx(), b.GetIdx())
@@ -14,7 +16,7 @@ def _bt(a, b):
 
 
 def _heavies(atom):
-    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    return [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
 
 
 def _n_rest(n, carbon):
@@ -24,18 +26,18 @@ def _n_rest(n, carbon):
 
 def _rest_atom_ok(x) -> bool:
     """Allow C or S (for Ar–SO2–N–guanidine)."""
-    return x.GetAtomicNum() in (6, 16)
+    return x.GetAtomicNum() in (C, S)
 
 
 def _n_ok(n, carbon) -> bool:
-    if n.GetAtomicNum() != 7 or n.GetIsAromatic() or n.IsInRing():
+    if n.GetAtomicNum() != N or n.GetIsAromatic() or n.IsInRing():
         return False
     rest = _n_rest(n, carbon)
     return len(rest) <= 2 and all(_rest_atom_ok(x) for x in rest)
 
 
 def _n_triple(carbon) -> list | None:
-    ns = [n for n in carbon.GetNeighbors() if n.GetAtomicNum() == 7]
+    ns = [n for n in carbon.GetNeighbors() if n.GetAtomicNum() == N]
     return ns if len(ns) == 3 else None
 
 
@@ -74,7 +76,7 @@ def _pack(carbon, ns: list) -> dict:
 
 
 def _entry(atom) -> dict | None:
-    if atom.GetAtomicNum() != 6:
+    if atom.GetAtomicNum() != C:
         return None
     ns = _n_triple(atom)
     if ns is None or not _bond_pattern_ok(atom, ns):
@@ -90,10 +92,10 @@ def guanidine_entries(mol: Mol) -> list[dict]:
 
 def is_guanidine_n(atom) -> bool:
     """True if atom is one of the three N on a guanidine carbon."""
-    if atom.GetAtomicNum() != 7:
+    if atom.GetAtomicNum() != N:
         return False
     return any(
-        n.GetAtomicNum() == 6 and _entry(n) is not None
+        n.GetAtomicNum() == C and _entry(n) is not None
         for n in atom.GetNeighbors()
     )
 

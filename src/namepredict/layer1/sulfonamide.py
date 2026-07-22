@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, H, N, O, S
+
 
 def _dbl_o_nbs(sulfur) -> list:
     out = []
@@ -10,7 +12,7 @@ def _dbl_o_nbs(sulfur) -> list:
         if b.GetBondType() != BondType.DOUBLE:
             continue
         other = b.GetOtherAtom(sulfur)
-        if other.GetAtomicNum() == 8:
+        if other.GetAtomicNum() == O:
             out.append(other)
     return out
 
@@ -28,25 +30,25 @@ def _sgl_nbs(sulfur, z: int) -> list:
 
 def _is_sulfonamide_s(atom) -> bool:
     """S with two =O, one C, one N (not sulfone/acid/ester/chloride)."""
-    if atom.GetAtomicNum() != 16 or atom.GetTotalNumHs() != 0:
+    if atom.GetAtomicNum() != S or atom.GetTotalNumHs() != 0:
         return False
     if atom.GetTotalDegree() != 4 or atom.GetFormalCharge() != 0:
         return False
     if len(_dbl_o_nbs(atom)) != 2:
         return False
-    return len(_sgl_nbs(atom, 6)) == 1 and len(_sgl_nbs(atom, 7)) == 1
+    return len(_sgl_nbs(atom, C)) == 1 and len(_sgl_nbs(atom, N)) == 1
 
 
 def _n_rest_ok(n_atom, s_idx: int) -> bool:
-    heavies = [n for n in n_atom.GetNeighbors() if n.GetAtomicNum() != 1]
+    heavies = [n for n in n_atom.GetNeighbors() if n.GetAtomicNum() != H]
     if any(h.GetIdx() != s_idx and h.GetAtomicNum() not in (6,) for h in heavies):
         return False
-    return sum(1 for h in heavies if h.GetAtomicNum() == 6) <= 2
+    return sum(1 for h in heavies if h.GetAtomicNum() == C) <= 2
 
 
 def _n_ok(n_atom, s_idx: int) -> bool:
     """N single-bonded only to S (+C/H); mono-N: ≤1 C outside S."""
-    if n_atom.GetAtomicNum() != 7 or n_atom.GetIsAromatic():
+    if n_atom.GetAtomicNum() != N or n_atom.GetIsAromatic():
         return False
     from namepredict.layer1.guanidine import is_guanidine_n
     return (not is_guanidine_n(n_atom)) and _n_rest_ok(n_atom, s_idx)
@@ -54,7 +56,7 @@ def _n_ok(n_atom, s_idx: int) -> bool:
 
 def _n_c_idxs(n_atom, s_idx: int) -> list[int]:
     return [x.GetIdx() for x in n_atom.GetNeighbors()
-            if x.GetAtomicNum() == 6 and x.GetIdx() != s_idx]
+            if x.GetAtomicNum() == C and x.GetIdx() != s_idx]
 
 
 def _pack_entry(atom, c, n) -> dict:
@@ -67,7 +69,7 @@ def _pack_entry(atom, c, n) -> dict:
 def _entry_for(atom) -> dict | None:
     if not _is_sulfonamide_s(atom):
         return None
-    c, n = _sgl_nbs(atom, 6)[0], _sgl_nbs(atom, 7)[0]
+    c, n = _sgl_nbs(atom, C)[0], _sgl_nbs(atom, N)[0]
     return _pack_entry(atom, c, n) if _n_ok(n, atom.GetIdx()) else None
 
 
