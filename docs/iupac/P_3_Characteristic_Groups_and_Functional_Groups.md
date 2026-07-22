@@ -4,7 +4,6 @@
 
 页码范围: 151 - 301
 
-**已完成的IUPAC规则:**
 - **P-29.3.1**: 环烷基命名 - cyclopropyl (环丙基), cyclobutyl (环丁基), cyclopentyl (环戊基), cyclohexyl (环己基) 等
 - **P-63.2.5**: 硫醚命名 - 包含环烷基硫醚的识别
 
@@ -22,7 +21,7 @@ the PIN is 1H-pyrrole)
 selenophene (PIN)
 tellurophene (PIN)
 thiophene (PIN)
-Table 2.3 Retained names of saturated heteromonocyclic parent hydrides (已完成 - pyrrolidine/piperidine/morpholine/piperazine)
+Table 2.3 Retained names of saturated heteromonocyclic parent hydrides
 oxazolidine isoxazolidine
 1,3-oxazolidine (PIN) 1,2-oxazolidine (PIN)
 thiazolidine (S instead of O) isothiazolidine (S instead of O)
@@ -170,7 +169,7 @@ azetidine (PIN)
 
 1,2-oxaphospholane (PIN)
 1,2,3-oxathiazolidine (PIN)
-P-22.2.2.1.6 Selecting Hantzsch-Widman names for six-membered rings (已完成) 
+P-22.2.2.1.6 Selecting Hantzsch-Widman names for six-membered rings 
 The stem for six-membered rings depends on the least senior heteroatom in the ring, i.e., the heteroatom whose name
 directly precedes the stem. Heteroatoms are divided into three groups, A, B, and C, each corresponding to a stem for the
 unsaturated and for the saturated compound (Table 2.5). The stem is selected in accordance with the group to which the

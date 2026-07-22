@@ -4,7 +4,6 @@
 
 页码范围: 301 - 501
 
-**已完成的IUPAC规则:**
 - **P-63.2.5**: 硫醚取代基命名 - 使用"sulfanyl"作为PIN前缀格式
 - **P-35.2.2**: 硫醚取代基命名 - alkylsulfanyl需要括号
 - **P-29.3.1**: 简单取代基前缀命名
@@ -18,7 +17,6 @@ their components.
 Example:
 (chloroazanediyl)bis(methylene) (preferred prefix)
 
-<!-- 已完成: P-29.1.3 复杂取代基命名规则 (2026-03-15) -->
 P-29.1.3 A complex substituent group consists of a parent substituent group to which is attached, by substitution or
 concatenation, at least one compound substituent group. In a complex substituent group, the parent substituent group of
 a component compound substituent group is called a subsidiary parent substituent group. Multiplicative prefixes, used
@@ -391,7 +389,7 @@ cyclohexane-1,4-diylbis(thio)
 silanediylbis(1-fluoroethane-2,1-diyl) (preferred prefix)
 [not silanediylbis(1-fluoroethylene)]
 P-29.5 COMPLEX SUBSTITUENT GROUPS
-P-29.5.1 Complex substituted substituent groups [已完成]
+P-29.5.1 Complex substituted substituent groups
 Complex substituted substituent groups are formed by substituting an acyclic compound substitutive substituent group
 into an acyclic substituent group, or into a cyclic substituent group, in accordance with the order of seniority of chains
 and rings and ring systems (P-44).
@@ -413,7 +411,7 @@ are discussed in this Section:
 P-29.6.1 Retained prefixes that are preferred prefixes;
 P-29.6.2 Retained prefixes that are not used as preferred prefixes;
 P-29.6.3 Retained prefixes no longer recommended as approved prefixes.
-P-29.6.1 Retained prefixes that are preferred prefixes (已完成)
+P-29.6.1 Retained prefixes that are preferred prefixes
 The traditional prefixes benzyl, benzylidene, benzylidyne are retained preferred prefixes, but are not to be substituted;
 however, see P-29.6.2.
 In the 1993 Guide (ref. 2), the names 'benzyl', 'benzylidene', and 'benzylidyne' could only be substituted on the
@@ -444,7 +442,7 @@ Examples:
 bromomethylene (preferred prefix)
 4-methylphenyl (preferred prefix)
 2,6-dimethyl-1,4-phenylene (preferred prefix)
-P-29.6.2 Retained prefixes that are not used as preferred prefixes (已完成)
+P-29.6.2 Retained prefixes that are not used as preferred prefixes
 P-29.6.2.1 The prefixes benzyl, benzylidene, and benzylidyne are preferred prefixes when unsubstituted. However,
 these prefixes may be used in general nomenclature when substituted as follows:
 (1) unlimited ring substitution;
@@ -479,7 +477,7 @@ trityl (no substitution allowed)
 triphenylmethyl (preferred prefix)
 (4-methylphenyl)di(phenyl)methyl (preferred prefix)
 P-29.6.2.3 The prefix ethylene and the following traditional prefixes for ring substituents are retained but only for
-general nomenclature and are fully substitutable. **(已完成: tolyl保留前缀支持)**
+general nomenclature and are fully substitutable. ****
 
 
 ### 第 315 页
@@ -519,7 +517,7 @@ quinolin-2-yl (also 3-, 4-, 5-, 6-, 7- and 8-isomers; preferred prefixes)
 thiophen-2-yl (also 3-isomer; preferred prefixes)
 o-tolyl (also m- and p-isomers; no substitution allowed)
 2-methylphenyl (also 3- and 4-isomers; preferred prefixes)
-P-29.6.3 Retained prefixes no longer recommended as approved prefixes (已完成)
+P-29.6.3 Retained prefixes no longer recommended as approved prefixes
 Trivial, common, and traditional prefixes have always been an integral part of organic nomenclature. However, as
 systematic nomenclature develops and becomes widely used, many of these prefixes fall by the wayside. Accordingly,
 each set of IUPAC recommendations contains fewer of these traditional prefixes. These recommendations are no
@@ -650,7 +648,7 @@ pent-1-en-4-yne (PIN)
 P-31.1.1.2 The multiplying prefixes 'di', 'tri', etc., are placed before endings denoting unsaturation to indicate the
 number of multiple bonds of each kind, as required, for example, 'diene' and 'triyne'. For euphonic reasons, when the
 endings 'ene' and 'yne' are preceded by a multiplying prefix and a locant the letter 'a' is inserted. There is no elision of
-the final letter 'a' of a multiplying prefix before 'ene' or 'yne', for example, 'tetraene' and 'pentayne'. (已完成 ✅ 2026-03-14)
+the final letter 'a' of a multiplying prefix before 'ene' or 'yne', for example, 'tetraene' and 'pentayne'.
 Examples:
 buta-1,3-diene (PIN)
 nona-1,3,5,7-tetraene (PIN)
@@ -659,7 +657,7 @@ P-31.1.1.3 The method of P-31.1.1 is applicable to the following saturated hydro
 corresponding hydrides modified by skeletal replacement ('a') nomenclature that are described in Chapter P-2:
 P-31.1.2 Acyclic parent hydrides
 P-31.1.3 Monocyclic parent hydrides
-P-31.1.4 Bi- and polycyclic von Baeyer parent hydrides (已完成)
+P-31.1.4 Bi- and polycyclic von Baeyer parent hydrides
 P-31.1.5 Spiro compounds
 P-31.1.6 Phane parent hydrides
 P-31.1.7 Ring assemblies of unsaturated components
@@ -720,15 +718,11 @@ Examples:
 2,5,8,11-tetraoxatetradec-13-ene (PIN)
 2,5,8,11-tetraoxadodec-3-ene (PIN)
 P-31.1.3 Monocyclic parent hydrides
-P-31.1.3.1 (已完成) In monocyclic homogeneous unsaturated compounds, one double or triple bond is always allocated the
+P-31.1.3.1 In monocyclic homogeneous unsaturated compounds, one double or triple bond is always allocated the
 locant '1'. When alone, the locant '1' is omitted in names. 
 此规则同样适用于单取代芳香化合物和末端取代基。
 
 <!-- ============================================================================
-     ✅ 已实现: P-31.1.3.1 + P-14.4 位置编号系统增强
-     实现位置: backend/app/services/namepredict_v2/core/name_assembler.py
-     测试文件: backend/tests/test_position_format_fix.py
-     实现日期: 2026-03-14
 
      规则内容:
      - P-31.1.3.1: 末端位置编号处理
@@ -741,7 +735,6 @@ locant '1'. When alone, the locant '1' is omitted in names.
      4. 添加中文位置编号（丙-1-醇, 丙-1-胺）
      5. 添加丙酮俗名到缓存（acetone）
 
-     通过测试: 20/20 ✅
      Benchmark: 34.1% → 37.1% (+3%, 修复 17 条)
      ============================================================================ -->
 Examples:
@@ -1039,7 +1032,7 @@ cyclohexene (PIN)
 4,5,6,7-tetrahydro-1,4-thiazepine (PIN)
 2,7-dihydro-1H-azepine (PIN)
 2,3-dihydro-1H-phosphole (PIN)
-P-31.2.3.2 Names of saturated heteromonocyclic compounds (已完成 ✅ 2026-03-20)
+P-31.2.3.2 Names of saturated heteromonocyclic compounds
 Preferred IUPAC names of saturated heteromonocyclic compounds are either Hantzsch-Widman names described in P-
 22.2.2.1.1 or retained names described in Table 2.3. Names of saturated rings derived by using hydro prefixes from
 Hantzsch-Widman names, retained names modified by adding the maximum of hydro prefixes, or 'cyclo' names
@@ -1074,7 +1067,7 @@ hexahydro-1,4-thiazepine
 cyclopentaazane
 pentazolidine (preselected name;
 see P-12.1; P-22.2.2.1.5.2; P-22.2.5)
-P-31.2.3.3 Saturation of double bonds in polycyclic mancude compounds (已完成 ✅ 2026-03-31 - dihydroisoquinoline hydro位置编号)
+P-31.2.3.3 Saturation of double bonds in polycyclic mancude compounds
 P-31.2.3.3.1 Retained names of partially saturated polycyclic mancude compounds
 P-31.2.3.3.2 Polycyclic mancude compounds
 P-31.2.3.3.3 Spiro compounds
@@ -2271,12 +2264,8 @@ This Chapter includes the general rules and orders of seniority used in substitu
 nomenclature when required.
 
 <!-- ============================================================================
-     ✅ 已实现: P-41/P-43 - 官能团优先级（后缀选择）
-     实现位置: backend/app/services/namepredict_v2/core/
               - skeleton_identifier_v2.py (FGPriority 枚举)
               - name_assembler.py (FG_SUFFIXES 字典)
-     测试文件: backend/tests/test_functional_group_priority.py
-     实现日期: 2026-03-13
 
      关键优先级（从高到低）：
      1. 羧酸 (carboxylic acid) - oic acid
@@ -2291,7 +2280,6 @@ nomenclature when required.
      10. 醇 (alcohol) - ol
      11. 胺 (amine) - amine
 
-     通过测试: 17/17 ✅
      ============================================================================ -->
 
 P-41 SENIORITY ORDER FOR CLASSES
@@ -4102,7 +4090,7 @@ is senior to
 is senior to
 3,12-dioxa-6,9-dithiaheptadecane (PIN)
 [five heteroatoms are greater than four]
-P-44.3.2 The principal chain has the greater number of skeletal atoms [criterion (b) in P-44.3].（已完成）
+P-44.3.2 The principal chain has the greater number of skeletal atoms [criterion (b) in P-44.3].
 
 
 ### 第 400 页
@@ -4678,10 +4666,10 @@ the second name multiplies only two)
 P-45.2 CRITERIA RELATED TO NUMBER AND LOCATION OF SUBSTITUENT GROUPS
 The following criteria are applied, in turn, until a decision is reached. The preferred IUPAC name is the name based on
 the senior parent structure that has:
-P-45.2.1 (已完成) the maximum number of substituent groups cited as prefixes;
+P-45.2.1 the maximum number of substituent groups cited as prefixes;
 P-45.2.2 the lower locant set for substituent groups cited as prefixes;
 P-45.2.3 the lower locant set for substituent groups in order of citation in the name
-P-45.2.1 (已完成) The preferred IUPAC name is based on the senior parent structure that has the maximum number of
+P-45.2.1 The preferred IUPAC name is based on the senior parent structure that has the maximum number of
 substituents cited as prefixes (other than 'hydro/dehydro') to the parent structure.
 Examples:
 (1)
@@ -6526,7 +6514,7 @@ hexahydro-2H-[1,4]dithiepino[2,3-c]furan (PIN)
 1,2-dihydro-2,2′-binaphthalene (PIN)
 1,2-dihydro-2,2′-binaphthyl
 1,2-dihydro-2-(naphthalen-2-yl)naphthalene
-P-54.4.3.2 (已完成). The retained names for the partially saturated heterocycles, 'indane', 'indoline', 'isoindoline', and
+P-54.4.3.2. The retained names for the partially saturated heterocycles, 'indane', 'indoline', 'isoindoline', and
 'chromane', 'isochromane' and their chalcogen analogues are not used as preferred IUPAC names, but are acceptable
 for use in general nomenclature (see P-31.2.3.3.1). Preferred IUPAC names are based on the retained mancude names
 
@@ -6780,7 +6768,7 @@ The two following prefixes are retained as preferred prefixes with unlimited sub
 phenyl (preferred prefix)
 1,4-phenylene (also 1,2- and 1,3-isomers)
 (preferred prefixes)
-P-57.1.5.3 Retained prefixes recommended only for use in general nomenclature (P-29.6.2.3). **(已完成)**
+P-57.1.5.3 Retained prefixes recommended only for use in general nomenclature (P-29.6.2.3). ****
 The following retained prefixes are recommended for only general nomenclature, with unlimited substitution except for
 tolyl for which no substitution is allowed:
 2-adamantyl (also 1-isomer)
@@ -7024,7 +7012,7 @@ this combination has the lowest possible locants that are structurally permissib
 hexahydro-2H,5H-pyrano[2,3-b]pyran (PIN)
 3a,5-dihydro-4H-indene (PIN)
 (not 4,5-dihydro-3aH-indene)
-P-58.2.2 'Added indicated hydrogen' (已完成)
+P-58.2.2 'Added indicated hydrogen'
 A second type of indicated hydrogen describes hydrogen atoms attached to ring atoms that are attached to adjacent ring
 atoms by single bonds only as the consequence of the addition of a suffix describing a structural modification. This type
 of indicated hydrogen is called 'added indicated hydrogen' because it is added to the name as a result of an operation on
@@ -7082,7 +7070,7 @@ naphthalene-4a,8a-diol (PIN)
 anthracene-1,9,10(2H)-trione (PIN)
 pyrazine-1,4-diyl (preferred prefix)
 P-58.2.3 Specific rules related to indicated hydrogen, 'added indicated hydrogen' and hydro prefixes
-P-58.2.3.1 (已完成) Indicated hydrogen is cited at any position of a ring system in order to accommodate principal characteristic
+P-58.2.3.1 Indicated hydrogen is cited at any position of a ring system in order to accommodate principal characteristic
 groups or free valences expressed as suffixes, provided that there are an equal or greater number of indicated hydrogen
 atoms available to accommodate all of the principal characteristic groups or free valences.
 P-58.2.3.1.1 When there are an equal number of indicated hydrogen atoms and principal characteristic groups or free
@@ -7482,7 +7470,7 @@ CH - methyl
 3
 Together with other rules, this analysis leads to the preferred IUPAC name:
 3-chloro-5-cyclohexyl-6-hydroxy-5-methylhex-3-enoic acid (PIN)
-Explanation: The presence of a carboxylic acid group at the end of the chain determines the direction of its numbering. (已完成)
+Explanation: The presence of a carboxylic acid group at the end of the chain determines the direction of its numbering.
 The 'ene' ending and the substituent prefixes, in alphanumerical order, are located on the chain in accord with its
 determined numbering.
 P-59.2.1.3 If the principal group occurs in two or more carbon chains that are not attached to one another (that is, do not

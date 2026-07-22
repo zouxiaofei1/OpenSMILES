@@ -4,13 +4,8 @@
 
 页码范围: 501 - 701
 
-<!-- IUPAC P-14.5 取代基字母排序规则 - 已完成 (2026-03-17) -->
-<!-- IUPAC P-65.1.2.4 多官能团羧酸命名规则 - 已完成 (2026-03-17) -->
-<!-- IUPAC P-65.6.3.3.2.1 取代二酸酯位置编号规则 - 已完成 (2026-03-31) -->
 <!-- 规则: 只有malonate(丙二酸,3碳)可省略位置编号，succinate/glutarate等不可省略 -->
-<!-- IUPAC P-65.6.3.3.2.1 二酸酯PIN格式命名 - 已完成 (2026-03-31) -->
 <!-- 规则: 无取代二酸酯使用PIN系统名(propanedioate, butanedioate等)，只有oxalate是PIN保留名 -->
-<!-- 中文IUPAC第3章: 甲苯衍生物使用系统命名法 - 已完成 (2026-03-20) -->
 <!-- 规则: "苯环系使用系统命名，甲苯、二甲苯和异丙苯等俗名" -->
 <!-- 甲苯衍生物中文命名使用"苯"作为母体，例如: 1-氯-4-甲基苯 -->
 
@@ -428,8 +423,8 @@ N CH-CO-O-C H
 ethyl diazoacetate (PIN)
 1-diazo-1-(trimethylsilyl)propan-2-one (PIN)
 1-diazo-1-(trimethylsilyl)acetone
-P-61.5 NITRO AND NITROSO COMPOUNDS (已完成)
-P-61.5.1 Nitro and nitroso compounds (已完成)
+P-61.5 NITRO AND NITROSO COMPOUNDS
+P-61.5.1 Nitro and nitroso compounds
 Compounds containing the -NO or -NO group are named by means of the prefixes 'nitro' and 'nitroso', respectively,
 2
 unless these groups can be named on the basis of the parent structures nitric and nitrous acids, NO -OH and NO-OH,
@@ -738,7 +733,7 @@ piperidin-1-amine (PIN)
 1,1,1-trimethylsilanamine (PIN)
 (trimethylsilyl)azane
 (trimethylsilyl)amine
-P-62.2.2 Secondary and tertiary amines (已完成 ✅ 2026-03-14)
+P-62.2.2 Secondary and tertiary amines
 P-62.2.2.1 Symmetrical and unsymmetrical secondary and tertiary amines are named only by the same methods
 described in P-62.2.1.2.
 (1) substitutively using the retained name 'aniline' or the suffix 'amine' and the name of a parent hydride with
@@ -789,7 +784,7 @@ H Si-NH-SiH
 (2) phenyl(pyridin-3-yl)azane
 (3) phenyl(pyridin-3-yl)amine
 [not N-(pyridin-3-yl)aniline]
-P-62.2.2.2 Selection of the principal chain or senior ring system in secondary and tertiary amines. **[已完成]**
+P-62.2.2.2 Selection of the principal chain or senior ring system in secondary and tertiary amines. ****
 Names of amines formed substitutively by using the retained name aniline or the suffix 'amine' are based on a principal
 chain and a senior ring system (see P-44.1). When a choice for parent hydride is possible between a ring and a chain,
 the ring is preferred. In names using 'amine' as a parent hydride, substituent groups expressed as prefixes are cited in
@@ -893,7 +888,6 @@ multiplying numerical prefix 'di', 'tri', 'tetra', etc. The terminal letter 'a' 
 suffix amine, i. e., 'tetramine', not 'tetraamine'. Numerical locants, including '1' in the case of amines derived from
 mononuclear parent hydrides, are used to denote substitution on atoms of the parent hydride and 'N' locants for
 substitution on the nitrogen atom for amines named by method (1). Method (2) is used only for monoamines.
-<!-- 已完成: 47027cf - 多胺N-取代基命名支持 (N, N', N'' 格式) -->
 Examples:
 ethane-1,2-diamine (PIN)
 ethylenediamine
@@ -1073,7 +1067,7 @@ two suffixes of different kinds are incompatible]
 P-62.3.1.2 The prefix 'imino' for =NH is used in presence of characteristic groups having seniority over imines. In
 multiplicative nomenclature, the prefix 'azanylylidene' is used for -N=. Substituent groups attached to rings, ring
 systems or heteroatoms of the type R-(C=NH)-, where R- is a ring or a chain, are named as acyl groups (see imidic
-acids, P-65.1.3.1 and acyl groups P-65.2). (已完成 - 2026-03-20)
+acids, P-65.1.3.1 and acyl groups P-65.2).
 Examples:
 3,5-diiminocyclohexan-1-one (PIN)
 3-(2-iminopropyl)cyclohexane-1-carboxylic acid (PIN)
@@ -1149,7 +1143,7 @@ CH -NH-BrO
 3
 methylbromous amide (PIN)
 N-bromosylmethanamine
-P-62.5 AMINE OXIDES, IMINE OXIDES, AND CHALCOGEN ANALOGUES (已完成)
+P-62.5 AMINE OXIDES, IMINE OXIDES, AND CHALCOGEN ANALOGUES
 Amine oxides, imine oxides, and their chalcogen analogues are named:
 (1) by functional class nomenclature using the class names 'oxide', 'sulfide', 'selenide', and 'telluride' provided that
 unambiguous superscripted N locants can be used, if necessary ;
@@ -1286,7 +1280,7 @@ P-63.1.3 Heterols
 P-63.1.4 Substitutive nomenclature, prefix mode
 P-63.1.5 Sulfur, selenium and tellurium analogues of hydroxy compounds
 P-63.1.1 Retained names
-P-63.1.1.1 (已完成) Only one name is retained, phenol, for C H -OH, both as a preferred name and for general nomenclature.
+P-63.1.1.1 Only one name is retained, phenol, for C H -OH, both as a preferred name and for general nomenclature.
 6 5
 The structure is substitutable at any position. Locants 2, 3, and 4 are recommended, not o, m, and p.
 Examples:
@@ -1354,8 +1348,7 @@ CH -OH
 (1) 2-methylpropan-2-ol (PIN)
 (2) tert-butyl alcohol
 (1) butane-1,3-diol (PIN)
-(1) pent-2-ene-1,5-diol (PIN)  <!-- 已完成: 不饱和醇命名格式, 2026-03-15 -->
-(1) cyclopentanol (PIN)
+(1) pent-2-ene-1,5-diol (PIN)  (1) cyclopentanol (PIN)
 (1) benzenehexol (PIN)
 (1) bicyclo[4.2.0]octan-3-ol (PIN)
 (1) quinolin-8-ol (PIN)
@@ -1388,7 +1381,6 @@ CH -OH
 (1) 2-methylidenepentan-1-ol (PIN)
 (1) 4-methylidenehexan-3-ol (PIN)
 (1) 4-(2-hydroxyethyl)-3-(hydroxymethyl)-2-methylidenecyclopentan-1-ol (PIN)
-<!-- IUPAC P-63.1.2 联苯官能团命名 - 已完成 (2026-03-17) -->
 (1) [1,1′-biphenyl]-2,4,4′,6-tetrol (PIN)
 biphenyl-2,4,4′,6-tetrol
 (1) [11,21:24,31-terphenyl]-12,16,23,25-tetrol (PIN)
@@ -1407,7 +1399,7 @@ locants when suffixes are present; for numbering, see P-28.3)
 2,2′-bi-1-naphthol
 (1) [2,2′-binaphthalene]-4,8′-diol (PIN)
 3,7′-bi-1-naphthol
-P-63.1.3 Heterols (已完成)
+P-63.1.3 Heterols
 When the hydroxy group is attached to an atom other than carbon, hydroxy compounds belong to a compound class
 called heterols. They are classified as hydroxy compounds and named using the suffix 'ol', unless they are classified as
 acids and denoted by a retained name. Names formed using a suffix are preferred to those formed by means of the
@@ -1452,7 +1444,6 @@ Examples:
 (1) 1-hydroxypiperidine-3-carbonitrile (PIN)
 (1) 3-(hydroxyphosphanyl)propanoic acid (PIN)
 P-63.1.5 Sulfur, selenium, and tellurium analogues of hydroxy compounds
-<!-- IUPAC P-63.1.5 硫醇作为取代基命名 - 已完成 (2026-03-30) -->
 <!-- 当硫醇(-SH)位于取代基（如苯氧基）的苯环上时，需要正确识别为sulfanyl取代基 -->
 <!-- 修复: substituent_analyzer.py 中 thiol 排除逻辑，当thiol在侧链上时不排除 -->
 <!-- 修复: substituent_element_analyzers.py 中 _identify_simple_substituent 添加硫醇检测 -->
@@ -1477,7 +1468,6 @@ benzenethiol (PIN)
 
 ### 第 539 页
 
-<!-- IUPAC P-63.3 thiazoline (4,5-dihydro-1,3-thiazole) 命名 - 已完成 (2026-03-19) -->
 <!-- thiol 后缀保留母体名称的 'e'，如 pyridine-2-thiol, 4,5-dihydro-1,3-thiazole-2-thiol -->
 4,5-dihydro-1,3-thiazole-2-thiol (PIN)
 3-sulfanylpropanoic acid (PIN)
@@ -1525,7 +1515,7 @@ substituent to it. Names of these substituent groups are described in Section P-
 uses substituent group names for R and R′.
 P-63.2.2 Names of substituent groups R′-O-, R′-S-, R′-Se-, and R′-Te-
 P-63.2.2.1 Systematic names
-P-63.2.2.1.1 [已完成] Substituent prefix names for R′-O- groups are formed by concatenation, i.e., by adding the prefix 'oxy' to
+P-63.2.2.1.1 Substituent prefix names for R′-O- groups are formed by concatenation, i.e., by adding the prefix 'oxy' to
 the substituent prefix name for the group R′. These compound prefixes require the numerical multiplying prefixes 'bis',
 'tris', etc.
 Examples:
@@ -1575,7 +1565,7 @@ methylenebis(sulfanediyl) (preferred prefix)
 2 2
 sulfanediylbis(methylene) (preferred prefix)
 (not sulfanediyldimethylene)
-P-63.2.2.2 [已完成] Retained names
+P-63.2.2.2 Retained names
 Some contracted names are retained for R-O- substituent groups. They are used both as preferred IUPAC prefixes and
 in general nomenclature; they are fully substitutable (with the exception of tert-butoxy) and are considered as simple
 prefixes requiring the numerical prefixes 'di', 'tri', etc. They are:
@@ -1651,7 +1641,7 @@ no substitution on anisole for PINs)
 no substitution on anisole for PINs)
 [not 1-methoxy-4-phenylbenzene;
 the biphenyl ring system is senior to a single benzene ring]
-P-63.2.4 Systematic names of ethers [已完成: 取代基命名法(alkoxyalkane, PIN) for 简单脂肪醚]
+P-63.2.4 Systematic names of ethers
 Ethers having the general structure R-O-R′ (R=R′, or R≠R′) have the class name 'ether' and are named by one of the
 five following methods:
 (1) substitutively by prefixing the name of the R′-O- group to that of the parent hydride RH;
@@ -1693,7 +1683,7 @@ this type of nomenclature are met (see P-15.4); otherwise substitutive nomenclat
 Example:
 (4) 2,5,8,11-tetraoxadodecane (PIN)
 (1) 1-methoxy-2-[2-(2-methoxyethoxy)ethoxy]ethane
-P-63.2.4.2 (已完成) The names of ethers when both R and R′ groups are cyclic are formed by methods (1), (2), (3), or (5).
+P-63.2.4.2 The names of ethers when both R and R′ groups are cyclic are formed by methods (1), (2), (3), or (5).
 Method (1), (3), or (5) leads to preferred IUPAC names.
 When method (1), substitutive nomenclature, is used, the senior ring or ring system must be chosen as the parent
 hydride (see P-44).
@@ -1716,7 +1706,7 @@ Examples:
 (2) 2-chlorophenyl 4-chlorophenyl ether
 (5) 2,4,6-trioxa-1,7(1),3,5(1,3)-tetrabenzenaheptaphane (PIN)
 (3) 1,1′-oxybis(3-phenoxybenzene)
-P-63.2.5 Names of chalcogen analogues of ethers, i.e., sulfides, selenides and tellurides 【已完成 - 2026-03-14】
+P-63.2.5 Names of chalcogen analogues of ethers, i.e., sulfides, selenides and tellurides
 General methodology
 Sulfides, R-S-R′, selenides R-Se-R′, and tellurides R-Te-R′, are named by the following methods:
 (1) by prefixing the names of the substituent groups R′-S-, R′-Se-, or R′-Te-, i.e., R′-sulfanyl, R′-selanyl, and R′-
@@ -1993,8 +1983,7 @@ Examples:
 (5) ethene oxide
 (2) 1,2-dioxane (PIN)
 (2) 1,2-oxathiolane (PIN)
-P-63.6 SULFOXIDES AND SULFONES ✅ 已实现
-Compounds with the general structures R-SO-R′ and R-SO -R′ are called generically 'sulfoxides' and 'sulfones',
+P-63.6 SULFOXIDES AND SULFONESCompounds with the general structures R-SO-R′ and R-SO -R′ are called generically 'sulfoxides' and 'sulfones',
 2
 respectively, when R and R′ are hydrocarbyl groups. They are named in three ways as follows:
 (1) substitutively, by prefixing the name of the acyl group R′-SO- or R′-SO - to the name of the parent hydride
@@ -2238,7 +2227,7 @@ P-64.2.1.2 For use in general nomenclature, only the names acetone and 1,4-benzo
 naphthoquinone and anthraquinone with locants, are retained with substitution on the corresponding structures. The
 name ketene is retained, but only for general nomenclature with substitution restricted to prefixes listed in P-15.1.8.2.
 The names acetophenone and benzophenone are retained only for general nomenclature, but no substitution is allowed.
-Substitutive names, systematically constructed, are the preferred IUPAC names for ketones (see P-64.2.2) (已完成 ✅ 2026-03-14: acetone的PIN是propan-2-one)
+Substitutive names, systematically constructed, are the preferred IUPAC names for ketones (see P-64.2.2)
 
 
 ### 第 558 页
@@ -2292,7 +2281,7 @@ C H -CO-CH -CH
 1-phenylpropan-1-one (PIN)
 (not propiophenone)
 P-64.2.2 Systematic construction of names for ketones.
-P-64.2.2.1 Acyclic ketones (已完成 ✅ 2026-03-17: 酮类编号方向与acetophenone取代限制)
+P-64.2.2.1 Acyclic ketones
 Unsubstituted acyclic ketones are systematically named in two ways:
 (1) substitutively, using the suffix 'one' and the prefix 'oxo'; the presence of several 'one' characteristic groups is
 denoted by the numerical multiplying prefixes 'di', 'tri', etc.; the final letter 'a' of a numerical multiplying prefix
@@ -2382,7 +2371,7 @@ naphthalen-1(2H)-one (PIN)
 pyrene-1,3,6,8(2H,7H)-tetrone (PIN)
 1,2,3,6,7,8-hexahydropyrene-1,3,6,8-tetrone
 (see P-58.2)
-P-64.2.2.2.3 Quinones (已完成 ✅ 2026-03-18: 蒽醌/萘醌/苯醌命名)
+P-64.2.2.2.3 Quinones
 No retained quinone names are used as preferred IUPAC names. The name 1,4-benzoquinone, and those of
 naphthoquinones and anthraquinones with locants, are retained for use in general nomenclature with substitution. All
 other quinones are named systematically using substitutive nomenclature in accordance with P-64.2.2.2.2. Diketones
@@ -2786,7 +2775,7 @@ P-65.1.1 Retained names
 Carboxylic acids derived from natural sources were often given trivial names reminiscent of their animal or vegetable
 origin. In both 1979 and 1993, the list of these trivial names was significantly reduced, systematic names being
 recommended.
-P-65.1.1.1 Retained names as preferred IUPAC names (已完成)
+P-65.1.1.1 Retained names as preferred IUPAC names
 Only the following five carboxylic acids retained names and are also preferred IUPAC names. All can be
 functionalized, but only acetic acid, benzoic acid, and oxamic acid can be substituted according to P-15.1.8.2.1; for
 substitution rules regarding formic acid, see P-65.1.8. Systematic substitutive names are used to generate acids modified
@@ -2845,7 +2834,7 @@ cinnamic acid ('E' configuration implied)
 3-phenylprop-2-enoic acid (PIN;
 'E' and 'Z' isomers)
 fumaric acid
-(2E)-but-2-enedioic acid (PIN) [已完成: unsaturated diacid naming]
+(2E)-but-2-enedioic acid (PIN)
 
 
 ### 第 577 页
@@ -2863,7 +2852,6 @@ CH =C(CH )-COOH
 methacrylic acid
 2-methylprop-2-enoic acid (PIN)
 isonicotinic acid
-<!-- 吡啶甲酸衍生物保留名命名已完成 (2026-03-18) -->
 pyridine-4-carboxylic acid (PIN)
 maleic acid
 (2Z)-but-2-enedioic acid (PIN)
@@ -2907,7 +2895,6 @@ methaneperoxoic acid (PIN; see P-65.1.4.1)
 (HOOC-CH) N-CH -CH -N(CH -COOH)
 2 2 2 2 2
 ethylenediaminetetraacetic acid
-<!-- P-65.1.1.2.3 多元醇和羟基酸PIN规则已完成 (2026-03-15) -->
 N,N′-(ethane-1,2-diyl)bis[N-(carboxymethyl)glycine]
 2,2′,2′′,2′′′-(ethane-1,2-diyldinitrilo)tetraacetic acid
 P-65.1.1.2.3 The names citric acid, lactic acid, glyceric acid, pyruvic acid, and tartaric acid, related to natural products,
@@ -2984,7 +2971,7 @@ Examples:
 pentane-1,3,5-tricarboxylic acid (PIN)
 ethane-1,1,2,2-tetracarboxylic acid (PIN)
 P-65.1.2.2.2 Carboxy groups attached to cyclic parent hydrides or heteroacyclic parent hydrides are always named by
-using the suffix 'carboxylic acid'. (已完成 - 2026-03-17) (已完成)
+using the suffix 'carboxylic acid'.
 
 
 ### 第 580 页
@@ -3946,7 +3933,7 @@ Example:
 3,5,7-trioxo-2,4,6,8-tetraoxanonanedioic acid (PIN)
 The decreasing order of seniority of the carbon acids as indicated in Section P-41 is: polycarbonic acids > tetracarbonic
 acid > tricarbonic acid > dicarbonic acid > carbonic acid > cyanic acid.
-P-65.2.1 Carbonic acid (已完成 ✅ 2026-03-16: carbamate基础命名, 支持O-alkyl和N-substituent识别)
+P-65.2.1 Carbonic acid
 P-65.2.2 Cyanic acid
 P-65.2.3 Di-, tri-, tetra-, and polycarbonic acids
 P-65.2.1 Carbonic acid
@@ -4068,7 +4055,7 @@ hydrazinecarboxylic acid (PIN)
 carbonohydrazidic acid
 (carboxylic acids expressed by suffixes are preferred to carbonic acid analogues;
 see P-41 and P-68.3.1.2.1)
-P-65.2.1.5 Acyl groups derived from carbonic and related acids (已完成 ✅ 2026-03-19: 碳酸酯中文命名格式优化，对称碳酸酯格式为"碳酸二XX酯")
+P-65.2.1.5 Acyl groups derived from carbonic and related acids
 Acyl groups derived from carbonic and related acids, including functional replacement analogues, by the removal of
 one or two hydroxy groups from the acid are named in accordance with the methodology described in P-65.1.7.2.
 Names are formed in two ways:
@@ -4609,11 +4596,11 @@ Examples:
 (propylsulfonyl)benzene
 [2,3-dichloro-4-(2-methylidenebutanoyl)phenoxy]acetic acid (PIN)
 P-65.5 ACYL HALIDES AND PSEUDOHALIDES
-P-65.5.1 Acyl halides from suffix acids (已完成: 2026-03-14)
+P-65.5.1 Acyl halides from suffix acids
 P-65.5.2 Acyl pseudohalides from suffix acids
 P-65.5.3 Acyl halides and pseudohalides from carbonic, cyanic, and polycarbonic acids
 P-65.5.4 Acyl halides and pseudohalides as substituent groups
-P-65.5.1 Acyl halides from suffix acids (已完成)
+P-65.5.1 Acyl halides from suffix acids
 Acyl halides in which hydroxy groups of all acid groups expressed as the suffix denoting the principal characteristic
 group (carboxylic, sulfonic, sulfinic, selenonic, etc. acids) have been replaced by halogen atoms (F, Cl, Br, and I) are
 named by citing the name of the acyl group (see P-65.1.7) followed by the name(s) of the specific class(es) as a separate
@@ -4665,7 +4652,7 @@ succinyl bromide chloride
 H N-CO-CO-Br
 2
 oxamoyl bromide (PIN)
-P-65.5.2 Acyl pseudohalides from suffix acids (已完成: 2026-03-31)
+P-65.5.2 Acyl pseudohalides from suffix acids
 P-65.5.2.1 Acyl pseudohalides in which hydroxy groups of all acid groups expressed as the suffix denoting the principal
 characteristic group (carboxylic, sulfonic, sulfinic, selenonic, etc. acids) have been replaced by pseudohalogen groups
 (N , CN, NC, NCO, NCS, NCSe, NCTe) are named by citing the name of the acyl group (see P-65.1.7) followed by the
@@ -4884,7 +4871,7 @@ CH -CH -SO -S-Ge(CH )
 3 2 2 3 3
 S-(trimethylgermyl) ethanesulfonothioate (PIN)
 P-65.6.3.2 General methodology
-P-65.6.3.2.1 All preferred IUPAC names for esters are named by functional class nomenclature. (已完成)
+P-65.6.3.2.1 All preferred IUPAC names for esters are named by functional class nomenclature.
 Examples:
 CH -CO-O-CH -CH
 3 2 3
@@ -4942,8 +4929,8 @@ ethyl 2-[(ethoxycarbonyl)oxy]-4,4-dimethyl-3-oxopentanoate (PIN)
 (see P-65.4.1 for naming acyl groups derived from acids)
 P-65.6.3.3 Preferred IUPAC names for esters
 P-65.6.3.3.1 Monoesters
-P-65.6.3.3.2 Polyesters derived from a single acid component (已实现✅)
-P-65.6.3.3.3 Polyesters formed from a single 'alcoholic' component (已实现✅)
+P-65.6.3.3.2 Polyesters derived from a single acid component 
+P-65.6.3.3.3 Polyesters formed from a single 'alcoholic' component 
 P-65.6.3.3.4 Polyesters derived from multiple acid components and multiple 'alcoholic' components
 P-65.6.3.3.5 Partial esters from polybasic acids and their salts
 P-65.6.3.3.6 Substitutive nomenclature is senior to functional class nomenclature for preferred IUPAC names for
@@ -4971,7 +4958,7 @@ S-(2-cyanoethyl) cyclohexanesulfinothioate (PIN)
 {not 3-[(cyclohexanesulfinyl)sulfanyl]propanenitrile
 nor 3-[(cyclohexylsulfinyl)sulfanyl]propanenitrile;
 see P-65.4.1 for naming acyl groups derived from acids}
-P-65.6.3.3.2 Polyesters derived from a single acid component (已实现✅)
+P-65.6.3.3.2 Polyesters derived from a single acid component 
 P-65.6.3.3.2.1 Fully esterified acids derived from a single acid are systematically named by placing the name(s) of the
 hydroxylic component denoted by an organyl group(s) (alkyl, aryl, etc.) as separate word(s) in front of the name of the
 acid component denoted by the anion name derived from the appropriate acid (see P-72.2.2.2.1). Multiplicative prefixes
@@ -5021,7 +5008,7 @@ methyl 2-chloro-5-[3-(ethoxycarbonyl)phenoxy]benzoate (PIN)
 the parent structure of the PIN has more substituents)
 1′-ethyl 1-methyl 6-chloro-3,3′-oxydibenzoate
 (this multiplicative name is acceptable only in general nomenclature.
-P-65.6.3.3.3 Polyesters formed from a single 'alcoholic' component (已完成)
+P-65.6.3.3.3 Polyesters formed from a single 'alcoholic' component
 Esters derived from a single 'polyhydroxylic' component are named by placing the name of the 'polyhydroxylic'
 component denoted by a multivalent organyl group (alkyl, aryl, etc.) in front of the name(s) of the acid component
 denoted by the anion names derived from the appropriate acid(s) (see P-72.2.2.2.1).
@@ -5303,7 +5290,7 @@ Compounds that may be considered as derived from hydroxy carboxylic acids or hyd
 water intramolecularly are classified as 'lactones' and 'sultones', respectively. For these compounds heterocyclic names
 are preferred IUPAC names. Names derived from corresponding hydroxy acids are not recommended, but may be used
 in general nomenclature.
-P-65.6.3.5.1 Lactones (已完成)
+P-65.6.3.5.1 Lactones
 Intramolecular esters of hydroxy carboxylic acids are 'lactones' and are named in three ways.
 (1) as heterocyclic pseudoketones by adding the suffix 'one', 'dione', 'thione', etc. and the appropriate
 multiplicative prefixes to the name of the heterocyclic parent hydride;
@@ -5399,7 +5386,7 @@ P-65.7.3 Thioanhydrides and other chalcogen analogues
 P-65.7.4 Peroxyanhydrides and chalcogen analogues
 P-65.7.5 Diacyl derivatives of trioxidane and chalcogen analogues
 P-65.7.6 Di- and polyanhydrides
-P-65.7.7 Cyclic anhydrides (已完成 - 2026-03-18)
+P-65.7.7 Cyclic anhydrides
 P-65.7.8 Polyfunctional anhydrides
 
 
@@ -5410,7 +5397,7 @@ Anhydrides are compounds consisting of two acyl groups bonded to the same oxygen
 Symmetric and mixed anhydrides have identical and different acyl groups, respectively. The central oxygen atom can
 be replaced by chalcogen atoms or a peroxy group and its chalcogen analogues.
 Polyanhydrides and polyfunctional anhydrides are also described in this Section.
-P-65.7.1 Symmetric anhydrides (已完成 - 2026-03-14)
+P-65.7.1 Symmetric anhydrides
 Symmetric anhydrides of monobasic acids, substituted or unsubstituted, are named by replacing the term 'acid' of an
 acid name by the class name 'anhydride'.
 Examples:
@@ -5673,7 +5660,7 @@ acetic 4-[(ethanethioyl)sulfanyl]-4-sulfanylidenebutanethioic anhydride (PIN)
 CH -CO-O-CO-CH -CH -CO-O-CO-CH -CH -CO-S-CO-CH -CH
 3 2 2 2 2 2 3
 acetic butanedioic 4-oxo-4-(propanoylsulfanyl)butanoic dianhydride (PIN)
-P-65.7.7 Cyclic anhydrides (已完成 - 2026-03-18)
+P-65.7.7 Cyclic anhydrides
 P-65.7.7.1 Cyclic anhydrides formed from two acid groups attached to the same parent hydride structure are named in
 two ways:
 (1) as heterocyclic pseudoketones;
@@ -5827,7 +5814,7 @@ amino group. Chalcogen replacement analogues are called thio-, seleno-, and tell
 two, or three acyl groups on a single nitrogen atom are generically included.
 P-66.1.1 Primary amides
 P-66.1.1.1 Carboxamides
-P-66.1.1.2 Sulfonamides, sulfinamides, and related selenium and tellurium amides (已完成)
+P-66.1.1.2 Sulfonamides, sulfinamides, and related selenium and tellurium amides
 P-66.1.1.3 Substitution of primary amides
 P-66.1.1.4 Amides denoted as prefixes
 P-66.1.1.1 Carboxamides
@@ -5854,7 +5841,7 @@ from the parent hydride by substitutive use of the suffix 'carboxamide'.
 Example:
 propane-1,2,3-tricarboxamide (PIN)
 P-66.1.1.1.1.3 The suffix 'carboxamide' is always used to name amides with the -CO-NH group attached to a ring,
-ring system, or to a heteroacyclic parent. (已完成: 2026-03-16)
+ring system, or to a heteroacyclic parent.
 Examples:
 H P-CO-NH
 2 2
@@ -5869,7 +5856,7 @@ Names of amides derived from carboxylic acids listed in P-65.1.1 are formed by c
 ending of the retained names of carboxylic acids into 'amide'. Names of amides formed by this method are either
 preferred IUPAC names or names for use in general nomenclature according to the status of the corresponding acid;
 structures can be substituted in the same way as indicated for the corresponding acids (see P-65.1.1).
-P-66.1.1.1.2.1 Only the following four retained names are preferred IUPAC names and can be substituted (已完成: 2026-03-14). The name
+P-66.1.1.1.2.1 Only the following four retained names are preferred IUPAC names and can be substituted. The name
 'oxamide' is a contracted name from 'oxalamide' and substitution on the nitrogen atoms is allowed.
 CH -CO-NH
 3 2
@@ -5888,7 +5875,7 @@ cyanamide
 
 ### 第 646 页
 
-P-66.1.1.1.2.2 The traditional name 'formamide' is retained for HCO-NH and is the preferred IUPAC name (已完成: 2026-03-14).
+P-66.1.1.1.2.2 The traditional name 'formamide' is retained for HCO-NH and is the preferred IUPAC name.
 2
 Substitution is permitted on the -NH group. Substitution of the aldehydic hydrogen is subject to limitations (see
 2
@@ -6081,14 +6068,14 @@ P-66.1.1.4.1 Substituents of the types -CO-NH and -CO-CO-NH
 2 2
 P-66.1.1.4.2 Substituents of the types -SO -NH , -SO-NH and their selenium and tellurium analogues
 2 2 2
-P-66.1.1.4.3 Substituents of the types -NH-CO-R and -NH-SO -R (已完成: 2026-03-19)
+P-66.1.1.4.3 Substituents of the types -NH-CO-R and -NH-SO -R
 2
 P-66.1.1.4.4 Substituent groups R-CO-N< and R-CO-N=, or R-SO -N< and R-SO -N= (and selenium and
 2 2
 tellurium analogues)
 P-66.1.1.4.5 Substituent groups derived from oxamide, H N-CO-CO-NH
 2 2
-P-66.1.1.4.1 Substituents of the types -CO-NH and -CO-CO-NH . (已完成: 2026-03-19)
+P-66.1.1.4.1 Substituents of the types -CO-NH and -CO-CO-NH .
 2 2
 
 
@@ -6304,10 +6291,10 @@ Examples:
 1-(3,4-dihydroquinolin-1(2H)-yl)propan-1-one (PIN)
 1-propanoyl-1,2,3,4-tetrahydroquinoline
 1-propionyl-1,2,3,4-tetrahydroquinoline
-P-66.1.4 Chalcogen analogues of amides [已完成 - 9b3530d]
+P-66.1.4 Chalcogen analogues of amides
 Chalcogen analogues of amides are named systematically. Prefixes, such as 'thio', modifying retained names are no
 longer recommended for preferred names.
-P-66.1.4.1 Names of chalcogen analogues of primary amides [已完成 - 9b3530d]
+P-66.1.4.1 Names of chalcogen analogues of primary amides
 P-66.1.4.1.1 Names are formed by using suffixes modified by functional replacement nomenclature using prefixes and
 infixes.
 Examples:
@@ -6459,8 +6446,8 @@ P-66.1.6.1.2 Isourea and its derivatives
 P-66.1.6.1.3 Chalcogen analogues of urea and isourea
 P-66.1.6.1.4 Condensed ureas
 P-66.1.6.1.1 Urea and its substitutive derivatives
-P-66.1.6.1.1.1 (已完成 ✅ 2026-03-16: urea基础命名, 支持简单urea和双取代urea)
-(已完成 ✅ 2026-03-31: 添加urea/thiourea及相关衍生物缓存, 符合PIN格式N-methylurea等)
+P-66.1.6.1.1.1
+
 The compound H N-CO-NH has the retained name 'urea', which is the preferred IUPAC name, with
 2 2
 locants N and N′, as shown above the structure below. The systematic name is 'carbonic diamide'. The locants 1, 2, and
@@ -7520,7 +7507,7 @@ names of carboxylic acids (see P-65.1.1.1) and carboxylic acids that are not sub
 nitriles (see P-65.1.1.2)
 (3) by functional class nomenclature, using the class name 'cyanide'
 P-66.5.1.1 Substitutive and functional class names for nitriles
-P-66.5.1.1.1 Acyclic mono- and dinitriles are named in the following two ways: (已完成 ✅ 2026-03-14: acetonitrile的PIN已添加到缓存)
+P-66.5.1.1.1 Acyclic mono- and dinitriles are named in the following two ways:
 (1) substitutively by using the suffix 'nitrile'; and
 (2) by functional class nomenclature using the class name 'cyanide'.
 Method (1) leads to preferred IUPAC names.
@@ -7572,7 +7559,7 @@ methanenitrile
 hydrogen cyanide
 CH -CN
 3
-acetonitrile (PIN) **(已完成: 当2-碳链连接腈基时，使用acetonitrile而非ethanenitrile)**
+acetonitrile (PIN) ****
 ethanenitrile
 C H -CN
 6 5

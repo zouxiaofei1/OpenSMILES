@@ -1,9 +1,5 @@
 # P-6 Polycyclic Systems
 
-<!-- IUPAC P-68.3.2 膦化合物命名 - 已完成 (2026-03-16) -->
-<!-- IUPAC P-68.3.2 胂化合物命名 - 已完成 (2026-03-16) -->
-<!-- IUPAC P-22.2.2.1.1 单杂环编号规则（吡啶编号修复） - 已完成 (2026-03-16) -->
-<!-- IUPAC P-63.2.2.1.2 硫醚取代基PIN命名（sulfanyl格式） - 已完成 (2026-03-17) -->
 
 ## 多环系统
 
@@ -545,7 +541,6 @@ P-67.1.3 Salts, esters, and anhydrides of mononuclear noncarbon oxoacids
 The methodology discussed in this section is applicable to all mononuclear oxo acids whether or not they have retained
 names or names using infixes or prefixes.
 P-67.1.3.1 Salts
-<!-- IUPAC P-67.1.3.2 有机硝酸酯和亚硝酸酯命名 - 已完成 (2026-03-19) -->
 P-67.1.3.2 Esters
 P-67.1.3.3 Anhydrides
 P-67.1.3.1 Salts of mononuclear noncarbon oxoacids 
@@ -2767,7 +2762,7 @@ N-sulfanylacetamide (PIN)
 H N-S-CH
 2 3
 S-methyl(thiohydroxylamine) (PIN)
-P-68.3.1.1.2 Oximes (已完成 - 2026-03-16)
+P-68.3.1.1.2 Oximes
 
 
 ### 第 755 页
@@ -7730,7 +7725,7 @@ P-91.2.1.2 Other acceptable stereodescriptors
 Non Cahn-Ingold-Prelog (CIP) stereodescriptors are divided into two categories:
 P-91.2.1.2.1 Stereodescriptors used in substitutive nomenclature;
 P-91.2.1.2.2 Stereodescriptors used in the nomenclature of natural products (see Chapter P-10).
-P-91.2.1.2.1 Stereodescriptors used in substitutive nomenclature ✅ 已实现 (2026-03-15)
+P-91.2.1.2.1 Stereodescriptors used in substitutive nomenclature)
 Stereodescriptors used in systematic substitutive names to specify the configuration of preferred IUPAC names and in
 general nomenclature; some stereodescriptors are recommended in general nomenclature only:
 (a) Stereodescriptors used in preferred IUPAC names

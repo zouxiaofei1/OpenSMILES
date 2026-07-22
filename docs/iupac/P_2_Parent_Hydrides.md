@@ -1,6 +1,5 @@
 # P-2 Parent Hydrides
 
-<!-- IUPAC P-28.2.1 联苯骨架识别 - 已完成 (2026-03-17) -->
 
 ## 母体氢化物
 
@@ -1242,9 +1241,9 @@ to the other Si atom, i.e., 1-chloro-1-ethylidenedisilane)
 Cl-CH=CH-
 2-chloroethen-1-yl (preferred prefix)
 2-chlorovinyl
-P-14.3.4.4 (已完成) As an exception the locant is not omitted from propan-2-one, butan-2-one, prop-2-enoic acid and prop-2-ynoic acid
+P-14.3.4.4 As an exception the locant is not omitted from propan-2-one, butan-2-one, prop-2-enoic acid and prop-2-ynoic acid
 although unambiguous without a locant. 注意：此规则仅适用于propan-2-one和butan-2-one，对于ethanone衍生物，母体结构是"ethanone"不带位置编号。
-P-14.3.4.5 (已完成) All locants are omitted in compounds or substituent groups in which all substitutable positions are
+P-14.3.4.5 All locants are omitted in compounds or substituent groups in which all substitutable positions are
 completely substituted or modified, for example, by hydro, in the same way. Except for hydrogen atoms attached to
 chalcogen atoms, such as in acids, alcohols, and to the carbon atoms of formyl groups (aldehydes), all hydrogen atoms
 are considered substitutable.
@@ -1350,11 +1349,11 @@ Examples:
 3-bromocyclohex-1-ene (PIN)
 2-methylpent-1-en-4-yn-3-ol (PIN)
 (not 4-methylpent-4-en-1-yn-3-ol)
-(f) detachable alphabetized prefixes, all considered together in a series of increasing numerical order; (已完成)
+(f) detachable alphabetized prefixes, all considered together in a series of increasing numerical order;
 Example:
 5-bromo-8-hydroxy-4-methylazulene-2-carboxylic acid (PIN)
 (the locant set '4,5,8' is lower than '4,7,8')
-(g) lowest locants for the substituent cited first as a prefix in the name; (已完成)
+(g) lowest locants for the substituent cited first as a prefix in the name;
 Examples:
 4-methyl-5-nitrooctanedioic acid (PIN)
 1-methyl-4-nitronaphthalene (PIN)
@@ -1452,7 +1451,7 @@ For the sorting of nonalphanumerical characters, see P-14.6.
 In these subsections the principles of alphanumerical order do not include Greek letters (except in conjunctive names)
 or isotopic or stereochemical descriptors.
 P-14.5.1 Simple prefixes (i.e., those describing atoms and unsubstituted substituents) are arranged alphabetically;
-multiplicative prefixes, if necessary, are then inserted and do not alter the alphabetical order already established. (已完成)
+multiplicative prefixes, if necessary, are then inserted and do not alter the alphabetical order already established.
 Examples:
 1-ethyl-1-methylcyclohexane (PIN)
 1-ethyl-4-methylcyclohexane (PIN)
@@ -1492,7 +1491,7 @@ Examples:
 3-(as-indacen-3-yl)-5-(s-indacen-1-yl)pyridine (PIN)
 [not 5-s-indacen-1-yl-3-as-indacen-3-ylpyridine]
 And similarly, naphtho[1,2-f]quinolin-2-yl is alphanumerically preferred to naphtho[1,2-g]quinolin-1-yl ('f' before 'g').
-P-14.5.4 When two or more prefixes consist of identical Roman letters, priority for order of citation is given to the (已完成)
+P-14.5.4 When two or more prefixes consist of identical Roman letters, priority for order of citation is given to the
 group that contains the lowest locant(s) at the first point of difference.
 Examples:
 4-(2-methylbutyl)-N-(3-methylbutyl)aniline (PIN)
@@ -1540,7 +1539,7 @@ N1-[2-({2-[(acetyldimethylsilyl)methoxy]ethyl}amino)ethyl]-N2-{2-[(2- aminoethyl
 at the third character the nonalphanumerical '{' is preferred to '[']
 19-amino-3,3-dimethyl-5-oxa-8,11,14,17-tetraaza-3-silanonadecan-2-one (PIN)
 P-14.7 INDICATED AND 'ADDED INDICATED HYDROGEN'
-P-14.7.1 Indicated hydrogen. [已完成 - 2026-03-14]
+P-14.7.1 Indicated hydrogen.
 Under certain circumstances it is necessary to indicate in the name of a mancude ring or
 ring system, i.e., one that contains the maximum number of noncumulative double bonds, one or more positions where
 no multiple bond is attached. When these positions are occupied by hydrogen atoms, the name can be made specific by
@@ -2044,7 +2043,7 @@ Examples:
 (not 2-carboxyphenol)
 phenylnitrous amide (PIN)
 N-nitrosoaniline
-P-15.1.8.2.2 Substitution rules for Type 2b retained names [已完成]
+P-15.1.8.2.2 Substitution rules for Type 2b retained names
 Type 2b retained names include parent compounds explicitly or implicitly devoid of suffixes; acetylene (PIN) and
 allene are examples. Substitution of these parent compounds is possible by using specifically designated prefixes only.
 The following characteristic groups cited can be used to substitute parent structures of Type 2b (ring and the side chain
@@ -3039,7 +3038,7 @@ conjunctive nomenclature used in CAS index nomenclature are discussed here brief
 ### 第 118 页
 
 P-15.6.1 Name formation
-P-15.6.1.1 Names are formed by juxtaposition of component names. (已完成)
+P-15.6.1.1 Names are formed by juxtaposition of component names.
 - 当取代基存在于ylmethanol的环部分时，需要使用括号
 - 例如: (2-chlorophenyl)methanol (不是 2-chlorophenylmethanol)
 - 例如: (2,7-dimethoxynaphthalen-1-yl)methanol
@@ -4116,7 +4115,7 @@ Chapter P-2 PARENT HYDRIDES
 P-20 Introduction
 P-21 Mononuclear and acyclic polynuclear parent hydrides
 P-22 Monocyclic parent hydrides
-P-23 Polyalicyclic parent hydrides (extended von Baeyer system) 【已完成: bicyclo/tricyclo桥环命名, 2026-03-17】
+P-23 Polyalicyclic parent hydrides (extended von Baeyer system)
 P-24 Spiro ring systems
 P-25 Fused and bridged fused ring systems
 P-26 Phane nomenclature
@@ -4411,7 +4410,7 @@ cyclododeca-1,3,5,7,9,11-hexaene (PIN, P-31.1.3.1)
 (I) (II)
 (I) 1H-[13]annulene
 (II) cyclotrideca-1,3,5,7,9,11-hexaene (PIN, P-31.1.3.1)
-P-22.1.3 Parent hydrocarbons having retained names [已完成 ✅ 2026-03-16: toluene PIN规则实现。对于PIN不允许取代。对于中文general nomenclature，当取代基在P-15.1.8.2.2允许列表中时使用"甲苯"作为母体，否则使用"甲基苯"。]
+P-22.1.3 Parent hydrocarbons having retained names
 Toluene, xylene, and mesitylene are specific parent hydrides that are composed of two components, one cyclic and the
 other acyclic and saturated. These names are retained due to a long and well established tradition. Toluene and xylene
 are preferred IUPAC names, but are not freely substitutable; toluene is substitutable under certain conditions, but only
@@ -4429,7 +4428,7 @@ mesitylene (no substitution)
 1,3,5-trimethylbenzene (PIN)
 P-22.2 HETEROMONOCYCLIC PARENT HYDRIDES
 P-22.2.1 Retained names of heteromonocycles
-P-22.2.2 Heteromonocyclic parent hydrides with 3-10 membered rings (Hantzsch-Widman names) [已完成 ✅ 2026-03-20: thietane/oxirane/aziridine/thiirane/oxetane/azetidine]
+P-22.2.2 Heteromonocyclic parent hydrides with 3-10 membered rings (Hantzsch-Widman names)
 P-22.2.3 Heteromonocyclic parent hydrides named by skeletal replacement ('a') nomenclature
 P-22.2.4 Heteromonocycles with eleven or more members with the maximum number of noncumulative double
 bonds
@@ -4449,10 +4448,10 @@ Table 2.2 Retained names of mancude heteromonocyclic parent hydrides
 furan (PIN)
 imidazole (1H-isomer shown;
 the PIN is 1H-imidazole)
-oxazole isoxazole [已完成 ✅ 2026-03-16: 区分 oxazole/isoxazole/oxadiazole]
-1,3-oxazole (PIN) 1,2-oxazole (PIN) [已完成 ✅ 2026-03-19: thiazole PIN格式修复]
+oxazole isoxazole
+1,3-oxazole (PIN) 1,2-oxazole (PIN)
 thiazole (S instead of O) isothiazole (S instead of O)
-1,3-thiazole (PIN) 1,2-thiazole (PIN) [已完成 ✅ 2026-03-19: thiazole PIN格式修复]
+1,3-thiazole (PIN) 1,2-thiazole (PIN)
 selenazole (Se instead of O) isoselenazole (Se instead of O)
 1,3-selenazole (PIN) 1,2-selenazole (PIN)
 tellurazole (Te instead of O) isotellurazole (Te instead of O)

@@ -226,7 +226,7 @@ Lower locants for heteroatoms introduced by skeletal replacement
 P-44.4.1.6
 (‘a’) nomenclature in the order
 P-44.4.1.7 Lower locant(s) for carbon atoms at fusion sites
-P-44.4.1.8 Lower locants for characteristic groups cited as a suffix (已完成)
+P-44.4.1.8 Lower locants for characteristic groups cited as a suffix
 P-44.4.1.9 Lowest locants for points of attachment (if a substituent group)
 P-44.4.1.10 Lowest locants for endings or prefixes that express changes in the
 degree of hydrogenation,
@@ -1901,7 +1901,7 @@ inorganic compounds, organic compounds precede inorganic compounds in formulas. 
 names of individual components in the order of the formula. The use of order of seniority of classes, a universal system,
 as a ranking criterion has been preferred to the language dependent alphanumerical order for preferred IUPAC names
 and in general nomenclature.
-14. Enclosing marks (已完成 P-14.2.2 嵌套括号规则，含von Baeyer描述符和指示氢修复 2026-03-31)
+14. Enclosing marks
 (a) Names such as cyclohexanecarbonyl and benzenesulfonyl are enclosed in parentheses, even though they are simple
 prefixes, in order to facilitate name interpretation by avoiding the illusion that two parent hydrides are present. This is a
 change from the 1993 Guide (ref. 2)
