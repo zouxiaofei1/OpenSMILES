@@ -3132,24 +3132,7 @@ P-44.2 Seniority order only for rings and ring systems
 P-44.3 Seniority of acyclic chains (the principal chain)
 P-44.4 Seniority criteria applicable to rings, ring systems, or acyclic chains
 
-## 实现状态 (2026-03-14 完成)
 
-**已完成:**
-- ✅ P-44.1.2.2: 环优先于链 (当同一类中)
-- ✅ P-44.2.1(a): 杂环优先于碳环
-- ✅ P-44.2.1(b): 含氮杂环优先
-- ✅ 官能团后缀命名: 酸、酰胺、腈、醛、酮
-- ✅ 链母体选择: 最长碳链 + 官能团后缀
-- ✅ 杂环母体选择: 优先级排序
-- ✅ 饱和杂环识别: oxazolidine, piperidine, morpholine 等
-- ✅ 苯甲酸类特殊命名: benzoic acid, benzamide, benzonitrile
-- ✅ 环烷烃命名: cyclopropane, cyclobutane, cyclopentane, cyclohexane
-- ✅ 稠杂环识别: quinoline, quinoxaline, benzothiophene
-
-**测试覆盖:**
-- 黄金测试集: 42/42 = **100%**
-- P-44 规则测试: 7/7 = **100%**
-- 总计: 49/49 = **100%**
 
 ---
 
@@ -3179,7 +3162,7 @@ P-44.1 SENIORITY ORDER FOR PARENT STRUCTURES
 When there is a choice, the senior parent structure is chosen by applying the following criteria, in order, until a decision
 is reached. These criteria must always be applied before those applicable to rings and ring systems (see P-44.2) and to
 chains (see P-44.3). Then criteria applicable to both chains and rings or ring systems given in P-44.4 are considered.
-P-44.1.1 (已完成) The senior parent structure has the maximum number of substituents corresponding to the principal
+P-44.1.1  The senior parent structure has the maximum number of substituents corresponding to the principal
 characteristic group (suffix) or senior parent hydride in accord with the seniority of classes (P-41) and the seniority of
 suffixes (P-43).
 Examples:
@@ -3321,34 +3304,7 @@ P-44.1.5 Criteria applicable to rings, ring systems, or acyclic chains, such as 
 atoms with different bonding numbers, isotopically modified compounds, and stereochemical configurations are given
 in P-44.4.
 
-<!-- ============================================================================
-     ✅ 已实现: P-44.2.1(a) - 异杂环优先于碳环
-     实现位置: backend/app/services/namepredict_v2/core/heterocyclic_detector.py
-     测试文件: backend/tests/test_heterocycle_priority.py
-     实现日期: 2026-03-13
 
-     规则内容:
-     - The senior ring or ring system: (a) is a heterocycle
-
-     实现内容:
-     1. 修复 Skeleton 类缺少 double_bonds, triple_bonds, heterocyclic_info 属性
-     2. 修复 FG 类缺少 atom_indices 属性
-     3. 修复杂环 SMARTS 模式：
-        - 吡嗪：修正为正确的6元环模式 (c1nccnc1, n1ccncc1)
-        - 咪唑：确保五元杂环正确识别
-        - 吡唑：添加 N-取代吡唑模式 (Cn1cccn1, n1cccn1)
-     4. 新增测试用例验证异杂环优先规则
-
-     通过测试:
-     - test_pyridine_over_benzene ✅
-     - test_quinoline_over_naphthalene ✅
-     - test_pyrimidine_over_benzene ✅
-     - test_furan_over_thiophene ✅
-     - test_imidazole_is_parent ✅
-     - test_pyrazole_is_parent ✅
-     - test_benzene_ring_over_alkyl_chain ✅
-     - test_cyclohexane_ring_over_chain ✅
-     ============================================================================ -->
 
 P-44.2 SENIORITY ORDER ONLY FOR RINGS AND RING SYSTEMS
 P-44.2.1 Criteria general to all rings and ring systems (other than phanes, both cyclic and linear, for which see
@@ -3359,11 +3315,7 @@ applied successively until there are no alternatives remaining. These criteria a
 illustrated in P-44.2.1.2 through P-44.2.1.8, below.
 The senior ring or ring system:
 (a) is a heterocycle;
-<!-- ✅ 已实现: P-44.2.1(a) 杂环优先于碳环 - 2026-03-15
-     实现位置: backend/app/services/namepredict_v2/core/heterocyclic_detector.py
-     测试文件: tests/test_p4421_heterocycle_priority.py
-     规则内容: 在选择母体环时，杂环优先于碳环作为母体
--->
+
 (b) has at least one nitrogen atom;
 (c) has at least one heteroatom (in the absence of nitrogen) that occurs earlier in the following sequence: F > Cl > Br
 > I > O > S > Se > Te > P > As > Sb > Bi > Si > Ge > Sn > Pb > B > Al > Ga > In > Tl;
@@ -3395,36 +3347,6 @@ cited as a substituent.
 
 
 ### 第 379 页
-
-<!-- ============================================================================
-     ✅ 已实现: P-44.2.1(b) - 含氮杂环优先
-     实现位置: backend/app/services/namepredict_v2/core/heterocyclic_detector.py
-     测试文件: backend/tests/test_nitrogen_heterocycle.py
-     实现日期: 2026-03-13
-
-     规则内容:
-     - P-44.2.1.3: The senior ring or ring system has at least one nitrogen ring atom
-
-     实现内容:
-     1. 重写 get_main_ring() 方法，实现动态优先级计算
-     2. 按照 IUPAC P-44.2.1(a)-(g) 顺序计算优先级得分
-     3. 实现杂原子优先级序列: F > Cl > Br > I > O > S > Se > Te > P > As > ...
-
-     关键改进:
-     - 含氮杂环优先于非含氮杂环
-     - 按杂原子序列排序（O > S）
-     - 稠环优先于单环
-     - 骨架原子多者优先
-
-     通过测试:
-     - test_pyrrole_over_benzopyran ✅
-     - test_pyrrole_over_furan_in_molecule ✅
-     - test_pyridine_over_furan ✅
-     - test_furan_over_thiophene ✅
-     - test_furan_thiophene_molecule ✅
-     - test_isoquinoline_over_pyrrole ✅
-     - test_quinoline_over_indole ✅
-     ============================================================================ -->
 
 4-[(4-fluoro-2-methyl-1H-indol-5-yl)oxy]-6-methoxy-7-[3-(pyrrolidin- 1-yl)propoxy]quinazoline (PIN)
 (quinazoline > indole > pyrrolidine)
@@ -3489,32 +3411,6 @@ biphenylene (PIN) 1,4-methanonaphthalene (PIN)
 
 ### 第 381 页
 
-<!-- ============================================================================
-     ✅ 已实现: P-44.2.1(c)(d)(e)(f)(g) - 杂原子序列、环数量、骨架原子、杂原子数量
-     实现位置: backend/app/services/namepredict_v2/core/heterocyclic_detector.py
-     测试文件: backend/tests/test_nitrogen_heterocycle.py
-     实现日期: 2026-03-13
-
-     规则内容:
-     - P-44.2.1.4: O > S 杂原子优先级序列
-     - P-44.2.1.5: 环数量多者优先 (2 rings > 1 ring)
-     - P-44.2.1.6: 骨架原子多者优先 (10 atoms > 9 atoms)
-     - P-44.2.1.7: 杂原子数量多者优先 (3 heteroatoms > 1 heteroatom)
-
-     实现内容:
-     1. 在 calculate_ring_score() 中实现完整的 P-44.2.1(a)-(g) 优先级计算
-     2. 杂原子优先级序列: F > Cl > Br > I > O > S > Se > Te > P > As > ...
-     3. 调整三唑SMARTS顺序，放在咪唑之前避免误匹配
-     4. 添加 c1nc[nH]n1 作为 1,2,4-triazole 的模式
-
-     通过测试:
-     - test_furan_over_thiophene ✅ (O > S)
-     - test_furan_thiophene_molecule ✅
-     - test_isoquinoline_over_pyrrole ✅ (2 rings > 1 ring)
-     - test_quinoline_over_indole ✅ (10 atoms > 9 atoms)
-     - test_pyrimidine_over_pyridine ✅ (2 heteroatoms > 1)
-     - test_triazole_recognition ✅ (3 heteroatoms)
-     ============================================================================ -->
 
 Note: Because of the hierarchical nature of these criteria, this criterion regarding the number of skeletal atoms
 supersedes P-44.2.2.2, which prefers a fused ring to a bridged fused ring.
@@ -4183,30 +4079,6 @@ Example (the symbol > means 'is senior to'):
 3,3′-bipyrano[3,2-e][1,4]dioxepine (PIN) 2,2′-bi-3,1,5-benzoxadiarsepine (PIN)
 [three oxygen atoms per ring preferred to one oxygen atom per ring]
 
-<!-- ============================================================================
-     ✅ 已实现: P-14.4 - 最低位规则（苯环取代基编号）
-     实现位置: backend/app/services/namepredict_v2/core/numbering_engine.py
-     测试文件: backend/tests/test_benzene_locants.py
-     实现日期: 2026-03-13
-
-     规则内容:
-     - P-14.4: 给取代基尽可能低的编号
-     - 编号方向选择：使所有取代基位置编号之和最小
-
-     实现内容:
-     1. 区分链状分子和环状分子
-     2. 链状分子：从主官能团端开始编号
-     3. 环状分子：尝试所有起始点和方向，选择位置和最小的方案
-     4. 通过分子结构正确查找取代基连接点
-
-     通过测试: 6/6 ✅
-     Benchmark: 4.6% → 4.5% (基本持平)
-
-     示例：
-     - 1,4-dibromo-2,3-diiodobenzene (位置和=10)
-     - 而非 1,4-dibromo-5,6-diiodobenzene (位置和=16)
-     ============================================================================ -->
-
 P-44.3 SENIORITY OF ACYCLIC CHAINS (THE PRINCIPAL CHAIN)
 In an acyclic compound consisting of individual atoms, alike or different (an acyclic chain), the chain on which the
 nomenclature and numbering is based is called the 'principal chain'. When there is a choice for the principal chain, the
@@ -4511,24 +4383,6 @@ the locant set '3a,5a' for the fusion sites in (II) is lower than '3a,6a' in (II
 
 ### 第 407 页
 
-<!-- ============================================================================
-     ✅ 已实现: P-44.4.1.8 多官能团位置编号
-     实现位置: backend/app/services/namepredict_v2/core/name_assembler.py
-     测试文件: backend/tests/test_multi_functional_group_naming.py
-     实现日期: 2026-03-14
-
-     规则内容:
-     多官能团位置编号：propane-1,3-diol, pentane-2,4-dione
-
-     实现内容:
-     1. 添加 original_fgs 属性保存原始官能团列表
-     2. 实现多官能团位置编号计算（二醇、二胺、二酮）
-     3. 修复酮的位置编号（找到羰基碳）
-     4. 修复胺的位置编号（找到连接 N 的碳）
-
-     通过测试: 9/9 ✅
-     Benchmark: 37.1% → 38.1% (+1.0%)
-     ============================================================================ -->
 
 (2)
 >

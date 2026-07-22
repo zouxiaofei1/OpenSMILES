@@ -25,6 +25,7 @@
           <button class="tab" data-page="namer" aria-current="page">Namer</button>
           <button class="tab" data-page="benchmark">Benchmark 预览</button>
           <button class="tab" data-page="benchmark-run">Benchmark 跑分</button>
+          <button class="tab" data-page="debug">Pipeline Debug</button>
         </nav>
       </div>
     </header>
@@ -238,6 +239,27 @@
                 <div class="br-acc-value" id="br-fails">—</div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Debug Page -->
+      <div id="debug-page" class="debug-page hidden" role="tabpanel" aria-labelledby="tab-debug">
+        <div class="debug-input-bar">
+          <input id="debug-smiles" class="input" type="text"
+                 placeholder="Enter SMILES, e.g. c1ccccc1C(=O)O or CC(=O)OC1CCCCC1"
+                 autocomplete="off" spellcheck="false">
+          <button id="debug-run" class="btn btn-primary" type="button">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <span>Run</span>
+          </button>
+        </div>
+        <div id="debug-output" class="debug-body">
+          <div class="debug-empty">
+            <h2>Pipeline Debug</h2>
+            <p>Enter a SMILES above and click Run to trace the naming pipeline layer by layer.</p>
           </div>
         </div>
       </div>
