@@ -22,6 +22,10 @@
           </svg>
           <span class="logo-text">ChemAgent Namer</span>
         </div>
+        <nav class="topbar-nav" role="navigation" aria-label="页面">
+          <button class="tab" data-page="namer" aria-current="page">Namer</button>
+          <button class="tab" data-page="benchmark">Benchmark 预览</button>
+        </nav>
       </div>
     </header>
 
@@ -112,8 +116,62 @@
           </div>
         </div>
       </div>
+
+      <!-- Benchmark Preview Page -->
+      <div id="benchmark-page" class="benchmark-page hidden" role="tabpanel" aria-labelledby="tab-benchmark">
+        <div class="benchmark-controls">
+          <span class="chip">共 <b id="bm-total">0</b> 条</span>
+          <span class="chip">显示 <b id="bm-shown">0</b></span>
+          <span class="chip">match <b id="bm-okn">0</b></span>
+          <span class="chip">en✓ <b id="bm-enn">0</b></span>
+          <span class="chip">zh✓ <b id="bm-zhn">0</b></span>
+          <input id="bm-q" class="input bm-search" type="search" placeholder="筛选 SMILES / 预测 / 正确命名…" />
+          <select id="bm-filter" class="input bm-select">
+            <option value="all">全部</option>
+            <option value="ok">仅 match</option>
+            <option value="fail">仅 miss</option>
+            <option value="wrong">有返回但错</option>
+          </select>
+          <select id="bm-pageSize" class="input bm-select">
+            <option value="50">每页 50</option>
+            <option value="100" selected>每页 100</option>
+            <option value="200">每页 200</option>
+            <option value="500">每页 500</option>
+          </select>
+          <button id="bm-prev" class="btn btn-secondary btn-sm" type="button">上一页</button>
+          <span class="chip">页 <b id="bm-page">1</b> / <b id="bm-pages">1</b></span>
+          <button id="bm-next" class="btn btn-secondary btn-sm" type="button">下一页</button>
+          <button id="bm-refresh" class="btn btn-secondary btn-sm" type="button" title="重新生成预览数据">刷新</button>
+        </div>
+        <div class="benchmark-table-wrap">
+          <table class="benchmark-table">
+            <colgroup>
+              <col class="bm-col-smiles" />
+              <col class="bm-col-pred" />
+              <col class="bm-col-gold" />
+              <col class="bm-col-struct" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>SMILES</th>
+                <th>本程序预测 IUPAC</th>
+                <th>正确命名</th>
+                <th>结构</th>
+              </tr>
+            </thead>
+            <tbody id="bm-tbody"></tbody>
+          </table>
+          <div id="bm-empty" class="empty-state" hidden>无匹配行</div>
+          <div id="bm-loading" class="empty-state">加载中…</div>
+        </div>
+        <footer class="bm-footer">
+          正确命名 = benchmark 金标 english_name / chinese_name。
+          match = 预测与金标一致。结构由 SmilesDrawer 渲染。
+        </footer>
+      </div>
     </main>
   </div>
+  <script src="/vendor/smiles-drawer.min.js"></script>
   <script src="/js/namer-ketcher.js"></script>
   <script src="/js/app.js" defer></script>
 </body>
