@@ -174,7 +174,7 @@ def test_score_parent_tuple_order() -> None:
     ox = _score_parent({}, _p("oxolane", chain=[0, 1, 2, 3, 4], n_carbons=4))
     eth = _score_parent({}, _p("ether", chain=[0, 1], n_carbons=2))
     # ether has principal FG (rank 2); oxolane does not — FG still wins today
-    assert eth[0] == 1 and ox[0] == 0
+    assert eth[:2] == (2, 1) and ox[:2] == (0, 0)
     assert eth > ox
     pyr = _score_parent({}, _p("pyridine", chain=list(range(6)), n_carbons=5))
     alk = _score_parent({}, _p("alkane", chain=[0, 1, 2], n_carbons=3))
@@ -182,7 +182,7 @@ def test_score_parent_tuple_order() -> None:
     assert pyr > alk
     bz = _score_parent({}, _p("benzoic", chain=list(range(6)), n_carbons=7))
     al = _score_parent({}, _p("alcohol", chain=[0, 1], n_carbons=2))
-    assert bz[1] == 13 and al[1] == 5
+    assert bz[0] == 13 and al[0] == 5
     assert bz > al
 
 

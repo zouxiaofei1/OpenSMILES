@@ -110,6 +110,15 @@ def test_fg_candidates_empty_or_no_fg_safe(smiles: str) -> None:
     assert all(isinstance(c, dict) and "kind" in c for c in cands)
 
 
+def test_fg_producer_kinds_have_registered_principal_rank() -> None:
+    """Every kind emitted by FG producers must participate in P-44 seniority."""
+    emitted: set[str] = set()
+    for smiles, _ in _KIND_CASES:
+        emitted.update(_kinds(_fg_candidates(_info(smiles))))
+    missing = {kind for kind in emitted if kr.get(kind) is None or kr.fg_rank(kind) <= 0}
+    assert missing == set()
+
+
 def test_candidates_has_no_hand_fg_try_tuple() -> None:
     path = Path("src/namepredict/layer2/candidates.py")
     tree = ast.parse(path.read_text(encoding="utf-8"))

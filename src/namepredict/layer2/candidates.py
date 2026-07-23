@@ -20,6 +20,7 @@ from namepredict.layer2.ring_parent import (
     _is_simple_benzene,
 )
 from namepredict.layer2.scoring import _pick_best
+from namepredict.layer2.parent_candidate import with_principal_group_contract
 from namepredict.layer2.arene_carbonyl import benzene_polycarboxylic_gate
 from namepredict.layer2.candidate_gate import CandidateGate, GateScope, gate_result
 from namepredict.layer2.carboxymethyl_diacid import is_carboxymethyl_diacid
@@ -52,15 +53,19 @@ def _unsat_candidates(info: dict) -> list[dict]:
     return [c for fn in _kr.unsat_try_fns() if (c := fn(info)) is not None]
 
 
+def _candidate_key(candidate: dict) -> tuple:
+    return candidate.get("kind"), tuple(candidate.get("chain") or [])
+
+
 def _dedupe_parents(cands: list[dict]) -> list[dict]:
     seen: set[tuple] = set()
     out: list[dict] = []
-    for c in cands:
-        key = (c.get("kind"), tuple(c.get("chain") or []))
-        if key in seen:
-            continue
-        seen.add(key)
-        out.append(c)
+    for raw in cands:
+        candidate = with_principal_group_contract(raw)
+        key = _candidate_key(candidate)
+        if key not in seen:
+            seen.add(key)
+            out.append(candidate)
     return out
 
 

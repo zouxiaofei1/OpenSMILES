@@ -11,6 +11,7 @@ must lose to a chain fallback instead of emitting a bare ring name.
 from __future__ import annotations
 
 from namepredict.layer2 import kind_registry as _kr
+from namepredict.layer2.parent_candidate import principal_key, with_principal_group_contract
 
 # Thin frozenset wrappers derived from registry (compat / external imports).
 _FG_RANK = {
@@ -70,15 +71,20 @@ def _retained_bonus(kind: str) -> int:
     return _kr.retained_bonus(kind)
 
 
+def _p44_1_1(parent: dict) -> tuple[int, int]:
+    facts = principal_key(with_principal_group_contract(parent))
+    return facts.principal_group_class, facts.principal_group_count
+
+
+def _later_score(parent: dict, kind: str) -> tuple:
+    return (_sides_ok(parent), _is_hetero_ring(kind), _is_carbo_ring(kind),
+            _n_rings(kind), _ring_size(parent, kind), _retained_bonus(kind),
+            _n_unsat(parent), _n_carbons(parent), -_n_unhandled(parent))
+
+
 def _score_parent(info: dict, parent: dict) -> tuple:
     kind = parent.get("kind") or ""
-    return (
-        _has_principal_fg(kind), _fg_class_rank(kind), _sides_ok(parent),
-        _is_hetero_ring(kind), _is_carbo_ring(kind),
-        _n_rings(kind), _ring_size(parent, kind),
-        _retained_bonus(kind), _n_unsat(parent), _n_carbons(parent),
-        -_n_unhandled(parent),
-    )
+    return (*_p44_1_1(parent), *_later_score(parent, kind))
 
 
 def _better_parent(info: dict, a: dict, b: dict) -> bool:

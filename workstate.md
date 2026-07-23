@@ -220,3 +220,17 @@
 [#0a74729][并行三选题 Round 4] (A)IUPAC P-29.3/P-22.2.1 五元杂芳ω-卤代烷基侧链母体修复(噻吩/呋喃/吡咯+CH₂Cl/CH₂Br) (B)数据驱动arene_fg_parent扩展pyrazole/thiazole/quinazoline+NH₂杂环胺母体 (C)多胺polyamine统一基础设施(triamine/tetraamine)遵循polyol泛型模式+修复diamine原子所有权bug [+4 EN, +3 ZH, +4 dual(15.4%→15.5%), -4 fails, 0 REGRESS]
 
 ## 其他
+[P-44 Layer2 母体选择重构路线，2026-07-22]
+- 靶心：按 P-44.1→P-44.2/P-44.3→P-44.4 的严格词典序比较替换当前近似 scoring；P-45（多个可行名称/PIN）另轮。
+- 现状：candidates 已按 FG/ring/unsat 注册生产候选，scoring tuple 混合类别、可命名性、环性、保留名、不饱和度与碳数；缺 P-44.1.1 的主特征基团计数，也未按候选类型分派 P-44.2/44.3。
+- 关键纠正：不是“先找最高优先级取代基再围绕每一个生母体”；应先由 P-41/P-43 定主特征基团类别，再枚举所有可表达该类最大数量的合法母体结构。官能团是候选约束/计数对象，不等同取代基。
+- 变体轴：官能团类别比较、环/链与优先原子、环系类型、开链路径、通用不饱和/λ/位次/同位素/立体均为正交规则轴，必须分轮。
+- Round A（已完成，未提交）：建立 typed ParentCandidate/P44Facts 与分阶段 lexicographic comparator；从现有 parent dict 适配；golden tests 固化 producer 输出。未新增化合物功能。
+- Round B（已完成，未提交）：实现 P-44.1.1；按 P-41/P-43 类别比较 principal class，并最大化候选所含 suffix FG 数；最高 phase 为硬边界，命名 capability 不得使母体降级。
+- Round C：实现 P-44.1.2：senior atom N>P>…>C，以及同优先元素时 ring>chain；ring-vs-ring 不在此决胜，转 P-44.2。
+- Round D：开链 P-44.3：杂原子总数→骨架原子数→按 O>S>…>Tl 的逐种计数；纯碳链因此首先按链长。实现 constrained simple-path/DP，必须覆盖所有 principal FG attachment atoms。
+- Round E：环 P-44.2.1 与已支持环型 P-44.2.2 子集：杂环→N→无N时 senior hetero→环数→骨架原子→杂原子数；spiro/fused/von Baeyer/assembly 按类型分派。未支持 phane/复杂桥稠显式 unsupported，不伪评分。
+- Round F：P-44.4 通用尾部：多重键数→双键数→λ→指示氢→骨架置换位次→稠合位点→后缀FG位次→连接点→ene/yne位次→同位素→立体。依赖 L4 的位次型标准通过候选 numbering facts 比较，不让 L2 自行编号。
+- Round G（独立去重轮）：移除旧 scoring 近似项（sides_ok、retained_bonus、n_unhandled）；“不可命名侧链”只作 capability gate/候选重试，不冒充 IUPAC seniority。P-45 PIN/保留名政策再单列路线。
+- 现存接入点：layer2/candidates.py 候选汇集；layer2/scoring.py 仲裁；layer2/parent_selector.py 排序/终态；layer2/kind_registry.py 类别元数据与 producers；layer1/ring_fingerprint.py 环系 IR；layer4/locants/plan.py NumberingPlan。
+- 禁止项：不得用“组合环系(某原子)”直接代表所有合法环母体；不得把环大小、保留名、可命名性或取代基数提前于条款层级；不得一轮同时扩功能与拆仲裁器。

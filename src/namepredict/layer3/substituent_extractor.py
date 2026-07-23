@@ -99,12 +99,18 @@ def _haloalkyl_names(n: int, z: int) -> tuple[str, str]:
     return f"{n}-{HALO_EN[z]}{se}", f"{n}-{HALO_ZH[z]}{sz}"
 
 
-def _make_haloalkyl(attach: int, path: list[int], z: int) -> dict:
+def _halo_atom(mol: Mol, carbon: int) -> int | None:
+    atom = mol.GetAtomWithIdx(carbon)
+    hits = [nb.GetIdx() for nb in atom.GetNeighbors() if nb.GetAtomicNum() in HALO_EN]
+    return hits[0] if len(hits) == 1 else None
+
+
+def _make_haloalkyl(attach: int, path: list[int], z: int, halo: int) -> dict:
     n = len(path)
     en, zh = _haloalkyl_names(n, z)
     return {
         "kind": "haloalkyl", "n_carbons": n, "attach_idx": attach,
-        "atoms": path, "en": en, "zh": zh, "paren": True,
+        "atoms": [*path, halo], "en": en, "zh": zh, "paren": True,
     }
 
 
@@ -114,7 +120,8 @@ def _one_haloalkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> di
     if not path:
         return None
     z = side_facts.terminal_halogen(mol, path[-1])
-    return _make_haloalkyl(attach, path, z) if z else None
+    halo = _halo_atom(mol, path[-1])
+    return _make_haloalkyl(attach, path, z, halo) if z and halo is not None else None
 
 
 def _one_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int], *, name_mode: str = "general") -> dict | None:
@@ -141,18 +148,23 @@ _BRANCH_CHECKS = (
 )
 
 
-def _one_branched(mol: Mol, attach: int, start: int, chain_set: set[int], *, name_mode: str = "general") -> dict | None:
+def _retained_branch(mol, attach, start, chain_set, name_mode):
     from namepredict.layer3.retained_substituents import resolve_name
 
     for shape, n, key in _BRANCH_CHECKS:
-        fact = side_facts.alkyl_shape(mol, start, chain_set, shape)
-        if fact:
+        if fact := side_facts.alkyl_shape(mol, start, chain_set, shape):
             en, zh = resolve_name(key, name_mode=name_mode)
             return _make_branch(attach, list(fact.atoms), n, en, zh)
-    cyc = _one_cycloalkyl_side(mol, attach, start, chain_set)
-    if cyc is not None:
+    return None
+
+
+def _one_branched(mol: Mol, attach: int, start: int, chain_set: set[int], *, name_mode: str = "general") -> dict | None:
+    if branch := _retained_branch(mol, attach, start, chain_set, name_mode):
+        return branch
+    if cyc := _one_cycloalkyl_side(mol, attach, start, chain_set):
         return cyc
-    cf3 = side_facts.alkyl_shape(mol, start, chain_set, side_facts.AlkylShape.C1_THREE_HALOGEN_LEAVES)
+    shape = side_facts.AlkylShape.C1_THREE_HALOGEN_LEAVES
+    cf3 = side_facts.alkyl_shape(mol, start, chain_set, shape)
     return _make_cf3(attach, list(cf3.atoms)) if cf3 else None
 
 

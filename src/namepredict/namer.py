@@ -9,6 +9,7 @@ from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.claimable_block import ClaimedBlock, SideSlot
 from namepredict.layer2.parent_ownership import finalize_parent_ownership
 from namepredict.layer2.parent_selector import iter_parent_candidates, select_parent
+from namepredict.layer2.parent_candidate import principal_phases
 from namepredict.layer3.coverage import build_coverage_ledger
 from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer3.substituent_namer import SubstituentName
@@ -142,43 +143,43 @@ def try_candidate(
     return hit
 
 
-def _run_candidates(info: dict, *, depth: int, t0: float, name_mode: str = "general") -> NameResult:
-    """Prefer complete-coverage candidates; if none, fall back to any assemblable name.
-
-    Empty-name path removed: do not return success=False with blank en when a
-    partial assembly is available from any ranked candidate.
-
-    At depth > 0 (recursive substituent naming), only the default parent is tried
-    to avoid combinatorial candidate explosion in nested submol naming.
-    """
-    attempts: list[dict] = []
-    prepared: list[tuple[dict, list[dict], bool, NameResult | None]] = []
-    if depth > 0:
-        cands = [select_parent(info)]
-    else:
-        cands = list(iter_parent_candidates(info)) or [select_parent(info)]
-    # Pass 1: complete ledger only (high quality), retaining work for fallback.
-    for candidate in cands:
-        parent, subst, complete = _prepare_candidate(info, candidate, name_mode=name_mode)
-        hit = _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode) if complete else None
-        prepared.append((parent, subst, complete, hit))
-        if hit is not None and hit.success and hit.en:
+def _complete_hit(prepared, *, depth, t0, name_mode):
+    for parent, subst, complete in prepared:
+        if complete and (hit := _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)):
             hit.meta = {**(hit.meta or {}), "coverage_complete": True}
             return hit
-        attempts.append({"kind": parent.get("kind"), "reason": "incomplete_or_unnamed"})
-    # Pass 2: assemble the retained extraction without repeating L3 work.
-    for parent, subst, complete, hit in prepared:
-        if not complete:
-            hit = _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)
-        if hit is not None and hit.success and hit.en:
-            hit.meta = {
-                **(hit.meta or {}),
-                "coverage_complete": complete,
-                "fallback": "no_coverage_gate",
-                "attempts": attempts,
-            }
+    return None
+
+
+def _partial_hit(prepared, *, depth, t0, name_mode, attempts):
+    for parent, subst, complete in prepared:
+        hit = _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)
+        if hit is not None:
+            hit.meta = {**(hit.meta or {}), "coverage_complete": complete, "fallback": "no_coverage_gate", "attempts": attempts}
             return hit
-    return _fail(_elapsed_ms(t0), "no_assemblable_candidate", attempts=attempts)
+    return None
+
+
+def _try_phase(prepared, *, depth, t0, name_mode, attempts):
+    hit = _complete_hit(prepared, depth=depth, t0=t0, name_mode=name_mode)
+    return hit or _partial_hit(
+        prepared, depth=depth, t0=t0, name_mode=name_mode, attempts=attempts,
+    )
+
+
+def _candidate_phases(info: dict, depth: int) -> list[list[dict]]:
+    if depth > 0:
+        return [[select_parent(info)]]
+    return principal_phases(list(iter_parent_candidates(info))) or [[select_parent(info)]]
+
+
+def _run_candidates(info: dict, *, depth: int, t0: float, name_mode: str = "general") -> NameResult:
+    """Try only the P-44.1.1-senior phase; never capability-downgrade."""
+    attempts: list[dict] = []
+    phase = _candidate_phases(info, depth)[0]
+    prepared = [_prepare_candidate(info, cand, name_mode=name_mode) for cand in phase]
+    hit = _try_phase(prepared, depth=depth, t0=t0, name_mode=name_mode, attempts=attempts)
+    return hit or _fail(_elapsed_ms(t0), "no_assemblable_candidate", attempts=attempts)
 
 
 def _name_mol(
