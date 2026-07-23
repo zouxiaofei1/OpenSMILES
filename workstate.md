@@ -234,3 +234,13 @@
 - Round G（独立去重轮）：移除旧 scoring 近似项（sides_ok、retained_bonus、n_unhandled）；“不可命名侧链”只作 capability gate/候选重试，不冒充 IUPAC seniority。P-45 PIN/保留名政策再单列路线。
 - 现存接入点：layer2/candidates.py 候选汇集；layer2/scoring.py 仲裁；layer2/parent_selector.py 排序/终态；layer2/kind_registry.py 类别元数据与 producers；layer1/ring_fingerprint.py 环系 IR；layer4/locants/plan.py NumberingPlan。
 - 禁止项：不得用“组合环系(某原子)”直接代表所有合法环母体；不得把环大小、保留名、可命名性或取代基数提前于条款层级；不得一轮同时扩功能与拆仲裁器。
+
+[P-41/P-43 kind 归一化与 scaffold 分层路线，2026-07-23]
+- 核心模型：`kind` 不再编码 FG、数量、环链或胺级别；母体骨架用 `parent_kind/scaffold_id`，主特征基团用可扩展 `PrincipalGroupClass + priority path`，数量来自 occurrence coverage，电荷/形态独立。
+- Round H（下一刀，纯架构）：建立 P-41/P-43 数据驱动 priority registry，替代 `KindMeta.fg_rank:int`；支持层级 priority path 与官能团置换扩展，磷烷等优先原子母体不伪装成 suffix FG。
+- Round I：统一 acid/diacid/polycarboxylic、ketone/dione/cycloketone、amine/diamine/.../cycloamine；删除数量/拓扑组合 kind，L2 输出 base parent kind + principal class + multiplicity + relation。
+- Round J：统一伯/仲/叔胺；N 为 occurrence 中心，L2 选最长合法 N-连接母体臂，L3 提取剩余 0–2 个 N-substituents，L5 组装 N-/N,N-。四级铵按 P-41 cation 单独实现，不归 amine。
+- Round K：酸/羧酸根共享 carboxyl family 与结构检测，但 charge state/P-41 class 分离；不得把 anion 当 neutral acid kind。盐/两性离子另做 L0/L5 组合。
+- Round L：拆 `ScaffoldSpec`：L2 保留 topology/scaffold identity；L3 ownership；L4 numbering policy；L5 stems/retained-name/后缀组装。`_ARENE_NAMED` 名称数据迁 L5，组合 FG scaffold 表删除；拓扑识别表不能从 L2 删除。
+- 层职责纠正：scaffold 分类属于 L2 Parent Selector；L4 不从 atom set 重新认母体，只消费 L2 的 `scaffold_id/parent topology` 生成编号方案；L5 消费编号与 principal facts 组装。
+- 目标规模：principal group 类别约 20 个可以成立；`kind` 不应约等于 priority rank，也不能限制为 20 个，因为 retained/scaffold identity 是独立且可扩展的命名空间。

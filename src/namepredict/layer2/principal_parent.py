@@ -53,6 +53,9 @@ def _special_expression(selection: PrincipalParentSelection, info: dict) -> dict
     if group_class is FunctionalGroupClass.ESTER and len(selection.principal.occurrences) == 2:
         from namepredict.layer2.diester import _diester_parent
         return _diester_parent(info)
+    if group_class is FunctionalGroupClass.KETONE and info["mol"].GetRingInfo().NumRings():
+        from namepredict.layer2.parent_selector import _ketone_parent
+        return _ketone_parent(info)
     return _open_chain_expression(selection, info)
 
 
@@ -87,6 +90,8 @@ def rule_driven_parent_candidates(info: dict) -> list[dict]:
     selection = select_principal_parent_skeletons(info)
     if selection.principal is None or selection.skeletons is None:
         return []
-    special = _owned(_special_expression(selection, info), selection)
     parents = _express_selected(selection, info)
-    return ([special] if special else []) + parents
+    special = _owned(_special_expression(selection, info), selection)
+    extra = [special] if special else []
+    typed_first = selection.principal.group_class is FunctionalGroupClass.KETONE
+    return parents + extra if typed_first and parents else extra + parents

@@ -489,7 +489,29 @@ def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if cyc is not None:
         return cyc
     return _amine_kind_names(kind, n, numbered)
+def _typed_acid_kind(kind: str, numbered: dict) -> str:
+    facts = (numbered.get("parent") or {}).get("principal_expression_facts")
+    if not facts or facts.group_class.value != "acid":
+        return kind
+    if facts.relation.value == "exocyclic" and kind == "cycloalkane":
+        return "cycloalkanecarboxylic" if facts.multiplicity == 1 else "cycloalkane_polycarboxylic"
+    if facts.relation.value == "exocyclic":
+        return kind
+    return "acid" if facts.multiplicity == 1 else "diacid" if facts.multiplicity == 2 else "polycarboxylic"
+
+
+def _typed_ketone_kind(kind: str, numbered: dict) -> str:
+    facts = (numbered.get("parent") or {}).get("principal_expression_facts")
+    if not facts or facts.group_class.value != "ketone":
+        return kind
+    cyclic = kind in {"cycloketone", "cycloalkanedione"}
+    if cyclic:
+        return "cycloketone" if facts.multiplicity == 1 else "cycloalkanedione"
+    return "ketone" if facts.multiplicity == 1 else "dione"
+
+
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    kind = _typed_ketone_kind(_typed_acid_kind(kind, numbered), numbered)
     from namepredict.layer5.phosphate_names import p_fg_names
     from namepredict.layer5.special_fg_names import special_fg_names
     top = special_fg_names(kind, n, numbered) or p_fg_names(kind, n, numbered)
@@ -572,10 +594,11 @@ from namepredict.layer5.assembler_prefixes import _build_prefix, _prefix_for
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     from namepredict.layer5.stereo_rs import apply_rs_prefix
     kind, n = _parent_n(numbered)
-    names = _names_for(kind, n, numbered)
+    effective_kind = _typed_ketone_kind(_typed_acid_kind(kind, numbered), numbered)
+    names = _names_for(effective_kind, n, numbered)
     if not names:
         return _unsupported(n, kind)
-    en, zh = join_kind_name(kind, _prefix_for(numbered, kind, n), names)
+    en, zh = join_kind_name(effective_kind, _prefix_for(numbered, effective_kind, n), names)
     en, zh = maybe_anion_names(numbered, en, zh)
     en, zh = apply_rs_prefix(numbered, en, zh)
     en, zh = maybe_metal_salt_names(numbered, en, zh)

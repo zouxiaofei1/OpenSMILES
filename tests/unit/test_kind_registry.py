@@ -102,18 +102,18 @@ def test_fused_hetero_d2(kind: str) -> None:
 def test_ether_meta() -> None:
     m = kr.get("ether")
     assert m is not None
-    assert m.fg_rank == 2
+    assert m.fg_rank == 0
     assert m.ring == "none"
     assert m.n_rings == 0
-    assert kr.fg_rank("ether") == 2
-    assert kr.has_principal_fg("ether") == 1
+    assert kr.fg_rank("ether") == 0
+    assert kr.has_principal_fg("ether") == 0
 
 
 def test_acid_meta() -> None:
     m = kr.get("acid")
     assert m is not None
-    assert m.fg_rank == 13
-    assert kr.fg_rank("acid") == 13
+    assert m.fg_rank == 14
+    assert kr.fg_rank("acid") == 14
     assert kr.has_principal_fg("acid") == 1
 
 
@@ -170,19 +170,17 @@ def _p(kind: str, **kw) -> dict:
 
 
 def test_score_parent_tuple_order() -> None:
-    """Score fields keep pre-migration semantics (relative order)."""
+    """Legacy score consumes the registry compatibility projection."""
     ox = _score_parent({}, _p("oxolane", chain=[0, 1, 2, 3, 4], n_carbons=4))
     eth = _score_parent({}, _p("ether", chain=[0, 1], n_carbons=2))
-    # ether has principal FG (rank 2); oxolane does not — FG still wins today
-    assert eth[:2] == (2, 1) and ox[:2] == (0, 0)
-    assert eth > ox
+    assert eth[:2] == (0, 0) and ox[:2] == (0, 0)
     pyr = _score_parent({}, _p("pyridine", chain=list(range(6)), n_carbons=5))
     alk = _score_parent({}, _p("alkane", chain=[0, 1, 2], n_carbons=3))
     assert pyr[3] == 1 and alk[3] == 0  # hetero bit
     assert pyr > alk
     bz = _score_parent({}, _p("benzoic", chain=list(range(6)), n_carbons=7))
     al = _score_parent({}, _p("alcohol", chain=[0, 1], n_carbons=2))
-    assert bz[0] == 13 and al[0] == 5
+    assert bz[0] == 14 and al[0] == 5
     assert bz > al
 
 

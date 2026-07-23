@@ -81,8 +81,14 @@ def _orient_dione(chain: list[int], parent: dict, substituents: list) -> list[in
 def _orient_to_terminal(chain: list[int], c_idx: int | None) -> list[int]:
     pos = _pos_on(chain, c_idx)
     return chain if pos is None or pos == 1 else list(reversed(chain))
+def _acid_anchor(parent: dict) -> int | None:
+    facts = parent.get("principal_expression_facts")
+    atoms = sorted(facts.attachment_atoms) if facts and facts.group_class.value == "acid" else []
+    return atoms[0] if len(atoms) == 1 else parent.get("cooh_c_idx")
+
+
 def _orient_acid(chain: list[int], parent: dict) -> list[int]:
-    return _orient_to_terminal(chain, parent.get("cooh_c_idx"))
+    return _orient_to_terminal(chain, _acid_anchor(parent))
 def _orient_aldehyde(chain: list[int], parent: dict) -> list[int]:
     return _orient_to_terminal(chain, parent.get("aldehyde_c_idx"))
 def _orient_ester(chain: list[int], parent: dict) -> list[int]:
@@ -382,10 +388,18 @@ def _kind_orienters() -> dict:
 def _orient_by_kind(kind: str, chain: list[int], parent: dict, subs: list) -> list[int]:
     fn = _kind_orienters().get(kind)
     return _orient_alkane(chain, subs) if fn is None else fn(chain, parent, subs)
+def _typed_ring_acid(parent: dict) -> bool:
+    facts = parent.get("principal_expression_facts")
+    return bool(facts and facts.group_class.value == "acid" and
+                facts.relation.value == "exocyclic")
+
+
 def _orient_chain(parent: dict, substituents: list) -> list[int]:
     chain = list(parent.get("chain") or [])
     if not chain:
         return chain
+    if _typed_ring_acid(parent):
+        return _orient_ring_fixed(chain, parent, substituents, "ring_attach_idx")
     return _orient_by_kind(parent.get("kind"), chain, parent, substituents)
 def _atom_locant(chain: list[int], atom: int | None, kind: str | None, facts=None, required=False) -> int | None:
     """Scaffold facts use a plan; otherwise retain ordinary chain numbering."""
@@ -435,9 +449,16 @@ def _amine_pair_locants(oriented: dict) -> list[int] | None:
     return _pair_locants(oriented, ("diamine", "triamine", "tetraamine", "benzenediamine"), "amine_c_idxs")
 def _amine_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, _AMINE_KINDS, "amine_c_idx")
+def _typed_ketone_atoms(oriented: dict) -> list[int]:
+    facts = oriented.get("principal_expression_facts")
+    return sorted(facts.attachment_atoms) if facts and facts.group_class.value == "ketone" else []
 def _ketone_locant(oriented: dict) -> int | None:
-    return _fg_locant(oriented, ("ketone", "cycloketone"), "ketone_c_idx")
+    atoms = _typed_ketone_atoms(oriented)
+    return _pos_on(oriented.get("chain") or [], atoms[0]) if len(atoms) == 1 else _fg_locant(oriented, ("ketone", "cycloketone"), "ketone_c_idx")
 def _ketone_pair_locants(oriented: dict) -> list[int] | None:
+    atoms = _typed_ketone_atoms(oriented)
+    if len(atoms) > 1:
+        return _pair_locs_on(oriented.get("chain") or [], atoms)
     return _pair_locants(
         oriented, ("dione", "benzoquinone", "ortho_benzoquinone", "cycloalkanedione"), "ketone_c_idxs",
     )

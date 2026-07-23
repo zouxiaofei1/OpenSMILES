@@ -1,7 +1,40 @@
 """ParentKind metadata registry — scoring + L5 stem authority (P-44)."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+
+from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG
+from namepredict.layer2.principal_registry import legacy_rank
+
+
+_KIND_CLASS = {
+    "acid": FG.ACID, "diacid": FG.ACID, "polycarboxylic": FG.ACID,
+    "anhydride": FG.ANHYDRIDE, "ester": FG.ESTER, "diester": FG.ESTER,
+    "acyl_chloride": FG.ACYL_HALIDE, "acyl_bromide": FG.ACYL_HALIDE,
+    "amide": FG.AMIDE, "nitrile": FG.NITRILE, "aldehyde": FG.ALDEHYDE,
+    "ketone": FG.KETONE, "dione": FG.KETONE, "cycloketone": FG.KETONE,
+    "alcohol": FG.ALCOHOL, "diol": FG.ALCOHOL, "triol": FG.ALCOHOL,
+    "cycloalcohol": FG.ALCOHOL, "thiol": FG.THIOL, "amine": FG.AMINE,
+    "diamine": FG.AMINE, "triamine": FG.AMINE, "tetraamine": FG.AMINE,
+    "sec_amine": FG.AMINE, "tert_amine": FG.AMINE, "cycloamine": FG.AMINE,
+    "sulfonic_acid": FG.SULFONIC_ACID, "ether": FG.ETHER,
+    "carbamate": FG.CARBAMATE, "hydrazine": FG.HYDRAZINE,
+    "isocyanate": FG.ISOCYANATE, "isothiocyanate": FG.ISOTHIOCYANATE,
+    "sulfide": FG.SULFIDE, "sulfoxide": FG.SULFOXIDE, "sulfone": FG.SULFONE,
+    "benzoic": FG.ACID, "benzene_polycarboxylic": FG.ACID,
+    "benzamide": FG.AMIDE, "benzonitrile": FG.NITRILE,
+    "benzaldehyde": FG.ALDEHYDE, "acetophenone": FG.KETONE,
+    "phenol": FG.ALCOHOL, "aniline": FG.AMINE,
+}
+
+
+def _kind_class(kind: str) -> FG | None:
+    return _KIND_CLASS.get(kind)
+
+
+def _principal_rank(kind: str, fallback: int = 0) -> int:
+    group_class = _kind_class(kind)
+    return legacy_rank(group_class) if group_class else fallback
 
 
 @dataclass(frozen=True)
@@ -88,7 +121,8 @@ _MISC_RING_FG: tuple[tuple[str, int, str, int, bool, str | None, str | None], ..
 
 
 def register(meta: KindMeta) -> None:
-    _REG[meta.kind] = meta
+    rank = _principal_rank(meta.kind, meta.fg_rank)
+    _REG[meta.kind] = replace(meta, fg_rank=rank)
 
 
 def get(kind: str) -> KindMeta | None:
@@ -96,8 +130,8 @@ def get(kind: str) -> KindMeta | None:
 
 
 def fg_rank(kind: str) -> int:
-    m = get(kind)
-    return m.fg_rank if m else 0
+    meta = get(kind)
+    return _principal_rank(kind, meta.fg_rank if meta else 0)
 
 
 def has_principal_fg(kind: str) -> int:

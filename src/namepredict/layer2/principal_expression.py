@@ -1,18 +1,45 @@
 """Annotate selected skeletons with principal-group expression facts."""
 from __future__ import annotations
 
+from dataclasses import dataclass
+from enum import Enum
+
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology
 from namepredict.layer2.principal_selection import PrincipalGroupSelection
 
 
+class PrincipalRelation(str, Enum):
+    IN_SKELETON = "in_skeleton"
+    EXOCYCLIC = "exocyclic"
+
+
+class PrincipalChargeState(str, Enum):
+    NEUTRAL = "neutral"
+    ANION = "anion"
+    MIXED = "mixed"
+
+
+@dataclass(frozen=True)
+class PrincipalExpressionFacts:
+    group_class: FunctionalGroupClass
+    multiplicity: int
+    relation: PrincipalRelation
+    occurrence_ids: tuple[str, ...]
+    characteristic_atoms: frozenset[int]
+    attachment_atoms: frozenset[int]
+    charge_state: PrincipalChargeState
+
+
 _CHAIN_KINDS = {
     FunctionalGroupClass.ACID: {1: "acid", 2: "diacid", 3: "polycarboxylic"},
+    FunctionalGroupClass.KETONE: {1: "ketone", 2: "dione"},
     FunctionalGroupClass.ALCOHOL: {1: "alcohol", 2: "diol", 3: "triol"},
     FunctionalGroupClass.AMINE: {1: "amine", 2: "diamine", 3: "triamine", 4: "tetraamine"},
 }
 _FIELDS = {
     FunctionalGroupClass.ACID: ("cooh_c_idx", "cooh_c_idxs"),
+    FunctionalGroupClass.KETONE: ("ketone_c_idx", "ketone_c_idxs"),
     FunctionalGroupClass.ALCOHOL: ("oh_c_idx", "oh_c_idxs"),
     FunctionalGroupClass.AMINE: ("amine_c_idx", "amine_c_idxs"),
 }
@@ -45,10 +72,37 @@ def _expression_flags(selection: PrincipalGroupSelection, occurrences) -> dict:
     return {"anion": True} if occurrences and all(o.payload.get("anion") for o in occurrences) else {}
 
 
-def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict) -> dict:
+def _charge_state(occurrences) -> PrincipalChargeState:
+    charges = [bool(o.payload.get("anion")) for o in occurrences]
+    if charges and all(charges):
+        return PrincipalChargeState.ANION
+    return PrincipalChargeState.MIXED if any(charges) else PrincipalChargeState.NEUTRAL
+
+
+def _skeletal_attachments(mol, skeleton, occurrences) -> frozenset[int]:
+    atoms = set(skeleton.atom_ids)
+    anchors = {i for o in occurrences for i in o.parent_anchors}
+    included = anchors & atoms
+    if included or mol is None:
+        return frozenset(included or anchors)
+    return frozenset(n.GetIdx() for i in anchors for n in mol.GetAtomWithIdx(i).GetNeighbors()
+                     if n.GetIdx() in atoms)
+
+
+def _facts(selection, skeleton, occurrences, mol=None) -> PrincipalExpressionFacts:
+    characteristic = frozenset(i for o in occurrences for i in o.characteristic_atoms)
+    relation = PrincipalRelation.IN_SKELETON if characteristic & set(skeleton.atom_ids) else PrincipalRelation.EXOCYCLIC
+    attachment = _skeletal_attachments(mol, skeleton, occurrences)
+    return PrincipalExpressionFacts(selection.group_class, len(occurrences), relation,
+                                    tuple(o.id for o in occurrences), characteristic, attachment,
+                                    _charge_state(occurrences))
+
+
+def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
+                 facts: PrincipalExpressionFacts) -> dict:
     return {"kind": kind, "chain": list(skeleton.atom_ids), "n_carbons": len(skeleton.atom_ids),
             "covered_principal_ids": tuple(o.id for o in occurrences),
-            "principal_group_count": len(occurrences), **fields}
+            "principal_group_count": len(occurrences), "principal_expression_facts": facts, **fields}
 
 
 _RETAINED_RING_KINDS = {
@@ -61,6 +115,7 @@ _RETAINED_RING_KINDS = {
 }
 _RING_FIELDS = {
     FunctionalGroupClass.ACID: ("cooh_c_idx", "cooh_c_idxs"),
+    FunctionalGroupClass.KETONE: ("ketone_c_idx", "ketone_c_idxs"),
     FunctionalGroupClass.ALDEHYDE: ("aldehyde_c_idx", "aldehyde_c_idxs"),
     FunctionalGroupClass.NITRILE: ("nitrile_c_idx", "nitrile_c_idxs"),
     FunctionalGroupClass.AMIDE: ("amide_c_idx", "amide_c_idxs"),
@@ -93,15 +148,30 @@ def _carbocycle_kind(mol, skeleton: ParentSkeleton) -> str:
     return "cycloalkane" if not unsaturated else "cycloalkene" if unsaturated == 1 else "cyclopolyene"
 
 
-def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int) -> str | None:
-    if _is_benzene(info, skeleton) and count == 1:
-        return _RETAINED_RING_KINDS.get(selection.group_class)
+def _ring_ketone_kind(selection, skeleton: ParentSkeleton, count: int) -> str | None:
+    if selection.group_class is not FunctionalGroupClass.KETONE:
+        return None
+    anchors = {i for o in selection.occurrences for i in o.parent_anchors}
+    if not anchors or not anchors <= set(skeleton.atom_ids):
+        return None
+    return "cycloketone" if count == 1 else "cycloalkanedione" if count == 2 else None
+
+
+def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
     mol = info["mol"]
     if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in skeleton.atom_ids):
         return _retained_scaffold_id(info, skeleton)
-    if all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids):
-        return _carbocycle_kind(mol, skeleton)
-    return None
+    all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
+    return _carbocycle_kind(mol, skeleton) if all_carbon else None
+
+
+def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int) -> str | None:
+    ketone = _ring_ketone_kind(selection, skeleton, count)
+    if ketone:
+        return ketone
+    if _is_benzene(info, skeleton) and count == 1:
+        return _RETAINED_RING_KINDS.get(selection.group_class)
+    return _generic_ring_kind(info, skeleton)
 
 
 def _ring_fields(selection: PrincipalGroupSelection, occurrences) -> dict:
@@ -116,6 +186,14 @@ def _ring_fields(selection: PrincipalGroupSelection, occurrences) -> dict:
             "principal_group_class": selection.group_class.value}
 
 
+def _ring_fact_fields(fields: dict, facts: PrincipalExpressionFacts) -> dict:
+    attachments = sorted(facts.attachment_atoms)
+    extra = {"principal_attachment_atoms": attachments}
+    if facts.group_class is FunctionalGroupClass.ACID and len(attachments) == 1:
+        extra["ring_attach_idx"] = attachments[0]
+    return {**fields, **extra}
+
+
 def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
                            skeleton: ParentSkeleton) -> dict | None:
     if skeleton.topology is not SkeletonTopology.RING_SYSTEM:
@@ -124,7 +202,15 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     kind = _ring_kind(info, selection, skeleton, len(occurrences))
     if kind is None:
         return None
-    return _parent_dict(kind, skeleton, occurrences, _ring_fields(selection, occurrences))
+    facts = _facts(selection, skeleton, occurrences, info["mol"])
+    fields = _ring_fact_fields(_ring_fields(selection, occurrences), facts)
+    return _parent_dict(kind, skeleton, occurrences, fields, facts)
+
+
+def _chain_fields(selection, occurrences) -> dict:
+    anchors = _anchors(occurrences)
+    return {**_principal_fields(selection.group_class, anchors),
+            **_expression_flags(selection, occurrences)}
 
 
 def express_chain_principal(selection: PrincipalGroupSelection, skeleton: ParentSkeleton) -> dict | None:
@@ -134,7 +220,5 @@ def express_chain_principal(selection: PrincipalGroupSelection, skeleton: Parent
     kind = _chain_kind(selection.group_class, len(occurrences))
     if kind is None:
         return None
-    anchors = _anchors(occurrences)
-    fields = {**_principal_fields(selection.group_class, anchors),
-              **_expression_flags(selection, occurrences)}
-    return _parent_dict(kind, skeleton, occurrences, fields)
+    return _parent_dict(kind, skeleton, occurrences, _chain_fields(selection, occurrences),
+                        _facts(selection, skeleton, occurrences))

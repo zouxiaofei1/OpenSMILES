@@ -2,28 +2,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Mapping
 
 from namepredict.layer1.functional_group_inventory import (
     FunctionalGroupClass,
     FunctionalGroupInventory,
     FunctionalGroupOccurrence,
 )
-
-
-# Explicit precedence: first item is senior. Functional-prefix-only classes are absent.
-_PRINCIPAL_ORDER = (
-    FunctionalGroupClass.ACID,
-    FunctionalGroupClass.SULFONIC_ACID,
-    FunctionalGroupClass.ANHYDRIDE,
-    FunctionalGroupClass.ESTER,
-    FunctionalGroupClass.ACYL_HALIDE,
-    FunctionalGroupClass.AMIDE,
-    FunctionalGroupClass.NITRILE,
-    FunctionalGroupClass.ALDEHYDE,
-    FunctionalGroupClass.KETONE,
-    FunctionalGroupClass.ALCOHOL,
-    FunctionalGroupClass.THIOL,
-    FunctionalGroupClass.AMINE,
+from namepredict.layer2.principal_registry import (
+    PRINCIPAL_REGISTRY,
+    PrincipalFeatureSpec,
+    principal_spec,
 )
 
 
@@ -33,9 +22,12 @@ class PrincipalGroupSelection:
     occurrences: tuple[FunctionalGroupOccurrence, ...]
 
 
-def select_principal_group(inventory: FunctionalGroupInventory) -> PrincipalGroupSelection | None:
-    for group_class in _PRINCIPAL_ORDER:
-        occurrences = inventory.occurrences(group_class)
-        if occurrences:
-            return PrincipalGroupSelection(group_class, occurrences)
-    return None
+def select_principal_group(
+    inventory: FunctionalGroupInventory,
+    registry: Mapping[FunctionalGroupClass, PrincipalFeatureSpec] = PRINCIPAL_REGISTRY,
+) -> PrincipalGroupSelection | None:
+    classes = (entry.group_class for entry in inventory.entries)
+    eligible = (group_class for group_class in set(classes) if principal_spec(group_class, registry))
+    selected = min(eligible, key=lambda group_class: principal_spec(group_class, registry).priority, default=None)
+    occurrences = inventory.occurrences(selected) if selected else ()
+    return PrincipalGroupSelection(selected, occurrences) if selected else None
