@@ -11,12 +11,25 @@ N  = 7
 O  = 8
 F  = 9
 Na = 11
+Al = 13
+Si = 14
 P  = 15
 S  = 16
 Cl = 17
 K  = 19
+Ga = 31
+Ge = 32
+As = 33
+Se = 34
 Br = 35
+In = 49
+Sn = 50
+Sb = 51
+Te = 52
 I  = 53
+Tl = 81
+Pb = 82
+Bi = 83
 
 # ── Common Sets ─────────────────────────────────────────────────
 HALO_Z = frozenset({F, Cl, Br, I})

@@ -26,7 +26,13 @@
       "Bash(git -C E:/dev/chem/.claude/worktrees/agent-a8dff0f4a7ffeacf2 status --short)",
       "Bash(git -C E:/dev/chem status --short)",
       "Bash(git -C E:/dev/chem diff --stat)",
-      "Bash(git -C E:/dev/chem diff -- src/namepredict/layer3/n_block_extract.py src/namepredict/layer2/claimable_block.py tests/unit)"
+      "Bash(git -C E:/dev/chem diff -- src/namepredict/layer3/n_block_extract.py src/namepredict/layer2/claimable_block.py tests/unit)",
+      "Bash(git -C /e/chem diff -- src/namepredict/layer2/candidates.py src/namepredict/layer2/principal_parent.py src/namepredict/layer3/principal_expression.py)",
+      "Bash(git -C /e/chem status --short)",
+      "Bash(PYTHONPATH=src pytest *)",
+      "Bash(git *)",
+      "Bash(pytest tests/unit/test_parent_skeleton.py -q)",
+      "Bash(E:/chem/.venv/Scripts/python.exe *)"
     ]
   }
 }

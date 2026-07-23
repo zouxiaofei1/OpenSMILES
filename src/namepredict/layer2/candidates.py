@@ -21,6 +21,7 @@ from namepredict.layer2.ring_parent import (
 )
 from namepredict.layer2.scoring import _pick_best
 from namepredict.layer2.parent_candidate import with_principal_group_contract
+from namepredict.layer2.principal_parent import rule_driven_parent_candidates
 from namepredict.layer2.arene_carbonyl import benzene_polycarboxylic_gate
 from namepredict.layer2.candidate_gate import CandidateGate, GateScope, gate_result
 from namepredict.layer2.carboxymethyl_diacid import is_carboxymethyl_diacid
@@ -39,10 +40,6 @@ def _benzene_candidate(info: dict) -> dict | None:
 
 def _alkane_fallback(info: dict) -> dict:
     return _parent_dict(_longest_chain(info["mol"]), "alkane")
-
-
-def _fg_candidates(info: dict) -> list[dict]:
-    return [c for fn in _kr.fg_try_fns() if (c := fn(info)) is not None]
 
 
 def _ring_candidates(info: dict) -> list[dict]:
@@ -105,15 +102,14 @@ def _candidate_result(info: dict, raw: list[dict]) -> list[dict]:
     return _unsupported_polyacid(reason) if reason is not None else kept
 
 
+def _principal_candidates(info: dict) -> list[dict]:
+    return rule_driven_parent_candidates(info)
+
+
 def _collect_candidates(info: dict) -> list[dict]:
-    raw = _fg_candidates(info) + _ring_candidates(info) + [_benzene_candidate(info)]
+    raw = _principal_candidates(info) + _ring_candidates(info) + [_benzene_candidate(info)]
     raw += _unsat_candidates(info) + [_alkane_fallback(info)]
     return _dedupe_parents(_candidate_result(info, [c for c in raw if c is not None]))
-
-
-def _fg_parent(info: dict) -> dict | None:
-    """Compat: best FG among independent class tries."""
-    return _pick_best(info, _fg_candidates(info))
 
 
 def _ring_parent(info: dict) -> dict | None:

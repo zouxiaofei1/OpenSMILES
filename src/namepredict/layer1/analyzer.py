@@ -478,8 +478,10 @@ def _fg_parts_b(mol: Mol) -> dict:
 def _fg_parts(mol: Mol) -> dict:
     return {**_fg_parts_a(mol), **_fg_parts_b(mol)}
 def _collect_fgs(mol: Mol) -> dict:
+    from namepredict.layer1.functional_group_inventory import build_inventory
+
     lists = _fg_lists(_fg_parts(mol))
-    return {**lists, **_fg_bools(lists)}
+    return {**lists, **_fg_bools(lists), "fg_inventory": build_inventory(lists)}
 def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
     base = {"mol": mol, "carbon_ids": carbons, "n_carbons": len(carbons)}
     return {**base, **fgs, **_ring_meta(mol)}

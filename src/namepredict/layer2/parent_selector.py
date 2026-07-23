@@ -505,9 +505,6 @@ def _hetero_parent(info: dict) -> dict | None:
     if info.get("has_amine") and info.get("amines"): return _amine_parent(info)
     eth = _ether_parent(info)
     return eth if eth is not None else _sulfide_parent(info)
-def _fg_parent(info: dict) -> dict | None:
-    from namepredict.layer2.candidates import _fg_parent as _fg_best
-    return _fg_best(info)
 def _unsat_parent(info: dict) -> dict | None:
     if _is_mono_alkyne(info): return _alkyne_parent(info)
     if _is_polyene(info): return _polyene_parent(info)

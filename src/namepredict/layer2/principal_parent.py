@@ -1,0 +1,92 @@
+"""Rule-driven principal parent-skeleton selection entry point."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from namepredict.layer1.functional_group_inventory import FunctionalGroupClass, inventory_from_info
+from namepredict.layer2.parent_skeleton import SkeletonSelection, SkeletonTopology, select_principal_skeletons
+from namepredict.layer2.principal_expression import express_chain_principal, express_ring_principal
+from namepredict.layer2.principal_selection import PrincipalGroupSelection, select_principal_group
+
+
+@dataclass(frozen=True)
+class PrincipalParentSelection:
+    principal: PrincipalGroupSelection | None
+    skeletons: SkeletonSelection | None
+
+
+def select_principal_parent_skeletons(info: dict) -> PrincipalParentSelection:
+    principal = select_principal_group(inventory_from_info(info))
+    skeletons = select_principal_skeletons(info, principal.occurrences) if principal else None
+    return PrincipalParentSelection(principal, skeletons)
+
+
+def _covers_all(selection: PrincipalParentSelection) -> bool:
+    total = len(selection.principal.occurrences)
+    return all(len(s.covered_principal_ids) == total for s in selection.skeletons.candidates)
+
+
+def _supported_payload(selection: PrincipalParentSelection) -> bool:
+    return selection.principal.group_class.value == "acid"
+
+
+def _migrated(selection: PrincipalParentSelection, info: dict) -> bool:
+    if selection.principal is None or selection.skeletons is None:
+        return False
+    nonempty = bool(selection.skeletons.candidates)
+    supported = (_supported_payload(selection) and not selection.skeletons.unsupported_ids
+                 and selection.skeletons.next_rule != "P-44.2")
+    no_unsat = not (info.get("double_bonds") or info.get("triple_bonds"))
+    return nonempty and supported and no_unsat and _covers_all(selection)
+
+
+def _owned(parent: dict | None, selection: PrincipalParentSelection) -> dict | None:
+    if parent is None:
+        return None
+    occurrences = selection.principal.occurrences
+    return {**parent, "covered_principal_ids": tuple(o.id for o in occurrences),
+            "principal_group_count": len(occurrences)}
+
+
+def _special_expression(selection: PrincipalParentSelection, info: dict) -> dict | None:
+    group_class = selection.principal.group_class
+    if group_class is FunctionalGroupClass.ESTER and len(selection.principal.occurrences) == 2:
+        from namepredict.layer2.diester import _diester_parent
+        return _diester_parent(info)
+    return _open_chain_expression(selection, info)
+
+
+def _open_chain_expression(selection: PrincipalParentSelection, info: dict) -> dict | None:
+    if len(selection.principal.occurrences) != 1 or info["mol"].GetRingInfo().NumRings():
+        return None
+    group_class = selection.principal.group_class
+    from namepredict.layer2 import parent_selector as builders
+    builders_by_class = {
+        FunctionalGroupClass.ESTER: builders._ester_parent,
+        FunctionalGroupClass.AMIDE: builders._amide_parent,
+        FunctionalGroupClass.ALDEHYDE: builders._aldehyde_parent,
+        FunctionalGroupClass.KETONE: builders._ketone_parent,
+        FunctionalGroupClass.NITRILE: builders._nitrile_parent,
+    }
+    builder = builders_by_class.get(group_class)
+    return builder(info) if builder else None
+
+
+def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[dict]:
+    parents = []
+    for skeleton in selection.skeletons.candidates:
+        parent = (express_ring_principal(info, selection.principal, skeleton)
+                  if skeleton.topology is SkeletonTopology.RING_SYSTEM
+                  else express_chain_principal(selection.principal, skeleton))
+        if parent is not None:
+            parents.append(parent)
+    return parents
+
+
+def rule_driven_parent_candidates(info: dict) -> list[dict]:
+    selection = select_principal_parent_skeletons(info)
+    if selection.principal is None or selection.skeletons is None:
+        return []
+    special = _owned(_special_expression(selection, info), selection)
+    parents = _express_selected(selection, info)
+    return ([special] if special else []) + parents
