@@ -132,29 +132,6 @@ def _pick_fg_ring(info: dict, ekey: str) -> set[int] | None:
     return _exocyclic_fg_ring(info["mol"], entries[0]["c_idx"])
 
 
-def _is_simple_benzoic(info: dict) -> bool:
-    if not _is_benzene_core(info) or _arene_fg_conflict(info, "has_aldehyde", "has_ketone"):
-        return False
-    ring = _pick_fg_ring(info, "carboxyls")
-    if ring is None or _carboxyl_ring_c(info, ring) is None:
-        return False
-    mol, fg_c = info["mol"], info["carboxyls"][0]["c_idx"]
-    return _arene_subs_ok(info, mol, ring, {fg_c}, _cooh_oxygen_idxs(mol, fg_c))
-
-
-def _benzoic_parent(info: dict) -> dict:
-    ring = _pick_fg_ring(info, "carboxyls") or set()
-    cooh_c = info["carboxyls"][0]["c_idx"]
-    return {
-        "chain": list(ring), "n_carbons": 6, "kind": "benzoic",
-        "cooh_c_idx": cooh_c, "ring_attach_idx": _carboxyl_ring_c(info, ring),
-    }
-
-
-def _try_benzoic_parent(info: dict) -> dict | None:
-    return _benzoic_parent(info) if _is_simple_benzoic(info) else None
-
-
 def _oxo_fg_ok(info: dict, ekey: str, *conflict: str) -> tuple | None:
     if not _is_benzene_core(info) or _arene_fg_conflict(info, *conflict):
         return None
@@ -164,27 +141,6 @@ def _oxo_fg_ok(info: dict, ekey: str, *conflict: str) -> tuple | None:
     mol, fg_c = info["mol"], info[ekey][0]["c_idx"]
     o_idx = _dbl_o_idx(mol, fg_c)
     return (mol, ring, fg_c, o_idx) if o_idx is not None else None
-
-
-def _is_simple_benzaldehyde(info: dict) -> bool:
-    got = _oxo_fg_ok(info, "aldehydes", "has_acid", "has_ketone")
-    if got is None:
-        return False
-    mol, ring, fg_c, o_idx = got
-    return _arene_subs_ok(info, mol, ring, {fg_c}, {o_idx})
-
-
-def _benzaldehyde_parent(info: dict) -> dict:
-    ring = _pick_fg_ring(info, "aldehydes") or set()
-    ald_c = info["aldehydes"][0]["c_idx"]
-    return {
-        "chain": list(ring), "n_carbons": 6, "kind": "benzaldehyde",
-        "aldehyde_c_idx": ald_c, "ring_attach_idx": _aldehyde_ring_c(info, ring),
-    }
-
-
-def _try_benzaldehyde_parent(info: dict) -> dict | None:
-    return _benzaldehyde_parent(info) if _is_simple_benzaldehyde(info) else None
 
 
 def _is_methyl_carbon(mol: Mol, c_idx: int, only_nb: int) -> bool:
@@ -264,65 +220,6 @@ def _simple_alkoxy_n(mol: Mol, start: int, o_idx: int) -> int | None:
     return n if 1 <= n <= 16 else None
 
 
-def _ester_alkoxy_arm(mol: Mol, start: int, o_idx: int) -> set[int]:
-    arm, cur, prev = set(), start, o_idx
-    while cur is not None and len(arm) < 17:
-        if not _is_alkoxy_c(mol, cur, prev):
-            break
-        arm.add(cur)
-        nxt = _alkoxy_next(mol, cur, prev)
-        if nxt is None or nxt == -1:
-            break
-        prev, cur = cur, nxt
-    return arm
-
-
-def _bfs_side(mol: Mol, start: int, ban: set[int]) -> set[int]:
-    """Heavy-atom component from start, not crossing ban."""
-    from collections import deque
-    seen: set[int] = set()
-    q: deque[int] = deque([start])
-    while q:
-        i = q.popleft()
-        if i in seen or i in ban:
-            continue
-        seen.add(i)
-        for n in mol.GetAtomWithIdx(i).GetNeighbors():
-            if n.GetAtomicNum() != 1:
-                q.append(n.GetIdx())
-    return seen
-
-
-def _ester_o_side(mol: Mol, e: dict) -> set[int]:
-    """Full alcohol-side component beyond ester O (linear or polycyclic)."""
-    linear = _ester_alkoxy_arm(mol, e["alkoxy_c_idx"], e["o_idx"])
-    if linear and _simple_alkoxy_n(mol, e["alkoxy_c_idx"], e["o_idx"]) is not None:
-        return linear
-    return _bfs_side(mol, e["alkoxy_c_idx"], {e["o_idx"]})
-
-
-def _ester_exclude(mol: Mol, e: dict) -> tuple[set[int], set[int]]:
-    fg_c, o_idx, ac = e["c_idx"], e["o_idx"], e["alkoxy_c_idx"]
-    o_dbl = _dbl_o_idx(mol, fg_c)
-    allowed = {o_idx, ac} | ({o_dbl} if o_dbl is not None else set())
-    exclude = {fg_c, o_idx} | _ester_o_side(mol, e) | ({o_dbl} if o_dbl is not None else set())
-    return exclude, allowed | exclude
-
-
-def _arene_fg_ctx(
-    info: dict, allow_flag: str, ekey: str,
-) -> tuple[Mol, set[int]] | None:
-    allow = frozenset({allow_flag})
-    if not _is_benzene_core(info) or _arene_fg_conflict(
-        info, "has_acid", "has_aldehyde", "has_ketone", allow=allow,
-    ):
-        return None
-    ring = _pick_fg_ring(info, ekey)
-    if ring is None or _fg_ring_c(info, ring, ekey) is None:
-        return None
-    return info["mol"], ring
-
-
 def _benzoate_alkoxy(mol: Mol, o_idx: int, ac: int) -> dict | None:
     """Linear C1–C16 or P-65.6 special alkoxy (benzyl/tBu/iPr/Ph)."""
     from namepredict.layer2.alkoxy_side import classify_alkoxy
@@ -333,37 +230,6 @@ def _benzoate_alkoxy(mol: Mol, o_idx: int, ac: int) -> dict | None:
     return {**side, "alkoxy_n": n} if n is not None else None
 
 
-def _ph_ring_plain(mol: Mol, ring: set[int], excl: set[int]) -> bool:
-    """Benzene ring has no unclaimed outside heavy attachments."""
-    from namepredict.layer2.scaffold.ring_parent import _outside_ok
-    return _outside_ok(mol, ring, excl)
-
-
-def _complex_benzoate_ok(info: dict) -> bool:
-    """Ph–C(=O)–O–R: clean Ph, any alcohol-side R (not simple linear/special)."""
-    ctx = _arene_fg_ctx(info, "has_ester", "esters")
-    if ctx is None:
-        return False
-    mol, ring = ctx
-    e = info["esters"][0]
-    if _benzoate_alkoxy(mol, e["o_idx"], e["alkoxy_c_idx"]) is not None:
-        return False  # simple path owns these
-    excl, allowed = _ester_exclude(mol, e)
-    return _ph_ring_plain(mol, ring, allowed | excl)
-
-
-def _is_simple_benzoate(info: dict) -> bool:
-    ctx = _arene_fg_ctx(info, "has_ester", "esters")
-    if ctx is None:
-        return False
-    mol, ring = ctx
-    e = info["esters"][0]
-    if _benzoate_alkoxy(mol, e["o_idx"], e["alkoxy_c_idx"]) is None:
-        return False
-    excl, allowed = _ester_exclude(mol, e)
-    return _arene_subs_ok(info, mol, ring, excl, allowed)
-
-
 def _benzoate_side_fields(side: dict) -> dict:
     return {
         "alkoxy_n": side.get("alkoxy_n"),
@@ -372,94 +238,12 @@ def _benzoate_side_fields(side: dict) -> dict:
     }
 
 
-def _benzoate_parent(info: dict) -> dict:
-    ring = _pick_fg_ring(info, "esters") or set()
-    e, mol = info["esters"][0], info["mol"]
-    side = _benzoate_alkoxy(mol, e["o_idx"], e["alkoxy_c_idx"]) or {}
-    return {
-        "chain": list(ring), "n_carbons": 6, "kind": "benzoate",
-        "ester_c_idx": e["c_idx"], "o_idx": e["o_idx"],
-        "alkoxy_c_idx": e["alkoxy_c_idx"], **_benzoate_side_fields(side),
-        "ring_attach_idx": _fg_ring_c(info, ring, "esters"),
-    }
-
-
-def _complex_benzoate_parent(info: dict) -> dict:
-    """Benzoate with unresolved O-alkyl; L5 emits bare benzoate until named."""
-    p = _benzoate_parent(info)
-    p["alkoxy_complex"] = True
-    return p
-
-
-def _try_benzoate_parent(info: dict) -> dict | None:
-    if _is_simple_benzoate(info):
-        return _benzoate_parent(info)
-    return _complex_benzoate_parent(info) if _complex_benzoate_ok(info) else None
-
-
 def _nitrile_n_idx(mol: Mol, c_idx: int) -> int | None:
     atom = mol.GetAtomWithIdx(c_idx)
     for n in atom.GetNeighbors():
         if n.GetAtomicNum() == 7:
             return n.GetIdx()
     return None
-
-
-def _is_simple_benzonitrile(info: dict) -> bool:
-    ctx = _arene_fg_ctx(info, "has_nitrile", "nitriles")
-    if ctx is None:
-        return False
-    mol, ring = ctx
-    fg_c = info["nitriles"][0]["c_idx"]
-    n_idx = _nitrile_n_idx(mol, fg_c)
-    return n_idx is not None and _arene_subs_ok(info, mol, ring, {fg_c}, {n_idx})
-
-
-def _benzonitrile_parent(info: dict) -> dict:
-    ring = _pick_fg_ring(info, "nitriles") or set()
-    c = info["nitriles"][0]["c_idx"]
-    return {
-        "chain": list(ring), "n_carbons": 6, "kind": "benzonitrile",
-        "nitrile_c_idx": c, "ring_attach_idx": _fg_ring_c(info, ring, "nitriles"),
-    }
-
-
-def _try_benzonitrile_parent(info: dict) -> dict | None:
-    return _benzonitrile_parent(info) if _is_simple_benzonitrile(info) else None
-
-
-def _acyl_allowed(mol: Mol, e: dict) -> set[int]:
-    o_dbl = _dbl_o_idx(mol, e["c_idx"])
-    allowed = {e.get("hal_idx", e["cl_idx"])}
-    return allowed | ({o_dbl} if o_dbl is not None else set())
-
-
-def _is_simple_benzoyl_halide(info: dict) -> bool:
-    ctx = _arene_fg_ctx(info, "has_acyl_chloride", "acyl_chlorides")
-    if ctx is None:
-        return False
-    mol, ring = ctx
-    e = info["acyl_chlorides"][0]
-    return _arene_subs_ok(info, mol, ring, {e["c_idx"]}, _acyl_allowed(mol, e))
-
-
-def _benzoyl_hal_kind(e: dict) -> str:
-    return "benzoyl_bromide" if int(e.get("hal_z") or 17) == 35 else "benzoyl_chloride"
-
-
-def _benzoyl_chloride_parent(info: dict) -> dict:
-    ring = _pick_fg_ring(info, "acyl_chlorides") or set()
-    e = info["acyl_chlorides"][0]
-    return {
-        "chain": list(ring), "n_carbons": 6, "kind": _benzoyl_hal_kind(e),
-        "acyl_c_idx": e["c_idx"], "cl_idx": e["cl_idx"],
-        "hal_idx": e.get("hal_idx", e["cl_idx"]), "hal_z": e.get("hal_z", 17),
-        "ring_attach_idx": _fg_ring_c(info, ring, "acyl_chlorides"),
-    }
-
-
-def _try_benzoyl_chloride_parent(info: dict) -> dict | None:
-    return _benzoyl_chloride_parent(info) if _is_simple_benzoyl_halide(info) else None
 
 
 def _benzene_polyacid_attach(info: dict, ring: set[int], acid: dict) -> int | None:
@@ -481,13 +265,6 @@ def _is_benzene_polycarboxylic(info: dict) -> bool:
     ):
         return False
     return _benzene_polyacid_ring(info) is not None
-
-
-def _benzene_polycarboxylic_parent(info: dict) -> dict:
-    ring = _benzene_polyacid_ring(info) or set()
-    attaches = [_benzene_polyacid_attach(info, ring, acid) for acid in info["carboxyls"]]
-    return {"chain": list(ring), "n_carbons": 6, "kind": "benzene_polycarboxylic",
-            "cooh_c_idxs": attaches, "acid_count": len(attaches)}
 
 
 def _benzene_polyacid_like(info: dict) -> bool:
@@ -521,23 +298,3 @@ def benzene_polycarboxylic_eligibility(info: dict) -> bool | None:
     gate = benzene_polycarboxylic_gate(info)
     in_scope = _is_benzene_core(info) and _benzene_polyacid_like(info)
     return None if not in_scope or not _has_benzene_polyacid_attachment(info) else gate.status is GateStatus.PASS
-
-
-def _try_benzene_polycarboxylic(info: dict) -> dict | None:
-    return _benzene_polycarboxylic_parent(info) if _is_benzene_polycarboxylic(info) else None
-
-
-def _try_benzamide_parent(info: dict) -> dict | None:
-    """Retained Ph–C(=O)–N parent (implementation in benzamide module)."""
-    from namepredict.layer2.benzamide import _try_benzamide_parent as _try
-    return _try(info)
-
-
-def _try_arene_other_fg(info: dict) -> dict | None:
-    for fn in (
-        _try_benzoyl_chloride_parent, _try_benzoate_parent, _try_benzonitrile_parent,
-        _try_benzamide_parent,
-    ):
-        if (p := fn(info)) is not None:
-            return p
-    return None

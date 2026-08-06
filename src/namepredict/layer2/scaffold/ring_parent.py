@@ -180,18 +180,6 @@ def _endocyclic_double(info: dict, ring_set: set[int]) -> tuple[int, int] | None
         return c1, c2
     return None
 
-def _is_simple_cycloalkene(info: dict) -> bool:
-    """Mono endocyclic C=C carbocycle; claimable n-alkyl / ring halo sides OK."""
-    if not _is_cycloalkene_core(info):
-        return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
-    if _endocyclic_double(info, ring_set) is None:
-        return False
-    if not _outside_ok(mol, ring_set):
-        return False
-    return _cyclo_fg_sides_ok(mol, ring_set)
-
 def _endocyclic_doubles(info: dict, ring_set: set[int]) -> list[tuple[int, int]]:
     out: list[tuple[int, int]] = []
     for db in info.get("double_bonds") or []:
@@ -205,26 +193,6 @@ def _is_cyclopolyene_core(info: dict) -> bool:
     if atom_ids is None or info.get("triple_bonds"):
         return False
     return _ring_double_count(info["mol"], atom_ids) >= 2
-
-def _is_simple_cyclopolyene(info: dict) -> bool:
-    if not _is_cyclopolyene_core(info):
-        return False
-    mol: Mol = info["mol"]
-    ring_set = set(info["rings"][0]["atom_ids"])
-    if len(_endocyclic_doubles(info, ring_set)) < 2:
-        return False
-    if not _outside_ok(mol, ring_set):
-        return False
-    return not _outside_carbons(mol, ring_set)
-
-def _hetero_allowed(mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
-    for atom in mol.GetAtoms():
-        z = atom.GetAtomicNum()
-        if z in (1, 6) or atom.GetIdx() in ring_set:
-            continue
-        if atom.GetIdx() not in allowed:
-            return False
-    return True
 
 def _mono_oh_on_ring(info: dict, ring_set: set[int]) -> dict | None:
     hydroxyls = info.get("hydroxyls") or []
@@ -266,11 +234,6 @@ def _cyclo_ene_fg_ok(info: dict, allowed: set[int]) -> bool:
         return False
     return _cyclo_fg_sides_ok(mol, ring_set)
 
-def _is_simple_cycloalcohol(info: dict) -> bool:
-    ring_set = set((info.get("rings") or [{}])[0].get("atom_ids") or [])
-    oh = _mono_oh_on_ring(info, ring_set)
-    return bool(oh) and _cyclo_fg_parent_ok(info, {oh["o_idx"]})
-
 def _mono_amine_on_ring(info: dict, ring_set: set[int]) -> dict | None:
     amines = info.get("amines") or []
     if len(amines) != 1:
@@ -280,11 +243,6 @@ def _mono_amine_on_ring(info: dict, ring_set: set[int]) -> dict | None:
     if c_idx is None or c_idx not in ring_set:
         return None
     return am
-
-def _is_simple_cycloamine(info: dict) -> bool:
-    ring_set = set((info.get("rings") or [{}])[0].get("atom_ids") or [])
-    am = _mono_amine_on_ring(info, ring_set)
-    return bool(am) and _cyclo_fg_parent_ok(info, {am["n_idx"]})
 
 def _dbl_o_idx(mol: Mol, c_idx: int) -> int | None:
     carbon = mol.GetAtomWithIdx(c_idx)
@@ -369,10 +327,6 @@ def _arene_alkoxy(info: dict, ring_set: set[int]) -> tuple[set[int], int]:
     alk = _ring_alkoxy_atoms(info, ring_set)
     return alk, len(_ring_alkoxy_ethers(info, ring_set))
 
-def _is_simple_benzene(info: dict) -> bool:
-    from namepredict.layer2.scaffold.benzene_pick import _is_simple_benzene as _isb
-    return _isb(info)
-
 def _hetero_or_ring_halo(mol: Mol, ring_set: set[int], allowed: set[int]) -> bool:
     return all(_outside_hetero_ok(a, ring_set, allowed) for a in mol.GetAtoms())
 
@@ -407,21 +361,6 @@ def _di_oh_on_ring(info: dict, ring_set: set[int]) -> list[dict] | None:
         return None
     return hydroxyls
 
-def _is_simple_benzenediol(info: dict) -> bool:
-    if not _is_benzene_core(info) or info.get("amines"):
-        return False
-    mol, ring_set = info["mol"], set(info["rings"][0]["atom_ids"])
-    ohs = _di_oh_on_ring(info, ring_set)
-    if ohs is None or _outside_carbons(mol, ring_set):
-        return False
-    return _hetero_allowed(mol, ring_set, {h["o_idx"] for h in ohs})
-
-def _benzenediol_parent(info: dict) -> dict:
-    ring = list(info["rings"][0]["atom_ids"])
-    ohs = _di_oh_on_ring(info, set(ring)) or []
-    return {"chain": ring, "n_carbons": len(ring), "kind": "benzenediol",
-            "oh_c_idxs": [h["c_idx"] for h in ohs]}
-
 def _is_methyl_on_ring(mol: Mol, s: int, ring_set: set[int]) -> bool:
     if _is_cf3_carbon(mol, s):
         return True
@@ -439,4 +378,3 @@ from namepredict.layer2.scaffold.cyclo_pick import (  # noqa: E402
     _is_simple_cycloalkane,
     _pick_cycloalkane_ring,
 )
-

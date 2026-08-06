@@ -74,52 +74,12 @@ def _qz_core(info: dict) -> tuple[set[int], list[int], set[int]] | None:
     return None if fused is None else _qz_from_fused(info["mol"], *fused)
 
 
-def _unsub_ok(mol: Mol, atoms: set[int]) -> bool:
-    return (
-        _outside_ok(mol, atoms)
-        and _ring_halo_n(mol, atoms) == 0
-        and not _ring_side_starts(mol, atoms)
-    )
-
-
-def _fg_block(info: dict) -> bool:
-    keys = (
-        "has_acid", "has_aldehyde", "has_ketone", "has_alcohol",
-        "has_ester", "has_amide", "has_nitrile", "has_amine",
-        "has_thiol", "has_nitro", "has_ether", "has_acyl_chloride",
-        "has_anhydride",
-    )
-    return any(info.get(k) for k in keys)
-
-
-def _is_simple_quinazoline(info: dict) -> bool:
-    core = _qz_core(info)
-    if core is None or _fg_block(info):
-        return False
-    return _unsub_ok(info["mol"], core[0])
-
-
 def _n1(mol: Mol, ns: list[int], bridge: set[int]) -> int:
     for n in ns:
         nbs = {a.GetIdx() for a in mol.GetAtomWithIdx(n).GetNeighbors()}
         if nbs & bridge:
             return n
     return ns[0]
-
-
-def _quinazoline_parent(info: dict) -> dict:
-    core = _qz_core(info)
-    atoms, ns, bridge = core
-    n1 = _n1(info["mol"], ns, bridge)
-    chain = [n1] + [i for i in sorted(atoms) if i != n1]
-    return {
-        "chain": chain, "n_carbons": 10, "kind": "quinazoline",
-        "ring_atoms": list(atoms),
-    }
-
-
-def _try_quinazoline_parent(info: dict) -> dict | None:
-    return _quinazoline_parent(info) if _is_simple_quinazoline(info) else None
 
 
 def _is_quinoxaline_n(mol: Mol, ns: list[int], bridge: set[int]) -> bool:
@@ -146,25 +106,3 @@ def _qx_from_fused(mol: Mol, r1, r2, br) -> tuple[set[int], list[int], set[int]]
 def _qx_core(info: dict) -> tuple[set[int], list[int], set[int]] | None:
     fused = _fused_pair(info)
     return None if fused is None else _qx_from_fused(info["mol"], *fused)
-
-
-def _is_simple_quinoxaline(info: dict) -> bool:
-    core = _qx_core(info)
-    if core is None or _fg_block(info):
-        return False
-    return _unsub_ok(info["mol"], core[0])
-
-
-def _quinoxaline_parent(info: dict) -> dict:
-    core = _qx_core(info)
-    atoms, ns, bridge = core
-    n1 = min(ns)  # either N works for unsub
-    chain = [n1] + [i for i in sorted(atoms) if i != n1]
-    return {
-        "chain": chain, "n_carbons": 10, "kind": "quinoxaline",
-        "ring_atoms": list(atoms),
-    }
-
-
-def _try_quinoxaline_parent(info: dict) -> dict | None:
-    return _quinoxaline_parent(info) if _is_simple_quinoxaline(info) else None
