@@ -8,12 +8,6 @@ from __future__ import annotations
 
 from namepredict.layer2 import kind_registry as _kr
 from namepredict.layer2.parent_core import _longest_chain, _parent_dict
-from namepredict.layer2.parent_selector import _benzene_parent, _quaternary_parent
-from namepredict.layer2.ring_parent import (
-    _is_benzene_core,
-    _is_simple_benzene,
-)
-from namepredict.layer2.scoring import _pick_best
 from namepredict.layer2.parent_candidate import with_principal_group_contract
 from namepredict.layer2.principal_parent import rule_driven_parent_candidates
 from namepredict.layer2.arene_carbonyl import benzene_polycarboxylic_gate
@@ -23,21 +17,8 @@ from namepredict.layer2.polycarboxylic import polycarboxylic_gate
 from namepredict.layer2.cyclo_polycarboxylic import cycloalkane_polycarboxylic_gate
 
 
-def _benzene_candidate(info: dict) -> dict | None:
-    if not _is_benzene_core(info):
-        return None
-    cand = _benzene_parent(info)
-    if not _is_simple_benzene(info):
-        cand["n_unhandled"] = 1
-    return cand
-
-
 def _alkane_fallback(info: dict) -> dict:
     return _parent_dict(_longest_chain(info["mol"]), "alkane")
-
-
-def _ring_candidates(info: dict) -> list[dict]:
-    return [c for fn in _kr.ring_try_fns() if (c := fn(info)) is not None]
 
 
 def _unsat_candidates(info: dict) -> list[dict]:
@@ -102,10 +83,4 @@ def _principal_candidates(info: dict) -> list[dict]:
 
 def _collect_candidates(info: dict) -> list[dict]:
     raw = _principal_candidates(info)
-    ##raw += [_quaternary_parent(info)] + _unsat_candidates(info) + [_alkane_fallback(info)]  +_ring_candidates(info) + [_benzene_candidate(info)]
     return _dedupe_parents(_candidate_result(info, [c for c in raw if c is not None]))
-
-
-def _ring_parent(info: dict) -> dict | None:
-    """Compat: best ring among independent class tries."""
-    return _pick_best(info, _ring_candidates(info))

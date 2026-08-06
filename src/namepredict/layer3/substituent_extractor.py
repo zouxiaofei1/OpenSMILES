@@ -6,6 +6,7 @@ import namepredict.layer2.side_facts as side_facts
 from namepredict.layer3.aryl_names import aryl_arm_name, heteroaryl_name
 from namepredict.layer3.alkoxy_names import _extract_alkoxys
 from namepredict.layer3.cycloalkyl_names import _one_cycloalkyl_side
+from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.amino_side import _extract_aminos as _extract_aminos_impl
 
 
@@ -450,7 +451,7 @@ def _carboxyalkyl_sub(fact: side_facts.CarboxyalkylArm) -> dict:
             "atoms": [*fact.atoms, fact.carboxyl], "en": en, "zh": zh, "paren": True}
 
 
-def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general") -> list:
+def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> list:
     from namepredict.layer3.claim_extract import extract_claimed_sides
 
     mol, chain = info["mol"], parent.get("chain") or []
@@ -460,4 +461,4 @@ def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general"
         + _extract_alkoxys(info, parent) + _extract_aryls(info, parent)
         + _extract_n_subs(info, parent)
     )
-    return base + extract_claimed_sides(info, parent, base, name_mode=name_mode)
+    return base + extract_claimed_sides(info, parent, base, name_mode=name_mode, cache=cache)

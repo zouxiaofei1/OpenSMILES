@@ -16,6 +16,8 @@ from server.routes_benchmark import router as benchmark_router
 from server.routes_benchmark_run import router as benchmark_run_router
 from server.routes_debug import router as debug_router
 from server.routes_layer_benchmark import router as layer_benchmark_router
+from server.routes_code_analysis import router as code_analysis_router
+from server.routes_call_graph import router as call_graph_router
 
 app = FastAPI(title="ChemAgent Namer", version="0.1.0")
 app.include_router(name_router)
@@ -23,6 +25,8 @@ app.include_router(benchmark_router)
 app.include_router(benchmark_run_router)
 app.include_router(debug_router)
 app.include_router(layer_benchmark_router)
+app.include_router(code_analysis_router)
+app.include_router(call_graph_router)
 
 
 @app.get("/health")

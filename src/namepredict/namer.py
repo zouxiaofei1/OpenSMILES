@@ -110,14 +110,16 @@ def _assemble_candidate(parent, subst, *, depth: int, t0: float, name_mode: str 
     return _ok_result(numbered, depth=depth, t0=t0, name_mode=name_mode)
 
 
-def _prepare_candidate(info: dict, parent: dict, *, name_mode: str = "general") -> tuple[dict, list[dict], bool]:
+def _prepare_candidate(
+    info: dict, parent: dict, *, name_mode: str = "general", cache: CommonNameCache | None = None,
+) -> tuple[dict, list[dict], bool]:
     mol = info["mol"]
     parent = finalize_parent_ownership(parent, mol)
     if not parent.get("owned_atoms"):
         return parent, [], False
     if not parent.get("chain") and not info.get("has_ring"):
         return parent, [], False
-    subst = extract_substituents(info, parent, name_mode=name_mode)
+    subst = extract_substituents(info, parent, name_mode=name_mode, cache=cache)
     complete = _ledger_complete(mol, parent["owned_atoms"], subst)
     return parent, subst, complete
 
@@ -170,14 +172,16 @@ def _try_phase(prepared, *, depth, t0, name_mode, attempts):
 def _candidate_phases(info: dict, depth: int) -> list[list[dict]]:
     if depth > 0:
         return [[select_parent(info)]]
-    return principal_phases(list(iter_parent_candidates(info))) or [[select_parent(info)]]
+    return  [[select_parent(info)]]
 
 
-def _run_candidates(info: dict, *, depth: int, t0: float, name_mode: str = "general") -> NameResult:
+def _run_candidates(
+    info: dict, *, depth: int, t0: float, name_mode: str = "general", cache: CommonNameCache | None = None,
+) -> NameResult:
     """Try only the P-44.1.1-senior phase; never capability-downgrade."""
     attempts: list[dict] = []
     phase = _candidate_phases(info, depth)[0]
-    prepared = [_prepare_candidate(info, cand, name_mode=name_mode) for cand in phase]
+    prepared = [_prepare_candidate(info, cand, name_mode=name_mode, cache=cache) for cand in phase]
     hit = _try_phase(prepared, depth=depth, t0=t0, name_mode=name_mode, attempts=attempts)
     return hit or _fail(_elapsed_ms(t0), "no_assemblable_candidate", attempts=attempts)
 
@@ -195,17 +199,17 @@ def _name_mol(
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
     organic, salt = dissociate_salt(mol)
-    result = _run_candidates(analyze(organic), depth=depth, t0=t0, name_mode=name_mode)
+    result = _run_candidates(analyze(organic), depth=depth, t0=t0, name_mode=name_mode, cache=cache)
     if salt and result.success:
         result.meta = {**(result.meta or {}), "salt": salt}
     return result
 
 
-def _pipeline(smiles: str, t0: float, *, name_mode: str = "general") -> NameResult:
+def _pipeline(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> NameResult:
     mol = preprocess(smiles)
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
-    return _name_mol(mol, depth=0, t0=t0, name_mode=name_mode)
+    return _name_mol(mol, depth=0, t0=t0, name_mode=name_mode, cache=cache)
 
 
 def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
@@ -215,13 +219,14 @@ def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
         pass
 
 
-def _name_uncached(smiles: str, t0: float, *, name_mode: str = "general") -> NameResult:
-    return _pipeline(smiles, t0, name_mode=name_mode)
+def _name_uncached(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> NameResult:
+    return _pipeline(smiles, t0, name_mode=name_mode, cache=cache)
 
 
 class SMILESNNamer:
     def __init__(self, cache: CommonNameCache | None = None, *, name_mode: str = "general") -> None:
-        self.cache = cache if cache is not None else CommonNameCache()
+        # 容量留足给主分子 + 递归子结构命名（全量去重后约 8.7k 条）
+        self.cache = cache if cache is not None else CommonNameCache(max_entries=20000)
         self._name_mode = name_mode
 
     def name(self, smiles: str) -> NameResult:
@@ -229,7 +234,7 @@ class SMILESNNamer:
         hit = self.cache.get(smiles)
         if hit is not None:
             return hit
-        result = _name_uncached(smiles, t0, name_mode=self._name_mode)
+        result = _name_uncached(smiles, t0, name_mode=self._name_mode, cache=self.cache)
         if result.success:
             _cache_put(self.cache, smiles, result)
         return result

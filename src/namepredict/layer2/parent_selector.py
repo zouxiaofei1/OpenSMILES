@@ -210,23 +210,6 @@ def _tert_amine_parent(info: dict) -> dict | None:
     parent, rest = _pick_amine_arms(info["mol"], arms)
     fields = _amine_arm_fields(info, 3, parent, rest)
     return _parent_dict(parent, "tert_amine", n_alkyl_ns=[len(a) for a in rest], **fields)
-def _quaternary_fields(entry: dict, arms: list[list[int]], parent: list[int], rest: list[list[int]]) -> dict:
-    owned = frozenset([entry["n_idx"], *(i for arm in arms for i in arm)])
-    return {"n_idx": entry["n_idx"], "owned_atoms": owned,
-            "quaternary_arm_lengths": [len(parent), *[len(a) for a in rest]]}
-
-
-def _quaternary_parent(info: dict) -> dict | None:
-    entries = info.get("quaternary_ammoniums") or []
-    if len(entries) != 1 or not _amine_sat_ok(info):
-        return None
-    entry = entries[0]
-    arms = [_longest_from(info["mol"], c, set()) for c in entry["c_idxs"]]
-    if not all(_arm_ok(info["mol"], arm, entry["n_idx"]) for arm in arms):
-        return None
-    parent, rest = _pick_amine_arms(info["mol"], arms)
-    return _parent_dict(parent, "tetraalkylammonium", **_quaternary_fields(entry, arms, parent, rest))
-
 def _primary_amine_parent(info: dict) -> dict:
     aliph = _aliphatic_entries(info, "amines")
     prim = next((a for a in aliph if "c_idx" in a), None)

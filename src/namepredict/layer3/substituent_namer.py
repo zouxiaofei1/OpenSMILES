@@ -6,6 +6,7 @@ from typing import Protocol, Sequence
 
 from rdkit.Chem import BondType
 
+from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer2.claimable_block import ClaimedBlock
 from namepredict.layer3.as_substituent import name_as_substituent
 
@@ -300,11 +301,12 @@ class RecursiveBackend:
 
     name = "recursive"
 
-    def __init__(self, *, name_mode: str = "general") -> None:
+    def __init__(self, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> None:
         self._name_mode = name_mode
+        self._cache = cache
 
     def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None:
-        hit = name_as_substituent(mol, claim.root, claim.atoms, depth=depth, name_mode=self._name_mode)
+        hit = name_as_substituent(mol, claim.root, claim.atoms, depth=depth, name_mode=self._name_mode, cache=self._cache)
         return None if hit is None else _from_yl(claim, hit)
 
 
@@ -317,13 +319,13 @@ def _from_yl(claim: ClaimedBlock, hit: tuple[str, str, bool]) -> SubstituentName
     )
 
 
-def _default_backends(name_mode: str = "general") -> list[SubstituentBackend]:
-    return [RetainedBackend(name_mode=name_mode), RootedTreeBackend(name_mode=name_mode), RecursiveBackend(name_mode=name_mode)]
+def _default_backends(name_mode: str = "general", cache: CommonNameCache | None = None) -> list[SubstituentBackend]:
+    return [RetainedBackend(name_mode=name_mode), RootedTreeBackend(name_mode=name_mode), RecursiveBackend(name_mode=name_mode, cache=cache)]
 
 
 class SubstituentNamer:
-    def __init__(self, backends: Sequence[SubstituentBackend] | None = None, *, name_mode: str = "general") -> None:
-        self._backends = list(backends) if backends is not None else _default_backends(name_mode)
+    def __init__(self, backends: Sequence[SubstituentBackend] | None = None, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> None:
+        self._backends = list(backends) if backends is not None else _default_backends(name_mode, cache=cache)
 
     def name(self, mol, claim: ClaimedBlock, *, depth: int = 0) -> SubstituentName | None:
         for backend in self._backends:

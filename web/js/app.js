@@ -15,6 +15,10 @@
     layerData: "/api/v1/layer-benchmark/data",
     layerScore: "/api/v1/layer-benchmark/score",
     layerScoreResult: "/api/v1/layer-benchmark/score-result",
+    layerAnalyzeOne: "/api/v1/layer-benchmark/analyze-one",
+    codeAnalysis: "/api/v1/code-analysis",
+    callGraph: "/api/v1/call-graph",
+    callGraphSvg: "/api/v1/call-graph/svg",
     debug: "/api/v1/debug",
   };
 
@@ -48,6 +52,21 @@
     lbGenerating: false,
     lbPollTimer: null,
     lbScore: null,
+    // code analysis
+    caData: null,
+    // call graph
+    cgData: null,
+    cgNetwork: null,
+    cgThreshold: 1.0,
+    cgLoading: false,
+    cgSvg: null,
+    cgSvgView: "force",
+    cgSvgLoading: false,
+    cgSourceTotal: 0,
+    cgRank: {
+      calls: { asc: false, all: false },
+      time: { asc: false, all: false },
+    },
   };
 
   const $ = (id) => document.getElementById(id);
@@ -321,12 +340,16 @@
     var bmPage = document.getElementById("benchmark-page");
     var brPage = document.getElementById("benchmark-run-page");
     var lbPage = document.getElementById("layer-benchmark-page");
+    var caPage = document.getElementById("code-analysis-page");
+    var cgPage = document.getElementById("call-graph-page");
     var debugPage = document.getElementById("debug-page");
     // Hide all first
     if (namerLayout) namerLayout.classList.add("hidden");
     if (bmPage) bmPage.classList.add("hidden");
     if (brPage) brPage.classList.add("hidden");
     if (lbPage) lbPage.classList.add("hidden");
+    if (caPage) caPage.classList.add("hidden");
+    if (cgPage) cgPage.classList.add("hidden");
     if (debugPage) debugPage.classList.add("hidden");
     // Stop polling
     stopBmPolling();
@@ -342,7 +365,13 @@
       if (brPage) brPage.classList.remove("hidden");
     } else if (name === "layer-benchmark") {
       if (lbPage) lbPage.classList.remove("hidden");
-      loadLayerBenchmarkData();
+      renderLbPanel(state.lbLayer);
+    } else if (name === "code-analysis") {
+      if (caPage) caPage.classList.remove("hidden");
+      loadCodeAnalysis();
+    } else if (name === "call-graph") {
+      if (cgPage) cgPage.classList.remove("hidden");
+      loadCallGraph();
     } else if (name === "debug") {
       if (debugPage) debugPage.classList.remove("hidden");
     } else {
@@ -912,6 +941,515 @@
     return html || '<span class="muted-text">(no output)</span>';
   }
 
+  /* ---------- Call Graph ---------- */
+
+  // Blue→red heat color by weight (ported from tools/render_callchain.py heat())
+  function cgHeat(w) {
+    var h = (1.0 - Math.min(1.0, Math.max(0.0, w))) * 0.66;
+    var s = 0.85;
+    var v = 0.92;
+    var i = Math.floor(h * 6);
+    var f = h * 6 - i;
+    var p = v * (1 - s);
+    var q = v * (1 - f * s);
+    var t = v * (1 - (1 - f) * s);
+    var r, g, b;
+    switch (i % 6) {
+      case 0: r = v; g = t; b = p; break;
+      case 1: r = q; g = v; b = p; break;
+      case 2: r = p; g = v; b = t; break;
+      case 3: r = p; g = q; b = v; break;
+      case 4: r = t; g = p; b = v; break;
+      default: r = v; g = p; b = q; break;
+    }
+    function hx(x) {
+      return Math.round(x * 255).toString(16).padStart(2, "0");
+    }
+    return "#" + hx(r) + hx(g) + hx(b);
+  }
+
+  function renderCgMeta(meta) {
+    var el = $("cg-meta");
+    if (!el || !meta) return;
+    var cache = meta.cached ? "缓存命中" : "本次采样";
+    el.textContent =
+      "分子 " + meta.n_actual + "/" + meta.n +
+      " · 总耗时 " + (meta.total_s * 1000).toFixed(1) + "ms" +
+      " · 函数 " + meta.n_nodes + "/" + meta.n_nodes_total +
+      " · 调用边 " + meta.n_edges +
+      " · " + cache +
+      " · 接口耗时 " + meta.elapsed_ms + "ms";
+  }
+
+  function cgTooltip(n) {
+    var layer = n.layer != null ? " · Layer " + n.layer : "";
+    return (
+      '<div class="cg-tip">' +
+      "<b>" + escapeHtml(n.label) + "</b>" +
+      '<div class="mono small">' + escapeHtml(n.module) + ":" + (n.line != null ? n.line : "?") + layer + "</div>" +
+      "<div>累计 " + n.cum_pct + "% · 自耗时 " + n.self_pct + "%</div>" +
+      "<div>调用 " + n.ncalls.toLocaleString() + " 次</div>" +
+      "<div>累计 " + (n.cum_s * 1000).toFixed(2) + "ms · 自耗 " + (n.self_s * 1000).toFixed(2) + "ms</div>" +
+      "</div>"
+    );
+  }
+
+  function ensureCgNetwork() {
+    if (state.cgNetwork) return state.cgNetwork;
+    var container = $("cg-network");
+    if (!container || typeof vis === "undefined" || !vis.Network) return null;
+    var options = {
+      physics: {
+        solver: "forceAtlas2Based",
+        stabilization: { enabled: true, iterations: 250, fit: true },
+        forceAtlas2Based: {
+          gravitationalConstant: -80,
+          centralGravity: 0.01,
+          springLength: 140,
+          springConstant: 0.08,
+          damping: 0.4,
+          avoidOverlap: 0.5
+        }
+      },
+      interaction: {
+        hover: true,
+        tooltipDelay: 120,
+        keyboard: true,
+        zoomView: true,
+        dragView: true,
+        dragNodes: true,
+        hoverConnectedEdges: true,
+        multiselect: true
+      },
+      nodes: { scaling: { min: 8, max: 42, label: { enabled: false } }, shadow: true },
+      edges: { selectionWidth: 2 }
+    };
+    state.cgNetwork = new vis.Network(container, { nodes: [], edges: [] }, options);
+    state.cgNetwork.on("stabilizationIterationsDone", function () {
+      if (state.cgNetwork) state.cgNetwork.fit();
+    });
+    state.cgNetwork.on("click", function (params) {
+      if (params.nodes && params.nodes.length) {
+        renderCalleeChain(params.nodes[0]);
+      }
+    });
+    return state.cgNetwork;
+  }
+
+  function cgApplyThreshold() {
+    var data = state.cgData;
+    if (!data || !data.nodes) return;
+    var t = state.cgThreshold;
+    var keepIds = {};
+    var nodes = data.nodes.filter(function (n) {
+      return n.cum_pct >= t;
+    });
+    nodes.forEach(function (n) {
+      keepIds[n.id] = true;
+    });
+    var edges = data.edges.filter(function (e) {
+      return keepIds[e.from] && keepIds[e.to];
+    });
+    var visNodes = nodes.map(function (n) {
+      return {
+        id: n.id,
+        label: n.label,
+        title: cgTooltip(n),
+        value: 5 + n.w * 45,
+        color: { background: cgHeat(n.w), border: "rgba(15,23,42,0.4)" },
+        borderWidth: 1,
+        shape: "dot",
+        font: { size: 11, color: "#1e293b", face: "monospace" }
+      };
+    });
+    var visEdges = edges.map(function (e) {
+      return {
+        from: e.from,
+        to: e.to,
+        width: Math.max(0.3, e.w * 3),
+        arrows: { to: { enabled: true, scaleFactor: 0.4 } },
+        color: { opacity: 0.55 },
+        smooth: { type: "continuous", roundness: 0.4 }
+      };
+    });
+    var network = ensureCgNetwork();
+    if (!network) throw new Error("vis-network 未加载");
+    network.setData({ nodes: visNodes, edges: visEdges });
+    network.fit({ animation: true });
+    renderCgRanks();
+  }
+
+  function cgNFromSlider() {
+    var pct = parseFloat(($("cg-n") && $("cg-n").value) || 5);
+    var total = state.cgSourceTotal || 4070;
+    var n = Math.max(1, Math.round(total * pct / 100));
+    var v = $("cg-n-val");
+    if (v) v.textContent = pct + "% ≈ " + n + " 分子";
+    return n;
+  }
+
+  function cgRankRow(n, idx, val) {
+    var mod = (n.module || "").split("/").pop().replace(".py", "");
+    var name = n.label + (n.line != null ? " @ " + mod + ":" + n.line : " (" + mod + ")");
+    return (
+      '<div class="cg-rank-row cg-rank-clickable" data-id="' + n.id + '" title="点击查看下层调用链">' +
+      '<span class="cg-rank-idx mono">' + idx + "</span>" +
+      '<span class="cg-rank-name mono" title="' + escapeHtml(n.module || "") + '">' + escapeHtml(name) + "</span>" +
+      '<span class="cg-rank-val mono">' + val + "</span>" +
+      "</div>"
+    );
+  }
+
+  function cgChainById() {
+    var idx = {};
+    ((state.cgData && state.cgData.nodes) || []).forEach(function (n) { idx[n.id] = n; });
+    return idx;
+  }
+
+  function cgChainShort(nd) {
+    var mod = (nd.module || "").split("/").pop().replace(".py", "");
+    return nd.label + " @" + mod + ":" + nd.line;
+  }
+
+  function renderCalleeChain(rootId) {
+    var data = state.cgData;
+    if (!data || !data.nodes) return;
+    var byId = cgChainById();
+    var root = byId[rootId];
+    if (!root) return;
+    var outEdges = {};
+    data.edges.forEach(function (e) {
+      (outEdges[e.from] = outEdges[e.from] || []).push(e);
+    });
+    function fmt(nd) {
+      return cgChainShort(nd) + "  " + nd.cum_pct + "% (" + nd.ncalls.toLocaleString() + "×)";
+    }
+    function walk(nid, depth) {
+      var callees = (outEdges[nid] || []).slice().sort(function (a, b) {
+        return byId[b.to].cum_s - byId[a.to].cum_s;
+      });
+      var html = "";
+      callees.forEach(function (e) {
+        var nd = byId[e.to];
+        var pad = depth * 16 + 8;
+        html +=
+          '<div class="cg-chain-row cg-chain-name" style="padding-left:' + pad + 'px" data-id="' + nd.id + '">' +
+          '<span class="mono">' + escapeHtml(fmt(nd)) + "</span>" +
+          (e.cum_pct ? '<span class="muted-text small">  ←' + e.calls + "×</span>" : "") +
+          "</div>";
+        if (seen[nd.id]) {
+          html += '<div class="cg-chain-row cg-chain-loop" style="padding-left:' + (pad + 16) + 'px">↺ 循环</div>';
+        } else {
+          seen[nd.id] = true;
+          html += walk(nd.id, depth + 1);
+        }
+      });
+      return html;
+    }
+    var seen = {};
+    seen[rootId] = true;
+    var el = $("cg-chain");
+    var head = '<div class="cg-chain-row cg-chain-root"><b>' + escapeHtml(fmt(root)) + "</b></div>";
+    el.innerHTML = head + walk(rootId, 0);
+    el.querySelectorAll(".cg-chain-name").forEach(function (row) {
+      row.addEventListener("click", function () {
+        renderCalleeChain(parseInt(row.getAttribute("data-id"), 10));
+      });
+    });
+    if (state.cgNetwork) state.cgNetwork.selectNodes([rootId], false);
+  }
+
+  function renderCalleeChainByName(query) {
+    var data = state.cgData;
+    if (!data || !data.nodes) return;
+    var q = String(query || "").trim().toLowerCase();
+    if (!q) return;
+    var hits = data.nodes.filter(function (n) {
+      return n.label.toLowerCase().indexOf(q) !== -1 ||
+        (n.module + ":" + n.line).toLowerCase().indexOf(q) !== -1;
+    });
+    if (!hits.length) {
+      var el = $("cg-chain");
+      if (el) el.innerHTML = '<p class="muted-text small">未找到匹配函数："' + escapeHtml(query) + '"</p>';
+      return;
+    }
+    renderCalleeChain(hits[0].id);
+    if (hits.length > 1) {
+      var el = $("cg-chain");
+      if (el) el.innerHTML += '<p class="muted-text small">匹配 ' + hits.length + " 个函数，已展开第一个；可用 文件:行号 精确定位</p>";
+    }
+  }
+
+  function bindCgChainControls() {
+    var go = $("cg-chain-go");
+    var input = $("cg-chain-input");
+    function run() {
+      if (input) renderCalleeChainByName(input.value);
+    }
+    if (go) go.addEventListener("click", run);
+    if (input) {
+      input.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") run();
+      });
+    }
+    ["cg-rank-calls", "cg-rank-time"].forEach(function (id) {
+      var list = $(id);
+      if (list) {
+        list.addEventListener("click", function (ev) {
+          var row = ev.target.closest(".cg-rank-clickable");
+          if (row) renderCalleeChain(parseInt(row.getAttribute("data-id"), 10));
+        });
+      }
+    });
+  }
+
+  function renderCgRanks() {
+    var data = state.cgData;
+    if (!data || !data.nodes) return;
+    var t = state.cgThreshold;
+    var nodes = data.nodes.filter(function (n) {
+      return n.cum_pct >= t;
+    });
+    function build(key, field, fmt) {
+      var st = state.cgRank[key] || { asc: false, all: false };
+      var arr = nodes.slice().sort(function (a, b) {
+        return st.asc ? a[field] - b[field] : b[field] - a[field];
+      });
+      var shown = st.all ? arr : arr.slice(0, 20);
+      return shown.map(function (n, i) { return cgRankRow(n, i + 1, fmt(n)); }).join("");
+    }
+    var cEl = $("cg-rank-calls");
+    var tEl = $("cg-rank-time");
+    if (cEl) {
+      var rc = build("calls", "ncalls", function (n) { return n.ncalls.toLocaleString() + "×"; });
+      cEl.innerHTML = rc || '<p class="muted-text small">无节点</p>';
+    }
+    if (tEl) {
+      var rt = build("time", "cum_s", function (n) { return n.cum_pct + "%"; });
+      tEl.innerHTML = rt || '<p class="muted-text small">无节点</p>';
+    }
+    updateCgRankBtns();
+  }
+
+  function updateCgRankBtns() {
+    ["calls", "time"].forEach(function (key) {
+      var st = state.cgRank[key] || { asc: false, all: false };
+      var dir = $("cg-rank-" + key + "-dir");
+      if (dir) dir.textContent = st.asc ? "↑ 升序" : "↓ 降序";
+      var more = $("cg-rank-" + key + "-more");
+      if (more) more.textContent = st.all ? "全部" : "Top 20";
+    });
+  }
+
+  function bindCgRankButtons() {
+    ["calls", "time"].forEach(function (key) {
+      var dir = $("cg-rank-" + key + "-dir");
+      if (dir) {
+        dir.addEventListener("click", function () {
+          state.cgRank[key] = state.cgRank[key] || { asc: false, all: false };
+          state.cgRank[key].asc = !state.cgRank[key].asc;
+          renderCgRanks();
+        });
+      }
+      var more = $("cg-rank-" + key + "-more");
+      if (more) {
+        more.addEventListener("click", function () {
+          state.cgRank[key] = state.cgRank[key] || { asc: false, all: false };
+          state.cgRank[key].all = !state.cgRank[key].all;
+          renderCgRanks();
+        });
+      }
+    });
+  }
+
+  async function loadCallGraph(force) {
+    if (state.cgLoading) return;
+    var n = cgNFromSlider();
+    var st = $("cg-status");
+    var btn = $("cg-refresh");
+    var empty = $("cg-empty");
+    var net = $("cg-network");
+    state.cgLoading = true;
+    if (btn) btn.disabled = true;
+    if (st) { st.textContent = "采样中…（约 1–3s）"; st.style.color = "#f59e0b"; }
+    if (empty) empty.hidden = true;
+    if (net) net.innerHTML = '<p class="muted-text small" style="padding:1rem">采样中，请稍候…</p>';
+    try {
+      var q = "?n=" + n + "&floor_pct=0" + (force ? "&refresh=1" : "");
+      var data = await api(API.callGraph + q);
+      if (!data || !data.ok) throw new Error((data && data.error) || "无数据");
+      state.cgData = data;
+      if (data.meta && data.meta.source_total) {
+        state.cgSourceTotal = data.meta.source_total;
+      }
+      cgNFromSlider();
+      // 重采样后旧分层 SVG 失效
+      state.cgSvg = null;
+      if (state.cgSvgView === "svg") {
+        var s = $("cg-svg-status");
+        if (s) { s.textContent = "数据已更新，请重新生成"; s.style.color = "#f59e0b"; }
+      }
+      renderCgMeta(data.meta);
+      cgApplyThreshold();
+      if (st) { st.textContent = "就绪"; st.style.color = "#86efac"; }
+    } catch (err) {
+      if (net) net.innerHTML = "";
+      if (empty) { empty.hidden = false; empty.textContent = "加载失败: " + (err.message || String(err)); }
+      if (st) { st.textContent = "错误"; st.style.color = "#ef4444"; }
+    } finally {
+      state.cgLoading = false;
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function bindCgControls() {
+    $("cg-refresh") &&
+      $("cg-refresh").addEventListener("click", function () {
+        loadCallGraph(true);
+      });
+    $("cg-threshold") &&
+      $("cg-threshold").addEventListener("input", function (ev) {
+        var tv = parseFloat(ev.target.value);
+        state.cgThreshold = isNaN(tv) ? 1 : tv;
+        var v = $("cg-threshold-val");
+        if (v) v.textContent = state.cgThreshold.toFixed(1) + "%";
+        cgApplyThreshold();
+      });
+    $("cg-n") &&
+      $("cg-n").addEventListener("input", function () {
+        cgNFromSlider();
+      });
+    $("cg-n") &&
+      $("cg-n").addEventListener("change", function () {
+        loadCallGraph();
+      });
+    $("cg-svg-gen") &&
+      $("cg-svg-gen").addEventListener("click", function () {
+        loadCallGraphSvg();
+      });
+    $("cg-view-force") &&
+      $("cg-view-force").addEventListener("click", function () {
+        setCgView("force");
+      });
+    $("cg-view-svg") &&
+      $("cg-view-svg").addEventListener("click", function () {
+        if (state.cgSvg) setCgView("svg");
+        else loadCallGraphSvg();
+      });
+  }
+
+  function setCgView(mode) {
+    state.cgSvgView = mode;
+    var net = $("cg-network");
+    var svgView = $("cg-svg-view");
+    var fb = $("cg-view-force");
+    var sb = $("cg-view-svg");
+    if (mode === "svg") {
+      if (net) net.classList.add("hidden");
+      if (svgView) svgView.classList.remove("hidden");
+      if (fb) fb.classList.remove("active");
+      if (sb) sb.classList.add("active");
+    } else {
+      if (svgView) svgView.classList.add("hidden");
+      if (net) net.classList.remove("hidden");
+      if (fb) fb.classList.add("active");
+      if (sb) sb.classList.remove("active");
+      if (state.cgNetwork) state.cgNetwork.redraw();
+    }
+  }
+
+  function setupSvgPanZoom(view) {
+    var svg = view.querySelector("svg");
+    if (!svg) return;
+    var st = { tx: 0, ty: 0, s: 1, dragging: false, sx: 0, sy: 0, stx: 0, sty: 0 };
+    function apply() {
+      svg.style.transform = "translate(" + st.tx + "px," + st.ty + "px) scale(" + st.s + ")";
+    }
+    function clamp(v, a, b) {
+      return Math.max(a, Math.min(b, v));
+    }
+    function fit() {
+      var vb = svg.viewBox.baseVal;
+      var pad = 24;
+      var r = view.getBoundingClientRect();
+      var s = Math.min((r.width - pad * 2) / vb.width, (r.height - pad * 2) / vb.height);
+      st.s = clamp(s, 0.1, 8);
+      st.tx = (r.width - vb.width * st.s) / 2;
+      st.ty = (r.height - vb.height * st.s) / 2;
+      apply();
+    }
+    view.addEventListener(
+      "wheel",
+      function (e) {
+        e.preventDefault();
+        var r = view.getBoundingClientRect();
+        var mx = e.clientX - r.left;
+        var my = e.clientY - r.top;
+        var factor = Math.pow(1.0015, -e.deltaY);
+        var ns = clamp(st.s * factor, 0.1, 8);
+        var wx = (mx - st.tx) / st.s;
+        var wy = (my - st.ty) / st.s;
+        st.s = ns;
+        st.tx = mx - wx * ns;
+        st.ty = my - wy * ns;
+        apply();
+      },
+      { passive: false }
+    );
+    view.addEventListener("mousedown", function (e) {
+      if (e.button !== 0) return;
+      st.dragging = true;
+      st.sx = e.clientX;
+      st.sy = e.clientY;
+      st.stx = st.tx;
+      st.sty = st.ty;
+      view.classList.add("dragging");
+      e.preventDefault();
+    });
+    window.addEventListener("mousemove", function (e) {
+      if (!st.dragging) return;
+      st.tx = st.stx + (e.clientX - st.sx);
+      st.ty = st.sty + (e.clientY - st.sy);
+      apply();
+    });
+    window.addEventListener("mouseup", function () {
+      st.dragging = false;
+      view.classList.remove("dragging");
+    });
+    view.addEventListener("dblclick", fit);
+    fit();
+  }
+
+  async function loadCallGraphSvg(force) {
+    if (state.cgSvgLoading) return;
+    var st = $("cg-svg-status");
+    var btn = $("cg-svg-gen");
+    state.cgSvgLoading = true;
+    if (btn) btn.disabled = true;
+    if (st) { st.textContent = "生成中…"; st.style.color = "#f59e0b"; }
+    var n = cgNFromSlider();
+    try {
+      var layerEl = $("cg-layer");
+      var layer = layerEl ? layerEl.value : "";
+      var q = "?n=" + n + "&floor_pct=" + state.cgThreshold;
+      if (layer !== "") q += layer === "core" ? "&layer=-1" : "&layer=" + layer;
+      q += force ? "&refresh=1" : "";
+      var data = await api(API.callGraphSvg + q);
+      if (!data || !data.ok) throw new Error((data && data.error) || "无数据");
+      state.cgSvg = data;
+      var view = $("cg-svg-view");
+      if (view) view.innerHTML = data.svg;
+      setCgView("svg");
+      if (view) setupSvgPanZoom(view);
+      if (st) { st.textContent = "就绪 · " + data.meta.n_nodes + " 节点"; st.style.color = "#86efac"; }
+    } catch (err) {
+      if (st) { st.textContent = "失败: " + (err.message || String(err)); st.style.color = "#ef4444"; }
+    } finally {
+      state.cgSvgLoading = false;
+      if (btn) btn.disabled = false;
+    }
+  }
+
   /* ---------- Init ---------- */
 
   function bind() {
@@ -1023,24 +1561,31 @@
       debugSmiles.addEventListener("input", scheduleLiveDebug);
     }
 
-    // Layer Benchmark controls
+    // Layer Benchmark controls（面板为动态渲染，用事件委托）
     document.querySelectorAll(".lb-item").forEach(function (b) {
       b.addEventListener("click", function () {
         setLbLayer(parseInt(b.getAttribute("data-lb-layer"), 10));
       });
     });
-    var lbRatio = document.getElementById("lb-ratio");
-    if (lbRatio) {
-      lbRatio.addEventListener("input", function () {
-        var v = parseInt(lbRatio.value, 10) || 0;
-        var valEl = document.getElementById("lb-ratio-val");
-        if (valEl) valEl.textContent = v + "%";
+    var lbContent = document.getElementById("lb-content");
+    if (lbContent) {
+      lbContent.addEventListener("click", function (ev) {
+        var t = ev.target;
+        if (t.closest && t.closest("#lb-refresh")) { startLayerSample(); return; }
+        if (t.closest && t.closest("#lb-score")) { runLayerScore(); return; }
+        if (t.closest && t.closest("#lb-one-run")) { runLayerOne(); }
+      });
+      lbContent.addEventListener("input", function (ev) {
+        if (ev.target && ev.target.id === "lb-ratio") {
+          var v = parseInt(ev.target.value, 10) || 0;
+          var valEl = document.getElementById("lb-ratio-val");
+          if (valEl) valEl.textContent = v + "%";
+        }
+      });
+      lbContent.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" && ev.target && ev.target.id === "lb-one-smiles") runLayerOne();
       });
     }
-    var lbRefresh = document.getElementById("lb-refresh");
-    if (lbRefresh) lbRefresh.addEventListener("click", startLayerSample);
-    var lbScore = document.getElementById("lb-score");
-    if (lbScore) lbScore.addEventListener("click", runLayerScore);
   }
 
   /* ---------- Benchmark Run ---------- */
@@ -1254,6 +1799,11 @@
     else statusEl.style.color = "";
   }
 
+  var LB_LAYER_META = {
+    0: { title: "Layer 0 — Molecule Preprocessor", desc: "SMILES 解析 / 无机-有机分类 / 盐解离" },
+    1: { title: "Layer 1 — Structural Analyzer", desc: "官能团 / 环系统 / 不饱和度分析" },
+  };
+
   function setLbLayer(layer) {
     state.lbLayer = layer;
     document.querySelectorAll(".lb-item").forEach(function (b) {
@@ -1261,15 +1811,68 @@
       if (l === layer) b.classList.add("active");
       else b.classList.remove("active");
     });
-    for (var i = 0; i <= 5; i++) {
-      var panel = document.getElementById("lb-panel-" + i);
-      if (panel) panel.classList.toggle("hidden", i !== layer);
-    }
+    renderLbPanel(layer);
   }
 
-  async function loadLayerBenchmarkData() {
+  function lbPlaceholderHtml(layer) {
+    return (
+      '<div class="card"><div class="card-head row-between"><h3 class="card-title">Layer ' + layer +
+      "</h3><span class=\"chip\">未实装</span></div>" +
+      '<p class="muted-text">功能尚未实装。布局与 Layer 0/1 相同，后续将接入该层输出与 LLM 数据的对比。</p></div>'
+    );
+  }
+
+  function lbPanelHtml(layer) {
+    var m = LB_LAYER_META[layer];
+    return (
+      '<div class="card" style="margin-bottom: var(--space-2xl)">' +
+      '<div class="card-head row-between"><h3 class="card-title">单物质 Layer ' + layer +
+      ' 分析</h3><span class="chip">LLM</span></div>' +
+      '<div class="lb-one-controls">' +
+      '<input id="lb-one-smiles" class="input mono" type="text" placeholder="输入 SMILES，如 CCO" autocomplete="off" spellcheck="false" />' +
+      '<button id="lb-one-run" class="btn btn-primary" type="button">分析</button></div>' +
+      '<div id="lb-one-result" class="lb-one-result hidden" aria-live="polite"></div></div>' +
+      '<div class="card" style="margin-bottom: var(--space-2xl)">' +
+      '<div class="card-head row-between"><h3 class="card-title">' + m.title +
+      '</h3><span id="lb-status" class="chip">就绪</span></div>' +
+      '<p class="muted-text small">' + m.desc + "</p>" +
+      '<div class="lb-controls">' +
+      '<div class="lb-field">' +
+      '<label class="field-label" for="lb-ratio">抽样比例</label>' +
+      '<input id="lb-ratio" class="input" type="range" min="1" max="100" value="10" step="1" />' +
+      '<span id="lb-ratio-val" class="muted-text small mono">10%</span>' +
+      '<span class="muted-text small">按 tier 分层随机抽取，覆盖难易不均</span></div>' +
+      '<div class="lb-actions">' +
+      '<button id="lb-refresh" class="btn btn-secondary" type="button">刷新 benchmark 数据</button>' +
+      '<button id="lb-score" class="btn btn-primary" type="button">跑分</button></div></div>' +
+      '<div id="lb-progress" class="hidden" style="margin-top: var(--space-xl)">' +
+      '<div class="br-progress-bar-wrap"><div id="lb-progress-bar" class="br-progress-bar" style="width:0%"></div></div>' +
+      '<div class="lb-progress-stats"><span id="lb-progress-text" class="muted-text small">0 / 0</span>' +
+      '<span class="muted-text small">正在调用 LLM 生成 Layer ' + layer +
+      ' 基准数据…</span></div></div></div>' +
+      '<div id="lb-result" class="hidden">' +
+      '<div class="card" style="margin-bottom: var(--space-2xl)">' +
+      '<div class="card-head row-between"><h3 class="card-title">跑分结果：真实 Layer ' + layer +
+      ' vs LLM 基准</h3><span id="lb-score-info" class="muted-text small mono"></span></div>' +
+      '<div id="lb-score-table-wrap"></div></div>' +
+      '<div class="card"><div class="card-head row-between"><h3 class="card-title">不一致示例</h3>' +
+      '<span id="lb-diff-count" class="muted-text small"></span></div>' +
+      '<div class="benchmark-table-wrap" id="lb-diff-wrap"></div></div></div>'
+    );
+  }
+
+  function renderLbPanel(layer) {
+    var content = document.getElementById("lb-content");
+    if (!content) return;
+    content.innerHTML = (layer === 0 || layer === 1) ? lbPanelHtml(layer) : lbPlaceholderHtml(layer);
+    hideLbProgress();
+    setLbStatus("就绪");
+    if (layer === 0 || layer === 1) loadLayerData(layer);
+  }
+
+  async function loadLayerData(layer) {
     try {
-      var data = await api(API.layerData);
+      var data = await api(API.layerData + "?layer=" + layer);
       if (!data || !data.ok) return;
       var ratioEl = lb$("ratio");
       var ratioVal = lb$("ratio-val");
@@ -1329,7 +1932,7 @@
   async function pollLayerStatus() {
     var status = null;
     try {
-      status = await api(API.layerSampleStatus);
+      status = await api(API.layerSampleStatus + "?layer=" + state.lbLayer);
     } catch (_) {
       return;
     }
@@ -1341,15 +1944,19 @@
     if (bar) bar.style.width = pct + "%";
     var text = lb$("progress-text");
     if (text) text.textContent = done + " / " + total + " (" + pct + "%)";
-    if (status.ready || (!status.running && done >= total && total > 0)) {
+    if (status.ready) {
       stopLbPolling();
       hideLbProgress();
       setLbStatus("基准就绪 · " + done + " 条");
-    } else if (!status.running) {
+      return;
+    }
+    if (status.error) {
       stopLbPolling();
       hideLbProgress();
-      setLbStatus("生成结束（可能失败）");
+      setLbStatus("生成失败: " + status.error, "#ef4444");
+      return;
     }
+    // 仍在运行或等待首条进度落盘：继续轮询；成败由后端 ready/error 兜底
   }
 
   function startLbPolling() {
@@ -1380,8 +1987,19 @@
     }
   }
 
-  function lbScoreRows(score) {
-    var fields = [
+  function lbScoreFields(layer) {
+    if (layer === 1) {
+      return [
+        ["parseable", "可解析 (parseable)"],
+        ["fg", "官能团集合一致"],
+        ["n_rings", "环数"],
+        ["n_ring_systems", "环系"],
+        ["has_double_bond", "C=C 双键"],
+        ["has_triple_bond", "C≡C 三键"],
+        ["complete", "全部字段一致"],
+      ];
+    }
+    return [
       ["parseable", "可解析 (parseable)"],
       ["classification", "有机 / 无机分类"],
       ["salt_present", "是否为盐"],
@@ -1389,6 +2007,10 @@
       ["n_fragments", "片段数"],
       ["complete", "全部字段一致"],
     ];
+  }
+
+  function lbScoreRows(score) {
+    var fields = lbScoreFields(state.lbLayer);
     return fields
       .map(function (pair) {
         var key = pair[0], label = pair[1];
@@ -1407,8 +2029,17 @@
       .join("");
   }
 
-  function lbSideHtml(s) {
+  function lbSideHtml(s, layer) {
     if (!s) return '<span class="muted-text">—</span>';
+    if (layer === 1) {
+      var parts = [];
+      parts.push(s.parseable ? "解析✓" : "解析✗");
+      parts.push("FG:[" + ((s.functional_groups || []).join(",")) + "]");
+      parts.push("环:" + (s.n_rings != null ? s.n_rings : "?"));
+      parts.push("环系:" + (s.n_ring_systems != null ? s.n_ring_systems : "?"));
+      parts.push((s.has_double_bond ? "双键" : "") + (s.has_triple_bond ? "三键" : ""));
+      return escapeHtml(parts.join(" · "));
+    }
     var parts = [];
     parts.push(s.parseable ? "解析✓" : "解析✗");
     parts.push(s.classification || "?");
@@ -1436,11 +2067,12 @@
     }
     var rows = diffs
       .map(function (d) {
+        var layer = state.lbLayer;
         return (
           "<tr>" +
           '<td class="mono small">' + escapeHtml(d.smiles || "") + "</td>" +
-          '<td class="small">' + lbSideHtml(d.real) + "</td>" +
-          '<td class="small">' + lbSideHtml(d.llm) + "</td>" +
+          '<td class="small">' + lbSideHtml(d.real, layer) + "</td>" +
+          '<td class="small">' + lbSideHtml(d.llm, layer) + "</td>" +
           "</tr>"
         );
       })
@@ -1452,8 +2084,230 @@
       "</tbody></table>";
   }
 
+  function lbOneHtml(r) {
+    var saltHtml = r.salt
+      ? Object.keys(r.salt)
+          .map(function (k) {
+            return "<dt>" + escapeHtml(k) + "</dt><dd class=\"mono\">" + escapeHtml(String(r.salt[k])) + "</dd>";
+          })
+          .join("")
+      : '<dt>salt</dt><dd class="mono muted-text">null</dd>';
+    return (
+      '<dl class="kv">' +
+      "<div><dt>parseable</dt><dd class=\"mono\">" + (r.parseable ? "true" : "false") + "</dd></div>" +
+      "<div><dt>classification</dt><dd class=\"mono\">" + escapeHtml(r.classification || "?") + "</dd></div>" +
+      "<div><dt>n_fragments</dt><dd class=\"mono\">" + escapeHtml(String(r.n_fragments != null ? r.n_fragments : "?")) + "</dd></div>" +
+      "<div><dt>organic_smiles</dt><dd class=\"mono\">" + escapeHtml(r.organic_smiles || "null") + "</dd></div>" +
+      saltHtml +
+      "<div><dt>notes</dt><dd>" + escapeHtml(r.notes || "") + "</dd></div>" +
+      "</dl>"
+    );
+  }
+
+  async function runLayerOne() {
+    var input = document.getElementById("lb-one-smiles");
+    var smiles = (input && input.value || "").trim();
+    if (!smiles) return;
+    var btn = document.getElementById("lb-one-run");
+    var resultEl = document.getElementById("lb-one-result");
+    if (btn) btn.disabled = true;
+    if (resultEl) {
+      resultEl.classList.remove("hidden");
+      resultEl.innerHTML = '<p class="muted-text small">分析中…</p>';
+    }
+    try {
+      var data = await api(API.layerAnalyzeOne, {
+        method: "POST",
+        body: JSON.stringify({ smiles: smiles, layer: state.lbLayer }),
+      });
+      if (!data || !data.ok) {
+        if (resultEl) resultEl.textContent = "错误: " + ((data && data.error) || "未知");
+        return;
+      }
+      if (resultEl) resultEl.innerHTML = lbOneHtml(data.result);
+    } catch (err) {
+      if (resultEl) resultEl.textContent = "请求失败: " + (err.message || String(err));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  /* ---------- Code Analysis ---------- */
+
+  var CA_COLORS = ["#22c55e", "#38bdf8", "#f59e0b", "#a78bfa", "#f472b6", "#2dd4bf"];
+
+  function ca$(id) {
+    return document.getElementById(id);
+  }
+
+  function caSkeleton() {
+    return (
+      '<div class="ca-skeleton" aria-hidden="true">' +
+      '<div class="skeleton" style="width:180px;height:180px;border-radius:50%;margin:0 auto"></div>' +
+      "</div>" +
+      '<div class="ca-list">' +
+      Array.from({ length: 6 })
+        .map(function () {
+          return (
+            '<div class="ca-row"><div class="skeleton" style="width:12px;height:12px;border-radius:50%"></div>' +
+            '<div class="skeleton" style="width:80px;height:14px"></div>' +
+            '<div class="skeleton" style="width:60px;height:14px"></div>' +
+            '<div class="skeleton" style="flex:1;height:8px;border-radius:4px"></div></div>'
+          );
+        })
+        .join("") +
+      "</div>"
+    );
+  }
+
+  async function loadCodeAnalysis() {
+    var donut = ca$("ca-donut");
+    var list = ca$("ca-list");
+    var summary = ca$("ca-summary");
+    if (donut) donut.innerHTML = caSkeleton();
+    if (list) list.innerHTML = "";
+    if (summary) { summary.classList.remove("hidden"); summary.textContent = "统计中…"; }
+    try {
+      var data = await api(API.codeAnalysis);
+      if (!data || !data.ok || !data.total) throw new Error("无数据");
+      state.caData = data;
+      if (summary) renderCaSummary(summary, data.total);
+      if (donut) donut.innerHTML = renderCaDonut(data.layers, data.total.code);
+      if (list) list.innerHTML = renderCaList(data.layers);
+    } catch (err) {
+      if (summary) {
+        summary.classList.remove("hidden");
+        summary.textContent = "加载失败: " + (err.message || String(err));
+      }
+      if (donut) donut.innerHTML = '<p class="muted-text">暂无统计数据</p>';
+    }
+  }
+
+  function renderCaSummary(el, total) {
+    el.innerHTML =
+      '<div class="ca-stat"><span class="ca-stat-label">总文件</span><b class="mono">' + total.files + "</b></div>" +
+      '<div class="ca-stat"><span class="ca-stat-label">代码行</span><b class="mono">' + total.code.toLocaleString() + "</b></div>" +
+      '<div class="ca-stat"><span class="ca-stat-label">注释行</span><b class="mono">' + total.comment.toLocaleString() + "</b></div>" +
+      '<div class="ca-stat"><span class="ca-stat-label">总行数</span><b class="mono">' + total.lines.toLocaleString() + "</b></div>";
+  }
+
+  function renderCaDonut(layers, totalCode) {
+    var size = 220, cx = 110, cy = 110, r = 78, w = 26;
+    var circ = 2 * Math.PI * r;
+    // 最大扇区从 12 点起，顺时针按占比降序
+    var sorted = layers.slice().sort(function (a, b) { return b.code - a.code; });
+    var acc = 0;
+    var segs = sorted.map(function (l) {
+      var frac = totalCode > 0 ? l.code / totalCode : 0;
+      var len = frac * circ;
+      var seg =
+        '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" ' +
+        'stroke="' + CA_COLORS[l.layer] + '" stroke-width="' + w + '" ' +
+        'stroke-dasharray="' + len.toFixed(2) + ' ' + (circ - len).toFixed(2) + '" ' +
+        'stroke-dashoffset="' + (-acc).toFixed(2) + '" ' +
+        'transform="rotate(-90 ' + cx + ' ' + cy + ')" class="ca-seg">' +
+        "<title>Layer " + l.layer + ": " + l.code + " 行 (" + l.share + "%)</title></circle>";
+      acc += len;
+      return seg;
+    });
+    return (
+      '<svg viewBox="0 0 ' + size + " " + size + '" class="ca-donut" role="img" aria-label="各 Layer 代码行占比">' +
+      segs.join("") +
+      '<text x="' + cx + '" y="' + (cy - 4) + '" class="ca-donut-total" text-anchor="middle">' + totalCode.toLocaleString() + "</text>" +
+      '<text x="' + cx + '" y="' + (cy + 18) + '" class="ca-donut-cap" text-anchor="middle">code lines</text>' +
+      "</svg>"
+    );
+  }
+
+  function renderCaList(layers) {
+    var maxCode = layers.reduce(function (m, l) { return Math.max(m, l.code); }, 0);
+    return (
+      '<div class="ca-list-head">' +
+      '<span></span><span>Layer</span><span class="mono">文件</span><span class="mono">代码行</span><span>占比</span><span class="mono">%</span><span></span>' +
+      "</div>" +
+      layers
+        .map(function (l) {
+          var bw = maxCode > 0 ? Math.round(100 * l.code / maxCode) : 0;
+          return (
+            '<div class="ca-row ca-row-toggle" data-layer="' + l.layer + '" role="button" tabindex="0" aria-expanded="false">' +
+            '<span class="ca-dot" style="background:' + CA_COLORS[l.layer] + '"></span>' +
+            '<span class="ca-name">Layer ' + l.layer + "</span>" +
+            '<span class="ca-files mono">' + l.file_count + "</span>" +
+            '<span class="ca-lines mono">' + l.code.toLocaleString() + "</span>" +
+            '<span class="ca-bar-wrap"><span class="ca-bar" style="width:' + bw + "%;background:" + CA_COLORS[l.layer] + '"></span></span>' +
+            '<span class="ca-share mono">' + l.share + "%</span>" +
+            '<span class="ca-chevron" aria-hidden="true"></span>' +
+            "</div>" +
+            '<div class="ca-file-sub hidden" data-file-layer="' + l.layer + '"></div>'
+          );
+        })
+        .join("")
+    );
+  }
+
+  function caFileRows(layer) {
+    var l = (state.caData && state.caData.layers || []).find(function (x) { return x.layer === layer; });
+    if (!l || !l.files || !l.files.length) return '<p class="muted-text small">无文件</p>';
+    var max = l.files.reduce(function (m, f) { return Math.max(m, f.code); }, 0);
+    return (
+      '<div class="ca-file-row ca-file-head">' +
+      '<span class="ca-file-name">文件名</span><span class="mono">代码行</span><span>分布</span><span class="mono">总行数</span>' +
+      "</div>" +
+      l.files
+        .map(function (f) {
+          var total = f.code + f.comment + f.blank;
+          var bw = max > 0 ? Math.round(100 * f.code / max) : 0;
+          return (
+            '<div class="ca-file-row">' +
+            '<span class="ca-file-name mono">' + escapeHtml(f.name) + "</span>" +
+            '<span class="ca-file-lines mono">' + f.code.toLocaleString() + "</span>" +
+            '<span class="ca-file-bar-wrap"><span class="ca-file-bar" style="width:' + bw + "%;background:" + CA_COLORS[layer] + '"></span></span>' +
+            '<span class="ca-file-total mono">' + total.toLocaleString() + "</span>" +
+            "</div>"
+          );
+        })
+        .join("")
+    );
+  }
+
+  function toggleCaRow(row) {
+    var layer = parseInt(row.getAttribute("data-layer"), 10);
+    var expanded = row.getAttribute("aria-expanded") === "true";
+    row.setAttribute("aria-expanded", String(!expanded));
+    row.classList.toggle("open", !expanded);
+    var sub = document.querySelector('.ca-file-sub[data-file-layer="' + layer + '"]');
+    if (sub) {
+      if (!expanded && !sub.getAttribute("data-rendered")) {
+        sub.innerHTML = caFileRows(layer);
+        sub.setAttribute("data-rendered", "1");
+      }
+      sub.classList.toggle("hidden", expanded);
+    }
+  }
+
+  function bindCaToggle() {
+    var list = ca$("ca-list");
+    if (!list) return;
+    list.addEventListener("click", function (ev) {
+      var row = ev.target.closest(".ca-row-toggle");
+      if (row) toggleCaRow(row);
+    });
+    list.addEventListener("keydown", function (ev) {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      var row = ev.target.closest(".ca-row-toggle");
+      if (row) {
+        ev.preventDefault();
+        toggleCaRow(row);
+      }
+    });
+  }
+
   async function init() {
     bind();
+    bindCaToggle();
+    bindCgControls();
+    bindCgRankButtons();
+    bindCgChainControls();
     renderNamerHistory();
     ensureKetcher();
   }

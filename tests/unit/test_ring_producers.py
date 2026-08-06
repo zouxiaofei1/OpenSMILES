@@ -12,7 +12,6 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2 import kind_registry as kr
-from namepredict.layer2.candidates import _ring_candidates
 from namepredict.namer import SMILESNNamer
 
 # Expected ordered producer __name__ snapshot (ring_producers._RING_PRODUCERS).
@@ -72,7 +71,8 @@ def test_ring_try_fns_unique() -> None:
     ],
 )
 def test_ring_candidates_via_registry(smiles: str, kind: str) -> None:
-    kinds = {c["kind"] for c in _ring_candidates(_info(smiles))}
+    info = _info(smiles)
+    kinds = {c["kind"] for fn in kr.ring_try_fns() if (c := fn(info)) is not None}
     assert kind in kinds
 
 
