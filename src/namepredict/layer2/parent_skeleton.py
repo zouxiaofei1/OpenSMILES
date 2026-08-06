@@ -8,7 +8,7 @@ from rdkit.Chem import Mol
 
 from namepredict.constants import Al, As, B, Bi, C, Ga, Ge, In, N, O, P, Pb, S, Sb, Se, Si, Sn, Te, Tl
 from namepredict.layer1.functional_group_inventory import FunctionalGroupOccurrence
-from namepredict.layer2.chain_walk import _chain_through, _chain_through_two
+from namepredict.layer2.chain_walk import _chain_through, _chain_through_two, _longest_chain
 
 
 class SkeletonTopology(str, Enum):
@@ -50,7 +50,12 @@ def _pair_chains(mol: Mol, anchors: list[int]) -> list[list[int]]:
 def _open_chains(mol: Mol, anchors: list[int]) -> list[list[int]]:
     open_anchors = [a for a in anchors if not mol.GetAtomWithIdx(a).IsInRing()]
     singles = [_chain_through({"mol": mol}, anchor) for anchor in open_anchors]
-    return singles + _pair_chains(mol, open_anchors)
+    out = singles + _pair_chains(mol, open_anchors)
+    if out:
+        return out
+    # 无主官能团（纯烃）：最长链作为唯一开链骨架候选。
+    chain = _longest_chain(mol)
+    return [chain] if chain else []
 
 
 def _chain_coverage(chain: list[int], occurrences) -> frozenset[str]:
@@ -67,7 +72,10 @@ def _ring_attaches(mol: Mol, ring: set[int], occurrence: FunctionalGroupOccurren
 def _ring_candidate(mol: Mol, system: dict, occurrences) -> ParentSkeleton | None:
     atoms = set(system.get("atom_ids") or ())
     covered = frozenset(o.id for o in occurrences if _ring_attaches(mol, atoms, o))
-    return ParentSkeleton(SkeletonTopology.RING_SYSTEM, tuple(sorted(atoms)), covered) if covered else None
+    # 有主官能团时要求环附着至少一个 occurrence；纯烃（无 occurrence）则全部枚举。
+    if occurrences and not covered:
+        return None
+    return ParentSkeleton(SkeletonTopology.RING_SYSTEM, tuple(sorted(atoms)), covered)
 
 
 def _producer_scaffold_ids(info: dict) -> dict[frozenset[int], str]:

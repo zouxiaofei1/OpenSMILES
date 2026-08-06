@@ -107,6 +107,7 @@ def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
 
 _RETAINED_RING_KINDS = {
     FunctionalGroupClass.ACID: "benzoic",
+    FunctionalGroupClass.ESTER: "benzoate",
     FunctionalGroupClass.ALDEHYDE: "benzaldehyde",
     FunctionalGroupClass.NITRILE: "benzonitrile",
     FunctionalGroupClass.AMIDE: "benzamide",
@@ -115,6 +116,7 @@ _RETAINED_RING_KINDS = {
 }
 _RING_FIELDS = {
     FunctionalGroupClass.ACID: ("cooh_c_idx", "cooh_c_idxs"),
+    FunctionalGroupClass.ESTER: ("ester_c_idx", "ester_c_idxs"),
     FunctionalGroupClass.KETONE: ("ketone_c_idx", "ketone_c_idxs"),
     FunctionalGroupClass.ALDEHYDE: ("aldehyde_c_idx", "aldehyde_c_idxs"),
     FunctionalGroupClass.NITRILE: ("nitrile_c_idx", "nitrile_c_idxs"),
@@ -192,7 +194,9 @@ def _ring_fields(selection: PrincipalGroupSelection, occurrences) -> dict:
 def _ring_fact_fields(fields: dict, facts: PrincipalExpressionFacts) -> dict:
     attachments = sorted(facts.attachment_atoms)
     extra = {"principal_attachment_atoms": attachments}
-    if facts.group_class is FunctionalGroupClass.ACID and len(attachments) == 1:
+    if len(attachments) == 1 and facts.group_class in (
+        FunctionalGroupClass.ACID, FunctionalGroupClass.ESTER,
+    ):
         extra["ring_attach_idx"] = attachments[0]
     return {**fields, **extra}
 
@@ -208,6 +212,15 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None) -> dict:
             "typed_ring_expression_supported": supported}
 
 
+def _benzoate_ester_fields(info: dict, fields: dict) -> dict:
+    """Benzoate（苯环上酯）特有字段：酯 O 与烷氧基侧（L5 命名依赖）。"""
+    from namepredict.layer2.arene_carbonyl import _benzoate_alkoxy, _benzoate_side_fields
+    e = info["esters"][0]
+    side = _benzoate_alkoxy(info["mol"], e["o_idx"], e["alkoxy_c_idx"]) or {}
+    return {**fields, "o_idx": e["o_idx"], "alkoxy_c_idx": e["alkoxy_c_idx"],
+            **_benzoate_side_fields(side)}
+
+
 def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
                            skeleton: ParentSkeleton) -> dict | None:
     if skeleton.topology is not SkeletonTopology.RING_SYSTEM:
@@ -219,6 +232,8 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     facts = _facts(selection, skeleton, occurrences, info["mol"])
     fields = {**_ring_fact_fields(_ring_fields(selection, occurrences), facts),
               **_scaffold_fields(info, skeleton, facts)}
+    if kind == "benzoate":
+        fields = _benzoate_ester_fields(info, fields)
     return _parent_dict(kind, skeleton, occurrences, fields, facts)
 
 
@@ -237,3 +252,83 @@ def express_chain_principal(selection: PrincipalGroupSelection, skeleton: Parent
         return None
     return _parent_dict(kind, skeleton, occurrences, _chain_fields(selection, occurrences),
                         _facts(selection, skeleton, occurrences))
+
+
+# ── 无主官能团（纯烃）表达：P-44.1 缺位时按拓扑分配 hydrocarbon kind ──
+
+def _system_is_aromatic(info: dict, atoms: set[int]) -> bool:
+    return any(set(s.get("atom_ids") or ()) == atoms and s.get("is_aromatic_mancude")
+               for s in info.get("ring_systems") or [])
+
+
+def _mono_ring_chain(info: dict, atoms: set[int]) -> list[int] | None:
+    """SSSR 环序（合法顺序），供单环骨架使用。"""
+    return next((list(r["atom_ids"]) for r in info.get("rings") or []
+                 if set(r["atom_ids"]) == atoms), None)
+
+
+def _chain_polys(info: dict, atom_set: set[int]) -> tuple[list[dict], list[dict]]:
+    """骨架内的 C=C / C≡C 条目（端点都在 atom_set 中）。"""
+    dbs = [d for d in info.get("double_bonds") or [] if d["c1"] in atom_set and d["c2"] in atom_set]
+    tbs = [t for t in info.get("triple_bonds") or [] if t["c1"] in atom_set and t["c2"] in atom_set]
+    return dbs, tbs
+
+
+def _hydrocarbon_chain_parent(info: dict, skeleton: ParentSkeleton) -> dict:
+    chain = list(skeleton.atom_ids)
+    dbs, tbs = _chain_polys(info, set(chain))
+    if len(tbs) == 1 and not dbs:
+        kind, fields = "alkyne", {"triple_bond": (tbs[0]["c1"], tbs[0]["c2"])}
+    elif len(dbs) == 1 and not tbs:
+        kind, fields = "alkene", {"double_bond": (dbs[0]["c1"], dbs[0]["c2"])}
+    elif len(dbs) >= 2 and not tbs:
+        kind, fields = "polyene", {"double_bonds": [(d["c1"], d["c2"]) for d in dbs]}
+    else:
+        kind, fields = "alkane", {}
+    return {"kind": kind, "chain": chain, "n_carbons": len(chain), **fields}
+
+
+def _aromatic_scaffold_parent(info: dict, skeleton: ParentSkeleton, atoms: set[int]) -> dict | None:
+    """芳香环：解析到保留 scaffold 则用其 id（benzene/naphthalene 等）。"""
+    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
+    scaffold = resolve_ring_scaffold(info, skeleton)
+    if scaffold is None or scaffold.id == "carbocycle":
+        return None  # 芳香碳环未匹配保留 scaffold（如 anthracene）
+    if scaffold.id != "naphthalene":
+        return {"kind": scaffold.id, "chain": _mono_ring_chain(info, atoms) or list(skeleton.atom_ids),
+                "n_carbons": len(atoms), **_scaffold_fields(info, skeleton, None)}
+    from namepredict.layer2.naphthalene import _naph_chains, _naph_parent_dict
+    chains = _naph_chains(info)
+    if chains and set(chains[0]) == atoms:
+        return {**_naph_parent_dict(info, "naphthalene"), **_scaffold_fields(info, skeleton, None)}
+    return None
+
+
+def _saturated_ring_parent(info: dict, skeleton: ParentSkeleton, atoms: set[int]) -> dict | None:
+    """非芳香环：按环内不饱和度分配 cycloalkane/cycloalkene/cyclopolyene。"""
+    dbs, tbs = _chain_polys(info, atoms)
+    if tbs:
+        return None  # 环炔暂不支持
+    chain = _mono_ring_chain(info, atoms) or list(skeleton.atom_ids)
+    if not dbs:
+        kind, fields = "cycloalkane", {}
+    elif len(dbs) == 1:
+        kind, fields = "cycloalkene", {"double_bond": (dbs[0]["c1"], dbs[0]["c2"])}
+    else:
+        kind, fields = "cyclopolyene", {"double_bonds": [(d["c1"], d["c2"]) for d in dbs]}
+    return {"kind": kind, "chain": chain, "n_carbons": len(chain), **fields}
+
+
+def _hydrocarbon_ring_parent(info: dict, skeleton: ParentSkeleton) -> dict | None:
+    atoms = set(skeleton.atom_ids)
+    if _system_is_aromatic(info, atoms):
+        return _aromatic_scaffold_parent(info, skeleton, atoms)
+    parent = _saturated_ring_parent(info, skeleton, atoms)
+    return {**parent, **_scaffold_fields(info, skeleton, None)} if parent else None
+
+
+def express_hydrocarbon_principal(info: dict, skeleton: ParentSkeleton) -> dict | None:
+    """无主官能团时：按拓扑分配纯烃 kind（alkane/ene/yne/polyene/环/保留 scaffold）。"""
+    if skeleton.topology is SkeletonTopology.RING_SYSTEM:
+        return _hydrocarbon_ring_parent(info, skeleton)
+    return _hydrocarbon_chain_parent(info, skeleton)

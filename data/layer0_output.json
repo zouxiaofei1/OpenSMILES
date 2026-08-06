@@ -1,0 +1,63 @@
+{
+ "meta": {
+  "total": 41,
+  "processed": 5
+ },
+ "results": {
+  "0": {
+   "id": "tiers-91",
+   "smiles": "CC(=O)N",
+   "parseable": true,
+   "classification": "organic",
+   "salt": null,
+   "organic_smiles": "CC(=O)N",
+   "n_fragments": 1,
+   "notes": "Acetamide is a neutral organic molecule.",
+   "error": false
+  },
+  "1": {
+   "id": "tiers-169",
+   "smiles": "CC(C)CO",
+   "parseable": true,
+   "classification": "organic",
+   "salt": null,
+   "organic_smiles": "CC(C)CO",
+   "n_fragments": 1,
+   "notes": "Organic molecule: 2-methylpropan-1-ol, no salt.",
+   "error": false
+  },
+  "2": {
+   "id": "tiers-38053",
+   "smiles": "CC1(CC(CC(C1)C)O)C",
+   "parseable": true,
+   "classification": "organic",
+   "salt": null,
+   "organic_smiles": "CC1(CC(CC(C1)C)O)C",
+   "n_fragments": 1,
+   "notes": "Organic molecule: a substituted cyclohexanol with carbon-hydrogen skeleton.",
+   "error": false
+  },
+  "3": {
+   "id": "tiers-97781",
+   "smiles": "N1(CCCCCC1)S(=O)(=O)C=1C=C(C(=O)NC2CS(CC2)(=O)=O)C=CC1Cl",
+   "parseable": true,
+   "classification": "organic",
+   "salt": null,
+   "organic_smiles": "N1(CCCCCC1)S(=O)(=O)C=1C=C(C(=O)NC2CS(CC2)(=O)=O)C=CC1Cl",
+   "n_fragments": 1,
+   "notes": "Organic molecule, single neutral entity, no counterions.",
+   "error": false
+  },
+  "4": {
+   "id": "tiers-7222",
+   "smiles": "[N+](=O)([O-])C=1C(=CC=2CCCCC2C1)O",
+   "parseable": true,
+   "classification": "organic",
+   "salt": null,
+   "organic_smiles": "[N+](=O)([O-])C=1C(=CC=2CCCCC2C1)O",
+   "n_fragments": 1,
+   "notes": "A single organic molecule: nitro-hydroxy-tetrahydronaphthalene.",
+   "error": false
+  }
+ }
+}

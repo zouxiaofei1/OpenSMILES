@@ -1193,6 +1193,142 @@ select.input {
 }
 
 /* ══════════════════════════════════════════════════════════════════
+   Layer Benchmark Page
+   ════════════════════════════════════════════════════════════════ */
+
+.layer-benchmark-page {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: var(--space-xl);
+  flex: 1;
+  min-height: 0;
+  animation: pageFadeIn 0.25s var(--ease-out);
+}
+
+.layer-benchmark-page.hidden {
+  display: none !important;
+}
+
+.lb-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-lg) var(--space-sm);
+  border-right: 1px solid rgba(71, 85, 105, 0.3);
+  align-self: start;
+  position: sticky;
+  top: var(--space-lg);
+}
+
+.lb-sidebar-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted-text);
+  padding: 0 var(--space-sm) var(--space-sm);
+}
+
+.lb-item {
+  text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text, inherit);
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.lb-item:hover {
+  background: rgba(71, 85, 105, 0.12);
+}
+
+.lb-item.active {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.lb-content {
+  min-width: 0;
+}
+
+.lb-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-lg);
+  margin-top: var(--space-lg);
+}
+
+.lb-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  flex: 1;
+  min-width: 260px;
+}
+
+.lb-field input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-accent);
+}
+
+.lb-actions {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.lb-progress-stats {
+  display: flex;
+  gap: var(--space-lg);
+  margin-top: var(--space-sm);
+}
+
+.lb-score-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) 2fr auto;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid rgba(71, 85, 105, 0.15);
+}
+
+.lb-score-label {
+  font-size: 13px;
+  color: var(--color-text, inherit);
+}
+
+.lb-score-bar-wrap {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(71, 85, 105, 0.15);
+  overflow: hidden;
+}
+
+.lb-score-bar {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--color-accent), #38bdf8);
+}
+
+.lb-score-value {
+  font-size: 13px;
+  min-width: 96px;
+  text-align: right;
+  color: var(--color-muted-text);
+}
+
+.lb-diff-table td {
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ══════════════════════════════════════════════════════════════════
    Pipeline Debug Page
    ════════════════════════════════════════════════════════════════ */
 

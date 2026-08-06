@@ -17,7 +17,8 @@ class PrincipalParentSelection:
 
 def select_principal_parent_skeletons(info: dict) -> PrincipalParentSelection:
     principal = select_principal_group(inventory_from_info(info))
-    skeletons = select_principal_skeletons(info, principal.occurrences) if principal else None
+    occurrences = principal.occurrences if principal else ()
+    skeletons = select_principal_skeletons(info, occurrences)
     return PrincipalParentSelection(principal, skeletons)
 
 
@@ -113,8 +114,12 @@ def _needs_special(selection: PrincipalParentSelection, parents: list[dict]) -> 
 
 def rule_driven_parent_candidates(info: dict) -> list[dict]:
     selection = select_principal_parent_skeletons(info)
-    if selection.principal is None or selection.skeletons is None:
+    if selection.skeletons is None:
         return []
+    if selection.principal is None:
+        from namepredict.layer2.principal_expression import express_hydrocarbon_principal
+        return [p for s in selection.skeletons.candidates
+                if (p := express_hydrocarbon_principal(info, s)) is not None]
     parents = _express_selected(selection, info)
     special = _owned(_special_expression(selection, info), selection) if _needs_special(selection, parents) else None
     extra = [special] if special else []

@@ -544,10 +544,13 @@ def _rank_candidates(info: dict, cands: list[dict]) -> list[dict]:
 
 def _finalize_ranked(info: dict, cands: list[dict]) -> list[dict]:
     from namepredict.layer2.kind_registry import pack_parent_stem
+    from namepredict.layer2.parent_candidate import with_principal_group_contract
     from namepredict.layer2.parent_ownership import finalize_parent_ownership
     mol = info.get("mol")
     return [
-        finalize_parent_ownership(pack_parent_stem(c, mol), mol)
+        finalize_parent_ownership(
+            pack_parent_stem(with_principal_group_contract(c), mol), mol,
+        )
         for c in _rank_candidates(info, cands)
     ]
 

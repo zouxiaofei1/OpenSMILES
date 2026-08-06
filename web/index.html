@@ -25,6 +25,7 @@
           <button class="tab" data-page="namer" aria-current="page">Namer</button>
           <button class="tab" data-page="benchmark">Benchmark 预览</button>
           <button class="tab" data-page="benchmark-run">Benchmark 跑分</button>
+          <button class="tab" data-page="layer-benchmark">分层 benchmark</button>
           <button class="tab" data-page="debug">Pipeline Debug</button>
         </nav>
       </div>
@@ -241,6 +242,113 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Layer Benchmark Page -->
+      <div id="layer-benchmark-page" class="layer-benchmark-page hidden" role="tabpanel" aria-labelledby="tab-layer-benchmark">
+        <aside class="lb-sidebar" role="navigation" aria-label="Layer 选择">
+          <div class="lb-sidebar-title">Layer</div>
+          <button type="button" class="lb-item active" data-lb-layer="0">Layer 0</button>
+          <button type="button" class="lb-item" data-lb-layer="1">Layer 1</button>
+          <button type="button" class="lb-item" data-lb-layer="2">Layer 2</button>
+          <button type="button" class="lb-item" data-lb-layer="3">Layer 3</button>
+          <button type="button" class="lb-item" data-lb-layer="4">Layer 4</button>
+          <button type="button" class="lb-item" data-lb-layer="5">Layer 5</button>
+        </aside>
+        <section class="lb-content" role="tabpanel">
+          <!-- Layer 0 panel (implemented) -->
+          <div id="lb-panel-0" class="lb-panel">
+            <div class="card" style="margin-bottom: var(--space-2xl)">
+              <div class="card-head row-between">
+                <h3 class="card-title">Layer 0 — Molecule Preprocessor</h3>
+                <span id="lb-status" class="chip">就绪</span>
+              </div>
+              <div class="lb-controls">
+                <div class="lb-field">
+                  <label class="field-label" for="lb-ratio">抽样比例</label>
+                  <input id="lb-ratio" class="input" type="range" min="1" max="100" value="10" step="1" />
+                  <span id="lb-ratio-val" class="muted-text small mono">10%</span>
+                  <span class="muted-text small">按 tier 分层随机抽取，覆盖难易不均</span>
+                </div>
+                <div class="lb-actions">
+                  <button id="lb-refresh" class="btn btn-secondary" type="button">刷新 benchmark 数据</button>
+                  <button id="lb-score" class="btn btn-primary" type="button">跑分</button>
+                </div>
+              </div>
+              <div id="lb-progress" class="hidden" style="margin-top: var(--space-xl)">
+                <div class="br-progress-bar-wrap">
+                  <div id="lb-progress-bar" class="br-progress-bar" style="width:0%"></div>
+                </div>
+                <div class="lb-progress-stats">
+                  <span id="lb-progress-text" class="muted-text small">0 / 0</span>
+                  <span id="lb-progress-hint" class="muted-text small">正在调用 LLM 生成 Layer 0 基准数据…</span>
+                </div>
+              </div>
+            </div>
+            <div id="lb-result" class="hidden">
+              <div class="card" style="margin-bottom: var(--space-2xl)">
+                <div class="card-head row-between">
+                  <h3 class="card-title">跑分结果：真实 Layer 0 vs LLM 基准</h3>
+                  <span id="lb-score-info" class="muted-text small mono"></span>
+                </div>
+                <div id="lb-score-table-wrap"></div>
+              </div>
+              <div class="card">
+                <div class="card-head row-between">
+                  <h3 class="card-title">不一致示例</h3>
+                  <span id="lb-diff-count" class="muted-text small"></span>
+                </div>
+                <div class="benchmark-table-wrap" id="lb-diff-wrap"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Layer 1-5 panels (not implemented) -->
+          <div id="lb-panel-1" class="lb-panel hidden">
+            <div class="card">
+              <div class="card-head row-between">
+                <h3 class="card-title">Layer 1 — Structural Analyzer</h3>
+                <span class="chip">未实装</span>
+              </div>
+              <p class="muted-text">功能尚未实装。布局与 Layer 0 相同，后续将接入该层输出与 LLM 数据的对比。</p>
+            </div>
+          </div>
+          <div id="lb-panel-2" class="lb-panel hidden">
+            <div class="card">
+              <div class="card-head row-between">
+                <h3 class="card-title">Layer 2 — Parent Selector</h3>
+                <span class="chip">未实装</span>
+              </div>
+              <p class="muted-text">功能尚未实装。布局与 Layer 0 相同，后续将接入该层输出与 LLM 数据的对比。</p>
+            </div>
+          </div>
+          <div id="lb-panel-3" class="lb-panel hidden">
+            <div class="card">
+              <div class="card-head row-between">
+                <h3 class="card-title">Layer 3 — Substituent Extractor</h3>
+                <span class="chip">未实装</span>
+              </div>
+              <p class="muted-text">功能尚未实装。布局与 Layer 0 相同，后续将接入该层输出与 LLM 数据的对比。</p>
+            </div>
+          </div>
+          <div id="lb-panel-4" class="lb-panel hidden">
+            <div class="card">
+              <div class="card-head row-between">
+                <h3 class="card-title">Layer 4 — Numbering Engine</h3>
+                <span class="chip">未实装</span>
+              </div>
+              <p class="muted-text">功能尚未实装。布局与 Layer 0 相同，后续将接入该层输出与 LLM 数据的对比。</p>
+            </div>
+          </div>
+          <div id="lb-panel-5" class="lb-panel hidden">
+            <div class="card">
+              <div class="card-head row-between">
+                <h3 class="card-title">Layer 5 — Name Assembler</h3>
+                <span class="chip">未实装</span>
+              </div>
+              <p class="muted-text">功能尚未实装。布局与 Layer 0 相同，后续将接入该层输出与 LLM 数据的对比。</p>
+            </div>
+          </div>
+        </section>
       </div>
 
       <!-- Debug Page -->

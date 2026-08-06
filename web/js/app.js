@@ -10,6 +10,11 @@
     benchmarkRun: "/api/v1/benchmark-run",
     benchmarkRunStatus: "/api/v1/benchmark-run/status",
     benchmarkRunResult: "/api/v1/benchmark-run/result",
+    layerSample: "/api/v1/layer-benchmark/sample",
+    layerSampleStatus: "/api/v1/layer-benchmark/sample-status",
+    layerData: "/api/v1/layer-benchmark/data",
+    layerScore: "/api/v1/layer-benchmark/score",
+    layerScoreResult: "/api/v1/layer-benchmark/score-result",
     debug: "/api/v1/debug",
   };
 
@@ -38,6 +43,11 @@
     // benchmark run
     brRunning: false,
     brPollTimer: null,
+    // layer benchmark
+    lbLayer: 0,
+    lbGenerating: false,
+    lbPollTimer: null,
+    lbScore: null,
   };
 
   const $ = (id) => document.getElementById(id);
@@ -310,15 +320,18 @@
     var namerLayout = document.getElementById("namer-layout");
     var bmPage = document.getElementById("benchmark-page");
     var brPage = document.getElementById("benchmark-run-page");
+    var lbPage = document.getElementById("layer-benchmark-page");
     var debugPage = document.getElementById("debug-page");
     // Hide all first
     if (namerLayout) namerLayout.classList.add("hidden");
     if (bmPage) bmPage.classList.add("hidden");
     if (brPage) brPage.classList.add("hidden");
+    if (lbPage) lbPage.classList.add("hidden");
     if (debugPage) debugPage.classList.add("hidden");
     // Stop polling
     stopBmPolling();
     stopBrPolling();
+    stopLbPolling();
     // Show active page
     if (name === "benchmark") {
       if (bmPage) bmPage.classList.remove("hidden");
@@ -327,6 +340,9 @@
       }
     } else if (name === "benchmark-run") {
       if (brPage) brPage.classList.remove("hidden");
+    } else if (name === "layer-benchmark") {
+      if (lbPage) lbPage.classList.remove("hidden");
+      loadLayerBenchmarkData();
     } else if (name === "debug") {
       if (debugPage) debugPage.classList.remove("hidden");
     } else {
@@ -1006,6 +1022,25 @@
     if (debugSmiles) {
       debugSmiles.addEventListener("input", scheduleLiveDebug);
     }
+
+    // Layer Benchmark controls
+    document.querySelectorAll(".lb-item").forEach(function (b) {
+      b.addEventListener("click", function () {
+        setLbLayer(parseInt(b.getAttribute("data-lb-layer"), 10));
+      });
+    });
+    var lbRatio = document.getElementById("lb-ratio");
+    if (lbRatio) {
+      lbRatio.addEventListener("input", function () {
+        var v = parseInt(lbRatio.value, 10) || 0;
+        var valEl = document.getElementById("lb-ratio-val");
+        if (valEl) valEl.textContent = v + "%";
+      });
+    }
+    var lbRefresh = document.getElementById("lb-refresh");
+    if (lbRefresh) lbRefresh.addEventListener("click", startLayerSample);
+    var lbScore = document.getElementById("lb-score");
+    if (lbScore) lbScore.addEventListener("click", runLayerScore);
   }
 
   /* ---------- Benchmark Run ---------- */
@@ -1181,6 +1216,240 @@
       if (r.n) parts.push("n=" + r.n);
       timing.textContent = parts.join("  ·  ");
     }
+  }
+
+  /* ---------- Layer Benchmark ---------- */
+
+  function lb$(id) {
+    return document.getElementById("lb-" + id);
+  }
+
+  function stopLbPolling() {
+    if (state.lbPollTimer) {
+      clearInterval(state.lbPollTimer);
+      state.lbPollTimer = null;
+    }
+    state.lbGenerating = false;
+  }
+
+  function showLbProgress(total) {
+    var prog = lb$("progress");
+    if (prog) prog.classList.remove("hidden");
+    var bar = lb$("progress-bar");
+    if (bar) bar.style.width = "0%";
+    var text = lb$("progress-text");
+    if (text && total) text.textContent = "0 / " + total + " (0%)";
+  }
+
+  function hideLbProgress() {
+    var prog = lb$("progress");
+    if (prog) prog.classList.add("hidden");
+  }
+
+  function setLbStatus(msg, color) {
+    var statusEl = lb$("status");
+    if (!statusEl) return;
+    statusEl.textContent = msg;
+    if (color) statusEl.style.color = color;
+    else statusEl.style.color = "";
+  }
+
+  function setLbLayer(layer) {
+    state.lbLayer = layer;
+    document.querySelectorAll(".lb-item").forEach(function (b) {
+      var l = parseInt(b.getAttribute("data-lb-layer"), 10);
+      if (l === layer) b.classList.add("active");
+      else b.classList.remove("active");
+    });
+    for (var i = 0; i <= 5; i++) {
+      var panel = document.getElementById("lb-panel-" + i);
+      if (panel) panel.classList.toggle("hidden", i !== layer);
+    }
+  }
+
+  async function loadLayerBenchmarkData() {
+    try {
+      var data = await api(API.layerData);
+      if (!data || !data.ok) return;
+      var ratioEl = lb$("ratio");
+      var ratioVal = lb$("ratio-val");
+      if (data.ratio > 0 && ratioEl) {
+        ratioEl.value = String(Math.round(data.ratio));
+        if (ratioVal) ratioVal.textContent = Math.round(data.ratio) + "%";
+      }
+      var truth = data.truth || {};
+      var n = data.sample_n || 0;
+      if (truth.running || (n > 0 && truth.done < truth.total)) {
+        state.lbGenerating = true;
+        showLbProgress(truth.total);
+        startLbPolling();
+        setLbStatus("生成基准中… " + (truth.done || 0) + "/" + (truth.total || n), "#f59e0b");
+      } else if (n > 0 && truth.ready) {
+        setLbStatus("基准就绪 · " + n + " 条");
+      } else if (n > 0) {
+        setLbStatus(n + " 条样本");
+      }
+      if (data.score && data.score.ok) {
+        state.lbScore = data.score;
+        renderLbScore(data.score);
+      }
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  async function startLayerSample() {
+    if (state.lbGenerating) return;
+    var btn = lb$("refresh");
+    if (btn) btn.disabled = true;
+    setLbStatus("抽样中…", "#f59e0b");
+    var ratioEl = lb$("ratio");
+    var ratio = ratioEl ? parseFloat(ratioEl.value) : 10;
+    if (!ratio || isNaN(ratio)) ratio = 10;
+    try {
+      var data = await api(API.layerSample, {
+        method: "POST",
+        body: JSON.stringify({ ratio: ratio, layer: state.lbLayer }),
+      });
+      if (!data || !data.ok) {
+        setLbStatus("错误: " + ((data && data.error) || "未知"), "#ef4444");
+        return;
+      }
+      setLbStatus("生成基准中… " + data.n + " 条", "#f59e0b");
+      showLbProgress(data.n);
+      state.lbGenerating = true;
+      startLbPolling();
+    } catch (err) {
+      setLbStatus("请求失败: " + (err.message || String(err)), "#ef4444");
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function pollLayerStatus() {
+    var status = null;
+    try {
+      status = await api(API.layerSampleStatus);
+    } catch (_) {
+      return;
+    }
+    if (!status || !status.ok) return;
+    var done = status.done || 0;
+    var total = status.total || 0;
+    var pct = total > 0 ? Math.round(100 * done / total) : 0;
+    var bar = lb$("progress-bar");
+    if (bar) bar.style.width = pct + "%";
+    var text = lb$("progress-text");
+    if (text) text.textContent = done + " / " + total + " (" + pct + "%)";
+    if (status.ready || (!status.running && done >= total && total > 0)) {
+      stopLbPolling();
+      hideLbProgress();
+      setLbStatus("基准就绪 · " + done + " 条");
+    } else if (!status.running) {
+      stopLbPolling();
+      hideLbProgress();
+      setLbStatus("生成结束（可能失败）");
+    }
+  }
+
+  function startLbPolling() {
+    if (state.lbPollTimer) return;
+    state.lbPollTimer = setInterval(pollLayerStatus, 3000);
+  }
+
+  async function runLayerScore() {
+    var btn = lb$("score");
+    if (btn) btn.disabled = true;
+    setLbStatus("跑分中…", "#f59e0b");
+    try {
+      var data = await api(API.layerScore, {
+        method: "POST",
+        body: JSON.stringify({ layer: state.lbLayer }),
+      });
+      if (!data || !data.ok) {
+        setLbStatus("错误: " + ((data && data.error) || "未知"), "#ef4444");
+        return;
+      }
+      setLbStatus("完成", "#86efac");
+      state.lbScore = data;
+      renderLbScore(data);
+    } catch (err) {
+      setLbStatus("跑分失败: " + (err.message || String(err)), "#ef4444");
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function lbScoreRows(score) {
+    var fields = [
+      ["parseable", "可解析 (parseable)"],
+      ["classification", "有机 / 无机分类"],
+      ["salt_present", "是否为盐"],
+      ["salt_type", "盐类型（均为盐时）"],
+      ["n_fragments", "片段数"],
+      ["complete", "全部字段一致"],
+    ];
+    return fields
+      .map(function (pair) {
+        var key = pair[0], label = pair[1];
+        var m = score[key] || {};
+        var pct = m.pct != null ? m.pct.toFixed(1) + "%" : "—";
+        var det = m.n ? "(" + m.ok + "/" + m.n + ")" : "";
+        var bw = m.n ? Math.round(100 * m.ok / m.n) : 0;
+        return (
+          '<div class="lb-score-row">' +
+          '<span class="lb-score-label">' + label + "</span>" +
+          '<span class="lb-score-bar-wrap"><span class="lb-score-bar" style="width:' + bw + '%"></span></span>' +
+          '<span class="lb-score-value mono">' + pct + " " + det + "</span>" +
+          "</div>"
+        );
+      })
+      .join("");
+  }
+
+  function lbSideHtml(s) {
+    if (!s) return '<span class="muted-text">—</span>';
+    var parts = [];
+    parts.push(s.parseable ? "解析✓" : "解析✗");
+    parts.push(s.classification || "?");
+    parts.push(s.salt ? "盐:" + s.salt : "无盐");
+    parts.push("frag=" + (s.n_fragments != null ? s.n_fragments : "?"));
+    return escapeHtml(parts.join(" · "));
+  }
+
+  function renderLbScore(score) {
+    var resultEl = lb$("result");
+    if (!resultEl) return;
+    resultEl.classList.remove("hidden");
+    var info = lb$("score-info");
+    if (info) info.textContent = "n=" + score.n + " · ratio=" + (score.ratio != null ? score.ratio + "%" : "?");
+    var wrap = lb$("score-table-wrap");
+    if (wrap) wrap.innerHTML = lbScoreRows(score);
+    var diffWrap = lb$("diff-wrap");
+    var diffCount = lb$("diff-count");
+    var diffs = score.diffs || [];
+    if (diffCount) diffCount.textContent = diffs.length + " 条";
+    if (!diffWrap) return;
+    if (!diffs.length) {
+      diffWrap.innerHTML = '<p class="muted-text small" style="padding:1rem">无不一致示例</p>';
+      return;
+    }
+    var rows = diffs
+      .map(function (d) {
+        return (
+          "<tr>" +
+          '<td class="mono small">' + escapeHtml(d.smiles || "") + "</td>" +
+          '<td class="small">' + lbSideHtml(d.real) + "</td>" +
+          '<td class="small">' + lbSideHtml(d.llm) + "</td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+    diffWrap.innerHTML =
+      '<table class="benchmark-table lb-diff-table"><thead><tr>' +
+      "<th>SMILES</th><th>真实 L0</th><th>LLM 基准</th></tr></thead><tbody>" +
+      rows +
+      "</tbody></table>";
   }
 
   async function init() {

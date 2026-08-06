@@ -107,8 +107,8 @@ def _principal_candidates(info: dict) -> list[dict]:
 
 
 def _collect_candidates(info: dict) -> list[dict]:
-    raw = [_quaternary_parent(info)] + _principal_candidates(info) + _ring_candidates(info) + [_benzene_candidate(info)]
-    raw += _unsat_candidates(info) + [_alkane_fallback(info)]
+    raw = _principal_candidates(info)
+    ##raw += [_quaternary_parent(info)] + _unsat_candidates(info) + [_alkane_fallback(info)]  +_ring_candidates(info) + [_benzene_candidate(info)]
     return _dedupe_parents(_candidate_result(info, [c for c in raw if c is not None]))
 
 
