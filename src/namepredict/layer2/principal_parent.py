@@ -41,24 +41,7 @@ def _special_expression(selection: PrincipalParentSelection, info: dict) -> dict
     if group_class is FunctionalGroupClass.KETONE and info["mol"].GetRingInfo().NumRings():
         from namepredict.layer2.parent_selector import _ketone_parent
         return _ketone_parent(info)
-    return _open_chain_expression(selection, info)
-
-def _open_chain_expression(selection: PrincipalParentSelection, info: dict) -> dict | None:
     return None
-    if len(selection.principal.occurrences) != 1 or info["mol"].GetRingInfo().NumRings():
-        return None
-    group_class = selection.principal.group_class
-    from namepredict.layer2 import parent_selector as builders
-    builders_by_class = {
-        FunctionalGroupClass.ESTER: builders._ester_parent,
-        FunctionalGroupClass.AMIDE: builders._amide_parent,
-        FunctionalGroupClass.ALDEHYDE: builders._aldehyde_parent,
-        #FunctionalGroupClass.KETONE: builders._ketone_parent,
-        FunctionalGroupClass.NITRILE: builders._nitrile_parent,
-        FunctionalGroupClass.AMINE: builders._amine_parent,
-    }
-    builder = builders_by_class.get(group_class)
-    return builder(info) if builder else None
 
 def _unsupported_typed_ring(parent: dict, selection: PrincipalParentSelection) -> bool:
     return (selection.principal.group_class is FunctionalGroupClass.KETONE

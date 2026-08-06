@@ -2,9 +2,8 @@
 # Layer: L2,L3,L4,L5
 #
 # 验证 rule-driven principal 管线对无环单官能团 ester/amide/aldehyde/nitrile
-# 也产出信息完整的 chain parent dict（kind + 单数 *_c_idx + 不饱和 + 酯烷氧基），
-# 与 builder 路径 _open_chain_expression 经 _dedupe_parents 按 (kind, chain)
-# 合并后命名行为不变。
+# 也产出信息完整的 chain parent dict（kind + 单数 *_c_idx + 不饱和 + 酯烷氧基）。
+# 经典 builder 路径 _open_chain_expression 已删除，骨架表达为唯一来源。
 from __future__ import annotations
 
 from namepredict.constants import normalize_en, normalize_zh

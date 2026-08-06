@@ -95,10 +95,9 @@ flowchart TD
      按环内不饱和度给 cycloalkane/cycloalkene/cyclopolyene）
 
 4. **`principal_parent.py`** — `rule_driven_parent_candidates()` 编排以上：选主官能团 →
-   选骨架 → 表达；对 ester×2（`_diester_parent`）与环酮等走 `_special_expression`；单 FG 无环
-   的 ester/amide/aldehyde/ketone/nitrile/amine 走 `_open_chain_expression`（直接调用
-   `parent_selector` 的经典 builder）——骨架表达已覆盖全部 8 类，与 builder 候选经
-   `_dedupe_parents`（`candidates.py`）按 `(kind, chain)` 去重合并，builder 缺失时骨架表达兜底。
+   选骨架 → 表达；对 ester×2（`_diester_parent`）与环酮等走 `_special_expression`。
+   `_open_chain_expression`（`parent_selector` 经典 builder 通道）已删除——骨架表达
+   `express_chain_principal` 覆盖全部 8 类主官能团，成为唯一来源。
    `_unsupported_typed_ring` 拒绝"无表达能力骨架"的酮表达。
 
 > **源:** `E:\chem\src\namepredict\layer2\principal_selection.py:25-33`, `E:\chem\src\namepredict\layer2\parent_skeleton.py:193-215`, `E:\chem\src\namepredict\layer2\principal_expression.py:37-45, 108-125, 211-222`, `E:\chem\src\namepredict\layer2\principal_parent.py:114-124`

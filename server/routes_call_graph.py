@@ -184,6 +184,56 @@ def _heat(w: float) -> str:
     r, g, b = colorsys.hsv_to_rgb(h, 0.85, 0.92)
     return "#%02x%02x%02x" % (int(r * 255), int(g * 255), int(b * 255))
 
+
+def _module_dir(module: str) -> str:
+    """module 路径（相对 namepredict）去掉文件名，如 layer2/scaffold。"""
+    m = module or "?"
+    return m.rsplit("/", 1)[0] if "/" in m else m
+
+
+_LAYER_RE = re.compile(r"layer(\d)")
+
+
+def _dir_hue(module: str) -> float:
+    """目录色相：layer0-5 各占 60°（层间明显区分），子目录在层内小偏移。
+
+    非 layer 路径（cache 等）退化为普通字符串哈希。
+    """
+    d = _module_dir(module)
+    m = _LAYER_RE.search(d)
+    if m:
+        base = int(m.group(1)) * 60  # layerN → N*60°
+        sub = d[len(m.group(0)):]    # 子路径（/scaffold/builders）
+        off = 0
+        for ch in sub:
+            off = (off * 33 + ord(ch)) & 0xffff
+        return ((base + off % 36) % 360) / 360.0
+    h = 0
+    for ch in d:
+        h = (h * 33 + ord(ch)) & 0xffff
+    return (h % 360) / 360.0
+
+
+def _node_color(module: str, w: float) -> str:
+    """目录色系节点色：色相由目录决定，耗时 w 越大越亮/越饱和。"""
+    hue = _dir_hue(module)
+    light = 0.30 + 0.30 * max(0.0, min(1.0, w))
+    sat = 0.50 + 0.25 * max(0.0, min(1.0, w))
+    r, g, b = colorsys.hls_to_rgb(hue, light, sat)
+    return "#%02x%02x%02x" % (int(r * 255), int(g * 255), int(b * 255))
+
+
+def _text_color(hex_color: str) -> str:
+    """按背景亮度选白/黑字，保证可读。"""
+    try:
+        r = int(hex_color[1:3], 16)
+        g = int(hex_color[3:5], 16)
+        b = int(hex_color[5:7], 16)
+    except (ValueError, IndexError):
+        return "#ffffff"
+    lum = 0.299 * r + 0.587 * g + 0.114 * b
+    return "#ffffff" if lum < 150 else "#0f172a"
+
 def _dot_escape(s: str) -> str:
     """Escape backslashes/quotes for dot string literals (paths/names)."""
     return s.replace("\\", "\\\\").replace('"', '\\"')
@@ -225,8 +275,10 @@ def _nodes_edges_to_dot(nodes: list[dict], edges: list[dict]) -> str:
                 f"{nd['cum_pct']:.1f}%\\n"
                 f"({nd['self_pct']:.2f}%)\\n{nd['ncalls']}×"
             )
+            bg = _node_color(nd.get("module") or "", nd.get("w") or 0.0)
+            fg = _text_color(bg)
             lines.append(
-                f'\t{nd["id"]} [color="{_heat(nd["w"])}", fontcolor="#ffffff", '
+                f'\t{nd["id"]} [color="{bg}", fontcolor="{fg}", '
                 f'fontsize="11.00", label="{label}", tooltip="{tip}"];'
             )
     for e in edges:
