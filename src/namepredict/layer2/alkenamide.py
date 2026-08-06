@@ -4,7 +4,7 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from namepredict.layer2.chain_walk import _longest_from
-from namepredict.layer2.ring_parent import _unsub_phenyl_at
+from namepredict.layer2.scaffold.ring_parent import _unsub_phenyl_at
 
 # Higher-priority FGs + peers that block open-chain alkenamide (amide allowed).
 _ALKENAMIDE_BAD = (
@@ -68,7 +68,7 @@ def _amide_n_benzyl(mol: Mol, am: dict, cs: list[int]) -> dict:
 
 def _amide_core_atoms(mol: Mol, am: dict) -> frozenset[int]:
     """Amide C + N + dbl O (parent core for N-block cut before parent exists)."""
-    from namepredict.layer2.ring_parent import _dbl_o_idx
+    from namepredict.layer2.scaffold.ring_parent import _dbl_o_idx
     o = _dbl_o_idx(mol, am["c_idx"])
     return frozenset({am["c_idx"], am["n_idx"]} | ({o} if o is not None else set()))
 

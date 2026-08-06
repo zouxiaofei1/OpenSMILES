@@ -10,7 +10,7 @@ from namepredict.layer2.aryl_sub import (
     _aryl_sub_n,
     _is_unfused_benzene_ring,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _arene_alkoxy,
     _arene_fg_subs_ok,
     _is_benzene_core,

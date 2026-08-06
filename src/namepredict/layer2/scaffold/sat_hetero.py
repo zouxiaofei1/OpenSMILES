@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _disjoint_cover,
     _outside_carbons,
     _outside_ok,

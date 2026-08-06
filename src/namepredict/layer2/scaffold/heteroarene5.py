@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _arene_alkoxy,
     _mono_amine_on_ring,
     _outside_ok,

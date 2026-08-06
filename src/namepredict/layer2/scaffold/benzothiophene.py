@@ -7,7 +7,7 @@ Engine via fused56; MonoSpec + ScaffoldSpec from scaffold.builders.fused56.
 """
 from __future__ import annotations
 
-from namepredict.layer2.fused56 import (
+from namepredict.layer2.scaffold.fused56 import (
     _fg_block,
     _mono_parent_dict,
     _mono_parts,
@@ -15,7 +15,7 @@ from namepredict.layer2.fused56 import (
     _subs_ok_cap,
     _try_mono_fused56,
 )
-from namepredict.layer2.ring_parent import _mono_oh_on_ring, _outside_ok
+from namepredict.layer2.scaffold.ring_parent import _mono_oh_on_ring, _outside_ok
 from namepredict.layer2.scaffold.builders.fused56 import BT_MONO, BT_OL
 
 _OL_BLOCK = (

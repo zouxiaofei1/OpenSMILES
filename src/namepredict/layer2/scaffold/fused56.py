@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.heteroarene5 import _ring_nn_dist
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.heteroarene5 import _ring_nn_dist
+from namepredict.layer2.scaffold.ring_parent import (
     _is_methyl_on_ring,
     _mono_amine_on_ring,
     _outside_ok,

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.retained_registry import match_scaffold_ids, match_systems
+from namepredict.layer2.scaffold.retained_registry import match_scaffold_ids, match_systems
 
 
 def _ids(smiles: str) -> list[str]:

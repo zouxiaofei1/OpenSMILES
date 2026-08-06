@@ -13,7 +13,7 @@ from namepredict.layer2.aryl_sub import (
     _ring_benzyloxys,
     _ring_phenoxys,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _arene_alkoxy,
     _arene_fg_subs_ok,
     _dbl_o_idx,
@@ -335,7 +335,7 @@ def _benzoate_alkoxy(mol: Mol, o_idx: int, ac: int) -> dict | None:
 
 def _ph_ring_plain(mol: Mol, ring: set[int], excl: set[int]) -> bool:
     """Benzene ring has no unclaimed outside heavy attachments."""
-    from namepredict.layer2.ring_parent import _outside_ok
+    from namepredict.layer2.scaffold.ring_parent import _outside_ok
     return _outside_ok(mol, ring, excl)
 
 

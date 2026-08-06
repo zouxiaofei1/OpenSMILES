@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.ring_parent import _outside_ok, _ring_bonds_single
-from namepredict.layer2.sat_hetero import (
+from namepredict.layer2.scaffold.ring_parent import _outside_ok, _ring_bonds_single
+from namepredict.layer2.scaffold.sat_hetero import (
     _all_nonarom,
     _extra_amine,
     _fg_block,

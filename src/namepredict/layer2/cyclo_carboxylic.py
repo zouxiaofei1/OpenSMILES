@@ -14,7 +14,7 @@ from namepredict.layer2.arene_carbonyl import (
     _fg_ring_c,
     _nitrile_n_idx,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _dbl_o_idx,
     _hetero_or_ring_halo,
     _is_cycloalkane_core,
@@ -22,7 +22,7 @@ from namepredict.layer2.ring_parent import (
     _ring_halo_n,
     _ring_side_starts,
 )
-from namepredict.layer2.side_alkyl import _walk_linear
+from namepredict.layer2.side_alkyl import _disjoint_cover, _side_sets
 
 # flag, ekey, kind, parent_c_key
 _FG_SPECS: tuple[tuple[str, str, str, str], ...] = (
@@ -35,22 +35,14 @@ _FG_SPECS: tuple[tuple[str, str, str, str], ...] = (
 )
 
 
-def _linear_covers(mol: Mol, start: int, ring: set[int], outside: set[int]) -> bool:
-    atoms = _walk_linear(mol, start, ring)
-    return atoms is not None and set(atoms) == outside
-
-
-def _alkyl_ok(mol: Mol, ring: set[int], starts: list[int], outside: set[int]) -> bool:
+def _subs_ok(mol: Mol, ring: set[int], exclude: set[int]) -> bool:
+    """Allow recognized side-chain topologies (linear, branched, CF3, etc.) via probes."""
+    starts = _ring_side_starts(mol, ring, exclude)
+    outside = set(_outside_carbons(mol, ring, exclude))
     if not starts:
         return not outside
-    return len(starts) == 1 and _linear_covers(mol, starts[0], ring, outside)
-
-
-def _subs_ok(mol: Mol, ring: set[int], exclude: set[int]) -> bool:
-    starts = _ring_side_starts(mol, ring, exclude)
-    if _ring_halo_n(mol, ring) + len(starts) > 1:
-        return False
-    return _alkyl_ok(mol, ring, starts, set(_outside_carbons(mol, ring, exclude)))
+    sets = _side_sets(mol, ring, starts)
+    return sets is not None and _disjoint_cover(sets, outside)
 
 
 def _fg_entry(info: dict, ekey: str) -> dict | None:
@@ -105,7 +97,7 @@ def _fg_pack(info: dict, ekey: str) -> tuple[set[int], set[int]] | None:
 
 
 def _pick_mono_sat_ring(info: dict) -> set[int] | None:
-    from namepredict.layer2.cyclo_pick import _cyclo_parent_candidates
+    from namepredict.layer2.scaffold.cyclo_pick import _cyclo_parent_candidates
     cands = _cyclo_parent_candidates(info)
     return cands[0] if len(cands) == 1 else None
 

@@ -9,12 +9,12 @@ from rdkit.Chem import Mol
 
 from namepredict.layer2.arene_carbonyl import _arene_alkoxy
 from namepredict.layer2.aryl_sub import _aryl_atoms, _aryl_exclude, _aryl_sub_n
-from namepredict.layer2.naphthalene import _bridge_adjacent, _bridge_pair
-from namepredict.layer2.quinoline import (
+from namepredict.layer2.scaffold.naphthalene import _bridge_adjacent, _bridge_pair
+from namepredict.layer2.scaffold.quinoline import (
     _bridge_nb_of,
     _path_of_len,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _dbl_o_idx,
     _hetero_or_ring_halo,
     _ring_halo_n,

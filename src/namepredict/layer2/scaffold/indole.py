@@ -13,13 +13,13 @@ from namepredict.layer2.arene_carbonyl import (
     _carboxyl_ring_c,
     _cooh_oxygen_idxs,
 )
-from namepredict.layer2.fused56 import (
+from namepredict.layer2.scaffold.fused56 import (
     _all_aromatic,
     _chain_atoms,
     _fused56,
     _six_all_c,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _outside_ok,
     _ring_halo_n,
     _ring_side_starts,

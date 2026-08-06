@@ -5,54 +5,54 @@ fused/hetero ring parents here instead of editing a hand tuple in candidates.
 """
 from __future__ import annotations
 
-from namepredict.layer2.anthracene import _try_anthracene_parent
-from namepredict.layer2.anthraquinone import _try_anthraquinone_parent
-from namepredict.layer2.azole13 import _try_azole13_parent
-from namepredict.layer2.benzoquinone import _try_benzoquinone_parent
-from namepredict.layer2.ortho_benzoquinone import _try_ortho_benzoquinone_parent
-from namepredict.layer2.benzimidazole import (
+from namepredict.layer2.scaffold.anthracene import _try_anthracene_parent
+from namepredict.layer2.scaffold.anthraquinone import _try_anthraquinone_parent
+from namepredict.layer2.scaffold.azole13 import _try_azole13_parent
+from namepredict.layer2.scaffold.benzoquinone import _try_benzoquinone_parent
+from namepredict.layer2.scaffold.ortho_benzoquinone import _try_ortho_benzoquinone_parent
+from namepredict.layer2.scaffold.benzimidazole import (
     _try_benzimidazolamine_parent,
     _try_benzimidazole_parent,
 )
-from namepredict.layer2.benzodiazine import (
+from namepredict.layer2.scaffold.benzodiazine import (
     _try_quinazoline_parent,
     _try_quinoxaline_parent,
 )
-from namepredict.layer2.benzofuran import _try_benzofuran_parent
-from namepredict.layer2.benzothiazole import _try_benzothiazole_parent
-from namepredict.layer2.benzothiophene import _try_benzothiophene_parent
-from namepredict.layer2.benzoxazole import _try_benzoxazole_parent
-from namepredict.layer2.chromenone import _try_chromenone_parent
-from namepredict.layer2.heteroarene5 import (
+from namepredict.layer2.scaffold.benzofuran import _try_benzofuran_parent
+from namepredict.layer2.scaffold.benzothiazole import _try_benzothiazole_parent
+from namepredict.layer2.scaffold.benzothiophene import _try_benzothiophene_parent
+from namepredict.layer2.scaffold.benzoxazole import _try_benzoxazole_parent
+from namepredict.layer2.scaffold.chromenone import _try_chromenone_parent
+from namepredict.layer2.scaffold.heteroarene5 import (
     _try_diazine_parent,
     _try_hetero5_parent,
     _try_imidazole_parent,
     _try_pyrazole_parent,
 )
-from namepredict.layer2.indazole import _try_indazole_parent
-from namepredict.layer2.indole import _try_indole_parent
+from namepredict.layer2.scaffold.indazole import _try_indazole_parent
+from namepredict.layer2.scaffold.indole import _try_indole_parent
 from namepredict.layer2.kind_registry import register_ring_try
-from namepredict.layer2.naphthalene import _try_naphthalene_parent
+from namepredict.layer2.scaffold.naphthalene import _try_naphthalene_parent
 from namepredict.layer2.parent_core import _parent_dict
 from namepredict.layer2.parent_selector import (
     _benzene_parent,
     _cycloalkane_parent,
 )
-from namepredict.layer2.pyridine import _try_pyridine_parent
-from namepredict.layer2.quinoline import (
+from namepredict.layer2.scaffold.pyridine import _try_pyridine_parent
+from namepredict.layer2.scaffold.quinoline import (
     _try_isoquinoline_parent,
     _try_quinoline_parent,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _endocyclic_doubles,
     _is_simple_benzene,
     _is_simple_cycloalkane,
     _is_simple_cyclopolyene,
 )
-from namepredict.layer2.sat_hetero import _try_sat_hetero_parent
+from namepredict.layer2.scaffold.sat_hetero import _try_sat_hetero_parent
 from namepredict.layer2.scaffold.builders.sat_hetero_repl import try_sat_hetero_repl
-from namepredict.layer2.bridged_parent import _try_bridged_parent
-from namepredict.layer2.spiro_parent import _try_spiro_parent
+from namepredict.layer2.scaffold.bridged_parent import _try_bridged_parent
+from namepredict.layer2.scaffold.spiro_parent import _try_spiro_parent
 
 
 def _try_simple_benzene(info: dict) -> dict | None:

@@ -6,7 +6,7 @@ from __future__ import annotations
 import pytest
 
 from namepredict.layer2 import kind_registry as kr
-from namepredict.layer2.retained_registry import get_entry, registry
+from namepredict.layer2.scaffold.retained_registry import get_entry, registry
 from namepredict.layer2.scaffold.specs import (
     FUSED56_SPECS,
     MONO_HETERO_SPECS,

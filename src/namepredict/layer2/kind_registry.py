@@ -102,7 +102,7 @@ _SAT_ONE = (
 # Fused FG kinds without Spec stems still need fg_rank registration.
 # Spec is authority when present; this table only covers residual FG tags.
 _MISC_RING_FG: tuple[tuple[str, int, str, int, bool, str | None, str | None], ...] = (
-    ("cycloalkanecarboxylic", 13, "none", 0, False, None, None),
+    ("cycloalkanecarboxylic", 13, "carbo", 1, False, None, None),
     ("cycloalkane_polycarboxylic", 13, "carbo", 1, False, None, None),
     ("cycloalkanecarbaldehyde", 7, "none", 0, False, None, None),
     ("cycloalkanecarbonitrile", 8, "none", 0, False, None, None),
@@ -202,7 +202,7 @@ def _ensure_ring_producers() -> None:
     global _RING_BOOTSTRAPPED
     if _RING_BOOTSTRAPPED:
         return
-    from namepredict.layer2 import ring_producers as _rp  # noqa: F401
+    from namepredict.layer2.scaffold import ring_producers as _rp  # noqa: F401
     _RING_BOOTSTRAPPED = True
 
 

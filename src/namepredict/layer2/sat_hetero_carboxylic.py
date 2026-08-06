@@ -13,13 +13,13 @@ from namepredict.layer2.arene_carbonyl import (
     _carboxyl_ring_c,
     _cooh_oxygen_idxs,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _hetero_or_ring_halo,
     _outside_ok,
     _ring_halo_n,
     _ring_side_starts,
 )
-from namepredict.layer2.sat_hetero import (
+from namepredict.layer2.scaffold.sat_hetero import (
     _extra_amine,
     _hetero_asym,
     _hetero_pair,

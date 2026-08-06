@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _outside_ok,
     _ring_halo_n,
     _ring_side_starts,

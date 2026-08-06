@@ -8,7 +8,7 @@ Engine via fused56; Di13Spec + ScaffoldSpec from scaffold.builders.fused56.
 """
 from __future__ import annotations
 
-from namepredict.layer2.fused56 import _try_di13_amine, _try_di13_fused56
+from namepredict.layer2.scaffold.fused56 import _try_di13_amine, _try_di13_fused56
 from namepredict.layer2.scaffold.builders.fused56 import BTZ_DI13
 
 

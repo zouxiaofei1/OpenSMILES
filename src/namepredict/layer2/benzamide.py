@@ -9,7 +9,7 @@ from namepredict.layer2.arene_carbonyl import (
     _fg_ring_c,
     _pick_fg_ring,
 )
-from namepredict.layer2.ring_parent import _dbl_o_idx
+from namepredict.layer2.scaffold.ring_parent import _dbl_o_idx
 
 
 def _amide_n_carbons(mol: Mol, am: dict) -> set[int]:

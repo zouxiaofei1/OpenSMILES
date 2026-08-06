@@ -1,7 +1,7 @@
 """Monocarbocycle mono-ene + mono FG (cycloalkenol / cycloalkenone; P-31.1)."""
 from __future__ import annotations
 
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _cyclo_ene_fg_ok,
     _dbl_o_idx,
     _mono_ketone_on_ring,

@@ -11,7 +11,7 @@ import pytest
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.indole import _try_indole_parent
+from namepredict.layer2.scaffold.indole import _try_indole_parent
 from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")

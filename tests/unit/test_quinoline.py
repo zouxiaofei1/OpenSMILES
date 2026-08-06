@@ -11,7 +11,7 @@ import pytest
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.quinoline import (
+from namepredict.layer2.scaffold.quinoline import (
     _try_isoquinoline_parent,
     _try_quinoline_parent,
     _try_quinolinecarboxylic_parent,

@@ -424,7 +424,7 @@ def _arene_alkoxy(info: dict, ring_set: set[int]) -> tuple[set[int], int]:
 
 
 def _is_simple_benzene(info: dict) -> bool:
-    from namepredict.layer2.benzene_pick import _is_simple_benzene as _isb
+    from namepredict.layer2.scaffold.benzene_pick import _is_simple_benzene as _isb
     return _isb(info)
 
 
@@ -493,7 +493,7 @@ def _is_methyl_on_ring(mol: Mol, s: int, ring_set: set[int]) -> bool:
     return True
 
 # Multi-ring cyclo parent pick lives in cyclo_pick (late re-export avoids cycles).
-from namepredict.layer2.cyclo_pick import (  # noqa: E402
+from namepredict.layer2.scaffold.cyclo_pick import (  # noqa: E402
     _is_cycloalkane_core,
     _is_simple_cycloalkane,
     _pick_cycloalkane_ring,

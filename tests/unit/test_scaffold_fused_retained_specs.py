@@ -8,9 +8,9 @@ import pytest
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.benzimidazole import _try_benzimidazole_parent
-from namepredict.layer2.indole import _try_indole_parent
-from namepredict.layer2.quinoline import _try_quinoline_parent
+from namepredict.layer2.scaffold.benzimidazole import _try_benzimidazole_parent
+from namepredict.layer2.scaffold.indole import _try_indole_parent
+from namepredict.layer2.scaffold.quinoline import _try_quinoline_parent
 from namepredict.layer2.scaffold.specs import (
     FUSED56_LABELS,
     NAPH_LABELS,

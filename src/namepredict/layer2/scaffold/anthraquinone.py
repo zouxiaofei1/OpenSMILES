@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.anthracene import _is_linear
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.anthracene import _is_linear
+from namepredict.layer2.scaffold.ring_parent import (
     _dbl_o_idx,
     _outside_ok,
     _ring_halo_n,

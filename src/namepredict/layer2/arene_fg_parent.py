@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.ring_parent import _dbl_o_idx, _outside_ok, _ring_halo_n, _ring_side_starts
+from namepredict.layer2.scaffold.ring_parent import _dbl_o_idx, _outside_ok, _ring_halo_n, _ring_side_starts
 from namepredict.layer2.arene_carbonyl import _nitrile_n_idx
 
 
@@ -31,7 +31,7 @@ _EXTRA_ATOMS_FNS = {"_carbonyl_o": _carbonyl_o, "_nitrile_n": _nitrile_n}
 
 def _detect_naphthalene(info: dict) -> tuple | None:
     """Return (ring_atoms, chain) or None."""
-    from namepredict.layer2.naphthalene import _is_naphthalene_core, _naph_chains
+    from namepredict.layer2.scaffold.naphthalene import _is_naphthalene_core, _naph_chains
     if not _is_naphthalene_core(info):
         return None
     rings = info.get("rings") or []
@@ -42,7 +42,7 @@ def _detect_naphthalene(info: dict) -> tuple | None:
 
 def _detect_quinoline(info: dict) -> tuple | None:
     """Return (ring_atoms, chain) or None."""
-    from namepredict.layer2.quinoline import _q_core, _build_chain, _ring_set
+    from namepredict.layer2.scaffold.quinoline import _q_core, _build_chain, _ring_set
     parts = _q_core(info)
     if parts is None:
         return None
@@ -51,7 +51,7 @@ def _detect_quinoline(info: dict) -> tuple | None:
 
 def _detect_pyrazole(info: dict):
     """Return (ring_atoms, chain, meta) for pyrazole-amine parent."""
-    from namepredict.layer2.heteroarene5 import _pyrazole_n_pair
+    from namepredict.layer2.scaffold.heteroarene5 import _pyrazole_n_pair
     pair = _pyrazole_n_pair(info)
     if pair is None: return None
     nh, n = pair
@@ -62,7 +62,7 @@ def _detect_pyrazole(info: dict):
 
 def _detect_thiazole(info: dict):
     """Return (ring_atoms, chain, meta) for thiazole-amine parent."""
-    from namepredict.layer2.azole13 import _azole13_hetero_pair
+    from namepredict.layer2.scaffold.azole13 import _azole13_hetero_pair
     pair = _azole13_hetero_pair(info)
     if pair is None: return None
     h, n = pair
@@ -73,7 +73,7 @@ def _detect_thiazole(info: dict):
 
 def _detect_quinazoline(info: dict):
     """Return (ring_atoms, chain, meta) for quinazoline-amine parent."""
-    from namepredict.layer2.benzodiazine import _qz_core, _n1
+    from namepredict.layer2.scaffold.benzodiazine import _qz_core, _n1
     core = _qz_core(info)
     if core is None: return None
     atoms, ns, bridge = core

@@ -249,18 +249,18 @@ def pyridinyl_atoms(mol: Mol, parent: set[int]) -> set[int]:
 # --- unsubstituted naphthalen-n-yl ---
 
 def _naph_chains(mol: Mol, r1: list[int], r2: list[int], br: tuple[int, int]):
-    from namepredict.layer2.naphthalene import _chains_for_bridge
+    from namepredict.layer2.scaffold.naphthalene import _chains_for_bridge
     return _chains_for_bridge(r1, r2, *br) + _chains_for_bridge(r1, r2, br[1], br[0])
 
 
 def _naph_atoms_ok(mol: Mol, r1: list[int], r2: list[int]) -> set[int] | None:
-    from namepredict.layer2.naphthalene import _all_aromatic_c
+    from namepredict.layer2.scaffold.naphthalene import _all_aromatic_c
     atoms = set(r1) | set(r2)
     return atoms if len(atoms) == 10 and _all_aromatic_c(mol, atoms) else None
 
 
 def _try_naph_pair(mol: Mol, r1: list[int], r2: list[int]):
-    from namepredict.layer2.naphthalene import _bridge_adjacent, _bridge_pair
+    from namepredict.layer2.scaffold.naphthalene import _bridge_adjacent, _bridge_pair
     br = _bridge_pair(r1, r2)
     if br is None or not _bridge_adjacent(mol, *br):
         return None

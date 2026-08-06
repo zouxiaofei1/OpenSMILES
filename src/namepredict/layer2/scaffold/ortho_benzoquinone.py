@@ -6,7 +6,7 @@ substitution gates; ortho vs para is ring distance only.
 """
 from __future__ import annotations
 
-from namepredict.layer2.benzoquinone import (
+from namepredict.layer2.scaffold.benzoquinone import (
     _bq_doubles_ok,
     _bq_fg_block,
     _bq_ring,
@@ -14,7 +14,7 @@ from namepredict.layer2.benzoquinone import (
     _ketone_idxs,
     _ring_dist,
 )
-from namepredict.layer2.ring_parent import _endocyclic_doubles
+from namepredict.layer2.scaffold.ring_parent import _endocyclic_doubles
 
 
 def _ketones_ortho(ring: list[int], ket: list[int]) -> bool:

@@ -143,10 +143,12 @@ def _carbocycle_kind(mol, skeleton: ParentSkeleton) -> str:
     return "cycloalkane" if not unsaturated else "cycloalkene" if unsaturated == 1 else "cyclopolyene"
 
 
-def _ring_ketone_kind(selection, skeleton: ParentSkeleton, count: int) -> str | None:
+def _ring_ketone_kind(info, selection, skeleton: ParentSkeleton, count: int) -> str | None:
     if selection.group_class is not FunctionalGroupClass.KETONE:
         return None
-    if skeleton.scaffold_id and skeleton.scaffold_id not in {"cycloalkane", "cycloketone", "cycloalkanedione"}:
+    from namepredict.layer2.scaffold.ring_scaffold import _producer_id
+    sid = _producer_id(info, skeleton)
+    if sid is not None and sid not in {"cycloalkane", "cycloketone", "cycloalkanedione"}:
         return None
     anchors = {i for o in selection.occurrences for i in o.parent_anchors}
     if not anchors or not anchors <= set(skeleton.atom_ids):
@@ -163,13 +165,13 @@ def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
 
 
 def _resolved_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
-    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
+    from namepredict.layer2.scaffold.ring_scaffold import resolve_ring_scaffold
     scaffold = resolve_ring_scaffold(info, skeleton)
     return scaffold.id if scaffold and scaffold.id != "carbocycle" else _generic_ring_kind(info, skeleton)
 
 
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int) -> str | None:
-    ketone = _ring_ketone_kind(selection, skeleton, count)
+    ketone = _ring_ketone_kind(info, selection, skeleton, count)
     if ketone:
         return ketone
     if selection.group_class is FunctionalGroupClass.AMINE and count != 1:
@@ -202,8 +204,8 @@ def _ring_fact_fields(fields: dict, facts: PrincipalExpressionFacts) -> dict:
 
 
 def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None) -> dict:
-    from namepredict.layer2.ring_expression_policy import supports_ring_expression
-    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
+    from namepredict.layer2.scaffold.ring_expression_policy import supports_ring_expression
+    from namepredict.layer2.scaffold.ring_scaffold import resolve_ring_scaffold
     scaffold = resolve_ring_scaffold(info, skeleton)
     if not scaffold:
         return {}
@@ -290,14 +292,14 @@ def _hydrocarbon_chain_parent(info: dict, skeleton: ParentSkeleton) -> dict:
 
 def _aromatic_scaffold_parent(info: dict, skeleton: ParentSkeleton, atoms: set[int]) -> dict | None:
     """芳香环：解析到保留 scaffold 则用其 id（benzene/naphthalene 等）。"""
-    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
+    from namepredict.layer2.scaffold.ring_scaffold import resolve_ring_scaffold
     scaffold = resolve_ring_scaffold(info, skeleton)
     if scaffold is None or scaffold.id == "carbocycle":
         return None  # 芳香碳环未匹配保留 scaffold（如 anthracene）
     if scaffold.id != "naphthalene":
         return {"kind": scaffold.id, "chain": _mono_ring_chain(info, atoms) or list(skeleton.atom_ids),
                 "n_carbons": len(atoms), **_scaffold_fields(info, skeleton, None)}
-    from namepredict.layer2.naphthalene import _naph_chains, _naph_parent_dict
+    from namepredict.layer2.scaffold.naphthalene import _naph_chains, _naph_parent_dict
     chains = _naph_chains(info)
     if chains and set(chains[0]) == atoms:
         return {**_naph_parent_dict(info, "naphthalene"), **_scaffold_fields(info, skeleton, None)}

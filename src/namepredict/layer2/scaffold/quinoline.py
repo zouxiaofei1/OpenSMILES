@@ -14,12 +14,12 @@ from namepredict.layer2.arene_carbonyl import (
     _carboxyl_ring_c,
     _cooh_oxygen_idxs,
 )
-from namepredict.layer2.naphthalene import (
+from namepredict.layer2.scaffold.naphthalene import (
     _bridge_adjacent,
     _bridge_pair,
     _two_six_rings,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _is_methyl_on_ring,
     _mono_oh_on_ring,
     _outside_ok,

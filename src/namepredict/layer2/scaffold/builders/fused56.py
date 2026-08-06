@@ -5,7 +5,7 @@ Chain orientation stays in layer2.fused56; labels authority is specs.FUSED56_LAB
 """
 from __future__ import annotations
 
-from namepredict.layer2.fused56 import Fused56Di13Spec, Fused56MonoSpec
+from namepredict.layer2.scaffold.fused56 import Fused56Di13Spec, Fused56MonoSpec
 from namepredict.layer2.scaffold.specs import FUSED56_LABELS, get_spec
 
 __all__ = [

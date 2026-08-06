@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from rdkit.Chem import Mol
 
 from namepredict.layer1.ring_ir import RingSystemIR, build_ring_ir
-from namepredict.layer2.ring_parent import _ring_double_count
+from namepredict.layer2.scaffold.ring_parent import _ring_double_count
 
 
 @dataclass(frozen=True)

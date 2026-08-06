@@ -94,17 +94,18 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
     return parents
 
 
-def _retained_ketone_skeleton(selection: PrincipalParentSelection) -> bool:
+def _retained_ketone_skeleton(selection: PrincipalParentSelection, info: dict) -> bool:
     if selection.principal.group_class is not FunctionalGroupClass.KETONE:
         return False
+    from namepredict.layer2.scaffold.ring_scaffold import _producer_id
     anchors = {a for o in selection.principal.occurrences for a in o.parent_anchors}
-    generic = {None, "cycloalkane", "cycloketone", "cycloalkanedione"}
-    return any(anchors <= set(s.atom_ids) and s.scaffold_id not in generic
-               for s in selection.skeletons.candidates)
+    generic = {"cycloalkane", "cycloketone", "cycloalkanedione"}
+    return any(anchors <= set(s.atom_ids) and (sid := _producer_id(info, s)) is not None
+               and sid not in generic for s in selection.skeletons.candidates)
 
 
-def _needs_special(selection: PrincipalParentSelection, parents: list[dict]) -> bool:
-    if _retained_ketone_skeleton(selection):
+def _needs_special(selection: PrincipalParentSelection, parents: list[dict], info: dict) -> bool:
+    if _retained_ketone_skeleton(selection, info):
         return False
     if selection.principal.group_class is not FunctionalGroupClass.KETONE:
         return True
@@ -121,7 +122,7 @@ def rule_driven_parent_candidates(info: dict) -> list[dict]:
         return [p for s in selection.skeletons.candidates
                 if (p := express_hydrocarbon_principal(info, s)) is not None]
     parents = _express_selected(selection, info)
-    special = _owned(_special_expression(selection, info), selection) if _needs_special(selection, parents) else None
+    special = _owned(_special_expression(selection, info), selection) if _needs_special(selection, parents, info) else None
     extra = [special] if special else []
     typed_first = selection.principal.group_class in {
         FunctionalGroupClass.KETONE, FunctionalGroupClass.AMINE,

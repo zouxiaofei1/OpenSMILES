@@ -78,23 +78,14 @@ def _ring_candidate(mol: Mol, system: dict, occurrences) -> ParentSkeleton | Non
     return ParentSkeleton(SkeletonTopology.RING_SYSTEM, tuple(sorted(atoms)), covered)
 
 
-def _producer_scaffold_ids(info: dict) -> dict[frozenset[int], str]:
-    from namepredict.layer2 import kind_registry as registry
-    found = {}
-    for producer in registry.ring_try_fns():
-        parent = producer(info)
-        atoms = frozenset(parent.get("chain") or ()) if parent else frozenset()
-        if atoms and any(info["mol"].GetAtomWithIdx(i).IsInRing() for i in atoms):
-            found.setdefault(atoms, parent.get("scaffold_id") or parent.get("kind"))
-    return found
-
-
 def _ring_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
+    # scaffold 身份 (scaffold_id) 不参与任何骨架选择决策，且只对最终胜出的
+    # 少数骨架有意义 —— 延迟到表达阶段 resolve_ring_scaffold 再识别（见
+    # ring_scaffold.resolve_ring_scaffold）。此处不跑 producer，避免为每个
+    # 环系统/每个分子支付完整 parent 生成器的成本。
     mol = info["mol"]
-    ids = _producer_scaffold_ids(info)
     basic = [c for system in info.get("ring_systems") or () if (c := _ring_candidate(mol, system, occurrences))]
-    return [ParentSkeleton(c.topology, c.atom_ids, c.covered_principal_ids,
-                           ids.get(frozenset(c.atom_ids))) for c in basic]
+    return [ParentSkeleton(c.topology, c.atom_ids, c.covered_principal_ids) for c in basic]
 
 
 def _chain_candidates(info: dict, occurrences) -> list[ParentSkeleton]:

@@ -8,7 +8,7 @@ import pytest
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.fused56 import (
+from namepredict.layer2.scaffold.fused56 import (
     Fused56Di13Spec,
     _di13_parts,
     _try_di13_amine,

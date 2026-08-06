@@ -20,7 +20,7 @@ from namepredict.layer2.aryl_sub import (
     _aryl_exclude,
     _aryl_sub_n,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _arene_alkoxy,
     _arene_fg_subs_ok,
     _benzene_subs_ok,

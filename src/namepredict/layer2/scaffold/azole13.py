@@ -8,13 +8,13 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.heteroarene5 import (
+from namepredict.layer2.scaffold.heteroarene5 import (
     _hetero5_fg_block,
     _hetero5_zs,
     _ring_atoms_if_mono,
     _ring_nn_dist,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _outside_ok,
     _ring_halo_n,
     _ring_side_starts,

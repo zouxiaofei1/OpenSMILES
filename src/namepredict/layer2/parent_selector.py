@@ -13,19 +13,19 @@ from namepredict.layer2.arene_fg_parent import (
 from namepredict.layer2.cyclo_carboxylic import _try_cycloalkanecarboxylic_parent
 from namepredict.layer2.hetero5_carboxylic import _try_hetero5carboxylic_parent as _try_h5cooh
 from namepredict.layer2.sat_hetero_carboxylic import _try_sat_hetero_carboxylic_parent as _try_shcooh
-from namepredict.layer2.benzofuran import _try_benzofuranamine_parent as _try_bfam
-from namepredict.layer2.benzothiophene import _try_benzothiophenol_parent as _try_btol
-from namepredict.layer2.benzothiazole import _try_benzothiazolamine_parent as _try_btzam
-from namepredict.layer2.benzoxazole import _try_benzoxazolamine_parent as _try_boxam
-from namepredict.layer2.benzimidazole import _try_benzimidazolamine_parent as _try_bimam
-from namepredict.layer2.indazole import (
+from namepredict.layer2.scaffold.benzofuran import _try_benzofuranamine_parent as _try_bfam
+from namepredict.layer2.scaffold.benzothiophene import _try_benzothiophenol_parent as _try_btol
+from namepredict.layer2.scaffold.benzothiazole import _try_benzothiazolamine_parent as _try_btzam
+from namepredict.layer2.scaffold.benzoxazole import _try_benzoxazolamine_parent as _try_boxam
+from namepredict.layer2.scaffold.benzimidazole import _try_benzimidazolamine_parent as _try_bimam
+from namepredict.layer2.scaffold.indazole import (
     _try_indazolecarbaldehyde_parent as _try_izald, _try_indazolecarbonitrile_parent as _try_izcn,
 )
-from namepredict.layer2.indole import _try_indolecarboxylic_parent as _try_indcooh
-from namepredict.layer2.naphthalene import _try_naphthalenecarboxylic_parent as _try_naphcooh
-from namepredict.layer2.quinoline import _try_quinolinecarboxylic_parent as _try_qcooh, _try_quinolinol_parent as _try_qol
-from namepredict.layer2.heteroarene5 import _try_pyrimidinamine_parent
-from namepredict.layer2.pyridine import (
+from namepredict.layer2.scaffold.indole import _try_indolecarboxylic_parent as _try_indcooh
+from namepredict.layer2.scaffold.naphthalene import _try_naphthalenecarboxylic_parent as _try_naphcooh
+from namepredict.layer2.scaffold.quinoline import _try_quinolinecarboxylic_parent as _try_qcooh, _try_quinolinol_parent as _try_qol
+from namepredict.layer2.scaffold.heteroarene5 import _try_pyrimidinamine_parent
+from namepredict.layer2.scaffold.pyridine import (
     _try_pyridinecarbonitrile_parent as _try_pycn, _try_pyridinecarboxylic_parent, _try_pyridin_fg_parent)
 from namepredict.layer2.phenol_aniline import (
     _aniline_parent, _is_simple_aniline, _is_simple_phenol, _phenol_parent)
@@ -33,7 +33,7 @@ from namepredict.layer2.cyclo_poly_fg import try_cycloalkanediol, try_cycloalkan
 from namepredict.layer2.cyclo_ene_fg import (
     _is_simple_cycloalkenol, _is_simple_cycloalkenone,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _benzenediol_parent, _endocyclic_double, _is_simple_benzene, _is_simple_benzenediol,
     _is_simple_cycloalcohol, _is_simple_cycloalkane, _is_simple_cycloalkene,
     _is_simple_cycloamine, _is_simple_cycloketone)
@@ -426,10 +426,10 @@ def _polyene_parent(info: dict) -> dict:
 def _ring_atoms(info: dict) -> list[int]:
     return list(info["rings"][0]["atom_ids"])
 def _cycloalkane_parent(info: dict) -> dict:
-    from namepredict.layer2.ring_parent import _pick_cycloalkane_ring as _pcr
+    from namepredict.layer2.scaffold.ring_parent import _pick_cycloalkane_ring as _pcr
     return _parent_dict(list(_pcr(info) or _ring_atoms(info)), "cycloalkane")
 def _benzene_parent(info: dict) -> dict:
-    from namepredict.layer2.benzene_pick import _pick_benzene_ring as _pbr
+    from namepredict.layer2.scaffold.benzene_pick import _pick_benzene_ring as _pbr
     return _parent_dict(_pbr(info) or _ring_atoms(info), "benzene")
 def _cycloalkene_parent(info: dict) -> dict:
     c = _ring_atoms(info); return _parent_dict(c, "cycloalkene", double_bond=_endocyclic_double(info, set(c)))

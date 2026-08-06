@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.ring_parent import _dbl_o_idx
+from namepredict.layer2.scaffold.ring_parent import _dbl_o_idx
 
 
 def _chain_atoms(parent: dict) -> set[int]:

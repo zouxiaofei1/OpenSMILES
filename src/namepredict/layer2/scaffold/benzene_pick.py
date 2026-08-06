@@ -5,7 +5,7 @@ from namepredict.layer2.aryl_sub import (
     _aryl_atoms, _aryl_sub_n, _arom_c6_ring_lists, _is_unfused_benzene_ring,
     _phenyl_starts_set,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _arene_alkoxy, _benzene_subs_ok, _outside_ok, _ring_halo_n,
     _ring_iso_atoms, _ring_iso_n, _ring_nitro_atoms, _ring_nitro_n,
     _ring_side_starts,

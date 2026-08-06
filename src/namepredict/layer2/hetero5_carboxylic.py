@@ -13,7 +13,7 @@ from namepredict.layer2.arene_carbonyl import (
     _carboxyl_ring_c,
     _cooh_oxygen_idxs,
 )
-from namepredict.layer2.heteroarene5 import (
+from namepredict.layer2.scaffold.heteroarene5 import (
     _hetero5_idx,
     _hetero5_kind,
     _imidazole_n_pair,
@@ -21,7 +21,7 @@ from namepredict.layer2.heteroarene5 import (
     _mono_methyl_only,
     _pyrazole_n_pair,
 )
-from namepredict.layer2.ring_parent import (
+from namepredict.layer2.scaffold.ring_parent import (
     _hetero_or_ring_halo,
     _ring_halo_n,
     _ring_primary_amines,
