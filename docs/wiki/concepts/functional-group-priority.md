@@ -124,37 +124,21 @@ scaffold 标注复用）。
 
 ---
 
-## BAD 元组排除规则（P-41 互斥约束）
+## 互斥排除（P-41 互斥约束）
 
-IUPAC P-41 规定某些 FG 之间不能作为母体共存——当某个候选母体被选中时，分子中不得存在与其冲突的更高或同级 FG。NamePredict 将此建模为 **BAD 元组（BAD tuple）**——一组 `has_*` 布尔键，若其中任何一个为 `True`，则该候选母体被排除。
+IUPAC P-41 规定某些 FG 之间不能作为母体共存——当某个候选母体被选中时，分子中不得存在与其冲突的更高或同级 FG。NamePredict 通过**互斥检查谓词 `_no_fgs(info, keys)`**（`fg_helpers.py`）实现：`keys` 是一组 `has_*` 布尔键，若其中任何一个为 `True`，则该候选母体被排除。
 
-`src/namepredict/layer2/parent_selector_common.py:1-23` 定义了核心 BAD 元组：
+历史上共享的 BAD 元组常量（`_CORE_BAD` / `_DIACID_BAD` / `_DIONE_BAD` 等，定义于原 `parent_selector_common.py`）**已随重构删除**——各候选的互斥 keys 现在由调用方**内联**传入。典型用法：
 
 ```python
-_CORE_BAD = (
-    "has_acid", "has_ester", "has_amide", "has_nitrile",
-    "has_aldehyde", "has_ketone", "has_acyl_chloride", "has_anhydride",
-)
+# parent_core.py —— 不饱和 FG 候选
+def _ok_unsat_fg(info, flag, ekey, bad):
+    return _open_chain_unsat_atoms(mol, c, db) and _no_fgs(info, bad)
 ```
 
-各母体候选在此基础上叠加额外约束：
+`_no_fgs` 是唯一共享的互斥原语；每类母体的排斥集合内联在各自 producer 的 `bad` 参数里（如 `parent_core.py` / `alkynoic.py`）。这是一种声明式的约束表达：**`keys` 元组定义了"该母体不容忍的 FG 集合"**。
 
-| BAD 元组 | 定义位置 | 排除条件 | IUPAC 依据 |
-|---|---|---|---|
-| `_DIACID_BAD` | `parent_selector_common.py:11-14` | 含 ester/amide/nitrile/acyl_chloride/aldehyde/anhydride | P-65.1.2: 羟基/氨基/氧代在二元酸中为前缀 |
-| `_DIOL_BAD` | `parent_selector_common.py:10` | `_CORE_BAD` + `has_amine` | 二元醇母体排斥 carbonyl 类和胺 |
-| `_DIAMINE_BAD` | `parent_selector_common.py:15` | `_CORE_BAD` + `has_alcohol` | 二元胺母体排斥 carbonyl 类和醇 |
-| `_DIONE_BAD` | `parent_selector_common.py:16-19` | acid/ester/amide/nitrile/aldehyde/amine/alcohol/acyl_chloride/anhydride | 二酮排斥几乎所有更高 FG |
-| `_ANHYDRIDE_BAD` | `parent_selector_common.py:20-23` | acid/ester/amide/nitrile/aldehyde/ketone/amine/alcohol/acyl_chloride | 酸酐排斥羧酸衍生物和还原性 FG |
-| `_ETHER_BAD` | `parent_selector.py:277` | `_CORE_BAD` + amine/alcohol/thiol/sulfide | 醚只能在不含羰基的分子中当母体 |
-| `_SULFIDE_BAD` | `parent_selector.py:278` | `_CORE_BAD` + amine/alcohol/thiol/ether | 硫醚只能在不含羰基的分子中当母体 |
-| `_ALKENOIC_BAD` | `parent_selector.py:304` | `_DIACID_BAD` + `has_thiol` | 烯酸保证羧酸主导 |
-
-其他独立模块中的 BAD 元组还包括 `_CB_BAD`（carbamate/carbonate: `parent_selector.py:277` 上下文和 `carbamate.py:5`），`_UREA_BAD`（urea: `urea.py:5-7`），`_GU_BAD`（guanidine: `guanidine.py:5-7`），`_SULFONE_BAD`（sulfone: `sulfone.py:5-7`），`_ISO_BAD`（isocyanate/isothiocyanate: `isocyanate.py:12`）等。
-
-验证函数 `_no_fgs(info, keys)` 检查 info 字典中对应的 `has_*` 布尔键是否全部为 `False`，若任一项为 `True` 则排除该候选。这是一种声明式的约束表达：**BAD 元组定义了"该母体不容忍的 FG 集合"**。
-
-> **源:** `src/namepredict/layer2/parent_selector_common.py:1-23`, `src/namepredict/layer2/parent_selector.py:49, 277-314`
+> **源:** `src/namepredict/layer2/fg_helpers.py`, `src/namepredict/layer2/parent_core.py`, `src/namepredict/layer2/alkynoic.py`
 
 ---
 
@@ -169,12 +153,12 @@ _CORE_BAD = (
 | `kind_registry.is_hetero_ring(kind)` / `is_carbo_ring(kind)` | 环系类型查询 |
 | `kind_registry.retained_bonus(kind)` | 是否为保留名 |
 | `kind_registry.parent_names(kind)` | 返回 `(en_stem, zh_stem)` 元组 |
-| `kind_registry.ring_try_fns()` / `unsat_try_fns()` | 返回注册的 try 函数列表（`fg_try_fns()` 已删除） |
+| `kind_registry.ring_try_fns()` / `unsat_try_fns()` | 已删除——try 函数注册表整体移除 |
 
-新增 FG 种类时，若走 principal typed 管线（acid/alcohol/ketone/amine 等），在 `_RETAINED_RING_KINDS` /
-`_CHAIN_KINDS` 等表达表中声明 kind 与字段即可；若走经典 builder（`parent_selector.py`），实现
-`_xxx_parent` 并供 `_open_chain_expression` 使用。评分、候选收集与组装逻辑不变，仍保持
-**开放-封闭原则**。
+新增 FG 种类时，若走 principal typed 管线（acid/alcohol/ketone/amine 等），在 `principal_expression.py`
+的 `_RETAINED_RING_KINDS` / `_CHAIN_KINDS` 等表达表中声明 kind 与字段即可；经典 builder
+（`_open_chain_expression` / `_special_expression`）已随注册层删除。评分、候选收集与组装逻辑不变，
+仍保持**开放-封闭原则**。
 
 > **源:** `src/namepredict/layer2/kind_registry.py:89-227`
 
@@ -182,9 +166,9 @@ _CORE_BAD = (
 
 ## 总结
 
-官能团优先级是 NamePredict 命名正确性的基石。从 Layer 1 的排他性检测、Layer 2 的 `fg_rank` 评分、Layer 5 的后缀分派，到 BAD 元组排除规则，整个系统严格遵循 IUPAC P-41 和 P-44 的层级化思维：
+官能团优先级是 NamePredict 命名正确性的基石。从 Layer 1 的排他性检测、Layer 2 的 `fg_rank` 评分、Layer 5 的后缀分派，到互斥检查规则，整个系统严格遵循 IUPAC P-41 和 P-44 的层级化思维：
 
 1. **检测层保证"一碳一 FG"**——排他性模式使得同一碳原子不会被重复识别为多个 FG
 2. **评分层保证"优先级强制"**——`fg_rank` 在 P-44 tuple 中高于环数和碳链长度，确保羧酸绝对优先于酮
 3. **组装层保证"劣后 FG 降级"**——低优先级 FG 从候选后缀降为取代基前缀
-4. **BAD 层保证"互斥正确"**——无法共存的 FG 组合通过 BAD 元组在候选阶段即被排除
+4. **互斥层保证"互斥正确"**——无法共存的 FG 组合通过 `_no_fgs` 互斥检查（`fg_helpers.py`）在候选阶段即被排除

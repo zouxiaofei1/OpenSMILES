@@ -95,14 +95,14 @@ info = {
 
 **职责**：母体氢化物（parent hydride）选择——按 IUPAC P-44 规则驱动管线选出主链/主环母体
 
-这是整个流水线中代码量最大的层（约占 60%，约 100 个文件），位于 `src/namepredict/layer2/`。
+这是整个流水线中代码量最大的层（约占 60%，约 75 个文件），位于 `src/namepredict/layer2/`。
 
 **主路径（P-44 规则驱动管线）**：
 
 `candidates._collect_candidates` → `_principal_candidates` → `rule_driven_parent_candidates`
 （`principal_parent.py`）。该管线按 IUPAC P-44 逐步筛选：
 
-1. **主官能团选择**（`principal_selection.py`）：按 `PRINCIPAL_REGISTRY`（P-41）优先级选主官能团
+1. **主官能团选择**（`principal.py`，原 `principal_selection` + `principal_registry` 合并）：按 `PRINCIPAL_REGISTRY`（P-41）优先级选主官能团
 2. **骨架枚举 + 筛选**（`parent_skeleton.py`）：枚举开链 + 环系统骨架，依次施加
    P-44.1.2（环>链 + 最高杂原子）/ P-44.2（环系统优先级）/ P-44.3（链长）/ P-44.4（不饱和度）
 3. **typed 表达**（`principal_expression.py`）：`express_chain/ring_principal` 产出带
@@ -110,13 +110,13 @@ info = {
    `_RETAINED_RING_KINDS` 保留名表（benzoic / **benzoate** / benzaldehyde / phenol / aniline 等）；
    无主官能团的纯烃走 `express_hydrocarbon_principal`（alkane/alkene/alkyne/polyene/环烷/保留 scaffold）
 
-**经典 producer 体系（部分保留）**：
+**经典 producer 体系（已删除）**：
 
-- `ring_producers.py`（~31 个环 try 函数）经 `ring_try_fns()` 被骨架枚举的 `_producer_scaffold_ids`
-  消费（标注骨架 scaffold_id）
-- `parent_selector.py` 的经典 FG builder（`_ester_parent`/`_amide_parent`/`_ketone_parent` 等）
-  被 `_open_chain_expression` / `_special_expression` 直接 import（单 FG 无环酯/酰胺/醛/酮/腈/胺）
-- **`fg_producers` 注册层已整体删除**；`_collect_candidates` 中的经典并行通道已被注释
+- **`fg_producers` / `ring_producers` / `unsat_producers` 三个 try 函数注册层已整体删除**，
+  `_collect_candidates` 中的经典并行通道已移除，只走 principal 单路径
+- 环骨架身份改由 `scaffold/ring_core` 的 `@_register` 识别器（`ring_core_fns()`）+ 
+  `scaffold/specs` 解析；`parent_selector` 瘦身为 `select_parent` / `iter_parent_candidates` 入口
+- 经典 builder（`_open_chain_expression` / `_special_expression`）已随旧通道删除
 
 **parent dict 结构**：
 
@@ -138,7 +138,7 @@ parent = {
 **评分与门控**：`scoring.py` 对候选做 11 维 P-44 评分；`candidate_gate.py` 提供类型化门控
 （`SCOPED_REJECT` / `GLOBAL_REJECT`）防止多元羧酸 fallback 绕过。
 
-> 源文件：`src/namepredict/layer2/principal_parent.py`, `src/namepredict/layer2/parent_skeleton.py`, `src/namepredict/layer2/principal_expression.py`, `src/namepredict/layer2/principal_selection.py`, `src/namepredict/layer2/parent_selector.py`, `src/namepredict/layer2/scoring.py`, `src/namepredict/layer2/candidate_gate.py`
+> 源文件：`src/namepredict/layer2/principal_parent.py`, `src/namepredict/layer2/parent_skeleton.py`, `src/namepredict/layer2/principal_expression.py`, `src/namepredict/layer2/principal.py`, `src/namepredict/layer2/parent_selector.py`, `src/namepredict/layer2/scoring.py`, `src/namepredict/layer2/candidate_gate.py`
 
 ### 2.4 Layer 3 -- Substituent Extractor（取代基提取器）
 
@@ -345,18 +345,22 @@ src/namepredict/
 │   ├── analyzer.py           # FG 检测 + info dict
 │   ├── a*_*.py               # ~20 FG 子检测模块
 │   └── ring_*.py             # 环系拓扑
-├── layer2/                   # 母体选择器（~85 文件）
-│   ├── parent_selector.py    # 调度中心
-│   ├── parent_core.py        # 核心母体逻辑
+├── layer2/                   # 母体选择器（~75 文件）
+│   ├── principal.py          # P-41 主官能团注册表 + 选择
+│   ├── principal_expression.py  # typed 表达 (chain/ring/hydrocarbon)
+│   ├── principal_parent.py   # P-44 规则驱动管线编排
+│   ├── parent_skeleton.py    # 骨架枚举 + P-44 筛选
+│   ├── candidates.py         # 候选收集 + 门控 + 兜底
+│   ├── parent_selector.py    # select_parent / iter_parent_candidates 入口
 │   ├── scoring.py            # 候选评分
 │   ├── candidate_gate.py     # 类型化门控
-│   ├── aliph_fg.py           # 脂肪族 FG 母体
-│   ├── ring_parent.py        # 苯系母体
-│   ├── arene_fg_parent.py    # 芳环 FG 母体
-│   ├── [fused ring].py       # 稠环系列（~15 文件）
-│   ├── [heterocycle].py      # 杂环系列（~10 文件）
-│   ├── [special FG].py       # 特殊功能团（~12 文件）
-│   └── scaffold/             # 骨架构建器
+│   ├── parent_core.py        # parent_dict / chain / gate helpers
+│   ├── fg_helpers.py         # FG 资格谓词 + 脂肪族过滤
+│   ├── cyclo_fg.py           # 环烯FG / 环二醇 / 环二酮
+│   ├── arene_carbonyl.py     # 苯甲酰类保留母体
+│   ├── side_*.py / aryl_*.py # 侧链事实 + 芳环侧链
+│   ├── scaffold/             # 母环保留名 + 骨架构建器 (specs/ring_core/…)
+│   └── leaves/               # 芳环外侧链识别
 ├── layer3/                   # 取代基提取
 │   ├── substituent_extractor.py
 │   ├── substituent_namer.py  # 递归命名入口

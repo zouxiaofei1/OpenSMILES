@@ -80,21 +80,20 @@ try 函数的职责是：
    - `n_carbons` — 碳原子数
    - 环系特有的关键原子位置（如 `n_idx` 表示氮原子在环中的位置）
 
-参考现有实现：
-- 单杂环: `E:\chem\src\namepredict\layer2\pyridine.py:125-126`
-- 稠杂环: `E:\chem\src\namepredict\layer2\indole.py`
-- 桥环: `E:\chem\src\namepredict\layer2\bridged_parent.py`
+参考现有实现（薄层 producer 位于 `scaffold/` 子目录）：
+- 单杂环/五元杂芳: `scaffold/heteroarene5.py` / `scaffold/azole13.py`
+- 稠杂环: `scaffold/quinoline.py` / `scaffold/indole.py` / `scaffold/fused56_mono.py`
+- 桥环/螺环: `scaffold/polycyclic_parent.py`
 
-### 2.2 注册 try 函数
+### 2.2 接入骨架识别（ring_core）
 
-在 `E:\chem\src\namepredict\layer2\ring_producers.py` 中：
+`ring_producers.py` 注册表**已随重构删除**。当前环骨架身份由 `scaffold/ring_core.py` 集中识别：
 
-1. 在文件顶部 import 你的 try 函数
-2. 将其加入 `_RING_PRODUCERS` tuple
+1. **保留名模板**：若环系是可子图同构匹配的保留母环，在 `scaffold/retained_templates.py` 添加 SMILES 模板
+2. **专用适配器**：若环系需程序化识别（如碳羰、规则碳环），在 `scaffold/ring_core.py` 用 `@_register` 装饰实现 `_xxx_core(info) -> list[tuple[set[int], str]]`
+3. **薄层 producer**：在 `scaffold/` 新建 `{ring}.py`（或并入相近文件），实现 `_try_{ring}_parent(info)` 完整 producer 供装配与 tests
 
-**注册顺序至关重要**：更具体的环系（多环、含多个杂原子）应排在更通用的环系（单环、简单碳环）前面。system 按 `_RING_PRODUCERS` 的顺序调用 try 函数，最先匹配的候选获得更高的选择机会。
-
-> **源:** `E:\chem\src\namepredict\layer2\ring_producers.py:76-108`
+> **源:** `E:\chem\src\namepredict\layer2\scaffold\ring_core.py`, `E:\chem\src\namepredict\layer2\scaffold\retained_templates.py`
 
 ### 2.3 注册 ScaffoldSpec（新的命名骨架）
 
@@ -274,8 +273,8 @@ def {ring}_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, str
 | Layer | 文件 | 改动内容 |
 |-------|------|---------|
 | L1 | `layer1/ring_systems.py` | 特殊环检测（通常无需改动） |
-| L2 | `layer2/{ring_name}.py` | **新建** try 函数模块 |
-| L2 | `layer2/ring_producers.py` | import + 注册到 `_RING_PRODUCERS` |
+| L2 | `layer2/scaffold/{ring_name}.py` | **新建**薄层 try 函数模块（或并入相近文件） |
+| L2 | `layer2/scaffold/ring_core.py` | `@_register` 核心识别器 或 `retained_templates.py` 模板 |
 | L2 | `layer2/scaffold/specs.py` | 新增 `ScaffoldSpec`（如果是新的 retained scaffold） |
 | L2 | `layer2/kind_registry.py` | 注册 `KindMeta`（如 FG 变体无 ScaffoldSpec） |
 | L4 | `layer4/numbering.py` | 添加 orienter + 注册到 `_kind_orienters()` 链 |
@@ -295,45 +294,20 @@ def {ring}_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, str
 
 吡啶的六元芳环（5C + 1N）被 SSSR 自动检测。未对 Layer1 做额外改动。
 
-### Step 2 — Layer2 try 函数
+### Step 2 — Layer2 骨架识别
 
-文件 `E:\chem\src\namepredict\layer2\pyridine.py`：
+`scaffold/pyridine.py` 薄层已随重构删除。pyridine 现在走**数据驱动**识别：
 
-```python
-def _try_pyridine_parent(info: dict) -> dict | None:
-    # 检测: 未稠合的 6 元芳环, 含 5C + 1N
-    # 验证: 无酸/醛/酮/醇/胺/酯/酰胺/腈 (这些应由 FG 变体处理)
-    # 构建: chain=环原子, kind="pyridine", n_idx=N 位置
-```
+1. **ScaffoldSpec**：`scaffold/specs.py` 的 `MONO_HETERO_SPECS` 已有
+   `_monohetero("pyridine", "pyridine", "吡啶")`（提供 stem + 编号策略）
+2. **ring_core 模板**：`scaffold/retained_templates.py` 的 SMILES 模板经子图同构
+   匹配识别吡啶环骨架，`_template_mother` 标注 `scaffold_id="pyridine"`
+3. **FG 变体**：pyridinecarboxylic / pyridinamine / pyridinol / pyridinecarbonitrile
+   等 kind 由 `kind_registry` 的 `_MISC_RING_FG` / `_H5_COOH` 表注册 fg_rank，命名走
+   L5 的 `pyridine_kind_names` 分发
 
-> **源:** `E:\chem\src\namepredict\layer2\pyridine.py:125-126`
-
-吡啶还有四个 FG 组合变体:
-
-| try 函数 | kind | 说明 |
-|----------|------|------|
-| `_try_pyridinecarboxylic_parent` | `pyridinecarboxylic` | 环上连一个 COOH |
-| `_try_pyridinamine_parent` | `pyridinamine` | 环上连一个 NH2 |
-| `_try_pyridinol_parent` | `pyridinol` | 环上连一个 OH |
-| `_try_pyridinecarbonitrile_parent` | `pyridinecarbonitrile` | 环上连一个 CN |
-
-> **源:** `E:\chem\src\namepredict\layer2\pyridine.py:160-163, 214-215, 240-241, 289-292`
-
-### Step 2 — 注册 try 函数
-
-在 `E:\chem\src\namepredict\layer2\ring_producers.py`:
-
-```python
-from namepredict.layer2.pyridine import _try_pyridine_parent
-# ...
-_RING_PRODUCERS = (
-    # ... 更复杂的环在前面 ...
-    _try_pyridine_parent,     # 单杂环, 排在中后位置
-    # ...
-)
-```
-
-> **源:** `E:\chem\src\namepredict\layer2\ring_producers.py:41, 95`
+若环系需程序化识别（非模板匹配），在 `scaffold/ring_core.py` 用 `@_register` 实现
+专用适配器（参考 `_benzoquinone_core` / `_cycloalkane_core`）。
 
 ### Step 2 — ScaffoldSpec
 
@@ -405,9 +379,9 @@ try 函数返回 `None` 表示该分子不满足此环系的条件。ScaffoldSpe
 
 ### Q: 为什么有些环系没有独立的 .py 文件？
 
-部分简单环系（如 furan, thiophene, pyrrole）共用 `heteroarene5.py`，因为它们共享相同的检测逻辑（五元芳杂环，仅杂原子种类不同）。
+部分简单环系（如 furan, thiophene, pyrrole）共用 `scaffold/heteroarene5.py`，因为它们共享相同的检测逻辑（五元芳杂环，仅杂原子种类不同）。
 
-> **源:** `E:\chem\src\namepredict\layer2\heteroarene5.py:24`
+> **源:** `E:\chem\src\namepredict\layer2\scaffold\heteroarene5.py`
 
 ### Q: 多环稠合系统如何处理？
 

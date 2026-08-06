@@ -1,6 +1,6 @@
 # NamePredict Wiki
 
-> 最后更新: 2026-08-06 | 源文件: 205 `.py` / 24,403 行 | Wiki 页面: 15
+> 最后更新: 2026-08-06 | 源文件: 165 `.py` / 21,141 行 | Wiki 页面: 15
 
 ## 项目概述
 
@@ -44,7 +44,7 @@ SMILES 输入
 
 | 页面 | 内容 |
 |------|------|
-| [[concepts/functional-group-priority]] | 官能团优先级体系：P-41 降序排列 (fg_rank 0-13)、kind_registry 单一权威注册中心、BAD tuple 互斥规则、L1/L2/L5 三层 FG 生命周期 |
+| [[concepts/functional-group-priority]] | 官能团优先级体系：P-41 降序排列 (fg_rank 0-13)、kind_registry 单一权威注册中心、互斥检查规则、L1/L2/L5 三层 FG 生命周期 |
 | [[concepts/atom-ownership]] | 原子归属跟踪：owned_atoms 计算 (链骨架+FG 杂原子)、ClaimedBlock 桥接类型与 SideSlot 枚举、gap/overlap 覆盖完整性、14 种 FG 的异原子归属规则 |
 | [[concepts/bilingual-naming]] | 中英双语命名约定：en/zh 元组惯例、词干表 (stems.py) 作为单一权威、酯类/盐类的语序反转、zh_stem 转换、zh_num 中文数字生成 |
 

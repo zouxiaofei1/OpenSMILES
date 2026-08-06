@@ -199,7 +199,7 @@ class ClaimedBlock:
     atoms: frozenset[int]  # 取代基包含的所有重原子
 ```
 
-> **源:** `src/namepredict/layer2/claimable_block.py:20-25`
+> **源:** `src/namepredict/layer3/claimable_block.py:20-25`
 
 `ClaimedBlock` 是一个冻结的 dataclass，不可变，保证在命名过程中不会被意外修改。
 
@@ -215,7 +215,7 @@ class ClaimedBlock:
 | `ETHER_O` | 醚氧上的连接 (已被取代基臂占据) | 连接原子是 O，恰好两个碳邻居（无氢邻居） |
 | `OTHER` | 其他杂原子的连接 | 不满足以上任何条件 |
 
-> **源:** `src/namepredict/layer2/claimable_block.py:12-17, 68-77`
+> **源:** `src/namepredict/layer3/claimable_block.py:12-17, 68-77`
 
 SideSlot 的推导由 `derive_slot()` 函数完成，它仅根据母体侧已归属原子的化学环境判断槽位类型。例如，检测酰胺氮的逻辑 (`_is_amide_n`) 会验证：该原子为氮 (Z=7)、单键连接到一个已归属的羰基碳，且该碳带有双键氧。
 
@@ -228,11 +228,11 @@ SideSlot 的推导由 `derive_slot()` 函数完成，它仅根据母体侧已归
 3. 通过 `cut_block()` 将整个外部组件从 root 开始切割出来
 4. 验证该组件仅有 **唯一一个** 连接回母体的点（多连接点=桥连=不是简单取代基，返回 None）
 
-> **源:** `src/namepredict/layer2/claimable_block.py:96-112`
+> **源:** `src/namepredict/layer3/claimable_block.py:96-112`
 
 然后 `iter_claims()` 遍历所有外部重原子组件（通过 `side_roots()` 获取所有母体外的起点，`cut_block()` 切割出组件，`_unique_components()` 去重），并为每个组件创建 ClaimedBlock。结果按 `(attach_parent, root, slot)` 三元组排序，保证输出顺序确定。
 
-> **源:** `src/namepredict/layer2/claimable_block.py:152-159`
+> **源:** `src/namepredict/layer3/claimable_block.py:152-159`
 
 ## Coverage Ledger: Gap 与 Overlap 验证
 

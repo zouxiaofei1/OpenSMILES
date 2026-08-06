@@ -184,7 +184,7 @@ graph TD
 
 **全称**: Ownership-Only Claimable Side Block
 
-**定义**: `src/namepredict/layer2/claimable_block.py:20-25`
+**定义**: `src/namepredict/layer3/claimable_block.py:20-25`
 
 **用途**: 描述 parent 未覆盖的一个"外侧"原子组件（side block），仅记录拓扑归属信息，不含名称。Layer 3 基于 ClaimedBlock 生成 `SubstituentName`。
 
@@ -199,7 +199,7 @@ class ClaimedBlock:
 
 ### SideSlot 枚举
 
-定义于 `claimable_block.py:12-17`：
+定义于 `layer3/claimable_block.py:12-17`：
 
 | 值 | 含义 |
 |---|---|
@@ -211,7 +211,7 @@ class ClaimedBlock:
 
 ### 产出函数
 
-`iter_claims(mol, owned_atoms)` at `claimable_block.py:152-159`：遍历所有外侧重原子组件，为每个组件确定 canonical edge `(attach_parent, root)` 和 slot，返回排序后的 `list[ClaimedBlock]`。
+`iter_claims(mol, owned_atoms)` at `layer3/claimable_block.py:152-159`：遍历所有外侧重原子组件，为每个组件确定 canonical edge `(attach_parent, root)` 和 slot，返回排序后的 `list[ClaimedBlock]`。
 
 ---
 

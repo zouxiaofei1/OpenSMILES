@@ -50,7 +50,7 @@ layer1 analyze → layer2 select_parent → layer3 extract_substituents → laye
 
 **第五阶段: N-取代基提取** — `_extract_n_subs` 处理酰胺和胺类母体氮原子上的取代基。分两条路径：简单路径 (`n_side_extract`) 处理 N-甲基、N-乙基、N,N-二甲基、N-苯基等简单取代基；复杂路径 (`n_block_extract`) 当母体标记 `n_block` 时，将整个 N-侧链切割为 block，通过 `SubstituentNamer` 全管道命名（支持保留名→rooted_tree→递归）。两者互斥：n_block 优先，若存在则跳过简单路径。
 
-**第六阶段: 声明侧链补全 (Claimed Sides)** — `extract_claimed_sides` 是覆盖补全机制。它遍历 layer2 通过 `iter_claims` 生成的所有 `ClaimedBlock`（即 ownership 边界处未被前面阶段覆盖的原子块），对每个未被覆盖的 claim 调用 `SubstituentNamer.name()` 进行命名。这是 layer3 的"安全网"——任何逃过前面所有专门提取器的侧链原子最终在这里被捕获命名。
+**第六阶段: 声明侧链补全 (Claimed Sides)** — `extract_claimed_sides` 是覆盖补全机制。它遍历 `iter_claims`（`layer3/claimable_block.py`，原 `layer2/claimable_block.py`，重构后迁至 L3）生成的所有 `ClaimedBlock`（即 ownership 边界处未被前面阶段覆盖的原子块），对每个未被覆盖的 claim 调用 `SubstituentNamer.name()` 进行命名。这是 layer3 的"安全网"——任何逃过前面所有专门提取器的侧链原子最终在这里被捕获命名。
 
 ### 取代基命名引擎 (SubstituentNamer)
 
@@ -191,7 +191,7 @@ flowchart LR
 | `substituent_extractor.py` | 445 | **主提取器**。识别母体链上的各种取代基：烷基、卤素、羟基、氨基、氧代、硝基、异氰酸酯、烷氧基、芳基/杂芳基、N-取代基、羧烷基。定义所有 `_make_*` 辅助函数构建取代基 dict。 |
 | `substituent_namer.py` | 334 | **命名引擎**。三后端链式尝试：保留名 (RetainedBackend)、饱和碳树 (RootedTreeBackend)、递归命名 (RecursiveBackend)。`SubstituentNamer` 类是统一入口。 |
 | `coverage.py` | 67 | **覆盖台账**。`CoverageLedger` 计算 gap/overlap，验证所有重原子已被母体或取代基恰好覆盖一次。`build_coverage_ledger` 是唯一公开函数。 |
-| `claim_extract.py` | 68 | **声明侧链提取**。`extract_claimed_sides` 遍历 layer2 的 `iter_claims`，对未覆盖的原子块调用 `SubstituentNamer` 命名。是覆盖补全的"安全网"。 |
+| `claim_extract.py` | 68 | **声明侧链提取**。`extract_claimed_sides` 遍历 `iter_claims`（`layer3/claimable_block.py`），对未覆盖的原子块调用 `SubstituentNamer` 命名。是覆盖补全的"安全网"。 |
 | `n_side_extract.py` | 104 | **N-简单侧链提取**。处理仲胺/叔胺的 N-烷基（methyl 到 butyl）和酰胺的 N-苯基。支持 N,N-二取代基格式。 |
 | `n_block_extract.py` | 74 | **N-复杂侧链提取**。当母体标记 n_block 时，切割整个 N-侧链为 block，通过 `SubstituentNamer` 命名后包装为 N-前缀。与 n_side_extract 互斥。 |
 | `alkyl_sys_names.py` | 150 | **烷基系统命名**。`name_rooted_alkyl` 将 `RootedAlkylTree` 转换为系统 -yl 双语名。实现主路径选择 (principal path)、分支收集、位次编号、前缀组装。 |

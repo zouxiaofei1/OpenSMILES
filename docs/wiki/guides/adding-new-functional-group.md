@@ -8,7 +8,7 @@
 
 本指南详细说明如何向 NamePredict 命名管线添加一个新的 functional group（官能团，FG）类型。整个流程跨越全部 5 个 layer，从前端检测到末端名称组装。我们以 **sulfoxide（亚砜，R-S(=O)-R'）** 作为完整的工作示例——它是一个中等优先级（`fg_rank=2`）、非末端的链状 FG，在 IUPAC P-63.3 中有明确定义，代码实现简洁清晰，非常适合作为新增 FG 的参考模板。
 
-在开始之前，建议先阅读 [[concepts/functional-group-priority]] 了解 FG 优先级体系和 BAD 元组排他规则，以及 [[architecture/overview]] 了解 5 层管线架构。
+在开始之前，建议先阅读 [[concepts/functional-group-priority]] 了解 FG 优先级体系和互斥检查规则，以及 [[architecture/overview]] 了解 5 层管线架构。
 
 ---
 
@@ -116,7 +116,7 @@ _FG_BOOL_MORE_KEYS = (
 
 3. **确保键名在 `_fg_more_lists` 函数中出现**（`analyzer.py:405-414`），该函数定义了哪些键从 parts dict 传递到 info dict。
 
-4. **如果新 FG 需要被更高优先级 FG 排他排除**（如 carboxyl 排除 ester），在高优先级检测器中添加对 `is_{fg}_atom()` 的调用。sulfoxide 在 fg_rank=2，低于大多数常见 FG，因此不需要被其他检测器排他排除——较低的 fg_rank 足以通过 Layer 2 的 BAD 元组机制将其降级为取代基。
+4. **如果新 FG 需要被更高优先级 FG 排他排除**（如 carboxyl 排除 ester），在高优先级检测器中添加对 `is_{fg}_atom()` 的调用。sulfoxide 在 fg_rank=2，低于大多数常见 FG，因此不需要被其他检测器排他排除——较低的 fg_rank 足以通过 Layer 2 的互斥检查（`_no_fgs`）将其降级为取代基。
 
 ---
 
@@ -140,10 +140,12 @@ _CHAIN_FG: tuple[tuple[str, int], ...] = (
 
 ### 2.2 创建 try 函数
 
-在 `src/namepredict/layer2/sulfoxide.py`（`sulfoxide.py:1-46`）中：
+（`sulfoxide.py` 已随重构删除，此处为**机制示例**——实际非 SUFFIX 类走 `principal.py` 的
+`LEGACY_COMPAT` 注册 + `kind_registry` stem，不再有独立 producer 模块）
 
 ```python
-_SULFOXIDE_BAD = (
+# 互斥 keys 内联传入 _no_fgs（共享 BAD 元组常量已删除）
+keys = (
     "has_acid", "has_ester", "has_amide", "has_nitrile",
     "has_aldehyde", "has_ketone", "has_acyl_chloride", "has_anhydride",
     "has_amine", "has_alcohol", "has_thiol", "has_ether", "has_sulfide",
@@ -151,7 +153,7 @@ _SULFOXIDE_BAD = (
 
 def _sulfoxide_parent(info: dict) -> dict | None:
     sxs = info.get("sulfoxides") or []
-    if len(sxs) != 1 or not _simple_ok(info):
+    if len(sxs) != 1 or not _no_fgs(info, keys):
         return None
     got = _arm_pair(info, sxs[0])
     return None if got is None else _make_parent(*got, sxs[0]["s_idx"])
@@ -159,8 +161,8 @@ def _sulfoxide_parent(info: dict) -> dict | None:
 
 try 函数的关键要素：
 
-- **BAD 元组**：定义该 FG 作为母体时不能共存的其他 FG。sulfoxide 的 `_SULFOXIDE_BAD` 排除了 carbonyl 类（acid 到 anhydride）、amine、alcohol、thiol、ether、sulfide——即所有优先级高于或等于它的 FG。
-- **`_simple_ok` 检查**：验证分子是饱和开链（`_is_open_sat`）且不含 BAD 元组中的任何 FG（`_no_fgs`）。
+- **互斥 keys**：定义该 FG 作为母体时不能共存的其他 FG，作为 `_no_fgs(info, keys)` 的参数传入（共享 BAD 元组常量已删除，keys 由 producer 内联）。sulfoxide 的 keys 排除 carbonyl 类（acid 到 anhydride）、amine、alcohol、thiol、ether、sulfide——即所有优先级高于或等于它的 FG。
+- **`_simple_ok` 检查**：验证分子是饱和开链（`_is_open_sat`）且不含互斥 keys 中的任何 FG（`_no_fgs`）。
 - **`_arm_pair` 检查**：对 sulfoxide 的二臂结构，验证 S 原子两侧都有有效的碳链臂（通过 `_longest_from` 和 `_arm_ok`）。
 - **`_make_parent`**：构建 parent dict，指定 `kind="sulfoxide"`、`s_idx`、以及两侧臂的碳数 `alkyl_ns`。
 
@@ -182,21 +184,23 @@ def _thiol_parent(info: dict) -> dict:
 - 苯环 + 单 FG：`_RETAINED_RING_KINDS`（如 `ESTER → "benzoate"`）
 - 环骨架：`_RING_FIELDS`（位次字段名）+ `_resolved_ring_kind`（scaffold 组合）
 
-**走经典 builder（sulfoxide/sulfone/醚等非 SUFFIX 类）**：
-在 `parent_selector.py` 实现 `_xxx_parent(info)`，供 principal 的 `_open_chain_expression` /
-`_special_expression` 直接 import。注意：非 SUFFIX 类当前**不参与主官能团选择**（`PRINCIPAL_REGISTRY`
-的 `principal_spec()` 只放行 SUFFIX），纯醚/纯亚砜分子在 principal-only 下仍会落入纯烃兜底，属
-已知能力缺口。
+**走 legacy_compat（sulfoxide/sulfone/醚等非 SUFFIX 类）**：
+经典 builder（`_open_chain_expression` / `_special_expression`）已随注册层删除；非 SUFFIX 类
+（sulfoxide/sulfone/醚等）当前通过 `principal.py` 的 `PRINCIPAL_REGISTRY`（`LEGACY_COMPAT` /
+`PREFIX_ONLY` 档）注册优先级 + `kind_registry` 提供 stem。注意：非 SUFFIX 类**不参与主官能团
+选择**（`principal_spec()` 只放行 SUFFIX），纯醚/纯亚砜分子在 principal-only 下仍会落入纯烃
+兜底，属已知能力缺口。
 
-### 2.4 BAD 元组（如果需要新组合）
+### 2.4 互斥 keys（如果需要新组合）
 
-如果新 FG 引入了新的互斥组合，在 `src/namepredict/layer2/parent_selector_common.py` 中定义 BAD 元组：
+如果新 FG 引入了新的互斥组合，通过 `_no_fgs(info, keys)` 传参即可（`fg_helpers.py`；共享 BAD 元组常量已删除）：
 
 ```python
-_NEWFG_BAD = _CORE_BAD + ("has_alcohol", "has_amine", ...)
+keys = ("has_acid", "has_ester", "has_alcohol", "has_amine", ...)
+ok = _no_fgs(info, keys)
 ```
 
-sulfoxide 的 BAD 元组直接定义在 `sulfoxide.py` 中，因为它是该 FG 特有的约束，不需要被其他模块共享。
+FG 特有的互斥 keys 可直接内联在该 FG 所在模块（如 `cyclo_fg.py` 的 `_OL_BLOCK`），不需要被其他模块共享。
 
 ### 2.5 添加 ownership 逻辑
 
@@ -343,7 +347,7 @@ sulfoxide 被放在 `_tail` 中（dispatch 链的尾部），因为它的 `fg_ra
 
 - **无 gap**（无遗漏）：该 FG 的所有合理分子变体都应被正确命名。
 - **无 overlap**（无冲突）：新 FG 不应破坏已有 FG 的命名结果（通过现有测试回归验证）。
-- **dual coverage**：验证新 FG 的 kind 在 `_FG_PRODUCERS` 中的位置不会导致候选选择冲突。
+- **dual coverage**：验证新 FG 的 kind 在 principal 表达表（`_CHAIN_KINDS` / `_RETAINED_RING_KINDS`）或 `kind_registry` 中的注册不会导致候选选择冲突。
 
 ### 集成测试
 
@@ -360,9 +364,9 @@ sulfoxide 被放在 `_tail` 中（dispatch 链的尾部），因为它的 `fg_ra
 | L1 | `analyzer.py:_FG_BOOL_MORE_KEYS` | `has_*` 布尔键映射 |
 | L1 | `analyzer.py:_p_fg_a/b1/b2` 或 `_fg_parts_b_core` | 注册 entries 收集函数 |
 | L2 | `kind_registry.py:_CHAIN_FG` | kind 字符串 + fg_rank |
-| L2 | 新建 `layer2/{fg}.py` 或 `parent_selector.py` | `_xxx_parent` + BAD 元组 + `_make_parent` |
+| L2 | 新建 `layer2/{fg}.py` 或 `parent_selector.py` | `_xxx_parent` + 互斥 keys + `_make_parent` |
 | L2 | `principal_expression.py`（SUFFIX 类） | `_CHAIN_KINDS` / `_RETAINED_RING_KINDS` / `_RING_FIELDS` 表达表 |
-| L2 | `parent_selector_common.py` | BAD 元组（如果需要新组合） |
+| L2 | `fg_helpers.py` | `_no_fgs` 互斥检查（如需要） |
 | L2 | `parent_ownership.py:_kind_fg_atoms` | FG heteroatom ownership 函数 |
 | L3 | `substituent_extractor.py` | 取代基提取规则（如果需要） |
 | L3 | `retained_substituents.py` | 前缀名注册（如果需要） |
@@ -392,13 +396,13 @@ sulfoxide 被放在 `_tail` 中（dispatch 链的尾部），因为它的 `fg_ra
 
 ## 常见陷阱
 
-1. **忘记添加 `has_*` 布尔键映射**：这是最常见的遗漏。如果 `_FG_BOOL_MORE_KEYS` 中没有映射，Layer 2 的 `_no_fgs` 检查无法正确排除该 FG，导致 BAD 元组失效。
+1. **忘记添加 `has_*` 布尔键映射**：这是最常见的遗漏。如果 `_FG_BOOL_MORE_KEYS` 中没有映射，Layer 2 的 `_no_fgs` 互斥检查无法正确排除该 FG，导致互斥规则失效。
 
-2. **fg_rank 设置错误**：fg_rank 不仅影响评分优先级，还影响 BAD 元组语义。如果将 sulfoxide 的 fg_rank 设为 6（与 ketone 同级），它就会错误地在含酮分子中成为 principal FG。
+2. **fg_rank 设置错误**：fg_rank 不仅影响评分优先级，还影响互斥规则语义。如果将 sulfoxide 的 fg_rank 设为 6（与 ketone 同级），它就会错误地在含酮分子中成为 principal FG。
 
 3. **ownership 遗漏**：如果 FG 包含 heteroatom（如 S, O, N），必须确保这些原子被标记为 `owned_atoms`。遗漏会导致这些原子被 Layer 3 误识别为"未被 parent 拥有"的取代基碎片。
 
-4. **_FG_PRODUCERS 顺序错误**：`_FG_PRODUCERS` 的顺序必须是 fg_rank 降序，否则高优先级 FG 可能在低优先级 FG 之后被尝试，导致错误的候选排序。修改顺序前必须运行 dual coverage 测试。
+4. **注册顺序/表达表错误**：新 FG 加入 principal 表达表（`_CHAIN_KINDS` / `_RETAINED_RING_KINDS`）时需按 fg_rank 语义排布，避免高优先级 FG 被低优先级 FG 抢先；修改后运行 dual coverage 测试。
 
 5. **arm_pair 中的 `_arm_ok` 检查遗漏**：对于双臂 FG（sulfide, ether, sulfoxide），必须调用 `_arm_ok(mol, arm, hetero_idx)` 确保每条臂都不含环或其他 heteroatom。遗漏此检查会导致含环结构的分子被错误地选择为 open-chain parent。
 

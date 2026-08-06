@@ -1,6 +1,6 @@
 # Layer2: Parent Selector（母体选择器）
 
-> **文件数:** ~85 source files | **代码占比:** ~60% of all project code
+> **文件数:** ~75 source files | **代码占比:** ~60% of all project code
 > **职责:** 给定 layer1 的功能团 (FG) 信息字典，选出 IUPAC 命名中的母体结构 (parent hydride)
 
 ---
@@ -36,11 +36,12 @@ _collect_candidates(info)            # 当前唯一入口
    └─ express_ring/chain_principal   # typed 表达；无主官能团→纯烃表达
 ```
 
-**经典并行通道（已注释/部分删除）**：历史上 Layer2 通过 `_carbonyl_parent` / `_hetero_parent`
+**经典并行通道（已删除）**：历史上 Layer2 通过 `_carbonyl_parent` / `_hetero_parent`
 / `_fg_candidates` / `_ring_candidates` / `_unsat_candidates` / `_benzene_candidate` /
-`_alkane_fallback` 并行生成所有候选再统一评分（scoring.py）。当前 `_collect_candidates` 中
-该通道已被注释；**`fg_producers` 注册层整体删除**（`fg_try_fns()` 已移除）；`ring_try_fns()`
-/ `unsat_try_fns()` 注册表仍保留——前者被 principal 管线的骨架 scaffold 识别复用。
+`_alkane_fallback` 并行生成所有候选再统一评分（scoring.py）。该通道及其注册层
+**（`fg_producers` / `ring_producers` / `unsat_producers` 三个 try 函数注册表）已整体删除**。
+`_collect_candidates` 当前唯一走 principal 单路径；骨架 scaffold 身份改由
+`scaffold/ring_core` + `scaffold/specs` 解析，不再依赖 ring try 注册表。
 
 > **源:** `E:\chem\src\namepredict\layer2\candidates.py:103-106`
 
@@ -51,7 +52,7 @@ _collect_candidates(info)            # 当前唯一入口
 
 ```mermaid
 flowchart TD
-    A[L1 analyze info] --> B[principal_selection<br/>P-41 注册表选主官能团]
+    A[L1 analyze info] --> B[principal.py<br/>P-41 注册表选主官能团]
     B --> C[parent_skeleton<br/>枚举开链+环骨架]
     C --> D{P-44 逐条筛选}
     D --> D1[keep_max_principal_coverage]
@@ -66,8 +67,8 @@ flowchart TD
     E -->|无主官能团| G[express_hydrocarbon_principal 纯烃]
 ```
 
-1. **`principal_selection.py`** — `select_principal_group()` 按 `PRINCIPAL_REGISTRY`（P-41 class
-   优先级）选出主官能团类。注册表把 FG 分成三档表达权限：**SUFFIX**（acid/ester/amide/nitrile/
+1. **`principal.py`**（原 `principal_selection.py` + `principal_registry.py` 合并）— `select_principal_group()`
+   按 `PRINCIPAL_REGISTRY`（P-41 class 优先级）选出主官能团类。注册表把 FG 分成三档表达权限：**SUFFIX**（acid/ester/amide/nitrile/
    aldehyde/ketone/alcohol/thiol/amine 等，有资格成为主官能团并 typed 表达）、**LEGACY_COMPAT**
    （sulfide/sulfone/carbamate 等，不参与主官能团选择）、**PREFIX_ONLY**（ether，只当前缀）。
    `principal_spec()` 只放行 SUFFIX 类。
@@ -95,12 +96,12 @@ flowchart TD
      按环内不饱和度给 cycloalkane/cycloalkene/cyclopolyene）
 
 4. **`principal_parent.py`** — `rule_driven_parent_candidates()` 编排以上：选主官能团 →
-   选骨架 → 表达；对 ester×2（`_diester_parent`）与环酮等走 `_special_expression`。
-   `_open_chain_expression`（`parent_selector` 经典 builder 通道）已删除——骨架表达
-   `express_chain_principal` 覆盖全部 8 类主官能团，成为唯一来源。
-   `_unsupported_typed_ring` 拒绝"无表达能力骨架"的酮表达。
+   选骨架 → 表达。经典 builder 通道 **`_open_chain_expression` 已删除**，`_special_expression`
+   亦随之清空（原 ester×2 / 环酮分支随 `diester.py` / `parent_selector` 旧 builder 一并移除，
+   现恒为 `return None`）——骨架表达 `express_chain_principal` 覆盖全部 8 类主官能团，
+   成为唯一来源。`_unsupported_typed_ring` 拒绝"无表达能力骨架"的酮表达。
 
-> **源:** `E:\chem\src\namepredict\layer2\principal_selection.py:25-33`, `E:\chem\src\namepredict\layer2\parent_skeleton.py:193-215`, `E:\chem\src\namepredict\layer2\principal_expression.py:37-45, 108-125, 211-222`, `E:\chem\src\namepredict\layer2\principal_parent.py:114-124`
+> **源:** `E:\chem\src\namepredict\layer2\principal.py`, `E:\chem\src\namepredict\layer2\parent_skeleton.py`, `E:\chem\src\namepredict\layer2\principal_expression.py`, `E:\chem\src\namepredict\layer2\principal_parent.py`
 
 ### Kind Registry: 母体元数据中心
 
@@ -108,51 +109,39 @@ flowchart TD
 
 - **`KindMeta`**: 每个 kind 的评分字段 (`fg_rank`, `ring`, `n_rings`, `retained`) 和命名 stem
 - **`fg_rank`**: 官能团类别优先级 (acid=13, ester=11, ketone=6, alcohol=5, amine=3...)，遵循 IUPAC P-41 优先顺序
-- **`ring_try_fns()` / `unsat_try_fns()`**: 两个可扩展的 try 函数注册表（`fg_try_fns()` 已随 fg 注册层删除）
+- **scaffold 识别**: ring/unsat try 函数注册表（`ring_producers.py` / `unsat_producers.py` / `fg_producers.py`）已整体删除；环骨架身份由 `scaffold/ring_core`（SMILES 模板子图同构 + 专用碳羰适配器）+ `scaffold/retained_templates` 识别
 - **ScaffoldSpec 单一 stem 权威源**: 词干 (stem_en/zh) 与编号策略由 `scaffold/specs.py` 提供，`kind_registry._load_from_scaffold_specs()` 在 bootstrap 末尾从 Spec 同步 `KindMeta`
 
-注册表通过 bootstrap 模式懒加载：`ring_producers.py`、`unsat_producers.py` 在模块导入时将 try 函数注入 `kind_registry`；FG 母体不再走注册表，改由 principal 管线的 typed 表达 + `parent_selector` 的直接 import 处理。
+FG 母体不走注册表，由 principal 管线的 typed 表达（`principal_expression.py`）处理；`scaffold/ring_core` 的 `ring_core_fns()`（装饰器 `@_register` 注册的核心识别器）为骨架标注 scaffold_id。
 
 > **源:** `E:\chem\src\namepredict\layer2\kind_registry.py:7-17, 157-228`
 
-### Try 函数注册机制
+### Ring 骨架识别机制
 
-Layer2 的候选生成曾采用 **Bootstrap Register 模式**，将母体探测逻辑与核心调度解耦。该模式当前仅存
-**环（ring）与不饱和（unsat）** 两类注册表——**FG 注册层（`fg_producers.py` 与其注册机制）已整体删除**
-（`fg_try_fns()` / `register_fg_try()` / `_FG_TRY` 均移除），FG 母体现在由 principal 管线的 typed
-表达 + `parent_selector` 的直接 import 处理。
+历史上的 **Bootstrap Register 模式**（`fg_producers` / `ring_producers` / `unsat_producers`
+三个 try 注册表）**已整体删除**。当前环骨架身份由 `scaffold/ring_core.py` 集中识别，其
+`ring_core_fns()` 返回一组**装饰器 `@_register` 注册的核心识别器**：
 
-| 注册表 | 生产者文件 | 访问函数 | 活跃消费者 |
-|--------|-----------|---------|-----------|
-| `_RING_TRY` | `ring_producers.py` | `ring_try_fns()` | `parent_skeleton._producer_scaffold_ids`（骨架 scaffold 标注） |
-| `_UNSAT_TRY` | `unsat_producers.py` | `unsat_try_fns()` | `candidates._unsat_candidates`（经典通道，当前被注释） |
+- **模板识别**：`_template_mother` 通过 `scaffold/retained_templates` 的 SMILES 模板
+  子图同构匹配保留母环（芳/杂芳/稠合）
+- **专用适配器**：碳羰母环（benzoquinone / anthraquinone / chromenone /
+  ortho_benzoquinone）与规则母环（cycloalkane / cyclopolyene / bridged / spiro /
+  saturated hetero）走各自的 `@_register` 适配器（`_benzoquinone_core` /
+  `_cycloalkane_core` / `_bridged_core` / `_spiro_core` 等）
 
-**注册流程（ring）：**
+`parent_skeleton._producer_scaffold_ids` 不再依赖 try 注册表，改为调用
+`scaffold/ring_scaffold.resolve_ring_scaffold`（经 `ring_core_fns()` 标 scaffold_id，再经
+`scaffold/specs` 的 `ScaffoldSpec` 解析编号身份）。各 `scaffold/*.py` 薄层模块仍提供
+`_try_*_parent(info) -> dict | None` 风格的完整 producer（如 `benzazole._try_benzothiazole_parent`、
+`fused56_mono._try_benzofuran_parent`），供 tests 直接验证与特定 kind 的独立装配。
 
-1. `ring_producers.py` 定义 `_RING_PRODUCERS` 元组（~31 个函数：anthraquinone→benzene→cycloalkane→bridged/spiro），模块末尾 `_bootstrap()` 遍历元组调用 `register_ring_try(fn)` 追加到 `_RING_TRY`
-2. `kind_registry` 的 `_ensure_ring_producers()` 懒加载——`parent_skeleton._producer_scaffold_ids` 首次调用 `ring_try_fns()` 时触发 import，确保注册表已填充
-
-**统一的 try 函数签名：**
-
-```python
-def _try_xxx_parent(info: dict) -> dict | None
-```
-
-每个 try 函数接收 layer1 的 info 字典，返回 parent dict（`chain`, `kind`, `n_carbons` 等），或 `None`。
-ring try 函数被 `parent_skeleton._producer_scaffold_ids` 并行评估，仅取其 `chain` → `scaffold_id`
-映射来标注骨架身份：
-
-> **源:** `E:\chem\src\namepredict\layer2\parent_skeleton.py:73-89`, `E:\chem\src\namepredict\layer2\ring_producers.py:76-108`
-
-**具体示例：**
-
-`_try_pyridine_parent`（`ring_producers.py:95`）检测分子是否含单一无取代吡啶环。如果 info 中的
-ring_systems 包含一个六元芳环且恰好含一个氮原子，则返回 `parent_dict(ring_atoms, "pyridine")`；否则返回 `None`。
+> **源:** `E:\chem\src\namepredict\layer2\scaffold\ring_core.py`, `E:\chem\src\namepredict\layer2\scaffold\ring_scaffold.py`, `E:\chem\src\namepredict\layer2\scaffold\retained_templates.py`
 
 **新增 ring 母体的步骤：**
-1. 在 `ring_producers.py` 实现 `_try_xxx_parent(info)` 函数
-2. 将其加入 `_RING_PRODUCERS` 元组
-3. 在 `kind_registry.py`（或 `scaffold/specs.py` 的 `ScaffoldSpec`）声明该 kind 的 `fg_rank`、`ring`、`retained`、stem 等元数据
+1. 在 `scaffold/specs.py` 的对应 `ScaffoldSpec` 元组声明该 kind 的 `fg_rank`、`ring`、`retained`、stem 等元数据
+2. 实现核心识别器（carbonyl 专用适配器在 `ring_core.py` 加 `@_register`；规则母环在
+   `scaffold/` 薄层模块实现 `_is_*_core` 后接入）
+3. 若需保留名模板，在 `scaffold/retained_templates.py` 添加 SMILES 模板
 
 ### 评分体系 (P-44 Seniority)
 
@@ -182,11 +171,13 @@ ring_systems 包含一个六元芳环且恰好含一个氮原子，则返回 `pa
 
 母体选择的核心分歧点是 **链状母体 vs 环状母体**：
 
-1. **环优先探测:** `_ring_candidates` 遍历所有注册的环 try 函数（从高优先级稠杂环到简单环烷烃），每个函数判定分子是否匹配该环骨架。例如：
-   - `_try_anthracene_parent` → 检测三环线性稠合芳碳环
-   - `_try_naphthalene_parent` → 检测两环邻位稠合芳碳环
-   - `_try_pyridine_parent` → 检测含氮六元芳杂环
-   - `_try_simple_cycloalkane` → 检测饱和碳环
+1. **环优先探测:** `parent_skeleton` 枚举环系统候选后，由 `scaffold/ring_core` 的
+   `ring_core_fns()`（`@_register` 识别器）标注 scaffold_id（保留名经 `retained_templates`
+   子图同构匹配）。例如：
+   - `scaffold/anthraquinone._aq_system` → 三环线性稠合芳碳环 + 两个 meso 酮
+   - `scaffold/naphthalene` → 两环邻位稠合芳碳环
+   - `scaffold/quinoline` / `scaffold/indole` → 稠杂环
+   - `scaffold/cyclo_pick` / `ring_parent` → 碳环 / 环烯 / 环多烯
 
 2. **链探测:** 当环候选不被评分选中或环无法承载特征官能团时，链状母体成为选择。链母体的核心算法在 `chain_walk.py`：
    - `_longest_chain(mol)`: DFS 遍历找到最长碳链
@@ -229,9 +220,9 @@ ring_systems 包含一个六元芳环且恰好含一个氮原子，则返回 `pa
 - **二酮 (dione):** 两个酮基
 - **不饱和多元醇:** 同时含有 -OH 和 C=C，如 `_try_alkenediol_parent`
 
-资格检查 (`_is_simple_n`) 使用"bad tuple"机制：例如二酸候选要求分子中无酯、酰胺、腈、醛等更高优先级官能团（通过 `_DIACID_BAD` 过滤），但不排斥羟基、氨基等低优先级官能团（它们将成为取代基）。
+资格检查使用互斥谓词 `_no_fgs(info, keys)`（`fg_helpers.py`；共享 BAD 元组常量已删除，keys 由各 producer 内联传入）：例如二酸候选要求分子中无酯、酰胺、腈、醛等更高优先级官能团，但不排斥羟基、氨基等低优先级官能团（它们将成为取代基）。链状多元酸走 `polycarboxylic.py` / `carboxymethyl_diacid.py`，环烷多元酸走 `cyclo_polycarboxylic.py`，环二醇/二酮走 `cyclo_fg.py`。
 
-> **源:** `E:\chem\src\namepredict\layer2\parent_selector.py:55-93`
+> **源:** `E:\chem\src\namepredict\layer2\fg_helpers.py`, `E:\chem\src\namepredict\layer2\polycarboxylic.py`, `E:\chem\src\namepredict\layer2\cyclo_fg.py`
 
 ### Atom Ownership: 母体原子归属
 
@@ -248,7 +239,7 @@ ownership 信息确保 layer3 只从未被拥有的原子中提取取代基。
 
 ### 块切割与子分子构建
 
-选出母体并确定 `owned_atoms` 后，Layer2 需要识别母体外围的侧链（即取代基候选）。`block_cut.py` 和 `submol_build.py` 提供了基于 BFS 的块切割基础设施。
+选出母体并确定 `owned_atoms` 后，Layer2 需要识别母体外围的侧链（即取代基候选）。`block_cut.py` 提供基于 BFS 的块切割基础设施；H-封端子分子构建 `submol_build.py` 已迁至 `layer3/`（服务 L3 递归子命名）。
 
 **parent_atom_set —— 母体原子边界：**
 
@@ -297,7 +288,8 @@ def _bfs_block(mol: Mol, root: int, parent_atoms: frozenset[int]) -> set[int]:
 
 **CutSubmol —— 诱导子分子与 H-封端：**
 
-`submol_build.py` 定义了 `CutSubmol` 冻结数据类，用于从母体上"切下"一个侧链并构建为独立分子（用于递归命名）：
+`submol_build.py`（**已随重构迁至 `layer3/submol_build.py`**，服务 L3 取代基子命名）定义 `CutSubmol`
+冻结数据类，用于从母体上"切下"一个侧链并构建为独立分子（用于递归命名）：
 
 ```python
 @dataclass(frozen=True)
@@ -312,7 +304,7 @@ class CutSubmol:
 
 `build_cut_submol(mol, atoms, attach_old)` 构建诱导子分子：复制指定原子及其键，在 attach 处用 H 填充自由价（通过 `SetNoImplicit(False)` + SanitizeMol），确保 RDKit 能正确感知化合价。`atom_map` 和 `inv_map` 提供新旧索引间的双向翻译。
 
-> **源:** `E:\chem\src\namepredict\layer2\submol_build.py:10-70`
+> **源:** `E:\chem\src\namepredict\layer3\submol_build.py`（原 `layer2/submol_build.py`）
 
 **递归命名流程：**
 
@@ -517,7 +509,7 @@ Layer3 调用这些工厂函数，获得类型化的事实列表后，直接进�
 芳环嵌套可能无限递归（如 `Ph-Ph-Ph-...`）。系统通过 `depth` 参数控制最大递归深度：
 
 - `match_leaf(mol, nb, ring_i, depth)` 在 `depth >= 3` 时跳过 `complex` handler（`leaves/registry.py:19`），只允许简单 leaves（卤素、甲基等）
-- `aryl_recurse.py` 在每个递归层级递增 depth 并检查上限
+- 深度控制由 L3 递归命名器（`substituent_namer`）在每个递归层级递增 `depth` 并检查上限
 - 默认 max_depth=3，对应 IUPAC 命名中常见的 Ph-O-Ph-CH2- 三层嵌套
 
 > **源:** `E:\chem\src\namepredict\layer2\leaves\registry.py:16-23`
@@ -539,11 +531,9 @@ Layer3 调用这些工厂函数，获得类型化的事实列表后，直接进�
 
 > **源:** `E:\chem\src\namepredict\layer2\heteroaryl_sub.py:21-341`
 
-### aryl_stem.py —— 芳环命名 stem 生成
+### leaves/ring_namer.py —— 芳环命名 stem 生成
 
-`aryl_stem.py` 提供 `with_aryl_names(side, mol, c_idx, parent)` 接口，将芳环侧链的检测结果注入 EN/ZH 名称字段。内部调用 `_phenyl_at` 和 `_phenyl_name` 获取完整的苯基命名（含取代基前缀），为 Layer5 的最终名称组装准备数据。
-
-> **源:** `E:\chem\src\namepredict\layer2\aryl_stem.py:1-31`
+芳环命名前缀由 `leaves/ring_namer.py` 的 `name_ph_ring` / `recursive_ph_name` 生成（含 halogeno/methyl/nitro 等所有取代基的定位编号）；`aryl_sub._phenyl_name` 递归调用它。`aryl_stem.py`（原 `with_aryl_names` 封装）已随重构删除。
 
 ---
 
@@ -551,11 +541,12 @@ Layer3 调用这些工厂函数，获得类型化的事实列表后，直接进�
 
 ### 桥环母体 (von Baeyer bicyclo[x.y.z]alkane)
 
-`bridged_parent.py` 实现饱和全碳双环桥环体系的母体识别（IUPAC P-23），当前 R1 范围覆盖双环桥环，杂原子/不饱和/多环桥环延后处理。
+`scaffold/polycyclic_parent.py`（原 `bridged_parent.py` + `spiro_parent.py` 合并）实现饱和全碳
+双环桥环体系的母体识别（IUPAC P-23），当前 R1 范围覆盖双环桥环，杂原子/不饱和/多环桥环延后处理。
 
 **检测流程：**
 
-1. `_is_simple_bridged(info)`: 遍历 layer1 输出的 `ring_systems`，检查 `topology == "bridged"` 且 `n_rings == 2` 且无杂原子/芳香性
+1. `_is_bridged_system(r)` / `_is_simple_bridged(info)`: 遍历 layer1 输出的 `ring_systems`，检查 `topology == "bridged"` 且 `n_rings == 2` 且无杂原子/芳香性
 2. `_bicyclo_stems(bridge_lengths)`: 将桥长降序排列生成 `bicyclo[2.2.1]` / `双环[2.2.1]` 前缀
 3. `_build_bridged_parent(br)`: 调用 `_parent_dict` 构建 parent dict，附加 `bridge_lengths`, `bridgeheads`, `bridge_paths` 字段
 
@@ -567,11 +558,11 @@ def _try_bridged_parent(info: dict) -> dict | None:
 
 母体 dict 的 `kind` 为 `"bridged"`，`stem_en`/`stem_zh` 包含完整前缀。桥头原子和桥路径信息传递给 layer4 用于编号。
 
-> **源:** `E:\chem\src\namepredict\layer2\bridged_parent.py:1-43`
+> **源:** `E:\chem\src\namepredict\layer2\scaffold\polycyclic_parent.py`
 
 ### 螺环母体 (spiro[x.y]alkane)
 
-`spiro_parent.py` 实现饱和全碳单螺环体系的母体识别（IUPAC P-24.2.1），当前 R1 范围覆盖两个单环组分的螺环。
+`scaffold/polycyclic_parent.py` 亦实现饱和全碳单螺环体系的母体识别（IUPAC P-24.2.1），当前 R1 范围覆盖两个单环组分的螺环。
 
 **检测流程：**
 
@@ -589,9 +580,11 @@ def _try_spiro_parent(info: dict) -> dict | None:
                         stem_en=stem_en, stem_zh=stem_zh, ring_sizes=sorted(sizes))
 ```
 
-> **源:** `E:\chem\src\namepredict\layer2\spiro_parent.py:1-41`
+> **源:** `E:\chem\src\namepredict\layer2\scaffold\polycyclic_parent.py`
 
-**注册方式：** 两个函数均通过 `ring_producers.py` 注册到 `_RING_TRY` 列表（`ring_producers.py:106-107`），在 `_ring_candidates(info)` 中被评估。桥环和螺环的 try 函数位于 `_RING_PRODUCERS` 元组的末尾，优先级低于芳环和杂环母体。
+**注册方式：** 桥环/螺环核心识别器 `_bridged_core` / `_spiro_core` 经 `@_register` 注册进
+`scaffold/ring_core.py` 的 `ring_core_fns()`，供骨架 scaffold 标注。完整 producer
+`_try_bridged_parent` / `_try_spiro_parent` 仍保留于 `polycyclic_parent.py` 供装配与测试。
 
 ---
 
@@ -743,103 +736,70 @@ flowchart LR
         IPC["iter_parent_candidates(info)"]
     end
 
-    subgraph Core["核心调度"]
-        PS["parent_selector.py<br/>主调度 + FG try 函数"]
-        CAND["candidates.py<br/>候选收集 + 去重"]
-        SCORE["scoring.py<br/>P-44 评分"]
+    subgraph Principal["P-44 规则驱动管线 (主路径)"]
+        PR["principal.py<br/>P-41 注册表 + select_principal_group"]
+        SKEL["parent_skeleton.py<br/>骨架枚举 + P-44 筛选"]
+        PEXPR["principal_expression.py<br/>typed 表达 (chain/ring/hydrocarbon)"]
+        PPR["principal_parent.py<br/>rule_driven_parent_candidates"]
+        PCAND["parent_candidate.py<br/>P44Facts / contract"]
     end
 
-    subgraph Registry["注册与元数据"]
-        KR["kind_registry.py<br/>KindMeta + fg_rank + stem"]
-        RP["ring_producers.py<br/>环候选注册"]
-        FP["fg_producers.py<br/>FG候选注册"]
-        UP["unsat_producers.py<br/>不饱和候选注册"]
+    subgraph Core["核心调度"]
+        CAND["candidates.py<br/>_collect_candidates + gate + 兜底"]
+        SCORE["scoring.py<br/>P-44 评分"]
+        PSEL["parent_selector.py<br/>iter_parent_candidates / select_parent"]
+    end
+
+    subgraph Registry["元数据与 scaffold"]
+        KR["kind_registry.py<br/>KindMeta + stem"]
+        SPECS["scaffold/specs.py<br/>ScaffoldSpec 权威"]
+        RCORE["scaffold/ring_core.py<br/>@_register 识别器"]
+        RSCAFF["scaffold/ring_scaffold.py<br/>ScaffoldIdentity"]
+    end
+
+    subgraph RingParents["scaffold 母环薄层"]
+        R1["benzazole / fused56_mono / indole / indazole / benzimidazole"]
+        R2["quinoline / naphthalene / anthraquinone / benzoquinone"]
+        R3["polycyclic_parent (桥环/螺环) / cyclo_pick / sat_hetero"]
+        R4["chromenone / azole13 / benzodiazine / fused56 / heteroarene5"]
+    end
+
+    subgraph ChainAndFG["链状 / FG 母体"]
+        CFG["cyclo_fg.py<br/>环烯FG / 环二醇 / 环二酮"]
+        PCO["polycarboxylic / cyclo_polycarboxylic / carboxymethyl_diacid"]
+        ALK["alkynoic / arene_carbonyl / arene_fg_parent / alkoxy_side"]
     end
 
     subgraph Utilities["共享工具"]
-        PC["parent_core.py<br/>parent_dict / chain覆盖 / 不饱和FG"]
-        CW["chain_walk.py<br/>最长链 / 最优链 / 碳邻居"]
-        AF["aliph_fg.py<br/>脂肪族FG过滤器"]
-        PSC["parent_selector_common.py<br/>BAD tuples / no_fgs"]
+        PC["parent_core.py<br/>parent_dict / chain / gate helpers"]
+        CW["chain_walk.py<br/>最长链 / 最优链"]
+        FG["fg_helpers.py<br/>_no_fgs / aliph 过滤"]
+        BO["block_cut.py<br/>侧链块切割"]
+    end
+
+    subgraph SideFacts["侧链事实"]
+        SF["side_facts.py + side_alkyl / side_alkoxy / side_cycloalkyl / side_sat_hetero"]
+        ARYL["aryl_sub / aryl_depth2 / heteroaryl_sub + leaves/"]
     end
 
     subgraph Ownership["归属与过滤"]
-        PO["parent_ownership.py<br/>owned_atoms 最终化"]
-        CG["candidate_gate.py<br/>类型化候选门控"]
+        PO["parent_ownership.py"]
+        CG["candidate_gate.py"]
     end
 
-    subgraph Chain_Parents["链状母体"]
-        CH1["chain_walk.py"]
-        CH2["alkynoic.py"]
-        CH3["alkenedioic.py"]
-        CH4["polyalkenol.py"]
-        CH5["prefix_alkenoic.py"]
-        CH6["polycarboxylic.py"]
-        CH7["carboxymethyl_diacid.py"]
-    end
-
-    subgraph Ring_Parents["环状母体"]
-        RI1["ring_parent.py<br/>环判定工具"]
-        RI2["ring_producers.py"]
-        RI3["cyclo_pick.py<br/>多环选择"]
-        RI4["cyclo_carboxylic.py"]
-        RI5["cyclo_poly_fg.py"]
-        RI6["cyclo_ene_fg.py"]
-    end
-
-    subgraph Heteroaryl["杂芳母体"]
-        HA1["pyridine.py"]
-        HA2["quinoline.py"]
-        HA3["indole.py"]
-        HA4["indazole.py"]
-        HA5["heteroarene5.py<br/>五元杂芳"]
-        HA6["benzimidazole.py"]
-    end
-
-    subgraph Fused["稠环系统"]
-        FU1["naphthalene.py"]
-        FU2["anthracene.py"]
-        FU3["benzofuran.py"]
-        FU4["benzothiophene.py"]
-        FU5["benzothiazole.py"]
-        FU6["benzoxazole.py"]
-        FU7["benzodiazine.py"]
-        FU8["chromenone.py"]
-        FU9["fused56.py<br/>5+6 共用"]
-    end
-
-    subgraph Complex["复杂母体"]
-        CX1["bridged_parent.py<br/>桥环"]
-        CX2["spiro_parent.py<br/>螺环"]
-        CX3["ether_parent.py<br/>二烷基醚"]
-        CX4["sat_hetero.py<br/>饱和杂环"]
-        CX5["sat_hetero_one.py<br/>内酯/内酰胺"]
-    end
-
-    subgraph FG_as_Parent["FG-环组合母体"]
-        FG1["arene_fg_parent.py<br/>芳环FG总入口"]
-        FG2["arene_carbonyl.py<br/>苯甲酰类"]
-        FG3["phenol_aniline.py<br/>苯酚/苯胺"]
-        FG4["scaffold/"<br/>编号骨架]
-        FG5["leaves/"<br/>芳环侧链识别]
-    end
-
-    PS --> CAND
-    PS --> PC
-    PS --> CW
-    PS --> AF
-    CAND --> SCORE
-    CAND --> KR
-    RP --> KR
-    FP --> KR
-    UP --> KR
+    PSEL --> CAND
     SP --> CAND
     IPC --> CAND
-    CAND --> PO
-    CAND --> CG
-    CAND --> RI2
-    CAND --> FP
-    CAND --> UP
+    CAND --> PPR
+    PPR --> PR & SKEL & PEXPR & PCAND
+    SKEL --> RSCAFF
+    RSCAFF --> RCORE & SPECS
+    KR --> SPECS
+    CAND --> SCORE & PO & CG
+    CAND --> CFG & PCO & ALK
+    CAND --> PC & CW & FG
+    R1 & R2 & R3 & R4 --> RCORE
+    SF --> ARYL
 ```
 
 ### 流水线集成
@@ -965,192 +925,105 @@ Layer3 接收 parent dict 后，遍历所有非 owned_atoms 的重原子（o_idx
 
 ## 文件清单
 
+> 经典 builder / 注册表文件（`fg_producers` / `ring_producers` / `unsat_producers` /
+> `ether_parent` / `diester` / `alkenamide` / `pyridine` 等）已随重构删除或合并；
+> 以下为当前实际存在的模块。
+
 ### 核心调度 (Core Dispatch)
 
 | 文件 | 职责 |
 |------|------|
 | `candidates.py` | 候选收集 (_collect_candidates → _principal_candidates 单一路径); polyacid 门控; _alkane_fallback 兜底 |
-| `parent_selector.py` | **经典 FG builder 库**: 所有 FG 母体实现 (acid/ester/ketone/alcohol/amine...)，被 principal 的 _open_chain_expression/_special_expression 直接 import；iter_parent_candidates / select_parent |
+| `parent_selector.py` | `select_parent` / `iter_parent_candidates` 经典入口（瘦身版：FG try 已移至 principal 管线，仅存排序/收尾） |
 | `scoring.py` | P-44 评分 tuple, _better_parent, _pick_best |
-| `parent_core.py` | 共享工具: _parent_dict, _best_cover_pair, _fg_chain, _is_open_sat, _covers |
-| `parent_selector_common.py` | BAD tuple 常量 (_CORE_BAD, _DIOL_BAD, _DIACID_BAD, _DIONE_BAD...) |
+| `parent_core.py` | 共享工具: _parent_dict, _best_cover_pair, _is_open_sat, chain/gate helpers（单一权威） |
+| `fg_helpers.py` | FG 资格谓词 + 脂肪族过滤（原 `aliph_fg` + `parent_selector_common` 合并）: `_no_fgs`, `_aliph_c_idxs` |
 | `__init__.py` | 导出 `select_parent` |
 
 ### P-44 规则驱动管线 (Rule-Driven Principal Pipeline)
 
 | 文件 | 职责 |
 |------|------|
-| `principal_selection.py` | P-41 主官能团选择: select_principal_group, PrincipalGroupSelection |
-| `principal_registry.py` | P-41 class / P-43 表达元数据: PRINCIPAL_REGISTRY, PrincipalFeatureSpec, legacy_rank |
-| `parent_skeleton.py` | 骨架枚举 + P-44 筛选: enumerate_principal_skeletons, select_principal_skeletons, keep_p44_1_2/2/3/4, ParentSkeleton |
-| `principal_expression.py` | typed 表达: express_chain/ring/hydrocarbon_principal, PrincipalExpressionFacts, _RETAINED_RING_KINDS (苯环保留名含 benzoate) |
-| `principal_parent.py` | 编排: rule_driven_parent_candidates, select_principal_parent_skeletons, _open_chain_expression, _special_expression |
+| `principal.py` | P-41 class / P-43 表达元数据 + 主官能团选择（原 `principal_selection` + `principal_registry` 合并）: PRINCIPAL_REGISTRY, select_principal_group |
+| `parent_skeleton.py` | 骨架枚举 + P-44 筛选: enumerate_principal_skeletons, select_principal_skeletons |
+| `principal_expression.py` | typed 表达: express_chain/ring/hydrocarbon_principal, PrincipalExpressionFacts, _RETAINED_RING_KINDS |
+| `principal_parent.py` | 编排: rule_driven_parent_candidates, select_principal_parent_skeletons（`_special_expression` 已清空） |
 | `parent_candidate.py` | P44Facts / ParentCandidate / with_principal_group_contract / principal_phases |
 | `scaffold/identity.py` | ScaffoldIdentity 拓扑级身份 |
-| `ring_scaffold.py` | 骨架 → ScaffoldIdentity 解析 (retained 匹配 + carbocycle 兜底) |
-| `ring_expression_policy.py` | 环表达能力白名单 (naming_class × FG × multiplicity) |
-| `amine_expression.py` | 中性胺 N 臂 typed facts (NeutralAmineArmFacts / NArm) |
+| `scaffold/ring_scaffold.py` | 骨架 → ScaffoldIdentity 解析 (retained 匹配 + carbocycle 兜底) |
+| `scaffold/ring_expression_policy.py` | 环表达能力白名单 (naming_class × FG × multiplicity) |
 
 ### 注册与元数据 (Registry & Metadata)
 
 | 文件 | 职责 |
 |------|------|
-| `kind_registry.py` | KindMeta 注册中心, fg_rank, stem, ring 元数据; ring/unsat 注册表 (fg 注册层已删); 从 ScaffoldSpec 同步词干 |
-| `ring_producers.py` | 环候选 try 函数注册表 (~31 entries), 被 _producer_scaffold_ids 消费 |
-| `unsat_producers.py` | 不饱和母体 try 函数注册表 (3 entries, 经典通道当前注释) |
+| `kind_registry.py` | KindMeta 注册中心, fg_rank, stem, ring 元数据; 从 ScaffoldSpec 同步词干 |
+| `scaffold/specs.py` | ScaffoldSpec 定义: 编号骨架 (fused56/naph/monohetero/mono_carbo), 数据权威源 |
+| `scaffold/ring_core.py` | `@_register` 核心识别器 (ring_core_fns): 模板识别 + 专用适配器 |
+| `scaffold/retained_templates.py` | 保留母环 SMILES 模板子图同构匹配 |
+| `scaffold/retained_registry.py` | 保留 scaffold 注册表 (拓扑匹配; stem 来自 Spec) |
 
 ### 块切割与侧链事实 (Block Cutting & Side Facts)
 
 | 文件 | 职责 |
 |------|------|
-| `block_cut.py` | BFS 块切割: parent_atom_set, side_roots, _bfs_block, cut_block |
-| `submol_build.py` | CutSubmol 数据类 + build_cut_submol (H封端诱导子分子) |
-| `side_facts.py` | **L2→L3 数据契约**: AlkylShape/ArylArmKind/HeteroarylKind 枚举 + 5 种 SideFact 类型 + 工厂函数 |
-| `side_alkyl.py` | 单烷基侧链拓扑: 线性 C1-C4 + 保留分支烷基 (异丙基/叔丁基等 12 种) |
-| `side_alkyl_sys.py` | 纯饱和碳侧链树: RootedAlkylTree 数据类 + BFS 树构建 |
-| `side_alkoxy.py` | 烷氧基侧链分类 (C1-C4 线性烷氧基) |
-| `side_cycloalkyl.py` | 单环环烷基侧链分类 |
-| `side_sat_hetero.py` | 饱和杂环侧链处理 |
+| `block_cut.py` | BFS 块切割: parent_atom_set, side_roots, _bfs_block, cut_block（`submol_build` 已迁 `layer3/submol_build.py`） |
+| `side_facts.py` | **L2→L3 数据契约**: AlkylShape + SideFact 类型 + 工厂函数 |
+| `side_alkyl.py` | 单烷基侧链拓扑: 线性 C1-C4 + 保留分支烷基 |
+| `side_alkoxy.py` | 烷氧基侧链分类 + PEG 尾 |
+| `side_cycloalkyl.py` | 单环环烷基侧链分类 (C3-C8) |
+| `side_sat_hetero.py` | 饱和杂环侧链 (piperidinyl 等) |
 
 ### 芳环侧链子系统 (Aryl Side-Chain Subsystem)
 
 | 文件 | 职责 |
 |------|------|
-| `aryl_sub.py` | 芳环侧链核心: Ph/OPh/CH2Ph/OCH2Ph 检测, 卤素/Me 计数, _classify_ph_arm |
+| `aryl_sub.py` | 芳环侧链核心: Ph/OPh/CH2Ph/OCH2Ph 检测, 卤素/Me 计数 |
 | `aryl_depth2.py` | 二级芳环处理: NO2/CF3/NH2/OH/嵌套Ph/烷氧基 site 检测 + 前缀生成 |
-| `aryl_recurse.py` | 芳环递归命名深度限制器 |
-| `aryl_stem.py` | 芳环 stem 生成: with_aryl_names, aryl_en_zh |
-| `heteroaryl_sub.py` | 杂芳环侧链: pyridin-n-yl (含 halo/Me/alkoxy leaves), naphthalen-n-yl |
+| `heteroaryl_sub.py` | 杂芳环侧链: pyridin-n-yl, naphthalen-n-yl |
+| `leaves/` | LeafHandler 注册表 (protocol/registry/simple/complex_h/ring_namer/topo) |
 
-### 链状母体 (Chain Parents)
+### 链状 / FG 母体 (Chain & FG Parents)
 
 | 文件 | 职责 |
 |------|------|
-| `chain_walk.py` | 碳链 DFS 遍历: _longest_chain, _longest_from, _best_cover_pair, _chain_through |
-| `aliph_fg.py` | 脂肪族 FG 过滤器: _aliphatic_entries, _aliph_c_idxs |
-| `alkynoic.py` | 不饱和醇/炔醇/炔酸的链-环分派 |
-| `alkenedioic.py` | 烯二酸母体 |
-| `polyalkenol.py` | 多烯醇母体 |
-| `prefix_alkenoic.py` | 前缀烯酸母体 |
-| `polycarboxylic.py` | 多元羧酸母体 (三酸及以上) |
+| `chain_walk.py` | 碳链 DFS 遍历: _longest_chain, _best_cover_pair, _chain_through |
+| `cyclo_fg.py` | 环烯FG + 环二醇/二酮（原 `cyclo_ene_fg` + `cyclo_poly_fg` 合并） |
+| `cyclo_polycarboxylic.py` | 环烷多元羧酸 (P-65.1.1) |
+| `polycarboxylic.py` | 开链多元羧酸 (三酸及以上) |
 | `carboxymethyl_diacid.py` | 羧甲基二酸特殊母体 |
-| `alkenamide.py` | 烯酰胺母体 |
+| `alkynoic.py` | 炔酸/炔醇 |
+| `arene_carbonyl.py` | 苯甲酰类保留母体: benzoic/benzaldehyde/acetophenone/benzoate |
+| `arene_fg_parent.py` | 芳环 FG 母体总入口: OH/NH2/CHO/CN 在任意芳环上 |
+| `alkoxy_side.py` | 酯/氨基甲酸酯烷氧侧拓扑 |
 
-### 环状母体 (Ring Parents)
-
-| 文件 | 职责 |
-|------|------|
-| `ring_parent.py` | 环判定: _is_simple_benzene, _is_simple_cycloalkane, _endocyclic_double, side chain 校验 |
-| `cyclo_pick.py` | 多环环烷烃选择: _cyclo_parent_candidates |
-| `cyclo_carboxylic.py` | 环烷甲酸母体 |
-| `cyclo_poly_fg.py` | 环烷二醇/二酮母体 |
-| `cyclo_ene_fg.py` | 环烯醇/环烯酮母体 |
-| `cyclo_polycarboxylic.py` | 环烷多元羧酸母体 |
-
-### 杂芳母体 (Heteroaryl Parents)
+### scaffold 母环薄层 (Retained Ring Modules)
 
 | 文件 | 职责 |
 |------|------|
-| `pyridine.py` | 吡啶 / 吡啶甲酸 / 吡啶胺 / 吡啶酚 / 吡啶甲腈 |
-| `quinoline.py` | 喹啉 / 异喹啉 / 喹啉甲酸 / 喹啉酚 / 喹啉二醇 |
-| `indole.py` | 吲哚 / 吲哚甲酸 |
-| `indazole.py` | 吲唑 / 吲唑甲醛 / 吲唑甲腈 |
-| `heteroarene5.py` | 五元杂芳通用: 呋喃/噻吩/吡咯/咪唑/吡唑/二嗪/嘧啶胺 |
-| `benzimidazole.py` | 苯并咪唑 / 苯并咪唑胺 |
-| `azole13.py` | 1,3-唑通用: 噻唑/噁唑 |
+| `scaffold/benzazole.py` | 1,3-苯并噻唑 / 苯并噁唑 + amine（原 `benzothiazole` + `benzoxazole` 合并） |
+| `scaffold/fused56_mono.py` | 苯并呋喃 / 苯并噻吩 + FG 变体（原 `benzofuran` + `benzothiophene` 合并） |
+| `scaffold/fused56.py` | 5+6 稠环通用 helper (P-22.2.1 / P-25) |
+| `scaffold/indole.py` / `scaffold/indazole.py` / `scaffold/benzimidazole.py` | 稠杂环保留母体 |
+| `scaffold/quinoline.py` / `scaffold/naphthalene.py` | 10 原子路径稠环 |
+| `scaffold/anthraquinone.py` | 蒽醌（含原 `anthracene` 的 `_is_linear`） |
+| `scaffold/benzoquinone.py` | 苯醌（含原 `ortho_benzoquinone`） |
+| `scaffold/chromenone.py` / `scaffold/benzodiazine.py` / `scaffold/azole13.py` / `scaffold/heteroarene5.py` | 其他保留母环 |
+| `scaffold/polycyclic_parent.py` | 桥环 / 螺环（原 `bridged_parent` + `spiro_parent` 合并） |
+| `scaffold/cyclo_pick.py` | 多环环烷烃选择 |
+| `scaffold/sat_hetero.py` / `scaffold/sat_hetero_stem.py` / `scaffold/hetero_a_names.py` | 饱和杂环 + stem |
+| `scaffold/builders/` | 骨架构建器 (carbocycle / fused56 / sat_hetero_repl) |
 
-### 稠环系统 (Fused Systems)
-
-| 文件 | 职责 |
-|------|------|
-| `naphthalene.py` | 萘 / 萘甲酸 / 萘酚 / 萘二酚 |
-| `anthracene.py` | 蒽母体 |
-| `anthraquinone.py` | 蒽醌母体 |
-| `benzoquinone.py` | 苯醌母体 |
-| `benzofuran.py` | 苯并呋喃 / 苯并呋喃胺 |
-| `benzothiophene.py` | 苯并噻吩 / 苯并噻吩酚 |
-| `benzothiazole.py` | 苯并噻唑 / 苯并噻唑胺 |
-| `benzoxazole.py` | 苯并噁唑 / 苯并噁唑胺 |
-| `benzodiazine.py` | 喹唑啉 / 喹喔啉 |
-| `chromenone.py` | 色酮 (chromenone) 母体 |
-| `fused56.py` | 5+6 稠环通用: _fused_56_pair, _fused56 |
-
-### 复杂母体 (Complex Parents)
+### 归属与过滤 (Ownership & Gating)
 
 | 文件 | 职责 |
 |------|------|
-| `bridged_parent.py` | 桥环 (von Baeyer): bicyclo[x.y.z] 母体 |
-| `spiro_parent.py` | 螺环: spiro[x.y] 母体 |
-| `ether_parent.py` | 二烷基醚母体 (线性 + 异丙基/HFIP 特殊支链) |
-| `sat_hetero.py` | 饱和单杂环 Hantzsch-Widman: aziridine, oxirane, oxolane, piperidine, morpholine... |
-| `sat_hetero_one.py` | 内酯/内酰胺: oxolanone, pyrrolidinone, piperidinone |
-| `sat_hetero_carboxylic.py` | 饱和杂环甲酸 |
-
-### FG-环组合母体 (FG-as-Parent)
-
-| 文件 | 职责 |
-|------|------|
-| `arene_fg_parent.py` | **芳环 FG 母体总入口**: 数据驱动匹配 OH/NH2/CHO/CN 在任意芳环上 |
-| `arene_carbonyl.py` | 苯甲酸/苯甲醛/苯乙酮/苯甲酸酯/苯多元酸 |
-| `phenol_aniline.py` | 苯酚/苯胺母体 |
-| `benzenediamine.py` | 苯二胺母体 |
-| `boronic.py` | 苯基硼酸母体 |
-
-### 其他 FG 母体
-
-| 文件 | 职责 |
-|------|------|
-| `carbamate.py` | 氨基甲酸酯母体 |
-| `carbonate.py` | 碳酸酯母体 |
-| `diester.py` | 二酯母体 |
-| `guanidine.py` | 胍母体 |
-| `hydrazine.py` | 肼母体 |
-| `isocyanate.py` | 异氰酸酯/异硫氰酸酯母体 |
-| `phosphate.py` | 磷酸酯/膦酸母体 |
-| `sulfonamide.py` | 磺酰胺母体 |
-| `sulfonate.py` | 磺酸酯母体 |
-| `sulfone.py` | 砜母体 |
-| `sulfonic_acid.py` | 磺酸母体 |
-| `sulfonyl_chloride.py` | 磺酰氯母体 |
-| `sulfoxide.py` | 亚砜母体 |
-| `urea.py` | 脲母体 |
-| `hetero5_carboxylic.py` | 五元杂环甲酸 |
-
-### Scaffold 子模块
-
-| 文件 | 职责 |
-|------|------|
-| `scaffold/specs.py` | `ScaffoldSpec` 定义: 编号骨架 (fused56/naph/monohetero/mono_carbo) |
-| `scaffold/builders/__init__.py` | builders 入口 |
-| `scaffold/builders/fused56.py` | 5+6 稠环编号骨架构建 |
-| `scaffold/builders/carbocycle.py` | 碳环编号骨架构建 |
-| `scaffold/builders/sat_hetero_repl.py` | 饱和杂环 replacement 命名 |
-| `scaffold/sat_hetero_stem.py` | 饱和杂环 stem 生成 |
-| `scaffold/hetero_a_names.py` | 杂环 "a" 命名法 |
-
-### Leaves 子模块 (芳环侧链)
-
-| 文件 | 职责 |
-|------|------|
-| `leaves/protocol.py` | `LeafHandler` 协议 + `ArylLeafKind` 枚举 |
-| `leaves/registry.py` | Leaf 匹配注册表 (复杂 → 简单) |
-| `leaves/simple.py` | 简单 leaves: 卤素, 甲基, 羟基, 氰基, 硝基, CF3, N-烷基, 甲硫基 |
-| `leaves/complex_h.py` | 复杂 leaves: 苯基, 苯氧基, 苄基 (支持嵌套) |
-| `leaves/ring_namer.py` | 递归苯环命名 |
-| `leaves/topo.py` | 拓扑工具: nb_out |
-
-### 辅助文件
-
-| 文件 | 职责 |
-|------|------|
-| `parent_ownership.py` | 母体原子归属最终化 |
+| `parent_ownership.py` | 母体原子归属最终化 (immutable owned_atoms) |
 | `candidate_gate.py` | 类型化候选门控 (多元酸作用域) |
-| `claimable_block.py` | ClaimedBlock / SideSlot 类型定义 |
-| `benzene_pick.py` | 多苯环选择 |
 
 ---
 
-## 对外接口
+## 对外接口## 对外接口
 
 ### 公共 API
 
@@ -1182,8 +1055,8 @@ def iter_parent_candidates(info: dict) -> list[dict]
 | `HeteroarylKind` | `side_facts.py:39-41` | 杂芳基种类枚举 (SIX_MEMBER_ONE_N/FUSED_TEN_MEMBER_C) |
 | `SidePath` | `side_facts.py:73-76` | 侧链原子路径: root + atoms tuple |
 | `ArylArmFact` | `side_facts.py:79-86` | 芳基臂事实: kind, attachment, outer, bridge, ring, atoms |
-| `CutSubmol` | `submol_build.py:10-17` | 诱导子分子: mol, atom_map, inv_map, attach 索引 |
-| `RootedAlkylTree` | `side_alkyl_sys.py:10-15` | 有根烷基树: root, atoms, children, depth |
+| `CutSubmol` | `layer3/submol_build.py`（原 layer2） | 诱导子分子: mol, atom_map, inv_map, attach 索引 |
+| `RootedAlkylTree` | `layer3/side_alkyl_sys.py`（原 layer2） | 有根烷基树: root, atoms, children, depth |
 
 ---
 
