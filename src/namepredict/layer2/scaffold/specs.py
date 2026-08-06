@@ -144,10 +144,7 @@ FUSED56_SPECS: tuple[ScaffoldSpec, ...] = (
     _fused56("benzoxazole", "1,3-benzoxazole", "1,3-苯并噁唑"),
     _fused56("benzoxazolamine", "benzoxazolamine", "苯并噁唑胺", fg_rank=3),
     _fused56("indole", "1H-indole", "吲哚"),
-    _fused56("indolecarboxylic", "indolecarboxylic", "吲哚羧酸", fg_rank=13),
     _fused56("indazole", "1H-indazole", "1H-吲唑"),
-    _fused56("indazolecarbonitrile", "indazolecarbonitrile", "吲唑甲腈", fg_rank=8),
-    _fused56("indazolecarbaldehyde", "indazolecarbaldehyde", "吲唑甲醛", fg_rank=7),
     _fused56("benzimidazole", "1H-benzimidazole", "1H-苯并咪唑"),
     _fused56(
         "benzimidazolamine", "benzimidazolamine", "苯并咪唑胺", fg_rank=3,
@@ -158,25 +155,10 @@ FUSED56_SPECS: tuple[ScaffoldSpec, ...] = (
 NAPH_FAMILY_SPECS: tuple[ScaffoldSpec, ...] = (
     _naph("quinoline", "quinoline", "喹啉"),
     _naph("isoquinoline", "isoquinoline", "异喹啉"),
-    _naph("quinolinol", "quinolinol", "喹啉酚", fg_rank=5),
-    _naph(
-        "quinolinecarboxylic", "quinolinecarboxylic", "喹啉羧酸", fg_rank=13,
-    ),
     _naph("naphthalene", "naphthalene", "萘", ring="carbo"),
-    _naph(
-        "naphthalenecarboxylic", "naphthalenecarboxylic", "萘羧酸",
-        ring="carbo", fg_rank=13,
-    ),
-    # Arene FG parents: OH/NH2 on fused carbo/hetero rings (P-63.1.4 / P-62.2.1).
+    # Arene FG parents: OH on fused carbo/hetero rings (P-63.1.4 / P-62.2.1).
     _naph("naphthalenol", "naphthalenol", "萘酚", ring="carbo", fg_rank=5),
     _naph("naphthalenediol", "naphthalenediol", "萘二酚", ring="carbo", fg_rank=5),
-    _naph("naphthalenamine", "naphthalenamine", "萘胺", ring="carbo", fg_rank=3),
-    _naph("quinolinediol", "quinolinediol", "喹啉二酚", fg_rank=5),
-    # Arene FG parents: CHO/CN on fused rings (P-66.6.1 / P-66.5.1).
-    _naph("naphthalenecarbaldehyde", "naphthalenecarbaldehyde", "萘甲醛", ring="carbo", fg_rank=7),
-    _naph("quinolinecarbaldehyde", "quinolinecarbaldehyde", "喹啉甲醛", fg_rank=7),
-    _naph("naphthalenecarbonitrile", "naphthalenecarbonitrile", "萘甲腈", ring="carbo", fg_rank=8),
-    _naph("quinolinecarbonitrile", "quinolinecarbonitrile", "喹啉甲腈", fg_rank=8),
     # Coumarin lactone retained: EN chromen-2-one; ZH 香豆素 (ketone-class rank).
     _naph("chromenone", "chromen-2-one", "香豆素", fg_rank=6),
 )

@@ -142,7 +142,7 @@ def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str]) -> tuple[s
 def join_kind_name(
     kind: str | None, pre: tuple[str, str], names: tuple[str, str],
 ) -> tuple[str, str]:
-    if kind in ("ester", "diester", "cycloalkanecarboxylate"):
+    if kind in ("ester", "diester"):
         return join_ester_name(pre[0], pre[1], names)
     en = join_parent_name(pre[0], names[0])
     zh = join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))
@@ -186,131 +186,6 @@ def benzenediol_names(locs: list[int] | None) -> tuple[str, str] | None:
     return f"benzene-{loc}-diol", f"苯-{loc}-二酚"
 
 
-def benzenediamine_names(locs: list[int] | None) -> tuple[str, str] | None:
-    if not locs or len(locs) != 2:
-        return None
-    loc = ",".join(str(x) for x in locs)
-    return f"benzene-{loc}-diamine", f"苯-{loc}-二胺"
-
-
-def _pyridine_cooh_loc(numbered: dict) -> int | None:
-    parent = numbered.get("parent") or {}
-    chain = parent.get("chain") or []
-    attach = parent.get("ring_attach_idx")
-    if attach is None or attach not in chain:
-        return None
-    return chain.index(attach) + 1
-
-
-def pyridinecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
-    loc = _pyridine_cooh_loc(numbered)
-    if loc is None:
-        return None
-    return f"pyridine-{loc}-carboxylic acid", f"吡啶-{loc}-甲酸"
-
-
-def pyridinecarbonitrile_names(numbered: dict) -> tuple[str, str] | None:
-    loc = _pyridine_cooh_loc(numbered)
-    if loc is None:
-        return None
-    return f"pyridine-{loc}-carbonitrile", f"吡啶-{loc}-甲腈"
-
-
-# base_kind → (en stem, zh stem, needs_1h)
-_H5COOH_STEM = {
-    "furan": ("furan", "呋喃", False),
-    "thiophene": ("thiophene", "噻吩", False),
-    "pyrrole": ("pyrrole", "吡咯", True),
-    "imidazole": ("imidazole", "咪唑", True),
-    "pyrazole": ("pyrazole", "吡唑", True),
-}
-
-
-def _h5cooh_stem(parent: dict) -> tuple[str, str] | None:
-    base = parent.get("base_kind") or ""
-    got = _H5COOH_STEM.get(base)
-    if got is None:
-        return None
-    en0, zh0, one_h = got
-    if one_h:
-        return f"1H-{en0}", f"1H-{zh0}"
-    return en0, zh0
-
-
-def hetero5carboxylic_names(numbered: dict) -> tuple[str, str] | None:
-    """furan/thiophene/1H-pyrrole/imidazole/pyrazole-n-carboxylic acid / …-甲酸."""
-    parent = numbered.get("parent") or {}
-    loc = _pyridine_cooh_loc(numbered)
-    stem = _h5cooh_stem(parent)
-    if loc is None or stem is None:
-        return None
-    en_s, zh_s = stem
-    return f"{en_s}-{loc}-carboxylic acid", f"{zh_s}-{loc}-甲酸"
-
-
-# base sat_hetero kind → (en stem, zh stem) from _ARENE_STEM table
-_SHCOOH_STEM = {
-    "pyrrolidine": ("pyrrolidine", "吡咯烷"),
-    "piperidine": ("piperidine", "哌啶"),
-    "piperazine": ("piperazine", "哌嗪"),
-    "morpholine": ("morpholine", "吗啉"),
-    "oxolane": ("oxolane", "氧杂环戊烷"),
-    "oxane": ("oxane", "氧杂环己烷"),
-    "thiolane": ("thiolane", "硫杂环戊烷"),
-    "aziridine": ("aziridine", "氮杂环丙烷"),
-}
-
-
-def sat_hetero_carboxylic_names(numbered: dict) -> tuple[str, str] | None:
-    """piperidine-n-carboxylic acid / 哌啶-n-甲酸 (etc.)."""
-    parent = numbered.get("parent") or {}
-    loc = _pyridine_cooh_loc(numbered)
-    stem = _SHCOOH_STEM.get(parent.get("base_kind") or "")
-    if loc is None or stem is None:
-        return None
-    en_s, zh_s = stem
-    return f"{en_s}-{loc}-carboxylic acid", f"{zh_s}-{loc}-甲酸"
-
-
-def _pyridine_fg_loc(numbered: dict, key: str) -> int | None:
-    parent = numbered.get("parent") or {}
-    chain = parent.get("chain") or []
-    attach = parent.get(key)
-    if attach is None or attach not in chain:
-        return None
-    return chain.index(attach) + 1
-
-
-def pyridinamine_names(numbered: dict) -> tuple[str, str] | None:
-    loc = numbered.get("amine_locant") or _pyridine_fg_loc(numbered, "amine_c_idx")
-    if loc is None:
-        return None
-    return f"pyridin-{loc}-amine", f"吡啶-{loc}-胺"
-
-
-def _pyrimidinamine_en(pre_en: str, loc: int) -> str:
-    return f"{pre_en}pyrimidin-{loc}-amine" if pre_en else f"pyrimidin-{loc}-amine"
-
-
-def _pyrimidinamine_zh(pre_zh: str, loc: int) -> str:
-    if not pre_zh:
-        return f"嘧啶-{loc}-胺"
-    return f"{loc}-氨基-{pre_zh}嘧啶"
-
-
-def pyrimidinamine_names(numbered: dict, build_prefix) -> tuple[str, str] | None:
-    loc = numbered.get("amine_locant") or _pyridine_fg_loc(numbered, "amine_c_idx")
-    if loc is None:
-        return None
-    pre_en, pre_zh = build_prefix(numbered.get("substituents") or [], 6, "pyrimidinamine")
-    return _pyrimidinamine_en(pre_en, loc), _pyrimidinamine_zh(pre_zh, loc)
-
-
-def pyridinol_names(numbered: dict) -> tuple[str, str] | None:
-    loc = numbered.get("oh_locant") or _pyridine_fg_loc(numbered, "oh_c_idx")
-    if loc is None:
-        return None
-    return f"pyridin-{loc}-ol", f"吡啶-{loc}-醇"
 
 
 def benzofuranamine_names(numbered: dict) -> tuple[str, str] | None:
@@ -406,95 +281,11 @@ def _q_cooh_loc(numbered: dict) -> int | None:
     return None if attach is None else _q_sub_loc(chain, attach)
 
 
-def quinolinecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
-    loc = _q_cooh_loc(numbered)
-    if loc is None:
-        return None
-    return f"quinoline-{loc}-carboxylic acid", f"喹啉-{loc}-甲酸"
-
-
-def quinolinol_names(numbered: dict) -> tuple[str, str] | None:
-    loc = numbered.get("oh_locant")
-    if loc is None:
-        return None
-    return f"quinolin-{loc}-ol", f"喹啉-{loc}-醇"
-
-
-_IZ_LOCANTS = (1, 2, 3, None, 4, 5, 6, 7, None)
-
-
-def _iz_fg_loc(numbered: dict) -> int | None:
-    """Indazole ring FG attach with indole-style locants (skip 3a/7a)."""
-    parent = numbered.get("parent") or {}
-    chain, attach = parent.get("chain") or [], parent.get("ring_attach_idx")
-    if attach is None or attach not in chain or len(chain) != 9:
-        return None
-    return _IZ_LOCANTS[chain.index(attach)]
-
-
-def indazolecarbonitrile_names(numbered: dict) -> tuple[str, str] | None:
-    loc = _iz_fg_loc(numbered)
-    if loc is None:
-        return None
-    return f"1H-indazole-{loc}-carbonitrile", f"1H-吲唑-{loc}-甲腈"
-
-
-def indazolecarbaldehyde_names(numbered: dict) -> tuple[str, str] | None:
-    loc = _iz_fg_loc(numbered)
-    if loc is None:
-        return None
-    return f"1H-indazole-{loc}-carbaldehyde", f"1H-吲唑-{loc}-甲醛"
-
-
-def indolecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
-    loc = _iz_fg_loc(numbered)
-    if loc is None:
-        return None
-    return f"1H-indole-{loc}-carboxylic acid", f"1H-吲哚-{loc}-甲酸"
-
-
-def naphthalenecarboxylic_names(numbered: dict) -> tuple[str, str] | None:
-    loc = _q_cooh_loc(numbered)
-    if loc is None:
-        return None
-    return f"naphthalene-{loc}-carboxylic acid", f"萘-{loc}-甲酸"
-
-
-def naphthalenecarbaldehyde_names(numbered: dict) -> tuple[str, str] | None:
-    loc = _q_cooh_loc(numbered)
-    if loc is None:
-        return None
-    return f"naphthalene-{loc}-carbaldehyde", f"萘-{loc}-甲醛"
-
-
-def quinolinecarbaldehyde_names(numbered: dict) -> tuple[str, str] | None:
-    loc = _q_cooh_loc(numbered)
-    if loc is None:
-        return None
-    return f"quinoline-{loc}-carbaldehyde", f"喹啉-{loc}-甲醛"
-
-
-def naphthalenecarbonitrile_names(numbered: dict) -> tuple[str, str] | None:
-    loc = _q_cooh_loc(numbered)
-    if loc is None:
-        return None
-    return f"naphthalene-{loc}-carbonitrile", f"萘-{loc}-甲腈"
-
-
-def quinolinecarbonitrile_names(numbered: dict) -> tuple[str, str] | None:
-    loc = _q_cooh_loc(numbered)
-    if loc is None:
-        return None
-    return f"quinoline-{loc}-carbonitrile", f"喹啉-{loc}-甲腈"
-
-
 # --- Generalized arene FG parent names (P-63.1.4 / P-62.2.1) ---
 
 _ARENE_FG_STEM: dict[str, tuple[str, str, str, str]] = {
     "naphthalenol": ("naphthalen", "萘", "ol", "酚"),
     "naphthalenediol": ("naphthalene", "萘", "diol", "二酚"),
-    "naphthalenamine": ("naphthalen", "萘", "amine", "胺"),
-    "quinolinediol": ("quinoline", "喹啉", "diol", "二酚"),
     "pyrazolamine": ("pyrazol", "吡唑", "amine", "胺"),
     "thiazolamine": ("thiazol", "噻唑", "amine", "胺"),
     "quinazolinamine": ("quinazolin", "喹唑啉", "amine", "胺"),
@@ -526,37 +317,18 @@ def _arene_fg_parent_names(kind: str, numbered: dict) -> tuple[str, str] | None:
 
 
 _PYRIDINE_KIND_FN = {
-    "pyridinecarboxylic": pyridinecarboxylic_names,
-    "pyridinecarbonitrile": pyridinecarbonitrile_names,
-    "pyridinamine": pyridinamine_names,
-    "pyridinol": pyridinol_names,
     "benzofuranamine": benzofuranamine_names,
     "benzothiophenol": benzothiophenol_names,
-    "quinolinol": quinolinol_names,
-    "quinolinecarboxylic": quinolinecarboxylic_names,
-    "indazolecarbonitrile": indazolecarbonitrile_names,
-    "indazolecarbaldehyde": indazolecarbaldehyde_names,
-    "indolecarboxylic": indolecarboxylic_names,
-    "naphthalenecarboxylic": naphthalenecarboxylic_names,
     # Generalized arene FG parents
     "naphthalenol": lambda n: _arene_fg_parent_names("naphthalenol", n),
     "naphthalenediol": lambda n: _arene_fg_parent_names("naphthalenediol", n),
-    "naphthalenamine": lambda n: _arene_fg_parent_names("naphthalenamine", n),
-    "quinolinediol": lambda n: _arene_fg_parent_names("quinolinediol", n),
     "pyrazolamine": lambda n: _arene_fg_parent_names("pyrazolamine", n),
     "thiazolamine": lambda n: _arene_fg_parent_names("thiazolamine", n),
     "quinazolinamine": lambda n: _arene_fg_parent_names("quinazolinamine", n),
-    # CHO/CN on naphthalene/quinoline
-    "naphthalenecarbaldehyde": naphthalenecarbaldehyde_names,
-    "quinolinecarbaldehyde": quinolinecarbaldehyde_names,
-    "naphthalenecarbonitrile": naphthalenecarbonitrile_names,
-    "quinolinecarbonitrile": quinolinecarbonitrile_names,
 }
 
 
 def pyridine_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, str] | None:
-    if kind == "pyrimidinamine":
-        return pyrimidinamine_names(numbered, build_prefix)
     if kind == "benzothiazolamine":
         return benzothiazolamine_names(numbered, build_prefix)
     if kind == "benzoxazolamine":

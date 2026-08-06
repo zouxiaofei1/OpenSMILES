@@ -15,8 +15,8 @@ def _plan(chain: list[int], kind: str):
 from namepredict.layer4.locants.plan import locant
 from namepredict.layer4.numbering import _amine_locant, _oh_locant, _sub_locant
 
-_INDOLE_KINDS = ["indole", "indolecarboxylic", "indazole", "indazolecarbonitrile", "indazolecarbaldehyde", "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol", "benzothiazole", "benzothiazolamine", "benzoxazole", "benzoxazolamine", "benzimidazole", "benzimidazolamine"]
-_NAPH_ALL = ["quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic", "naphthalene", "naphthalenecarboxylic"]
+_INDOLE_KINDS = ["indole", "indazole", "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol", "benzothiazole", "benzothiazolamine", "benzoxazole", "benzoxazolamine", "benzimidazole", "benzimidazolamine"]
+_NAPH_ALL = ["quinoline", "isoquinoline", "naphthalene"]
 _ANTHRA_ALL = ["anthracene", "anthraquinone"]
 INDOLE_LABELS = get_spec("indole").numbering.standard_path
 NAPH_LABELS = get_spec("naphthalene").numbering.standard_path
@@ -131,9 +131,6 @@ def test_sub_locant_prefers_plan_anthra_family(kind: str, idx: int):
 # FG locants on retained fused parents must use the same plan path as _sub_locant.
 _FG_CASES = [
     # (kind, chain_len, atom_key, locant_fn, chain_idx, expected_loc)
-    ("quinolinol", 10, "oh_c_idx", _oh_locant, 1, 2),
-    ("quinolinol", 10, "oh_c_idx", _oh_locant, 5, 5),
-    ("quinolinol", 10, "oh_c_idx", _oh_locant, 7, 7),
     ("benzothiophenol", 9, "oh_c_idx", _oh_locant, 1, 2),
     ("benzothiophenol", 9, "oh_c_idx", _oh_locant, 4, 4),
     ("benzothiophenol", 9, "oh_c_idx", _oh_locant, 6, 6),

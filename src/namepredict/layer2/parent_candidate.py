@@ -8,9 +8,9 @@ from namepredict.layer2 import kind_registry as _kr
 _FIXED_MULTI = {
     "diacid": 2, "diester": 2, "dione": 2, "diol": 2, "diamine": 2,
     "triol": 3, "triamine": 3, "tetraamine": 4, "benzenediol": 2,
-    "benzenediamine": 2, "cycloalkanediol": 2, "cycloalkanedione": 2,
+    "cycloalkanediol": 2, "cycloalkanedione": 2,
     "anthraquinone": 2, "benzoquinone": 2, "ortho_benzoquinone": 2,
-    "naphthalenediol": 2, "quinolinediol": 2,
+    "naphthalenediol": 2,
 }
 _DYNAMIC_IDS = {
     "polycarboxylic": "cooh_c_idxs", "benzene_polycarboxylic": "cooh_c_idxs",

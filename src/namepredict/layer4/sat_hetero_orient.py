@@ -25,12 +25,6 @@ SAT_HETERO_PLAIN = (
     "aziridine", "oxirane", "oxolane", "oxane", "pyrrolidine", "piperidine",
     "morpholine", "piperazine", "dioxolane", "dioxane", "thiolane",
 )
-SAT_HETERO_ATTACH = (
-    "piperidinecarboxylic", "pyrrolidinecarboxylic", "piperazinecarboxylic",
-    "morpholinecarboxylic", "oxolanecarboxylic", "oxanecarboxylic",
-    "thiolanecarboxylic", "aziridinecarboxylic",
-    "oxolanone", "oxanone", "pyrrolidinone", "piperidinone",
-)
 
 
 def _rotate(chain: list[int], atom: int) -> list[int]:
@@ -124,29 +118,7 @@ def orient_sat_hetero(
     return _fixed(chain, parent.get("hetero_idx"), substituents)
 
 
-def _virt(parent: dict, substituents: list) -> list:
-    attach, virtual = parent.get("ring_attach_idx"), list(substituents)
-    if attach is not None:
-        virtual = virtual + [{"attach_idx": attach, "en": ""}]
-    return virtual
-
-
-def orient_sat_hetero_attach(
-    chain: list[int], parent: dict, substituents: list,
-) -> list[int]:
-    """Hetero=1; principal attach (COOH/one) lowest, then other subs."""
-    hs = parent.get("hetero_idxs") or []
-    virt = _virt(parent, substituents)
-    attach = parent.get("ring_attach_idx")
-    if len(hs) < 2 or parent.get("hetero_asym"):
-        return _fixed(chain, hs[0] if hs else None, virt, attach)
-    a = _fixed(chain, hs[0], virt, attach)
-    b = _fixed(chain, hs[1], virt, attach)
-    return _prefer(a, b, virt, attach)
-
-
 def sat_hetero_orienters() -> dict:
-    """kind → orient-fn for plain / attach / repl sat_hetero families."""
+    """kind → orient-fn for plain / repl sat_hetero families."""
     d = {k: orient_sat_hetero for k in SAT_HETERO_PLAIN}
-    d.update({k: orient_sat_hetero_attach for k in SAT_HETERO_ATTACH})
     return {**d, "sat_hetero_repl": orient_sat_hetero_repl}

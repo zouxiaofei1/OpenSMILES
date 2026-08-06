@@ -22,8 +22,7 @@ __all__ = [
 
 # Aza fused56 kinds (indole / indazole / bim); O/S engine specs below.
 FUSED56_AZA_KINDS = frozenset({
-    "indole", "indolecarboxylic", "indazole", "indazolecarbonitrile",
-    "indazolecarbaldehyde", "benzimidazole", "benzimidazolamine",
+    "indole", "indazole", "benzimidazole", "benzimidazolamine",
 })
 
 # Engine specs aligned with ScaffoldSpec ids in specs.FUSED56_SPECS.

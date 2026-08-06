@@ -1,19 +1,12 @@
 """Retained 1H-indazole parent (IUPAC P-22.2.1 / P-25).
 
 Fused aromatic 6+5: benzo[c]pyrazole. NH=1, N=2 (adjacent);
-≤2 methyl/halo; mono CN → carbonitrile; mono CHO → carbaldehyde.
+≤2 methyl/halo.
 """
 from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.arene_carbonyl import (
-    _aldehyde_ring_c,
-    _arene_fg_conflict,
-    _arene_subs_ok,
-    _fg_ring_c,
-    _nitrile_n_idx,
-)
 from namepredict.layer2.scaffold.fused56 import (
     _all_aromatic,
     _chain_atoms,
@@ -21,7 +14,6 @@ from namepredict.layer2.scaffold.fused56 import (
     _six_all_c,
 )
 from namepredict.layer2.scaffold.ring_parent import (
-    _dbl_o_idx,
     _outside_ok,
     _ring_halo_n,
     _ring_side_starts,
@@ -147,80 +139,3 @@ def _indazole_parent(info: dict) -> dict:
 
 def _try_indazole_parent(info: dict) -> dict | None:
     return _indazole_parent(info) if _is_simple_indazole(info) else None
-
-
-def _iz_fg_ring(info: dict) -> tuple[Mol, set[int]] | None:
-    parts = _iz_parts(info)
-    if parts is None:
-        return None
-    return info["mol"], _ring_set(parts)
-
-
-def _iz_cn_blocked(info: dict) -> bool:
-    allow = frozenset({"has_nitrile"})
-    bad = _arene_fg_conflict(info, "has_acid", "has_aldehyde", "has_ketone", allow=allow)
-    return not _is_iz_core(info) or bad
-
-
-def _iz_cn_ctx(info: dict) -> tuple | None:
-    if _iz_cn_blocked(info):
-        return None
-    got = _iz_fg_ring(info)
-    if got is None or _fg_ring_c(info, got[1], "nitriles") is None:
-        return None
-    mol, ring, fg_c = got[0], got[1], info["nitriles"][0]["c_idx"]
-    n_idx = _nitrile_n_idx(mol, fg_c)
-    return (mol, ring, fg_c, n_idx) if n_idx is not None else None
-
-
-def _is_simple_indazolecarbonitrile(info: dict) -> bool:
-    got = _iz_cn_ctx(info)
-    if got is None:
-        return False
-    mol, ring, fg_c, n_idx = got
-    return _arene_subs_ok(info, mol, ring, {fg_c}, {n_idx})
-
-
-def _try_indazolecarbonitrile_parent(info: dict) -> dict | None:
-    if not _is_simple_indazolecarbonitrile(info):
-        return None
-    parts = _iz_parts(info)
-    assert parts is not None
-    ring = _ring_set(parts)
-    return _iz_parent_dict(
-        info, "indazolecarbonitrile",
-        nitrile_c_idx=info["nitriles"][0]["c_idx"],
-        ring_attach_idx=_fg_ring_c(info, ring, "nitriles"),
-    )
-
-
-def _iz_ald_ctx(info: dict) -> tuple | None:
-    if not _is_iz_core(info) or _arene_fg_conflict(info, "has_acid", "has_ketone"):
-        return None
-    got = _iz_fg_ring(info)
-    if got is None or _aldehyde_ring_c(info, got[1]) is None:
-        return None
-    mol, ring = got
-    fg_c, o_idx = info["aldehydes"][0]["c_idx"], _dbl_o_idx(mol, info["aldehydes"][0]["c_idx"])
-    return (mol, ring, fg_c, o_idx) if o_idx is not None else None
-
-
-def _is_simple_indazolecarbaldehyde(info: dict) -> bool:
-    got = _iz_ald_ctx(info)
-    if got is None:
-        return False
-    mol, ring, fg_c, o_idx = got
-    return _arene_subs_ok(info, mol, ring, {fg_c}, {o_idx})
-
-
-def _try_indazolecarbaldehyde_parent(info: dict) -> dict | None:
-    if not _is_simple_indazolecarbaldehyde(info):
-        return None
-    parts = _iz_parts(info)
-    assert parts is not None
-    ring = _ring_set(parts)
-    return _iz_parent_dict(
-        info, "indazolecarbaldehyde",
-        aldehyde_c_idx=info["aldehydes"][0]["c_idx"],
-        ring_attach_idx=_aldehyde_ring_c(info, ring),
-    )

@@ -8,8 +8,8 @@ from namepredict.layer5.stems import (
 )
 from namepredict.layer5.benzene_names import (
     benzene_parent_names, benzene_prefix,
-    benzoate_parent_names, benzenediamine_names, benzenediol_names, hetero5carboxylic_names,
-    join_kind_name, pyridine_kind_names, sat_hetero_carboxylic_names,
+    benzoate_parent_names, benzenediol_names,
+    join_kind_name, pyridine_kind_names,
 )
 from namepredict.types import NameResult
 from namepredict.constants import MULT_EN, MULT_ZH
@@ -299,7 +299,6 @@ def _acid_ald_amide(kind: str, n: int, numbered: dict | None = None) -> tuple[st
     if kind == "aldehyde" and numbered:
         top = _unsat_aldehyde(n, numbered)
         if top is not None: return top
-    if kind == "cycloalkanecarboxylic": return _cycloalkanecarboxylic_names(n)
     fn = _acid_table(n).get(kind)
     return fn() if fn else None
 def _unsat_nitrile(n: int, numbered: dict) -> tuple[str, str] | None:
@@ -427,8 +426,6 @@ def _amine_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | No
         return _tetraalkylammonium_names(numbered)
     if kind in ("diamine", "triamine", "tetraamine"):
         return _polyamine_names(n, numbered.get("amine_locants"), kind)
-    if kind == "benzenediamine":
-        return benzenediamine_names(numbered.get("amine_locants"))
     if kind not in ("amine", "sec_amine", "tert_amine"):
         return None
     return _amine_names(
@@ -607,15 +604,6 @@ def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         omit = numbered.get("omit_yne_locant", False)
         return _alkyne_names(n, numbered.get("yne_locant"), omit)
     return None
-_H5COOH_KINDS = frozenset({
-    "furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic",
-    "imidazolecarboxylic", "pyrazolecarboxylic",
-})
-_SHCOOH_KINDS = frozenset({
-    "piperidinecarboxylic", "pyrrolidinecarboxylic", "piperazinecarboxylic",
-    "morpholinecarboxylic", "oxolanecarboxylic", "oxanecarboxylic",
-    "thiolanecarboxylic", "aziridinecarboxylic",
-})
 def _parent_stem_names(numbered: dict) -> tuple[str, str] | None:
     parent = numbered.get("parent") or {}
     en, zh = parent.get("stem_en"), parent.get("stem_zh")
@@ -640,8 +628,6 @@ def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None
     if kind == "bridged": return _bridged_names(n, numbered)
     if kind == "spiro": return _spiro_names(n, numbered)
     if kind == "benzoate": return benzoate_parent_names(numbered, _build_prefix)
-    if kind in _H5COOH_KINDS: return hetero5carboxylic_names(numbered)
-    if kind in _SHCOOH_KINDS: return sat_hetero_carboxylic_names(numbered)
     top = pyridine_kind_names(kind, numbered, _build_prefix)
     if top is not None: return top
     stem = _parent_stem_names(numbered)

@@ -80,43 +80,13 @@ _ARENE_NAMED: tuple[tuple[str, str, str, int], ...] = (
     ("aniline", "aniline", "苯胺", 3),
     ("boronic", "phenylboronic acid", "苯基硼酸", 12),
 )
-_H5_COOH = (
-    "furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic",
-    "imidazolecarboxylic", "pyrazolecarboxylic", "pyridinecarboxylic",
-    "pyridinecarbonitrile",
-)
-_SAT_COOH = (
-    "piperidinecarboxylic", "pyrrolidinecarboxylic",
-    "piperazinecarboxylic", "morpholinecarboxylic",
-    "oxolanecarboxylic", "oxanecarboxylic",
-    "thiolanecarboxylic", "aziridinecarboxylic",
-)
-# Lactone/lactam pseudoketones (P-65.6.3.5.1 / P-66.1.5.1); fg_rank = ketone.
-# Stems are placeholders; L5 builds locanted names from base_kind.
-_SAT_ONE = (
-    ("oxolanone", "oxolanone", "氧杂环戊烷酮"),
-    ("oxanone", "oxanone", "氧杂环己烷酮"),
-    ("pyrrolidinone", "pyrrolidinone", "吡咯烷酮"),
-    ("piperidinone", "piperidinone", "哌啶酮"),
-)
 # Fused FG kinds without Spec stems still need fg_rank registration.
 # Spec is authority when present; this table only covers residual FG tags.
 _MISC_RING_FG: tuple[tuple[str, int, str, int, bool, str | None, str | None], ...] = (
-    ("cycloalkanecarboxylic", 13, "carbo", 1, False, None, None),
     ("cycloalkane_polycarboxylic", 13, "carbo", 1, False, None, None),
-    ("cycloalkanecarbaldehyde", 7, "none", 0, False, None, None),
-    ("cycloalkanecarbonitrile", 8, "none", 0, False, None, None),
-    ("cycloalkanecarboxamide", 9, "none", 0, False, None, None),
-    ("cycloalkanecarboxylate", 11, "none", 0, False, None, None),
-    ("cycloalkanecarbonyl_chloride", 10, "none", 0, False, None, None),
-    ("cycloalkanecarbonyl_bromide", 10, "none", 0, False, None, None),
     ("benzenediol", 5, "none", 0, False, None, None),
     ("cycloalkanediol", 5, "none", 0, False, None, None),
     ("cycloalkanedione", 6, "none", 0, False, None, None),
-    ("pyridinol", 5, "none", 0, False, None, None),
-    ("pyridinamine", 3, "none", 0, False, None, None),
-    ("pyrimidinamine", 3, "none", 0, False, None, None),
-    ("benzenediamine", 3, "carbo", 1, False, None, None),
 )
 
 
@@ -211,23 +181,6 @@ def _load_arene_fg_names() -> None:
     _add("benzoate", fg=11, ret=True)
 
 
-def _load_h5_cooh() -> None:
-    for k in _H5_COOH:
-        fg = 8 if k.endswith("carbonitrile") else 13
-        _add(k, fg=fg, ret=True)
-
-
-def _load_sat_cooh() -> None:
-    for k in _SAT_COOH:
-        _add(k, fg=13, ret=True)
-
-
-def _load_sat_one() -> None:
-    """Lactone/lactam kinds: ketone-class rank; hetero ring meta."""
-    for k, en, zh in _SAT_ONE:
-        _add(k, en=en, zh=zh, fg=6, ring="hetero", n=1, ret=True)
-
-
 def _load_misc_ring_fg() -> None:
     for k, fg, ring, n, ret, en, zh in _MISC_RING_FG:
         _add(k, en=en, zh=zh, fg=fg, ring=ring, n=n, ret=ret)
@@ -273,9 +226,6 @@ def _load_from_scaffold_specs() -> None:
 def _bootstrap() -> None:
     _load_chain_fg()
     _load_arene_fg_names()
-    _load_h5_cooh()
-    _load_sat_cooh()
-    _load_sat_one()
     _load_misc_ring_fg()
     _load_cyclo_rings()
     _load_bridged()

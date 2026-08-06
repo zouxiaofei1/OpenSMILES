@@ -40,12 +40,15 @@ def _stat_layer(layer: int) -> dict[str, Any]:
     files: list[dict[str, Any]] = []
     counts = {"file_count": 0, "code": 0, "comment": 0, "blank": 0}
     if d.is_dir():
-        for py in sorted(d.glob("*.py")):
+        for py in sorted(d.rglob("*.py")):  # 递归统计子目录（layer2/scaffold 等）
+            if "__pycache__" in py.parts:
+                continue
             try:
                 code, comment, blank = _count_lines(py.read_text(encoding="utf-8"))
             except (OSError, UnicodeDecodeError):
                 continue
-            files.append({"name": py.name, "code": code, "comment": comment, "blank": blank})
+            rel = py.relative_to(d).as_posix()
+            files.append({"name": rel, "code": code, "comment": comment, "blank": blank})
             counts["file_count"] += 1
             counts["code"] += code
             counts["comment"] += comment

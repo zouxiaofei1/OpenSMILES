@@ -54,18 +54,14 @@ def _mol(smiles: str):
     "sid,nclass,n_labs",
     [
         ("indole", "fused56", 9),
-        ("indolecarboxylic", "fused56", 9),
         ("indazole", "fused56", 9),
-        ("indazolecarbonitrile", "fused56", 9),
-        ("indazolecarbaldehyde", "fused56", 9),
         ("benzimidazole", "fused56", 9),
         ("benzimidazolamine", "fused56", 9),
         ("quinoline", "naph_family", 10),
         ("isoquinoline", "naph_family", 10),
-        ("quinolinol", "naph_family", 10),
-        ("quinolinecarboxylic", "naph_family", 10),
         ("naphthalene", "naph_family", 10),
-        ("naphthalenecarboxylic", "naph_family", 10),
+        ("naphthalenol", "naph_family", 10),
+        ("naphthalenediol", "naph_family", 10),
     ],
 )
 def test_retained_fused_specs_registered(sid: str, nclass: str, n_labs: int) -> None:

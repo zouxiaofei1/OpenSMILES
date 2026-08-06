@@ -26,25 +26,14 @@ _KNOWN_CYCLOALKANE_KINDS = (
     "cycloalkanediol",
     "cycloalkanedione",
     "cycloalkane_polycarboxylic",
-    # Round D exo FG kinds (previously only via startswith fallback)
+    # Only cycloalkanecarboxylic is wired (typed_acid_kind derivation);
+    # carbaldehyde/carbonitrile/etc. exo FG kinds are un-wired and not produced.
     "cycloalkanecarboxylic",
-    "cycloalkanecarbaldehyde",
-    "cycloalkanecarbonitrile",
-    "cycloalkanecarboxamide",
-    "cycloalkanecarboxylate",
-    "cycloalkanecarbonyl_chloride",
-    "cycloalkanecarbonyl_bromide",
 )
 
 # Exo FG kinds that must share _orient_benzoic (ring_attach_idx fixed).
 _EXO_FG_KINDS = (
     "cycloalkanecarboxylic",
-    "cycloalkanecarbaldehyde",
-    "cycloalkanecarbonitrile",
-    "cycloalkanecarboxamide",
-    "cycloalkanecarboxylate",
-    "cycloalkanecarbonyl_chloride",
-    "cycloalkanecarbonyl_bromide",
 )
 
 

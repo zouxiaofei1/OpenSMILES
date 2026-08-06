@@ -11,8 +11,6 @@ _RS_KINDS = frozenset({
     "diacid", "amide", "nitrile", "aldehyde", "thiol",
     "piperidine", "pyrrolidine", "piperazine", "morpholine",
     "oxolane", "oxane",
-    "piperidinecarboxylic", "pyrrolidinecarboxylic",
-    "piperazinecarboxylic", "morpholinecarboxylic",
 })
 
 # Single-center sat-hetero parents omit locant: (R)- not (3R)-.

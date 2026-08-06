@@ -17,7 +17,6 @@ from namepredict.layer5.sulfonic_acid_names import sulfonic_acid_names
 from namepredict.layer5.sulfonyl_chloride_names import sulfonyl_chloride_names
 from namepredict.layer5.sulfoxide_names import sulfoxide_names
 from namepredict.layer5.urea_names import urea_names
-from namepredict.layer5.sat_hetero_one_names import sat_hetero_one_names
 
 
 def _core_table(n: int, numbered: dict) -> dict:
@@ -59,6 +58,4 @@ def special_fg_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | Non
     top = cyclo_exo_fg_names(kind, n, numbered) or _by_kind(kind, n, numbered)
     if top is not None:
         return top
-    if kind in ("oxolanone", "oxanone", "pyrrolidinone", "piperidinone"):
-        return sat_hetero_one_names(numbered)
     return _tail(kind, n, numbered)

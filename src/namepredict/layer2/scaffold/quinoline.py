@@ -2,18 +2,12 @@
 
 Two six-membered aromatic rings (9C+1N) sharing two adjacent bridge atoms.
 N adjacent to one bridge → quinoline (N=1); N adjacent to none → isoquinoline (N=2).
-≤2 halo/methyl; mono ring OH → quinolinol; mono COOH → quinolinecarboxylic.
+≤2 halo/methyl.
 """
 from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.arene_carbonyl import (
-    _arene_fg_conflict,
-    _arene_subs_ok,
-    _carboxyl_ring_c,
-    _cooh_oxygen_idxs,
-)
 from namepredict.layer2.scaffold.naphthalene import (
     _bridge_adjacent,
     _bridge_pair,
@@ -21,7 +15,6 @@ from namepredict.layer2.scaffold.naphthalene import (
 )
 from namepredict.layer2.scaffold.ring_parent import (
     _is_methyl_on_ring,
-    _mono_oh_on_ring,
     _outside_ok,
     _ring_halo_n,
     _ring_side_starts,
@@ -209,52 +202,3 @@ def _try_isoquinoline_parent(info: dict) -> dict | None:
     if not _is_simple_q_kind(info, "isoquinoline"):
         return None
     return _q_parent_dict(info, "isoquinoline")
-
-def _ol_conflict(info: dict) -> bool:
-    keys = (
-        "has_acid", "has_aldehyde", "has_ketone", "has_ester",
-        "has_amide", "has_nitrile", "has_amine", "has_thiol",
-        "has_nitro", "has_acyl_chloride", "has_anhydride",
-    )
-    return any(info.get(k) for k in keys)
-
-def _is_simple_quinolinol(info: dict) -> bool:
-    parts = _q_core(info)
-    if parts is None or parts[5] != "quinoline" or _ol_conflict(info):
-        return False
-    mol, ring = info["mol"], _ring_set(parts)
-    oh = _mono_oh_on_ring(info, ring)
-    if oh is None or not _outside_ok(mol, ring, {oh["o_idx"]}):
-        return False
-    return _q_subs_ok(mol, ring)
-
-def _try_quinolinol_parent(info: dict) -> dict | None:
-    if not _is_simple_quinolinol(info):
-        return None
-    return _q_parent_dict(
-        info, "quinolinol", oh_c_idx=info["hydroxyls"][0]["c_idx"],
-    )
-
-def _is_simple_quinolinecarboxylic(info: dict) -> bool:
-    parts = _q_core(info)
-    if parts is None or parts[5] != "quinoline":
-        return False
-    if _arene_fg_conflict(info, "has_aldehyde", "has_ketone"):
-        return False
-    mol, ring = info["mol"], _ring_set(parts)
-    if _carboxyl_ring_c(info, ring) is None:
-        return False
-    fg_c = info["carboxyls"][0]["c_idx"]
-    return _arene_subs_ok(info, mol, ring, {fg_c}, _cooh_oxygen_idxs(mol, fg_c))
-
-def _try_quinolinecarboxylic_parent(info: dict) -> dict | None:
-    if not _is_simple_quinolinecarboxylic(info):
-        return None
-    parts = _q_core(info)
-    assert parts is not None
-    ring = _ring_set(parts)
-    return _q_parent_dict(
-        info, "quinolinecarboxylic",
-        cooh_c_idx=info["carboxyls"][0]["c_idx"],
-        ring_attach_idx=_carboxyl_ring_c(info, ring),
-    )

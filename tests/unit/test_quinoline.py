@@ -2,7 +2,7 @@
 # Layer: L2,L3,L4,L5
 """Retained parent quinoline / isoquinoline (IUPAC P-22.2.1 / P-25):
 fused aromatic 6+6, N=1 (quinoline) or N=2 (isoquinoline).
-Unsub, ≤2 halo/methyl; mono ring OH → quinolin-n-ol; mono COOH.
+Unsub, ≤2 halo/methyl.
 """
 from __future__ import annotations
 
@@ -14,8 +14,6 @@ from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.scaffold.quinoline import (
     _try_isoquinoline_parent,
     _try_quinoline_parent,
-    _try_quinolinecarboxylic_parent,
-    _try_quinolinol_parent,
 )
 from namepredict.namer import SMILESNNamer
 
@@ -97,26 +95,6 @@ def test_l2_parent_kind_isoquinoline() -> None:
     assert parent.get("n_idx") is not None
 
 
-def test_l2_parent_kind_ol() -> None:
-    mol = preprocess("ClC1=NC2=CC=C(C=C2C=C1)O")
-    assert mol is not None
-    parent = _try_quinolinol_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "quinolinol"
-    assert parent.get("oh_c_idx") is not None
-    assert len(parent.get("chain") or []) == 10
-
-
-def test_l2_parent_kind_carboxylic() -> None:
-    mol = preprocess("O=C(O)c1ccc2ccccc2n1")
-    assert mol is not None
-    parent = _try_quinolinecarboxylic_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "quinolinecarboxylic"
-    assert parent.get("cooh_c_idx") is not None
-    assert parent.get("ring_attach_idx") is not None
-
-
 def test_l2_rejects_naphthalene() -> None:
     mol = preprocess("c1ccc2ccccc2c1")
     assert mol is not None
@@ -145,23 +123,6 @@ def test_l2_rejects_benzofuran() -> None:
     mol = preprocess("c1ccc2occc2c1")
     assert mol is not None
     assert _try_quinoline_parent(analyze(mol)) is None
-
-
-def test_simple_blocks_ol() -> None:
-    """Ring OH routes to quinolinol, not plain quinoline."""
-    mol = preprocess("ClC1=NC2=CC=C(C=C2C=C1)O")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_quinoline_parent(info) is None
-    assert _try_quinolinol_parent(info) is not None
-
-
-def test_simple_blocks_carboxylic() -> None:
-    mol = preprocess("O=C(O)c1ccc2ccccc2n1")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_quinoline_parent(info) is None
-    assert _try_quinolinecarboxylic_parent(info) is not None
 
 
 def test_quinoline_not_iso() -> None:

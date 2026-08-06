@@ -2,18 +2,11 @@
 
 Two six-membered aromatic carbocycles sharing exactly two adjacent atoms.
 Unsubstituted, mono-methyl, or mono-halo only.
-Mono ring COOH → naphthalenecarboxylic (P-65.1.1).
 """
 from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.arene_carbonyl import (
-    _arene_fg_conflict,
-    _arene_subs_ok,
-    _carboxyl_ring_c,
-    _cooh_oxygen_idxs,
-)
 from namepredict.layer2.scaffold.ring_parent import (
     _outside_ok,
     _ring_halo_n,
@@ -179,31 +172,3 @@ def _naphthalene_parent(info: dict) -> dict:
 
 def _try_naphthalene_parent(info: dict) -> dict | None:
     return _naphthalene_parent(info) if _is_simple_naphthalene(info) else None
-
-
-def _naph_ring(info: dict) -> set[int] | None:
-    pair = _two_six_rings(info)
-    if pair is None or not _is_naphthalene_core(info):
-        return None
-    return set(pair[0]) | set(pair[1])
-
-
-def _is_simple_naphthalenecarboxylic(info: dict) -> bool:
-    ring = _naph_ring(info)
-    if ring is None or _arene_fg_conflict(info, "has_aldehyde", "has_ketone"):
-        return False
-    if _carboxyl_ring_c(info, ring) is None:
-        return False
-    mol, fg_c = info["mol"], info["carboxyls"][0]["c_idx"]
-    return _arene_subs_ok(info, mol, ring, {fg_c}, _cooh_oxygen_idxs(mol, fg_c))
-
-
-def _try_naphthalenecarboxylic_parent(info: dict) -> dict | None:
-    if not _is_simple_naphthalenecarboxylic(info):
-        return None
-    ring = _naph_ring(info) or set()
-    return _naph_parent_dict(
-        info, "naphthalenecarboxylic",
-        cooh_c_idx=info["carboxyls"][0]["c_idx"],
-        ring_attach_idx=_carboxyl_ring_c(info, ring),
-    )

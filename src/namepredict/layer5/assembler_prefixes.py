@@ -4,9 +4,6 @@ from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 from namepredict.layer5.benzene_names import benzene_prefix
 from namepredict.constants import MULT_EN, MULT_ZH
-_H5COOH_KINDS = frozenset({"furancarboxylic", "thiophenecarboxylic", "pyrrolecarboxylic", "imidazolecarboxylic", "pyrazolecarboxylic"})
-_SHCOOH_KINDS = frozenset({"piperidinecarboxylic", "pyrrolidinecarboxylic", "piperazinecarboxylic", "morpholinecarboxylic", "oxolanecarboxylic", "oxanecarboxylic", "thiolanecarboxylic", "aziridinecarboxylic"})
-
 def _group_by_stem(substituents: list) -> dict[str, list]:
     groups: dict[str, list] = {}
     for s in substituents:
@@ -19,12 +16,9 @@ def _mult_en(n: int) -> str: return MULT_EN.get(n, "")
 def _mult_zh(n: int) -> str: return MULT_ZH.get(n, "")
 _KEEP_LOCANT_KINDS = frozenset({
     "acid",
-    "benzoic", "benzaldehyde", "acetophenone", "pyridinecarboxylic",
-    "pyridinecarbonitrile", "benzoate", "benzonitrile", "benzoyl_chloride",
-    "benzoyl_bromide", "benzamide", "cycloalkanecarboxylic", "cycloalkanecarbaldehyde",
-    "cycloalkanecarbonitrile", "cycloalkanecarboxamide",
-    "cycloalkanecarboxylate", "cycloalkanecarbonyl_chloride",
-    "cycloalkanecarbonyl_bromide"}) | _H5COOH_KINDS | _SHCOOH_KINDS
+    "benzoic", "benzaldehyde", "acetophenone", "benzoate", "benzonitrile",
+    "benzoyl_chloride", "benzoyl_bromide", "benzamide",
+})
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
     if n_carbons <= 1 or (kind in ("cycloalkane", "benzene") and len(substituents) == 1):
         return True
@@ -85,7 +79,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "benzene":
         return benzene_prefix(numbered, _build_prefix)
-    _skip = ("benzoate", "pyrimidinamine", "benzothiazolamine",
+    _skip = ("benzoate", "benzothiazolamine",
              "benzoxazolamine", "benzimidazolamine", "boronic")
     if kind in _skip:
         return "", ""

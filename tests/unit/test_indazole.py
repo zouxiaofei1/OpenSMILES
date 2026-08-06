@@ -2,8 +2,7 @@
 # Layer: L2,L3,L4,L5
 """Retained parent 1H-indazole (IUPAC P-22.2.1 / P-25):
 benzo[c]pyrazole / 1,2-diazaindene fused 6+5 aromatic system.
-Unsubstituted + ≤2 ring monomethyl / monohalo; mono ring CN / CHO
-as parent FG (carbonitrile / carbaldehyde). NH=1, N=2.
+Unsubstituted + ≤2 ring monomethyl / monohalo. NH=1, N=2.
 """
 from __future__ import annotations
 
@@ -12,11 +11,7 @@ import pytest
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.indazole import (
-    _try_indazole_parent,
-    _try_indazolecarbaldehyde_parent,
-    _try_indazolecarbonitrile_parent,
-)
+from namepredict.layer2.scaffold.indazole import _try_indazole_parent
 from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
@@ -77,28 +72,6 @@ def test_l2_rejects_pyrazole() -> None:
     mol = preprocess("c1cn[nH]c1")
     assert mol is not None
     assert _try_indazole_parent(analyze(mol)) is None
-
-
-def test_l2_carbonitrile_kind() -> None:
-    mol = preprocess("N1N=CC2=CC=C(C=C12)C#N")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_indazole_parent(info) is None
-    parent = _try_indazolecarbonitrile_parent(info)
-    assert parent is not None
-    assert parent.get("kind") == "indazolecarbonitrile"
-    assert parent.get("ring_attach_idx") is not None
-
-
-def test_l2_carbaldehyde_kind() -> None:
-    mol = preprocess("N1N=CC2=CC(=CC=C12)C=O")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_indazole_parent(info) is None
-    parent = _try_indazolecarbaldehyde_parent(info)
-    assert parent is not None
-    assert parent.get("kind") == "indazolecarbaldehyde"
-    assert parent.get("ring_attach_idx") is not None
 
 
 def test_diiodo_locants_3_6() -> None:

@@ -193,15 +193,8 @@ def _orient_cycloalkane_polycarboxylic(chain: list[int], parent: dict, substitue
 
 def _orient_benzenediol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "oh_c_idxs", substituents)
-def _orient_benzenediamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    return _orient_ring_pair(chain, parent, "amine_c_idxs", substituents)
 def _orient_diazine(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "n_idxs", substituents)
-def _orient_pyrimidinamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    attach, virtual = parent.get("amine_c_idx"), list(substituents)
-    if attach is not None:
-        virtual = virtual + [{"attach_idx": attach, "en": ""}]
-    return _orient_diazine(chain, parent, virtual)
 def _orient_cycloketone(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fg_ene(chain, parent, substituents, "ketone_c_idx")
 def _orient_cycloamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -223,27 +216,6 @@ def _orient_imidazole(chain: list[int], parent: dict, substituents: list) -> lis
     rev = _rotate_to_front(list(reversed(chain)), nh)
     n = parent.get("n_idx")
     return base if _n_loc_on(base, n) <= _n_loc_on(rev, n) else rev
-def _virtual_cooh_subs(parent: dict, substituents: list) -> list:
-    attach, virtual = parent.get("ring_attach_idx"), list(substituents)
-    if attach is not None:
-        virtual = virtual + [{"attach_idx": attach, "en": ""}]
-    return virtual
-def _orient_pyridinecarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    return _orient_pyridine(chain, parent, _virtual_cooh_subs(parent, substituents))
-def _orient_hetero5carboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    """Hetero fixed as 1; COOH attach as virtual sub for direction."""
-    return _orient_hetero5(chain, parent, _virtual_cooh_subs(parent, substituents))
-def _orient_diazolecarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    return _orient_imidazole(chain, parent, substituents)
-def _orient_pyridin_fg(chain: list[int], parent: dict, substituents: list, key: str) -> list[int]:
-    attach, virtual = parent.get(key), list(substituents)
-    if attach is not None:
-        virtual = virtual + [{"attach_idx": attach, "en": ""}]
-    return _orient_pyridine(chain, parent, virtual)
-def _orient_pyridinamine(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    return _orient_pyridin_fg(chain, parent, substituents, "amine_c_idx")
-def _orient_pyridinol(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    return _orient_pyridin_fg(chain, parent, substituents, "oh_c_idx")
 def _naph_loc_on(chain: list[int], attach: int) -> int:
     if attach not in chain: return 99
     loc = (1, 2, 3, 4, None, 5, 6, 7, 8, None)[chain.index(attach)]
@@ -261,53 +233,32 @@ def _orient_naphthalene(chain: list[int], parent: dict, substituents: list) -> l
     if not cands: return chain
     if not substituents: return cands[0]
     return _pick_naph_chain(cands, lambda c: _naph_loc_key(c, substituents))
-def _orient_naphthalenecarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    """Lowest sub set, then lowest principal COOH locant (P-14.4)."""
-    cands = parent.get("naph_chains") or [chain]
-    if not cands: return chain
-    virt = _virtual_cooh_subs(parent, substituents)
-    attach = parent.get("ring_attach_idx")
-    def key(c):
-        cooh = 99 if attach is None else _naph_loc_on(c, attach)
-        return (_naph_loc_key(c, virt), cooh)
-    return _pick_naph_chain(cands, key)
 def _orient_indole(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return chain
 def _aza_orienters() -> dict:
     return {
-        "pyridine": _orient_pyridine, "pyridinecarboxylic": _orient_pyridinecarboxylic,
-        "pyridinecarbonitrile": _orient_pyridinecarboxylic,
-        "pyridinamine": _orient_pyridinamine, "pyridinol": _orient_pyridinol,
+        "pyridine": _orient_pyridine,
         "imidazole": _orient_imidazole, "pyrazole": _orient_imidazole,
         "pyrazolamine": _orient_imidazole,
         "oxazole": _orient_imidazole, "thiazole": _orient_imidazole,
-        "imidazolecarboxylic": _orient_diazolecarboxylic,
-        "pyrazolecarboxylic": _orient_diazolecarboxylic,
         "pyrimidine": _orient_diazine, "pyrazine": _orient_diazine,
-        "pyridazine": _orient_diazine, "pyrimidinamine": _orient_pyrimidinamine}
+        "pyridazine": _orient_diazine}
 _FIXED_FUSED = (
-    "indole", "indolecarboxylic", "indazole", "indazolecarbonitrile", "indazolecarbaldehyde",
+    "indole", "indazole",
     "benzofuran", "benzofuranamine", "benzothiophene", "benzothiophenol", "benzothiazole",
     "benzothiazolamine", "benzoxazole", "benzoxazolamine", "benzimidazole", "benzimidazolamine",
-    "quinoline", "isoquinoline", "quinolinol", "quinolinecarboxylic",
-    "quinolinecarbaldehyde", "quinolinecarbonitrile", "chromenone",
+    "quinoline", "isoquinoline", "chromenone",
     "quinazoline", "quinazolinamine",
 )
 def _fused_orienters() -> dict:
     d = {kind: _orient_indole for kind in _FIXED_FUSED}
     d["naphthalene"] = _orient_naphthalene
-    d["naphthalenecarboxylic"] = _orient_naphthalenecarboxylic
-    d["naphthalenecarbaldehyde"] = _orient_naphthalenecarboxylic
-    d["naphthalenecarbonitrile"] = _orient_naphthalenecarboxylic
     d["anthraquinone"] = _orient_anthraquinone
     return d
 def _arene_orienters() -> dict:
     return {
         "furan": _orient_hetero5, "thiophene": _orient_hetero5, "pyrrole": _orient_hetero5,
         "thiazolamine": _orient_hetero5,
-        "furancarboxylic": _orient_hetero5carboxylic,
-        "thiophenecarboxylic": _orient_hetero5carboxylic,
-        "pyrrolecarboxylic": _orient_hetero5carboxylic,
         **_fused_orienters(), **_aza_orienters(), **_sat_hetero_orienters(),
     }
 def _orient_ring_ketone_pair(c, p, s):
@@ -320,7 +271,7 @@ def _hetero_orienters() -> dict:
         "cycloalcohol": _orient_cycloalcohol, "phenol": _orient_cycloalcohol,
         "boronic": _orient_boronic, "benzenediol": di, "cycloalkanediol": di,
         "benzoquinone": bq, "ortho_benzoquinone": bq, "amine": _orient_amine,
-        "benzenediamine": _orient_benzenediamine, "cycloamine": _orient_cycloamine,
+        "cycloamine": _orient_cycloamine,
         "aniline": _orient_cycloamine, "sec_amine": _orient_amine,
         "tert_amine": _orient_amine, **_arene_orienters()}
 def _orient_polyene(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -345,12 +296,7 @@ def _benzoic_orienters() -> dict:
 def _cyclo_exo_orienters() -> dict:
     """Monocyclic cycloalkane + one exocyclic carbonyl FG (ring_attach_idx = 1)."""
     b = _orient_benzoic
-    return {
-        "cycloalkanecarboxylic": b, "cycloalkanecarbaldehyde": b,
-        "cycloalkanecarbonitrile": b, "cycloalkanecarboxamide": b,
-        "cycloalkanecarboxylate": b, "cycloalkanecarbonyl_chloride": b,
-        "cycloalkanecarbonyl_bromide": b,
-    }
+    return {"cycloalkanecarboxylic": b}
 def _append_bridge_paths(order: list[int], paths: list[list[int]], b: int) -> None:
     """Append bridge paths to order, alternating direction; append b after first path."""
     for i, path in enumerate(paths):
@@ -467,11 +413,11 @@ def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
     if oriented.get("kind") not in kinds:
         return None
     return _atom_locant(oriented.get("chain") or [], oriented.get(key), oriented.get("kind"), oriented.get("numbering_scaffold"), oriented.get("numbering_scaffold_required", False))
-_OH_KINDS = ("alcohol", "cycloalcohol", "pyridinol", "quinolinol", "benzothiophenol", "naphthalenol")
+_OH_KINDS = ("alcohol", "cycloalcohol", "benzothiophenol", "naphthalenol")
 _AMINE_KINDS = (
-    "amine", "cycloamine", "sec_amine", "tert_amine", "pyridinamine",
-    "pyrimidinamine", "benzofuranamine", "benzothiazolamine",
-    "benzoxazolamine", "benzimidazolamine", "naphthalenamine",
+    "amine", "cycloamine", "sec_amine", "tert_amine",
+    "benzofuranamine", "benzothiazolamine",
+    "benzoxazolamine", "benzimidazolamine",
     "pyrazolamine", "thiazolamine", "quinazolinamine",
 )
 def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
@@ -514,7 +460,7 @@ def _oh_locants(oriented: dict) -> list[int] | None:
     locs = _typed_atom_locants(oriented, "alcohol")
     if locs:
         return locs
-    if oriented.get("kind") in ("naphthalenediol", "quinolinediol"):
+    if oriented.get("kind") in ("naphthalenediol",):
         return _scaffold_pair_locants(oriented, "oh_c_idxs")
     return _pair_locants(oriented, ("alcohol", "diol", "triol", "benzenediol", "cycloalkanediol"), "oh_c_idxs")
 def _typed_amine_atoms(oriented: dict) -> list[int]:
@@ -525,7 +471,7 @@ def _amine_pair_locants(oriented: dict) -> list[int] | None:
     locs = _typed_atom_locants(oriented, "amine")
     if locs:
         return locs
-    return _pair_locants(oriented, ("diamine", "triamine", "tetraamine", "benzenediamine"), "amine_c_idxs")
+    return _pair_locants(oriented, ("diamine", "triamine", "tetraamine"), "amine_c_idxs")
 def _amine_locant(oriented: dict) -> int | None:
     locs = _typed_atom_locants(oriented, "amine")
     return locs[0] if len(locs) == 1 else _fg_locant(oriented, _AMINE_KINDS, "amine_c_idx")
