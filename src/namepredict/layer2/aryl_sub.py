@@ -10,14 +10,12 @@ from rdkit.Chem import Mol
 from namepredict.constants import C, H, N
 
 from namepredict.layer2.aryl_depth2 import (
-    _d2_sites,
     _depth2_atoms_on,
 )
 from namepredict.layer2.leaves.registry import match_leaf_kind as _recurse_leaf_kind
 from namepredict.layer2.leaves.ring_namer import recursive_ph_name as _recursive_ph_name
 
-from namepredict.constants import HALO_Z as _HALO, HALO_EN as _HALO_EN, HALO_ZH as _HALO_ZH
-from namepredict.constants import MULT_EN as _MULT_EN, MULT_ZH as _MULT_ZH
+from namepredict.constants import HALO_Z as _HALO
 
 def _is_arom_c6(mol: Mol, atoms) -> bool:
     if len(atoms) != 6:
@@ -82,119 +80,12 @@ def _phenyl_at(mol: Mol, attach: int, parent: int) -> set[int] | None:
     ring = hits[0]
     return ring if _side_ok(mol, ring, attach, parent) else None
 
-def _halo_list(mol: Mol, ring: set[int]) -> list[tuple[int, int]]:
-    return [
-        (i, nb.GetAtomicNum())
-        for i in ring
-        for nb in _nb_outside(mol, i, ring)
-        if _is_terminal_halo(nb)
-    ]
-
-def _me_sites(mol: Mol, ring: set[int]) -> list[int]:
-    sites: list[int] = []
-    for i in ring:
-        for nb in _nb_outside(mol, i, ring):
-            if nb.GetAtomicNum() == C and _is_terminal_me_leaf(mol, nb.GetIdx(), i):
-                sites.append(i)
-    return sites
-
-def _ring_nbrs(mol: Mol, i: int, ring: set[int]) -> list[int]:
-    return sorted(
-        n.GetIdx() for n in mol.GetAtomWithIdx(i).GetNeighbors()
-        if n.GetIdx() in ring
-    )
-
-def _walk_ring(mol: Mol, ring: set[int], start: int, nxt: int) -> list[int]:
-    path, prev, cur = [start], start, nxt
-    while cur != start:
-        path.append(cur)
-        opts = [j for j in _ring_nbrs(mol, cur, ring) if j != prev]
-        if not opts:
-            break
-        prev, cur = cur, opts[0]
-    return path
-
-def _loc_tuple(order: list[int], sites: list[int]) -> tuple[int, ...]:
-    return tuple(sorted(order.index(s) + 1 for s in sites if s in order))
-
-def _sub_sites(mol: Mol, ring: set[int], attach: int | None = None) -> list[int]:
-    return (
-        [s for s, _ in _halo_list(mol, ring)]
-        + _me_sites(mol, ring)
-        + _d2_sites(mol, ring, _nb_outside, attach)
-    )
-
-def _ring_order(mol: Mol, ring: set[int], start: int) -> list[int]:
-    nbrs = _ring_nbrs(mol, start, ring)
-    if len(nbrs) != 2:
-        return [start]
-    a = _walk_ring(mol, ring, start, nbrs[0])
-    b = _walk_ring(mol, ring, start, nbrs[1])
-    sites = _sub_sites(mol, ring, start)
-    ta, tb = _loc_tuple(a, sites), _loc_tuple(b, sites)
-    if ta != tb:
-        return a if ta < tb else b
-    return a if a <= b else b
-
-def _ph_locant(mol: Mol, ring: set[int], attach: int, site: int) -> int:
-    order = _ring_order(mol, ring, attach)
-    return order.index(site) + 1 if site in order else 1
-
-def _same_z_prefix(items: list[tuple[int, int]]) -> tuple[str, str]:
-    z, n = items[0][1], len(items)
-    locs = ",".join(str(l) for l, _ in items)
-    return (
-        f"{locs}-{_MULT_EN.get(n, '')}{_HALO_EN[z]}",
-        f"{locs}-{_MULT_ZH.get(n, '')}{_HALO_ZH[z]}",
-    )
-
-def _mixed_z_prefix(items: list[tuple[int, int]]) -> tuple[str, str]:
-    by_en = sorted(items, key=lambda lz: _HALO_EN[lz[1]])
-    en = "-".join(f"{l}-{_HALO_EN[z]}" for l, z in by_en)
-    zh = "-".join(f"{l}-{_HALO_ZH[z]}" for l, z in by_en)
-    return en, zh
-
-def _halo_prefix(items: list[tuple[int, int]]) -> tuple[str, str]:
-    if len({z for _, z in items}) == 1:
-        return _same_z_prefix(items)
-    return _mixed_z_prefix(items)
-
-def _me_prefix(locs: list[int]) -> tuple[str, str]:
-    if not locs:
-        return "", ""
-    n = len(locs)
-    ls = ",".join(str(l) for l in sorted(locs))
-    return (
-        f"{ls}-{_MULT_EN.get(n, '')}methyl",
-        f"{ls}-{_MULT_ZH.get(n, '')}甲基",
-    )
-
-def _halo_me_prefs(mol: Mol, ph: set[int], attach: int) -> tuple[str, str, str, str]:
-    items = sorted((_ph_locant(mol, ph, attach, s), z) for s, z in _halo_list(mol, ph))
-    pe, pz = _halo_prefix(items) if items else ("", "")
-    me = [_ph_locant(mol, ph, attach, s) for s in _me_sites(mol, ph)]
-    me_e, me_z = _me_prefix(me)
-    return pe, pz, me_e, me_z
-
 def _ph_bridge_attach(mol: Mol, ph: set[int], bridge: int) -> int:
     for i in ph:
         for n in mol.GetAtomWithIdx(i).GetNeighbors():
             if n.GetIdx() == bridge:
                 return i
     return min(ph)
-
-def _stem_swap(en: str, zh: str, from_en: str, to_en: str, from_zh: str, to_zh: str):
-    if en.endswith(from_en):
-        en = en[: -len(from_en)] + to_en
-    if zh.endswith(from_zh):
-        zh = zh[: -len(from_zh)] + to_zh
-    return en, zh
-
-def _phenyl_name(mol: Mol, ph: set[int], attach: int) -> tuple[str, str, bool]:
-    # parent of arm Ph is outside attach; use any non-ring heavy as parent proxy
-    parent = _arm_parent_of(mol, ph, attach)
-    en, zh, paren, _ = _recursive_ph_name(mol, ph, attach, parent)
-    return en, zh, paren
 
 def _arm_parent_of(mol: Mol, ph: set[int], attach: int) -> int:
     for n in mol.GetAtomWithIdx(attach).GetNeighbors():
@@ -368,13 +259,6 @@ def _is_unfused_benzene_ring(mol: Mol, ring: set[int]) -> bool:
 def _phenyl_starts_set(mol: Mol, parent: set[int]) -> set[int]:
     ps = {p["outer_c"] for p in _ring_phenyls(mol, parent)}
     return ps | {p["outer_c"] for p in _ring_benzyls(mol, parent)}
-
-def _unsub_phenyl_at(mol: Mol, c_idx: int, n_idx: int) -> bool:
-    """True if c_idx is sole N-attachment of unsubstituted phenyl (amide N-Ph)."""
-    if mol.GetAtomWithIdx(n_idx).GetAtomicNum() != N:
-        return False
-    ph = _phenyl_at(mol, c_idx, n_idx)
-    return ph is not None and not _halo_list(mol, ph)
 
 def _arom_c6_ring_lists(mol: Mol) -> list[list[int]]:
     return [list(r) for r in mol.GetRingInfo().AtomRings() if _is_arom_c6(mol, r)]

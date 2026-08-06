@@ -475,11 +475,11 @@ Layer3 调用这些工厂函数，获得类型化的事实列表后，直接进�
 
 > **源:** `E:\chem\src\namepredict\layer2\aryl_sub.py:72-88`
 
-**_classify_ph_arm —— 芳环武器分类：**
+**_classify_ph_arm —— 芳环臂分类：**
 
-`_phenyl_name(mol, ph, attach)` 通过递归调用 `_recursive_ph_name`（来自 `leaves/ring_namer.py`）获取芳环的完整命名前缀（包含 halogeno/methyl/nitro 等所有取代基的定位编号）。`_arm_parent_of` 识别芳环与母体的连接点，确保递归命名时知道哪个位置是"外侧"。
+芳环臂命名通过 `_one_arm_atoms`（`aryl_sub.py`）调用 `_recursive_ph_name`（来自 `leaves/ring_namer.py`）获取芳环的完整命名前缀（包含 halo/methyl/nitro/alkoxy 等所有取代基的定位编号）。`_arm_attach_parent` 识别芳环与母体的连接点，确保递归命名时知道哪个位置是"外侧"。
 
-> **源:** `E:\chem\src\namepredict\layer2\aryl_sub.py:235-246`
+> **源:** `E:\chem\src\namepredict\layer2\aryl_sub.py` | 旧 `_phenyl_name` / `_halo_me_prefs` / 环走向组（`_ring_order`/`_walk_ring`/`_loc_tuple` 等）已随死代码清理删除
 
 ### aryl_depth2.py —— 二级深度芳环处理
 
@@ -533,7 +533,7 @@ Layer3 调用这些工厂函数，获得类型化的事实列表后，直接进�
 
 ### leaves/ring_namer.py —— 芳环命名 stem 生成
 
-芳环命名前缀由 `leaves/ring_namer.py` 的 `name_ph_ring` / `recursive_ph_name` 生成（含 halogeno/methyl/nitro 等所有取代基的定位编号）；`aryl_sub._phenyl_name` 递归调用它。`aryl_stem.py`（原 `with_aryl_names` 封装）已随重构删除。
+芳环命名前缀由 `leaves/ring_namer.py` 的 `name_ph_ring` / `recursive_ph_name` 生成（含 halo/methyl/nitro/alkoxy 等所有取代基的定位编号）；`aryl_sub._one_arm_atoms` 递归调用它。`aryl_stem.py`（原 `with_aryl_names` 封装）与 `aryl_sub._phenyl_name`（旧 Ph 前缀组装路径）均已随重构/死代码清理删除。
 
 ---
 
