@@ -265,6 +265,10 @@
 
       <!-- Code Analysis Page -->
       <div id="code-analysis-page" class="code-analysis-page hidden" role="tabpanel" aria-labelledby="tab-code-analysis">
+        <div class="ca-toolbar">
+          <button id="ca-refresh" class="btn btn-secondary btn-sm" type="button">刷新</button>
+          <span id="ca-refresh-status" class="muted-text small"></span>
+        </div>
         <div id="ca-summary" class="ca-summary hidden"></div>
         <div class="ca-grid">
           <div class="card">
@@ -299,17 +303,10 @@
             </div>
             <div class="cg-field">
               <label class="field-label" for="cg-threshold">累计耗时阈值
-                <span id="cg-threshold-val" class="mono">1.0%</span></label>
-              <input id="cg-threshold" class="input" type="range" min="0" max="50" step="0.1" value="1" style="width:220px" />
+                <span id="cg-threshold-val" class="mono">0.0%</span></label>
+              <input id="cg-threshold" class="input" type="range" min="0" max="50" step="0.1" value="0" style="width:220px" />
             </div>
             <button id="cg-refresh" class="btn btn-secondary" type="button">重新采样</button>
-            <div class="cg-field">
-              <label class="field-label">视图</label>
-              <div class="cg-seg">
-                <button id="cg-view-force" class="btn btn-secondary active" type="button">力导向图</button>
-                <button id="cg-view-svg" class="btn btn-secondary" type="button">分层 SVG</button>
-              </div>
-            </div>
             <div class="cg-field">
               <label class="field-label" for="cg-layer">Layer</label>
               <select id="cg-layer" class="input" style="width:120px">
@@ -333,8 +330,7 @@
           </div>
           <div id="cg-meta" class="cg-meta muted-text small"></div>
         </div>
-        <div id="cg-network" class="cg-network"></div>
-        <div id="cg-svg-view" class="cg-network hidden"></div>
+        <div id="cg-svg-view" class="cg-network"></div>
         <div id="cg-empty" class="empty-state" hidden></div>
         <div class="card" id="cg-chain-card">
           <div class="card-head row-between">
@@ -397,7 +393,6 @@
     </main>
   </div>
   <script src="/vendor/smiles-drawer.min.js"></script>
-  <script src="/vendor/vis-network.min.js"></script>
   <script src="/js/namer-ketcher.js"></script>
   <script src="/js/app.js" defer></script>
 </body>

@@ -27,15 +27,12 @@ from namepredict.layer2.scaffold.ring_parent import (
     _ring_side_starts,
 )
 
-
 def _core_atoms(r1: list[int], r2: list[int]) -> set[int] | None:
     atoms = set(r1) | set(r2)
     return atoms if len(atoms) == 10 else None
 
-
 def _all_aromatic(mol: Mol, atoms: set[int]) -> bool:
     return all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms)
-
 
 def _one_n_nine_c(mol: Mol, atoms: set[int]) -> int | None:
     zs = [mol.GetAtomWithIdx(i).GetAtomicNum() for i in atoms]
@@ -43,11 +40,9 @@ def _one_n_nine_c(mol: Mol, atoms: set[int]) -> int | None:
         return None
     return next(i for i in atoms if mol.GetAtomWithIdx(i).GetAtomicNum() == 7)
 
-
 def _n_bridge_degree(n_idx: int, bridge: set[int], mol: Mol) -> int:
     nbs = {a.GetIdx() for a in mol.GetAtomWithIdx(n_idx).GetNeighbors()}
     return len(nbs & bridge)
-
 
 def _kind_from_n(n_idx: int, bridge: set[int], mol: Mol) -> str | None:
     if n_idx in bridge:
@@ -57,7 +52,6 @@ def _kind_from_n(n_idx: int, bridge: set[int], mol: Mol) -> str | None:
         return "quinoline"
     return "isoquinoline" if deg == 0 else None
 
-
 def _fused_pair(info: dict) -> tuple[list[int], list[int], tuple[int, int]] | None:
     pair = _two_six_rings(info)
     if pair is None:
@@ -66,7 +60,6 @@ def _fused_pair(info: dict) -> tuple[list[int], list[int], tuple[int, int]] | No
     if bridge is None or not _bridge_adjacent(info["mol"], *bridge):
         return None
     return (*pair, bridge)
-
 
 def _q_from_fused(
     info: dict, r1: list[int], r2: list[int], bridge: tuple[int, int],
@@ -80,24 +73,16 @@ def _q_from_fused(
     kind = _kind_from_n(n_idx, set(bridge), info["mol"])
     return None if kind is None else (r1, r2, n_idx, bridge[0], bridge[1], kind)
 
-
 def _q_core(info: dict) -> tuple[list[int], list[int], int, int, int, str] | None:
     """Return (r1, r2, n_idx, ba, bb, kind) or None."""
     fused = _fused_pair(info)
     return None if fused is None else _q_from_fused(info, *fused)
 
-
-def _is_q_core(info: dict) -> bool:
-    return _q_core(info) is not None
-
-
 def _ring_set(parts: tuple) -> set[int]:
     return set(parts[0]) | set(parts[1])
 
-
 def _is_methyl(mol: Mol, s: int, ring: set[int]) -> bool:
     return _is_methyl_on_ring(mol, s, ring)
-
 
 def _methyl_starts_ok(mol: Mol, ring: set[int], starts: list[int]) -> bool:
     outside = [
@@ -108,13 +93,11 @@ def _methyl_starts_ok(mol: Mol, ring: set[int], starts: list[int]) -> bool:
         return False
     return all(_is_methyl(mol, s, ring) for s in starts)
 
-
 def _q_subs_ok(mol: Mol, ring: set[int], cap: int = 2) -> bool:
     h, starts = _ring_halo_n(mol, ring), _ring_side_starts(mol, ring)
     if h + len(starts) > cap:
         return False
     return True if not starts else _methyl_starts_ok(mol, ring, starts)
-
 
 def _q_fg_block(info: dict) -> bool:
     keys = (
@@ -124,14 +107,12 @@ def _q_fg_block(info: dict) -> bool:
     )
     return any(info.get(k) for k in keys)
 
-
 def _is_simple_q_kind(info: dict, want: str) -> bool:
     parts = _q_core(info)
     if parts is None or parts[5] != want or _q_fg_block(info):
         return False
     mol, ring = info["mol"], _ring_set(parts)
     return _outside_ok(mol, ring) and _q_subs_ok(mol, ring)
-
 
 def _walk_path(ring: list[int], start: int, end: int) -> list[int] | None:
     if start not in ring or end not in ring:
@@ -145,7 +126,6 @@ def _walk_path(ring: list[int], start: int, end: int) -> list[int] | None:
         path.append(atom)
     return None
 
-
 def _path_of_len(ring: list[int], start: int, end: int, n: int) -> list[int] | None:
     for base in (ring, list(reversed(ring))):
         p = _walk_path(base, start, end)
@@ -153,13 +133,11 @@ def _path_of_len(ring: list[int], start: int, end: int, n: int) -> list[int] | N
             return p
     return None
 
-
 def _bridge_nb_of(mol: Mol, atom: int, bridge: set[int]) -> list[int]:
     return [
         a.GetIdx() for a in mol.GetAtomWithIdx(atom).GetNeighbors()
         if a.GetIdx() in bridge
     ]
-
 
 def _quinoline_chain(
     mol: Mol, r1: list[int], r2: list[int], n: int, ba: int, bb: int,
@@ -173,7 +151,6 @@ def _quinoline_chain(
     mid, ext = _path_of_len(pyr, n, a4a, 3), _path_of_len(ben, a4a, a8a, 4)
     return None if not mid or not ext else [n] + mid + [a4a] + ext + [a8a]
 
-
 def _iso_a1_a8a(mol: Mol, nbs: list[int], bridge: set[int]) -> tuple[int, int, int] | None:
     """Return (a1, a3, a8a): a1 is N-nb adjacent to bridge a8a."""
     for a1 in nbs:
@@ -183,11 +160,9 @@ def _iso_a1_a8a(mol: Mol, nbs: list[int], bridge: set[int]) -> tuple[int, int, i
             return a1, a3, hit[0]
     return None
 
-
 def _pyr_nbs(mol: Mol, n: int, pyr: list[int]) -> list[int]:
     pset = set(pyr)
     return [a.GetIdx() for a in mol.GetAtomWithIdx(n).GetNeighbors() if a.GetIdx() in pset]
-
 
 def _iso_pack(
     mol: Mol, pyr: list[int], ben: list[int], n: int, ba: int, bb: int, nbs: list[int],
@@ -200,7 +175,6 @@ def _iso_pack(
     mid, ext = _path_of_len(pyr, a3, a4a, 1), _path_of_len(ben, a4a, a8a, 4)
     return None if not mid or not ext else [a1, n, a3, mid[0], a4a] + ext + [a8a]
 
-
 def _isoquinoline_chain(
     mol: Mol, r1: list[int], r2: list[int], n: int, ba: int, bb: int,
 ) -> list[int] | None:
@@ -209,14 +183,12 @@ def _isoquinoline_chain(
     nbs = _pyr_nbs(mol, n, pyr)
     return None if len(nbs) != 2 else _iso_pack(mol, pyr, ben, n, ba, bb, nbs)
 
-
 def _build_chain(info: dict, parts: tuple) -> list[int]:
     r1, r2, n, ba, bb, kind = parts
     mol = info["mol"]
     if kind == "quinoline":
         return _quinoline_chain(mol, r1, r2, n, ba, bb) or []
     return _isoquinoline_chain(mol, r1, r2, n, ba, bb) or []
-
 
 def _q_parent_dict(info: dict, kind: str, **extra) -> dict:
     parts = _q_core(info)
@@ -228,18 +200,15 @@ def _q_parent_dict(info: dict, kind: str, **extra) -> dict:
         **extra,
     }
 
-
 def _try_quinoline_parent(info: dict) -> dict | None:
     if not _is_simple_q_kind(info, "quinoline"):
         return None
     return _q_parent_dict(info, "quinoline")
 
-
 def _try_isoquinoline_parent(info: dict) -> dict | None:
     if not _is_simple_q_kind(info, "isoquinoline"):
         return None
     return _q_parent_dict(info, "isoquinoline")
-
 
 def _ol_conflict(info: dict) -> bool:
     keys = (
@@ -248,7 +217,6 @@ def _ol_conflict(info: dict) -> bool:
         "has_nitro", "has_acyl_chloride", "has_anhydride",
     )
     return any(info.get(k) for k in keys)
-
 
 def _is_simple_quinolinol(info: dict) -> bool:
     parts = _q_core(info)
@@ -260,14 +228,12 @@ def _is_simple_quinolinol(info: dict) -> bool:
         return False
     return _q_subs_ok(mol, ring)
 
-
 def _try_quinolinol_parent(info: dict) -> dict | None:
     if not _is_simple_quinolinol(info):
         return None
     return _q_parent_dict(
         info, "quinolinol", oh_c_idx=info["hydroxyls"][0]["c_idx"],
     )
-
 
 def _is_simple_quinolinecarboxylic(info: dict) -> bool:
     parts = _q_core(info)
@@ -280,7 +246,6 @@ def _is_simple_quinolinecarboxylic(info: dict) -> bool:
         return False
     fg_c = info["carboxyls"][0]["c_idx"]
     return _arene_subs_ok(info, mol, ring, {fg_c}, _cooh_oxygen_idxs(mol, fg_c))
-
 
 def _try_quinolinecarboxylic_parent(info: dict) -> dict | None:
     if not _is_simple_quinolinecarboxylic(info):

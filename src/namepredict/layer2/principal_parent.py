@@ -86,7 +86,7 @@ def _unsupported_typed_ring(parent: dict, selection: PrincipalParentSelection) -
 def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[dict]:
     parents = []
     for skeleton in selection.skeletons.candidates:
-        parent = (express_ring_principal(info, selection.principal, skeleton)
+        parent = ((express_ring_principal(info, selection.principal, skeleton))
                   if skeleton.topology is SkeletonTopology.RING_SYSTEM
                   else express_chain_principal(selection.principal, skeleton))
         if parent is not None and not _unsupported_typed_ring(parent, selection):

@@ -34,6 +34,11 @@ def _producer_scaffold_ids(info: dict) -> dict[frozenset[int], str]:
 
 
 def _producer_id(info: dict, skeleton: ParentSkeleton) -> str | None:
+    # 开链骨架不是环母体：直接短路，避免为每个开链候选跑完整 producer 兜底。
+    from namepredict.layer2.parent_skeleton import SkeletonTopology
+
+    if skeleton.topology is not SkeletonTopology.RING_SYSTEM:
+        return None
     key = frozenset(skeleton.atom_ids)
     if key in (found := _producer_scaffold_ids(info)):
         return found[key]

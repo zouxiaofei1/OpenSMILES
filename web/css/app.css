@@ -1361,6 +1361,13 @@ select.input {
   display: none !important;
 }
 
+.ca-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
 .ca-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

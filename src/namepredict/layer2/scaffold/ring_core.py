@@ -1,18 +1,27 @@
 """Core-only mother-ring identification (no simple/substituent gate).
 
-Every registered fn(info) -> list[tuple[set[int], str]] maps ring-atom sets to
-scaffold ids WITHOUT the substituent / outside / FG gates that the full
-`_try_*_parent` producers apply. `ring_scaffold._producer_scaffold_ids` uses
-these so a substituted mother (e.g. 2,3,6-trimethylquinoline) still resolves
-to its mother scaffold instead of being dropped by `_*_subs_ok`.
+Splits 'is this ring system mother X' from 'is molecule simple enough to use
+retained name X'. Every registered fn(info) -> list[tuple[set[int], str]]
+maps ring-atom sets to scaffold ids WITHOUT the substituent / outside / FG
+gates that the full `_try_*_parent` producers apply.
+
+Two sources:
+  * `_template_mother` — retained mothers registered as SMILES templates and
+    matched by subgraph isomorphism (see retained_templates), covering the
+    aromatic / heteroarene / fused mothers.
+  * dedicated adapters — carbonyl mothers (benzoquinone / anthraquinone /
+    chromenone / ortho_benzoquinone) whose templates would include exocyclic
+    =O atoms, and rule mothers (cycloalkane / cyclopolyene / bridged / spiro /
+    saturated hetero) whose composition is open-ended.
 
 The full producers remain authoritative for FG-variant retained names
-(benzofuranamine, benzothiophenol, ...): `_producer_id` falls back to them
-lazily for skeletons the core table did not tag.
+(benzofuranamine, ...): `_producer_id` falls back to them lazily for skeletons
+the core table did not tag.
 """
 from __future__ import annotations
 
-_CORE_FNS: list = []
+_CORE_FNS: list = []   # template mother + rule mothers (all)
+_RULE_FNS: list = []   # rule mothers only (no template)
 
 
 def _register(fn):
@@ -20,31 +29,32 @@ def _register(fn):
     return fn
 
 
+def _register_rule(fn):
+    _CORE_FNS.append(fn)
+    _RULE_FNS.append(fn)
+    return fn
+
+
 def ring_core_fns() -> list:
     return list(_CORE_FNS)
 
 
-def _fused56_mono(info: dict, spec, sid: str) -> list:
-    from namepredict.layer2.scaffold.fused56 import _mono_parts
-
-    parts = _mono_parts(info, spec)
-    return [(set(parts[0]) | set(parts[1]), sid)] if parts else []
-
-
-def _fused56_di13(info: dict, spec, sid: str) -> list:
-    from namepredict.layer2.scaffold.fused56 import _di13_parts
-
-    parts = _di13_parts(info, spec)
-    return [(set(parts[0]) | set(parts[1]), sid)] if parts else []
+def ring_rule_fns() -> list:
+    return list(_RULE_FNS)
 
 
 @_register
-def _benzene_core(info: dict) -> list:
-    from namepredict.layer2.aryl_sub import _arom_c6_ring_lists, _is_unfused_benzene_ring
+def _template_mother(info: dict) -> list:
+    """Retained mothers via SMILES-template subgraph isomorphism."""
+    from namepredict.layer2.scaffold.retained_templates import match_retained
 
-    mol = info["mol"]
-    return [(set(r), "benzene") for r in _arom_c6_ring_lists(mol)
-            if _is_unfused_benzene_ring(mol, set(r))]
+    out: list = []
+    for s in info.get("ring_systems") or []:
+        atoms = tuple(sorted(s["atom_ids"]))
+        sid = match_retained(info, atoms)
+        if sid:
+            out.append((set(atoms), sid))
+    return out
 
 
 @_register
@@ -62,176 +72,6 @@ def _cyclopolyene_core(info: dict) -> list:
         return []
     atoms = _is_carbocycle_ring(info)
     return [(set(atoms), "cyclopolyene")] if atoms else []
-
-
-@_register
-def _pyridine_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.pyridine import _pyridine_ring_lists
-
-    return [(set(r), "pyridine") for r in _pyridine_ring_lists(info["mol"])]
-
-
-@_register
-def _diazine_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.heteroarene5 import (
-        _DIAZINE_KIND,
-        _diazine_rings,
-        _ring_n_idxs,
-        _ring_nn_dist,
-    )
-
-    mol = info["mol"]
-    out = []
-    for r in _diazine_rings(mol):
-        ns = _ring_n_idxs(mol, r)
-        if len(ns) == 2:
-            kind = _DIAZINE_KIND.get(_ring_nn_dist(r, ns))
-            if kind:
-                out.append((set(r), kind))
-    return out
-
-
-@_register
-def _hetero5_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.heteroarene5 import _hetero5_kind_of, _hetero5_rings
-
-    mol = info["mol"]
-    return [(set(r), k) for r in _hetero5_rings(mol) if (k := _hetero5_kind_of(mol, r))]
-
-
-@_register
-def _azole13_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.azole13 import _azole13_kind
-    from namepredict.layer2.scaffold.heteroarene5 import _ring_atoms_if_mono
-
-    kind = _azole13_kind(info)
-    if kind is None:
-        return []
-    atom_ids = _ring_atoms_if_mono(info)
-    return [(set(atom_ids), kind)] if atom_ids else []
-
-
-@_register
-def _diazole_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.heteroarene5 import (
-        _imidazole_n_pair,
-        _pyrazole_n_pair,
-        _ring_atoms_if_mono,
-    )
-
-    atom_ids = _ring_atoms_if_mono(info)
-    out = []
-    if atom_ids:
-        if _imidazole_n_pair(info):
-            out.append((set(atom_ids), "imidazole"))
-        if _pyrazole_n_pair(info):
-            out.append((set(atom_ids), "pyrazole"))
-    return out
-
-
-@_register
-def _naphthalene_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.naphthalene import _is_naphthalene_core, _two_six_rings
-
-    if not _is_naphthalene_core(info):
-        return []
-    r1, r2 = _two_six_rings(info)
-    return [(set(r1) | set(r2), "naphthalene")]
-
-
-@_register
-def _quinoline_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.quinoline import _q_core
-
-    parts = _q_core(info)
-    if parts is None:
-        return []
-    r1, r2, _n, _ba, _bb, kind = parts
-    return [(set(r1) | set(r2), kind)]  # quinoline | isoquinoline
-
-
-@_register
-def _indole_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.indole import _indole_parts
-
-    parts = _indole_parts(info)
-    return [(set(parts[0]) | set(parts[1]), "indole")] if parts else []
-
-
-@_register
-def _indazole_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.indazole import _iz_parts
-
-    parts = _iz_parts(info)
-    return [(set(parts[0]) | set(parts[1]), "indazole")] if parts else []
-
-
-@_register
-def _benzimidazole_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.benzimidazole import _bim_parts
-
-    parts = _bim_parts(info)
-    return [(set(parts[0]) | set(parts[1]), "benzimidazole")] if parts else []
-
-
-@_register
-def _benzofuran_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.builders.fused56 import BF_MONO
-
-    return _fused56_mono(info, BF_MONO, "benzofuran")
-
-
-@_register
-def _benzothiophene_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.builders.fused56 import BT_MONO
-
-    return _fused56_mono(info, BT_MONO, "benzothiophene")
-
-
-@_register
-def _benzothiazole_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.builders.fused56 import BTZ_DI13
-
-    return _fused56_di13(info, BTZ_DI13, "benzothiazole")
-
-
-@_register
-def _benzoxazole_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.builders.fused56 import BOX_DI13
-
-    return _fused56_di13(info, BOX_DI13, "benzoxazole")
-
-
-@_register
-def _quinazoline_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.benzodiazine import _qz_core
-
-    parts = _qz_core(info)
-    return [(parts[0], "quinazoline")] if parts else []
-
-
-@_register
-def _quinoxaline_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.benzodiazine import _qx_core
-
-    parts = _qx_core(info)
-    return [(parts[0], "quinoxaline")] if parts else []
-
-
-@_register
-def _anthracene_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.anthracene import _anthracene_system
-
-    s = _anthracene_system(info)
-    return [(set(s["atom_ids"]), "anthracene")] if s else []
-
-
-@_register
-def _anthraquinone_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.anthraquinone import _aq_system
-
-    s = _aq_system(info)
-    return [(set(s["atom_ids"]), "anthraquinone")] if s else []
 
 
 @_register
@@ -255,6 +95,14 @@ def _ortho_benzoquinone_core(info: dict) -> list:
         return []
     ket = _ketone_idxs(info)
     return [(set(ring), "ortho_benzoquinone")] if len(ket) == 2 and _ketones_ortho(ring, ket) else []
+
+
+@_register
+def _anthraquinone_core(info: dict) -> list:
+    from namepredict.layer2.scaffold.anthraquinone import _aq_system
+
+    s = _aq_system(info)
+    return [(set(s["atom_ids"]), "anthraquinone")] if s else []
 
 
 @_register
@@ -294,8 +142,8 @@ def _sat_hetero_core(info: dict) -> list:
 
 @_register
 def _sat_hetero_repl_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.sat_hetero import _ring_atoms_if_mono
     from namepredict.layer2.scaffold.builders.sat_hetero_repl import _is_repl_core
+    from namepredict.layer2.scaffold.sat_hetero import _ring_atoms_if_mono
 
     if not _is_repl_core(info):
         return []

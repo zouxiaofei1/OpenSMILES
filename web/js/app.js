@@ -56,11 +56,9 @@
     caData: null,
     // call graph
     cgData: null,
-    cgNetwork: null,
-    cgThreshold: 1.0,
+    cgThreshold: 0,
     cgLoading: false,
     cgSvg: null,
-    cgSvgView: "force",
     cgSvgLoading: false,
     cgSourceTotal: 0,
     cgRank: {
@@ -943,31 +941,6 @@
 
   /* ---------- Call Graph ---------- */
 
-  // Blue→red heat color by weight (ported from tools/render_callchain.py heat())
-  function cgHeat(w) {
-    var h = (1.0 - Math.min(1.0, Math.max(0.0, w))) * 0.66;
-    var s = 0.85;
-    var v = 0.92;
-    var i = Math.floor(h * 6);
-    var f = h * 6 - i;
-    var p = v * (1 - s);
-    var q = v * (1 - f * s);
-    var t = v * (1 - (1 - f) * s);
-    var r, g, b;
-    switch (i % 6) {
-      case 0: r = v; g = t; b = p; break;
-      case 1: r = q; g = v; b = p; break;
-      case 2: r = p; g = v; b = t; break;
-      case 3: r = p; g = q; b = v; break;
-      case 4: r = t; g = p; b = v; break;
-      default: r = v; g = p; b = q; break;
-    }
-    function hx(x) {
-      return Math.round(x * 255).toString(16).padStart(2, "0");
-    }
-    return "#" + hx(r) + hx(g) + hx(b);
-  }
-
   function renderCgMeta(meta) {
     var el = $("cg-meta");
     if (!el || !meta) return;
@@ -979,104 +952,6 @@
       " · 调用边 " + meta.n_edges +
       " · " + cache +
       " · 接口耗时 " + meta.elapsed_ms + "ms";
-  }
-
-  function cgTooltip(n) {
-    var layer = n.layer != null ? " · Layer " + n.layer : "";
-    return (
-      '<div class="cg-tip">' +
-      "<b>" + escapeHtml(n.label) + "</b>" +
-      '<div class="mono small">' + escapeHtml(n.module) + ":" + (n.line != null ? n.line : "?") + layer + "</div>" +
-      "<div>累计 " + n.cum_pct + "% · 自耗时 " + n.self_pct + "%</div>" +
-      "<div>调用 " + n.ncalls.toLocaleString() + " 次</div>" +
-      "<div>累计 " + (n.cum_s * 1000).toFixed(2) + "ms · 自耗 " + (n.self_s * 1000).toFixed(2) + "ms</div>" +
-      "</div>"
-    );
-  }
-
-  function ensureCgNetwork() {
-    if (state.cgNetwork) return state.cgNetwork;
-    var container = $("cg-network");
-    if (!container || typeof vis === "undefined" || !vis.Network) return null;
-    var options = {
-      physics: {
-        solver: "forceAtlas2Based",
-        stabilization: { enabled: true, iterations: 250, fit: true },
-        forceAtlas2Based: {
-          gravitationalConstant: -80,
-          centralGravity: 0.01,
-          springLength: 140,
-          springConstant: 0.08,
-          damping: 0.4,
-          avoidOverlap: 0.5
-        }
-      },
-      interaction: {
-        hover: true,
-        tooltipDelay: 120,
-        keyboard: true,
-        zoomView: true,
-        dragView: true,
-        dragNodes: true,
-        hoverConnectedEdges: true,
-        multiselect: true
-      },
-      nodes: { scaling: { min: 8, max: 42, label: { enabled: false } }, shadow: true },
-      edges: { selectionWidth: 2 }
-    };
-    state.cgNetwork = new vis.Network(container, { nodes: [], edges: [] }, options);
-    state.cgNetwork.on("stabilizationIterationsDone", function () {
-      if (state.cgNetwork) state.cgNetwork.fit();
-    });
-    state.cgNetwork.on("click", function (params) {
-      if (params.nodes && params.nodes.length) {
-        renderCalleeChain(params.nodes[0]);
-      }
-    });
-    return state.cgNetwork;
-  }
-
-  function cgApplyThreshold() {
-    var data = state.cgData;
-    if (!data || !data.nodes) return;
-    var t = state.cgThreshold;
-    var keepIds = {};
-    var nodes = data.nodes.filter(function (n) {
-      return n.cum_pct >= t;
-    });
-    nodes.forEach(function (n) {
-      keepIds[n.id] = true;
-    });
-    var edges = data.edges.filter(function (e) {
-      return keepIds[e.from] && keepIds[e.to];
-    });
-    var visNodes = nodes.map(function (n) {
-      return {
-        id: n.id,
-        label: n.label,
-        title: cgTooltip(n),
-        value: 5 + n.w * 45,
-        color: { background: cgHeat(n.w), border: "rgba(15,23,42,0.4)" },
-        borderWidth: 1,
-        shape: "dot",
-        font: { size: 11, color: "#1e293b", face: "monospace" }
-      };
-    });
-    var visEdges = edges.map(function (e) {
-      return {
-        from: e.from,
-        to: e.to,
-        width: Math.max(0.3, e.w * 3),
-        arrows: { to: { enabled: true, scaleFactor: 0.4 } },
-        color: { opacity: 0.55 },
-        smooth: { type: "continuous", roundness: 0.4 }
-      };
-    });
-    var network = ensureCgNetwork();
-    if (!network) throw new Error("vis-network 未加载");
-    network.setData({ nodes: visNodes, edges: visEdges });
-    network.fit({ animation: true });
-    renderCgRanks();
   }
 
   function cgNFromSlider() {
@@ -1156,7 +1031,6 @@
         renderCalleeChain(parseInt(row.getAttribute("data-id"), 10));
       });
     });
-    if (state.cgNetwork) state.cgNetwork.selectNodes([rootId], false);
   }
 
   function renderCalleeChainByName(query) {
@@ -1268,12 +1142,10 @@
     var st = $("cg-status");
     var btn = $("cg-refresh");
     var empty = $("cg-empty");
-    var net = $("cg-network");
     state.cgLoading = true;
     if (btn) btn.disabled = true;
     if (st) { st.textContent = "采样中…（约 1–3s）"; st.style.color = "#f59e0b"; }
     if (empty) empty.hidden = true;
-    if (net) net.innerHTML = '<p class="muted-text small" style="padding:1rem">采样中，请稍候…</p>';
     try {
       var q = "?n=" + n + "&floor_pct=0" + (force ? "&refresh=1" : "");
       var data = await api(API.callGraph + q);
@@ -1285,15 +1157,12 @@
       cgNFromSlider();
       // 重采样后旧分层 SVG 失效
       state.cgSvg = null;
-      if (state.cgSvgView === "svg") {
-        var s = $("cg-svg-status");
-        if (s) { s.textContent = "数据已更新，请重新生成"; s.style.color = "#f59e0b"; }
-      }
+      var s = $("cg-svg-status");
+      if (s) { s.textContent = "数据已更新，请重新生成"; s.style.color = "#f59e0b"; }
       renderCgMeta(data.meta);
-      cgApplyThreshold();
+      renderCgRanks();
       if (st) { st.textContent = "就绪"; st.style.color = "#86efac"; }
     } catch (err) {
-      if (net) net.innerHTML = "";
       if (empty) { empty.hidden = false; empty.textContent = "加载失败: " + (err.message || String(err)); }
       if (st) { st.textContent = "错误"; st.style.color = "#ef4444"; }
     } finally {
@@ -1310,10 +1179,10 @@
     $("cg-threshold") &&
       $("cg-threshold").addEventListener("input", function (ev) {
         var tv = parseFloat(ev.target.value);
-        state.cgThreshold = isNaN(tv) ? 1 : tv;
+        state.cgThreshold = isNaN(tv) ? 0 : tv;
         var v = $("cg-threshold-val");
         if (v) v.textContent = state.cgThreshold.toFixed(1) + "%";
-        cgApplyThreshold();
+        renderCgRanks();
       });
     $("cg-n") &&
       $("cg-n").addEventListener("input", function () {
@@ -1327,35 +1196,6 @@
       $("cg-svg-gen").addEventListener("click", function () {
         loadCallGraphSvg();
       });
-    $("cg-view-force") &&
-      $("cg-view-force").addEventListener("click", function () {
-        setCgView("force");
-      });
-    $("cg-view-svg") &&
-      $("cg-view-svg").addEventListener("click", function () {
-        if (state.cgSvg) setCgView("svg");
-        else loadCallGraphSvg();
-      });
-  }
-
-  function setCgView(mode) {
-    state.cgSvgView = mode;
-    var net = $("cg-network");
-    var svgView = $("cg-svg-view");
-    var fb = $("cg-view-force");
-    var sb = $("cg-view-svg");
-    if (mode === "svg") {
-      if (net) net.classList.add("hidden");
-      if (svgView) svgView.classList.remove("hidden");
-      if (fb) fb.classList.remove("active");
-      if (sb) sb.classList.add("active");
-    } else {
-      if (svgView) svgView.classList.add("hidden");
-      if (net) net.classList.remove("hidden");
-      if (fb) fb.classList.add("active");
-      if (sb) sb.classList.remove("active");
-      if (state.cgNetwork) state.cgNetwork.redraw();
-    }
   }
 
   function setupSvgPanZoom(view) {
@@ -1438,9 +1278,11 @@
       if (!data || !data.ok) throw new Error((data && data.error) || "无数据");
       state.cgSvg = data;
       var view = $("cg-svg-view");
-      if (view) view.innerHTML = data.svg;
-      setCgView("svg");
-      if (view) setupSvgPanZoom(view);
+      if (view) {
+        view.innerHTML = data.svg;
+        view.classList.remove("hidden");
+        setupSvgPanZoom(view);
+      }
       if (st) { st.textContent = "就绪 · " + data.meta.n_nodes + " 节点"; st.style.color = "#86efac"; }
     } catch (err) {
       if (st) { st.textContent = "失败: " + (err.message || String(err)); st.style.color = "#ef4444"; }
@@ -2185,7 +2027,7 @@
 
   function renderCaSummary(el, total) {
     el.innerHTML =
-      '<div class="ca-stat"><span class="ca-stat-label">总文件</span><b class="mono">' + total.files + "</b></div>" +
+      '<div class="ca-stat"><span class="ca-stat-label">总文件</span><b class="mono">' + (total.file_count != null ? total.file_count : total.files) + "</b></div>" +
       '<div class="ca-stat"><span class="ca-stat-label">代码行</span><b class="mono">' + total.code.toLocaleString() + "</b></div>" +
       '<div class="ca-stat"><span class="ca-stat-label">注释行</span><b class="mono">' + total.comment.toLocaleString() + "</b></div>" +
       '<div class="ca-stat"><span class="ca-stat-label">总行数</span><b class="mono">' + total.lines.toLocaleString() + "</b></div>";
@@ -2302,9 +2144,21 @@
     });
   }
 
+  function bindCaRefresh() {
+    var btn = $("ca-refresh");
+    if (!btn) return;
+    btn.addEventListener("click", async function () {
+      var st = $("ca-refresh-status");
+      if (st) st.textContent = "刷新中…";
+      await loadCodeAnalysis();
+      if (st) st.textContent = "已刷新 " + new Date().toLocaleTimeString();
+    });
+  }
+
   async function init() {
     bind();
     bindCaToggle();
+    bindCaRefresh();
     bindCgControls();
     bindCgRankButtons();
     bindCgChainControls();
