@@ -58,13 +58,19 @@ def _one_amino(info: dict, a: dict, chain_set: set[int]) -> dict | None:
     return _sec_amino_off_chain(info["mol"], a, chain_set)
 
 
+def _principal_amine_attachments(parent: dict) -> frozenset[int]:
+    facts = parent.get("principal_expression_facts")
+    return facts.attachment_atoms if facts and facts.group_class.value == "amine" else frozenset()
+
+
 def _extract_aminos(info: dict, parent: dict, parent_nh2_kinds: set) -> list[dict]:
-    if parent.get("kind") in parent_nh2_kinds:
+    principal = _principal_amine_attachments(parent)
+    if parent.get("kind") in parent_nh2_kinds and not principal:
         return []
     chain_set = set(parent.get("chain") or [])
     out: list[dict] = []
     for a in info.get("amines") or []:
         one = _one_amino(info, a, chain_set)
-        if one is not None:
+        if one is not None and one["attach_idx"] not in principal:
             out.append(one)
     return out

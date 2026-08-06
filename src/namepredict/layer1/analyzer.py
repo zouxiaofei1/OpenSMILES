@@ -265,6 +265,11 @@ def _amine_entry(atom, deg: int) -> dict:
     base = {"n_idx": atom.GetIdx(), "degree": deg}
     return {**base, "c_idxs": cs} if deg >= 2 else {**base, "c_idx": cs[0]}
 
+def _quaternary_ammonium_entries(mol: Mol) -> list[dict]:
+    return [{"n_idx": a.GetIdx(), "c_idxs": [n.GetIdx() for n in a.GetNeighbors()]}
+            for a in mol.GetAtoms() if a.GetAtomicNum() == N and a.GetFormalCharge() == 1
+            and len(a.GetNeighbors()) == 4 and all(n.GetAtomicNum() == C for n in a.GetNeighbors())]
+
 def _amine_entries(mol: Mol) -> list[dict]:
     return [
         _amine_entry(a, d) for a in mol.GetAtoms()
@@ -406,7 +411,7 @@ def _carbon_ids(mol: Mol) -> list[int]:
 
 def _fg_more_lists(parts: dict) -> dict:
     keys = (
-        "aldehydes", "amines", "nitriles", "double_bonds", "triple_bonds",
+        "aldehydes", "amines", "quaternary_ammoniums", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
         "nitros", "phosphates", "phosphonics", "carbamates", "carbonates",
         "sulfoxides", "isocyanates", "isothiocyanates", "ureas", "hydrazines",
@@ -467,6 +472,7 @@ def _p_fg_parts(mol: Mol) -> dict:
 def _fg_parts_b_core(mol: Mol) -> dict:
     return {
         "aldehydes": _aldehyde_entries(mol), "amines": _amine_entries(mol),
+        "quaternary_ammoniums": _quaternary_ammonium_entries(mol),
         "nitriles": _nitrile_entries(mol), "double_bonds": _double_bond_entries(mol),
         "triple_bonds": _triple_bond_entries(mol), "acyl_chlorides": _acyl_chloride_entries(mol),
         "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),

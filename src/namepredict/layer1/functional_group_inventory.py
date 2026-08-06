@@ -18,6 +18,7 @@ class FunctionalGroupClass(str, Enum):
     THIOL = "thiol"
     HYDRAZINE = "hydrazine"
     AMINE = "amine"
+    QUATERNARY_AMMONIUM = "quaternary_ammonium"
     BORONIC = "boronic"
     CARBAMATE = "carbamate"
     CARBONATE = "carbonate"
@@ -77,6 +78,7 @@ _LIST_CLASSES = {
     "thiols": FunctionalGroupClass.THIOL,
     "hydrazines": FunctionalGroupClass.HYDRAZINE,
     "amines": FunctionalGroupClass.AMINE,
+    "quaternary_ammoniums": FunctionalGroupClass.QUATERNARY_AMMONIUM,
     "boronics": FunctionalGroupClass.BORONIC,
     "carbamates": FunctionalGroupClass.CARBAMATE,
     "carbonates": FunctionalGroupClass.CARBONATE,

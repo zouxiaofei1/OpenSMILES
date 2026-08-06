@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from namepredict.layer2.scaffold.identity import ScaffoldIdentity, identity_of
+
 
 @dataclass(frozen=True)
 class NumberingPolicy:
@@ -26,6 +28,10 @@ class ScaffoldSpec:
     numbering: NumberingPolicy
     sub_rules: object | None = None
     principal_slots: object | None = None
+
+    @property
+    def identity(self) -> ScaffoldIdentity:
+        return identity_of(self)
 
 
 # Shared fused 5+6 path labels (IUPAC P-22.2.1 / P-25): hetero=1 … 7a.
@@ -252,6 +258,7 @@ _ALL_SPECS: tuple[ScaffoldSpec, ...] = (
     + POLY_CARBO_SPECS
 )
 _BY_ID: dict[str, ScaffoldSpec] = {s.id: s for s in _ALL_SPECS}
+_IDENTITIES: dict[str, ScaffoldIdentity] = {s.id: s.identity for s in _ALL_SPECS}
 
 
 _CYCLOALKANE_STEMS = {
@@ -265,6 +272,14 @@ _CYCLOALKANE_STEMS = {
 def cycloalkane_polyacid_stem(n: int) -> tuple[str, str] | None:
     """Parameterized C3–C10 stem facts for the cyclo polyacid ScaffoldSpec."""
     return _CYCLOALKANE_STEMS.get(n)
+
+
+def get_identity(spec_id: str) -> ScaffoldIdentity | None:
+    return _IDENTITIES.get(spec_id)
+
+
+def all_identities() -> tuple[ScaffoldIdentity, ...]:
+    return tuple(_IDENTITIES.values())
 
 
 def get_spec(spec_id: str) -> ScaffoldSpec | None:

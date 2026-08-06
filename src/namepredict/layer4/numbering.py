@@ -394,10 +394,65 @@ def _typed_ring_acid(parent: dict) -> bool:
                 facts.relation.value == "exocyclic")
 
 
+def _typed_group_atoms(parent: dict, group: str) -> list[int]:
+    facts = parent.get("principal_expression_facts")
+    return sorted(facts.attachment_atoms) if facts and facts.group_class.value == group else []
+
+
+def _typed_alcohol_parent(parent: dict, atoms: list[int]) -> dict:
+    fields = {"oh_c_idxs": atoms}
+    if len(atoms) == 1:
+        fields["oh_c_idx"] = atoms[0]
+    return {**parent, **fields}
+
+
+_TYPED_ALCOHOL_ORIENT_KINDS = frozenset({
+    "alcohol", "diol", "triol", "cycloalkane", "cycloalcohol",
+    "cycloalkanediol", "benzene", "phenol", "benzenediol",
+})
+
+
+def _typed_alcohol_orient(parent: dict, chain: list[int], subs: list) -> list[int] | None:
+    atoms = _typed_group_atoms(parent, "alcohol")
+    if not atoms or parent.get("kind") not in _TYPED_ALCOHOL_ORIENT_KINDS:
+        return None
+    typed = _typed_alcohol_parent(parent, atoms)
+    if parent.get("kind") in {"cycloalkane", "benzene", "phenol", "benzenediol"}:
+        return (_orient_ring_fixed(chain, typed, subs, "oh_c_idx") if len(atoms) == 1
+                else _orient_ring_pair(chain, typed, "oh_c_idxs", subs))
+    return _orient_alcohol(chain, typed, subs) if len(atoms) == 1 else _orient_polyol(chain, typed, subs)
+
+
+_TYPED_AMINE_ORIENT_KINDS = frozenset({
+    "amine", "diamine", "triamine", "tetraamine", "cycloalkane", "cycloamine",
+})
+
+
+def _typed_amine_orient(parent: dict, chain: list[int], subs: list) -> list[int] | None:
+    atoms = _typed_group_atoms(parent, "amine")
+    if not atoms or parent.get("kind") not in _TYPED_AMINE_ORIENT_KINDS:
+        return None
+    typed = {**parent, "amine_c_idx": atoms[0], "amine_c_idxs": atoms}
+    if parent.get("kind") == "cycloalkane" and len(atoms) == 1:
+        return _orient_ring_fixed(chain, typed, subs, "amine_c_idx")
+    return _orient_amine(chain, typed, subs) if len(atoms) == 1 else _orient_diamine(chain, typed, subs)
+
+
+def _typed_principal_orient(parent: dict, chain: list[int], subs: list) -> list[int] | None:
+    for orient in (_typed_alcohol_orient, _typed_amine_orient):
+        result = orient(parent, chain, subs)
+        if result is not None:
+            return result
+    return None
+
+
 def _orient_chain(parent: dict, substituents: list) -> list[int]:
     chain = list(parent.get("chain") or [])
     if not chain:
         return chain
+    typed = _typed_principal_orient(parent, chain, substituents)
+    if typed is not None:
+        return typed
     if _typed_ring_acid(parent):
         return _orient_ring_fixed(chain, parent, substituents, "ring_attach_idx")
     return _orient_by_kind(parent.get("kind"), chain, parent, substituents)
@@ -419,8 +474,22 @@ _AMINE_KINDS = (
     "benzoxazolamine", "benzimidazolamine", "naphthalenamine",
     "pyrazolamine", "thiazolamine", "quinazolinamine",
 )
+def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
+    chain = oriented.get("chain") or []
+    atoms = _typed_group_atoms(oriented, group)
+    kind, facts = oriented.get("kind"), oriented.get("numbering_scaffold")
+    required = oriented.get("numbering_scaffold_required", False)
+    return sorted(loc for atom in atoms
+                  if (loc := _atom_locant(chain, atom, kind, facts, required)) is not None)
+
+
+def _typed_alcohol_atoms(oriented: dict) -> list[int]:
+    return _typed_group_atoms(oriented, "alcohol")
+
+
 def _oh_locant(oriented: dict) -> int | None:
-    return _fg_locant(oriented, _OH_KINDS, "oh_c_idx")
+    locs = _typed_atom_locants(oriented, "alcohol")
+    return locs[0] if len(locs) == 1 else _fg_locant(oriented, _OH_KINDS, "oh_c_idx")
 def _sh_locant(oriented: dict) -> int | None:
     return _fg_locant(oriented, ("thiol",), "sh_c_idx")
 def _pair_locants(oriented: dict, kinds, key: str) -> list[int] | None:
@@ -442,13 +511,24 @@ def _scaffold_pair_locants(oriented: dict, key: str) -> list[int] | None:
     locs = [_atom_locant(chain, c, kind, facts, required) for c in cs if c in chain]
     return sorted(locs) if len(locs) == len(cs) and all(l is not None for l in locs) else None
 def _oh_locants(oriented: dict) -> list[int] | None:
+    locs = _typed_atom_locants(oriented, "alcohol")
+    if locs:
+        return locs
     if oriented.get("kind") in ("naphthalenediol", "quinolinediol"):
         return _scaffold_pair_locants(oriented, "oh_c_idxs")
     return _pair_locants(oriented, ("alcohol", "diol", "triol", "benzenediol", "cycloalkanediol"), "oh_c_idxs")
+def _typed_amine_atoms(oriented: dict) -> list[int]:
+    return _typed_group_atoms(oriented, "amine")
+
+
 def _amine_pair_locants(oriented: dict) -> list[int] | None:
+    locs = _typed_atom_locants(oriented, "amine")
+    if locs:
+        return locs
     return _pair_locants(oriented, ("diamine", "triamine", "tetraamine", "benzenediamine"), "amine_c_idxs")
 def _amine_locant(oriented: dict) -> int | None:
-    return _fg_locant(oriented, _AMINE_KINDS, "amine_c_idx")
+    locs = _typed_atom_locants(oriented, "amine")
+    return locs[0] if len(locs) == 1 else _fg_locant(oriented, _AMINE_KINDS, "amine_c_idx")
 def _typed_ketone_atoms(oriented: dict) -> list[int]:
     facts = oriented.get("principal_expression_facts")
     return sorted(facts.attachment_atoms) if facts and facts.group_class.value == "ketone" else []
@@ -501,14 +581,25 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "yne_locant": _yne_locant(oriented),
         "omit_yne_locant": _omit_unsat(n, kind, oriented),
     }
+def _typed_alcohol_numbering_kind(oriented: dict) -> str:
+    atoms = _typed_alcohol_atoms(oriented)
+    return "cycloalcohol" if len(atoms) == 1 and oriented.get("kind") == "cycloalkane" else oriented.get("kind")
+
+
+def _typed_amine_numbering_kind(oriented: dict) -> str:
+    atoms = _typed_amine_atoms(oriented)
+    return "cycloamine" if len(atoms) == 1 and oriented.get("kind") == "cycloalkane" else oriented.get("kind")
+
+
 def _oh_am_locants(oriented: dict, n: int, n_subs: int = 0) -> dict:
     oh, am = _oh_locant(oriented), _amine_locant(oriented)
-    kind = oriented.get("kind")
+    kind = _typed_alcohol_numbering_kind(oriented)
+    amine_kind = _typed_amine_numbering_kind(oriented)
     return {
         "oh_locant": oh, "oh_locants": _oh_locants(oriented),
         "omit_oh_locant": _omit_oh(oh, n, kind, oriented, n_subs),
         "amine_locant": am, "amine_locants": _amine_pair_locants(oriented),
-        "omit_amine_locant": _omit_amine(am, n, kind, n_subs),
+        "omit_amine_locant": _omit_amine(am, n, amine_kind, n_subs),
     }
 def _sh_locants(oriented: dict, n: int) -> dict:
     sh = _sh_locant(oriented)

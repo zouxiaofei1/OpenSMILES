@@ -21,6 +21,7 @@ class ParentSkeleton:
     topology: SkeletonTopology
     atom_ids: tuple[int, ...]
     covered_principal_ids: frozenset[str]
+    scaffold_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -69,9 +70,23 @@ def _ring_candidate(mol: Mol, system: dict, occurrences) -> ParentSkeleton | Non
     return ParentSkeleton(SkeletonTopology.RING_SYSTEM, tuple(sorted(atoms)), covered) if covered else None
 
 
+def _producer_scaffold_ids(info: dict) -> dict[frozenset[int], str]:
+    from namepredict.layer2 import kind_registry as registry
+    found = {}
+    for producer in registry.ring_try_fns():
+        parent = producer(info)
+        atoms = frozenset(parent.get("chain") or ()) if parent else frozenset()
+        if atoms and any(info["mol"].GetAtomWithIdx(i).IsInRing() for i in atoms):
+            found.setdefault(atoms, parent.get("scaffold_id") or parent.get("kind"))
+    return found
+
+
 def _ring_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     mol = info["mol"]
-    return [c for system in info.get("ring_systems") or () if (c := _ring_candidate(mol, system, occurrences))]
+    ids = _producer_scaffold_ids(info)
+    basic = [c for system in info.get("ring_systems") or () if (c := _ring_candidate(mol, system, occurrences))]
+    return [ParentSkeleton(c.topology, c.atom_ids, c.covered_principal_ids,
+                           ids.get(frozenset(c.atom_ids))) for c in basic]
 
 
 def _chain_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
@@ -123,17 +138,56 @@ def keep_p44_3(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[Parent
     return tuple(c for c in chains if p44_3_key(mol, c) == best)
 
 
-def keep_max_ring_system_size(candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
+def _ring_count(mol: Mol, skeleton: ParentSkeleton) -> int:
+    atoms = set(skeleton.atom_ids)
+    return sum(set(ring) <= atoms for ring in mol.GetRingInfo().AtomRings())
+
+
+def p44_2_key(mol: Mol, skeleton: ParentSkeleton) -> tuple:
+    numbers = [mol.GetAtomWithIdx(i).GetAtomicNum() for i in skeleton.atom_ids]
+    hetero = [z for z in numbers if z != C]
+    has_n = N in hetero
+    senior = next((len(_SENIOR_ATOMS) - i for i, z in enumerate(_SENIOR_ATOMS) if z in hetero), 0)
+    return bool(hetero), numbers.count(N) if has_n else 0, senior if not has_n else 0, _ring_count(mol, skeleton), len(numbers), len(hetero)
+
+
+def keep_p44_2(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
     rings = tuple(c for c in candidates if c.topology is SkeletonTopology.RING_SYSTEM)
-    if not rings:
-        return candidates
-    maximum = max(len(c.atom_ids) for c in rings)
-    return tuple(c for c in rings if len(c.atom_ids) == maximum)
+    best = max((p44_2_key(mol, c) for c in rings), default=())
+    return tuple(c for c in rings if p44_2_key(mol, c) == best)
 
 
 def keep_max_principal_coverage(candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
     maximum = max((len(c.covered_principal_ids) for c in candidates), default=0)
     return tuple(c for c in candidates if len(c.covered_principal_ids) == maximum)
+
+
+def _principal_multiple_edges(mol: Mol, occurrences) -> set[frozenset[int]]:
+    edges = set()
+    for occurrence in occurrences:
+        atoms = occurrence.characteristic_atoms
+        edges |= {frozenset((b.GetBeginAtomIdx(), b.GetEndAtomIdx())) for b in mol.GetBonds()
+                  if b.GetBondTypeAsDouble() > 1 and {b.GetBeginAtomIdx(), b.GetEndAtomIdx()} <= atoms}
+    return edges
+
+
+def p44_4_unsaturation_key(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -> tuple[int, int]:
+    atoms, excluded = set(skeleton.atom_ids), _principal_multiple_edges(mol, occurrences)
+    bonds = [b for b in mol.GetBonds() if not b.GetIsAromatic()
+             and {b.GetBeginAtomIdx(), b.GetEndAtomIdx()} <= atoms
+             and frozenset((b.GetBeginAtomIdx(), b.GetEndAtomIdx())) not in excluded]
+    return sum(b.GetBondTypeAsDouble() > 1 for b in bonds), sum(b.GetBondTypeAsDouble() == 2 for b in bonds)
+
+
+def keep_p44_4_unsaturation(mol: Mol, candidates: tuple[ParentSkeleton, ...], occurrences=()) -> tuple[ParentSkeleton, ...]:
+    best = max((p44_4_unsaturation_key(mol, c, occurrences) for c in candidates), default=())
+    return tuple(c for c in candidates if p44_4_unsaturation_key(mol, c, occurrences) == best)
+
+
+def _finish_skeleton_selection(info: dict, candidates, occurrences, unsupported) -> SkeletonSelection:
+    candidates = keep_p44_4_unsaturation(info["mol"], candidates, occurrences)
+    next_rule = "L4:P-44.4.1.3+" if candidates else None
+    return SkeletonSelection(candidates, next_rule, unsupported)
 
 
 def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> SkeletonSelection:
@@ -142,9 +196,10 @@ def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOcc
     candidates = keep_p44_1_2(info["mol"], candidates)
     topologies = {candidate.topology for candidate in candidates}
     if topologies == {SkeletonTopology.ACYCLIC}:
-        return SkeletonSelection(keep_p44_3(info["mol"], candidates), "P-44.4", enumerated.unsupported_ids)
-    candidates = keep_max_ring_system_size(candidates)
-    return SkeletonSelection(candidates, "P-44.2-complete" if candidates else None, enumerated.unsupported_ids)
+        candidates = keep_p44_3(info["mol"], candidates)
+    else:
+        candidates = keep_p44_2(info["mol"], candidates)
+    return _finish_skeleton_selection(info, candidates, occurrences, enumerated.unsupported_ids)
 
 
 def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> PrincipalSkeletons:

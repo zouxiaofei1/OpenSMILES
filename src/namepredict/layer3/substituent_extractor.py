@@ -281,13 +281,20 @@ def _extract_isocyanates(info: dict, parent: dict) -> list[dict]:
     return a + b
 
 
+def _principal_attachments(parent: dict, group: str) -> frozenset[int]:
+    facts = parent.get("principal_expression_facts")
+    return facts.attachment_atoms if facts and facts.group_class.value == group else frozenset()
+
+
 def _extract_hydroxys(info: dict, parent: dict) -> list[dict]:
-    if parent.get("kind") in _PARENT_OH_KINDS:
+    principal = _principal_attachments(parent, "alcohol")
+    if parent.get("kind") in _PARENT_OH_KINDS and not principal:
         return []
     chain = set(parent.get("chain") or [])
     return [
         _make_hydroxy(h["c_idx"], h["o_idx"])
-        for h in info.get("hydroxyls") or [] if h["c_idx"] in chain
+        for h in info.get("hydroxyls") or []
+        if h["c_idx"] in chain and h["c_idx"] not in principal
     ]
 
 

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from namepredict.layer2 import kind_registry as _kr
 from namepredict.layer2.parent_core import _longest_chain, _parent_dict
-from namepredict.layer2.parent_selector import _benzene_parent
+from namepredict.layer2.parent_selector import _benzene_parent, _quaternary_parent
 from namepredict.layer2.ring_parent import (
     _is_benzene_core,
     _is_simple_benzene,
@@ -107,7 +107,7 @@ def _principal_candidates(info: dict) -> list[dict]:
 
 
 def _collect_candidates(info: dict) -> list[dict]:
-    raw = _principal_candidates(info) + _ring_candidates(info) + [_benzene_candidate(info)]
+    raw = [_quaternary_parent(info)] + _principal_candidates(info) + _ring_candidates(info) + [_benzene_candidate(info)]
     raw += _unsat_candidates(info) + [_alkane_fallback(info)]
     return _dedupe_parents(_candidate_result(info, [c for c in raw if c is not None]))
 

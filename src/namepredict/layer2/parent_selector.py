@@ -233,19 +233,44 @@ def _n_arms(info: dict, deg: int) -> list[list[int]] | None:
     arms = [_longest_from(mol, c, set()) for c in cs]
     return arms if all(_arm_ok(mol, a, n_idx) for a in arms) else None
 def _amine_sat_ok(info: dict) -> bool: return _no_fgs(info, _CORE_BAD) and not (info.get("has_alkene") or info.get("has_alkyne"))
+def _amine_arm_fields(info: dict, degree: int, parent: list[int], rest: list[list[int]]) -> dict:
+    from namepredict.layer2.amine_expression import build_amine_arm_facts
+    amine = _amine_of_deg(info, degree)
+    facts = build_amine_arm_facts(amine["n_idx"], degree, parent, rest)
+    return {"amine_c_idx": parent[0], "neutral_amine_arm_facts": facts}
+
+
 def _sec_amine_parent(info: dict) -> dict | None:
     if not _amine_sat_ok(info): return None
     arms = _n_arms(info, 2)
     if arms is None: return None
-    mol = info["mol"]
-    parent, rest = _pick_amine_arms(mol, arms)
-    return _parent_dict(parent, "sec_amine", amine_c_idx=parent[0], n_alkyl_n=len(rest[0]))
+    parent, rest = _pick_amine_arms(info["mol"], arms)
+    fields = _amine_arm_fields(info, 2, parent, rest)
+    return _parent_dict(parent, "sec_amine", n_alkyl_n=len(rest[0]), **fields)
 def _tert_amine_parent(info: dict) -> dict | None:
     if not _amine_sat_ok(info): return None
     arms = _n_arms(info, 3)
     if arms is None: return None
     parent, rest = _pick_amine_arms(info["mol"], arms)
-    return _parent_dict(parent, "tert_amine", amine_c_idx=parent[0], n_alkyl_ns=[len(a) for a in rest])
+    fields = _amine_arm_fields(info, 3, parent, rest)
+    return _parent_dict(parent, "tert_amine", n_alkyl_ns=[len(a) for a in rest], **fields)
+def _quaternary_fields(entry: dict, arms: list[list[int]], parent: list[int], rest: list[list[int]]) -> dict:
+    owned = frozenset([entry["n_idx"], *(i for arm in arms for i in arm)])
+    return {"n_idx": entry["n_idx"], "owned_atoms": owned,
+            "quaternary_arm_lengths": [len(parent), *[len(a) for a in rest]]}
+
+
+def _quaternary_parent(info: dict) -> dict | None:
+    entries = info.get("quaternary_ammoniums") or []
+    if len(entries) != 1 or not _amine_sat_ok(info):
+        return None
+    entry = entries[0]
+    arms = [_longest_from(info["mol"], c, set()) for c in entry["c_idxs"]]
+    if not all(_arm_ok(info["mol"], arm, entry["n_idx"]) for arm in arms):
+        return None
+    parent, rest = _pick_amine_arms(info["mol"], arms)
+    return _parent_dict(parent, "tetraalkylammonium", **_quaternary_fields(entry, arms, parent, rest))
+
 def _primary_amine_parent(info: dict) -> dict:
     aliph = _aliphatic_entries(info, "amines")
     prim = next((a for a in aliph if "c_idx" in a), None)

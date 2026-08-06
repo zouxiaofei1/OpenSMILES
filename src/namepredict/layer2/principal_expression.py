@@ -131,13 +131,6 @@ def _is_benzene(info: dict, skeleton: ParentSkeleton) -> bool:
         for i in skeleton.atom_ids)
 
 
-def _retained_scaffold_id(info: dict, skeleton: ParentSkeleton) -> str | None:
-    from namepredict.layer2.retained_registry import match_systems
-    atoms = set(skeleton.atom_ids)
-    return next((sid for sid, system, _ in match_systems(info)
-                 if set(system.get("atom_ids") or ()) == atoms), None)
-
-
 def _carbocycle_kind(mol, skeleton: ParentSkeleton) -> str:
     atoms = set(skeleton.atom_ids)
     unsaturated = sum(
@@ -151,6 +144,8 @@ def _carbocycle_kind(mol, skeleton: ParentSkeleton) -> str:
 def _ring_ketone_kind(selection, skeleton: ParentSkeleton, count: int) -> str | None:
     if selection.group_class is not FunctionalGroupClass.KETONE:
         return None
+    if skeleton.scaffold_id and skeleton.scaffold_id not in {"cycloalkane", "cycloketone", "cycloalkanedione"}:
+        return None
     anchors = {i for o in selection.occurrences for i in o.parent_anchors}
     if not anchors or not anchors <= set(skeleton.atom_ids):
         return None
@@ -160,18 +155,26 @@ def _ring_ketone_kind(selection, skeleton: ParentSkeleton, count: int) -> str | 
 def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
     mol = info["mol"]
     if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in skeleton.atom_ids):
-        return _retained_scaffold_id(info, skeleton)
+        return None
     all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
     return _carbocycle_kind(mol, skeleton) if all_carbon else None
+
+
+def _resolved_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
+    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
+    scaffold = resolve_ring_scaffold(info, skeleton)
+    return scaffold.id if scaffold and scaffold.id != "carbocycle" else _generic_ring_kind(info, skeleton)
 
 
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int) -> str | None:
     ketone = _ring_ketone_kind(selection, skeleton, count)
     if ketone:
         return ketone
+    if selection.group_class is FunctionalGroupClass.AMINE and count != 1:
+        return None
     if _is_benzene(info, skeleton) and count == 1:
         return _RETAINED_RING_KINDS.get(selection.group_class)
-    return _generic_ring_kind(info, skeleton)
+    return _resolved_ring_kind(info, skeleton)
 
 
 def _ring_fields(selection: PrincipalGroupSelection, occurrences) -> dict:
@@ -194,6 +197,17 @@ def _ring_fact_fields(fields: dict, facts: PrincipalExpressionFacts) -> dict:
     return {**fields, **extra}
 
 
+def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None) -> dict:
+    from namepredict.layer2.ring_expression_policy import supports_ring_expression
+    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
+    scaffold = resolve_ring_scaffold(info, skeleton)
+    if not scaffold:
+        return {}
+    supported = supports_ring_expression(scaffold, facts) if facts else False
+    return {"scaffold_id": scaffold.id, "scaffold_identity": scaffold,
+            "typed_ring_expression_supported": supported}
+
+
 def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
                            skeleton: ParentSkeleton) -> dict | None:
     if skeleton.topology is not SkeletonTopology.RING_SYSTEM:
@@ -203,7 +217,8 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     if kind is None:
         return None
     facts = _facts(selection, skeleton, occurrences, info["mol"])
-    fields = _ring_fact_fields(_ring_fields(selection, occurrences), facts)
+    fields = {**_ring_fact_fields(_ring_fields(selection, occurrences), facts),
+              **_scaffold_fields(info, skeleton, facts)}
     return _parent_dict(kind, skeleton, occurrences, fields, facts)
 
 

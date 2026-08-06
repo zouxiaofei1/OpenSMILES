@@ -70,9 +70,16 @@ def _open_chain_expression(selection: PrincipalParentSelection, info: dict) -> d
         FunctionalGroupClass.ALDEHYDE: builders._aldehyde_parent,
         FunctionalGroupClass.KETONE: builders._ketone_parent,
         FunctionalGroupClass.NITRILE: builders._nitrile_parent,
+        FunctionalGroupClass.AMINE: builders._amine_parent,
     }
     builder = builders_by_class.get(group_class)
     return builder(info) if builder else None
+
+
+def _unsupported_typed_ring(parent: dict, selection: PrincipalParentSelection) -> bool:
+    return (selection.principal.group_class is FunctionalGroupClass.KETONE
+            and parent.get("scaffold_identity") is not None
+            and parent.get("typed_ring_expression_supported") is False)
 
 
 def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[dict]:
@@ -81,9 +88,27 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
         parent = (express_ring_principal(info, selection.principal, skeleton)
                   if skeleton.topology is SkeletonTopology.RING_SYSTEM
                   else express_chain_principal(selection.principal, skeleton))
-        if parent is not None:
+        if parent is not None and not _unsupported_typed_ring(parent, selection):
             parents.append(parent)
     return parents
+
+
+def _retained_ketone_skeleton(selection: PrincipalParentSelection) -> bool:
+    if selection.principal.group_class is not FunctionalGroupClass.KETONE:
+        return False
+    anchors = {a for o in selection.principal.occurrences for a in o.parent_anchors}
+    generic = {None, "cycloalkane", "cycloketone", "cycloalkanedione"}
+    return any(anchors <= set(s.atom_ids) and s.scaffold_id not in generic
+               for s in selection.skeletons.candidates)
+
+
+def _needs_special(selection: PrincipalParentSelection, parents: list[dict]) -> bool:
+    if _retained_ketone_skeleton(selection):
+        return False
+    if selection.principal.group_class is not FunctionalGroupClass.KETONE:
+        return True
+    facts = [p.get("principal_expression_facts") for p in parents]
+    return not parents or any(f and f.relation.value == "exocyclic" for f in facts)
 
 
 def rule_driven_parent_candidates(info: dict) -> list[dict]:
@@ -91,7 +116,9 @@ def rule_driven_parent_candidates(info: dict) -> list[dict]:
     if selection.principal is None or selection.skeletons is None:
         return []
     parents = _express_selected(selection, info)
-    special = _owned(_special_expression(selection, info), selection)
+    special = _owned(_special_expression(selection, info), selection) if _needs_special(selection, parents) else None
     extra = [special] if special else []
-    typed_first = selection.principal.group_class is FunctionalGroupClass.KETONE
+    typed_first = selection.principal.group_class in {
+        FunctionalGroupClass.KETONE, FunctionalGroupClass.AMINE,
+    }
     return parents + extra if typed_first and parents else extra + parents

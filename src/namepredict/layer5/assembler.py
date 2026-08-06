@@ -402,7 +402,29 @@ def _oh_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind in ("diol", "triol"):
         return _unsat_polyol_names(n, numbered) or _polyol_names(n, numbered.get("oh_locants"), kind)
     return None
+_Q_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
+_Q_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
+_Q_MULT_EN = {2: "di", 3: "tri", 4: "tetra"}
+_Q_MULT_ZH = {2: "二", 3: "三", 4: "四"}
+
+
+def _quaternary_radicals(lengths: list[int]) -> tuple[str, str]:
+    counts = {n: lengths.count(n) for n in set(lengths)}
+    en = "".join(f"{_Q_MULT_EN.get(c, '')}{_Q_EN[n]}" for n, c in sorted(counts.items(), key=lambda x: _Q_EN[x[0]]))
+    zh = "".join(f"{_Q_MULT_ZH.get(c, '')}{_Q_ZH[n]}" for n, c in sorted(counts.items(), reverse=True))
+    return en, zh
+
+
+def _tetraalkylammonium_names(numbered: dict) -> tuple[str, str] | None:
+    lengths = (numbered.get("parent") or {}).get("quaternary_arm_lengths")
+    if not lengths or any(n not in _Q_EN for n in lengths):
+        return None
+    en, zh = _quaternary_radicals(lengths)
+    return f"{en}ammonium", f"{zh}铵"
+
 def _amine_kind_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    if kind == "tetraalkylammonium":
+        return _tetraalkylammonium_names(numbered)
     if kind in ("diamine", "triamine", "tetraamine"):
         return _polyamine_names(n, numbered.get("amine_locants"), kind)
     if kind == "benzenediamine":
@@ -504,14 +526,57 @@ def _typed_ketone_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "ketone":
         return kind
-    cyclic = kind in {"cycloketone", "cycloalkanedione"}
-    if cyclic:
+    if kind in {"cycloalkane", "cycloketone", "cycloalkanedione"}:
         return "cycloketone" if facts.multiplicity == 1 else "cycloalkanedione"
+    if kind not in {"ketone", "dione"}:
+        return kind
     return "ketone" if facts.multiplicity == 1 else "dione"
 
 
+def _typed_ring_alcohol_kind(kind: str, numbered: dict, facts) -> str | None:
+    if kind in {"cycloalkane", "cycloalcohol", "cycloalkanediol"}:
+        return "cycloalcohol" if facts.multiplicity == 1 else "cycloalkanediol"
+    if kind in {"benzene", "phenol", "benzenediol"}:
+        return "phenol" if facts.multiplicity == 1 else "benzenediol"
+    parent = numbered.get("parent") or {}
+    scaffold = parent.get("scaffold_identity")
+    if parent.get("typed_ring_expression_supported") and scaffold and scaffold.id == "naphthalene":
+        return "naphthalenol" if facts.multiplicity == 1 else "naphthalenediol"
+    return None
+
+
+def _typed_alcohol_kind(kind: str, numbered: dict) -> str:
+    facts = (numbered.get("parent") or {}).get("principal_expression_facts")
+    if not facts or facts.group_class.value != "alcohol":
+        return kind
+    ring_kind = _typed_ring_alcohol_kind(kind, numbered, facts)
+    if ring_kind:
+        return ring_kind
+    if kind not in {"alcohol", "diol", "triol"}:
+        return kind
+    return "alcohol" if facts.multiplicity == 1 else "diol" if facts.multiplicity == 2 else "triol"
+
+
+def _typed_amine_kind(kind: str, numbered: dict) -> str:
+    facts = (numbered.get("parent") or {}).get("principal_expression_facts")
+    if not facts or facts.group_class.value != "amine":
+        return kind
+    if kind in {"cycloalkane", "cycloamine"} and facts.multiplicity == 1:
+        return "cycloamine"
+    if kind not in {"amine", "diamine", "triamine", "tetraamine"}:
+        return kind
+    return {1: "amine", 2: "diamine", 3: "triamine", 4: "tetraamine"}.get(facts.multiplicity, kind)
+
+
+def _typed_expression_kind(kind: str, numbered: dict) -> str:
+    kind = _typed_acid_kind(kind, numbered)
+    kind = _typed_ketone_kind(kind, numbered)
+    kind = _typed_alcohol_kind(kind, numbered)
+    return _typed_amine_kind(kind, numbered)
+
+
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    kind = _typed_ketone_kind(_typed_acid_kind(kind, numbered), numbered)
+    kind = _typed_expression_kind(kind, numbered)
     from namepredict.layer5.phosphate_names import p_fg_names
     from namepredict.layer5.special_fg_names import special_fg_names
     top = special_fg_names(kind, n, numbered) or p_fg_names(kind, n, numbered)
@@ -594,7 +659,7 @@ from namepredict.layer5.assembler_prefixes import _build_prefix, _prefix_for
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     from namepredict.layer5.stereo_rs import apply_rs_prefix
     kind, n = _parent_n(numbered)
-    effective_kind = _typed_ketone_kind(_typed_acid_kind(kind, numbered), numbered)
+    effective_kind = _typed_expression_kind(kind, numbered)
     names = _names_for(effective_kind, n, numbered)
     if not names:
         return _unsupported(n, kind)
