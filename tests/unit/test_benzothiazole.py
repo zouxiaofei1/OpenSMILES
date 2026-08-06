@@ -11,7 +11,7 @@ import pytest
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.benzothiazole import (
+from namepredict.layer2.scaffold.benzazole import (
     _try_benzothiazole_parent,
     _try_benzothiazolamine_parent,
 )

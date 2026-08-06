@@ -79,7 +79,7 @@ def _benzoquinone_core(info: dict) -> list:
 @_register
 def _ortho_benzoquinone_core(info: dict) -> list:
     from namepredict.layer2.scaffold.benzoquinone import _bq_ring, _ketone_idxs
-    from namepredict.layer2.scaffold.ortho_benzoquinone import _ketones_ortho
+    from namepredict.layer2.scaffold.benzoquinone import _ketones_ortho
 
     ring = _bq_ring(info)
     if ring is None:
