@@ -20,6 +20,9 @@
     callGraph: "/api/v1/call-graph",
     callGraphSvg: "/api/v1/call-graph/svg",
     debug: "/api/v1/debug",
+    settings: "/api/v1/settings",
+    wiki: "/api/v1/wiki",
+    wikiDoc: "/api/v1/wiki/doc",
   };
 
   const LIVE_NAME_DEBOUNCE_MS = 20;
@@ -341,6 +344,8 @@
     var caPage = document.getElementById("code-analysis-page");
     var cgPage = document.getElementById("call-graph-page");
     var debugPage = document.getElementById("debug-page");
+    var settingsPage = document.getElementById("settings-page");
+    var wikiPage = document.getElementById("wiki-page");
     // Hide all first
     if (namerLayout) namerLayout.classList.add("hidden");
     if (bmPage) bmPage.classList.add("hidden");
@@ -349,6 +354,8 @@
     if (caPage) caPage.classList.add("hidden");
     if (cgPage) cgPage.classList.add("hidden");
     if (debugPage) debugPage.classList.add("hidden");
+    if (settingsPage) settingsPage.classList.add("hidden");
+    if (wikiPage) wikiPage.classList.add("hidden");
     // Stop polling
     stopBmPolling();
     stopBrPolling();
@@ -372,6 +379,12 @@
       loadCallGraph();
     } else if (name === "debug") {
       if (debugPage) debugPage.classList.remove("hidden");
+    } else if (name === "settings") {
+      if (settingsPage) settingsPage.classList.remove("hidden");
+      loadSettings();
+    } else if (name === "wiki") {
+      if (wikiPage) wikiPage.classList.remove("hidden");
+      loadWiki();
     } else {
       if (namerLayout) namerLayout.classList.remove("hidden");
     }
@@ -2155,13 +2168,159 @@
     });
   }
 
+  /* ---------- Settings ---------- */
+
+  function settings$(id) {
+    return document.getElementById("settings-" + id);
+  }
+
+  function applyTheme(theme) {
+    var t = theme === "light" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", t);
+    try { localStorage.setItem("chem-theme", t); } catch (_) {}
+  }
+
+  function initTheme() {
+    var t = null;
+    try { t = localStorage.getItem("chem-theme"); } catch (_) {}
+    if (t !== "light" && t !== "dark") t = "dark";
+    applyTheme(t);
+    var sel = settings$("theme");
+    if (sel) sel.value = t;
+  }
+
+  function fillApiKeyHint(s) {
+    var hint = settings$("api-key-hint");
+    if (!hint) return;
+    hint.textContent = s && s.api_key_configured
+      ? "已配置（……" + (s.api_key_hint || "") + "），留空保持不变"
+      : "未配置 API Key";
+  }
+
+  async function loadSettings() {
+    try {
+      var data = await api(API.settings);
+      if (!data || !data.ok) throw new Error((data && data.error) || "加载失败");
+      var s = data.settings || {};
+      if (settings$("model")) settings$("model").value = s.model || "";
+      if (settings$("base-url")) settings$("base-url").value = s.base_url || "";
+      if (settings$("concurrency")) settings$("concurrency").value = s.concurrency || 1;
+      if (settings$("theme")) settings$("theme").value = s.theme || "dark";
+      fillApiKeyHint(s);
+      applyTheme(s.theme || "dark");
+    } catch (err) {
+      var st = settings$("status");
+      if (st) st.textContent = "加载失败: " + (err.message || err);
+    }
+  }
+
+  async function saveSettings() {
+    var body = {
+      model: settings$("model") ? settings$("model").value.trim() : "",
+      base_url: settings$("base-url") ? settings$("base-url").value.trim() : "",
+      concurrency: parseInt((settings$("concurrency") && settings$("concurrency").value) || "1", 10) || 1,
+      theme: settings$("theme") ? settings$("theme").value : "dark",
+    };
+    var ak = settings$("api-key");
+    if (ak && ak.value && ak.value.trim()) body.api_key = ak.value.trim();
+
+    var st = settings$("status");
+    if (st) { st.textContent = "保存中…"; st.className = "chip"; }
+    try {
+      var data = await api(API.settings, { method: "POST", body: JSON.stringify(body) });
+      if (!data || !data.ok) throw new Error((data && data.error) || "保存失败");
+      if (ak) ak.value = "";
+      var s = data.settings || {};
+      fillApiKeyHint(s);
+      applyTheme(s.theme || "dark");
+      if (st) { st.textContent = "已保存 " + new Date().toLocaleTimeString(); st.className = "chip accent"; }
+    } catch (err) {
+      if (st) { st.textContent = "保存失败: " + (err.message || err); st.className = "chip warn"; }
+    }
+  }
+
+  function bindSettingsControls() {
+    var saveBtn = document.getElementById("settings-save");
+    if (saveBtn) saveBtn.addEventListener("click", saveSettings);
+    var themeSel = settings$("theme");
+    if (themeSel) {
+      themeSel.addEventListener("change", function () {
+        applyTheme(themeSel.value);
+      });
+    }
+  }
+
+  /* ---------- Wiki ---------- */
+
+  function renderWikiTree(entry, depth) {
+    var html = "";
+    if (entry.name !== "wiki") {
+      html +=
+        '<details class="wiki-dir" data-path="' + escapeHtml(entry.path) + '"' + (depth === 0 ? " open" : "") + ">" +
+        '<summary style="padding-left:' + (depth * 14 + 4) + 'px">' + escapeHtml(entry.name) + "</summary>";
+    }
+    entry.files.forEach(function (f) {
+      html += '<div class="wiki-file" data-path="' + escapeHtml(f.path) + '" style="padding-left:' + ((depth + 1) * 14 + 8) + 'px">' + escapeHtml(f.name) + "</div>";
+    });
+    entry.dirs.forEach(function (d) {
+      html += renderWikiTree(d, depth + 1);
+    });
+    if (entry.name !== "wiki") html += "</details>";
+    return html;
+  }
+
+  async function loadWiki() {
+    try {
+      var data = await api(API.wiki);
+      if (!data || !data.ok) throw new Error((data && data.error) || "加载失败");
+      var treeEl = $("wiki-tree");
+      if (treeEl) treeEl.innerHTML = renderWikiTree(data.tree, 0);
+      loadWikiDoc("index.md");
+    } catch (err) {
+      var doc = $("wiki-doc");
+      if (doc) doc.innerHTML = '<p class="muted-text">加载失败: ' + escapeHtml(err.message || err) + "</p>";
+    }
+  }
+
+  async function loadWikiDoc(path) {
+    try {
+      var data = await api(API.wikiDoc + "?path=" + encodeURIComponent(path));
+      if (!data || !data.ok) throw new Error((data && data.error) || "加载失败");
+      var doc = $("wiki-doc");
+      var body = typeof marked !== "undefined" && marked.parse
+        ? marked.parse(data.content)
+        : escapeHtml(data.content);
+      if (doc) doc.innerHTML = '<div class="wiki-title">' + escapeHtml(data.name) + "</div>" + body;
+      document.querySelectorAll(".wiki-file.active").forEach(function (el) {
+        el.classList.remove("active");
+      });
+      var sel = document.querySelector('.wiki-file[data-path="' + CSS.escape(path) + '"]');
+      if (sel) sel.classList.add("active");
+    } catch (err) {
+      var doc = $("wiki-doc");
+      if (doc) doc.innerHTML = '<p class="muted-text">加载失败: ' + escapeHtml(err.message || err) + "</p>";
+    }
+  }
+
+  function bindWikiControls() {
+    var tree = $("wiki-tree");
+    if (!tree) return;
+    tree.addEventListener("click", function (ev) {
+      var f = ev.target.closest(".wiki-file");
+      if (f) loadWikiDoc(f.getAttribute("data-path"));
+    });
+  }
+
   async function init() {
     bind();
+    initTheme();
     bindCaToggle();
     bindCaRefresh();
     bindCgControls();
     bindCgRankButtons();
     bindCgChainControls();
+    bindSettingsControls();
+    bindWikiControls();
     renderNamerHistory();
     ensureKetcher();
   }

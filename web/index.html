@@ -29,6 +29,8 @@
           <button class="tab" data-page="code-analysis">代码量分析</button>
           <button class="tab" data-page="call-graph">调用链</button>
           <button class="tab" data-page="debug">Pipeline Debug</button>
+          <button class="tab" data-page="settings">设置</button>
+          <button class="tab" data-page="wiki">Wiki</button>
         </nav>
       </div>
     </header>
@@ -390,9 +392,70 @@
           </div>
         </div>
       </div>
+      <!-- Wiki Page -->
+      <div id="wiki-page" class="wiki-page hidden" role="tabpanel" aria-labelledby="tab-wiki">
+        <div class="wiki-layout">
+          <aside class="wiki-sidebar">
+            <div class="wiki-sidebar-head">docs/wiki</div>
+            <div id="wiki-tree" class="wiki-tree"></div>
+          </aside>
+          <section class="wiki-content">
+            <div id="wiki-doc" class="wiki-doc">
+              <p class="muted-text">选择左侧文档查看</p>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Settings Page -->
+      <div id="settings-page" class="settings-page hidden" role="tabpanel" aria-labelledby="tab-settings">
+        <div class="card settings-card">
+          <div class="card-head row-between">
+            <h3 class="card-title">设置</h3>
+            <span id="settings-status" class="chip">未保存</span>
+          </div>
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label class="field-label" for="settings-model">模型名 / Model</label>
+              <input id="settings-model" class="input" type="text" placeholder="deepseek-v4-pro"
+                     autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="settings-field">
+              <label class="field-label" for="settings-base-url">网站 / Base URL</label>
+              <input id="settings-base-url" class="input mono" type="text" placeholder="https://api.deepseek.com"
+                     autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="settings-field">
+              <label class="field-label" for="settings-api-key">API Key</label>
+              <input id="settings-api-key" class="input mono" type="password" placeholder="未配置"
+                     autocomplete="new-password" spellcheck="false" />
+              <p id="settings-api-key-hint" class="muted-text small"></p>
+            </div>
+            <div class="settings-field">
+              <label class="field-label" for="settings-concurrency">LLM 并发</label>
+              <input id="settings-concurrency" class="input" type="number" value="1" min="1" max="64" style="width:120px" />
+              <span class="muted-text small">layer LLM 请求并发（1 = 串行）</span>
+            </div>
+            <div class="settings-field">
+              <label class="field-label" for="settings-theme">主题 / Theme</label>
+              <select id="settings-theme" class="input" style="width:140px">
+                <option value="dark">暗色 Dark</option>
+                <option value="light">亮色 Light</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button id="settings-save" class="btn btn-primary" type="button">保存设置</button>
+          </div>
+          <p class="muted-text small" style="margin-top:var(--space-xl)">
+            LLM 配置在下次 layer LLM 生成 / 单物质分析时生效；主题即时切换。
+          </p>
+        </div>
+      </div>
     </main>
   </div>
   <script src="/vendor/smiles-drawer.min.js"></script>
+  <script src="/vendor/marked.min.js"></script>
   <script src="/js/namer-ketcher.js"></script>
   <script src="/js/app.js" defer></script>
 </body>

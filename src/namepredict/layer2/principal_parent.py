@@ -44,6 +44,7 @@ def _special_expression(selection: PrincipalParentSelection, info: dict) -> dict
     return _open_chain_expression(selection, info)
 
 def _open_chain_expression(selection: PrincipalParentSelection, info: dict) -> dict | None:
+    #return None
     if len(selection.principal.occurrences) != 1 or info["mol"].GetRingInfo().NumRings():
         return None
     group_class = selection.principal.group_class
@@ -52,7 +53,7 @@ def _open_chain_expression(selection: PrincipalParentSelection, info: dict) -> d
         FunctionalGroupClass.ESTER: builders._ester_parent,
         FunctionalGroupClass.AMIDE: builders._amide_parent,
         FunctionalGroupClass.ALDEHYDE: builders._aldehyde_parent,
-        FunctionalGroupClass.KETONE: builders._ketone_parent,
+        #FunctionalGroupClass.KETONE: builders._ketone_parent,
         FunctionalGroupClass.NITRILE: builders._nitrile_parent,
         FunctionalGroupClass.AMINE: builders._amine_parent,
     }
