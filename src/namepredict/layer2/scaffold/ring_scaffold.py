@@ -18,8 +18,8 @@ def _producer_scaffold_ids(info: dict) -> dict[frozenset[int], str]:
 
     `ring_core` matches mother rings WITHOUT the substituent/outside/FG gates,
     so substituted mothers (e.g. 2,3,6-trimethylquinoline) are still tagged.
-    FG-variant retained names (benzofuranamine, ...) are NOT covered here —
-    `_producer_id` falls back to the full producers lazily for those skeletons.
+    The full ring producers are NOT consulted here: a fallback over
+    `ring_try_fns` never hit on real data and was removed.
     """
     cache = info.get("_scaffold_ids")
     if cache is not None:
@@ -34,23 +34,14 @@ def _producer_scaffold_ids(info: dict) -> dict[frozenset[int], str]:
 
 
 def _producer_id(info: dict, skeleton: ParentSkeleton) -> str | None:
-    # 开链骨架不是环母体：直接短路，避免为每个开链候选跑完整 producer 兜底。
+    # 开链骨架不是环母体：直接短路。
     from namepredict.layer2.parent_skeleton import SkeletonTopology
 
     if skeleton.topology is not SkeletonTopology.RING_SYSTEM:
         return None
-    key = frozenset(skeleton.atom_ids)
-    if key in (found := _producer_scaffold_ids(info)):
-        return found[key]
-    # Core table missed this skeleton (FG-variant retained name): lazily ask the
-    # full producers for exactly this ring-atom set.
-    from namepredict.layer2 import kind_registry as registry
-    for producer in registry.ring_try_fns():
-        parent = producer(info)
-        atoms = frozenset(parent.get("chain") or ()) if parent else frozenset()
-        if atoms == key:
-            return parent.get("scaffold_id") or parent.get("kind")
-    return None
+    # 只查 core 表缓存。完整的 producer 回退曾是死代码（真实数据上从未命中，
+    # 且会抢占羰基母环的专用 core 适配器），已删除。
+    return _producer_scaffold_ids(info).get(frozenset(skeleton.atom_ids))
 
 
 def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:

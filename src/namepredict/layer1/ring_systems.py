@@ -10,14 +10,11 @@ from rdkit.Chem import Mol
 
 from namepredict.constants import C
 
-
 def _sssr(mol: Mol) -> list[tuple[int, ...]]:
     return list(mol.GetRingInfo().AtomRings())
 
-
 def _shared(a: tuple[int, ...], b: tuple[int, ...]) -> frozenset[int]:
     return frozenset(a) & frozenset(b)
-
 
 def _ring_adjacent(ring: tuple[int, ...], a: int, b: int) -> bool:
     """True if a and b are adjacent (consecutive) in the ring."""
@@ -27,7 +24,6 @@ def _ring_adjacent(ring: tuple[int, ...], a: int, b: int) -> bool:
            (ring[i] == b and ring[(i + 1) % n] == a):
             return True
     return False
-
 
 def _fusion_edges(rings: list[tuple[int, ...]]) -> list[tuple[int, int, frozenset[int]]]:
     """Edges (i, j, shared_atoms) for pairs sharing >=2 atoms."""
@@ -39,30 +35,6 @@ def _fusion_edges(rings: list[tuple[int, ...]]) -> list[tuple[int, int, frozense
                 out.append((i, j, sh))
     return out
 
-
-def _bridged_edges(rings: list[tuple[int, ...]]) -> list[tuple[int, int, frozenset[int]]]:
-    """Edges (i, j, shared_atoms) for pairs sharing >=3 atoms (bridged)."""
-    out: list[tuple[int, int, frozenset[int]]] = []
-    for i, ri in enumerate(rings):
-        for j in range(i + 1, len(rings)):
-            sh = _shared(ri, rings[j])
-            if len(sh) >= 3:
-                out.append((i, j, sh))
-    return out
-
-
-def _is_bridged_component(rings: list[tuple[int, ...]], members: list[int],
-                          fusion_edges: list) -> bool:
-    """True if a set of rings forms a bridged (not fused) system.
-
-    Criterion: any pair of rings in the component shares 3+ atoms."""
-    mset = set(members)
-    for i, j, sh in fusion_edges:
-        if i in mset and j in mset and len(sh) >= 3:
-            return True
-    return False
-
-
 def _spiro_pairs(rings: list[tuple[int, ...]]) -> list[tuple[int, int, int]]:
     """Pairs sharing exactly 1 atom: (i, j, atom)."""
     out: list[tuple[int, int, int]] = []
@@ -73,19 +45,16 @@ def _spiro_pairs(rings: list[tuple[int, ...]]) -> list[tuple[int, int, int]]:
                 out.append((i, j, next(iter(sh))))
     return out
 
-
 def _uf_find(parent: list[int], x: int) -> int:
     while parent[x] != x:
         parent[x] = parent[parent[x]]
         x = parent[x]
     return x
 
-
 def _uf_union(parent: list[int], a: int, b: int) -> None:
     ra, rb = _uf_find(parent, a), _uf_find(parent, b)
     if ra != rb:
         parent[rb] = ra
-
 
 def _components(n: int, edges: list[tuple[int, int, frozenset[int]]]) -> list[list[int]]:
     """Union-find components over ring indices."""
@@ -97,7 +66,6 @@ def _components(n: int, edges: list[tuple[int, int, frozenset[int]]]) -> list[li
         buckets.setdefault(_uf_find(parent, i), []).append(i)
     return list(buckets.values())
 
-
 def _hetero_atoms(mol: Mol, atom_ids: set[int]) -> list[dict]:
     out: list[dict] = []
     for i in sorted(atom_ids):
@@ -106,12 +74,10 @@ def _hetero_atoms(mol: Mol, atom_ids: set[int]) -> list[dict]:
             out.append({"idx": i, "Z": z})
     return out
 
-
 def _is_arom_mancude(mol: Mol, atom_ids: set[int]) -> bool:
     if not atom_ids:
         return False
     return all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atom_ids)
-
 
 def _topology(n_rings: int, n_fusion: int, has_spiro: bool,
               is_bridged: bool = False) -> str:
@@ -125,7 +91,6 @@ def _topology(n_rings: int, n_fusion: int, has_spiro: bool,
         return "spiro"
     return "other"
 
-
 def _non_adjacent_pairs(mrings, shared):
     """Return bridgehead atoms: shared atoms not adjacent in at least one ring."""
     sh_list, bh_set = sorted(shared), set()
@@ -135,20 +100,17 @@ def _non_adjacent_pairs(mrings, shared):
                 bh_set.add(a); bh_set.add(b)
     return bh_set
 
-
 def _bridgeheads(rings: list[tuple[int, ...]], members: list[int],
                  shared: frozenset[int]) -> list[int]:
     """Find bridgehead atoms in a bridged ring component."""
     mrings = [rings[i] for i in members]
     return sorted(_non_adjacent_pairs(mrings, shared))
 
-
 def _walk_path(ring, start, end, exclude, direction):
     n, path, cur = len(ring), [], (start + direction) % len(ring)
     while cur != end and ring[cur] not in exclude:
         path.append(ring[cur]); cur = (cur + direction) % n
     return [] if cur != end else path
-
 
 def _paths_between(ring: tuple[int, ...], a: int, b: int,
                    exclude: set[int]) -> list[list[int]]:
@@ -159,18 +121,15 @@ def _paths_between(ring: tuple[int, ...], a: int, b: int,
         return []
     return [p for d in (1, -1) if (p := _walk_path(ring, ia, ib, exclude, d))]
 
-
 def _member_atoms(rings: list[tuple[int, ...]], members: list[int]) -> set[int]:
     atom_ids: set[int] = set()
     for i in members:
         atom_ids |= set(rings[i])
     return atom_ids
 
-
 def _dedup_paths(paths):
     """Deduplicate paths by frozenset, preserving insertion order."""
     return list({frozenset(p): p for p in paths}.values())
-
 
 def _bridge_paths(rings: list[tuple[int, ...]], members: list[int],
                   bridgeheads: list[int]) -> list[list[int]]:
@@ -182,7 +141,6 @@ def _bridge_paths(rings: list[tuple[int, ...]], members: list[int],
     all_paths = [p for r in mrings for p in _paths_between(r, a, b, bh_set)]
     return sorted(_dedup_paths(all_paths), key=len, reverse=True)
 
-
 def _bridge_info(rings: list[tuple[int, ...]], members: list[int],
                  bridgeheads: list[int]) -> dict | None:
     """Compute bridge info for a bridged component."""
@@ -193,7 +151,6 @@ def _bridge_info(rings: list[tuple[int, ...]], members: list[int],
             "bridge_lengths": [len(p) for p in paths],
             "bridge_paths": paths}
 
-
 def _member_edges(
     members: list[int], fusion_edges: list[tuple[int, int, frozenset[int]]],
 ) -> list[tuple[int, int, list[int]]]:
@@ -201,7 +158,6 @@ def _member_edges(
     return [
         (i, j, sorted(sh)) for i, j, sh in fusion_edges if i in mset and j in mset
     ]
-
 
 def _system_dict(
     atom_ids: set[int], members: list[int], edges: list, mol: Mol, spiro_in: bool,
@@ -224,7 +180,6 @@ def _system_dict(
         result["bridge_paths"] = bridge_info["bridge_paths"]
     return result
 
-
 def _try_bridge_component(rings, members, fusion_edges):
     """Try to find bridge info: loop fusion edges for 3+ shared atoms in 2-ring component."""
     mset = set(members)
@@ -235,7 +190,6 @@ def _try_bridge_component(rings, members, fusion_edges):
                 return _bridge_info(rings, members, bh)
     return None
 
-
 def _compute_bridged_info(
     rings: list[tuple[int, ...]], members: list[int],
     fusion_edges: list[tuple[int, int, frozenset[int]]],
@@ -245,7 +199,6 @@ def _compute_bridged_info(
         return False, None
     bi = _try_bridge_component(rings, members, fusion_edges)
     return (True, bi) if bi else (False, None)
-
 
 def _system_entry(
     mol: Mol,
@@ -259,11 +212,9 @@ def _system_entry(
     is_bridged, bridge_info = _compute_bridged_info(rings, members, fusion_edges)
     return _system_dict(atoms, members, edges, mol, spiro_in, is_bridged, bridge_info)
 
-
 def _spiro_touching(members: list[int], spiro: list[tuple[int, int, int]]) -> bool:
     mset = set(members)
     return any(i in mset or j in mset for i, j, _ in spiro)
-
 
 def _collect_merged_fields(
     systems: list[dict], indices: list[int],
@@ -278,7 +229,6 @@ def _collect_merged_fields(
         atoms.update(s["atom_ids"])
         hetero.extend(s["hetero_atoms"])
     return sssr, atoms, hetero
-
 
 def _merged_spiro_system(
     mol: Mol, rings: list[tuple[int, ...]],
@@ -298,7 +248,6 @@ def _merged_spiro_system(
         "ring_sizes": sorted(len(rings[ri]) - 1 for ri in sssr),
     }
 
-
 def _spiro_sys_indices(
     systems: list[dict], spiro_pairs: list[tuple[int, int, int]],
 ) -> list[int]:
@@ -312,20 +261,17 @@ def _spiro_sys_indices(
             _uf_union(parent, si, sj)
     return parent
 
-
 def _find_sys_for_ring(systems: list[dict], ring_idx: int) -> int:
     for idx, s in enumerate(systems):
         if ring_idx in s["sssr_indices"]:
             return idx
     return -1
 
-
 def _group_by_root(parent: list[int], n: int) -> dict[int, list[int]]:
     buckets: dict[int, list[int]] = {}
     for idx in range(n):
         buckets.setdefault(_uf_find(parent, idx), []).append(idx)
     return buckets
-
 
 def _merge_spiro(
     mol: Mol, rings: list[tuple[int, ...]],
@@ -343,7 +289,6 @@ def _merge_spiro(
             if len(indices) > 1 else systems[indices[0]]
         )
     return result
-
 
 def build_ring_systems(mol: Mol) -> list[dict]:
     """Return ring systems: fusion-connected + spiro-merged."""

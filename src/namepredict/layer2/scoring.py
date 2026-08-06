@@ -21,40 +21,25 @@ _HETERO_RING = frozenset(k for k in _kr.all_kinds() if _kr.is_hetero_ring(k))
 _CARBO_RING = frozenset(k for k in _kr.all_kinds() if _kr.is_carbo_ring(k))
 _RETAINED = frozenset(k for k in _kr.all_kinds() if _kr.retained_bonus(k))
 
-
-def _has_principal_fg(kind: str) -> int:
-    return _kr.has_principal_fg(kind)
-
-
-def _fg_class_rank(kind: str) -> int:
-    return _kr.fg_rank(kind)
-
-
 def _n_unhandled(parent: dict) -> int:
     return int(parent.get("n_unhandled") or 0)
-
 
 def _sides_ok(parent: dict) -> int:
     return 0 if _n_unhandled(parent) else 1
 
-
 def _is_hetero_ring(kind: str) -> int:
     return _kr.is_hetero_ring(kind)
-
 
 def _is_carbo_ring(kind: str) -> int:
     return _kr.is_carbo_ring(kind)
 
-
 def _n_rings(kind: str) -> int:
     return _kr.n_rings_of(kind)
-
 
 def _ring_size(parent: dict, kind: str) -> int:
     if not _n_rings(kind):
         return 0
     return len(parent.get("chain") or [])
-
 
 def _n_unsat(parent: dict) -> int:
     kind = parent.get("kind")
@@ -62,34 +47,27 @@ def _n_unsat(parent: dict) -> int:
         return len(parent.get("double_bonds") or [])
     return 1 if kind in ("alkene", "alkyne", "cycloalkene") else 0
 
-
 def _n_carbons(parent: dict) -> int:
     return int(parent.get("n_carbons") or len(parent.get("chain") or []))
-
 
 def _retained_bonus(kind: str) -> int:
     return _kr.retained_bonus(kind)
 
-
 def _p44_1_1(parent: dict) -> tuple[int, int]:
     facts = principal_key(with_principal_group_contract(parent))
     return facts.principal_group_class, facts.principal_group_count
-
 
 def _later_score(parent: dict, kind: str) -> tuple:
     return (_sides_ok(parent), _is_hetero_ring(kind), _is_carbo_ring(kind),
             _n_rings(kind), _ring_size(parent, kind), _retained_bonus(kind),
             _n_unsat(parent), _n_carbons(parent), -_n_unhandled(parent))
 
-
 def _score_parent(info: dict, parent: dict) -> tuple:
     kind = parent.get("kind") or ""
     return (*_p44_1_1(parent), *_later_score(parent, kind))
 
-
 def _better_parent(info: dict, a: dict, b: dict) -> bool:
     return _score_parent(info, a) > _score_parent(info, b)
-
 
 def _pick_best(info: dict, candidates: list[dict]) -> dict | None:
     best: dict | None = None

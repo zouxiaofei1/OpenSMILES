@@ -8,12 +8,10 @@ from namepredict.layer2.parent_skeleton import SkeletonSelection, SkeletonTopolo
 from namepredict.layer2.principal_expression import express_chain_principal, express_ring_principal
 from namepredict.layer2.principal_selection import PrincipalGroupSelection, select_principal_group
 
-
 @dataclass(frozen=True)
 class PrincipalParentSelection:
     principal: PrincipalGroupSelection | None
     skeletons: SkeletonSelection | None
-
 
 def select_principal_parent_skeletons(info: dict) -> PrincipalParentSelection:
     principal = select_principal_group(inventory_from_info(info))
@@ -21,25 +19,12 @@ def select_principal_parent_skeletons(info: dict) -> PrincipalParentSelection:
     skeletons = select_principal_skeletons(info, occurrences)
     return PrincipalParentSelection(principal, skeletons)
 
-
 def _covers_all(selection: PrincipalParentSelection) -> bool:
     total = len(selection.principal.occurrences)
     return all(len(s.covered_principal_ids) == total for s in selection.skeletons.candidates)
 
-
 def _supported_payload(selection: PrincipalParentSelection) -> bool:
     return selection.principal.group_class.value == "acid"
-
-
-def _migrated(selection: PrincipalParentSelection, info: dict) -> bool:
-    if selection.principal is None or selection.skeletons is None:
-        return False
-    nonempty = bool(selection.skeletons.candidates)
-    supported = (_supported_payload(selection) and not selection.skeletons.unsupported_ids
-                 and selection.skeletons.next_rule != "P-44.2")
-    no_unsat = not (info.get("double_bonds") or info.get("triple_bonds"))
-    return nonempty and supported and no_unsat and _covers_all(selection)
-
 
 def _owned(parent: dict | None, selection: PrincipalParentSelection) -> dict | None:
     if parent is None:
@@ -47,7 +32,6 @@ def _owned(parent: dict | None, selection: PrincipalParentSelection) -> dict | N
     occurrences = selection.principal.occurrences
     return {**parent, "covered_principal_ids": tuple(o.id for o in occurrences),
             "principal_group_count": len(occurrences)}
-
 
 def _special_expression(selection: PrincipalParentSelection, info: dict) -> dict | None:
     group_class = selection.principal.group_class
@@ -58,7 +42,6 @@ def _special_expression(selection: PrincipalParentSelection, info: dict) -> dict
         from namepredict.layer2.parent_selector import _ketone_parent
         return _ketone_parent(info)
     return _open_chain_expression(selection, info)
-
 
 def _open_chain_expression(selection: PrincipalParentSelection, info: dict) -> dict | None:
     if len(selection.principal.occurrences) != 1 or info["mol"].GetRingInfo().NumRings():
@@ -76,12 +59,10 @@ def _open_chain_expression(selection: PrincipalParentSelection, info: dict) -> d
     builder = builders_by_class.get(group_class)
     return builder(info) if builder else None
 
-
 def _unsupported_typed_ring(parent: dict, selection: PrincipalParentSelection) -> bool:
     return (selection.principal.group_class is FunctionalGroupClass.KETONE
             and parent.get("scaffold_identity") is not None
             and parent.get("typed_ring_expression_supported") is False)
-
 
 def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[dict]:
     parents = []
@@ -93,7 +74,6 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
             parents.append(parent)
     return parents
 
-
 def _retained_ketone_skeleton(selection: PrincipalParentSelection, info: dict) -> bool:
     if selection.principal.group_class is not FunctionalGroupClass.KETONE:
         return False
@@ -103,7 +83,6 @@ def _retained_ketone_skeleton(selection: PrincipalParentSelection, info: dict) -
     return any(anchors <= set(s.atom_ids) and (sid := _producer_id(info, s)) is not None
                and sid not in generic for s in selection.skeletons.candidates)
 
-
 def _needs_special(selection: PrincipalParentSelection, parents: list[dict], info: dict) -> bool:
     if _retained_ketone_skeleton(selection, info):
         return False
@@ -111,7 +90,6 @@ def _needs_special(selection: PrincipalParentSelection, parents: list[dict], inf
         return True
     facts = [p.get("principal_expression_facts") for p in parents]
     return not parents or any(f and f.relation.value == "exocyclic" for f in facts)
-
 
 def rule_driven_parent_candidates(info: dict) -> list[dict]:
     selection = select_principal_parent_skeletons(info)

@@ -140,6 +140,11 @@ def match_retained(info: dict, atom_ids) -> str | None:
     and ring double-bond placement (graph-isomorphic). Positional isomers are
     resolved by `_DISAMBIGUATE`. Element signature prefilter skips templates
     whose composition cannot match before running subgraph isomorphism.
+
+    Template miss returns None. The full ring producers are NOT consulted
+    here: a former fallback loop over `ring_try_fns` never hit on real data
+    (the template table already covers every mother ring the producers can
+    name) and it clobbered the carbonyl-mother core adapters in ring_core.
     """
     mol = info["mol"]
     atoms = frozenset(atom_ids)

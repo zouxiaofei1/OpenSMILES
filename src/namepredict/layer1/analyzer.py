@@ -49,12 +49,6 @@ def _has_carboxylate_o_neighbor(carbon) -> bool:
 def _has_acid_o_neighbor(carbon) -> bool:
     return _has_oh_neighbor(carbon) or _has_carboxylate_o_neighbor(carbon)
 
-def _acyl_cl_of(carbon) -> int | None:
-    """Compat: Cl idx only; prefer layer1.acyl_halide for Cl/Br."""
-    from namepredict.layer1.acyl_halide import acyl_hal_of
-    h = acyl_hal_of(carbon)
-    return h[0] if h is not None and h[1] == 17 else None
-
 def _acyl_hal_of(carbon) -> tuple[int, int] | None:
     from namepredict.layer1.acyl_halide import acyl_hal_of
     return acyl_hal_of(carbon)

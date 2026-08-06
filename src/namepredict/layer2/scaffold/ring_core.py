@@ -14,14 +14,15 @@ Two sources:
     =O atoms, and rule mothers (cycloalkane / cyclopolyene / bridged / spiro /
     saturated hetero) whose composition is open-ended.
 
-The full producers remain authoritative for FG-variant retained names
-(benzofuranamine, ...): `_producer_id` falls back to them lazily for skeletons
-the core table did not tag.
+The full producers are NOT consulted for scaffold identity. A former fallback
+over `ring_try_fns` (in `_producer_id`) never hit on real data — the template
+table already covers every mother ring the producers can name, including the
+FG-variant skeletons (benzofuranamine's ring set IS benzofuran) — and it
+clobbered the carbonyl-mother adapters above, so it was removed.
 """
 from __future__ import annotations
 
-_CORE_FNS: list = []   # template mother + rule mothers (all)
-_RULE_FNS: list = []   # rule mothers only (no template)
+_CORE_FNS: list = []
 
 
 def _register(fn):
@@ -29,18 +30,8 @@ def _register(fn):
     return fn
 
 
-def _register_rule(fn):
-    _CORE_FNS.append(fn)
-    _RULE_FNS.append(fn)
-    return fn
-
-
 def ring_core_fns() -> list:
     return list(_CORE_FNS)
-
-
-def ring_rule_fns() -> list:
-    return list(_RULE_FNS)
 
 
 @_register

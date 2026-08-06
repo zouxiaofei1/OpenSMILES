@@ -34,8 +34,8 @@ from namepredict.layer2.cyclo_ene_fg import (
     _is_simple_cycloalkenol, _is_simple_cycloalkenone,
 )
 from namepredict.layer2.scaffold.ring_parent import (
-    _benzenediol_parent, _endocyclic_double, _is_simple_benzene, _is_simple_benzenediol,
-    _is_simple_cycloalcohol, _is_simple_cycloalkane, _is_simple_cycloalkene,
+    _benzenediol_parent, _endocyclic_double, _is_simple_benzenediol,
+    _is_simple_cycloalcohol, _is_simple_cycloalkene,
     _is_simple_cycloamine, _is_simple_cycloketone)
 from namepredict.layer2.aliph_fg import _aliph_c_idxs, _aliphatic_entries, _c_idxs
 from namepredict.layer2.chain_walk import (
@@ -50,7 +50,7 @@ from namepredict.constants import Br, C, Cl
 from namepredict.layer2.parent_selector_common import _ANHYDRIDE_BAD, _CORE_BAD, _DIACID_BAD, _DIAMINE_BAD, _DIOL_BAD, _DIONE_BAD, _no_fgs
 from namepredict.layer2.parent_core import (
     _arm_ok, _best_cover_pair, _covers, _db_pairs, _fg_chain, _hetero_open_chain,
-    _is_mono_alkene, _is_mono_alkyne, _is_mono_fg, _is_open_sat, _parent_dict,
+    _is_mono_fg, _is_open_sat, _parent_dict,
     _try_unsat_fg, _unsat_or_sat,
 )
 def _is_simple_n(info: dict, bad: tuple, ekey: str, n: int) -> bool:
@@ -88,32 +88,6 @@ def _dione_parent(info: dict) -> dict:
     return _cover_parent(info, "ketones", 2, "dione", "ketone_c_idxs")
 def _has_n_oh(info: dict, n: int) -> bool:
     ohs = _aliphatic_entries(info, "hydroxyls"); return len(ohs) == n
-def _alkenediol_good(info: dict, bad: tuple) -> bool:
-    dbs = info.get("double_bonds") or []
-    return (_has_n_oh(info, 2) and len(dbs) == 1
-            and not info.get("has_alkyne") and _no_fgs(info, bad))
-def _polyenediol_good(info: dict, bad: tuple) -> bool:
-    dbs = info.get("double_bonds") or []
-    return (_has_n_oh(info, 2) and len(dbs) >= 2
-            and not info.get("has_alkyne") and _no_fgs(info, bad))
-def _alkynediol_good(info: dict, bad: tuple) -> bool:
-    tbs = info.get("triple_bonds") or []
-    return (_has_n_oh(info, 2) and len(tbs) == 1
-            and not info.get("has_alkene") and _no_fgs(info, bad))
-def _alkenetriol_good(info: dict, bad: tuple) -> bool:
-    dbs = info.get("double_bonds") or []
-    return (_has_n_oh(info, 3) and len(dbs) == 1
-            and not info.get("has_alkyne") and _no_fgs(info, bad))
-def _uniq_atoms(*lists) -> list[int]:
-    """Deduplicated atom id list preserving first-occurrence order."""
-    seen: set[int] = set()
-    out: list[int] = []
-    for x in lists:
-        for a in x:
-            if a not in seen:
-                seen.add(a); out.append(a)
-    return out
-
 def _ring_fg_try(info: dict, pairs, ekey: str, ckey: str) -> dict | None:
     for pred, kind in pairs:
         if pred(info):
@@ -425,12 +399,6 @@ def _polyene_parent(info: dict) -> dict:
     return _parent_dict(chain, "polyene", double_bonds=_db_pairs(info))
 def _ring_atoms(info: dict) -> list[int]:
     return list(info["rings"][0]["atom_ids"])
-def _cycloalkane_parent(info: dict) -> dict:
-    from namepredict.layer2.scaffold.ring_parent import _pick_cycloalkane_ring as _pcr
-    return _parent_dict(list(_pcr(info) or _ring_atoms(info)), "cycloalkane")
-def _benzene_parent(info: dict) -> dict:
-    from namepredict.layer2.scaffold.benzene_pick import _pick_benzene_ring as _pbr
-    return _parent_dict(_pbr(info) or _ring_atoms(info), "benzene")
 def _cycloalkene_parent(info: dict) -> dict:
     c = _ring_atoms(info); return _parent_dict(c, "cycloalkene", double_bond=_endocyclic_double(info, set(c)))
 def _cyclo_fg_parent(info: dict, kind: str, ekey: str, ckey: str) -> dict:
@@ -460,19 +428,6 @@ def _aldehyde_ketone(info: dict) -> dict | None:
     if info.get("has_aldehyde") and info.get("aldehydes"):
         return _aldehyde_parent(info)
     return _ketone_parent(info) if info.get("has_ketone") and info.get("ketones") else None
-def _carbonyl_parent(info: dict) -> dict | None:
-    top = _acid_ester_amide(info)
-    return top if top is not None else _aldehyde_ketone(info)
-def _hetero_parent(info: dict) -> dict | None:
-    if info.get("has_alcohol") and info.get("hydroxyls"): return _alcohol_parent(info)
-    if info.get("has_thiol") and info.get("thiols"): return _thiol_parent(info)
-    if info.get("has_amine") and info.get("amines"): return _amine_parent(info)
-    eth = _ether_parent(info)
-    return eth if eth is not None else _sulfide_parent(info)
-def _unsat_parent(info: dict) -> dict | None:
-    if _is_mono_alkyne(info): return _alkyne_parent(info)
-    if _is_polyene(info): return _polyene_parent(info)
-    return _alkene_parent(info) if _is_mono_alkene(info) else None
 def _ring_parent(info: dict) -> dict | None:
     from namepredict.layer2.candidates import _ring_parent as _ring_best
     return _ring_best(info)

@@ -187,56 +187,6 @@ def all_kinds() -> frozenset[str]:
     return frozenset(_REG)
 
 
-# Ordered ring parent producers (filled by layer2.ring_producers bootstrap).
-_RING_TRY: list = []
-_RING_BOOTSTRAPPED = False
-
-
-def register_ring_try(fn) -> None:
-    """Append a ring parent producer: (info) -> parent dict | None."""
-    _RING_TRY.append(fn)
-
-
-def _ensure_ring_producers() -> None:
-    """Import ring_producers once so ring_try_fns works without candidates import."""
-    global _RING_BOOTSTRAPPED
-    if _RING_BOOTSTRAPPED:
-        return
-    from namepredict.layer2.scaffold import ring_producers as _rp  # noqa: F401
-    _RING_BOOTSTRAPPED = True
-
-
-def ring_try_fns() -> list:
-    """Return registered ring parent try callables (order = try order)."""
-    _ensure_ring_producers()
-    return list(_RING_TRY)
-
-
-# Ordered unsat parent producers (filled by layer2.unsat_producers bootstrap).
-_UNSAT_TRY: list = []
-_UNSAT_BOOTSTRAPPED = False
-
-
-def register_unsat_try(fn) -> None:
-    """Append an unsat parent producer: (info) -> parent dict | None."""
-    _UNSAT_TRY.append(fn)
-
-
-def _ensure_unsat_producers() -> None:
-    """Import unsat_producers once so unsat_try_fns works without candidates import."""
-    global _UNSAT_BOOTSTRAPPED
-    if _UNSAT_BOOTSTRAPPED:
-        return
-    from namepredict.layer2 import unsat_producers as _up  # noqa: F401
-    _UNSAT_BOOTSTRAPPED = True
-
-
-def unsat_try_fns() -> list:
-    """Return registered unsat parent try callables (order = try order)."""
-    _ensure_unsat_producers()
-    return list(_UNSAT_TRY)
-
-
 def _add(
     kind: str,
     *,

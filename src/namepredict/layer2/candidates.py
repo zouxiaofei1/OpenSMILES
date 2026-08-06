@@ -1,12 +1,11 @@
 """Layer2 parent-candidate collection (scored by layer2.scoring, P-44).
 
-Ring parents in `layer2.ring_producers` → `kind_registry.ring_try_fns()`;
-open-chain unsat hydrocarbon parents in `layer2.unsat_producers` →
-`kind_registry.unsat_try_fns()`.
+Ring parents come from `rule_driven_parent_candidates` (scaffold/core-table
+driven). The former `ring_producers` / `unsat_producers` bootstrap chains in
+kind_registry were removed as dead code.
 """
 from __future__ import annotations
 
-from namepredict.layer2 import kind_registry as _kr
 from namepredict.layer2.parent_core import _longest_chain, _parent_dict
 from namepredict.layer2.parent_candidate import with_principal_group_contract
 from namepredict.layer2.principal_parent import rule_driven_parent_candidates
@@ -19,10 +18,6 @@ from namepredict.layer2.cyclo_polycarboxylic import cycloalkane_polycarboxylic_g
 
 def _alkane_fallback(info: dict) -> dict:
     return _parent_dict(_longest_chain(info["mol"]), "alkane")
-
-
-def _unsat_candidates(info: dict) -> list[dict]:
-    return [c for fn in _kr.unsat_try_fns() if (c := fn(info)) is not None]
 
 
 def _candidate_key(candidate: dict) -> tuple:
