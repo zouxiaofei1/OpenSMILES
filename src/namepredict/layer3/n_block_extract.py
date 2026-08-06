@@ -1,7 +1,7 @@
 """N-block extract: complex N-substituents via SubstituentNamer (amide/benzamide)."""
 from __future__ import annotations
 
-from namepredict.layer2.claimable_block import ClaimedBlock, SideSlot
+from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
 from namepredict.layer3.substituent_namer import SubstituentName, SubstituentNamer
 
 

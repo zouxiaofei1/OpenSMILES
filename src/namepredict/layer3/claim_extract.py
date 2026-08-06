@@ -37,7 +37,7 @@ def _covered_atoms(subs: list[dict]) -> set[int]:
 
 
 def _should_skip(claim, covered: set[int]) -> bool:
-    from namepredict.layer2.claimable_block import SideSlot
+    from namepredict.layer3.claimable_block import SideSlot
     return claim.slot == SideSlot.AMIDE_N or bool(set(claim.atoms) & covered)
 
 
@@ -52,7 +52,7 @@ def _append_named(mol, claim, namer, covered: set[int], out: list[dict]) -> None
 
 
 def _named_new_sides(mol, owned, covered: set[int], *, name_mode: str = "general", cache: CommonNameCache | None = None) -> list[dict]:
-    from namepredict.layer2.claimable_block import iter_claims
+    from namepredict.layer3.claimable_block import iter_claims
     from namepredict.layer3.substituent_namer import SubstituentNamer
 
     namer, out = SubstituentNamer(name_mode=name_mode, cache=cache), []

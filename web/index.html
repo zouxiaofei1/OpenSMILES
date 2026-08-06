@@ -308,7 +308,10 @@
                 <span id="cg-threshold-val" class="mono">0.0%</span></label>
               <input id="cg-threshold" class="input" type="range" min="0" max="50" step="0.1" value="0" style="width:220px" />
             </div>
-            <button id="cg-refresh" class="btn btn-secondary" type="button">重新采样</button>
+            <div class="cg-seg">
+              <button id="cg-regenerate" class="btn btn-secondary" type="button">重新生成</button>
+              <span id="cg-svg-status" class="chip">未生成</span>
+            </div>
             <div class="cg-field">
               <label class="field-label" for="cg-layer">Layer</label>
               <select id="cg-layer" class="input" style="width:120px">
@@ -321,13 +324,6 @@
                 <option value="5">L5 组装</option>
                 <option value="core">核心调度</option>
               </select>
-            </div>
-            <div class="cg-field">
-              <label class="field-label" for="cg-svg-gen">分层图</label>
-              <div class="cg-seg">
-                <button id="cg-svg-gen" class="btn btn-secondary" type="button">生成分层 SVG 图</button>
-                <span id="cg-svg-status" class="chip">未生成</span>
-              </div>
             </div>
           </div>
           <div id="cg-meta" class="cg-meta muted-text small"></div>

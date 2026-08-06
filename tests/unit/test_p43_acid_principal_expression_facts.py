@@ -55,7 +55,7 @@ def test_facts_include_only_occurrences_covered_by_selected_skeleton():
     info = analyze(Chem.MolFromSmiles("C(C(=O)O)(C(=O)O)C(=O)O"))
     selected = select_principal_parent_skeletons(info)
     skeleton = selected.skeletons.candidates[0]
-    parent = express_chain_principal(selected.principal, skeleton)
+    parent = express_chain_principal(info, selected.principal, skeleton)
     facts = parent["principal_expression_facts"]
     assert facts.multiplicity == len(skeleton.covered_principal_ids) == 2
     assert set(facts.occurrence_ids) == set(skeleton.covered_principal_ids)

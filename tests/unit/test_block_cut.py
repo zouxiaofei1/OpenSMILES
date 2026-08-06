@@ -2,7 +2,7 @@ from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.parent_selector import select_parent
 from namepredict.layer2.block_cut import parent_atom_set, cut_block, side_roots
-from namepredict.layer2.submol_build import build_cut_submol
+from namepredict.layer3.submol_build import build_cut_submol
 
 
 def test_cut_n_phenyl_from_benzamide():

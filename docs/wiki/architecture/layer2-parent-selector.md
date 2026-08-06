@@ -81,7 +81,9 @@ flowchart TD
    （最多不饱和度，排除主 FG 自身多元键）。
 
 3. **`principal_expression.py`** — 把选定的骨架表达为 parent dict：
-   - `express_chain_principal()` — 开链 ACID/KETONE/ALCOHOL/AMINE（`_CHAIN_KINDS`）
+   - `express_chain_principal()` — 开链全部 8 类主官能团（`_CHAIN_KINDS`，含 ESTER/AMIDE/
+     ALDEHYDE/NITRILE），骨架内 C=C/C≡C 带 `double_bond`/`triple_bond`/`double_bonds` 字段，
+     酯额外带烷氧侧链字段（`o_idx`/`alkoxy_c_idx`/`alkoxy_n`）供 L5 命名
    - `express_ring_principal()` — 环骨架；**苯环 + 单 FG** 走 `_RETAINED_RING_KINDS` 保留名表
      （ACID→benzoic、ESTER→benzoate、ALDEHYDE→benzaldehyde、NITRILE→benzonitrile、AMIDE→
      benzamide、ALCOHOL→phenol、AMINE→aniline），环酮走 `_ring_ketone_kind`，其余走
@@ -95,7 +97,9 @@ flowchart TD
 4. **`principal_parent.py`** — `rule_driven_parent_candidates()` 编排以上：选主官能团 →
    选骨架 → 表达；对 ester×2（`_diester_parent`）与环酮等走 `_special_expression`；单 FG 无环
    的 ester/amide/aldehyde/ketone/nitrile/amine 走 `_open_chain_expression`（直接调用
-   `parent_selector` 的经典 builder）。`_unsupported_typed_ring` 拒绝"无表达能力骨架"的酮表达。
+   `parent_selector` 的经典 builder）——骨架表达已覆盖全部 8 类，与 builder 候选经
+   `_dedupe_parents`（`candidates.py`）按 `(kind, chain)` 去重合并，builder 缺失时骨架表达兜底。
+   `_unsupported_typed_ring` 拒绝"无表达能力骨架"的酮表达。
 
 > **源:** `E:\chem\src\namepredict\layer2\principal_selection.py:25-33`, `E:\chem\src\namepredict\layer2\parent_skeleton.py:193-215`, `E:\chem\src\namepredict\layer2\principal_expression.py:37-45, 108-125, 211-222`, `E:\chem\src\namepredict\layer2\principal_parent.py:114-124`
 

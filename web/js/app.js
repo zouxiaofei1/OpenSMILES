@@ -64,6 +64,7 @@
     cgSvg: null,
     cgSvgLoading: false,
     cgSourceTotal: 0,
+    wikiCurrent: "",
     cgRank: {
       calls: { asc: false, all: false },
       time: { asc: false, all: false },
@@ -1153,7 +1154,7 @@
     if (state.cgLoading) return;
     var n = cgNFromSlider();
     var st = $("cg-status");
-    var btn = $("cg-refresh");
+    var btn = $("cg-regenerate");
     var empty = $("cg-empty");
     state.cgLoading = true;
     if (btn) btn.disabled = true;
@@ -1185,9 +1186,9 @@
   }
 
   function bindCgControls() {
-    $("cg-refresh") &&
-      $("cg-refresh").addEventListener("click", function () {
-        loadCallGraph(true);
+    $("cg-regenerate") &&
+      $("cg-regenerate").addEventListener("click", function () {
+        regenerate();
       });
     $("cg-threshold") &&
       $("cg-threshold").addEventListener("input", function (ev) {
@@ -1205,10 +1206,12 @@
       $("cg-n").addEventListener("change", function () {
         loadCallGraph();
       });
-    $("cg-svg-gen") &&
-      $("cg-svg-gen").addEventListener("click", function () {
-        loadCallGraphSvg();
-      });
+  }
+
+  async function regenerate() {
+    // 强制重新采样（更新数据 + 排行），再用新缓存重新生成分层 SVG
+    await loadCallGraph(true);
+    await loadCallGraphSvg();
   }
 
   function setupSvgPanZoom(view) {
@@ -1276,7 +1279,7 @@
   async function loadCallGraphSvg(force) {
     if (state.cgSvgLoading) return;
     var st = $("cg-svg-status");
-    var btn = $("cg-svg-gen");
+    var btn = $("cg-regenerate");
     state.cgSvgLoading = true;
     if (btn) btn.disabled = true;
     if (st) { st.textContent = "生成中…"; st.style.color = "#f59e0b"; }
@@ -2283,32 +2286,60 @@
   }
 
   async function loadWikiDoc(path) {
-    try {
-      var data = await api(API.wikiDoc + "?path=" + encodeURIComponent(path));
-      if (!data || !data.ok) throw new Error((data && data.error) || "加载失败");
-      var doc = $("wiki-doc");
-      var body = typeof marked !== "undefined" && marked.parse
-        ? marked.parse(data.content)
-        : escapeHtml(data.content);
-      if (doc) doc.innerHTML = '<div class="wiki-title">' + escapeHtml(data.name) + "</div>" + body;
-      document.querySelectorAll(".wiki-file.active").forEach(function (el) {
-        el.classList.remove("active");
-      });
-      var sel = document.querySelector('.wiki-file[data-path="' + CSS.escape(path) + '"]');
-      if (sel) sel.classList.add("active");
-    } catch (err) {
-      var doc = $("wiki-doc");
-      if (doc) doc.innerHTML = '<p class="muted-text">加载失败: ' + escapeHtml(err.message || err) + "</p>";
+    // 解析相对路径：含 / 按 wiki 根相对；纯文件名按「当前文档同目录」优先、根兜底
+    var cur = state.wikiCurrent || "";
+    var curDir = cur.indexOf("/") !== -1 ? cur.substring(0, cur.lastIndexOf("/")) : "";
+    var candidates = path.indexOf("/") !== -1
+      ? [path]
+      : (curDir ? [curDir + "/" + path, path] : [path]);
+
+    var doc = $("wiki-doc");
+    for (var i = 0; i < candidates.length; i++) {
+      var data = null;
+      try {
+        data = await api(API.wikiDoc + "?path=" + encodeURIComponent(candidates[i]));
+      } catch (e) {
+        data = null;
+      }
+      if (data && data.ok) {
+        state.wikiCurrent = data.path;
+        var body = typeof marked !== "undefined" && marked.parse
+          ? marked.parse(data.content)
+          : escapeHtml(data.content);
+        if (doc) doc.innerHTML = '<div class="wiki-title">' + escapeHtml(data.name) + "</div>" + body;
+        document.querySelectorAll(".wiki-file.active").forEach(function (el) {
+          el.classList.remove("active");
+        });
+        var sel = document.querySelector('.wiki-file[data-path="' + CSS.escape(data.path) + '"]');
+        if (sel) sel.classList.add("active");
+        return;
+      }
     }
+    if (doc) doc.innerHTML = '<p class="muted-text">无法打开文档: ' + escapeHtml(path) + "</p>";
   }
 
   function bindWikiControls() {
     var tree = $("wiki-tree");
-    if (!tree) return;
-    tree.addEventListener("click", function (ev) {
-      var f = ev.target.closest(".wiki-file");
-      if (f) loadWikiDoc(f.getAttribute("data-path"));
-    });
+    if (tree) {
+      tree.addEventListener("click", function (ev) {
+        var f = ev.target.closest(".wiki-file");
+        if (f) loadWikiDoc(f.getAttribute("data-path"));
+      });
+    }
+    var doc = $("wiki-doc");
+    if (doc) {
+      doc.addEventListener("click", function (ev) {
+        var a = ev.target.closest("a");
+        if (!a) return;
+        var href = (a.getAttribute("href") || "").trim();
+        // 外部链接 / 锚点保留默认行为
+        if (!href || /^[a-z]+:/i.test(href) || href.charAt(0) === "#") return;
+        // 仅拦截指向 wiki 内 .md 的相对链接
+        if (!/\.md(?:[#?]|$)/i.test(href)) return;
+        ev.preventDefault();
+        loadWikiDoc(href.split(/[#?]/)[0]);
+      });
+    }
   }
 
   async function init() {

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer2.claimable_block import ClaimedBlock, SideSlot
+from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
 from namepredict.layer3.coverage import CoverageLedger, build_coverage_ledger
 from namepredict.layer3.substituent_namer import SubstituentName
 

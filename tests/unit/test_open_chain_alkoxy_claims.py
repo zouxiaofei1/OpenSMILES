@@ -6,7 +6,7 @@ from rdkit import Chem
 
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.claimable_block import iter_claims
+from namepredict.layer3.claimable_block import iter_claims
 from namepredict.layer2.parent_selector import select_parent
 from namepredict.namer import SMILESNNamer
 

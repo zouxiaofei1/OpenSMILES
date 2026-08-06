@@ -16,7 +16,7 @@ from namepredict.layer2.parent_ownership import finalize_parent_ownership
 from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer3.coverage import build_coverage_ledger
 from namepredict.layer3.substituent_namer import SubstituentName
-from namepredict.layer2.claimable_block import ClaimedBlock, SideSlot
+from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
 from namepredict.layer4.numbering import number
 from namepredict.layer5.assembler import assemble
 

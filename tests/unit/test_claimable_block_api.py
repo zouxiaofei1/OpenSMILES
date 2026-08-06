@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.claimable_block import SideSlot, claim_block, iter_claims
+from namepredict.layer3.claimable_block import SideSlot, claim_block, iter_claims
 from namepredict.layer2.parent_selector import iter_parent_candidates, select_parent
 
 

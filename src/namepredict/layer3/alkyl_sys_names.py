@@ -1,7 +1,7 @@
 """L3 dual systematic -yl names for rooted saturated-carbon trees."""
 from __future__ import annotations
 
-from namepredict.layer2.side_alkyl_sys import RootedAlkylTree
+from namepredict.layer3.side_alkyl_sys import RootedAlkylTree
 
 _CHAIN_EN = {
     1: "meth", 2: "eth", 3: "prop", 4: "but", 5: "pent", 6: "hex",

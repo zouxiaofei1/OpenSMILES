@@ -44,7 +44,7 @@ def _special_expression(selection: PrincipalParentSelection, info: dict) -> dict
     return _open_chain_expression(selection, info)
 
 def _open_chain_expression(selection: PrincipalParentSelection, info: dict) -> dict | None:
-    #return None
+    return None
     if len(selection.principal.occurrences) != 1 or info["mol"].GetRingInfo().NumRings():
         return None
     group_class = selection.principal.group_class
@@ -70,7 +70,7 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
     for skeleton in selection.skeletons.candidates:
         parent = ((express_ring_principal(info, selection.principal, skeleton))
                   if skeleton.topology is SkeletonTopology.RING_SYSTEM
-                  else express_chain_principal(selection.principal, skeleton))
+                  else express_chain_principal(info, selection.principal, skeleton))
         if parent is not None and not _unsupported_typed_ring(parent, selection):
             parents.append(parent)
     return parents

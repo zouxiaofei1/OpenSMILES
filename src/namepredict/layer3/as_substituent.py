@@ -5,7 +5,7 @@ No host (benzamide gate / n_block extract) wiring — pure cut→pipeline→yl.
 from __future__ import annotations
 
 from namepredict.cache.common_names import CommonNameCache
-from namepredict.layer2.submol_build import build_cut_submol
+from namepredict.layer3.submol_build import build_cut_submol
 from namepredict.layer3.yl_form import yl_form
 
 

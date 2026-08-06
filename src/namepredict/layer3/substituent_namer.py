@@ -7,7 +7,7 @@ from typing import Protocol, Sequence
 from rdkit.Chem import BondType
 
 from namepredict.cache.common_names import CommonNameCache
-from namepredict.layer2.claimable_block import ClaimedBlock
+from namepredict.layer3.claimable_block import ClaimedBlock
 from namepredict.layer3.as_substituent import name_as_substituent
 
 
@@ -271,7 +271,7 @@ class RetainedBackend:
 
 
 def _rooted_tree_name(mol, claim: ClaimedBlock) -> SubstituentName | None:
-    from namepredict.layer2.side_alkyl_sys import build_rooted_alkyl_tree
+    from namepredict.layer3.side_alkyl_sys import build_rooted_alkyl_tree
     from namepredict.layer3.alkyl_sys_names import name_rooted_alkyl
 
     tree = build_rooted_alkyl_tree(mol, root=claim.root, atoms=claim.atoms)

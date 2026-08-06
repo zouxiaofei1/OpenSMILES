@@ -4,7 +4,7 @@ from __future__ import annotations
 from rdkit import Chem
 
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.claimable_block import ClaimedBlock, SideSlot, iter_claims
+from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot, iter_claims
 from namepredict.layer2.parent_selector import select_parent
 from namepredict.layer3.substituent_namer import RootedTreeBackend, SubstituentNamer
 

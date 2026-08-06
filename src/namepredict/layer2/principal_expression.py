@@ -33,13 +33,21 @@ class PrincipalExpressionFacts:
 
 _CHAIN_KINDS = {
     FunctionalGroupClass.ACID: {1: "acid", 2: "diacid", 3: "polycarboxylic"},
+    FunctionalGroupClass.ESTER: {1: "ester"},
     FunctionalGroupClass.KETONE: {1: "ketone", 2: "dione"},
+    FunctionalGroupClass.ALDEHYDE: {1: "aldehyde"},
+    FunctionalGroupClass.NITRILE: {1: "nitrile"},
+    FunctionalGroupClass.AMIDE: {1: "amide"},
     FunctionalGroupClass.ALCOHOL: {1: "alcohol", 2: "diol", 3: "triol"},
     FunctionalGroupClass.AMINE: {1: "amine", 2: "diamine", 3: "triamine", 4: "tetraamine"},
 }
 _FIELDS = {
     FunctionalGroupClass.ACID: ("cooh_c_idx", "cooh_c_idxs"),
+    FunctionalGroupClass.ESTER: ("ester_c_idx", "ester_c_idxs"),
     FunctionalGroupClass.KETONE: ("ketone_c_idx", "ketone_c_idxs"),
+    FunctionalGroupClass.ALDEHYDE: ("aldehyde_c_idx", "aldehyde_c_idxs"),
+    FunctionalGroupClass.NITRILE: ("nitrile_c_idx", "nitrile_c_idxs"),
+    FunctionalGroupClass.AMIDE: ("amide_c_idx", "amide_c_idxs"),
     FunctionalGroupClass.ALCOHOL: ("oh_c_idx", "oh_c_idxs"),
     FunctionalGroupClass.AMINE: ("amine_c_idx", "amine_c_idxs"),
 }
@@ -245,14 +253,43 @@ def _chain_fields(selection, occurrences) -> dict:
             **_expression_flags(selection, occurrences)}
 
 
-def express_chain_principal(selection: PrincipalGroupSelection, skeleton: ParentSkeleton) -> dict | None:
+def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> dict:
+    """Attach double/triple-bond locant fields for C=C/C≡C inside the skeleton."""
+    dbs, tbs = _chain_polys(info, set(skeleton.atom_ids))
+    if len(tbs) == 1 and not dbs:
+        return {**fields, "triple_bond": (tbs[0]["c1"], tbs[0]["c2"])}
+    if len(dbs) == 1 and not tbs:
+        return {**fields, "double_bond": (dbs[0]["c1"], dbs[0]["c2"])}
+    if len(dbs) >= 2 and not tbs:
+        return {**fields, "double_bonds": [(d["c1"], d["c2"]) for d in dbs]}
+    return fields
+
+
+def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
+    """Ester alkoxy-side fields (o_idx/alkoxy_c_idx/alkoxy_*) for L5 ester naming."""
+    if len(occurrences) != 1:
+        return fields
+    match = next((e for e in (info.get("esters") or [])
+                  if e["c_idx"] in occurrences[0].characteristic_atoms), None)
+    if match is None:
+        return fields
+    from namepredict.layer2.alkoxy_side import classify_alkoxy
+    side = classify_alkoxy(info["mol"], match["o_idx"], match["alkoxy_c_idx"])
+    return {**fields, "o_idx": match["o_idx"], "alkoxy_c_idx": match["alkoxy_c_idx"], **side}
+
+
+def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
+                            skeleton: ParentSkeleton) -> dict | None:
     if skeleton.topology is not SkeletonTopology.ACYCLIC:
         return None
     occurrences = _covered(selection, skeleton)
     kind = _chain_kind(selection.group_class, len(occurrences))
     if kind is None:
         return None
-    return _parent_dict(kind, skeleton, occurrences, _chain_fields(selection, occurrences),
+    fields = _chain_unsat_fields(info, skeleton, _chain_fields(selection, occurrences))
+    if kind == "ester":
+        fields = _chain_ester_fields(info, occurrences, fields)
+    return _parent_dict(kind, skeleton, occurrences, fields,
                         _facts(selection, skeleton, occurrences))
 
 
