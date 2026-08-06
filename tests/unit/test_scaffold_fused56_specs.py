@@ -8,7 +8,7 @@ import pytest
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.benzofuran import _try_benzofuran_parent
+from namepredict.layer2.scaffold.fused56_mono import _try_benzofuran_parent
 from namepredict.layer2.scaffold.benzazole import _try_benzothiazole_parent
 from namepredict.layer2.scaffold.builders.fused56 import (
     FUSED56_LABELS,

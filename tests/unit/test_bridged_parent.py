@@ -7,7 +7,7 @@ import pytest
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.bridged_parent import _is_simple_bridged, _try_bridged_parent
+from namepredict.layer2.scaffold.polycyclic_parent import _is_simple_bridged, _try_bridged_parent
 
 
 def _info(smiles: str) -> dict:

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.aliph_fg import _aliphatic_entries, _c_idxs
+from namepredict.layer2.fg_helpers import _aliphatic_entries, _c_idxs, _no_fgs
 from namepredict.layer2.chain_walk import (
     _better,
     _carbon_neighbors,
@@ -16,8 +16,6 @@ from namepredict.layer2.chain_walk import (
     _longest_chain,
     _longest_from,
 )
-from namepredict.layer2.parent_selector_common import _no_fgs
-
 # Re-export chain / gate primitives used by producers.
 __all__ = [
     "_parent_dict",

@@ -11,7 +11,7 @@ import pytest
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.benzofuran import (
+from namepredict.layer2.scaffold.fused56_mono import (
     _try_benzofuran_parent,
     _try_benzofuranamine_parent,
 )

@@ -11,13 +11,13 @@ from namepredict.layer1.functional_group_inventory import (
     FunctionalGroupOccurrence,
 )
 from namepredict.layer2 import kind_registry
-from namepredict.layer2.principal_registry import (
+from namepredict.layer2.principal import (
     PRINCIPAL_REGISTRY,
     PrincipalExpression,
     PrincipalFeatureSpec,
     PrincipalPriority,
+    select_principal_group,
 )
-from namepredict.layer2.principal_selection import select_principal_group
 
 # Representative structures for the P-41/P-43 boundaries under test.
 CASES = [

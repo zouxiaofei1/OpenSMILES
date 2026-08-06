@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass, inventory_from_info
 from namepredict.layer2.parent_skeleton import SkeletonSelection, SkeletonTopology, select_principal_skeletons
 from namepredict.layer2.principal_expression import express_chain_principal, express_ring_principal
-from namepredict.layer2.principal_selection import PrincipalGroupSelection, select_principal_group
+from namepredict.layer2.principal import PrincipalGroupSelection, select_principal_group
 
 @dataclass(frozen=True)
 class PrincipalParentSelection:

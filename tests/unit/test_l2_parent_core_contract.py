@@ -43,7 +43,7 @@ _HELPERS = frozenset({
 _EXEMPT = frozenset({
     "parent_selector.py",
     "parent_core.py",
-    "parent_selector_common.py",
+    "fg_helpers.py",
     "__init__.py",
 })
 

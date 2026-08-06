@@ -6,7 +6,7 @@ from enum import Enum
 
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology
-from namepredict.layer2.principal_selection import PrincipalGroupSelection
+from namepredict.layer2.principal import PrincipalGroupSelection
 
 
 class PrincipalRelation(str, Enum):

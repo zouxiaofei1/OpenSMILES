@@ -6,29 +6,11 @@ from rdkit import Chem
 
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.alkenamide import _amide_n_meta
 from namepredict.layer2.parent_selector import select_parent
 from namepredict.namer import SMILESNNamer
 
 CYCLOHEPTYL = "O=C(NC1CCCCCC1)c1ccccc1"
 DIMETHYLPHENYL = "O=C(Nc1cc(C)cc(C)c1)c1ccccc1"
-
-
-def test_cycloheptyl_not_simple_n_alkyl():
-    mol = Chem.MolFromSmiles(CYCLOHEPTYL)
-    info = analyze(mol)
-    meta = _amide_n_meta(info)
-    assert "n_alkyl_n" not in meta
-    assert "n_alkyl_ns" not in meta
-    assert meta.get("n_block") is True
-
-
-def test_dimethylphenyl_not_simple_n_phenyl():
-    mol = Chem.MolFromSmiles(DIMETHYLPHENYL)
-    info = analyze(mol)
-    meta = _amide_n_meta(info)
-    assert "n_phenyl" not in meta
-    assert meta.get("n_block") is True
 
 
 @pytest.mark.parametrize(

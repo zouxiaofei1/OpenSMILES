@@ -7,7 +7,7 @@ import pytest
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.spiro_parent import _is_simple_spiro, _try_spiro_parent
+from namepredict.layer2.scaffold.polycyclic_parent import _is_simple_spiro, _try_spiro_parent
 
 
 def _info(smiles: str) -> dict:

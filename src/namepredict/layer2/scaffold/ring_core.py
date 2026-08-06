@@ -106,7 +106,7 @@ def _chromenone_core(info: dict) -> list:
 
 @_register
 def _bridged_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.bridged_parent import _is_bridged_system
+    from namepredict.layer2.scaffold.polycyclic_parent import _is_bridged_system
 
     return [(set(r["atom_ids"]), "bridged") for r in (info.get("ring_systems") or [])
             if _is_bridged_system(r)]
@@ -114,7 +114,7 @@ def _bridged_core(info: dict) -> list:
 
 @_register
 def _spiro_core(info: dict) -> list:
-    from namepredict.layer2.scaffold.spiro_parent import _is_simple_spiro
+    from namepredict.layer2.scaffold.polycyclic_parent import _is_simple_spiro
 
     s = _is_simple_spiro(info)
     return [(set(s["atom_ids"]), "spiro")] if s else []

@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG
-from namepredict.layer2.principal_registry import legacy_rank
+from namepredict.layer2.principal import legacy_rank
 
 
 _KIND_CLASS = {
