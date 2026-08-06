@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import time
 
 from namepredict.cache.common_names import CommonNameCache
@@ -219,6 +220,29 @@ def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
         pass
 
 
+def _canonical_result(mol, result: NameResult) -> NameResult:
+    """Copy result with meta.parent_chain rewritten to canonical atom ranks.
+
+    Cache entries are keyed only by the substructure SMILES, so the stored
+    parent_chain must not depend on the cut's atom ordering (which varies with
+    the parent molecule). Canonical rank is a stable identifier across cuts of
+    the same substructure, keeping _yl_from_sub locant reuse safe.
+    """
+    chain = (result.meta or {}).get("parent_chain") or []
+    if not chain:
+        return result
+    try:
+        from rdkit.Chem import CanonicalRankAtoms
+
+        ranks = CanonicalRankAtoms(mol)
+        canon = [ranks[i] for i in chain]
+    except Exception:
+        return result
+    r = copy.copy(result)
+    r.meta = {**(result.meta or {}), "parent_chain": canon}
+    return r
+
+
 def _name_uncached(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> NameResult:
     return _pipeline(smiles, t0, name_mode=name_mode, cache=cache)
 
@@ -236,5 +260,6 @@ class SMILESNNamer:
             return hit
         result = _name_uncached(smiles, t0, name_mode=self._name_mode, cache=self.cache)
         if result.success:
-            _cache_put(self.cache, smiles, result)
+            mol = preprocess(smiles)
+            _cache_put(self.cache, smiles, _canonical_result(mol, result))
         return result

@@ -4,31 +4,42 @@ No host (benzamide gate / n_block extract) wiring — pure cut→pipeline→yl.
 """
 from __future__ import annotations
 
+from rdkit.Chem import CanonicalRankAtoms
+
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_cut_submol
 from namepredict.layer3.yl_form import yl_form
 
 
-def _locant_from_result(result, attach_new: int) -> int | None:
+def _locant_from_result(mol, result, attach_new: int) -> int | None:
+    """Locant of attach on the parent_chain (canonical ranks; cache-safe across cuts)."""
     chain = (result.meta or {}).get("parent_chain") or []
-    if attach_new in chain:
-        return chain.index(attach_new) + 1
+    if not chain:
+        return None
+    ranks = CanonicalRankAtoms(mol)
+    ar = ranks[attach_new]
+    if ar in chain:
+        return chain.index(ar) + 1
     return None
 
 
-def _locant_via_hetero(mol, attach_new: int, chain: list[int]) -> int | None:
+def _locant_via_hetero(mol, attach_new: int, result) -> int | None:
     """When attach is a heteroatom (O/S/N) not in chain, use its chain-neighbor."""
     a = mol.GetAtomWithIdx(attach_new)
     if a.GetAtomicNum() not in (8, 16, 7):
         return None
-    c_nbrs = [n.GetIdx() for n in a.GetNeighbors() if n.GetIdx() in chain]
+    chain = (result.meta or {}).get("parent_chain") or []
+    if not chain:
+        return None
+    ranks = CanonicalRankAtoms(mol)
+    c_nbrs = [ranks[n.GetIdx()] for n in a.GetNeighbors() if ranks[n.GetIdx()] in chain]
     return chain.index(c_nbrs[0]) + 1 if len(c_nbrs) == 1 else None
 
 
 def _yl_from_sub(
     sub, *, depth: int, name_mode: str = "general", cache: CommonNameCache | None = None,
 ) -> tuple[str, str, bool] | None:
-    from namepredict.namer import _cache_put, _name_mol
+    from namepredict.namer import _cache_put, _canonical_result, _name_mol
     from rdkit import Chem
 
     result = None
@@ -38,14 +49,23 @@ def _yl_from_sub(
         smiles = Chem.MolToSmiles(sub.mol)
         result = cache.get(smiles)
     if result is None:
-        result = _name_mol(sub.mol, depth=depth, name_mode=name_mode, cache=cache)
+        # 用 canonical SMILES 重解析再命名：命名输入与缓存 key 严格一一对应，
+        # 消除不同 cut 上下文（环断点/手性方向）泄漏进命名的差异。
+        named_mol = sub.mol
+        if smiles:
+            canonical = Chem.MolFromSmiles(smiles)
+            if canonical is not None:
+                named_mol = canonical
+        result = _name_mol(named_mol, depth=depth, name_mode=name_mode, cache=cache)
         if cache is not None and result.success and result.en:
+            # 缓存条目的 parent_chain 必须是 canonical rank，跨 cut 复用才安全。
+            result = _canonical_result(named_mol, result)
             _cache_put(cache, smiles, result)
     if not result.success or not result.en:
         return None
-    loc = _locant_from_result(result, sub.attach_new)
+    loc = _locant_from_result(sub.mol, result, sub.attach_new)
     if loc is None:
-        loc = _locant_via_hetero(sub.mol, sub.attach_new, (result.meta or {}).get("parent_chain") or [])
+        loc = _locant_via_hetero(sub.mol, sub.attach_new, result)
     return None if loc is None else yl_form(result.en, result.zh, loc)
 
 

@@ -34,13 +34,7 @@ def _owned(parent: dict | None, selection: PrincipalParentSelection) -> dict | N
             "principal_group_count": len(occurrences)}
 
 def _special_expression(selection: PrincipalParentSelection, info: dict) -> dict | None:
-    group_class = selection.principal.group_class
-    if group_class is FunctionalGroupClass.ESTER and len(selection.principal.occurrences) == 2:
-        from namepredict.layer2.diester import _diester_parent
-        return _diester_parent(info)
-    if group_class is FunctionalGroupClass.KETONE and info["mol"].GetRingInfo().NumRings():
-        from namepredict.layer2.parent_selector import _ketone_parent
-        return _ketone_parent(info)
+
     return None
 
 def _unsupported_typed_ring(parent: dict, selection: PrincipalParentSelection) -> bool:
