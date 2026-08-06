@@ -1,6 +1,6 @@
 # NamePredict Wiki
 
-> 最后更新: 2026-07-20 | 源文件: 195 `.py` / 25,232 行 | Wiki 页面: 15
+> 最后更新: 2026-08-06 | 源文件: 205 `.py` / 24,403 行 | Wiki 页面: 15
 
 ## 项目概述
 
@@ -17,7 +17,7 @@ SMILES 输入
     |
 [layer1] 官能团分析 -> 识别 FG、环指纹  -> info dict
     |
-[layer2] 母体选择 -> 最长链、环系骨架、保留名称 <- 核心 (60% 代码量)
+[layer2] 母体选择 -> P-44 规则管线选主官能团/骨架、纯烃兜底、保留名 <- 核心 (60% 代码量)
     |
 [layer3] 取代基提取 -> 原子归属、覆盖台账
     |
@@ -35,7 +35,7 @@ SMILES 输入
 | [[architecture/overview]] | 架构总览：6 层流水线、数据流图、跨层设计模式、namer.py 协调器 |
 | [[architecture/layer0-preprocessor]] | Layer0 预处理：SMILES 解析、盐检测与解离、盐元数据注入 |
 | [[architecture/layer1-analyzer]] | Layer1 官能团分析器：34 种 FG 检测、环系拓扑、排他性优先级 |
-| [[architecture/layer2-parent-selector]] | Layer2 母体选择器：候选生成架构、P-44 评分、kind_registry、保留名 |
+| [[architecture/layer2-parent-selector]] | Layer2 母体选择器：P-44 规则驱动主链管线、纯烃表达、苯环保留名、kind_registry、评分与门控 |
 | [[architecture/layer3-substituents]] | Layer3 取代基提取器：6 阶段提取、SubstituentNamer 三后端、覆盖台账 |
 | [[architecture/layer4-numbering]] | Layer4 编号：链/环方向决策、约束驱动编号引擎、omit_locants 规则 |
 | [[architecture/layer5-name-assembly]] | Layer5 名称组装：5 步流水线、双语词干表、FG 专属命名模块、立体化学 |

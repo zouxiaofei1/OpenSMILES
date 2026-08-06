@@ -113,51 +113,7 @@ def _uniq_atoms(*lists) -> list[int]:
             if a not in seen:
                 seen.add(a); out.append(a)
     return out
-def _try_alkenediol_parent(info: dict, bad: tuple) -> dict | None:
-    """Diol + one C=C → kind='diol' with double_bond."""
-    if not _alkenediol_good(info, bad): return None
-    oh_ids = _aliph_c_idxs(info, "hydroxyls", 2)
-    if not oh_ids: return None
-    db = info["double_bonds"][0]
-    chain = _best_cover_pair(info["mol"], _uniq_atoms(oh_ids, [db["c1"], db["c2"]]))
-    return (_parent_dict(chain, "diol", oh_c_idxs=oh_ids,
-                         double_bond=(db["c1"], db["c2"]), n_oh=2)
-            if chain else None)
-def _try_polyenediol_parent(info: dict, bad: tuple) -> dict | None:
-    """Diol + 2+ C=C → kind='diol' with double_bonds."""
-    if not _polyenediol_good(info, bad): return None
-    oh_ids = _aliph_c_idxs(info, "hydroxyls", 2)
-    if not oh_ids: return None
-    dbs_c = [c for db in info.get("double_bonds") or [] for c in (db["c1"], db["c2"])]
-    chain = _best_cover_pair(info["mol"], _uniq_atoms(oh_ids, dbs_c))
-    return (_parent_dict(chain, "diol", oh_c_idxs=oh_ids,
-                         double_bonds=_db_pairs(info), n_oh=2)
-            if chain else None)
-def _try_alkynediol_parent(info: dict, bad: tuple) -> dict | None:
-    """Diol + one C≡C → kind='diol' with triple_bond."""
-    if not _alkynediol_good(info, bad): return None
-    oh_ids = _aliph_c_idxs(info, "hydroxyls", 2)
-    if not oh_ids: return None
-    tb = info["triple_bonds"][0]
-    chain = _best_cover_pair(info["mol"], _uniq_atoms(oh_ids, [tb["c1"], tb["c2"]]))
-    return (_parent_dict(chain, "diol", oh_c_idxs=oh_ids,
-                         triple_bond=(tb["c1"], tb["c2"]), n_oh=2)
-            if chain else None)
-def _try_alkenetriol_parent(info: dict, bad: tuple) -> dict | None:
-    """Triol + one C=C → kind='triol' with double_bond."""
-    if not _alkenetriol_good(info, bad): return None
-    oh_ids = _aliph_c_idxs(info, "hydroxyls", 3)
-    if not oh_ids: return None
-    db = info["double_bonds"][0]
-    chain = _best_cover_pair(info["mol"], _uniq_atoms(oh_ids, [db["c1"], db["c2"]]))
-    return (_parent_dict(chain, "triol", oh_c_idxs=oh_ids,
-                         double_bond=(db["c1"], db["c2"]), n_oh=3)
-            if chain else None)
-def _try_unsat_polyol(info: dict, bad: tuple) -> dict | None:
-    return (_try_alkenediol_parent(info, bad)
-            or _try_alkynediol_parent(info, bad)
-            or _try_polyenediol_parent(info, bad)
-            or _try_alkenetriol_parent(info, bad))
+
 def _ring_fg_try(info: dict, pairs, ekey: str, ckey: str) -> dict | None:
     for pred, kind in pairs:
         if pred(info):

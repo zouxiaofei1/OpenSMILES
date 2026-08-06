@@ -20,21 +20,84 @@ Layer2 是 NamePredict 六层流水线中体量最大、逻辑最复杂的一层
 
 ### 候选生成架构
 
-Layer2 不采用"if-else 短路"的单一路径选择，而是 **并行生成所有可行的母体候选，再统一评分排序**。这避免了因选择顺序错误导致的优先级问题。
+Layer2 采用 **"P-44 规则驱动管线"为主路径** 的设计，辅以并行候选评分仲裁。
 
-核心入口在 `parent_selector.py` 和 `candidates.py`：
+**主路径（P-44 规则驱动）**：`candidates._collect_candidates` 当前只调用 `_principal_candidates`
+→ `rule_driven_parent_candidates`（`principal_parent.py`）。这条管线按 IUPAC P-44 规则逐步筛选：
+先用 `PRINCIPAL_REGISTRY`（P-41）选主官能团，再枚举可行骨架（开链 + 环系统），用
+P-44.1.2 / P-44.2 / P-44.3 / P-44.4 逐条筛选，最后表达为 typed parent dict
+（`principal_expression.py`）。详见下文「P-44 规则驱动主链管线」。
 
 ```
-_carbonyl_parent(info)  → acid/ester/amide/anhydride → aldehyde/ketone
-_hetero_parent(info)    → alcohol/thiol/amine/ether/sulfide
-_fg_candidates(info)    → fg_producers 中注册的所有 FG try 函数
-_ring_candidates(info)  → ring_producers 中注册的所有环 try 函数
-_benzene_candidate(info)→ 苯环候选（特殊处理 n_unhandled）
-_unsat_candidates(info) → alkyne/polyene/alkene
-_alkane_fallback(info)  → 最终兜底（最长碳链 = 烷烃）
+_collect_candidates(info)            # 当前唯一入口
+└─ _principal_candidates(info)       # = rule_driven_parent_candidates(info)
+   ├─ select_principal_group         # P-41 注册表选主官能团
+   ├─ select_principal_skeletons     # 枚举+筛选骨架 (P-44.1.2/2/3/4)
+   └─ express_ring/chain_principal   # typed 表达；无主官能团→纯烃表达
 ```
+
+**经典并行通道（已注释/部分删除）**：历史上 Layer2 通过 `_carbonyl_parent` / `_hetero_parent`
+/ `_fg_candidates` / `_ring_candidates` / `_unsat_candidates` / `_benzene_candidate` /
+`_alkane_fallback` 并行生成所有候选再统一评分（scoring.py）。当前 `_collect_candidates` 中
+该通道已被注释；**`fg_producers` 注册层整体删除**（`fg_try_fns()` 已移除）；`ring_try_fns()`
+/ `unsat_try_fns()` 注册表仍保留——前者被 principal 管线的骨架 scaffold 识别复用。
 
 > **源:** `E:\chem\src\namepredict\layer2\candidates.py:103-106`
+
+### P-44 规则驱动主链管线
+
+当前 Layer2 的**主路径**。与旧架构"并行 try + scoring 仲裁"不同，这条管线按 IUPAC P-44
+条款逐步筛选，由四个模块协作，全部无副作用纯函数、可单测：
+
+```mermaid
+flowchart TD
+    A[L1 analyze info] --> B[principal_selection<br/>P-41 注册表选主官能团]
+    B --> C[parent_skeleton<br/>枚举开链+环骨架]
+    C --> D{P-44 逐条筛选}
+    D --> D1[keep_max_principal_coverage]
+    D1 --> D2[keep_p44_1_2: 环>链 + 最高杂原子]
+    D2 --> D3{拓扑}
+    D3 -->|纯链| D4[keep_p44_3: 杂原子数→链长]
+    D3 -->|环| D5[keep_p44_2: 杂环>碳环→N数→杂原子→环数→原子数]
+    D4 --> D6[keep_p44_4_unsaturation]
+    D5 --> D6
+    D6 --> E[principal_expression<br/>typed 表达]
+    E -->|有主官能团| F[express_chain/ring_principal]
+    E -->|无主官能团| G[express_hydrocarbon_principal 纯烃]
+```
+
+1. **`principal_selection.py`** — `select_principal_group()` 按 `PRINCIPAL_REGISTRY`（P-41 class
+   优先级）选出主官能团类。注册表把 FG 分成三档表达权限：**SUFFIX**（acid/ester/amide/nitrile/
+   aldehyde/ketone/alcohol/thiol/amine 等，有资格成为主官能团并 typed 表达）、**LEGACY_COMPAT**
+   （sulfide/sulfone/carbamate 等，不参与主官能团选择）、**PREFIX_ONLY**（ether，只当前缀）。
+   `principal_spec()` 只放行 SUFFIX 类。
+
+2. **`parent_skeleton.py`** — `enumerate_principal_skeletons()` 从主官能团的附着点出发枚举
+   **开链候选**（`_open_chains`，锚点为空即纯烃时退化为最长链）与**环系统候选**
+   （`_ring_candidates`，每个环系统经 `_producer_scaffold_ids` 运行 ring producers 标注
+   `scaffold_id`）。随后 `select_principal_skeletons()` 依次施加 `keep_max_principal_coverage` →
+   `keep_p44_1_2`（环优先 + 最高优先级杂原子）→ 按拓扑走 `keep_p44_3`（链）/ `keep_p44_2`
+   （环，键序：含杂原子→N 数→最高杂原子→环数→环原子数）→ `keep_p44_4_unsaturation`
+   （最多不饱和度，排除主 FG 自身多元键）。
+
+3. **`principal_expression.py`** — 把选定的骨架表达为 parent dict：
+   - `express_chain_principal()` — 开链 ACID/KETONE/ALCOHOL/AMINE（`_CHAIN_KINDS`）
+   - `express_ring_principal()` — 环骨架；**苯环 + 单 FG** 走 `_RETAINED_RING_KINDS` 保留名表
+     （ACID→benzoic、ESTER→benzoate、ALDEHYDE→benzaldehyde、NITRILE→benzonitrile、AMIDE→
+     benzamide、ALCOHOL→phenol、AMINE→aniline），环酮走 `_ring_ketone_kind`，其余走
+     `_resolved_ring_kind`（scaffold 解析）
+   - 每个候选携带 `PrincipalExpressionFacts`（group_class/multiplicity/relation/attachment_atoms）
+     与 `ScaffoldIdentity`（scaffold_id / naming_class / n_rings / ring）
+   - `express_hydrocarbon_principal()` — **无主官能团（纯烃）**：开链按 C=C/C≡C 分布给
+     alkane/alkene/alkyne/polyene；环按芳香性分流（保留 scaffold 如 benzene/naphthalene，或
+     按环内不饱和度给 cycloalkane/cycloalkene/cyclopolyene）
+
+4. **`principal_parent.py`** — `rule_driven_parent_candidates()` 编排以上：选主官能团 →
+   选骨架 → 表达；对 ester×2（`_diester_parent`）与环酮等走 `_special_expression`；单 FG 无环
+   的 ester/amide/aldehyde/ketone/nitrile/amine 走 `_open_chain_expression`（直接调用
+   `parent_selector` 的经典 builder）。`_unsupported_typed_ring` 拒绝"无表达能力骨架"的酮表达。
+
+> **源:** `E:\chem\src\namepredict\layer2\principal_selection.py:25-33`, `E:\chem\src\namepredict\layer2\parent_skeleton.py:193-215`, `E:\chem\src\namepredict\layer2\principal_expression.py:37-45, 108-125, 211-222`, `E:\chem\src\namepredict\layer2\principal_parent.py:114-124`
 
 ### Kind Registry: 母体元数据中心
 
@@ -42,28 +105,29 @@ _alkane_fallback(info)  → 最终兜底（最长碳链 = 烷烃）
 
 - **`KindMeta`**: 每个 kind 的评分字段 (`fg_rank`, `ring`, `n_rings`, `retained`) 和命名 stem
 - **`fg_rank`**: 官能团类别优先级 (acid=13, ester=11, ketone=6, alcohol=5, amine=3...)，遵循 IUPAC P-41 优先顺序
-- **`ring_try_fns()` / `fg_try_fns()` / `unsat_try_fns()`**: 三个可扩展的 try 函数注册表
+- **`ring_try_fns()` / `unsat_try_fns()`**: 两个可扩展的 try 函数注册表（`fg_try_fns()` 已随 fg 注册层删除）
+- **ScaffoldSpec 单一 stem 权威源**: 词干 (stem_en/zh) 与编号策略由 `scaffold/specs.py` 提供，`kind_registry._load_from_scaffold_specs()` 在 bootstrap 末尾从 Spec 同步 `KindMeta`
 
-注册表通过 bootstrap 模式懒加载：`ring_producers.py`、`fg_producers.py`、`unsat_producers.py` 各自在模块导入时将 try 函数注入 `kind_registry`。新增母体类别只需在这些文件中添加一个 try 函数，无需修改核心选择逻辑。
+注册表通过 bootstrap 模式懒加载：`ring_producers.py`、`unsat_producers.py` 在模块导入时将 try 函数注入 `kind_registry`；FG 母体不再走注册表，改由 principal 管线的 typed 表达 + `parent_selector` 的直接 import 处理。
 
 > **源:** `E:\chem\src\namepredict\layer2\kind_registry.py:7-17, 157-228`
 
 ### Try 函数注册机制
 
-Layer2 的候选生成采用 **Bootstrap Register 模式**，将母体探测逻辑与核心调度解耦。三类母体各有独立的注册表：
+Layer2 的候选生成曾采用 **Bootstrap Register 模式**，将母体探测逻辑与核心调度解耦。该模式当前仅存
+**环（ring）与不饱和（unsat）** 两类注册表——**FG 注册层（`fg_producers.py` 与其注册机制）已整体删除**
+（`fg_try_fns()` / `register_fg_try()` / `_FG_TRY` 均移除），FG 母体现在由 principal 管线的 typed
+表达 + `parent_selector` 的直接 import 处理。
 
-| 注册表 | 存储位置 | 生产者文件 | 访问函数 |
-|--------|---------|-----------|---------|
-| `_RING_TRY` | `kind_registry.py:157` | `ring_producers.py` | `ring_try_fns()` |
-| `_FG_TRY` | `kind_registry.py:182` | `fg_producers.py` | `fg_try_fns()` |
-| `_UNSAT_TRY` | `kind_registry.py:207` | `unsat_producers.py` | `unsat_try_fns()` |
+| 注册表 | 生产者文件 | 访问函数 | 活跃消费者 |
+|--------|-----------|---------|-----------|
+| `_RING_TRY` | `ring_producers.py` | `ring_try_fns()` | `parent_skeleton._producer_scaffold_ids`（骨架 scaffold 标注） |
+| `_UNSAT_TRY` | `unsat_producers.py` | `unsat_try_fns()` | `candidates._unsat_candidates`（经典通道，当前被注释） |
 
-**注册流程：**
+**注册流程（ring）：**
 
-1. `ring_producers.py` 定义 `_RING_PRODUCERS` 元组（~28 个函数），在模块末尾调用 `_bootstrap()` 遍历元组，对每个函数调用 `register_ring_try(fn)` 将其追加到 `_RING_TRY` 列表
-2. `fg_producers.py` 同理定义 `_FG_PRODUCERS` 元组（~30 个函数），通过 `register_fg_try(fn)` 注册
-3. `unsat_producers.py` 定义 `_UNSAT_PRODUCERS`（3 个函数），通过 `register_unsat_try(fn)` 注册
-4. `kind_registry` 中的 `_ensure_*_producers()` 函数采用**懒加载**——当 `candidates.py` 首次调用 `fg_try_fns()` 时，通过 `import fg_producers` 触发模块级 `_bootstrap()`，确保注册表在使用前已填充
+1. `ring_producers.py` 定义 `_RING_PRODUCERS` 元组（~31 个函数：anthraquinone→benzene→cycloalkane→bridged/spiro），模块末尾 `_bootstrap()` 遍历元组调用 `register_ring_try(fn)` 追加到 `_RING_TRY`
+2. `kind_registry` 的 `_ensure_ring_producers()` 懒加载——`parent_skeleton._producer_scaffold_ids` 首次调用 `ring_try_fns()` 时触发 import，确保注册表已填充
 
 **统一的 try 函数签名：**
 
@@ -71,39 +135,21 @@ Layer2 的候选生成采用 **Bootstrap Register 模式**，将母体探测逻�
 def _try_xxx_parent(info: dict) -> dict | None
 ```
 
-每个 try 函数接收 layer1 的 info 字典，返回一个 parent dict（包含 `chain`, `kind`, `n_carbons` 等字段），或返回 `None` 表示该候选不适用。所有 try 函数在 `candidates._fg_candidates(info)` 中被并行评估：
+每个 try 函数接收 layer1 的 info 字典，返回 parent dict（`chain`, `kind`, `n_carbons` 等），或 `None`。
+ring try 函数被 `parent_skeleton._producer_scaffold_ids` 并行评估，仅取其 `chain` → `scaffold_id`
+映射来标注骨架身份：
 
-```python
-def _fg_candidates(info: dict) -> list[dict]:
-    return [c for fn in _kr.fg_try_fns() if (c := fn(info)) is not None]
-```
-
-> **源:** `E:\chem\src\namepredict\layer2\candidates.py:43-44`
+> **源:** `E:\chem\src\namepredict\layer2\parent_skeleton.py:73-89`, `E:\chem\src\namepredict\layer2\ring_producers.py:76-108`
 
 **具体示例：**
 
-`_try_pyridine_parent`（`ring_producers.py:95`）检测分子是否含单一无取代吡啶环。如果 info 中的 ring_systems 包含一个六元芳环且恰好含一个氮原子，则返回 `parent_dict(ring_atoms, "pyridine")`；否则返回 `None`。
+`_try_pyridine_parent`（`ring_producers.py:95`）检测分子是否含单一无取代吡啶环。如果 info 中的
+ring_systems 包含一个六元芳环且恰好含一个氮原子，则返回 `parent_dict(ring_atoms, "pyridine")`；否则返回 `None`。
 
-`_try_simple_carboxyl_parent`（对应 `_try_acid` 在 `fg_producers.py:56-58`）检查 `info["has_acid"]` 和 `info["carboxyls"]`，若为真则委托给 `_acid_parent(info)`。`_acid_parent` 内部先尝试环状酸母体（苯甲酸、吡啶甲酸等），再尝试链状酸：
-
-```python
-def _acid_parent_core(info: dict) -> dict | None:
-    top = _ring_acid_try(info) or _poly_acid_try(info)
-    if top is not None:
-        return top
-    ...
-```
-
-> **源:** `E:\chem\src\namepredict\layer2\parent_selector.py:343-354`
-
-**新增母体的步骤：**
-1. 在对应的 producer 文件中实现 `_try_xxx_parent(info)` 函数
-2. 将其加入 `_RING_PRODUCERS` / `_FG_PRODUCERS` / `_UNSAT_PRODUCERS` 元组（**顺序很重要**——元组中靠前的函数先被评分比较）
-3. 在 `kind_registry.py` 的 `_add()` 调用中声明该 kind 的 `fg_rank`、`ring`、`retained` 等元数据
-
-这种设计确保核心调度逻辑（`candidates.py`）永远不需要修改，新母体类别通过纯注册加入。
-
-> **源:** `E:\chem\src\namepredict\layer2\ring_producers.py:76-108`, `E:\chem\src\namepredict\layer2\fg_producers.py:200-228`, `E:\chem\src\namepredict\layer2\kind_registry.py:157-228`
+**新增 ring 母体的步骤：**
+1. 在 `ring_producers.py` 实现 `_try_xxx_parent(info)` 函数
+2. 将其加入 `_RING_PRODUCERS` 元组
+3. 在 `kind_registry.py`（或 `scaffold/specs.py` 的 `ScaffoldSpec`）声明该 kind 的 `fg_rank`、`ring`、`retained`、stem 等元数据
 
 ### 评分体系 (P-44 Seniority)
 
@@ -548,6 +594,11 @@ def _try_spiro_parent(info: dict) -> dict | None:
 
 ## 数据流图
 
+> **架构版本说明**：以下决策树 / 模块图 / 时序图 / 走查描述的是**经典并行通道**（`_fg_candidates` /
+> `fg_producers` 等）。当前 `_collect_candidates` 已改为 **principal 单路径**（`_principal_candidates`
+> → `rule_driven_parent_candidates`），`fg_producers` 注册层已删除；经典通道的图仅作历史参考，现行
+> 主路径见上文「P-44 规则驱动主链管线」的 Mermaid 流程图。
+
 ### 母体选择决策树
 
 ```mermaid
@@ -915,21 +966,35 @@ Layer3 接收 parent dict 后，遍历所有非 owned_atoms 的重原子（o_idx
 
 | 文件 | 职责 |
 |------|------|
-| `parent_selector.py` | **主文件**: select_parent, iter_parent_candidates, 所有 FG try 函数 (~542 lines) |
-| `candidates.py` | 候选收集 (_collect_candidates), FG/ring/unsat 三类候选并行生成 |
+| `candidates.py` | 候选收集 (_collect_candidates → _principal_candidates 单一路径); polyacid 门控; _alkane_fallback 兜底 |
+| `parent_selector.py` | **经典 FG builder 库**: 所有 FG 母体实现 (acid/ester/ketone/alcohol/amine...)，被 principal 的 _open_chain_expression/_special_expression 直接 import；iter_parent_candidates / select_parent |
 | `scoring.py` | P-44 评分 tuple, _better_parent, _pick_best |
 | `parent_core.py` | 共享工具: _parent_dict, _best_cover_pair, _fg_chain, _is_open_sat, _covers |
 | `parent_selector_common.py` | BAD tuple 常量 (_CORE_BAD, _DIOL_BAD, _DIACID_BAD, _DIONE_BAD...) |
 | `__init__.py` | 导出 `select_parent` |
 
+### P-44 规则驱动管线 (Rule-Driven Principal Pipeline)
+
+| 文件 | 职责 |
+|------|------|
+| `principal_selection.py` | P-41 主官能团选择: select_principal_group, PrincipalGroupSelection |
+| `principal_registry.py` | P-41 class / P-43 表达元数据: PRINCIPAL_REGISTRY, PrincipalFeatureSpec, legacy_rank |
+| `parent_skeleton.py` | 骨架枚举 + P-44 筛选: enumerate_principal_skeletons, select_principal_skeletons, keep_p44_1_2/2/3/4, ParentSkeleton |
+| `principal_expression.py` | typed 表达: express_chain/ring/hydrocarbon_principal, PrincipalExpressionFacts, _RETAINED_RING_KINDS (苯环保留名含 benzoate) |
+| `principal_parent.py` | 编排: rule_driven_parent_candidates, select_principal_parent_skeletons, _open_chain_expression, _special_expression |
+| `parent_candidate.py` | P44Facts / ParentCandidate / with_principal_group_contract / principal_phases |
+| `scaffold/identity.py` | ScaffoldIdentity 拓扑级身份 |
+| `ring_scaffold.py` | 骨架 → ScaffoldIdentity 解析 (retained 匹配 + carbocycle 兜底) |
+| `ring_expression_policy.py` | 环表达能力白名单 (naming_class × FG × multiplicity) |
+| `amine_expression.py` | 中性胺 N 臂 typed facts (NeutralAmineArmFacts / NArm) |
+
 ### 注册与元数据 (Registry & Metadata)
 
 | 文件 | 职责 |
 |------|------|
-| `kind_registry.py` | KindMeta 注册中心, fg_rank, stem, ring 元数据 |
-| `ring_producers.py` | 环候选 try 函数注册表 (~28 entries) |
-| `fg_producers.py` | FG 候选 try 函数注册表 (~30 entries) |
-| `unsat_producers.py` | 不饱和母体 try 函数注册表 (3 entries) |
+| `kind_registry.py` | KindMeta 注册中心, fg_rank, stem, ring 元数据; ring/unsat 注册表 (fg 注册层已删); 从 ScaffoldSpec 同步词干 |
+| `ring_producers.py` | 环候选 try 函数注册表 (~31 entries), 被 _producer_scaffold_ids 消费 |
+| `unsat_producers.py` | 不饱和母体 try 函数注册表 (3 entries, 经典通道当前注释) |
 
 ### 块切割与侧链事实 (Block Cutting & Side Facts)
 

@@ -1,0 +1,69 @@
+{
+ "ok": true,
+ "n": 41,
+ "ratio": 1.0,
+ "parseable": {
+  "ok": 41,
+  "n": 41,
+  "pct": 100.0
+ },
+ "classification": {
+  "ok": 41,
+  "n": 41,
+  "pct": 100.0
+ },
+ "salt_present": {
+  "ok": 39,
+  "n": 41,
+  "pct": 95.1
+ },
+ "salt_type": {
+  "ok": 0,
+  "n": 0,
+  "pct": null
+ },
+ "n_fragments": {
+  "ok": 41,
+  "n": 41,
+  "pct": 100.0
+ },
+ "complete": {
+  "ok": 41,
+  "n": 41,
+  "pct": 100.0
+ },
+ "diffs": [
+  {
+   "idx": 20,
+   "smiles": "C/C(=C\\C(=O)OCCCCCCCCC(=O)[O-])C[C@@H]1OC[C@H](C[C@@H]2O[C@H]2[C@@H](C)[C@H](C)O)[C@@H](O)[C@H]1O.C/C(=C\\C(=O)OCCCCCCCCC(=O)[O-])C[C@@H]1OC[C@H](C[C@@H]2O[C@H]2[C@@H](C)[C@H](C)O)[C@@H](O)[C@H]1O.O.O.[Ca+2]",
+   "real": {
+    "parseable": true,
+    "classification": "organic",
+    "salt": null,
+    "n_fragments": 5
+   },
+   "llm": {
+    "parseable": true,
+    "classification": "organic",
+    "salt": "other",
+    "n_fragments": 5
+   }
+  },
+  {
+   "idx": 28,
+   "smiles": "CCN1C(=CC=CC=Cc2[o+]c3ccccc3n2CC)Oc2ccccc21.[I-]",
+   "real": {
+    "parseable": true,
+    "classification": "organic",
+    "salt": null,
+    "n_fragments": 2
+   },
+   "llm": {
+    "parseable": true,
+    "classification": "organic",
+    "salt": "other",
+    "n_fragments": 2
+   }
+  }
+ ]
+}

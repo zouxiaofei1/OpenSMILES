@@ -171,27 +171,22 @@ def _thiol_parent(info: dict) -> dict:
     return _fg_chain(info, "thiols", "thiol", "sh_c_idx")
 ```
 
-### 2.3 注册 try 函数到 fg_producers
+### 2.3 接入母体选择（fg 注册层已删除）
 
-在 `src/namepredict/layer2/fg_producers.py` 中：
+`fg_producers.py` 及其注册机制（`_FG_PRODUCERS` / `fg_try_fns()`）已整体删除。当前新 FG 的母体
+接入方式取决于是否属于 principal SUFFIX 类：
 
-1. 导入 try 函数（`fg_producers.py:48`）：
+**走 principal typed 管线（acid/ester/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine）**：
+在 `principal_expression.py` 的表达表中声明 kind 与字段：
+- 开链：`_CHAIN_KINDS`（group_class → kind，如 acid→acid/diacid/polycarboxylic）
+- 苯环 + 单 FG：`_RETAINED_RING_KINDS`（如 `ESTER → "benzoate"`）
+- 环骨架：`_RING_FIELDS`（位次字段名）+ `_resolved_ring_kind`（scaffold 组合）
 
-```python
-from namepredict.layer2.sulfoxide import _sulfoxide_parent
-```
-
-2. 在 `_FG_PRODUCERS` 元组中插入（`fg_producers.py:226`）：
-
-```python
-_FG_PRODUCERS = (
-    ...
-    _sulfoxide_parent,
-    ...
-)
-```
-
-**注意**：`_FG_PRODUCERS` 的顺序影响候选生成顺序（先尝试高优先级 FG）。`_sulfoxide_parent` 被放在 ether 和 sulfide 之后，sulfone 之前，遵循 fg_rank 递减顺序。修改顺序前务必检查 dual coverage 测试结果。
+**走经典 builder（sulfoxide/sulfone/醚等非 SUFFIX 类）**：
+在 `parent_selector.py` 实现 `_xxx_parent(info)`，供 principal 的 `_open_chain_expression` /
+`_special_expression` 直接 import。注意：非 SUFFIX 类当前**不参与主官能团选择**（`PRINCIPAL_REGISTRY`
+的 `principal_spec()` 只放行 SUFFIX），纯醚/纯亚砜分子在 principal-only 下仍会落入纯烃兜底，属
+已知能力缺口。
 
 ### 2.4 BAD 元组（如果需要新组合）
 
@@ -365,8 +360,8 @@ sulfoxide 被放在 `_tail` 中（dispatch 链的尾部），因为它的 `fg_ra
 | L1 | `analyzer.py:_FG_BOOL_MORE_KEYS` | `has_*` 布尔键映射 |
 | L1 | `analyzer.py:_p_fg_a/b1/b2` 或 `_fg_parts_b_core` | 注册 entries 收集函数 |
 | L2 | `kind_registry.py:_CHAIN_FG` | kind 字符串 + fg_rank |
-| L2 | 新建 `layer2/{fg}.py` | try 函数 + BAD 元组 + `_make_parent` |
-| L2 | `fg_producers.py:_FG_PRODUCERS` | 注册 try 函数 |
+| L2 | 新建 `layer2/{fg}.py` 或 `parent_selector.py` | `_xxx_parent` + BAD 元组 + `_make_parent` |
+| L2 | `principal_expression.py`（SUFFIX 类） | `_CHAIN_KINDS` / `_RETAINED_RING_KINDS` / `_RING_FIELDS` 表达表 |
 | L2 | `parent_selector_common.py` | BAD 元组（如果需要新组合） |
 | L2 | `parent_ownership.py:_kind_fg_atoms` | FG heteroatom ownership 函数 |
 | L3 | `substituent_extractor.py` | 取代基提取规则（如果需要） |
@@ -388,7 +383,6 @@ sulfoxide 被放在 `_tail` 中（dispatch 链的尾部），因为它的 `fg_ra
 | `src/namepredict/layer1/analyzer.py`（修改处） | ~5 行 | 注册 has_sulfoxide 布尔键 + entries 收集 |
 | `src/namepredict/layer2/kind_registry.py`（修改处） | 1 行 | `("sulfoxide", 2)` |
 | `src/namepredict/layer2/sulfoxide.py` | 46 | try 函数 + BAD + arm_pair + make_parent |
-| `src/namepredict/layer2/fg_producers.py`（修改处） | 2 行 | import + `_sulfoxide_parent` 注册 |
 | `src/namepredict/layer5/sulfoxide_names.py` | 39 | 对称/不对称双语命名 |
 | `src/namepredict/layer5/special_fg_names.py`（修改处） | 2 行 | import + dispatch |
 

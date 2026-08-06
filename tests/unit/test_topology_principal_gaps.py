@@ -1,7 +1,5 @@
 # IUPAC: P-44
 # Layer: L1,L2
-from unittest.mock import patch
-
 import pytest
 from rdkit import Chem
 
@@ -30,10 +28,10 @@ CASES = [
 
 @pytest.mark.parametrize("smiles,kind,en", CASES)
 def test_topology_first_principal_path_owns_target(smiles, kind, en):
+    # fg_try_fns 已随 fg 注册层删除；principal-only 是默认状态。
     info = analyze(Chem.MolFromSmiles(smiles))
-    with patch("namepredict.layer2.kind_registry.fg_try_fns", side_effect=AssertionError):
-        parents = _collect_candidates(info)
-        result = SMILESNNamer().name(smiles)
+    parents = _collect_candidates(info)
+    result = SMILESNNamer().name(smiles)
     owned = [parent for parent in parents if parent.get("kind") == kind]
     assert owned
     count = 2 if kind == "diester" else 1

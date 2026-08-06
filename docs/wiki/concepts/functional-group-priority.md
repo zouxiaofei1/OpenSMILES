@@ -101,7 +101,10 @@ class KindMeta:
 
 这一评分体系使得含羧酸的链状母体（`fg_rank=13`, `has_principal_fg=1`）必然优先于含酮的母体（`fg_rank=6`），无论链长或环数如何。
 
-母体候选的生成来自三类注册表（`fg_try_fns()`, `ring_try_fns()`, `unsat_try_fns()`），所有候选并行生成后通过 `_pick_best()` 从最高分到最低分排序选择。
+母体候选的生成当前以 **P-44 规则驱动管线**为主（`rule_driven_parent_candidates`，见
+[[architecture/layer2-parent-selector]]），评分仍由 `scoring.py` 的 11 维 tuple 仲裁。经典的三类注册表
+中，`fg_try_fns()` 已随 fg 注册层删除；`ring_try_fns()` / `unsat_try_fns()` 仍被保留（前者供骨架
+scaffold 标注复用）。
 
 > **源:** `src/namepredict/layer2/scoring.py:73-95`, `kind_registry.py:175-227` | 详情见 [[architecture/layer2-parent-selector]]
 
@@ -166,9 +169,12 @@ _CORE_BAD = (
 | `kind_registry.is_hetero_ring(kind)` / `is_carbo_ring(kind)` | 环系类型查询 |
 | `kind_registry.retained_bonus(kind)` | 是否为保留名 |
 | `kind_registry.parent_names(kind)` | 返回 `(en_stem, zh_stem)` 元组 |
-| `kind_registry.fg_try_fns()` / `ring_try_fns()` / `unsat_try_fns()` | 返回注册的 try 函数列表 |
+| `kind_registry.ring_try_fns()` / `unsat_try_fns()` | 返回注册的 try 函数列表（`fg_try_fns()` 已删除） |
 
-新增 FG 种类时，只需在对应 producer 文件中添加 try 函数并注册到 `kind_registry`，无需修改 scoring、candidates 或 assembler 的核心逻辑。这一架构实现了**开放-封闭原则（Open-Closed Principle）**：对扩展开放（新增 try 函数），对修改封闭（评分/选择/组装逻辑不变）。
+新增 FG 种类时，若走 principal typed 管线（acid/alcohol/ketone/amine 等），在 `_RETAINED_RING_KINDS` /
+`_CHAIN_KINDS` 等表达表中声明 kind 与字段即可；若走经典 builder（`parent_selector.py`），实现
+`_xxx_parent` 并供 `_open_chain_expression` 使用。评分、候选收集与组装逻辑不变，仍保持
+**开放-封闭原则**。
 
 > **源:** `src/namepredict/layer2/kind_registry.py:89-227`
 

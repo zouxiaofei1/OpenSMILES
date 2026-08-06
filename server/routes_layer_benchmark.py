@@ -44,6 +44,23 @@ SCORE = ROOT / "data" / "layer0_score.json"
 
 _LLM_RUNNER = ROOT / "data" / "run_layer0_llm.py"
 SPAWN_LOG = ROOT / "data" / "layer0_spawn_error.log"
+SAMPLE_META = ROOT / "data" / "layer0_sample_meta.json"  # 持久化上次抽样 ratio/n（重启后仍可读）
+
+# 单物质分析复用 data/run_layer0_llm 的 prompt 与解析（单点维护）
+_llm_runner = None
+
+
+def _import_llm_runner():
+    """Lazily import run_layer0_llm (data/ is not a package)."""
+    global _llm_runner
+    if _llm_runner is not None:
+        return _llm_runner
+    data_dir = str(ROOT / "data")
+    if data_dir not in sys.path:
+        sys.path.insert(0, data_dir)
+    import run_layer0_llm  # noqa: PLC0415
+    _llm_runner = run_layer0_llm
+    return _llm_runner
 
 # ── subprocess / mutable state ───────────────────────────────────
 _proc: subprocess.Popen | None = None
@@ -62,6 +79,11 @@ def _read_json(path: Path, default: Any) -> Any:
 def _source_rows() -> list[dict]:
     rows = _read_json(SOURCE, [])
     return rows if isinstance(rows, list) else []
+
+
+def _sample_meta() -> dict[str, Any]:
+    meta = _read_json(SAMPLE_META, {})
+    return meta if isinstance(meta, dict) else {}
 
 
 def _sample_rows(rows: list[dict], ratio: float) -> list[dict]:
@@ -194,8 +216,15 @@ def _compare_one(real: dict[str, Any], llm: dict[str, Any]) -> dict[str, Any]:
     out["classification"] = (real.get("classification") == lc) if lc in ("organic", "inorganic") else None
 
     r_salt, l_salt = _real_salt_type(real.get("salt_meta")), _llm_salt_type(llm.get("salt"))
+    out["both_salt"] = (r_salt is not None and l_salt is not None)
     out["salt_present"] = ((r_salt is not None) == (l_salt is not None))
-    out["salt_type"] = (r_salt == l_salt) if (r_salt is not None and l_salt is not None) else None
+    # 盐类型：两边都有盐 → 比较 type；两边都无盐 → 视为一致；否则 → 不一致
+    if out["both_salt"]:
+        out["salt_type"] = (r_salt == l_salt)
+    elif r_salt is None and l_salt is None:
+        out["salt_type"] = True
+    else:
+        out["salt_type"] = False
 
     ln = llm.get("n_fragments")
     out["n_fragments"] = (int(real.get("n_fragments", 0)) == int(ln)) if isinstance(ln, int) else None
@@ -222,11 +251,16 @@ def _run_score() -> dict[str, Any]:
         llm = results.get(str(idx)) or {}
         cmp = _compare_one(real, llm)
         for k in counts:
+            if k == "salt_type":  # salt_type 只在 both_salt 分支累计（分母为有盐行）
+                continue
             if cmp[k] is True:
                 counts[k] += 1
-        if cmp.get("salt_type") is True:
+        if cmp.get("both_salt"):
             n_salt_both += 1
-        if not cmp["complete"] or not cmp["parseable"] or not cmp["classification"]:
+            if cmp["salt_type"] is True:
+                counts["salt_type"] += 1
+        if not (cmp["parseable"] and cmp["classification"] and cmp["salt_present"]
+                and cmp["salt_type"] and cmp["n_fragments"]):
             diffs.append({
                 "idx": idx, "smiles": row.get("smiles"),
                 "real": {"parseable": real["parseable"], "classification": real.get("classification"),
@@ -239,7 +273,7 @@ def _run_score() -> dict[str, Any]:
     pct = lambda c: round(100.0 * c / n, 1) if n else 0.0
     score = {
         "ok": True, "n": n,
-        "ratio": _sample_ratio,
+        "ratio": _sample_meta().get("ratio", _sample_ratio),
         "parseable": {"ok": counts["parseable"], "n": n, "pct": pct(counts["parseable"])},
         "classification": {"ok": counts["classification"], "n": n, "pct": pct(counts["classification"])},
         "salt_present": {"ok": counts["salt_present"], "n": n, "pct": pct(counts["salt_present"])},
@@ -263,6 +297,10 @@ class ScoreRequest(BaseModel):
     layer: int = Field(default=0, ge=0, le=5)
 
 
+class AnalyzeOneRequest(BaseModel):
+    smiles: str = Field(..., min_length=1, description="单物质 SMILES")
+
+
 # ── endpoints ────────────────────────────────────────────────────
 
 @router.post("/layer-benchmark/sample")
@@ -276,6 +314,7 @@ def layer_sample(req: SampleRequest) -> dict[str, Any]:
         return {"ok": False, "error": f"数据源为空: {SOURCE}"}
     sample = _sample_rows(rows, req.ratio)
     SAMPLE.write_text(json.dumps(sample, ensure_ascii=False), encoding="utf-8")
+    SAMPLE_META.write_text(json.dumps({"ratio": req.ratio, "n": len(sample)}), encoding="utf-8")
     _sample_ratio = req.ratio
     _sample_n = len(sample)
     _start_llm_generation()
@@ -297,7 +336,7 @@ def layer_data() -> dict[str, Any]:
     score = _read_json(SCORE, None)
     return {
         "ok": True,
-        "ratio": _sample_ratio,
+        "ratio": _sample_meta().get("ratio", _sample_ratio),
         "sample_n": len(sample) if isinstance(sample, list) else 0,
         "truth": truth,
         "score": score if isinstance(score, dict) else None,
@@ -319,3 +358,19 @@ def layer_score_result() -> dict[str, Any]:
     if isinstance(score, dict):
         return {"ok": True, "score": score}
     return {"ok": False, "error": "还没有跑分结果"}
+
+
+@router.post("/layer-benchmark/analyze-one")
+def layer_analyze_one(req: AnalyzeOneRequest) -> dict[str, Any]:
+    """Single-molecule Layer0 analysis via LLM（等价 run_layer0_llm --smiles）."""
+    try:
+        runner = _import_llm_runner()
+        raw = runner._call_llm(f"SMILES: {req.smiles}")
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": f"LLM runner 不可用: {exc}"}
+    if raw is None:
+        return {"ok": False, "error": "LLM 无有效返回（API 失败或重试耗尽）"}
+    entry = runner._sanitize(raw, req.smiles)
+    for key in ("id", "error"):
+        entry.pop(key, None)
+    return {"ok": True, "result": entry}

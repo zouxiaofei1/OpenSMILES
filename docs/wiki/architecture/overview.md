@@ -93,27 +93,30 @@ info = {
 
 ### 2.3 Layer 2 -- Parent Selector（母体选择器）
 
-**职责**：母体氢化物（parent hydride）候选生成 + 评分 + 归属
+**职责**：母体氢化物（parent hydride）选择——按 IUPAC P-44 规则驱动管线选出主链/主环母体
 
-这是整个流水线中代码量最大的层（约占 60%，约 85 个文件），位于 `src/namepredict/layer2/`。
+这是整个流水线中代码量最大的层（约占 60%，约 100 个文件），位于 `src/namepredict/layer2/`。
 
-**两层调度架构**：
+**主路径（P-44 规则驱动管线）**：
 
-1. **iter_parent_candidates(info)**（`src/namepredict/layer2/parent_selector.py:159`）：生成器，依次调用各 producer 模块生成候选母体。每个 producer 检查 info dict 特征（如是否含苯环、是否开链羧酸），匹配则 yield 一个 parent dict。
-2. **select_parent(info)**：始终返回默认母体（由 parent_core 模块生成），作为降级兜底。
+`candidates._collect_candidates` → `_principal_candidates` → `rule_driven_parent_candidates`
+（`principal_parent.py`）。该管线按 IUPAC P-44 逐步筛选：
 
-**Producer 模块**（按化学领域划分）：
+1. **主官能团选择**（`principal_selection.py`）：按 `PRINCIPAL_REGISTRY`（P-41）优先级选主官能团
+2. **骨架枚举 + 筛选**（`parent_skeleton.py`）：枚举开链 + 环系统骨架，依次施加
+   P-44.1.2（环>链 + 最高杂原子）/ P-44.2（环系统优先级）/ P-44.3（链长）/ P-44.4（不饱和度）
+3. **typed 表达**（`principal_expression.py`）：`express_chain/ring_principal` 产出带
+   `PrincipalExpressionFacts` 与 `ScaffoldIdentity` 的 parent dict；苯环 + 单 FG 走
+   `_RETAINED_RING_KINDS` 保留名表（benzoic / **benzoate** / benzaldehyde / phenol / aniline 等）；
+   无主官能团的纯烃走 `express_hydrocarbon_principal`（alkane/alkene/alkyne/polyene/环烷/保留 scaffold）
 
-| 领域 | 代表模块 | 覆盖范围 |
-|------|---------|---------|
-| 开链脂肪族 | `aliph_fg.py`, `polycarboxylic.py`, `alkynoic.py` | 醇/酮/酸/胺/烯/炔 |
-| 苯系芳香族 | `ring_parent.py`, `arene_fg_parent.py`, `arene_carbonyl.py` | 苯/苯二酚/苯胺/苯甲酸 |
-| 稠环芳香族 | `naphthalene.py`, `anthracene.py`, `quinoline.py` | 萘/蒽/喹啉衍生物 |
-| 杂环芳香族 | `indole.py`, `benzofuran.py`, `pyridine.py`, `azole13.py` | 吲哚/苯并呋喃/吡啶/唑 |
-| 饱和杂环 | `sat_hetero.py`, `sat_hetero_one.py`, `sat_hetero_carboxylic.py` | 氧杂/氮杂/硫杂环烷 |
-| 特殊功能团 | `phosphate.py`, `sulfonate.py`, `guanidine.py`, `urea.py` | 磷酸酯/磺酸/胍/脲 |
-| 桥环/螺环 | `bridged_parent.py`, `spiro_parent.py` | 桥环/螺环母体 |
-| FG 母体（新） | `arene_fg_parent.py`, `cyclo_poly_fg.py` | NH2/CHO/CN 作为母体后缀 |
+**经典 producer 体系（部分保留）**：
+
+- `ring_producers.py`（~31 个环 try 函数）经 `ring_try_fns()` 被骨架枚举的 `_producer_scaffold_ids`
+  消费（标注骨架 scaffold_id）
+- `parent_selector.py` 的经典 FG builder（`_ester_parent`/`_amide_parent`/`_ketone_parent` 等）
+  被 `_open_chain_expression` / `_special_expression` 直接 import（单 FG 无环酯/酰胺/醛/酮/腈/胺）
+- **`fg_producers` 注册层已整体删除**；`_collect_candidates` 中的经典并行通道已被注释
 
 **parent dict 结构**：
 
@@ -122,7 +125,8 @@ parent = {
     "kind": str,          # 母体种类：决定 L4/L5 的 dispatch 路径
     "chain": [int, ...],  # 母体链原子索引（定向到 L4）
     "owned_atoms": set,   # 归母体所有的原子（L2->L3 的边界桥梁）
-    "double_bonds": [...], # 双键信息
+    "principal_expression_facts": ...,  # typed 主基团表达（L4/L5 消费）
+    "scaffold_id": str, "scaffold_identity": ...,  # 骨架身份（编号策略）
     # FG 特定字段
     "oh_c_idx": int,      # 羟基碳索引
     "cooh_c_idxs": [...], # 羧基碳索引
@@ -131,11 +135,10 @@ parent = {
 }
 ```
 
-**评分系统**：`scoring.py` 对候选做多维度评分（骨架覆盖率、官能团优先级、产业链长度等），确保最优母体被选中。
+**评分与门控**：`scoring.py` 对候选做 11 维 P-44 评分；`candidate_gate.py` 提供类型化门控
+（`SCOPED_REJECT` / `GLOBAL_REJECT`）防止多元羧酸 fallback 绕过。
 
-**CandidateGate**：`candidate_gate.py` 提供类型化的门控合约 -- producer 可以将自己的候选标记为 `SCOPED_REJECT` 或 `GLOBAL_REJECT`，由 `gate_result()` 统一仲裁。
-
-> 源文件：`src/namepredict/layer2/parent_selector.py`, `src/namepredict/layer2/scoring.py`, `src/namepredict/layer2/candidate_gate.py`, `src/namepredict/layer2/parent_core.py`
+> 源文件：`src/namepredict/layer2/principal_parent.py`, `src/namepredict/layer2/parent_skeleton.py`, `src/namepredict/layer2/principal_expression.py`, `src/namepredict/layer2/principal_selection.py`, `src/namepredict/layer2/parent_selector.py`, `src/namepredict/layer2/scoring.py`, `src/namepredict/layer2/candidate_gate.py`
 
 ### 2.4 Layer 3 -- Substituent Extractor（取代基提取器）
 

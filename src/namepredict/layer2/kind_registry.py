@@ -212,31 +212,6 @@ def ring_try_fns() -> list:
     return list(_RING_TRY)
 
 
-# Ordered FG parent producers (filled by layer2.fg_producers bootstrap).
-_FG_TRY: list = []
-_FG_BOOTSTRAPPED = False
-
-
-def register_fg_try(fn) -> None:
-    """Append an FG parent producer: (info) -> parent dict | None."""
-    _FG_TRY.append(fn)
-
-
-def _ensure_fg_producers() -> None:
-    """Import fg_producers once so fg_try_fns works without candidates import."""
-    global _FG_BOOTSTRAPPED
-    if _FG_BOOTSTRAPPED:
-        return
-    from namepredict.layer2 import fg_producers as _fp  # noqa: F401
-    _FG_BOOTSTRAPPED = True
-
-
-def fg_try_fns() -> list:
-    """Return registered FG parent try callables (order = try order)."""
-    _ensure_fg_producers()
-    return list(_FG_TRY)
-
-
 # Ordered unsat parent producers (filled by layer2.unsat_producers bootstrap).
 _UNSAT_TRY: list = []
 _UNSAT_BOOTSTRAPPED = False

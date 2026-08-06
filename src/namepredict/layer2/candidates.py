@@ -1,14 +1,8 @@
 """Layer2 parent-candidate collection (scored by layer2.scoring, P-44).
 
-FG, ring, and unsat classes each try independently (no short-circuit `or`).
-Scoring then picks the best among all viable parents so `_FG_RANK`
-actually arbitrates acid vs alcohol vs amine, etc.
-
-FG parent producers are registered in `layer2.fg_producers` →
-`kind_registry.fg_try_fns()`; ring parents in `layer2.ring_producers` →
-`kind_registry.ring_try_fns()`; open-chain unsat hydrocarbon parents in
-`layer2.unsat_producers` → `kind_registry.unsat_try_fns()` (not hand-written
-tuples here).
+Ring parents in `layer2.ring_producers` → `kind_registry.ring_try_fns()`;
+open-chain unsat hydrocarbon parents in `layer2.unsat_producers` →
+`kind_registry.unsat_try_fns()`.
 """
 from __future__ import annotations
 

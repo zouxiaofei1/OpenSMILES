@@ -173,12 +173,6 @@ scope:
 ---
 
 
-## 源码引用格式
-
-```markdown
-> **源:** `src/namepredict/layer2/parent_selector.py:142-158`
-> 母体选择主逻辑，按官能团优先级遍历候选母体链。
-```
 
 ---
 ### IUPAC 规则覆盖
