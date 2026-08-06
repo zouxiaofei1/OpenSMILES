@@ -126,17 +126,26 @@ Layer 2 是管线中最复杂的部分，负责根据检测到的 FG 集合选�
 
 ### 2.1 注册 kind 和 fg_rank
 
-在 `src/namepredict/layer2/kind_registry.py:21-36` 的 `_CHAIN_FG` 元组中添加新条目：
+`fg_rank` 的单一权威是 `src/namepredict/layer2/principal.py` 的 `PRINCIPAL_REGISTRY`
+（FG → `PrincipalFeatureSpec.compatibility_rank`，遵循 IUPAC P-41 顺序）；`kind_registry.py`
+的 `_KIND_CLASS` 表把 kind 字符串映射到 FG 枚举，`_load_chain_fg()` 遍历其 keys 注册。
+新增 chain FG 分两步：
+
+1. 在 `PRINCIPAL_REGISTRY` 中补充该 FG 的 `PrincipalFeatureSpec`，expression 用
+   `LEGACY_COMPAT`（非 SUFFIX 类不参与主官能团选择，`principal_spec()` 只放行 SUFFIX）：
 
 ```python
-_CHAIN_FG: tuple[tuple[str, int], ...] = (
-    ...
-    ("sulfoxide", 2),   # fg_rank=2, 低优先级，通常为取代基前缀
-    ...
-)
+FG.SULFOXIDE: PrincipalFeatureSpec(PrincipalPriority(41, (3,)), PrincipalExpression.LEGACY_COMPAT, 2),
 ```
 
-`sulfoxide` 的 `fg_rank=2`，与 ether 和 sulfide 同级——在 IUPAC P-41 中，它们都是最低优先级的含杂原子 FG，只有当分子中无更高优先级 FG 时才成为 principal characteristic group。
+2. 在 `kind_registry.py` 的 `_KIND_CLASS` 中补 kind→FG 映射：
+
+```python
+"sulfoxide": FG.SULFOXIDE,
+```
+
+`sulfoxide` 的 `fg_rank=2`（即 `compatibility_rank`），与 ether 和 sulfide 同级——在 IUPAC P-41 中，
+它们都是最低优先级的含杂原子 FG，只有当分子中无更高优先级 FG 时才成为 principal characteristic group。
 
 ### 2.2 创建 try 函数
 
@@ -363,7 +372,8 @@ sulfoxide 被放在 `_tail` 中（dispatch 链的尾部），因为它的 `fg_ra
 | L1 | `analyzer.py` 或新建 `{fg}.py` | 检测逻辑 + entries 函数 |
 | L1 | `analyzer.py:_FG_BOOL_MORE_KEYS` | `has_*` 布尔键映射 |
 | L1 | `analyzer.py:_p_fg_a/b1/b2` 或 `_fg_parts_b_core` | 注册 entries 收集函数 |
-| L2 | `kind_registry.py:_CHAIN_FG` | kind 字符串 + fg_rank |
+| L2 | `principal.py:PRINCIPAL_REGISTRY` | `PrincipalFeatureSpec`（`LEGACY_COMPAT` + `compatibility_rank`） |
+| L2 | `kind_registry.py:_KIND_CLASS` | kind→FG 映射 |
 | L2 | 新建 `layer2/{fg}.py` 或 `parent_selector.py` | `_xxx_parent` + 互斥 keys + `_make_parent` |
 | L2 | `principal_expression.py`（SUFFIX 类） | `_CHAIN_KINDS` / `_RETAINED_RING_KINDS` / `_RING_FIELDS` 表达表 |
 | L2 | `fg_helpers.py` | `_no_fgs` 互斥检查（如需要） |

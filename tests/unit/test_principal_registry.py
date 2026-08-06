@@ -63,6 +63,11 @@ def test_legacy_kind_rank_is_registry_projection() -> None:
 @pytest.mark.parametrize("kind,rank", [
     ("carbamate", 11), ("hydrazine", 4), ("sulfone", 6),
     ("sulfide", 2), ("sulfoxide", 2), ("isocyanate", 8),
+    # Migrated from _CHAIN_FG fallback to PRINCIPAL_REGISTRY projection:
+    # ranks must be preserved exactly.
+    ("carbonate", 11), ("sulfonate", 11), ("sulfonyl_chloride", 10),
+    ("urea", 9), ("guanidine", 9), ("sulfonamide", 9),
+    ("tetraalkylammonium", 0), ("phosphate", 2), ("phosphonic", 2),
 ])
 def test_unmigrated_legacy_ranks_are_preserved(kind: str, rank: int) -> None:
     assert kind_registry.fg_rank(kind) == rank

@@ -1994,6 +1994,23 @@
 
   var CA_COLORS = ["#22c55e", "#38bdf8", "#f59e0b", "#a78bfa", "#f472b6", "#2dd4bf"];
 
+  // 深浅变体：amt>0 向白混合（变浅），amt<0 向黑混合（变深）
+  function caShade(hex, amt) {
+    var c = parseInt(hex.slice(1), 16);
+    var r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
+    if (amt >= 0) {
+      r = Math.round(r + (255 - r) * amt);
+      g = Math.round(g + (255 - g) * amt);
+      b = Math.round(b + (255 - b) * amt);
+    } else {
+      amt = -amt;
+      r = Math.round(r * (1 - amt));
+      g = Math.round(g * (1 - amt));
+      b = Math.round(b * (1 - amt));
+    }
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
   function ca$(id) {
     return document.getElementById(id);
   }
@@ -2106,7 +2123,9 @@
   function caFileRows(layer) {
     var l = (state.caData && state.caData.layers || []).find(function (x) { return x.layer === layer; });
     if (!l || !l.files || !l.files.length) return '<p class="muted-text small">无文件</p>';
-    var max = l.files.reduce(function (m, f) { return Math.max(m, f.code); }, 0);
+    var color = CA_COLORS[layer];
+    var shade = caShade(color, 0.6); // 浅色 = 总行数（含注释/空行）
+    var maxTotal = l.files.reduce(function (m, f) { return Math.max(m, f.code + f.comment + f.blank); }, 0);
     return (
       '<div class="ca-file-row ca-file-head">' +
       '<span class="ca-file-name">文件名</span><span class="mono">代码行</span><span>分布</span><span class="mono">总行数</span>' +
@@ -2114,13 +2133,17 @@
       l.files
         .map(function (f) {
           var total = f.code + f.comment + f.blank;
-          var bw = max > 0 ? Math.round(100 * f.code / max) : 0;
+          var codeW = maxTotal > 0 ? Math.round(100 * f.code / maxTotal) : 0;
+          var otherW = maxTotal > 0 ? Math.round(100 * (total - f.code) / maxTotal) : 0;
           return (
             '<div class="ca-file-row">' +
             '<span class="ca-file-name mono">' + escapeHtml(f.name) + "</span>" +
-            '<span class="ca-file-lines mono">' + f.code.toLocaleString() + "</span>" +
-            '<span class="ca-file-bar-wrap"><span class="ca-file-bar" style="width:' + bw + "%;background:" + CA_COLORS[layer] + '"></span></span>' +
-            '<span class="ca-file-total mono">' + total.toLocaleString() + "</span>" +
+            '<span class="ca-file-lines mono" style="color:' + color + '">' + f.code.toLocaleString() + "</span>" +
+            '<span class="ca-file-bar-wrap">' +
+            '<span class="ca-file-bar" style="width:' + codeW + "%;background:" + color + '"></span>' +
+            '<span class="ca-file-bar ca-file-bar-shade" style="width:' + otherW + "%;background:" + shade + '"></span>' +
+            "</span>" +
+            '<span class="ca-file-total mono" style="color:' + shade + '">' + total.toLocaleString() + "</span>" +
             "</div>"
           );
         })

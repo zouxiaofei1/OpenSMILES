@@ -18,14 +18,14 @@ NamePredict 将这一优先级体系内建于 **`kind_registry.py` 的 `fg_rank`
 
 ## fg_rank 优先级表
 
-以下表格展示 NamePredict 中实现的官能团优先级，遵循 IUPAC P-41 顺序（数值越大优先级越高）。表格依据 `src/namepredict/layer2/kind_registry.py:21-36` 中的 `_CHAIN_FG` 注册表生成，同时合并了从 `_ARENE_NAMED`、`_H5_COOH`、`_MISC_RING_FG` 等注册表注入的环系 FG 种类。
+以下表格展示 NamePredict 中实现的官能团优先级，遵循 IUPAC P-41 顺序（数值越大优先级越高）。表格依据 `src/namepredict/layer2/principal.py` 的 `PRINCIPAL_REGISTRY`（`compatibility_rank`）生成，经 `kind_registry._KIND_CLASS` 映射到 kind，同时合并了从 `_ARENE_NAMED`、`_MISC_RING_FG` 等注册表注入的环系 FG 种类。
 
 | `fg_rank` | 官能团种类 (kind) | 英文后缀示例 | 中文后缀示例 | 说明 |
 |:---:|---|---|---|---|
-| **13** | `acid`, `diacid`, `polycarboxylic` | -oic acid / -dioic acid | -酸 / -二酸 | P-65.1: 羧酸为最高优先级链状 FG |
-| **13** | `benzoic`, `furancarboxylic`, `pyridinecarboxylic` 等 | benzoic acid / ... | 苯甲酸 / ... | 芳环/杂环羧酸保留名，同属 carboxylic acid 类 |
-| **12** | `anhydride` | -oic anhydride | -酸酐 | 羧酸酐，略低于 free acid |
-| **12** | `sulfonic_acid`, `boronic` | sulfonic acid / boronic acid | 磺酸 / 硼酸 | S/B 酸类，优先级等同 anhydride |
+| **14** | `acid`, `diacid`, `polycarboxylic` | -oic acid / -dioic acid | -酸 / -二酸 | P-65.1: 羧酸为最高优先级链状 FG |
+| **14** | `benzoic`, `furancarboxylic`, `pyridinecarboxylic` 等 | benzoic acid / ... | 苯甲酸 / ... | 芳环/杂环羧酸保留名，同属 carboxylic acid 类 |
+| **13** | `sulfonic_acid` | sulfonic acid | 磺酸 | S 酸类，略低于羧酸 |
+| **12** | `anhydride`, `boronic` | -oic anhydride / boronic acid | -酸酐 / 硼酸 | 羧酸酐与 B 酸 |
 | **11** | `ester`, `diester`, `carbamate`, `carbonate` | -oate / -dioate | -酸酯 / 氨基甲酸酯 | 羧酸衍生物（酯类） |
 | **11** | `sulfonate` | sulfonate | 磺酸酯 | 磺酸酯 |
 | **10** | `acyl_chloride`, `acyl_bromide` | -oyl chloride / -oyl bromide | -酰氯 / -酰溴 | 酰卤 |
@@ -39,10 +39,10 @@ NamePredict 将这一优先级体系内建于 **`kind_registry.py` 的 `fg_rank`
 | **3** | `amine`, `diamine`, `triamine`, `tetraamine`, `cycloamine`, `aniline` | -amine / -diamine | -胺 / -二胺 | 氨基 |
 | **3** | `sec_amine`, `tert_amine` | N-...-amine | N-...-胺 | 二级/三级胺 |
 | **2** | `phosphate`, `phosphonic` | phosphate / phosphonic acid | 磷酸酯 / 膦酸 | P-官能团 |
-| **2** | `ether`, `sulfide`, `sulfoxide` | ether / sulfide / sulfoxide | 醚 / 硫醚 / 亚砜 | 最低优先级——始终为前缀，除非无更高 FG |
-| **0** | `alkane`, `alkene`, `alkyne`, `cycloalkane`, `bridged` | -ane / -ene / -yne | -烷 / -烯 / -炔 | 无 principal FG 的烃类母体 |
+| **2** | `sulfide`, `sulfoxide` | sulfide / sulfoxide | 硫醚 / 亚砜 | 低优先级杂原子 FG |
+| **0** | `ether`, `alkane`, `alkene`, `alkyne`, `cycloalkane`, `bridged` | ether / -ane / -ene / -yne | 醚 / -烷 / -烯 / -炔 | 无 principal FG 的母体（醚始终为前缀） |
 
-> **源:** `src/namepredict/layer2/kind_registry.py:21-36` (链状 FG), `37-49` (芳烃命名 FG), `50-57` (五元杂环羧酸), `71-87` (杂项环 FG)
+> **源:** `src/namepredict/layer2/principal.py` 的 `PRINCIPAL_REGISTRY` (P-41 链状 FG), `src/namepredict/layer2/kind_registry.py` 的 `_ARENE_NAMED` (芳烃命名 FG), `_MISC_RING_FG` (杂项环 FG)
 
 ---
 

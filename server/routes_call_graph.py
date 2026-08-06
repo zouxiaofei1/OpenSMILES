@@ -185,40 +185,28 @@ def _heat(w: float) -> str:
     return "#%02x%02x%02x" % (int(r * 255), int(g * 255), int(b * 255))
 
 
-def _module_dir(module: str) -> str:
-    """module 路径（相对 namepredict）去掉文件名，如 layer2/scaffold。"""
-    m = module or "?"
-    return m.rsplit("/", 1)[0] if "/" in m else m
-
-
-_LAYER_RE = re.compile(r"layer(\d)")
+def _hash_bits(s: str) -> int:
+    """确定性字符串哈希（md5 前 4 字节），跨进程/机器颜色稳定。"""
+    return int.from_bytes(hashlib.md5(s.encode()).digest()[:4], "big")
 
 
 def _dir_hue(module: str) -> float:
-    """目录色相：layer0-5 各占 60°（层间明显区分），子目录在层内小偏移。
+    """节点色相：按完整 module 路径哈希，在 0-360° 均匀分布。
 
-    非 layer 路径（cache 等）退化为普通字符串哈希。
+    早期按 layerN 主色分段、目录作层内偏移；但实际 module 多形如
+    layer2/arene_carbonyl.py（文件直接挂 layer 下、无子目录），目录解析后只剩
+    layer2，同层文件色相完全一致、图上糊成一片。改为全 module 哈希后，每个
+    文件/文件夹在色相环上都有独立且均匀散布的颜色，层内 20+ 文件也可分辨。
     """
-    d = _module_dir(module)
-    m = _LAYER_RE.search(d)
-    if m:
-        base = int(m.group(1)) * 60  # layerN → N*60°
-        sub = d[len(m.group(0)):]    # 子路径（/scaffold/builders）
-        off = 0
-        for ch in sub:
-            off = (off * 33 + ord(ch)) & 0xffff
-        return ((base + off % 36) % 360) / 360.0
-    h = 0
-    for ch in d:
-        h = (h * 33 + ord(ch)) & 0xffff
-    return (h % 360) / 360.0
+    m = module or "?"
+    return (_hash_bits(m) % 360) / 360.0
 
 
 def _node_color(module: str, w: float) -> str:
-    """目录色系节点色：色相由目录决定，耗时 w 越大越亮/越饱和。"""
+    """文件色系节点色：色相由 module 决定，耗时 w 越大越亮/越饱和。"""
     hue = _dir_hue(module)
-    light = 0.30 + 0.30 * max(0.0, min(1.0, w))
-    sat = 0.50 + 0.25 * max(0.0, min(1.0, w))
+    light = 0.42 + 0.38 * max(0.0, min(1.0, w))
+    sat = 0.62 + 0.30 * max(0.0, min(1.0, w))
     r, g, b = colorsys.hls_to_rgb(hue, light, sat)
     return "#%02x%02x%02x" % (int(r * 255), int(g * 255), int(b * 255))
 

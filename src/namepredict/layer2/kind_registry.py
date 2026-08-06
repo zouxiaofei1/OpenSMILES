@@ -17,10 +17,15 @@ _KIND_CLASS = {
     "cycloalcohol": FG.ALCOHOL, "thiol": FG.THIOL, "amine": FG.AMINE,
     "diamine": FG.AMINE, "triamine": FG.AMINE, "tetraamine": FG.AMINE,
     "sec_amine": FG.AMINE, "tert_amine": FG.AMINE, "cycloamine": FG.AMINE,
-    "sulfonic_acid": FG.SULFONIC_ACID, "ether": FG.ETHER,
-    "carbamate": FG.CARBAMATE, "hydrazine": FG.HYDRAZINE,
+    "sulfonic_acid": FG.SULFONIC_ACID, "sulfonate": FG.SULFONATE,
+    "sulfonyl_chloride": FG.SULFONYL_HALIDE, "ether": FG.ETHER,
+    "carbamate": FG.CARBAMATE, "carbonate": FG.CARBONATE,
+    "urea": FG.UREA, "guanidine": FG.GUANIDINE, "sulfonamide": FG.SULFONAMIDE,
+    "hydrazine": FG.HYDRAZINE,
     "isocyanate": FG.ISOCYANATE, "isothiocyanate": FG.ISOTHIOCYANATE,
     "sulfide": FG.SULFIDE, "sulfoxide": FG.SULFOXIDE, "sulfone": FG.SULFONE,
+    "phosphate": FG.PHOSPHATE, "phosphonic": FG.PHOSPHONIC,
+    "tetraalkylammonium": FG.QUATERNARY_AMMONIUM,
     "benzoic": FG.ACID, "benzene_polycarboxylic": FG.ACID,
     "benzamide": FG.AMIDE, "benzonitrile": FG.NITRILE,
     "benzaldehyde": FG.ALDEHYDE, "acetophenone": FG.KETONE,
@@ -51,22 +56,8 @@ class KindMeta:
 _REG: dict[str, KindMeta] = {}
 
 # --- bootstrap tables (module-level; kept out of function bodies) ---
-_CHAIN_FG: tuple[tuple[str, int], ...] = (
-    ("acid", 13), ("diacid", 13), ("polycarboxylic", 13),
-    ("anhydride", 12), ("ester", 11), ("diester", 11), ("carbamate", 11), ("carbonate", 11),
-    ("sulfonate", 11), ("sulfonic_acid", 12),
-    ("acyl_chloride", 10), ("acyl_bromide", 10), ("sulfonyl_chloride", 10),
-    ("amide", 9), ("urea", 9), ("guanidine", 9), ("sulfonamide", 9), ("nitrile", 8),
-    ("aldehyde", 7),
-    ("ketone", 6), ("dione", 6), ("cycloketone", 6),
-    ("alcohol", 5), ("diol", 5), ("triol", 5),
-    ("cycloalcohol", 5), ("thiol", 4),
-    ("amine", 3), ("diamine", 3), ("triamine", 3), ("tetraamine", 3), ("sec_amine", 3), ("tert_amine", 3),
-    ("cycloamine", 3), ("tetraalkylammonium", 0), ("hydrazine", 4), ("phosphate", 2), ("phosphonic", 2),
-    ("ether", 2), ("sulfide", 2), ("sulfoxide", 2),
-    ("isocyanate", 8), ("isothiocyanate", 8),
-    ("sulfone", 6),
-)
+# Chain FG ranks come from PRINCIPAL_REGISTRY via _KIND_CLASS (principal.py
+# is the single P-41 authority). _load_chain_fg() registers every mapped kind.
 _ARENE_NAMED: tuple[tuple[str, str, str, int], ...] = (
     ("benzoic", "benzoic acid", "苯甲酸", 13),
     ("benzene_polycarboxylic", "benzene", "苯", 13),
@@ -171,8 +162,8 @@ def _add(
 
 
 def _load_chain_fg() -> None:
-    for k, r in _CHAIN_FG:
-        _add(k, fg=r)
+    for k in _KIND_CLASS:
+        _add(k)
 
 
 def _load_arene_fg_names() -> None:

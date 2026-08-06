@@ -57,6 +57,16 @@ PRINCIPAL_REGISTRY: dict[FG, PrincipalFeatureSpec] = {
     FG.SULFOXIDE: PrincipalFeatureSpec(PrincipalPriority(41, (3,)), PrincipalExpression.LEGACY_COMPAT, 2),
     FG.SULFONE: PrincipalFeatureSpec(PrincipalPriority(41, (4,)), PrincipalExpression.LEGACY_COMPAT, 6),
     FG.ETHER: PrincipalFeatureSpec(PrincipalPriority(41, (1,)), PrincipalExpression.PREFIX_ONLY),
+    # Legacy_compat: compatibility_rank only (kind_registry fg_rank projection);
+    # never eligible as principal group (principal_spec() gates on SUFFIX).
+    FG.CARBONATE: PrincipalFeatureSpec(PrincipalPriority(9), PrincipalExpression.LEGACY_COMPAT, 11),
+    FG.SULFONATE: PrincipalFeatureSpec(PrincipalPriority(9), PrincipalExpression.LEGACY_COMPAT, 11),
+    FG.SULFONYL_HALIDE: PrincipalFeatureSpec(PrincipalPriority(10), PrincipalExpression.LEGACY_COMPAT, 10),
+    FG.UREA: PrincipalFeatureSpec(PrincipalPriority(11), PrincipalExpression.LEGACY_COMPAT, 9),
+    FG.GUANIDINE: PrincipalFeatureSpec(PrincipalPriority(11), PrincipalExpression.LEGACY_COMPAT, 9),
+    FG.SULFONAMIDE: PrincipalFeatureSpec(PrincipalPriority(11), PrincipalExpression.LEGACY_COMPAT, 9),
+    FG.PHOSPHATE: PrincipalFeatureSpec(PrincipalPriority(41), PrincipalExpression.LEGACY_COMPAT, 2),
+    FG.PHOSPHONIC: PrincipalFeatureSpec(PrincipalPriority(41), PrincipalExpression.LEGACY_COMPAT, 2),
 }
 
 

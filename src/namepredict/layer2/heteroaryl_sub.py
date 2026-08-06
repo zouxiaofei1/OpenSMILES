@@ -8,7 +8,7 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from namepredict.layer2.aryl_depth2 import _alkoxy_n
-from namepredict.layer2.leaves.topo import is_halo, is_me_leaf
+#from namepredict.layer2.leaves.topo import is_halo, is_me_leaf
 
 def _nb_out(mol: Mol, i: int, ring: set[int]) -> list:
     return [

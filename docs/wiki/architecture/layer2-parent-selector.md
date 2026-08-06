@@ -191,7 +191,7 @@ FG 母体不走注册表，由 principal 管线的 typed 表达（`principal_exp
 
 ### FG 优先级体系
 
-官能团优先级遵循 IUPAC P-41 降序排列，在 `kind_registry._CHAIN_FG` 中定义：
+官能团优先级遵循 IUPAC P-41 降序排列，由 `principal.py` 的 `PRINCIPAL_REGISTRY`（`compatibility_rank`）定义，经 `kind_registry._KIND_CLASS` 映射到 kind：
 
 | 优先级 | FG 类别 | kind 示例 |
 |--------|---------|-----------|
@@ -208,7 +208,7 @@ FG 母体不走注册表，由 principal 管线的 typed 表达（`principal_exp
 | 3 | 胺/多胺/环胺 | amine, diamine, cycloamine |
 | 2 | 醚/硫醚/亚砜 | ether, sulfide, sulfoxide |
 
-> **源:** `E:\chem\src\namepredict\layer2\kind_registry.py:21-36`
+> **源:** `E:\chem\src\namepredict\layer2\principal.py` `PRINCIPAL_REGISTRY`（`compatibility_rank`）+ `kind_registry._KIND_CLASS`
 
 ### 多官能团母体
 
