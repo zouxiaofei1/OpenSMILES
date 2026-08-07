@@ -63,19 +63,20 @@ def _one_anchored_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int], 
 
     Uses side_atoms (full non-parent connected component) as the atom set and
     picks the substituent-side attach atom, then looks up the anchored key
-    under name_mode.  A hit replaces the hand-written shape recognition when
-    its output matches; a miss falls through.
+    under name_mode.  Only "alkyl"-kind entries are claimed here (pure-carbon
+    side chains); hetero leaves (cyano/nitroso/...) stay with the FG/claim
+    extractors.  A miss falls through.
     """
-    from namepredict.tools.anchored_table import anchored_lookup
+    from namepredict.tools.anchored_table import anchored_entry
     from namepredict.tools.block_cut import side_atoms
 
     atoms = side_atoms(mol, frozenset(chain_set), attach, frozenset({start}))
     if not atoms:
         return None
-    hit = anchored_lookup(mol, atoms, None, name_mode=name_mode)
-    if hit is None:
+    entry = anchored_entry(mol, atoms, name_mode=name_mode)
+    if entry is None or entry[3] != "alkyl":
         return None
-    en, zh, paren = hit
+    en, zh, paren, _kind = entry
     return {
         "kind": "alkyl", "n_carbons": len(atoms), "attach_idx": attach,
         "atoms": sorted(atoms), "en": en, "zh": zh, "paren": paren,

@@ -81,8 +81,8 @@ def _cycloalkyl_ring_at(mol: Mol, start: int, parent: set[int]) -> set[int] | No
 
 
 def _is_monocycloalkyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
-    ring = _cycloalkyl_ring_at(mol, start, chain)
-    return sorted(ring) if ring is not None else None
+    return None
+
 
 
 def _cycloalkyl_names(n: int) -> tuple[str, str] | None:
