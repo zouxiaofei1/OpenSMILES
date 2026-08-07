@@ -13,7 +13,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+
+from server import history_store
 
 router = APIRouter(prefix="/api/v1", tags=["code-analysis"])
 
@@ -67,8 +69,7 @@ def _stat_group(gid: int, dirname: str, label: str) -> dict[str, Any]:
     }
 
 
-@router.get("/code-analysis")
-def code_analysis() -> dict[str, Any]:
+def _code_analysis_live() -> dict[str, Any]:
     """Per-layer/tools code statistics + aggregate, sorted by group order."""
     layers = [_stat_group(*g) for g in GROUPS]
     agg = {"file_count": 0, "code": 0, "comment": 0, "blank": 0}
@@ -80,3 +81,64 @@ def code_analysis() -> dict[str, Any]:
     for l in layers:
         l["share"] = round(100.0 * l["code"] / agg["code"], 1) if agg["code"] else 0.0
     return {"ok": True, "total": agg, "layers": layers}
+
+
+def _code_analysis_history(commit: str) -> dict[str, Any]:
+    """Code statistics for a past commit, read statically from git objects."""
+    cache = history_store.read_cache(commit, "code-analysis")
+    if cache and cache.get("_data_sig") == history_store.data_sig():
+        return cache["payload"]
+
+    names = history_store.list_tree(commit, "src/namepredict")
+    layers: list[dict[str, Any]] = []
+    for gid, dirname, label in GROUPS:
+        prefix = f"src/namepredict/{dirname}/"
+        counts = {"file_count": 0, "code": 0, "comment": 0, "blank": 0}
+        files: list[dict[str, Any]] = []
+        for p in names:
+            if not p.startswith(prefix):
+                continue
+            text = history_store.show_file(commit, p)
+            if text is None:
+                continue
+            code, comment, blank = _count_lines(text)
+            rel = p[len(prefix):]
+            files.append({"name": rel, "code": code, "comment": comment, "blank": blank})
+            counts["file_count"] += 1
+            counts["code"] += code
+            counts["comment"] += comment
+            counts["blank"] += blank
+        counts["lines"] = counts["code"] + counts["comment"] + counts["blank"]
+        files.sort(key=lambda f: f["code"], reverse=True)
+        layers.append({
+            "layer": gid, "label": label, "path": f"src/namepredict/{dirname}",
+            "files": files, **counts,
+        })
+
+    agg = {"file_count": 0, "code": 0, "comment": 0, "blank": 0}
+    for l in layers:
+        for k in ("file_count", "code", "comment", "blank"):
+            agg[k] += l[k]
+    agg["lines"] = agg["code"] + agg["comment"] + agg["blank"]
+    for l in layers:
+        l["share"] = round(100.0 * l["code"] / agg["code"], 1) if agg["code"] else 0.0
+
+    payload = {"ok": True, "total": agg, "layers": layers}
+    history_store.write_cache(commit, "code-analysis", {
+        "_data_sig": history_store.data_sig(), "payload": payload,
+    })
+    return payload
+
+
+@router.get("/code-analysis")
+def code_analysis(commit: str | None = None) -> dict[str, Any]:
+    """Per-layer code stats for the current code, or a past git commit."""
+    if not commit:
+        return _code_analysis_live()
+    try:
+        full = history_store.resolve_commit(commit)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"invalid commit: {commit}")
+    if full is None:
+        return _code_analysis_live()
+    return _code_analysis_history(full)

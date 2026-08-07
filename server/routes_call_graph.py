@@ -19,6 +19,7 @@ from __future__ import annotations
 import colorsys
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -30,7 +31,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
+
+from server import history_store
 
 router = APIRouter(prefix="/api/v1", tags=["call-graph"])
 
@@ -69,6 +72,15 @@ def _source_total() -> int:
     except Exception:
         return 0
 
+def _hist_commit(commit: str | None) -> str | None:
+    """Resolve a commit ref → full hash; None = absent/HEAD. 400 on invalid."""
+    if not commit:
+        return None
+    try:
+        return history_store.resolve_commit(commit)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"invalid commit: {commit}")
+
 def _src_signature() -> str:
     """sha256 over (relpath, size, mtime_ns) of all src/namepredict/**/*.py.
 
@@ -100,13 +112,18 @@ def _data_signature() -> str:
         return "missing"
 
 def _get_raw(
-    n: int, module: str, aggregate_external: bool, refresh: bool
+    n: int, module: str, aggregate_external: bool, refresh: bool, commit: str | None = None,
 ) -> tuple[dict[str, Any], bool]:
     """Fetch raw sampled graph from cache, sampling in a subprocess on miss.
 
     Returns (raw, cached). raw may be {"ok": False, "error": ...} on failure.
     Shared by /call-graph (JSON) and /call-graph/svg so both see the same data.
+    With a commit, results are cached under tools/history_cache and keyed by
+    sampling params (commit code is immutable, so no src signature needed).
     """
+    if commit is not None:
+        return _get_raw_history(n, module, aggregate_external, refresh, commit)
+
     key = (
         f"n={n};mod={module};agg={aggregate_external};"
         f"src={_src_signature()};data={_data_signature()}"
@@ -128,17 +145,66 @@ def _get_raw(
             return raw, False
         return raw, True
 
+
+def _get_raw_history(
+    n: int, module: str, aggregate_external: bool, refresh: bool, commit: str,
+) -> tuple[dict[str, Any], bool]:
+    """Fetch raw graph for a past commit from its history cache (sample on miss)."""
+    key = f"n={n};mod={module};agg={aggregate_external}"
+    cache = history_store.read_cache(commit, "callgraph")
+    if cache and cache.get("_data_sig") == history_store.data_sig():
+        entries = cache.get("entries") or {}
+        if not refresh and key in entries:
+            raw = dict(entries[key])
+            raw["ok"] = True
+            return raw, True
+    _set_progress(0, 0, True)
+    raw = _run_profile_subprocess(n, module, aggregate_external, commit)
+    if not raw.get("ok"):
+        _set_progress(0, 0, False)
+        return raw, False
+    raw["generated_at"] = datetime.now(timezone.utc).isoformat()
+    cache = history_store.read_cache(commit, "callgraph") or {
+        "_data_sig": history_store.data_sig(), "entries": {},
+    }
+    entries = cache.setdefault("entries", {})
+    entries[key] = raw
+    history_store.write_cache(commit, "callgraph", cache)
+    return raw, False
+
 _PROFILE_SAMPLER = ROOT / "server" / "profile_sampler.py"
 
-def _run_profile_subprocess(n: int, module: str, aggregate_external: bool) -> dict[str, Any]:
+def _run_profile_subprocess(
+    n: int, module: str, aggregate_external: bool, commit: str | None = None,
+) -> dict[str, Any]:
     """Run the multi-process sampler script; parse its JSON graph from stdout.
 
     Reads stdout line-by-line so the sampler's CALLGRAPH_PROGRESS lines update
     the global _PROGRESS dict that /call-graph/progress reports to the UI.
+
+    With a commit: the sampler runs against that commit's worktree src (via
+    NAMEPREDICT_SRC_ROOT), the worktree is ref-counted (released in finish_job),
+    and the timeout is relaxed to 300s (historical sampling is slower).
     """
     cmd = [sys.executable, str(_PROFILE_SAMPLER), "--n", str(n), "--module", module]
     if aggregate_external:
         cmd.append("--agg")
+    env: dict[str, str] | None = None
+    timeout = 30
+    if commit is not None:
+        try:
+            wt = history_store.ensure_worktree(commit)  # refs+1; released in finish_job
+        except RuntimeError as exc:
+            return {"ok": False, "error": f"worktree: {exc}"}
+        if not (wt / "src" / "namepredict").is_dir():
+            # The package is an editable install pointing at the main repo, so an
+            # import would silently fall back to current code — reject instead.
+            history_store.release_worktree(commit)
+            return {"ok": False, "error": f"该 commit 无 namepredict 源码（{commit[:7]}），无法采样历史调用链"}
+        cmd += ["--data", str(DATA)]
+        env = dict(os.environ)
+        env["NAMEPREDICT_SRC_ROOT"] = str(wt / "src")
+        timeout = 300
     lines: list[str] = []
     try:
         p = subprocess.Popen(
@@ -149,9 +215,21 @@ def _run_profile_subprocess(n: int, module: str, aggregate_external: bool) -> di
             encoding="utf-8",
             errors="replace",
             cwd=str(ROOT),
+            env=env,
         )
     except OSError as exc:
+        if commit is not None:
+            history_store.release_worktree(commit)
         return {"ok": False, "error": f"profile subprocess failed to start: {exc}"}
+    if commit is not None:
+        ok, err = history_store.register_job(commit, "callgraph", p, n)
+        if not ok:
+            try:
+                p.kill()
+            except Exception:
+                pass
+            history_store.release_worktree(commit)
+            return {"ok": False, "error": err}
     for line in p.stdout:
         if line.startswith(_PROGRESS_PREFIX):
             parts = line.strip().split()
@@ -163,10 +241,14 @@ def _run_profile_subprocess(n: int, module: str, aggregate_external: bool) -> di
             continue
         lines.append(line)
     try:
-        p.wait(timeout=30)
+        p.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
         p.kill()
+        if commit is not None:
+            history_store.finish_job(commit, "callgraph")
         return {"ok": False, "error": "profile timed out"}
+    if commit is not None:
+        history_store.finish_job(commit, "callgraph")
     _set_progress(_PROGRESS["done"], _PROGRESS["total"], False)
     out = "".join(lines)
     marker = "__CALLGRAPH_JSON__"
@@ -399,12 +481,14 @@ def call_graph_svg(
     module: str = "namepredict",
     aggregate_external: bool = False,
     layer: int | None = Query(None, ge=-1, le=6),
+    commit: str | None = Query(None),
 ) -> dict[str, Any]:
     """Layered graphviz SVG of the sampled call graph (pan/zoom on the frontend).
 
     layer: None=全部；0..5=仅该 pipeline layer；6=Tools 共享层；
     -1=核心调度（无 layer 归属的函数，如 namer.py 入口）。
     """
+    full = _hist_commit(commit)
     if not DATA.is_file():
         return {"ok": False, "error": "benchmark data not found"}
     src_total = _source_total()
@@ -413,7 +497,7 @@ def call_graph_svg(
     n = min(n, src_total)
 
     t0 = time.perf_counter()
-    raw, cached = _get_raw(n, module, aggregate_external, refresh)
+    raw, cached = _get_raw(n, module, aggregate_external, refresh, full)
     if not raw.get("ok"):
         return raw
     nodes, edges = _filter_and_build(raw, floor_pct)
@@ -431,7 +515,7 @@ def call_graph_svg(
 
     key = (
         f"n={n};mod={module};agg={aggregate_external};floor={floor_pct:.3f};"
-        f"layer={layer};src={_src_signature()};data={_data_signature()}"
+        f"layer={layer};src={full[:10] if full else _src_signature()};data={_data_signature()}"
     )
     svg = None
     svg_cached = False
@@ -483,8 +567,10 @@ def call_graph(
     refresh: bool = False,
     module: str = "namepredict",
     aggregate_external: bool = False,
+    commit: str | None = Query(None),
 ) -> dict[str, Any]:
     """Dynamically sampled call graph of the naming pipeline."""
+    full = _hist_commit(commit)
     if not DATA.is_file():
         return {"ok": False, "error": "benchmark data not found"}
     src_total = _source_total()
@@ -493,7 +579,7 @@ def call_graph(
     n = min(n, src_total)
 
     t0 = time.perf_counter()
-    raw, cached = _get_raw(n, module, aggregate_external, refresh)
+    raw, cached = _get_raw(n, module, aggregate_external, refresh, full)
     if not raw.get("ok"):
         return raw
     nodes, edges = _filter_and_build(raw, floor_pct)

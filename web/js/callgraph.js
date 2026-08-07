@@ -374,7 +374,15 @@ export async function loadCallGraph(force) {
     if (st) { st.textContent = "就绪"; st.style.color = "#86efac"; }
     return true;
   } catch (err) {
-    if (empty) { empty.hidden = false; empty.textContent = "加载失败: " + (err.message || String(err)); }
+    var cgErrMsg = err.message || String(err);
+    if (/busy|in progress/i.test(cgErrMsg)) {
+      // A historical sampling for another commit is running; retry shortly.
+      if (empty) { empty.hidden = false; empty.textContent = "上一历史采样进行中，2 秒后自动重试…"; }
+      if (st) { st.textContent = "等待中…"; st.style.color = "#f59e0b"; }
+      setTimeout(function () { loadCallGraph(); }, 2000);
+      return false;
+    }
+    if (empty) { empty.hidden = false; empty.textContent = "加载失败: " + cgErrMsg; }
     if (st) { st.textContent = "错误"; st.style.color = "#ef4444"; }
     return false;
   } finally {

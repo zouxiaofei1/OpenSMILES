@@ -11,6 +11,7 @@ import { loadCodeAnalysis, bindCodeAnalysis } from "./code-analysis.js";
 import { loadCallGraph, loadCallGraphSvg, bindCallGraph } from "./callgraph.js";
 import { initTheme, loadSettings, bindSettings } from "./settings.js";
 import { loadWiki, bindWiki } from "./wiki.js";
+import { initHistoryPicker } from "./history.js";
 
 /* ---------- Page switching ---------- */
 
@@ -109,6 +110,7 @@ async function init() {
   bind();
   initTheme();
   ensureKetcher();
+  initHistoryPicker();
 }
 
 if (document.readyState === "loading") {

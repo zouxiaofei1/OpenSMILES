@@ -20,6 +20,7 @@ from server.routes_code_analysis import router as code_analysis_router
 from server.routes_call_graph import router as call_graph_router
 from server.routes_settings import router as settings_router
 from server.routes_wiki import router as wiki_router
+from server.routes_history import router as history_router
 
 app = FastAPI(title="ChemAgent Namer", version="0.1.0")
 app.include_router(name_router)
@@ -31,6 +32,7 @@ app.include_router(code_analysis_router)
 app.include_router(call_graph_router)
 app.include_router(settings_router)
 app.include_router(wiki_router)
+app.include_router(history_router)
 
 
 @app.get("/health")

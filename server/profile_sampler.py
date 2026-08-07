@@ -27,7 +27,10 @@ from pathlib import Path
 import pstats
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
+# NAMEPREDICT_SRC_ROOT lets the history feature sample a past commit's code from
+# its worktree without running that commit's own (possibly missing) sampler.
+_SRC_ROOT = Path(os.environ.get("NAMEPREDICT_SRC_ROOT") or (ROOT / "src"))
+sys.path.insert(0, str(_SRC_ROOT))
 
 _WORKER_NAMER = None
 

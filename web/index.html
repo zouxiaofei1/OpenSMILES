@@ -33,6 +33,15 @@
           <button class="tab" data-page="wiki">Wiki</button>
         </nav>
       </div>
+      <div class="topbar-right">
+        <div class="history-picker">
+          <input id="history-commit-input" class="input history-input" type="text"
+                 list="history-commit-list" placeholder="选择历史提交…" disabled
+                 title="查看历史版本的数据（仅影响代码量分析 / benchmark / 调用链）" />
+          <datalist id="history-commit-list"></datalist>
+        </div>
+        <span id="history-badge" class="chip">HEAD</span>
+      </div>
     </header>
 
     <!-- Main -->

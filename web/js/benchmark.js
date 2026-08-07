@@ -114,6 +114,11 @@ async function refreshBenchmark() {
       startBmPolling();
     } else {
       var msg = (data && data.error) || "未知错误";
+      if (/busy|in progress/i.test(msg)) {
+        // A historical generation for another commit is running; retry shortly.
+        setTimeout(refreshBenchmark, 2000);
+        return;
+      }
       alert("刷新失败: " + msg);
     }
   } catch (err) {

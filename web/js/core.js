@@ -22,9 +22,11 @@ export const API = {
   settings: "/api/v1/settings",
   wiki: "/api/v1/wiki",
   wikiDoc: "/api/v1/wiki/doc",
+  gitCommits: "/api/v1/git/commits",
 };
 
 export const state = {
+  currentCommit: null /* null = HEAD; set by the history picker */,
   namerHistory: [],
   liveNameEnabled: true,
   ketcherReady: false,
@@ -79,6 +81,11 @@ export function escapeHtml(str) {
 }
 
 export async function api(url, opts) {
+  // When a historical commit is selected, point the three data pages at it.
+  // Endpoints that don't declare ?commit= simply ignore the extra query param.
+  if (state.currentCommit && !/[?&]commit=/.test(url)) {
+    url += (url.indexOf("?") === -1 ? "?" : "&") + "commit=" + encodeURIComponent(state.currentCommit);
+  }
   const res = await fetch(url, {
     headers: { Accept: "application/json", ...(opts && opts.body ? { "Content-Type": "application/json" } : {}) },
     ...opts,
