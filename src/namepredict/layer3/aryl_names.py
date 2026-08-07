@@ -6,7 +6,6 @@ from rdkit.Chem import Mol
 from namepredict.tools.side_facts import (
     ArylArmFact, ArylArmKind, HeteroarylFact, HeteroarylKind, HeteroarylLeaf,
 )
-from namepredict.layer3.ring_namer import recursive_ph_name
 
 
 _STEMS = {
@@ -70,9 +69,20 @@ def heteroaryl_name(fact: HeteroarylFact) -> tuple[str, str]:
 
 
 def aryl_arm_name(mol: Mol, fact: ArylArmFact) -> tuple[str, str, bool]:
+    """Name an aryl arm via the generic cut→free-name→yl pipeline.
+
+    The benzene ring is the free parent; leaves (halo/Me/alkoxy/nitro/
+    OH/NH2/CN/nested Ph) are collected topologically so the cut submol
+    carries the full arm and name_ph_ring renumbers attach=1 (P-29.6.2).
+    """
+    from namepredict.layer3.as_substituent import name_as_substituent
+    from namepredict.tools.leaves.registry import nested_leaf_atoms
+
     attach = _ring_attachment(mol, fact)
-    en, zh, paren, _ = recursive_ph_name(
-        mol, set(fact.ring), attach, _ring_parent(fact),
-    )
+    atoms = nested_leaf_atoms(mol, set(fact.ring), attach, _ring_parent(fact))
+    hit = name_as_substituent(mol, attach, atoms)
+    if hit is None:
+        return "", "", False
+    en, zh, paren = hit
     en, zh = _stem(en, zh, fact.kind)
     return en, zh, paren

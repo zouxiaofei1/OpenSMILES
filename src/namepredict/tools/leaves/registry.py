@@ -46,8 +46,7 @@ def nested_leaf_atoms(
     mol: Mol, ring: set[int], attach: int, parent: int, depth: int = 1,
 ) -> set[int]:
     """Pure-topology nested atoms: ring ∪ every matched leaf, recursing into
-    complex (nested ring) leaves. Equivalent to the atoms of the old
-    recursive_ph_name without going through naming."""
+    complex (nested ring) leaves. Topology-only; naming stays in layer3."""
     out = set(ring)
     for i in ring:
         for nb in nb_out(mol, i, ring):

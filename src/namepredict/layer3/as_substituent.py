@@ -8,7 +8,37 @@ from rdkit.Chem import CanonicalRankAtoms
 
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_cut_submol
-from namepredict.layer3.yl_form import yl_form
+from namepredict.layer5.free_to_yl import free_to_yl as yl_form
+
+
+def _arene_yl_from_sub(sub, result) -> tuple[str, str, bool] | None:
+    """Structured arene → yl for benzene-parent submol (P-29.6.2 phenyl).
+
+    The free-name pipeline names a substituted benzene as e.g. 'chlorobenzene'
+    (or 'phenol'/'aniline'/'benzonitrile' when the ring carries an OH/NH2/CN
+    leaf — those are leaves of the phenyl substituent, not the free parent).
+    The generic -k-yl fallback would produce 'chlorobenzen-1-yl'.  For any
+    benzene ring we instead renumber with attach=1 (lowest locant set) and
+    swap the stem to 'phenyl', letting name_ph_ring collect leaves on the cut
+    submol (halo/Me/alkoxy/nitro/OH/NH2/CN/nested Ph all verified).
+    """
+    from namepredict.layer3.ring_namer import name_ph_ring
+
+    mol = sub.mol
+    attach_new = sub.attach_new
+    ph = next(
+        (set(r) for r in mol.GetRingInfo().AtomRings()
+         if attach_new in r and len(r) == 6
+         and all(mol.GetAtomWithIdx(i).GetIsAromatic()
+                 and mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in r)),
+        None,
+    )
+    if ph is None:
+        return None
+    en, zh, _ = name_ph_ring(mol, ph, attach_new, -1, depth=1)
+    if not en:
+        return None
+    return en, zh, en != "phenyl"
 
 
 def _locant_from_result(mol, result, attach_new: int) -> int | None:
@@ -63,6 +93,9 @@ def _yl_from_sub(
             _cache_put(cache, smiles, result)
     if not result.success or not result.en:
         return None
+    arene = _arene_yl_from_sub(sub, result)
+    if arene is not None:
+        return arene
     loc = _locant_from_result(sub.mol, result, sub.attach_new)
     if loc is None:
         loc = _locant_via_hetero(sub.mol, sub.attach_new, result)

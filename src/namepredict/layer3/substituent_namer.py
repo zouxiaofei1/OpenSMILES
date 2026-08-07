@@ -43,17 +43,6 @@ def _try_cycloalkyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
     return None if names is None else _retained_hit(claim, names[0], names[1], False)
 
 
-def _try_sub_phenyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
-    from namepredict.tools.aryl_sub import _phenyl_at
-    from namepredict.layer3.ring_namer import recursive_ph_name
-
-    ph = _phenyl_at(mol, claim.root, claim.attach_parent)
-    if ph is None:
-        return None
-    en, zh, paren, atoms = recursive_ph_name(mol, ph, claim.root, claim.attach_parent)
-    return None if set(atoms) != set(claim.atoms) or not en else _retained_hit(claim, en, zh, paren)
-
-
 def _methoxy_o(mol, claim: ClaimedBlock) -> int | None:
     if mol.GetAtomWithIdx(claim.root).GetAtomicNum() == 8:
         return claim.root
@@ -247,7 +236,6 @@ def _retained_name(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> S
     return (
         _try_registry_leaf(mol, claim, name_mode=name_mode)
         or _try_cycloalkyl(mol, claim)
-        or _try_sub_phenyl(mol, claim)
         or _try_alkenyl_retained(mol, claim, name_mode=name_mode)
         or _try_methoxy(mol, claim)
         or _try_methylsulfanyl(mol, claim)

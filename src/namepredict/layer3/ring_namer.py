@@ -208,10 +208,3 @@ def name_ph_ring(
     pe, pz = _alpha_merge(named)
     atoms = set().union(*(at for *_, at in named)) if named else set()
     return _join_pref(pe) + "phenyl", _join_pref(pz) + "苯基", set(ph) | atoms
-
-
-def recursive_ph_name(
-    mol: Mol, ph: set[int], attach: int, parent: int,
-) -> tuple[str, str, bool, set[int]]:
-    en, zh, atoms = name_ph_ring(mol, ph, attach, parent, depth=1)
-    return en, zh, en != "phenyl", atoms
