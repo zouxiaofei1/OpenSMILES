@@ -7,10 +7,9 @@ from enum import Enum, auto
 
 from rdkit.Chem import Atom, Mol
 
-from namepredict.layer3 import aryl_sub, side_alkoxy
-from namepredict.tools import side_alkyl
-from namepredict.tools.leaves.protocol import ArylLeafKind, LeafTopology
-from namepredict.tools.leaves.registry import match_leaf_topology
+from namepredict.layer3 import aryl_sub, side_alkoxy, side_alkyl
+from namepredict.layer3.leaves.protocol import ArylLeafKind, LeafTopology
+from namepredict.layer3.leaves.registry import match_leaf_topology
 
 
 class AlkylShape(Enum):

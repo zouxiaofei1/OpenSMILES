@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import MolFromSmiles, GetSymmSSSR
 
-from namepredict.tools.side_alkyl import (
+from namepredict.layer3.side_alkyl import (
     _is_vinyl,
     _is_allyl,
     _is_isopropenyl,

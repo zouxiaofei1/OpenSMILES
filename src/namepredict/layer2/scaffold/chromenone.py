@@ -22,7 +22,7 @@ from namepredict.layer2.scaffold.ring_parent import (
     _ring_primary_amines,
     _ring_side_starts,
 )
-from namepredict.tools.side_alkyl import _side_atoms
+from namepredict.layer3.side_alkyl import _side_atoms
 
 
 def _six_rings(info: dict) -> list[list[int]]:

@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.tools.leaves import topo
-from namepredict.tools.leaves.protocol import Match
+from namepredict.layer3.leaves import topo
+from namepredict.layer3.leaves.protocol import Match
 
 
 class _FnHandler:

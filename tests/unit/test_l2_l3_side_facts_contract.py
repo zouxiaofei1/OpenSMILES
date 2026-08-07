@@ -10,7 +10,7 @@ from pathlib import Path
 LAYER3 = Path(__file__).parents[2] / "src" / "namepredict" / "layer3"
 # Side-topology facts now live in the L3 layer.
 TOOLS_FACTS = LAYER3 / "side_facts.py"
-LEAF_PROTOCOL = LAYER3.parent / "tools" / "leaves" / "protocol.py"
+LEAF_PROTOCOL = LAYER3 / "leaves" / "protocol.py"
 
 
 def _private_layer2_imports(path: Path) -> list[str]:

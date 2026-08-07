@@ -12,7 +12,7 @@ from namepredict.constants import C, H
 from namepredict.layer3.aryl_depth2 import (
     _depth2_atoms_on,
 )
-from namepredict.tools.leaves.registry import (
+from namepredict.layer3.leaves.registry import (
     match_leaf_kind as _recurse_leaf_kind,
     nested_leaf_atoms as _nested_leaf_atoms,
 )

@@ -37,5 +37,25 @@ class LeafTopology:
 Match = dict
 
 
-def make_match(kind: ArylLeafKind, atoms: set[int], site: int, **extra) -> Match:
-    return {ArylLeafKind: kind, "atoms": atoms, "site": site, **extra}
+def make_match(
+    kind: ArylLeafKind, atoms: set[int], site: int,
+    *, z: int | None = None, n: int | None = None, o_idx: int | None = None,
+    ch2: int | None = None, child_ring: set[int] | None = None,
+    child_attach: int | None = None, child_parent: int | None = None,
+) -> Match:
+    m: Match = {ArylLeafKind: kind, "atoms": atoms, "site": site}
+    if z is not None:
+        m["z"] = z
+    if n is not None:
+        m["n"] = n
+    if o_idx is not None:
+        m["o_idx"] = o_idx
+    if ch2 is not None:
+        m["ch2"] = ch2
+    if child_ring is not None:
+        m["child_ring"] = child_ring
+    if child_attach is not None:
+        m["child_attach"] = child_attach
+    if child_parent is not None:
+        m["child_parent"] = child_parent
+    return m

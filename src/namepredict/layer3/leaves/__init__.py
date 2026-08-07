@@ -1,5 +1,5 @@
 """Leaf match registry for aryl ring outside-neighbors (topology only)."""
-from namepredict.tools.leaves.registry import (
+from namepredict.layer3.leaves.registry import (
     match_leaf,
     match_leaf_kind,
 )

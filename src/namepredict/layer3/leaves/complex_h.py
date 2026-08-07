@@ -4,15 +4,15 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 from namepredict.layer3.aryl_depth2 import _nested_c6_at
-from namepredict.tools.leaves import topo
-from namepredict.tools.leaves.protocol import ArylLeafKind, Match, make_match
-from namepredict.tools.leaves.simple import _FnHandler
+from namepredict.layer3.leaves import topo
+from namepredict.layer3.leaves.protocol import ArylLeafKind, Match, make_match
+from namepredict.layer3.leaves.simple import _FnHandler
 
 _MAX_DEPTH = 3
 
 
 def _ph_ok(mol: Mol, ph: set[int], attach: int, parent: int, depth: int) -> bool:
-    from namepredict.tools.leaves.registry import all_outside_matched
+    from namepredict.layer3.leaves.registry import all_outside_matched
 
     if depth > _MAX_DEPTH:
         return False

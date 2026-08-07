@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.tools.leaves.complex_h import COMPLEX_HANDLERS
-from namepredict.tools.leaves.protocol import ArylLeafKind, LeafTopology, Match
-from namepredict.tools.leaves.simple import SIMPLE_HANDLERS
-from namepredict.tools.leaves.topo import nb_out
+from namepredict.layer3.leaves.complex_h import COMPLEX_HANDLERS
+from namepredict.layer3.leaves.protocol import ArylLeafKind, LeafTopology, Match
+from namepredict.layer3.leaves.simple import SIMPLE_HANDLERS
+from namepredict.layer3.leaves.topo import nb_out
 
 # complex before simple (OPh must win over future ether leaves)
 _HANDLERS = list(COMPLEX_HANDLERS) + list(SIMPLE_HANDLERS)
