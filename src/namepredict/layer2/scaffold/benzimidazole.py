@@ -15,7 +15,7 @@ from namepredict.layer2.scaffold.fused56 import (
     _six_all_c,
 )
 from namepredict.layer2.scaffold.heteroarene5 import _ring_nn_dist
-from namepredict.tools.aryl_sub import _aryl_atoms, _aryl_exclude, _aryl_sub_n
+from namepredict.layer3.aryl_sub import _aryl_atoms, _aryl_exclude, _aryl_sub_n
 from namepredict.layer2.scaffold.ring_parent import (
     _is_methyl_on_ring,
     _mono_amine_on_ring,

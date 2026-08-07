@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.tools.side_alkoxy import _linear_alkyl_atoms
+from namepredict.layer3.side_alkoxy import _linear_alkyl_atoms
 from namepredict.tools.side_alkyl import _is_cf3_carbon
 
 _ALKOXY_EN = {1: "methoxy", 2: "ethoxy", 3: "propoxy", 4: "butoxy"}

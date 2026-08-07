@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.tools.aryl_sub import _aryl_atoms, _aryl_exclude, _aryl_sub_n
+from namepredict.layer3.aryl_sub import _aryl_atoms, _aryl_exclude, _aryl_sub_n
 from namepredict.layer2.scaffold.naphthalene import _bridge_adjacent, _bridge_pair
 from namepredict.layer2.scaffold.quinoline import (
     _bridge_nb_of,

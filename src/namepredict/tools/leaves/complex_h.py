@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.tools.aryl_depth2 import _nested_c6_at
+from namepredict.layer3.aryl_depth2 import _nested_c6_at
 from namepredict.tools.leaves import topo
 from namepredict.tools.leaves.protocol import ArylLeafKind, Match, make_match
 from namepredict.tools.leaves.simple import _FnHandler

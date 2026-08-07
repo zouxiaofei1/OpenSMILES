@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.tools.aryl_depth2 import (
+from namepredict.layer3.aryl_depth2 import (
     _ALKOXY_EN,
     _alkoxy_n,
     _heavies,

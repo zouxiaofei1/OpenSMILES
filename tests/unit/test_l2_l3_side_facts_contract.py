@@ -8,8 +8,8 @@ from pathlib import Path
 
 
 LAYER3 = Path(__file__).parents[2] / "src" / "namepredict" / "layer3"
-# Side-topology facts moved to the shared tools layer (consumed by both L2/L3).
-TOOLS_FACTS = LAYER3.parent / "tools" / "side_facts.py"
+# Side-topology facts now live in the L3 layer.
+TOOLS_FACTS = LAYER3 / "side_facts.py"
 LEAF_PROTOCOL = LAYER3.parent / "tools" / "leaves" / "protocol.py"
 
 

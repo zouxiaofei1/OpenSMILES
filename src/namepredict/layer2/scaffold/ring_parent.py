@@ -4,7 +4,7 @@ from rdkit.Chem import Mol
 
 from namepredict.constants import Br, C, Cl, F, H, I, O
 
-from namepredict.tools.aryl_sub import (
+from namepredict.layer3.aryl_sub import (
     _arom_c6_ring_lists, _is_unfused_benzene_ring,
 )
 from namepredict.tools.side_alkyl import (

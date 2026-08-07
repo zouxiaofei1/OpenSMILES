@@ -1,4 +1,4 @@
-"""Layer 2 向 Layer 3 暴露的侧链拓扑事实。"""
+"""Layer 3 的侧链拓扑事实：Layer 2 主链选择与 Layer 3 取代基命名共用。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -7,8 +7,8 @@ from enum import Enum, auto
 
 from rdkit.Chem import Atom, Mol
 
-from namepredict.tools import aryl_sub, heteroaryl_sub, side_alkyl
-from namepredict.tools import side_alkoxy
+from namepredict.layer3 import aryl_sub, heteroaryl_sub, side_alkoxy
+from namepredict.tools import side_alkyl
 from namepredict.tools.leaves.protocol import ArylLeafKind, LeafTopology
 from namepredict.tools.leaves.registry import match_leaf_topology
 

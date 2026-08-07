@@ -5,7 +5,7 @@ from rdkit.Chem import Mol
 
 from namepredict.layer2.candidate_gate import CandidateGate, GateScope, GateStatus, pass_gate, scoped_reject
 
-from namepredict.tools.aryl_sub import (
+from namepredict.layer3.aryl_sub import (
     _exocyclic_fg_ring,
 )
 from namepredict.layer2.scaffold.ring_parent import (

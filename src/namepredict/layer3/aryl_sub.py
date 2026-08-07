@@ -9,7 +9,7 @@ from rdkit.Chem import Mol
 
 from namepredict.constants import C, H
 
-from namepredict.tools.aryl_depth2 import (
+from namepredict.layer3.aryl_depth2 import (
     _depth2_atoms_on,
 )
 from namepredict.tools.leaves.registry import (
