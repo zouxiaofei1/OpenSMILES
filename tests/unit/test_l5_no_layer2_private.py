@@ -18,16 +18,12 @@ from namepredict.namer import SMILESNNamer
 _ROOT = Path(__file__).resolve().parents[2]
 _L5 = _ROOT / "src" / "namepredict" / "layer5"
 
-# Eight L5 modules that previously walked via L2 private APIs.
+# L5 special-FG name modules that previously walked via L2 private APIs.
 _TARGET_L5 = (
-    "sulfonamide_names.py",
-    "urea_names.py",
-    "guanidine_names.py",
     "carbamate_names.py",
     "carbonate_names.py",
-    "sulfonic_acid_names.py",
-    "sulfonate_names.py",
-    "sulfonyl_chloride_names.py",
+    "nitrogen_names.py",
+    "sulfur_names.py",
 )
 
 

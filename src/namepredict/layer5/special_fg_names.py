@@ -7,16 +7,13 @@ from namepredict.layer5.carbamate_names import carbamate_names
 from namepredict.layer5.carbonate_names import carbonate_names
 from namepredict.layer5.cyclo_exo_fg_names import cyclo_exo_fg_names
 from namepredict.layer5.diester_names import diester_names
-from namepredict.layer5.guanidine_names import guanidine_names
-from namepredict.layer5.hydrazine_names import hydrazine_names
-from namepredict.layer5.isocyanate_names import iso_kind_names
-from namepredict.layer5.sulfonamide_names import sulfonamide_names
-from namepredict.layer5.sulfonate_names import sulfonate_names
-from namepredict.layer5.sulfone_names import sulfone_names
-from namepredict.layer5.sulfonic_acid_names import sulfonic_acid_names
-from namepredict.layer5.sulfonyl_chloride_names import sulfonyl_chloride_names
-from namepredict.layer5.sulfoxide_names import sulfoxide_names
-from namepredict.layer5.urea_names import urea_names
+from namepredict.layer5.nitrogen_names import (
+    guanidine_names, hydrazine_names, iso_kind_names, urea_names,
+)
+from namepredict.layer5.sulfur_names import (
+    sulfonamide_names, sulfonate_names, sulfone_names,
+    sulfonic_acid_names, sulfonyl_chloride_names, sulfoxide_names,
+)
 
 
 def _core_table(n: int, numbered: dict) -> dict:
