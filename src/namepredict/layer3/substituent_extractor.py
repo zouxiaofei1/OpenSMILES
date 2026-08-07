@@ -203,7 +203,7 @@ def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general"
     mol, chain = info["mol"], parent.get("chain") or []
     base = (
        _extract_core_subs(info, parent)
-        + _extract_alkoxys(info, parent) +  _extract_alkyls_no_aryl(mol, chain, name_mode=name_mode)
+       +  _extract_alkyls_no_aryl(mol, chain, name_mode=name_mode)
     )
     owned = parent.get("owned_atoms")
     if owned:
