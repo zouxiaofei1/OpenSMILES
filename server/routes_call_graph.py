@@ -49,6 +49,16 @@ _SVG_CACHE: dict[str, str] = {}
 _MAX_SVG_KEYS = 10
 _DOT_EXE: str | None = None
 
+# live sampling progress for the call-graph UI progress bar
+_PROGRESS_PREFIX = "CALLGRAPH_PROGRESS "
+_PROGRESS: dict[str, Any] = {"done": 0, "total": 0, "active": False}
+_PROGRESS_LOCK = threading.Lock()
+
+
+def _set_progress(done: int, total: int, active: bool) -> None:
+    with _PROGRESS_LOCK:
+        _PROGRESS.update(done=done, total=total, active=active)
+
 def _source_total() -> int:
     """Number of rows in the benchmark data file, or 0."""
     if not DATA.is_file():
@@ -106,8 +116,10 @@ def _get_raw(
         if not refresh:
             raw = _CACHE.get(key)
         if raw is None:
+            _set_progress(0, 0, True)
             raw = _run_profile_subprocess(n, module, aggregate_external)
             if not raw.get("ok"):
+                _set_progress(0, 0, False)
                 return raw, False
             raw["generated_at"] = datetime.now(timezone.utc).isoformat()
             _CACHE[key] = raw
@@ -119,26 +131,50 @@ def _get_raw(
 _PROFILE_SAMPLER = ROOT / "server" / "profile_sampler.py"
 
 def _run_profile_subprocess(n: int, module: str, aggregate_external: bool) -> dict[str, Any]:
-    """Run the multi-process sampler script; parse its JSON graph from stdout."""
+    """Run the multi-process sampler script; parse its JSON graph from stdout.
+
+    Reads stdout line-by-line so the sampler's CALLGRAPH_PROGRESS lines update
+    the global _PROGRESS dict that /call-graph/progress reports to the UI.
+    """
     cmd = [sys.executable, str(_PROFILE_SAMPLER), "--n", str(n), "--module", module]
     if aggregate_external:
         cmd.append("--agg")
+    lines: list[str] = []
     try:
-        p = subprocess.run(
+        p = subprocess.Popen(
             cmd,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
-            timeout=900,
+            encoding="utf-8",
+            errors="replace",
             cwd=str(ROOT),
         )
+    except OSError as exc:
+        return {"ok": False, "error": f"profile subprocess failed to start: {exc}"}
+    for line in p.stdout:
+        if line.startswith(_PROGRESS_PREFIX):
+            parts = line.strip().split()
+            if len(parts) == 3:
+                try:
+                    _set_progress(int(parts[1]), int(parts[2]), True)
+                except ValueError:
+                    pass
+            continue
+        lines.append(line)
+    try:
+        p.wait(timeout=30)
     except subprocess.TimeoutExpired:
+        p.kill()
         return {"ok": False, "error": "profile timed out"}
+    _set_progress(_PROGRESS["done"], _PROGRESS["total"], False)
+    out = "".join(lines)
     marker = "__CALLGRAPH_JSON__"
-    if marker not in p.stdout:
-        tail = (p.stderr or p.stdout)[-500:]
+    if marker not in out:
+        tail = out[-500:]
         return {"ok": False, "error": f"profile subprocess failed: {tail}"}
     try:
-        raw = json.loads(p.stdout.split(marker, 1)[1])
+        raw = json.loads(out.split(marker, 1)[1])
     except Exception as exc:
         return {"ok": False, "error": f"bad profile output: {exc}"}
     raw["ok"] = True
@@ -427,6 +463,18 @@ def call_graph_svg(
         "generated_at": raw.get("generated_at", ""),
     }
     return {"ok": True, "svg": svg, "meta": meta}
+
+
+@router.get("/call-graph/progress")
+def call_graph_progress() -> dict[str, Any]:
+    """Live sampling progress for the call-graph UI progress bar."""
+    with _PROGRESS_LOCK:
+        done, total, active = (
+            _PROGRESS["done"], _PROGRESS["total"], _PROGRESS["active"],
+        )
+    pct = round(100.0 * done / total, 1) if total > 0 else 0.0
+    return {"ok": True, "done": done, "total": total, "pct": pct, "active": active}
+
 
 @router.get("/call-graph")
 def call_graph(

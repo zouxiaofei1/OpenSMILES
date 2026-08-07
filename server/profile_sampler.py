@@ -21,7 +21,7 @@ import sys
 import tempfile
 import time
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 import pstats
@@ -42,15 +42,30 @@ def _init_worker() -> None:
     _WORKER_NAMER = SMILESNNamer()
 
 
-def _profile_chunk(smiles: list[str]) -> str:
-    """Profile a chunk of molecules in the current worker; return temp .prof path."""
+def _report(done: int, total: int) -> None:
+    """Emit sampling progress to stdout for the parent process (Popen line reader)."""
+    if total <= 0:
+        return
+    print(f"CALLGRAPH_PROGRESS {done} {total}", flush=True)
+
+
+def _profile_chunk(smiles: list[str], progress=None) -> str:
+    """Profile a chunk of molecules in the current worker; return temp .prof path.
+
+    progress(done, total) is called after each molecule. Only the parent process
+    passes a callback (single-process path); workers pass None so their stdout
+    stays quiet and the multi-process path reports by completed chunk instead.
+    """
     pr = cProfile.Profile()
     pr.enable()
-    for s in smiles:
+    total = len(smiles)
+    for i, s in enumerate(smiles, 1):
         try:
             _WORKER_NAMER.name(s)
         except Exception:
             pass
+        if progress is not None:
+            progress(i, total)
     pr.disable()
     fd, path = tempfile.mkstemp(suffix=".prof")
     os.close(fd)
@@ -73,7 +88,7 @@ def sample(smiles: list[str], workers: int) -> tuple[pstats.Stats, int]:
     """
     if len(smiles) < 300 or workers <= 1:
         _init_worker()
-        path = _profile_chunk(smiles)
+        path = _profile_chunk(smiles, progress=_report)
         try:
             return _merge_stats([path]), len(smiles)
         finally:
@@ -86,9 +101,14 @@ def sample(smiles: list[str], workers: int) -> tuple[pstats.Stats, int]:
     chunk_size = max(1, len(smiles) // (n_workers * 4))
     chunks = [smiles[i:i + chunk_size] for i in range(0, len(smiles), chunk_size)]
     paths: list[str] = []
+    done_mols = 0
     try:
         with ProcessPoolExecutor(max_workers=n_workers, initializer=_init_worker) as ex:
-            paths = list(ex.map(_profile_chunk, chunks))
+            fut_to_chunk = {ex.submit(_profile_chunk, ch): ch for ch in chunks}
+            for fut in as_completed(fut_to_chunk):
+                paths.append(fut.result())
+                done_mols += len(fut_to_chunk[fut])
+                _report(done_mols, len(smiles))
         return _merge_stats(paths), len(smiles)
     finally:
         for p in paths:

@@ -1488,6 +1488,13 @@ select.input {
   font-family: var(--mono);
 }
 
+.cg-progress-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
 .cg-network {
   height: calc(100vh - var(--topbar-h) - 280px);
   min-height: 480px;

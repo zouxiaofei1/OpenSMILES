@@ -16,6 +16,7 @@ export const API = {
   layerAnalyzeOne: "/api/v1/layer-benchmark/analyze-one",
   codeAnalysis: "/api/v1/code-analysis",
   callGraph: "/api/v1/call-graph",
+  callGraphProgress: "/api/v1/call-graph/progress",
   callGraphSvg: "/api/v1/call-graph/svg",
   debug: "/api/v1/debug",
   settings: "/api/v1/settings",

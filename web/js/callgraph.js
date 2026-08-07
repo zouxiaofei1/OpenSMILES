@@ -303,6 +303,42 @@ function bindCgRankButtons() {
   });
 }
 
+function startCgProgress() {
+  var wrap = $("cg-progress");
+  var bar = $("cg-progress-bar");
+  var text = $("cg-progress-text");
+  if (wrap) wrap.classList.remove("hidden");
+  if (bar) bar.style.width = "0%";
+  if (text) text.textContent = "0 / 0 (0%)";
+  stopCgProgress();
+  state.cgPollTimer = setInterval(pollCgProgress, 400);
+}
+
+function stopCgProgress() {
+  if (state.cgPollTimer) {
+    clearInterval(state.cgPollTimer);
+    state.cgPollTimer = null;
+  }
+}
+
+async function pollCgProgress() {
+  var p;
+  try {
+    p = await api(API.callGraphProgress);
+  } catch (_) {
+    return;
+  }
+  if (!p || !p.ok) return;
+  var done = p.done || 0;
+  var total = p.total || 0;
+  var pct = total > 0 ? Math.round(100 * done / total) : 0;
+  var bar = $("cg-progress-bar");
+  if (bar) bar.style.width = pct + "%";
+  var text = $("cg-progress-text");
+  if (text) text.textContent = done + " / " + total + " (" + pct + "%)";
+  if (!p.active) stopCgProgress();
+}
+
 export async function loadCallGraph(force) {
   if (state.cgLoading) return;
   var n = cgNFromSlider();
@@ -313,6 +349,7 @@ export async function loadCallGraph(force) {
   if (btn) btn.disabled = true;
   if (st) { st.textContent = "采样中…（约 1–3s）"; st.style.color = "#f59e0b"; }
   if (empty) empty.hidden = true;
+  startCgProgress();
   try {
     var q = "?n=" + n + "&floor_pct=" + state.cgThreshold + (force ? "&refresh=1" : "");
     var data = await api(API.callGraph + q);
@@ -328,6 +365,12 @@ export async function loadCallGraph(force) {
     if (s) { s.textContent = "数据已更新，请重新生成"; s.style.color = "#f59e0b"; }
     renderCgMeta(data.meta);
     renderCgRanks();
+    // 采样完成：进度条收满
+    var bar = $("cg-progress-bar");
+    if (bar) bar.style.width = "100%";
+    var pt = $("cg-progress-text");
+    var n_actual = (data.meta && data.meta.n_actual) || 0;
+    if (pt) pt.textContent = n_actual ? n_actual + " / " + n_actual + " (100%)" : "完成";
     if (st) { st.textContent = "就绪"; st.style.color = "#86efac"; }
     return true;
   } catch (err) {
@@ -337,6 +380,13 @@ export async function loadCallGraph(force) {
   } finally {
     state.cgLoading = false;
     if (btn) btn.disabled = false;
+    stopCgProgress();
+    var wrap = $("cg-progress");
+    if (wrap) {
+      setTimeout(function () {
+        wrap.classList.add("hidden");
+      }, 600);
+    }
   }
 }
 
