@@ -209,7 +209,7 @@ keys = ("has_acid", "has_ester", "has_alcohol", "has_amine", ...)
 ok = _no_fgs(info, keys)
 ```
 
-FG 特有的互斥 keys 可直接内联在该 FG 所在模块（如 `cyclo_fg.py` 的 `_OL_BLOCK`），不需要被其他模块共享。
+FG 特有的互斥 keys 可直接内联在该 FG 所在模块，不需要被其他模块共享。
 
 ### 2.5 添加 ownership 逻辑
 

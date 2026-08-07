@@ -81,7 +81,7 @@ try 函数的职责是：
    - 环系特有的关键原子位置（如 `n_idx` 表示氮原子在环中的位置）
 
 参考现有实现（薄层 producer 位于 `scaffold/` 子目录）：
-- 单杂环/五元杂芳: `scaffold/heteroarene5.py` / `scaffold/azole13.py`
+- 五元杂芳: `scaffold/heteroarene5.py`
 - 稠杂环: `scaffold/quinoline.py` / `scaffold/indole.py` / `scaffold/fused56_mono.py`
 - 桥环/螺环: `scaffold/polycyclic_parent.py`
 
@@ -252,15 +252,13 @@ def {ring}_kind_names(kind: str, numbered: dict, build_prefix) -> tuple[str, str
 
 如果环系需要支持 FG 变体（如吡啶甲酸 pyridinecarboxylic acid、吲哚甲醛 indolecarbaldehyde 等）：
 
-### 5.1 数据驱动表（arene_fg_parent.py）
+### 5.1 FG 变体表达（principal 管线）
 
-对于常见的 arene + FG 组合，可在 `E:\chem\src\namepredict\layer2\arene_fg_parent.py` 的数据表中添加条目，实现 OH/NH2/CHO/CN 等 FG 在环系上的自动识别。
+对于常见的 arene + FG 组合（naphthalenol、pyridinecarboxylic 等），由 layer2 的 principal 管线按 `kind` 组合处理（`kind_registry.py` + `principal_expression.py`）。原 `arene_fg_parent.py` 数据驱动表已在 2026-08 重构中移除。
 
 ### 5.2 专用模块
 
-对于复杂情况，创建专用父体模块：
-- `E:\chem\src\namepredict\layer2\hetero5_carboxylic.py` — 五元杂环 COOH
-- `E:\chem\src\namepredict\layer2\cyclo_carboxylic.py` — 环烷烃羧酸
+对于复杂情况，创建专用母体模块（如 `carboxymethyl_diacid.py`、`cyclo_polycarboxylic.py`），或在 `scaffold/specs.py` 登记带 FG 变体的保留母环。
 
 ### 5.3 注册
 

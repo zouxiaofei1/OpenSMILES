@@ -220,9 +220,9 @@ FG 母体不走注册表，由 principal 管线的 typed 表达（`principal_exp
 - **二酮 (dione):** 两个酮基
 - **不饱和多元醇:** 同时含有 -OH 和 C=C，如 `_try_alkenediol_parent`
 
-资格检查使用互斥谓词 `_no_fgs(info, keys)`（`fg_helpers.py`；共享 BAD 元组常量已删除，keys 由各 producer 内联传入）：例如二酸候选要求分子中无酯、酰胺、腈、醛等更高优先级官能团，但不排斥羟基、氨基等低优先级官能团（它们将成为取代基）。链状多元酸走 `polycarboxylic.py` / `carboxymethyl_diacid.py`，环烷多元酸走 `cyclo_polycarboxylic.py`，环二醇/二酮走 `cyclo_fg.py`。
+资格检查使用互斥谓词 `_no_fgs(info, keys)`（`fg_helpers.py`；共享 BAD 元组常量已删除，keys 由各 producer 内联传入）：例如二酸候选要求分子中无酯、酰胺、腈、醛等更高优先级官能团，但不排斥羟基、氨基等低优先级官能团（它们将成为取代基）。链状多元酸走 `polycarboxylic.py` / `carboxymethyl_diacid.py`，环烷多元酸走 `cyclo_polycarboxylic.py`，环二醇/二酮/环烯 FG 由 principal 管线按 `kind`（`diol`/`dione`/`cycloketone` 等，`kind_registry.py`/`principal_expression.py`）处理——原 `cyclo_fg.py` 已删除。
 
-> **源:** `E:\chem\src\namepredict\layer2\fg_helpers.py`, `E:\chem\src\namepredict\layer2\polycarboxylic.py`, `E:\chem\src\namepredict\layer2\cyclo_fg.py`
+> **源:** `E:\chem\src\namepredict\layer2\fg_helpers.py`, `E:\chem\src\namepredict\layer2\polycarboxylic.py`
 
 ### Atom Ownership: 母体原子归属
 
@@ -239,7 +239,7 @@ ownership 信息确保 layer3 只从未被拥有的原子中提取取代基。
 
 ### 块切割与子分子构建
 
-选出母体并确定 `owned_atoms` 后，Layer2 需要识别母体外围的侧链（即取代基候选）。`block_cut.py` 提供基于 BFS 的块切割基础设施；H-封端子分子构建 `submol_build.py` 已迁至 `layer3/`（服务 L3 递归子命名）。
+母体边界与侧链原子块切割已下沉为**层无关工具** `tools/block_cut.py`（原 `layer2/block_cut.py` 迁出，L2/L3 共享）。H-封端子分子构建 `submol_build.py` 已迁至 `layer3/`（服务 L3 递归子命名）。Layer2 自身选完母体后不再做侧链块切割——侧链识别全部由 Layer3 的 `extract_claimed_sides`（`iter_claims`）与 `tools.block_cut.side_atoms` 承担。
 
 **parent_atom_set —— 母体原子边界：**
 
@@ -253,7 +253,7 @@ def parent_atom_set(parent: dict, mol: Mol) -> frozenset[int]:
     return finalize_parent_ownership(parent, mol)["owned_atoms"]
 ```
 
-> **源:** `E:\chem\src\namepredict\layer2\block_cut.py:9-15`
+> **源:** `E:\chem\src\namepredict\tools\block_cut.py`（`parent_atom_set`）
 
 **side_roots —— BFS 发现侧链根原子：**
 
@@ -267,7 +267,7 @@ def side_roots(mol: Mol, parent_atoms: frozenset[int]) -> list[int]:
     return sorted(roots)
 ```
 
-> **源:** `E:\chem\src\namepredict\layer2\block_cut.py:27-32`
+> **源:** `E:\chem\src\namepredict\tools\block_cut.py`（`side_roots`）
 
 **_bfs_block —— BFS 收集连通块：**
 
@@ -284,7 +284,7 @@ def _bfs_block(mol: Mol, root: int, parent_atoms: frozenset[int]) -> set[int]:
 
 `cut_block(mol, root, parent_atoms)` 是公开接口，返回 `frozenset[int]` 或 `None`。
 
-> **源:** `E:\chem\src\namepredict\layer2\block_cut.py:44-57`
+> **源:** `E:\chem\src\namepredict\tools\block_cut.py`（`cut_block` / `_bfs_block`）
 
 **CutSubmol —— 诱导子分子与 H-封端：**
 
@@ -344,31 +344,27 @@ IUPAC 特许某些结构使用传统保留名而非系统命名。Layer2 通过 
 
 > **源:** `E:\chem\src\namepredict\layer2\candidate_gate.py:1-68`
 
-### Leaves: 芳环外侧链识别
+### Leaves: 芳环外侧叶子拓扑（已迁 layer3）
 
-`leaves/` 子模块处理芳环上的外侧链识别（Ph-X 中的 X），这是判断"simple benzene"（简单苯环，可作母体）vs "substituted benzene"（取代苯，需选其他母体）的关键：
+`leaves/` 子模块（原 `layer2/leaves/`，2026-08 迁至 `layer3/leaves/`）处理芳环上的外侧叶子（Ph-X 中的 X）拓扑识别。Layer2 不再直接使用它——`simple benzene` vs `substituted benzene` 的判定由 layer3 的 `aryl_sub.py`（`_side_ok`/`_count_side_leaves`）与 `leaves/registry.py` 的 `match_leaf_topology` 提供，Layer2 仅在 `arene_carbonyl.py` 等保留苯母体处通过 `layer3.aryl_sub` 检测环。
 
-- `LeafHandler` 协议定义 match/name 接口
-- `ArylLeafKind` 枚举: 卤素、氨基、氰基、烷氧基、羟基、甲基、N-烷基、甲硫基、硝基、三氟甲基、苯基、苯氧基、苄基
-- 复杂 leaves 优先匹配（OPh 先于简单醚）以正确处理嵌套芳环
-
-> **源:** `E:\chem\src\namepredict\layer2\leaves\protocol.py:10-57`
-
-**Leaves 匹配注册表：**
-
-`leaves/registry.py` 维护一个按优先级排序的 handler 列表，**复杂 handler 排在简单 handler 前面**（`COMPLEX_HANDLERS + SIMPLE_HANDLERS`），确保 OPh 嵌套芳环优先于普通烷氧基匹配。`match_leaf(mol, nb, ring_i, depth)` 遍历 handler 列表，返回第一个成功的匹配。`all_outside_matched(mol, ring, attach, parent, depth)` 检查芳环上所有非 parent-link 的外侧原子是否都能被识别——这是判别 "simple benzene" 的核心条件。
-
-> **源:** `E:\chem\src\namepredict\layer2\leaves\registry.py:12-60`
+新接口为纯拓扑：`layer3/leaves/protocol.py` 定义 `ArylLeafKind`（13 种叶子）与 `LeafTopology` 冻结数据类；`layer3/leaves/registry.py` 提供 `match_leaf_topology(mol, atom, ring_atom, depth)`，经 `layer3/side_facts.ring_leaf` 暴露给 L3 命名层。详见 [[architecture/layer3-substituents]]。
 
 ---
 
 ## 侧链事实系统 (Side Facts)
 
-侧链事实系统是 **Layer2 与 Layer3 之间的核心数据契约**。Layer2 不仅选出母体，还负责对母体外围的每个侧链进行拓扑分类，生成类型化的 `SideFact` 数据对象供 Layer3 消费。
+侧链事实层 `side_facts.py` 及其配套（`side_alkyl` / `side_alkoxy` / `aryl_sub` / `aryl_depth2` / `leaves`）在 **2026-08 已从 Layer2 整体迁入 `layer3/`**，成为 L2 与 L3 共享的拓扑契约层（受契约测试 `test_l2_l3_side_facts_contract` 保护：纯拓扑、无命名依赖）。Layer2 自身不再对侧链做拓扑分类——侧链识别与命名全部由 Layer3 承担（见 [[architecture/layer3-substituents]]）。Layer2 仅**反向借用**三个拓扑函数：
 
-### AlkylShape 枚举——支链烷基的 10 种形状
+| L2 消费点 | 借用函数 | 用途 |
+|-----------|---------|------|
+| `carboxymethyl_diacid.py` | `layer3.side_facts.carboxyalkyl_arms` | 羧甲基二酸母体的羧烷基臂 |
+| `cyclo_polycarboxylic.py` | `layer3.side_alkyl._walk_linear` | 环烷多元羧酸的线性臂 |
+| `arene_carbonyl.py` | `layer3.aryl_sub` | 苯甲酰类保留母体的芳环检测 |
 
-`side_facts.py` 定义了 `AlkylShape` 枚举，将分支烷基侧链分为 12 种可命名的拓扑形状：
+### AlkylShape 枚举——支链烷基的 12 种形状
+
+`layer3/side_facts.py` 定义了 `AlkylShape` 枚举，将分支烷基侧链分为 12 种可命名的拓扑形状（`alkyl_shape`/`_SHAPE_MATCHERS` 为契约保留 API；当前 L3 主流程经 `tools/anchored_table` 锚定查表命名，不再逐形状匹配）：
 
 | 枚举值 | 代表结构 | 检测函数 |
 |--------|---------|---------|
@@ -387,153 +383,74 @@ IUPAC 特许某些结构使用传统保留名而非系统命名。Layer2 通过 
 
 每个形状对应 `_SHAPE_MATCHERS` 字典中的一个检测函数 `(mol, root, parent_set) -> list[int] | None`，返回从 root 出发的碳原子路径或 `None`。
 
-> **源:** `E:\chem\src\namepredict\layer2\side_facts.py:17-29, 115-128`
+> **源:** `E:\chem\src\namepredict\layer3\side_facts.py:15-28, 95-108`
 
-### 侧链分类子系统
+### 侧链分类子系统（已迁 layer3）
 
-侧链分类由四个独立模块协作完成：
-
-1. **`side_alkyl.py`** — 纯碳烷基侧链的系统识别。核心工具函数：
-   - `_c_neighbors(mol, idx)`: 获取碳原子的非氢碳邻居
-   - `_walk_linear_n(mol, root, parent, limit)`: BFS 走最长线性碳链（最多 12 个碳）
-   - `_is_cf3_carbon(mol, idx)`: 检测 CF3 碳（四取代碳、恰好 3 个氟）
-   - `_is_omega_halo_c(mol, idx)`: 检测 ω-卤代末端碳
-   - 各分支检测函数（`_is_isopropyl`, `_is_tert_butyl`, `_is_sec_butyl` 等）通过 `_free_neighbors` 和 `_nb_kind` 对碳骨架进行拓扑匹配
-
-2. **`side_alkoxy.py`** — 烷氧基侧链分类（-O-R）。`_outer_alkoxy_n(mol, root, oxygen)` 识别与 ring-O 连接的线性烷基长度（C1-C4），返回碳数 code。
-
-3. **`side_cycloalkyl.py`** — 环烷基侧链分类。`_is_monocycloalkyl(mol, root, parent)` 检测与母体直接相连的单环环烷基。
-
-4. **`side_sat_hetero.py`** — 饱和杂环侧链分类。`_sat_hetero_rings(mol)` 枚举分子中所有饱和杂环，`_exo_only_parent(mol, ring, root, parent)` 检查杂环是否仅通过 root 与母体相连。
-
-> **源:** `E:\chem\src\namepredict\layer2\side_alkyl.py:1-100`, `E:\chem\src\namepredict\layer2\side_facts.py:11-12`
+- **`layer3/side_alkyl.py`** — 烷基侧拓扑探针：`_c_neighbors`、`_walk_linear`、`_is_cf3_carbon`、`_is_omega_halo_c` 及 12 个分支/烯基形状匹配器（`_is_isopropyl`/`_is_tert_butyl`/`_is_vinyl` 等）。
+- **`layer3/side_alkoxy.py`** — 烷氧基侧拓扑：`_outer_alkoxy_n`/`_outer_atoms`（线性 C1-C4 + PEG code + 分支 isopropoxy/isobutoxy）。
+- **`layer3/aryl_sub.py` / `layer3/aryl_depth2.py`** — 芳环侧链拓扑：Ph/OPh/CH2Ph/OCH2Ph 检测、卤素/Me 计数、二级叶子（NO2/CF3/NH2/OH/嵌套 Ph）。
+- **`tools/anchored_table.py`** — 2026-08 新增的锚定 canonical-SMILES 查表（`*C(C)C`），统一覆盖环烷基 C3-C8、烯基、卤代烷基、芳基与含杂叶。`side_cycloalkyl.py` 已删除；`side_sat_hetero.py` 未随迁。
 
 ### SideFact 类型体系
 
-`side_facts.py` 定义了 5 种核心事实类型，覆盖所有可能的侧链拓扑：
+`layer3/side_facts.py` 定义了 6 种拓扑事实类型（`HeteroarylFact`/`SaturatedHeterocycleFact` 已在重构中删除，杂芳基/饱和杂环侧链改由 L3 通用 cut→free-name→yl 管道命名）：
 
 | SideFact 类型 | 关键字段 | 用途 |
 |--------------|---------|------|
 | `SidePath` | `root`, `atoms: tuple[int, ...]` | 线性/分支烷基侧链 |
-| `AlkoxyFact` | `root`, `oxygen`, `code`, `atoms` | 烷氧基侧链 (C1-C4) |
-| `ArylArmFact` | `kind: ArylArmKind`, `attachment`, `outer`, `ring`, `atoms` | 芳环侧链 (Ph/OPh/CH2Ph/OCH2Ph) |
-| `HeteroarylFact` | `kind: HeteroarylKind`, `attachment`, `ring`, `locant`, `leaves` | 杂芳环侧链 (pyridinyl/naphthyl) |
-| `SaturatedHeterocycleFact` | `root`, `ring`, `signature` | 饱和杂环侧链 |
-| `ArylLeafFact` | `kind: ArylLeafKind`, `site`, `atoms`, `child_ring`, `child_attach` | 芳环上的单原子/小基团取代 |
+| `AlkoxyFact` | `root`, `oxygen`, `code`, `atoms` | 烷氧基侧链 (C1-C4 + PEG) |
+| `ArylArmFact` | `kind: ArylArmKind`, `attachment`, `outer`, `bridge`, `ring`, `atoms` | 芳环侧链 (Ph/OPh/CH2Ph/OCH2Ph) |
+| `ArylLeafFact` | `kind: ArylLeafKind`, `site`, `atoms`, `value`, `child_ring`, `child_attach`, `child_parent`, `extra_atom` | 芳环上的叶子取代 |
 | `CarboxyalkylArm` | `attachment`, `atoms`, `carboxyl` | 羧烷基臂 (如 -CH2-COOH) |
+| `AlkylShape`/`ArylArmKind`/`HeteroarylKind` 枚举 | — | 侧链形状/连接方式/杂芳基分类 |
 
 `ArylArmKind` 枚举区分四种芳基连接方式：`DIRECT_C` (Ph-), `METHYLENE_C` (Ph-CH2-), `DIRECT_O` (Ph-O-), `O_METHYLENE_C` (Ph-CH2-O-)。`HeteroarylKind` 枚举区分 `SIX_MEMBER_ONE_N`（吡啶基）与 `FUSED_TEN_MEMBER_C`（萘基）。
 
-> **源:** `E:\chem\src\namepredict\layer2\side_facts.py:32-113`
-
-### L2-to-L3 数据流
-
-`side_facts.py` 提供一系列工厂函数将原始检测结果封装为类型化事实：
+### 公开拓扑接口 (layer3/side_facts)
 
 ```
-aryl_arms(info, parent)     → list[ArylArmFact]  (Ph/OPh/CH2Ph/OCH2Ph)
-pyridinyl_facts(mol, parent)→ list[HeteroarylFact]
-naphthyl_facts(mol, parent) → list[HeteroarylFact]
-linear_alkyl(mol, root, p)  → SidePath | None
-alkyl_shape(mol, root, p, s)→ SidePath | None
-outer_alkoxy(mol, root, o)  → AlkoxyFact | None
-cycloalkyl_side(mol, root, p)→ SidePath | None
-saturated_heterocycle_side(mol, root, p) → SaturatedHeterocycleFact | None
-carboxyalkyl_arms(mol, chain, acids) → tuple[CarboxyalkylArm, ...]
+ring_leaf(mol, atom, ring_atom, depth)   → ArylLeafFact | None
+carbon_neighbors(mol, atom)              → list[int]
+alkyl_shape(mol, root, parent, shape)    → SidePath | None   (契约保留)
+outer_alkoxy(mol, root, oxygen)          → AlkoxyFact | None
+phenyl_ring(mol, root, parent)           → frozenset | None
+benzyl_ring(mol, root, parent)           → frozenset | None
+aryl_leaves(mol, ring)                   → frozenset[int]
+carboxyalkyl_arms(mol, chain, acids)     → tuple[CarboxyalkylArm, ...]
 ```
 
-Layer3 调用这些工厂函数，获得类型化的事实列表后，直接进行名称组装——Layer3 不需要关心侧链的检测逻辑细节，只需消费事实数据。
-
-> **源:** `E:\chem\src\namepredict\layer2\side_facts.py:174-302`
+> **源:** `E:\chem\src\namepredict\layer3\side_facts.py:121-176`
 
 ---
 
-## 芳环侧链深度处理
+## 芳环侧链深度处理（已迁 layer3）
 
-芳环侧链识别是 Layer2 中体量最大的子系统之一，涉及多个文件协作处理 Ph、OPh、CH2Ph、OCH2Ph 及其嵌套变体。
+芳环侧链识别（Ph/OPh/CH2Ph/OCH2Ph 及其嵌套变体）在 **2026-08 随拓扑事实层整体迁入 `layer3/`**：`aryl_sub.py` / `aryl_depth2.py` / `leaves/` 现位于 `src/namepredict/layer3/`。Layer2 仅在 `arene_carbonyl.py`（苯甲酰类保留母体）通过 `layer3.aryl_sub` 检测芳环；取代苯的完整识别与命名由 Layer3 的 `side_facts` + `aryl_arm_name`（通用 cut→free-name→yl 管道）承担，详见 [[architecture/layer3-substituents]]。
 
-### aryl_sub.py —— 芳环取代基计数与分类
+### aryl_sub.py —— 芳环取代基计数与分类（layer3）
 
-`aryl_sub.py` 是芳环侧链处理的核心入口，负责：
+`aryl_sub.py` 是芳环侧链拓扑的核心，提供四种芳环连接方式检测（`_phenyl_at`/`_ch2_ph_at`/`_phenoxy_from_ether`/`_benzyloxy_from_ether`）、叶子计数（`_count_side_leaves`/`_side_ok`，P-29.3 限 3 个取代）与叶子原子收集（`_halo_atoms_on`）。芳环臂**命名**不再走 `_recursive_ph_name`（`ring_namer.py` 已删除），改由 `layer3/aryl_names.aryl_arm_name` 调 `name_as_substituent` 通用管道。
 
-**四种芳环连接方式的检测：**
+> **源:** `E:\chem\src\namepredict\layer3\aryl_sub.py`
 
-| 函数 | 检测目标 | 连接方式 |
-|------|---------|---------|
-| `_phenyl_at(mol, attach, parent)` | 直接苯基 (Ph-) | C(sp2)-C(arom) 直接键 |
-| `_ch2_ph_at(mol, ch2, parent)` | 苄基 (Ph-CH2-) | 通过 sp3 CH2 桥接 |
-| `_phenoxy_from_ether(mol, e, parent)` | 苯氧基 (Ph-O-) | 通过醚氧桥接 |
-| `_benzyloxy_from_ether(mol, e, parent)` | 苄氧基 (Ph-CH2-O-) | 通过 O-CH2 桥接 |
+### aryl_depth2.py —— 二级深度芳环处理（layer3）
 
-> **源:** `E:\chem\src\namepredict\layer2\aryl_sub.py:90-95, 286-315`
+`aryl_depth2.py` 提供二级取代基（NO2/CF3/NH2/OH/嵌套 Ph/烷氧基）的位点检测（`_depth2_kind`/`_depth2_atoms_on`/`_leaf_atoms_*`），供 L3 叶子拓扑与原子归属使用。
 
-**卤素/甲基/CN/NO2/CF3 计数：**
-
-`_count_side_leaves(mol, ring, attach, parent)` 遍历芳环上的每个外侧原子，通过 `_side_leaf_kind` 分类为 halo/me/cn/nitro/cf3/alkoxy/phenyl 等，要求叶节点总数不超过 3（IUPAC P-29.3 允许的最多取代数）。该函数排除 parent link 所在位置的原子，确保母体连接点不被计数为取代基。
-
-`_side_ok(mol, ring, attach, parent)` 是最终判定——返回 `True` 当且仅当所有外侧原子均可识别且总数不超过 3。
-
-> **源:** `E:\chem\src\namepredict\layer2\aryl_sub.py:72-88`
-
-**_classify_ph_arm —— 芳环臂分类：**
-
-芳环臂命名通过 `_one_arm_atoms`（`aryl_sub.py`）调用 `_recursive_ph_name`（来自 `leaves/ring_namer.py`）获取芳环的完整命名前缀（包含 halo/methyl/nitro/alkoxy 等所有取代基的定位编号）。`_arm_attach_parent` 识别芳环与母体的连接点，确保递归命名时知道哪个位置是"外侧"。
-
-> **源:** `E:\chem\src\namepredict\layer2\aryl_sub.py` | 旧 `_phenyl_name` / `_halo_me_prefs` / 环走向组（`_ring_order`/`_walk_ring`/`_loc_tuple` 等）已随死代码清理删除
-
-### aryl_depth2.py —— 二级深度芳环处理
-
-当芳环上的取代基本身也是复杂基团（而非简单的 Cl 或 Me）时，`aryl_depth2.py` 提供深度-2 处理：
-
-- **`_d2_sites(mol, ring, nb_outside, attach)`** —— 收集芳环上所有二级取代位点（硝基、羟基、氨基、CF3、嵌套苯基、烷氧基）。返回 `list[int]`（ring atom indices）。
-- **`_depth2_atoms_on(mol, ring, attach)`** —— 收集二级取代基涉及的所有原子（用于后续 ownership 计算）。
-- **`_d2_pref_parts(mol, ring, attach, locant_fn, nb_outside)`** —— 生成二级取代基的命名前缀，按优先级排序：amino, alkoxy, halo, hydroxy, methyl, nitro, phenyl, CF3。通过 `_join_pref` 用 "-" 连接各部分。
-
-> **源:** `E:\chem\src\namepredict\layer2\aryl_depth2.py:136-216`
-
-**二级取代基种类检测：**
-
-| 函数 | 检测目标 | 判定逻辑 |
-|------|---------|---------|
-| `_is_terminal_nitro(atom)` | -NO2 | N 连接两个双键 O + 一个 C |
-| `_is_terminal_oh(nb, ring_i)` | 酚羟基 | O 仅连接 ring C |
-| `_is_terminal_nh2(nb, ring_i)` | 芳胺基 | N 仅连接 ring C |
-| `_is_cf3_leaf(mol, c_idx, ring_i)` | -CF3 | C 连接 3 个 F + 1 个 ring C |
-| `_is_nested_phenyl(mol, nb, ring_i)` | 嵌套 Ph | arom C 连接另一个 C6 芳环 |
-| `_alkoxy_n(mol, o_atom, ring_i)` | C1-C4 烷氧基 | 醚 O 连接线性烷基 |
-
-> **源:** `E:\chem\src\namepredict\layer2\aryl_depth2.py:30-133`
+> **源:** `E:\chem\src\namepredict\layer3\aryl_depth2.py`
 
 ### 深度限制与递归防护
 
-芳环嵌套可能无限递归（如 `Ph-Ph-Ph-...`）。系统通过 `depth` 参数控制最大递归深度：
+芳环嵌套可能无限递归（如 `Ph-Ph-Ph-...`）。系统通过 `depth` 参数控制最大递归深度：深度控制由 L3 递归命名器 `SubstituentNamer`（`as_substituent.name_as_substituent`，默认 `max_depth=4`）在每层递归递增 `depth` 并检查上限。
 
-- `match_leaf(mol, nb, ring_i, depth)` 在 `depth >= 3` 时跳过 `complex` handler（`leaves/registry.py:19`），只允许简单 leaves（卤素、甲基等）
-- 深度控制由 L3 递归命名器（`substituent_namer`）在每个递归层级递增 `depth` 并检查上限
-- 默认 max_depth=3，对应 IUPAC 命名中常见的 Ph-O-Ph-CH2- 三层嵌套
+### heteroaryl_sub.py —— 已删除
 
-> **源:** `E:\chem\src\namepredict\layer2\leaves\registry.py:16-23`
+原 `heteroaryl_sub.py`（pyridin-n-yl / naphthalen-n-yl 专用识别，278 行）已在 **2026-08 重构中整体删除**（commit `ff394d0`）。杂芳基侧链作为取代基时由 L3 通用管道命名（如吡啶基经 `anchored_table` / `name_as_substituent`）；作为母体则走 layer2 scaffold（`quinoline.py`/`naphthalene.py` 等保留母环）。
 
-### heteroaryl_sub.py —— 杂芳环侧链
+### leaves/ring_namer.py —— 已删除
 
-当母体是链状结构时，杂芳环（如吡啶基、萘基）可以作为侧链取代基出现。`heteroaryl_sub.py` 处理两种杂芳基：
-
-**吡啶基 (pyridin-n-yl):**
-- `_is_pyridine_ring(mol, r)`: 检测六元芳环恰好含一个 N
-- `_ring_order(mol, ring, attach)`: 以 N=1 为起点走环，选择使 attach 位获得最低定位的环形走方向
-- `_leaf_items(mol, ring, attach, parent, order)`: 收集吡啶环上的取代基（halo/Me/methoxy/ethoxy，最多 3 个）
-- `ring_pyridinyls(mol, parent)`: 返回所有吡啶基侧链的完整描述（含命名前缀）
-
-**萘基 (naphthalen-n-yl):**
-- `_naph_core(mol)`: 通过遍历所有六元环对，检测邻位稠合的 10 原子芳碳环系
-- `_naph_ready(mol, start, att)`: 验证萘核无取代（仅 parent link 为外侧重原子）
-- `ring_naphthyls(mol, parent)`: 返回所有萘基侧链
-
-> **源:** `E:\chem\src\namepredict\layer2\heteroaryl_sub.py:21-341`
-
-### leaves/ring_namer.py —— 芳环命名 stem 生成
-
-芳环命名前缀由 `leaves/ring_namer.py` 的 `name_ph_ring` / `recursive_ph_name` 生成（含 halo/methyl/nitro/alkoxy 等所有取代基的定位编号）；`aryl_sub._one_arm_atoms` 递归调用它。`aryl_stem.py`（原 `with_aryl_names` 封装）与 `aryl_sub._phenyl_name`（旧 Ph 前缀组装路径）均已随重构/死代码清理删除。
+原 `ring_namer.py` 的 `name_ph_ring` / `recursive_ph_name`（递归苯环命名）已在 **2026-08 移除**（commit `aea616e`）。芳环取代基的完整命名（含 halo/methyl/nitro/alkoxy 等定位编号）改由 `layer3/aryl_names.aryl_arm_name` + `as_substituent` 的苯环锚定自由基路径实现。
 
 ---
 
@@ -646,84 +563,56 @@ flowchart TD
         MOL["RDKit Mol"]
     end
 
-    subgraph BlockCut["Block Cutting (block_cut.py)"]
-        PAS["parent_atom_set()<br/>→ frozenset 边界"]
-        SR["side_roots()<br/>BFS 发现根原子"]
-        BF["_bfs_block()<br/>收集连通块"]
-        CB["cut_block()<br/>→ frozenset 侧链原子"]
+    subgraph Tools["层无关工具 (tools/)"]
+        PAS["block_cut.parent_atom_set()<br/>→ frozenset 边界"]
+        SR["block_cut.side_roots()<br/>BFS 发现根原子"]
+        CB["block_cut.cut_block()<br/>→ frozenset 侧链原子"]
+        SA["block_cut.side_atoms()<br/>全连通分量补全"]
+        AT["anchored_table.py<br/>锚定查表 *C(C)C"]
     end
 
-    subgraph Submol["CutSubmol 构建 (submol_build.py)"]
-        BUILD["build_cut_submol()<br/>诱导子分子 + H封端"]
-        MAP["atom_map / inv_map<br/>新旧索引翻译"]
-    end
-
-    subgraph SideClass["侧链分类子系统"]
-        SA["side_alkyl.py<br/>线性/分支烷基"]
-        SO["side_alkoxy.py<br/>C1-C4 烷氧基"]
-        SC["side_cycloalkyl.py<br/>环烷基"]
-        SH["side_sat_hetero.py<br/>饱和杂环"]
-    end
-
-    subgraph ArylSubsystem["芳环侧链子系统"]
+    subgraph L3Topo["拓扑事实层 (layer3/)"]
+        SF["side_facts.py<br/>L2/L3 共享接口"]
+        ALK["side_alkyl.py<br/>烷基/烯基形状探针"]
+        AOX["side_alkoxy.py<br/>烷氧基尾"]
         ARYL["aryl_sub.py<br/>Ph/OPh/CH2Ph/OCH2Ph"]
         AD2["aryl_depth2.py<br/>NO2/CF3/NH2/OH/嵌套Ph"]
-        HET["heteroaryl_sub.py<br/>pyridinyl/naphthyl"]
     end
 
-    subgraph SideFacts["Side Facts 统一契约 (side_facts.py)"]
-        SF_PATH["SidePath<br/>烷基/环烷基"]
-        SF_ALKOXY["AlkoxyFact<br/>烷氧基"]
-        SF_ARYL["ArylArmFact<br/>Ph/OPh/Bn"]
-        SF_HET["HeteroarylFact<br/>pyridinyl/naphthyl"]
-        SF_SAT["SaturatedHeterocycleFact<br/>饱和杂环"]
-        SF_LEAF["ArylLeafFact<br/>卤素/Me/CN/NO2"]
+    subgraph Submol["CutSubmol 构建 (layer3/submol_build.py)"]
+        BUILD["build_cut_submol()<br/>诱导子分子 + H封端"]
     end
 
-    subgraph Output["输出 → L3"]
-        L3["Layer3: extract_substituents<br/>消费 SideFact 列表 → 取代基名称"]
+    subgraph Output["输出 → L3 命名"]
+        L3["SubstituentNamer / extract_substituents<br/>anchored 查表 + claim 补全"]
     end
 
     PARENT --> PAS
     MOL --> PAS
     PAS --> SR
-    SR --> BF
-    BF --> CB
+    SR --> CB
+    CB --> SA
     CB --> BUILD
     MOL --> BUILD
-    BUILD --> MAP
 
-    CB --> SA
-    SA --> SF_PATH
-    CB --> SO
-    SO --> SF_ALKOXY
-    CB --> SC
-    SC --> SF_PATH
-    CB --> SH
-    SH --> SF_SAT
+    SA --> AT
+    AT --> L3
 
+    CB --> ALK
+    CB --> AOX
     PARENT --> ARYL
-    MOL --> ARYL
     ARYL --> AD2
-    AD2 --> SF_LEAF
-    ARYL --> SF_ARYL
-    PARENT --> HET
-    MOL --> HET
-    HET --> SF_HET
 
-    SF_PATH --> L3
-    SF_ALKOXY --> L3
-    SF_ARYL --> L3
-    SF_HET --> L3
-    SF_SAT --> L3
-    SF_LEAF --> L3
+    ALK --> SF
+    AOX --> SF
+    ARYL --> SF
+    SF --> L3
+    SF -. "L2 反向借用<br/>carboxyalkyl_arms" .-> L2C["layer2 母体选择"]
 
     style Input fill:#e1f5fe
-    style BlockCut fill:#fff3e0
+    style Tools fill:#e0f7fa
+    style L3Topo fill:#e8f5e9
     style Submol fill:#f3e5f5
-    style SideClass fill:#e8f5e9
-    style ArylSubsystem fill:#fce4ec
-    style SideFacts fill:#fff9c4
     style Output fill:#c8e6c9
 ```
 
@@ -761,25 +650,24 @@ flowchart LR
         R1["benzazole / fused56_mono / indole / indazole / benzimidazole"]
         R2["quinoline / naphthalene / anthraquinone / benzoquinone"]
         R3["polycyclic_parent (桥环/螺环) / cyclo_pick / sat_hetero"]
-        R4["chromenone / azole13 / benzodiazine / fused56 / heteroarene5"]
+        R4["chromenone / benzodiazine / fused56 / heteroarene5"]
     end
 
     subgraph ChainAndFG["链状 / FG 母体"]
-        CFG["cyclo_fg.py<br/>环烯FG / 环二醇 / 环二酮"]
         PCO["polycarboxylic / cyclo_polycarboxylic / carboxymethyl_diacid"]
-        ALK["alkynoic / arene_carbonyl / arene_fg_parent / alkoxy_side"]
+        ALK["alkynoic / arene_carbonyl"]
     end
 
     subgraph Utilities["共享工具"]
         PC["parent_core.py<br/>parent_dict / chain / gate helpers"]
         CW["chain_walk.py<br/>最长链 / 最优链"]
         FG["fg_helpers.py<br/>_no_fgs / aliph 过滤"]
-        BO["block_cut.py<br/>侧链块切割"]
+        BO["tools/block_cut.py<br/>侧链块切割 (L2/L3 共享)"]
     end
 
-    subgraph SideFacts["侧链事实"]
-        SF["side_facts.py + side_alkyl / side_alkoxy / side_cycloalkyl / side_sat_hetero"]
-        ARYL["aryl_sub / aryl_depth2 / heteroaryl_sub + leaves/"]
+    subgraph SideFacts["侧链拓扑事实 (layer3/)"]
+        SF["layer3/side_facts.py + side_alkyl / side_alkoxy"]
+        ARYL["layer3/aryl_sub / aryl_depth2 + leaves/"]
     end
 
     subgraph Ownership["归属与过滤"]
@@ -796,7 +684,7 @@ flowchart LR
     RSCAFF --> RCORE & SPECS
     KR --> SPECS
     CAND --> SCORE & PO & CG
-    CAND --> CFG & PCO & ALK
+    CAND --> PCO & ALK
     CAND --> PC & CW & FG
     R1 & R2 & R3 & R4 --> RCORE
     SF --> ARYL
@@ -965,37 +853,43 @@ Layer3 接收 parent dict 后，遍历所有非 owned_atoms 的重原子（o_idx
 
 ### 块切割与侧链事实 (Block Cutting & Side Facts)
 
-| 文件 | 职责 |
+> **2026-08 已迁出 Layer2**：以下模块现位于 `tools/`（层无关）或 `layer3/`（拓扑事实层），Layer2 仅少量反向借用。详见 [[architecture/layer3-substituents]]。
+
+| 文件（当前位置） | 职责 |
 |------|------|
-| `block_cut.py` | BFS 块切割: parent_atom_set, side_roots, _bfs_block, cut_block（`submol_build` 已迁 `layer3/submol_build.py`） |
-| `side_facts.py` | **L2→L3 数据契约**: AlkylShape + SideFact 类型 + 工厂函数 |
-| `side_alkyl.py` | 单烷基侧链拓扑: 线性 C1-C4 + 保留分支烷基 |
-| `side_alkoxy.py` | 烷氧基侧链分类 + PEG 尾 |
-| `side_cycloalkyl.py` | 单环环烷基侧链分类 (C3-C8) |
-| `side_sat_hetero.py` | 饱和杂环侧链 (piperidinyl 等) |
+| `tools/block_cut.py` | BFS 块切割: parent_atom_set, side_roots, cut_block, side_atoms（原 `layer2/block_cut.py`） |
+| `layer3/side_facts.py` | **L2/L3 共享拓扑契约**: AlkylShape + 事实类型 + 公开接口 |
+| `layer3/side_alkyl.py` | 烷基侧拓扑探针（原 layer2） |
+| `layer3/side_alkoxy.py` | 烷氧基侧拓扑（原 layer2） |
+| `layer3/submol_build.py` | CutSubmol 构建: build_cut_submol / build_anchor_submol（原 layer2） |
+| `tools/anchored_table.py` | **锚定 canonical-SMILES 查表**（2026-08 新增核心机制） |
+
+已删除: `side_cycloalkyl.py`（并入 anchored_table）、`side_sat_hetero.py`（未随迁）。
 
 ### 芳环侧链子系统 (Aryl Side-Chain Subsystem)
 
-| 文件 | 职责 |
+> **2026-08 已迁 Layer2 → layer3**：
+
+| 文件（当前位置） | 职责 |
 |------|------|
-| `aryl_sub.py` | 芳环侧链核心: Ph/OPh/CH2Ph/OCH2Ph 检测, 卤素/Me 计数 |
-| `aryl_depth2.py` | 二级芳环处理: NO2/CF3/NH2/OH/嵌套Ph/烷氧基 site 检测 + 前缀生成 |
-| `heteroaryl_sub.py` | 杂芳环侧链: pyridin-n-yl, naphthalen-n-yl |
-| `leaves/` | LeafHandler 注册表 (protocol/registry/simple/complex_h/ring_namer/topo) |
+| `layer3/aryl_sub.py` | 芳环侧链拓扑: Ph/OPh/CH2Ph/OCH2Ph 检测, 卤素/Me 计数 |
+| `layer3/aryl_depth2.py` | 二级芳环叶子: NO2/CF3/NH2/OH/嵌套Ph/烷氧基 |
+| `layer3/leaves/` | 芳基叶子拓扑 registry (protocol/registry/simple/topo/complex_h) |
+
+已删除: `heteroaryl_sub.py`（杂芳基侧链走通用管道）、`leaves/ring_namer.py`（recursive_ph_name 移除）。
 
 ### 链状 / FG 母体 (Chain & FG Parents)
 
 | 文件 | 职责 |
 |------|------|
 | `chain_walk.py` | 碳链 DFS 遍历: _longest_chain, _best_cover_pair, _chain_through |
-| `cyclo_fg.py` | 环烯FG + 环二醇/二酮（原 `cyclo_ene_fg` + `cyclo_poly_fg` 合并） |
-| `cyclo_polycarboxylic.py` | 环烷多元羧酸 (P-65.1.1) |
+| `cyclo_polycarboxylic.py` | 环烷多元羧酸 (P-65.1.1)；借 `layer3.side_alkyl._walk_linear` |
 | `polycarboxylic.py` | 开链多元羧酸 (三酸及以上) |
-| `carboxymethyl_diacid.py` | 羧甲基二酸特殊母体 |
+| `carboxymethyl_diacid.py` | 羧甲基二酸特殊母体；借 `layer3.side_facts.carboxyalkyl_arms` |
 | `alkynoic.py` | 炔酸/炔醇 |
-| `arene_carbonyl.py` | 苯甲酰类保留母体: benzoic/benzaldehyde/acetophenone/benzoate |
-| `arene_fg_parent.py` | 芳环 FG 母体总入口: OH/NH2/CHO/CN 在任意芳环上 |
-| `alkoxy_side.py` | 酯/氨基甲酸酯烷氧侧拓扑 |
+| `arene_carbonyl.py` | 苯甲酰类保留母体: benzoic/benzaldehyde/acetophenone/benzoate（借 `layer3.aryl_sub`） |
+
+已删除: `cyclo_fg.py`（环烯FG 处理散入各羧酸/scaffold 模块）、`arene_fg_parent.py`（芳环 FG 母体数据驱动入口移除）；`alkoxy_side.py` 已迁至 `tools/alkoxy_side.py`（layer2 仍消费 `classify_alkoxy`）。
 
 ### scaffold 母环薄层 (Retained Ring Modules)
 
@@ -1008,7 +902,7 @@ Layer3 接收 parent dict 后，遍历所有非 owned_atoms 的重原子（o_idx
 | `scaffold/quinoline.py` / `scaffold/naphthalene.py` | 10 原子路径稠环 |
 | `scaffold/anthraquinone.py` | 蒽醌（含原 `anthracene` 的 `_is_linear`） |
 | `scaffold/benzoquinone.py` | 苯醌（含原 `ortho_benzoquinone`） |
-| `scaffold/chromenone.py` / `scaffold/benzodiazine.py` / `scaffold/azole13.py` / `scaffold/heteroarene5.py` | 其他保留母环 |
+| `scaffold/chromenone.py` / `scaffold/benzodiazine.py` / `scaffold/heteroarene5.py` | 其他保留母环 |
 | `scaffold/polycyclic_parent.py` | 桥环 / 螺环（原 `bridged_parent` + `spiro_parent` 合并） |
 | `scaffold/cyclo_pick.py` | 多环环烷烃选择 |
 | `scaffold/sat_hetero.py` / `scaffold/sat_hetero_stem.py` / `scaffold/hetero_a_names.py` | 饱和杂环 + stem |
@@ -1048,15 +942,15 @@ def iter_parent_candidates(info: dict) -> list[dict]
 | `KindMeta` | `kind_registry.py:7-15` | 母体种类元数据: fg_rank, ring, n_rings, retained, en/zh stem |
 | `ScaffoldSpec` | `scaffold/specs.py:17-28` | 编号骨架定义: naming_class, stem, NumberingPolicy |
 | `CandidateGate` | `candidate_gate.py:20-30` | 候选门控: GateStatus + GateScope + reason |
-| `LeafTopology` | `leaves/protocol.py:26-35` | 芳环侧链拓扑: kind, site, atoms, value |
+| `LeafTopology` | `layer3/leaves/protocol.py:23-32` | 芳环叶子拓扑: kind, site, atoms, value |
 | `NameResult` | `types.py:6-13` | 最终命名结果: en, zh, success, meta |
-| `AlkylShape` | `side_facts.py:17-29` | 烷基侧链形状枚举 (12 种分支拓扑) |
-| `ArylArmKind` | `side_facts.py:32-36` | 芳基连接方式枚举 (DIRECT_C/METHYLENE_C/DIRECT_O/O_METHYLENE_C) |
-| `HeteroarylKind` | `side_facts.py:39-41` | 杂芳基种类枚举 (SIX_MEMBER_ONE_N/FUSED_TEN_MEMBER_C) |
-| `SidePath` | `side_facts.py:73-76` | 侧链原子路径: root + atoms tuple |
-| `ArylArmFact` | `side_facts.py:79-86` | 芳基臂事实: kind, attachment, outer, bridge, ring, atoms |
+| `AlkylShape` | `layer3/side_facts.py:15-28` | 烷基侧链形状枚举 (12 种分支拓扑) |
+| `ArylArmKind` | `layer3/side_facts.py:30-35` | 芳基连接方式枚举 (DIRECT_C/METHYLENE_C/DIRECT_O/O_METHYLENE_C) |
+| `HeteroarylKind` | `layer3/side_facts.py:37-40` | 杂芳基种类枚举 (SIX_MEMBER_ONE_N/FUSED_TEN_MEMBER_C) |
+| `SidePath` | `layer3/side_facts.py:71-75` | 侧链原子路径: root + atoms tuple |
+| `ArylArmFact` | `layer3/side_facts.py:77-85` | 芳基臂事实: kind, attachment, outer, bridge, ring, atoms |
 | `CutSubmol` | `layer3/submol_build.py`（原 layer2） | 诱导子分子: mol, atom_map, inv_map, attach 索引 |
-| `RootedAlkylTree` | `layer3/side_alkyl_sys.py`（原 layer2） | 有根烷基树: root, atoms, children, depth |
+| `RootedAlkylTree` | `layer3/side_alkyl_sys.py:10-16`（原 layer2） | 有根烷基树: root, atoms, children, depth |
 
 ---
 

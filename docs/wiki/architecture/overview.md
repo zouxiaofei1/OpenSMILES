@@ -345,7 +345,7 @@ src/namepredict/
 │   ├── analyzer.py           # FG 检测 + info dict
 │   ├── a*_*.py               # ~20 FG 子检测模块
 │   └── ring_*.py             # 环系拓扑
-├── layer2/                   # 母体选择器（~75 文件）
+├── layer2/                   # 母体选择器（20 .py + scaffold/27）
 │   ├── principal.py          # P-41 主官能团注册表 + 选择
 │   ├── principal_expression.py  # typed 表达 (chain/ring/hydrocarbon)
 │   ├── principal_parent.py   # P-44 规则驱动管线编排
@@ -356,18 +356,19 @@ src/namepredict/
 │   ├── candidate_gate.py     # 类型化门控
 │   ├── parent_core.py        # parent_dict / chain / gate helpers
 │   ├── fg_helpers.py         # FG 资格谓词 + 脂肪族过滤
-│   ├── cyclo_fg.py           # 环烯FG / 环二醇 / 环二酮
 │   ├── arene_carbonyl.py     # 苯甲酰类保留母体
-│   ├── side_*.py / aryl_*.py # 侧链事实 + 芳环侧链
-│   ├── scaffold/             # 母环保留名 + 骨架构建器 (specs/ring_core/…)
-│   └── leaves/               # 芳环外侧链识别
-├── layer3/                   # 取代基提取
+│   ├── kind_registry.py      # 母体元数据注册中心
+│   └── scaffold/             # 母环保留名 + 骨架构建器 (specs/ring_core/…)
+├── layer3/                   # 取代基提取 + 侧链拓扑事实
 │   ├── substituent_extractor.py
-│   ├── substituent_namer.py  # 递归命名入口
+│   ├── substituent_namer.py  # 三后端命名 (anchored / rooted-tree / recursive)
 │   ├── coverage.py           # Coverage Ledger
-│   ├── alkyl_names.py        # 烷基名称
-│   ├── alkoxy_names.py       # 烷氧基名称
-│   └── aryl_names.py         # 芳基名称
+│   ├── side_facts.py         # L2/L3 共享拓扑事实层
+│   ├── side_alkyl.py / side_alkoxy.py / aryl_sub.py / aryl_depth2.py
+│   ├── leaves/               # 芳基叶子拓扑 (protocol/registry/topo/…)
+│   ├── as_substituent.py / submol_build.py  # cut→free-name→yl 管道
+│   ├── alkoxy_names.py / aryl_names.py / amino_side.py / alkyl_sys_names.py
+│   └── claim_extract.py / claimable_block.py  # 覆盖补全
 ├── layer4/                   # 编号
 │   ├── numbering.py          # 编号调度
 │   ├── omit_locants.py       # omit-locant 决策
