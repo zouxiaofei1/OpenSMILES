@@ -165,14 +165,6 @@ def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
     return f"1H-{zh_parent}"
 
 
-def _ester_alkyl_pair(alkoxy_n: int | None) -> tuple[str, str] | None:
-    from namepredict.layer5.stems import ESTER_ALKYL_EN, ESTER_ALKYL_ZH
-    if alkoxy_n is None:
-        return None
-    en, zh = ESTER_ALKYL_EN.get(alkoxy_n), ESTER_ALKYL_ZH.get(alkoxy_n)
-    return (en, zh) if en and zh else None
-
-
 def benzoate_parent_names(numbered: dict, build_prefix) -> tuple[str, str] | None:
     from namepredict.layer5.stems import ester_alkoxy_pair
     parent = numbered.get("parent") or {}
@@ -271,23 +263,6 @@ def benzothiophenol_names(numbered: dict) -> tuple[str, str] | None:
     if loc is None:
         return None
     return f"1-benzothiophen-{loc}-ol", f"苯并[b]噻吩-{loc}-醇"
-
-
-_Q_LOCANTS = (1, 2, 3, 4, None, 5, 6, 7, 8, None)
-
-
-def _q_sub_loc(chain: list[int], attach: int) -> int | None:
-    if attach not in chain or len(chain) != 10:
-        return None
-    loc = _Q_LOCANTS[chain.index(attach)]
-    return loc
-
-
-def _q_cooh_loc(numbered: dict) -> int | None:
-    """COOH ring attach with naphthalene-style locants (skip 4a/8a)."""
-    parent = numbered.get("parent") or {}
-    chain, attach = parent.get("chain") or [], parent.get("ring_attach_idx")
-    return None if attach is None else _q_sub_loc(chain, attach)
 
 
 # --- Generalized arene FG parent names (P-63.1.4 / P-62.2.1) ---

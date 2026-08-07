@@ -2,7 +2,7 @@ from __future__ import annotations
 from namepredict.layer5.stems import (
     ACID_EN, ACID_ZH, ALCOHOL_EN, ALCOHOL_ZH,
     ALDEHYDE_EN, ALDEHYDE_ZH, ALKANE_EN, ALKANE_ZH, ALKOXY_EN, ALKOXY_ZH,
-    AMIDE_EN, AMIDE_ZH, ESTER_ACYL_EN, ESTER_ALKYL_EN, ESTER_ALKYL_ZH,
+    AMIDE_EN, AMIDE_ZH, ESTER_ACYL_EN,
     ETHER_SYM_EN, ETHER_SYM_ZH, NITRILE_EN, NITRILE_ZH, SULFIDE_ALKYL_EN,
     SULFIDE_ALKYL_ZH, SULFIDE_SYM_EN, SULFIDE_SYM_ZH, maybe_anion_names, maybe_metal_salt_names, zh_stem,
 )
@@ -69,8 +69,6 @@ def _cycloamine_names(
     n: int, loc: int | None = None, omit: bool = True,
 ) -> tuple[str, str] | None:
     return _cyclo_fg_with_loc(n, loc, omit, "amine", "胺")
-def _cycloalkanecarboxylic_names(n: int) -> tuple[str, str] | None:
-    return _cyclo_from_alkane(n, lambda e: f"cyclo{e[:-1]}ecarboxylic acid", lambda z: f"环{z}甲酸")
 def _omit_term_locant(n: int, loc: int | None, omit: bool) -> bool:
     return omit or loc is None or (loc == 1 and n <= 2)
 def _alcohol_names(n: int, oh_locant: int | None, omit: bool) -> tuple[str, str] | None:
@@ -180,9 +178,6 @@ def _nitrile_names(n: int) -> tuple[str, str] | None:
     return _pair(NITRILE_EN, NITRILE_ZH, n)
 def _ester_acyl_en(n: int) -> str | None:
     return ESTER_ACYL_EN.get(n)
-def _ester_alkyl_pair(alkoxy_n: int) -> tuple[str, str] | None:
-    en, zh = ESTER_ALKYL_EN.get(alkoxy_n), ESTER_ALKYL_ZH.get(alkoxy_n)
-    return (en, zh) if en and zh else None
 def _ester_names(acyl_n: int, parent: dict) -> tuple[str, str] | None:
     from namepredict.layer5.stems import ester_alkoxy_pair
     alkyl = ester_alkoxy_pair(parent)

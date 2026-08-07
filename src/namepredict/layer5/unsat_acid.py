@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from namepredict.layer5.stems import (
-    ALKANE_EN, ALKANE_ZH, ESTER_ALKYL_EN, ESTER_ALKYL_ZH, zh_stem,
+    ALKANE_EN, ALKANE_ZH, zh_stem,
 )
 from namepredict.layer5.stereo_ez import (
     _ez_for_alkenol,
@@ -204,11 +204,6 @@ def alkynenitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
         n, numbered.get("yne_locant"), "ynenitrile", "炔腈",
         numbered.get("omit_yne_locant", False),
     )
-
-
-def _ester_alkyl_pair(alkoxy_n: int) -> tuple[str, str] | None:
-    en, zh = ESTER_ALKYL_EN.get(alkoxy_n), ESTER_ALKYL_ZH.get(alkoxy_n)
-    return (en, zh) if en and zh else None
 
 
 def alkenoate_names(n, locant, parent, ez="") -> tuple[str, str] | None:
