@@ -66,14 +66,3 @@ def _score_parent(info: dict, parent: dict) -> tuple:
     kind = parent.get("kind") or ""
     return (*_p44_1_1(parent), *_later_score(parent, kind))
 
-def _better_parent(info: dict, a: dict, b: dict) -> bool:
-    return _score_parent(info, a) > _score_parent(info, b)
-
-def _pick_best(info: dict, candidates: list[dict]) -> dict | None:
-    best: dict | None = None
-    for cand in candidates:
-        if cand is None:
-            continue
-        if best is None or _better_parent(info, cand, best):
-            best = cand
-    return best

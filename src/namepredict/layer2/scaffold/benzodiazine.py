@@ -12,9 +12,6 @@ from namepredict.layer2.scaffold.naphthalene import (
     _bridge_pair,
     _two_six_rings,
 )
-from namepredict.layer2.scaffold.ring_parent import _outside_ok, _ring_halo_n, _ring_side_starts
-
-
 def _fused_pair(info: dict):
     pair = _two_six_rings(info)
     if pair is None:
@@ -72,14 +69,6 @@ def _qz_from_fused(mol: Mol, r1, r2, br) -> tuple[set[int], list[int], set[int]]
 def _qz_core(info: dict) -> tuple[set[int], list[int], set[int]] | None:
     fused = _fused_pair(info)
     return None if fused is None else _qz_from_fused(info["mol"], *fused)
-
-
-def _n1(mol: Mol, ns: list[int], bridge: set[int]) -> int:
-    for n in ns:
-        nbs = {a.GetIdx() for a in mol.GetAtomWithIdx(n).GetNeighbors()}
-        if nbs & bridge:
-            return n
-    return ns[0]
 
 
 def _is_quinoxaline_n(mol: Mol, ns: list[int], bridge: set[int]) -> bool:

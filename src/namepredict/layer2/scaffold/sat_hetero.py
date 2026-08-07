@@ -13,7 +13,6 @@ from rdkit.Chem import Mol
 from namepredict.layer2.scaffold.ring_parent import (
     _disjoint_cover,
     _outside_carbons,
-    _outside_ok,
     _ring_bonds_single,
     _ring_halo_n,
     _ring_side_starts,
@@ -124,28 +123,6 @@ def _fg_block(info: dict) -> bool:
     return bool(info.get("has_nitrile") or info.get("has_thiol") or info.get("has_nitro"))
 
 
-def _ring_n_set(mol: Mol, atom_ids: list[int]) -> set[int]:
-    return {i for i in atom_ids if mol.GetAtomWithIdx(i).GetAtomicNum() == 7}
-
-
-def _extra_amine(info: dict, ring_ns: set[int]) -> bool:
-    """True if any detected amine is not a ring hetero (principal amine FG)."""
-    for a in info.get("amines") or []:
-        if a.get("n_idx") not in ring_ns:
-            return True
-        if a.get("degree") == 1:
-            return True
-    return False
-
-
-def _n_unsub(mol: Mol, ring_ns: set[int]) -> bool:
-    """Ring N must be N–H (or bare), not N-alkyl."""
-    for i in ring_ns:
-        if mol.GetAtomWithIdx(i).GetTotalNumHs() < 1:
-            return False
-    return True
-
-
 def _mono_methyl_only(mol: Mol, ring: set[int], starts: list[int]) -> bool:
     """True when every outside C is a mono-methyl attach (used by carboxylic)."""
     if not starts:
@@ -154,66 +131,3 @@ def _mono_methyl_only(mol: Mol, ring: set[int], starts: list[int]) -> bool:
     return outside == set(starts)
 
 
-def _sides_cover(mol: Mol, ring: set[int], starts: list[int]) -> bool:
-    """Outside C fully covered by recognized alkyl side probes (C1–C4 / branched)."""
-    outside = set(_outside_carbons(mol, ring))
-    if not starts:
-        return not outside
-    sets = _side_sets(mol, ring, starts)
-    return sets is not None and _disjoint_cover(sets, outside)
-
-
-def _subs_ok(mol: Mol, ring: set[int]) -> bool:
-    """Allow ring-C linear/branched alkyl sides + monohalo (P-22.2.2 / P-14.3.4)."""
-    if _ring_halo_n(mol, ring) > 1:
-        return False
-    return _sides_cover(mol, ring, _ring_side_starts(mol, ring))
-
-
-def _is_simple_sat_hetero(info: dict) -> bool:
-    if _kind_of(info) is None or _fg_block(info):
-        return False
-    mol: Mol = info["mol"]
-    atom_ids = _ring_atoms_if_mono(info)
-    ring, ring_ns = set(atom_ids), _ring_n_set(mol, atom_ids)
-    if _extra_amine(info, ring_ns) or not _n_unsub(mol, ring_ns):
-        return False
-    if not _outside_ok(mol, ring):
-        return False
-    return _subs_ok(mol, ring)
-
-
-def _hetero_pair(info: dict) -> list[int]:
-    """Hetero indices for orientation: mono → [h]; di → ordered by priority."""
-    mol: Mol = info["mol"]
-    atom_ids = _ring_atoms_if_mono(info)
-    hs = _ring_hetero_idxs(mol, atom_ids)
-    if len(hs) <= 1:
-        return hs
-    # O before N before S for morpholine O=1; piperazine both N; diox both O
-    return sorted(hs, key=lambda i: (mol.GetAtomWithIdx(i).GetAtomicNum() != 8, i))
-
-
-def _hetero_asym(info: dict, hs: list[int]) -> bool:
-    """True when dihetero atoms differ (morpholine O≠N); false for N–N / O–O."""
-    if len(hs) < 2:
-        return False
-    mol: Mol = info["mol"]
-    return mol.GetAtomWithIdx(hs[0]).GetAtomicNum() != mol.GetAtomWithIdx(hs[1]).GetAtomicNum()
-
-
-def _sat_hetero_parent(info: dict) -> dict:
-    atom_ids = _ring_atoms_if_mono(info)
-    kind = _kind_of(info)
-    hs = _hetero_pair(info)
-    out = {
-        "chain": atom_ids, "n_carbons": len(atom_ids), "kind": kind,
-        "hetero_idxs": hs, "hetero_asym": _hetero_asym(info, hs),
-    }
-    if len(hs) == 1:
-        out["hetero_idx"] = hs[0]
-    return out
-
-
-def _try_sat_hetero_parent(info: dict) -> dict | None:
-    return _sat_hetero_parent(info) if _is_simple_sat_hetero(info) else None

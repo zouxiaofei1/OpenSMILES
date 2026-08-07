@@ -93,9 +93,6 @@ def _ring_order(mol: Mol, ring: set[int], attach: int) -> list[int]:
 def _locant_in(order: list[int], site: int) -> int:
     return order.index(site) + 1 if site in order else 1
 
-def _locant(mol: Mol, ring: set[int], attach: int) -> int:
-    return _locant_in(_ring_order(mol, ring, attach), attach)
-
 def _parent_link(mol: Mol, start: int, parent: set[int]) -> int | None:
     links = [
         n.GetIdx() for n in mol.GetAtomWithIdx(start).GetNeighbors()
@@ -193,24 +190,6 @@ def ring_pyridinyls(mol: Mol, parent: set[int]) -> list[dict]:
             out.append(one)
     return out
 
-def _add_alkoxy_atoms(mol: Mol, o_idx: int, ring_i: int, out: set[int]) -> None:
-    out.add(o_idx)
-    for n2 in mol.GetAtomWithIdx(o_idx).GetNeighbors():
-        if n2.GetAtomicNum() == 6 and n2.GetIdx() != ring_i:
-            out.add(n2.GetIdx())
-
-def _leaf_atoms_on(mol: Mol, ring: set[int], attach: int, parent: int) -> set[int]:
-    out: set[int] = set()
-    for i in ring:
-        for nb in _nb_out(mol, i, ring):
-            if i == attach and nb.GetIdx() == parent:
-                continue
-            if nb.GetAtomicNum() == 8:
-                _add_alkoxy_atoms(mol, nb.GetIdx(), i, out)
-            else:
-                out.add(nb.GetIdx())
-    return out
-
 def _naph_chains(mol: Mol, r1: list[int], r2: list[int], br: tuple[int, int]):
     from namepredict.tools.ring_ident import _chains_for_bridge
     return _chains_for_bridge(r1, r2, *br) + _chains_for_bridge(r1, r2, br[1], br[0])
@@ -293,12 +272,6 @@ def ring_naphthyls(mol: Mol, parent: set[int]) -> list[dict]:
         if one is not None:
             out.append(one)
     return out
-
-def _as_sub(p: dict, kind: str, n_c: int) -> dict:
-    return {
-        "kind": kind, "attach_idx": p["attach"], "atoms": p["atoms"],
-        "n_carbons": n_c, "en": p["en"], "zh": p["zh"], "paren": p["paren"],
-    }
 
 def heteroaryl_outers(mol: Mol, chain: set[int]) -> set[int]:
     py = {p["outer_c"] for p in ring_pyridinyls(mol, chain)}

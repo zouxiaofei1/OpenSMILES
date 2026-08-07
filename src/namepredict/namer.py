@@ -10,7 +10,6 @@ from namepredict.layer1.analyzer import analyze
 from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
 from namepredict.layer2.parent_ownership import finalize_parent_ownership
 from namepredict.layer2.parent_selector import iter_parent_candidates, select_parent
-from namepredict.layer2.parent_candidate import principal_phases
 from namepredict.layer3.coverage import build_coverage_ledger
 from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer3.substituent_namer import SubstituentName

@@ -19,13 +19,6 @@ def select_principal_parent_skeletons(info: dict) -> PrincipalParentSelection:
     skeletons = select_principal_skeletons(info, occurrences)
     return PrincipalParentSelection(principal, skeletons)
 
-def _covers_all(selection: PrincipalParentSelection) -> bool:
-    total = len(selection.principal.occurrences)
-    return all(len(s.covered_principal_ids) == total for s in selection.skeletons.candidates)
-
-def _supported_payload(selection: PrincipalParentSelection) -> bool:
-    return selection.principal.group_class.value == "acid"
-
 def _owned(parent: dict | None, selection: PrincipalParentSelection) -> dict | None:
     if parent is None:
         return None

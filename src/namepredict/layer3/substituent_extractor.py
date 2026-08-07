@@ -44,19 +44,8 @@ def alkyl_alpha_key(stem: str) -> str:
     s = _strip_outer_parens(s)
     return _strip_lead_locant(s)
 
-# n-alkyl C1–C12 (P-29.3 / BQ P-64.2 Round B); C11+ ZH uses …烷基
-ALKYL_EN = {
-    1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl", 5: "pentyl", 6: "hexyl",
-    7: "heptyl", 8: "octyl", 9: "nonyl", 10: "decyl", 11: "undecyl", 12: "dodecyl",
-}
-ALKYL_ZH = {
-    1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基", 5: "戊基", 6: "己基",
-    7: "庚基", 8: "辛基", 9: "壬基", 10: "癸基", 11: "十一烷基", 12: "十二烷基",
-}
 HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
 HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}
-_HALOALKYL_STEM_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
-_HALOALKYL_STEM_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
 
 def _side_starts(mol: Mol, chain: list[int]) -> list[tuple[int, int]]:
     cs = set(chain)
@@ -153,43 +142,6 @@ def _make_oxo(attach: int) -> dict:
         "en": "oxo", "zh": "氧代",
     }
 
-def _make_nitro(attach: int, n_idx: int, o_idxs: list[int]) -> dict:
-    return {
-        "kind": "nitro", "attach_idx": attach, "atoms": [n_idx] + list(o_idxs),
-        "en": "nitro", "zh": "硝基",
-    }
-
-def _extract_nitros(info: dict, parent: dict) -> list[dict]:
-    chain = set(parent.get("chain") or [])
-    return [
-        _make_nitro(n["c_idx"], n["n_idx"], n.get("o_idxs") or [])
-        for n in info.get("nitros") or [] if n["c_idx"] in chain
-    ]
-
-def _make_iso(kind: str, attach: int, e: dict, en: str, zh: str) -> dict:
-    return {
-        "kind": kind, "attach_idx": attach,
-        "atoms": [e["n_idx"], e["c_idx"], e["x_idx"]], "en": en, "zh": zh,
-    }
-
-def _extract_iso_kind(
-    info: dict, parent: dict, key: str, kind: str, en: str, zh: str,
-) -> list[dict]:
-    if parent.get("kind") in ("isocyanate", "isothiocyanate"):
-        return []
-    chain = set(parent.get("chain") or [])
-    return [
-        _make_iso(kind, e["r_c_idx"], e, en, zh)
-        for e in info.get(key) or [] if e["r_c_idx"] in chain
-    ]
-
-def _extract_isocyanates(info: dict, parent: dict) -> list[dict]:
-    a = _extract_iso_kind(info, parent, "isocyanates", "isocyanato", "isocyanato", "异氰酸根合")
-    b = _extract_iso_kind(
-        info, parent, "isothiocyanates", "isothiocyanato", "isothiocyanato", "异硫氰酸根合",
-    )
-    return a + b
-
 def _principal_attachments(parent: dict, group: str) -> frozenset[int]:
     facts = parent.get("principal_expression_facts")
     return facts.attachment_atoms if facts and facts.group_class.value == group else frozenset()
@@ -215,40 +167,6 @@ def _extract_oxos(info: dict, parent: dict) -> list[dict]:
     return [
         _make_oxo(k["c_idx"]) for k in info.get("ketones") or [] if k["c_idx"] in chain
     ]
-
-_AMIDE_KINDS = frozenset({"amide", "benzamide"})
-
-def _n_benzyl_en_zh(en: str, zh: str, paren: bool) -> tuple[str, str]:
-    if paren or en != "benzyl":
-        return f"N-({en})", f"N-({zh})"
-    return f"N-{en}", f"N-{zh}"
-
-def _n_benzyl_sub(attach: int, en: str, zh: str, paren: bool) -> dict:
-    ne, nz = _n_benzyl_en_zh(en, zh, paren)
-    return {
-        "kind": "n_benzyl", "n_carbons": 7, "attach_idx": attach,
-        "atoms": [], "en": ne, "zh": nz,
-    }
-
-def _n_benzyl_named(info: dict, ch2: int, owned) -> tuple[str, str, bool] | None:
-    ams = info.get("amides") or []
-    n_idx = ams[0]["n_idx"] if ams else -1
-    ring = side_facts.benzyl_ring(info["mol"], ch2, n_idx)
-    if ring is None:
-        return None
-    fact = side_facts.ArylArmFact(
-        side_facts.ArylArmKind.METHYLENE_C, n_idx, ch2, ch2, ring, (ch2, *ring),
-    )
-    return aryl_arm_name(info["mol"], fact, owned)
-
-def _extract_n_benzyl(info: dict, parent: dict) -> list[dict]:
-    if parent.get("kind") not in _AMIDE_KINDS or not parent.get("n_benzyl"):
-        return []
-    attach, ch2 = parent.get("amide_c_idx"), parent.get("n_benzyl_ch2")
-    if attach is None or ch2 is None:
-        return []
-    named = _n_benzyl_named(info, ch2, parent.get("owned_atoms"))
-    return [_n_benzyl_sub(attach, *named)] if named else []
 
 def _make_aryl(
     kind: str, attach: int, atoms: list[int], en: str, zh: str, paren: bool,
@@ -303,8 +221,7 @@ def _extract_core_subs(info: dict, parent: dict) -> list:
     halo = _filter_fg_halos(_extract_halos(mol, chain), parent)
     return (
         halo + _extract_hydroxys(info, parent) + _extract_aminos(info, parent)
-        + _extract_oxos(info, parent)  # + _extract_nitros(info, parent)
-        # + _extract_isocyanates(info, parent)
+        + _extract_oxos(info, parent)
     )
 
 def _extract_aryls(info: dict, parent: dict) -> list[dict]:
@@ -313,31 +230,6 @@ def _extract_aryls(info: dict, parent: dict) -> list[dict]:
     aryl = [_one_aryl(mol, fact, owned) for fact in _aryl_facts(info, parent)]
     hetero = side_facts.pyridinyl_facts(mol, chain) + side_facts.naphthyl_facts(mol, chain)
     return aryl + [_one_heteroaryl(fact) for fact in hetero]
-
-def _extract_n_subs(info: dict, parent: dict) -> list[dict]:
-    from namepredict.layer3.n_block_extract import extract_n_blocks
-    from namepredict.layer3.n_side_extract import extract_n_alkyl, extract_n_phenyl
-
-    # Mutual exclusion: n_block claims complex N; skip simple n_alkyl/phenyl/benzyl.
-    n_blocks = extract_n_blocks(info, parent)
-    if n_blocks:
-        return n_blocks
-    mol = info.get("mol")
-    return (
-        extract_n_alkyl(parent, mol) + extract_n_phenyl(parent, mol)
-        + _extract_n_benzyl(info, parent)
-    )
-
-def _extract_carboxymethyls(parent: dict) -> list[dict]:
-    facts = parent.get("carboxymethyl_arms") or ()
-    return [_carboxyalkyl_sub(fact) for fact in facts]
-
-def _carboxyalkyl_sub(fact: side_facts.CarboxyalkylArm) -> dict:
-    n = len(fact.atoms)
-    names = {1: ("carboxymethyl", "羧甲基"), 2: ("2-carboxyethyl", "2-羧乙基"), 3: ("3-carboxypropyl", "3-羧丙基"), 4: ("4-carboxybutyl", "4-羧丁基")}
-    en, zh = names.get(n, (f"{n}-carboxy{ALKYL_EN[n]}", f"{n}-羧{ALKYL_ZH[n]}"))
-    return {"kind": "carboxyalkyl", "attach_idx": fact.attachment,
-            "atoms": [*fact.atoms, fact.carboxyl], "en": en, "zh": zh, "paren": True}
 
 def _with_full_atoms(mol, owned, s: dict) -> dict:
     """Replace a substituent's atoms with its full non-parent connected

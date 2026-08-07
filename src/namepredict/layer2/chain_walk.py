@@ -109,9 +109,3 @@ def _chain_through_two(mol: Mol, c1: int, c2: int) -> list[int]:
     left = _best_arm_away(mol, path[0], set(path[1:]))
     right = _best_arm_away(mol, path[-1], set(path[:-1]))
     return list(reversed(left)) + path + right
-
-
-def _chain_through_bond(mol: Mol, c1: int, c2: int) -> list[int]:
-    left = _best_arm_away(mol, c1, {c2})
-    right = _best_arm_away(mol, c2, {c1})
-    return list(reversed(left)) + [c1, c2] + right

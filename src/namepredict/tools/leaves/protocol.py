@@ -3,9 +3,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Protocol
-
-from rdkit.Chem import Mol
 
 class ArylLeafKind(Enum):
     HALOGEN = auto()
@@ -38,12 +35,6 @@ class LeafTopology:
 # Match: topology result for one outside neighbor on a ring carbon.
 # keys: kind, atoms, site (ring carbon), optional child fields for complex leaves
 Match = dict
-
-
-class LeafHandler(Protocol):
-    complex: bool
-
-    def match(self, mol: Mol, nb, ring_i: int, depth: int) -> Match | None: ...
 
 
 def make_match(kind: ArylLeafKind, atoms: set[int], site: int, **extra) -> Match:

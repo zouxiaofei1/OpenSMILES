@@ -23,10 +23,6 @@ def _c_idxs(entries, n: int) -> list[int] | None:
     return xs if len(xs) == n and len(set(xs)) == n else None
 
 
-def _aliph_c_idxs(info: dict, ekey: str, n: int) -> list[int] | None:
-    return _c_idxs(_aliphatic_entries(info, ekey), n)
-
-
 def _no_fgs(info: dict, keys: tuple) -> bool:
     return not any(info.get(k) for k in keys)
 

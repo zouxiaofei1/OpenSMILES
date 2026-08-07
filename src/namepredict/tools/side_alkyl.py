@@ -142,13 +142,6 @@ def _walk_linear(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     path = _walk_with(mol, start, chain, _advance)
     return path if path is not None and 1 <= len(path) <= 4 else None
 
-def _walk_linear_n(
-    mol: Mol, start: int, chain: set[int], max_n: int = 12,
-) -> list[int] | None:
-    """Linear pure n-alkyl path of length 1..max_n (C1–C12 for BQ sides)."""
-    path = _walk_with(mol, start, chain, _advance, max_len=max_n + 1)
-    return path if path is not None and 1 <= len(path) <= max_n else None
-
 def _is_terminal_methyl(mol: Mol, idx: int, parent: int) -> bool:
     if not _is_pure_alkyl_c(mol, idx):
         return False
@@ -374,12 +367,6 @@ def _first_side(mol: Mol, start: int, chain: set[int], probes) -> list[int] | No
 def _side_atoms(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     return _first_side(mol, start, chain, _TOPOLOGY_SIDE_PROBES)
 
-def _side_covers(
-    mol: Mol, start: int, chain: set[int], outside: set[int],
-) -> bool:
-    atoms = _side_atoms(mol, start, chain)
-    return atoms is not None and set(atoms) == outside
-
 def _side_sets(mol: Mol, chain: set[int], starts: list[int]) -> list[set[int]] | None:
     sets: list[set[int]] = []
     for s in starts:
@@ -397,45 +384,10 @@ def _disjoint_cover(sets: list[set[int]], outside: set[int]) -> bool:
         seen |= s
     return seen == outside
 
-def _outside_c_atoms(mol: Mol, ring: set[int]) -> set[int]:
-    return {
-        a.GetIdx() for a in mol.GetAtoms()
-        if a.GetAtomicNum() == C and a.GetIdx() not in ring
-    }
-
-def _linear_path_ok(mol: Mol, start: int, ring: set[int], max_n: int) -> list[int] | None:
-    """Linear n-alkyl path from start of length 1..max_n, or None."""
-    return _walk_linear_n(mol, start, ring, max_n=max_n)
-
-def _walk_omega_halo_n(
-    mol: Mol, start: int, chain: set[int], max_n: int,
-) -> list[int] | None:
-    """Omega-halo n-alkyl path of length 1..max_n, or None."""
-    path = _walk_with(mol, start, chain, _omega_step, max_len=max_n + 1)
-    if path is None or not (1 <= len(path) <= max_n):
-        return None
-    return path if _is_omega_halo_c(mol, path[-1]) else None
-
 # Ring outer alkoxy topology lives in side_alkoxy (shared by ring_parent / L3).
 from namepredict.tools.side_alkoxy import (  # noqa: E402
     _outer_alkoxy_n,
     _outer_atoms,
-    _parse_outer_alkoxy,
 )
 
-def _linear_or_omega_halo_sides_ok(
-    mol: Mol, ring: set[int], starts: list[int], max_n: int,
-) -> bool:
-    """True when every ring side start is linear n-alkyl or omega-halo C1–max_n."""
-    if not starts:
-        return not _outside_c_atoms(mol, ring)
-    paths: list[set[int]] = []
-    for s in starts:
-        path = _linear_path_ok(mol, s, ring, max_n)
-        if path is None:
-            path = _walk_omega_halo_n(mol, s, ring, max_n)
-        if path is None:
-            return False
-        paths.append(set(path))
-    return _disjoint_cover(paths, _outside_c_atoms(mol, ring))
 

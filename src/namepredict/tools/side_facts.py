@@ -8,10 +8,9 @@ from enum import Enum, auto
 from rdkit.Chem import Atom, Mol
 
 from namepredict.tools import aryl_sub, heteroaryl_sub, side_alkyl
-from namepredict.tools import side_alkoxy, side_cycloalkyl, side_sat_hetero
+from namepredict.tools import side_alkoxy
 from namepredict.tools.leaves.protocol import ArylLeafKind, LeafTopology
 from namepredict.tools.leaves.registry import match_leaf_topology
-from namepredict.tools.leaves.topo import nb_out
 
 
 class AlkylShape(Enum):
@@ -95,13 +94,6 @@ class AlkoxyFact:
 
 
 @dataclass(frozen=True)
-class SaturatedHeterocycleFact:
-    root: int
-    ring: frozenset[int]
-    signature: tuple
-
-
-@dataclass(frozen=True)
 class HeteroarylFact:
     kind: HeteroarylKind
     attachment: int
@@ -152,10 +144,6 @@ def _benzyloxy_arm(item: dict) -> ArylArmFact:
                        frozenset(item.get("ph")), tuple(item.get("atoms")))
 
 
-def ring_outside(mol: Mol, atom: int, ring: set[int]) -> list[Atom]:
-    return nb_out(mol, atom, ring)
-
-
 def _leaf_fact(match: LeafTopology) -> ArylLeafFact:
     return ArylLeafFact(match.kind, match.site, match.atoms, match.value,
                         match.child_ring, match.child_attach,
@@ -171,18 +159,6 @@ def carbon_neighbors(mol: Mol, atom: int) -> list[int]:
     return side_alkyl._c_neighbors(mol, atom)
 
 
-def linear_alkyl(mol: Mol, root: int, parent: set[int], limit: int = 12) -> SidePath | None:
-    return _path(root, side_alkyl._walk_linear_n(mol, root, parent, limit))
-
-
-def omega_halo_alkyl(mol: Mol, root: int, parent: set[int]) -> SidePath | None:
-    return _path(root, side_alkyl._walk_omega_halo(mol, root, parent))
-
-
-def terminal_halogen(mol: Mol, atom: int) -> int | None:
-    return side_alkyl._terminal_halo_z(mol, atom)
-
-
 def alkyl_shape(mol: Mol, root: int, parent: set[int], shape: AlkylShape) -> SidePath | None:
     return _path(root, _SHAPE_MATCHERS[shape](mol, root, parent))
 
@@ -191,23 +167,6 @@ def outer_alkoxy(mol: Mol, root: int, oxygen: int) -> AlkoxyFact | None:
     code = side_alkoxy._outer_alkoxy_n(mol, root, oxygen)
     atoms = side_alkoxy._outer_atoms(mol, root, oxygen, code) if code else None
     return AlkoxyFact(root, oxygen, code, tuple(atoms)) if atoms else None
-
-
-def cycloalkyl_side(mol: Mol, root: int, parent: set[int]) -> SidePath | None:
-    return _path(root, side_cycloalkyl._is_monocycloalkyl(mol, root, parent))
-
-
-def cycloalkylethyl_side(mol: Mol, root: int, parent: set[int]) -> SidePath | None:
-    return _path(root, side_cycloalkyl._is_1_cycloalkylethyl(mol, root, parent))
-
-
-def saturated_heterocycle_side(
-    mol: Mol, root: int, parent: set[int],
-) -> SaturatedHeterocycleFact | None:
-    for ring, signature in side_sat_hetero._sat_hetero_rings(mol):
-        if root in ring and not ring & parent and side_sat_hetero._exo_only_parent(mol, ring, root, parent):
-            return SaturatedHeterocycleFact(root, frozenset(ring), signature)
-    return None
 
 
 def aryl_arms(info: dict, parent: set[int]) -> list[ArylArmFact]:

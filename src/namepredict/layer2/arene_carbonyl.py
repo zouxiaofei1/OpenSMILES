@@ -6,23 +6,10 @@ from rdkit.Chem import Mol
 from namepredict.layer2.candidate_gate import CandidateGate, GateScope, GateStatus, pass_gate, scoped_reject
 
 from namepredict.tools.aryl_sub import (
-    _aryl_atoms,
-    _aryl_exclude,
-    _aryl_sub_n,
     _exocyclic_fg_ring,
-    _ring_benzyloxys,
-    _ring_phenoxys,
 )
 from namepredict.layer2.scaffold.ring_parent import (
-    _arene_alkoxy,
-    _arene_fg_subs_ok,
-    _dbl_o_idx,
     _is_benzene_core,
-    _phenol_amines_ok,
-    _ring_alkoxy_ethers,
-    _ring_nitro_atoms,
-    _ring_nitro_n,
-    _ring_primary_amines,
 )
 
 
@@ -34,33 +21,9 @@ def _ring_c_neighbors(mol: Mol, c_idx: int, ring_set: set[int]) -> list[int]:
     ]
 
 
-def _fg_ring_c(info: dict, ring_set: set[int], ekey: str) -> int | None:
-    entries = info.get(ekey) or []
-    if len(entries) != 1:
-        return None
-    nbs = _ring_c_neighbors(info["mol"], entries[0]["c_idx"], ring_set)
-    return nbs[0] if len(nbs) == 1 else None
-
-
-def _carboxyl_ring_c(info: dict, ring_set: set[int]) -> int | None:
-    return _fg_ring_c(info, ring_set, "carboxyls")
-
-
-def _aldehyde_ring_c(info: dict, ring_set: set[int]) -> int | None:
-    return _fg_ring_c(info, ring_set, "aldehydes")
-
-
-def _ketone_ring_c(info: dict, ring_set: set[int]) -> int | None:
-    return _fg_ring_c(info, ring_set, "ketones")
-
-
 def _cooh_oxygen_idxs(mol: Mol, c_idx: int) -> set[int]:
     atom = mol.GetAtomWithIdx(c_idx)
     return {n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 8}
-
-
-def _ring_phenol_ohs(info: dict, ring_set: set[int]) -> list[dict]:
-    return [h for h in (info.get("hydroxyls") or []) if h["c_idx"] in ring_set]
 
 
 def _arene_fg_conflict(
@@ -73,120 +36,6 @@ def _arene_fg_conflict(
     if any(info.get(k) for k in bad if k not in allow):
         return True
     return bool(info.get("thiols"))
-
-
-def _arene_ethers_ok(info: dict, ring_set: set[int]) -> bool:
-    n_ether = len(info.get("ethers") or [])
-    n_ok = (
-        len(_ring_alkoxy_ethers(info, ring_set))
-        + len(_ring_phenoxys(info, ring_set))
-        + len(_ring_benzyloxys(info, ring_set))
-    )
-    return n_ether == n_ok
-
-
-def _arene_ring_prefix_ok(info: dict, ring_set: set[int]) -> bool:
-    if _phenol_amines_ok(info, ring_set) is None:
-        return False
-    return _arene_ethers_ok(info, ring_set)
-
-
-def _arene_prefix_atoms(info: dict, ring_set: set[int]) -> set[int]:
-    ams = _ring_primary_amines(info, ring_set)
-    ohs = _ring_phenol_ohs(info, ring_set)
-    alk, _ = _arene_alkoxy(info, ring_set)
-    return (
-        {a["n_idx"] for a in ams}
-        | {h["o_idx"] for h in ohs}
-        | _ring_nitro_atoms(info, ring_set)
-        | alk
-        | _aryl_atoms(info, ring_set)
-    )
-
-
-def _arene_sub_ctx(info: dict, ring_set: set[int], exclude: set[int], allowed: set[int]):
-    alk, n_alk = _arene_alkoxy(info, ring_set)
-    ams = _ring_primary_amines(info, ring_set)
-    n_oh = len(_ring_phenol_ohs(info, ring_set))
-    full = allowed | _arene_prefix_atoms(info, ring_set)
-    excl = exclude | alk | _aryl_exclude(info, ring_set)
-    return full, excl, n_alk, len(ams) + n_oh
-
-
-def _arene_subs_ok(
-    info: dict, mol: Mol, ring_set: set[int], exclude: set[int], allowed: set[int],
-) -> bool:
-    if not _arene_ring_prefix_ok(info, ring_set):
-        return False
-    full, excl, n_alk, n_am = _arene_sub_ctx(info, ring_set, exclude, allowed)
-    return _arene_fg_subs_ok(
-        mol, ring_set, full, _ring_nitro_n(info, ring_set), n_am, n_alk, excl,
-        _aryl_sub_n(info, ring_set),
-    )
-
-
-def _pick_fg_ring(info: dict, ekey: str) -> set[int] | None:
-    entries = info.get(ekey) or []
-    if len(entries) != 1:
-        return None
-    return _exocyclic_fg_ring(info["mol"], entries[0]["c_idx"])
-
-
-def _oxo_fg_ok(info: dict, ekey: str, *conflict: str) -> tuple | None:
-    if not _is_benzene_core(info) or _arene_fg_conflict(info, *conflict):
-        return None
-    ring = _pick_fg_ring(info, ekey)
-    if ring is None or _fg_ring_c(info, ring, ekey) is None:
-        return None
-    mol, fg_c = info["mol"], info[ekey][0]["c_idx"]
-    o_idx = _dbl_o_idx(mol, fg_c)
-    return (mol, ring, fg_c, o_idx) if o_idx is not None else None
-
-
-def _is_methyl_carbon(mol: Mol, c_idx: int, only_nb: int) -> bool:
-    atom = mol.GetAtomWithIdx(c_idx)
-    if atom.GetAtomicNum() != 6 or atom.IsInRing():
-        return False
-    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
-    return len(heavies) == 1 and heavies[0].GetIdx() == only_nb
-
-
-def _acetyl_methyl_c(mol: Mol, ket_c: int, ring_set: set[int]) -> int | None:
-    atom = mol.GetAtomWithIdx(ket_c)
-    cands = [
-        n.GetIdx() for n in atom.GetNeighbors()
-        if n.GetAtomicNum() == 6 and n.GetIdx() not in ring_set
-    ]
-    if len(cands) != 1:
-        return None
-    me = cands[0]
-    return me if _is_methyl_carbon(mol, me, ket_c) else None
-
-
-def _is_simple_acetophenone(info: dict) -> bool:
-    got = _oxo_fg_ok(info, "ketones", "has_acid", "has_aldehyde")
-    if got is None:
-        return False
-    mol, ring, ket_c, o_idx = got
-    me = _acetyl_methyl_c(mol, ket_c, ring)
-    if me is None:
-        return False
-    return _arene_subs_ok(info, mol, ring, {ket_c, me}, {o_idx})
-
-
-def _acetophenone_parent(info: dict) -> dict:
-    ring = _pick_fg_ring(info, "ketones") or set()
-    ket_c = info["ketones"][0]["c_idx"]
-    me = _acetyl_methyl_c(info["mol"], ket_c, ring)
-    return {
-        "chain": list(ring), "n_carbons": 6, "kind": "acetophenone",
-        "ketone_c_idx": ket_c, "acetyl_methyl_idx": me,
-        "ring_attach_idx": _ketone_ring_c(info, ring),
-    }
-
-
-def _try_acetophenone_parent(info: dict) -> dict | None:
-    return _acetophenone_parent(info) if _is_simple_acetophenone(info) else None
 
 
 def _is_alkoxy_c(mol: Mol, cur: int, prev: int) -> bool:
@@ -236,14 +85,6 @@ def _benzoate_side_fields(side: dict) -> dict:
         "alkoxy_en": side.get("alkoxy_en") or "",
         "alkoxy_zh": side.get("alkoxy_zh") or "",
     }
-
-
-def _nitrile_n_idx(mol: Mol, c_idx: int) -> int | None:
-    atom = mol.GetAtomWithIdx(c_idx)
-    for n in atom.GetNeighbors():
-        if n.GetAtomicNum() == 7:
-            return n.GetIdx()
-    return None
 
 
 def _benzene_polyacid_attach(info: dict, ring: set[int], acid: dict) -> int | None:

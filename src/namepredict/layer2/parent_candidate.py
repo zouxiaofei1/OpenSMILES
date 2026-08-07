@@ -64,8 +64,3 @@ def from_parent_dict(parent: dict) -> ParentCandidate:
 
 def principal_key(parent: dict) -> P44Facts:
     return from_parent_dict(parent).facts
-
-
-def principal_phases(parents: list[dict]) -> list[list[dict]]:
-    keys = sorted({principal_key(parent) for parent in parents}, reverse=True)
-    return [[parent for parent in parents if principal_key(parent) == key] for key in keys]
