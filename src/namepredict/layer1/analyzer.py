@@ -403,9 +403,26 @@ def _ring_meta(mol: Mol) -> dict:
 def _carbon_ids(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
 
+def _radical_entries(mol: Mol) -> list[dict]:
+    """Dummy-atom (atomic number 0) neighbour carbons: P-41 free-radical sites.
+
+    Only molecules carrying a dummy anchor (`*`, from build_anchor_submol) emit
+    entries, so normal SMILES input is unaffected.  Each dummy contributes its
+    heavy neighbour as one radical site.
+    """
+    out: list[dict] = []
+    for a in mol.GetAtoms():
+        if a.GetAtomicNum() != 0:
+            continue
+        for n in a.GetNeighbors():
+            if n.GetAtomicNum() != 1:
+                out.append({"c_idx": n.GetIdx(), "rad_idx": a.GetIdx()})
+    return out
+
+
 def _fg_more_lists(parts: dict) -> dict:
     keys = (
-        "aldehydes", "amines", "quaternary_ammoniums", "nitriles", "double_bonds", "triple_bonds",
+        "radicals", "aldehydes", "amines", "quaternary_ammoniums", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
         "nitros", "phosphates", "phosphonics", "carbamates", "carbonates",
         "sulfoxides", "isocyanates", "isothiocyanates", "ureas", "hydrazines",
@@ -465,6 +482,7 @@ def _p_fg_parts(mol: Mol) -> dict:
     return {**_p_fg_a(mol), **_p_fg_b(mol)}
 def _fg_parts_b_core(mol: Mol) -> dict:
     return {
+        "radicals": _radical_entries(mol),
         "aldehydes": _aldehyde_entries(mol), "amines": _amine_entries(mol),
         "quaternary_ammoniums": _quaternary_ammonium_entries(mol),
         "nitriles": _nitrile_entries(mol), "double_bonds": _double_bond_entries(mol),

@@ -87,6 +87,15 @@ def benzene_parent_names(numbered: dict) -> tuple[str, str]:
     return iso_fused_parent(numbered) if is_fused_iso(numbered) else ("benzene", "苯")
 
 
+def phenyl_parent_names(numbered: dict) -> tuple[str, str]:
+    """Free-radical benzene (P-41): pure phenyl stem, prefix comes from _prefix_for.
+
+    No retained names (toluene/anisole/xylene/iso): a phenyl radical is always
+    {leaf-locants}{leaves}phenyl, e.g. 4-chlorophenyl, 3,4-dichlorophenyl.
+    """
+    return "phenyl", "苯基"
+
+
 def _xylene_prefix(numbered: dict) -> tuple[str, str]:
     locs = _xylene_locants(numbered)
     return f"{locs}-", f"{locs}-二甲基"

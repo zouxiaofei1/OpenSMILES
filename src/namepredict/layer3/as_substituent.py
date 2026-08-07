@@ -7,38 +7,46 @@ from __future__ import annotations
 from rdkit.Chem import CanonicalRankAtoms
 
 from namepredict.cache.common_names import CommonNameCache
-from namepredict.layer3.submol_build import build_cut_submol
+from namepredict.layer3.submol_build import build_anchor_submol, build_cut_submol
 from namepredict.layer5.free_to_yl import free_to_yl as yl_form
 
 
-def _arene_yl_from_sub(sub, result) -> tuple[str, str, bool] | None:
-    """Structured arene → yl for benzene-parent submol (P-29.6.2 phenyl).
+def _arene_yl_from_sub(
+    sub, result, *, mol, atoms, attach_old, depth: int, name_mode: str, cache: CommonNameCache | None,
+) -> tuple[str, str, bool] | None:
+    """Benzene cut → phenyl radical via the P-41 free-radical principal group.
 
-    The free-name pipeline names a substituted benzene as e.g. 'chlorobenzene'
-    (or 'phenol'/'aniline'/'benzonitrile' when the ring carries an OH/NH2/CN
-    leaf — those are leaves of the phenyl substituent, not the free parent).
-    The generic -k-yl fallback would produce 'chlorobenzen-1-yl'.  For any
-    benzene ring we instead renumber with attach=1 (lowest locant set) and
-    swap the stem to 'phenyl', letting name_ph_ring collect leaves on the cut
-    submol (halo/Me/alkoxy/nitro/OH/NH2/CN/nested Ph all verified).
+    The free-name pipeline names a substituted benzene as 'chlorobenzene' (or
+    'phenol'/'aniline'/'benzonitrile' when OH/NH2/CN is the principal group),
+    but a phenyl *substituent* must treat those as leaves and number from the
+    anchor carbon (locant 1).  We rebuild the cut in anchored form (dummy `*`
+    at the attach carbon) and re-free-name it: L1 detects the radical, L2 picks
+    the phenyl parent, L4 anchors locant 1, L5 emits {leaf-locants}phenyl.
     """
-    from namepredict.layer3.ring_namer import name_ph_ring
+    from namepredict.namer import _cache_put, _canonical_result, _name_mol
+    from rdkit import Chem
 
-    mol = sub.mol
-    attach_new = sub.attach_new
-    ph = next(
-        (set(r) for r in mol.GetRingInfo().AtomRings()
-         if attach_new in r and len(r) == 6
-         and all(mol.GetAtomWithIdx(i).GetIsAromatic()
-                 and mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in r)),
-        None,
-    )
-    if ph is None:
+    mol_sub = sub.mol
+    if not any(
+        len(r) == 6 and sub.attach_new in r
+        and all(mol_sub.GetAtomWithIdx(i).GetIsAromatic()
+                and mol_sub.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in r)
+        for r in mol_sub.GetRingInfo().AtomRings()
+    ):
         return None
-    en, zh, _ = name_ph_ring(mol, ph, attach_new, -1, depth=1)
-    if not en:
+    anchored = build_anchor_submol(mol, frozenset(atoms), attach_old)
+    if anchored is None:
         return None
-    return en, zh, en != "phenyl"
+    smiles = Chem.MolToSmiles(anchored)
+    hit = cache.get(smiles) if cache is not None else None
+    if hit is None:
+        hit = _name_mol(anchored, depth=depth, name_mode=name_mode, cache=cache)
+        if cache is not None and hit.success and hit.en:
+            hit = _canonical_result(anchored, hit)
+            _cache_put(cache, smiles, hit)
+    if not hit.success or not hit.en:
+        return None
+    return hit.en, hit.zh, hit.en != "phenyl"
 
 
 def _locant_from_result(mol, result, attach_new: int) -> int | None:
@@ -67,7 +75,8 @@ def _locant_via_hetero(mol, attach_new: int, result) -> int | None:
 
 
 def _yl_from_sub(
-    sub, *, depth: int, name_mode: str = "general", cache: CommonNameCache | None = None,
+    sub, *, mol, atoms, attach_old, depth: int, name_mode: str = "general",
+    cache: CommonNameCache | None = None,
 ) -> tuple[str, str, bool] | None:
     from namepredict.namer import _cache_put, _canonical_result, _name_mol
     from rdkit import Chem
@@ -93,7 +102,10 @@ def _yl_from_sub(
             _cache_put(cache, smiles, result)
     if not result.success or not result.en:
         return None
-    arene = _arene_yl_from_sub(sub, result)
+    arene = _arene_yl_from_sub(
+        sub, result, mol=mol, atoms=atoms, attach_old=attach_old,
+        depth=depth, name_mode=name_mode, cache=cache,
+    )
     if arene is not None:
         return arene
     loc = _locant_from_result(sub.mol, result, sub.attach_new)
@@ -109,5 +121,9 @@ def name_as_substituent(
     """Cut atoms at attach_old, free-name the submol, emit -yl dual names."""
     if depth >= max_depth:
         return None
-    sub = build_cut_submol(mol, frozenset(atoms), attach_old)
-    return None if sub is None else _yl_from_sub(sub, depth=depth + 1, name_mode=name_mode, cache=cache)
+    atoms = frozenset(atoms)
+    sub = build_cut_submol(mol, atoms, attach_old)
+    if sub is None:
+        return None
+    return _yl_from_sub(sub, mol=mol, atoms=atoms, attach_old=attach_old,
+                        depth=depth + 1, name_mode=name_mode, cache=cache)

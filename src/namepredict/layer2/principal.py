@@ -37,6 +37,7 @@ def _suffix(p41_class: int, rank: int, *path: int) -> PrincipalFeatureSpec:
 
 
 PRINCIPAL_REGISTRY: dict[FG, PrincipalFeatureSpec] = {
+    FG.RADICAL: _suffix(1, 1),
     FG.ACID: _suffix(7, 14, 1),
     FG.SULFONIC_ACID: _suffix(7, 13, 4),
     FG.ANHYDRIDE: _suffix(8, 12),

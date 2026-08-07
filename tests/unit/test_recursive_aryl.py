@@ -99,9 +99,10 @@ def test_dichloro_n_phenyl_not_unsub() -> None:
 
 
 def test_mixed_halo_phenyl_alpha_order() -> None:
-    """Mixed halos: cite by English name order (bromo before chloro)."""
+    """Mixed halos: cite by English name order (bromo before chloro); the
+    alpha-earlier substituent gets the lower locant (P-14.4)."""
     r = SMILESNNamer().name("O=Cc1ccc(-c2cc(Cl)cc(Br)c2)cc1")
     assert r.success
     en = normalize_en(r.en)
-    assert "5-bromo-3-chlorophenyl" in en
-    assert "3-chloro-5-bromo" not in en
+    assert "3-bromo-5-chlorophenyl" in en
+    assert "5-bromo-3-chlorophenyl" not in en

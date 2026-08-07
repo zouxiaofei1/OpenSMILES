@@ -7,7 +7,7 @@ from namepredict.layer5.stems import (
     SULFIDE_ALKYL_ZH, SULFIDE_SYM_EN, SULFIDE_SYM_ZH, maybe_anion_names, maybe_metal_salt_names, zh_stem,
 )
 from namepredict.layer5.benzene_names import (
-    benzene_parent_names, benzene_prefix,
+    benzene_parent_names, benzene_prefix, phenyl_parent_names,
     benzoate_parent_names, benzenediol_names,
     join_kind_name, pyridine_kind_names,
 )
@@ -624,6 +624,7 @@ def _bridged_names(n: int, numbered: dict) -> tuple[str, str] | None:
     return None
 def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "cycloalkane": return _cycloalkane_names(n)
+    if kind == "phenyl": return phenyl_parent_names(numbered)
     if kind == "benzene": return benzene_parent_names(numbered)
     if kind == "bridged": return _bridged_names(n, numbered)
     if kind == "spiro": return _spiro_names(n, numbered)

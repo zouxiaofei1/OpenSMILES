@@ -13,16 +13,30 @@ def _claim_kind(slot_value: str) -> str:
     }.get(slot_value, "side")
 
 
+# Anchored-table / retained leaves whose name implies a non-alkyl kind, so the
+# L5 layers keying off `kind` (iso fusion, poly-anisole, halo benzene) fire.
+_NAME_KIND = {
+    "fluoro": "halo", "chloro": "halo", "bromo": "halo", "iodo": "halo",
+    "nitro": "nitro",
+    "isocyanato": "isocyanato", "isothiocyanato": "isothiocyanato",
+}
+
+
 def _kind_for_named(named) -> str:
     if named.en in ("methoxy", "ethoxy", "propoxy", "butoxy"):
         return "alkoxy"
-    return _claim_kind(named.claim.slot.value)
+    return _NAME_KIND.get(named.en, _claim_kind(named.claim.slot.value))
 
 
-def sub_from_named(named) -> dict:
+def sub_from_named(named, mol=None) -> dict:
     claim = named.claim
+    if mol is not None:
+        n_carbons = sum(1 for i in claim.atoms
+                        if mol.GetAtomWithIdx(i).GetAtomicNum() == 6)
+    else:
+        n_carbons = len(claim.atoms)
     return {
-        "kind": _kind_for_named(named), "n_carbons": len(claim.atoms),
+        "kind": _kind_for_named(named), "n_carbons": n_carbons,
         "attach_idx": claim.attach_parent, "atoms": sorted(claim.atoms),
         "en": named.en, "zh": named.zh, "paren": named.requires_parentheses,
         "backend": named.backend,
@@ -47,7 +61,7 @@ def _append_named(mol, claim, namer, covered: set[int], out: list[dict]) -> None
     named = namer.name(mol, claim, depth=0)
     if named is None:
         return
-    out.append(sub_from_named(named))
+    out.append(sub_from_named(named, mol))
     covered |= set(named.claim.atoms)
 
 

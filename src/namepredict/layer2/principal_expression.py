@@ -42,6 +42,7 @@ _CHAIN_KINDS = {
     FunctionalGroupClass.AMINE: {1: "amine", 2: "diamine", 3: "triamine", 4: "tetraamine"},
 }
 _FIELDS = {
+    FunctionalGroupClass.RADICAL: ("radical_c_idx", "radical_c_idxs"),
     FunctionalGroupClass.ACID: ("cooh_c_idx", "cooh_c_idxs"),
     FunctionalGroupClass.ESTER: ("ester_c_idx", "ester_c_idxs"),
     FunctionalGroupClass.KETONE: ("ketone_c_idx", "ketone_c_idxs"),
@@ -114,6 +115,7 @@ def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
 
 
 _RETAINED_RING_KINDS = {
+    FunctionalGroupClass.RADICAL: "phenyl",
     FunctionalGroupClass.ACID: "benzoic",
     FunctionalGroupClass.ESTER: "benzoate",
     FunctionalGroupClass.ALDEHYDE: "benzaldehyde",
@@ -123,6 +125,7 @@ _RETAINED_RING_KINDS = {
     FunctionalGroupClass.AMINE: "aniline",
 }
 _RING_FIELDS = {
+    FunctionalGroupClass.RADICAL: ("radical_c_idx", "radical_c_idxs"),
     FunctionalGroupClass.ACID: ("cooh_c_idx", "cooh_c_idxs"),
     FunctionalGroupClass.ESTER: ("ester_c_idx", "ester_c_idxs"),
     FunctionalGroupClass.KETONE: ("ketone_c_idx", "ketone_c_idxs"),

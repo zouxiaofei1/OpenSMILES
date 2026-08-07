@@ -303,8 +303,8 @@ def _extract_core_subs(info: dict, parent: dict) -> list:
     halo = _filter_fg_halos(_extract_halos(mol, chain), parent)
     return (
         halo + _extract_hydroxys(info, parent) + _extract_aminos(info, parent)
-        + _extract_oxos(info, parent) + _extract_nitros(info, parent)
-        + _extract_isocyanates(info, parent)
+        + _extract_oxos(info, parent)  # + _extract_nitros(info, parent)
+        # + _extract_isocyanates(info, parent)
     )
 
 def _extract_aryls(info: dict, parent: dict) -> list[dict]:
@@ -357,9 +357,10 @@ def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general"
 
     mol, chain = info["mol"], parent.get("chain") or []
     base = (
-        _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent), name_mode=name_mode) + _extract_carboxymethyls(parent) + _extract_core_subs(info, parent)
-        + _extract_alkoxys(info, parent) + _extract_aryls(info, parent)
-        + _extract_n_subs(info, parent)
+       _extract_core_subs(info, parent)
+        + _extract_alkoxys(info, parent) +  _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent), name_mode=name_mode) 
+        +    _extract_aryls(info, parent)
+        
     )
     owned = parent.get("owned_atoms")
     if owned:

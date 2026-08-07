@@ -79,6 +79,15 @@ ANCHOR_TABLE: dict[str, tuple[str | None, str, str, bool]] = {
     "*c1ccc(Cl)cc1": (None, "4-chlorophenyl", "4-氯苯基", True),
     "*c1cccc(Cl)c1": (None, "3-chlorophenyl", "3-氯苯基", True),
     "*c1ccccc1Cl": (None, "2-chlorophenyl", "2-氯苯基", True),
+    # single-atom halogens (always single-bonded; no bond-type ambiguity)
+    "*F": (None, "fluoro", "氟", False),
+    "*Cl": (None, "chloro", "氯", False),
+    "*Br": (None, "bromo", "溴", False),
+    "*I": (None, "iodo", "碘", False),
+    # multi-atom FG leaves with unique bond topology
+    "*[N+](=O)[O-]": (None, "nitro", "硝基", False),
+    "*N=C=O": (None, "isocyanato", "异氰酸根合", False),
+    "*N=C=S": (None, "isothiocyanato", "异硫氰酸根合", False),
 }
 
 

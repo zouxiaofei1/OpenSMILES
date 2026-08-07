@@ -73,7 +73,8 @@ def aryl_arm_name(mol: Mol, fact: ArylArmFact, owned_atoms) -> tuple[str, str, b
 
     The benzene ring is the free parent; leaves (halo/Me/alkoxy/nitro/
     OH/NH2/CN/nested Ph) are collected topologically so the cut submol
-    carries the full arm and name_ph_ring renumbers attach=1 (P-29.6.2).
+    carries the full arm. name_as_substituent re-names the anchored ring as a
+    phenyl radical (P-41), numbering the attach carbon locant 1 (P-29.6.2).
 
     owned_atoms is the parent boundary (parent.owned_atoms). The cut atom
     set is the full non-parent connected component (side_atoms) minus the

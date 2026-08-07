@@ -6,6 +6,7 @@ from enum import Enum
 
 
 class FunctionalGroupClass(str, Enum):
+    RADICAL = "radical"
     ACID = "acid"
     ANHYDRIDE = "anhydride"
     ESTER = "ester"
@@ -66,6 +67,7 @@ class FunctionalGroupInventory:
 
 
 _LIST_CLASSES = {
+    "radicals": FunctionalGroupClass.RADICAL,
     "carboxyls": FunctionalGroupClass.ACID,
     "anhydrides": FunctionalGroupClass.ANHYDRIDE,
     "esters": FunctionalGroupClass.ESTER,
@@ -100,6 +102,7 @@ _LIST_CLASSES = {
 
 
 _ANCHOR_KEYS = {
+    FunctionalGroupClass.RADICAL: ("c_idx",),
     FunctionalGroupClass.ACID: ("c_idx",),
     FunctionalGroupClass.ESTER: ("c_idx",),
     FunctionalGroupClass.ACYL_HALIDE: ("c_idx",),

@@ -1,6 +1,6 @@
 """Simple (non-recursive) leaf match handlers: halo/Me/alkoxy/nitro/OH/NH2/CF3.
 
-Match-only registry entries; naming lives in L3 (layer3/ring_namer.py).
+Match-only registry entries; naming lives in L3 (name_as_substituent).
 """
 from __future__ import annotations
 

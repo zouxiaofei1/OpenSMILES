@@ -329,8 +329,13 @@ def _unsat_orienters() -> dict:
             "cyclopolyene": orient_cyclopolyene, "cycloalkene": _orient_cycloalkene,
             "alkyne": _orient_alkyne, "cycloalkane": _orient_cycloalkane, "benzene": _orient_cycloalkane,
             **_benzoic_orienters(), **_cyclo_exo_orienters(), **_bridged_orienters()}
+def _orient_radical(chain: list[int], parent: dict, subs: list) -> list[int]:
+    """Free-radical parent: anchor carbon (radical_c_idx) is locant 1; choose the
+    lower-locant direction round the ring."""
+    return _orient_ring_fixed(chain, parent, subs, "radical_c_idx")
 def _kind_orienters() -> dict:
-    return {**_hetero_orienters(), **_unsat_orienters(), **_carbonyl_orienters()}
+    return {**_hetero_orienters(), **_unsat_orienters(), **_carbonyl_orienters(),
+            "phenyl": _orient_radical}
 def _orient_by_kind(kind: str, chain: list[int], parent: dict, subs: list) -> list[int]:
     fn = _kind_orienters().get(kind)
     return _orient_alkane(chain, subs) if fn is None else fn(chain, parent, subs)

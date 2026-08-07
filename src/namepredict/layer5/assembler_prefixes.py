@@ -20,6 +20,10 @@ _KEEP_LOCANT_KINDS = frozenset({
     "benzoyl_chloride", "benzoyl_bromide", "benzamide",
 })
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
+    if kind == "phenyl":
+        # Phenyl radical: attach is implicit locant 1, so every leaf keeps its
+        # locant (4-chlorophenyl, not chlorophenyl).
+        return False
     if n_carbons <= 1 or (kind in ("cycloalkane", "benzene") and len(substituents) == 1):
         return True
     if kind in ("sec_amine", "tert_amine", "amide", "benzamide"):
