@@ -6,7 +6,7 @@ from enum import Enum
 
 from rdkit.Chem import BondType, Mol
 
-from namepredict.layer2.block_cut import cut_block, side_roots
+from namepredict.tools.block_cut import cut_block, side_roots
 
 
 class SideSlot(str, Enum):

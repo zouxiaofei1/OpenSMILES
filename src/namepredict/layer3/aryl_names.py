@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.side_facts import (
+from namepredict.tools.side_facts import (
     ArylArmFact, ArylArmKind, HeteroarylFact, HeteroarylKind, HeteroarylLeaf,
 )
 from namepredict.layer3.ring_namer import recursive_ph_name

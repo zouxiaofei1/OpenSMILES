@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.side_alkyl import _c_neighbors, _is_pure_alkyl_c, _is_terminal_methyl
+from namepredict.tools.side_alkyl import _c_neighbors, _is_pure_alkyl_c, _is_terminal_methyl
 
 _CYCLOALKYL_EN = {
     3: "cyclopropyl", 4: "cyclobutyl", 5: "cyclopentyl",

@@ -35,7 +35,7 @@ def _is_isopropyl_c(mol, c_idx: int, o_idx: int) -> bool:
 
 
 def _sole_c6_at(mol, attach: int, parent: int):
-    from namepredict.layer2.aryl_sub import _c6_rings_at, _is_unfused_benzene_ring
+    from namepredict.tools.aryl_sub import _c6_rings_at, _is_unfused_benzene_ring
     hits = _c6_rings_at(mol, attach)
     if len(hits) != 1 or parent in hits[0]:
         return None
@@ -44,7 +44,7 @@ def _sole_c6_at(mol, attach: int, parent: int):
 
 
 def _ring_only_parent_link(mol, ring, attach: int, parent: int) -> bool:
-    from namepredict.layer2.aryl_sub import _nb_outside
+    from namepredict.tools.aryl_sub import _nb_outside
     for i in ring:
         outs = [n.GetIdx() for n in _nb_outside(mol, i, ring)]
         if i == attach:
@@ -89,7 +89,7 @@ def _benzyl_ph_attach(mol, ch2_idx: int, o_idx: int) -> int | None:
 
 
 def _linear_n(mol, start: int) -> int:
-    from namepredict.layer2.parent_core import _longest_from
+    from namepredict.tools.chain import _longest_from
     chain = _longest_from(mol, start)
     return len(chain) if chain else 1
 

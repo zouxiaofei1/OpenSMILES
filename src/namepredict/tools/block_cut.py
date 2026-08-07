@@ -7,12 +7,17 @@ from rdkit.Chem import Mol
 
 
 def parent_atom_set(parent: dict, mol: Mol) -> frozenset[int]:
-    """Compatibility adapter: prefer terminal owned_atoms; else finalize once."""
+    """Parent boundary atoms; caller must supply a finalized parent.
+
+    L2 parent_selector always finalizes (owned_atoms = frozenset) before L3,
+    so this adapter no longer falls back to L2 parent_ownership finalization
+    (keeps block_cut free of pipeline-layer dependencies).
+    """
+    del mol  # not needed once parent is finalized
     owned = parent.get("owned_atoms")
-    if isinstance(owned, frozenset):
-        return owned
-    from namepredict.layer2.parent_ownership import finalize_parent_ownership
-    return finalize_parent_ownership(parent, mol)["owned_atoms"]
+    if not isinstance(owned, frozenset):
+        raise ValueError(f"unfinalized parent (missing owned_atoms): kind={parent.get('kind')!r}")
+    return owned
 
 
 def _is_heavy_out(atom, parent_atoms: frozenset[int]) -> bool:

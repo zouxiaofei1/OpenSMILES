@@ -17,8 +17,8 @@ from namepredict.layer2.scaffold.ring_parent import (
     _ring_nitro_n,
     _ring_side_starts,
 )
-from namepredict.layer2.side_alkyl import _linear_or_omega_halo_sides_ok
-from namepredict.layer2.aryl_sub import _aryl_atoms, _aryl_exclude, _aryl_sub_n
+from namepredict.tools.side_alkyl import _linear_or_omega_halo_sides_ok
+from namepredict.tools.aryl_sub import _aryl_atoms, _aryl_exclude, _aryl_sub_n
 
 # Z of ring hetero → parent kind (5-membered mono)
 _HETERO5_KIND = {8: "furan", 16: "thiophene", 7: "pyrrole"}

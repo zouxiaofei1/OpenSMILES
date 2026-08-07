@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.aryl_depth2 import _ALKOXY_EN, _ALKOXY_ZH
-from namepredict.layer2.leaves import topo
-from namepredict.layer2.leaves.protocol import Match
+from namepredict.tools.aryl_depth2 import _ALKOXY_EN, _ALKOXY_ZH
+from namepredict.tools.leaves import topo
+from namepredict.tools.leaves.protocol import Match
 
 _HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
 _HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}

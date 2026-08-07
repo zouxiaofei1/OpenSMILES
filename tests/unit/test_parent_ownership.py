@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.block_cut import parent_atom_set
+from namepredict.tools.block_cut import parent_atom_set
 from namepredict.layer2.parent_ownership import finalize_parent_ownership
 from namepredict.layer2.parent_selector import iter_parent_candidates, select_parent
 

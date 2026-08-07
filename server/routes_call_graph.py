@@ -362,11 +362,11 @@ def call_graph_svg(
     refresh: bool = False,
     module: str = "namepredict",
     aggregate_external: bool = False,
-    layer: int | None = Query(None, ge=-1, le=5),
+    layer: int | None = Query(None, ge=-1, le=6),
 ) -> dict[str, Any]:
     """Layered graphviz SVG of the sampled call graph (pan/zoom on the frontend).
 
-    layer: None=全部；0..5=仅该 pipeline layer（跨层调用聚合成灰/虚线外部节点）；
+    layer: None=全部；0..5=仅该 pipeline layer；6=Tools 共享层；
     -1=核心调度（无 layer 归属的函数，如 namer.py 入口）。
     """
     if not DATA.is_file():

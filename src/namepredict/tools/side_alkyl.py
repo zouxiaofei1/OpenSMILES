@@ -337,11 +337,11 @@ def _is_isopropenyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
     return [start, dbl[0], sgl[0]] if dbl_heavies == [start] else None
 
 def _probe_monocycloalkyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
-    from namepredict.layer2.side_cycloalkyl import _is_monocycloalkyl
+    from namepredict.tools.side_cycloalkyl import _is_monocycloalkyl
     return _is_monocycloalkyl(mol, start, chain)
 
 def _probe_1_cycloalkylethyl(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
-    from namepredict.layer2.side_cycloalkyl import _is_1_cycloalkylethyl
+    from namepredict.tools.side_cycloalkyl import _is_1_cycloalkylethyl
     return _is_1_cycloalkylethyl(mol, start, chain)
 
 # Topology-only side recognition for parent gates (not a naming-mode table).
@@ -417,7 +417,7 @@ def _walk_omega_halo_n(
     return path if _is_omega_halo_c(mol, path[-1]) else None
 
 # Ring outer alkoxy topology lives in side_alkoxy (shared by ring_parent / L3).
-from namepredict.layer2.side_alkoxy import (  # noqa: E402
+from namepredict.tools.side_alkoxy import (  # noqa: E402
     _outer_alkoxy_n,
     _outer_atoms,
     _parse_outer_alkoxy,

@@ -2,11 +2,11 @@
 setlocal EnableExtensions
 chcp 65001 >nul
 
-REM ChemAgent Console — double-click to restart http://127.0.0.1:8765/
+REM ChemAgent Console — double-click to restart http://127.0.0.1:8766/
 cd /d "%~dp0"
 
-echo [restart-console] Stopping any process listening on port 8765...
-for /f "tokens=5" %%P in ('netstat -ano ^| findstr ":8765" ^| findstr "LISTENING"') do (
+echo [restart-console] Stopping any process listening on port 8766...
+for /f "tokens=5" %%P in ('netstat -ano ^| findstr ":8766" ^| findstr "LISTENING"') do (
   echo   killing PID %%P
   taskkill /F /PID %%P >nul 2>&1
 )

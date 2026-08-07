@@ -5,7 +5,7 @@ from rdkit.Chem import Mol
 
 from namepredict.layer2.candidate_gate import CandidateGate, GateScope, GateStatus, pass_gate, scoped_reject
 
-from namepredict.layer2.aryl_sub import (
+from namepredict.tools.aryl_sub import (
     _aryl_atoms,
     _aryl_exclude,
     _aryl_sub_n,
@@ -222,7 +222,7 @@ def _simple_alkoxy_n(mol: Mol, start: int, o_idx: int) -> int | None:
 
 def _benzoate_alkoxy(mol: Mol, o_idx: int, ac: int) -> dict | None:
     """Linear C1–C16 or P-65.6 special alkoxy (benzyl/tBu/iPr/Ph)."""
-    from namepredict.layer2.alkoxy_side import classify_alkoxy
+    from namepredict.tools.alkoxy_side import classify_alkoxy
     side = classify_alkoxy(mol, o_idx, ac)
     if side.get("alkoxy_en"):
         return side

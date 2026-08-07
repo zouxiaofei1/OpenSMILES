@@ -1,6 +1,6 @@
 """P-65.1.2.2.3 terminal carboxyalkyl-substituted diacids."""
 from itertools import combinations
-from namepredict.layer2.side_facts import carboxyalkyl_arms
+from namepredict.tools.side_facts import carboxyalkyl_arms
 
 def _acids(info): return {int(x["c_idx"]) for x in info.get("carboxyls") or []}
 def _graph(info):

@@ -22,6 +22,6 @@ agent_loop/prompts/.cycle_current.md
 agent_loop/memory/STATE.json
 agent_loop/memory/STOP
 agent_loop/memory/secrets.json
-tools/
+/tools/
 profiles/
 server/settings.json

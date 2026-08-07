@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.side_facts import (
+from namepredict.tools.side_facts import (
     cycloalkyl_side,
     cycloalkylethyl_side,
     saturated_heterocycle_side,

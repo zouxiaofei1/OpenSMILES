@@ -62,7 +62,7 @@ def _n_side_roots(mol: Mol, n_idx: int, owned: frozenset[int]) -> list[int]:
 
 
 def _cut_n_sides(mol: Mol, n_idx: int, owned: frozenset[int]) -> list[int]:
-    from namepredict.layer2.block_cut import cut_block
+    from namepredict.tools.block_cut import cut_block
 
     atoms: set[int] = set()
     for root in _n_side_roots(mol, n_idx, owned):

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.aryl_depth2 import (
+from namepredict.tools.aryl_depth2 import (
     _ALKOXY_EN,
     _alkoxy_n,
     _heavies,
@@ -16,7 +16,7 @@ from namepredict.layer2.aryl_depth2 import (
     _leaf_atoms_nitro,
     _nested_c6_at,
 )
-from namepredict.layer2.leaves.protocol import ArylLeafKind, make_match
+from namepredict.tools.leaves.protocol import ArylLeafKind, make_match
 
 _HALO = frozenset({9, 17, 35, 53})
 

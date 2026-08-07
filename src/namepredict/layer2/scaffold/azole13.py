@@ -19,7 +19,7 @@ from namepredict.layer2.scaffold.ring_parent import (
     _ring_halo_n,
     _ring_side_starts,
 )
-from namepredict.layer2.side_alkyl import _linear_or_omega_halo_sides_ok
+from namepredict.tools.side_alkyl import _linear_or_omega_halo_sides_ok
 
 # O/S atomic number → kind
 _AZOLE13_KIND = {8: "oxazole", 16: "thiazole"}

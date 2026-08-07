@@ -3,16 +3,16 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.aryl_depth2 import _nested_c6_at
-from namepredict.layer2.leaves import topo
-from namepredict.layer2.leaves.protocol import ArylLeafKind, Match, make_match
-from namepredict.layer2.leaves.simple import _FnHandler
+from namepredict.tools.aryl_depth2 import _nested_c6_at
+from namepredict.tools.leaves import topo
+from namepredict.tools.leaves.protocol import ArylLeafKind, Match, make_match
+from namepredict.tools.leaves.simple import _FnHandler
 
 _MAX_DEPTH = 3
 
 
 def _ph_ok(mol: Mol, ph: set[int], attach: int, parent: int, depth: int) -> bool:
-    from namepredict.layer2.leaves.registry import all_outside_matched
+    from namepredict.tools.leaves.registry import all_outside_matched
 
     if depth > _MAX_DEPTH:
         return False
@@ -70,7 +70,7 @@ def _to_phenoxy(en: str, zh: str) -> tuple[str, str]:
 
 
 def name_phenyl(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    from namepredict.layer2.leaves.ring_namer import name_ph_ring
+    from namepredict.tools.leaves.ring_namer import name_ph_ring
 
     return name_ph_ring(
         mol, m["child_ring"], m["child_attach"], m["child_parent"], depth + 1,
@@ -78,7 +78,7 @@ def name_phenyl(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
 
 
 def name_phenoxy(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    from namepredict.layer2.leaves.ring_namer import name_ph_ring
+    from namepredict.tools.leaves.ring_namer import name_ph_ring
 
     en, zh, atoms = name_ph_ring(
         mol, m["child_ring"], m["child_attach"], m["child_parent"], depth + 1,
@@ -109,7 +109,7 @@ def _to_benzyl(en: str, zh: str) -> tuple[str, str]:
 
 
 def name_benzyl(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    from namepredict.layer2.leaves.ring_namer import name_ph_ring
+    from namepredict.tools.leaves.ring_namer import name_ph_ring
 
     en, zh, atoms = name_ph_ring(
         mol, m["child_ring"], m["child_attach"], m["child_parent"], depth + 1,

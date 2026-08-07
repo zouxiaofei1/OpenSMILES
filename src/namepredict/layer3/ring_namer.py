@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.side_facts import (
+from namepredict.tools.side_facts import (
     ArylLeafFact, ArylLeafKind, ring_leaf, ring_outside,
 )
 

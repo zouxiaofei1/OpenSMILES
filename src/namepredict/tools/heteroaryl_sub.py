@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.aryl_depth2 import _alkoxy_n
-#from namepredict.layer2.leaves.topo import is_halo, is_me_leaf
+from namepredict.tools.aryl_depth2 import _alkoxy_n
+#from namepredict.tools.leaves.topo import is_halo, is_me_leaf
 
 def _nb_out(mol: Mol, i: int, ring: set[int]) -> list:
     return [
@@ -212,16 +212,16 @@ def _leaf_atoms_on(mol: Mol, ring: set[int], attach: int, parent: int) -> set[in
     return out
 
 def _naph_chains(mol: Mol, r1: list[int], r2: list[int], br: tuple[int, int]):
-    from namepredict.layer2.scaffold.naphthalene import _chains_for_bridge
+    from namepredict.tools.ring_ident import _chains_for_bridge
     return _chains_for_bridge(r1, r2, *br) + _chains_for_bridge(r1, r2, br[1], br[0])
 
 def _naph_atoms_ok(mol: Mol, r1: list[int], r2: list[int]) -> set[int] | None:
-    from namepredict.layer2.scaffold.naphthalene import _all_aromatic_c
+    from namepredict.tools.ring_ident import _all_aromatic_c
     atoms = set(r1) | set(r2)
     return atoms if len(atoms) == 10 and _all_aromatic_c(mol, atoms) else None
 
 def _try_naph_pair(mol: Mol, r1: list[int], r2: list[int]):
-    from namepredict.layer2.scaffold.naphthalene import _bridge_adjacent, _bridge_pair
+    from namepredict.tools.ring_ident import _bridge_adjacent, _bridge_pair
     br = _bridge_pair(r1, r2)
     if br is None or not _bridge_adjacent(mol, *br):
         return None

@@ -16,7 +16,7 @@ from namepredict.layer2.scaffold.ring_parent import (
     _ring_alkoxy_ethers,
     _ring_side_starts,
 )
-from namepredict.layer2.side_alkyl import _disjoint_cover, _walk_linear_n
+from namepredict.tools.side_alkyl import _disjoint_cover, _walk_linear_n
 
 
 def _ketone_idxs(info: dict) -> list[int]:

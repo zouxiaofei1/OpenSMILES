@@ -33,7 +33,7 @@ def _retained_hit(claim: ClaimedBlock, en: str, zh: str, paren: bool) -> Substit
 
 
 def _try_cycloalkyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
-    from namepredict.layer2.side_cycloalkyl import _cycloalkyl_names, _is_monocycloalkyl
+    from namepredict.tools.side_cycloalkyl import _cycloalkyl_names, _is_monocycloalkyl
 
     parent = {claim.attach_parent}
     atoms = _is_monocycloalkyl(mol, claim.root, parent)
@@ -44,7 +44,7 @@ def _try_cycloalkyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
 
 
 def _try_sub_phenyl(mol, claim: ClaimedBlock) -> SubstituentName | None:
-    from namepredict.layer2.aryl_sub import _phenyl_at
+    from namepredict.tools.aryl_sub import _phenyl_at
     from namepredict.layer3.ring_namer import recursive_ph_name
 
     ph = _phenyl_at(mol, claim.root, claim.attach_parent)
@@ -226,7 +226,7 @@ _ALKENYL_CHECKS = (
 
 
 def _try_alkenyl_retained(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
-    from namepredict.layer2 import side_facts
+    from namepredict.tools import side_facts
     from namepredict.layer3.retained_substituents import resolve_name
 
     SHAPES = {

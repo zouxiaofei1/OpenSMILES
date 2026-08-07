@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-import namepredict.layer2.side_facts as side_facts
+import namepredict.tools.side_facts as side_facts
 from namepredict.layer3.aryl_names import aryl_arm_name, heteroaryl_name
 from namepredict.layer3.alkoxy_names import _extract_alkoxys
 from namepredict.layer3.cycloalkyl_names import _one_cycloalkyl_side

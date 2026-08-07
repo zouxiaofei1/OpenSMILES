@@ -122,12 +122,13 @@ def _build_graph(
         fname, lineno, func = key
         rel = fname.replace(BS, "/").split(module + "/")[-1]
         m = re.match("layer([0-9])/", rel)
+        layer = int(m.group(1)) if m else (6 if rel.startswith("tools/") else None)
         nodes.append(
             {
                 "id": id_of[key],
                 "label": func,
                 "module": rel,
-                "layer": int(m.group(1)) if m else None,
+                "layer": layer,
                 "line": lineno,
                 "file": fname,
                 "ncalls": cc,

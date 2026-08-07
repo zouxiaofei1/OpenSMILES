@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.aryl_depth2 import _join_pref
-from namepredict.layer2.leaves.protocol import Match
-from namepredict.layer2.leaves.registry import match_leaf, name_leaf
-from namepredict.layer2.leaves.topo import nb_out
+from namepredict.tools.aryl_depth2 import _join_pref
+from namepredict.tools.leaves.protocol import Match
+from namepredict.tools.leaves.registry import match_leaf, name_leaf
+from namepredict.tools.leaves.topo import nb_out
 
 from namepredict.constants import HALO_EN as _HALO_EN, HALO_ZH as _HALO_ZH, MULT_EN as _MULT_EN, MULT_ZH as _MULT_ZH
 

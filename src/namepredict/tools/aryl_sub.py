@@ -9,11 +9,11 @@ from rdkit.Chem import Mol
 
 from namepredict.constants import C, H, N
 
-from namepredict.layer2.aryl_depth2 import (
+from namepredict.tools.aryl_depth2 import (
     _depth2_atoms_on,
 )
-from namepredict.layer2.leaves.registry import match_leaf_kind as _recurse_leaf_kind
-from namepredict.layer2.leaves.ring_namer import recursive_ph_name as _recursive_ph_name
+from namepredict.tools.leaves.registry import match_leaf_kind as _recurse_leaf_kind
+from namepredict.tools.leaves.ring_namer import recursive_ph_name as _recursive_ph_name
 
 from namepredict.constants import HALO_Z as _HALO
 

@@ -19,7 +19,12 @@ router = APIRouter(prefix="/api/v1", tags=["code-analysis"])
 
 ROOT = Path(__file__).resolve().parents[1]
 LAYER_DIR = ROOT / "src" / "namepredict"
-LAYERS = list(range(0, 6))
+# (gid, dirname, label) — tools is the shared layer-agnostic package.
+GROUPS = [
+    (0, "layer0", "Layer 0"), (1, "layer1", "Layer 1"), (2, "layer2", "Layer 2"),
+    (3, "layer3", "Layer 3"), (4, "layer4", "Layer 4"), (5, "layer5", "Layer 5"),
+    (6, "tools", "Tools"),
+]
 
 
 def _count_lines(text: str) -> tuple[int, int, int]:
@@ -35,12 +40,12 @@ def _count_lines(text: str) -> tuple[int, int, int]:
     return code, comment, blank
 
 
-def _stat_layer(layer: int) -> dict[str, Any]:
-    d = LAYER_DIR / f"layer{layer}"
+def _stat_group(gid: int, dirname: str, label: str) -> dict[str, Any]:
+    d = LAYER_DIR / dirname
     files: list[dict[str, Any]] = []
     counts = {"file_count": 0, "code": 0, "comment": 0, "blank": 0}
     if d.is_dir():
-        for py in sorted(d.rglob("*.py")):  # 递归统计子目录（layer2/scaffold 等）
+        for py in sorted(d.rglob("*.py")):  # 递归统计子目录（layer2/scaffold、tools/leaves 等）
             if "__pycache__" in py.parts:
                 continue
             try:
@@ -56,13 +61,16 @@ def _stat_layer(layer: int) -> dict[str, Any]:
     counts["lines"] = counts["code"] + counts["comment"] + counts["blank"]
     # 文件按代码行数降序（供前端展开明细）
     files.sort(key=lambda f: f["code"], reverse=True)
-    return {"layer": layer, "path": f"src/namepredict/layer{layer}", "files": files, **counts}
+    return {
+        "layer": gid, "label": label, "path": f"src/namepredict/{dirname}",
+        "files": files, **counts,
+    }
 
 
 @router.get("/code-analysis")
 def code_analysis() -> dict[str, Any]:
-    """Per-layer code statistics + aggregate, sorted by layer order."""
-    layers = [_stat_layer(i) for i in LAYERS]
+    """Per-layer/tools code statistics + aggregate, sorted by group order."""
+    layers = [_stat_group(*g) for g in GROUPS]
     agg = {"file_count": 0, "code": 0, "comment": 0, "blank": 0}
     for l in layers:
         for k in ("file_count", "code", "comment", "blank"):

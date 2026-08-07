@@ -22,15 +22,12 @@ def _amide_n(parent: dict, mol) -> int:
 
 
 def _n_claim(mol, parent: dict) -> ClaimedBlock | None:
-    from namepredict.layer2.block_cut import cut_block
+    from namepredict.tools.block_cut import cut_block
 
     root = parent.get("n_block_root")
     if root is None:
         return None
-    owned = parent.get("owned_atoms")
-    if not isinstance(owned, frozenset):
-        from namepredict.layer2.block_cut import parent_atom_set
-        owned = parent_atom_set(parent, mol)
+    owned = parent["owned_atoms"]
     atoms = cut_block(mol, root, owned)
     if atoms is None:
         return None

@@ -6,7 +6,7 @@ from rdkit.Chem import Mol
 from namepredict.layer2.arene_carbonyl import _cooh_oxygen_idxs
 from namepredict.layer2.scaffold.cyclo_pick import _cyclo_parent_candidates
 from namepredict.layer2.scaffold.ring_parent import _hetero_or_ring_halo, _outside_carbons, _ring_halo_n, _ring_side_starts
-from namepredict.layer2.side_alkyl import _walk_linear
+from namepredict.tools.side_alkyl import _walk_linear
 from namepredict.layer2.scaffold.specs import (
     cycloalkane_polyacid_stem, get_spec, numbering_scaffold_facts,
 )

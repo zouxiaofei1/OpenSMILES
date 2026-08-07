@@ -52,6 +52,7 @@ class NoCacheHTMLJSStaticFiles(StaticFiles):
         if (
             lower.endswith(".html")
             or lower in ("", "index.html")
+            or lower.startswith("js/")
             or base in ("app.js", "namer-ketcher.js", "app.css")
             or lower.endswith("/app.js")
             or lower.endswith("/namer-ketcher.js")

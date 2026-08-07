@@ -273,7 +273,7 @@ def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
                   if e["c_idx"] in occurrences[0].characteristic_atoms), None)
     if match is None:
         return fields
-    from namepredict.layer2.alkoxy_side import classify_alkoxy
+    from namepredict.tools.alkoxy_side import classify_alkoxy
     side = classify_alkoxy(info["mol"], match["o_idx"], match["alkoxy_c_idx"])
     return {**fields, "o_idx": match["o_idx"], "alkoxy_c_idx": match["alkoxy_c_idx"], **side}
 
