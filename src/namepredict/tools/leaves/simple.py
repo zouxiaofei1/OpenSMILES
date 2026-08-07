@@ -1,89 +1,35 @@
-"""Simple (non-recursive) leaf handlers: halo/Me/alkoxy/nitro/OH/NH2/CF3."""
+"""Simple (non-recursive) leaf match handlers: halo/Me/alkoxy/nitro/OH/NH2/CF3.
+
+Match-only registry entries; naming lives in L3 (layer3/ring_namer.py).
+"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.tools.aryl_depth2 import _ALKOXY_EN, _ALKOXY_ZH
 from namepredict.tools.leaves import topo
 from namepredict.tools.leaves.protocol import Match
 
-_HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
-_HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}
-
 
 class _FnHandler:
-    """Adapter: match/name callables + metadata."""
+    """Adapter: match callable + complex flag."""
 
-    def __init__(self, key: str, alpha: str, match_fn, name_fn, complex: bool = False):
-        self.key = key
-        self.alpha_key = alpha
+    def __init__(self, match_fn, complex: bool = False):
         self.complex = complex
         self._match = match_fn
-        self._name = name_fn
 
     def match(self, mol: Mol, nb, ring_i: int, depth: int) -> Match | None:
         return self._match(mol, nb, ring_i, depth)
 
-    def name(self, mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-        return self._name(mol, m, depth)
-
-
-def _name_halo(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    z = m["z"]
-    return _HALO_EN[z], _HALO_ZH[z], set(m["atoms"])
-
-
-def _name_me(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    return "methyl", "甲基", set(m["atoms"])
-
-
-def _name_cf3(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    return "(trifluoromethyl)", "三氟甲基", set(m["atoms"])
-
-
-def _name_nitro(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    return "nitro", "硝基", set(m["atoms"])
-
-
-def _name_hydroxy(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    return "hydroxy", "羟基", set(m["atoms"])
-
-
-def _name_amino(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    return "amino", "氨基", set(m["atoms"])
-
-
-def _name_alkoxy(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    n = m["n"]
-    return _ALKOXY_EN[n], _ALKOXY_ZH[n], set(m["atoms"])
-
-
-_ALKYL_EN = {2: "ethyl", 3: "propyl", 4: "butyl"}
-_ALKYL_ZH = {2: "乙基", 3: "丙基", 4: "丁基"}
-
-
-def _name_n_alkyl(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    n = m["n"]
-    return _ALKYL_EN[n], _ALKYL_ZH[n], set(m["atoms"])
-
-
-def _name_methylthio(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    return "methylsulfanyl", "甲硫基", set(m["atoms"])
-
-
-def _name_cyano(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    return "cyano", "氰基", set(m["atoms"])
-
 
 SIMPLE_HANDLERS = [
-    _FnHandler("halo", "halo", topo.match_halo, _name_halo),
-    _FnHandler("amino", "amino", topo.match_amino, _name_amino),
-    _FnHandler("cyano", "cyano", topo.match_cyano, _name_cyano),
-    _FnHandler("alkoxy", "alkoxy", topo.match_alkoxy, _name_alkoxy),
-    _FnHandler("hydroxy", "hydroxy", topo.match_hydroxy, _name_hydroxy),
-    _FnHandler("me", "methyl", topo.match_me, _name_me),
-    _FnHandler("n_alkyl", "alkyl", topo.match_n_alkyl, _name_n_alkyl),
-    _FnHandler("methylthio", "methylsulfanyl", topo.match_methylthio, _name_methylthio),
-    _FnHandler("nitro", "nitro", topo.match_nitro, _name_nitro),
-    _FnHandler("cf3", "trifluoromethyl", topo.match_cf3, _name_cf3),
+    _FnHandler(topo.match_halo),
+    _FnHandler(topo.match_amino),
+    _FnHandler(topo.match_cyano),
+    _FnHandler(topo.match_alkoxy),
+    _FnHandler(topo.match_hydroxy),
+    _FnHandler(topo.match_me),
+    _FnHandler(topo.match_n_alkyl),
+    _FnHandler(topo.match_methylthio),
+    _FnHandler(topo.match_nitro),
+    _FnHandler(topo.match_cf3),
 ]

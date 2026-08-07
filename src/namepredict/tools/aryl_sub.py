@@ -7,13 +7,15 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.constants import C, H, N
+from namepredict.constants import C, H
 
 from namepredict.tools.aryl_depth2 import (
     _depth2_atoms_on,
 )
-from namepredict.tools.leaves.registry import match_leaf_kind as _recurse_leaf_kind
-from namepredict.tools.leaves.ring_namer import recursive_ph_name as _recursive_ph_name
+from namepredict.tools.leaves.registry import (
+    match_leaf_kind as _recurse_leaf_kind,
+    nested_leaf_atoms as _nested_leaf_atoms,
+)
 
 from namepredict.constants import HALO_Z as _HALO
 
@@ -229,7 +231,7 @@ def _arm_attach_parent(mol: Mol, p: dict) -> tuple[int, int]:
 
 def _one_arm_atoms(mol: Mol, p: dict) -> set[int]:
     att, parent = _arm_attach_parent(mol, p)
-    _, _, _, nested = _recursive_ph_name(mol, p["ph"], att, parent)
+    nested = _nested_leaf_atoms(mol, p["ph"], att, parent)
     return set(p["atoms"]) | nested
 
 def _aryl_atoms(info: dict, parent: set[int]) -> set[int]:

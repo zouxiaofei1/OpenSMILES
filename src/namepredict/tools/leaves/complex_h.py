@@ -1,4 +1,4 @@
-"""Complex (recursive) leaf handlers: nested phenyl / phenoxy."""
+"""Complex (recursive) leaf match handlers: nested phenyl / phenoxy / benzyl."""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
@@ -61,32 +61,6 @@ def _phenoxy_outer(mol: Mol, o_atom, ring_i: int) -> int | None:
     return outer if mol.GetAtomWithIdx(outer).GetIsAromatic() else None
 
 
-def _to_phenoxy(en: str, zh: str) -> tuple[str, str]:
-    if en.endswith("phenyl"):
-        en = en[: -len("phenyl")] + "phenoxy"
-    if zh.endswith("苯基"):
-        zh = zh[: -len("苯基")] + "苯氧基"
-    return en, zh
-
-
-def name_phenyl(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    from namepredict.tools.leaves.ring_namer import name_ph_ring
-
-    return name_ph_ring(
-        mol, m["child_ring"], m["child_attach"], m["child_parent"], depth + 1,
-    )
-
-
-def name_phenoxy(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    from namepredict.tools.leaves.ring_namer import name_ph_ring
-
-    en, zh, atoms = name_ph_ring(
-        mol, m["child_ring"], m["child_attach"], m["child_parent"], depth + 1,
-    )
-    en, zh = _to_phenoxy(en, zh)
-    return en, zh, atoms | {m["o_idx"]}
-
-
 def match_benzyl(mol: Mol, nb, ring_i: int, depth: int) -> Match | None:
     got = topo.match_benzyl_bridge(mol, nb, ring_i)
     if got is None:
@@ -100,26 +74,8 @@ def match_benzyl(mol: Mol, nb, ring_i: int, depth: int) -> Match | None:
     )
 
 
-def _to_benzyl(en: str, zh: str) -> tuple[str, str]:
-    if en.endswith("phenyl"):
-        en = en[: -len("phenyl")] + "benzyl"
-    if zh.endswith("苯基"):
-        zh = zh[: -len("苯基")] + "苄基"
-    return en, zh
-
-
-def name_benzyl(mol: Mol, m: Match, depth: int) -> tuple[str, str, set[int]]:
-    from namepredict.tools.leaves.ring_namer import name_ph_ring
-
-    en, zh, atoms = name_ph_ring(
-        mol, m["child_ring"], m["child_attach"], m["child_parent"], depth + 1,
-    )
-    en, zh = _to_benzyl(en, zh)
-    return en, zh, atoms | {m["ch2"]}
-
-
 COMPLEX_HANDLERS = [
-    _FnHandler("phenyl", "phenyl", match_phenyl, name_phenyl, complex=True),
-    _FnHandler("phenoxy", "phenoxy", match_phenoxy, name_phenoxy, complex=True),
-    _FnHandler("benzyl", "benzyl", match_benzyl, name_benzyl, complex=True),
+    _FnHandler(match_phenyl, complex=True),
+    _FnHandler(match_phenoxy, complex=True),
+    _FnHandler(match_benzyl, complex=True),
 ]

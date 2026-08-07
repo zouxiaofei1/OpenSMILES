@@ -41,8 +41,30 @@ def match_leaf_kind(mol: Mol, nb, ring_i: int, depth: int = 1) -> ArylLeafKind |
     return None if got is None else got[0][ArylLeafKind]
 
 
-def name_leaf(mol: Mol, m: Match, h, depth: int) -> tuple[str, str, set[int]]:
-    return h.name(mol, m, depth)
+
+def nested_leaf_atoms(
+    mol: Mol, ring: set[int], attach: int, parent: int, depth: int = 1,
+) -> set[int]:
+    """Pure-topology nested atoms: ring ∪ every matched leaf, recursing into
+    complex (nested ring) leaves. Equivalent to the atoms of the old
+    recursive_ph_name without going through naming."""
+    out = set(ring)
+    for i in ring:
+        for nb in nb_out(mol, i, ring):
+            if i == attach and nb.GetIdx() == parent:
+                continue
+            got = match_leaf(mol, nb, i, depth)
+            if got is None:
+                continue
+            m, h = got
+            out |= set(m["atoms"])
+            if h.complex and m.get("child_ring"):
+                out |= nested_leaf_atoms(
+                    mol, m["child_ring"], m["child_attach"], m["child_parent"],
+                    depth + 1,
+                )
+    return out
+
 
 
 def all_outside_matched(
