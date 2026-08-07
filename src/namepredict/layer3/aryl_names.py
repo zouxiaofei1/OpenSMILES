@@ -68,18 +68,26 @@ def heteroaryl_name(fact: HeteroarylFact) -> tuple[str, str]:
     return f"{en}pyridin-{fact.locant}-yl", f"{zh}吡啶-{fact.locant}-基"
 
 
-def aryl_arm_name(mol: Mol, fact: ArylArmFact) -> tuple[str, str, bool]:
+def aryl_arm_name(mol: Mol, fact: ArylArmFact, owned_atoms) -> tuple[str, str, bool]:
     """Name an aryl arm via the generic cut→free-name→yl pipeline.
 
     The benzene ring is the free parent; leaves (halo/Me/alkoxy/nitro/
     OH/NH2/CN/nested Ph) are collected topologically so the cut submol
     carries the full arm and name_ph_ring renumbers attach=1 (P-29.6.2).
+
+    owned_atoms is the parent boundary (parent.owned_atoms). The cut atom
+    set is the full non-parent connected component (side_atoms) minus the
+    kind-encoded arm atoms (fact.atoms - fact.ring, e.g. phenoxy's O or
+    benzyl's CH2), which the _stem suffix carries instead.
     """
     from namepredict.layer3.as_substituent import name_as_substituent
-    from namepredict.tools.leaves.registry import nested_leaf_atoms
+    from namepredict.tools.block_cut import side_atoms
 
     attach = _ring_attachment(mol, fact)
-    atoms = nested_leaf_atoms(mol, set(fact.ring), attach, _ring_parent(fact))
+    seed = frozenset(fact.atoms)
+    arm = seed - frozenset(fact.ring)
+    parent = _ring_parent(fact)
+    atoms = side_atoms(mol, frozenset(owned_atoms), attach, seed) - arm - {parent}
     hit = name_as_substituent(mol, attach, atoms)
     if hit is None:
         return "", "", False

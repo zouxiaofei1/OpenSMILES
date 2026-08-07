@@ -282,7 +282,7 @@ def _n_benzyl_sub(attach: int, en: str, zh: str, paren: bool) -> dict:
         "atoms": [], "en": ne, "zh": nz,
     }
 
-def _n_benzyl_named(info: dict, ch2: int) -> tuple[str, str, bool] | None:
+def _n_benzyl_named(info: dict, ch2: int, owned) -> tuple[str, str, bool] | None:
     ams = info.get("amides") or []
     n_idx = ams[0]["n_idx"] if ams else -1
     ring = side_facts.benzyl_ring(info["mol"], ch2, n_idx)
@@ -291,7 +291,7 @@ def _n_benzyl_named(info: dict, ch2: int) -> tuple[str, str, bool] | None:
     fact = side_facts.ArylArmFact(
         side_facts.ArylArmKind.METHYLENE_C, n_idx, ch2, ch2, ring, (ch2, *ring),
     )
-    return aryl_arm_name(info["mol"], fact)
+    return aryl_arm_name(info["mol"], fact, owned)
 
 def _extract_n_benzyl(info: dict, parent: dict) -> list[dict]:
     if parent.get("kind") not in _AMIDE_KINDS or not parent.get("n_benzyl"):
@@ -299,7 +299,7 @@ def _extract_n_benzyl(info: dict, parent: dict) -> list[dict]:
     attach, ch2 = parent.get("amide_c_idx"), parent.get("n_benzyl_ch2")
     if attach is None or ch2 is None:
         return []
-    named = _n_benzyl_named(info, ch2)
+    named = _n_benzyl_named(info, ch2, parent.get("owned_atoms"))
     return [_n_benzyl_sub(attach, *named)] if named else []
 
 def _make_aryl(
@@ -318,8 +318,8 @@ _ARYL_KINDS = {
     side_facts.ArylArmKind.O_METHYLENE_C: "benzyloxy",
 }
 
-def _one_aryl(mol: Mol, fact: side_facts.ArylArmFact) -> dict:
-    en, zh, paren = aryl_arm_name(mol, fact)
+def _one_aryl(mol: Mol, fact: side_facts.ArylArmFact, owned) -> dict:
+    en, zh, paren = aryl_arm_name(mol, fact, owned)
     kind = _ARYL_KINDS[fact.kind]
     return _make_aryl(kind, fact.attachment, list(fact.atoms), en, zh, paren)
 
@@ -361,7 +361,8 @@ def _extract_core_subs(info: dict, parent: dict) -> list:
 
 def _extract_aryls(info: dict, parent: dict) -> list[dict]:
     mol, chain = info["mol"], set(parent.get("chain") or [])
-    aryl = [_one_aryl(mol, fact) for fact in _aryl_facts(info, parent)]
+    owned = parent.get("owned_atoms")
+    aryl = [_one_aryl(mol, fact, owned) for fact in _aryl_facts(info, parent)]
     hetero = side_facts.pyridinyl_facts(mol, chain) + side_facts.naphthyl_facts(mol, chain)
     return aryl + [_one_heteroaryl(fact) for fact in hetero]
 
@@ -390,14 +391,29 @@ def _carboxyalkyl_sub(fact: side_facts.CarboxyalkylArm) -> dict:
     return {"kind": "carboxyalkyl", "attach_idx": fact.attachment,
             "atoms": [*fact.atoms, fact.carboxyl], "en": en, "zh": zh, "paren": True}
 
+def _with_full_atoms(mol, owned, s: dict) -> dict:
+    """Replace a substituent's atoms with its full non-parent connected
+    component (side_atoms), so leaves (halo/alkoxy/nested rings) counted once."""
+    from namepredict.tools.block_cut import side_atoms
+
+    seed = frozenset(s.get("atoms") or [])
+    attach = s.get("attach_idx")
+    if not seed or attach is None or attach not in owned:
+        return s
+    full = side_atoms(mol, owned, attach, seed)
+    return s if not full else {**s, "atoms": sorted(full)}
+
+
 def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> list:
     from namepredict.layer3.claim_extract import extract_claimed_sides
 
     mol, chain = info["mol"], parent.get("chain") or []
-    alkyl = _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent), name_mode=name_mode)
     base = (
-        alkyl + _extract_carboxymethyls(parent) + _extract_core_subs(info, parent)
+        _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent), name_mode=name_mode) + _extract_carboxymethyls(parent) + _extract_core_subs(info, parent)
         + _extract_alkoxys(info, parent) + _extract_aryls(info, parent)
         + _extract_n_subs(info, parent)
     )
+    owned = parent.get("owned_atoms")
+    if owned:
+        base = [_with_full_atoms(mol, owned, s) for s in base]
     return base + extract_claimed_sides(info, parent, base, name_mode=name_mode, cache=cache)

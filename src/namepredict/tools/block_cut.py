@@ -60,3 +60,31 @@ def cut_block(mol: Mol, root: int, parent_atoms: frozenset[int]) -> frozenset[in
         return None
     seen = _bfs_block(mol, root, parent_atoms)
     return frozenset(seen) if seen else None
+
+
+def side_atoms(
+    mol: Mol, owned_atoms: frozenset[int], attach_idx: int,
+    seed_atoms: frozenset[int],
+) -> frozenset[int]:
+    """Full non-parent connected components of a substituent.
+
+    Root the cut at the seed atoms (the substituent's already-known atoms)
+    adjacent to the parent attach atom, then union their cut_block components.
+    attach_idx is the parent-side atom; seed_atoms are the substituent-side
+    atoms (must contain at least one atom bonded to attach_idx, otherwise the
+    result is empty).
+    """
+    roots = {
+        n.GetIdx()
+        for n in mol.GetAtomWithIdx(attach_idx).GetNeighbors()
+        if n.GetIdx() not in owned_atoms and n.GetIdx() in seed_atoms
+    }
+    comp: set[int] = set()
+    for r in roots:
+        block = cut_block(mol, r, owned_atoms)
+        if block:
+            comp |= block
+    return frozenset(comp)
+
+
+
