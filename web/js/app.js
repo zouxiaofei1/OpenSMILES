@@ -377,7 +377,10 @@
       loadCodeAnalysis();
     } else if (name === "call-graph") {
       if (cgPage) cgPage.classList.remove("hidden");
-      loadCallGraph();
+      // 采样完成后自动生成分层 SVG，避免进入页面后空白、需手动点「重新生成」
+      loadCallGraph().then(function (ok) {
+        if (ok && !state.cgSvg) loadCallGraphSvg();
+      });
     } else if (name === "debug") {
       if (debugPage) debugPage.classList.remove("hidden");
     } else if (name === "settings") {
@@ -1176,9 +1179,11 @@
       renderCgMeta(data.meta);
       renderCgRanks();
       if (st) { st.textContent = "就绪"; st.style.color = "#86efac"; }
+      return true;
     } catch (err) {
       if (empty) { empty.hidden = false; empty.textContent = "加载失败: " + (err.message || String(err)); }
       if (st) { st.textContent = "错误"; st.style.color = "#ef4444"; }
+      return false;
     } finally {
       state.cgLoading = false;
       if (btn) btn.disabled = false;
