@@ -1574,15 +1574,83 @@ select.input {
 
 .cg-chain-row.cg-chain-name {
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cg-chain-row.cg-chain-name .mono,
+.cg-chain-row.cg-chain-root b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .cg-chain-row.cg-chain-name:hover {
   background: rgba(100, 116, 139, 0.12);
 }
 
+.cg-chev {
+  flex: none;
+  width: 12px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--color-foreground-dim, #94a3b8);
+}
+
+.cg-chev-none {
+  visibility: hidden;
+}
+
+.cg-chain-row.cg-sel-row {
+  background: rgba(245, 158, 11, 0.18);
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+
 .cg-chain-row.cg-chain-loop {
   color: var(--color-foreground-dim, #94a3b8);
   font-style: italic;
+}
+
+/* 右键菜单 */
+.cg-ctx-menu {
+  position: fixed;
+  z-index: 999;
+  min-width: 180px;
+  background: var(--color-surface-1, #1e293b);
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  border-radius: var(--radius, 8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  padding: 4px;
+}
+.cg-ctx-menu[hidden] {
+  display: none;
+}
+.cg-ctx-item {
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--color-foreground, #e2e8f0);
+}
+.cg-ctx-item:hover {
+  background: rgba(245, 158, 11, 0.18);
+}
+.cg-ctx-item + .cg-ctx-item {
+  border-top: 1px solid rgba(100, 116, 139, 0.2);
+}
+
+/* SVG 节点高亮（选中函数） */
+#cg-svg-view g.cg-sel polygon,
+#cg-svg-view g.cg-sel path,
+#cg-svg-view g.cg-sel ellipse {
+  stroke: #f59e0b !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.9));
+}
+#cg-svg-view g.cg-sel text {
+  font-weight: 700;
 }
 
 .cg-rank-clickable {

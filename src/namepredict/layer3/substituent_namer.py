@@ -9,6 +9,7 @@ from rdkit.Chem import BondType
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.claimable_block import ClaimedBlock
 from namepredict.layer3.as_substituent import name_as_substituent
+from namepredict.tools.anchored_table import anchored_lookup
 
 
 @dataclass(frozen=True)
@@ -232,9 +233,24 @@ def _try_alkenyl_retained(mol, claim: ClaimedBlock, *, name_mode: str = "general
     return None
 
 
+def _try_anchored_lookup(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
+    """Try the anchored-canonical-SMILES lookup table for a simple substituent.
+
+    Proof-of-concept: the anchor key uniquely identifies shape + site, so a
+    dict lookup suffices for simple leaves (alkyl/cycloalkyl/phenyl/halo).  A
+    miss falls through to the existing retained/rooted/recursive chain.
+    """
+    hit = anchored_lookup(mol, claim.atoms, claim.root, name_mode=name_mode)
+    if hit is None:
+        return None
+    en, zh, paren = hit
+    return _retained_hit(claim, en, zh, paren)
+
+
 def _retained_name(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
     return (
-        _try_registry_leaf(mol, claim, name_mode=name_mode)
+        _try_anchored_lookup(mol, claim, name_mode=name_mode)
+        or _try_registry_leaf(mol, claim, name_mode=name_mode)
         or _try_cycloalkyl(mol, claim)
         or _try_alkenyl_retained(mol, claim, name_mode=name_mode)
         or _try_methoxy(mol, claim)

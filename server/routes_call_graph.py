@@ -253,7 +253,7 @@ def _nodes_edges_to_dot(nodes: list[dict], edges: list[dict]) -> str:
                 f"{nd['cum_pct']:.1f}%\\n{nd['ncalls']}×"
             )
             lines.append(
-                f'\t{nd["id"]} [color="#94a3b8", fontcolor="#1e293b", '
+                f'\t{nd["id"]} [id="cg{nd["id"]}", color="#94a3b8", fontcolor="#1e293b", '
                 f'style="filled,dashed", fontsize="10.00", label="{label}", tooltip="{tip}"];'
             )
         else:
@@ -266,7 +266,7 @@ def _nodes_edges_to_dot(nodes: list[dict], edges: list[dict]) -> str:
             bg = _node_color(nd.get("module") or "", nd.get("w") or 0.0)
             fg = _text_color(bg)
             lines.append(
-                f'\t{nd["id"]} [color="{bg}", fontcolor="{fg}", '
+                f'\t{nd["id"]} [id="cg{nd["id"]}", color="{bg}", fontcolor="{fg}", '
                 f'fontsize="11.00", label="{label}", tooltip="{tip}"];'
             )
     for e in edges:

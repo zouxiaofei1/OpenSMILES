@@ -35,6 +35,9 @@ function cgRankRow(n, idx, val) {
   );
 }
 
+/* ── 下层调用链：展开/折叠树 + 右键进入 + SVG 高亮 ─────────────────── */
+var cgRootId = null, cgSelId = null, cgOpen = {};
+
 function cgChainById() {
   var idx = {};
   ((state.cgData && state.cgData.nodes) || []).forEach(function (n) { idx[n.id] = n; });
@@ -46,51 +49,84 @@ function cgChainShort(nd) {
   return nd.label + " @" + mod + ":" + nd.line;
 }
 
-function renderCalleeChain(rootId) {
-  var data = state.cgData;
-  if (!data || !data.nodes) return;
-  var byId = cgChainById();
-  var root = byId[rootId];
-  if (!root) return;
-  var outEdges = {};
-  data.edges.forEach(function (e) {
-    (outEdges[e.from] = outEdges[e.from] || []).push(e);
+// 每个节点的直接 callee 边，按累计耗时降序
+function cgOutEdges(byId, data) {
+  var out = {};
+  (data && data.edges || []).forEach(function (e) {
+    (out[e.from] = out[e.from] || []).push(e);
   });
+  Object.keys(out).forEach(function (f) {
+    out[f].sort(function (a, b) {
+      var sa = byId[a.to] ? byId[a.to].cum_s : 0;
+      var sb = byId[b.to] ? byId[b.to].cum_s : 0;
+      return sb - sa;
+    });
+  });
+  return out;
+}
+
+function cgChev(id, hasKids) {
+  if (!hasKids) return '<span class="cg-chev cg-chev-none" aria-hidden="true"></span>';
+  return '<span class="cg-chev" aria-hidden="true">' + (cgOpen[id] ? "▾" : "▸") + "</span>";
+}
+
+function cgTreeHtml(byId, out, root) {
   function fmt(nd) {
     return cgChainShort(nd) + "  " + nd.cum_pct + "% (" + nd.ncalls.toLocaleString() + "×)";
   }
-  function walk(nid, depth) {
-    var callees = (outEdges[nid] || []).slice().sort(function (a, b) {
-      return byId[b.to].cum_s - byId[a.to].cum_s;
-    });
+  function row(nd, depth) {
+    var pad = depth * 16 + 8;
+    var kids = out[nd.id] || [];
+    var sel = nd.id === cgSelId ? " cg-sel-row" : "";
+    return (
+      '<div class="cg-chain-row cg-chain-name' + sel + '" data-id="' + nd.id + '" style="padding-left:' + pad + 'px">' +
+      cgChev(nd.id, kids.length > 0) +
+      '<span class="mono">' + escapeHtml(fmt(nd)) + "</span>" +
+      "</div>"
+    );
+  }
+  function walk(nd, depth, path) {
+    var kids = out[nd.id] || [];
+    if (!kids.length) return "";
     var html = "";
-    callees.forEach(function (e) {
-      var nd = byId[e.to];
-      var pad = depth * 16 + 8;
-      html +=
-        '<div class="cg-chain-row cg-chain-name" style="padding-left:' + pad + 'px" data-id="' + nd.id + '">' +
-        '<span class="mono">' + escapeHtml(fmt(nd)) + "</span>" +
-        (e.cum_pct ? '<span class="muted-text small">  ←' + e.calls + "×</span>" : "") +
-        "</div>";
-      if (seen[nd.id]) {
-        html += '<div class="cg-chain-row cg-chain-loop" style="padding-left:' + (pad + 16) + 'px">↺ 循环</div>';
-      } else {
-        seen[nd.id] = true;
-        html += walk(nd.id, depth + 1);
+    kids.forEach(function (e) {
+      var nd2 = byId[e.to];
+      if (!nd2) return;
+      if (path[nd2.id]) {
+        html += '<div class="cg-chain-row cg-chain-loop" style="padding-left:' + (depth * 16 + 24) + 'px">↺ 循环</div>';
+        return;
+      }
+      html += row(nd2, depth);
+      if (cgOpen[nd2.id]) {
+        var p2 = Object.assign({}, path);
+        p2[nd2.id] = true;
+        html += walk(nd2, depth + 1, p2);
       }
     });
     return html;
   }
-  var seen = {};
-  seen[rootId] = true;
+  var rootNd = byId[root];
+  if (!rootNd) return '<p class="muted-text small">无数据</p>';
+  var rootSel = rootNd.id === cgSelId ? " cg-sel-row" : "";
+  var head =
+    '<div class="cg-chain-row cg-chain-root cg-chain-name' + rootSel + '" data-id="' + rootNd.id + '">' +
+    cgChev(rootNd.id, (out[rootNd.id] || []).length > 0) +
+    "<b>" + escapeHtml(fmt(rootNd)) + "</b></div>";
+  var body = cgOpen[rootNd.id] ? walk(rootNd, 1, { [rootNd.id]: true }) : "";
+  return head + body;
+}
+
+// 进入某个函数：切换树根、默认展开第一层、选中并高亮
+function renderCalleeChain(rootId) {
   var el = $("cg-chain");
-  var head = '<div class="cg-chain-row cg-chain-root"><b>' + escapeHtml(fmt(root)) + "</b></div>";
-  el.innerHTML = head + walk(rootId, 0);
-  el.querySelectorAll(".cg-chain-name").forEach(function (row) {
-    row.addEventListener("click", function () {
-      renderCalleeChain(parseInt(row.getAttribute("data-id"), 10));
-    });
-  });
+  if (!el) return;
+  cgRootId = rootId;
+  cgOpen[rootId] = true; // 进入后默认展开第一层
+  cgSelId = rootId;
+  var byId = cgChainById();
+  var out = cgOutEdges(byId, state.cgData);
+  el.innerHTML = cgTreeHtml(byId, out, rootId);
+  applyCgHighlight();
 }
 
 function renderCalleeChainByName(query) {
@@ -114,6 +150,56 @@ function renderCalleeChainByName(query) {
   }
 }
 
+/* ── SVG 图上高亮选中节点 ─────────────────────────────────────────── */
+function applyCgHighlight() {
+  var view = $("cg-svg-view");
+  if (!view) return;
+  var prev = view.querySelectorAll(".cg-sel");
+  for (var i = 0; i < prev.length; i++) prev[i].classList.remove("cg-sel");
+  if (cgSelId == null) return;
+  var g = view.querySelector('[id="cg' + cgSelId + '"]');
+  if (g) g.classList.add("cg-sel");
+}
+
+/* ── 右键菜单：进入该函数 ─────────────────────────────────────────── */
+var _cgCtx = null;
+function showCgCtxMenu(x, y, id) {
+  if (!_cgCtx) {
+    _cgCtx = document.createElement("div");
+    _cgCtx.className = "cg-ctx-menu";
+    _cgCtx.innerHTML =
+      '<div class="cg-ctx-item" data-act="enter">进入此函数查看下层调用链</div>' +
+      '<div class="cg-ctx-item" data-act="copy">复制函数名</div>';
+    document.body.appendChild(_cgCtx);
+    _cgCtx.addEventListener("click", function (ev) {
+      var item = ev.target.closest(".cg-ctx-item");
+      if (!item || _cgCtx._id == null) return;
+      var act = item.getAttribute("data-act");
+      var id = _cgCtx._id;
+      hideCgCtxMenu();
+      if (act === "enter") {
+        renderCalleeChain(id);
+      } else if (act === "copy") {
+        var nd = cgChainById()[id];
+        var name = nd ? (nd.label + " @" + nd.line) : String(id);
+        try { navigator.clipboard.writeText(name); } catch (e) {}
+      }
+    });
+    window.addEventListener("click", hideCgCtxMenu);
+    window.addEventListener("blur", hideCgCtxMenu);
+  }
+  _cgCtx._id = id;
+  _cgCtx.hidden = false;
+  var r = _cgCtx.getBoundingClientRect();
+  var nx = Math.min(x, window.innerWidth - r.width - 8);
+  var ny = Math.min(y, window.innerHeight - r.height - 8);
+  _cgCtx.style.left = Math.max(0, nx) + "px";
+  _cgCtx.style.top = Math.max(0, ny) + "px";
+}
+function hideCgCtxMenu() {
+  if (_cgCtx) { _cgCtx.hidden = true; _cgCtx._id = null; }
+}
+
 function bindCgChainControls() {
   var go = $("cg-chain-go");
   var input = $("cg-chain-input");
@@ -126,6 +212,7 @@ function bindCgChainControls() {
       if (ev.key === "Enter") run();
     });
   }
+  // rank 排行行：点击进入该函数的调用链
   ["cg-rank-calls", "cg-rank-time"].forEach(function (id) {
     var list = $(id);
     if (list) {
@@ -134,6 +221,26 @@ function bindCgChainControls() {
         if (row) renderCalleeChain(parseInt(row.getAttribute("data-id"), 10));
       });
     }
+  });
+  // 下层调用链树：容器级事件委托（点击展开/折叠 + 选中，右键进入）
+  var chain = $("cg-chain");
+  if (!chain) return;
+  chain.addEventListener("click", function (ev) {
+    var row = ev.target.closest(".cg-chain-name");
+    if (!row) return;
+    var id = parseInt(row.getAttribute("data-id"), 10);
+    cgOpen[id] = !cgOpen[id];
+    cgSelId = id;
+    var byId = cgChainById();
+    var out = cgOutEdges(byId, state.cgData);
+    chain.innerHTML = cgTreeHtml(byId, out, cgRootId);
+    applyCgHighlight();
+  });
+  chain.addEventListener("contextmenu", function (ev) {
+    var row = ev.target.closest(".cg-chain-name");
+    if (!row) return;
+    ev.preventDefault();
+    showCgCtxMenu(ev.clientX, ev.clientY, parseInt(row.getAttribute("data-id"), 10));
   });
 }
 
@@ -207,7 +314,7 @@ export async function loadCallGraph(force) {
   if (st) { st.textContent = "采样中…（约 1–3s）"; st.style.color = "#f59e0b"; }
   if (empty) empty.hidden = true;
   try {
-    var q = "?n=" + n + "&floor_pct=0" + (force ? "&refresh=1" : "");
+    var q = "?n=" + n + "&floor_pct=" + state.cgThreshold + (force ? "&refresh=1" : "");
     var data = await api(API.callGraph + q);
     if (!data || !data.ok) throw new Error((data && data.error) || "无数据");
     state.cgData = data;
@@ -346,6 +453,7 @@ export async function loadCallGraphSvg(force) {
       view.innerHTML = data.svg;
       view.classList.remove("hidden");
       setupSvgPanZoom(view);
+      applyCgHighlight(); // 若已有选中函数，在 SVG 图上高亮
     }
     if (st) { st.textContent = "就绪 · " + data.meta.n_nodes + " 节点"; st.style.color = "#86efac"; }
   } catch (err) {

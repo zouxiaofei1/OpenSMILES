@@ -5,7 +5,6 @@ from rdkit.Chem import Mol
 import namepredict.tools.side_facts as side_facts
 from namepredict.layer3.aryl_names import aryl_arm_name, heteroaryl_name
 from namepredict.layer3.alkoxy_names import _extract_alkoxys
-from namepredict.layer3.cycloalkyl_names import _one_cycloalkyl_side
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.amino_side import _extract_aminos as _extract_aminos_impl
 
@@ -63,92 +62,41 @@ def _side_starts(mol: Mol, chain: list[int]) -> list[tuple[int, int]]:
     cs = set(chain)
     return [(c, n) for c in chain for n in side_facts.carbon_neighbors(mol, c) if n not in cs]
 
-def _make_alkyl(attach: int, path: list[int]) -> dict:
-    n = len(path)
-    return {
-        "kind": "alkyl", "n_carbons": n, "attach_idx": attach,
-        "atoms": path, "en": ALKYL_EN[n], "zh": ALKYL_ZH[n],
-    }
 
-def _make_branch(attach: int, atoms: list[int], n: int, en: str, zh: str) -> dict:
-    return {
-        "kind": "alkyl", "n_carbons": n, "attach_idx": attach,
-        "atoms": atoms, "en": en, "zh": zh,
-    }
 
-def _make_cf3(attach: int, atoms: list[int]) -> dict:
-    return {
-        "kind": "trifluoromethyl", "n_carbons": 1, "attach_idx": attach,
-        "atoms": atoms, "en": "trifluoromethyl", "zh": "三氟甲基",
-    }
 
-def _haloalkyl_names(n: int, z: int) -> tuple[str, str]:
-    se, sz = _HALOALKYL_STEM_EN[n], _HALOALKYL_STEM_ZH[n]
-    if n == 1:
-        return f"{HALO_EN[z]}{se}", f"{HALO_ZH[z]}{sz}"
-    return f"{n}-{HALO_EN[z]}{se}", f"{n}-{HALO_ZH[z]}{sz}"
 
-def _halo_atom(mol: Mol, carbon: int) -> int | None:
-    atom = mol.GetAtomWithIdx(carbon)
-    hits = [nb.GetIdx() for nb in atom.GetNeighbors() if nb.GetAtomicNum() in HALO_EN]
-    return hits[0] if len(hits) == 1 else None
 
-def _make_haloalkyl(attach: int, path: list[int], z: int, halo: int) -> dict:
-    n = len(path)
-    en, zh = _haloalkyl_names(n, z)
-    return {
-        "kind": "haloalkyl", "n_carbons": n, "attach_idx": attach,
-        "atoms": [*path, halo], "en": en, "zh": zh, "paren": True,
-    }
 
-def _one_haloalkyl(mol: Mol, attach: int, start: int, chain_set: set[int]) -> dict | None:
-    fact = side_facts.omega_halo_alkyl(mol, start, chain_set)
-    path = list(fact.atoms) if fact else None
-    if not path:
+
+def _one_anchored_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int], *, name_mode: str) -> dict | None:
+    """Try the anchored canonical-SMILES table for a side starting at `start`.
+
+    Uses side_atoms (full non-parent connected component) as the atom set and
+    picks the substituent-side attach atom, then looks up the anchored key
+    under name_mode.  A hit replaces the hand-written shape recognition when
+    its output matches; a miss falls through.
+    """
+    from namepredict.tools.anchored_table import anchored_lookup
+    from namepredict.tools.block_cut import side_atoms
+
+    atoms = side_atoms(mol, frozenset(chain_set), attach, frozenset({start}))
+    if not atoms:
         return None
-    z = side_facts.terminal_halogen(mol, path[-1])
-    halo = _halo_atom(mol, path[-1])
-    return _make_haloalkyl(attach, path, z, halo) if z and halo is not None else None
+    hit = anchored_lookup(mol, atoms, None, name_mode=name_mode)
+    if hit is None:
+        return None
+    en, zh, paren = hit
+    return {
+        "kind": "alkyl", "n_carbons": len(atoms), "attach_idx": attach,
+        "atoms": sorted(atoms), "en": en, "zh": zh, "paren": paren,
+    }
+
 
 def _one_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int], *, name_mode: str = "general") -> dict | None:
-    fact = side_facts.linear_alkyl(mol, start, chain_set, 12)
-    path = list(fact.atoms) if fact else None
-    if path and len(path) in ALKYL_EN:
-        return _make_alkyl(attach, path)
-    ha = _one_haloalkyl(mol, attach, start, chain_set)
-    return ha if ha is not None else _one_branched(mol, attach, start, chain_set, name_mode=name_mode)
+    anchored = _one_anchored_alkyl(mol, attach, start, chain_set, name_mode=name_mode)
+    return anchored
 
-_BRANCH_CHECKS = (
-    (side_facts.AlkylShape.C2_VINYL, 2, "vinyl"),
-    (side_facts.AlkylShape.C3_ALLYL, 3, "allyl"),
-    (side_facts.AlkylShape.C3_ISOPROPENYL, 3, "isopropenyl"),
-    (side_facts.AlkylShape.C3_BRANCH_AT_ROOT, 3, "isopropyl"),
-    (side_facts.AlkylShape.C4_TRIPLE_BRANCH_AT_ROOT, 4, "tert-butyl"),
-    (side_facts.AlkylShape.C5_ASYMMETRIC_ROOT_BRANCH, 5, "2-methylbutan-2-yl"),
-    (side_facts.AlkylShape.C4_BRANCH_AFTER_ROOT, 4, "isobutyl"),
-    (side_facts.AlkylShape.C4_BRANCH_AT_SECOND, 4, "sec-butyl"),
-    (side_facts.AlkylShape.C5_DOUBLE_BRANCH_AFTER_ROOT, 5, "neopentyl"),
-    (side_facts.AlkylShape.C5_PRENYL, 5, "3-methylbut-2-enyl"),
-    (side_facts.AlkylShape.C5_BRANCH_NEAR_LEAF, 5, "isopentyl"),
-)
-
-def _retained_branch(mol, attach, start, chain_set, name_mode):
-    from namepredict.layer3.retained_substituents import resolve_name
-
-    for shape, n, key in _BRANCH_CHECKS:
-        if fact := side_facts.alkyl_shape(mol, start, chain_set, shape):
-            en, zh = resolve_name(key, name_mode=name_mode)
-            return _make_branch(attach, list(fact.atoms), n, en, zh)
-    return None
-
-def _one_branched(mol: Mol, attach: int, start: int, chain_set: set[int], *, name_mode: str = "general") -> dict | None:
-    if branch := _retained_branch(mol, attach, start, chain_set, name_mode):
-        return branch
-    if cyc := _one_cycloalkyl_side(mol, attach, start, chain_set):
-        return cyc
-    shape = side_facts.AlkylShape.C1_THREE_HALOGEN_LEAVES
-    cf3 = side_facts.alkyl_shape(mol, start, chain_set, shape)
-    return _make_cf3(attach, list(cf3.atoms)) if cf3 else None
 
 def _make_halo(attach: int, halo_idx: int, z: int) -> dict:
     return {

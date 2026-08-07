@@ -68,3 +68,32 @@ def build_cut_submol(
     _cap_attach_h(em, inv[attach_old])
     out = _sanitize(em)
     return None if out is None else _pack(out, inv, attach_old, atoms)
+
+
+def _add_anchor(em: Chem.RWMol, attach_new: int) -> None:
+    """Mark the attach atom with a dummy atom (`*`) instead of capping with H.
+
+    The anchor is a canonicalisation-preserving fingerprint of the substituent
+    shape + attachment site: e.g. isopropyl → *C(C)C vs n-propyl → *CCC, and
+    *c1ccc(Cl)cc1 (4-Cl) vs *c1cccc(Cl)c1 (3-Cl) vs *c1ccccc1Cl (2-Cl).  The
+    capped-H variant (build_cut_submol) loses branch/site info because the
+    attach valence is absorbed by H.
+    """
+    d = em.AddAtom(Chem.Atom(0))
+    em.AddBond(attach_new, d, Chem.BondType.SINGLE)
+
+
+def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol | None:
+    """Induced submol on atoms with the attach site marked by a dummy atom.
+
+    Returns the sanitized Mol (canonical SMILES is the lookup key), or None
+    when attach_old is not in atoms or sanitize fails.  The dummy atom has
+    atomic number 0 and is not part of the real substituent.
+    """
+    if attach_old not in atoms:
+        return None
+    em = Chem.RWMol()
+    inv = _copy_atoms(em, mol, _ordered(atoms))
+    _copy_bonds(em, mol, inv)
+    _add_anchor(em, inv[attach_old])
+    return _sanitize(em)
