@@ -7,7 +7,7 @@ from enum import Enum, auto
 
 from rdkit.Chem import Atom, Mol
 
-from namepredict.layer3 import aryl_sub, heteroaryl_sub, side_alkoxy
+from namepredict.layer3 import aryl_sub, side_alkoxy
 from namepredict.tools import side_alkyl
 from namepredict.tools.leaves.protocol import ArylLeafKind, LeafTopology
 from namepredict.tools.leaves.registry import match_leaf_topology
@@ -93,17 +93,6 @@ class AlkoxyFact:
     atoms: tuple[int, ...]
 
 
-@dataclass(frozen=True)
-class HeteroarylFact:
-    kind: HeteroarylKind
-    attachment: int
-    outer: int
-    ring: frozenset[int]
-    atoms: tuple[int, ...]
-    locant: int
-    leaves: tuple[tuple[int, HeteroarylLeaf, int], ...]
-
-
 _SHAPE_MATCHERS = {
     AlkylShape.C2_VINYL: side_alkyl._is_vinyl,
     AlkylShape.C3_ALLYL: side_alkyl._is_allyl,
@@ -122,26 +111,6 @@ _SHAPE_MATCHERS = {
 
 def _path(root: int, atoms: list[int] | None) -> SidePath | None:
     return SidePath(root, tuple(atoms)) if atoms is not None else None
-
-
-def _phenyl_arm(item: dict) -> ArylArmFact:
-    return ArylArmFact(ArylArmKind.DIRECT_C, item.get("attach"), item.get("outer_c"), None,
-                       frozenset(item.get("ph")), tuple(item.get("atoms")))
-
-
-def _benzyl_arm(item: dict) -> ArylArmFact:
-    return ArylArmFact(ArylArmKind.METHYLENE_C, item.get("attach"), item.get("outer_c"), item.get("ch2"),
-                       frozenset(item.get("ph")), tuple(item.get("atoms")))
-
-
-def _phenoxy_arm(item: dict) -> ArylArmFact:
-    return ArylArmFact(ArylArmKind.DIRECT_O, item.get("ring_c"), item.get("outer_c"), item.get("o_idx"),
-                       frozenset(item.get("ph")), tuple(item.get("atoms")))
-
-
-def _benzyloxy_arm(item: dict) -> ArylArmFact:
-    return ArylArmFact(ArylArmKind.O_METHYLENE_C, item.get("ring_c"), item.get("outer_c"), item.get("ch2"),
-                       frozenset(item.get("ph")), tuple(item.get("atoms")))
 
 
 def _leaf_fact(match: LeafTopology) -> ArylLeafFact:
@@ -169,15 +138,6 @@ def outer_alkoxy(mol: Mol, root: int, oxygen: int) -> AlkoxyFact | None:
     return AlkoxyFact(root, oxygen, code, tuple(atoms)) if atoms else None
 
 
-def aryl_arms(info: dict, parent: set[int]) -> list[ArylArmFact]:
-    mol = info.get("mol")
-    phenoxy = map(_phenoxy_arm, aryl_sub._ring_phenoxys(info, parent))
-    phenyl = map(_phenyl_arm, aryl_sub._ring_phenyls(mol, parent))
-    benzyloxy = map(_benzyloxy_arm, aryl_sub._ring_benzyloxys(info, parent))
-    benzyl = map(_benzyl_arm, aryl_sub._ring_benzyls(mol, parent))
-    return [*phenoxy, *phenyl, *benzyloxy, *benzyl]
-
-
 def phenyl_ring(mol: Mol, root: int, parent: int) -> frozenset[int] | None:
     ring = aryl_sub._phenyl_at(mol, root, parent)
     return frozenset(ring) if ring else None
@@ -190,50 +150,6 @@ def benzyl_ring(mol: Mol, root: int, parent: int) -> frozenset[int] | None:
 
 def aryl_leaves(mol: Mol, ring: frozenset[int]) -> frozenset[int]:
     return frozenset(aryl_sub._halo_atoms_on(mol, set(ring)))
-
-
-def heteroaryl_outers(mol: Mol, parent: set[int]) -> set[int]:
-    return heteroaryl_sub.heteroaryl_outers(mol, parent)
-
-
-def _leaf_topology(mol: Mol, ring: set[int], order: list[int], locant: int,
-                   outer: int, attach: int) -> tuple[int, HeteroarylLeaf, int]:
-    site = order[locant - 1]
-    leaves = heteroaryl_sub._nb_out(mol, site, ring)
-    leaves = [atom for atom in leaves if not (site == outer and atom.GetIdx() == attach)]
-    atom = leaves[0]
-    if atom.GetAtomicNum() in (9, 17, 35, 53):
-        return locant, HeteroarylLeaf.HALOGEN, atom.GetAtomicNum()
-    if atom.GetAtomicNum() == 8:
-        return locant, HeteroarylLeaf.ALKOXY, heteroaryl_sub._alkoxy_n(mol, atom, site)
-    return locant, HeteroarylLeaf.METHYL, 6
-
-
-def _pyridinyl_fact(mol: Mol, item: dict) -> HeteroarylFact:
-    ring, outer, attach = set(item.get("ring")), item.get("outer_c"), item.get("attach")
-    order = heteroaryl_sub._ring_order(mol, ring, outer)
-    raw = heteroaryl_sub._leaf_items(mol, ring, outer, attach, order)
-    leaves = tuple(_leaf_topology(mol, ring, order, loc, outer, attach) for loc, _, _ in raw)
-    return HeteroarylFact(HeteroarylKind.SIX_MEMBER_ONE_N, attach, outer, frozenset(ring),
-                          tuple(item.get("atoms")), order.index(outer) + 1, leaves)
-
-
-def _naphthyl_fact(mol: Mol, item: dict) -> HeteroarylFact:
-    ready = heteroaryl_sub._naph_ready(mol, item.get("outer_c"), item.get("attach"))
-    locant = heteroaryl_sub._naph_locant(ready[1], item.get("outer_c"))
-    ring = frozenset(item.get("atoms"))
-    return HeteroarylFact(HeteroarylKind.FUSED_TEN_MEMBER_C, item.get("attach"), item.get("outer_c"), ring,
-                          tuple(item.get("atoms")), locant, ())
-
-
-def naphthyl_facts(mol: Mol, parent: set[int]) -> list[HeteroarylFact]:
-    return [_naphthyl_fact(mol, item)
-            for item in heteroaryl_sub.ring_naphthyls(mol, parent)]
-
-
-def pyridinyl_facts(mol: Mol, parent: set[int]) -> list[HeteroarylFact]:
-    return [_pyridinyl_fact(mol, item)
-            for item in heteroaryl_sub.ring_pyridinyls(mol, parent)]
 
 
 def _arm_path(mol: Mol, acid: int, parent: set[int]) -> tuple[int, tuple[int, ...]] | None:

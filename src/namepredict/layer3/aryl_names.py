@@ -3,9 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer3.side_facts import (
-    ArylArmFact, ArylArmKind, HeteroarylFact, HeteroarylKind, HeteroarylLeaf,
-)
+from namepredict.layer3.side_facts import ArylArmFact, ArylArmKind
 
 
 _STEMS = {
@@ -39,33 +37,6 @@ def _ring_parent(fact: ArylArmFact) -> int:
         return fact.attachment
     bridged = (ArylArmKind.METHYLENE_C, ArylArmKind.O_METHYLENE_C)
     return fact.outer if fact.kind in bridged else fact.bridge or -1
-
-
-_HALOGEN_NAMES = {9: ("fluoro", "氟"), 17: ("chloro", "氯"),
-                   35: ("bromo", "溴"), 53: ("iodo", "碘")}
-_ALKOXY_NAMES = {1: ("methoxy", "甲氧基"), 2: ("ethoxy", "乙氧基")}
-
-
-def _leaf_name(kind: HeteroarylLeaf, value: int) -> tuple[str, str]:
-    if kind == HeteroarylLeaf.HALOGEN:
-        return _HALOGEN_NAMES[value]
-    if kind == HeteroarylLeaf.ALKOXY:
-        return _ALKOXY_NAMES[value]
-    return "methyl", "甲基"
-
-
-def _hetero_prefix(fact: HeteroarylFact) -> tuple[str, str]:
-    parts = [(loc, *_leaf_name(kind, value)) for loc, kind, value in fact.leaves]
-    en = "-".join(f"{loc}-{name}" for loc, name, _ in sorted(parts))
-    zh = "-".join(f"{loc}-{name}" for loc, _, name in sorted(parts))
-    return en, zh
-
-
-def heteroaryl_name(fact: HeteroarylFact) -> tuple[str, str]:
-    if fact.kind == HeteroarylKind.FUSED_TEN_MEMBER_C:
-        return f"naphthalen-{fact.locant}-yl", f"萘-{fact.locant}-基"
-    en, zh = _hetero_prefix(fact)
-    return f"{en}pyridin-{fact.locant}-yl", f"{zh}吡啶-{fact.locant}-基"
 
 
 def aryl_arm_name(mol: Mol, fact: ArylArmFact, owned_atoms) -> tuple[str, str, bool]:

@@ -3,7 +3,6 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 import namepredict.layer3.side_facts as side_facts
-from namepredict.layer3.aryl_names import aryl_arm_name, heteroaryl_name
 from namepredict.layer3.alkoxy_names import _extract_alkoxys
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.amino_side import _extract_aminos as _extract_aminos_impl
@@ -169,49 +168,9 @@ def _extract_oxos(info: dict, parent: dict) -> list[dict]:
         _make_oxo(k["c_idx"]) for k in info.get("ketones") or [] if k["c_idx"] in chain
     ]
 
-def _make_aryl(
-    kind: str, attach: int, atoms: list[int], en: str, zh: str, paren: bool,
-) -> dict:
-    n = 7 if kind in ("benzyl", "benzyloxy") else 6
-    return {
-        "kind": kind, "attach_idx": attach, "atoms": atoms,
-        "n_carbons": n, "en": en, "zh": zh, "paren": paren,
-    }
-
-_ARYL_KINDS = {
-    side_facts.ArylArmKind.DIRECT_C: "phenyl",
-    side_facts.ArylArmKind.METHYLENE_C: "benzyl",
-    side_facts.ArylArmKind.DIRECT_O: "phenoxy",
-    side_facts.ArylArmKind.O_METHYLENE_C: "benzyloxy",
-}
-
-def _one_aryl(mol: Mol, fact: side_facts.ArylArmFact, owned) -> dict:
-    en, zh, paren = aryl_arm_name(mol, fact, owned)
-    kind = _ARYL_KINDS[fact.kind]
-    return _make_aryl(kind, fact.attachment, list(fact.atoms), en, zh, paren)
-
-def _aryl_facts(info: dict, parent: dict) -> list[side_facts.ArylArmFact]:
-    return side_facts.aryl_arms(info, set(parent.get("chain") or []))
-
-def _one_heteroaryl(fact: side_facts.HeteroarylFact) -> dict:
-    en, zh = heteroaryl_name(fact)
-    pyridinyl = fact.kind == side_facts.HeteroarylKind.SIX_MEMBER_ONE_N
-    return {
-        "kind": "pyridinyl" if pyridinyl else "naphthyl",
-        "attach_idx": fact.attachment, "atoms": list(fact.atoms),
-        "n_carbons": 5 if pyridinyl else 10, "en": en, "zh": zh, "paren": True,
-    }
-
-def _aryl_outer_starts(info: dict, parent: dict) -> set[int]:
-    mol, chain = info["mol"], set(parent.get("chain") or [])
-    aromatic = {fact.outer for fact in side_facts.aryl_arms(info, chain)}
-    return aromatic | side_facts.heteroaryl_outers(mol, chain)
-
-def _extract_alkyls_no_aryl(mol: Mol, chain: list[int], skip: set[int], *, name_mode: str = "general") -> list[dict]:
+def _extract_alkyls_no_aryl(mol: Mol, chain: list[int], *, name_mode: str = "general") -> list[dict]:
     cs, out = set(chain), []
     for attach, start in _side_starts(mol, chain):
-        if start in skip:
-            continue
         one = _one_alkyl(mol, attach, start, cs, name_mode=name_mode)
         if one is not None:
             out.append(one)
@@ -224,13 +183,6 @@ def _extract_core_subs(info: dict, parent: dict) -> list:
         halo + _extract_hydroxys(info, parent) + _extract_aminos(info, parent)
         + _extract_oxos(info, parent)
     )
-
-def _extract_aryls(info: dict, parent: dict) -> list[dict]:
-    mol, chain = info["mol"], set(parent.get("chain") or [])
-    owned = parent.get("owned_atoms")
-    aryl = [_one_aryl(mol, fact, owned) for fact in _aryl_facts(info, parent)]
-    hetero = side_facts.pyridinyl_facts(mol, chain) + side_facts.naphthyl_facts(mol, chain)
-    return aryl + [_one_heteroaryl(fact) for fact in hetero]
 
 def _with_full_atoms(mol, owned, s: dict) -> dict:
     """Replace a substituent's atoms with its full non-parent connected
@@ -251,7 +203,7 @@ def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general"
     mol, chain = info["mol"], parent.get("chain") or []
     base = (
        _extract_core_subs(info, parent)
-        + _extract_alkoxys(info, parent) +  _extract_alkyls_no_aryl(mol, chain, _aryl_outer_starts(info, parent), name_mode=name_mode)
+        + _extract_alkoxys(info, parent) +  _extract_alkyls_no_aryl(mol, chain, name_mode=name_mode)
     )
     owned = parent.get("owned_atoms")
     if owned:
