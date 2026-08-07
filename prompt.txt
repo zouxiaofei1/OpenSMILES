@@ -6,26 +6,23 @@
 ##特别注意
 1.data\merged_benchmark.json 是**Benchmark数据库**
 2.Benchmark脚本运行方式:python -m benchmarks.benchmark_parallel --data data/merged_benchmark.json --time  --timeout 1 
-3.严格按照IUPAC规则编写，IUPAC原文完整文档 docs\iupac\
+3.按照IUPAC规则编写，IUPAC原文完整文档 docs\iupac\
 4.临时文件写在chem\tools
 5.每一次任务都必须运行**benchmark**
-6.常见失败模式:空返回,结构错误，母体选错，侧链选错，编号错，缺功能
-7.禁止修改 benchmark和其数据库。命令中不应包含>15s的sleep
-8.subagent有时会出问题。subagent不应更换模型。可以多尝试几次，不应自己编写代码
-9.pytest应多线程运行pytest -n auto
-10.本项目虽然存在benchmark步骤，但**完全允许准确率回退或持平**.本项目不欢迎导致准确率增加，但违反代码和工作流规范的更改.
-12.benchmark使用english_name和chinese_name字段
-13.如果要新增取代基，阅读layer3\retained_substituents.py并接入注册表
-15.**文件必须**存在src\namepredict\layer0-layer5某个文件夹里，且代码长度不超过1000行
+6.禁止修改 benchmark和其数据库。命令中不应包含>15s的sleep
+7.subagent有时会出问题。subagent不应更换模型。可以多尝试几次，不应自己编写代码
+8.pytest应多线程运行pytest -n auto
+9.benchmark使用english_name和chinese_name字段
+15.文件存在src\namepredict\layer0-layer5某个文件夹里，且代码长度不超过1000行
 Layer 0: Molecule Preprocessor
 Layer 1: Structural Analyzer
 Layer 2: Parent Selector
 Layer 3: Substituent Extractor
 Layer 4: Numbering Engine
 Layer 5: Name Assembler
-减少非必要的layer间引用和职责不清
-namepredict目录下，只允许修改入口点,layer0-layer5文件夹,其他文件只读。
-- 函数式编程:每个方法不得超过10行，方法输入输出尽量只有一个，复用已有的方法
+tools :跨层工具
+namepredict目录下，只允许修改入口点,layer0-layer5+tools文件夹,其他文件只读。
+- 函数式编程:每个方法不超过10行，复用已有的方法
 
 
 #工作步骤：
@@ -138,3 +135,6 @@ namepredict目录下，只允许修改入口点,layer0-layer5文件夹,其他文
 3.layer2和layer3是互相确定的，有互相调用正常，但是layer2不应包含取代基选择，layer3不应包含母体选择逻辑
 4.如果反复修改分数却不增加，往往是架构不对。
 5.在处理一层的代码时，想象其他层是完美的
+6.常见失败模式:空返回,结构错误，母体选错，侧链选错，编号错，缺功能
+7.benchmark一般elapsed<10s,成本很低，多运行防止回归。如果耗时明显增加，估计是代码有问题。
+8.层间可以互相调用，只要不逻辑混乱，不循环引用即可
