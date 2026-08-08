@@ -42,8 +42,7 @@ def _unsupported_polyacid(reason: str | None) -> list[dict]:
 
 
 def _polyacid_gates(info: dict) -> list[CandidateGate]:
-    gates = [benzene_polycarboxylic_gate(info), polycarboxylic_gate(info), cycloalkane_polycarboxylic_gate(info)]
-    return gates if not is_carboxymethyl_diacid(info) else gates[:1]
+    return  []
 
 
 _CANDIDATE_POLICIES = {

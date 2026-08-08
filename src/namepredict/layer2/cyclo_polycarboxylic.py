@@ -49,20 +49,7 @@ def _is_cycloalkane_polycarboxylic(info: dict) -> bool:
     if not _hetero_or_ring_halo(info["mol"], ring, allowed): return False
     return _ring_halo_n(info["mol"], ring) <= 1 and _alkyl_ok(info["mol"], ring, acids)
 
-def _cycloalkane_polycarboxylic_parent(info: dict) -> dict:
-    ring, spec = _acid_ring(info) or set(), get_spec("cycloalkane_polycarboxylic")
-    stems = cycloalkane_polyacid_stem(len(ring)) or (spec.stem_en, spec.stem_zh)
-    attaches, stereo = [_attach(info["mol"], ring, acid) for acid in info["carboxyls"]], _relative_stereo(info, ring, info["carboxyls"])
-    return {
-        "chain": list(ring), "n_carbons": len(ring),
-        "kind": "cycloalkane_polycarboxylic", "scaffold_id": spec.id,
-        "stem_en": stems[0], "stem_zh": stems[1], "cooh_c_idxs": attaches,
-        "acid_count": len(attaches), "relative_stereo": stereo,
-        "numbering_scaffold": numbering_scaffold_facts(spec.id, len(ring)),
-    }
 
-def _try_cycloalkane_polycarboxylic(info: dict) -> dict | None:
-    return _cycloalkane_polycarboxylic_parent(info) if _is_cycloalkane_polycarboxylic(info) else None
 
 def _polyacid_ring_like(info: dict) -> bool:
     acids, mol = info.get("carboxyls") or [], info["mol"]
