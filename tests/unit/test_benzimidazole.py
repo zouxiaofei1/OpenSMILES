@@ -10,12 +10,6 @@ from __future__ import annotations
 import pytest
 
 from namepredict.constants import normalize_en, normalize_zh
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.benzimidazole import (
-    _try_benzimidazole_parent,
-    _try_benzimidazolamine_parent,
-)
 from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
@@ -77,65 +71,6 @@ def test_amino_tautomer_not_methanamine() -> None:
     en = normalize_en(r.en)
     assert en == "1h-benzimidazol-2-amine"
     assert "methanamine" not in en
-
-
-def test_l2_parent_kind_unsub() -> None:
-    mol = preprocess("c1ccc2[nH]cnc2c1")
-    assert mol is not None
-    parent = _try_benzimidazole_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "benzimidazole"
-    assert len(parent.get("chain") or []) == 9
-    assert parent.get("nh_idx") is not None
-    assert parent.get("n_idx") is not None
-
-
-def test_l2_parent_kind_amine() -> None:
-    mol = preprocess("Nc1nc2ccccc2[nH]1")
-    assert mol is not None
-    parent = _try_benzimidazolamine_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "benzimidazolamine"
-    assert parent.get("amine_c_idx") is not None
-    assert len(parent.get("chain") or []) == 9
-
-
-def test_l2_parent_kind_imino() -> None:
-    mol = preprocess("N=c1[nH]c2ccccc2[nH]1")
-    assert mol is not None
-    parent = _try_benzimidazolamine_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "benzimidazolamine"
-    assert parent.get("amine_c_idx") is not None
-
-
-def test_l2_rejects_indazole() -> None:
-    mol = preprocess("c1ccc2[nH]ncc2c1")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_benzimidazole_parent(info) is None
-    assert _try_benzimidazolamine_parent(info) is None
-
-
-def test_l2_rejects_imidazole() -> None:
-    mol = preprocess("c1c[nH]cn1")
-    assert mol is not None
-    assert _try_benzimidazole_parent(analyze(mol)) is None
-
-
-def test_l2_rejects_benzothiazole() -> None:
-    mol = preprocess("c1nc2ccccc2s1")
-    assert mol is not None
-    assert _try_benzimidazole_parent(analyze(mol)) is None
-
-
-def test_simple_blocks_amine() -> None:
-    """Primary 2-amine routes to benzimidazolamine, not plain benzimidazole."""
-    mol = preprocess("Nc1nc2ccccc2[nH]1")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_benzimidazole_parent(info) is None
-    assert _try_benzimidazolamine_parent(info) is not None
 
 
 def test_chloro_locant_is_5() -> None:

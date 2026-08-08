@@ -9,12 +9,6 @@ from __future__ import annotations
 import pytest
 
 from namepredict.constants import normalize_en, normalize_zh
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.fused56_mono import (
-    _try_benzothiophene_parent,
-    _try_benzothiophenol_parent,
-)
 from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
@@ -63,63 +57,6 @@ def test_ol_not_octanol() -> None:
     en = normalize_en(r.en)
     assert en == "1-benzothiophen-4-ol"
     assert "octan" not in en
-
-
-def test_l2_parent_kind_unsub() -> None:
-    mol = preprocess("c1ccc2sccc2c1")
-    assert mol is not None
-    parent = _try_benzothiophene_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "benzothiophene"
-    assert len(parent.get("chain") or []) == 9
-    assert parent.get("s_idx") is not None
-
-
-def test_l2_parent_kind_ol() -> None:
-    mol = preprocess("S1C=CC=2C1=CC=CC2O")
-    assert mol is not None
-    parent = _try_benzothiophenol_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "benzothiophenol"
-    assert parent.get("oh_c_idx") is not None
-    assert len(parent.get("chain") or []) == 9
-
-
-def test_l2_rejects_benzofuran() -> None:
-    mol = preprocess("c1ccc2occc2c1")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_benzothiophene_parent(info) is None
-    assert _try_benzothiophenol_parent(info) is None
-
-
-def test_l2_rejects_indole() -> None:
-    mol = preprocess("c1ccc2[nH]ccc2c1")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_benzothiophene_parent(info) is None
-    assert _try_benzothiophenol_parent(info) is None
-
-
-def test_l2_rejects_thiophene() -> None:
-    mol = preprocess("c1ccsc1")
-    assert mol is not None
-    assert _try_benzothiophene_parent(analyze(mol)) is None
-
-
-def test_l2_rejects_naphthalene() -> None:
-    mol = preprocess("c1ccc2ccccc2c1")
-    assert mol is not None
-    assert _try_benzothiophene_parent(analyze(mol)) is None
-
-
-def test_simple_blocks_ol() -> None:
-    """Ring OH routes to benzothiophenol, not plain benzothiophene."""
-    mol = preprocess("S1C=CC=2C1=CC=CC2O")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_benzothiophene_parent(info) is None
-    assert _try_benzothiophenol_parent(info) is not None
 
 
 def test_methyl_locant_is_2_not_3() -> None:

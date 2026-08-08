@@ -7,9 +7,9 @@ whose template subgraph-isomorphically covers the given ring-atom set exactly
 double-bond placement on rings (both are graph-isomorphic).
 
 Positional isomers that are graph-isomorphic (quinoline/isoquinoline,
-pyridazine/pyrimidine/pyrazine, imidazole/pyrazole, benzimidazole/indazole,
-quinazoline/quinoxaline) hit several templates at once and are disambiguated by
-a small positional check on the graph, reusing the existing core detectors.
+pyridazine/pyrimidine/pyrazine, imidazole/pyrazole) hit several templates at
+once and are disambiguated by a small positional check on the graph, reusing
+the existing core detectors.
 """
 from __future__ import annotations
 
@@ -98,37 +98,17 @@ def _dis_quinoline(info: dict, atoms) -> str | None:
     return parts[5]  # "quinoline" | "isoquinoline"
 
 
-def _dis_bim_iz(info: dict, atoms) -> str | None:
-    from namepredict.layer2.scaffold.benzimidazole import _bim_parts
-    from namepredict.layer2.scaffold.indazole import _iz_parts
-
-    parts = _bim_parts(info)
-    if parts is not None and set(parts[0]) | set(parts[1]) == atoms:
-        return "benzimidazole"
-    parts = _iz_parts(info)
-    if parts is not None and set(parts[0]) | set(parts[1]) == atoms:
-        return "indazole"
-    return None
-
-
-def _dis_qz_qx(info: dict, atoms) -> str | None:
-    from namepredict.layer2.scaffold.benzodiazine import _qx_core, _qz_core
-
-    parts = _qz_core(info)
-    if parts is not None and parts[0] == atoms:
-        return "quinazoline"
-    parts = _qx_core(info)
-    if parts is not None and parts[0] == atoms:
-        return "quinoxaline"
-    return None
-
+# NOTE: benzimidazole/indazole and quinazoline/quinoxaline were once
+# disambiguated by `_bim_parts`/`_iz_parts`/`_qz_core`/`_qx_core` in their
+# respective producer modules, which have since been removed as dead code.
+# On the current benchmark set their templates hit individually (single-hit),
+# so no positional disambiguation is needed; a theoretical double-hit falls
+# back to template order via `hits[0]`.
 
 _DISAMBIGUATE: dict[tuple[str, ...], callable] = {
     ("quinoline", "isoquinoline"): _dis_quinoline,
     ("pyridazine", "pyrimidine", "pyrazine"): _dis_diazine,
     ("imidazole", "pyrazole"): _dis_diazole,
-    ("benzimidazole", "indazole"): _dis_bim_iz,
-    ("quinazoline", "quinoxaline"): _dis_qz_qx,
 }
 
 

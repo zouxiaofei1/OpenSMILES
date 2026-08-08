@@ -8,8 +8,6 @@ import pytest
 from namepredict.constants import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.benzimidazole import _try_benzimidazole_parent
-from namepredict.layer2.scaffold.indole import _try_indole_parent
 from namepredict.layer2.scaffold.quinoline import _try_quinoline_parent
 from namepredict.layer2.scaffold.specs import (
     FUSED56_LABELS,
@@ -129,20 +127,6 @@ def test_plan_from_chain_naphthalene_10() -> None:
     plan = plan_from_chain(list(range(10)), "naphthalene", numbering_scaffold_facts("naphthalene", 10))
     assert plan is not None
     assert plan.labels == _NAPH_LABELS
-
-
-def test_parent_indole_scaffold_id() -> None:
-    parent = _try_indole_parent(analyze(_mol("c1ccc2[nH]ccc2c1")))
-    assert parent is not None
-    assert parent.get("kind") == "indole"
-    assert parent.get("scaffold_id") == "indole"
-    assert len(parent.get("chain") or []) == 9
-
-
-def test_parent_bim_scaffold_id() -> None:
-    parent = _try_benzimidazole_parent(analyze(_mol("c1ccc2[nH]cnc2c1")))
-    assert parent is not None
-    assert parent.get("scaffold_id") == "benzimidazole"
 
 
 def test_parent_quinoline_scaffold_id() -> None:

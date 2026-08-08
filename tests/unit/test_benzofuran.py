@@ -9,12 +9,6 @@ from __future__ import annotations
 import pytest
 
 from namepredict.constants import normalize_en, normalize_zh
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.fused56_mono import (
-    _try_benzofuran_parent,
-    _try_benzofuranamine_parent,
-)
 from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
@@ -61,55 +55,6 @@ def test_amine_not_octanamine() -> None:
     en = normalize_en(r.en)
     assert en == "benzofuran-2-amine"
     assert "octan" not in en
-
-
-def test_l2_parent_kind_unsub() -> None:
-    mol = preprocess("c1ccc2occc2c1")
-    assert mol is not None
-    parent = _try_benzofuran_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "benzofuran"
-    assert len(parent.get("chain") or []) == 9
-    assert parent.get("o_idx") is not None
-
-
-def test_l2_parent_kind_amine() -> None:
-    mol = preprocess("O1C(=CC2=C1C=CC=C2)N")
-    assert mol is not None
-    parent = _try_benzofuranamine_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "benzofuranamine"
-    assert parent.get("amine_c_idx") is not None
-    assert len(parent.get("chain") or []) == 9
-
-
-def test_l2_rejects_indole() -> None:
-    mol = preprocess("c1ccc2[nH]ccc2c1")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_benzofuran_parent(info) is None
-    assert _try_benzofuranamine_parent(info) is None
-
-
-def test_l2_rejects_furan() -> None:
-    mol = preprocess("c1ccoc1")
-    assert mol is not None
-    assert _try_benzofuran_parent(analyze(mol)) is None
-
-
-def test_l2_rejects_naphthalene() -> None:
-    mol = preprocess("c1ccc2ccccc2c1")
-    assert mol is not None
-    assert _try_benzofuran_parent(analyze(mol)) is None
-
-
-def test_simple_blocks_amine() -> None:
-    """Primary amine routes to benzofuranamine, not plain benzofuran."""
-    mol = preprocess("O1C(=CC2=C1C=CC=C2)N")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_benzofuran_parent(info) is None
-    assert _try_benzofuranamine_parent(info) is not None
 
 
 def test_methyl_locant_is_2_not_3() -> None:

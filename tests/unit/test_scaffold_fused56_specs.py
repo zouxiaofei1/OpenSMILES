@@ -6,21 +6,14 @@ from __future__ import annotations
 import pytest
 
 from namepredict.constants import normalize_en, normalize_zh
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.fused56_mono import _try_benzofuran_parent
-from namepredict.layer2.scaffold.benzazole import _try_benzothiazole_parent
-from namepredict.layer2.scaffold.builders.fused56 import (
-    FUSED56_LABELS,
-    scaffold_id_for_kind,
-)
 from namepredict.layer2.scaffold.specs import (
+    FUSED56_LABELS,
     FUSED56_SPECS,
     ScaffoldSpec,
     all_specs,
     get_spec,
+    numbering_scaffold_facts,
 )
-from namepredict.layer2.scaffold.specs import numbering_scaffold_facts
 from namepredict.layer4.locants.adapt import plan_from_chain
 from namepredict.namer import SMILESNNamer
 
@@ -38,12 +31,6 @@ POS_CASES = [
 
 # Negative: non-fused56 parents must not be fused56 specs.
 NEG_KINDS = ("benzene", "naphthalene", "cycloalkane", "furan")
-
-
-def _mol(smiles: str):
-    mol = preprocess(smiles)
-    assert mol is not None
-    return mol
 
 
 @pytest.mark.parametrize(
@@ -99,20 +86,6 @@ def test_e2e_fused56_names_stable(smiles, kind, en, zh) -> None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
 
 
-def test_parent_carries_scaffold_id() -> None:
-    parent = _try_benzofuran_parent(analyze(_mol("c1ccc2occc2c1")))
-    assert parent is not None
-    assert parent.get("kind") == "benzofuran"
-    assert parent.get("scaffold_id") == "benzofuran"
-    assert len(parent.get("chain") or []) == 9
-
-
-def test_btz_parent_scaffold_id() -> None:
-    parent = _try_benzothiazole_parent(analyze(_mol("c1ccc2scnc2c1")))
-    assert parent is not None
-    assert parent.get("scaffold_id") == "benzothiazole"
-
-
 def test_plan_from_chain_uses_spec_labels() -> None:
     chain = list(range(9))
     plan = plan_from_chain(chain, "benzofuran", numbering_scaffold_facts("benzofuran", len(chain)))
@@ -123,12 +96,6 @@ def test_plan_from_chain_uses_spec_labels() -> None:
 
 def test_plan_from_chain_benzene_none() -> None:
     assert plan_from_chain(list(range(6)), "benzene", numbering_scaffold_facts("benzene", 6)) is None
-
-
-def test_scaffold_id_helpers() -> None:
-    assert scaffold_id_for_kind("benzofuran") == "benzofuran"
-    assert scaffold_id_for_kind("benzothiazolamine") == "benzothiazolamine"
-    assert scaffold_id_for_kind("benzene") is None
 
 
 def test_l2_fused56_labels_are_parent_plan_authority() -> None:

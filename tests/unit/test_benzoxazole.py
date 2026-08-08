@@ -9,12 +9,6 @@ from __future__ import annotations
 import pytest
 
 from namepredict.constants import normalize_en, normalize_zh
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.benzazole import (
-    _try_benzoxazole_parent,
-    _try_benzoxazolamine_parent,
-)
 from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
@@ -60,56 +54,6 @@ def test_amine_not_methanamine() -> None:
     en = normalize_en(r.en)
     assert en == "1,3-benzoxazol-2-amine"
     assert "methanamine" not in en
-
-
-def test_l2_parent_kind_unsub() -> None:
-    mol = preprocess("c1ccc2ocnc2c1")
-    assert mol is not None
-    parent = _try_benzoxazole_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "benzoxazole"
-    assert len(parent.get("chain") or []) == 9
-    assert parent.get("o_idx") is not None
-    assert parent.get("n_idx") is not None
-
-
-def test_l2_parent_kind_amine() -> None:
-    mol = preprocess("Nc1nc2ccccc2o1")
-    assert mol is not None
-    parent = _try_benzoxazolamine_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "benzoxazolamine"
-    assert parent.get("amine_c_idx") is not None
-    assert len(parent.get("chain") or []) == 9
-
-
-def test_l2_rejects_benzothiazole() -> None:
-    mol = preprocess("c1nc2ccccc2s1")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_benzoxazole_parent(info) is None
-    assert _try_benzoxazolamine_parent(info) is None
-
-
-def test_l2_rejects_benzimidazole() -> None:
-    mol = preprocess("c1ccc2[nH]cnc2c1")
-    assert mol is not None
-    assert _try_benzoxazole_parent(analyze(mol)) is None
-
-
-def test_l2_rejects_anisole() -> None:
-    mol = preprocess("COc1ccccc1")
-    assert mol is not None
-    assert _try_benzoxazole_parent(analyze(mol)) is None
-
-
-def test_simple_blocks_amine() -> None:
-    """Primary 2-amine routes to benzoxazolamine, not plain benzoxazole."""
-    mol = preprocess("Nc1nc2ccccc2o1")
-    assert mol is not None
-    info = analyze(mol)
-    assert _try_benzoxazole_parent(info) is None
-    assert _try_benzoxazolamine_parent(info) is not None
 
 
 def test_bromo_locant_is_6() -> None:

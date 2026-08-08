@@ -80,10 +80,13 @@ try 函数的职责是：
    - `n_carbons` — 碳原子数
    - 环系特有的关键原子位置（如 `n_idx` 表示氮原子在环中的位置）
 
-参考现有实现（薄层 producer 位于 `scaffold/` 子目录）：
-- 五元杂芳: `scaffold/heteroarene5.py`
-- 稠杂环: `scaffold/quinoline.py` / `scaffold/indole.py` / `scaffold/fused56_mono.py`
+参考现有实现：
+- 保留名模板匹配 + 位置异构消歧: `scaffold/retained_templates.py`（芳/杂芳/稠杂环识别主路径）
+- 五元杂芳消歧: `scaffold/heteroarene5.py`
+- 稠杂环 10 原子路径: `scaffold/quinoline.py` / `scaffold/naphthalene.py`
+- 羰基母环适配器: `scaffold/benzoquinone.py` / `scaffold/anthraquinone.py` / `scaffold/chromenone.py`
 - 桥环/螺环: `scaffold/polycyclic_parent.py`
+- 注：旧 fused 杂环 producer 薄层（indole/indazole/benzimidazole/benzazole/fused56/fused56_mono）已随 producer 体系退役删除，识别统一走 ring_core + retained_templates + specs
 
 ### 2.2 接入骨架识别（ring_core）
 

@@ -9,9 +9,6 @@ from __future__ import annotations
 import pytest
 
 from namepredict.constants import normalize_en, normalize_zh
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.indole import _try_indole_parent
 from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
@@ -46,28 +43,6 @@ def test_unsub_not_octane() -> None:
     assert r.success
     assert normalize_en(r.en) == "1h-indole"
     assert "octane" not in normalize_en(r.en)
-
-
-def test_l2_parent_kind_unsub() -> None:
-    mol = preprocess("c1ccc2[nH]ccc2c1")
-    assert mol is not None
-    parent = _try_indole_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "indole"
-    assert len(parent.get("chain") or []) == 9
-    assert parent.get("nh_idx") is not None
-
-
-def test_l2_rejects_naphthalene() -> None:
-    mol = preprocess("c1ccc2ccccc2c1")
-    assert mol is not None
-    assert _try_indole_parent(analyze(mol)) is None
-
-
-def test_l2_rejects_imidazole() -> None:
-    mol = preprocess("c1cnc[nH]1")
-    assert mol is not None
-    assert _try_indole_parent(analyze(mol)) is None
 
 
 def test_methyl_locant_is_3_not_2() -> None:

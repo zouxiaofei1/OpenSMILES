@@ -131,9 +131,10 @@ FG 母体不走注册表，由 principal 管线的 typed 表达（`principal_exp
 
 `parent_skeleton._producer_scaffold_ids` 不再依赖 try 注册表，改为调用
 `scaffold/ring_scaffold.resolve_ring_scaffold`（经 `ring_core_fns()` 标 scaffold_id，再经
-`scaffold/specs` 的 `ScaffoldSpec` 解析编号身份）。各 `scaffold/*.py` 薄层模块仍提供
-`_try_*_parent(info) -> dict | None` 风格的完整 producer（如 `benzazole._try_benzothiazole_parent`、
-`fused56_mono._try_benzofuran_parent`），供 tests 直接验证与特定 kind 的独立装配。
+`scaffold/specs` 的 `ScaffoldSpec` 解析编号身份）。仅存的薄层模块仍提供
+`_try_*_parent(info) -> dict | None` 风格的完整 producer（如 `quinoline._try_quinoline_parent`），
+供 tests 直接验证与特定 kind 的独立装配；fused 杂环 producer 薄层（benzazole / fused56_mono /
+fused56 / indole / indazole / benzimidazole）已退役删除。
 
 > **源:** `E:\chem\src\namepredict\layer2\scaffold\ring_core.py`, `E:\chem\src\namepredict\layer2\scaffold\ring_scaffold.py`, `E:\chem\src\namepredict\layer2\scaffold\retained_templates.py`
 
@@ -647,10 +648,10 @@ flowchart LR
     end
 
     subgraph RingParents["scaffold 母环薄层"]
-        R1["benzazole / fused56_mono / indole / indazole / benzimidazole"]
-        R2["quinoline / naphthalene / anthraquinone / benzoquinone"]
-        R3["polycyclic_parent (桥环/螺环) / cyclo_pick / sat_hetero"]
-        R4["chromenone / benzodiazine / fused56 / heteroarene5"]
+        R1["quinoline / naphthalene / anthraquinone / benzoquinone"]
+        R2["chromenone / heteroarene5 / cyclo_pick / sat_hetero"]
+        R3["polycyclic_parent (桥环/螺环)"]
+        R4["retained_templates 模板匹配（fused 杂环识别主路径）"]
     end
 
     subgraph ChainAndFG["链状 / FG 母体"]
@@ -895,18 +896,19 @@ Layer3 接收 parent dict 后，遍历所有非 owned_atoms 的重原子（o_idx
 
 | 文件 | 职责 |
 |------|------|
-| `scaffold/benzazole.py` | 1,3-苯并噻唑 / 苯并噁唑 + amine（原 `benzothiazole` + `benzoxazole` 合并） |
-| `scaffold/fused56_mono.py` | 苯并呋喃 / 苯并噻吩 + FG 变体（原 `benzofuran` + `benzothiophene` 合并） |
-| `scaffold/fused56.py` | 5+6 稠环通用 helper (P-22.2.1 / P-25) |
-| `scaffold/indole.py` / `scaffold/indazole.py` / `scaffold/benzimidazole.py` | 稠杂环保留母体 |
+| `scaffold/retained_templates.py` | 保留名 SMILES 模板匹配 + 位置异构消歧（芳/杂芳/稠杂环识别主路径） |
 | `scaffold/quinoline.py` / `scaffold/naphthalene.py` | 10 原子路径稠环 |
 | `scaffold/anthraquinone.py` | 蒽醌（含原 `anthracene` 的 `_is_linear`） |
 | `scaffold/benzoquinone.py` | 苯醌（含原 `ortho_benzoquinone`） |
-| `scaffold/chromenone.py` / `scaffold/benzodiazine.py` / `scaffold/heteroarene5.py` | 其他保留母环 |
+| `scaffold/chromenone.py` / `scaffold/heteroarene5.py` | 其他保留母环 |
 | `scaffold/polycyclic_parent.py` | 桥环 / 螺环（原 `bridged_parent` + `spiro_parent` 合并） |
 | `scaffold/cyclo_pick.py` | 多环环烷烃选择 |
 | `scaffold/sat_hetero.py` / `scaffold/sat_hetero_stem.py` / `scaffold/hetero_a_names.py` | 饱和杂环 + stem |
-| `scaffold/builders/` | 骨架构建器 (carbocycle / fused56 / sat_hetero_repl) |
+| `scaffold/builders/` | 骨架构建器 (carbocycle / sat_hetero_repl) |
+
+已删除（producer 体系退役）：`scaffold/fused56.py`、`scaffold/fused56_mono.py`、`scaffold/benzazole.py`、
+`scaffold/indole.py`、`scaffold/indazole.py`、`scaffold/benzimidazole.py`、`scaffold/benzodiazine.py`、
+`scaffold/builders/fused56.py`。识别统一走 ring_core（@_register）+ retained_templates + specs。
 
 ### 归属与过滤 (Ownership & Gating)
 
