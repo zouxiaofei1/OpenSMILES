@@ -109,6 +109,7 @@ def _other_heavy(atom, parent: int) -> int | None:
     return None if parent not in ids else (ids - {parent}).pop()
 
 def _ch2_ph_at(mol: Mol, ch2: int, parent: int) -> set[int] | None:
+    return None
     atom = mol.GetAtomWithIdx(ch2)
     if not _is_open_ch2(atom):
         return None

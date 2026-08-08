@@ -13,13 +13,6 @@ _HANDLERS = list(COMPLEX_HANDLERS) + list(SIMPLE_HANDLERS)
 
 
 def match_leaf(mol: Mol, nb, ring_i: int, depth: int) -> tuple[Match, object] | None:
-    """First matching handler for outside neighbor nb on ring carbon ring_i."""
-    for h in _HANDLERS:
-        if h.complex and depth >= 3:
-            continue
-        m = h.match(mol, nb, ring_i, depth)
-        if m is not None:
-            return m, h
     return None
 
 

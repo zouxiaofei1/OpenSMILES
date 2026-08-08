@@ -16,16 +16,8 @@ def _make_amino(attach: int, n_idx: int, en: str = "amino", zh: str = "氨基",
 
 
 def _n_aryl_named(mol: Mol, start: int, n_idx: int, is_ch2: bool, owned):
-    ring = side_facts.benzyl_ring(mol, start, n_idx) if is_ch2 else side_facts.phenyl_ring(mol, start, n_idx)
-    if ring is None:
-        return None
-    kind = (side_facts.ArylArmKind.METHYLENE_C if is_ch2
-            else side_facts.ArylArmKind.DIRECT_C)
-    atoms = (start, *ring) if is_ch2 else tuple(ring)
-    fact = side_facts.ArylArmFact(kind, n_idx, start, start if is_ch2 else None, ring, atoms)
-    en0, zh0, _ = aryl_arm_name(mol, fact, owned)
-    base = [n_idx, *atoms]
-    return f"({en0})amino", f"({zh0})氨基", base + list(side_facts.aryl_leaves(mol, ring))
+    return None
+
 
 
 def _sec_n_side_name(mol: Mol, start: int, n_idx: int, owned):

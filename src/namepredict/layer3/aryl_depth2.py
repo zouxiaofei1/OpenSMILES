@@ -184,8 +184,4 @@ def _leaf_atoms_simple(mol: Mol, nb, ring_i: int, kind: str | None) -> set[int]:
 
 
 def _depth2_atoms_on(mol: Mol, ph: set[int], nb_outside, attach: int | None = None) -> set[int]:
-    out: set[int] = set()
-    for i in ph:
-        for nb in nb_outside(mol, i, ph):
-            out |= _leaf_atoms_one(mol, nb, i, attach)
-    return out
+    return None
