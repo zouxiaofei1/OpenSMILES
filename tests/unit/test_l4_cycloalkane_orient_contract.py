@@ -25,7 +25,6 @@ _KNOWN_CYCLOALKANE_KINDS = (
     "cycloalkane",
     "cycloalkanediol",
     "cycloalkanedione",
-    "cycloalkane_polycarboxylic",
     # Only cycloalkanecarboxylic is wired (typed_acid_kind derivation);
     # carbaldehyde/carbonitrile/etc. exo FG kinds are un-wired and not produced.
     "cycloalkanecarboxylic",

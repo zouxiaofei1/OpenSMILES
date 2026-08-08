@@ -58,17 +58,6 @@ class ArylLeafFact:
 
 
 @dataclass(frozen=True)
-class CarboxyalkylArm:
-    attachment: int
-    atoms: tuple[int, ...]
-    carboxyl: int
-
-
-# Compatibility alias for Round B1 callers.
-CarboxymethylArm = CarboxyalkylArm
-
-
-@dataclass(frozen=True)
 class SidePath:
     root: int
     atoms: tuple[int, ...]
@@ -149,28 +138,3 @@ def benzyl_ring(mol: Mol, root: int, parent: int) -> frozenset[int] | None:
 
 def aryl_leaves(mol: Mol, ring: frozenset[int]) -> frozenset[int]:
     return frozenset(aryl_sub._halo_atoms_on(mol, set(ring)))
-
-
-def _arm_path(mol: Mol, acid: int, parent: set[int]) -> tuple[int, tuple[int, ...]] | None:
-    path, previous, current = [], acid, acid
-    while True:
-        nexts = [n.GetIdx() for n in mol.GetAtomWithIdx(current).GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() != previous]
-        if len(nexts) != 1: return None
-        current = nexts[0]
-        if current in parent: return (current, tuple(reversed(path))) if path else None
-        path.append(current)
-        previous = path[-2] if len(path) > 1 else acid
-
-
-def _carboxyalkyl_arm(mol: Mol, acid: int, parent: set[int]) -> CarboxyalkylArm | None:
-    path = _arm_path(mol, acid, parent)
-    return CarboxyalkylArm(path[0], path[1], acid) if path else None
-
-
-def carboxyalkyl_arms(mol: Mol, chain: list[int], acids: list[int]) -> tuple[CarboxyalkylArm, ...]:
-    parent = set(chain)
-    facts = (_carboxyalkyl_arm(mol, acid, parent) for acid in acids)
-    return tuple(fact for fact in facts if fact is not None)
-
-
-carboxymethyl_arms = carboxyalkyl_arms

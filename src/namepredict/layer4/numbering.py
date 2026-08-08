@@ -187,10 +187,6 @@ def _orient_ring_pair(chain: list[int], parent: dict, key: str, subs: list) -> l
     return best
 def _orient_benzene_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "cooh_c_idxs", substituents)
-def _orient_cycloalkane_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    plan = choose_numbering(chain, "polyacid", double_bonds=parent.get("cooh_c_idxs"), sub_attach=[s["attach_idx"] for s in substituents], scaffold_id=parent.get("scaffold_id") or "")
-    return list(plan.atom_order)
-
 def _orient_benzenediol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "oh_c_idxs", substituents)
 def _orient_diazine(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -281,11 +277,7 @@ def _orient_alkenedioic(chain: list[int], parent: dict, substituents: list) -> l
 def _orient_diacid(chain: list[int], parent: dict, substituents: list) -> list[int]:
     if parent.get("double_bond") or parent.get("double_bonds"):
         return _orient_alkenedioic(chain, parent, substituents)
-    if parent.get("carboxymethyl_arms"):
-        return _orient_carboxymethyl_diacid(chain, substituents)
     return _orient_alkane(chain, substituents)
-def _orient_carboxymethyl_diacid(chain: list[int], subs: list) -> list[int]:
-    return _prefer_chain(chain, list(reversed(chain)), subs)
 def _orient_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return orient_polycarboxylic(chain, parent, _orient_pair)
 def _benzoic_orienters() -> dict:
@@ -325,7 +317,7 @@ def _unsat_orienters() -> dict:
             "alkene": _orient_alkene, "diacid": _orient_diacid, "diester": _orient_diacid,
             "polycarboxylic": _orient_polycarboxylic,
             "benzene_polycarboxylic": _orient_benzene_polycarboxylic,
-            "cycloalkane_polycarboxylic": _orient_cycloalkane_polycarboxylic, "polyene": _orient_polyene,
+            "polyene": _orient_polyene,
             "cyclopolyene": orient_cyclopolyene, "cycloalkene": _orient_cycloalkene,
             "alkyne": _orient_alkyne, "cycloalkane": _orient_cycloalkane, "benzene": _orient_cycloalkane,
             **_benzoic_orienters(), **_cyclo_exo_orienters(), **_bridged_orienters()}
@@ -556,7 +548,7 @@ def _sh_locants(oriented: dict, n: int) -> dict:
     sh = _sh_locant(oriented)
     return {"sh_locant": sh, "omit_sh_locant": _omit_sh(sh, n)}
 def _cooh_locants(oriented: dict) -> list[int] | None:
-    if oriented.get("kind") not in {"polycarboxylic", "benzene_polycarboxylic", "cycloalkane_polycarboxylic"}: return None
+    if oriented.get("kind") not in {"polycarboxylic", "benzene_polycarboxylic"}: return None
     return _pair_locs_on(oriented.get("chain") or [], oriented.get("cooh_c_idxs"))
 def _omit_ket_loc(oriented: dict, n_subs: int) -> bool:
     return _omit_ketone(oriented.get("kind"), n_subs, oriented, has_ene=_has_parent_ene)
