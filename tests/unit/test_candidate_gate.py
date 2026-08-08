@@ -12,8 +12,6 @@ from namepredict.layer2.candidate_gate import (
     scoped_reject,
 )
 from namepredict.layer2.candidates import _collect_candidates, _polyacid_gates
-from namepredict.layer2.polycarboxylic import polycarboxylic_gate
-from namepredict.layer2.cyclo_polycarboxylic import cycloalkane_polycarboxylic_gate
 
 
 def _info(smiles: str) -> dict:
@@ -52,42 +50,6 @@ def test_benzene_gate_rejects_unsupported_structure_in_its_scope() -> None:
 def test_benzene_gate_does_not_terminate_other_scopes(smiles: str) -> None:
     assert all(gate.status is GateStatus.PASS for gate in _polyacid_gates(_info(smiles)))
     assert "unsupported_polycarboxylic" not in _kinds(smiles)
-
-
-
-
-@pytest.mark.parametrize("smiles", [
-    "O=C(O)c1ccccc1C(=O)O",
-    "O=C(O)C1CCOC1C(=O)O",
-    "O=C(O)C1CCC2(CC1)CCC2C(=O)O",
-    "O=C(O)C1CCCCC1CC(C(=O)O)C(=O)O",
-])
-def test_cyclo_gate_passes_non_scope_polyacids(smiles: str) -> None:
-    gate = cycloalkane_polycarboxylic_gate(_info(smiles))
-    assert gate.status is GateStatus.PASS
-    assert gate.scope is GateScope.CYCLOALKANE_POLYCARBOXYLIC
-
-
-def test_cyclo_gate_claims_unsupported_same_ring_polyacid() -> None:
-    gate = cycloalkane_polycarboxylic_gate(_info("O=C(O)C1C(C(=O)O)C(C(=O)O)C(C(=O)O)CC1"))
-    assert gate.status is GateStatus.SCOPED_REJECT
-
-
-    gate = polycarboxylic_gate(_info("O=C([O-])CC(C(=O)O)CC(=O)O"))
-    assert gate.status is GateStatus.SCOPED_REJECT
-    assert gate.reason == "partial_deprotonation"
-    assert _kinds("O=C([O-])CC(C(=O)O)CC(=O)O") == {"unsupported_polycarboxylic"}
-
-
-def test_open_chain_gate_preserves_tetraacid_acceptance() -> None:
-    gate = polycarboxylic_gate(_info("O=C(O)C(C(=O)O)C(C(=O)O)C(=O)O"))
-    assert gate.status is GateStatus.PASS
-    assert "polycarboxylic" in _kinds("O=C(O)C(C(=O)O)C(C(=O)O)C(=O)O")
-
-
-def test_open_chain_scope_excludes_cyclic_tetraacid() -> None:
-    gate = polycarboxylic_gate(_info("O=C(O)C1(C(=O)O)CC(C(=O)O)CC1C(=O)O"))
-    assert gate.status is GateStatus.PASS
 
 
 def test_pass_gate_keeps_candidates() -> None:

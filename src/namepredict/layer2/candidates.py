@@ -9,11 +9,7 @@ from __future__ import annotations
 from namepredict.layer2.parent_core import _longest_chain, _parent_dict
 from namepredict.layer2.parent_candidate import with_principal_group_contract
 from namepredict.layer2.principal_parent import rule_driven_parent_candidates
-from namepredict.layer2.arene_carbonyl import benzene_polycarboxylic_gate
 from namepredict.layer2.candidate_gate import CandidateGate, GateScope, gate_result
-from namepredict.layer2.carboxymethyl_diacid import is_carboxymethyl_diacid
-from namepredict.layer2.polycarboxylic import polycarboxylic_gate
-from namepredict.layer2.cyclo_polycarboxylic import cycloalkane_polycarboxylic_gate
 
 
 def _alkane_fallback(info: dict) -> dict:
