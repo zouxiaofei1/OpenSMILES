@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 from rdkit.Chem import Mol
-import namepredict.layer3.side_facts as side_facts
-from namepredict.layer3.aryl_names import aryl_arm_name
 
 
 def _make_amino(attach: int, n_idx: int, en: str = "amino", zh: str = "氨基",

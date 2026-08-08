@@ -384,10 +384,3 @@ def _disjoint_cover(sets: list[set[int]], outside: set[int]) -> bool:
         seen |= s
     return seen == outside
 
-# Ring outer alkoxy topology lives in side_alkoxy (shared by ring_parent / L3).
-from namepredict.layer3.side_alkoxy import (  # noqa: E402
-    _outer_alkoxy_n,
-    _outer_atoms,
-)
-
-

@@ -3,7 +3,6 @@ from __future__ import annotations
 from rdkit.Chem import Mol
 
 import namepredict.layer3.side_facts as side_facts
-from namepredict.layer3.alkoxy_names import _extract_alkoxys
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.amino_side import _extract_aminos as _extract_aminos_impl
 

@@ -7,9 +7,8 @@ from enum import Enum, auto
 
 from rdkit.Chem import Atom, Mol
 
-from namepredict.layer3 import aryl_sub, side_alkoxy, side_alkyl
-from namepredict.layer3.leaves.protocol import ArylLeafKind, LeafTopology
-from namepredict.layer3.leaves.registry import match_leaf_topology
+from namepredict.layer3 import side_alkyl
+from namepredict.layer3.leaves.protocol import ArylLeafKind
 
 
 class AlkylShape(Enum):
@@ -57,84 +56,14 @@ class ArylLeafFact:
     extra_atom: int
 
 
-@dataclass(frozen=True)
-class SidePath:
-    root: int
-    atoms: tuple[int, ...]
-
-
-@dataclass(frozen=True)
-class ArylArmFact:
-    kind: ArylArmKind
-    attachment: int
-    outer: int
-    bridge: int | None
-    ring: frozenset[int]
-    atoms: tuple[int, ...]
-
-
-@dataclass(frozen=True)
-class AlkoxyFact:
-    root: int
-    oxygen: int
-    code: int
-    atoms: tuple[int, ...]
-
-
-_SHAPE_MATCHERS = {
-    AlkylShape.C2_VINYL: side_alkyl._is_vinyl,
-    AlkylShape.C3_ALLYL: side_alkyl._is_allyl,
-    AlkylShape.C3_ISOPROPENYL: side_alkyl._is_isopropenyl,
-    AlkylShape.C3_BRANCH_AT_ROOT: side_alkyl._is_isopropyl,
-    AlkylShape.C4_BRANCH_AT_SECOND: side_alkyl._is_sec_butyl,
-    AlkylShape.C4_TRIPLE_BRANCH_AT_ROOT: side_alkyl._is_tert_butyl,
-    AlkylShape.C4_BRANCH_AFTER_ROOT: side_alkyl._is_isobutyl,
-    AlkylShape.C5_ASYMMETRIC_ROOT_BRANCH: side_alkyl._is_2_methylbutan_2_yl,
-    AlkylShape.C5_PRENYL: side_alkyl._is_prenyl,
-    AlkylShape.C5_BRANCH_NEAR_LEAF: side_alkyl._is_isopentyl,
-    AlkylShape.C5_DOUBLE_BRANCH_AFTER_ROOT: side_alkyl._is_neopentyl,
-    AlkylShape.C1_THREE_HALOGEN_LEAVES: side_alkyl._is_trifluoromethyl,
-}
-
-
-def _path(root: int, atoms: list[int] | None) -> SidePath | None:
-    return SidePath(root, tuple(atoms)) if atoms is not None else None
-
-
-def _leaf_fact(match: LeafTopology) -> ArylLeafFact:
-    return ArylLeafFact(match.kind, match.site, match.atoms, match.value,
-                        match.child_ring, match.child_attach,
-                        match.child_parent, match.extra_atom)
-
-
 def ring_leaf(mol: Mol, atom: Atom, ring_atom: int, depth: int) -> ArylLeafFact | None:
-    got = match_leaf_topology(mol, atom, ring_atom, depth)
-    return _leaf_fact(got) if got is not None else None
+    """Leaf matching retired in 446ce69; kept as typed contract stub."""
+    return None
 
 
 def carbon_neighbors(mol: Mol, atom: int) -> list[int]:
     return side_alkyl._c_neighbors(mol, atom)
 
 
-def alkyl_shape(mol: Mol, root: int, parent: set[int], shape: AlkylShape) -> SidePath | None:
-    return _path(root, _SHAPE_MATCHERS[shape](mol, root, parent))
 
 
-def outer_alkoxy(mol: Mol, root: int, oxygen: int) -> AlkoxyFact | None:
-    code = side_alkoxy._outer_alkoxy_n(mol, root, oxygen)
-    atoms = side_alkoxy._outer_atoms(mol, root, oxygen, code) if code else None
-    return AlkoxyFact(root, oxygen, code, tuple(atoms)) if atoms else None
-
-
-def phenyl_ring(mol: Mol, root: int, parent: int) -> frozenset[int] | None:
-    ring = aryl_sub._phenyl_at(mol, root, parent)
-    return frozenset(ring) if ring else None
-
-
-def benzyl_ring(mol: Mol, root: int, parent: int) -> frozenset[int] | None:
-    ring = aryl_sub._ch2_ph_at(mol, root, parent)
-    return frozenset(ring) if ring else None
-
-
-def aryl_leaves(mol: Mol, ring: frozenset[int]) -> frozenset[int]:
-    return frozenset(aryl_sub._halo_atoms_on(mol, set(ring)))

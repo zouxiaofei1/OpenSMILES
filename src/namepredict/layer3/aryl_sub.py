@@ -9,14 +9,6 @@ from rdkit.Chem import Mol
 
 from namepredict.constants import C, H
 
-from namepredict.layer3.aryl_depth2 import (
-    _depth2_atoms_on,
-)
-from namepredict.layer3.leaves.registry import (
-    match_leaf_kind as _recurse_leaf_kind,
-    nested_leaf_atoms as _nested_leaf_atoms,
-)
-
 from namepredict.constants import HALO_Z as _HALO
 
 def _is_arom_c6(mol: Mol, atoms) -> bool:
@@ -57,7 +49,7 @@ def _side_leaf_kind(mol: Mol, nb, ring_i: int) -> str | None:
         return "halo"
     if nb.GetAtomicNum() == C and _is_terminal_me_leaf(mol, nb.GetIdx(), ring_i):
         return "me"
-    return _recurse_leaf_kind(mol, nb, ring_i)
+    return None
 
 def _count_side_leaves(mol: Mol, ring: set[int], attach: int, parent: int) -> int | None:
     """Count terminal halo + methyl leaves on Ph (exclude parent link)."""
@@ -210,20 +202,6 @@ def _ring_benzyls(mol: Mol, parent: set[int]) -> list[dict]:
             out.append(one)
     return out
 
-def _simple_leaf_atoms(mol: Mol, ph: set[int]) -> set[int]:
-    out: set[int] = set()
-    for i in ph:
-        for nb in _nb_outside(mol, i, ph):
-            if _is_terminal_halo(nb):
-                out.add(nb.GetIdx())
-            elif nb.GetAtomicNum() == C and _is_terminal_me_leaf(mol, nb.GetIdx(), i):
-                out.add(nb.GetIdx())
-    return out
-
-def _halo_atoms_on(mol: Mol, ph: set[int], attach: int | None = None) -> set[int]:
-    """Halo + methyl + depth-2 leaf atom indices on Ph (legacy name)."""
-    return _simple_leaf_atoms(mol, ph) | _depth2_atoms_on(mol, ph, _nb_outside, attach)
-
 def _arm_attach_parent(mol: Mol, p: dict) -> tuple[int, int]:
     if "ch2" in p:
         return _ph_bridge_attach(mol, p["ph"], p["ch2"]), p["ch2"]
@@ -232,7 +210,7 @@ def _arm_attach_parent(mol: Mol, p: dict) -> tuple[int, int]:
 
 def _one_arm_atoms(mol: Mol, p: dict) -> set[int]:
     att, parent = _arm_attach_parent(mol, p)
-    nested = _nested_leaf_atoms(mol, p["ph"], att, parent)
+    nested = set(p["ph"])
     return set(p["atoms"]) | nested
 
 def _aryl_atoms(info: dict, parent: set[int]) -> set[int]:
