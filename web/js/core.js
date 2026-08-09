@@ -22,6 +22,8 @@ export const API = {
   settings: "/api/v1/settings",
   wiki: "/api/v1/wiki",
   wikiDoc: "/api/v1/wiki/doc",
+  iupac: "/api/v1/iupac",
+  iupacDoc: "/api/v1/iupac/doc",
   gitCommits: "/api/v1/git/commits",
 };
 
@@ -64,6 +66,7 @@ export const state = {
   cgSvgLoading: false,
   cgSourceTotal: 0,
   wikiCurrent: "",
+  iupacCurrent: "",
   cgRank: {
     calls: { asc: false, all: false },
     time: { asc: false, all: false },

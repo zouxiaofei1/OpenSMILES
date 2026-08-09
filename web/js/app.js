@@ -11,6 +11,7 @@ import { loadCodeAnalysis, bindCodeAnalysis } from "./code-analysis.js";
 import { loadCallGraph, loadCallGraphSvg, bindCallGraph } from "./callgraph.js";
 import { initTheme, loadSettings, bindSettings } from "./settings.js";
 import { loadWiki, bindWiki } from "./wiki.js";
+import { loadIupac, bindIupac } from "./iupac.js";
 import { initHistoryPicker } from "./history.js";
 
 /* ---------- Page switching ---------- */
@@ -36,6 +37,7 @@ function switchPage(name) {
   var debugPage = document.getElementById("debug-page");
   var settingsPage = document.getElementById("settings-page");
   var wikiPage = document.getElementById("wiki-page");
+  var iupacPage = document.getElementById("iupac-page");
   // Hide all first
   if (namerLayout) namerLayout.classList.add("hidden");
   if (bmPage) bmPage.classList.add("hidden");
@@ -46,6 +48,7 @@ function switchPage(name) {
   if (debugPage) debugPage.classList.add("hidden");
   if (settingsPage) settingsPage.classList.add("hidden");
   if (wikiPage) wikiPage.classList.add("hidden");
+  if (iupacPage) iupacPage.classList.add("hidden");
   // Stop polling
   stopBmPolling();
   stopBrPolling();
@@ -78,6 +81,9 @@ function switchPage(name) {
   } else if (name === "wiki") {
     if (wikiPage) wikiPage.classList.remove("hidden");
     loadWiki();
+  } else if (name === "iupac") {
+    if (iupacPage) iupacPage.classList.remove("hidden");
+    loadIupac();
   } else {
     if (namerLayout) namerLayout.classList.remove("hidden");
   }
@@ -104,6 +110,7 @@ function bind() {
   bindCallGraph();
   bindSettings();
   bindWiki();
+  bindIupac();
 }
 
 async function init() {

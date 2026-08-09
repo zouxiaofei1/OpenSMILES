@@ -2534,6 +2534,10 @@ details.mol-details pre {
 
 .wiki-doc a { color: var(--color-accent); }
 
+/* IUPAC CN translation page: reuses .wiki-* layout; wider sidebar for zh titles */
+.iupac-page .wiki-sidebar { width: 300px; }
+.iupac-page .wiki-file { white-space: normal; }
+
 /* History version picker (topbar right) */
 .history-picker { display: flex; align-items: center; gap: var(--space-sm); }
 .history-picker .input.history-input { max-width: 320px; min-height: 34px; font-size: 13px; padding: 4px 12px; }

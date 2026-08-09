@@ -20,6 +20,7 @@ from server.routes_code_analysis import router as code_analysis_router
 from server.routes_call_graph import router as call_graph_router
 from server.routes_settings import router as settings_router
 from server.routes_wiki import router as wiki_router
+from server.routes_iupac import IUPAC_DIR, router as iupac_router
 from server.routes_history import router as history_router
 
 app = FastAPI(title="ChemAgent Namer", version="0.1.0")
@@ -32,6 +33,7 @@ app.include_router(code_analysis_router)
 app.include_router(call_graph_router)
 app.include_router(settings_router)
 app.include_router(wiki_router)
+app.include_router(iupac_router)
 app.include_router(history_router)
 
 
@@ -64,6 +66,10 @@ class NoCacheHTMLJSStaticFiles(StaticFiles):
             response.headers["Pragma"] = "no-cache"
         return response
 
+
+# IUPAC CN translation figures (relative image links rewritten to /iupac-cn/...).
+# Mounted before the web static fallback so figure paths win.
+app.mount("/iupac-cn", StaticFiles(directory=str(IUPAC_DIR)), name="iupac_cn")
 
 # Static UI last so /api/* and /health win over StaticFiles.
 app.mount("/", NoCacheHTMLJSStaticFiles(directory="web", html=True), name="web")
