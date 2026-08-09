@@ -28,15 +28,41 @@ class DebugBody(BaseModel):
 
 
 def _mol_info(mol) -> dict:
-    """Serializable subset of Mol."""
+    """Serializable subset of Mol, incl. raw atom/bond tables for the debug UI.
+
+    The `atoms` / `bonds` / `smiles` fields mirror the full RDKit graph so the
+    frontend can expand the raw molecule without the Mol object ever crossing
+    the API boundary (JSON has no object references).
+    """
     from collections import Counter
     elem = Counter()
+    atoms = []
     for a in mol.GetAtoms():
         elem[a.GetSymbol()] += 1
+        atoms.append({
+            "idx": a.GetIdx(),
+            "symbol": a.GetSymbol(),
+            "charge": a.GetFormalCharge(),
+            "h": a.GetTotalNumHs(),
+            "aromatic": a.GetIsAromatic(),
+            "degree": a.GetDegree(),
+            "nbrs": [n.GetIdx() for n in a.GetNeighbors()],
+        })
+    bonds = []
+    for b in mol.GetBonds():
+        bonds.append({
+            "a": b.GetBeginAtomIdx(),
+            "b": b.GetEndAtomIdx(),
+            "order": int(b.GetBondTypeAsDouble()),
+            "aromatic": b.GetIsAromatic(),
+        })
     return {
         "num_atoms": mol.GetNumAtoms(),
         "num_bonds": mol.GetNumBonds(),
         "composition": " ".join(f"{e}={n}" for e, n in sorted(elem.items())),
+        "smiles": Chem.MolToSmiles(mol),
+        "atoms": atoms,
+        "bonds": bonds,
     }
 
 

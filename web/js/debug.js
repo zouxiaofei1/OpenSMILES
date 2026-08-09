@@ -103,12 +103,17 @@ function renderDebugLayer(key, l) {
 }
 
 function renderDebugL0(l) {
-  return '<dl class="debug-kv">' +
+  var html = '<dl class="debug-kv">' +
     '<dt>SMILES</dt><dd>' + escapeHtml(l.smiles || "") + '</dd>' +
     '<dt>Atoms</dt><dd>' + l.num_atoms + '</dd>' +
     '<dt>Bonds</dt><dd>' + l.num_bonds + '</dd>' +
-    '<dt>Composition</dt><dd>' + escapeHtml(l.composition || "") + '</dd>' +
-    '</dl>';
+    '<dt>Composition</dt><dd>' + escapeHtml(l.composition || "") + '</dd>';
+  if (l.atoms || l.bonds) {
+    html += '<dt>raw graph</dt><dd><details class="mol-details"><summary>show atoms / bonds</summary><pre class="json-block">' +
+      escapeHtml(JSON.stringify({ smiles: l.smiles, atoms: l.atoms, bonds: l.bonds }, null, 2)) + '</pre></details></dd>';
+  }
+  html += '</dl>';
+  return html;
 }
 
 function renderDebugL1(l) {
@@ -116,7 +121,9 @@ function renderDebugL1(l) {
   html += '<dt>n_carbons</dt><dd>' + l.n_carbons + '</dd>';
   html += '<dt>n_ring_systems</dt><dd>' + l.n_ring_systems + '</dd>';
   html += '<dt>n_rings</dt><dd>' + l.n_rings + '</dd>';
-  html += '<dt>molecule</dt><dd>' + (l.mol ? (l.mol.num_atoms + ' atoms, ' + l.mol.num_bonds + ' bonds') : '—') + '</dd>';
+  html += '<dt>molecule</dt><dd>' + (l.mol ? (l.mol.num_atoms + ' atoms, ' + l.mol.num_bonds + ' bonds' +
+    '<details class="mol-details"><summary>show raw Mol graph</summary><pre class="json-block">' +
+    escapeHtml(JSON.stringify(l.mol, null, 2)) + '</pre></details>') : '—') + '</dd>';
   html += '</dl>';
 
   // Ring systems
@@ -149,33 +156,52 @@ function renderDebugL1(l) {
     html += '</tbody></table></div>';
   }
 
-  // FG flags
+  // Functional Groups: every has_* flag + every FG entry list with its content
   html += '<div class="debug-sub"><div class="debug-sub-title">Functional Groups</div>';
-  var fgMap = [
-    ['has_acid','COOH'],['has_alcohol','OH'],['has_alkene','C=C'],['has_alkyne','C≡C'],
-    ['has_amide','CON'],['has_amine','NH2/NH'],['has_anhydride','(CO)2O'],['has_boronic','B(OH)2'],
-    ['has_carbamate','OCON'],['has_carbonate','OCOO'],['has_ester','COOR'],['has_ether','C-O-C'],
-    ['has_guanidine','N-C(=N)N'],['has_hydrazine','N-N'],['has_isocyanate','NCO'],
-    ['has_isothiocyanate','NCS'],['has_ketone','C=O'],['has_nitrile','C≡N'],['has_nitro','NO2'],
-    ['has_phosphate','OPO3'],['has_sulfide','C-S-C'],['has_sulfonamide','SO2N'],
-    ['has_sulfonate','SO3R'],['has_sulfone','SO2'],['has_sulfonic_acid','SO3H'],
-    ['has_sulfonyl_chloride','SO2Cl'],['has_sulfoxide','SO'],['has_thiol','SH'],['has_urea','NCON'],
-  ];
+  var fgMap = {
+    has_acid:'COOH', has_alcohol:'OH', has_aldehyde:'CHO', has_alkene:'C=C', has_alkyne:'C≡C',
+    has_acyl_chloride:'COCl', has_amide:'CON', has_amine:'NH2/NH', has_anhydride:'(CO)2O', has_boronic:'B(OH)2',
+    has_carbamate:'OCON', has_carbonate:'OCOO', has_ester:'COOR', has_ether:'C-O-C',
+    has_guanidine:'N-C(=N)N', has_hydrazine:'N-N', has_isocyanate:'NCO',
+    has_isothiocyanate:'NCS', has_ketone:'C=O', has_nitrile:'C≡N', has_nitro:'NO2',
+    has_phosphate:'OPO3', has_phosphonic:'P(OH)2O', has_sulfide:'C-S-C', has_sulfonamide:'SO2N',
+    has_sulfonate:'SO3R', has_sulfone:'SO2', has_sulfonic_acid:'SO3H',
+    has_sulfonyl_chloride:'SO2Cl', has_sulfoxide:'SO', has_thiol:'SH', has_urea:'NCON',
+  };
+  var flagKeys = Object.keys(l).filter(function (k) { return k.indexOf("has_") === 0; });
   html += '<div class="summary-row">';
-  for (var k = 0; k < fgMap.length; k++) {
-    var f = fgMap[k];
-    if (l[f[0]] === true) html += '<span class="chip accent">' + f[1] + '</span>';
+  for (var i = 0; i < flagKeys.length; i++) {
+    var k = flagKeys[i];
+    if (l[k] === true) {
+      html += '<span class="chip accent" title="' + escapeHtml(k) + '">' + escapeHtml(fgMap[k] || k) + '</span>';
+    }
   }
   html += '</div>';
-  html += '<span class="small muted-text">hydroxyls=' + (l.hydroxyls||[]).length +
-    ' amines=' + (l.amines||[]).length +
-    ' carboxyls=' + (l.carboxyls||[]).length +
-    ' esters=' + (l.esters||[]).length +
-    ' ethers=' + (l.ethers||[]).length +
-    ' ketones=' + (l.ketones||[]).length +
-    ' amides=' + (l.amides||[]).length +
-    ' dbl_bonds=' + (l.double_bonds||[]).length + '</span>';
-  html += '</div>';
+  var off = flagKeys.filter(function (k) { return l[k] !== true; });
+  if (off.length) {
+    html += '<div class="fg-flags-off">' + off.map(function (k) {
+      return '<span class="fg-flag-off" title="' + escapeHtml(k) + '">' + escapeHtml(fgMap[k] || k) + '</span>';
+    }).join('') + '</div>';
+  }
+
+  // FG entry lists (dynamic: any list key in the info dict that is not structural)
+  var STRUCT_KEYS = { ring_systems: 1, rings: 1, carbon_ids: 1, mol: 1 };
+  var entryKeys = Object.keys(l).filter(function (k) {
+    return Array.isArray(l[k]) && l[k].length && !STRUCT_KEYS[k];
+  });
+  if (entryKeys.length) {
+    html += '<div class="fg-entries"><table class="subst-table"><thead><tr><th>FG</th><th>Count</th><th>Entries</th></tr></thead><tbody>';
+    for (var j = 0; j < entryKeys.length; j++) {
+      var ek = entryKeys[j];
+      html += '<tr><td>' + escapeHtml(ek) + '</td><td>' + l[ek].length + '</td><td class="atom-list">' +
+        escapeHtml(JSON.stringify(l[ek])) + '</td></tr>';
+    }
+    html += '</tbody></table></div>';
+  }
+
+  // Raw info dict fallback: everything else (carbon_ids, fg_inventory, ...)
+  html += '<details class="mol-details"><summary>show raw L1 info dict (' + Object.keys(l).length + ' keys)</summary>' +
+    '<pre class="json-block">' + escapeHtml(JSON.stringify(l, null, 2)) + '</pre></details>';
 
   return html;
 }

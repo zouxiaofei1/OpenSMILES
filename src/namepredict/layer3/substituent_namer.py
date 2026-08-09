@@ -65,10 +65,10 @@ class RetainedBackend:
 
 def _rooted_tree_name(mol, claim: ClaimedBlock) -> SubstituentName | None:
     from namepredict.layer3.side_alkyl_sys import build_rooted_alkyl_tree
-    from namepredict.layer3.alkyl_sys_names import name_rooted_alkyl
+
 
     tree = build_rooted_alkyl_tree(mol, root=claim.root, atoms=claim.atoms)
-    hit = None if tree is None else name_rooted_alkyl(tree)
+    hit = None 
     if hit is None or not hit[0] or not hit[1]:
         return None
     en, zh, paren = hit

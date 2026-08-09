@@ -61,9 +61,11 @@ def ring_leaf(mol: Mol, atom: Atom, ring_atom: int, depth: int) -> ArylLeafFact 
     return None
 
 
+from namepredict.constants import C, F, H, HALO_Z as _HALO_Z
 def carbon_neighbors(mol: Mol, atom: int) -> list[int]:
-    return side_alkyl._c_neighbors(mol, atom)
-
+    #return side_alkyl._c_neighbors(mol, atom)
+    atom = mol.GetAtomWithIdx(atom)
+    return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == C]
 
 
 

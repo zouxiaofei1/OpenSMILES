@@ -8,7 +8,7 @@ from namepredict.layer3.aryl_sub import (
     _arom_c6_ring_lists, _is_unfused_benzene_ring,
 )
 from namepredict.layer3.side_alkyl import (
-    _disjoint_cover, _is_cf3_carbon, _is_cf3_fluoro, _is_omega_halo_c,
+    _disjoint_cover,
     _is_side_halo, _side_sets,
 )
 
@@ -48,11 +48,7 @@ def _pure_c_bonds(mol: Mol, idx: int) -> bool:
             return False
     return True
 
-def _pure_alkyl_outside(mol: Mol, outside: list[int]) -> bool:
-    return all(
-        _is_cf3_carbon(mol, i) or _is_omega_halo_c(mol, i) or _pure_c_bonds(mol, i)
-        for i in outside
-    )
+
 
 def _ring_side_starts(
     mol: Mol, ring_set: set[int], exclude: set[int] | None = None,

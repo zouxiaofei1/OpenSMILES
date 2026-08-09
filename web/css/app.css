@@ -2242,6 +2242,44 @@ select.input {
   word-break: break-all;
 }
 
+/* Debug: collapsible raw data (molecule graph / full info dict) */
+details.mol-details {
+  margin-top: 4px;
+}
+
+details.mol-details summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--color-info-soft);
+  font-family: var(--mono);
+  user-select: none;
+}
+
+details.mol-details summary:hover {
+  text-decoration: underline;
+}
+
+details.mol-details pre {
+  margin-top: 6px;
+}
+
+/* Debug: all has_* flags, present vs absent */
+.fg-flags-off {
+  margin-top: 6px;
+  line-height: 1.9;
+}
+
+.fg-flag-off {
+  font-size: 11px;
+  color: var(--color-muted-text-dim);
+  margin-right: 10px;
+  white-space: nowrap;
+}
+
+.fg-entries {
+  margin-top: var(--space-md);
+}
+
 .status-dot {
   display: inline-block;
   width: 8px;
