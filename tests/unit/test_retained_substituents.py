@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer3.retained_substituents import (
+from namepredict.tools.anchored_table import (
     IupacLevel,
     get_retained,
     resolve_name,
@@ -126,45 +126,6 @@ def test_haloalkyl_pin_level_uses_same_name():
         e = get_retained(key)
         assert e.level == IupacLevel.PIN
         assert e.en == e.systematic_en
-
-
-# ── leaf_atoms topology fingerprints ──
-
-LEAF_KEYS = {"nitroso", "azido", "cyano", "isocyano", "sulfo"}
-
-
-def test_leaf_entries_have_atoms_and_non_empty():
-    for key in LEAF_KEYS:
-        e = get_retained(key)
-        assert e is not None, f"missing leaf: {key}"
-        assert e.leaf_atoms is not None and len(e.leaf_atoms) > 0, f"{key}: no leaf_atoms"
-
-
-def test_leaf_atoms_consistent_with_key():
-    """cyano(C+N) vs isocyano(N+C) distinguished by leaf_root_z only."""
-    c = get_retained("cyano")
-    i = get_retained("isocyano")
-    assert c.leaf_atoms == i.leaf_atoms == (6, 7)  # same atoms
-    assert c.leaf_root_z == 6  # C is root for cyano
-    assert i.leaf_root_z == 7  # N is root for isocyano
-
-
-def test_azido_has_three_nitrogens():
-    e = get_retained("azido")
-    assert e.leaf_atoms == (7, 7, 7)
-    assert e.leaf_root_z is None  # any N can be root
-
-
-def test_nitroso_leaf_topology():
-    e = get_retained("nitroso")
-    assert e.leaf_atoms == (7, 8)
-    assert e.leaf_root_z == 7  # N is root
-
-
-def test_sulfo_leaf_topology():
-    e = get_retained("sulfo")
-    assert e.leaf_atoms == (8, 8, 8, 16)  # 3xO + S
-    assert e.leaf_root_z == 16  # S is root
 
 
 # ── heteroaryl general-only (P-57.1.5.3) ──

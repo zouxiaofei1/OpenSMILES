@@ -79,12 +79,6 @@ def _ring_nitro_atoms(info: dict, ring_set: set[int]) -> set[int]:
             out.update(n.get("o_idxs") or [])
     return out
 
-def _outside_hetero_ok(atom, ring_set: set[int], allow: set[int]) -> bool:
-    if atom.GetAtomicNum() in (1, 6) or atom.GetIdx() in ring_set:
-        return True
-    if atom.GetIdx() in allow or _is_ring_halo(atom, ring_set):
-        return True
-    return _is_cf3_fluoro(atom) or _is_side_halo(atom)
 
 def _no_hetero_outside(mol: Mol, ring_set: set[int], allowed: set[int] | None = None) -> bool:
     allow = allowed or set()
