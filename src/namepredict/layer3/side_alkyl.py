@@ -16,24 +16,6 @@ def _is_side_halo(atom) -> bool:
         return False
     return not heavies[0].IsInRing()
 
-def _terminal_halo_z(mol: Mol, idx: int) -> int | None:
-    """Atomic number of the single terminal halo on carbon, else None."""
-    atom = mol.GetAtomWithIdx(idx)
-    if atom.GetAtomicNum() != C or atom.IsInRing():
-        return None
-    halos = [n for n in atom.GetNeighbors() if n.GetAtomicNum() in _HALO_Z]
-    if len(halos) != 1:
-        return None
-    ok = all(n.GetAtomicNum() in (1, 6) or n.GetAtomicNum() in _HALO_Z for n in atom.GetNeighbors())
-    return halos[0].GetAtomicNum() if ok else None
-
-
-
-# Topology-only side recognition for parent gates (not a naming-mode table).
-_TOPOLOGY_SIDE_PROBES = (
-
-)
-
 def _first_side(mol: Mol, start: int, chain: set[int], probes) -> list[int] | None:
     for probe in probes:
         got = probe(mol, start, chain)
@@ -42,7 +24,7 @@ def _first_side(mol: Mol, start: int, chain: set[int], probes) -> list[int] | No
     return None
 
 def _side_atoms(mol: Mol, start: int, chain: set[int]) -> list[int] | None:
-    return _first_side(mol, start, chain, _TOPOLOGY_SIDE_PROBES)
+    return _first_side(mol, start, chain, ())
 
 def _side_sets(mol: Mol, chain: set[int], starts: list[int]) -> list[set[int]] | None:
     sets: list[set[int]] = []

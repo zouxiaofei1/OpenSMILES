@@ -8,7 +8,7 @@ from enum import Enum, auto
 from rdkit.Chem import Atom, Mol
 
 from namepredict.layer3 import side_alkyl
-from namepredict.layer3.leaves.protocol import ArylLeafKind
+
 
 
 class AlkylShape(Enum):
@@ -44,21 +44,6 @@ class HeteroarylLeaf(Enum):
     ALKOXY = auto()
 
 
-@dataclass(frozen=True)
-class ArylLeafFact:
-    kind: ArylLeafKind
-    site: int
-    atoms: frozenset[int]
-    value: int
-    child_ring: frozenset[int]
-    child_attach: int
-    child_parent: int
-    extra_atom: int
-
-
-def ring_leaf(mol: Mol, atom: Atom, ring_atom: int, depth: int) -> ArylLeafFact | None:
-    """Leaf matching retired in 446ce69; kept as typed contract stub."""
-    return None
 
 
 from namepredict.constants import C, F, H, HALO_Z as _HALO_Z
