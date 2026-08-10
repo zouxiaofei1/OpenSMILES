@@ -26,17 +26,37 @@ function fmtSec(s) {
   return m + "m " + sec + "s";
 }
 
+async function loadBrDatasets() {
+  var sel = document.getElementById("br-data");
+  if (!sel) return;
+  try {
+    var data = await api(API.benchmarkRunDatasets);
+    if (data && data.ok && Array.isArray(data.datasets)) {
+      sel.innerHTML = data.datasets.map(function (name) {
+        var selAttr = name === "merged_benchmark.json" ? " selected" : "";
+        return '<option value="' + name + '"' + selAttr + ">" + name + "</option>";
+      }).join("");
+    } else {
+      sel.innerHTML = '<option value="">无可用测试文件</option>';
+    }
+  } catch (_) {
+    sel.innerHTML = '<option value="">加载失败</option>';
+  }
+}
+
 async function startBenchmarkRun() {
   if (state.brRunning) return;
 
   var workersEl = document.getElementById("br-workers");
   var timeoutEl = document.getElementById("br-timeout");
   var limitEl = document.getElementById("br-limit");
+  var dataEl = document.getElementById("br-data");
 
   var workers = parseInt(workersEl && workersEl.value || "0", 10) || 0;
   var timeout = parseFloat(timeoutEl && timeoutEl.value || "1.0") || 1.0;
   var limitVal = (limitEl && limitEl.value || "").trim();
   var limit = limitVal ? parseInt(limitVal, 10) || null : null;
+  var dataFile = (dataEl && dataEl.value) || "merged_benchmark.json";
 
   var btn = br$("run");
   if (btn) btn.disabled = true;
@@ -49,7 +69,7 @@ async function startBenchmarkRun() {
   if (resultEl) resultEl.classList.add("hidden");
 
   try {
-    var body = { workers: workers, timeout: timeout };
+    var body = { workers: workers, timeout: timeout, data_file: dataFile };
     if (limit != null) body.limit = limit;
     var data = await api(API.benchmarkRun, { method: "POST", body: JSON.stringify(body) });
     if (!data || !data.ok) {
@@ -179,5 +199,10 @@ export function bindBenchmarkRun() {
   var brRun = document.getElementById("br-run");
   if (brRun) {
     brRun.addEventListener("click", startBenchmarkRun);
+  }
+  // Load test-file dropdown once (page may be visited multiple times).
+  if (!state.brDatasetsLoaded) {
+    state.brDatasetsLoaded = true;
+    loadBrDatasets();
   }
 }

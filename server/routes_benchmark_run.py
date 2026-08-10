@@ -22,7 +22,23 @@ router = APIRouter(prefix="/api/v1", tags=["benchmark-run"])
 
 ROOT = Path(__file__).resolve().parents[1]
 BENCHMARK_MODULE = "benchmarks.benchmark_parallel"
-DATA_PATH = ROOT / "data" / "merged_benchmark.json"
+DATA_DIR = ROOT / "data"
+DEFAULT_DATA_FILE = "merged_benchmark.json"
+
+
+def _data_path(data_file: str | None) -> Path:
+    """Resolve a data file relative to the data dir, with traversal guard.
+
+    Accepts a bare filename (resolved against DATA_DIR). Slashes are rejected
+    so callers cannot reach arbitrary files elsewhere on disk.
+    """
+    name = (data_file or DEFAULT_DATA_FILE).strip()
+    if "/" in name or "\\" in name or name in ("", ".", ".."):
+        raise ValueError("invalid data file name")
+    p = (DATA_DIR / name).resolve()
+    if p.suffix.lower() != ".json" or not str(p).startswith(str(DATA_DIR.resolve())):
+        raise ValueError("invalid data file path")
+    return p
 
 # ── mutable state (single-run; new run replaces old) ──────────────
 _proc: subprocess.Popen | None = None
@@ -117,7 +133,8 @@ def _parse_workers(line: str) -> dict[str, Any] | None:
 
 # ── runner ────────────────────────────────────────────────────────
 
-def _run_benchmark(workers: int, timeout: float, limit: int | None) -> None:
+def _run_benchmark(data_path: Path, workers: int, timeout: float,
+                   limit: int | None) -> None:
     """Run benchmark_parallel in a subprocess; update globals with progress."""
     global _proc, _run_total, _run_done, _run_running, _run_elapsed, _run_rate, _run_eta
     global _run_so_far_en_ok, _run_so_far_en_n, _run_so_far_zh_ok, _run_so_far_zh_n
@@ -135,7 +152,7 @@ def _run_benchmark(workers: int, timeout: float, limit: int | None) -> None:
 
     cmd = [
         sys.executable, "-m", BENCHMARK_MODULE,
-        "--data", str(DATA_PATH),
+        "--data", str(data_path),
         "--timeout", str(timeout),
         "--workers", str(workers),
         "--no-snapshot",
@@ -252,12 +269,28 @@ def _run_benchmark(workers: int, timeout: float, limit: int | None) -> None:
 # ── request model ─────────────────────────────────────────────────
 
 class BenchmarkRunRequest(BaseModel):
+    data_file: str | None = Field(
+        default=None, description=f"Test data file under data/ (default: {DEFAULT_DATA_FILE})"
+    )
     workers: int = Field(default=0, ge=0, le=64, description="Process pool size; 0 = auto (cpu_count-1)")
     timeout: float = Field(default=1.0, ge=0.1, le=60.0, description="Per-row timeout in seconds")
     limit: int | None = Field(default=None, ge=1, description="Optional row limit for quick tests")
 
 
 # ── endpoints ─────────────────────────────────────────────────────
+
+@router.get("/benchmark-run/datasets")
+def benchmark_datasets() -> dict[str, Any]:
+    """List available .json test files under data/ (bare filenames)."""
+    try:
+        files = sorted(
+            p.name for p in DATA_DIR.iterdir()
+            if p.is_file() and p.suffix.lower() == ".json"
+        )
+    except OSError as exc:
+        return {"ok": False, "error": str(exc)}
+    return {"ok": True, "datasets": files}
+
 
 @router.post("/benchmark-run")
 def start_benchmark_run(req: BenchmarkRunRequest) -> dict[str, Any]:
@@ -270,8 +303,13 @@ def start_benchmark_run(req: BenchmarkRunRequest) -> dict[str, Any]:
             "error": "A benchmark run is already in progress",
         }
 
-    if not DATA_PATH.is_file():
-        return {"ok": False, "error": f"Data not found: {DATA_PATH}"}
+    try:
+        data_path = _data_path(req.data_file)
+    except ValueError as exc:
+        return {"ok": False, "error": str(exc)}
+
+    if not data_path.is_file():
+        return {"ok": False, "error": f"Data not found: {data_path}"}
 
     workers = req.workers if req.workers > 0 else max(1, (__import__("os").cpu_count() or 2) - 1)
     timeout = req.timeout
@@ -279,13 +317,14 @@ def start_benchmark_run(req: BenchmarkRunRequest) -> dict[str, Any]:
 
     threading.Thread(
         target=_run_benchmark,
-        args=(workers, timeout, limit),
+        args=(data_path, workers, timeout, limit),
         daemon=True,
     ).start()
 
     return {
         "ok": True,
         "started": True,
+        "data_file": data_path.name,
         "workers": workers,
         "timeout": timeout,
         "limit": limit,

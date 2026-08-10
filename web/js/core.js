@@ -6,6 +6,7 @@ export const API = {
   benchmarkRefresh: "/api/v1/benchmark-preview/refresh",
   benchmarkStatus: "/api/v1/benchmark-preview/status",
   benchmarkRun: "/api/v1/benchmark-run",
+  benchmarkRunDatasets: "/api/v1/benchmark-run/datasets",
   benchmarkRunStatus: "/api/v1/benchmark-run/status",
   benchmarkRunResult: "/api/v1/benchmark-run/result",
   layerSample: "/api/v1/layer-benchmark/sample",
@@ -51,6 +52,7 @@ export const state = {
   // benchmark run
   brRunning: false,
   brPollTimer: null,
+  brDatasetsLoaded: false,
   // layer benchmark
   lbLayer: 0,
   lbGenerating: false,
