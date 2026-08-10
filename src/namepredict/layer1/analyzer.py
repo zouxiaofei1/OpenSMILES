@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
-from namepredict.constants import C, Cl, H, N, O, S
+from namepredict.constants import C, H, N, O, S
 
 _FG_BOOL_MORE_KEYS = (
     ("has_aldehyde", "aldehydes"), ("has_amine", "amines"),

@@ -2,7 +2,6 @@ from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 from namepredict.layer4.anthra_orient import orient_anthraquinone as _orient_anthraquinone
 from namepredict.layer4.locants.adapt import effective_sub_locant, plan_from_chain
-from namepredict.layer4.locants.engine import choose_numbering
 from namepredict.layer4.polyene import (
     ene_locants, orient_alkenol, orient_alkenedioic, orient_cycloalkene,
     orient_cyclopolyene, orient_polyene, orient_ring_fg_ene, prefer_unsat_if_fg_tie,

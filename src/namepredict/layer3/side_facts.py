@@ -1,13 +1,11 @@
 """Layer 3 的侧链拓扑事实：Layer 2 主链选择与 Layer 3 取代基命名共用。"""
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import Enum, auto
 
 
-from rdkit.Chem import Atom, Mol
+from rdkit.Chem import Mol
 
-from namepredict.layer3 import side_alkyl
 
 
 
@@ -46,9 +44,8 @@ class HeteroarylLeaf(Enum):
 
 
 
-from namepredict.constants import C, F, H, HALO_Z as _HALO_Z
+from namepredict.constants import C
 def carbon_neighbors(mol: Mol, atom: int) -> list[int]:
-    #return side_alkyl._c_neighbors(mol, atom)
     atom = mol.GetAtomWithIdx(atom)
     return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == C]
 

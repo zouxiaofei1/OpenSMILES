@@ -3,16 +3,6 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.candidate_gate import CandidateGate, GateScope, GateStatus, pass_gate, scoped_reject
-
-from namepredict.layer3.aryl_sub import (
-    _exocyclic_fg_ring,
-)
-from namepredict.layer2.scaffold.ring_parent import (
-    _is_benzene_core,
-)
-
-
 def _is_alkoxy_c(mol: Mol, cur: int, prev: int) -> bool:
     atom = mol.GetAtomWithIdx(cur)
     if atom.GetAtomicNum() != 6 or atom.IsInRing():

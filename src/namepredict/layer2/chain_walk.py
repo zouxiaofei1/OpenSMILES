@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.tools.chain import _carbon_neighbors, _dfs_path, _extend_best, _longest_from
+from namepredict.tools.chain import _carbon_neighbors, _longest_from
 
 
 def _all_carbons(mol: Mol) -> list[int]:

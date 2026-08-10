@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
-from namepredict.constants import C, O, S
+from namepredict.constants import O, S
 
 
 def _dbl_o_nbs(sulfur) -> list:

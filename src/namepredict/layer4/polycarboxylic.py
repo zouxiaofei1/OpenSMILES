@@ -1,7 +1,6 @@
 """L4 orientation and assembled stem facts for unsaturated polycarboxylic parents."""
 from __future__ import annotations
 from rdkit.Chem import BondStereo
-from namepredict.layer4.polyene import ene_locants
 
 _ALKANE_NAMES = {
     1: ("methane", "甲烷"), 2: ("ethane", "乙烷"), 3: ("propane", "丙烷"),

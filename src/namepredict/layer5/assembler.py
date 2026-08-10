@@ -7,12 +7,11 @@ from namepredict.layer5.stems import (
     SULFIDE_ALKYL_ZH, SULFIDE_SYM_EN, SULFIDE_SYM_ZH, maybe_anion_names, maybe_metal_salt_names, zh_stem,
 )
 from namepredict.layer5.benzene_names import (
-    benzene_parent_names, benzene_prefix, phenyl_parent_names,
+    benzene_parent_names, phenyl_parent_names,
     benzoate_parent_names, benzenediol_names,
     join_kind_name, pyridine_kind_names,
 )
 from namepredict.types import NameResult
-from namepredict.constants import MULT_EN, MULT_ZH
 def _fail(meta: dict | None = None) -> NameResult: return NameResult(en="", zh="", success=False, source="iupac", meta=meta or {})
 def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult: return NameResult(en=en, zh=zh, success=True, source=source, time_ms=time_ms)
 def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:

@@ -243,19 +243,6 @@ _BY_ID: dict[str, ScaffoldSpec] = {s.id: s for s in _ALL_SPECS}
 _IDENTITIES: dict[str, ScaffoldIdentity] = {s.id: s.identity for s in _ALL_SPECS}
 
 
-_CYCLOALKANE_STEMS = {
-    3: ("cyclopropane", "环丙烷"), 4: ("cyclobutane", "环丁烷"),
-    5: ("cyclopentane", "环戊烷"), 6: ("cyclohexane", "环己烷"),
-    7: ("cycloheptane", "环庚烷"), 8: ("cyclooctane", "环辛烷"),
-    9: ("cyclononane", "环壬烷"), 10: ("cyclodecane", "环癸烷"),
-}
-
-
-def cycloalkane_polyacid_stem(n: int) -> tuple[str, str] | None:
-    """Parameterized C3–C10 stem facts for the cyclo polyacid ScaffoldSpec."""
-    return _CYCLOALKANE_STEMS.get(n)
-
-
 def get_identity(spec_id: str) -> ScaffoldIdentity | None:
     return _IDENTITIES.get(spec_id)
 
