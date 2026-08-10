@@ -13,24 +13,7 @@ def _matched_id(info: dict, skeleton: ParentSkeleton) -> str | None:
                  if set(system.get("atom_ids") or ()) == atoms), None)
 
 
-def _producer_scaffold_ids(info: dict) -> dict[frozenset[int], str]:
-    """Mother-ring scaffold identification via the core table, memoized per info.
 
-    `ring_core` matches mother rings WITHOUT the substituent/outside/FG gates,
-    so substituted mothers (e.g. 2,3,6-trimethylquinoline) are still tagged.
-    The full ring producers are NOT consulted here: a fallback over
-    `ring_try_fns` never hit on real data and was removed.
-    """
-    cache = info.get("_scaffold_ids")
-    if cache is not None:
-        return cache
-    from namepredict.layer2.scaffold.ring_core import ring_core_fns
-    found: dict[frozenset[int], str] = {}
-    for fn in ring_core_fns():
-        for atoms, sid in fn(info) or ():
-            found.setdefault(frozenset(atoms), sid)
-    info["_scaffold_ids"] = found
-    return found
 
 
 def _producer_id(info: dict, skeleton: ParentSkeleton) -> str | None:
@@ -41,7 +24,7 @@ def _producer_id(info: dict, skeleton: ParentSkeleton) -> str | None:
         return None
     # 只查 core 表缓存。完整的 producer 回退曾是死代码（真实数据上从未命中，
     # 且会抢占羰基母环的专用 core 适配器），已删除。
-    return _producer_scaffold_ids(info).get(frozenset(skeleton.atom_ids))
+    return None
 
 
 def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
