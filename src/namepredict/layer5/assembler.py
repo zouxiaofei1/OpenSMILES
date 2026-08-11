@@ -2,9 +2,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from namepredict.layer5.stems import (
     ACID_EN, ACID_ZH, ALCOHOL_EN, ALCOHOL_ZH,
-    ALDEHYDE_EN, ALDEHYDE_ZH, ALKANE_EN, ALKANE_ZH, ALKOXY_EN, ALKOXY_ZH,
+    ALDEHYDE_EN, ALDEHYDE_ZH, ALKANE_EN, ALKANE_ZH,
     AMIDE_EN, AMIDE_ZH, ESTER_ACYL_EN,
-    ETHER_SYM_EN, ETHER_SYM_ZH, NITRILE_EN, NITRILE_ZH, SULFIDE_ALKYL_EN,
+    NITRILE_EN, NITRILE_ZH, SULFIDE_ALKYL_EN,
     SULFIDE_ALKYL_ZH, SULFIDE_SYM_EN, SULFIDE_SYM_ZH, _en_stem,
     alkane_zh, maybe_anion_names, maybe_metal_salt_names, zh_stem,
 )
@@ -34,69 +34,9 @@ def _anhydride_from_acid(n: int) -> tuple[str, str] | None:
         return None
     en, zh = plain
     return en.replace(" acid", " anhydride"), f"{zh}酐"
-from namepredict.layer5.polycarboxylic import (
-    benzene_polycarboxylic_names as _benzene_polycarboxylic_names,
-    cycloalkane_polycarboxylic_names as _cycloalkane_polycarboxylic_names,
-    polycarboxylic_names as _polycarboxylic_names,
-)
-
-def _polyacid_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    if kind == "polycarboxylic": return _polycarboxylic_names(n, numbered)
-    if kind == "benzene_polycarboxylic": return _benzene_polycarboxylic_names(n, numbered)
-    return _cycloalkane_polycarboxylic_names(n, numbered)
-
 def _ene_loc_kept(numbered: dict) -> int | None:
     return None if numbered.get("omit_ene_locant") else numbered.get("ene_locant")
-_Q_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
-_Q_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}
-_Q_MULT_EN = {2: "di", 3: "tri", 4: "tetra"}
-_Q_MULT_ZH = {2: "二", 3: "三", 4: "四"}
 
-
-def _sym_ether_names(n: int) -> tuple[str, str] | None:
-    return _pair(ETHER_SYM_EN, ETHER_SYM_ZH, n)
-def _asym_ether_names(parent_n: int, alkoxy_n: int) -> tuple[str, str] | None:
-    alk = _alkane_names(parent_n)
-    en_pre, zh_pre = ALKOXY_EN.get(alkoxy_n), ALKOXY_ZH.get(alkoxy_n)
-    if not alk or not en_pre or not zh_pre:
-        return None
-    en_p, zh_p = alk
-    if parent_n <= 2:
-        return f"{en_pre}{en_p}", f"{zh_pre}{zh_p}"
-    return f"1-{en_pre}{en_p}", f"1-{zh_pre}{zh_p}"
-# Functional-class ether arms: (tag, n) → (en radical, zh radical without 基)
-_ETHER_ARM_EN = {
-    ("n", 1): "methyl", ("n", 2): "ethyl", ("n", 3): "propyl", ("n", 4): "butyl",
-    ("ipr", 0): "isopropyl", ("hfip", 0): "hexafluoroisopropyl",
-}
-_ETHER_ARM_ZH = {
-    ("n", 1): "甲", ("n", 2): "乙", ("n", 3): "丙", ("n", 4): "丁",
-    ("ipr", 0): "异丙", ("hfip", 0): "六氟异丙",
-}
-def _ether_arm_pair(tag: str, n: int) -> tuple[str, str] | None:
-    key = (tag, int(n))
-    en, zh = _ETHER_ARM_EN.get(key), _ETHER_ARM_ZH.get(key)
-    return (en, zh) if en and zh else None
-def _func_ether_names(arms) -> tuple[str, str] | None:
-    """hexafluoroisopropyl methyl ether / 六氟异丙基甲醚 (alpha EN)."""
-    if not arms or len(arms) != 2:
-        return None
-    pairs = [_ether_arm_pair(t, n) for t, n in arms]
-    if any(p is None for p in pairs):
-        return None
-    a, b = sorted(pairs, key=lambda x: x[0])
-    return f"{a[0]} {b[0]} ether", f"{a[1]}基{b[1]}醚"
-def _ether_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    parent = numbered.get("parent") or {}
-    arms = parent.get("ether_arms")
-    if arms is not None:
-        return _func_ether_names(arms)
-    alkoxy_n = parent.get("alkoxy_n")
-    if alkoxy_n is None:
-        return None
-    if alkoxy_n == n:
-        return _sym_ether_names(n)
-    return _asym_ether_names(n, alkoxy_n)
 def _sym_sulfide_names(n: int) -> tuple[str, str] | None:
     return _pair(SULFIDE_SYM_EN, SULFIDE_SYM_ZH, n)
 def _asym_sulfide_names(n1: int, n2: int) -> tuple[str, str] | None:

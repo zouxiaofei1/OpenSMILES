@@ -176,38 +176,6 @@ def nitrile_zh(n: int) -> str | None:
     return f"{z}腈" if z else None
 
 
-def acyl_chloride_en(n: int) -> str | None:
-    if n == 2:
-        return "acetyl chloride"
-    s = _en_stem(n)
-    return f"{s}anoyl chloride" if s and n >= 3 else None
-
-
-def acyl_chloride_zh(n: int) -> str | None:
-    if n == 2:
-        return "乙酰氯"
-    if 3 <= n <= 10 and n in _ALKANE_ZH_BASE:
-        return f"{_ALKANE_ZH_BASE[n][0]}酰氯"
-    z = zh_num(n)
-    return f"{z}酰氯" if z and n >= 3 else None
-
-
-def acyl_bromide_en(n: int) -> str | None:
-    if n == 2:
-        return "acetyl bromide"
-    s = _en_stem(n)
-    return f"{s}anoyl bromide" if s and n >= 3 else None
-
-
-def acyl_bromide_zh(n: int) -> str | None:
-    if n == 2:
-        return "乙酰溴"
-    if 3 <= n <= 10 and n in _ALKANE_ZH_BASE:
-        return f"{_ALKANE_ZH_BASE[n][0]}酰溴"
-    z = zh_num(n)
-    return f"{z}酰溴" if z and n >= 3 else None
-
-
 def ester_acyl_en(n: int) -> str | None:
     if n == 1:
         return "formate"
@@ -310,17 +278,6 @@ def ester_alkyl_zh(n: int) -> str | None:
     return base.get(n) or zh_num(n)
 
 
-def ester_alkoxy_pair(parent: dict) -> tuple[str, str] | None:
-    """Prefer special alkoxy_en/zh; else linear ESTER_ALKYL by alkoxy_n."""
-    if parent.get("alkoxy_en"):
-        return parent["alkoxy_en"], parent.get("alkoxy_zh") or parent["alkoxy_en"]
-    n = parent.get("alkoxy_n")
-    if n is None:
-        return None
-    en, zh = ester_alkyl_en(n), ester_alkyl_zh(n)
-    return (en, zh) if en and zh else None
-
-
 def _fill(fn, lo: int = 1, hi: int = 35) -> dict[int, str]:
     out: dict[int, str] = {}
     for n in range(lo, hi + 1):
@@ -346,22 +303,7 @@ NITRILE_ZH = _fill(nitrile_zh)
 ESTER_ACYL_EN = _fill(ester_acyl_en)
 ESTER_ALKYL_EN = _fill(ester_alkyl_en)
 ESTER_ALKYL_ZH = _fill(ester_alkyl_zh)
-ACYL_CHLORIDE_EN = _fill(acyl_chloride_en, lo=2)
-ACYL_CHLORIDE_ZH = _fill(acyl_chloride_zh, lo=2)
-ACYL_BROMIDE_EN = _fill(acyl_bromide_en, lo=2)
-ACYL_BROMIDE_ZH = _fill(acyl_bromide_zh, lo=2)
 
-# P-63.2.2 symmetric dialkyl ether retained: dimethyl…dibutyl ether / 二…基醚
-ETHER_SYM_EN = {
-    1: "dimethyl ether", 2: "diethyl ether",
-    3: "dipropyl ether", 4: "dibutyl ether",
-}
-ETHER_SYM_ZH = {
-    1: "二甲基醚", 2: "二乙基醚", 3: "二丙基醚", 4: "二丁基醚",
-}
-# Asymmetric alkoxy prefix (alkoxyalkane)
-ALKOXY_EN = {1: "methoxy", 2: "ethoxy", 3: "propoxy", 4: "butoxy"}
-ALKOXY_ZH = {1: "甲氧基", 2: "乙氧基", 3: "丙氧基", 4: "丁氧基"}
 # P-63.2.1 dialkyl sulfide: dimethyl…dibutyl sulfide / 二…硫醚
 SULFIDE_SYM_EN = {
     1: "dimethyl sulfide", 2: "diethyl sulfide",
