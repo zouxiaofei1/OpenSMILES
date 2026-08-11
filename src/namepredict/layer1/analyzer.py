@@ -424,31 +424,21 @@ def _fg_bools(lists: dict) -> dict:
     }
     more = {hk: bool(lists[lk]) for hk, lk in _FG_BOOL_MORE_KEYS}
     return {**core, **more}
-def _fg_parts_a(mol: Mol) -> dict:
-    return {
-        "hydroxyls": _hydroxyl_entries(mol), "carboxyls": _carboxyl_entries(mol),
-        "esters": _ester_entries(mol), "amides": _amide_entries(mol),
-        "ketones": _ketone_entries(mol),
-    }
 
-def _p_fg_parts(mol: Mol) -> dict:
-    from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
-    return {"isocyanates": isocyanate_entries(mol), "isothiocyanates": isothiocyanate_entries(mol)}
-def _fg_parts_b_core(mol: Mol) -> dict:
-    return {
-        "radicals": _radical_entries(mol),
-        "aldehydes": _aldehyde_entries(mol), "amines": _amine_entries(mol),
-        "quaternary_ammoniums": _quaternary_ammonium_entries(mol),
-        "nitriles": _nitrile_entries(mol), "double_bonds": _double_bond_entries(mol),
-        "triple_bonds": _triple_bond_entries(mol), "acyl_chlorides": _acyl_chloride_entries(mol),
-        "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
-        "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
-        "nitros": _nitro_entries(mol),
-    }
-def _fg_parts_b(mol: Mol) -> dict:
-    return {**_fg_parts_b_core(mol), **_p_fg_parts(mol)}
+
 def _fg_parts(mol: Mol) -> dict:
-    return {**_fg_parts_a(mol), **_fg_parts_b(mol)}
+    from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
+    return { "carboxyls": _carboxyl_entries(mol),"hydroxyls": _hydroxyl_entries(mol),
+        "esters": _ester_entries(mol), "amides": _amide_entries(mol),
+        "ketones": _ketone_entries(mol), "radicals": _radical_entries(mol),
+            "aldehydes": _aldehyde_entries(mol), "amines": _amine_entries(mol),
+            "quaternary_ammoniums": _quaternary_ammonium_entries(mol),
+            "nitriles": _nitrile_entries(mol), "double_bonds": _double_bond_entries(mol),
+            "triple_bonds": _triple_bond_entries(mol), "acyl_chlorides": _acyl_chloride_entries(mol),
+            "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
+            "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
+            "nitros": _nitro_entries(mol),"isocyanates": isocyanate_entries(mol), "isothiocyanates": isothiocyanate_entries(mol)}
+
 def _collect_fgs(mol: Mol) -> dict:
     from namepredict.layer1.functional_group_inventory import build_inventory
 
