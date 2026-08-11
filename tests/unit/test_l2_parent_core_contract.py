@@ -24,19 +24,7 @@ _HELPERS = frozenset({
     "_no_fgs",
     "_longest_from",
     "_longest_chain",
-    "_is_open_sat",
-    "_hetero_open_chain",
-    "_best_cover_pair",
-    "_db_pairs",
-    "_fg_chain",
-    "_is_mono_fg",
-    "_arm_ok",
     "_c_idxs",
-    "_is_mono_alkyne",
-    "_is_mono_alkene",
-    "_try_unsat_fg",
-    "_unsat_or_sat",
-    "_side_carbons",
 })
 
 # Modules allowed to re-export / host try surface.

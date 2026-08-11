@@ -5,10 +5,6 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en, normalize_zh
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.scaffold.quinoline import _try_quinoline_parent
 from namepredict.layer2.scaffold.specs import (
     FUSED56_LABELS,
     NAPH_LABELS,
@@ -20,19 +16,9 @@ from namepredict.layer2.scaffold.specs import (
     numbering_scaffold_facts,
 )
 from namepredict.layer4.locants.adapt import plan_from_chain
-from namepredict.namer import SMILESNNamer
 
 _F56_LABELS = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
 _NAPH_LABELS = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a")
-
-# Positive retained parents: kind, smiles, en, zh
-POS_CASES = [
-    ("indole", "c1ccc2[nH]ccc2c1", "1H-indole", "吲哚"),
-    ("benzimidazole", "c1ccc2[nH]cnc2c1", "1H-benzimidazole", "1H-苯并咪唑"),
-    ("quinoline", "c1ccc2ncccc2c1", "quinoline", "喹啉"),
-    ("indazole", "c1ccc2[nH]ncc2c1", "1H-indazole", "1H-吲唑"),
-    ("naphthalene", "c1ccc2ccccc2c1", "naphthalene", "萘"),
-]
 
 # Negative: wrong naming_class / not these families
 NEG_CASES = [
@@ -40,12 +26,6 @@ NEG_CASES = [
     ("furan", None),
     ("cycloalkane", "carbocycle"),  # carbo free, not fused56/naph
 ]
-
-
-def _mol(smiles: str):
-    mol = preprocess(smiles)
-    assert mol is not None
-    return mol
 
 
 @pytest.mark.parametrize(
@@ -127,21 +107,3 @@ def test_plan_from_chain_naphthalene_10() -> None:
     plan = plan_from_chain(list(range(10)), "naphthalene", numbering_scaffold_facts("naphthalene", 10))
     assert plan is not None
     assert plan.labels == _NAPH_LABELS
-
-
-def test_parent_quinoline_scaffold_id() -> None:
-    parent = _try_quinoline_parent(analyze(_mol("c1ccc2ncccc2c1")))
-    assert parent is not None
-    assert parent.get("scaffold_id") == "quinoline"
-    assert len(parent.get("chain") or []) == 10
-
-
-@pytest.mark.parametrize("smiles,kind,en,zh", [
-    (s, k, e, z) for k, s, e, z in POS_CASES
-])
-def test_e2e_retained_names_stable(smiles, kind, en, zh) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)

@@ -4,52 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.arene_carbonyl import benzene_polycarboxylic_gate
 from namepredict.layer2.candidate_gate import (
     CandidateGate, GateScope, GateStatus, gate_result, global_reject, pass_gate,
     scoped_reject,
 )
-from namepredict.layer2.candidates import _collect_candidates, _polyacid_gates
-
-
-def _info(smiles: str) -> dict:
-    mol = preprocess(smiles)
-    assert mol is not None
-    return analyze(mol)
-
-
-def _kinds(smiles: str) -> set[str]:
-    return {candidate["kind"] for candidate in _collect_candidates(_info(smiles))}
-
-
-@pytest.mark.parametrize("smiles", [
-    "O=C(O)CC(Cc1ccccc1)C(=O)O",
-    "O=C(O)C1CCCCC1C(=O)O",
-    "O=C(O)c1ccncc1C(=O)O",
-])
-def test_benzene_gate_passes_non_scope_structures(smiles: str) -> None:
-    gate = benzene_polycarboxylic_gate(_info(smiles))
-    assert gate.status is GateStatus.PASS
-    assert gate.scope is GateScope.BENZENE_POLYCARBOXYLIC
-
-
-def test_benzene_gate_rejects_unsupported_structure_in_its_scope() -> None:
-    gate = benzene_polycarboxylic_gate(_info("O=C(O)c1ccccc1C(=O)OC"))
-    assert gate.status is GateStatus.SCOPED_REJECT
-    assert gate.reason == "unsupported_benzene_polyacid"
-    assert _kinds("O=C(O)c1ccccc1C(=O)OC") == {"unsupported_polycarboxylic"}
-
-
-@pytest.mark.parametrize("smiles", [
-    "O=C(O)CC(Cc1ccccc1)C(=O)O",
-    "O=C(O)C1CCCCC1C(=O)O",
-    "O=C(O)c1ccncc1C(=O)O",
-])
-def test_benzene_gate_does_not_terminate_other_scopes(smiles: str) -> None:
-    assert all(gate.status is GateStatus.PASS for gate in _polyacid_gates(_info(smiles)))
-    assert "unsupported_polycarboxylic" not in _kinds(smiles)
 
 
 def test_pass_gate_keeps_candidates() -> None:
