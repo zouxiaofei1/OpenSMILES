@@ -112,7 +112,7 @@ def extract_substituents(info, parent, *, name_mode="general", cache=None) -> li
 - `submol_build.py` 提供 `build_cut_submol`（诱导子分子 + attach 处 H 封端）与 `build_anchor_submol`（attach 打 dummy `*`，供 anchored SMILES 使用），定义 `CutSubmol` 数据类（`atom_map`/`inv_map`/`attach_new`/`attach_old`）。
 - `_yl_from_sub` 用 **canonical SMILES 作为缓存键**与 `_name_mol` 的输入，与主分子共享 `CommonNameCache`（`_cache_put`/`_canonical_result`），消除 cut 上下文（环断点/手性方向）对命名的泄漏。
 - `_arene_yl_from_sub` 处理苯环切割：自由名管线的 `_name_mol` 会把取代苯命名为"chlorobenzene"（或 phenol/aniline），但苯基*取代基*必须把 OH/NH2/CN 当作叶并令附着碳位次为 1。该路径重建锚定 submol 重新自由命名，L1 检测自由基、L2 选苯基母体、L4 锚定位次 1、L5 输出 `{leaf-locants}phenyl`。芳基臂命名即经此路径，无独立芳基命名模块。
-- yl 转换由 `layer5/free_to_yl.free_to_yl` 完成（`layer3/yl_form.py` 薄重导出该函数），处理官能团后缀到前缀的特殊转换：醇→烷氧基 (P-63.2.2)、硫醇→烷硫基 (P-63.2.1)、伯胺→烷氨基 (P-62.2)。
+- yl 转换由 `tools/free_to_yl.free_to_yl` 完成（`layer3/yl_form.py` 薄重导出该函数），处理官能团后缀到前缀的特殊转换：醇→烷氧基 (P-63.2.2)、硫醇→烷硫基 (P-63.2.1)、伯胺→烷氨基 (P-62.2)。
 
 > **源:** `src/namepredict/layer3/as_substituent.py:20-129`, `src/namepredict/layer3/submol_build.py`
 
@@ -187,7 +187,7 @@ flowchart LR
         BC["build_cut_submol<br/>诱导子分子 + H 封端"]
         YL["_yl_from_sub<br/>canonical SMILES 缓存键"]
         ARENE["_arene_yl_from_sub<br/>苯环 → 锚定苯基自由基"]
-        FY["layer5.free_to_yl<br/>-yl 转换"]
+        FY["tools.free_to_yl<br/>-yl 转换"]
     end
 
     subgraph ANCHOR["锚定查表 (tools/anchored_table.py)"]
@@ -218,7 +218,7 @@ flowchart LR
 | `claimable_block.py` | 159 | `ClaimedBlock` / `SideSlot`(CHAIN_C/RING_C/AMIDE_N/ETHER_O) / `iter_claims`。 |
 | `amino_side.py` | 67 | 氨基取代基：伯氨基 + 仲氨基（`_extract_aminos`）。 |
 | `coverage.py` | 66 | **覆盖台账**。`build_coverage_ledger` 计算 gap/overlap。 |
-| `yl_form.py` | 10 | yl 转换薄重导出（指向 `layer5/free_to_yl.free_to_yl`）。 |
+| `yl_form.py` | 10 | yl 转换薄重导出（指向 `tools/free_to_yl.free_to_yl`）。 |
 
 ### tools/ 层无关工具（layer3 消费）
 
@@ -273,7 +273,7 @@ def build_coverage_ledger(mol, *, owned_atoms, names) -> CoverageLedger
 - [[architecture/layer2-parent-selector]] — Layer2 母体选择器，提供 `parent` dict（含 `owned_atoms` 和 `chain`）；L2 与 L3 互不调用，共享仅经 `tools/`
 - [[architecture/layer1-analyzer]] — Layer1 官能团分析器，提供 `info` dict
 - [[architecture/layer4-numbering]] — Layer4 编号引擎，消费 layer3 输出的取代基列表
-- [[architecture/layer5-name-assembly]] — Layer5 名称组装，最终拼接母体名和取代基前缀（含 `free_to_yl`）
+- [[architecture/layer5-name-assembly]] — Layer5 名称组装，最终拼接母体名和取代基前缀（-yl 转换在 `tools/free_to_yl`，经 `layer3/yl_form` 薄重导出）
 - [[architecture/overview]] — 系统架构概览，6 层流水线总览
 - [[concepts/bilingual-naming]] — 中英双语命名约定
 - [[concepts/atom-ownership]] — ClaimedBlock / owned_atoms / CoverageLedger 原子归属模型

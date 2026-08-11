@@ -9,9 +9,8 @@ from namepredict.layer5.stems import (
     alkane_zh, maybe_anion_names, maybe_metal_salt_names, zh_stem,
 )
 from namepredict.layer5.benzene_names import (
-    benzene_parent_names, phenyl_parent_names,
-    benzenediol_names,
-    join_kind_name, pyridine_kind_names,
+
+    join_kind_name,
 )
 from namepredict.layer5.stereo_ez import _ez_prefix, ez_for_parent
 from namepredict.layer5.unsat_acid import alkenamide_names
@@ -46,15 +45,6 @@ def _asym_sulfide_names(n1: int, n2: int) -> tuple[str, str] | None:
         return None
     a, b = sorted([(en1, zh1), (en2, zh2)], key=lambda x: x[0])
     return f"{a[0]} {b[0]} sulfide", f"{a[1]}{b[1]}硫醚"
-def _sulfide_names(numbered: dict) -> tuple[str, str] | None:
-    parent = numbered.get("parent") or {}
-    ns = parent.get("alkyl_ns")
-    if not ns or len(ns) != 2:
-        return None
-    n1, n2 = int(ns[0]), int(ns[1])
-    if n1 == n2:
-        return _sym_sulfide_names(n1)
-    return _asym_sulfide_names(n1, n2)
 
 def _typed_acid_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
@@ -479,19 +469,14 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if entry is not None:
         return _chain_names(entry, n, numbered)
   
-    if kind == "sulfide":
-        return _sulfide_names(numbered)
-    if kind == "benzenediol":
-        return benzenediol_names(numbered.get("oh_locants"))
+
     if kind == "phenyl":
-        return phenyl_parent_names(numbered)
+        return "phenyl", "苯基"
     if kind == "benzene":
-        return benzene_parent_names(numbered)
+        return ("benzene", "苯")
     if kind == "benzoate":
         return ("benzoate", "苯甲酸")
-    top = pyridine_kind_names(kind, numbered, _build_prefix)
-    if top is not None:
-        return top
+   
     stem = _parent_stem_names(numbered)
     return stem if stem is not None else _alkane_names(n)
 

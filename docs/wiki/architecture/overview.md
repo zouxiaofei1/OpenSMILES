@@ -380,7 +380,6 @@ src/namepredict/
     ├── stereo_ez.py          # E/Z
     ├── unsat_acid.py         # 烯酰胺特例
     ├── acyl_halide_names.py  # 酰卤前缀判断
-    ├── free_to_yl.py         # -yl 转换
     └── __init__.py
 ```
 

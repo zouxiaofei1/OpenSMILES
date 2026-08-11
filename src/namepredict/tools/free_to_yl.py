@@ -1,23 +1,4 @@
-"""Free parent name → P-29 -yl substituent word-stem conversion (L5).
 
-Central word-stem knowledge: alcohol→alkoxy, thiol→alkylsulfanyl,
-1° amine→alkylamino, benzene→phenyl, and the generic -e-drop + -k-yl.
-
-P-29.3.6 compound prefixes (methylamino = CH3-NH-) need parentheses to
-distinguish from two separate substituents.
-
-| free EN              | attach | yl EN                          |
-|----------------------|--------|--------------------------------|
-| benzene              | 1      | phenyl (retained shortcut)     |
-| pyridine             | k      | pyridin-k-yl                   |
-| ethanol (alcohol)    | –      | ethoxy (P-63.2.2)              |
-| ethanethiol          | –      | ethylsulfanyl (P-63.2.1)       |
-| methanamine (1° amine)| –     | methylamino (P-62.2)           |
-| …ole / …ine etc.     | k      | drop terminal e (if any) + -k-yl |
-| free name w/ prefix  | k      | keep prefix + parent → yl      |
-
-Chinese: 吡啶 → 吡啶-2-基; 乙醇 → 乙氧基; 乙硫醇 → 乙硫基; 甲胺 → 甲氨基.
-"""
 from __future__ import annotations
 
 import re

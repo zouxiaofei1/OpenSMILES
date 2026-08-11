@@ -84,6 +84,17 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -
     paren = kind == "benzene" and len(substituents) >= 4
     en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit, paren)
     return "-".join(en_parts), "-".join(zh_parts)
+
+def _is_isobutyryl(numbered: dict) -> bool:
+    """C3 acyl + single methyl at locant 2 (isobutyryl retained topology)."""
+    if int((numbered.get("parent") or {}).get("n_carbons") or 0) != 3:
+        return False
+    subs = numbered.get("substituents") or []
+    if len(subs) != 1:
+        return False
+    s = subs[0]
+    return s.get("en") == "methyl" and int(s.get("locant") or 0) == 2
+
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "benzene":
         return benzene_prefix(numbered, _build_prefix)
@@ -91,7 +102,6 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
              "benzoxazolamine", "benzimidazolamine", "boronic")
     if kind in _skip:
         return "", ""
-    from namepredict.layer5.acyl_halide_names import _is_isobutyryl
     if kind == "acyl_bromide" and _is_isobutyryl(numbered):
         return "", ""
     return _build_prefix(numbered.get("substituents") or [], n, kind)

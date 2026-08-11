@@ -194,13 +194,7 @@ assemble(numbered)
 
 > **源:** `src/namepredict/layer5/unsat_acid.py:24-31` (alkenamide_names), `src/namepredict/layer5/assembler.py:363-396` (acid/ester/aldehyde/nitrile 的 ene_base/yne_suf)
 
-### 9. yl 转换 (`free_to_yl.py`)
-
-`free_to_yl` 将自由母体名转为 P-29 取代基 -yl 形式（FG 后缀 → 前缀），例如 `-oic acid` → `-yl`。内部通过 `_try_fg_prefix` 处理烷氧基/硫烷基/氨基等 FG 前缀，`_mirror_azole_locants_zh` 镜像中文唑类位次，`_yl_en`/`_yl_zh` 生成 en/zh 的 -yl/-基 后缀。
-
-> **源:** `src/namepredict/layer5/free_to_yl.py:172` (free_to_yl)
-
-### 10. 名称拼接 (`join_kind_name`)
+### 9. 名称拼接 (`join_kind_name`)
 
 `join_kind_name` 是前缀与母体的拼接函数（`benzene_names.py:189-199`），处理三种拼接模式：
 
@@ -255,7 +249,6 @@ assemble(numbered)
 | 文件 | 说明 |
 |------|------|
 | `src/namepredict/layer5/acyl_halide_names.py` | 酰卤前缀保留名判断 `_is_isobutyryl` (13 行) |
-| `src/namepredict/layer5/free_to_yl.py` | 自由母体名 → P-29 取代基 -yl 形式（FG 后缀→前缀）(185 行) |
 
 ### 管线集成
 
