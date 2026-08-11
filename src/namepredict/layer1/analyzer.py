@@ -442,11 +442,9 @@ def _fg_parts_a(mol: Mol) -> dict:
         "ketones": _ketone_entries(mol),
     }
 def _p_fg_a(mol: Mol) -> dict:
-    from namepredict.layer1.phosphate import phosphate_entries, phosphonic_entries
-    from namepredict.layer1.sulfur import sulfoxide_entries
-    return {"phosphates": phosphate_entries(mol), "phosphonics": phosphonic_entries(mol),
+    return {"phosphates": None, "phosphonics": None,
             "carbamates": None, "carbonates": None,
-            "sulfoxides": sulfoxide_entries(mol)}
+            "sulfoxides": None}
 def _p_fg_b1(mol: Mol) -> dict:
     from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
     return {"isocyanates": isocyanate_entries(mol), "isothiocyanates": isothiocyanate_entries(mol),
@@ -454,14 +452,10 @@ def _p_fg_b1(mol: Mol) -> dict:
             "guanidines": None}
 
 def _p_fg_b2(mol: Mol) -> dict:
-    from namepredict.layer1.boronic import boronic_entries
-    from namepredict.layer1.sulfur import (sulfonamide_entries, sulfonate_entries,
-                                           sulfone_entries, sulfonic_acid_entries,
-                                           sulfonyl_chloride_entries)
-    return {"sulfonamides": sulfonamide_entries(mol), "sulfonates": sulfonate_entries(mol),
-            "sulfonyl_chlorides": sulfonyl_chloride_entries(mol),
-            "sulfonic_acids": sulfonic_acid_entries(mol), "sulfones": sulfone_entries(mol),
-            "boronics": boronic_entries(mol)}
+    return {"sulfonamides": None, "sulfonates": None,
+            "sulfonyl_chlorides": None,
+            "sulfonic_acids": None, "sulfones": None,
+            "boronics": None}
 def _p_fg_b(mol: Mol) -> dict:
     return {**_p_fg_b1(mol), **_p_fg_b2(mol)}
 def _p_fg_parts(mol: Mol) -> dict:
