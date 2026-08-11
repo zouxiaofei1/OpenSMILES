@@ -8,7 +8,7 @@ from rdkit.Chem import CanonicalRankAtoms
 
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol, build_cut_submol
-from namepredict.layer5.free_to_yl import free_to_yl as yl_form
+from namepredict.tools.free_to_yl import free_to_yl as yl_form
 
 
 def _arene_yl_from_sub(
