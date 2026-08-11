@@ -103,18 +103,6 @@ def _sulfide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     return out
 
 
-def _sulfonic_acid_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Sulfonic acid S + all O neighbours."""
-    s_idx = parent.get("s_idx")
-    if s_idx is None:
-        return set()
-    out = {int(s_idx)}
-    for n in mol.GetAtomWithIdx(int(s_idx)).GetNeighbors():
-        if n.GetAtomicNum() == 8:
-            out.add(n.GetIdx())
-    return out
-
-
 def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     """Alcohol/diol/triol: attachment carbon(s) + OH oxygen(s)."""
     c_idxs = parent.get("oh_c_idxs") or ([parent.get("oh_c_idx")] if parent.get("oh_c_idx") is not None else [])
@@ -241,7 +229,6 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
         _acid_fg_atoms(mol, parent),
         _ether_fg_atoms(mol, parent),
         _sulfide_fg_atoms(mol, parent),
-        _sulfonic_acid_fg_atoms(mol, parent),
         _hydroxy_fg_atoms(mol, parent),
         _ketone_fg_atoms(mol, parent),
         _amine_fg_atoms(mol, parent),

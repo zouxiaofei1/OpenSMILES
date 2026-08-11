@@ -263,12 +263,7 @@ _FG_KEY = {
     "double_bonds": "double_bond", "triple_bonds": "triple_bond",
     "acyl_chlorides": "acyl_chloride", "anhydrides": "anhydride", "thiols": "thiol",
     "ethers": "ether", "sulfides": "sulfide", "nitros": "nitro",
-    "phosphates": "phosphate", "phosphonics": "phosphonic", "carbamates": "carbamate",
-    "carbonates": "carbonate", "sulfoxides": "sulfoxide", "isocyanates": "isocyanate",
-    "isothiocyanates": "isothiocyanate", "ureas": "urea", "hydrazines": "hydrazine",
-    "guanidines": "guanidine", "sulfonamides": "sulfonamide", "sulfonates": "sulfonate",
-    "sulfonyl_chlorides": "sulfonyl_chloride", "sulfonic_acids": "sulfonic_acid",
-    "sulfones": "sulfone", "boronics": "boronic",
+    "isocyanates": "isocyanate", "isothiocyanates": "isothiocyanate",
 }
 
 

@@ -17,14 +17,9 @@ _KIND_CLASS = {
     "cycloalcohol": FG.ALCOHOL, "thiol": FG.THIOL, "amine": FG.AMINE,
     "diamine": FG.AMINE, "triamine": FG.AMINE, "tetraamine": FG.AMINE,
     "sec_amine": FG.AMINE, "tert_amine": FG.AMINE, "cycloamine": FG.AMINE,
-    "sulfonic_acid": FG.SULFONIC_ACID, "sulfonate": FG.SULFONATE,
-    "sulfonyl_chloride": FG.SULFONYL_HALIDE, "ether": FG.ETHER,
-    "carbamate": FG.CARBAMATE, "carbonate": FG.CARBONATE,
-    "urea": FG.UREA, "guanidine": FG.GUANIDINE, "sulfonamide": FG.SULFONAMIDE,
-    "hydrazine": FG.HYDRAZINE,
+    "ether": FG.ETHER,
     "isocyanate": FG.ISOCYANATE, "isothiocyanate": FG.ISOTHIOCYANATE,
-    "sulfide": FG.SULFIDE, "sulfoxide": FG.SULFOXIDE, "sulfone": FG.SULFONE,
-    "phosphate": FG.PHOSPHATE, "phosphonic": FG.PHOSPHONIC,
+    "sulfide": FG.SULFIDE,
     "tetraalkylammonium": FG.QUATERNARY_AMMONIUM,
     "benzoic": FG.ACID, "benzene_polycarboxylic": FG.ACID,
     "benzamide": FG.AMIDE, "benzonitrile": FG.NITRILE,
@@ -69,7 +64,6 @@ _ARENE_NAMED: tuple[tuple[str, str, str, int], ...] = (
     ("acetophenone", "acetophenone", "苯乙酮", 6),
     ("phenol", "phenol", "苯酚", 5),
     ("aniline", "aniline", "苯胺", 3),
-    ("boronic", "phenylboronic acid", "苯基硼酸", 12),
 )
 # Fused FG kinds without Spec stems still need fg_rank registration.
 # Spec is authority when present; this table only covers residual FG tags.

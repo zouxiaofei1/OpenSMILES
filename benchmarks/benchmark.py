@@ -277,6 +277,9 @@ def _print_one_diff(d: dict[str, Any]) -> None:
     print(f"    prev_pred_zh={prev.get('pred_zh') or ''!r}  cur_pred_zh={cur.get('pred_zh') or ''!r}")
 
 
+_MAX_PRINT_DIFFS = 200
+
+
 def _print_diffs(diffs: list[dict[str, Any]]) -> None:
     if not diffs:
         print("diff_vs_last: none (same as last run, or no previous snapshot)")
@@ -285,8 +288,12 @@ def _print_diffs(diffs: list[dict[str, Any]]) -> None:
     n_imp = sum(1 for d in diffs if d["kind"] == "IMPROVE")
     n_chg = sum(1 for d in diffs if d["kind"] == "CHANGE")
     print(f"diff_vs_last: total={len(diffs)} REGRESS={n_reg} IMPROVE={n_imp} CHANGE={n_chg}")
-    for d in diffs:
+    shown = diffs[:_MAX_PRINT_DIFFS]
+    for d in shown:
         _print_one_diff(d)
+    n_hidden = len(diffs) - len(shown)
+    if n_hidden > 0:
+        print(f"  ... {n_hidden} more diff(s) not shown (cap {_MAX_PRINT_DIFFS})")
 
 
 def _report_for_json(report: dict[str, Any], diffs: list[dict[str, Any]]) -> dict[str, Any]:

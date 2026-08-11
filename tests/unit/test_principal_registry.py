@@ -22,7 +22,6 @@ from namepredict.layer2.principal import (
 # Representative structures for the P-41/P-43 boundaries under test.
 CASES = [
     ("CC(=O)OCC(=O)O", FG.ACID, FG.ESTER),
-    ("CS(=O)(=O)OC(=O)OC", FG.SULFONIC_ACID, FG.ANHYDRIDE),
     ("N#CCC=O", FG.NITRILE, FG.ALDEHYDE),
     ("COC", None, FG.ETHER),
 ]
@@ -45,29 +44,26 @@ def test_principal_boundaries(smiles: str, expected: FG | None, other: FG) -> No
 
 def test_registry_supports_new_p41_class_and_p43_subpath() -> None:
     custom = dict(PRINCIPAL_REGISTRY)
-    custom[FG.PHOSPHONIC] = PrincipalFeatureSpec(
+    custom[FG.ISOCYANATE] = PrincipalFeatureSpec(
         PrincipalPriority(7, (3, 2)), PrincipalExpression.SUFFIX,
     )
-    selected = select_principal_group(_inventory(FG.PHOSPHONIC, FG.AMIDE), custom)
-    assert selected is not None and selected.group_class == FG.PHOSPHONIC
+    selected = select_principal_group(_inventory(FG.ISOCYANATE, FG.AMIDE), custom)
+    assert selected is not None and selected.group_class == FG.ISOCYANATE
 
 
 def test_legacy_kind_rank_is_registry_projection() -> None:
     assert kind_registry.fg_rank("acid") > kind_registry.fg_rank("ester")
-    assert kind_registry.fg_rank("sulfonic_acid") > kind_registry.fg_rank("anhydride")
+    assert kind_registry.fg_rank("acid") > kind_registry.fg_rank("anhydride")
     assert kind_registry.fg_rank("nitrile") > kind_registry.fg_rank("aldehyde")
     assert kind_registry.fg_rank("ether") == 0
     assert kind_registry.has_principal_fg("ether") == 0
 
 
 @pytest.mark.parametrize("kind,rank", [
-    ("carbamate", 11), ("hydrazine", 4), ("sulfone", 6),
-    ("sulfide", 2), ("sulfoxide", 2), ("isocyanate", 8),
+    ("sulfide", 2), ("isocyanate", 8),
     # Migrated from _CHAIN_FG fallback to PRINCIPAL_REGISTRY projection:
     # ranks must be preserved exactly.
-    ("carbonate", 11), ("sulfonate", 11), ("sulfonyl_chloride", 10),
-    ("urea", 9), ("guanidine", 9), ("sulfonamide", 9),
-    ("tetraalkylammonium", 0), ("phosphate", 2), ("phosphonic", 2),
+    ("tetraalkylammonium", 0),
 ])
 def test_unmigrated_legacy_ranks_are_preserved(kind: str, rank: int) -> None:
     assert kind_registry.fg_rank(kind) == rank

@@ -17,26 +17,12 @@ class FunctionalGroupClass(str, Enum):
     KETONE = "ketone"
     ALCOHOL = "alcohol"
     THIOL = "thiol"
-    HYDRAZINE = "hydrazine"
     AMINE = "amine"
     QUATERNARY_AMMONIUM = "quaternary_ammonium"
-    BORONIC = "boronic"
-    CARBAMATE = "carbamate"
-    CARBONATE = "carbonate"
-    GUANIDINE = "guanidine"
-    UREA = "urea"
     ISOCYANATE = "isocyanate"
     ISOTHIOCYANATE = "isothiocyanate"
-    PHOSPHATE = "phosphate"
-    PHOSPHONIC = "phosphonic"
     ETHER = "ether"
     SULFIDE = "sulfide"
-    SULFOXIDE = "sulfoxide"
-    SULFONE = "sulfone"
-    SULFONAMIDE = "sulfonamide"
-    SULFONATE = "sulfonate"
-    SULFONYL_HALIDE = "sulfonyl_halide"
-    SULFONIC_ACID = "sulfonic_acid"
 
 
 @dataclass(frozen=True)
@@ -78,26 +64,12 @@ _LIST_CLASSES = {
     "ketones": FunctionalGroupClass.KETONE,
     "hydroxyls": FunctionalGroupClass.ALCOHOL,
     "thiols": FunctionalGroupClass.THIOL,
-    "hydrazines": FunctionalGroupClass.HYDRAZINE,
     "amines": FunctionalGroupClass.AMINE,
     "quaternary_ammoniums": FunctionalGroupClass.QUATERNARY_AMMONIUM,
-    "boronics": FunctionalGroupClass.BORONIC,
-    "carbamates": FunctionalGroupClass.CARBAMATE,
-    "carbonates": FunctionalGroupClass.CARBONATE,
-    "guanidines": FunctionalGroupClass.GUANIDINE,
-    "ureas": FunctionalGroupClass.UREA,
     "isocyanates": FunctionalGroupClass.ISOCYANATE,
     "isothiocyanates": FunctionalGroupClass.ISOTHIOCYANATE,
-    "phosphates": FunctionalGroupClass.PHOSPHATE,
-    "phosphonics": FunctionalGroupClass.PHOSPHONIC,
     "ethers": FunctionalGroupClass.ETHER,
     "sulfides": FunctionalGroupClass.SULFIDE,
-    "sulfoxides": FunctionalGroupClass.SULFOXIDE,
-    "sulfones": FunctionalGroupClass.SULFONE,
-    "sulfonamides": FunctionalGroupClass.SULFONAMIDE,
-    "sulfonates": FunctionalGroupClass.SULFONATE,
-    "sulfonyl_chlorides": FunctionalGroupClass.SULFONYL_HALIDE,
-    "sulfonic_acids": FunctionalGroupClass.SULFONIC_ACID,
 }
 
 

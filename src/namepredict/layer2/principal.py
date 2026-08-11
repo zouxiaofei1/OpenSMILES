@@ -39,7 +39,6 @@ def _suffix(p41_class: int, rank: int, *path: int) -> PrincipalFeatureSpec:
 PRINCIPAL_REGISTRY: dict[FG, PrincipalFeatureSpec] = {
     FG.RADICAL: _suffix(1, 1),
     FG.ACID: _suffix(7, 14, 1),
-    FG.SULFONIC_ACID: _suffix(7, 13, 4),
     FG.ANHYDRIDE: _suffix(8, 12),
     FG.ESTER: _suffix(9, 11),
     FG.ACYL_HALIDE: _suffix(10, 10),
@@ -50,24 +49,12 @@ PRINCIPAL_REGISTRY: dict[FG, PrincipalFeatureSpec] = {
     FG.ALCOHOL: _suffix(17, 5, 1),
     FG.THIOL: _suffix(17, 4, 2),
     FG.AMINE: _suffix(19, 3),
-    FG.CARBAMATE: PrincipalFeatureSpec(PrincipalPriority(9), PrincipalExpression.LEGACY_COMPAT, 11),
-    FG.HYDRAZINE: PrincipalFeatureSpec(PrincipalPriority(21), PrincipalExpression.LEGACY_COMPAT, 4),
     FG.ISOCYANATE: PrincipalFeatureSpec(PrincipalPriority(41), PrincipalExpression.LEGACY_COMPAT, 8),
     FG.ISOTHIOCYANATE: PrincipalFeatureSpec(PrincipalPriority(41), PrincipalExpression.LEGACY_COMPAT, 8),
     FG.SULFIDE: PrincipalFeatureSpec(PrincipalPriority(41, (2,)), PrincipalExpression.LEGACY_COMPAT, 2),
-    FG.SULFOXIDE: PrincipalFeatureSpec(PrincipalPriority(41, (3,)), PrincipalExpression.LEGACY_COMPAT, 2),
-    FG.SULFONE: PrincipalFeatureSpec(PrincipalPriority(41, (4,)), PrincipalExpression.LEGACY_COMPAT, 6),
     FG.ETHER: PrincipalFeatureSpec(PrincipalPriority(41, (1,)), PrincipalExpression.PREFIX_ONLY),
     # Legacy_compat: compatibility_rank only (kind_registry fg_rank projection);
     # never eligible as principal group (principal_spec() gates on SUFFIX).
-    FG.CARBONATE: PrincipalFeatureSpec(PrincipalPriority(9), PrincipalExpression.LEGACY_COMPAT, 11),
-    FG.SULFONATE: PrincipalFeatureSpec(PrincipalPriority(9), PrincipalExpression.LEGACY_COMPAT, 11),
-    FG.SULFONYL_HALIDE: PrincipalFeatureSpec(PrincipalPriority(10), PrincipalExpression.LEGACY_COMPAT, 10),
-    FG.UREA: PrincipalFeatureSpec(PrincipalPriority(11), PrincipalExpression.LEGACY_COMPAT, 9),
-    FG.GUANIDINE: PrincipalFeatureSpec(PrincipalPriority(11), PrincipalExpression.LEGACY_COMPAT, 9),
-    FG.SULFONAMIDE: PrincipalFeatureSpec(PrincipalPriority(11), PrincipalExpression.LEGACY_COMPAT, 9),
-    FG.PHOSPHATE: PrincipalFeatureSpec(PrincipalPriority(41), PrincipalExpression.LEGACY_COMPAT, 2),
-    FG.PHOSPHONIC: PrincipalFeatureSpec(PrincipalPriority(41), PrincipalExpression.LEGACY_COMPAT, 2),
 }
 
 
