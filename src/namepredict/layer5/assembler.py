@@ -10,7 +10,7 @@ from namepredict.layer5.stems import (
 )
 from namepredict.layer5.benzene_names import (
     benzene_parent_names, phenyl_parent_names,
-    benzoate_parent_names, benzenediol_names,
+    benzenediol_names,
     join_kind_name, pyridine_kind_names,
 )
 from namepredict.layer5.stereo_ez import _ez_prefix, ez_for_parent
@@ -24,63 +24,8 @@ def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:
 def _alkane_names(n: int) -> tuple[str, str] | None: return _pair(ALKANE_EN, ALKANE_ZH, n)
 def _omit_term_locant(n: int, loc: int | None, omit: bool) -> bool:
     return omit or loc is None or (loc == 1 and n <= 2)
-def _alcohol_names(n: int, oh_locant: int | None, omit: bool) -> tuple[str, str] | None:
-    if _omit_term_locant(n, oh_locant, omit):
-        return _pair(ALCOHOL_EN, ALCOHOL_ZH, n)
-    plain = _pair(ALCOHOL_EN, ALCOHOL_ZH, n)
-    if not plain:
-        return None
-    en, zh = plain
-    return f"{en[:-2]}-{oh_locant}-ol", f"{zh_stem(zh)}-{oh_locant}-醇"
 def _pair_loc_str(locs: list[int]) -> str:
     return ",".join(str(x) for x in locs)
-def _poly_fg_names(
-    n: int, locs: list[int] | None, en_suf: str, zh_suf: str, need: int
-) -> tuple[str, str] | None:
-    plain = _alkane_names(n)
-    if not plain or not locs or len(locs) != need:
-        return None
-    en, zh = plain
-    loc = _pair_loc_str(locs)
-    return f"{en}-{loc}-{en_suf}", f"{zh}-{loc}-{zh_suf}"
-def _polyol_names(n: int, locs: list[int] | None, kind: str) -> tuple[str, str] | None:
-    if kind == "alcohol":
-        return _alcohol_names(n, locs[0] if locs else None, False)
-    m = {"diol": ("diol", "二醇", 2), "triol": ("triol", "三醇", 3)}.get(kind)
-    return _poly_fg_names(n, locs, *m) if m else None
-def _unsat_polyol_ok(numbered: dict) -> tuple | None:
-    locs = numbered.get("oh_locants")
-    kind = (numbered.get("parent") or {}).get("kind", "")
-    if not locs or kind not in ("diol", "triol"): return None
-    ene, yne = numbered.get("ene_locant"), numbered.get("yne_locant")
-    enes = numbered.get("ene_locants")
-    if ene or yne or (enes and len(enes) >= 2): return (locs, kind, ene, yne, enes)
-    return None
-def _monoene_polyol_name(plain, ene, loc, suf, omit: bool = False) -> tuple[str, str]:
-    en, zh = plain
-    if omit: return f"{en[:-3]}ene-{loc}-{suf[0]}", f"{zh}烯-{loc}-{suf[1]}"
-    return f"{en[:-3]}-{ene}-ene-{loc}-{suf[0]}", f"{zh}-{ene}-烯-{loc}-{suf[1]}"
-def _monoyne_polyol_name(plain, yne, loc, suf, omit: bool = False) -> tuple[str, str]:
-    en, zh = plain
-    if omit: return f"{en[:-3]}yne-{loc}-{suf[0]}", f"{zh}炔-{loc}-{suf[1]}"
-    return f"{en[:-3]}-{yne}-yne-{loc}-{suf[0]}", f"{zh}-{yne}-炔-{loc}-{suf[1]}"
-def _polyene_polyol_name(plain, enes, loc, suf) -> tuple[str, str]:
-    en, zh, n = plain[0], plain[1], len(enes)
-    el = _pair_loc_str(enes)
-    me, mz = {2: "diene", 3: "triene"}.get(n, ""), {2: "二烯", 3: "三烯"}.get(n, "")
-    return f"{en[:-3]}a-{el}-{me}-{loc}-{suf[0]}", f"{zh}-{el}-{mz}-{loc}-{suf[1]}"
-def _unsat_polyol_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """but-2-ene-1,4-diol / hexa-2,4-diene-1,6-diol — ene/yne before polyol suffix."""
-    u = _unsat_polyol_ok(numbered)
-    if u is None: return None
-    locs, kind, ene, yne, enes = u
-    plain, suf = _alkane_names(n), {"diol": ("diol", "二醇"), "triol": ("triol", "三醇")}.get(kind)
-    if not plain or not suf: return None
-    loc = _pair_loc_str(locs)
-    if enes and len(enes) >= 2: return _polyene_polyol_name(plain, enes, loc, suf)
-    if ene is not None:
-        return _monoene_polyol_name(plain, ene, loc, suf, numbered.get("omit_ene_locant", False))
-    return _monoyne_polyol_name(plain, yne, loc, suf, numbered.get("omit_yne_locant", False))
 def _acid_names(n: int) -> tuple[str, str] | None:
     return _pair(ACID_EN, ACID_ZH, n)
 def _anhydride_from_acid(n: int) -> tuple[str, str] | None:
@@ -94,16 +39,7 @@ from namepredict.layer5.polycarboxylic import (
     cycloalkane_polycarboxylic_names as _cycloalkane_polycarboxylic_names,
     polycarboxylic_names as _polycarboxylic_names,
 )
-def _ester_acyl_en(n: int) -> str | None:
-    return ESTER_ACYL_EN.get(n)
-def _ester_names(acyl_n: int, parent: dict) -> tuple[str, str] | None:
-    from namepredict.layer5.stems import ester_alkoxy_pair
-    alkyl = ester_alkoxy_pair(parent)
-    acyl = _ester_acyl_en(acyl_n)
-    acid_zh = ACID_ZH.get(acyl_n)
-    if not alkyl or not acyl or not acid_zh:
-        return None
-    return f"{alkyl[0]} {acyl}", f"{acid_zh}{alkyl[1]}酯"
+
 def _polyacid_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "polycarboxylic": return _polycarboxylic_names(n, numbered)
     if kind == "benzene_polycarboxylic": return _benzene_polycarboxylic_names(n, numbered)
@@ -365,6 +301,7 @@ class _Chain:
     cyclic_unsat: bool = False          # 仅烯/炔段时加环 (cyclopolyene: 无烯回落纯烷烃)
     zh_full: bool = False               # 中文词干保留完整烷烃后缀 "烷" (环烷/回落)
     wrap: object = None                 # (pair, numbered)->pair  整体包裹 (E/Z)
+    unsat_polyol: bool = False          # 多 FG 词干支持烯/炔插入 (diol/triol: but-2-ene-1,4-diol)
 
 def _chain_zh_base(n: int) -> str | None:
     z = alkane_zh(n)
@@ -376,6 +313,34 @@ def _chain_plain(spec: _Chain, s: str, zs: str, n: int) -> tuple[str, str]:
     if pair is None and spec.plain_fn is not None:
         pair = spec.plain_fn(n)
     return pair if pair is not None else (f"{s}{spec.coda}{spec.en_suf}", f"{zs}{spec.zh_suf}")
+
+def _chain_polyol_stem(n: int, numbered: dict) -> tuple[str, str] | None:
+    """多 FG 不饱和词干: but-2-ene / 丁烷-2-烯 (对齐 _unsat_polyol_names 输出)."""
+    enes = numbered.get("ene_locants")
+    ene = numbered.get("ene_locant")
+    yne = numbered.get("yne_locant")
+    if not (enes or ene or yne):
+        return None
+    plain = _alkane_names(n)
+    if not plain:
+        return None
+    en, zh = plain
+    if enes and len(enes) >= 2:
+        loc = _pair_loc_str(enes)
+        me = {2: "diene", 3: "triene"}.get(len(enes), "")
+        mz = {2: "二烯", 3: "三烯"}.get(len(enes), "")
+        if not me:
+            return None
+        return f"{en[:-3]}a-{loc}-{me}", f"{zh}-{loc}-{mz}"
+    if yne is not None:
+        if numbered.get("omit_yne_locant", False):
+            return f"{en[:-3]}yne", f"{zh}炔"
+        return f"{en[:-3]}-{yne}-yne", f"{zh}-{yne}-炔"
+    if ene is not None:
+        if numbered.get("omit_ene_locant", False):
+            return f"{en[:-3]}ene", f"{zh}烯"
+        return f"{en[:-3]}-{ene}-ene", f"{zh}-{ene}-烯"
+    return None
 
 def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None:
     """单链词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环; 烯/炔段插入由 spec 数据驱动."""
@@ -400,7 +365,15 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         if not locs or (spec.need is not None and len(locs) != spec.need):
             return None
         loc_s = ",".join(str(x) for x in locs)
-        pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
+        if spec.unsat_polyol:
+            poly_stem = _chain_polyol_stem(n, numbered)
+            if poly_stem is not None:
+                es, zs2 = poly_stem
+                pair = (f"{es}-{loc_s}-{spec.en_suf}", f"{zs2}-{loc_s}-{spec.zh_suf}")
+            else:
+                pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
+        else:
+            pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
     else:
         loc = numbered.get(spec.loc) if spec.loc else None
         omit = numbered.get(spec.omit_key, spec.default_omit) if spec.loc else False
@@ -429,6 +402,14 @@ _KIND_TABLE = {
                       mult_seg={2: ("dien", "二烯"), 3: ("trien", "三烯"),
                                 4: ("tetraen", "四烯"), 5: ("pentaen", "五烯")},
                       ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent),
+    "diol": _Chain(kind="diol", en_suf="diol", zh_suf="二醇", coda="ane",
+                   loc=None, omit_key="", default_omit=False,
+                   no_loc="none", omit_rule=lambda n, loc, omit: False,
+                   locs="oh_locants", need=2, zh_full=True, unsat_polyol=True),
+    "triol": _Chain(kind="triol", en_suf="triol", zh_suf="三醇", coda="ane",
+                    loc=None, omit_key="", default_omit=False,
+                    no_loc="none", omit_rule=lambda n, loc, omit: False,
+                    locs="oh_locants", need=3, zh_full=True, unsat_polyol=True),
     "ketone": _Chain(kind="ketone", en_suf="one", zh_suf="酮", coda="an",
                      loc="ketone_locant", omit_key="omit_ketone_locant", default_omit=False,
                      no_loc="none",
@@ -557,23 +538,17 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     entry = _KIND_TABLE.get(kind)
     if entry is not None:
         return _chain_names(entry, n, numbered)
-    if kind == "ether":
-        return _ether_names(n, numbered)
+  
     if kind == "sulfide":
         return _sulfide_names(numbered)
     if kind == "benzenediol":
         return benzenediol_names(numbered.get("oh_locants"))
-    if kind in ("diol", "triol"):
-        top = _unsat_polyol_names(n, numbered)
-        if top is not None:
-            return top
-        return _polyol_names(n, numbered.get("oh_locants"), kind)
     if kind == "phenyl":
         return phenyl_parent_names(numbered)
     if kind == "benzene":
         return benzene_parent_names(numbered)
     if kind == "benzoate":
-        return benzoate_parent_names(numbered, _build_prefix)
+        return ("benzoate", "苯甲酸")
     top = pyridine_kind_names(kind, numbered, _build_prefix)
     if top is not None:
         return top

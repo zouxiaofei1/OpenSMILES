@@ -206,24 +206,6 @@ def alkynenitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
     )
 
 
-def alkenoate_names(n, locant, parent, ez="") -> tuple[str, str] | None:
-    from namepredict.layer5.stems import ester_alkoxy_pair
-    alkyl = ester_alkoxy_pair(parent)
-    stem = _unsat_acid_pair(n, locant, "", "enoate", "烯酸")
-    if not alkyl or not stem:
-        return None
-    return f"{alkyl[0]} {ez}{stem[0]}", f"{ez}{stem[1]}{alkyl[1]}酯"
-
-
-def alkynoate_names(n, locant, parent, omit=False) -> tuple[str, str] | None:
-    from namepredict.layer5.stems import ester_alkoxy_pair
-    alkyl = ester_alkoxy_pair(parent)
-    stem = _alkynoic_pair(n, locant, "ynoate", "炔酸", omit)
-    if not alkyl or not stem:
-        return None
-    return f"{alkyl[0]} {stem[0]}", f"{stem[1]}{alkyl[1]}酯"
-
-
 def _ene_mult_ol(k: int) -> tuple[str, str]:
     en = {2: "diene", 3: "triene", 4: "tetraene", 5: "pentaene"}.get(k, "")
     zh = {2: "二烯", 3: "三烯", 4: "四烯", 5: "五烯"}.get(k, "")
@@ -306,16 +288,3 @@ def _alkynone_names(n, yne_loc, one_loc) -> tuple[str, str] | None:
 def alkynone_from(n: int, numbered: dict) -> tuple[str, str] | None:
     """but-3-yn-2-one / 丁-3-炔-2-酮 (ketone + yne locants retained)."""
     return _alkynone_names(n, numbered.get("yne_locant"), numbered.get("ketone_locant"))
-
-
-def ester_or_alkenoate(n: int, numbered: dict) -> tuple[str, str] | None:
-    """Ester stem; unsat when yne or ene fields present."""
-    parent = numbered.get("parent") or {}
-    if _has_yne(numbered):
-        omit = numbered.get("omit_yne_locant", False)
-        return alkynoate_names(n, numbered.get("yne_locant"), parent, omit)
-    if _has_ene(numbered):
-        return alkenoate_names(
-            n, numbered.get("ene_locant"), parent, _ez_prefix(numbered),
-        )
-    return None

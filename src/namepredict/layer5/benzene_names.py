@@ -133,10 +133,20 @@ def join_parent_name(prefix: str, parent: str) -> str:
 
 
 def _ester_alkoxy_from(numbered) -> tuple[str, str]:
-    """O-side alkyl from o_side substituents: (en, zh without trailing 基)."""
+    """O-side alkyl: linear 走 parent.alkoxy_n 保留名表; 特殊基团/复杂回落 o_side 取代基.
+
+    linear (如 hexadecan-16-yl 的 o_side 命名带位次) 必须走 ester_alkyl_en/zh 的
+    "hexadecyl"/"十六", 否则长链 O 侧会带 -16-yl 位次 (ester/benzoate 共用此路径).
+    """
     if not numbered:
         return "", ""
+    parent = numbered.get("parent") or {}
     o = [s for s in (numbered.get("substituents") or []) if s.get("o_side")]
+    if len(o) <= 1 and parent.get("alkoxy_n") is not None:
+        from namepredict.layer5.stems import ester_alkyl_en, ester_alkyl_zh
+        en, zh = ester_alkyl_en(parent["alkoxy_n"]), ester_alkyl_zh(parent["alkoxy_n"])
+        if en and zh:
+            return en, zh
     if not o:
         return "", ""
     en0, zh0 = o[0].get("en") or "", (o[0].get("zh") or "").rstrip("基")
@@ -162,12 +172,28 @@ def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=N
     return en, zh
 
 
+def join_benzoate_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=None) -> tuple[str, str]:
+    """O-side alkyl + benzoate acid stem: ethyl 4-chlorobenzoate / 4-氯苯甲酸乙酯.
+
+    与 ester 同构: 母体只含酸部分, 烷氧基从 o_side 取代基取; zh 恒拼"酯"
+    (无烷氧基时保留"苯甲酸酯", 如复杂 O-烷基场景).
+    """
+    en, zh = names
+    alk_en, alk_zh = _ester_alkoxy_from(numbered)
+    body = f"{pre_en}{en}" if pre_en else en
+    en = f"{alk_en} {body}" if alk_en else body
+    midz = f"{pre_zh}{zh}" if pre_zh else zh
+    return en, f"{midz}{alk_zh}酯"
+
+
 def join_kind_name(
     kind: str | None, pre: tuple[str, str], names: tuple[str, str],
     numbered=None,
 ) -> tuple[str, str]:
     if kind in ("ester", "diester"):
         return join_ester_name(pre[0], pre[1], names, numbered)
+    if kind == "benzoate":
+        return join_benzoate_name(pre[0], pre[1], names, numbered)
     en = join_parent_name(pre[0], names[0])
     zh = join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))
     return en, zh
@@ -178,21 +204,6 @@ def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
     if not prefix or not en_parent.startswith("1H-") or zh_parent.startswith("1H-"):
         return zh_parent
     return f"1H-{zh_parent}"
-
-
-def benzoate_parent_names(numbered: dict, build_prefix) -> tuple[str, str] | None:
-    from namepredict.layer5.stems import ester_alkoxy_pair
-    parent = numbered.get("parent") or {}
-    alkyl = ester_alkoxy_pair(parent)
-    pre_en, pre_zh = build_prefix(numbered.get("substituents") or [], 6, "benzoate")
-    # Complex O-alkyl: parent hit only (alkyl radical not yet named).
-    if not alkyl and parent.get("alkoxy_complex"):
-        en = f"{pre_en}benzoate" if pre_en else "benzoate"
-        return en, f"{pre_zh}苯甲酸酯"
-    if not alkyl:
-        return None
-    en = f"{alkyl[0]} {pre_en}benzoate" if pre_en else f"{alkyl[0]} benzoate"
-    return en, f"{pre_zh}苯甲酸{alkyl[1]}酯"
 
 
 def benzenediol_names(locs: list[int] | None) -> tuple[str, str] | None:

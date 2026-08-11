@@ -87,7 +87,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "benzene":
         return benzene_prefix(numbered, _build_prefix)
-    _skip = ("benzoate", "benzothiazolamine",
+    _skip = ("benzothiazolamine",
              "benzoxazolamine", "benzimidazolamine", "boronic")
     if kind in _skip:
         return "", ""
