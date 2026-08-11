@@ -1,6 +1,6 @@
 # Layer5: 名称组装 (Name Assembly)
 
-> **管线位置:** 第 5 层 / 6 层 (输出层) | **源文件:** 26 个 `.py` | **最后更新:** 2026-07-20
+> **管线位置:** 第 5 层 / 6 层 (输出层) | **源文件:** 22 个 `.py` | **最后更新:** 2026-08-11
 
 ---
 
@@ -58,11 +58,12 @@ assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> Name
 
 ### 1. 组装总控 (`assemble` 函数)
 
-Layer5 的入口是 `assembler.py` 中的 `assemble` 函数（第 573 行）。它遵循一个清晰的 5 步流水线，每步返回双语元组 `(en, zh)`：
+Layer5 的入口是 `assembler.py` 中的 `assemble` 函数（第 640 行）。它遵循一个清晰的名称变换流水线，每步返回双语元组 `(en, zh)`：
 
 ```
 assemble(numbered)
   │
+  ├─ 0. _typed_expression_kind(kind, numbered) → 按 principal expression 重定型
   ├─ 1. _names_for(kind, n, numbered)     → 母体名称 (en, zh)
   ├─ 2. _prefix_for(numbered, kind, n)    → 取代基前缀 (pre_en, pre_zh)
   ├─ 3. join_kind_name(kind, pre, names)  → 拼接前缀+母体
@@ -72,13 +73,13 @@ assemble(numbered)
        → NameResult(en, zh)
 ```
 
-> **源:** `src/namepredict/layer5/assembler.py:573-583`
+> **源:** `src/namepredict/layer5/assembler.py:640-651`
 
 这 5 步体现了 IUPAC 名称的标准模板：**[立体前缀]-[取代基前缀]-[母体词干]-[官能团后缀]-[盐后缀]**。每一步都是纯文本操作，不涉及任何化学计算——所有化学推理已在 Layer1-4 完成。
 
 ### 2. 母体名称生成的派发机制 (`_names_for`)
 
-`_names_for` 是母体名称的核心派发函数（第 493 行），按优先级依次尝试五种命名策略：
+`_names_for` 是母体名称的核心派发函数（第 569 行），按优先级依次尝试五种命名策略：
 
 1. **特殊 FG 命名** (`special_fg_names`)：覆盖 carbamate、carbonate、urea、guanidine、hydrazine、diester、boronic、acyl halide、sulfoxide、sulfonamide、sulfonate、sulfone、sulfonic acid、sulfonyl chloride、cyclo exo-FG 等。这些类别有独特的命名模式，不符合标准的"词干-FG后缀"模板。
 
@@ -90,7 +91,7 @@ assemble(numbered)
 
 5. **不饱和烃/环命名** (`_unsat_or_alkane`)：处理 alkene、polyene、alkyne、cycloalkane、cycloalkene、benzene、bridged、spiro 等。
 
-> **源:** `src/namepredict/layer5/assembler.py:493-499`
+> **源:** `src/namepredict/layer5/assembler.py:569-576`
 
 这种 5 级派发确保了特殊命名优先于通用命名——例如 diethyl carbonate 调用 `carbonate_names` 而非走通用 `ether` 分支。
 
@@ -179,7 +180,7 @@ assemble(numbered)
 
 **合并规则：** R/S 前缀与已有的 E/Z 前缀共享同一个括号块，按"先 E/Z 后 R/S"、同类型按位次号排序。例如 `(E,2S)-` 而非 `(E)-(2S)-`。对于酯，R/S 描述符插入烷基词之后（`methyl (2S)-butanoate`）。
 
-> **源:** `src/namepredict/layer5/stereo_rs.py:156-164` (apply_rs_prefix), `src/namepredict/layer5/stereo_rs.py:92-114` (_parse_stereo / _format_stereo)
+> **源:** `src/namepredict/layer5/stereo_rs.py:154` (apply_rs_prefix), `src/namepredict/layer5/stereo_rs.py:92-114` (_parse_stereo / _format_stereo)
 
 ### 7. 功能性命名模式
 
@@ -207,11 +208,11 @@ assemble(numbered)
 - **烯酮 (alkenone)：** `{alkane}-{ene}-en-{one}-one` 格式
 - **不饱和多元醇：** `assembler.py` 中的 `_unsat_polyol_names` 在 diol/triol 母体上优先尝试不饱和命名，如 `but-2-ene-1,4-diol`/`丁-2-烯-1,4-二醇`
 
-> **源:** `src/namepredict/layer5/unsat_acid.py:75-81` (alkenoic_acid_names), `src/namepredict/layer5/assembler.py:133-144` (_unsat_polyol_names)
+> **源:** `src/namepredict/layer5/unsat_acid.py:75` (alkenoic_acid_names), `src/namepredict/layer5/assembler.py:129` (_unsat_polyol_names)
 
 ### 9. FG 专属命名模块的设计模式
 
-Layer5 的 15+ 个 FG 专属命名文件遵循一个统一的设计模式——每个模块导出一个或多个函数，签名为 `(numbered: dict) -> tuple[str, str] | None` 或 `(kind: str, n: int, numbered: dict) -> tuple[str, str] | None`。以 `sulfonamide_names.py` 为例：
+Layer5 的多个 FG 专属命名模块遵循一个统一的设计模式——每个模块导出一个或多个函数，签名为 `(numbered: dict) -> tuple[str, str] | None` 或 `(kind: str, n: int, numbered: dict) -> tuple[str, str] | None`。以 `sulfur_names.sulfonamide_names` 为例：
 
 1. **kind 门控：** 入口函数检查 `parent["kind"]` 是否匹配，不匹配直接返回 `None`。
 2. **mode 派发：** 通过 `parent["mode"]` 字段（如 `"alkyl"`, `"aryl"`, `"n_alkyl"` 等）派发到不同的子模式函数。
@@ -220,13 +221,13 @@ Layer5 的 15+ 个 FG 专属命名文件遵循一个统一的设计模式——�
 
 其他模块的类似模式：
 - **carbamate_names**: `alkyl N-substituent carbamate` / `N-取代基 氨基甲酸 烷基酯`
-- **urea_names**: 无取代 `urea`/`脲` → 单芳基 `phenylurea`/`苯脲` → 1,1-二甲基-3-芳基模式
+- **nitrogen_names.urea_names**: 无取代 `urea`/`脲` → 单芳基 `phenylurea`/`苯脲` → 1,1-二甲基-3-芳基模式
 - **phosphate_names**: `alkyl dihydrogen phosphate` / `磷酸烷基酯`
-- **sulfonic_acid_names**: `alkanesulfonic acid` / `烷磺酸` 或 `arenesulfonic acid` / `芳烃磺酸`
+- **sulfur_names.sulfonic_acid_names**: `alkanesulfonic acid` / `烷磺酸` 或 `arenesulfonic acid` / `芳烃磺酸`
 
-这种设计模式确保了每个 FG 模块的高内聚性——特定官能团的所有命名知识封装在单个文件中，`special_fg_names` 仅作为薄派发层。
+氮族（urea/guanidine/hydrazine/isocyanate/isothiocyanate）集中在 `nitrogen_names.py`，硫族（sulfonamide/sulfonate/sulfone/sulfonic acid/sulfonyl chloride/sulfoxide）集中在 `sulfur_names.py`。这种设计模式确保了每个 FG 模块的高内聚性——特定官能团的所有命名知识封装在单个文件中，`special_fg_names` 仅作为薄派发层。
 
-> **源:** `src/namepredict/layer5/special_fg_names.py:58-64` (special_fg_names dispatch)
+> **源:** `src/namepredict/layer5/special_fg_names.py:54` (special_fg_names dispatch)
 
 ### 10. 名称拼接 (`join_kind_name`)
 
@@ -248,60 +249,57 @@ Layer5 的 15+ 个 FG 专属命名文件遵循一个统一的设计模式——�
 | 文件 | 说明 |
 |------|------|
 | `src/namepredict/layer5/__init__.py` | 包入口，导出 `assemble` |
-| `src/namepredict/layer5/assembler.py` | 主组装器：母体名称派发 + 5 步流水线整合 (584 行) |
-| `src/namepredict/layer5/assembler_prefixes.py` | 取代基前缀：分组、位次合并、字母序排列 (97 行) |
+| `src/namepredict/layer5/assembler.py` | 主组装器：typed-kind 重定型 + 母体名称派发 + 名称变换流水线 (651 行) |
+| `src/namepredict/layer5/assembler_prefixes.py` | 取代基前缀：分组、位次合并、字母序排列 (93 行) |
 
 ### 词干表
 
 | 文件 | 说明 |
 |------|------|
-| `src/namepredict/layer5/stems.py` | C1-C35+ 英中双语烷烃及 FG 词干生成器，盐后缀支持 (376 行) |
+| `src/namepredict/layer5/stems.py` | C1-C35+ 英中双语烷烃及 FG 词干生成器，盐后缀支持 (375 行) |
 
 ### 芳烃/杂环母体
 
 | 文件 | 说明 |
 |------|------|
-| `src/namepredict/layer5/benzene_names.py` | 苯/芳烃/杂环母体：保留名、前缀、杂环羧酸、泛化芳烃 FG (569 行) |
+| `src/namepredict/layer5/benzene_names.py` | 苯/芳烃/杂环母体：保留名、前缀、杂环羧酸、泛化芳烃 FG、`pyridine_kind_names` 分发 (324 行) |
 | `src/namepredict/layer5/aryl_helpers.py` | 芳基辅助：tolyl 交换、phenyl→benzene 转换、括号包裹 (38 行) |
-| `src/namepredict/layer5/iso_arene_names.py` | iso-芳烃稠合体系命名 |
+| `src/namepredict/layer5/iso_arene_names.py` | iso-芳烃稠合体系命名 (73 行) |
 
 ### 立体化学
 
 | 文件 | 说明 |
 |------|------|
-| `src/namepredict/layer5/stereo_rs.py` | CIP R/S 手性中心立体描述符 (165 行) |
-| `src/namepredict/layer5/stereo_ez.py` | E/Z 双键立体描述符 (74 行) |
+| `src/namepredict/layer5/stereo_rs.py` | CIP R/S 手性中心立体描述符 (162 行) |
+| `src/namepredict/layer5/stereo_ez.py` | E/Z 双键立体描述符 (73 行) |
 
 ### 不饱和体系
 
 | 文件 | 说明 |
 |------|------|
-| `src/namepredict/layer5/unsat_acid.py` | 烯/炔酸、醛、腈、酯、醇、酮的不饱和母体命名 (327 行) |
+| `src/namepredict/layer5/unsat_acid.py` | 烯/炔酸、醛、腈、酯、醇、酮的不饱和母体命名 (321 行) |
+| `src/namepredict/layer5/polycarboxylic.py` | 多元羧酸（开链/苯/环烷）(43 行) |
 
 ### FG 专属命名（按字母序）
 
 | 文件 | 说明 |
 |------|------|
-| `src/namepredict/layer5/acyl_halide_names.py` | 酰氯/酰溴 (40 行) |
-| `src/namepredict/layer5/boronic_names.py` | 硼酸命名 |
-| `src/namepredict/layer5/carbamate_names.py` | 氨基甲酸酯：N-取代模式 (78 行) |
-| `src/namepredict/layer5/carbonate_names.py` | 碳酸酯命名 |
-| `src/namepredict/layer5/cyclo_exo_fg_names.py` | 环烷外环羰基 FG (56 行) |
-| `src/namepredict/layer5/diester_names.py` | 对称二酯 (68 行) |
-| `src/namepredict/layer5/guanidine_names.py` | 胍命名 |
-| `src/namepredict/layer5/hydrazine_names.py` | 肼命名 (63 行) |
-| `src/namepredict/layer5/isocyanate_names.py` | 异氰酸酯/异硫氰酸酯命名 |
-| `src/namepredict/layer5/phosphate_names.py` | 磷酸酯/膦酸命名 (45 行) |
-| `src/namepredict/layer5/polycarboxylic.py` | 多元羧酸（开链/苯/环烷）(46 行) |
-| `src/namepredict/layer5/sat_hetero_one_names.py` | 饱和杂环酮 (oxolanone 等) |
-| `src/namepredict/layer5/special_fg_names.py` | FG 派发层：统筹所有 FG 专属命名模块 (65 行) |
-| `src/namepredict/layer5/sulfonamide_names.py` | 磺酰胺：alkyl/aryl/N-取代 多模式 (113 行) |
-| `src/namepredict/layer5/sulfonate_names.py` | 磺酸酯命名 |
-| `src/namepredict/layer5/sulfone_names.py` | 砜命名 |
-| `src/namepredict/layer5/sulfonic_acid_names.py` | 磺酸：alkyl/aryl 模式 (41 行) |
-| `src/namepredict/layer5/sulfonyl_chloride_names.py` | 磺酰氯命名 |
-| `src/namepredict/layer5/sulfoxide_names.py` | 亚砜命名 |
-| `src/namepredict/layer5/urea_names.py` | 脲命名：无取代/单芳基/1,1-二甲基-3-芳基模式 (59 行) |
+| `src/namepredict/layer5/acyl_halide_names.py` | 酰氯/酰溴 (39 行) |
+| `src/namepredict/layer5/boronic_names.py` | 硼酸命名 (45 行) |
+| `src/namepredict/layer5/carbamate_names.py` | 氨基甲酸酯：N-取代模式 (77 行) |
+| `src/namepredict/layer5/carbonate_names.py` | 碳酸酯命名 (65 行) |
+| `src/namepredict/layer5/cyclo_exo_fg_names.py` | 环烷外环羰基 FG (31 行) |
+| `src/namepredict/layer5/diester_names.py` | 对称二酯 (67 行) |
+| `src/namepredict/layer5/nitrogen_names.py` | **氮族合并模块**：urea / guanidine / hydrazine / isocyanate / isothiocyanate (199 行) |
+| `src/namepredict/layer5/phosphate_names.py` | 磷酸酯/膦酸命名 (44 行) |
+| `src/namepredict/layer5/special_fg_names.py` | FG 派发层：统筹所有 FG 专属命名模块 (58 行) |
+| `src/namepredict/layer5/sulfur_names.py` | **硫族合并模块**：sulfonamide / sulfonate / sulfone / sulfonic acid / sulfonyl chloride / sulfoxide (358 行) |
+
+### yl 转换
+
+| 文件 | 说明 |
+|------|------|
+| `src/namepredict/layer5/free_to_yl.py` | 自由母体名 → P-29 取代基 -yl 形式（FG 后缀→前缀，`free_to_yl`) (185 行) |
 
 ### 管线集成
 

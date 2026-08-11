@@ -95,28 +95,20 @@ info = {
 
 **职责**：母体氢化物（parent hydride）选择——按 IUPAC P-44 规则驱动管线选出主链/主环母体
 
-这是整个流水线中代码量最大的层（约占 60%，约 75 个文件），位于 `src/namepredict/layer2/`。
+这是整个流水线中逻辑最复杂的层之一（25 个文件，2,728 行；与 layer5 并列为代码量最大的两层），位于 `src/namepredict/layer2/`。
 
 **主路径（P-44 规则驱动管线）**：
 
 `candidates._collect_candidates` → `_principal_candidates` → `rule_driven_parent_candidates`
 （`principal_parent.py`）。该管线按 IUPAC P-44 逐步筛选：
 
-1. **主官能团选择**（`principal.py`，原 `principal_selection` + `principal_registry` 合并）：按 `PRINCIPAL_REGISTRY`（P-41）优先级选主官能团
+1. **主官能团选择**（`principal.py`）：按 `PRINCIPAL_REGISTRY`（P-41）优先级选主官能团
 2. **骨架枚举 + 筛选**（`parent_skeleton.py`）：枚举开链 + 环系统骨架，依次施加
    P-44.1.2（环>链 + 最高杂原子）/ P-44.2（环系统优先级）/ P-44.3（链长）/ P-44.4（不饱和度）
 3. **typed 表达**（`principal_expression.py`）：`express_chain/ring_principal` 产出带
    `PrincipalExpressionFacts` 与 `ScaffoldIdentity` 的 parent dict；苯环 + 单 FG 走
    `_RETAINED_RING_KINDS` 保留名表（benzoic / **benzoate** / benzaldehyde / phenol / aniline 等）；
    无主官能团的纯烃走 `express_hydrocarbon_principal`（alkane/alkene/alkyne/polyene/环烷/保留 scaffold）
-
-**经典 producer 体系（已删除）**：
-
-- **`fg_producers` / `ring_producers` / `unsat_producers` 三个 try 函数注册层已整体删除**，
-  `_collect_candidates` 中的经典并行通道已移除，只走 principal 单路径
-- 环骨架身份改由 `scaffold/ring_core` 的 `@_register` 识别器（`ring_core_fns()`）+ 
-  `scaffold/specs` 解析；`parent_selector` 瘦身为 `select_parent` / `iter_parent_candidates` 入口
-- 经典 builder（`_open_chain_expression` / `_special_expression`）已随旧通道删除
 
 **parent dict 结构**：
 
@@ -345,7 +337,7 @@ src/namepredict/
 │   ├── analyzer.py           # FG 检测 + info dict
 │   ├── a*_*.py               # ~20 FG 子检测模块
 │   └── ring_*.py             # 环系拓扑
-├── layer2/                   # 母体选择器（20 .py + scaffold/27）
+├── layer2/                   # 母体选择器（25 .py，含 scaffold/）
 │   ├── principal.py          # P-41 主官能团注册表 + 选择
 │   ├── principal_expression.py  # typed 表达 (chain/ring/hydrocarbon)
 │   ├── principal_parent.py   # P-44 规则驱动管线编排
@@ -355,20 +347,18 @@ src/namepredict/
 │   ├── scoring.py            # 候选评分
 │   ├── candidate_gate.py     # 类型化门控
 │   ├── parent_core.py        # parent_dict / chain / gate helpers
-│   ├── fg_helpers.py         # FG 资格谓词 + 脂肪族过滤
+│   ├── fg_helpers.py         # FG 资格谓词 + 互斥检查
 │   ├── arene_carbonyl.py     # 苯甲酰类保留母体
-│   ├── kind_registry.py      # 母体元数据注册中心
-│   └── scaffold/             # 母环保留名 + 骨架构建器 (specs/ring_core/…)
+│   ├── kind_registry.py      # 母体元数据注册中心（只读权威）
+│   └── scaffold/             # 骨架身份 (specs/ring_scaffold/retained_registry)
 ├── layer3/                   # 取代基提取 + 侧链拓扑事实
-│   ├── substituent_extractor.py
-│   ├── substituent_namer.py  # 三后端命名 (anchored / rooted-tree / recursive)
-│   ├── coverage.py           # Coverage Ledger
-│   ├── side_facts.py         # L2/L3 共享拓扑事实层
-│   ├── side_alkyl.py / side_alkoxy.py / aryl_sub.py / aryl_depth2.py
-│   ├── leaves/               # 芳基叶子拓扑 (protocol/registry/topo/…)
+│   ├── substituent_extractor.py  # 三段流水线 (core + anchored + claim)
+│   ├── substituent_namer.py  # 有序后端命名 (retained / rooted-tree / recursive)
 │   ├── as_substituent.py / submol_build.py  # cut→free-name→yl 管道
-│   ├── alkoxy_names.py / aryl_names.py / amino_side.py / alkyl_sys_names.py
-│   └── claim_extract.py / claimable_block.py  # 覆盖补全
+│   ├── claim_extract.py / claimable_block.py  # 覆盖补全
+│   ├── side_facts.py / side_alkyl_sys.py / aryl_sub.py
+│   ├── amino_side.py         # 氨基取代基
+│   └── coverage.py           # Coverage Ledger
 ├── layer4/                   # 编号
 │   ├── numbering.py          # 编号调度
 │   ├── omit_locants.py       # omit-locant 决策
@@ -377,12 +367,16 @@ src/namepredict/
 │   │   ├── engine.py         # choose_numbering
 │   │   ├── constraints.py    # 约束定义
 │   │   ├── generate.py       # 编号候选生成
+│   │   ├── adapt.py          # 从 parent/chain 建 plan
 │   │   └── plan.py           # NumberingPlan
 │   └── [orient modules].py   # 各类定向策略
 └── layer5/                   # 名称组装
     ├── assembler.py          # 组装调度
     ├── stems.py              # 词素映射 (EN/ZH)
-    └── benzene_names.py      # 苯系名称
+    ├── benzene_names.py      # 苯系名称
+    ├── nitrogen_names.py     # 氮族 FG 命名 (urea/guanidine/hydrazine/iso)
+    ├── sulfur_names.py       # 硫族 FG 命名 (sulfonamide/sulfone/sulfoxide/…)
+    └── free_to_yl.py         # -yl 转换
 ```
 
 ---

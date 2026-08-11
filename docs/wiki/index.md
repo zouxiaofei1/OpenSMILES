@@ -1,6 +1,6 @@
 # NamePredict Wiki
 
-> 最后更新: 2026-08-07 | 源文件: 158 `.py` / 17,476 行 | Wiki 页面: 15
+> 最后更新: 2026-08-11 | 源文件: 111 `.py` / 12,374 行 | Wiki 页面: 15
 
 ## 项目概述
 
@@ -17,7 +17,7 @@ SMILES 输入
     |
 [layer1] 官能团分析 -> 识别 FG、环指纹  -> info dict
     |
-[layer2] 母体选择 -> P-44 规则管线选主官能团/骨架、纯烃兜底、保留名 <- 核心 (60% 代码量)
+[layer2] 母体选择 -> P-44 规则管线选主官能团/骨架、纯烃兜底、保留名 <- 核心
     |
 [layer3] 取代基提取 -> anchored 查表 + claim 补全、覆盖台账
     |
@@ -36,7 +36,7 @@ SMILES 输入
 | [[architecture/layer0-preprocessor]] | Layer0 预处理：SMILES 解析、盐检测与解离、盐元数据注入 |
 | [[architecture/layer1-analyzer]] | Layer1 官能团分析器：34 种 FG 检测、环系拓扑、排他性优先级 |
 | [[architecture/layer2-parent-selector]] | Layer2 母体选择器：P-44 规则驱动主链管线、纯烃表达、苯环保留名、kind_registry、评分与门控 |
-| [[architecture/layer3-substituents]] | Layer3 取代基提取器：anchored 查表主流程 + claim 补全、SubstituentNamer 三后端、侧链拓扑事实层 (side_facts)、覆盖台账 |
+| [[architecture/layer3-substituents]] | Layer3 取代基提取器：anchored 查表主流程 + claim 补全、SubstituentNamer 有序后端（retained/rooted-tree/recursive）、侧链拓扑事实层 (side_facts)、覆盖台账 |
 | [[architecture/layer4-numbering]] | Layer4 编号：链/环方向决策、约束驱动编号引擎、omit_locants 规则 |
 | [[architecture/layer5-name-assembly]] | Layer5 名称组装：5 步流水线、双语词干表、FG 专属命名模块、立体化学 |
 

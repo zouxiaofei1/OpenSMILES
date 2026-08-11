@@ -48,7 +48,7 @@ NamePredict 将这一优先级体系内建于 **`kind_registry.py` 的 `fg_rank`
 
 ## KindMeta 数据结构
 
-`kind_registry.py:7-16` 定义了 `KindMeta` 数据类，作为所有母体种类的统一元数据容器：
+`kind_registry.py:45-53` 定义了 `KindMeta` 数据类，作为所有母体种类的统一元数据容器：
 
 ```python
 @dataclass(frozen=True)
@@ -62,7 +62,7 @@ class KindMeta:
     retained: bool         # 是否为 IUPAC 保留名（retained name），影响 L2 评分
 ```
 
-所有母体种类通过模块级 `_bootstrap()` 函数统一注册（`kind_registry.py:314-327`），注册顺序为链状 FG → 芳烃 FG → 杂环 FG → 环烷 FG → bridged → 饱和杂环 → ScaffoldSpec。最后加载的 `_load_from_scaffold_specs()` 来自 `scaffold/specs.py`，是 **stem 的最终权威来源**——如果已有注册条目，ScaffoldSpec 会覆盖。
+所有母体种类通过模块级 `_bootstrap()` 函数统一注册（`kind_registry.py:217-227`），注册顺序为链状 FG → 芳烃 FG → 环 FG 变体 → 环烷 → bridged → 饱和杂环 → ScaffoldSpec。最后加载的 `_load_from_scaffold_specs()` 来自 `scaffold/specs.py`，是 **stem 的最终权威来源**——如果已有注册条目，ScaffoldSpec 会覆盖。
 
 ---
 
@@ -101,12 +101,12 @@ class KindMeta:
 
 这一评分体系使得含羧酸的链状母体（`fg_rank=13`, `has_principal_fg=1`）必然优先于含酮的母体（`fg_rank=6`），无论链长或环数如何。
 
-母体候选的生成当前以 **P-44 规则驱动管线**为主（`rule_driven_parent_candidates`，见
-[[architecture/layer2-parent-selector]]），评分仍由 `scoring.py` 的 11 维 tuple 仲裁。经典的三类注册表
-中，`fg_try_fns()` 已随 fg 注册层删除；`ring_try_fns()` / `unsat_try_fns()` 仍被保留（前者供骨架
-scaffold 标注复用）。
+母体候选的生成以 **P-44 规则驱动管线**为主（`rule_driven_parent_candidates`，见
+[[architecture/layer2-parent-selector]]），评分由 `scoring.py` 的 11 维 tuple 仲裁。`fg_rank` 经
+`kind_registry._KIND_CLASS` 映射到 FG 枚举后由 `principal.legacy_rank` 投影（P-41 `compatibility_rank`
+为单一权威），不存在任何 try 函数注册表。
 
-> **源:** `src/namepredict/layer2/scoring.py:73-95`, `kind_registry.py:175-227` | 详情见 [[architecture/layer2-parent-selector]]
+> **源:** `src/namepredict/layer2/scoring.py:65-68`, `kind_registry.py:10-33` | 详情见 [[architecture/layer2-parent-selector]]
 
 ### Layer 5: 后缀分派（Suffix Dispatch）
 
@@ -128,23 +128,18 @@ scaffold 标注复用）。
 
 IUPAC P-41 规定某些 FG 之间不能作为母体共存——当某个候选母体被选中时，分子中不得存在与其冲突的更高或同级 FG。NamePredict 通过**互斥检查谓词 `_no_fgs(info, keys)`**（`fg_helpers.py`）实现：`keys` 是一组 `has_*` 布尔键，若其中任何一个为 `True`，则该候选母体被排除。
 
-历史上共享的 BAD 元组常量（`_CORE_BAD` / `_DIACID_BAD` / `_DIONE_BAD` 等，定义于原 `parent_selector_common.py`）**已随重构删除**——各候选的互斥 keys 现在由调用方**内联**传入。典型用法：
+各候选的互斥 keys 由调用方**内联**传入 `_no_fgs(info, keys)`。`_no_fgs`（`fg_helpers.py:26`）是唯一的共享互斥原语；每类母体的排斥集合内联在各自模块的 `keys` 参数里。这是一种声明式的约束表达：**`keys` 元组定义了"该母体不容忍的 FG 集合"**。
 
-```python
-# parent_core.py —— 不饱和 FG 候选
-def _ok_unsat_fg(info, flag, ekey, bad):
-    return _open_chain_unsat_atoms(mol, c, db) and _no_fgs(info, bad)
-```
-
-`_no_fgs` 是唯一共享的互斥原语；每类母体的排斥集合内联在各自 producer 的 `bad` 参数里（如 `parent_core.py` / `alkynoic.py`）。这是一种声明式的约束表达：**`keys` 元组定义了"该母体不容忍的 FG 集合"**。
-
-> **源:** `src/namepredict/layer2/fg_helpers.py`, `src/namepredict/layer2/parent_core.py`, `src/namepredict/layer2/alkynoic.py`
+> **源:** `src/namepredict/layer2/fg_helpers.py:26`
 
 ---
 
-## 注册体系：kind_registry 作为单一权威来源
+## 注册体系：kind_registry 作为元数据聚合层
 
-`src/namepredict/layer2/kind_registry.py` 是整个 FG 元数据系统的**单一权威注册中心（Single Registry Authority）**。所有对 FG 优先级的查询必须通过此模块的公共 API 进行：
+`src/namepredict/layer2/kind_registry.py` 是 FG 元数据的**注册与查询中心**：链状 FG 的 `fg_rank` 经
+`_KIND_CLASS` 映射到 FG 枚举后由 `principal.PRINCIPAL_REGISTRY` 的 `compatibility_rank` 投影（P-41
+单一权威），保留 scaffold 的 stem 由 `scaffold/specs.py` 提供（bootstrap 最后加载覆盖）。所有对 FG
+优先级的查询通过此模块的公共 API 进行：
 
 | API | 功能 |
 |---|---|
@@ -153,12 +148,11 @@ def _ok_unsat_fg(info, flag, ekey, bad):
 | `kind_registry.is_hetero_ring(kind)` / `is_carbo_ring(kind)` | 环系类型查询 |
 | `kind_registry.retained_bonus(kind)` | 是否为保留名 |
 | `kind_registry.parent_names(kind)` | 返回 `(en_stem, zh_stem)` 元组 |
-| `kind_registry.ring_try_fns()` / `unsat_try_fns()` | 已删除——try 函数注册表整体移除 |
 
-新增 FG 种类时，若走 principal typed 管线（acid/alcohol/ketone/amine 等），在 `principal_expression.py`
-的 `_RETAINED_RING_KINDS` / `_CHAIN_KINDS` 等表达表中声明 kind 与字段即可；经典 builder
-（`_open_chain_expression` / `_special_expression`）已随注册层删除。评分、候选收集与组装逻辑不变，
-仍保持**开放-封闭原则**。
+新增 FG 种类时，若走 principal typed 管线（acid/alcohol/ketone/amine 等），在 `principal.py` 的
+`PRINCIPAL_REGISTRY` 注册 `PrincipalFeatureSpec`（SUFFIX 档），并在 `principal_expression.py`
+的 `_RETAINED_RING_KINDS` / `_CHAIN_KINDS` 等表达表中声明 kind 与字段即可。评分、候选收集与组装
+逻辑不变，仍保持**开放-封闭原则**。
 
 > **源:** `src/namepredict/layer2/kind_registry.py:89-227`
 
