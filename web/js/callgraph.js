@@ -126,7 +126,41 @@ function renderCalleeChain(rootId) {
   var byId = cgChainById();
   var out = cgOutEdges(byId, state.cgData);
   el.innerHTML = cgTreeHtml(byId, out, rootId);
+  updateCgChainCount(rootId, byId, out);
   applyCgHighlight();
+}
+
+// 统计从根出发的下层调用链：去重函数总数、直接下层数、最深深度
+function cgChainStats(rootId, byId, out) {
+  var seen = {}, directSeen = {}, count = 0, direct = 0, maxDepth = 0;
+  var stack = [{ id: rootId, depth: 0 }];
+  while (stack.length) {
+    var cur = stack.pop();
+    if (seen[cur.id]) continue;
+    seen[cur.id] = true;
+    count++;
+    if (cur.depth > maxDepth) maxDepth = cur.depth;
+    (out[cur.id] || []).forEach(function (e) {
+      if (!byId[e.to]) return;
+      if (cur.depth === 0 && !directSeen[e.to]) {
+        directSeen[e.to] = true;
+        direct++;
+      }
+      stack.push({ id: e.to, depth: cur.depth + 1 });
+    });
+  }
+  return { total: count, direct: direct, maxDepth: maxDepth };
+}
+
+// 在下层调用链标题旁显示整条链的函数数统计
+function updateCgChainCount(rootId, byId, out) {
+  var el = $("cg-chain-count");
+  if (!el) return;
+  var s = cgChainStats(rootId, byId, out);
+  el.hidden = false;
+  el.textContent =
+    "链内 " + s.total + " 个函数" +
+    " · 下层 " + s.direct + " · 最深 " + s.maxDepth + " 层";
 }
 
 function renderCalleeChainByName(query) {
@@ -141,6 +175,8 @@ function renderCalleeChainByName(query) {
   if (!hits.length) {
     var el = $("cg-chain");
     if (el) el.innerHTML = '<p class="muted-text small">未找到匹配函数："' + escapeHtml(query) + '"</p>';
+    var cnt = $("cg-chain-count");
+    if (cnt) cnt.hidden = true;
     return;
   }
   renderCalleeChain(hits[0].id);

@@ -175,23 +175,14 @@ def _thiol_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     return out
 
 
-def _add_ester_alkoxy_arm(mol: Mol, c_idx: int, dbl_o: int | None, out: set[int]) -> None:
-    """Find ester -O- neighbor of c_idx and walk its alkoxy arm."""
-    for n in mol.GetAtomWithIdx(c_idx).GetNeighbors():
-        if n.GetAtomicNum() != 8 or n.GetIdx() == dbl_o:
-            continue
-        out.add(n.GetIdx())
-        for nn in n.GetNeighbors():
-            if nn.GetIdx() != c_idx and nn.GetAtomicNum() == 6:
-                out |= _ether_arm_atoms(mol, n.GetIdx(), nn.GetIdx())
-
-
 def _one_ester_fg(mol: Mol, c_idx: int, out: set[int]) -> None:
-    """Add one ester carbonyl C + =O + -O- + alkoxy arm to out."""
+    """Add one ester carbonyl C + =O + -O- (acid side only, no alkoxy arm)."""
     out.add(int(c_idx))
     dbl_o = _dbl_o_idx(mol, int(c_idx))
     _add_opt(out, dbl_o)
-    _add_ester_alkoxy_arm(mol, int(c_idx), dbl_o, out)
+    for n in mol.GetAtomWithIdx(int(c_idx)).GetNeighbors():
+        if n.GetAtomicNum() == 8 and n.GetIdx() != dbl_o:
+            out.add(n.GetIdx())
 
 
 def _single_ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:

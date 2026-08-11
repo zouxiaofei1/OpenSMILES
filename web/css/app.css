@@ -1558,6 +1558,11 @@ select.input {
   align-items: center;
 }
 
+.card-title .chip {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
 .cg-chain-body {
   max-height: 460px;
   overflow-y: auto;

@@ -33,7 +33,7 @@ _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈",
 
 def zh_num(n: int) -> str | None:
     """Chinese cardinal for n in 1..99 (十一…三十五); None if out of range."""
-    if n < 1 or n > 99:
+    if n < 1:
         return None
     if n < 10:
         return _DIGIT_ZH[n]

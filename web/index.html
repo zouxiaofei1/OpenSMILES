@@ -353,7 +353,10 @@
         <div id="cg-empty" class="empty-state" hidden></div>
         <div class="card" id="cg-chain-card">
           <div class="card-head row-between">
-            <h3 class="card-title">下层调用链</h3>
+            <h3 class="card-title">下层调用链
+              <span id="cg-chain-count" class="chip info" hidden
+                    title="整条下层调用链（含根函数，去重后）共包含的函数数"></span>
+            </h3>
             <div class="cg-chain-search">
               <input id="cg-chain-input" class="input" type="text"
                      placeholder="输入函数名，如 _finalize_ranked" style="width:240px"

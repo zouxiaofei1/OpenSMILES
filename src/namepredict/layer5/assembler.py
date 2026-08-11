@@ -15,6 +15,7 @@ from namepredict.layer5.benzene_names import (
 )
 from namepredict.layer5.stereo_ez import _ez_prefix, ez_for_parent
 from namepredict.layer5.unsat_acid import alkenamide_names
+from namepredict.constants import MULT_EN, MULT_ZH
 from namepredict.types import NameResult
 def _fail(meta: dict | None = None) -> NameResult: return NameResult(en="", zh="", success=False, source="iupac", meta=meta or {})
 def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult: return NameResult(en=en, zh=zh, success=True, source=source, time_ms=time_ms)
@@ -250,7 +251,7 @@ def _chain_unsat(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
         top = _chain_yne(spec, n, numbered)
         if top is not None:
             return top
-    if _has_ene(numbered) and (spec.ene_seg is not None or spec.ene_suf_table is not None):
+    if _has_ene(numbered) and (spec.ene_seg is not None or spec.ene_base is not None):
         top = _chain_ene(spec, n, numbered)
         if top is not None:
             return top
@@ -276,19 +277,28 @@ def _chain_yne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
         f"{zs}-{yne}-{spec.yne_seg[1]}-{fg}-{spec.zh_suf}",
     )
 
+def _fused_ene_suf(spec: "_Chain", m: int) -> tuple[str, str] | None:
+    """融合式烯后缀: MULT[m] + 单烯基座 (acid→enoic/dienoic…); m 超界返回 None."""
+    if m < spec.ene_m_min:
+        return None
+    me, mz = MULT_EN.get(m), MULT_ZH.get(m)
+    if me is None or mz is None:
+        return None
+    return f"{me}{spec.ene_base[0]}", f"{mz}{spec.ene_base[1]}"
+
 def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
     s, zs = _en_stem(n), _chain_zh_base(n)
     if s is None or zs is None:
         return None
     enes = numbered.get("ene_locants")
-    if enes and len(enes) >= 2:       # 多烯: 词干加 "a", 后缀表带倍数
-        if spec.ene_suf_table is not None:   # 融合式 (酸)
-            me, mz = spec.ene_suf_table.get(len(enes), ("", ""))
-            if not me or not mz or n < spec.ene_n_min:
+    if enes and len(enes) >= 2:       # 多烯: 词干加 "a", 后缀生成式
+        if spec.ene_base is not None:        # 融合式 (酸/醛/腈/二酸/酰胺/多烯)
+            fused = _fused_ene_suf(spec, len(enes))
+            if fused is None or n < spec.ene_n_min:
                 return None
             ez = spec.ez_ene_multi(numbered) if spec.ez_ene_multi else ""
             loc = ",".join(str(x) for x in enes)
-            return f"{ez}{s}a-{loc}-{me}", f"{ez}{zs}-{loc}-{mz}"
+            return f"{ez}{s}a-{loc}-{fused[0]}", f"{ez}{zs}-{loc}-{fused[1]}"
         if spec.mult_seg is not None:        # 段式多烯 (醇)
             fg = numbered.get(spec.loc) if spec.loc else None
             if fg is None:
@@ -301,16 +311,18 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
             return f"{ez}{s}a-{loc}-{me}-{fg}-{spec.en_suf}", f"{ez}{zs}-{loc}-{mz}-{fg}-{spec.zh_suf}"
         return None
     ene = numbered.get("ene_locant")
-    if spec.ene_suf_table is not None:       # 融合式单烯 (酸)
+    if spec.ene_base is not None:            # 融合式单烯 (酸/醛/腈/二酸/酰胺/多烯)
         if spec.ene_special is not None:
             sp = spec.ene_special(n, numbered)
             if sp is not None:
                 return sp
         if ene is None or n < spec.ene_single_min:
             return None
-        me, mz = spec.ene_suf_table.get(1, ("", ""))
+        fused = _fused_ene_suf(spec, 1)
+        if fused is None:
+            return None
         ez = spec.ez_ene(numbered) if spec.ez_ene else ""
-        return f"{ez}{s}-{ene}-{me}", f"{ez}{zs}-{ene}-{mz}"
+        return f"{ez}{s}-{ene}-{fused[0]}", f"{ez}{zs}-{ene}-{fused[1]}"
     if spec.ene_omit_aware:
         ene = _ene_loc_kept(numbered)
     fg = numbered.get(spec.loc) if spec.loc else None   # 段式单烯 (醇/酮)
@@ -340,7 +352,8 @@ class _Chain:
     ene_seg: tuple | None = None        # 单烯段 ("en","烯") — 醇/酮
     yne_seg: tuple | None = None        # 炔段 ("yn","炔") — 醇/酮
     mult_seg: dict | None = None        # 多烯段表 {2:("dien","二烯"),...} — 醇
-    ene_suf_table: dict | None = None   # 融合式烯后缀 {1:("enoic acid","烯酸"),2:...} — 酸
+    ene_base: tuple | None = None       # 融合式烯基座 = 单烯后缀 ("enoic acid","烯酸") — 实际后缀 = MULT[m]+基座
+    ene_m_min: int = 1                  # 融合式烯最小烯数 (polyene/cyclopolyene 为 2)
     ene_special: object = None          # 融合式单烯俗名钩子 (n, numbered)->pair — amide 丙烯酰胺
     yne_suf: tuple | None = None        # 融合式炔后缀 ("ynoic acid","炔酸") — 酸
     ez_ene: object = None               # (numbered)->str  单烯 E/Z
@@ -430,14 +443,16 @@ _KIND_TABLE = {
                    loc=None, omit_key="", default_omit=False,
                    no_loc="plain", omit_rule=lambda n, loc, omit: False,
                    plain_maps=(ACID_EN, ACID_ZH),
-                   ene_suf_table={1: ("enoic acid", "烯酸"),
-                                  2: ("dienoic acid", "二烯酸"),
-                                  3: ("trienoic acid", "三烯酸"),
-                                  4: ("tetraenoic acid", "四烯酸"),
-                                  5: ("pentaenoic acid", "五烯酸"),
-                                  6: ("hexaenoic acid", "六烯酸")},
+                   ene_base=("enoic acid", "烯酸"),
                    yne_suf=("ynoic acid", "炔酸"),
                    ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent),
+    "ester": _Chain(kind="ester", en_suf="oate", zh_suf="酸", coda="an",
+                    loc=None, omit_key="", default_omit=False,
+                    no_loc="plain", omit_rule=lambda n, loc, omit: False,
+                    plain_maps=(ESTER_ACYL_EN, ACID_ZH),
+                    ene_base=("enoate", "烯酸"),
+                    yne_suf=("ynoate", "炔酸"),
+                    ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
                     loc="sh_locant", omit_key="omit_sh_locant", default_omit=False,
                     no_loc="plain", omit_rule=_omit_term_locant),
@@ -448,29 +463,25 @@ _KIND_TABLE = {
                        loc=None, omit_key="", default_omit=False,
                        no_loc="plain", omit_rule=lambda n, loc, omit: False,
                        plain_maps=(ALDEHYDE_EN, ALDEHYDE_ZH),
-                       ene_suf_table={1: ("enal", "烯醛"), 2: ("dienal", "二烯醛"),
-                                      3: ("trienal", "三烯醛"), 4: ("tetraenal", "四烯醛"),
-                                      5: ("pentaenal", "五烯醛"), 6: ("hexaenal", "六烯醛")},
+                       ene_base=("enal", "烯醛"),
                        yne_suf=("ynal", "炔醛"),
                        ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent),
     "nitrile": _Chain(kind="nitrile", en_suf="anenitrile", zh_suf="腈", coda="an",
                       loc=None, omit_key="", default_omit=False,
                       no_loc="plain", omit_rule=lambda n, loc, omit: False,
                       plain_maps=(NITRILE_EN, NITRILE_ZH),
-                      ene_suf_table={1: ("enenitrile", "烯腈")},
+                      ene_base=("enenitrile", "烯腈"),
                       yne_suf=("ynenitrile", "炔腈"),
                       ez_ene=ez_for_parent),
     "polyene": _Chain(kind="polyene", en_suf="diene", zh_suf="二烯", coda="",
                       loc=None, omit_key="", default_omit=False,
                       no_loc="none", omit_rule=lambda n, loc, omit: False,
-                      ene_suf_table={2: ("diene", "二烯"), 3: ("triene", "三烯"),
-                                     4: ("tetraene", "四烯"), 5: ("pentaene", "五烯")},
+                      ene_base=("ene", "烯"), ene_m_min=2,
                       ene_n_min=0, wrap=_with_ez),
     "cyclopolyene": _Chain(kind="cyclopolyene", en_suf="", zh_suf="", coda="ane",
                            loc=None, omit_key="", default_omit=False,
                            no_loc="plain", omit_rule=lambda n, loc, omit: False,
-                           ene_suf_table={2: ("diene", "二烯"), 3: ("triene", "三烯"),
-                                          4: ("tetraene", "四烯"), 5: ("pentaene", "五烯")},
+                           ene_base=("ene", "烯"), ene_m_min=2,
                            ene_n_min=0, cyclic_unsat=True, zh_full=True),
     "alkyne": _Chain(kind="alkyne", en_suf="yne", zh_suf="炔", coda="",
                      loc="yne_locant", omit_key="omit_yne_locant", default_omit=False,
@@ -508,10 +519,7 @@ _KIND_TABLE = {
                      loc=None, omit_key="", default_omit=False,
                      no_loc="plain", omit_rule=lambda n, loc, omit: False,
                      plain_maps=({2: "oxalic acid"}, {2: "草酸"}),
-                     ene_suf_table={1: ("enedioic acid", "烯二酸"),
-                                    2: ("dienedioic acid", "二烯二酸"),
-                                    3: ("trienedioic acid", "三烯二酸"),
-                                    4: ("tetraenedioic acid", "四烯二酸")},
+                     ene_base=("enedioic acid", "烯二酸"),
                      ene_single_min=3,
                      ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent),
     "diamine": _Chain(kind="diamine", en_suf="diamine", zh_suf="二胺", coda="ane",
@@ -538,7 +546,7 @@ _KIND_TABLE = {
                     loc=None, omit_key="", default_omit=False,
                     no_loc="plain", omit_rule=lambda n, loc, omit: False,
                     plain_maps=(AMIDE_EN, AMIDE_ZH),
-                    ene_suf_table={1: ("enamide", "烯酰胺")},
+                    ene_base=("enamide", "烯酰胺"),
                     ene_special=alkenamide_names,
                     yne_suf=("ynamide", "炔酰胺"),
                     ez_ene=_ez_prefix),
@@ -560,12 +568,6 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         if top is not None:
             return top
         return _polyol_names(n, numbered.get("oh_locants"), kind)
-    if kind == "ester":
-        from namepredict.layer5.unsat_acid import ester_or_alkenoate
-        top = ester_or_alkenoate(n, numbered)
-        if top is not None:
-            return top
-        return _ester_names(n, numbered.get("parent") or {})
     if kind == "phenyl":
         return phenyl_parent_names(numbered)
     if kind == "benzene":
@@ -597,7 +599,7 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     names = _names_for(effective_kind, n, numbered)
     if not names:
         return _unsupported(n, kind)
-    en, zh = join_kind_name(effective_kind, _prefix_for(numbered, effective_kind, n), names)
+    en, zh = join_kind_name(effective_kind, _prefix_for(numbered, effective_kind, n), names, numbered)
     en, zh = maybe_anion_names(numbered, en, zh)
     en, zh = apply_rs_prefix(numbered, en, zh)
     en, zh = maybe_metal_salt_names(numbered, en, zh)

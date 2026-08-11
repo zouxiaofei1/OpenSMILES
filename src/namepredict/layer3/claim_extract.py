@@ -55,23 +55,31 @@ def _should_skip(claim, covered: set[int]) -> bool:
     return claim.slot == SideSlot.AMIDE_N or bool(set(claim.atoms) & covered)
 
 
-def _append_named(mol, claim, namer, covered: set[int], out: list[dict]) -> None:
+# Ester acid-side O (alkoxy arm): a claimed side attached to an O atom of an
+# ester/benzoate parent is the O-side alkyl, consumed by L5 join_kind_name.
+_ESTER_O_SIDE_KINDS = frozenset({"ester", "diester", "benzoate"})
+
+
+def _append_named(mol, claim, namer, covered: set[int], out: list[dict], *, o_side: bool = False) -> None:
     if _should_skip(claim, covered):
         return
     named = namer.name(mol, claim, depth=0)
     if named is None:
         return
-    out.append(sub_from_named(named, mol))
+    s = sub_from_named(named, mol)
+    if o_side and mol.GetAtomWithIdx(claim.attach_parent).GetAtomicNum() == 8:
+        s["o_side"] = True
+    out.append(s)
     covered |= set(named.claim.atoms)
 
 
-def _named_new_sides(mol, owned, covered: set[int], *, name_mode: str = "general", cache: CommonNameCache | None = None) -> list[dict]:
+def _named_new_sides(mol, owned, covered: set[int], *, name_mode: str = "general", cache: CommonNameCache | None = None, o_side: bool = False) -> list[dict]:
     from namepredict.layer3.claimable_block import iter_claims
     from namepredict.layer3.substituent_namer import SubstituentNamer
 
     namer, out = SubstituentNamer(name_mode=name_mode, cache=cache), []
     for claim in iter_claims(mol, owned):
-        _append_named(mol, claim, namer, covered, out)
+        _append_named(mol, claim, namer, covered, out, o_side=o_side)
     return out
 
 
@@ -80,4 +88,5 @@ def extract_claimed_sides(info: dict, parent: dict, existing: list[dict], *, nam
     owned = parent.get("owned_atoms")
     if owned is None:
         return []
-    return _named_new_sides(info["mol"], owned, _covered_atoms(existing), name_mode=name_mode, cache=cache)
+    o_side = parent.get("kind") in _ESTER_O_SIDE_KINDS
+    return _named_new_sides(info["mol"], owned, _covered_atoms(existing), name_mode=name_mode, cache=cache, o_side=o_side)

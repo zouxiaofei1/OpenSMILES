@@ -76,6 +76,10 @@ def _collect_parts(groups: dict[str, list], omit: bool, paren_cf3: bool = False)
 def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -> tuple[str, str]:
     if not substituents:
         return "", ""
+    # ester O-side alkyl is consumed by join_kind_name as the alkoxy arm, never a prefix
+    substituents = [s for s in substituents if not s.get("o_side")]
+    if not substituents:
+        return "", ""
     omit = _omit_sub_locants(n_carbons, substituents, kind)
     paren = kind == "benzene" and len(substituents) >= 4
     en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit, paren)

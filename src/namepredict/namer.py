@@ -81,6 +81,8 @@ def _chain_set(parent: dict) -> set[int]:
 
 def _remap_attach(parent: dict, s: dict) -> dict:
     """Ensure attach_idx is on parent chain for L4 orient (ring FG attach)."""
+    if s.get("o_side"):
+        return s  # ester O-side alkyl: keep attach on the ester O, no chain remap
     chain = _chain_set(parent)
     attach = s.get("attach_idx")
     if attach in chain:
@@ -97,7 +99,7 @@ def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
     out: list[dict] = []
     for s in subst:
         s2 = _remap_attach(parent, s)
-        if s2.get("attach_idx") in chain:
+        if s2.get("o_side") or s2.get("attach_idx") in chain:
             out.append(s2)
     return out
 

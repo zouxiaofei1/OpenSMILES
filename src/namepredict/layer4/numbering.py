@@ -20,13 +20,18 @@ def _maybe_reverse(chain: list[int], pos: int) -> list[int]:
         return list(reversed(chain))
     return chain
 def _locants_on(chain: list[int], substituents: list) -> list[int]:
-    return sorted(chain.index(s["attach_idx"]) + 1 for s in substituents)
+    # ester O-side alkyl attaches to the ester O (not on chain) and carries no
+    # parent locant — exclude it from orientation comparison.
+    return sorted(
+        chain.index(s["attach_idx"]) + 1
+        for s in substituents if s["attach_idx"] in chain
+    )
 def _locant_key(locs: list[int]) -> tuple:
     return (locs, len(locs))
 def _stem_loc_pairs(chain: list[int], substituents: list) -> list[tuple]:
     return sorted(
         (alkyl_alpha_key(s.get("en") or ""), chain.index(s["attach_idx"]) + 1)
-        for s in substituents
+        for s in substituents if s["attach_idx"] in chain
     )
 def _orient_key(chain: list[int], substituents: list) -> tuple:
     return (_locant_key(_locants_on(chain, substituents)), _stem_loc_pairs(chain, substituents))

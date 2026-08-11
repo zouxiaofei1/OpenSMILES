@@ -31,7 +31,7 @@ def _simple_alkoxy_n(mol: Mol, start: int, o_idx: int) -> int | None:
         if not _is_alkoxy_c(mol, cur, prev) or (nxt := _alkoxy_next(mol, cur, prev)) == -1:
             return None
         n, prev, cur = n + 1, cur, nxt
-    return n if 1 <= n <= 16 else None
+    return n
 
 #
 def _benzoate_alkoxy(mol: Mol, o_idx: int, ac: int) -> dict | None:
