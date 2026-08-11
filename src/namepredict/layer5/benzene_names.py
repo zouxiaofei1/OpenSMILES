@@ -2,55 +2,10 @@
 from __future__ import annotations
 
 from namepredict.constants import MULT_EN, MULT_ZH
-from namepredict.layer3.substituent_extractor import alkyl_alpha_key
-
-
-
-
-def _xylene_locants(numbered: dict) -> str:
-    locs = sorted(int(s["locant"]) for s in numbered.get("substituents") or [] if "locant" in s)
-    return ",".join(str(x) for x in locs)
-
-
-def _methoxy_subs(subs: list) -> list:
-    return [s for s in subs if s.get("kind") == "alkoxy" and s.get("n_carbons") == 1]
-
-
-def _is_poly_anisole(numbered: dict) -> bool:
-    return None
-
-def _anisole_reloc(loc: int, meo: int, rev: bool) -> int:
-    d = (meo - loc) % 6 if rev else (loc - meo) % 6
-    return d + 1
-
-
-def _anisole_dir_key(others: list, meo: int, rev: bool) -> tuple:
-    """Locants in alphabetical citation order (not sorted-set)."""
-    ordered = sorted(
-        (s for s in others if "locant" in s),
-        key=lambda s: alkyl_alpha_key(s.get("en") or ""),
-    )
-    return tuple(_anisole_reloc(int(s["locant"]), meo, rev) for s in ordered)
-
-
-def _anisole_pick_rev(others: list, meo: int) -> bool:
-    return _anisole_dir_key(others, meo, True) < _anisole_dir_key(others, meo, False)
-
-
-def _anisole_renum(others: list, meo_loc: int, rev: bool) -> list:
-    return [{**s, "locant": _anisole_reloc(int(s["locant"]), meo_loc, rev)} for s in others]
-
-
-
-
-def _xylene_prefix(numbered: dict) -> tuple[str, str]:
-    locs = _xylene_locants(numbered)
-    return f"{locs}-", f"{locs}-二甲基"
-
 
 def benzene_prefix(numbered: dict, build_prefix) -> tuple[str, str]:
     en_pre, zh_pre = build_prefix(numbered.get("substituents") or [], 6, "benzene")
-    return (en_pre, None) if _is_poly_anisole(numbered) else (en_pre, zh_pre)
+    return  (en_pre, zh_pre)
 
 
 def _stereo_lead(parent: str) -> tuple[str, str]:

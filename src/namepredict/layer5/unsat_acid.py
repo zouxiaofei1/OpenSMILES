@@ -4,11 +4,7 @@ from __future__ import annotations
 from namepredict.layer5.stems import (
     ALKANE_EN, ALKANE_ZH, zh_stem,
 )
-from namepredict.layer5.stereo_ez import (
-    _ez_for_alkenol,
-    _ez_prefix,
-    ez_for_parent,
-)
+from namepredict.layer5.stereo_ez import _ez_prefix
 
 
 def _unsat_acid_pair(n, locant, ez, en_sfx, zh_sfx, min_n=2) -> tuple[str, str] | None:

@@ -4,8 +4,7 @@ from namepredict.layer5.stems import (
     ACID_EN, ACID_ZH, ALCOHOL_EN, ALCOHOL_ZH,
     ALDEHYDE_EN, ALDEHYDE_ZH, ALKANE_EN, ALKANE_ZH,
     AMIDE_EN, AMIDE_ZH, ESTER_ACYL_EN,
-    NITRILE_EN, NITRILE_ZH, SULFIDE_ALKYL_EN,
-    SULFIDE_ALKYL_ZH, SULFIDE_SYM_EN, SULFIDE_SYM_ZH, _en_stem,
+    NITRILE_EN, NITRILE_ZH, _en_stem,
     alkane_zh, maybe_anion_names, maybe_metal_salt_names, zh_stem,
 )
 from namepredict.layer5.benzene_names import (
@@ -36,15 +35,7 @@ def _anhydride_from_acid(n: int) -> tuple[str, str] | None:
 def _ene_loc_kept(numbered: dict) -> int | None:
     return None if numbered.get("omit_ene_locant") else numbered.get("ene_locant")
 
-def _sym_sulfide_names(n: int) -> tuple[str, str] | None:
-    return _pair(SULFIDE_SYM_EN, SULFIDE_SYM_ZH, n)
-def _asym_sulfide_names(n1: int, n2: int) -> tuple[str, str] | None:
-    en1, en2 = SULFIDE_ALKYL_EN.get(n1), SULFIDE_ALKYL_EN.get(n2)
-    zh1, zh2 = SULFIDE_ALKYL_ZH.get(n1), SULFIDE_ALKYL_ZH.get(n2)
-    if not en1 or not en2 or not zh1 or not zh2:
-        return None
-    a, b = sorted([(en1, zh1), (en2, zh2)], key=lambda x: x[0])
-    return f"{a[0]} {b[0]} sulfide", f"{a[1]}{b[1]}硫醚"
+
 
 def _typed_acid_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
@@ -490,7 +481,7 @@ def _parent_n(numbered: dict) -> tuple[str | None, int]:
     return parent.get("kind"), int(parent.get("n_carbons") or 0)
 def _unsupported(n: int, kind: str | None) -> NameResult:
     return _fail({"reason": "unsupported", "n_carbons": n, "kind": kind})
-from namepredict.layer5.assembler_prefixes import _build_prefix, _prefix_for
+from namepredict.layer5.assembler_prefixes import _prefix_for
 
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     from namepredict.layer5.stereo_rs import apply_rs_prefix

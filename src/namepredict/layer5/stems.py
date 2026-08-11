@@ -27,16 +27,17 @@ _TENS = {
     2: "icos", 3: "triacont", 4: "tetracont", 5: "pentacont",
     6: "hexacont", 7: "heptacont", 8: "octacont", 9: "nonacont",
 }
+_HS_NUMBER = "甲乙丙丁戊己庚辛壬癸"
 _DIGIT_ZH = "零一二三四五六七八九"
 _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈", "胺", "酮", "烯", "炔")
 
 
 def zh_num(n: int) -> str | None:
-    """Chinese cardinal for n in 1..99 (十一…三十五); None if out of range."""
+    """Chinese stem digit for n: 1..10 天干(甲…癸); 11..99 数字组合(十一…九十九)."""
     if n < 1:
         return None
-    if n < 10:
-        return _DIGIT_ZH[n]
+    if n <= 10:
+        return _HS_NUMBER[n-1]
     tens, ones = divmod(n, 10)
     head = "十" if tens == 1 else f"{_DIGIT_ZH[tens]}十"
     return head if ones == 0 else f"{head}{_DIGIT_ZH[ones]}"
@@ -106,12 +107,6 @@ def acid_en(n: int) -> str | None:
 
 
 def acid_zh(n: int) -> str | None:
-    if n == 1:
-        return "甲酸"
-    if n == 2:
-        return "乙酸"
-    if n <= 10 and n in _ALKANE_ZH_BASE:
-        return f"{_ALKANE_ZH_BASE[n][0]}酸"
     z = zh_num(n)
     return f"{z}酸" if z else None
 
@@ -126,12 +121,6 @@ def aldehyde_en(n: int) -> str | None:
 
 
 def aldehyde_zh(n: int) -> str | None:
-    if n == 1:
-        return "甲醛"
-    if n == 2:
-        return "乙醛"
-    if n <= 10 and n in _ALKANE_ZH_BASE:
-        return f"{_ALKANE_ZH_BASE[n][0]}醛"
     z = zh_num(n)
     return f"{z}醛" if z else None
 
@@ -146,12 +135,6 @@ def amide_en(n: int) -> str | None:
 
 
 def amide_zh(n: int) -> str | None:
-    if n == 1:
-        return "甲酰胺"
-    if n == 2:
-        return "乙酰胺"
-    if n <= 10 and n in _ALKANE_ZH_BASE:
-        return f"{_ALKANE_ZH_BASE[n][0]}酰胺"
     z = zh_num(n)
     return f"{z}酰胺" if z else None
 
@@ -166,12 +149,6 @@ def nitrile_en(n: int) -> str | None:
 
 
 def nitrile_zh(n: int) -> str | None:
-    if n == 1:
-        return "甲腈"
-    if n == 2:
-        return "乙腈"
-    if n <= 10 and n in _ALKANE_ZH_BASE:
-        return f"{_ALKANE_ZH_BASE[n][0]}腈"
     z = zh_num(n)
     return f"{z}腈" if z else None
 
@@ -195,7 +172,6 @@ def acid_to_anion_en(en: str) -> str:
 
 
 def acid_to_anion_zh(zh: str) -> str:
-    """十二酸 → 十二酸根; 乙酸 → 乙酸根."""
     return zh if zh.endswith("根") else f"{zh}根"
 
 
@@ -301,17 +277,3 @@ AMIDE_ZH = _fill(amide_zh)
 NITRILE_EN = _fill(nitrile_en)
 NITRILE_ZH = _fill(nitrile_zh)
 ESTER_ACYL_EN = _fill(ester_acyl_en)
-ESTER_ALKYL_EN = _fill(ester_alkyl_en)
-ESTER_ALKYL_ZH = _fill(ester_alkyl_zh)
-
-# P-63.2.1 dialkyl sulfide: dimethyl…dibutyl sulfide / 二…硫醚
-SULFIDE_SYM_EN = {
-    1: "dimethyl sulfide", 2: "diethyl sulfide",
-    3: "dipropyl sulfide", 4: "dibutyl sulfide",
-}
-SULFIDE_SYM_ZH = {
-    1: "二甲硫醚", 2: "二乙硫醚", 3: "二丙硫醚", 4: "二丁硫醚",
-}
-# Alkyl radical for asymmetric alkyl alkyl sulfide (alphabetical EN)
-SULFIDE_ALKYL_EN = {1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl"}
-SULFIDE_ALKYL_ZH = {1: "甲基", 2: "乙基", 3: "丙基", 4: "丁基"}

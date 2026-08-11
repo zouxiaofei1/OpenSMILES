@@ -67,7 +67,3 @@ def ez_for_parent(numbered: dict) -> str:
     if parent.get("double_bonds"):
         return _ez_multi_prefix(numbered)
     return _ez_prefix(numbered)
-
-
-# Backward-compatible alias used by unsat acid / alkenol paths.
-_ez_for_alkenol = ez_for_parent

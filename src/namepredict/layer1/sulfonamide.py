@@ -50,8 +50,7 @@ def _n_ok(n_atom, s_idx: int) -> bool:
     """N single-bonded only to S (+C/H); mono-N: ≤1 C outside S."""
     if n_atom.GetAtomicNum() != N or n_atom.GetIsAromatic():
         return False
-    from namepredict.layer1.guanidine import is_guanidine_n
-    return (not is_guanidine_n(n_atom)) and _n_rest_ok(n_atom, s_idx)
+    return (not None) and _n_rest_ok(n_atom, s_idx)
 
 
 def _n_c_idxs(n_atom, s_idx: int) -> list[int]:

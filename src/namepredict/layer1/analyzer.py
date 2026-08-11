@@ -87,8 +87,7 @@ def _is_amide_carbon(atom) -> bool:
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
         return False
-    from namepredict.layer1.urea import _is_urea_carbon as _iu
-    return _amide_n_info(atom) is not None and not _iu(atom)
+    return _amide_n_info(atom) is not None and not None
 
 def _is_ketone_carbon(atom) -> bool:
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
@@ -192,9 +191,7 @@ def _is_ester_carbon(atom) -> bool:
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is None:
         return False
-    from namepredict.layer1.carbamate import _is_carbamate_carbon
-    from namepredict.layer1.carbonate import _is_carbonate_carbon
-    return not _is_carbamate_carbon(atom) and not _is_carbonate_carbon(atom)
+    return not None 
 
 def _ald_blocked(atom) -> bool:
     if _ester_alkoxy_of(atom) is not None or _acyl_hal_of(atom) is not None:
@@ -213,8 +210,7 @@ def _is_aldehyde_carbon(atom) -> bool:
 def _is_hydroxyl_oxygen(atom) -> bool:
     if not _is_single_c_oh(atom):
         return False
-    from namepredict.layer1.urea import is_urea_oh
-    if is_urea_oh(atom) or _is_carboxyl_carbon(_carbon_neighbor(atom)):
+    if None or _is_carboxyl_carbon(_carbon_neighbor(atom)):
         return False
     return True
 
@@ -239,11 +235,7 @@ def _thiol_entries(mol: Mol) -> list[dict]:
 
 def _is_amide_n(atom) -> bool:
     """True for amide/urea/guanidine N (not amine parent)."""
-    from namepredict.layer1.guanidine import is_guanidine_n
-    from namepredict.layer1.urea import _is_urea_carbon as _iu
-    if is_guanidine_n(atom):
-        return True
-    return any(n.GetAtomicNum() == C and (_has_double_bonded_o(n) or _iu(n))
+    return any(n.GetAtomicNum() == C and (_has_double_bonded_o(n) or None)
                for n in atom.GetNeighbors())
 
 def _amine_degree(atom) -> int | None:
@@ -451,20 +443,16 @@ def _fg_parts_a(mol: Mol) -> dict:
     }
 def _p_fg_a(mol: Mol) -> dict:
     from namepredict.layer1.phosphate import phosphate_entries, phosphonic_entries
-    from namepredict.layer1.carbamate import carbamate_entries
-    from namepredict.layer1.carbonate import carbonate_entries
     from namepredict.layer1.sulfoxide import sulfoxide_entries
     return {"phosphates": phosphate_entries(mol), "phosphonics": phosphonic_entries(mol),
-            "carbamates": carbamate_entries(mol), "carbonates": carbonate_entries(mol),
+            "carbamates": None, "carbonates": None,
             "sulfoxides": sulfoxide_entries(mol)}
 def _p_fg_b1(mol: Mol) -> dict:
-    from namepredict.layer1.guanidine import guanidine_entries
-    from namepredict.layer1.hydrazine import hydrazine_entries
     from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
-    from namepredict.layer1.urea import urea_entries
     return {"isocyanates": isocyanate_entries(mol), "isothiocyanates": isothiocyanate_entries(mol),
-            "ureas": urea_entries(mol), "hydrazines": hydrazine_entries(mol),
-            "guanidines": guanidine_entries(mol)}
+            "ureas": None, "hydrazines": None,
+            "guanidines": None}
+
 def _p_fg_b2(mol: Mol) -> dict:
     from namepredict.layer1.boronic import boronic_entries
     from namepredict.layer1.sulfonamide import sulfonamide_entries
