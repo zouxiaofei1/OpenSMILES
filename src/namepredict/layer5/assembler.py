@@ -358,9 +358,7 @@ def _ester_ketone(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return _cycloalkanedione_names(n, numbered.get("ketone_locants"))
     if kind == "ketone": return _ketone_or_alkenone(n, numbered)
     return _cycloketone_from(n, numbered) if kind == "cycloketone" else None
-def _carbonyl_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    top = _acid_ald_amide(kind, n, numbered) or _nitrile_or_none(kind, n, numbered)
-    return top if top is not None else _ester_ketone(kind, n, numbered)
+
 def _ene_loc_kept(numbered: dict) -> int | None:
     return None if numbered.get("omit_ene_locant") else numbered.get("ene_locant")
 def _cyclo_hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
@@ -491,17 +489,7 @@ def _ether_or_sulfide(kind: str, n: int, numbered: dict) -> tuple[str, str] | No
     if kind == "ether":
         return _ether_names(n, numbered)
     return _sulfide_names(numbered) if kind == "sulfide" else None
-def _hetero_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    top = _ether_or_sulfide(kind, n, numbered)
-    if top is not None:
-        return top
-    top = _oh_kind_names(kind, n, numbered)
-    if top is not None:
-        return top
-    cyc = _cyclo_hetero_names(kind, n, numbered)
-    if cyc is not None:
-        return cyc
-    return _amine_kind_names(kind, n, numbered)
+
 def _typed_acid_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "acid":
@@ -564,16 +552,6 @@ def _typed_expression_kind(kind: str, numbered: dict) -> str:
     kind = _typed_ketone_kind(kind, numbered)
     kind = _typed_alcohol_kind(kind, numbered)
     return _typed_amine_kind(kind, numbered)
-
-
-def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    kind = _typed_expression_kind(kind, numbered)
-    from namepredict.layer5.phosphate_names import p_fg_names
-    from namepredict.layer5.special_fg_names import special_fg_names
-    top = special_fg_names(kind, n, numbered) or p_fg_names(kind, n, numbered)
-    if top is not None: return top
-    top = _hetero_names(kind, n, numbered) or _carbonyl_names(kind, n, numbered)
-    return top if top is not None else _unsat_or_alkane(kind, n, numbered)
 def _with_ez(pair: tuple[str, str] | None, numbered: dict) -> tuple[str, str] | None:
     if pair is None: return None
     from namepredict.layer5.stereo_ez import ez_for_parent
@@ -588,6 +566,7 @@ def _alkene_or_poly(kind: str, n: int, numbered: dict) -> tuple[str, str] | None
     if kind == "cyclopolyene":
         return _cyclopolyene_names(n, numbered.get("ene_locants"))
     return None
+
 def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     top = _alkene_or_poly(kind, n, numbered)
     if top is not None:
@@ -598,38 +577,52 @@ def _unsat_names(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         omit = numbered.get("omit_yne_locant", False)
         return _alkyne_names(n, numbered.get("yne_locant"), omit)
     return None
+
+def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
+    top = _ether_or_sulfide(kind, n, numbered)
+    if top is not None:
+        return top
+    top = _oh_kind_names(kind, n, numbered)
+    if top is not None:
+        return top
+    top = _cyclo_hetero_names(kind, n, numbered)
+    if top is not None:
+        return top
+    top = _amine_kind_names(kind, n, numbered)
+    if top is not None:
+        return top
+    top = _acid_ald_amide(kind, n, numbered)
+    if top is not None:
+        return top
+    top = _nitrile_or_none(kind, n, numbered)
+    if top is not None:
+        return top
+    top = _ester_ketone(kind, n, numbered)
+    if top is not None:
+        return top
+    top = _unsat_names(kind, n, numbered)
+    if top is not None:
+        return top
+    
+    return _ring_or_alkane(kind, n, numbered)
+
+
+
 def _parent_stem_names(numbered: dict) -> tuple[str, str] | None:
     parent = numbered.get("parent") or {}
     en, zh = parent.get("stem_en"), parent.get("stem_zh")
     return (en, zh) if en and zh else None
-def _spiro_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """spiro[4.5]decane / 螺[4.5]癸烷."""
-    stem = _parent_stem_names(numbered)
-    alk = _alkane_names(n)
-    if stem and alk:
-        return f"{stem[0]}{alk[0]}", f"{stem[1]}{alk[1]}"
-    return None
-def _bridged_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """bicyclo[2.2.1]heptane / 双环[2.2.1]庚烷."""
-    stem = _parent_stem_names(numbered)
-    alk = _alkane_names(n)
-    if stem and alk:
-        return f"{stem[0]}{alk[0]}", f"{stem[1]}{alk[1]}"
-    return None
+
 def _ring_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "cycloalkane": return _cycloalkane_names(n)
     if kind == "phenyl": return phenyl_parent_names(numbered)
     if kind == "benzene": return benzene_parent_names(numbered)
-    if kind == "bridged": return _bridged_names(n, numbered)
-    if kind == "spiro": return _spiro_names(n, numbered)
     if kind == "benzoate": return benzoate_parent_names(numbered, _build_prefix)
     top = pyridine_kind_names(kind, numbered, _build_prefix)
     if top is not None: return top
     stem = _parent_stem_names(numbered)
     return stem if stem is not None else _alkane_names(n)
-def _unsat_or_alkane(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    unsat = _unsat_names(kind, n, numbered)
-    return unsat if unsat is not None else _ring_or_alkane(kind, n, numbered)
+
 def _parent_n(numbered: dict) -> tuple[str | None, int]:
     parent = numbered.get("parent") or {}
     return parent.get("kind"), int(parent.get("n_carbons") or 0)
