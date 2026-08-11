@@ -85,17 +85,17 @@ graph TD
 | `phosphonics` | — | `layer1/phosphate.py` |
 | `carbamates` | — | `layer1/carbamate.py` |
 | `carbonates` | — | `layer1/carbonate.py` |
-| `sulfoxides` | — | `layer1/sulfoxide.py` |
+| `sulfoxides` | — | `layer1/sulfur.py` |
 | `isocyanates` | — | `layer1/isocyanate.py` |
 | `isothiocyanates` | — | `layer1/isocyanate.py` |
 | `ureas` | — | `layer1/urea.py` |
 | `hydrazines` | — | `layer1/hydrazine.py` |
 | `guanidines` | — | `layer1/guanidine.py` |
-| `sulfonamides` | — | `layer1/sulfonamide.py` |
-| `sulfonates` | — | `layer1/sulfonate.py` |
-| `sulfonyl_chlorides` | — | `layer1/sulfonyl_chloride.py` |
-| `sulfonic_acids` | — | `layer1/sulfonic_acid.py` |
-| `sulfones` | — | `layer1/sulfone.py` |
+| `sulfonamides` | — | `layer1/sulfur.py` |
+| `sulfonates` | — | `layer1/sulfur.py` |
+| `sulfonyl_chlorides` | — | `layer1/sulfur.py` |
+| `sulfonic_acids` | — | `layer1/sulfur.py` |
+| `sulfones` | — | `layer1/sulfur.py` |
 | `boronics` | — | `layer1/boronic.py` |
 
 ### 布尔标志（Boolean flags）

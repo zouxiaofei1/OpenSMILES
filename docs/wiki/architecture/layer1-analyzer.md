@@ -106,7 +106,7 @@ def _carboxyl_entries(mol: Mol) -> list[dict]:
   - `_is_hydroxyl_oxygen` 调用 `is_urea_oh` 排除 urea enol 互变异构体中的 OH
 - **检测逻辑粒度**: 每个检测器专门处理一种特征原子环境（如 sulfoxide 检测 S 原子的度=3、一个双键 O、两个 C 邻居），通过精细的邻居约束（键型、原子序数、氢原子数、形式电荷、是否在环内）确保低误报率
 
-**示例 -- sulfoxide (`sulfoxide.py:22-39`)**:
+**示例 -- sulfoxide (`sulfur.py:42-66`, Sulfoxide 块)**:
 ```python
 def _is_sulfoxide_sulfur(atom) -> bool:
     """S with exactly one =O and two C neighbors (not sulfone/sulfide)."""
@@ -193,18 +193,13 @@ analyze(mol)
 | `phosphate.py` | **磷酸酯** (phosphate monoester) 和**膦酸** (phosphonic acid) 检测 (P-67) |
 | `carbamate.py` | **氨基甲酸酯** (carbamate R2N-C(=O)-OR) 检测 (P-65) |
 | `carbonate.py` | **碳酸酯** (carbonate RO-C(=O)-OR') 检测 (P-65.6) |
-| `sulfoxide.py` | **亚砜** (sulfoxide R-S(=O)-R') 检测 (P-63.3) |
+| `sulfur.py` | **硫含氧官能团** -- 亚砜 (P-63.3)、砜 (P-65.3.1.2)、磺酸 (P-65.3)、磺酸酯 (P-65.3.2)、磺酰胺 (P-65.3)、磺酰氯 (P-65.3) 检测 |
 | `isocyanate.py` | **异氰酸酯** (R-N=C=O) 和**异硫氰酸酯** (R-N=C=S) 检测 (P-61.9) |
 | `urea.py` | **脲** (urea R2N-C(=O)-NR2 / enol tautomer) 检测 (P-66.1.6.1.1) |
 | `hydrazine.py` | **肼** (hydrazine N-N) 检测 (P-68.3.1.2) -- 基于键遍历 |
 | `boronic.py` | **硼酸** (boronic acid R-B(OH)2) 检测 (P-68.1) |
 | `acyl_halide.py` | **酰卤** (acyl halide R-C(=O)-X, X=Cl/Br) 检测 (P-65.5) |
 | `guanidine.py` | **胍** (guanidine H2N-C(=NH)-NH2 / tautomers) 检测 (P-66.4.1.2.1) |
-| `sulfonyl_chloride.py` | **磺酰氯** (sulfonyl chloride R-SO2-Cl) 检测 (P-65.3) |
-| `sulfonate.py` | **磺酸酯** (sulfonate ester R-SO2-OR') 检测 (P-65.3.2) |
-| `sulfonic_acid.py` | **磺酸** (sulfonic acid R-SO2-OH / R-SO2-O-) 检测 (P-65.3) |
-| `sulfonamide.py` | **磺酰胺** (sulfonamide R-SO2-NR'R'') 检测 (P-65.3) |
-| `sulfone.py` | **砜** (sulfone R-SO2-R') 检测 (P-65.3.1.2) |
 
 ---
 

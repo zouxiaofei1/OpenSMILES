@@ -62,7 +62,7 @@ def _{fg}_entries(mol: Mol) -> list[dict]:
 
 ### 选项 B: 独立模块检测（sulfoxide 的模式）
 
-创建 `src/namepredict/layer1/sulfoxide.py`（`sulfoxide.py:1-39`）：
+sulfoxide 的检测位于 `src/namepredict/layer1/sulfur.py` 的 Sulfoxide 块（`sulfur.py:42-66`）：
 
 ```python
 """L1 detection of open-chain dialkyl sulfoxides (P-63.3)."""
@@ -99,7 +99,7 @@ def sulfoxide_entries(mol: Mol) -> list[dict]:
 
 ```python
 def _p_fg_a(mol: Mol) -> dict:
-    from namepredict.layer1.sulfoxide import sulfoxide_entries
+    from namepredict.layer1.sulfur import sulfoxide_entries
     return {"phosphates": phosphate_entries(mol), ...,
             "sulfoxides": sulfoxide_entries(mol)}
 ```
@@ -324,7 +324,7 @@ sulfoxide 功能在当前源码中的位置：
 
 | 文件 | 功能 |
 |---|---|
-| `src/namepredict/layer1/sulfoxide.py` | 检测 S(=O) 环境 |
+| `src/namepredict/layer1/sulfur.py` | 检测 S(=O) 环境（Sulfoxide 块） |
 | `src/namepredict/layer1/analyzer.py` | 注册 has_sulfoxide 布尔键 + entries 收集 |
 | `src/namepredict/layer2/principal.py` | `PRINCIPAL_REGISTRY` 的 `FG.SULFOXIDE`（LEGACY_COMPAT, compatibility_rank=2） |
 | `src/namepredict/layer2/kind_registry.py` | `_KIND_CLASS` 的 kind→FG 映射 + bootstrap 注册 |

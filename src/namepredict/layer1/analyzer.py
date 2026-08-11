@@ -443,7 +443,7 @@ def _fg_parts_a(mol: Mol) -> dict:
     }
 def _p_fg_a(mol: Mol) -> dict:
     from namepredict.layer1.phosphate import phosphate_entries, phosphonic_entries
-    from namepredict.layer1.sulfoxide import sulfoxide_entries
+    from namepredict.layer1.sulfur import sulfoxide_entries
     return {"phosphates": phosphate_entries(mol), "phosphonics": phosphonic_entries(mol),
             "carbamates": None, "carbonates": None,
             "sulfoxides": sulfoxide_entries(mol)}
@@ -455,11 +455,9 @@ def _p_fg_b1(mol: Mol) -> dict:
 
 def _p_fg_b2(mol: Mol) -> dict:
     from namepredict.layer1.boronic import boronic_entries
-    from namepredict.layer1.sulfonamide import sulfonamide_entries
-    from namepredict.layer1.sulfonate import sulfonate_entries
-    from namepredict.layer1.sulfone import sulfone_entries
-    from namepredict.layer1.sulfonic_acid import sulfonic_acid_entries
-    from namepredict.layer1.sulfonyl_chloride import sulfonyl_chloride_entries
+    from namepredict.layer1.sulfur import (sulfonamide_entries, sulfonate_entries,
+                                           sulfone_entries, sulfonic_acid_entries,
+                                           sulfonyl_chloride_entries)
     return {"sulfonamides": sulfonamide_entries(mol), "sulfonates": sulfonate_entries(mol),
             "sulfonyl_chlorides": sulfonyl_chloride_entries(mol),
             "sulfonic_acids": sulfonic_acid_entries(mol), "sulfones": sulfone_entries(mol),
