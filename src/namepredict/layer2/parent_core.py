@@ -35,7 +35,6 @@ __all__ = [
     "_db_pairs",
     "_fg_chain",
     "_try_unsat_fg",
-    "_try_polyunsat_fg",
     "_unsat_or_sat",
 ]
 
@@ -119,29 +118,11 @@ def _ok_unsat_fg(info: dict, flag: str, ekey: str, bad: tuple) -> bool:
     return _open_chain_unsat_atoms(mol, c, db) and _no_fgs(info, bad)
 
 
-def _ok_polyunsat_fg(info: dict, flag: str, ekey: str, bad: tuple) -> bool:
-    """Multi open-chain unsat FG: FG + 2+ C=C ends all acyclic."""
-    if info.get("has_alkyne") or not _is_mono_fg(info, flag, ekey):
-        return False
-    dbs = info.get("double_bonds") or []
-    if len(dbs) < 2:
-        return False
-    c, mol = info[ekey][0]["c_idx"], info["mol"]
-    return all(_open_chain_unsat_atoms(mol, c, db) for db in dbs) and _no_fgs(info, bad)
-
-
 def _unsat_cover_atoms(info, c_idx: int, db: dict) -> list[int]:
     atoms = {c_idx, db["c1"], db["c2"]}
     for key in ("hydroxyls", "ketones", "amines"):
         for e in _aliphatic_entries(info, key):
             atoms.add(e["c_idx"])
-    return list(atoms)
-
-
-def _polyunsat_cover_atoms(info, c_idx: int) -> list[int]:
-    atoms = {c_idx}
-    for db in info.get("double_bonds") or []:
-        atoms.update((db["c1"], db["c2"]))
     return list(atoms)
 
 
@@ -154,19 +135,6 @@ def _try_unsat_fg(info, flag, ekey, bad, kind, ckey, **extra) -> dict | None:
         return None
     return _parent_dict(
         chain, kind, **{ckey: c_idx, "double_bond": (db["c1"], db["c2"]), "mol": info["mol"], **extra},
-    )
-
-
-def _try_polyunsat_fg(info, flag, ekey, bad, kind, ckey, **extra) -> dict | None:
-    if not _ok_polyunsat_fg(info, flag, ekey, bad):
-        return None
-    c_idx = info[ekey][0]["c_idx"]
-    chain = _best_cover_pair(info["mol"], _polyunsat_cover_atoms(info, c_idx))
-    if not chain or c_idx not in chain:
-        return None
-    return _parent_dict(
-        chain, kind,
-        **{ckey: c_idx, "double_bonds": _db_pairs(info), "mol": info["mol"], **extra},
     )
 
 
