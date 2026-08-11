@@ -1,6 +1,6 @@
 # Layer5: 名称组装 (Name Assembly)
 
-> **管线位置:** 第 5 层 / 6 层 (输出层) | **源文件:** 22 个 `.py` | **最后更新:** 2026-08-11
+> **管线位置:** 第 5 层 / 6 层 (输出层) | **源文件:** 11 个 `.py` (1842 行) | **最后更新:** 2026-08-11
 
 ---
 
@@ -27,9 +27,8 @@ Layer4: numbering (位次分配)
 | 母体名称生成 | 根据 parent kind 和碳数 n 查表/构造双语母体词干 |
 | 取代基前缀组装 | 按字母序排列、重复基团合并 (di/tri/tetra)、位次号拼接 |
 | 立体化学插入 | R/S (CIP) 和 E/Z (双键) 立体描述符的前缀化 |
-| 功能类命名 | 酯 (ester)、酸酐 (anhydride)、盐 (salt) 的特殊名称模式 |
+| 功能类命名 | 酯 (ester)、苯甲酸酯 (benzoate)、酸酐 (anhydride) 的特殊名称模式 |
 | 双语输出 | 同步生成英文和中文两套 IUPAC 字符串 |
-| 特殊 FG 命名 | 磷酸酯、磺酸/磺酰胺、脲/胍/肼、氨基甲酸酯等专属命名规则 |
 
 **非职责（由上游层承担）：**
 
@@ -46,7 +45,7 @@ assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> Name
 
 `numbered` 字典是多层管线积累的结构化数据，核心字段包括：
 - `parent` — 母体信息 (`kind`, `n_carbons`, `stem_en`, `stem_zh`, `chain`, `mol` 等)
-- `substituents` — 取代基列表 (每条含 `en`, `zh`, `locant`, `kind`, `paren` 等)
+- `substituents` — 取代基列表 (每条含 `en`, `zh`, `locant`, `kind`, `paren`, `o_side` 等)
 - 各种 `_locant` / `_locants` 字段 — FG 位次 (如 `oh_locant`, `amine_locant`, `ketone_locant`, `ene_locant`, `cooh_locants` 等)
 - 立体化学字段 — `double_bond` / `double_bonds` (供 E/Z), 分子内嵌 CIP (供 R/S)
 
@@ -58,42 +57,38 @@ assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> Name
 
 ### 1. 组装总控 (`assemble` 函数)
 
-Layer5 的入口是 `assembler.py` 中的 `assemble` 函数（第 640 行）。它遵循一个清晰的名称变换流水线，每步返回双语元组 `(en, zh)`：
+Layer5 的入口是 `assembler.py` 中的 `assemble` 函数（第 510 行）。它遵循一个清晰的名称变换流水线，每步返回双语元组 `(en, zh)`：
 
 ```
 assemble(numbered)
   │
   ├─ 0. _typed_expression_kind(kind, numbered) → 按 principal expression 重定型
-  ├─ 1. _names_for(kind, n, numbered)     → 母体名称 (en, zh)
-  ├─ 2. _prefix_for(numbered, kind, n)    → 取代基前缀 (pre_en, pre_zh)
-  ├─ 3. join_kind_name(kind, pre, names)  → 拼接前缀+母体
-  ├─ 4. maybe_anion_names(numbered, en, zh) → 羧酸根阴离子后缀
-  ├─ 5. apply_rs_prefix(numbered, en, zh) → R/S 立体化学前缀
-  └─ 6. maybe_metal_salt_names(...)       → 金属盐/盐酸盐后缀
+  │      (acid→diacid/polycarboxylic, alcohol→diol, amine→sec/tert amine 等)
+  ├─ 1. _names_for(effective_kind, n, numbered) → 母体名称 (en, zh)
+  ├─ 2. _prefix_for(numbered, kind, n)          → 取代基前缀 (pre_en, pre_zh)
+  ├─ 3. join_kind_name(kind, pre, names)        → 拼接前缀+母体 (酯/苯甲酸酯有专属拼接)
+  ├─ 4. maybe_anion_names(numbered, en, zh)     → 羧酸根阴离子后缀
+  ├─ 5. apply_rs_prefix(numbered, en, zh)       → R/S 立体化学前缀
+  └─ 6. maybe_metal_salt_names(...)             → 金属盐/盐酸盐后缀
        → NameResult(en, zh)
 ```
 
-> **源:** `src/namepredict/layer5/assembler.py:640-651`
+> **源:** `src/namepredict/layer5/assembler.py:510-521`
 
 这 5 步体现了 IUPAC 名称的标准模板：**[立体前缀]-[取代基前缀]-[母体词干]-[官能团后缀]-[盐后缀]**。每一步都是纯文本操作，不涉及任何化学计算——所有化学推理已在 Layer1-4 完成。
 
 ### 2. 母体名称生成的派发机制 (`_names_for`)
 
-`_names_for` 是母体名称的核心派发函数（第 569 行），按优先级依次尝试五种命名策略：
+`_names_for`（第 476 行）是母体名称的核心派发函数。当前实现以 **`_KIND_TABLE` 数据驱动的链词干引擎**为主（第 336 行），辅以少数特殊 worker：
 
-1. **特殊 FG 命名** (`special_fg_names`)：覆盖 carbamate、carbonate、urea、guanidine、hydrazine、diester、boronic、acyl halide、sulfoxide、sulfonamide、sulfonate、sulfone、sulfonic acid、sulfonyl chloride、cyclo exo-FG 等。这些类别有独特的命名模式，不符合标准的"词干-FG后缀"模板。
+1. **`_KIND_TABLE` 链引擎** (`_chain_names`)：一张 kind → `_Chain` spec 的表，覆盖 29 种链/环母体——`alcohol/diol/triol/ketone/alkene/acid/ester/thiol/amine/sec_amine/tert_amine/aldehyde/nitrile/polyene/cyclopolyene/alkyne/cycloalkane/cycloalkene/dione/cycloalkanedione/cycloalcohol/cycloketone/cycloamine/diacid/diamine/triamine/tetraamine/anhydride/cycloalkanediol/amide`。每个 spec 声明词干后缀、位次字段、省略规则、不饱和段（`ene_seg`/`ene_base`/`yne_suf`）与 E/Z 包装函数，`_chain_names` 统一渲染（烯/炔段插入、环前缀、位次省略均由 spec 数据驱动）。
+2. **硫醚** (`_sulfide_names`)：对称/不对称 `_sym_sulfide_names`/`_asym_sulfide_names`。
+3. **苯系/杂环 worker**：`benzenediol_names`、`phenyl_parent_names`、`benzene_parent_names`、`benzoate`（常量 "benzoate"/"苯甲酸"）、`pyridine_kind_names`（吡啶/萘/吲哚/苯并唑胺等派发）。
+4. **回退**：`_parent_stem_names`（用 parent 携带的 stem_en/stem_zh）→ `_alkane_names`。
 
-2. **磷酸酯命名** (`p_fg_names`)：phosphate 和 phosphonic 的专属规则。
+> **源:** `src/namepredict/layer5/assembler.py:476-496` (`_names_for`), `src/namepredict/layer5/assembler.py:336-474` (`_KIND_TABLE`)
 
-3. **杂原子/羟基/胺基命名** (`_hetero_names`)：处理 ether、sulfide、alcohol、thiol、diol、triol、amine、polyamine、cycloalcohol、cycloamine 等含 O/N/S 的母体。
-
-4. **羰基命名** (`_carbonyl_names`)：处理 acid、aldehyde、amide、nitrile、anhydride、ester、ketone、dione 等含 C=O 的母体，包括其不饱和变体（alkenoic acid、alkynone 等）。
-
-5. **不饱和烃/环命名** (`_unsat_or_alkane`)：处理 alkene、polyene、alkyne、cycloalkane、cycloalkene、benzene、bridged、spiro 等。
-
-> **源:** `src/namepredict/layer5/assembler.py:569-576`
-
-这种 5 级派发确保了特殊命名优先于通用命名——例如 diethyl carbonate 调用 `carbonate_names` 而非走通用 `ether` 分支。
+这种数据驱动设计使得新增一种链状 FG 只需在 `_KIND_TABLE` 增加一行 spec，而无需修改派发逻辑。
 
 ### 3. 双语词干表 (`stems.py`)
 
@@ -112,17 +107,17 @@ assemble(numbered)
 - 酰胺 (amide): hexane → hexanamide (EN) / 己 → 己酰胺 (ZH)
 - 腈 (nitrile): octane → octanenitrile (EN) / 辛 → 辛腈 (ZH)
 - 酯 (ester acyl): decane → decanoate (EN)
-- 酰氯/酰溴 (acyl halide): butane → butanoyl chloride (EN) / 丁 → 丁酰氯 (ZH)
+- 酰卤 (acyl halide): butane → butanoyl chloride (EN) / 丁 → 丁酰氯 (ZH)
 
 所有公开词干表通过 `_fill(fn, lo=1, hi=35)` 自动填充为字典，确保 C20+ 的长链名称无需手动维护。
 
-> **源:** `src/namepredict/layer5/stems.py:9-13` (基表), `src/namepredict/layer5/stems.py:333-352` (Fill 生成)
+> **源:** `src/namepredict/layer5/stems.py:53-75` (基表/词干组合), `src/namepredict/layer5/stems.py:281-305` (Fill 生成)
 
 **中文词干处理：** `zh_stem(zh_full)` 函数从中文全名中剥离末端 FG/母体后缀（如 `十一烷` → `十一`），用于构造带位次号的 FG 名称（如 `丁-2-醇`）。
 
 **盐后缀支持：** `maybe_anion_names` 将羧酸名称转为羧酸根形式（`dodecanoic acid` → `dodecanoate` / `十二酸` → `十二酸根`）。`maybe_metal_salt_names` 处理碱性金属盐（`sodium dodecanoate` / `十二酸钠`）和盐酸盐（`;hydrochloride` / `;盐酸盐`）。
 
-> **源:** `src/namepredict/layer5/stems.py:234-238`, `src/namepredict/layer5/stems.py:285-290`
+> **源:** `src/namepredict/layer5/stems.py:188-221` (酸→酸根 + 阴离子), `src/namepredict/layer5/stems.py:221-260` (金属盐)
 
 ### 4. 取代基前缀组装 (`assembler_prefixes.py`)
 
@@ -142,13 +137,13 @@ assemble(numbered)
 
 6. **字母序排列** (`_sorted_stems`)：英文词干按 `alkyl_alpha_key` 定义的规则排序（与 Layer3 的取代基提取器共享同一排序键，保证一致性）。
 
-> **源:** `src/namepredict/layer5/assembler_prefixes.py:80-86` (_build_prefix), `src/namepredict/layer5/assembler_prefixes.py:12-16` (_group_by_stem)
+> **源:** `src/namepredict/layer5/assembler_prefixes.py:76-85` (_build_prefix), `src/namepredict/layer5/assembler_prefixes.py:7-12` (_group_by_stem)
 
-**特殊前缀模式：** `_prefix_for` 在苯、苯甲酸酯、嘧啶胺等特定母体上施加额外规则，确保前缀生成与母体命名风格的协调。例如苯的取代基数 >= 4 时，中文前缀使用括号包裹三氟甲基以确保可读性。
+**特殊前缀模式：** `_prefix_for` 在苯、苯甲酸酯、嘧啶胺等特定母体上施加额外规则，确保前缀生成与母体命名风格的协调。例如苯的取代基数 >= 4 时，中文前缀使用括号包裹三氟甲基以确保可读性。酰卤前缀经 `acyl_halide_names._is_isobutyryl` 判断 C3+2-甲基分支的保留名。
 
-> **源:** `src/namepredict/layer5/assembler_prefixes.py:87-97` (_prefix_for)
+> **源:** `src/namepredict/layer5/assembler_prefixes.py:87-97` (_prefix_for), `src/namepredict/layer5/acyl_halide_names.py:5` (_is_isobutyryl)
 
-### 5. 苯/芳烃母体命名 (`benzene_names.py`)
+### 5. 苯/芳烃/杂环母体命名 (`benzene_names.py`)
 
 芳烃命名是 Layer5 中最复杂的子系统之一，因为存在大量 IUPAC 保留名和特殊编号规则：
 
@@ -158,21 +153,19 @@ assemble(numbered)
 
 **二甲苯前缀：** `_xylene_prefix` 将两个甲基位次号前置，英文为 `2,3-` 格式，中文为 `2,3-二甲基` 格式。
 
-**稠合 iso 芳烃：** 通过 `iso_arene_names.py` 处理 isoindole、isobenzofuran 等特殊稠合体系。
+**苯二酚：** `benzenediol_names` 生成 `benzene-1,4-diol`/`苯-1,4-二酚` 格式。
 
-**苯甲酸酯 (benzoate)：** `benzoate_parent_names` 处理 alkyl benzoate 格式——英文为 `methyl benzoate`，中文为 `苯甲酸甲酯`（酸在前、醇在后，与英文语序相反）。支持复杂 O-烷基（`alkoxy_complex`）模式。
+**稠合 iso 芳烃：** 通过 `iso_arene_names.py` 处理 isocyanato/isothiocyanatobenzene 等 P-61.9 保留名体系（`iso_fused_parent`/`iso_fused_prefix`）。
 
-**杂环羧酸：** `hetero5carboxylic_names` 处理五元杂环（呋喃、噻吩、吡咯、咪唑、吡唑）的羧酸衍生物，自动添加 `1H-` 前缀（如 `1H-pyrrole-2-carboxylic acid`）。`sat_hetero_carboxylic_names` 处理饱和杂环（哌啶、吗啉、氧杂环戊烷等）。
+**杂环母体：** `pyridine_kind_names`（`_PYRIDINE_KIND_FN` 表）派发吡啶类官能团母体（pyridinecarboxylic、pyridinamine、pyridinol）、苯并噻唑/噁唑/咪唑胺（`benzothiazolamine_names`/`benzoxazolamine_names`/`benzimidazolamine_names`）、苯并呋喃胺、苯并噻吩硫酚、萘/喹啉/吲哚/吲唑的羧酸/醛/腈等。
 
-**吡啶/喹啉/吲哚/萘衍生物：** `pyridine_kind_names` 派发吡啶类官能团母体（pyridinecarboxylic、pyridinamine、pyridinol）、嘧啶胺、苯并噻唑/噁唑/咪唑胺，以及萘/喹啉/吲哚/吲唑的羧酸/醛/腈等。
+**泛化芳烃 FG 母体：** `_ARENE_FG_STEM` 表驱动地处理 naphthalenol、naphthalenediol、pyrazolamine、thiazolamine、quinazolinamine 等，通过统一的 `_arene_fg_parent_names` 函数生成 `{stem}-{locants}-{suffix}` 格式名称。
 
-**泛化芳烃 FG 母体：** `_ARENE_FG_STEM` 表驱动地处理 naphthalenol、naphthalenediol、naphthalenamine、quinolinediol、pyrazolamine、thiazolamine、quinazolinamine 等，通过统一的 `_arene_fg_parent_names` 函数生成 `{stem}-{locants}-{suffix}` 格式名称。
-
-> **源:** `src/namepredict/layer5/benzene_names.py:82-87` (benzene_parent_names), `src/namepredict/layer5/benzene_names.py:493-525` (arene FG stem)
+> **源:** `src/namepredict/layer5/benzene_names.py:73-91` (保留名/母体), `src/namepredict/layer5/benzene_names.py:341-350` (pyridine_kind_names), `src/namepredict/layer5/benzene_names.py:296-327` (arene FG stem)
 
 ### 6. 立体化学插入
 
-**E/Z 前缀 (`stereo_ez.py`)：** 检查母体的 `double_bond`（单个双键）或 `double_bonds`（多个双键）字段，读取 RDKit 的双键立体标签 (`BondStereo.STEREOE` / `BondStereo.STEREOZ`)，生成 `(E)-` 或 `(Z)-` 前缀。多烯体系生成复合前缀如 `(2E,6Z)-`。
+**E/Z 前缀 (`stereo_ez.py`)：** 检查母体的 `double_bond`（单个双键）或 `double_bonds`（多个双键）字段，读取 RDKit 的双键立体标签 (`BondStereo.STEREOE` / `BondStereo.STEREOZ`)，生成 `(E)-` 或 `(Z)-` 前缀。多烯体系生成复合前缀如 `(2E,6Z)-`。`ez_for_parent` 被 `_KIND_TABLE` 中多个 spec 的 `ez_ene` 字段复用。
 
 > **源:** `src/namepredict/layer5/stereo_ez.py:64-69` (ez_for_parent)
 
@@ -180,65 +173,44 @@ assemble(numbered)
 
 **合并规则：** R/S 前缀与已有的 E/Z 前缀共享同一个括号块，按"先 E/Z 后 R/S"、同类型按位次号排序。例如 `(E,2S)-` 而非 `(E)-(2S)-`。对于酯，R/S 描述符插入烷基词之后（`methyl (2S)-butanoate`）。
 
-> **源:** `src/namepredict/layer5/stereo_rs.py:154` (apply_rs_prefix), `src/namepredict/layer5/stereo_rs.py:92-114` (_parse_stereo / _format_stereo)
+> **源:** `src/namepredict/layer5/stereo_rs.py:154` (apply_rs_prefix), `src/namepredict/layer5/stereo_rs.py:90-114` (_parse_stereo / _format_stereo)
 
-### 7. 功能性命名模式
+### 7. 酯 / 苯甲酸酯拼接
 
-**酯 (ester)：** 英文格式 `{alkyl} {acyl}ate`（如 `methyl butanoate`），中文格式 `{酸}{醇}酯`（如 `丁酸甲酯`，酸在前醇在后）。`join_ester_name` 处理取代基前缀在酯中的插入——前缀插入 acyl 词干前（`methyl 2-oxobutanoate`），而 E/Z 立体前缀保留在 alkyl 词之后。不饱和酯通过 `unsat_acid.py` 派发为 alkenoate/alkynoate 格式。
+**酯 (ester)：** 英文格式 `{alkyl} {acyl}ate`（如 `methyl butanoate`），中文格式 `{酸}{醇}酯`（如 `丁酸甲酯`，酸在前醇在后）。`join_ester_name`（`benzene_names.py:162`）处理取代基前缀在酯中的插入——前缀插入 acyl 词干前（`methyl 2-oxobutanoate`），而 E/Z 立体前缀保留在 alkyl 词之后。O 侧烷基经 `_ester_alkoxy_from` 从 `parent.alkoxy_n` 保留名表或 `o_side` 取代基解析；对称多臂（同 en）聚合为 `dimethyl`/`二甲`。
 
-> **源:** `src/namepredict/layer5/benzene_names.py:131-139` (join_ester_name)
+**苯甲酸酯 (benzoate)：** `join_benzoate_name` 处理 alkyl benzoate 格式——英文为 `ethyl 4-chlorobenzoate`，中文为 `4-氯苯甲酸乙酯`（酸在前、醇在后，与英文语序相反）。中文恒拼"酯"，无烷氧基时保留"苯甲酸酯"。
 
 **酸酐 (anhydride)：** `_anhydride_from_acid` 将酸名转为酸酐名——英文 `oic acid` → `oic anhydride`，中文 `酸` → `酐`（如 `acetic anhydride`/`乙酸酐`）。
 
-**二酯 (diester)：** `diester_names.py` 处理对称二酯 `di{alkyl} {alkane}dioate` 格式（如 `diethyl oxalate`/`草酸二乙酯`），支持不饱和二酯的 E/Z 立体标记。
-
-**金属盐：** `maybe_metal_salt_names` 将羧酸根名称转为金属盐——检测 `salt.metal` 字段，英文追加金属名前缀（`sodium acetate`），中文将 `酸根` 替换为 `酸{金属}`（`乙酸钠`）。盐酸盐通过 `acid_salt` 字段追加 `;hydrochloride`/`;盐酸盐`。
-
-**酰卤 (acyl halide)：** `acyl_halide_names.py` 生成 `{alkan}oyl chloride`/`{烷}酰氯` 格式。特殊保留名如 `acetyl chloride`（C2）、`isobutyryl bromide`（C3 + 2-甲基分支）。
+> **源:** `src/namepredict/layer5/benzene_names.py:162-199` (join_ester_name / join_benzoate_name / join_kind_name), `src/namepredict/layer5/assembler.py:31` (_anhydride_from_acid)
 
 ### 8. 不饱和体系的母体命名
 
-`unsat_acid.py` 提供完整的不饱和羰基/羟基/酮体系的母体命名：
+不饱和链式母体（烯/炔酸、醛、腈、酰胺、酮）由 `_KIND_TABLE` 各 spec 的 `ene_base`/`yne_suf`/`ene_seg` 数据驱动（如 acid 的 `ene_base=("enoic acid","烯酸")`），`_chain_names` 统一渲染 E/Z 前缀与不饱和段位次。
 
-- **烯酸 (alkenoic acid)：** `{alkane}enoic acid`，如 `but-2-enoic acid`/`丁-2-烯酸`，多烯使用 `dienoic acid`/`二烯酸` 等复合后缀
-- **炔酸 (alkynoic acid)：** `{alkane}ynoic acid`/`{烷}炔酸`
-- **烯醛 (alkenal)：** `{alkane}enal`/`{烷}烯醛`
-- **烯腈 (alkenenitrile)：** `{alkane}enenitrile`/`{烷}烯腈`
-- **烯醇 (alkenol)：** `{alkane}-{ene}-en-{oh}-ol` 格式，同时标记双键和 OH 位次
-- **烯酮 (alkenone)：** `{alkane}-{ene}-en-{one}-one` 格式
-- **不饱和多元醇：** `assembler.py` 中的 `_unsat_polyol_names` 在 diol/triol 母体上优先尝试不饱和命名，如 `but-2-ene-1,4-diol`/`丁-2-烯-1,4-二醇`
+`unsat_acid.py` 只保留特殊 case：
+- **烯酰胺 (alkenamide)：** `alkenamide_names` 处理保留名 `acrylamide`/`丙烯酰胺`（C3 + 2-烯）及通用 `(E)-but-2-enamide`/`(E)-丁-2-烯酰胺`。
 
-> **源:** `src/namepredict/layer5/unsat_acid.py:75` (alkenoic_acid_names), `src/namepredict/layer5/assembler.py:129` (_unsat_polyol_names)
+> **源:** `src/namepredict/layer5/unsat_acid.py:24-31` (alkenamide_names), `src/namepredict/layer5/assembler.py:363-396` (acid/ester/aldehyde/nitrile 的 ene_base/yne_suf)
 
-### 9. FG 专属命名模块的设计模式
+### 9. yl 转换 (`free_to_yl.py`)
 
-Layer5 的多个 FG 专属命名模块遵循一个统一的设计模式——每个模块导出一个或多个函数，签名为 `(numbered: dict) -> tuple[str, str] | None` 或 `(kind: str, n: int, numbered: dict) -> tuple[str, str] | None`。以 `sulfur_names.sulfonamide_names` 为例：
+`free_to_yl` 将自由母体名转为 P-29 取代基 -yl 形式（FG 后缀 → 前缀），例如 `-oic acid` → `-yl`。内部通过 `_try_fg_prefix` 处理烷氧基/硫烷基/氨基等 FG 前缀，`_mirror_azole_locants_zh` 镜像中文唑类位次，`_yl_en`/`_yl_zh` 生成 en/zh 的 -yl/-基 后缀。
 
-1. **kind 门控：** 入口函数检查 `parent["kind"]` 是否匹配，不匹配直接返回 `None`。
-2. **mode 派发：** 通过 `parent["mode"]` 字段（如 `"alkyl"`, `"aryl"`, `"n_alkyl"` 等）派发到不同的子模式函数。
-3. **侧链 (side) 提取：** 从 `parent["s_side"]`（S 侧）和 `parent["n_side"]`（N 侧）提取芳基/烷基信息。
-4. **双语拼接：** 英文使用 "X benzenesulfonamide" 格式，中文使用 "X 苯磺酰胺" 格式，N-取代前缀通过 `N-` 标记。
-
-其他模块的类似模式：
-- **carbamate_names**: `alkyl N-substituent carbamate` / `N-取代基 氨基甲酸 烷基酯`
-- **nitrogen_names.urea_names**: 无取代 `urea`/`脲` → 单芳基 `phenylurea`/`苯脲` → 1,1-二甲基-3-芳基模式
-- **phosphate_names**: `alkyl dihydrogen phosphate` / `磷酸烷基酯`
-- **sulfur_names.sulfonic_acid_names**: `alkanesulfonic acid` / `烷磺酸` 或 `arenesulfonic acid` / `芳烃磺酸`
-
-氮族（urea/guanidine/hydrazine/isocyanate/isothiocyanate）集中在 `nitrogen_names.py`，硫族（sulfonamide/sulfonate/sulfone/sulfonic acid/sulfonyl chloride/sulfoxide）集中在 `sulfur_names.py`。这种设计模式确保了每个 FG 模块的高内聚性——特定官能团的所有命名知识封装在单个文件中，`special_fg_names` 仅作为薄派发层。
-
-> **源:** `src/namepredict/layer5/special_fg_names.py:54` (special_fg_names dispatch)
+> **源:** `src/namepredict/layer5/free_to_yl.py:172` (free_to_yl)
 
 ### 10. 名称拼接 (`join_kind_name`)
 
-`join_kind_name` 是前缀与母体的拼接函数（`benzene_names.py:142-149`），处理两种拼接模式：
+`join_kind_name` 是前缀与母体的拼接函数（`benzene_names.py:189-199`），处理三种拼接模式：
 
 - **酯类拼接** (`join_ester_name`)：将前缀插入 alkyl-acyl 结构之间，保留 E/Z 立体标记在 alkyl 词后
+- **苯甲酸酯拼接** (`join_benzoate_name`)：同构于酯，中文恒拼"酯"
 - **常规拼接** (`join_parent_name`)：前缀-母体用连字符连接，但以数字或 `1H-` 开头的母体需要连字符（`pre-stem` 而非 `prestem`）
 
 中文额外处理：当英文母体以 `1H-` 开头且中文母体尚未携带此前缀时，自动添加 `1H-` 前缀（`zh_1h_parent`）。
 
-> **源:** `src/namepredict/layer5/benzene_names.py:142-149` (join_kind_name), `src/namepredict/layer5/benzene_names.py:117-122` (join_parent_name)
+> **源:** `src/namepredict/layer5/benzene_names.py:189-206` (join_kind_name / zh_1h_parent), `src/namepredict/layer5/benzene_names.py:127` (join_parent_name)
 
 ---
 
@@ -249,22 +221,21 @@ Layer5 的多个 FG 专属命名模块遵循一个统一的设计模式——每
 | 文件 | 说明 |
 |------|------|
 | `src/namepredict/layer5/__init__.py` | 包入口，导出 `assemble` |
-| `src/namepredict/layer5/assembler.py` | 主组装器：typed-kind 重定型 + 母体名称派发 + 名称变换流水线 (651 行) |
-| `src/namepredict/layer5/assembler_prefixes.py` | 取代基前缀：分组、位次合并、字母序排列 (93 行) |
+| `src/namepredict/layer5/assembler.py` | 主组装器：typed-kind 重定型 + `_KIND_TABLE` 链引擎 + 特殊 worker + 名称变换流水线 (521 行) |
+| `src/namepredict/layer5/assembler_prefixes.py` | 取代基前缀：分组、位次合并、字母序排列 (97 行) |
 
 ### 词干表
 
 | 文件 | 说明 |
 |------|------|
-| `src/namepredict/layer5/stems.py` | C1-C35+ 英中双语烷烃及 FG 词干生成器，盐后缀支持 (375 行) |
+| `src/namepredict/layer5/stems.py` | C1-C35+ 英中双语烷烃及 FG 词干生成器，盐后缀支持 (317 行) |
 
 ### 芳烃/杂环母体
 
 | 文件 | 说明 |
 |------|------|
-| `src/namepredict/layer5/benzene_names.py` | 苯/芳烃/杂环母体：保留名、前缀、杂环羧酸、泛化芳烃 FG、`pyridine_kind_names` 分发 (324 行) |
-| `src/namepredict/layer5/aryl_helpers.py` | 芳基辅助：tolyl 交换、phenyl→benzene 转换、括号包裹 (38 行) |
-| `src/namepredict/layer5/iso_arene_names.py` | iso-芳烃稠合体系命名 (73 行) |
+| `src/namepredict/layer5/benzene_names.py` | 苯/芳烃/杂环母体：保留名、前缀、苯二酚、杂环胺、泛化芳烃 FG、`join_kind_name` (350 行) |
+| `src/namepredict/layer5/iso_arene_names.py` | iso-芳烃保留名体系 (isocyanato/isothiocyanatobenzene) 命名 (73 行) |
 
 ### 立体化学
 
@@ -277,29 +248,14 @@ Layer5 的多个 FG 专属命名模块遵循一个统一的设计模式——每
 
 | 文件 | 说明 |
 |------|------|
-| `src/namepredict/layer5/unsat_acid.py` | 烯/炔酸、醛、腈、酯、醇、酮的不饱和母体命名 (321 行) |
-| `src/namepredict/layer5/polycarboxylic.py` | 多元羧酸（开链/苯/环烷）(43 行) |
+| `src/namepredict/layer5/unsat_acid.py` | 烯酰胺保留名 + 不饱和酸/醛/腈/酯的特例 (46 行；通用不饱和命名由 `_KIND_TABLE` 数据驱动) |
 
-### FG 专属命名（按字母序）
-
-| 文件 | 说明 |
-|------|------|
-| `src/namepredict/layer5/acyl_halide_names.py` | 酰氯/酰溴 (39 行) |
-| `src/namepredict/layer5/boronic_names.py` | 硼酸命名 (45 行) |
-| `src/namepredict/layer5/carbamate_names.py` | 氨基甲酸酯：N-取代模式 (77 行) |
-| `src/namepredict/layer5/carbonate_names.py` | 碳酸酯命名 (65 行) |
-| `src/namepredict/layer5/cyclo_exo_fg_names.py` | 环烷外环羰基 FG (31 行) |
-| `src/namepredict/layer5/diester_names.py` | 对称二酯 (67 行) |
-| `src/namepredict/layer5/nitrogen_names.py` | **氮族合并模块**：urea / guanidine / hydrazine / isocyanate / isothiocyanate (199 行) |
-| `src/namepredict/layer5/phosphate_names.py` | 磷酸酯/膦酸命名 (44 行) |
-| `src/namepredict/layer5/special_fg_names.py` | FG 派发层：统筹所有 FG 专属命名模块 (58 行) |
-| `src/namepredict/layer5/sulfur_names.py` | **硫族合并模块**：sulfonamide / sulfonate / sulfone / sulfonic acid / sulfonyl chloride / sulfoxide (358 行) |
-
-### yl 转换
+### 其他
 
 | 文件 | 说明 |
 |------|------|
-| `src/namepredict/layer5/free_to_yl.py` | 自由母体名 → P-29 取代基 -yl 形式（FG 后缀→前缀，`free_to_yl`) (185 行) |
+| `src/namepredict/layer5/acyl_halide_names.py` | 酰卤前缀保留名判断 `_is_isobutyryl` (13 行) |
+| `src/namepredict/layer5/free_to_yl.py` | 自由母体名 → P-29 取代基 -yl 形式（FG 后缀→前缀）(185 行) |
 
 ### 管线集成
 
@@ -315,30 +271,18 @@ Layer5 的多个 FG 专属命名模块遵循一个统一的设计模式——每
 
 ```mermaid
 flowchart TD
-    NUMBERED["numbered dict\n(Layer4 输出)"] --> ASSEMBLE["assemble()\nassembler.py:573"]
+    NUMBERED["numbered dict\n(Layer4 输出)"] --> ASSEMBLE["assemble()\nassembler.py:510"]
 
-    ASSEMBLE --> PARSE["_parent_n(numbered)\n→ (kind, n)"]
+    ASSEMBLE --> TYPED["_typed_expression_kind\nassembler.py:111\nacid→diacid / alcohol→diol\namine→sec/tert 重定型"]
 
-    PARSE --> NAMES_FOR["_names_for(kind, n, numbered)\nassembler.py:493\n5 级派发生成母体名称"]
+    TYPED --> NAMES_FOR["_names_for(kind, n, numbered)\nassembler.py:476\n派发母体名称"]
 
-    NAMES_FOR --> DISPATCH{"派发顺序"}
-    DISPATCH --> S1["1. special_fg_names\n    脲/胍/肼/二酯/酰卤等"]
-    DISPATCH --> S2["2. p_fg_names\n    磷酸酯/膦酸"]
-    DISPATCH --> S3["3. _hetero_names\n    醚/硫醚/醇/硫醇/胺"]
-    DISPATCH --> S4["4. _carbonyl_names\n    酸/醛/酰胺/腈/酯/酮"]
-    DISPATCH --> S5["5. _unsat_or_alkane\n    烯/炔/环烷/苯/桥环"]
+    NAMES_FOR --> CHAIN{"_KIND_TABLE\n链引擎?"}
+    CHAIN -->|"29 种链/环 kind"| ENG["_chain_names\nassembler.py:285\n词干 + 烯/炔段 + 位次\n+ 环前缀 (数据驱动)"]
+    CHAIN -->|"special worker"| WORKER["sulfide / benzenediol\nphenyl / benzene / benzoate\npyridine_kind_names"]
 
-    S1 --> SPECIAL["15+ FG 专属模块\n如 carbamate/urea/sulfonamide"]
-    S2 --> PHOS["phosphate/phosphonic"]
-    S3 --> HETERO["ether/sulfide/alcohol\n/thiol/amine/diol"]
-    S4 --> CARBONYL["acid/aldehyde/amide\n/nitrile/anhydride/ester\n/ketone/dione"]
-    S5 --> UNSAT["alkene/polyene/alkyne\n/cycloalkane/benzene\n/bridged/spiro"]
-
-    SPECIAL --> PARENT_NAME["(en, zh) 母体名称"]
-    PHOS --> PARENT_NAME
-    HETERO --> PARENT_NAME
-    CARBONYL --> PARENT_NAME
-    UNSAT --> PARENT_NAME
+    ENG --> PARENT_NAME["(en, zh) 母体名称"]
+    WORKER --> PARENT_NAME
 
     ASSEMBLE --> PREFIX["_prefix_for(numbered, kind, n)\nassembler_prefixes.py:87\n分组/位次合并/字母序"]
 
@@ -348,21 +292,21 @@ flowchart TD
     LOCANT --> PAREN["括号包裹规则\n_stem_needs_paren"]
     PAREN --> PREF_PAIR["(pre_en, pre_zh)"]
 
-    PARENT_NAME --> JOIN["join_kind_name(kind, pre, names)\nbenzene_names.py:142\n酯类 vs 常规拼接"]
+    PARENT_NAME --> JOIN["join_kind_name(kind, pre, names)\nbenzene_names.py:189\n酯/苯甲酸酯/常规拼接"]
 
     PREF_PAIR --> JOIN
 
-    JOIN --> ANION["maybe_anion_names\nstems.py:234\n羧酸→羧酸根"]
+    JOIN --> ANION["maybe_anion_names\nstems.py:202\n羧酸→羧酸根"]
 
-    ANION --> RS["apply_rs_prefix\nstereo_rs.py:156\nCIP R/S 手性前缀"]
+    ANION --> RS["apply_rs_prefix\nstereo_rs.py:154\nCIP R/S 手性前缀"]
 
-    RS --> SALT["maybe_metal_salt_names\nstems.py:285\n金属盐/盐酸盐后缀"]
+    RS --> SALT["maybe_metal_salt_names\nstems.py\n金属盐/盐酸盐后缀"]
 
     SALT --> RESULT["NameResult(en, zh, success=True)"]
 
     style NUMBERED fill:#e1f5fe
     style RESULT fill:#c8e6c9
-    style DISPATCH fill:#fff3e0
+    style CHAIN fill:#fff3e0
     style NAMES_FOR fill:#f3e5f5
     style PREFIX fill:#f3e5f5
 ```
@@ -435,7 +379,7 @@ Layer5 唯一的公共接口，将编号完成的结构化数据组装为最终�
 | `time_ms` | `float` | 累计耗时（毫秒） |
 | `meta` | `dict` | 元数据（含 `parent_kind`, `parent_chain`, `depth`, `salt` 等） |
 
-**调用者:** `namer.py:_ok_result` (第 70 行) — 在 Layer4 编号完成后立即调用，将结果封装为 `NameResult` 并注入覆盖率元数据。
+**调用者:** `namer.py:_ok_result` — 在 Layer4 编号完成后立即调用，将结果封装为 `NameResult` 并注入覆盖率元数据。
 
 ---
 

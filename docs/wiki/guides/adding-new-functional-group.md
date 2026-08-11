@@ -247,65 +247,28 @@ sulfoxide 的对称命名（如 dimethyl sulfoxide）不需要位次编号，这
 
 Layer 5 将编号后的 parent 和 substituent 信息组装为最终的中英双语名称。
 
-### 5.1 创建命名模块
+### 5.1 命名实现（当前机制）
 
-`sulfoxide_names` 位于 `src/namepredict/layer5/sulfur_names.py`（`:350`），与 sulfonamide/sulfone/sulfonic acid 等硫族命名合并。机制示意如下：
+Layer5 的母体命名以 `assembler.py` 的 `_KIND_TABLE` 链引擎为主（数据驱动），特殊拼接模式在 `_names_for` 中添加 worker 分支：
 
-```python
-"""L5 names for open-chain dialkyl sulfoxides (P-63.3)."""
-from __future__ import annotations
-from namepredict.layer5.stems import SULFIDE_ALKYL_EN, SULFIDE_ALKYL_ZH
+**方式 A：链状/环状 FG → 在 `_KIND_TABLE` 添加 `_Chain` spec。** 例如 `acid`（`assembler.py:363-369`）声明 `en_suf="oic acid"`、`zh_suf="酸"`、不饱和段 `ene_base=("enoic acid","烯酸")`/`yne_suf=("ynoic acid","炔酸")`、E/Z 包装 `ez_ene=_ez_prefix`。醇/酮/胺/醛/腈/烯/炔/环烷等 29 种链/环 kind 均由 `_chain_names` 统一渲染词干、不饱和段、位次与环前缀——新增此类 FG 通常只需一行 spec，无需修改派发逻辑。
 
-SULFOXIDE_SYM_EN = {
-    1: "dimethyl sulfoxide", 2: "diethyl sulfoxide",
-    3: "dipropyl sulfoxide", 4: "dibutyl sulfoxide",
-}
-SULFOXIDE_SYM_ZH = {
-    1: "二甲基亚砜", 2: "二乙基亚砜", 3: "二丙基亚砜", 4: "二丁基亚砜",
-}
-
-def sulfoxide_names(numbered: dict) -> tuple[str, str] | None:
-    parent = numbered.get("parent") or {}
-    ns = parent.get("alkyl_ns")
-    if not ns or len(ns) != 2:
-        return None
-    n1, n2 = int(ns[0]), int(ns[1])
-    if n1 == n2:
-        return _sym_names(n1)
-    return _asym_names(n1, n2)
-```
-
-命名模块的设计要素：
-
-- **对称命名**（symmetrical）：两侧臂长度相同时使用特化名称（如 "dimethyl sulfoxide" / "二甲基亚砜"）。
-- **不对称命名**（asymmetrical）：两侧臂长度不同时，按字母序排列 alkyl 前缀（如 "ethyl methyl sulfoxide" / "乙基甲基亚砜"）。
-- **复用 stems**：sulfoxide 的不对称命名复用了 `SULFIDE_ALKYL_EN/ZH` 中的 alkyl 词干（sulfide 和 sulfoxide 共享 methyl/ethyl/propyl/butyl 等 alkyl 前缀），避免重复定义。
-- **返回值**：`(en_name, zh_name)` 元组，或 `None` 表示无法生成名称（触发 fallback）。
-
-### 5.2 注册到 dispatch 链
-
-在 `src/namepredict/layer5/special_fg_names.py` 中（分派入口 `special_fg_names` 在 `:54`）：
-
-1. 导入命名函数（从合并模块导入）：
+**方式 B：特殊拼接 → 在 `_names_for` 添加 worker 分支。** 例如硫醚（`assembler.py:482-483`）：
 
 ```python
-from namepredict.layer5.sulfur_names import sulfoxide_names
+if kind == "sulfide":
+    return _sulfide_names(numbered)
 ```
 
-2. 在 `_tail` 函数中添加分派（`special_fg_names.py:46-51`）：
+`_sulfide_names`（`:49`）按对称/不对称臂长分派 `_sym_sulfide_names`/`_asym_sulfide_names`，返回 `(en, zh)` 或 `None`（None 触发 fallback）。
 
-```python
-def _tail(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    if kind in ("isocyanate", "isothiocyanate"):
-        return iso_kind_names(kind, n)
-    if kind in ("acyl_chloride", "acyl_bromide"):
-        return acyl_halide_names(kind, n, numbered)
-    return sulfoxide_names(numbered) if kind == "sulfoxide" else None
-```
+**复用 stems**：烷基词干从 `stems.py` 的 `ALKANE_EN/ZH`、`ester_alkyl_*` 等表取，避免重复定义。对称/不对称模式（如 `dimethyl sulfide`/`二甲基硫醚` vs `ethyl methyl sulfide`/`乙基甲基硫醚`）复用同一批 alkyl 词干。
 
-sulfoxide 被放在 `_tail` 中（dispatch 链的尾部），因为它的 `fg_rank=2` 意味着它很少成为 principal FG——大多数时候被 `_by_kind` 中的高优先级 FG 路径截获。`_tail` 处理最低优先级的特殊命名 FG。
+### 5.2 接线到组装流水线
 
-如果新 FG 的命名逻辑更复杂（如需要特殊的前缀/后缀组合、需要编号定位符），可以考虑在 `_by_kind` 的 `_core_table` 或 `_s_table` 中注册，或者在 assembler.py 的 `_names_for` 链中直接处理。
+`_names_for` 返回 `(en, zh)` 后，由 `assemble`（`assembler.py:510`）统一完成后续变换——`join_kind_name` 拼接前缀、`maybe_anion_names` 阴离子、`apply_rs_prefix` 立体前缀、`maybe_metal_salt_names` 盐后缀——无需为单个 FG 手动接线。
+
+如果新 FG 需要专属拼接（如酯/苯甲酸酯在 alkyl 与 acyl 之间插入前缀），在 `benzene_names.py` 增加 `join_{fg}_name`，并在 `join_kind_name`（`benzene_names.py:189-199`）添加 kind 分支。
 
 ---
 
@@ -350,8 +313,8 @@ sulfoxide 被放在 `_tail` 中（dispatch 链的尾部），因为它的 `fg_ra
 | L3/tools | `tools/anchored_table.py` | 前缀名注册（如果需要） |
 | L4 | `numbering.py:_kind_orienters()` | orienter 函数（如果需要） |
 | L4 | `omit_locants.py` | 省略位次规则（如果需要） |
-| L5 | 新建 `layer5/{fg}_names.py` | 命名模块（en + zh stems） |
-| L5 | `special_fg_names.py` 或 `assembler.py` | 注册到 dispatch 链 |
+| L5 | 新建 `layer5/{fg}_names.py` 或加进 `assembler.py` | 命名模块 / worker（en + zh stems） |
+| L5 | `assembler.py:_KIND_TABLE` 或 `_names_for` | `_Chain` spec 或 worker 分支 |
 
 ---
 
@@ -365,8 +328,7 @@ sulfoxide 功能在当前源码中的位置：
 | `src/namepredict/layer1/analyzer.py` | 注册 has_sulfoxide 布尔键 + entries 收集 |
 | `src/namepredict/layer2/principal.py` | `PRINCIPAL_REGISTRY` 的 `FG.SULFOXIDE`（LEGACY_COMPAT, compatibility_rank=2） |
 | `src/namepredict/layer2/kind_registry.py` | `_KIND_CLASS` 的 kind→FG 映射 + bootstrap 注册 |
-| `src/namepredict/layer5/sulfur_names.py` | `sulfoxide_names` 对称/不对称双语命名 |
-| `src/namepredict/layer5/special_fg_names.py` | `_tail` 分派 |
+| `src/namepredict/layer5/assembler.py` | `_KIND_TABLE` 链引擎 + `_sulfide_names` 等 worker（sulfoxide 专属命名模块 `sulfur_names.py` 已删除，L5 目前不输出 sulfoxide 名称） |
 
 ---
 

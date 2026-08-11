@@ -95,7 +95,7 @@ info = {
 
 **职责**：母体氢化物（parent hydride）选择——按 IUPAC P-44 规则驱动管线选出主链/主环母体
 
-这是整个流水线中逻辑最复杂的层之一（25 个文件，2,728 行；与 layer5 并列为代码量最大的两层），位于 `src/namepredict/layer2/`。
+这是整个流水线中逻辑最复杂的层之一（25 个文件，2,606 行；与 layer5 并列为代码量最大的两层），位于 `src/namepredict/layer2/`。
 
 **主路径（P-44 规则驱动管线）**：
 
@@ -371,12 +371,17 @@ src/namepredict/
 │   │   └── plan.py           # NumberingPlan
 │   └── [orient modules].py   # 各类定向策略
 └── layer5/                   # 名称组装
-    ├── assembler.py          # 组装调度
+    ├── assembler.py          # 组装调度 + _KIND_TABLE 链引擎
+    ├── assembler_prefixes.py # 取代基前缀
     ├── stems.py              # 词素映射 (EN/ZH)
-    ├── benzene_names.py      # 苯系名称
-    ├── nitrogen_names.py     # 氮族 FG 命名 (urea/guanidine/hydrazine/iso)
-    ├── sulfur_names.py       # 硫族 FG 命名 (sulfonamide/sulfone/sulfoxide/…)
-    └── free_to_yl.py         # -yl 转换
+    ├── benzene_names.py      # 苯系/杂环母体 + join_kind_name
+    ├── iso_arene_names.py    # iso-芳烃保留名
+    ├── stereo_rs.py          # CIP R/S
+    ├── stereo_ez.py          # E/Z
+    ├── unsat_acid.py         # 烯酰胺特例
+    ├── acyl_halide_names.py  # 酰卤前缀判断
+    ├── free_to_yl.py         # -yl 转换
+    └── __init__.py
 ```
 
 ---

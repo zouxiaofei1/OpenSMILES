@@ -110,17 +110,14 @@ class KindMeta:
 
 ### Layer 5: 后缀分派（Suffix Dispatch）
 
-`src/namepredict/layer5/assembler.py:493-499` 的 `_names_for()` 函数是名称组装的中枢调度器。它根据 parent kind 分层分发：
+`src/namepredict/layer5/assembler.py:476-496` 的 `_names_for()` 函数是名称组装的中枢调度器。当前实现以 `_KIND_TABLE` 数据驱动的链词干引擎为主：
 
-1. **`special_fg_names()`**: 处理特殊 FG 类别（酯的 alkoxy 配对、sulfonate、carbamate 等非标准后缀）
-2. **`p_fg_names()`**: 处理 phosphate/phosphonic 的 P-FG 后缀
-3. **`_hetero_names()`**: 分发 alcohol/thiol/ether/sulfide/amine 类后缀
-4. **`_carbonyl_names()`**: 分发 acid/aldehyde/amide/nitrile/ester/ketone 类后缀
-5. **`_unsat_or_alkane()`**: 无 principal FG 时的烃类后缀（-ane/-ene/-yne）
+1. **`_KIND_TABLE` 链引擎**（`assembler.py:336`）：29 种链/环 kind（alcohol/diol/triol/ketone/acid/ester/thiol/amine/aldehyde/nitrile/alkene/alkyne/cycloalkane/dione/cycloalcohol/cycloamine/diacid/diamine/anhydride/amide 等）由 `_chain_names` 统一渲染词干、不饱和段、位次与环前缀（spec 数据驱动）。
+2. **特殊 worker**：`sulfide`、`benzenediol`/`phenyl`/`benzene`/`benzoate`、`pyridine_kind_names`（吡啶/萘/苯并唑胺类）、`_parent_stem_names` 回退。
 
-调度逻辑是分层的：先尝试最高优先级路径，命中后直接返回。这确保了被选为母体的 principal FG 获得后缀，而劣后 FG 在 Layer 3 中被转为取代基前缀（如 hydroxy-、oxo-、amino-）。
+调度是分层的：先尝试链引擎，命中后直接返回。这确保了被选为母体的 principal FG 获得后缀，而劣后 FG 在 Layer 3 中被转为取代基前缀（如 hydroxy-、oxo-、amino-）。
 
-> **源:** `src/namepredict/layer5/assembler.py:493-499`, `src/namepredict/layer5/stems.py:1-376` | 详情见 [[architecture/layer5-name-assembly]]
+> **源:** `src/namepredict/layer5/assembler.py:476-496`, `src/namepredict/layer5/stems.py:1-317` | 详情见 [[architecture/layer5-name-assembly]]
 
 ---
 

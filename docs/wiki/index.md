@@ -1,6 +1,6 @@
 # NamePredict Wiki
 
-> 最后更新: 2026-08-11 | 源文件: 111 `.py` / 12,374 行 | Wiki 页面: 15
+> 最后更新: 2026-08-11 | 源文件: 100 `.py` / 10,784 行 | Wiki 页面: 15
 
 ## 项目概述
 
@@ -38,7 +38,7 @@ SMILES 输入
 | [[architecture/layer2-parent-selector]] | Layer2 母体选择器：P-44 规则驱动主链管线、纯烃表达、苯环保留名、kind_registry、评分与门控 |
 | [[architecture/layer3-substituents]] | Layer3 取代基提取器：anchored 查表主流程 + claim 补全、SubstituentNamer 有序后端（retained/rooted-tree/recursive）、侧链拓扑事实层 (side_facts)、覆盖台账 |
 | [[architecture/layer4-numbering]] | Layer4 编号：链/环方向决策、约束驱动编号引擎、omit_locants 规则 |
-| [[architecture/layer5-name-assembly]] | Layer5 名称组装：5 步流水线、双语词干表、FG 专属命名模块、立体化学 |
+| [[architecture/layer5-name-assembly]] | Layer5 名称组装：组装流水线、`_KIND_TABLE` 链引擎、双语词干表、立体化学 |
 
 ## 核心概念
 

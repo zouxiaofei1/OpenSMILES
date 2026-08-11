@@ -221,14 +221,9 @@ IUPAC 特许某些结构使用传统保留名而非系统命名。保留 scaffol
 
 ### 桥环与螺环母体
 
-`scaffold/polycyclic_parent.py` 实现饱和全碳双环桥环（IUPAC P-23）与单螺环（P-24.2.1）的母体候选：
+`scaffold/polycyclic_parent.py`（曾实现 `_try_bridged_parent`/`_try_spiro_parent` 桥环/螺环母体候选）已删除。当前 Layer2 **不产生** `bridged`/`spiro` 母体候选——桥环/螺环的**拓扑检测**保留在 `layer1/ring_systems.py`（`_topology` 在 `:82-91` 区分 bridged/spiro），但 L2 侧对应母体候选 kind 未被 principal 主路径消费。
 
-- **`_try_bridged_parent`**（`:79`）— `_is_simple_bridged` 检测 `topology == "bridged"` 且 `n_rings == 2` 且无杂原子/芳香性；`_bicyclo_stems` 按桥长降序生成 `bicyclo[2.2.1]`/`双环[2.2.1]` 前缀；`_build_bridged_parent` 附加 `bridge_lengths`/`bridgeheads`/`bridge_paths` 字段
-- **`_try_spiro_parent`**（`:32`）— `_is_simple_spiro` 检测 `topology == "spiro"` 且 `n_rings == 2` 且全碳饱和；`_spiro_stems` 生成 `spiro[4.5]`/`螺[4.5]` 前缀
-
-这两个 producer 为独立候选函数，当前未被 principal 主路径调用。kind 注册（`_load_bridged` 注册 `bridged`，ring="carbo", n=2）使评分与 stem 可用。
-
-> **源:** `src/namepredict/layer2/scaffold/polycyclic_parent.py`
+> **源:** `src/namepredict/layer1/ring_systems.py:82-91`
 
 ## 数据流图
 
@@ -282,7 +277,6 @@ flowchart LR
 
     subgraph RingParents["scaffold 母环薄层"]
         R1["naphthalene.py"]
-        R2["polycyclic_parent (桥环/螺环)"]
         R3["ring_parent.py (环母体辅助原语)"]
     end
 
@@ -432,7 +426,6 @@ Layer3 接收 parent dict 后，遍历所有非 owned_atoms 的重原子（o_idx
 |------|------|
 | `scaffold/identity.py` | ScaffoldIdentity 拓扑级身份 |
 | `scaffold/naphthalene.py` | 萘母体: `_naph_chains` / `_naph_parent_dict`（芳香 scaffold 萘路径消费） |
-| `scaffold/polycyclic_parent.py` | 桥环 / 螺环候选（独立 producer，未被 principal 主路径调用） |
 | `scaffold/ring_parent.py` | 环母体辅助原语: `_outside_carbons`, `_ring_side_starts`, `_is_ring_halo`, `_dbl_o_idx` 等 |
 
 ### 归属与过滤 (Ownership & Gating)

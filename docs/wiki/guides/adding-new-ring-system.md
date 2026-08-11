@@ -69,8 +69,7 @@ topology|sizes|fusion|hetero|aromatic
 参考现有实现：
 - 单杂环数据驱动: `scaffold/specs.py` 的 `_monohetero`（`MONO_HETERO_SPECS`，`:174`）
 - 保留拓扑: `scaffold/retained_registry.py` 的 `_TOPOLOGY`（benzene/pyridine/naphthalene/indole 4 条）
-- 萘母体薄层: `scaffold/naphthalene.py`
-- 桥环/螺环候选: `scaffold/polycyclic_parent.py`
+- 萘母体薄层: `scaffold/naphthalene.py`（桥环/螺环母体候选模块 `scaffold/polycyclic_parent.py` 已删除，L2 不产生 bridged/spiro 候选）
 
 ### 2.2 接入骨架识别（resolve_ring_scaffold）
 
