@@ -48,7 +48,7 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
 def _retained_ketone_skeleton(selection: PrincipalParentSelection, info: dict) -> bool:
     if selection.principal.group_class is not FunctionalGroupClass.KETONE:
         return False
-    from namepredict.layer2.scaffold.ring_scaffold import _producer_id
+    from namepredict.layer2.ring_scaffold import _producer_id
     anchors = {a for o in selection.principal.occurrences for a in o.parent_anchors}
     generic = {"cycloalkane", "cycloketone", "cycloalkanedione"}
     return any(anchors <= set(s.atom_ids) and (sid := _producer_id(info, s)) is not None

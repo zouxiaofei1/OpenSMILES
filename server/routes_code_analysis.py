@@ -47,7 +47,7 @@ def _stat_group(gid: int, dirname: str, label: str) -> dict[str, Any]:
     files: list[dict[str, Any]] = []
     counts = {"file_count": 0, "code": 0, "comment": 0, "blank": 0}
     if d.is_dir():
-        for py in sorted(d.rglob("*.py")):  # 递归统计子目录（layer2/scaffold、tools/leaves 等）
+        for py in sorted(d.rglob("*.py")):  # 递归统计子目录（layer2、tools/leaves 等）
             if "__pycache__" in py.parts:
                 continue
             try:

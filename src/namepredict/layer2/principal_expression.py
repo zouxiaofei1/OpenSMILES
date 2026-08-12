@@ -211,9 +211,9 @@ def _ring_fact_fields(fields: dict, facts: PrincipalExpressionFacts) -> dict:
 
 
 def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=None) -> dict:
-    from namepredict.layer2.scaffold.ring_expression_policy import supports_ring_expression
+    from namepredict.layer2.ring_expression_policy import supports_ring_expression
     if scaffold is None:
-        from namepredict.layer2.scaffold.ring_scaffold import resolve_ring_scaffold
+        from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
         scaffold = resolve_ring_scaffold(info, skeleton)
     if not scaffold:
         return {}
@@ -236,7 +236,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     if skeleton.topology is not SkeletonTopology.RING_SYSTEM:
         return None
     # 骨架原子集已确定：一次识别 scaffold，下游复用（不再重复调 _producer_id）。
-    from namepredict.layer2.scaffold.ring_scaffold import resolve_ring_scaffold
+    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
     scaffold = resolve_ring_scaffold(info, skeleton)
     occurrences = _covered(selection, skeleton)
     kind = _ring_kind(info, selection, skeleton, len(occurrences), scaffold)
@@ -332,14 +332,14 @@ def _hydrocarbon_chain_parent(info: dict, skeleton: ParentSkeleton) -> dict:
 
 def _aromatic_scaffold_parent(info: dict, skeleton: ParentSkeleton, atoms: set[int]) -> dict | None:
     """芳香环：解析到保留 scaffold 则用其 id（benzene/naphthalene 等）。"""
-    from namepredict.layer2.scaffold.ring_scaffold import resolve_ring_scaffold
+    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
     scaffold = resolve_ring_scaffold(info, skeleton)
     if scaffold is None or scaffold.id == "carbocycle":
         return None  # 芳香碳环未匹配保留 scaffold（如 anthracene）
     if scaffold.id != "naphthalene":
         return {"kind": scaffold.id, "chain": _mono_ring_chain(info, atoms) or list(skeleton.atom_ids),
                 "n_carbons": len(atoms), **_scaffold_fields(info, skeleton, None, scaffold)}
-    from namepredict.layer2.scaffold.naphthalene import _naph_chains, _naph_parent_dict
+    from namepredict.layer2.naphthalene import _naph_chains, _naph_parent_dict
     chains = _naph_chains(info)
     if chains and set(chains[0]) == atoms:
         return {**_naph_parent_dict(info, "naphthalene"), **_scaffold_fields(info, skeleton, None, scaffold)}

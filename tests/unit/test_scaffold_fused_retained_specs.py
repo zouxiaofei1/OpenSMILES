@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer2.scaffold.specs import (
+from namepredict.layer2.specs import (
     FUSED56_LABELS,
     NAPH_LABELS,
     ScaffoldSpec,

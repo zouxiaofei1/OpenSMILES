@@ -121,7 +121,7 @@ def parent_names(kind: str) -> tuple[str, str] | None:
 
 
 def _attach_numbering_scaffold(packed: dict) -> dict:
-    from namepredict.layer2.scaffold.specs import numbering_scaffold_facts
+    from namepredict.layer2.specs import numbering_scaffold_facts
     facts = numbering_scaffold_facts(
         packed.get("scaffold_id") or packed.get("kind"), len(packed.get("chain") or ()),
     )
@@ -200,7 +200,7 @@ def _spec_to_meta(sp) -> KindMeta:
 
 def _load_from_scaffold_specs() -> None:
     """Single stem authority: ScaffoldSpec → KindMeta (overwrite if present)."""
-    from namepredict.layer2.scaffold.specs import all_specs
+    from namepredict.layer2.specs import all_specs
 
     for sp in all_specs():
         if sp.stem_en is None or sp.stem_zh is None:

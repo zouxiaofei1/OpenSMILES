@@ -1,6 +1,6 @@
 """Naphthalene-ring topology primitives (pure rdkit; tools layer).
 
-Extracted from layer2/scaffold/naphthalene.py so L3 heteroaryl side-chain
+Extracted from layer2/naphthalene.py so L3 heteroaryl side-chain
 detection (heteroaryl_sub) can reuse the ring-bridge helpers without importing
 a pipeline layer. Only depends on rdkit.
 """

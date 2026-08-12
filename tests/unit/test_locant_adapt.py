@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer2.scaffold.specs import get_spec, numbering_scaffold_facts
+from namepredict.layer2.specs import get_spec, numbering_scaffold_facts
 from namepredict.layer4.locants.adapt import effective_sub_locant, plan_from_chain
 
 

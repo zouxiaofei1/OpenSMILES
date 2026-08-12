@@ -8,7 +8,7 @@ import pytest
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.parent_selector import select_parent
-from namepredict.layer2.scaffold.specs import all_specs
+from namepredict.layer2.specs import all_specs
 from namepredict.layer4.numbering import number
 from namepredict.namer import SMILESNNamer
 
