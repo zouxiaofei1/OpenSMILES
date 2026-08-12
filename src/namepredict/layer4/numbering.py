@@ -12,14 +12,13 @@ from namepredict.layer4._chain_orient import (
     _rotate_to,
     _table_loc_key,
 )
-from namepredict.layer4.anthra_orient import orient_anthraquinone as _orient_anthraquinone
+
 from namepredict.layer4.locants.adapt import effective_sub_locant, plan_from_chain
 from namepredict.layer4.locants.generate import ring_candidates
 from namepredict.layer4.polyene import (
     ene_locants, orient_alkenol, orient_alkenedioic, orient_cycloalkene,
     orient_cyclopolyene, orient_polyene, orient_ring_fg_ene, prefer_unsat_if_fg_tie,
 )
-from namepredict.layer4.polycarboxylic import orient_polycarboxylic, polycarboxylic_facts
 from namepredict.layer4.sat_hetero_orient import sat_hetero_orienters as _sat_hetero_orienters
 from namepredict.layer4.omit_locants import (
     omit_amine as _omit_amine, omit_ketone as _omit_ketone, omit_sh as _omit_sh,
@@ -195,7 +194,7 @@ _FIXED_FUSED = (
 def _fused_orienters() -> dict:
     d = {kind: _orient_indole for kind in _FIXED_FUSED}
     d["naphthalene"] = _orient_naphthalene
-    d["anthraquinone"] = _orient_anthraquinone
+    d["anthraquinone"] = None
     return d
 def _arene_orienters() -> dict:
     return {
@@ -225,7 +224,7 @@ def _orient_diacid(chain: list[int], parent: dict, substituents: list) -> list[i
         return _orient_alkenedioic(chain, parent, substituents)
     return _orient_alkane(chain, substituents)
 def _orient_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    return orient_polycarboxylic(chain, parent, _orient_pair)
+    return None
 def _benzoic_orienters() -> dict:
     b = _orient_benzoic
     return {"benzoic": b, "benzaldehyde": b, "acetophenone": b, "benzoate": b,

@@ -158,6 +158,7 @@ def _carbo_or_poly_key(order, mode, double_bonds, sub_attach) -> tuple:
 
 
 def constraints_applied(mode: str) -> tuple[str, ...]:
+   
     if mode == "poly_unsat":
         return ("unsaturation", "substituent")
     if mode == "polyacid":
