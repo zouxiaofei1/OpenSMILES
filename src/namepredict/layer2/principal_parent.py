@@ -39,7 +39,9 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
     return parents
 
 def rule_driven_parent_candidates(info: dict) -> list[dict]:
+
     selection = select_principal_parent_skeletons(info)
+  
     if selection.skeletons is None:
         return []
     if selection.principal is None:

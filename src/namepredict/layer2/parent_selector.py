@@ -21,6 +21,7 @@ def select_parent(info: dict, *, all_candidates: bool = False) -> dict | list[di
     """Ranked parent candidates, each finalized with immutable owned_atoms.
     """
     from namepredict.layer2.candidates import _collect_candidates
+   
     cands = _finalize_ranked(info, _collect_candidates(info))
     if all_candidates:
         return cands

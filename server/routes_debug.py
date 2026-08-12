@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 import time
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter
@@ -21,6 +25,8 @@ from namepredict.layer4.numbering import number
 from namepredict.layer5.assembler import assemble
 
 router = APIRouter(prefix="/api/v1", tags=["debug"])
+
+_ROOT = Path(__file__).resolve().parent.parent
 
 
 class DebugBody(BaseModel):
@@ -280,4 +286,35 @@ def debug_smiles(body: DebugBody) -> dict[str, Any]:
             "L4_numbering": l4_out,
             "L5_assemble": l5_out,
         },
+    }
+
+
+@router.post("/debug-print")
+def debug_print(body: DebugBody) -> dict[str, Any]:
+    """Run scripts/debug.py on the SMILES and return its captured stdout.
+
+    Executes in a fresh subprocess so every call reflects the latest src/
+    code, and any print() executed anywhere in the naming path ends up in
+    `stdout` — exactly what the "打印调试" panel in debug.html shows.
+    """
+    script = _ROOT / "scripts" / "debug.py"
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(script), body.smiles],
+            capture_output=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+            env=env,
+            cwd=str(_ROOT),
+        )
+    except subprocess.TimeoutExpired:
+        return {"success": False, "error": "debug.py timed out after 60s"}
+    return {
+        "success": proc.returncode == 0,
+        "returncode": proc.returncode,
+        "stdout": proc.stdout,
+        "stderr": proc.stderr,
+        "smiles": body.smiles,
     }

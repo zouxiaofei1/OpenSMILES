@@ -29,6 +29,7 @@
           <button class="tab" data-page="code-analysis">代码量分析</button>
           <button class="tab" data-page="call-graph">调用链</button>
           <button class="tab" data-page="debug">Pipeline Debug</button>
+          <button class="tab" data-page="print-debug">打印调试</button>
           <button class="tab" data-page="settings">设置</button>
           <button class="tab" data-page="wiki">Wiki</button>
           <button class="tab" data-page="iupac">IUPAC</button>
@@ -42,8 +43,21 @@
           <datalist id="history-commit-list"></datalist>
         </div>
         <span id="history-badge" class="chip">HEAD</span>
+        <button type="button" id="nav-toggle" class="nav-toggle" aria-expanded="false"
+                aria-controls="nav-drawer" aria-label="打开菜单" title="打开菜单">
+          <span class="nav-toggle-bars" aria-hidden="true">
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+            <span class="nav-toggle-bar"></span>
+          </span>
+        </button>
       </div>
     </header>
+
+    <!-- Mobile / narrow nav drawer（由 JS 从 .topbar-nav 克隆生成，保持单一事实来源） -->
+    <nav id="nav-drawer" class="nav-drawer" role="navigation" aria-label="页面" aria-hidden="true">
+      <div id="nav-drawer-tabs" class="nav-drawer-tabs"></div>
+    </nav>
 
     <!-- Main -->
     <main class="main" role="main">
@@ -412,6 +426,26 @@
           </div>
         </div>
       </div>
+
+      <!-- 打印调试 Page -->
+      <div id="print-debug-page" class="debug-page hidden" role="tabpanel" aria-labelledby="tab-print-debug">
+        <div class="debug-input-bar">
+          <input id="print-debug-smiles" class="input" type="text"
+                 placeholder="Enter SMILES, e.g. c1ccccc1C(=O)O or Oc1ccc(Cl)cc1"
+                 autocomplete="off" spellcheck="false">
+          <button id="print-debug-run" class="btn btn-primary" type="button">
+            <span>打印调试</span>
+          </button>
+        </div>
+        <div class="print-panel">
+          <div class="print-head">
+            <span class="print-title">打印调试输出</span>
+            <span class="print-hint">执行 scripts/debug.py —— 显示命名路径中所有 print() 输出</span>
+          </div>
+          <pre id="print-debug-output" class="print-output">（输入 SMILES，点击"打印调试"执行）</pre>
+        </div>
+      </div>
+
       <!-- Wiki Page -->
       <div id="wiki-page" class="wiki-page hidden" role="tabpanel" aria-labelledby="tab-wiki">
         <div class="wiki-layout">

@@ -2,16 +2,12 @@
 setlocal EnableExtensions
 chcp 65001 >nul
 
-REM ChemAgent Console — double-click to restart http://127.0.0.1:8766/
+REM ChemAgent Console — restart http://127.0.0.1:8766/  (auto-restarts on src/server changes)
 cd /d "%~dp0"
 
 echo [restart-console] Stopping any process listening on port 8766...
-for /f "tokens=5" %%P in ('netstat -ano ^| findstr ":8766" ^| findstr "LISTENING"') do (
-  echo   killing PID %%P
-  taskkill /F /PID %%P >nul 2>&1
-)
+powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\stop-port.ps1" -Port 8766
 
-REM Brief wait so the port is released
 timeout /t 1 /nobreak >nul
 
 if not exist ".venv\Scripts\uvicorn.exe" (
@@ -21,11 +17,12 @@ if not exist ".venv\Scripts\uvicorn.exe" (
   exit /b 1
 )
 
-echo [restart-console] Starting uvicorn on http://127.0.0.1:8766/
+echo [restart-console] Starting dev server on http://127.0.0.1:8766/
+echo   Changes under src\ and server\ restart uvicorn automatically.
 echo   Close this window or press Ctrl+C to stop the server.
 echo.
 
-".venv\Scripts\uvicorn.exe" server.app:app --host 127.0.0.1 --port 8766
+".venv\Scripts\python.exe" scripts\dev_server.py
 
 echo.
 echo [restart-console] Server exited.

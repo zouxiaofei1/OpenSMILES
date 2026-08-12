@@ -294,6 +294,31 @@ button {
   min-width: 0;
 }
 
+/* 左侧（logo+导航）可收缩以让出空间；右侧工具区固定不缩 */
+.topbar-left {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.topbar-right {
+  flex: 0 0 auto;
+}
+
+/* 滚动投影：main 内容滚动后在玻璃下方叠一层更实的阴影 */
+.topbar {
+  transition: box-shadow var(--transition), background var(--transition);
+}
+
+.topbar.scrolled {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 32px rgba(0, 0, 0, 0.45);
+  background: rgba(17, 24, 39, 0.88);
+}
+
+[data-theme="light"] .topbar.scrolled {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 32px rgba(15, 23, 42, 0.12);
+}
+
 /* ── Logo ── */
 .logo {
   display: flex;
@@ -302,6 +327,8 @@ button {
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--color-foreground);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .logo .icon {
@@ -329,6 +356,21 @@ button {
   border-radius: var(--radius);
   padding: 3px;
   border: 1px solid rgba(71, 85, 105, 0.25);
+  flex: 0 1 auto; /* 空间够则保持内容宽度；不够则收缩并横向滚动 */
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.topbar-nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* 中屏：真正溢出时才叠加边缘渐变遮罩（JS 检测 .overflowing） */
+.topbar-nav.overflowing {
+  mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
 }
 
 .tab {
@@ -342,6 +384,8 @@ button {
   cursor: pointer;
   transition: all var(--transition-fast);
   position: relative;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tab:hover {
@@ -358,6 +402,173 @@ button {
 @keyframes tabPulse {
   0%, 100% { box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2); }
   50%      { box-shadow: 0 0 10px rgba(34, 197, 94, 0.12), 0 0 0 1px rgba(34, 197, 94, 0.35); }
+}
+
+/* ── Hamburger toggle（≤768px 显示） ── */
+.nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: var(--radius);
+  color: var(--color-muted-text);
+  background: transparent;
+  border: 1px solid rgba(71, 85, 105, 0.35);
+  transition: all var(--transition-fast);
+}
+
+.nav-toggle:hover {
+  color: var(--color-foreground);
+  background: var(--color-surface-2);
+  border-color: var(--color-border-light);
+}
+
+.nav-toggle:active {
+  transform: scale(0.94);
+}
+
+.nav-toggle-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 18px;
+}
+
+.nav-toggle-bar {
+  height: 2px;
+  width: 100%;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform var(--transition), opacity var(--transition-fast);
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(2) {
+  opacity: 0;
+}
+
+.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* ── Nav drawer（≤768px 的导航折叠面板） ── */
+.nav-drawer {
+  position: fixed;
+  top: var(--topbar-h);
+  left: 0;
+  right: 0;
+  z-index: 19;
+  max-height: calc(100vh - var(--topbar-h));
+  overflow-y: auto;
+  padding: var(--space-sm) var(--space-lg) var(--space-lg);
+  background: rgba(13, 19, 33, 0.92);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border-bottom: 1px solid rgba(71, 85, 105, 0.35);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition:
+    opacity var(--transition),
+    transform var(--transition),
+    visibility 0s linear var(--transition);
+}
+
+.nav-drawer.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition:
+    opacity var(--transition),
+    transform var(--transition),
+    visibility 0s;
+}
+
+[data-theme="light"] .nav-drawer {
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+}
+
+.nav-drawer-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.drawer-tab {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-muted-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.drawer-tab:hover {
+  color: var(--color-foreground);
+  background: var(--color-surface-2);
+}
+
+.drawer-tab[aria-current="page"] {
+  color: var(--color-accent);
+  background: var(--color-accent-subtle);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2);
+}
+
+/* 抽屉内激活项左侧强调条 */
+.drawer-tab[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 3px;
+  background: var(--color-accent);
+  box-shadow: 0 0 8px var(--color-accent-glow);
+}
+
+/* 抽屉项错位淡入 */
+.nav-drawer.open .drawer-tab {
+  animation: drawerTabIn 0.28s var(--ease-out) both;
+}
+
+.nav-drawer.open .drawer-tab:nth-child(2) { animation-delay: 0.03s; }
+.nav-drawer.open .drawer-tab:nth-child(3) { animation-delay: 0.06s; }
+.nav-drawer.open .drawer-tab:nth-child(4) { animation-delay: 0.09s; }
+.nav-drawer.open .drawer-tab:nth-child(5) { animation-delay: 0.12s; }
+.nav-drawer.open .drawer-tab:nth-child(6) { animation-delay: 0.15s; }
+.nav-drawer.open .drawer-tab:nth-child(7) { animation-delay: 0.18s; }
+.nav-drawer.open .drawer-tab:nth-child(8) { animation-delay: 0.21s; }
+.nav-drawer.open .drawer-tab:nth-child(9) { animation-delay: 0.24s; }
+.nav-drawer.open .drawer-tab:nth-child(10) { animation-delay: 0.27s; }
+.nav-drawer.open .drawer-tab:nth-child(11) { animation-delay: 0.3s; }
+.nav-drawer.open .drawer-tab:nth-child(n + 12) { animation-delay: 0.33s; }
+
+@keyframes drawerTabIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -1959,6 +2170,53 @@ select.input {
   padding: var(--space-lg) 0;
 }
 
+/* 打印调试 page */
+.print-panel {
+  margin: var(--space-lg) 0;
+  border: 1px solid rgba(71, 85, 105, 0.3);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface-1);
+}
+
+.print-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-xl);
+  background: var(--color-surface-2);
+  border-bottom: 1px solid rgba(71, 85, 105, 0.25);
+}
+
+.print-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-foreground);
+}
+
+.print-hint {
+  font-size: 11px;
+  color: var(--color-muted-text);
+}
+
+.print-output {
+  margin: 0;
+  padding: var(--space-lg) var(--space-xl);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--color-foreground-dim);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.print-output.has-error {
+  color: var(--color-destructive-soft);
+}
+
 /* Timeline-style layer list */
 .layer-list {
   display: flex;
@@ -2323,22 +2581,32 @@ details.mol-details pre {
   }
 
   .topbar {
-    height: auto;
+    height: var(--topbar-h);
     min-height: var(--topbar-h);
-    flex-wrap: wrap;
-    padding: var(--space-md) var(--space-lg);
-    gap: var(--space-md);
+    padding: 0 var(--space-lg);
+    gap: var(--space-sm);
   }
 
   .topbar-left,
   .topbar-right {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: var(--space-sm);
   }
 
+  /* 导航收进抽屉，hamburger 常驻 */
   .topbar-nav {
-    margin-left: 0;
-    width: 100%;
-    justify-content: center;
+    display: none;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  /* 移动端历史选择器紧凑化 */
+  .history-picker .input.history-input {
+    max-width: 120px;
+    font-size: 12px;
+    padding: 4px 10px;
   }
 
   .benchmark-controls {
@@ -2365,6 +2633,30 @@ details.mol-details pre {
 }
 
 @media (max-width: 480px) {
+  .topbar {
+    padding: 0 var(--space-md);
+  }
+
+  .logo-text {
+    display: none; /* 窄屏仅保留图标 logo */
+  }
+
+  .history-picker .input.history-input {
+    max-width: 96px;
+    padding: 4px 8px;
+  }
+
+  #history-badge {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .nav-drawer {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
+
   .br-controls {
     flex-direction: column;
     align-items: stretch;
