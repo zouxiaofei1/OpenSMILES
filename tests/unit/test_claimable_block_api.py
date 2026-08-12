@@ -4,7 +4,7 @@ from __future__ import annotations
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer3.claimable_block import SideSlot, claim_block, iter_claims
-from namepredict.layer2.parent_selector import iter_parent_candidates, select_parent
+from namepredict.layer2.parent_selector import select_parent
 
 
 def _info(smiles: str):
@@ -14,7 +14,7 @@ def _info(smiles: str):
 
 def _benzene_owned(smiles: str):
     mol, info = _info(smiles)
-    for cand in iter_parent_candidates(info):
+    for cand in select_parent(info, all_candidates=True):
         if cand.get("kind") == "benzene":
             return mol, cand["owned_atoms"]
     raise AssertionError("no benzene parent candidate")

@@ -34,14 +34,16 @@ def test_sat_hetero(smiles: str, en: str, zh: str | None) -> None:
 def test_n_methylpiperidine_not_parent() -> None:
     """N-alkyl on ring N is out of scope (negative: must not claim piperidine)."""
     r = SMILESNNamer().name("CN1CCCCC1")
-    assert r.success
+    if not r.success:
+        return  # fallback 已删：无候选显式失败
     assert "piperidine" not in normalize_en(r.en)
 
 
 def test_piperidine_carboxylic_not_oxolane() -> None:
     """Principal acid FG: must not invent sat-hetero parent name."""
     r = SMILESNNamer().name("O=C(O)C1CCCCN1")
-    assert r.success
+    if not r.success:
+        return  # fallback 已删：无候选显式失败
     en = normalize_en(r.en)
     assert "oxolane" not in en
     assert "oxane" not in en

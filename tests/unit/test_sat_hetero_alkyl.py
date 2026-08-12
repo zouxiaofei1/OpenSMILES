@@ -31,7 +31,8 @@ def test_sat_hetero_alkyl(smiles: str, en: str, zh: str | None) -> None:
 def test_n_methyl_not_c_methyl_piperidine() -> None:
     """N-methylpiperidine is out of scope; must not invent a C-methyl name."""
     r = SMILESNNamer().name("CN1CCCCC1")
-    assert r.success
+    if not r.success:
+        return  # fallback 已删：无候选显式失败
     en = normalize_en(r.en)
     assert "piperidine" not in en
     assert en != "4-methylpiperidine"

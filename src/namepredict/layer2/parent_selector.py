@@ -17,12 +17,11 @@ def _finalize_ranked(info: dict, cands: list[dict]) -> list[dict]:
         for c in _rank_candidates(info, cands)
     ]
 
-def iter_parent_candidates(info: dict) -> list[dict]:
-    """Ranked parent candidates, each finalized with immutable owned_atoms."""
-    from namepredict.layer2.candidates import _alkane_fallback, _collect_candidates
-    cands = _collect_candidates(info) or [_alkane_fallback(info)]
-    return _finalize_ranked(info, cands)
-
-def select_parent(info: dict) -> dict:
-    """Legacy: first finalized ranked candidate (or alkane fallback)."""
-    return iter_parent_candidates(info)[0]
+def select_parent(info: dict, *, all_candidates: bool = False) -> dict | list[dict] | None:
+    """Ranked parent candidates, each finalized with immutable owned_atoms.
+    """
+    from namepredict.layer2.candidates import _collect_candidates
+    cands = _finalize_ranked(info, _collect_candidates(info))
+    if all_candidates:
+        return cands
+    return next(iter(cands), None)

@@ -172,7 +172,8 @@ def _try_phase(prepared, *, depth, t0, name_mode, attempts):
 
 
 def _candidate_phases(info: dict, depth: int) -> list[list[dict]]:
-    return [[select_parent(info)]]
+    parent = select_parent(info)
+    return [[parent]] if parent is not None else [[]]
 
 
 def _run_candidates(

@@ -5,7 +5,7 @@ from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.tools.block_cut import parent_atom_set
 from namepredict.layer2.parent_ownership import finalize_parent_ownership
-from namepredict.layer2.parent_selector import iter_parent_candidates, select_parent
+from namepredict.layer2.parent_selector import select_parent
 
 
 def _info(smiles: str):
@@ -86,10 +86,10 @@ def test_parent_atom_set_adapter_prefers_owned_atoms():
     assert parent_atom_set(parent, mol) == parent["owned_atoms"]
 
 
-def test_iter_parent_candidates_finalizes_ordered():
-    """iter_parent_candidates returns ranked finalized parents; first matches select."""
+def test_select_parent_all_candidates_finalizes_ordered():
+    """select_parent(all_candidates=True) returns ranked finalized parents; first matches select."""
     mol, info = _info("c1ccccc1C(=O)Nc2ccccc2")
-    cands = iter_parent_candidates(info)
+    cands = select_parent(info, all_candidates=True)
     assert cands
     assert all(isinstance(c.get("owned_atoms"), frozenset) for c in cands)
     best = select_parent(info)

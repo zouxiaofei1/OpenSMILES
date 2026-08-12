@@ -6,13 +6,8 @@ kind_registry were removed as dead code.
 """
 from __future__ import annotations
 
-from namepredict.layer2.parent_core import _longest_chain, _parent_dict
 from namepredict.layer2.parent_candidate import with_principal_group_contract
 from namepredict.layer2.principal_parent import rule_driven_parent_candidates
-
-
-def _alkane_fallback(info: dict) -> dict:
-    return _parent_dict(_longest_chain(info["mol"]), "alkane")
 
 
 def _candidate_key(candidate: dict) -> tuple:

@@ -26,7 +26,8 @@ NEG_NOT_SULFONYL_CHLORIDE = [
 @pytest.mark.parametrize("smiles,forbidden", NEG_NOT_SULFONYL_CHLORIDE)
 def test_not_sulfonyl_chloride(smiles: str, forbidden: str) -> None:
     r = SMILESNNamer().name(smiles)
-    assert r.success
+    if not r.success:
+        return  # fallback 已删：无候选显式失败
     en = normalize_en(r.en)
     zh = normalize_zh(r.zh)
     assert forbidden not in en

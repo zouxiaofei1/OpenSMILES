@@ -11,7 +11,7 @@ from rdkit import Chem
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.parent_selector import iter_parent_candidates, select_parent
+from namepredict.layer2.parent_selector import select_parent
 from namepredict.layer2.parent_ownership import finalize_parent_ownership
 from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer3.coverage import build_coverage_ledger
@@ -157,7 +157,7 @@ def debug_smiles(body: DebugBody) -> dict[str, Any]:
 
     # ── L2: parent candidates / selection ──
     l2_start = time.perf_counter()
-    candidates_raw = list(iter_parent_candidates(info))
+    candidates_raw = select_parent(info, all_candidates=True)
     selected = select_parent(info)
     candidates = []
     for c in candidates_raw:

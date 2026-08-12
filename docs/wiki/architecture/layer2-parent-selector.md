@@ -32,7 +32,7 @@ iter_parent_candidates(info)             # 唯一候选入口 (parent_selector.p
          └─ express_ring/chain/hydrocarbon_principal   # typed 表达
 ```
 
-候选收集后经 `_candidate_result`（`candidates.py:65`，调 `candidate_gate.gate_result` 做多元酸作用域门控）与 `_dedupe_parents`（`candidates.py:23`）去重；无官能团时回退 `_alkane_fallback`（`candidates.py:15`，最长碳链 = 烷烃）。每个候选最后经 `_finalize_ranked`（`parent_selector.py:8`）：`_rank_candidates`（scoring）→ `with_principal_group_contract`（parent_candidate）→ `pack_parent_stem`（kind_registry）→ `finalize_parent_ownership`（parent_ownership）。
+候选收集后经 `_candidate_result`（`candidates.py:30`）与 `_dedupe_parents`（`candidates.py:18`）去重。选不出候选时**不回退烷烃兜底**：`select_parent` 返回 `None`，调用方显式失败（`namer._candidate_phases` 空 phase → `_fail`）。每个候选最后经 `_finalize_ranked`（`parent_selector.py:8`）：`_rank_candidates`（scoring）→ `with_principal_group_contract`（parent_candidate）→ `pack_parent_stem`（kind_registry）→ `finalize_parent_ownership`（parent_ownership）。
 
 > **源:** `src/namepredict/layer2/parent_selector.py:20-28`, `src/namepredict/layer2/candidates.py:74-76`
 
@@ -392,7 +392,7 @@ Layer3 接收 parent dict 后，遍历所有非 owned_atoms 的重原子（o_idx
 
 | 文件 | 职责 |
 |------|------|
-| `candidates.py` | 候选收集 (_collect_candidates → _principal_candidates 单一路径); 多元酸门控; _alkane_fallback 兜底 |
+| `candidates.py` | 候选收集 (_collect_candidates → _principal_candidates 单一路径); 多元酸门控 |
 | `parent_selector.py` | `iter_parent_candidates` / `select_parent` 入口 + 排序/收尾 (`_finalize_ranked`) |
 | `scoring.py` | P-44 评分 tuple, `_score_parent`, `_better_parent` 排序 |
 | `parent_core.py` | 共享工具: `_parent_dict`, `_best_cover_pair`, `_arm_ok`, `_fg_chain`, chain/gate helpers |
