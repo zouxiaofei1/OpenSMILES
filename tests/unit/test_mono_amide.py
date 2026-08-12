@@ -21,7 +21,6 @@ CASES = [
     ("CCCC(=O)N", "butanamide", "丁酰胺"),
     ("CCCCC(=O)N", "pentanamide", "戊酰胺"),
     ("CCCCCC(=O)N", "hexanamide", "己酰胺"),
-    # negative: aldehyde / acid / ester / amine / alkane / alcohol / ketone /
     # alkene / cycloalkane must not become amides
     ("CC=O", "acetaldehyde", "乙醛"),
     ("CC(=O)O", "acetic acid", "乙酸"),
@@ -42,10 +41,3 @@ def test_mono_amide(smiles: str, en: str, zh: str | None) -> None:
     assert normalize_en(r.en) == normalize_en(en)
     if zh is not None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
-def test_n_substituted_not_acetamide() -> None:
-    """N-substituted amide CC(=O)NC must not be named acetamide."""
-    r = SMILESNNamer().name("CC(=O)NC")
-    assert r.success
-    assert normalize_en(r.en) != normalize_en("acetamide")

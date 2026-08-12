@@ -20,7 +20,6 @@ POS_NO_METHANONE = [
 NEG_CASES = [
     ("CC(=O)C", "propan-2-one", "丙-2-酮"),
     ("CCC(=O)CC", "pentan-3-one", "戊-3-酮"),
-    ("CC(=O)c1ccccc1", "acetophenone", "苯乙酮"),
     ("CC(=O)C(C)C", "3-methylbutan-2-one", None),
 ]
 

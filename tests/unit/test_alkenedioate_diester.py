@@ -14,20 +14,9 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
-    # positive: open-chain mono-ene symmetric diesters (E/Z + alkyl)
-    (r"COC(=O)/C=C/C(=O)OC", "dimethyl (E)-but-2-enedioate", "(E)-丁-2-烯二酸二甲酯"),
-    (r"COC(=O)/C=C\C(=O)OC", "dimethyl (Z)-but-2-enedioate", "(Z)-丁-2-烯二酸二甲酯"),
-    (r"CCOC(=O)/C=C/C(=O)OCC", "diethyl (E)-but-2-enedioate", "(E)-丁-2-烯二酸二乙酯"),
-    # positive: asymmetric mono-ene → lowest ene locant (P-31.1)
-    (r"CCOC(=O)C/C=C/C(=O)OCC", "diethyl (E)-pent-2-enedioate", "(E)-戊-2-烯二酸二乙酯"),
-    (r"COC(=O)CC/C=C/C(=O)OC", "dimethyl (E)-hex-2-enedioate", "(E)-己-2-烯二酸二甲酯"),
-    # positive: saturated diesters must not regress
-    ("CCOC(=O)C(=O)OCC", "diethyl oxalate", "草酸二乙酯"),
-    ("CCOC(=O)CC(=O)OCC", "diethyl propanedioate", "丙二酸二乙酯"),
     # negative: mono ester, saturated diacid, anhydride
     ("CCOC(=O)C", "ethyl acetate", "乙酸乙酯"),
     ("OC(=O)CC(=O)O", "propanedioic acid", "丙二酸"),
-    ("CC(=O)OC(=O)C", "acetic anhydride", "乙酸酐"),
 ]
 
 

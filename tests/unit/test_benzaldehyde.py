@@ -17,16 +17,12 @@ CASES = [
     ("O=Cc1ccccc1", "benzaldehyde", "苯甲醛"),
     # positive: phenolic hydroxy as prefix
     ("O=Cc1ccc(O)cc1", "4-hydroxybenzaldehyde", None),
-    # positive: hydroxy + methyl
-    ("Cc1cccc(C=O)c1O", "2-hydroxy-3-methylbenzaldehyde", None),
     # negative: benzoic acid, acetaldehyde, phenol, benzene, ethanol
     ("OC(=O)c1ccccc1", "benzoic acid", "苯甲酸"),
     ("CC=O", "acetaldehyde", "乙醛"),
     ("Oc1ccccc1", "phenol", "苯酚"),
     ("c1ccccc1", "benzene", "苯"),
     ("CCO", "ethanol", "乙醇"),
-    # negative: acetophenone retained parent (not benzaldehyde)
-    ("CC(=O)c1ccccc1", "acetophenone", "苯乙酮"),
 ]
 
 

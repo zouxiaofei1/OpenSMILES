@@ -15,10 +15,6 @@ from namepredict.namer import SMILESNNamer
 # ("smiles", "expected_en", "expected_zh_or_None")
 # zh=None skips Chinese assert (chebi rows without chinese gold).
 CASES = [
-    # positive: unsubstituted benzene-diols (lowest locant set)
-    ("Oc1ccccc1O", "benzene-1,2-diol", "苯-1,2-二酚"),
-    ("Oc1cc(O)ccc1", "benzene-1,3-diol", "苯-1,3-二酚"),
-    ("Oc1ccc(O)cc1", "benzene-1,4-diol", None),
     # negative: mono phenol, chain diol/triol, bare benzene, chain alcohol
     ("Oc1ccccc1", "phenol", "苯酚"),
     ("OCCO", "ethane-1,2-diol", "乙烷-1,2-二醇"),

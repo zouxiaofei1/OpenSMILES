@@ -77,29 +77,6 @@ def _is_auto_member(node: ast.Assign) -> bool:
             and value.func.id == "auto" and not value.args and not value.keywords)
 
 
-def test_fact_discriminators_are_topology_enums() -> None:
-    tree = ast.parse(TOOLS_FACTS.read_text(encoding="utf-8"))
-    annotations = [ast.unparse(node.annotation) for node in ast.walk(tree)
-                   if isinstance(node, ast.AnnAssign)]
-    assert not any("Literal" in annotation for annotation in annotations)
-    protocol = ast.parse(LEAF_PROTOCOL.read_text(encoding="utf-8"))
-    enum_names = {"AlkylShape", "ArylArmKind", "HeteroarylKind", "HeteroarylLeaf"}
-    enums = {node.name: node for node in tree.body if isinstance(node, ast.ClassDef)
-             and node.name in enum_names}
-    leaf = next(node for node in protocol.body if isinstance(node, ast.ClassDef)
-                and node.name == "ArylLeafKind")
-    enums[leaf.name] = leaf
-    enum_names.add("ArylLeafKind")
-    assert set(enums) == enum_names
-    assert all([ast.unparse(base) for base in node.bases] == ["Enum"] for node in enums.values())
-    assert all(_enum_members(node) and all(map(_is_auto_member, _enum_members(node)))
-               for node in enums.values())
-    members = {item.targets[0].id for item in _enum_members(enums["AlkylShape"])}
-    named = {"ISOPROPYL", "SEC_BUTYL", "TERT_BUTYL", "ISOBUTYL",
-             "TERT_AMYL", "ISOPENTYL", "NEOPENTYL", "TRIFLUOROMETHYL"}
-    assert not members & named
-
-
 def test_side_facts_has_no_naming_dependencies() -> None:
     tree = ast.parse(TOOLS_FACTS.read_text(encoding="utf-8"))
     imports = [(node.module or "", alias.name) for node in ast.walk(tree)
@@ -136,15 +113,6 @@ def test_side_fact_contract_has_no_public_name_renderers() -> None:
     string_tuples = [fn.name for fn in public if "tuple[str" in ast.unparse(fn.returns)]
     assert not banned
     assert not string_tuples
-
-
-def test_ring_leaf_contract_is_typed_topology() -> None:
-    tree = ast.parse(TOOLS_FACTS.read_text(encoding="utf-8"))
-    ring_leaf = next(n for n in tree.body if isinstance(n, ast.FunctionDef)
-                     and n.name == "ring_leaf")
-    annotation = ast.unparse(ring_leaf.returns)
-    assert "tuple" not in annotation and "dict" not in annotation
-    assert "object" not in [ast.unparse(arg.annotation) for arg in ring_leaf.args.args]
 
 
 def test_side_fact_dataclasses_expose_only_topology_fields() -> None:

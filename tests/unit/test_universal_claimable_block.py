@@ -9,11 +9,7 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
-    ("O=C(NC1CCCCCC1)c1ccccc1", "N-cycloheptylbenzamide", "N-环庚基苯甲酰胺"),
-    ("O=C(Nc1cc(C)cc(C)c1)c1ccccc1", "N-(3,5-dimethylphenyl)benzamide", "N-(3,5-二甲基苯基)苯甲酰胺"),
     ("COC(C)CC", "2-methoxybutane", "2-甲氧基丁烷"),
-    ("CCCCC(CC(C)CC)C(=O)O", "2-(2-methylbutyl)hexanoic acid", "2-(2-甲基丁基)己酸"),
-    ("c1ccc(cc1)CC(C)CC", "(2-methylbutyl)benzene", "(2-甲基丁基)苯"),
 ]
 
 

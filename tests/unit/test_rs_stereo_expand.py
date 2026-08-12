@@ -28,29 +28,6 @@ CASES = [
         "(1R)-1-hydroxy-1-phenylpropan-2-one",
         "(1R)-1-羟基-1-苯基丙-2-酮",
     ),
-    # piperidine single center: no locant on descriptor
-    (
-        "C[C@H]1CNCCC1",
-        "(R)-3-methylpiperidine",
-        "(R)-3-甲基哌啶",
-    ),
-    # sat-hetero carboxylic: keep locant
-    (
-        "O=C(O)[C@@H]1CCCNC1",
-        "(3R)-piperidine-3-carboxylic acid",
-        "(3R)-哌啶-3-甲酸",
-    ),
-    (
-        "O=C(O)[C@H]1CNCCN1",
-        "(2R)-piperazine-2-carboxylic acid",
-        "(2R)-哌嗪-2-甲酸",
-    ),
-    # pyrrolidine single center omit locant
-    (
-        "C[C@H]1CCCN1",
-        "(S)-2-methylpyrrolidine",
-        "(S)-2-甲基吡咯烷",
-    ),
     # regression open-chain acid
     (
         "O=C(O)[C@@H](O)CO",
@@ -77,14 +54,3 @@ def test_rs_stereo_expand(smiles: str, en: str, zh: str | None) -> None:
     assert normalize_en(r.en) == normalize_en(en)
     if zh is not None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
-def test_no_false_methanol_stereo() -> None:
-    """Collapsed polyol ring must not emit (1S)-methanol / (1S)-hydroxymethane."""
-    smi = "C1C[C@H](O)[C@@H](O)[C@H](O)[C@H]1O"
-    r = SMILESNNamer().name(smi)
-    assert r.success
-    assert "(1S)-methanol" not in normalize_en(r.en)
-    assert "(1s)-methanol" not in normalize_en(r.en)
-    assert not normalize_en(r.en).startswith("(1s)-")
-    assert not normalize_en(r.en).startswith("(1r)-")

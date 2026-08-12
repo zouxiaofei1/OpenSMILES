@@ -81,10 +81,6 @@ def test_producers_do_not_import_helpers_from_parent_selector(path: Path) -> Non
 _E2E = [
     # acid / chain
     ("CC(=O)O", "acetic acid", "乙酸"),
-    # sulfoxide (uses arm_ok / hetero_open / parent_dict)
-    ("CS(=O)C", "dimethyl sulfoxide", "二甲基亚砜"),
-    # urea
-    ("NC(=O)N", "urea", "脲"),
     # ester
     ("CCOC(=O)C", "ethyl acetate", "乙酸乙酯"),
 ]

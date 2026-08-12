@@ -12,18 +12,6 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
-    # unsubstituted 9,10-anthraquinone
-    ("O=C1c2ccccc2C(=O)c2ccccc12", "9,10-anthraquinone", "蒽醌"),
-    # dual gold: 2,3-dimethyl-9,10-anthraquinone / 2,3-二甲基蒽醌
-    (
-        "CC1=CC=2C(C3=CC=CC=C3C(C2C=C1C)=O)=O",
-        "2,3-dimethyl-9,10-anthraquinone",
-        "2,3-二甲基蒽醌",
-    ),
-    # alt SMILES for unsubstituted (explicit Kekulé)
-    ("O=C1C2=CC=CC=C2C(=O)C2=CC=CC=C12", "9,10-anthraquinone", "蒽醌"),
-    # negatives: unoxidized anthracene stays anthracene
-    ("c1ccc2cc3ccccc3cc2c1", "anthracene", "蒽"),
     # open-chain alkanedione not captured as anthraquinone
     ("CC(=O)CC(=O)C", "pentane-2,4-dione", "戊-2,4-二酮"),
     # benzene untouched

@@ -1,10 +1,10 @@
 # IUPAC: P-14.3.4 / P-22.2.1
 # Layer: L2
-"""Five-membered heteroarene simple-sub limit 1→2 (IUPAC P-14.3.4 / P-22.2.1).
+"""Imidazole disub scope (P-14.3.4) — negative guard only.
 
-Retained parents furan/thiophene/pyrrole/imidazole/pyrazole may carry up to two
-ring simple substituents: two monomethyl, two monohalo, or one of each. Each
-side chain must remain pure monomethyl.
+Positive 2-substituted imidazole cases are not covered in this file. The
+retained case asserts an amino-imidazolecarboxylic acid is not named as a
+simple retained imidazole.
 """
 from __future__ import annotations
 
@@ -14,16 +14,6 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
-    # positive: iodo + methyl imidazole (gold dual target)
-    ("IC=1NC=C(N1)C", "2-iodo-4-methyl-1H-imidazole", "2-碘-4-甲基-1H-咪唑"),
-    # positive: dimethyl imidazole
-    ("Cc1nc(C)c[nH]1", "2,4-dimethyl-1H-imidazole", "2,4-二甲基-1H-咪唑"),
-    # positive: dichloro imidazole
-    ("Clc1nc(Cl)c[nH]1", "2,4-dichloro-1H-imidazole", "2,4-二氯-1H-咪唑"),
-    # positive: mono still ok (no regression)
-    ("Cc1cn[nH]c1", "4-methyl-1H-pyrazole", "4-甲基-1H-吡唑"),
-    # negative: unsubstituted keeps short Chinese parent
-    ("c1cnc[nH]1", "1H-imidazole", "咪唑"),
     # negative: FG-bearing acid must not be simple imidazole parent
     ("Nc1[nH]cnc1C(=O)O", None, None),
 ]

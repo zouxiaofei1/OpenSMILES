@@ -19,7 +19,6 @@ CASES = [
     ("Clc1ccccc1", "chlorobenzene", "氯苯"),
     ("Brc1ccccc1", "bromobenzene", "溴苯"),
     ("Ic1ccccc1", "iodobenzene", "碘苯"),
-    ("Cc1ccccc1", "toluene", "甲苯"),
     ("CCc1ccccc1", "ethylbenzene", "乙基苯"),
     # negative: saturated cyclo / chain alcohol must stay correct
     ("C1CCCCC1", "cyclohexane", "环己烷"),

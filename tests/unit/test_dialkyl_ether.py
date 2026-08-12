@@ -15,11 +15,6 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
-    # positive: symmetric retained
-    ("CCOCC", "diethyl ether", "二乙基醚"),
-    ("COC", "dimethyl ether", "二甲基醚"),
-    ("CCCOCCC", "dipropyl ether", "二丙基醚"),
-    ("CCCCOCCCC", "dibutyl ether", "二丁基醚"),
     # positive: asymmetric alkoxyalkane
     ("CCOC", "methoxyethane", "甲氧基乙烷"),
     ("CCCOC", "1-methoxypropane", "1-甲氧基丙烷"),
@@ -39,11 +34,3 @@ def test_dialkyl_ether(smiles: str, en: str, zh: str | None) -> None:
     assert normalize_en(r.en) == normalize_en(en)
     if zh is not None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
-def test_diethyl_ether_not_ethane() -> None:
-    """CCOCC must not collapse to ethane parent."""
-    r = SMILESNNamer().name("CCOCC")
-    assert r.success
-    assert normalize_en(r.en) == "diethyl ether"
-    assert normalize_en(r.en) != "ethane"

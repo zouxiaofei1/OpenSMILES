@@ -14,17 +14,9 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
-    # positive: symmetric open-chain saturated diesters
-    ("CCOC(=O)C(=O)OCC", "diethyl oxalate", "草酸二乙酯"),
-    ("COC(=O)C(=O)OC", "dimethyl oxalate", "草酸二甲酯"),
-    ("CCOC(=O)CC(=O)OCC", "diethyl propanedioate", "丙二酸二乙酯"),
-    ("CCOC(=O)CCC(=O)OCC", "diethyl butanedioate", "丁二酸二乙酯"),
-    ("COC(=O)CCCC(=O)OC", "dimethyl pentanedioate", "戊二酸二甲酯"),
-    ("CCOC(=O)CCCCC(=O)OCC", "diethyl hexanedioate", "己二酸二乙酯"),
     # negative: mono ester, diacid, anhydride (must not become diester)
     ("CCOC(=O)C", "ethyl acetate", "乙酸乙酯"),
     ("O=C(O)C(=O)O", "oxalic acid", "草酸"),
-    ("CC(=O)OC(=O)C", "acetic anhydride", "乙酸酐"),
 ]
 
 

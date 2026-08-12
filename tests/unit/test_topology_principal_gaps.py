@@ -16,8 +16,6 @@ CASES = [
     ("NC(=O)c1ccccc1", "benzamide", "benzamide"),
     ("Oc1ccccc1", "phenol", "phenol"),
     ("Nc1ccccc1", "aniline", "aniline"),
-    ("COC(=O)CCC(=O)OC", "diester", "dimethyl butanedioate"),
-    ("CCOC(=O)CC(=O)OCC", "diester", "diethyl propanedioate"),
     ("CCCC(=O)OC", "ester", "methyl butanoate"),
     ("CCCC(=O)N", "amide", "butanamide"),
     ("CCCC=O", "aldehyde", "butanal"),

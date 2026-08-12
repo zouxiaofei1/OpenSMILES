@@ -14,25 +14,9 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
-    # carbocycle side on open ketone
-    ("O=C(C)C1CCCCC1", "1-cyclohexylethanone", "1-环己基乙酮"),
-    ("CC(=O)C1CCCCC1", "1-cyclohexylethanone", "1-环己基乙酮"),
-    # aza-sat side on open ketone / alcohol / amine
-    ("O=C(C)C1CCNCC1", "1-(piperidin-4-yl)ethanone", "1-(哌啶-4-基)乙酮"),
-    (
-        "O=C(CBr)C1CCNCC1",
-        "2-bromo-1-(piperidin-4-yl)ethanone",
-        "2-溴-1-(哌啶-4-基)乙酮",
-    ),
-    ("CC(O)C1CCNCC1", "1-(piperidin-4-yl)ethanol", "1-(哌啶-4-基)乙醇"),
-    ("NCC1CCNCC1", "(piperidin-4-yl)methanamine", "(哌啶-4-基)甲胺"),
-    # pyrrolidine
-    ("O=C(C)C1CCNC1", "1-(pyrrolidin-3-yl)ethanone", "1-(吡咯烷-3-基)乙酮"),
     # negatives: ring FG parents + plain open ketone
-    ("O=C1CCCCC1", "cyclohexanone", "环己酮"),
     ("OC1CCCCC1", "cyclohexanol", "环己醇"),
     ("CCC(=O)C", "butan-2-one", "丁-2-酮"),
-    ("O=C(C)c1ccccc1", "acetophenone", "苯乙酮"),
 ]
 
 

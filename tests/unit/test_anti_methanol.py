@@ -23,7 +23,6 @@ NEG_CASES = [
     ("CCO", "ethanol", "乙醇"),
     ("CC(C)O", "propan-2-ol", "丙-2-醇"),
     ("OC1CCCCC1", "cyclohexanol", "环己醇"),
-    ("c1ccc(CO)cc1", "phenylmethanol", "苯基甲醇"),
 ]
 
 

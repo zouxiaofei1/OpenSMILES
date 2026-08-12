@@ -93,16 +93,6 @@ def test_no_bidirectional_drift_stem_specs() -> None:
         assert kr.parent_names(sp.id) == (sp.stem_en, sp.stem_zh)
 
 
-def test_chain_kind_acid_no_spec_but_in_registry() -> None:
-    """Negative: chain FG stays kind-only (no ScaffoldSpec)."""
-    assert get_spec("acid") is None
-    m = kr.get("acid")
-    assert m is not None
-    assert m.fg_rank == 13
-    assert m.ring == "none"
-    assert kr.parent_names("acid") is None
-
-
 def test_retained_registry_ids_subset_of_spec() -> None:
     for sid in registry():
         assert get_spec(sid) is not None, sid

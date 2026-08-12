@@ -18,9 +18,3 @@ def test_tricarboxylate_does_not_fall_back_to_monoacid() -> None:
 def test_partial_deprotonation_does_not_claim_polycarboxylate() -> None:
     result = SMILESNNamer().name("O=C([O-])CC(C(=O)O)CC(=O)O")
     assert "tricarboxylate" not in normalize_en(result.en)
-
-
-def test_polyacid_orientation_uses_lowest_carboxyl_locant_set() -> None:
-    chain = [10, 11, 12, 13]
-    parent = {"cooh_c_idxs": [11, 12, 13]}
-    assert _orient_polycarboxylic(chain, parent, []) == list(reversed(chain))

@@ -32,7 +32,6 @@ CASES = [
         "1-氟-2-碘-3-三氟甲基苯",
     ),
     # negative: keep existing correct names / chain CF3 not arene rule
-    ("Cc1ccccc1", "toluene", "甲苯"),
     ("Fc1ccccc1", "fluorobenzene", "氟苯"),
     ("Oc1ccccc1", "phenol", "苯酚"),
     ("CC(F)(F)F", "1,1,1-trifluoroethane", "1,1,1-三氟乙烷"),

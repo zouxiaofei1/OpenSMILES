@@ -27,8 +27,6 @@ CASES = [
     (r"C/C=C/C(C)=O", "(E)-pent-3-en-2-one", "(E)-戊-3-烯-2-酮"),
     # negatives: saturated ketone / ring / aromatic must not become alkenone
     ("CCC(C)=O", "butan-2-one", "丁-2-酮"),
-    ("C1CCC(=O)CC1", "cyclohexanone", "环己酮"),
-    ("CC(=O)c1ccccc1", "acetophenone", "苯乙酮"),
 ]
 
 

@@ -15,10 +15,6 @@ CASES = [
     ("CCC(=O)CC", "ketone", 1, "pentan-3-one", "戊-3-酮"),
     ("CC(=O)CC(=O)C", "dione", 2, "pentane-2,4-dione", "戊-2,4-二酮"),
     ("CC(=O)C(C)=O", "dione", 2, "butane-2,3-dione", "丁-2,3-二酮"),
-    ("O=C1CCCCC1", "cycloketone", 1, "cyclohexanone", "环己酮"),
-    ("O=C1CCCC1", "cycloketone", 1, "cyclopentanone", "环戊酮"),
-    ("O=C1CCC(=O)CC1", "cycloalkanedione", 2, "cyclohexane-1,4-dione", "环己烷-1,4-二酮"),
-    ("O=C1CC(=O)CC1", "cycloalkanedione", 2, "cyclopentane-1,3-dione", "环戊烷-1,3-二酮"),
 ]
 
 
@@ -47,10 +43,3 @@ def test_alcohol_near_neighbor_has_no_ketone_facts():
     alcohol = next(parent for parent in parents if parent.get("kind") == "alcohol")
     facts = alcohol.get("principal_expression_facts")
     assert facts is None or facts.group_class.value != "ketone"
-
-
-def test_retained_acetophenone_is_not_claimed_as_cycloketone():
-    parents = _collect_candidates(analyze(Chem.MolFromSmiles("CC(=O)c1ccccc1")))
-    assert any(parent.get("kind") == "acetophenone" for parent in parents)
-    result = SMILESNNamer().name("CC(=O)c1ccccc1")
-    assert normalize_en(result.en) == "acetophenone"

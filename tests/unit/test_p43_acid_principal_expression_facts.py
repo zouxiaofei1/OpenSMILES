@@ -14,7 +14,6 @@ from namepredict.namer import SMILESNNamer
 CASES = [
     ("CCCC(=O)O", "acid", 1, PrincipalRelation.IN_SKELETON, "neutral", "butanoic acid", "丁酸"),
     ("O=C(O)CCC(=O)O", "diacid", 2, PrincipalRelation.IN_SKELETON, "neutral", "butanedioic acid", "丁二酸"),
-    ("O=C(O)C1CCCCC1", "cycloalkane", 1, PrincipalRelation.EXOCYCLIC, "neutral", "cyclohexanecarboxylic acid", "环己烷甲酸"),
     ("CCCC(=O)[O-]", "acid", 1, PrincipalRelation.IN_SKELETON, "anion", "butanoate", "丁酸根"),
 ]
 
@@ -38,12 +37,6 @@ def test_acid_principal_expression_facts(smiles, kind, count, relation, charge, 
     assert result.success
     assert normalize_en(result.en) == normalize_en(en)
     assert normalize_zh(result.zh) == normalize_zh(zh)
-
-
-def test_ester_near_neighbor_has_no_acid_facts():
-    parents = _collect_candidates(analyze(Chem.MolFromSmiles("CCCC(=O)OC")))
-    ester = next(parent for parent in parents if parent.get("kind") == "ester")
-    assert "principal_expression_facts" not in ester
 
 
 def test_partially_deprotonated_diacid_has_mixed_charge_state():

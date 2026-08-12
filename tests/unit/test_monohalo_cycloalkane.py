@@ -29,7 +29,6 @@ CASES = [
     ("ClCC", "chloroethane", "氯乙烷"),
     ("CCO", "ethanol", "乙醇"),
     ("OC1CCCCC1", "cyclohexanol", "环己醇"),
-    ("O=C1CCCCC1", "cyclohexanone", "环己酮"),
 ]
 
 

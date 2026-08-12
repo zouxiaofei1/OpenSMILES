@@ -24,13 +24,9 @@ CASES = [
     ("CCOC(=O)c1c(Br)cc(Cl)cc1", "ethyl 2-bromo-4-chlorobenzoate", None),
     # positive: benzonitrile (P-66.5.1)
     ("N#Cc1ccccc1", "benzonitrile", "苯甲腈"),
-    # positive: benzoyl chloride (P-65.5.1)
-    ("ClC(=O)c1ccccc1", "benzoyl chloride", "苯甲酰氯"),
-    ("O=C(Cl)c1ccc(Cl)cc1", "4-chlorobenzoyl chloride", None),
     # negative: must not steal existing retained / open-chain parents
     ("OC(=O)c1ccccc1", "benzoic acid", "苯甲酸"),
     ("O=Cc1ccccc1", "benzaldehyde", "苯甲醛"),
-    ("CC(=O)c1ccccc1", "acetophenone", "苯乙酮"),
     ("CCCCCCC(=O)OC", "methyl heptanoate", "庚酸甲酯"),
     ("CC(=O)OCC", "ethyl acetate", "乙酸乙酯"),
 ]

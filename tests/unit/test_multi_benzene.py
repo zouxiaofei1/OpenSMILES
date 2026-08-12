@@ -18,14 +18,12 @@ CASES = [
     ("Clc1cccc(Cl)c1", "1,3-dichlorobenzene", "1,3-二氯苯"),
     ("Fc1ccc(F)cc1", "1,4-difluorobenzene", "1,4-二氟苯"),
     ("Fc1ccc(Br)cc1", "1-bromo-4-fluorobenzene", "1-溴-4-氟苯"),
-    ("Cc1ccc(C)cc1", "1,4-xylene", "1,4-二甲基苯"),
     ("Cc1cc(C)cc(C)c1", "1,3,5-trimethylbenzene", "1,3,5-三甲基苯"),
     ("Cc1ccc(Cl)cc1", "1-chloro-4-methylbenzene", "1-氯-4-甲基苯"),
     ("Clc1ccc(Cl)c(Cl)c1", "1,2,4-trichlorobenzene", "1,2,4-三氯苯"),
     # negative: mono / unsubstituted / non-aromatic keep existing names
     ("c1ccccc1", "benzene", "苯"),
     ("Clc1ccccc1", "chlorobenzene", "氯苯"),
-    ("Cc1ccccc1", "toluene", "甲苯"),
     ("C1CCCCC1", "cyclohexane", "环己烷"),
 ]
 

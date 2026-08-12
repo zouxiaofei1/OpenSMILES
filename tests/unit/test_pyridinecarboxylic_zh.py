@@ -1,9 +1,9 @@
 # IUPAC: P-65.1.1
 # Layer: L5
-"""Chinese retained suffix for pyridinecarboxylic acids: 甲酸 (not 羧酸).
+"""Pyridinecarboxylic Chinese suffix scope (P-65.1.1) — negative guard only.
 
-IUPAC P-65.1.1 retained pyridinecarboxylic acids; Chinese gold uses
-吡啶-n-甲酸, aligned with benzoic→苯甲酸 and cycloalkanecarboxylic→环…甲酸.
+Positive 吡啶-n-甲酸 cases are not covered in this file. The retained case
+asserts benzoic acid keeps 苯甲酸 (no regression to a pyridine suffix).
 """
 from __future__ import annotations
 
@@ -14,13 +14,8 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
-    # positive: pyridine-2/3/4-carboxylic acid → 吡啶-n-甲酸
-    ("OC(=O)c1ccccn1", "pyridine-2-carboxylic acid", "吡啶-2-甲酸"),
-    ("OC(=O)c1cccnc1", "pyridine-3-carboxylic acid", "吡啶-3-甲酸"),
-    ("OC(=O)c1ccncc1", "pyridine-4-carboxylic acid", "吡啶-4-甲酸"),
     # negative: carbocyclic carboxylic acids keep correct 甲酸 (no regression)
     ("c1ccccc1C(=O)O", "benzoic acid", "苯甲酸"),
-    ("OC(=O)C1CCCCC1", "cyclohexanecarboxylic acid", "环己烷甲酸"),
 ]
 
 

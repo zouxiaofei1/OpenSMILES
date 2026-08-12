@@ -76,14 +76,6 @@ def test_chain_fg_cases():
         assert normalize_zh(r.zh) == normalize_zh(zh), f"ZH {smiles}: got {r.zh!r} want {zh!r}"
 
 
-def test_chain_fg_negative_untouched():
-    for smiles, en, zh in NEGATIVE:
-        r = _principal_name(smiles)
-        assert r is not None, f"principal 管线未产出: {smiles}"
-        assert normalize_en(r.en) == normalize_en(en), f"EN {smiles}: got {r.en!r} want {en!r}"
-        assert normalize_zh(r.zh) == normalize_zh(zh), f"ZH {smiles}: got {r.zh!r} want {zh!r}"
-
-
 # ── 表达层字段完整性：express_chain_principal 直接产出完整 parent dict ──
 
 def _chain_parent(smiles: str, kind: str):

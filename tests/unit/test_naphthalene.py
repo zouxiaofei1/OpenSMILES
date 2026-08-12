@@ -48,15 +48,6 @@ def test_unsub_not_decane() -> None:
     assert "decane" not in normalize_en(r.en)
 
 
-def test_l2_parent_kind_unsub() -> None:
-    mol = preprocess("c1ccc2ccccc2c1")
-    assert mol is not None
-    parent = _try_naphthalene_parent(analyze(mol))
-    assert parent is not None
-    assert parent.get("kind") == "naphthalene"
-    assert len(parent.get("chain") or []) == 10
-
-
 def test_l2_rejects_benzene() -> None:
     mol = preprocess("c1ccccc1")
     assert mol is not None

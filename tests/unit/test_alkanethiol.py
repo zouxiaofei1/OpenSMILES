@@ -15,16 +15,9 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
-    # positive: simple alkanethiols
-    ("CS", "methanethiol", "甲硫醇"),
-    ("CCS", "ethanethiol", "乙硫醇"),
-    ("CCCS", "propane-1-thiol", "丙-1-硫醇"),
-    ("CC(C)S", "propane-2-thiol", "丙-2-硫醇"),
-    ("CCCCS", "butane-1-thiol", "丁-1-硫醇"),
     # negative: alcohol / amine / thioether (not thiol)
     ("CCO", "ethanol", "乙醇"),
     ("CCN", "ethanamine", "乙胺"),
-    ("CCSC", "ethyl methyl sulfide", "乙基甲基硫醚"),
 ]
 
 

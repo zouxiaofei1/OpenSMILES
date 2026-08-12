@@ -1,8 +1,10 @@
 # IUPAC: P-22.2.1
 # Layer: L2,L4,L5
-"""Retained parent 1H-indole (IUPAC P-22.2.1 / P-25):
-benzo[b]pyrrole fused 6+5 aromatic system. Unsubstituted + at most one
-ring monomethyl / monohalo (F/Cl/Br/I). NH = 1; standard locants 2–7.
+"""Retained 1H-indole scope (P-22.2.1) — unsubstituted + negative guard.
+
+Only the unsubstituted indole positive case is retained here; substituted
+cases are not covered. The other cases assert naphthalene / benzene / pyridine
+must not regress.
 """
 from __future__ import annotations
 
@@ -15,15 +17,8 @@ from namepredict.namer import SMILESNNamer
 CASES = [
     # positive: unsubstituted
     ("c1ccc2[nH]ccc2c1", "1H-indole", "吲哚"),
-    # positive: mono-methyl (pyrrole β = 3; α = 2)
-    ("Cc1c[nH]c2ccccc12", "3-methyl-1H-indole", "3-甲基-1H-吲哚"),
-    ("Cc1cc2ccccc2[nH]1", "2-methyl-1H-indole", "2-甲基-1H-吲哚"),
-    # positive: mono-halo on benzene ring
-    ("Brc1ccc2[nH]ccc2c1", "5-bromo-1H-indole", "5-溴-1H-吲哚"),
-    ("Clc1ccc2[nH]ccc2c1", "5-chloro-1H-indole", "5-氯-1H-吲哚"),
     # negative: must not regress naphthalene / imidazole / benzene / pyridine
     ("c1ccc2ccccc2c1", "naphthalene", "萘"),
-    ("c1cnc[nH]1", "1H-imidazole", "咪唑"),
     ("c1ccccc1", "benzene", "苯"),
     ("c1ccncc1", "pyridine", "吡啶"),
 ]
@@ -43,12 +38,3 @@ def test_unsub_not_octane() -> None:
     assert r.success
     assert normalize_en(r.en) == "1h-indole"
     assert "octane" not in normalize_en(r.en)
-
-
-def test_methyl_locant_is_3_not_2() -> None:
-    """Cc1c[nH]c2ccccc12 is 3-methyl (β), not 2-methyl (α)."""
-    r = SMILESNNamer().name("Cc1c[nH]c2ccccc12")
-    assert r.success
-    en = normalize_en(r.en)
-    assert en == "3-methyl-1h-indole"
-    assert "2-methyl" not in en

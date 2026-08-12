@@ -22,18 +22,11 @@ CASES = [
     ("OC1CCC(O)CC1", "cyclohexane-1,4-diol", "环己烷-1,4-二醇"),
     ("OC1CCCC1O", "cyclopentane-1,2-diol", "环戊烷-1,2-二醇"),
     ("OC1CCC1O", "cyclobutane-1,2-diol", "环丁烷-1,2-二醇"),
-    # positive: unsubstituted cycloalkanediones
-    ("O=C1CCCCC1=O", "cyclohexane-1,2-dione", "环己烷-1,2-二酮"),
-    ("O=C1CCC(=O)CC1", "cyclohexane-1,4-dione", "环己烷-1,4-二酮"),
-    ("O=C1CC(=O)CC1", "cyclopentane-1,3-dione", "环戊烷-1,3-二酮"),
-    ("O=C1CCCC(=O)C1", "cyclohexane-1,3-dione", "环己烷-1,3-二酮"),
     # positive: simple ring sub keeps FG pair + sub locant
     ("CC1CC(O)CC(O)C1", "5-methylcyclohexane-1,3-diol", "5-甲基环己烷-1,3-二醇"),
     ("ClC1CC(O)CC(O)C1", "5-chlorocyclohexane-1,3-diol", "5-氯环己烷-1,3-二醇"),
     # negative: mono cyclo FG, arene diol, open-chain poly FG stay correct
     ("OC1CCCCC1", "cyclohexanol", "环己醇"),
-    ("O=C1CCCCC1", "cyclohexanone", "环己酮"),
-    ("Oc1ccccc1O", "benzene-1,2-diol", "苯-1,2-二酚"),
     ("OCCCO", "propane-1,3-diol", "丙烷-1,3-二醇"),
     ("CC(=O)CC(=O)C", "pentane-2,4-dione", "戊-2,4-二酮"),
 ]

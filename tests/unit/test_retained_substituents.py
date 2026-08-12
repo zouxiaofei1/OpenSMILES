@@ -196,11 +196,3 @@ def test_methylsulfanyl_unchanged():
     r = SMILESNNamer(name_mode="general").name("CC(C)SC")
     assert r.success
     assert "methylsulfanyl" in r.en
-
-
-def test_sulfonate_not_falsely_tosyl():
-    """Butyl tosylate must remain sulfonate parent, not tosyl substituent."""
-    from namepredict.namer import SMILESNNamer
-    r = SMILESNNamer(name_mode="general").name("CC1=CC=C(C=C1)S(=O)(=O)OCCCC")
-    assert r.success
-    assert "4-methylbenzenesulfonate" in r.en

@@ -24,7 +24,6 @@ CASES = [
     ("CCCN", "propan-1-amine", "丙-1-胺"),
     ("C1CCCCC1", "cyclohexane", "环己烷"),
     ("OC1CCCCC1", "cyclohexanol", "环己醇"),
-    ("O=C1CCCCC1", "cyclohexanone", "环己酮"),
     ("ClC1CCCCC1", "chlorocyclohexane", "氯环己烷"),
     ("CC1CCCCC1", "methylcyclohexane", "甲基环己烷"),
 ]

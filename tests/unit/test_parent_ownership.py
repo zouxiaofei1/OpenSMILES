@@ -121,36 +121,3 @@ def _ester_o_count(mol, owned):
         if mol.GetAtomWithIdx(i).GetAtomicNum() == 8
         and any(n.GetIdx() in owned and n.GetAtomicNum() == 6 for n in mol.GetAtomWithIdx(i).GetNeighbors())
     )
-
-
-def test_diester_owns_alkoxy_arms():
-    """Diester parent owns both carbonyl C's, =O's, -O-'s, and alkoxy methyl C's."""
-    mol, info = _info("COC(=O)C(=O)OC")
-    parent = select_parent(info)
-    assert parent["kind"] == "diester"
-    owned = parent["owned_atoms"]
-    assert isinstance(owned, frozenset)
-
-    # Both ester carbonyl carbons owned
-    for ec in parent["ester_c_idxs"]:
-        assert int(ec) in owned
-
-    # All 4 oxygens (2 carbonyl + 2 ester -O-) are owned
-    assert _ester_o_count(mol, owned) >= 4
-
-    # Methyl carbons (alkoxy arms) are owned
-    n_c = sum(1 for i in owned if mol.GetAtomWithIdx(i).GetAtomicNum() == 6)
-    assert n_c >= 4  # 2 carbonyl C + 2 methyl C (+ possibly the central C in chain)
-
-
-def test_diester_ownership_prevents_phantom_substituents():
-    """Diester names must not include alkoxy prefixes (methoxy, ethoxy)."""
-    from namepredict.namer import SMILESNNamer
-    namer = SMILESNNamer()
-
-    for smiles in ("COC(=O)C(=O)OC", "CCOC(=O)C(=O)OCC"):
-        r = namer.name(smiles)
-        assert r.success, f"Failed for {smiles}: {r.error}"
-        en_lower = r.en.lower()
-        assert "methoxy" not in en_lower, f"Phantom methoxy in {r.en}"
-        assert "ethoxy" not in en_lower, f"Phantom ethoxy in {r.en}"

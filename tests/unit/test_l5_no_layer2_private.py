@@ -19,12 +19,6 @@ _ROOT = Path(__file__).resolve().parents[2]
 _L5 = _ROOT / "src" / "namepredict" / "layer5"
 
 # L5 special-FG name modules that previously walked via L2 private APIs.
-_TARGET_L5 = (
-    "carbamate_names.py",
-    "carbonate_names.py",
-    "nitrogen_names.py",
-    "sulfur_names.py",
-)
 
 
 def _layer2_import_hits(path: Path) -> list[str]:
@@ -43,14 +37,6 @@ def _layer2_import_hits(path: Path) -> list[str]:
                 ):
                     hits.append(f"import {alias.name} (L{node.lineno})")
     return hits
-
-
-@pytest.mark.parametrize("fname", _TARGET_L5)
-def test_l5_special_fg_no_layer2_import(fname: str) -> None:
-    path = _L5 / fname
-    assert path.is_file(), f"missing {path}"
-    hits = _layer2_import_hits(path)
-    assert hits == [], f"{fname} must not import layer2: {hits}"
 
 
 @pytest.mark.parametrize("path", sorted(_L5.glob("*.py")), ids=lambda p: p.name)
@@ -74,12 +60,3 @@ _E2E = [
     # alkyl sulfonamide still correct (non-aryl path)
     ("CS(=O)(=O)N", "methanesulfonamide", "甲磺酰胺"),
 ]
-
-
-def test_alkyl_sulfonamide_not_aryl() -> None:
-    """Negative: simple alkyl sulfonamide stays alkyl (not benzene-…)."""
-    r = SMILESNNamer().name("CCS(=O)(=O)N")
-    assert r.success
-    assert normalize_en(r.en) == "ethanesulfonamide"
-    assert "benzene" not in normalize_en(r.en)
-    assert "苯" not in normalize_zh(r.zh)

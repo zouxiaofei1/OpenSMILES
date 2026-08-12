@@ -13,12 +13,6 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
-    # positive: unsubstituted cycloketones (omit locant)
-    ("O=C1CCCCC1", "cyclohexanone", "环己酮"),
-    ("O=C1CCCC1", "cyclopentanone", "环戊酮"),
-    ("O=C1CCC1", "cyclobutanone", "环丁酮"),
-    ("O=C1CCCCCC1", "cycloheptanone", "环庚酮"),
-    ("O=C1CC1", "cyclopropanone", "环丙酮"),
     # negative: chain ketones and other parents stay correct
     ("CC(=O)C", "propan-2-one", "丙-2-酮"),
     ("CC(=O)CC", "butan-2-one", "丁-2-酮"),

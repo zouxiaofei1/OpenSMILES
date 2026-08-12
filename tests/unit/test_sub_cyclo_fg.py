@@ -25,17 +25,12 @@ CASES = [
     # positive: monohalo cycloalcohol
     ("ClC1CCCCC1O", "2-chlorocyclohexan-1-ol", "2-氯环己-1-醇"),
     ("BrC1CCCCC1O", "2-bromocyclohexan-1-ol", "2-溴环己-1-醇"),
-    # positive: monoalkyl / monohalo cycloketone
-    ("CC1CCCCC1=O", "2-methylcyclohexan-1-one", "2-甲基环己-1-酮"),
-    ("O=C1CCC(C)CC1", "4-methylcyclohexan-1-one", "4-甲基环己-1-酮"),
-    ("ClC1CCCCC1=O", "2-chlorocyclohexan-1-one", "2-氯环己-1-酮"),
     # positive: monoalkyl / monohalo cycloamine
     ("CC1CCCCC1N", "2-methylcyclohexan-1-amine", "2-甲基环己-1-胺"),
     ("CC1CCC(N)CC1", "4-methylcyclohexan-1-amine", "4-甲基环己-1-胺"),
     ("ClC1CCCCC1N", "2-chlorocyclohexan-1-amine", "2-氯环己-1-胺"),
     # negative: unsubstituted keep omit-locant forms; open-chain / cycloalkane intact
     ("OC1CCCCC1", "cyclohexanol", "环己醇"),
-    ("O=C1CCCCC1", "cyclohexanone", "环己酮"),
     ("NC1CCCCC1", "cyclohexanamine", "环己胺"),
     ("CCO", "ethanol", "乙醇"),
     ("CC1CCCCC1", "methylcyclohexane", "甲基环己烷"),

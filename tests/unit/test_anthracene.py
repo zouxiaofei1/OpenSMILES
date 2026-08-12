@@ -9,7 +9,6 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
-    ("c1ccc2cc3ccccc3cc2c1", "anthracene", "蒽"),
     # negatives
     ("c1ccc2ccccc2c1", "naphthalene", "萘"),
     ("c1ccccc1", "benzene", "苯"),

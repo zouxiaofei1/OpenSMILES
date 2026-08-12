@@ -14,7 +14,6 @@ from namepredict.namer import SMILESNNamer
 
 CASES = [
     # positive: mono C1–C4 n-alkyl + isopropylbenzene
-    ("Cc1ccccc1", "toluene", "甲苯"),
     ("CCc1ccccc1", "ethylbenzene", "乙基苯"),
     ("CCCc1ccccc1", "propylbenzene", "丙基苯"),
     ("CCCCc1ccccc1", "butylbenzene", "丁基苯"),

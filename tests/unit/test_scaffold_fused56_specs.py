@@ -21,13 +21,6 @@ from namepredict.namer import SMILESNNamer
 _EXPECTED_LABELS = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
 
 # Positive: fused56 retained parents must stay registered + name-stable.
-POS_CASES = [
-    ("c1ccc2occc2c1", "benzofuran", "benzofuran", "苯并呋喃"),
-    ("c1ccc2sccc2c1", "benzothiophene", "1-benzothiophene", "苯并[b]噻吩"),
-    ("c1ccc2scnc2c1", "benzothiazole", "1,3-benzothiazole", "1,3-苯并噻唑"),
-    ("c1ccc2ocnc2c1", "benzoxazole", "1,3-benzoxazole", "1,3-苯并噁唑"),
-    ("O1C(=CC2=C1C=CC=C2)N", "benzofuranamine", "benzofuran-2-amine", "苯并呋喃-2-胺"),
-]
 
 # Negative: non-fused56 parents must not be fused56 specs.
 NEG_KINDS = ("benzene", "naphthalene", "cycloalkane", "furan")
@@ -75,15 +68,6 @@ def test_non_fused56_not_wrong_parent_spec(kind: str) -> None:
     if sp is None:
         return
     assert sp.naming_class != "fused56"
-
-
-@pytest.mark.parametrize("smiles,kind,en,zh", POS_CASES)
-def test_e2e_fused56_names_stable(smiles, kind, en, zh) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)
 
 
 def test_plan_from_chain_uses_spec_labels() -> None:

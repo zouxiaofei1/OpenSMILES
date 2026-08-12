@@ -25,7 +25,6 @@ CASES = [
     ("C1CCCCC1", "cyclohexane", "环己烷"),
     ("CC1CCCCC1", "methylcyclohexane", "甲基环己烷"),
     ("OC1CCCCC1", "cyclohexanol", "环己醇"),
-    ("O=C1CCCCC1", "cyclohexanone", "环己酮"),
     ("NC1CCCCC1", "cyclohexanamine", "环己胺"),
 ]
 

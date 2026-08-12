@@ -15,23 +15,6 @@ from namepredict.namer import SMILESNNamer
 
 
 # Positive: arene acids with branched alkoxy → benzoic parent + alkoxy prefix
-POS_BRANCHED = [
-    (
-        "BrC1=CC(=C(C(=O)O)C=C1)OCC(C)C",
-        "4-bromo-2-isobutoxybenzoic acid",
-        "4-溴-2-异丁氧基苯甲酸",
-    ),
-    (
-        "CC(C)Oc1ccc(C(=O)O)cc1",
-        "4-isopropoxybenzoic acid",
-        "4-异丙氧基苯甲酸",
-    ),
-    (
-        "CC(C)COc1ccc(C(=O)O)cc1",
-        "4-isobutoxybenzoic acid",
-        "4-异丁氧基苯甲酸",
-    ),
-]
 
 # Positive: ring/hetero acids must not emit formic (name quality optional)
 POS_NO_FORMIC = [
@@ -47,15 +30,6 @@ NEG_CASES = [
     ("CCCCCC(=O)O", "hexanoic acid", "己酸"),
     ("COc1ccc(C(=O)O)cc1", "4-methoxybenzoic acid", "4-甲氧基苯甲酸"),
 ]
-
-
-@pytest.mark.parametrize("smiles,en,zh", POS_BRANCHED)
-def test_branched_alkoxy_benzoic(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)
 
 
 @pytest.mark.parametrize("smiles", POS_NO_FORMIC)

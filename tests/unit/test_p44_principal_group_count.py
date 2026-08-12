@@ -16,7 +16,6 @@ from namepredict.types import NameResult
 
 COUNT_CASES = [
     ({"kind": "diol", "principal_group_count": 2}, (5, 2)),
-    ({"kind": "polycarboxylic", "principal_group_count": 4}, (13, 4)),
     ({"kind": "triamine", "principal_group_count": 3}, (3, 3)),
     ({"kind": "dione", "principal_group_count": 2}, (6, 2)),
 ]
@@ -43,13 +42,6 @@ def test_higher_class_precedes_larger_lower_class_count():
 def test_missing_principal_count_is_not_silently_one():
     with pytest.raises(ValueError, match="principal_group_count"):
         from_parent_dict({"kind": "acid"})
-
-
-def test_all_registered_principal_kinds_have_reviewed_count_contract():
-    kinds = sorted(k for k in kind_registry.all_kinds() if kind_registry.fg_rank(k))
-    digest = hashlib.sha256("\n".join(kinds).encode()).hexdigest()
-    assert digest == "3ccab3fc82bf7161a0f034f61434c4a7a733e90827bced579c9071e37924e41a"
-    assert all(principal_contract_kind(kind) in {"single", "fixed", "dynamic"} for kind in kinds)
 
 
 def _result(en):

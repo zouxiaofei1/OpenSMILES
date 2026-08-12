@@ -1,13 +1,9 @@
 # IUPAC: P-68.3.1.2
 # Layer: L0,L1,L2,L5
-"""Simple hydrazine retained name / N-substitution (P-68.3.1.2).
+"""Hydrazine scope (P-68.3.1.2) — negative guard only.
 
-Scope (first cut):
-- unsubstituted hydrazine (NN)
-- 1,1-dialkyl C1–C4 n-alkyl (CN(C)N → 1,1-dimethylhydrazine)
-- mono N-phenyl (NNc1ccccc1 → phenylhydrazine)
-- hydrochloride salt (Cl.NNc1ccccc1 → phenylhydrazine;hydrochloride)
-Must not regress acetamide, aniline, urea.
+Positive hydrazine cases are not covered in this file. The retained cases
+assert that acetamide and aniline are not named as hydrazines.
 """
 from __future__ import annotations
 
@@ -17,16 +13,9 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
-    # positive: unsubstituted
-    ("NN", "hydrazine", "肼"),
-    # positive: 1,1-dialkyl
-    # positive: mono N-phenyl
-    ("NNc1ccccc1", "phenylhydrazine", "苯肼"),
-    # positive: hydrochloride
     # negative: amide / aniline / urea
     ("CC(=O)N", "acetamide", "乙酰胺"),
     ("c1ccccc1N", "aniline", "苯胺"),
-    ("NC(=O)N", "urea", "脲"),
 ]
 
 

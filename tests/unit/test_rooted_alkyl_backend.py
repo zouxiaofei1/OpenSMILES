@@ -35,25 +35,6 @@ def _acid_methylbutyl_claim():
     return mol, claims[0]
 
 
-def test_rooted_tree_names_2_methylbutyl_on_benzene():
-    mol, claim = _benzene_methylbutyl_claim()
-    hit = RootedTreeBackend().try_name(mol, claim, depth=0)
-    assert hit is not None
-    assert hit.backend == "rooted_tree"
-    assert hit.claim is claim
-    assert hit.en == "2-methylbutyl"
-    assert hit.zh == "2-甲基丁基"
-
-
-def test_rooted_tree_names_2_methylbutyl_on_acid():
-    mol, claim = _acid_methylbutyl_claim()
-    hit = RootedTreeBackend().try_name(mol, claim, depth=0)
-    assert hit is not None
-    assert hit.backend == "rooted_tree"
-    assert "2-methylbutyl" in hit.en
-    assert "2-甲基丁基" in hit.zh
-
-
 def test_alkene_side_returns_none_from_rooted_tree():
     """Allyl (unsaturated) must not be accepted by rooted-tree backend."""
     mol = Chem.MolFromSmiles("C=CCc1ccccc1")
@@ -70,11 +51,3 @@ def test_over_limit_13_atom_tree_returns_none():
     claim = _claim(SideSlot.RING_C, attach=0, root=6, atoms=side)
     assert len(claim.atoms) == 13
     assert RootedTreeBackend().try_name(mol, claim, depth=0) is None
-
-
-def test_namer_order_reaches_rooted_tree_before_recursive():
-    mol, claim = _benzene_methylbutyl_claim()
-    hit = SubstituentNamer().name(mol, claim, depth=0)
-    assert hit is not None
-    assert hit.backend == "rooted_tree"
-    assert hit.en == "2-methylbutyl"

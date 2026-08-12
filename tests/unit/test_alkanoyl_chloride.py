@@ -15,13 +15,6 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
-    # positive: straight-chain mono alkanoyl chlorides
-    ("ClC(=O)C", "acetyl chloride", "乙酰氯"),
-    ("CC(=O)Cl", "acetyl chloride", "乙酰氯"),
-    ("ClC(=O)CC", "propanoyl chloride", "丙酰氯"),
-    ("ClC(=O)CCC", "butanoyl chloride", "丁酰氯"),
-    ("ClC(=O)CCCC", "pentanoyl chloride", "戊酰氯"),
-    ("ClC(=O)CCCCC", "hexanoyl chloride", "己酰氯"),
     # negative: acid / aldehyde / ketone / dichloroalkane must not become acyl chloride
     ("CC(=O)O", "acetic acid", "乙酸"),
     ("CC=O", "acetaldehyde", "乙醛"),

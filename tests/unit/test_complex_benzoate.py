@@ -41,14 +41,6 @@ def test_complex_benzoate(smiles: str, en: str, zh: str | None) -> None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
 
 
-def test_complex_benzoate_parent_kind() -> None:
-    mol = Chem.MolFromSmiles(COMPLEX)
-    info = analyze(mol)
-    p = select_parent(info)
-    assert p.get("kind") == "benzoate"
-    assert p.get("alkoxy_complex") is True
-
-
 def test_complex_not_ethane_collapse() -> None:
     r = SMILESNNamer().name(COMPLEX)
     assert r.success

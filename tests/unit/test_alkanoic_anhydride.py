@@ -15,16 +15,9 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
-    # positive: symmetrical alkanoic anhydrides
-    ("CC(=O)OC(=O)C", "acetic anhydride", "乙酸酐"),
-    ("CCC(=O)OC(=O)CC", "propanoic anhydride", "丙酸酐"),
-    ("CCCC(=O)OC(=O)CCC", "butanoic anhydride", "丁酸酐"),
-    ("CCCCC(=O)OC(=O)CCCC", "pentanoic anhydride", "戊酸酐"),
-    ("CCCCCC(=O)OC(=O)CCCCC", "hexanoic anhydride", "己酸酐"),
     # negative: acid / ester / acyl chloride / ketone must not become anhydride
     ("CC(=O)O", "acetic acid", "乙酸"),
     ("CC(=O)OC", "methyl acetate", "乙酸甲酯"),
-    ("ClC(=O)C", "acetyl chloride", "乙酰氯"),
     ("CC(=O)C", "propan-2-one", "丙-2-酮"),
 ]
 

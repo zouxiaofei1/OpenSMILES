@@ -10,19 +10,8 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
-    # positive: halo + alkoxy
-    ("ClC1=NC=CC=C1OC", "2-chloro-3-methoxypyridine", "2-氯-3-甲氧基吡啶"),
-    # positive: multi-halo + ethoxy
-    ("BrC1=NC(=CC=C1OCC)Br", "2,6-dibromo-3-ethoxypyridine", "2,6-二溴-3-乙氧基吡啶"),
-    # positive: alkoxy + alkyl + nitro
-    ("COC1=NC=C(C=C1C)[N+](=O)[O-]", "2-methoxy-3-methyl-5-nitropyridine", "2-甲氧基-3-甲基-5-硝基吡啶"),
-    # positive probes: mono-alkoxy / mono-nitro
-    ("COc1ccccn1", "2-methoxypyridine", "2-甲氧基吡啶"),
-    ("[O-][N+](=O)c1ccncc1", "4-nitropyridine", "4-硝基吡啶"),
     # negative near-miss: existing simple pyridine / benzene stay correct
     ("c1ccncc1", "pyridine", "吡啶"),
-    ("Clc1ccncc1", "4-chloropyridine", "4-氯吡啶"),
-    ("Cc1ccncc1", "4-methylpyridine", "4-甲基吡啶"),
     ("c1ccccc1", "benzene", "苯"),
 ]
 

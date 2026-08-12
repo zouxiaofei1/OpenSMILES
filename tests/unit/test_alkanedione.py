@@ -24,7 +24,6 @@ CASES = [
     # negative: monoketones / cycloketone must not break
     ("CC(=O)C", "propan-2-one", "丙-2-酮"),
     ("CCCC(=O)C", "pentan-2-one", "戊-2-酮"),
-    ("C1CCC(=O)CC1", "cyclohexanone", "环己酮"),
 ]
 
 

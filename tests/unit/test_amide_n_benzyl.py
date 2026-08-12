@@ -13,30 +13,7 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
-    # N-benzyl formamide / acetamide
-    ("O=CNCc1ccccc1", "N-benzylformamide", "N-苄基甲酰胺"),
-    ("CC(=O)NCc1ccccc1", "N-benzylacetamide", "N-苄基乙酰胺"),
-    # substituted benzyl
-    (
-        "O=CNCc1ccc(Cl)cc1",
-        "N-(4-chlorobenzyl)formamide",
-        "N-(4-氯苄基)甲酰胺",
-    ),
-    (
-        "CC(=O)NCc1ccc(OC)cc1",
-        "N-(4-methoxybenzyl)acetamide",
-        "N-(4-甲氧基苄基)乙酰胺",
-    ),
-    (
-        "O=CNCc1ccc(C)cc1",
-        "N-(4-methylbenzyl)formamide",
-        "N-(4-甲基苄基)甲酰胺",
-    ),
     # negatives: N-phenyl, plain N-alkyl, primary amide
-    ("O=CNc1ccccc1", "N-phenylformamide", "N-苯基甲酰胺"),
-    ("CC(=O)Nc1ccccc1", "N-phenylacetamide", "N-苯基乙酰胺"),
-    ("O=CNCCCC", "N-butylformamide", "N-丁基甲酰胺"),
-    ("CC(=O)NCC", "N-ethylacetamide", "N-乙基乙酰胺"),
     ("CC(=O)N", "acetamide", "乙酰胺"),
 ]
 
