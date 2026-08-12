@@ -3,14 +3,18 @@ from namepredict.layer4._chain_orient import (
     _chain_pos,
     _edge_locants,
     _edge_min_locant,
+    _orient_table_cands,
     _pair_locants,
+    _pick_ring_by_pair_locants,
+    _prefer as _prefer_chain,
     _prefer_lowest_bond_locs,
+    _prefer_lowest_locs,
     _rotate_to,
-    _stem_loc_pairs,
-    _sub_locants,
+    _table_loc_key,
 )
 from namepredict.layer4.anthra_orient import orient_anthraquinone as _orient_anthraquinone
 from namepredict.layer4.locants.adapt import effective_sub_locant, plan_from_chain
+from namepredict.layer4.locants.generate import ring_candidates
 from namepredict.layer4.polyene import (
     ene_locants, orient_alkenol, orient_alkenedioic, orient_cycloalkene,
     orient_cyclopolyene, orient_polyene, orient_ring_fg_ene, prefer_unsat_if_fg_tie,
@@ -24,12 +28,6 @@ def _maybe_reverse(chain: list[int], pos: int) -> list[int]:
     if pos > (len(chain) + 1) // 2:
         return list(reversed(chain))
     return chain
-def _locant_key(locs: list[int]) -> tuple:
-    return (locs, len(locs))
-def _orient_key(chain: list[int], substituents: list) -> tuple:
-    return (_locant_key(_sub_locants(chain, substituents)), _stem_loc_pairs(chain, substituents))
-def _prefer_chain(a: list[int], b: list[int], substituents: list) -> list[int]:
-    return a if _orient_key(a, substituents) <= _orient_key(b, substituents) else b
 def _orient_alkane(chain: list[int], substituents: list) -> list[int]:
     if not substituents or not chain:
         return chain
@@ -57,11 +55,9 @@ def _orient_ketone(chain: list[int], parent: dict, substituents: list) -> list[i
     base = _orient_by_single_fg(chain, parent, substituents, "ketone_c_idx")
     return prefer_unsat_if_fg_tie(base, parent, substituents, "ketone_c_idx", _prefer_ene_orient)
 def _better_pair_orient(a: list[int], b: list[int], cs, subs: list) -> list[int]:
-    la, lb = _pair_locants(a, cs), _pair_locants(b, cs)
-    if la is None: return b
-    if lb is None or la < lb: return a
-    if lb < la: return b
-    return _prefer_chain(a, b, subs)
+    return _prefer_lowest_locs(
+        a, b, lambda x: _pair_locants(x, cs), lambda x, y: _prefer_chain(x, y, subs),
+    )
 def _orient_pair(chain: list[int], parent: dict, key: str, subs: list) -> list[int]:
     cs = parent.get(key)
     return chain if not cs else _better_pair_orient(chain, list(reversed(chain)), cs, subs)
@@ -117,16 +113,9 @@ def _terminal_orienters() -> dict:
     }
 def _carbonyl_orienters() -> dict:
     return {**_terminal_orienters(), "ketone": _orient_ketone, "dione": _orient_dione}
-def _rotations(chain: list[int]) -> list[list[int]]:
-    return [chain[i:] + chain[:i] for i in range(len(chain))]
-def _ring_candidates(chain: list[int]) -> list[list[int]]:
-    out: list[list[int]] = []
-    for base in (chain, list(reversed(chain))):
-        out.extend(_rotations(base))
-    return out
 def _best_ring(chain: list[int], substituents: list) -> list[int]:
     best = chain
-    for cand in _ring_candidates(chain):
+    for cand in ring_candidates(chain):
         best = _prefer_chain(best, cand, substituents)
     return best
 def _orient_cycloalkane(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -146,23 +135,11 @@ def _orient_ring_fg_ene(chain, parent, substituents, key):
     )
 def _orient_cycloalcohol(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_fg_ene(chain, parent, substituents, "oh_c_idx")
-def _better_ring_pair(best, best_locs, cand, cs, subs):
-    locs = _pair_locants(cand, cs)
-    if locs is None:
-        return best, best_locs
-    if best_locs is None or locs < best_locs:
-        return cand, locs
-    if locs == best_locs:
-        return _prefer_chain(best, cand, subs), best_locs
-    return best, best_locs
 def _orient_ring_pair(chain: list[int], parent: dict, key: str, subs: list) -> list[int]:
     cs = parent.get(key)
     if not cs or not chain:
         return chain
-    best, best_locs = chain, _pair_locants(chain, cs)
-    for cand in _ring_candidates(chain):
-        best, best_locs = _better_ring_pair(best, best_locs, cand, cs, subs)
-    return best
+    return _pick_ring_by_pair_locants(chain, cs, subs, ring_candidates, _prefer_chain)
 def _orient_benzene_polycarboxylic(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return _orient_ring_pair(chain, parent, "cooh_c_idxs", substituents)
 def _orient_benzenediol(chain: list[int], parent: dict, substituents: list) -> list[int]:
@@ -190,23 +167,14 @@ def _orient_imidazole(chain: list[int], parent: dict, substituents: list) -> lis
     rev = _rotate_to(list(reversed(chain)), nh)
     n = parent.get("n_idx")
     return base if _n_loc_on(base, n) <= _n_loc_on(rev, n) else rev
-def _naph_loc_on(chain: list[int], attach: int) -> int:
-    if attach not in chain: return 99
-    loc = (1, 2, 3, 4, None, 5, 6, 7, 8, None)[chain.index(attach)]
-    return 99 if loc is None else loc
-def _naph_loc_key(chain: list[int], substituents: list) -> tuple:
-    locs = sorted(_naph_loc_on(chain, s["attach_idx"]) for s in substituents)
-    return tuple(locs) if locs else ()
-def _pick_naph_chain(cands: list, key_fn) -> list[int]:
-    best = cands[0]
-    for cand in cands[1:]:
-        if key_fn(cand) < key_fn(best): best = cand
-    return best
+_NAPH_LOCANTS = (1, 2, 3, 4, None, 5, 6, 7, 8, None)
+
+
 def _orient_naphthalene(chain: list[int], parent: dict, substituents: list) -> list[int]:
-    cands = parent.get("naph_chains") or [chain]
-    if not cands: return chain
-    if not substituents: return cands[0]
-    return _pick_naph_chain(cands, lambda c: _naph_loc_key(c, substituents))
+    return _orient_table_cands(
+        chain, parent, substituents, "naph_chains",
+        lambda c, s: _table_loc_key(c, s, _NAPH_LOCANTS),
+    )
 def _orient_indole(chain: list[int], parent: dict, substituents: list) -> list[int]:
     return chain
 def _aza_orienters() -> dict:

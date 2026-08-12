@@ -5,7 +5,11 @@ from dataclasses import dataclass, replace
 
 from rdkit.Chem import Mol
 
-from namepredict.layer1.ring_systems import build_ring_systems
+from namepredict.layer1.ring_systems import (
+    _is_arom_mancude,
+    _sssr,
+    build_ring_systems,
+)
 
 
 @dataclass(frozen=True)
@@ -34,10 +38,6 @@ class RingSystemIR:
     fingerprint: str | None = ""
 
 
-def _sssr(mol: Mol) -> list[tuple[int, ...]]:
-    return list(mol.GetRingInfo().AtomRings())
-
-
 def _ring_hetero(mol: Mol, atom_ids: tuple[int, ...]) -> tuple[tuple[int, int], ...]:
     out: list[tuple[int, int]] = []
     for i in atom_ids:
@@ -47,12 +47,6 @@ def _ring_hetero(mol: Mol, atom_ids: tuple[int, ...]) -> tuple[tuple[int, int], 
     return tuple(out)
 
 
-def _ring_aromatic(mol: Mol, atom_ids: tuple[int, ...]) -> bool:
-    if not atom_ids:
-        return False
-    return all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atom_ids)
-
-
 def _component(mol: Mol, sssr_idx: int, ring: tuple[int, ...]) -> RingComponent:
     atoms = tuple(sorted(ring))
     return RingComponent(
@@ -60,7 +54,7 @@ def _component(mol: Mol, sssr_idx: int, ring: tuple[int, ...]) -> RingComponent:
         size=len(atoms),
         atom_ids=atoms,
         hetero=_ring_hetero(mol, atoms),
-        aromatic=_ring_aromatic(mol, atoms),
+        aromatic=_is_arom_mancude(mol, atoms),
     )
 
 

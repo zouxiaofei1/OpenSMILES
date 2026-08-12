@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 from namepredict.layer4._chain_orient import (
-    _pair_locants,
+    _pick_ring_by_pair_locants,
+    _prefer,
     _rotate_to,
-    _stem_loc_pairs,
-    _sub_locants,
 )
 from namepredict.layer4.locants.engine import choose_numbering
 
@@ -32,35 +31,11 @@ SAT_HETERO_PLAIN = (
 )
 
 
-def _orient_key(chain: list[int], subs: list) -> tuple:
-    """Locant set first, then stem-alpha pairs when sets tie (P-14.5)."""
-    return (tuple(_sub_locants(chain, subs)), _stem_loc_pairs(chain, subs))
-
-
-def _attach_loc(chain: list[int], attach: int | None) -> int:
-    if attach is None or attach not in chain:
-        return 99
-    return chain.index(attach) + 1
-
-
-def _attach_key(chain: list[int], subs: list, attach: int | None) -> tuple:
-    """Principal attach, then loc set + stem pairs (COOH/one lowest)."""
-    return (_attach_loc(chain, attach), _orient_key(chain, subs))
-
-
-def _prefer(a: list[int], b: list[int], subs: list, attach: int | None = None) -> list[int]:
-    if attach is not None:
-        return a if _attach_key(a, subs, attach) <= _attach_key(b, subs, attach) else b
-    return a if _orient_key(a, subs) <= _orient_key(b, subs) else b
-
-
-def _fixed(
-    chain: list[int], atom: int | None, subs: list, attach: int | None = None,
-) -> list[int]:
+def _fixed(chain: list[int], atom: int | None, subs: list) -> list[int]:
     if atom is None or atom not in chain:
         return chain
     base, rev = _rotate_to(chain, atom), _rotate_to(list(reversed(chain)), atom)
-    return _prefer(base, rev, subs, attach)
+    return _prefer(base, rev, subs)
 
 
 def _ring_cands(chain: list[int]) -> list[list[int]]:
@@ -73,16 +48,7 @@ def _ring_cands(chain: list[int]) -> list[list[int]]:
 
 
 def _orient_pair(chain: list[int], cs, subs: list) -> list[int]:
-    best, best_locs = chain, _pair_locants(chain, cs)
-    for cand in _ring_cands(chain):
-        locs = _pair_locants(cand, cs)
-        if locs is None:
-            continue
-        if best_locs is None or locs < best_locs:
-            best, best_locs = cand, locs
-        elif locs == best_locs:
-            best = _prefer(best, cand, subs)
-    return best
+    return _pick_ring_by_pair_locants(chain, cs, subs, _ring_cands, _prefer)
 
 
 def orient_sat_hetero(

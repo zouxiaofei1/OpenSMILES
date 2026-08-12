@@ -20,18 +20,21 @@ def _methyl_count(c, o_idx: int, c_idx: int) -> int:
     )
 
 
-def _is_tert_butyl_c(mol, c_idx: int, o_idx: int) -> bool:
-    """C attached to O is C(CH3)3."""
+def _is_branched_alkyl_c(mol, c_idx: int, o_idx: int, *, total_nbs: int, n_methyl: int) -> bool:
+    """True if `c_idx` is C with `total_nbs` heavy neighbours, `n_methyl` of them methyl."""
     c = mol.GetAtomWithIdx(c_idx)
     nbs = _heavy_nbs(c)
-    return c.GetAtomicNum() == 6 and len(nbs) == 4 and _methyl_count(c, o_idx, c_idx) == 3
+    return c.GetAtomicNum() == 6 and len(nbs) == total_nbs and _methyl_count(c, o_idx, c_idx) == n_methyl
+
+
+def _is_tert_butyl_c(mol, c_idx: int, o_idx: int) -> bool:
+    """C attached to O is C(CH3)3."""
+    return _is_branched_alkyl_c(mol, c_idx, o_idx, total_nbs=4, n_methyl=3)
 
 
 def _is_isopropyl_c(mol, c_idx: int, o_idx: int) -> bool:
     """C attached to O is CH(CH3)2."""
-    c = mol.GetAtomWithIdx(c_idx)
-    nbs = _heavy_nbs(c)
-    return c.GetAtomicNum() == 6 and len(nbs) == 3 and _methyl_count(c, o_idx, c_idx) == 2
+    return _is_branched_alkyl_c(mol, c_idx, o_idx, total_nbs=3, n_methyl=2)
 
 
 def _sole_c6_at(mol, attach: int, parent: int):

@@ -2,8 +2,8 @@
 
 Extracted verbatim from layer1/analyzer.py and layer1/acyl_halide.py, which
 duplicated this whole block.  The two detectors still keep their own
-`_is_ester_alkoxy_o` / `_ester_alkoxy_of` because those differ semantically
-(analyzer excludes anhydride-bridge O; acyl halide checks formal charge).
+`_is_ester_alkoxy_o` predicate (analyzer excludes anhydride-bridge O; acyl
+halide checks formal charge) and pass it into the shared `_ester_alkoxy_of`.
 """
 from __future__ import annotations
 
@@ -60,6 +60,21 @@ def _alkoxy_c_of(oxygen, carbonyl) -> int | None:
     return None
 
 
+def _ester_alkoxy_of(carbon, is_alkoxy_o) -> tuple[int, int] | None:
+    """Find ester-like O on `carbon` whose neighbour C is a valid alkoxy side.
+
+    `is_alkoxy_o(oxygen, carbonyl)` is the module-specific predicate: analyzer
+    excludes anhydride-bridge O, acyl_halide checks formal charge.
+    """
+    for n in carbon.GetNeighbors():
+        if not is_alkoxy_o(n, carbon):
+            continue
+        alkoxy = _alkoxy_c_of(n, carbon)
+        if alkoxy is not None:
+            return n.GetIdx(), alkoxy
+    return None
+
+
 def _amide_n_rest(n, carbon) -> list:
     return [x for x in n.GetNeighbors()
             if x.GetAtomicNum() != H and x.GetIdx() != carbon.GetIdx()]
@@ -70,11 +85,17 @@ def _amide_n_single(carbon, n) -> bool:
     return b is not None and b.GetBondType() == BondType.SINGLE
 
 
-def _amide_n_of(carbon) -> int | None:
+def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
+    """Return (n_idx, neighbour-C idx list) for the amide N on `carbon`."""
     for n in carbon.GetNeighbors():
         if n.GetAtomicNum() != N or not _amide_n_single(carbon, n):
             continue
         o = _amide_n_rest(n, carbon)
         if len(o) <= 2 and all(x.GetAtomicNum() == C for x in o):
-            return n.GetIdx()
+            return n.GetIdx(), [x.GetIdx() for x in o]
     return None
+
+
+def _amide_n_of(carbon) -> int | None:
+    info = _amide_n_info(carbon)
+    return info[0] if info else None

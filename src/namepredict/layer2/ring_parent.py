@@ -43,15 +43,20 @@ def _outside_ok(mol: Mol, ring_set: set[int], allowed: set[int] | None = None) -
         return False
     return _pure_alkyl_outside(mol, _outside_carbons(mol, ring_set, allowed or set()))
 
-def _dbl_o_idx(mol: Mol, c_idx: int) -> int | None:
+def _o_idx(mol: Mol, c_idx: int, bond_name: str) -> int | None:
+    """Index of O neighbour of `c_idx` across a bond of the given type."""
     carbon = mol.GetAtomWithIdx(c_idx)
     for bond in carbon.GetBonds():
-        if bond.GetBondType().name != "DOUBLE":
+        if bond.GetBondType().name != bond_name:
             continue
         other = bond.GetOtherAtom(carbon)
         if other.GetAtomicNum() == O:
             return other.GetIdx()
     return None
+
+
+def _dbl_o_idx(mol: Mol, c_idx: int) -> int | None:
+    return _o_idx(mol, c_idx, "DOUBLE")
 
 def _ring_halo_n(mol: Mol, ring_set: set[int]) -> int:
     return sum(1 for a in mol.GetAtoms() if _is_ring_halo(a, ring_set))

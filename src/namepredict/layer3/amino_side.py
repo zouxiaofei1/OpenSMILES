@@ -17,13 +17,13 @@ def _one_amino(info: dict, a: dict, chain_set: set[int], owned) -> dict | None:
     return None
 
 
-def _principal_amine_attachments(parent: dict) -> frozenset[int]:
+def _principal_attachments(parent: dict, group: str) -> frozenset[int]:
     facts = parent.get("principal_expression_facts")
-    return facts.attachment_atoms if facts and facts.group_class.value == "amine" else frozenset()
+    return facts.attachment_atoms if facts and facts.group_class.value == group else frozenset()
 
 
 def _extract_aminos(info: dict, parent: dict, parent_nh2_kinds: set) -> list[dict]:
-    principal = _principal_amine_attachments(parent)
+    principal = _principal_attachments(parent, "amine")
     if parent.get("kind") in parent_nh2_kinds and not principal:
         return []
     chain_set = set(parent.get("chain") or [])

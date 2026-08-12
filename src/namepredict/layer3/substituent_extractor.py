@@ -4,7 +4,10 @@ from rdkit.Chem import Mol
 
 import namepredict.layer3.side_facts as side_facts
 from namepredict.cache.common_names import CommonNameCache
-from namepredict.layer3.amino_side import _extract_aminos as _extract_aminos_impl
+from namepredict.layer3.amino_side import (
+    _extract_aminos as _extract_aminos_impl,
+    _principal_attachments,
+)
 
 def _strip_ital_prefix(stem: str) -> str:
     if stem.startswith("tert-") or stem.startswith("sec-"):
@@ -140,10 +143,6 @@ def _make_oxo(attach: int) -> dict:
         "kind": "oxo", "attach_idx": attach, "atoms": [attach],
         "en": "oxo", "zh": "氧代",
     }
-
-def _principal_attachments(parent: dict, group: str) -> frozenset[int]:
-    facts = parent.get("principal_expression_facts")
-    return facts.attachment_atoms if facts and facts.group_class.value == group else frozenset()
 
 def _extract_hydroxys(info: dict, parent: dict) -> list[dict]:
     principal = _principal_attachments(parent, "alcohol")

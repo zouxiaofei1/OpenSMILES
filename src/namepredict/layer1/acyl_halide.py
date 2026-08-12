@@ -7,13 +7,9 @@ from namepredict.constants import Br, C, Cl, O
 from namepredict.layer1._carbonyl_common import (
     _alkoxy_c_of,
     _amide_n_of,
-    _amide_n_rest,
-    _amide_n_single,
-    _dbl_o_on,
+    _ester_alkoxy_of as _ester_alkoxy_of_common,
     _has_acid_o_neighbor,
     _has_double_bonded_o,
-    _is_carboxylate_o,
-    _is_single_c_oh,
 )
 
 # acyl halide detection only covers Cl/Br (P-65.5); F/I are not handled downstream
@@ -27,13 +23,7 @@ def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     return _alkoxy_c_of(oxygen, carbonyl) is not None
 
 def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
-    for n in carbon.GetNeighbors():
-        if not _is_ester_alkoxy_o(n, carbon):
-            continue
-        alkoxy = _alkoxy_c_of(n, carbon)
-        if alkoxy is not None:
-            return n.GetIdx(), alkoxy
-    return None
+    return _ester_alkoxy_of_common(carbon, _is_ester_alkoxy_o)
 
 def _acyl_hal_of(carbon) -> tuple[int, int] | None:
     """Return (hal_idx, hal_z) for Cl/Br neighbor; else None."""

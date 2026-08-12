@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
-from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology
+from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
 from namepredict.layer2.principal import PrincipalGroupSelection
 
 
@@ -57,10 +57,6 @@ _FIELDS = {
 def _covered(selection: PrincipalGroupSelection, skeleton: ParentSkeleton):
     ids = skeleton.covered_principal_ids
     return tuple(o for o in selection.occurrences if o.id in ids)
-
-
-def _anchors(occurrences) -> list[int]:
-    return sorted({a for occurrence in occurrences for a in occurrence.parent_anchors})
 
 
 def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
@@ -146,7 +142,7 @@ def _ring_ketone_kind(scaffold_id: str | None, selection, skeleton: ParentSkelet
         return None
     if scaffold_id is not None and scaffold_id not in {"cycloalkane", "cycloketone", "cycloalkanedione"}:
         return None
-    anchors = {i for o in selection.occurrences for i in o.parent_anchors}
+    anchors = set(_anchors(selection.occurrences))
     if not anchors or not anchors <= set(skeleton.atom_ids):
         return None
     return "cycloketone" if count == 1 else "cycloalkanedione" if count == 2 else None

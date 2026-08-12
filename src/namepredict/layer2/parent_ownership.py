@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.ring_parent import _dbl_o_idx
+from namepredict.layer2.ring_parent import _dbl_o_idx, _o_idx
 
 
 def _chain_atoms(parent: dict) -> set[int]:
@@ -34,14 +34,7 @@ def _amide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _single_o_idx(mol: Mol, c_idx: int) -> int | None:
-    carbon = mol.GetAtomWithIdx(c_idx)
-    for bond in carbon.GetBonds():
-        if bond.GetBondType().name != "SINGLE":
-            continue
-        other = bond.GetOtherAtom(carbon)
-        if other.GetAtomicNum() == 8:
-            return other.GetIdx()
-    return None
+    return _o_idx(mol, c_idx, "SINGLE")
 
 
 def _acid_o_atoms(mol: Mol, c_idx: int) -> set[int]:
@@ -79,28 +72,26 @@ def _ether_arm_atoms(mol: Mol, o_idx: int, c_idx: int) -> set[int]:
     return {c_idx, *_longest_from(mol, c_idx, {o_idx})}
 
 
+def _chalcogen_arm_fg(mol: Mol, parent: dict, kind: str, idx_field: str) -> set[int]:
+    """Chalcogen center + carbon arms (short arm not always in chain)."""
+    if parent.get("kind") != kind or parent.get(idx_field) is None:
+        return set()
+    center = int(parent[idx_field])
+    out = {center}
+    for n in mol.GetAtomWithIdx(center).GetNeighbors():
+        if n.GetAtomicNum() == 6:
+            out |= _ether_arm_atoms(mol, center, n.GetIdx())
+    return out
+
+
 def _ether_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     """Ether O + both carbon arms (short arm not always in chain)."""
-    if parent.get("kind") != "ether" or parent.get("o_idx") is None:
-        return set()
-    o_idx = int(parent["o_idx"])
-    out = {o_idx}
-    for n in mol.GetAtomWithIdx(o_idx).GetNeighbors():
-        if n.GetAtomicNum() == 6:
-            out |= _ether_arm_atoms(mol, o_idx, n.GetIdx())
-    return out
+    return _chalcogen_arm_fg(mol, parent, "ether", "o_idx")
 
 
 def _sulfide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     """Sulfide S + both carbon arms (short arm not always in chain)."""
-    if parent.get("kind") != "sulfide" or parent.get("s_idx") is None:
-        return set()
-    s_idx = int(parent["s_idx"])
-    out = {s_idx}
-    for n in mol.GetAtomWithIdx(s_idx).GetNeighbors():
-        if n.GetAtomicNum() == 6:
-            out |= _ether_arm_atoms(mol, s_idx, n.GetIdx())
-    return out
+    return _chalcogen_arm_fg(mol, parent, "sulfide", "s_idx")
 
 
 def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:

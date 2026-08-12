@@ -5,15 +5,13 @@ from rdkit.Chem import BondType, Mol
 from namepredict.constants import C, H, N, O, S
 from namepredict.layer1._carbonyl_common import (
     _alkoxy_c_of,
+    _amide_n_info,
     _amide_n_of,
-    _amide_n_rest,
-    _amide_n_single,
-    _dbl_o_on,
+    _ester_alkoxy_of as _ester_alkoxy_of_common,
     _has_acid_o_neighbor,
     _has_carboxylate_o_neighbor,
     _has_double_bonded_o,
     _is_anhydride_bridge_o,
-    _is_carboxylate_o,
     _is_single_c_oh,
 )
 
@@ -37,15 +35,6 @@ def _is_carboxyl_carbon(atom) -> bool:
 
 def _carbon_neighbor_count(atom) -> int:
     return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == C])
-
-def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
-    for n in carbon.GetNeighbors():
-        if n.GetAtomicNum() != N or not _amide_n_single(carbon, n):
-            continue
-        o = _amide_n_rest(n, carbon)
-        if len(o) <= 2 and all(x.GetAtomicNum() == C for x in o):
-            return n.GetIdx(), [x.GetIdx() for x in o]
-    return None
 
 def _is_amide_carbon(atom) -> bool:
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
@@ -129,13 +118,7 @@ def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     return _alkoxy_c_of(oxygen, carbonyl) is not None
 
 def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
-    for n in carbon.GetNeighbors():
-        if not _is_ester_alkoxy_o(n, carbon):
-            continue
-        alkoxy = _alkoxy_c_of(n, carbon)
-        if alkoxy is not None:
-            return n.GetIdx(), alkoxy
-    return None
+    return _ester_alkoxy_of_common(carbon, _is_ester_alkoxy_o)
 
 def _is_ester_carbon(atom) -> bool:
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
@@ -295,19 +278,14 @@ def _bond_entry(bond) -> dict:
     a, b = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
     return {"c1": min(a, b), "c2": max(a, b)}
 
+def _filter_bond_entries(mol: Mol, pred, entry_fn) -> list[dict]:
+    return [entry_fn(bond) for bond in mol.GetBonds() if pred(bond)]
+
 def _double_bond_entries(mol: Mol) -> list[dict]:
-    out: list[dict] = []
-    for bond in mol.GetBonds():
-        if _is_cc_double(bond):
-            out.append(_bond_entry(bond))
-    return out
+    return _filter_bond_entries(mol, _is_cc_double, _bond_entry)
 
 def _triple_bond_entries(mol: Mol) -> list[dict]:
-    out: list[dict] = []
-    for bond in mol.GetBonds():
-        if _is_cc_triple(bond):
-            out.append(_bond_entry(bond))
-    return out
+    return _filter_bond_entries(mol, _is_cc_triple, _bond_entry)
 
 def _is_cn_triple(bond) -> bool:
     if bond.GetBondType() != BondType.TRIPLE:
@@ -322,11 +300,7 @@ def _nitrile_entry(bond) -> dict:
     return {"c_idx": c.GetIdx(), "n_idx": n.GetIdx()}
 
 def _nitrile_entries(mol: Mol) -> list[dict]:
-    out: list[dict] = []
-    for bond in mol.GetBonds():
-        if _is_cn_triple(bond):
-            out.append(_nitrile_entry(bond))
-    return out
+    return _filter_bond_entries(mol, _is_cn_triple, _nitrile_entry)
 
 def _ring_entry(atom_ids: tuple) -> dict:
     return {"atom_ids": atom_ids}

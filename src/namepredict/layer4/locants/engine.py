@@ -5,6 +5,7 @@ from namepredict.layer4.locants.constraints import (
     constraint_key,
     constraints_applied,
 )
+from namepredict.layer4._chain_orient import _argmin
 from namepredict.layer4.locants.generate import candidates_for, labels_for
 from namepredict.layer4.locants.plan import NumberingPlan, make_plan
 
@@ -32,13 +33,9 @@ def _best_candidate(
     hetero_atoms=None,
     hetero_z=None,
 ) -> list[int]:
-    best = cands[0]
-    best_k = _key(best, mode, double_bonds, sub_attach, hetero_atoms, hetero_z)
-    for cand in cands[1:]:
-        k = _key(cand, mode, double_bonds, sub_attach, hetero_atoms, hetero_z)
-        if k < best_k:
-            best, best_k = cand, k
-    return best
+    return _argmin(
+        cands, lambda c: _key(c, mode, double_bonds, sub_attach, hetero_atoms, hetero_z),
+    )
 
 
 def _to_plan(

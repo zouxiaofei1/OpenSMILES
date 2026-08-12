@@ -27,10 +27,9 @@ def _arene_yl_from_sub(
     from rdkit import Chem
 
     mol_sub = sub.mol
+    from namepredict.layer3.aryl_sub import _is_arom_c6
     if not any(
-        len(r) == 6 and sub.attach_new in r
-        and all(mol_sub.GetAtomWithIdx(i).GetIsAromatic()
-                and mol_sub.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in r)
+        len(r) == 6 and sub.attach_new in r and _is_arom_c6(mol_sub, r)
         for r in mol_sub.GetRingInfo().AtomRings()
     ):
         return None
