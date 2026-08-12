@@ -103,10 +103,6 @@ def _result_entry(row: dict[str, Any], score: dict[str, Any], pred_en: str, pred
     }
 
 
-def _fail_entry(row: dict[str, Any], score: dict[str, Any], pred_en: str, pred_zh: str) -> dict:
-    return _result_entry(row, score, pred_en, pred_zh)
-
-
 def _score_one(namer: SMILESNNamer, row: dict[str, Any]) -> tuple[dict, str, str]:
     result = namer.name(str(row.get("smiles") or ""))
     pred_en, pred_zh = result.en or "", result.zh or ""

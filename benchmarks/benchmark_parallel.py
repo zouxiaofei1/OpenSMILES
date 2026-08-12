@@ -30,7 +30,6 @@ if _src_str not in sys.path:
 from benchmarks.benchmark import (  # noqa: E402
     _SNAPSHOT_PATH,
     _empty_bucket,
-    _fail_entry,
     _finalize,
     _handle_report,
     _is_fail,

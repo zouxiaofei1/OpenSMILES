@@ -3,6 +3,19 @@ from __future__ import annotations
 from rdkit.Chem import BondType, Mol
 
 from namepredict.constants import C, H, N, O, S
+from namepredict.layer1._carbonyl_common import (
+    _alkoxy_c_of,
+    _amide_n_of,
+    _amide_n_rest,
+    _amide_n_single,
+    _dbl_o_on,
+    _has_acid_o_neighbor,
+    _has_carboxylate_o_neighbor,
+    _has_double_bonded_o,
+    _is_anhydride_bridge_o,
+    _is_carboxylate_o,
+    _is_single_c_oh,
+)
 
 _FG_BOOL_MORE_KEYS = (
     ("has_aldehyde", "aldehydes"), ("has_amine", "amines"),
@@ -12,34 +25,6 @@ _FG_BOOL_MORE_KEYS = (
     ("has_ether", "ethers"), ("has_sulfide", "sulfides"), ("has_nitro", "nitros"),
     ("has_isocyanate", "isocyanates"), ("has_isothiocyanate", "isothiocyanates"),
 )
-
-def _is_single_c_oh(atom) -> bool:
-    if atom.GetAtomicNum() != O or atom.GetTotalNumHs() < 1:
-        return False
-    return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == C]) == 1
-
-def _dbl_o_on(bond, carbon) -> bool:
-    if bond.GetBondType() != BondType.DOUBLE:
-        return False
-    return bond.GetOtherAtom(carbon).GetAtomicNum() == O
-
-def _has_double_bonded_o(carbon) -> bool:
-    return any(_dbl_o_on(b, carbon) for b in carbon.GetBonds())
-
-def _has_oh_neighbor(carbon) -> bool:
-    return any(_is_single_c_oh(n) for n in carbon.GetNeighbors())
-
-def _is_carboxylate_o(atom) -> bool:
-    """Single-bonded O- on a carboxylate (C(=O)[O-])."""
-    if atom.GetAtomicNum() != O or atom.GetFormalCharge() != -1:
-        return False
-    return atom.GetTotalDegree() == 1 and atom.GetTotalNumHs() == 0
-
-def _has_carboxylate_o_neighbor(carbon) -> bool:
-    return any(_is_carboxylate_o(n) for n in carbon.GetNeighbors())
-
-def _has_acid_o_neighbor(carbon) -> bool:
-    return _has_oh_neighbor(carbon) or _has_carboxylate_o_neighbor(carbon)
 
 def _acyl_hal_of(carbon) -> tuple[int, int] | None:
     from namepredict.layer1.acyl_halide import acyl_hal_of
@@ -53,14 +38,6 @@ def _is_carboxyl_carbon(atom) -> bool:
 def _carbon_neighbor_count(atom) -> int:
     return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == C])
 
-def _amide_n_rest(n, carbon) -> list:
-    return [x for x in n.GetNeighbors()
-            if x.GetAtomicNum() != H and x.GetIdx() != carbon.GetIdx()]
-
-def _amide_n_single(carbon, n) -> bool:
-    b = carbon.GetOwningMol().GetBondBetweenAtoms(carbon.GetIdx(), n.GetIdx())
-    return b is not None and b.GetBondType() == BondType.SINGLE
-
 def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
     for n in carbon.GetNeighbors():
         if n.GetAtomicNum() != N or not _amide_n_single(carbon, n):
@@ -70,16 +47,12 @@ def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
             return n.GetIdx(), [x.GetIdx() for x in o]
     return None
 
-def _amide_n_of(carbon) -> int | None:
-    info = _amide_n_info(carbon)
-    return info[0] if info else None
-
 def _is_amide_carbon(atom) -> bool:
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
         return False
-    return _amide_n_info(atom) is not None and not None
+    return _amide_n_info(atom) is not None
 
 def _is_ketone_carbon(atom) -> bool:
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
@@ -87,20 +60,6 @@ def _is_ketone_carbon(atom) -> bool:
     if _has_acid_o_neighbor(atom) or _carbon_neighbor_count(atom) != 2:
         return False
     return _amide_n_of(atom) is None and _anhydride_o_of(atom) is None
-
-def _alkoxy_c_of(oxygen, carbonyl) -> int | None:
-    for n in oxygen.GetNeighbors():
-        if n.GetAtomicNum() == C and n.GetIdx() != carbonyl.GetIdx():
-            return n.GetIdx()
-    return None
-
-def _is_anhydride_bridge_o(oxygen) -> bool:
-    if oxygen.GetAtomicNum() != O or oxygen.GetTotalNumHs() != 0:
-        return False
-    cs = [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() == C]
-    if len(cs) != 2:
-        return False
-    return all(_has_double_bonded_o(c) and not _has_acid_o_neighbor(c) for c in cs)
 
 def _anhydride_o_of(carbon) -> int | None:
     for n in carbon.GetNeighbors():
@@ -183,7 +142,7 @@ def _is_ester_carbon(atom) -> bool:
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is None:
         return False
-    return not None 
+    return True
 
 def _ald_blocked(atom) -> bool:
     if _ester_alkoxy_of(atom) is not None or _acyl_hal_of(atom) is not None:
@@ -202,7 +161,7 @@ def _is_aldehyde_carbon(atom) -> bool:
 def _is_hydroxyl_oxygen(atom) -> bool:
     if not _is_single_c_oh(atom):
         return False
-    if None or _is_carboxyl_carbon(_carbon_neighbor(atom)):
+    if _is_carboxyl_carbon(_carbon_neighbor(atom)):
         return False
     return True
 
@@ -227,7 +186,7 @@ def _thiol_entries(mol: Mol) -> list[dict]:
 
 def _is_amide_n(atom) -> bool:
     """True for amide/urea/guanidine N (not amine parent)."""
-    return any(n.GetAtomicNum() == C and (_has_double_bonded_o(n) or None)
+    return any(n.GetAtomicNum() == C and _has_double_bonded_o(n)
                for n in atom.GetNeighbors())
 
 def _amine_degree(atom) -> int | None:

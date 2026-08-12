@@ -1,7 +1,12 @@
 """Orient sat_hetero* chains: plain, carboxylic, lactone/lactam, repl (L4)."""
 from __future__ import annotations
 
-from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+from namepredict.layer4._chain_orient import (
+    _pair_locants,
+    _rotate_to,
+    _stem_loc_pairs,
+    _sub_locants,
+)
 from namepredict.layer4.locants.engine import choose_numbering
 
 
@@ -27,30 +32,9 @@ SAT_HETERO_PLAIN = (
 )
 
 
-def _rotate(chain: list[int], atom: int) -> list[int]:
-    i = chain.index(atom)
-    return chain[i:] + chain[:i]
-
-
-def _loc_key(chain: list[int], subs: list) -> tuple:
-    locs = sorted(
-        chain.index(s["attach_idx"]) + 1
-        for s in subs if s.get("attach_idx") in chain
-    )
-    return tuple(locs)
-
-
-def _stem_pairs(chain: list[int], subs: list) -> list[tuple]:
-    """Alpha stem + attach locant pairs (≈ numbering._orient_key secondary)."""
-    return sorted(
-        (alkyl_alpha_key(s.get("en") or ""), chain.index(s["attach_idx"]) + 1)
-        for s in subs if s.get("attach_idx") in chain
-    )
-
-
 def _orient_key(chain: list[int], subs: list) -> tuple:
     """Locant set first, then stem-alpha pairs when sets tie (P-14.5)."""
-    return (_loc_key(chain, subs), _stem_pairs(chain, subs))
+    return (tuple(_sub_locants(chain, subs)), _stem_loc_pairs(chain, subs))
 
 
 def _attach_loc(chain: list[int], attach: int | None) -> int:
@@ -75,15 +59,8 @@ def _fixed(
 ) -> list[int]:
     if atom is None or atom not in chain:
         return chain
-    base, rev = _rotate(chain, atom), _rotate(list(reversed(chain)), atom)
+    base, rev = _rotate_to(chain, atom), _rotate_to(list(reversed(chain)), atom)
     return _prefer(base, rev, subs, attach)
-
-
-def _pair_locs(chain: list[int], cs) -> tuple[int, ...] | None:
-    if not cs:
-        return None
-    locs = sorted(chain.index(c) + 1 for c in cs if c in chain)
-    return tuple(locs) if len(locs) == len(cs) else None
 
 
 def _ring_cands(chain: list[int]) -> list[list[int]]:
@@ -96,9 +73,9 @@ def _ring_cands(chain: list[int]) -> list[list[int]]:
 
 
 def _orient_pair(chain: list[int], cs, subs: list) -> list[int]:
-    best, best_locs = chain, _pair_locs(chain, cs)
+    best, best_locs = chain, _pair_locants(chain, cs)
     for cand in _ring_cands(chain):
-        locs = _pair_locs(cand, cs)
+        locs = _pair_locants(cand, cs)
         if locs is None:
             continue
         if best_locs is None or locs < best_locs:

@@ -96,7 +96,6 @@ def _typed_expression_kind(kind: str, numbered: dict) -> str:
     return _typed_amine_kind(kind, numbered)
 def _with_ez(pair: tuple[str, str] | None, numbered: dict) -> tuple[str, str] | None:
     if pair is None: return None
-    from namepredict.layer5.stereo_ez import ez_for_parent
     ez = ez_for_parent(numbered)
     return f"{ez}{pair[0]}", f"{ez}{pair[1]}"
 

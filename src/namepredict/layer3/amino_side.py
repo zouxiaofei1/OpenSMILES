@@ -1,8 +1,6 @@
 """Secondary amino substituents on non-amine parents (e.g. N-benzyl on ethanol)."""
 from __future__ import annotations
 
-from rdkit.Chem import Mol
-
 
 def _make_amino(attach: int, n_idx: int, en: str = "amino", zh: str = "氨基",
                 atoms: list[int] | None = None, paren: bool = False) -> dict:
@@ -13,39 +11,10 @@ def _make_amino(attach: int, n_idx: int, en: str = "amino", zh: str = "氨基",
     }
 
 
-def _n_aryl_named(mol: Mol, start: int, n_idx: int, is_ch2: bool, owned):
-    return None
-
-
-
-def _sec_n_side_name(mol: Mol, start: int, n_idx: int, owned):
-    return _n_aryl_named(mol, start, n_idx, True, owned) or _n_aryl_named(mol, start, n_idx, False, owned)
-
-
-def _sec_on_off(a: dict, chain_set: set[int]) -> tuple[int, int] | None:
-    cs = a.get("c_idxs") or []
-    if a.get("degree") != 2 or len(cs) != 2:
-        return None
-    on = [c for c in cs if c in chain_set]
-    off = [c for c in cs if c not in chain_set]
-    return (on[0], off[0]) if len(on) == 1 and len(off) == 1 else None
-
-
-def _sec_amino_off_chain(mol: Mol, a: dict, chain_set: set[int], owned) -> dict | None:
-    pair = _sec_on_off(a, chain_set)
-    if pair is None:
-        return None
-    named = _sec_n_side_name(mol, pair[1], a["n_idx"], owned)
-    if named is None:
-        return None
-    en, zh, atoms = named
-    return _make_amino(pair[0], a["n_idx"], en, zh, atoms, True)
-
-
 def _one_amino(info: dict, a: dict, chain_set: set[int], owned) -> dict | None:
     if "c_idx" in a and a["c_idx"] in chain_set:
         return _make_amino(a["c_idx"], a["n_idx"])
-    return _sec_amino_off_chain(info["mol"], a, chain_set, owned)
+    return None
 
 
 def _principal_amine_attachments(parent: dict) -> frozenset[int]:

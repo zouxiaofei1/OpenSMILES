@@ -13,14 +13,6 @@ from __future__ import annotations
 from namepredict.layer2 import kind_registry as _kr
 from namepredict.layer2.parent_candidate import principal_key, with_principal_group_contract
 
-# Thin frozenset wrappers derived from registry (compat / external imports).
-_FG_RANK = {
-    k: _kr.fg_rank(k) for k in _kr.all_kinds() if _kr.fg_rank(k)
-}
-_HETERO_RING = frozenset(k for k in _kr.all_kinds() if _kr.is_hetero_ring(k))
-_CARBO_RING = frozenset(k for k in _kr.all_kinds() if _kr.is_carbo_ring(k))
-_RETAINED = frozenset(k for k in _kr.all_kinds() if _kr.retained_bonus(k))
-
 def _n_unhandled(parent: dict) -> int:
     return int(parent.get("n_unhandled") or 0)
 

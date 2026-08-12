@@ -90,12 +90,13 @@ def _monohetero(
 
 
 def _mono_carbo(
-    sid: str, stem_en: str, stem_zh: str, *, mode: str = "fixed_roles",
+    sid: str, stem_en: str, stem_zh: str, *,
+    mode: str = "fixed_roles", fg_rank: int = 0, retained: bool = True,
 ) -> ScaffoldSpec:
     pol = NumberingPolicy(mode=mode)
     return ScaffoldSpec(
         id=sid, naming_class="mono_carbo", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=1, ring="carbo", retained=True, fg_rank=0, numbering=pol,
+        n_rings=1, ring="carbo", retained=retained, fg_rank=fg_rank, numbering=pol,
     )
 
 
@@ -198,25 +199,14 @@ MONO_HETERO_SPECS: tuple[ScaffoldSpec, ...] = (
     _monohetero("thiolane", "thiolane", "硫杂环戊烷"),
 )
 
-def _mono_carbo_fg(
-    sid: str, stem_en: str, stem_zh: str, *, fg_rank: int, retained: bool = False,
-) -> ScaffoldSpec:
-    pol = NumberingPolicy(mode="fixed_roles")
-    return ScaffoldSpec(
-        id=sid, naming_class="mono_carbo", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=1, ring="carbo", retained=retained, fg_rank=fg_rank,
-        numbering=pol,
-    )
-
-
 # Mono / linear polycyclic carbo retained (benzene, anthracene).
 MONO_CARBO_SPECS: tuple[ScaffoldSpec, ...] = (
     _mono_carbo("benzene", "benzene", "苯"),
-    _mono_carbo_fg(
+    _mono_carbo(
         "benzoquinone", "cyclohexa-2,5-diene-1,4-dione", "环己-2,5-二烯-1,4-二酮",
         fg_rank=6, retained=False,
     ),
-    _mono_carbo_fg(
+    _mono_carbo(
         "ortho_benzoquinone", "cyclohexa-3,5-diene-1,2-dione", "环己-3,5-二烯-1,2-二酮",
         fg_rank=6, retained=False,
     ),
@@ -275,17 +265,17 @@ def numbering_scaffold_facts(spec_id: str | None, atom_count: int) -> dict | Non
 
 def fused56_kind_ids() -> frozenset[str]:
     """Kind / scaffold ids that use fused56 1…7a labels."""
-    return frozenset(s.id for s in FUSED56_SPECS)
+    return kind_ids_for("fused56")
 
 
 def naph_kind_ids() -> frozenset[str]:
     """Kind / scaffold ids that use naph 1…8a labels."""
-    return frozenset(s.id for s in NAPH_FAMILY_SPECS)
+    return kind_ids_for("naph_family")
 
 
 def monohetero_kind_ids() -> frozenset[str]:
     """Kind / scaffold ids for mono-hetero retained scaffolds."""
-    return frozenset(s.id for s in MONO_HETERO_SPECS)
+    return kind_ids_for("monohetero")
 
 
 def kind_ids_for(naming_class: str) -> frozenset[str]:

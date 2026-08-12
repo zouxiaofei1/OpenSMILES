@@ -1,41 +1,23 @@
 """L1 detection of acyl halide R–C(=O)–X (X = Cl/Br) per IUPAC P-65.5."""
 from __future__ import annotations
 
-from rdkit.Chem import BondType, Mol
+from rdkit.Chem import Mol
 
-from namepredict.constants import Br, C, Cl, H, N, O
+from namepredict.constants import Br, C, Cl, O
+from namepredict.layer1._carbonyl_common import (
+    _alkoxy_c_of,
+    _amide_n_of,
+    _amide_n_rest,
+    _amide_n_single,
+    _dbl_o_on,
+    _has_acid_o_neighbor,
+    _has_double_bonded_o,
+    _is_carboxylate_o,
+    _is_single_c_oh,
+)
 
 # acyl halide detection only covers Cl/Br (P-65.5); F/I are not handled downstream
 _HAL_Z = frozenset({Cl, Br})
-
-def _dbl_o_on(bond, carbon) -> bool:
-    if bond.GetBondType() != BondType.DOUBLE:
-        return False
-    return bond.GetOtherAtom(carbon).GetAtomicNum() == O
-
-def _has_double_bonded_o(carbon) -> bool:
-    return any(_dbl_o_on(b, carbon) for b in carbon.GetBonds())
-
-def _is_single_c_oh(atom) -> bool:
-    if atom.GetAtomicNum() != O or atom.GetTotalNumHs() < 1:
-        return False
-    return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == C]) == 1
-
-def _is_carboxylate_o(atom) -> bool:
-    if atom.GetAtomicNum() != O or atom.GetFormalCharge() != -1:
-        return False
-    return atom.GetTotalDegree() == 1 and atom.GetTotalNumHs() == 0
-
-def _has_acid_o_neighbor(carbon) -> bool:
-    return any(
-        _is_single_c_oh(n) or _is_carboxylate_o(n) for n in carbon.GetNeighbors()
-    )
-
-def _alkoxy_c_of(oxygen, carbonyl) -> int | None:
-    for n in oxygen.GetNeighbors():
-        if n.GetAtomicNum() == C and n.GetIdx() != carbonyl.GetIdx():
-            return n.GetIdx()
-    return None
 
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     if oxygen.GetAtomicNum() != O or oxygen.GetTotalNumHs() != 0:
@@ -51,25 +33,6 @@ def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
         alkoxy = _alkoxy_c_of(n, carbon)
         if alkoxy is not None:
             return n.GetIdx(), alkoxy
-    return None
-
-def _amide_n_rest(n, carbon) -> list:
-    return [
-        x for x in n.GetNeighbors()
-        if x.GetAtomicNum() != H and x.GetIdx() != carbon.GetIdx()
-    ]
-
-def _amide_n_single(carbon, n) -> bool:
-    b = carbon.GetOwningMol().GetBondBetweenAtoms(carbon.GetIdx(), n.GetIdx())
-    return b is not None and b.GetBondType() == BondType.SINGLE
-
-def _amide_n_of(carbon) -> int | None:
-    for n in carbon.GetNeighbors():
-        if n.GetAtomicNum() != N or not _amide_n_single(carbon, n):
-            continue
-        o = _amide_n_rest(n, carbon)
-        if len(o) <= 2 and all(x.GetAtomicNum() == C for x in o):
-            return n.GetIdx()
     return None
 
 def _acyl_hal_of(carbon) -> tuple[int, int] | None:

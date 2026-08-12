@@ -64,17 +64,8 @@ class RetainedBackend:
 
 
 def _rooted_tree_name(mol, claim: ClaimedBlock) -> SubstituentName | None:
-    from namepredict.layer3.side_alkyl_sys import build_rooted_alkyl_tree
-
-
-    tree = build_rooted_alkyl_tree(mol, root=claim.root, atoms=claim.atoms)
-    hit = None 
-    if hit is None or not hit[0] or not hit[1]:
-        return None
-    en, zh, paren = hit
-    return SubstituentName(
-        claim=claim, en=en, zh=zh, requires_parentheses=paren, backend="rooted_tree",
-    )
+    # 占位桩：rooted-tree 系统命名尚未实现，恒返回 None（由 retained/recursive 后端承担）。
+    return None
 
 
 class RootedTreeBackend:

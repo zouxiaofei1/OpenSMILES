@@ -2,20 +2,11 @@
 from __future__ import annotations
 
 from namepredict.constants import MULT_EN, MULT_ZH
+from namepredict.layer5._stereo_common import _split_stereo_lead as _stereo_lead
 
 def benzene_prefix(numbered: dict, build_prefix) -> tuple[str, str]:
     en_pre, zh_pre = build_prefix(numbered.get("substituents") or [], 6, "benzene")
     return  (en_pre, zh_pre)
-
-
-def _stereo_lead(parent: str) -> tuple[str, str]:
-    """Split leading stereo '(E)-' / '(9Z,11E)-' from parent stem."""
-    if not parent.startswith("("):
-        return "", parent
-    close = parent.find(")-")
-    if close < 0:
-        return "", parent
-    return parent[: close + 2], parent[close + 2 :]
 
 
 def join_parent_name(prefix: str, parent: str) -> str:

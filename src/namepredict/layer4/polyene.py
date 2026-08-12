@@ -1,43 +1,19 @@
 """Polyene orientation and multi-ene locants (P-31.1)."""
 from __future__ import annotations
 
-
-def _pair_ends(chain: list[int], pair) -> tuple[int, int] | None:
-    if not pair or pair[0] not in chain or pair[1] not in chain:
-        return None
-    return chain.index(pair[0]) + 1, chain.index(pair[1]) + 1
-
-
-def _min_loc(chain: list[int], pair) -> int | None:
-    ends = _pair_ends(chain, pair)
-    return min(ends) if ends else None
-
-
-def _bond_min_locs(chain: list[int], bonds) -> tuple[int, ...] | None:
-    if not bonds:
-        return None
-    locs = [_min_loc(chain, b) for b in bonds]
-    if any(x is None for x in locs):
-        return None
-    return tuple(sorted(int(x) for x in locs))
-
-
-def _prefer(a: list[int], b: list[int], bonds, subs: list, prefer_fn) -> list[int]:
-    la, lb = _bond_min_locs(a, bonds), _bond_min_locs(b, bonds)
-    if la is None:
-        return b
-    if lb is None or la < lb:
-        return a
-    if lb < la:
-        return b
-    return prefer_fn(a, b, subs)
+from namepredict.layer4._chain_orient import (
+    _bond_min_locs,
+    _chain_pos,
+    _prefer_lowest_bond_locs,
+    _rotate_to,
+)
 
 
 def orient_polyene(chain: list[int], parent: dict, subs: list, prefer_fn) -> list[int]:
     bonds = parent.get("double_bonds") or []
     if not bonds:
         return chain
-    return _prefer(chain, list(reversed(chain)), bonds, subs, prefer_fn)
+    return _prefer_lowest_bond_locs(chain, list(reversed(chain)), bonds, subs, prefer_fn)
 
 
 def orient_alkenedioic(chain, parent, subs, prefer_fn, mono_fn):
@@ -71,17 +47,13 @@ def orient_alkenol(chain: list[int], parent: dict, subs: list, prefer_fn) -> lis
     return picked if picked is not None else orient_polyene(chain, parent, subs, prefer_fn)
 
 
-def _fg_pos(chain: list[int], c: int | None) -> int | None:
-    return None if c is None or c not in chain else chain.index(c) + 1
-
-
 def prefer_unsat_if_fg_tie(base, parent, subs, fg_key, prefer_ene_fn):
     """When FG locant ties both ways, prefer lower ene/yne locant (P-31.1)."""
     ends = parent.get("double_bond") or parent.get("triple_bond")
     if not ends:
         return base
     rev = list(reversed(base))
-    if _fg_pos(base, parent.get(fg_key)) != _fg_pos(rev, parent.get(fg_key)):
+    if _chain_pos(base, parent.get(fg_key)) != _chain_pos(rev, parent.get(fg_key)):
         return base
     return prefer_ene_fn(base, rev, ends, subs)
 
@@ -96,13 +68,6 @@ def orient_cyclopolyene(chain: list[int], parent: dict, subs: list) -> list[int]
         scaffold_id="cyclopolyene",
     )
     return list(plan.atom_order) if plan.atom_order else chain
-
-
-def _rotate_to(chain: list[int], atom: int) -> list[int]:
-    if atom not in chain:
-        return chain
-    i = chain.index(atom)
-    return chain[i:] + chain[:i]
 
 
 def _ene_base_from(chain: list[int], a: int, b: int) -> list[int] | None:

@@ -49,7 +49,7 @@ def normalize_en(name: str) -> str:
     s = (name or "").strip().lower()
     s = s.replace("–", "-").replace("—", "-")
     s = _WS.sub(" ", s)
-    s = s.replace(" ,", ",").replace(" ,", ",")
+    s = s.replace(" ,", ",")
     return s
 
 

@@ -152,21 +152,16 @@ def _normalize_substituents(raw: dict[str, Any]) -> dict[str, int]:
     out: dict[str, int] = {}
     for k, v in raw.items():
         k = k.strip().lower()
-        if k in _ALLOWED_SUBSTITUENTS:
-            try:
-                out[k] = int(v)
-            except (ValueError, TypeError):
-                out[k] = 1
-        else:
-            # Try fuzzy: case-insensitive match
-            match = next((a for a in _ALLOWED_SUBSTITUENTS if a.lower() == k), None)
-            if match:
-                try:
-                    out[match] = int(v)
-                except (ValueError, TypeError):
-                    out[match] = 1
-            else:
-                print(f"  [WARN] Unknown substituent '{k}' discarded", file=sys.stderr)
+        canonical = k if k in _ALLOWED_SUBSTITUENTS else next(
+            (a for a in _ALLOWED_SUBSTITUENTS if a.lower() == k), None
+        )
+        if canonical is None:
+            print(f"  [WARN] Unknown substituent '{k}' discarded", file=sys.stderr)
+            continue
+        try:
+            out[canonical] = int(v)
+        except (ValueError, TypeError):
+            out[canonical] = 1
     return out
 
 

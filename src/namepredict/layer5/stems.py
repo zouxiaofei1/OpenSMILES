@@ -6,6 +6,8 @@ IUPAC P-14.2.1 / P-21 (icos- preferred over eicos-).
 
 from __future__ import annotations
 
+from namepredict.constants import MULT_EN, MULT_ZH
+
 # --- C1–C10 retained / systematic base (byte-compatible) ---
 _ALKANE_EN_BASE = {
     1: "methane", 2: "ethane", 3: "propane", 4: "butane", 5: "pentane",
@@ -97,69 +99,54 @@ def alcohol_zh(n: int) -> str | None:
     return f"{z}醇" if z else None
 
 
-def acid_en(n: int) -> str | None:
+def _en_retained(n: int, one: str, two: str, suffix: str) -> str | None:
     if n == 1:
-        return "formic acid"
+        return one
     if n == 2:
-        return "acetic acid"
+        return two
     s = _en_stem(n)
-    return f"{s}anoic acid" if s else None
+    return f"{s}{suffix}" if s else None
+
+
+def _zh_suffixed(n: int, suffix: str) -> str | None:
+    z = zh_num(n)
+    return f"{z}{suffix}" if z else None
+
+
+def acid_en(n: int) -> str | None:
+    return _en_retained(n, "formic acid", "acetic acid", "anoic acid")
 
 
 def acid_zh(n: int) -> str | None:
-    z = zh_num(n)
-    return f"{z}酸" if z else None
+    return _zh_suffixed(n, "酸")
 
 
 def aldehyde_en(n: int) -> str | None:
-    if n == 1:
-        return "formaldehyde"
-    if n == 2:
-        return "acetaldehyde"
-    s = _en_stem(n)
-    return f"{s}anal" if s else None
+    return _en_retained(n, "formaldehyde", "acetaldehyde", "anal")
 
 
 def aldehyde_zh(n: int) -> str | None:
-    z = zh_num(n)
-    return f"{z}醛" if z else None
+    return _zh_suffixed(n, "醛")
 
 
 def amide_en(n: int) -> str | None:
-    if n == 1:
-        return "formamide"
-    if n == 2:
-        return "acetamide"
-    s = _en_stem(n)
-    return f"{s}anamide" if s else None
+    return _en_retained(n, "formamide", "acetamide", "anamide")
 
 
 def amide_zh(n: int) -> str | None:
-    z = zh_num(n)
-    return f"{z}酰胺" if z else None
+    return _zh_suffixed(n, "酰胺")
 
 
 def nitrile_en(n: int) -> str | None:
-    if n == 1:
-        return "formonitrile"
-    if n == 2:
-        return "acetonitrile"
-    s = _en_stem(n)
-    return f"{s}anenitrile" if s else None
+    return _en_retained(n, "formonitrile", "acetonitrile", "anenitrile")
 
 
 def nitrile_zh(n: int) -> str | None:
-    z = zh_num(n)
-    return f"{z}腈" if z else None
+    return _zh_suffixed(n, "腈")
 
 
 def ester_acyl_en(n: int) -> str | None:
-    if n == 1:
-        return "formate"
-    if n == 2:
-        return "acetate"
-    s = _en_stem(n)
-    return f"{s}anoate" if s else None
+    return _en_retained(n, "formate", "acetate", "anoate")
 
 
 def acid_to_anion_en(en: str) -> str:
@@ -182,24 +169,21 @@ def maybe_anion_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     return acid_to_anion_en(en), acid_to_anion_zh(zh)
 
 
-def _metal_en_prefix(salt: dict) -> str | None:
-    metal, n = salt.get("metal"), salt.get("n_metal") or 0
+def _metal_prefix(metal: str | None, n: int, mult: dict) -> str | None:
     if not metal or n < 1:
         return None
     if n == 1:
         return metal
-    mult = {2: "di", 3: "tri", 4: "tetra"}.get(n)
-    return f"{mult}{metal}" if mult else None
+    m = mult.get(n)
+    return f"{m}{metal}" if m else None
+
+
+def _metal_en_prefix(salt: dict) -> str | None:
+    return _metal_prefix(salt.get("metal"), salt.get("n_metal") or 0, MULT_EN)
 
 
 def _metal_zh_suffix(salt: dict) -> str | None:
-    zh_m, n = salt.get("metal_zh"), salt.get("n_metal") or 0
-    if not zh_m or n < 1:
-        return None
-    if n == 1:
-        return zh_m
-    mult = {2: "二", 3: "三", 4: "四"}.get(n)
-    return f"{mult}{zh_m}" if mult else None
+    return _metal_prefix(salt.get("metal_zh"), salt.get("n_metal") or 0, MULT_ZH)
 
 
 def _salt_en(en: str, salt: dict) -> str:

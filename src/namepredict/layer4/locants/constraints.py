@@ -19,13 +19,13 @@ def _pos(order: tuple[int, ...] | list[int], atom: int) -> int | None:
         return None
 
 
-def _sub_loc_set(
+def _loc_set(
     order: tuple[int, ...] | list[int],
-    sub_attach: list[int] | None,
+    atoms: list[int] | None,
 ) -> tuple[int, ...]:
-    if not sub_attach:
+    if not atoms:
         return ()
-    locs = [_pos(order, a) for a in sub_attach]
+    locs = [_pos(order, a) for a in atoms]
     if any(x is None for x in locs):
         return (999,)
     return tuple(sorted(int(x) for x in locs))
@@ -64,19 +64,6 @@ def _stable_tie(order: tuple[int, ...] | list[int]) -> tuple:
     """Prefer original direction (smaller first atom, then tuple order)."""
     o = tuple(order)
     return (o[0] if o else 0, o)
-
-
-def _hetero_loc_set(
-    order: tuple[int, ...] | list[int],
-    hetero_atoms: list[int] | None,
-) -> tuple[int, ...]:
-    """Sorted locants of hetero atoms (lowest set wins)."""
-    if not hetero_atoms:
-        return ()
-    locs = [_pos(order, a) for a in hetero_atoms]
-    if any(x is None for x in locs):
-        return (999,)
-    return tuple(sorted(int(x) for x in locs))
 
 
 def _z_of(
@@ -135,9 +122,9 @@ def _multi_hetero_key(
 ) -> tuple:
     """hetero set → element priority → sub set → stable."""
     return (
-        _hetero_loc_set(order, hetero_atoms),
+        _loc_set(order, hetero_atoms),
         _elem_rank_key(order, hetero_atoms, hetero_z),
-        _sub_loc_set(order, sub_attach),
+        _loc_set(order, sub_attach),
         _stable_tie(order),
     )
 
@@ -161,12 +148,12 @@ def constraint_key(
 
 
 def _carbo_or_poly_key(order, mode, double_bonds, sub_attach) -> tuple:
-    subs = _sub_loc_set(order, sub_attach)
+    subs = _loc_set(order, sub_attach)
     stable = _stable_tie(order)
     if mode == "poly_unsat":
         return (_ene_loc_set(order, double_bonds), subs, stable)
     if mode == "polyacid":
-        return (_sub_loc_set(order, double_bonds), subs, stable)
+        return (_loc_set(order, double_bonds), subs, stable)
     return (subs, stable)
 
 

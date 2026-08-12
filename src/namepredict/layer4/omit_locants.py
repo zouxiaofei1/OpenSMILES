@@ -18,8 +18,8 @@ def omit_oh(
 ) -> bool:
     if _keep_cyclo_ene_fg(kind, "cycloalcohol", parent, has_ene):
         return False
-    if _omit_cyclo_fg(kind, "cycloalcohol", n_subs) or kind == "cycloalcohol":
-        return kind == "cycloalcohol" and n_subs == 0
+    if kind == "cycloalcohol":
+        return n_subs == 0
     if kind == "alcohol" and parent and (
         (has_ene and has_ene(parent)) or (has_yne and has_yne(parent))
     ):

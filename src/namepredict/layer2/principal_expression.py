@@ -124,19 +124,6 @@ _RETAINED_RING_KINDS = {
     FunctionalGroupClass.ALCOHOL: "phenol",
     FunctionalGroupClass.AMINE: "aniline",
 }
-_RING_FIELDS = {
-    FunctionalGroupClass.RADICAL: ("radical_c_idx", "radical_c_idxs"),
-    FunctionalGroupClass.ACID: ("cooh_c_idx", "cooh_c_idxs"),
-    FunctionalGroupClass.ESTER: ("ester_c_idx", "ester_c_idxs"),
-    FunctionalGroupClass.KETONE: ("ketone_c_idx", "ketone_c_idxs"),
-    FunctionalGroupClass.ALDEHYDE: ("aldehyde_c_idx", "aldehyde_c_idxs"),
-    FunctionalGroupClass.NITRILE: ("nitrile_c_idx", "nitrile_c_idxs"),
-    FunctionalGroupClass.AMIDE: ("amide_c_idx", "amide_c_idxs"),
-    FunctionalGroupClass.ALCOHOL: ("oh_c_idx", "oh_c_idxs"),
-    FunctionalGroupClass.AMINE: ("amine_c_idx", "amine_c_idxs"),
-}
-
-
 def _is_benzene(info: dict, skeleton: ParentSkeleton) -> bool:
     mol = info["mol"]
     return len(skeleton.atom_ids) == 6 and all(
@@ -190,10 +177,7 @@ def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentS
 
 def _ring_fields(selection: PrincipalGroupSelection, occurrences) -> dict:
     anchors = _anchors(occurrences)
-    names = _RING_FIELDS.get(selection.group_class)
     fields = _principal_fields(selection.group_class, anchors) if selection.group_class in _FIELDS else {}
-    if names and anchors:
-        fields.update({names[0]: anchors[0], names[1]: anchors} if len(anchors) == 1 else {names[1]: anchors})
     characteristic = sorted({i for o in occurrences for i in o.characteristic_atoms})
     return {**fields, "principal_characteristic_atoms": characteristic,
             "principal_attachment_atoms": anchors,
@@ -256,16 +240,21 @@ def _chain_fields(selection, occurrences) -> dict:
             **_expression_flags(selection, occurrences)}
 
 
+def _unsat_bond_fields(dbs: list[dict], tbs: list[dict]) -> dict:
+    """Unsaturation → double/triple-bond field dict (empty for mixed/none)."""
+    if len(tbs) == 1 and not dbs:
+        return {"triple_bond": (tbs[0]["c1"], tbs[0]["c2"])}
+    if len(dbs) == 1 and not tbs:
+        return {"double_bond": (dbs[0]["c1"], dbs[0]["c2"])}
+    if len(dbs) >= 2 and not tbs:
+        return {"double_bonds": [(d["c1"], d["c2"]) for d in dbs]}
+    return {}
+
+
 def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> dict:
     """Attach double/triple-bond locant fields for C=C/C≡C inside the skeleton."""
     dbs, tbs = _chain_polys(info, set(skeleton.atom_ids))
-    if len(tbs) == 1 and not dbs:
-        return {**fields, "triple_bond": (tbs[0]["c1"], tbs[0]["c2"])}
-    if len(dbs) == 1 and not tbs:
-        return {**fields, "double_bond": (dbs[0]["c1"], dbs[0]["c2"])}
-    if len(dbs) >= 2 and not tbs:
-        return {**fields, "double_bonds": [(d["c1"], d["c2"]) for d in dbs]}
-    return fields
+    return {**fields, **_unsat_bond_fields(dbs, tbs)}
 
 
 def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
@@ -319,15 +308,16 @@ def _chain_polys(info: dict, atom_set: set[int]) -> tuple[list[dict], list[dict]
 def _hydrocarbon_chain_parent(info: dict, skeleton: ParentSkeleton) -> dict:
     chain = list(skeleton.atom_ids)
     dbs, tbs = _chain_polys(info, set(chain))
-    if len(tbs) == 1 and not dbs:
-        kind, fields = "alkyne", {"triple_bond": (tbs[0]["c1"], tbs[0]["c2"])}
-    elif len(dbs) == 1 and not tbs:
-        kind, fields = "alkene", {"double_bond": (dbs[0]["c1"], dbs[0]["c2"])}
-    elif len(dbs) >= 2 and not tbs:
-        kind, fields = "polyene", {"double_bonds": [(d["c1"], d["c2"]) for d in dbs]}
+    bf = _unsat_bond_fields(dbs, tbs)
+    if "triple_bond" in bf:
+        kind = "alkyne"
+    elif "double_bond" in bf:
+        kind = "alkene"
+    elif "double_bonds" in bf:
+        kind = "polyene"
     else:
-        kind, fields = "alkane", {}
-    return {"kind": kind, "chain": chain, "n_carbons": len(chain), **fields}
+        kind = "alkane"
+    return {"kind": kind, "chain": chain, "n_carbons": len(chain), **bf}
 
 
 def _aromatic_scaffold_parent(info: dict, skeleton: ParentSkeleton, atoms: set[int]) -> dict | None:
@@ -352,13 +342,14 @@ def _saturated_ring_parent(info: dict, skeleton: ParentSkeleton, atoms: set[int]
     if tbs:
         return None  # 环炔暂不支持
     chain = _mono_ring_chain(info, atoms) or list(skeleton.atom_ids)
+    bf = _unsat_bond_fields(dbs, tbs)  # tbs 已排除：只可能 double_bond/double_bonds/空
     if not dbs:
-        kind, fields = "cycloalkane", {}
+        kind = "cycloalkane"
     elif len(dbs) == 1:
-        kind, fields = "cycloalkene", {"double_bond": (dbs[0]["c1"], dbs[0]["c2"])}
+        kind = "cycloalkene"
     else:
-        kind, fields = "cyclopolyene", {"double_bonds": [(d["c1"], d["c2"]) for d in dbs]}
-    return {"kind": kind, "chain": chain, "n_carbons": len(chain), **fields}
+        kind = "cyclopolyene"
+    return {"kind": kind, "chain": chain, "n_carbons": len(chain), **bf}
 
 
 def _hydrocarbon_ring_parent(info: dict, skeleton: ParentSkeleton) -> dict | None:

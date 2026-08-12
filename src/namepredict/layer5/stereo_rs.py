@@ -4,6 +4,8 @@ from __future__ import annotations
 from rdkit import Chem
 from rdkit.Chem import Mol
 
+from namepredict.layer5._stereo_common import _split_stereo_lead as _strip_stereo
+
 _RS_KINDS = frozenset({
     "acid", "alcohol",
     "diol", "triol", "amine", "diamine",
@@ -63,16 +65,6 @@ def _rs_parts(numbered: dict) -> list[tuple[int, str]]:
     if mol is None or not chain:
         return []
     return _cip_on_chain(mol, chain)
-
-
-def _strip_stereo(name: str) -> tuple[str, str]:
-    """Split leading '(…)-' stereo block from name."""
-    if not name.startswith("("):
-        return "", name
-    close = name.find(")-")
-    if close < 0:
-        return "", name
-    return name[: close + 2], name[close + 2 :]
 
 
 def _parse_token(tok: str) -> tuple[int | None, str] | None:
