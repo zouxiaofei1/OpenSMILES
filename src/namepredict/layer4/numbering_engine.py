@@ -95,6 +95,7 @@ def _unsat_bonds(parent: dict) -> tuple[list, list]:
         if v:
             pair = (v[0], v[1])
             (target if key == "double_bond" else all_bonds).append(pair)
+   
     for key in ("double_bonds", "triple_bonds"):
         for b in parent.get(key) or []:
             pair = (b[0], b[1])
@@ -170,6 +171,7 @@ def orient_numbering(parent: dict, substituents: list) -> list[int] | None:
     if bonds:
         cands = _narrow(cands, lambda c: (_bond_locants(c, bonds), _bond_locants(c, doubles)))
     subs = [s["attach_idx"] for s in substituents if s.get("attach_idx") in chain]
+    
     if subs:
         cands = _narrow(cands, lambda c: _locant_set(c, subs))
     if len(cands) > 1 and substituents:

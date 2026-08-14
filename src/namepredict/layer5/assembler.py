@@ -24,7 +24,7 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return ("benzoate", "苯甲酸")
    
     stem = _parent_stem_names(numbered)
-    return stem if stem is not None else _alkane_names(n)
+    return stem
 
 def _parent_stem_names(numbered: dict) -> tuple[str, str] | None:
     parent = numbered.get("parent") or {}
