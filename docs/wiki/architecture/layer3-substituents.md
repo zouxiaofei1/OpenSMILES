@@ -1,6 +1,6 @@
 # Layer3: 取代基提取器 (Substituent Extractor)
 
-> **最后更新:** 2026-08-11 | **源文件:** 13 `.py` | **公开 API:** `extract_substituents(info, parent, *, name_mode, cache) -> list[dict]`
+> **最后更新:** 2026-08-14 | **源文件:** 11 `.py` | **公开 API:** `extract_substituents(info, parent, *, name_mode, cache) -> list[dict]`
 
 ## 概述
 
@@ -79,31 +79,29 @@ def extract_substituents(info, parent, *, name_mode="general", cache=None) -> li
 
 ### 侧链拓扑事实层 (side_facts)
 
-`side_facts.py` 定义侧链拓扑"事实"类型，全部为纯拓扑、无命名依赖。layer2 与 layer3 **互不调用**——两层的共享仅经由 `tools/` 层无关工具（见 `tools/__init__.py`）。
+`side_facts.py` 提供侧链拓扑共享原语，layer2 与 layer3 **互不调用**——两层的共享仅经由 `tools/` 层无关工具（见 `tools/__init__.py`）。
 
 | 类型 | 说明 |
 |------|------|
-| `AlkylShape`（枚举） | 支链烷基的 12 种拓扑形状（`C2_VINYL`/`C3_ALLYL`/`C4_TRIPLE_BRANCH_AT_ROOT`/`C1_THREE_HALOGEN_LEAVES` 等） |
-| `ArylArmKind`（枚举） | 芳基连接方式（`DIRECT_C`/`METHYLENE_C`/`DIRECT_O`/`O_METHYLENE_C`） |
-| `HeteroarylKind`（枚举） | 杂芳基种类（`SIX_MEMBER_ONE_N`/`FUSED_TEN_MEMBER_C`） |
-| `HeteroarylLeaf`（枚举） | 杂芳环叶子（`HALOGEN`/`METHYL`/`ALKOXY`） |
 | `carbon_neighbors`（函数） | `(mol, atom) -> list[int]` — 碳原子非氢碳邻居（`substituent_extractor._side_starts` 用） |
 
-配套模块：`side_alkyl_sys.py`（有根烷基树构建 `build_rooted_alkyl_tree` → `RootedAlkylTree`，供系统 -yl 命名）、`aryl_sub.py`（芳环辅助谓词 `_is_arom_c6`/`_c6_rings_at` 等）。当前主流程的侧链命名经 `tools/anchored_table` 锚定查表完成，侧链类型枚举在现网中多未直接接线。
+配套模块：`aryl_sub.py`（芳环辅助谓词 `_is_arom_c6`/`_c6_rings_at` 等）。当前主流程的侧链命名经 `tools/anchored_table` 锚定查表完成。
 
-> **源:** `src/namepredict/layer3/side_facts.py:12-50`, `src/namepredict/layer3/side_alkyl_sys.py`, `src/namepredict/layer3/aryl_sub.py`
+> `side_alkyl_sys.py`（`build_rooted_alkyl_tree`/`RootedAlkylTree` 有根烷基树）已删除——`SubstituentNamer` 的 RootedTreeBackend 占位桩随之移除。
+>
+> **源:** `src/namepredict/layer3/side_facts.py`, `src/namepredict/layer3/aryl_sub.py`
 
 ### 取代基命名引擎 (SubstituentNamer)
 
-当直接提取器无法命名或 claim 补全器认领的取代基出现时，`SubstituentNamer` 承担命名职责。它采用有序后端链，首个命中即返回：
+当直接提取器无法命名或 claim 补全器认领的取代基出现时，`SubstituentNamer` 承担命名职责。它采用有序后端链（`_default_backends`，`substituent_namer.py:88-89`），首个命中即返回：
 
 1. **RetainedBackend** — 保留名/锚定查表。`_try_anchored_lookup` 用 `tools.anchored_table.anchored_lookup` 查 `ANCHOR_TABLE`，命中即返回。
 
-2. **RootedTreeBackend** — 纯饱和碳树系统命名。经 `side_alkyl_sys.build_rooted_alkyl_tree`（`RootedAlkylTree`：root + atoms + depth，限 12 原子、深 3 层）构建有根树后转系统 -yl 名。当前该后端为占位桩（`_rooted_tree_name` 恒返回 `None`），实际命名由 retained 与 recursive 两个后端承担。
+2. **RecursiveBackend** — 有界递归切割命名。`as_substituent.name_as_substituent` 将 claim 原子从母分子切出为 submol，作为独立分子跑完整 L1-L5 管道，再转 P-29 -yl 形式。递归深度上限 `max_depth=4`。
 
-3. **RecursiveBackend** — 有界递归切割命名。`as_substituent.name_as_substituent` 将 claim 原子从母分子切出为 submol，作为独立分子跑完整 L1-L5 管道，再转 P-29 -yl 形式。递归深度上限 `max_depth=4`。
+> RootedTreeBackend 占位桩（`build_rooted_alkyl_tree` 有根树转系统 -yl）已删除——实际命名由 retained 与 recursive 两个后端承担。
 
-> **源:** `src/namepredict/layer3/substituent_namer.py:115-128`
+> **源:** `src/namepredict/layer3/substituent_namer.py:54-98`
 
 ### 通用 cut→free-name→yl 管道 (as_substituent / submol_build)
 
@@ -112,7 +110,7 @@ def extract_substituents(info, parent, *, name_mode="general", cache=None) -> li
 - `submol_build.py` 提供 `build_cut_submol`（诱导子分子 + attach 处 H 封端）与 `build_anchor_submol`（attach 打 dummy `*`，供 anchored SMILES 使用），定义 `CutSubmol` 数据类（`atom_map`/`inv_map`/`attach_new`/`attach_old`）。
 - `_yl_from_sub` 用 **canonical SMILES 作为缓存键**与 `_name_mol` 的输入，与主分子共享 `CommonNameCache`（`_cache_put`/`_canonical_result`），消除 cut 上下文（环断点/手性方向）对命名的泄漏。
 - `_arene_yl_from_sub` 处理苯环切割：自由名管线的 `_name_mol` 会把取代苯命名为"chlorobenzene"（或 phenol/aniline），但苯基*取代基*必须把 OH/NH2/CN 当作叶并令附着碳位次为 1。该路径重建锚定 submol 重新自由命名，L1 检测自由基、L2 选苯基母体、L4 锚定位次 1、L5 输出 `{leaf-locants}phenyl`。芳基臂命名即经此路径，无独立芳基命名模块。
-- yl 转换由 `tools/free_to_yl.free_to_yl` 完成（`layer3/yl_form.py` 薄重导出该函数），处理官能团后缀到前缀的特殊转换：醇→烷氧基 (P-63.2.2)、硫醇→烷硫基 (P-63.2.1)、伯胺→烷氨基 (P-62.2)。
+- yl 转换由 `tools/free_to_yl.free_to_yl` 完成（`layer3/yl_form.py` 薄重导出已删除，`as_substituent.py` 直接 `from namepredict.tools.free_to_yl import free_to_yl as yl_form`），处理官能团后缀到前缀的特殊转换：醇→烷氧基 (P-63.2.2)、硫醇→烷硫基 (P-63.2.1)、伯胺→烷氨基 (P-62.2)。
 
 > **源:** `src/namepredict/layer3/as_substituent.py:20-129`, `src/namepredict/layer3/submol_build.py`
 
@@ -151,10 +149,9 @@ flowchart TD
         CLAIM["extract_claimed_sides<br/>claimable_block → SubstituentNamer"]
     end
 
-    subgraph NAMER["substituent_namer.py (三后端)"]
+    subgraph NAMER["substituent_namer.py (二后端)"]
         direction TB
         RETAINED["RetainedBackend<br/>anchored_table 查表"]
-        TREE["RootedTreeBackend<br/>side_alkyl_sys → 系统 -yl"]
         RECURSE["RecursiveBackend<br/>cut→free-name→yl"]
     end
 
@@ -170,11 +167,9 @@ flowchart TD
 
     FULL --> CLAIM
     CLAIM -- "未覆盖 claim" --> RETAINED
-    RETAINED -- "未命中" --> TREE
-    TREE -- "未命中" --> RECURSE
+    RETAINED -- "未命中" --> RECURSE
 
     RETAINED --> SUBST["list[dict]"]
-    TREE --> SUBST
     RECURSE --> SUBST
     CLAIM --> SUBST
 
@@ -207,28 +202,28 @@ flowchart LR
 | 文件 | 行数 | 描述 |
 |------|------|------|
 | `__init__.py` | 5 | 公开 API 导出：`extract_substituents` |
-| `substituent_extractor.py` | 210 | **主提取器**。三段流水线：`_extract_core_subs` + `_extract_alkyls_no_aryl`（anchored 查表）+ `extract_claimed_sides`。 |
-| `substituent_namer.py` | 128 | **命名引擎**。有序后端链：Retained(anchored) → RootedTree(桩) → Recursive。 |
-| `as_substituent.py` | 129 | **cut→free-name→yl 通用管道**。`name_as_substituent` + 苯环锚定自由基特殊路径，共享 CommonNameCache。 |
+| `substituent_extractor.py` | 196 | **主提取器**。三段流水线：`_extract_core_subs` + `_extract_alkyls_no_aryl`（anchored 查表）+ `extract_claimed_sides`。 |
+| `substituent_namer.py` | 101 | **命名引擎**。有序后端链：Retained(anchored) → Recursive。 |
+| `as_substituent.py` | 128 | **cut→free-name→yl 通用管道**。`name_as_substituent` + 苯环锚定自由基特殊路径，共享 CommonNameCache。 |
 | `submol_build.py` | 99 | **子分子构建**。`build_cut_submol` / `build_anchor_submol` / `CutSubmol`。 |
-| `side_facts.py` | 53 | **侧链拓扑事实类型**。4 个枚举（AlkylShape 12 形状/ArylArmKind/HeteroarylKind/HeteroarylLeaf）+ `carbon_neighbors`。 |
-| `side_alkyl_sys.py` | 84 | 有根烷基树构建：`build_rooted_alkyl_tree` → `RootedAlkylTree`。 |
+| `side_facts.py` | 14 | **侧链拓扑原语**。`carbon_neighbors`（碳原子邻居）。 |
 | `aryl_sub.py` | 41 | 芳环辅助谓词：`_is_arom_c6` / `_c6_rings_at` 等。 |
-| `claim_extract.py` | 83 | **声明侧链补全**。`extract_claimed_sides` 遍历 `iter_claims`，对未覆盖 claim 调 `SubstituentNamer`。 |
+| `claim_extract.py` | 93 | **声明侧链补全**。`extract_claimed_sides` 遍历 `iter_claims`，对未覆盖 claim 调 `SubstituentNamer`。 |
 | `claimable_block.py` | 159 | `ClaimedBlock` / `SideSlot`(CHAIN_C/RING_C/AMIDE_N/ETHER_O) / `iter_claims`。 |
-| `amino_side.py` | 67 | 氨基取代基：伯氨基 + 仲氨基（`_extract_aminos`）。 |
+| `amino_side.py` | 36 | 氨基取代基：伯氨基 + 仲氨基（`_extract_aminos`）。 |
 | `coverage.py` | 66 | **覆盖台账**。`build_coverage_ledger` 计算 gap/overlap。 |
-| `yl_form.py` | 10 | yl 转换薄重导出（指向 `tools/free_to_yl.free_to_yl`）。 |
+
+> `yl_form.py`（yl 转换薄重导出）已删除；`as_substituent.py` 直接 `import tools.free_to_yl.free_to_yl as yl_form`。
 
 ### tools/ 层无关工具（layer3 消费）
 
 | 文件 | 行数 | 描述 |
 |------|------|------|
-| `tools/anchored_table.py` | 524 | **锚定 canonical-SMILES 查表 + 保留取代基注册表**。`ANCHOR_TABLE` 128 条 + `anchored_entry`/`anchored_lookup`/`pick_root`/`resolve_name`/`_REGISTRY`。核心机制。 |
+| `tools/anchored_table.py` | 357 | **锚定 canonical-SMILES 查表 + 保留取代基注册表**。`ANCHOR_TABLE` 128 条 + `anchored_entry`/`anchored_lookup`/`pick_root`/`resolve_name`/`_REGISTRY`。核心机制。 |
 | `tools/block_cut.py` | 90 | 母体边界块切割：`side_atoms`（全连通分量）/`cut_block`/`side_roots`。 |
 | `tools/chain.py` | 38 | 开链行走原语，L2/L3 共享。 |
-| `tools/ring_ident.py` | 75 | 萘环拓扑原语。 |
-| `tools/alkoxy_side.py` | 118 | 酯/氨基甲酸酯烷氧基侧拓扑（P-65.6），L2 消费。 |
+| `tools/free_to_yl.py` | 166 | **-yl 转换**（原 layer5/free_to_yl.py 迁入，layer-agnostic）。 |
+| `tools/alkoxy_side.py` | 121 | 酯/氨基甲酸酯烷氧基侧拓扑（P-65.6），L2 消费。 |
 
 ## 对外接口
 
@@ -273,7 +268,7 @@ def build_coverage_ledger(mol, *, owned_atoms, names) -> CoverageLedger
 - [[architecture/layer2-parent-selector]] — Layer2 母体选择器，提供 `parent` dict（含 `owned_atoms` 和 `chain`）；L2 与 L3 互不调用，共享仅经 `tools/`
 - [[architecture/layer1-analyzer]] — Layer1 官能团分析器，提供 `info` dict
 - [[architecture/layer4-numbering]] — Layer4 编号引擎，消费 layer3 输出的取代基列表
-- [[architecture/layer5-name-assembly]] — Layer5 名称组装，最终拼接母体名和取代基前缀（-yl 转换在 `tools/free_to_yl`，经 `layer3/yl_form` 薄重导出）
+- [[architecture/layer5-name-assembly]] — Layer5 名称组装，最终拼接母体名和取代基前缀（-yl 转换在 `tools/free_to_yl`）
 - [[architecture/overview]] — 系统架构概览，6 层流水线总览
 - [[concepts/bilingual-naming]] — 中英双语命名约定
 - [[concepts/atom-ownership]] — ClaimedBlock / owned_atoms / CoverageLedger 原子归属模型

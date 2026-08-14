@@ -109,10 +109,6 @@ def pack_parent_stem(parent: dict, mol=None) -> dict:
     return _attach_numbering_scaffold(packed)
 
 
-def all_kinds() -> frozenset[str]:
-    return frozenset(_REG)
-
-
 def _add(
     kind: str,
     *,

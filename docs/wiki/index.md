@@ -1,6 +1,6 @@
 # NamePredict Wiki
 
-> 最后更新: 2026-08-11 | 源文件: 100 `.py` / 10,784 行 | Wiki 页面: 15
+> 最后更新: 2026-08-14 | 源文件: 76 `.py` / 7,399 行 | Wiki 页面: 15
 
 ## 项目概述
 
@@ -17,11 +17,11 @@ SMILES 输入
     |
 [layer1] 官能团分析 -> 识别 FG、环指纹  -> info dict
     |
-[layer2] 母体选择 -> P-44 规则管线选主官能团/骨架、纯烃兜底、保留名 <- 核心
+[layer2] 母体选择 -> P-44 规则管线选主官能团/骨架、kind 正交化 <- 核心
     |
 [layer3] 取代基提取 -> anchored 查表 + claim 补全、覆盖台账
     |
-[layer4] 编号与定位符 -> 位次分配、方向决策
+[layer4] 编号与定位符 -> P-14.4 候选编号引擎、位次分配
     |
 [layer5] 名称组装 -> 中英双语拼接 <- 输出层
     |
@@ -34,17 +34,17 @@ SMILES 输入
 |------|------|
 | [[architecture/overview]] | 架构总览：6 层流水线、数据流图、跨层设计模式、namer.py 协调器 |
 | [[architecture/layer0-preprocessor]] | Layer0 预处理：SMILES 解析、盐检测与解离、盐元数据注入 |
-| [[architecture/layer1-analyzer]] | Layer1 官能团分析器：34 种 FG 检测、环系拓扑、排他性优先级 |
-| [[architecture/layer2-parent-selector]] | Layer2 母体选择器：P-44 规则驱动主链管线、纯烃表达、苯环保留名、kind_registry、评分与门控 |
+| [[architecture/layer1-analyzer]] | Layer1 官能团分析器：20 类 FG 检测、环系拓扑、排他性优先级 |
+| [[architecture/layer2-parent-selector]] | Layer2 母体选择器：P-44 规则驱动主链管线、kind 正交化（ring_scaffold 三合一）、评分与门控 |
 | [[architecture/layer3-substituents]] | Layer3 取代基提取器：anchored 查表主流程 + claim 补全、SubstituentNamer 有序后端（retained/rooted-tree/recursive）、侧链拓扑事实层 (side_facts)、覆盖台账 |
-| [[architecture/layer4-numbering]] | Layer4 编号：链/环方向决策、约束驱动编号引擎、omit_locants 规则 |
-| [[architecture/layer5-name-assembly]] | Layer5 名称组装：组装流水线、`_KIND_TABLE` 链引擎、双语词干表、立体化学 |
+| [[architecture/layer4-numbering]] | Layer4 编号：P-14.4 候选编号引擎（numbering_engine）、FG 位次计算、omit_locants 规则 |
+| [[architecture/layer5-name-assembly]] | Layer5 名称组装：组装流水线、`chain_engine._KIND_TABLE` 链引擎、`typed_kinds` kind 收敛、立体化学 |
 
 ## 核心概念
 
 | 页面 | 内容 |
 |------|------|
-| [[concepts/functional-group-priority]] | 官能团优先级体系：P-41 降序排列 (fg_rank 0-13)、kind_registry 单一权威注册中心、互斥检查规则、L1/L2/L5 三层 FG 生命周期 |
+| [[concepts/functional-group-priority]] | 官能团优先级体系：P-41 降序排列 (fg_rank 0-14)、kind_registry 单一权威注册中心、L1/L2/L5 三层 FG 生命周期 |
 | [[concepts/atom-ownership]] | 原子归属跟踪：owned_atoms 计算 (链骨架+FG 杂原子)、ClaimedBlock 桥接类型与 SideSlot 枚举、gap/overlap 覆盖完整性、14 种 FG 的异原子归属规则 |
 | [[concepts/bilingual-naming]] | 中英双语命名约定：en/zh 元组惯例、词干表 (stems.py) 作为单一权威、酯类/盐类的语序反转、zh_stem 转换、zh_num 中文数字生成 |
 
@@ -58,8 +58,8 @@ SMILES 输入
 
 | 页面 | 内容 |
 |------|------|
-| [[guides/adding-new-functional-group]] | 新增官能团指南：以亚砜 (sulfoxide) 为工作示例，跨越 L1-L5 的完整注册模式 (检测->母体选择->取代基->编号->组装)，含文件改动清单和常见陷阱 |
-| [[guides/adding-new-ring-system]] | 新增环系指南：以吡啶 (pyridine) 为工作示例，跨越 L1-L5 的完整流程 (环检测->ScaffoldSpec 注册->编号骨架->命名->FG-环组合)，含文件改动清单 |
+| [[guides/adding-new-functional-group]] | 新增官能团指南：以硫醇 (thiol) 为工作示例，覆盖 L1-L5 的注册模式 (检测->母体选择->命名)，含文件改动清单和常见陷阱 |
+| [[guides/adding-new-ring-system]] | 新增环系指南：以吡啶 (pyridine) 为工作示例，覆盖 L1-L5 的完整流程 (环检测->ring_scaffold 注册->编号->命名->FG-环组合)，含文件改动清单 |
 
 ## 外部资源
 

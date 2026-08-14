@@ -42,12 +42,12 @@ graph TD
 
 **全称**: Functional Group Information Dictionary（官能团信息字典）
 
-**产出**: `analyze(mol)` in `src/namepredict/layer1/analyzer.py:484-485`
+**产出**: `analyze(mol)` in `src/namepredict/layer1/analyzer.py:383-384`
 
-**构建**: `_info(mol, carbons, fgs)` at `analyzer.py:481-483`，由三层合并：
+**构建**: `_info(mol, carbons, fgs)` at `analyzer.py:380-382`，由三层合并：
 - `base`: `mol`, `carbon_ids`, `n_carbons`
-- `fgs`: 所有 FG 条目列表 + 布尔标志（`_collect_fgs` at `analyzer.py:478-480`）
-- `_ring_meta(mol)`: 环系元信息（`analyzer.py:393-400`）
+- `fgs`: 所有 FG 条目列表 + 布尔标志 + `fg_inventory`（`_collect_fgs`）
+- `_ring_meta(mol)`: 环系元信息
 
 **输入方**: Layer 2 (`select_parent(info)`), Layer 3 (`extract_substituents(info, parent)`), Layer 4 (间接通过 parent), Layer 5 (间接)
 
@@ -61,17 +61,19 @@ graph TD
 
 ### 官能团条目列表（FG entry lists）
 
-每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部列表键名：
+每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 20 个列表键（来自 `_fg_parts` at `analyzer.py:362-373`）：
 
 | 键名 | 条目 dict 典型字段 | 来源 |
 |---|---|---|
-| `hydroxyls` | `o_idx`, `c_idx` | `analyzer.py:_hydroxyl_entries` |
 | `carboxyls` | `c_idx`, `anion` | `analyzer.py:_carboxyl_entries` |
+| `hydroxyls` | `o_idx`, `c_idx` | `analyzer.py:_hydroxyl_entries` |
 | `esters` | 酯键原子索引 | `analyzer.py:_ester_entries` |
 | `amides` | 酰胺键原子索引 | `analyzer.py:_amide_entries` |
 | `ketones` | `c_idx` | `analyzer.py:_ketone_entries` |
+| `radicals` | 自由基（dummy 位点） | `analyzer.py` |
 | `aldehydes` | `c_idx` | `analyzer.py` |
 | `amines` | `n_idx` | `analyzer.py` |
+| `quaternary_ammoniums` | 季铵 | `analyzer.py` |
 | `nitriles` | `c_idx`, `n_idx` | `analyzer.py` |
 | `double_bonds` | 双键原子对 | `analyzer.py` |
 | `triple_bonds` | 三键原子对 | `analyzer.py` |
@@ -81,26 +83,14 @@ graph TD
 | `ethers` | `o_idx` | `analyzer.py` |
 | `sulfides` | `s_idx` | `analyzer.py` |
 | `nitros` | — | `analyzer.py` |
-| `phosphates` | — | `layer1/phosphate.py` |
-| `phosphonics` | — | `layer1/phosphate.py` |
-| `carbamates` | — | `layer1/carbamate.py` |
-| `carbonates` | — | `layer1/carbonate.py` |
-| `sulfoxides` | — | `layer1/sulfur.py` |
-| `isocyanates` | — | `layer1/isocyanate.py` |
-| `isothiocyanates` | — | `layer1/isocyanate.py` |
-| `ureas` | — | `layer1/urea.py` |
-| `hydrazines` | — | `layer1/hydrazine.py` |
-| `guanidines` | — | `layer1/guanidine.py` |
-| `sulfonamides` | — | `layer1/sulfur.py` |
-| `sulfonates` | — | `layer1/sulfur.py` |
-| `sulfonyl_chlorides` | — | `layer1/sulfur.py` |
-| `sulfonic_acids` | — | `layer1/sulfur.py` |
-| `sulfones` | — | `layer1/sulfur.py` |
-| `boronics` | — | `layer1/boronic.py` |
+| `isocyanates` | `c_idx`, `n_idx`, `x_idx`, `r_c_idx` | `layer1/isocyanate.py` |
+| `isothiocyanates` | `c_idx`, `n_idx`, `x_idx`, `r_c_idx` | `layer1/isocyanate.py` |
+
+> 13 个扩展 FG 列表键（`phosphates`/`phosphonics`/`carbamates`/`carbonates`/`sulfoxides`/`ureas`/`hydrazines`/`guanidines`/`sulfonamides`/`sulfonates`/`sulfonyl_chlorides`/`sulfonic_acids`/`sulfones`/`boronics`）已随检测模块删除。
 
 ### 布尔标志（Boolean flags）
 
-对应 `_fg_bools(lists)` at `analyzer.py:420-427`，每个 `has_*` 标志 = `bool(对应的 FG 列表)`：
+对应 `_fg_bools(lists)` at `analyzer.py:352-359`，每个 `has_*` 标志 = `bool(对应的 FG 列表)`。共 **18 个**：
 
 | 标志 | 对应列表 | 标志 | 对应列表 |
 |---|---|---|---|
@@ -112,20 +102,13 @@ graph TD
 | `has_acyl_chloride` | `acyl_chlorides` | `has_anhydride` | `anhydrides` |
 | `has_thiol` | `thiols` | `has_ether` | `ethers` |
 | `has_sulfide` | `sulfides` | `has_nitro` | `nitros` |
-| `has_phosphate` | `phosphates` | `has_phosphonic` | `phosphonics` |
-| `has_carbamate` | `carbamates` | `has_carbonate` | `carbonates` |
-| `has_sulfoxide` | `sulfoxides` | `has_isocyanate` | `isocyanates` |
-| `has_isothiocyanate` | `isothiocyanates` | `has_urea` | `ureas` |
-| `has_hydrazine` | `hydrazines` | `has_guanidine` | `guanidines` |
-| `has_sulfonamide` | `sulfonamides` | `has_sulfonate` | `sulfonates` |
-| `has_sulfonyl_chloride` | `sulfonyl_chlorides` | `has_sulfonic_acid` | `sulfonic_acids` |
-| `has_sulfone` | `sulfones` | `has_boronic` | `boronics` |
+| `has_isocyanate` | `isocyanates` | `has_isothiocyanate` | `isothiocyanates` |
 
-> 共计 **31 个布尔标志**（5 个 core + 26 个 from `_FG_BOOL_MORE_KEYS` at `analyzer.py:5-20`）。
+另有类型化键 `fg_inventory`：`FunctionalGroupInventory`（17 个 `FunctionalGroupClass` 类别，由 `functional_group_inventory.inventory_from_info` 构建）。
 
 ### 环系元信息
 
-来自 `_ring_meta(mol)` at `analyzer.py:393-400`：
+来自 `_ring_meta(mol)`：
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -141,7 +124,7 @@ graph TD
 
 **全称**: Parent Structure Dictionary（母体结构字典）
 
-**产出**: `select_parent(info)` at `src/namepredict/layer2/parent_selector.py:539-541`；候选列表由 `iter_parent_candidates(info)` at `parent_selector.py:532-536` 生成。
+**产出**: `select_parent(info)` at `src/namepredict/layer2/parent_selector.py:27-28`；候选列表由 `iter_parent_candidates(info)` at `parent_selector.py:23-24` 生成。
 
 **构建**: 每个候选由 `_collect_candidates(info)` 生成，经 `_finalize_ranked(info, cands)` 排序并注入 `owned_atoms`（frozenset）。
 
@@ -259,7 +242,7 @@ class SubstituentName:
 
 | 字段 | 类型 | 注入方 | 说明 |
 |---|---|---|---|
-| `locant` | `int` / `str` | `_with_locants()` at `numbering.py:472-473` | 该取代基在母体链上的位次编号 |
+| `locant` | `int` / `str` | `_with_locants()` at `locant_calc.py:93-94` | 该取代基在母体链上的位次编号 |
 
 ---
 
@@ -294,15 +277,15 @@ class CoverageLedger:
 
 **全称**: Numbered Structure Dictionary（编号结构字典）
 
-**产出**: `number(parent, substituents)` at `src/namepredict/layer4/numbering.py:519-526`
+**产出**: `number(parent, substituents)` at `src/namepredict/layer4/numbering.py:5-15`
 
-**构建**: `_pack(oriented, subs_with_locants)` at `numbering.py:510-518`
+**构建**: `_pack(oriented, subs_with_locants)` at `locant_calc.py:164-173`
 
 ### 结构
 
 ```python
 {
-    "parent":       {...},    # 增强的 parent dict（带 oriented chain + numbering plan）
+    "parent":       {...},    # 增强的 parent dict（带 oriented chain + numbering plan + 立体化学事实）
     "substituents": [...],    # list[subst dict]，每项已注入 locant
     # principal FG 位次: 结构化稀疏列表, 只含实际存在的 FG:
     "fg_locants":   list[dict],  # [{kind, locants, omit}, ...]
@@ -312,10 +295,9 @@ class CoverageLedger:
     "omit_ene_locant":        bool,
     "yne_locant":             int | None,
     "omit_yne_locant":        bool,
-    # 来自 polycarboxylic / cyclo_relative_stereo:
-    "stem_en":                str,   # (polycarboxylic 特定)
-    "stem_zh":                str,   # (polycarboxylic 特定)
+    # 来自 cyclo_relative_stereo (环二酸):
     "relative_stereo_prefix": str,
+    "relative_stereo_locants": str,
     # 由 namer._ok_result 注入:
     "name_mode":              str,   # "general" | "screened" | ...
 }
@@ -325,7 +307,7 @@ class CoverageLedger:
 
 ```python
 {
-    "kind":     "oh" | "amine" | "ketone" | "sh",  # FG 类别 (来自 principal_expression_facts.group_class 映射)
+    "kind":     "oh" | "amine" | "ketone" | "sh" | "acid",  # FG 类别 (来自 principal_expression_facts.group_class 映射)
     "locants":  list[int],   # 统一列表 (单 FG 也是 [x]); 由挂载原子经 chain/plan 换算
     "omit":     bool,        # L4 omit_locants.py 规则算好的省略标志
 }
@@ -333,12 +315,14 @@ class CoverageLedger:
 
 ### locant 字段详解
 
-`_fg_locants()` at `src/namepredict/layer4/locant_calc.py` 数据驱动（`_FG_LOCANTS` 表）产出 `fg_locants` 稀疏列表——只产实际存在的 principal FG（oh/amine/ketone/sh），cooh 不产（单/多酸位次隐含，死字段清理）。烯/炔位次由 `_unsat_locants()` 独立产出为扁平字段：
+`_fg_locants()` at `src/namepredict/layer4/locant_calc.py` 数据驱动（`_FG_LOCANTS` 表）产出 `fg_locants` 稀疏列表——只产实际存在的 principal FG（oh/amine/ketone/sh/acid），cooh 不产（单/多酸位次隐含，死字段清理）。烯/炔位次由 `_unsat_locants()` 独立产出为扁平字段：
 
 | 产出方 | 内容 |
 |---|---|
-| `_fg_locants()` at `locant_calc.py`（`_FG_LOCANTS` 数据表） | `fg_locants`: [{kind, locants, omit}] — 稀疏, 只含实际存在的 principal FG |
-| `_unsat_locants()` at `locant_calc.py:122` | `ene_locant`, `ene_locants`, `omit_ene_locant`, `yne_locant`, `omit_yne_locant` |
+| `_fg_locants()` at `locant_calc.py`（`_FG_LOCANTS` 数据表 `:145-151`） | `fg_locants`: [{kind, locants, omit}] — 稀疏, 只含实际存在的 principal FG |
+| `_unsat_locants()` at `locant_calc.py:95-103` | `ene_locant`, `ene_locants`, `omit_ene_locant`, `yne_locant`, `omit_yne_locant` |
+
+`_with_locants()`（注入取代基 locant）位于 `locant_calc.py:93-94`。
 
 ---
 

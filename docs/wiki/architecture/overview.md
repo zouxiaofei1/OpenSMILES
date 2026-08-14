@@ -34,7 +34,7 @@ flowchart TD
     L0 -->|Mol| L1["L1: Analyzer<br/>官能团检测 + 环拓扑分析"]
     L1 -->|info dict| L2["L2: Parent Selector<br/>母体候选生成 + 评分 + 归属"]
     L2 -->|parent + owned_atoms| L3["L3: Substituent Extractor<br/>取代基切除 + 命名 + Coverage Ledger"]
-    L3 -->|parent + substituents| L4["L4: Numbering<br/>位次分配 + 链定向 + 约束引擎"]
+    L3 -->|parent + substituents| L4["L4: Numbering<br/>位次分配 + 链定向 + P-14.4 编号引擎"]
     L4 -->|numbered dict| L5["L5: Name Assembly<br/>双语名称组装 + 盐后缀"]
     L5 --> R["NameResult<br/>(en, zh, meta)"]
 
@@ -66,21 +66,23 @@ flowchart TD
 
 **职责**：官能团检测 + 环系拓扑分析，输出 info dict
 
-`analyze(mol)`（`src/namepredict/layer1/analyzer.py:484-485`）对 Mol 进行全原子扫描，输出一个标准化的 info dict：
+`analyze(mol)`（`src/namepredict/layer1/analyzer.py:383`）对 Mol 进行全原子扫描，输出一个标准化的 info dict：
 
 ```python
 info = {
     "mol": mol,                   # RDKit Mol 对象
     "carbon_ids": [...],          # 所有碳原子索引
     "n_carbons": N,               # 碳原子总数
-    # --- 官能团布尔标记 ---
+    # --- 官能团布尔标记 (18 个) ---
     "has_alcohol": bool, "has_acid": bool, "has_ester": bool,
     "has_amide": bool, "has_ketone": bool, "has_aldehyde": bool,
     "has_amine": bool, "has_nitrile": bool, "has_alkene": bool,
-    "has_alkyne": bool, ...       # 共 30+ 种官能团
-    # --- 官能团实例列表 ---
+    "has_alkyne": bool, ...       # 共 18 个 has_* 标志
+    # --- 官能团实例列表 (20 个) ---
     "hydroxyls": [...], "carboxyls": [...], "esters": [...],
     "amides": [...], "ketones": [...], "aldehydes": [...], ...
+    # --- 类型化 FG 库存 ---
+    "fg_inventory": FunctionalGroupInventory(...),
     # --- 环系拓扑 ---
     "has_ring": bool, "ring_count": int,
     "ring_systems": [...],        # 环系分组信息
@@ -89,13 +91,13 @@ info = {
 
 信息 dict 是整个流水线的通用数据合约（data contract），从 L1 产出后贯穿 L2-L5 全部层级。L2 基于它做母体决策，L3 基于它做取代基切除，L4/L5 基于它做位次分配和名称组装。
 
-> 源文件：`src/namepredict/layer1/analyzer.py`, `src/namepredict/layer1/*.py`
+> 源文件：`src/namepredict/layer1/analyzer.py`（10 个 `.py`，约 1,268 行；13 个扩展 FG 检测器已删除，仅剩核心 20 类 FG）
 
 ### 2.3 Layer 2 -- Parent Selector（母体选择器）
 
 **职责**：母体氢化物（parent hydride）选择——按 IUPAC P-44 规则驱动管线选出主链/主环母体
 
-这是整个流水线中逻辑最复杂的层之一（25 个文件，2,606 行；与 layer5 并列为代码量最大的两层），位于 `src/namepredict/layer2/`。
+这是整个流水线中逻辑最复杂的层之一（19 个文件，1,897 行），位于 `src/namepredict/layer2/`。2026-08 重构后 `scaffold/` 子包解散（`specs.py`/`retained_registry.py`/`ring_scaffold.py` 三合一为根目录 `ring_scaffold.py`），kind 正交化（纯烃环并入 `alkane`、数量派生 kind 删除）。
 
 **主路径（P-44 规则驱动管线）**：
 
@@ -106,9 +108,11 @@ info = {
 2. **骨架枚举 + 筛选**（`parent_skeleton.py`）：枚举开链 + 环系统骨架，依次施加
    P-44.1.2（环>链 + 最高杂原子）/ P-44.2（环系统优先级）/ P-44.3（链长）/ P-44.4（不饱和度）
 3. **typed 表达**（`principal_expression.py`）：`express_chain/ring_principal` 产出带
-   `PrincipalExpressionFacts` 与 `ScaffoldIdentity` 的 parent dict；苯环 + 单 FG 走
-   `_RETAINED_RING_KINDS` 保留名表（benzoic / **benzoate** / benzaldehyde / phenol / aniline 等）；
-   无主官能团的纯烃走 `express_hydrocarbon_principal`（alkane/alkene/alkyne/polyene/环烷/保留 scaffold）
+   `PrincipalExpressionFacts` 与 `ScaffoldIdentity` 的 parent dict。**kind 正交化后**：
+   ACID/ALCOHOL/AMINE 任意主基团数恒返回基团名（数量由 `multiplicity` 承载），仅 KETONE 保留
+   `count==2 → "dione"`；`_RETAINED_RING_KINDS` 已删除，苯保留名决策迁往 `layer5/typed_kinds.py`；
+   无主官能团的纯烃走 `express_hydrocarbon_principal`（alkane/alkene/alkyne/polyene/保留 scaffold，
+   非芳香环 kind 恒为 `alkane`）
 
 **parent dict 结构**：
 
@@ -118,6 +122,7 @@ parent = {
     "chain": [int, ...],  # 母体链原子索引（定向到 L4）
     "owned_atoms": set,   # 归母体所有的原子（L2->L3 的边界桥梁）
     "principal_expression_facts": ...,  # typed 主基团表达（L4/L5 消费）
+    "principal_group_count": int,       # 主官能团实例数
     "scaffold_id": str, "scaffold_identity": ...,  # 骨架身份（编号策略）
     # FG 特定字段
     "oh_c_idx": int,      # 羟基碳索引
@@ -127,8 +132,10 @@ parent = {
 }
 ```
 
-**评分与门控**：`scoring.py` 对候选做 11 维 P-44 评分；`candidate_gate.py` 提供类型化门控
-（`SCOPED_REJECT` / `GLOBAL_REJECT`）防止多元羧酸 fallback 绕过。
+**评分与门控**：`scoring.py` 对候选做 11 维 P-44 评分（`has_principal_fg` 已折叠进
+`principal_group_class`）；`candidate_gate.py` 提供类型化门控（`scoped_reject` / `global_reject`）
+防止多元羧酸 fallback 绕过。`fg_helpers.py` 的 `_no_fgs` 互斥谓词已删除，互斥由
+`select_principal_group` 的单选择结构性替代。
 
 > 源文件：`src/namepredict/layer2/principal_parent.py`, `src/namepredict/layer2/parent_skeleton.py`, `src/namepredict/layer2/principal_expression.py`, `src/namepredict/layer2/principal.py`, `src/namepredict/layer2/parent_selector.py`, `src/namepredict/layer2/scoring.py`, `src/namepredict/layer2/candidate_gate.py`
 
@@ -165,35 +172,32 @@ Coverage Ledger 是 Pass1/Pass2 门控的核心机制（见第 4 节）。参见
 
 **职责**：位次分配 + 链定向 + omit-locant 决策
 
-`number(parent, substituents)`（`src/namepredict/layer4/numbering.py`）基于 parent["kind"] 调度到不同的编号策略：
+2026-08 重构后，layer4 从"按 kind 派发 40+ orienter"收敛为**候选枚举的 P-14.4 编号引擎**（~655 行）。`number(parent, substituents)`（`src/namepredict/layer4/numbering.py`）的核心是 `numbering_engine.orient_numbering`：
 
-| parent kind | 编号模式 | 策略说明 |
-|-------------|---------|---------|
-| `alkane`, `alcohol`, etc. | mode=`chain` | 开链定位（烷烃/醇/胺/酮） |
-| `cycloalkane`, `cycloalcohol` | mode=`cycle` | 环烷烃官能团定向 |
-| `benzene`, `phenol`, `aniline` | mode=`benzene` | 苯系最低位次规则 |
-| `naphthalene`, `quinoline` | mode=`fused` | 稠环固定编号系统 |
-| `heteroarene` | mode=`hetero` | 杂环 O/N/S 优先级编号 |
-| `bridged`, `spiro` | mode=`von_baeyer` | 桥环/螺环特殊编号 |
+1. **固定编号**：保留 scaffold（naphthalene/indole 等）经 `plan_from_chain` 用 L2 注入的 `numbering_scaffold` 事实直接定向
+2. **候选枚举**：链正反（2 个）/ 环每原子 1 号位 × 双向（2n 个）
+3. **P-14.4 逐条收窄**：principal FG 最低位次集 → 多重键位次（双键优先）→ 取代基位次集 → stem-alpha 平局决胜（P-14.5）
 
-**约束引擎**（`src/namepredict/layer4/locants/engine.py:58`）：`choose_numbering(chain, mode, ...)` 生成所有合法编号候选，按约束优先级排序，选择最优方案。
+FG 位次由 `locant_calc.py` 的 `_FG_LOCANTS` 数据表产出（稀疏 `fg_locants`），omit 标志由 `omit_locants.py` 基于 `scaffold_id` 判定。旧的 `locants/engine.py`/`constraints.py`/`generate.py` 约束引擎整套删除。
 
 **omit-locant 标志**：L4 判定哪些位次可以被省略（如末端取代基 locant 为 1 时可省略），设置 omit 标志传递至 L5。
 
-> 源文件：`src/namepredict/layer4/numbering.py`, `src/namepredict/layer4/locants/engine.py`, `src/namepredict/layer4/omit_locants.py`
+> 源文件：`src/namepredict/layer4/numbering.py`, `src/namepredict/layer4/numbering_engine.py`, `src/namepredict/layer4/locant_calc.py`, `src/namepredict/layer4/omit_locants.py`
 
 ### 2.6 Layer 5 -- Name Assembly（名称组装）
 
 **职责**：双语名称组装 + 盐后缀拼接
 
-`assemble(numbered_dict)`（`src/namepredict/layer5/assembler.py`）是流水线的最终输出层：
+`assemble(numbered_dict)`（`src/namepredict/layer5/assembler.py`）是流水线的最终输出层（9 个 `.py`，约 1,387 行）：
 
-1. **KIND DISPATCH**：根据 parent["kind"] 选择对应的名称模板 -- 烷烃/醇/酸/醛/酮/酰胺/酯/腈/杂环/桥环/螺环等各有独立命名逻辑。
-2. **取代基排序**：按字母顺序（EN）或笔画/拼音（ZH）排列前缀取代基。
-3. **双语生成**：同时产出英文和中文名称 -- 英文遵循 IUPAC Blue Book，中文遵循中国化学会《有机化学命名原则》。
-4. **盐后缀追加**：如果 L0 的 salt_meta 存在，追加 "sodium"/"钠"、"potassium"/"钾"、"hydrochloride"/"盐酸盐" 等。
+1. **KIND 收敛**：`typed_kinds._typed_expression_kind` 把 L2 kind 收敛为 FG 类别（数量统一由 multiplicity 承载），苯环单 FG 返回保留名（benzoic/phenol/aniline 等）。
+2. **母体命名**：`_names_for` 查 `chain_engine._KIND_TABLE`（15 个 `_Chain` spec，词干 + 烯/炔段 + 位次 + variant 数量后缀），特殊 case 走 worker（exocyclic acid/苯系/苯二酚）。
+3. **取代基排序**：按字母序（EN）排列前缀取代基，重复基团 di/tri/tetra 合并。
+4. **双语生成**：同时产出英文和中文名称 -- 英文遵循 IUPAC Blue Book，中文遵循中国化学会《有机化学命名原则》。
+5. **立体化学**：`stereo.py` 合并 E/Z 与 CIP R/S 前缀（原 stereo_rs/stereo_ez/_stereo_common 三合一）。
+6. **盐后缀追加**：如果 L0 的 salt_meta 存在，追加 "sodium"/"钠"、"potassium"/"钾"、"hydrochloride"/"盐酸盐" 等。
 
-> 源文件：`src/namepredict/layer5/assembler.py`, `src/namepredict/layer5/stems.py`, `src/namepredict/layer5/benzene_names.py`
+> 源文件：`src/namepredict/layer5/assembler.py`, `src/namepredict/layer5/chain_engine.py`, `src/namepredict/layer5/typed_kinds.py`, `src/namepredict/layer5/stereo.py`, `src/namepredict/layer5/stems.py`
 
 ---
 
@@ -264,12 +268,12 @@ L1 产出的 info dict 是流水线中最重要的数据合约。它的结构稳
 
 ### 4.4 parent["kind"] dispatch（L2 -> L4/L5）
 
-L2 产出的 parent dict 中的 `"kind"` 字段是整个下游的调度键：
+L2 产出的 parent dict 中的 `"kind"` 字段是下游调度键，但正交化后 kind 已高度收敛：
 
-- L4 根据 kind 选择编号模式（chain/cycle/benzene/fused/hetero/von_baeyer）。
-- L5 根据 kind 选择名称模板（醇/酸/醛/酮/杂环命名格式不同）。
+- L4 不再按 kind 枚举 orienter——`numbering_engine.orient_numbering` 按 P-14.4 对 parent 携带的 FG/不饱和键/取代基字段自动定向，kind 只用于保留 scaffold 的 `numbering_scaffold` 查表。
+- L5 先把 kind 经 `typed_kinds` 收敛为 FG 类别，再查 `chain_engine._KIND_TABLE` 命名。
 
-新增母体类型只需：L2 producer 设置新 kind -> L4 注册编号模式 -> L5 注册名称模板。这是典型的策略模式（strategy pattern）。
+新增母体类型只需：L2 设置新 kind -> L5 注册命名模板；L4 无需改动（候选引擎自动适用）。这是典型的策略模式（strategy pattern）向数据驱动的收敛。
 
 ### 4.5 FG 层级与优先级（L1 -> L2 -> L5）
 
@@ -330,56 +334,62 @@ src/namepredict/
 ├── namer.py                  # Orchestrator (SMILESNNamer + pipeline)
 ├── types.py                  # NameResult dataclass
 ├── cache/                    # 常用名缓存
+├── constants.py              # 化学常量 (元素符号, MULT_EN/MULT_ZH 等)
 ├── layer0/                   # 预处理器
 │   ├── preprocessor.py       # SMILES → Mol
 │   └── salt.py               # 盐解离
-├── layer1/                   # 分析器
-│   ├── analyzer.py           # FG 检测 + info dict
-│   ├── a*_*.py               # ~20 FG 子检测模块
-│   └── ring_*.py             # 环系拓扑
-├── layer2/                   # 母体选择器（25 .py，含 scaffold/）
+├── layer1/                   # 分析器 (10 .py, ~1,268 行)
+│   ├── analyzer.py           # FG 检测 (20 列表键/18 bool) + info dict
+│   ├── _carbonyl_common.py   # 共享羰基检测原语 (13 函数)
+│   ├── functional_group_inventory.py  # 类型化 FG 库存 (FunctionalGroupClass)
+│   ├── isocyanate.py         # isocyanate / isothiocyanate 检测
+│   ├── acyl_halide.py        # 酰卤 (Cl/Br) 检测
+│   └── ring_*.py             # 环系拓扑 (systems/ir/fingerprint/relative_stereo)
+├── layer2/                   # 母体选择器 (19 .py, ~1,897 行)
 │   ├── principal.py          # P-41 主官能团注册表 + 选择
-│   ├── principal_expression.py  # typed 表达 (chain/ring/hydrocarbon)
+│   ├── principal_expression.py  # typed 表达 (chain/ring/hydrocarbon, kind 正交化)
 │   ├── principal_parent.py   # P-44 规则驱动管线编排
 │   ├── parent_skeleton.py    # 骨架枚举 + P-44 筛选
-│   ├── candidates.py         # 候选收集 + 门控 + 兜底
+│   ├── candidates.py         # 候选收集 + 门控
 │   ├── parent_selector.py    # select_parent / iter_parent_candidates 入口
-│   ├── scoring.py            # 候选评分
+│   ├── scoring.py            # 候选评分 (11 维 P-44)
 │   ├── candidate_gate.py     # 类型化门控
 │   ├── parent_core.py        # parent_dict / chain / gate helpers
-│   ├── fg_helpers.py         # FG 资格谓词 + 互斥检查
 │   ├── arene_carbonyl.py     # 苯甲酰类保留母体
 │   ├── kind_registry.py      # 母体元数据注册中心（只读权威）
-│   └── scaffold/             # 骨架身份 (specs/ring_scaffold/retained_registry)
+│   ├── ring_scaffold.py      # ScaffoldSpec + _TOPOLOGY + resolve_ring_scaffold（三合一）
+│   ├── identity.py / ring_expression_policy.py / ring_parent.py
+│   └── (fg_helpers.py, scaffold/ 子包已删除)
 ├── layer3/                   # 取代基提取 + 侧链拓扑事实
 │   ├── substituent_extractor.py  # 三段流水线 (core + anchored + claim)
 │   ├── substituent_namer.py  # 有序后端命名 (retained / rooted-tree / recursive)
 │   ├── as_substituent.py / submol_build.py  # cut→free-name→yl 管道
 │   ├── claim_extract.py / claimable_block.py  # 覆盖补全
-│   ├── side_facts.py / side_alkyl_sys.py / aryl_sub.py
+│   ├── side_facts.py / aryl_sub.py
 │   ├── amino_side.py         # 氨基取代基
 │   └── coverage.py           # Coverage Ledger
-├── layer4/                   # 编号
-│   ├── numbering.py          # 编号调度
+│   (yl_form.py 已删除 → 直接 tools.free_to_yl)
+├── layer4/                   # 编号 (11 .py, ~655 行)
+│   ├── numbering.py          # 入口: number()
+│   ├── numbering_engine.py   # P-14.4 候选编号引擎 (orient_numbering)
+│   ├── locant_calc.py        # FG 位次 + _pack
+│   ├── _chain_orient.py      # 共享方向原语
+│   ├── orienters.py          # _typed_group_atoms (仅存)
 │   ├── omit_locants.py       # omit-locant 决策
-│   ├── polyene.py            # 多烯定向
-│   ├── locants/              # 约束引擎
-│   │   ├── engine.py         # choose_numbering
-│   │   ├── constraints.py    # 约束定义
-│   │   ├── generate.py       # 编号候选生成
-│   │   ├── adapt.py          # 从 parent/chain 建 plan
-│   │   └── plan.py           # NumberingPlan
-│   └── [orient modules].py   # 各类定向策略
-└── layer5/                   # 名称组装
-    ├── assembler.py          # 组装调度 + _KIND_TABLE 链引擎
+│   ├── polyene.py            # 多烯位次
+│   ├── cyclo_relative_stereo.py  # 环多元酸 cis/trans
+│   └── locants/              # NumberingPlan 数据 + adapt (engine/constraints/generate 已删)
+│       ├── plan.py           # NumberingPlan
+│       └── adapt.py          # 从 parent/chain 建 plan
+└── layer5/                   # 名称组装 (9 .py, ~1,387 行)
+    ├── assembler.py          # 组装调度 + _names_for 派发
     ├── assembler_prefixes.py # 取代基前缀
+    ├── chain_engine.py       # _KIND_TABLE 链引擎 (_Chain spec, variant 数量后缀)
+    ├── typed_kinds.py        # kind 收敛 + 苯保留名 (_BENZENE_RETAINED)
     ├── stems.py              # 词素映射 (EN/ZH)
     ├── benzene_names.py      # 苯系/杂环母体 + join_kind_name
-    ├── iso_arene_names.py    # iso-芳烃保留名
-    ├── stereo_rs.py          # CIP R/S
-    ├── stereo_ez.py          # E/Z
+    ├── stereo.py             # E/Z + CIP R/S (三合一)
     ├── unsat_acid.py         # 烯酰胺特例
-    ├── acyl_halide_names.py  # 酰卤前缀判断
     └── __init__.py
 ```
 

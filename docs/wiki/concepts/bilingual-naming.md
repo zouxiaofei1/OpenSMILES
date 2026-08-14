@@ -45,7 +45,7 @@ Layer5: (en, zh) tuples → NameResult(en="ethanol", zh="乙醇")   ← 双语�
 
 ### 母体名称派发中的双语约定
 
-`_names_for` 函数（`src/namepredict/layer5/assembler.py:493`）按 5 级优先级依次尝试：special FG names → phosphate names → hetero names → carbonyl names → unsat/alkane names。每一级都是一个双语函数，返回 `(en, zh)` 或 `None`。当某级返回 `None` 时，派发器自动降级到下一优先级。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
+`_names_for` 函数（`src/namepredict/layer5/assembler.py:79-112`）先查 `chain_engine._KIND_TABLE`（15 个 `_Chain` spec，按 `scaffold_id` 运行时注入环前缀/稠环词干），命中即返回；否则落到特殊 worker（`_exocyclic_acid_names`/`phenyl`/`benzene`/`_ARENE_RETAINED_NAMES`/`benzenediol`）或 `_parent_stem_names` 回退。每个 worker 都是返回 `(en, zh)` 或 `None` 的双语函数——返回 `None` 时派发器降级到下一策略。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
 
 ## 词干表：双语单词的单一权威来源
 
@@ -155,7 +155,7 @@ _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈",
 
 `zh_stem` 的工作原理是按 `_ZH_SUFFIXES` 元组中的顺序依次尝试匹配——一旦某个后缀匹配成功，就切除该后缀并返回剩余部分。匹配顺序从长后缀（`酰胺`）到短后缀（`烯`、`炔`），避免短后缀误匹配长后缀的尾部。如果没有任何后缀匹配，函数返回原始输入——这意味着它可以安全地用于任何中文名称字符串。
 
-在 `assembler.py` 的环系命名中广泛使用了 `zh_stem`，例如 `_cycloalkene_names` 函数调用 `zh_stem(z)` 获取环烷烃词干，再追加 `烯` 后缀形成环烯名称。
+在 `chain_engine.py` 的环系命名中广泛使用了 `zh_stem`——`_chain_names` 对 `scaffold_id=="carbocycle"` 的母体注入 `cyclic=True`（恒加 `环`/`cyclo` 前缀），并用 `zh_stem` 获取环烷烃词干后再追加烯/醇等后缀。
 
 ## `zh_num`：中文数字生成
 

@@ -63,14 +63,6 @@ ANTHRA_LABELS: tuple[str, ...] = (
 )
 
 
-def _carbo(sid: str, mode: str) -> ScaffoldSpec:
-    pol = NumberingPolicy(mode=mode)
-    return ScaffoldSpec(
-        id=sid, naming_class="carbocycle", stem_en=None, stem_zh=None,
-        n_rings=1, ring="carbo", retained=False, fg_rank=0, numbering=pol,
-    )
-
-
 def _fused56(
     sid: str, stem_en: str | None, stem_zh: str | None, fg_rank: int = 0,
     *, retained: bool = True,
