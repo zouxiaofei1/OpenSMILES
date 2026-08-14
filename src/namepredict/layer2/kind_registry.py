@@ -7,25 +7,12 @@ from namepredict.layer1.functional_group_inventory import FunctionalGroupClass a
 from namepredict.layer2.principal import legacy_rank
 
 
-# 数量派生 kind(diacid/diol/diamine/…)已删:multiplicity 由 principal_expression_facts 承载。
-_KIND_CLASS = {
-    "acid": FG.ACID,
-    "ester": FG.ESTER,
-    "amide": FG.AMIDE, "nitrile": FG.NITRILE, "aldehyde": FG.ALDEHYDE,
-    "ketone": FG.KETONE,
-    "alcohol": FG.ALCOHOL,
-    "amine": FG.AMINE,
-    "tetraalkylammonium": FG.QUATERNARY_AMMONIUM,
-    "alkane": FG.NONE,
-
-    #暂时无效的kind
-    "ether": FG.ETHER,"thiol": FG.THIOL, "anhydride": FG.ANHYDRIDE,"acyl_chloride": FG.ACYL_HALIDE, "acyl_bromide": FG.ACYL_HALIDE,
-}
-
-
 def _kind_class(kind: str) -> FG | None:
-    return _KIND_CLASS.get(kind)
 
+    try:
+        return FG(kind)
+    except ValueError:
+        return None
 
 def _principal_rank(kind: str, fallback: int = 0) -> int:
     group_class = _kind_class(kind)
@@ -121,9 +108,6 @@ def _add(
     register(KindMeta(kind, en, zh, fg, ring, n, ret))
 
 
-def _load_chain_fg() -> None:
-    for k in _KIND_CLASS:
-        _add(k)
 
 
 def _spec_to_meta(sp) -> KindMeta:
@@ -144,7 +128,6 @@ def _load_from_scaffold_specs() -> None:
 
 
 def _bootstrap() -> None:
-    _load_chain_fg()
     _load_from_scaffold_specs()  # 最后：Spec 是词干权威
 
 

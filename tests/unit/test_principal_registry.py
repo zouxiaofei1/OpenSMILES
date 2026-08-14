@@ -72,3 +72,9 @@ def test_unmigrated_legacy_ranks_are_preserved(kind: str, rank: int) -> None:
 @pytest.mark.parametrize("kind", ["carboxylate", "formamide_like", "amine_oxide", "unknown_one"])
 def test_kind_projection_never_uses_substring_guessing(kind: str) -> None:
     assert kind_registry.fg_rank(kind) == 0
+
+
+def test_chain_fg_anchor_fields_present() -> None:
+    """链式表达能产生 kind 的 FG 都必须有 payload 锚点字段（_FIELDS 并入主表后的守卫）。"""
+    from namepredict.layer2.principal_expression import _CHAIN_FG, _anchor_fields
+    assert all(_anchor_fields(gc) is not None for gc in _CHAIN_FG)

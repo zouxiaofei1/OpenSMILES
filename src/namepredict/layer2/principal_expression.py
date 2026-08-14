@@ -6,7 +6,7 @@ from enum import Enum
 
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
-from namepredict.layer2.principal import PrincipalGroupSelection
+from namepredict.layer2.principal import PrincipalGroupSelection, feature_spec
 
 
 class PrincipalRelation(str, Enum):
@@ -31,30 +31,22 @@ class PrincipalExpressionFacts:
     charge_state: PrincipalChargeState
 
 
-# 数量派生 kind 已统一：multiplicity 由 principal_expression_facts 承载，acid/alcohol/amine/ketone 对任意数量恒用基团名；dione 后缀由 L5 chain_engine variant 切换。
-_CHAIN_KINDS = {
-    FunctionalGroupClass.ACID: {1: "acid"},
-    FunctionalGroupClass.ESTER: {1: "ester"},
-    FunctionalGroupClass.KETONE: {1: "ketone"},
-    FunctionalGroupClass.ALDEHYDE: {1: "aldehyde"},
-    FunctionalGroupClass.NITRILE: {1: "nitrile"},
-    FunctionalGroupClass.AMIDE: {1: "amide"},
-    FunctionalGroupClass.ALCOHOL: {1: "alcohol"},
-    FunctionalGroupClass.AMINE: {1: "amine"},
-    FunctionalGroupClass.NONE: {0: "alkane"}
-}
-_FIELDS = {
-    FunctionalGroupClass.RADICAL: ("radical_c_idx", "radical_c_idxs"),
-    FunctionalGroupClass.ACID: ("cooh_c_idx", "cooh_c_idxs"),
-    FunctionalGroupClass.ESTER: ("ester_c_idx", "ester_c_idxs"),
-    FunctionalGroupClass.KETONE: ("ketone_c_idx", "ketone_c_idxs"),
-    FunctionalGroupClass.ALDEHYDE: ("aldehyde_c_idx", "aldehyde_c_idxs"),
-    FunctionalGroupClass.NITRILE: ("nitrile_c_idx", "nitrile_c_idxs"),
-    FunctionalGroupClass.AMIDE: ("amide_c_idx", "amide_c_idxs"),
-    FunctionalGroupClass.ALCOHOL: ("oh_c_idx", "oh_c_idxs"),
-    FunctionalGroupClass.AMINE: ("amine_c_idx", "amine_c_idxs"),
-     FunctionalGroupClass.NONE:("none_c_idx","none_c_idxs"),
-}
+# 链式主官能团：kind 恒为 FG 类别名；acid/alcohol/amine/ketone 任意数量恒用基团名，其余链 FG 仅单基。
+_CHAIN_FG = frozenset({
+    FunctionalGroupClass.ACID, FunctionalGroupClass.ALCOHOL,
+    FunctionalGroupClass.AMINE, FunctionalGroupClass.KETONE,
+    FunctionalGroupClass.ESTER, FunctionalGroupClass.AMIDE,
+    FunctionalGroupClass.NITRILE, FunctionalGroupClass.ALDEHYDE,
+})
+_MULTI_FG = frozenset({
+    FunctionalGroupClass.ACID, FunctionalGroupClass.ALCOHOL,
+    FunctionalGroupClass.AMINE, FunctionalGroupClass.KETONE,
+})
+def _anchor_fields(group_class: FunctionalGroupClass) -> tuple[str, str] | None:
+    if group_class is FunctionalGroupClass.NONE:
+        return "none_c_idx", "none_c_idxs"
+    spec = feature_spec(group_class)
+    return spec.anchor_fields if spec else None
 
 
 def _covered(selection: PrincipalGroupSelection, skeleton: ParentSkeleton):
@@ -63,18 +55,17 @@ def _covered(selection: PrincipalGroupSelection, skeleton: ParentSkeleton):
 
 
 def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
-    if group_class in (FunctionalGroupClass.ACID, FunctionalGroupClass.ALCOHOL,
-                       FunctionalGroupClass.AMINE, FunctionalGroupClass.KETONE):
-        # 任意主基团数(≥1)→ 基团名;count=0(仲/叔胺等未覆盖)不产 facts;dione 后缀由 L5 variant 切换。
-        return _CHAIN_KINDS[group_class][1] if count >= 1 else None
-    kinds = _CHAIN_KINDS.get(group_class)
-    if kinds is None:
+    if group_class is FunctionalGroupClass.NONE:
+        return group_class.value if count == 0 else None
+    if group_class not in _CHAIN_FG:
         return None
-    return kinds.get(count)
+    if group_class not in _MULTI_FG and count != 1:
+        return None
+    return group_class.value if count >= 1 else None
 
 
 def _principal_fields(group_class: FunctionalGroupClass, anchors: list[int]) -> dict:
-    single, plural = _FIELDS[group_class]
+    single, plural = _anchor_fields(group_class)
     return {single: anchors[0], plural: anchors} if len(anchors) == 1 else {plural: anchors}
 
 
@@ -162,7 +153,7 @@ def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentS
 
 def _ring_fields(selection: PrincipalGroupSelection, occurrences) -> dict:
     anchors = _anchors(occurrences)
-    fields = _principal_fields(selection.group_class, anchors) if selection.group_class in _FIELDS else {}
+    fields = _principal_fields(selection.group_class, anchors) if _anchor_fields(selection.group_class) else {}
     characteristic = sorted({i for o in occurrences for i in o.characteristic_atoms})
     return {**fields, "principal_characteristic_atoms": characteristic,
             "principal_attachment_atoms": anchors,

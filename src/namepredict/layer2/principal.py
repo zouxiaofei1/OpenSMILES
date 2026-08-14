@@ -29,26 +29,28 @@ class PrincipalFeatureSpec:
     priority: PrincipalPriority
     expression: PrincipalExpression
     compatibility_rank: int = 0
+    anchor_fields: tuple[str, str] | None = None
 
 
-def _suffix(p41_class: int, rank: int, *path: int) -> PrincipalFeatureSpec:
+def _suffix(p41_class: int, rank: int, *path: int,
+            anchor_fields: tuple[str, str] | None = None) -> PrincipalFeatureSpec:
     priority = PrincipalPriority(p41_class, path)
-    return PrincipalFeatureSpec(priority, PrincipalExpression.SUFFIX, rank)
+    return PrincipalFeatureSpec(priority, PrincipalExpression.SUFFIX, rank, anchor_fields)
 
 
 PRINCIPAL_REGISTRY: dict[FG, PrincipalFeatureSpec] = {
-    FG.RADICAL: _suffix(1, 1),
-    FG.ACID: _suffix(7, 14, 1),
+    FG.RADICAL: _suffix(1, 1, anchor_fields=("radical_c_idx", "radical_c_idxs")),
+    FG.ACID: _suffix(7, 14, 1, anchor_fields=("cooh_c_idx", "cooh_c_idxs")),
     FG.ANHYDRIDE: _suffix(8, 12),
-    FG.ESTER: _suffix(9, 11),
+    FG.ESTER: _suffix(9, 11, anchor_fields=("ester_c_idx", "ester_c_idxs")),
     FG.ACYL_HALIDE: _suffix(10, 10),
-    FG.AMIDE: _suffix(11, 9),
-    FG.NITRILE: _suffix(14, 8),
-    FG.ALDEHYDE: _suffix(15, 7),
-    FG.KETONE: _suffix(16, 6),
-    FG.ALCOHOL: _suffix(17, 5, 1),
+    FG.AMIDE: _suffix(11, 9, anchor_fields=("amide_c_idx", "amide_c_idxs")),
+    FG.NITRILE: _suffix(14, 8, anchor_fields=("nitrile_c_idx", "nitrile_c_idxs")),
+    FG.ALDEHYDE: _suffix(15, 7, anchor_fields=("aldehyde_c_idx", "aldehyde_c_idxs")),
+    FG.KETONE: _suffix(16, 6, anchor_fields=("ketone_c_idx", "ketone_c_idxs")),
+    FG.ALCOHOL: _suffix(17, 5, 1, anchor_fields=("oh_c_idx", "oh_c_idxs")),
     FG.THIOL: _suffix(17, 4, 2),
-    FG.AMINE: _suffix(19, 3),
+    FG.AMINE: _suffix(19, 3, anchor_fields=("amine_c_idx", "amine_c_idxs")),
     FG.ISOCYANATE: PrincipalFeatureSpec(PrincipalPriority(41), PrincipalExpression.LEGACY_COMPAT, 8),
     FG.ISOTHIOCYANATE: PrincipalFeatureSpec(PrincipalPriority(41), PrincipalExpression.LEGACY_COMPAT, 8),
     FG.SULFIDE: PrincipalFeatureSpec(PrincipalPriority(41, (2,)), PrincipalExpression.LEGACY_COMPAT, 2),
