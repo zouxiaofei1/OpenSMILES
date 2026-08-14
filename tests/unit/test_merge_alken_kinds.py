@@ -24,7 +24,7 @@ UNSAT_CASES = [
     ("COC(=O)C=C", "ester", "methyl prop-2-enoate", "丙-2-烯酸甲酯"),
     ("C=CC#N", "nitrile", "prop-2-enenitrile", "丙-2-烯腈"),
     ("C=CC(N)=O", "amide", "prop-2-enamide", "丙-2-烯酰胺"),
-    ("O=C(O)C=CC(=O)O", "diacid", "but-2-enedioic acid", "丁-2-烯二酸"),
+    ("O=C(O)C=CC(=O)O", "acid", "but-2-enedioic acid", "丁-2-烯二酸"),
 ]
 SAT_CASES = [
     ("CC(=O)O", "acid", "acetic acid", "乙酸"),

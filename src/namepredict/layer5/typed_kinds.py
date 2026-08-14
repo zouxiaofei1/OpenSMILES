@@ -34,7 +34,7 @@ def _typed_acid_kind(kind: str, numbered: dict) -> str:
         return "cycloalkanecarboxylic" if facts.multiplicity == 1 else "cycloalkane_polycarboxylic"
     if facts.relation.value == "exocyclic":
         return kind
-    return "acid" if facts.multiplicity == 1 else "diacid" if facts.multiplicity == 2 else "polycarboxylic"
+    return "acid"  # 链式:数量统一由 multiplicity 承载,kind 恒为 acid
 
 
 def _typed_ester_kind(kind: str, numbered: dict) -> str:
@@ -97,7 +97,7 @@ def _typed_alcohol_kind(kind: str, numbered: dict) -> str:
         return ring_kind
     if kind not in {"alcohol", "diol", "triol"}:
         return kind
-    return "alcohol" if facts.multiplicity == 1 else "diol" if facts.multiplicity == 2 else "triol"
+    return "alcohol"  # 链式:数量统一由 multiplicity 承载,kind 恒为 alcohol
 
 def _typed_amine_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
@@ -110,7 +110,7 @@ def _typed_amine_kind(kind: str, numbered: dict) -> str:
         return "cycloamine"
     if kind not in {"amine", "diamine", "triamine", "tetraamine"}:
         return kind
-    return {1: "amine", 2: "diamine", 3: "triamine", 4: "tetraamine"}.get(facts.multiplicity, kind)
+    return "amine"  # 链式:数量统一由 multiplicity 承载,kind 恒为 amine
 
 def _typed_expression_kind(kind: str, numbered: dict) -> str:
     kind = _typed_acid_kind(kind, numbered)

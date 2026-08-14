@@ -15,8 +15,8 @@ from namepredict.layer2.scoring import _score_parent
 from namepredict.types import NameResult
 
 COUNT_CASES = [
-    ({"kind": "diol", "principal_group_count": 2}, (5, 2)),
-    ({"kind": "triamine", "principal_group_count": 3}, (3, 3)),
+    ({"kind": "alcohol", "principal_group_count": 2}, (5, 2)),
+    ({"kind": "amine", "principal_group_count": 3}, (3, 3)),
     ({"kind": "dione", "principal_group_count": 2}, (6, 2)),
 ]
 
@@ -28,13 +28,13 @@ def test_typed_principal_group_contract(parent, expected):
 
 
 def test_scoring_starts_with_typed_p44_facts():
-    parent = {"kind": "diol", "principal_group_count": 2}
+    parent = {"kind": "alcohol", "principal_group_count": 2}
     assert _score_parent({}, parent)[:2] == (5, 2)
 
 
 def test_higher_class_precedes_larger_lower_class_count():
     acid = {"kind": "acid", "principal_group_count": 1}
-    triol = {"kind": "triol", "principal_group_count": 3}
+    triol = {"kind": "alcohol", "principal_group_count": 3}
     amine = {"kind": "amine", "principal_group_count": 1}
     assert _score_parent({}, acid) > _score_parent({}, triol) > _score_parent({}, amine)
 

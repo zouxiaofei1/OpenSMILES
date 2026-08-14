@@ -31,15 +31,17 @@ class PrincipalExpressionFacts:
     charge_state: PrincipalChargeState
 
 
+# 数量派生 kind 已统一:multiplicity 由 principal_expression_facts 承载,
+# acid/alcohol/amine 对任意数量恒用基团名;仅 KETONE 保留 dione 区分环酮表达。
 _CHAIN_KINDS = {
-    FunctionalGroupClass.ACID: {1: "acid", 2: "diacid", 3: "polycarboxylic"},
+    FunctionalGroupClass.ACID: {1: "acid"},
     FunctionalGroupClass.ESTER: {1: "ester"},
     FunctionalGroupClass.KETONE: {1: "ketone", 2: "dione"},
     FunctionalGroupClass.ALDEHYDE: {1: "aldehyde"},
     FunctionalGroupClass.NITRILE: {1: "nitrile"},
     FunctionalGroupClass.AMIDE: {1: "amide"},
-    FunctionalGroupClass.ALCOHOL: {1: "alcohol", 2: "diol", 3: "triol"},
-    FunctionalGroupClass.AMINE: {1: "amine", 2: "diamine", 3: "triamine", 4: "tetraamine"},
+    FunctionalGroupClass.ALCOHOL: {1: "alcohol"},
+    FunctionalGroupClass.AMINE: {1: "amine"},
     FunctionalGroupClass.NONE: {0: "alkane"}
 }
 _FIELDS = {
@@ -62,13 +64,14 @@ def _covered(selection: PrincipalGroupSelection, skeleton: ParentSkeleton):
 
 
 def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
+    if group_class in (FunctionalGroupClass.ACID, FunctionalGroupClass.ALCOHOL,
+                       FunctionalGroupClass.AMINE):
+        # 任意主基团数(≥1)→ 基团名;count=0(仲/叔胺等未覆盖)不产 facts。
+        return _CHAIN_KINDS[group_class][1] if count >= 1 else None
     kinds = _CHAIN_KINDS.get(group_class)
-    # print(kinds,count)
-    # print( kinds.get(count, "polycarboxylic" if group_class is FunctionalGroupClass.ACID else None))
-    if kinds is None :
+    if kinds is None:
         return None
-
-    return kinds.get(count, "polycarboxylic" if group_class is FunctionalGroupClass.ACID else None)
+    return kinds.get(count)
 
 
 def _principal_fields(group_class: FunctionalGroupClass, anchors: list[int]) -> dict:

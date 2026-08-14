@@ -19,7 +19,7 @@ def test_methanol_omit_flag():
 
 
 def test_diol_single_oh_record_multi_locants():
-    fg = _fg_locants({"kind": "diol", "n_carbons": 7, "chain": [9, 8, 6, 5, 3, 1, 0],
+    fg = _fg_locants({"kind": "alcohol", "n_carbons": 7, "chain": [9, 8, 6, 5, 3, 1, 0],
                       "oh_c_idxs": [1, 9]})
     assert fg == [{"kind": "oh", "locants": [1, 6], "omit": False}]
 

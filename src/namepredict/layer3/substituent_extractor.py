@@ -115,12 +115,12 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
     return [h for h in halos if cl not in (h.get("atoms") or [])]
 
 _PARENT_OH_KINDS = frozenset({
-    "alcohol", "diol", "triol", "cycloalcohol", "cycloalkanediol",
+    "alcohol", "cycloalcohol", "cycloalkanediol",
     "phenol", "benzenediol", "benzothiophenol",
     "naphthalenol", "naphthalenediol",
 })
 _PARENT_NH2_KINDS = frozenset({
-    "amine", "diamine", "triamine", "tetraamine", "cycloamine", "sec_amine", "tert_amine",
+    "amine", "cycloamine", "sec_amine", "tert_amine",
     "aniline", "benzofuranamine",
     "benzothiazolamine", "benzoxazolamine", "benzimidazolamine",
     "pyrazolamine", "thiazolamine", "quinazolinamine",

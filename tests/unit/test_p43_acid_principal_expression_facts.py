@@ -13,19 +13,22 @@ from namepredict.namer import SMILESNNamer
 
 CASES = [
     ("CCCC(=O)O", "acid", 1, PrincipalRelation.IN_SKELETON, "neutral", "butanoic acid", "丁酸"),
-    ("O=C(O)CCC(=O)O", "diacid", 2, PrincipalRelation.IN_SKELETON, "neutral", "butanedioic acid", "丁二酸"),
+    ("O=C(O)CCC(=O)O", "acid", 2, PrincipalRelation.IN_SKELETON, "neutral", "butanedioic acid", "丁二酸"),
     ("CCCC(=O)[O-]", "acid", 1, PrincipalRelation.IN_SKELETON, "anion", "butanoate", "丁酸根"),
 ]
 
 
-def _parent(smiles, kind):
+def _parent(smiles, kind, count):
     parents = _collect_candidates(analyze(Chem.MolFromSmiles(smiles)))
-    return next(parent for parent in parents if parent.get("kind") == kind)
+    return next(parent for parent in parents
+                if parent.get("kind") == kind
+                and parent.get("principal_expression_facts")
+                and parent["principal_expression_facts"].multiplicity == count)
 
 
 @pytest.mark.parametrize("smiles,kind,count,relation,charge,en,zh", CASES)
 def test_acid_principal_expression_facts(smiles, kind, count, relation, charge, en, zh):
-    facts = _parent(smiles, kind)["principal_expression_facts"]
+    facts = _parent(smiles, kind, count)["principal_expression_facts"]
     assert facts.group_class.value == "acid"
     assert facts.multiplicity == count
     assert facts.relation is relation
@@ -40,7 +43,7 @@ def test_acid_principal_expression_facts(smiles, kind, count, relation, charge, 
 
 
 def test_partially_deprotonated_diacid_has_mixed_charge_state():
-    parent = _parent("O=C([O-])CCC(=O)O", "diacid")
+    parent = _parent("O=C([O-])CCC(=O)O", "acid", 2)
     assert parent["principal_expression_facts"].charge_state is PrincipalChargeState.MIXED
 
 

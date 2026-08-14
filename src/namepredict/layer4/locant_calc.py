@@ -66,7 +66,7 @@ def _oh_locants(oriented: dict) -> list[int] | None:
         return locs
     if oriented.get("kind") in ("naphthalenediol",):
         return _scaffold_pair_locants(oriented, "oh_c_idxs")
-    return _oriented_pair_locants(oriented, ("alcohol", "diol", "triol", "benzenediol", "cycloalkanediol"), "oh_c_idxs")
+    return _oriented_pair_locants(oriented, ("alcohol", "benzenediol", "cycloalkanediol"), "oh_c_idxs")
 def _typed_amine_atoms(oriented: dict) -> list[int]:
     return _typed_group_atoms(oriented, "amine")
 
@@ -75,7 +75,7 @@ def _amine_pair_locants(oriented: dict) -> list[int] | None:
     locs = _typed_atom_locants(oriented, "amine")
     if locs:
         return locs
-    return _oriented_pair_locants(oriented, ("diamine", "triamine", "tetraamine"), "amine_c_idxs")
+    return _oriented_pair_locants(oriented, ("amine",), "amine_c_idxs")
 def _amine_locant(oriented: dict) -> int | None:
     locs = _typed_atom_locants(oriented, "amine")
     return locs[0] if len(locs) == 1 else _fg_locant(oriented, _AMINE_KINDS, "amine_c_idx")

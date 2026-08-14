@@ -89,10 +89,9 @@ def ez_for_parent(numbered: dict) -> str:
 # --- CIP R/S stereodescriptors ----------------------------------------------
 
 _RS_KINDS = frozenset({
-    "acid", "alcohol",
-    "diol", "triol", "amine", "diamine",
+    "acid", "alcohol", "amine",
     "ketone", "ester",
-    "diacid", "amide", "nitrile", "aldehyde", "thiol",
+    "amide", "nitrile", "aldehyde", "thiol",
     "piperidine", "pyrrolidine", "piperazine", "morpholine",
     "oxolane", "oxane",
 })

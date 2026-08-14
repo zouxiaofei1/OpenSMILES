@@ -7,14 +7,14 @@ from namepredict.layer1.functional_group_inventory import FunctionalGroupClass a
 from namepredict.layer2.principal import legacy_rank
 
 
+# 数量派生 kind(diacid/diol/diamine/…)已删:multiplicity 由 principal_expression_facts 承载。
 _KIND_CLASS = {
-    "acid": FG.ACID, "diacid": FG.ACID, "polycarboxylic": FG.ACID,
-    "ester": FG.ESTER, 
+    "acid": FG.ACID,
+    "ester": FG.ESTER,
     "amide": FG.AMIDE, "nitrile": FG.NITRILE, "aldehyde": FG.ALDEHYDE,
     "ketone": FG.KETONE, "dione": FG.KETONE, "cycloketone": FG.KETONE,
-    "alcohol": FG.ALCOHOL, "diol": FG.ALCOHOL, "triol": FG.ALCOHOL,
+    "alcohol": FG.ALCOHOL,
     "cycloalcohol": FG.ALCOHOL, "amine": FG.AMINE,
-    "diamine": FG.AMINE, "triamine": FG.AMINE, "tetraamine": FG.AMINE,
     "sec_amine": FG.AMINE, "tert_amine": FG.AMINE, "cycloamine": FG.AMINE,
     "tetraalkylammonium": FG.QUATERNARY_AMMONIUM,
     "alkane": FG.NONE,
