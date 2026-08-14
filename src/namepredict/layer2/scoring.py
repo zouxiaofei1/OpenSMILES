@@ -34,10 +34,11 @@ def _ring_size(parent: dict, kind: str) -> int:
     return len(parent.get("chain") or [])
 
 def _n_unsat(parent: dict) -> int:
-    kind = parent.get("kind")
-    if kind in ("polyene", "cyclopolyene"):
-        return len(parent.get("double_bonds") or [])
-    return 1 if kind in ("alkene", "alkyne", "cycloalkene") else 0
+    # 不饱和度从字段判读（正交化后 kind 不再承载环烯组合）；兼容 legacy 烃 kind。
+    dbs = parent.get("double_bonds")
+    if dbs:
+        return len(dbs)
+    return 1 if parent.get("double_bond") or parent.get("triple_bond") else 0
 
 def _n_carbons(parent: dict) -> int:
     return int(parent.get("n_carbons") or len(parent.get("chain") or []))

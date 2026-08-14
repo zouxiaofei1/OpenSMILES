@@ -126,22 +126,14 @@ def _is_benzene(info: dict, skeleton: ParentSkeleton) -> bool:
         for i in skeleton.atom_ids)
 
 
-def _carbocycle_kind(mol, skeleton: ParentSkeleton) -> str:
-    atoms = set(skeleton.atom_ids)
-    unsaturated = sum(
-        bond.GetBondTypeAsDouble() > 1
-        for bond in mol.GetBonds()
-        if bond.GetBeginAtomIdx() in atoms and bond.GetEndAtomIdx() in atoms
-    )
-    return "cycloalkane" if not unsaturated else "cycloalkene" if unsaturated == 1 else "cyclopolyene"
-
-
 def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
     mol = info["mol"]
     if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in skeleton.atom_ids):
         return None
     all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
-    return _carbocycle_kind(mol, skeleton) if all_carbon else None
+    # 纯烃环统一 kind='alkane'（正交化：环系由 scaffold_id 承载，不饱和度由
+    # double_bond/double_bonds 字段承载，命名由 chain_engine 动态加 cyclo 前缀）。
+    return "alkane" if all_carbon else None
 
 
 def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str | None:
@@ -225,8 +217,11 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     if kind is None:
         return None
     facts = _facts(selection, skeleton, occurrences, info["mol"])
+    # 补环内不饱和字段：kind 正交化后（醇/酮/纯烃环 → FG 类别/alkane），
+    # 烯/炔由 double_bond(s)/triple_bond 字段承载（否则环烯酮/环烯醇/环烯烃烯丢失）。
     fields = {**_ring_fact_fields(_ring_fields(selection, occurrences), facts),
-              **_scaffold_fields(info, skeleton, facts, scaffold)}
+              **_chain_unsat_fields(info, skeleton,
+                                    _scaffold_fields(info, skeleton, facts, scaffold))}
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
         fields = _benzoate_ester_fields(info, fields)
     return _parent_dict(kind, skeleton, occurrences, fields, facts)
@@ -337,19 +332,13 @@ def _aromatic_scaffold_parent(info: dict, skeleton: ParentSkeleton, atoms: set[i
 
 
 def _saturated_ring_parent(info: dict, skeleton: ParentSkeleton, atoms: set[int]) -> dict | None:
-    """非芳香环：按环内不饱和度分配 cycloalkane/cycloalkene/cyclopolyene。"""
+    """非芳香环：kind 统一为 alkane（正交化），烯信息由 double_bond(s) 字段承载。"""
     dbs, tbs = _chain_polys(info, atoms)
     if tbs:
         return None  # 环炔暂不支持
     chain = _mono_ring_chain(info, atoms) or list(skeleton.atom_ids)
     bf = _unsat_bond_fields(dbs, tbs)  # tbs 已排除：只可能 double_bond/double_bonds/空
-    if not dbs:
-        kind = "cycloalkane"
-    elif len(dbs) == 1:
-        kind = "cycloalkene"
-    else:
-        kind = "cyclopolyene"
-    return {"kind": kind, "chain": chain, "n_carbons": len(chain), **bf}
+    return {"kind": "alkane", "chain": chain, "n_carbons": len(chain), **bf}
 
 
 def _hydrocarbon_ring_parent(info: dict, skeleton: ParentSkeleton) -> dict | None:

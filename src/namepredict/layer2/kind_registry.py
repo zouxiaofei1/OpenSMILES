@@ -131,13 +131,6 @@ def _load_chain_fg() -> None:
         _add(k)
 
 
-def _load_cyclo_rings() -> None:
-    """Cyclo* kinds without stems (Spec stem is None; still need ring meta)."""
-    _add("cycloalkane", ring="carbo", n=1)
-    _add("cycloalkene", ring="carbo", n=1)
-    _add("cyclopolyene", ring="carbo", n=1)
-
-
 def _spec_to_meta(sp) -> KindMeta:
     return KindMeta(
         sp.id, sp.stem_en, sp.stem_zh, sp.fg_rank, sp.ring, sp.n_rings,
@@ -157,7 +150,6 @@ def _load_from_scaffold_specs() -> None:
 
 def _bootstrap() -> None:
     _load_chain_fg()
-    _load_cyclo_rings()
     _load_from_scaffold_specs()  # last: Spec is stem authority
 
 

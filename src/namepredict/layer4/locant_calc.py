@@ -17,13 +17,9 @@ def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
     if oriented.get("kind") not in kinds:
         return None
     return _atom_locant(oriented.get("chain") or [], oriented.get(key), oriented.get("kind"), oriented.get("numbering_scaffold"), oriented.get("numbering_scaffold_required", False))
-_OH_KINDS = ("alcohol", "cycloalcohol", "benzothiophenol", "naphthalenol")
-_AMINE_KINDS = (
-    "amine", "cycloamine", "sec_amine", "tert_amine",
-    "benzofuranamine", "benzothiazolamine",
-    "benzoxazolamine", "benzimidazolamine",
-    "pyrazolamine", "thiazolamine", "quinazolinamine",
-)
+# 组合 kind 已根除（scaffold×FG 正交化）：集合只含活的 FG 类别 kind。
+_OH_KINDS = ("alcohol",)
+_AMINE_KINDS = ("amine", "sec_amine", "tert_amine")
 def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
     chain = oriented.get("chain") or []
     atoms = _typed_group_atoms(oriented, group)
@@ -31,10 +27,6 @@ def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
     required = oriented.get("numbering_scaffold_required", False)
     return sorted(loc for atom in atoms
                   if (loc := _atom_locant(chain, atom, kind, facts, required)) is not None)
-
-
-def _typed_alcohol_atoms(oriented: dict) -> list[int]:
-    return _typed_group_atoms(oriented, "alcohol")
 
 
 def _oh_locant(oriented: dict) -> int | None:
@@ -49,28 +41,11 @@ def _oriented_pair_locants(oriented: dict, kinds, key: str) -> list[int] | None:
     return list(locs) if locs else None
 
 
-def _scaffold_pair_locants(oriented: dict, key: str) -> list[int] | None:
-    """Multi-FG locants with scaffold-aware numbering (fused rings)."""
-    chain = oriented.get("chain") or []
-    cs = oriented.get(key)
-    if not cs or not chain:
-        return None
-    kind = oriented.get("kind")
-    facts = oriented.get("numbering_scaffold")
-    required = oriented.get("numbering_scaffold_required", False)
-    locs = [_atom_locant(chain, c, kind, facts, required) for c in cs if c in chain]
-    return sorted(locs) if len(locs) == len(cs) and all(l is not None for l in locs) else None
 def _oh_locants(oriented: dict) -> list[int] | None:
     locs = _typed_atom_locants(oriented, "alcohol")
     if locs:
         return locs
-    if oriented.get("kind") in ("naphthalenediol",):
-        return _scaffold_pair_locants(oriented, "oh_c_idxs")
-    return _oriented_pair_locants(oriented, ("alcohol", "benzenediol", "cycloalkanediol"), "oh_c_idxs")
-def _typed_amine_atoms(oriented: dict) -> list[int]:
-    return _typed_group_atoms(oriented, "amine")
-
-
+    return _oriented_pair_locants(oriented, ("alcohol", "benzenediol"), "oh_c_idxs")
 def _amine_pair_locants(oriented: dict) -> list[int] | None:
     locs = _typed_atom_locants(oriented, "amine")
     if locs:
@@ -81,23 +56,21 @@ def _amine_locant(oriented: dict) -> int | None:
     return locs[0] if len(locs) == 1 else _fg_locant(oriented, _AMINE_KINDS, "amine_c_idx")
 def _ketone_locant(oriented: dict) -> int | None:
     atoms = _typed_group_atoms(oriented, "ketone")
-    return _chain_pos(oriented.get("chain") or [], atoms[0]) if len(atoms) == 1 else _fg_locant(oriented, ("ketone", "cycloketone"), "ketone_c_idx")
+    return _chain_pos(oriented.get("chain") or [], atoms[0]) if len(atoms) == 1 else _fg_locant(oriented, ("ketone",), "ketone_c_idx")
 def _ketone_pair_locants(oriented: dict) -> list[int] | None:
     atoms = _typed_group_atoms(oriented, "ketone")
     if len(atoms) > 1:
         return _pair_locants(oriented.get("chain") or [], atoms)
-    return _oriented_pair_locants(
-        oriented, ("dione", "benzoquinone", "ortho_benzoquinone", "cycloalkanedione"), "ketone_c_idxs",
-    )
+    return _oriented_pair_locants(oriented, ("dione",), "ketone_c_idxs")
 def _has_parent_ene(oriented: dict) -> bool:
     return bool(oriented.get("double_bond") or oriented.get("double_bonds"))
 def _ene_locant(oriented: dict) -> int | None:
-    kind = oriented.get("kind")
-    if kind in ("alkene", "cycloalkene") or _has_parent_ene(oriented):
-        return _edge_min_locant(
-            oriented.get("chain") or [], oriented.get("double_bond")
-        )
-    return None
+    if not _has_parent_ene(oriented):
+        return None
+    db = oriented.get("double_bond")
+    if db is None:
+        return None  # 多烯：位次由 ene_locants 列表承载
+    return _edge_min_locant(oriented.get("chain") or [], db)
 def _yne_locant(oriented: dict) -> int | None:
     locs = oriented.get("yne_locants") or []
     if locs:
@@ -128,25 +101,19 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "yne_locant": _yne_locant(oriented),
         "omit_yne_locant": _omit_unsat(n, kind, oriented),
     }
-def _typed_ring_numbering_kind(oriented: dict, atoms: list[int], cyclo_kind: str) -> str:
-    # 饱和环（scaffold 收敛后 kind 为 FG 类别）；环骨架由 scaffold_id 判定。
-    return cyclo_kind if len(atoms) == 1 and oriented.get("scaffold_id") == "carbocycle" else oriented.get("kind")
-
-
 def _sh_locants_list(oriented: dict) -> list[int] | None:
     loc = _sh_locant(oriented)
     return [loc] if loc is not None else None
 def _omit_ket_loc(oriented: dict, n_subs: int) -> bool:
-    ket_kind = _typed_ring_numbering_kind(oriented, _typed_group_atoms(oriented, "ketone"), "cycloketone")
-    return _omit_ketone(ket_kind, n_subs, oriented, has_ene=_has_parent_ene)
+    single = len(_typed_group_atoms(oriented, "ketone")) == 1
+    return _omit_ketone(oriented.get("kind"), n_subs, oriented,
+                        has_ene=_has_parent_ene, single=single)
 def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
-    """FG 记录 omit 标志:复现旧 _oh_am_locants/_sh_locants/_omit_ket_loc 的计算."""
+    """FG 记录 omit 标志:环状判断由 omit_locants 基于 scaffold_id 完成（不虚构 cyclo* kind）。"""
     if kind == "oh":
-        fg_kind = _typed_ring_numbering_kind(oriented, _typed_alcohol_atoms(oriented), "cycloalcohol")
-        return _omit_oh(_oh_locant(oriented), n, fg_kind, oriented, n_subs)
+        return _omit_oh(_oh_locant(oriented), n, oriented.get("kind"), oriented, n_subs)
     if kind == "amine":
-        amine_kind = _typed_ring_numbering_kind(oriented, _typed_amine_atoms(oriented), "cycloamine")
-        return _omit_amine(_amine_locant(oriented), n, amine_kind, n_subs)
+        return _omit_amine(_amine_locant(oriented), n, oriented.get("kind"), n_subs, oriented)
     if kind == "ketone":
         return _omit_ket_loc(oriented, n_subs)
     if kind == "sh":

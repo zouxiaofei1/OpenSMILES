@@ -128,6 +128,9 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
         if fused is None:
             return None
         ez = spec.ez_ene(numbered) if spec.ez_ene else ""
+        if spec.ene_loc_omit and numbered.get("omit_ene_locant"):
+            # 环状单烯 (cyclohexene)：位次 1 隐含省略 (P-31.1.2)。
+            return f"{ez}{s}{fused[0]}", f"{ez}{zs}{fused[1]}"
         return f"{ez}{s}-{ene}-{fused[0]}", f"{ez}{zs}-{ene}-{fused[1]}"
     if spec.ene_omit_aware:
         ene = _ene_loc_kept(numbered)
@@ -164,7 +167,8 @@ class _Chain:
     ene_n_min: int = 4                  # 多烯融合式 n 下限 (polyene 类为 0)
     ene_single_min: int = 2             # 融合式单烯 n 下限 (diacid 为 3)
     ene_omit_aware: bool = False        # 烯段受 omit_ene_locant 影响 (环系 FG)
-    cyclic: bool = False                # 恒加环前缀 (cycloalkane/cycloalkene)
+    ene_loc_omit: bool = False          # 融合式单烯省略位次 (环单烯: cyclohexene)
+    cyclic: bool = False                # 恒加环前缀 (纯烃环/环系 FG)
     cyclic_unsat: bool = False          # 仅烯/炔段时加环 (cyclopolyene: 无烯回落纯烷烃)
     zh_full: bool = False               # 中文词干保留完整烷烃后缀 "烷" (环烷/回落)
     wrap: object = None                 # (pair, numbered)->pair  整体包裹 (E/Z)
@@ -342,20 +346,12 @@ _KIND_TABLE = {
                       ene_base=("enenitrile", "烯腈"),
                       yne_suf=("ynenitrile", "炔腈"),
                       ez_ene=ez_for_parent),
-    "cyclopolyene": _Chain(kind="cyclopolyene", en_suf="", zh_suf="", coda="ane",
-                           no_loc="plain", omit_rule=lambda n, loc, omit: False,
-                           ene_base=("ene", "烯"), ene_m_min=2,
-                           ene_n_min=0, cyclic_unsat=True, zh_full=True),
-    "cycloalkane": _Chain(kind="cycloalkane", en_suf="", zh_suf="", coda="ane",
-                          no_loc="plain", omit_rule=lambda n, loc, omit: False,
-                          cyclic=True, zh_full=True),
-    "cycloalkene": _Chain(kind="cycloalkene", en_suf="ene", zh_suf="烯", coda="",
-                          no_loc="plain", omit_rule=lambda n, loc, omit: False,
-                          cyclic=True),
     "dione": _Chain(kind="dione", en_suf="dione", zh_suf="二酮", coda="ane",
                     fg="ketone", need=2, no_loc="none", omit_rule=lambda n, loc, omit: False),
     # 命名 kind 正交化：cycloalcohol/cycloketone/cycloamine/cycloalkanediol/cycloalkanedione
     # 已删——环醇/酮/胺与链状共用同一 _Chain（assembler._names_for 运行时加 cyclic）。
+    # 纯烃环也并入 alkane：cyclo 前缀由 assembler 按 scaffold_id 动态加。cycloalkane/
+    # cycloalkene/cyclopolyene 组合 kind 已删。
     "anhydride": _Chain(kind="anhydride", en_suf="", zh_suf="", coda="ane",
                         no_loc="plain", omit_rule=lambda n, loc, omit: False,
                         plain_fn=_anhydride_from_acid),

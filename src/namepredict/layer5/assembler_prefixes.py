@@ -19,12 +19,17 @@ _KEEP_LOCANT_KINDS = frozenset({
     "benzoic", "benzaldehyde", "acetophenone", "benzoate", "benzonitrile",
     "benzoyl_chloride", "benzoyl_bromide", "benzamide",
 })
-def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None) -> bool:
+def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None,
+                      scaffold: str | None = None, has_ene: bool = False) -> bool:
     if kind == "phenyl":
         # Phenyl radical: attach is implicit locant 1, so every leaf keeps its
         # locant (4-chlorophenyl, not chlorophenyl).
         return False
-    if n_carbons <= 1 or (kind in ("cycloalkane", "benzene") and len(substituents) == 1):
+    # 纯烃饱和环单取代（cycloalkane，kind 收敛为 alkane + carbocycle scaffold）位次隐含；
+    # 环烯取代基位次必须保留（1-methylcyclohexene）。
+    if n_carbons <= 1 or (
+        (kind == "alkane" and scaffold == "carbocycle" and not has_ene) or kind == "benzene"
+    ) and len(substituents) == 1:
         return True
     if kind in ("sec_amine", "tert_amine", "amide", "benzamide"):
         return {s.get("kind") for s in substituents} <= {
@@ -73,14 +78,15 @@ def _collect_parts(groups: dict[str, list], omit: bool, paren_cf3: bool = False)
         en_parts.append(en_p)
         zh_parts.append(zh_p)
     return en_parts, zh_parts
-def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None) -> tuple[str, str]:
+def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
+                  scaffold: str | None = None, has_ene: bool = False) -> tuple[str, str]:
     if not substituents:
         return "", ""
     # ester O-side alkyl is consumed by join_kind_name as the alkoxy arm, never a prefix
     substituents = [s for s in substituents if not s.get("o_side")]
     if not substituents:
         return "", ""
-    omit = _omit_sub_locants(n_carbons, substituents, kind)
+    omit = _omit_sub_locants(n_carbons, substituents, kind, scaffold, has_ene)
     paren = kind == "benzene" and len(substituents) >= 4
     en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit, paren)
     return "-".join(en_parts), "-".join(zh_parts)
@@ -98,10 +104,9 @@ def _is_isobutyryl(numbered: dict) -> bool:
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "benzene":
         return benzene_prefix(numbered, _build_prefix)
-    _skip = ("benzothiazolamine",
-             "benzoxazolamine", "benzimidazolamine")
-    if kind in _skip:
-        return "", ""
     if kind == "acyl_bromide" and _is_isobutyryl(numbered):
         return "", ""
-    return _build_prefix(numbered.get("substituents") or [], n, kind)
+    parent = numbered.get("parent") or {}
+    has_ene = bool(parent.get("double_bond") or parent.get("double_bonds"))
+    return _build_prefix(numbered.get("substituents") or [], n, kind,
+                         parent.get("scaffold_id"), has_ene)

@@ -114,23 +114,10 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
     cl = parent.get("cl_idx") or parent.get("hal_idx")
     return [h for h in halos if cl not in (h.get("atoms") or [])]
 
-_PARENT_OH_KINDS = frozenset({
-    "alcohol", "cycloalcohol", "cycloalkanediol",
-    "phenol", "benzenediol", "benzothiophenol",
-    "naphthalenol", "naphthalenediol",
-})
-_PARENT_NH2_KINDS = frozenset({
-    "amine", "cycloamine", "sec_amine", "tert_amine",
-    "aniline", "benzofuranamine",
-    "benzothiazolamine", "benzoxazolamine", "benzimidazolamine",
-    "pyrazolamine", "thiazolamine", "quinazolinamine",
-})
-_PARENT_OXO_KINDS = frozenset(
-    {
-        "ketone", "dione", "cycloketone", "cycloalkanedione", "anthraquinone",
-        "benzoquinone", "ortho_benzoquinone",
-    },
-)
+# 组合 kind 已根除（scaffold×FG 正交化）：集合只含活的 FG 类别/保留名 kind。
+_PARENT_OH_KINDS = frozenset({"alcohol", "phenol", "benzenediol"})
+_PARENT_NH2_KINDS = frozenset({"amine", "sec_amine", "tert_amine", "aniline"})
+_PARENT_OXO_KINDS = frozenset({"ketone", "dione"})
 
 def _make_hydroxy(attach: int, o_idx: int) -> dict:
     return {

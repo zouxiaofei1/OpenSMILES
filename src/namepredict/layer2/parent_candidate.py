@@ -6,11 +6,9 @@ from dataclasses import dataclass
 from namepredict.layer2 import kind_registry as _kr
 from namepredict.layer2.principal import legacy_rank
 
-_FIXED_MULTI = {
-    "dione": 2, "benzenediol": 2,
-    "anthraquinone": 2, "benzoquinone": 2, "ortho_benzoquinone": 2,
-    "naphthalenediol": 2,
-}
+# 组合 kind（anthraquinone/benzoquinone/naphthalenediol 等 scaffold×FG×num）已根除：
+# 多基团计数由 principal_expression_facts.multiplicity 承载，L2 parent 恒有 principal_group_count。
+_FIXED_MULTI: dict[str, int] = {}
 _DYNAMIC_IDS: dict[str, str] = {}
 
 

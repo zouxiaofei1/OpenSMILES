@@ -92,7 +92,10 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             # 环式 FG 的 locant omit 由 L4 算出的 omit 标志决定。
             entry = replace(entry, stem=_RING_STEM[sid], omit_rule=lambda n, loc, omit: bool(omit))
         elif sid == "carbocycle":
-            entry = replace(entry, cyclic=True, omit_rule=lambda n, loc, omit: bool(omit))
+            # 纯烃环（kind=alkane）+ 环系 FG 共用：cyclo 前缀动态加；
+            # 环单烯省略位次（cyclohexene，ene_loc_omit）。
+            entry = replace(entry, cyclic=True, ene_loc_omit=True,
+                            omit_rule=lambda n, loc, omit: bool(omit))
         return _chain_names(entry, n, numbered)
 
 

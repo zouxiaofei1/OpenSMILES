@@ -2,13 +2,9 @@
 from __future__ import annotations
 
 
-def _omit_cyclo_fg(kind: str | None, target: str, n_subs: int) -> bool:
-    """Unsubstituted cyclo FG omits locant; any ring sub keeps FG@1."""
-    return kind == target and n_subs == 0
-
-
-def _keep_cyclo_ene_fg(kind: str | None, target: str, parent, has_ene) -> bool:
-    return kind == target and bool(parent and has_ene and has_ene(parent))
+def _is_cyclo(parent: dict | None) -> bool:
+    """环状 carbocycle（kind 正交化后环系由 scaffold_id 承载，不再虚构 cyclo* kind）。"""
+    return (parent or {}).get("scaffold_id") == "carbocycle"
 
 
 def omit_oh(
@@ -16,9 +12,10 @@ def omit_oh(
     parent: dict | None = None, n_subs: int = 0, *,
     has_ene=None, has_yne=None,
 ) -> bool:
-    if _keep_cyclo_ene_fg(kind, "cycloalcohol", parent, has_ene):
-        return False
-    if kind == "cycloalcohol":
+    # 环单醇：有烯保留位次；无取代省略位次（P-14.3.4）。
+    if _is_cyclo(parent) and oh_pos is not None:
+        if has_ene and has_ene(parent):
+            return False
         return n_subs == 0
     if kind == "alcohol" and parent and (
         (has_ene and has_ene(parent)) or (has_yne and has_yne(parent))
@@ -33,30 +30,35 @@ def omit_sh(sh_pos: int | None, n_carbons: int) -> bool:
 
 def omit_amine(
     am_pos: int | None, n_carbons: int, kind: str | None = None, n_subs: int = 0,
+    parent: dict | None = None,
 ) -> bool:
-    if _omit_cyclo_fg(kind, "cycloamine", n_subs):
-        return True
-    if kind == "cycloamine":
-        return False
+    # 环单胺：无取代省略位次；有取代保留（cycloamine 规则，按 scaffold 判断）。
+    if _is_cyclo(parent) and am_pos is not None:
+        return n_subs == 0
     return am_pos == 1 and n_carbons <= 2
 
 
 def omit_ketone(
-    kind: str | None, n_subs: int, parent: dict | None = None, *, has_ene=None,
+    kind: str | None, n_subs: int, parent: dict | None = None, *,
+    has_ene=None, single: bool = True,
 ) -> bool:
-    if _keep_cyclo_ene_fg(kind, "cycloketone", parent, has_ene):
-        return False
-    return _omit_cyclo_fg(kind, "cycloketone", n_subs)
+    # 环单酮：有烯保留位次；无取代省略（cycloketone 规则，按 scaffold 判断）。
+    if _is_cyclo(parent) and single:
+        if has_ene and has_ene(parent):
+            return False
+        return n_subs == 0
+    return False
 
 
 def omit_unsat(
     n_carbons: int, kind: str | None = None, parent: dict | None = None, *,
     has_ene=None, has_yne=None,
 ) -> bool:
-    if kind == "cycloalkene":
-        return True
-    if kind in ("cycloalcohol", "cycloketone") and parent and has_ene and has_ene(parent):
-        return False
+    # 纯烃环单烯（cycloalkene，kind 收敛为 alkane + carbocycle scaffold）：位次隐含省略；
+    # 环多烯（double_bonds）保留位次。
+    if kind == "alkane" and (parent or {}).get("scaffold_id") == "carbocycle":
+        if not (parent or {}).get("double_bonds"):
+            return True
     if kind == "alcohol" and parent and has_yne and has_yne(parent):
         return False
     if parent and has_ene and has_ene(parent) and kind != "alkene":
