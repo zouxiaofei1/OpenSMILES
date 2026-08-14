@@ -3,8 +3,7 @@
 """Open-chain tricarboxylic acids and their fully deprotonated anions."""
 from __future__ import annotations
 
-from namepredict.constants import normalize_en, normalize_zh
-from namepredict.layer4.numbering import _orient_polycarboxylic
+from namepredict.constants import normalize_en
 from namepredict.namer import SMILESNNamer
 
 

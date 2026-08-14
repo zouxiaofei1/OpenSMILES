@@ -10,9 +10,6 @@ from collections.abc import Mapping
 
 from namepredict.layer4.locants.plan import NumberingPlan, locant, make_plan
 
-# Numeric orientation ranks are L4 mechanics, not a second label authority.
-ANTHRA_LOCANTS = (1, 2, 3, 4, None, 10, None, 5, 6, 7, 8, None, 9, None)
-
 
 def _fact_fields(facts: object) -> tuple[str, tuple[str, ...]] | None:
     if not isinstance(facts, Mapping):

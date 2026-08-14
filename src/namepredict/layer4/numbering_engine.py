@@ -159,6 +159,10 @@ def orient_numbering(parent: dict, substituents: list) -> list[int] | None:
     start = _fixed_start(parent)
     if start is not None:
         cands = [c for c in cands if c.get(start) == 1]
+    if not cands:
+        # fixed-start atom can never be locant 1 in a chain candidate (e.g.
+        # a hetero/ring atom in the middle of a linear chain): keep original order.
+        return chain
     principal = _principal_atoms(parent)
     if principal:
         cands = _narrow(cands, lambda c: _locant_set(c, principal))

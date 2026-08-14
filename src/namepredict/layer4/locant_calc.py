@@ -162,8 +162,7 @@ def _fg_locants(oriented: dict, n_subs: int = 0) -> dict:
     }
 def _pack(oriented: dict, substituents: list) -> dict:
     from namepredict.layer4.cyclo_relative_stereo import relative_stereo_facts
-    facts = polycarboxylic_facts(oriented) if oriented.get("kind") == "polycarboxylic" else {}
-    facts = {**facts, **relative_stereo_facts(oriented)}
+    facts = relative_stereo_facts(oriented)
     n_subs = len(substituents or [])
     return {
         "parent": {**oriented, **facts}, "substituents": substituents,
