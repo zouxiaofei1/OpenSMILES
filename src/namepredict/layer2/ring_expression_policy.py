@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG
-from namepredict.layer2.identity import ScaffoldIdentity
+from namepredict.layer2.ring_scaffold import ScaffoldIdentity
 
 
 @dataclass(frozen=True)

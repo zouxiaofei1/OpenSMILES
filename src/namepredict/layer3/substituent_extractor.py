@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-import namepredict.layer3.side_facts as side_facts
 from namepredict.cache.common_names import CommonNameCache
+from namepredict.tools.chain import carbon_neighbors
 from namepredict.layer3.amino_side import (
     _extract_aminos as _extract_aminos_impl,
     _principal_attachments,
@@ -50,7 +50,7 @@ HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}
 
 def _side_starts(mol: Mol, chain: list[int]) -> list[tuple[int, int]]:
     cs = set(chain)
-    return [(c, n) for c in chain for n in side_facts.carbon_neighbors(mol, c) if n not in cs]
+    return [(c, n) for c in chain for n in carbon_neighbors(mol, c) if n not in cs]
 
 
 

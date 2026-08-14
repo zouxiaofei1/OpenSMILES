@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from namepredict.layer2.identity import ScaffoldIdentity, identity_of
+
 from namepredict.layer2.parent_skeleton import ParentSkeleton
 
 
@@ -36,6 +36,19 @@ class ScaffoldSpec:
     def identity(self) -> ScaffoldIdentity:
         return identity_of(self)
 
+ScaffoldId = str
+
+
+@dataclass(frozen=True)
+class ScaffoldIdentity:
+    id: ScaffoldId
+    naming_class: str
+    n_rings: int
+    ring: str
+
+
+def identity_of(spec) -> ScaffoldIdentity:
+    return ScaffoldIdentity(spec.id, spec.naming_class, spec.n_rings, spec.ring)
 
 # 共用的稠合 5+6 位次标签（IUPAC P-22.2.1 / P-25）：hetero=1 … 7a。
 FUSED56_LABELS: tuple[str, ...] = (

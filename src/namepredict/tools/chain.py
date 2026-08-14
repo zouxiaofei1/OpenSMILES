@@ -1,8 +1,16 @@
-"""开链游走原语（tools 层；供 L2 链母体共享）。
-从 layer2/chain_walk.py 抽出，使 L3 烷氧基/侧链检测可复用最长开链游走，无需导入流水线层。"""
+"""碳拓扑原语（tools 层；供 L2 链母体与 L3 侧链共用）。
+从 layer2/chain_walk.py 抽出，使 L3 烷氧基/侧链检测可复用最长开链游走与侧链碳邻居，无需导入流水线层。"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
+
+from namepredict.constants import C
+
+
+def carbon_neighbors(mol: Mol, atom: int) -> list[int]:
+    """侧链拓扑事实：原子所有碳邻居（含芳香/环；供 L3 取代基提取）。"""
+    atom = mol.GetAtomWithIdx(atom)
+    return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == C]
 
 
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:

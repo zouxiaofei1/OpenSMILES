@@ -8,8 +8,9 @@ from pathlib import Path
 
 
 LAYER3 = Path(__file__).parents[2] / "src" / "namepredict" / "layer3"
-# Side-topology facts now live in the L3 layer.
-TOOLS_FACTS = LAYER3 / "side_facts.py"
+TOOLS = Path(__file__).parents[2] / "src" / "namepredict" / "tools"
+# Side-topology facts merged into tools 碳拓扑原语 chain.py。
+TOOLS_FACTS = TOOLS / "chain.py"
 LEAF_PROTOCOL = LAYER3 / "leaves" / "protocol.py"
 
 

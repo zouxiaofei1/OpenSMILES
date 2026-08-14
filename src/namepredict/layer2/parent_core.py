@@ -3,13 +3,6 @@ from __future__ import annotations
 
 from namepredict.layer2.chain_walk import _longest_chain, _longest_from
 
-# 再导出生产者使用的链/门控原语。
-__all__ = [
-    "_parent_dict",
-    "_longest_from",
-    "_longest_chain",
-]
-
 
 def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
     return {"chain": chain, "n_carbons": len(chain), "kind": kind, **kw}
