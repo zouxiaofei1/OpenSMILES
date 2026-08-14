@@ -136,17 +136,6 @@ def _carbocycle_kind(mol, skeleton: ParentSkeleton) -> str:
     return "cycloalkane" if not unsaturated else "cycloalkene" if unsaturated == 1 else "cyclopolyene"
 
 
-def _ring_ketone_kind(scaffold_id: str | None, selection, skeleton: ParentSkeleton, count: int) -> str | None:
-    if selection.group_class is not FunctionalGroupClass.KETONE:
-        return None
-    if scaffold_id is not None and scaffold_id not in {"cycloalkane", "cycloketone", "cycloalkanedione"}:
-        return None
-    anchors = set(_anchors(selection.occurrences))
-    if not anchors or not anchors <= set(skeleton.atom_ids):
-        return None
-    return "cycloketone" if count == 1 else "cycloalkanedione" if count == 2 else None
-
-
 def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
     mol = info["mol"]
     if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in skeleton.atom_ids):
@@ -160,15 +149,28 @@ def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str |
 
 
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold) -> str | None:
-    ketone = _ring_ketone_kind(scaffold.id if scaffold else None, selection, skeleton, count)
-    if ketone:
-        return ketone
     if selection.group_class is FunctionalGroupClass.AMINE and count != 1:
         return None
     # 苯基取代基 radical 保持 'phenyl'（P-22.2.4），非保留名 parent；
-    # 其余苯系保留名（benzoic/phenol/...）由 L5 typed_kinds 决定。
+    # 环 + 主 FG 的 kind 收敛为 FG 类别（正交化），环骨架由 scaffold_id 承载，
+    # 命名 kind（cycloalcohol/cycloketone/benzoic/phenol/...）由 L5 typed_kinds 决定。
     if selection.group_class is FunctionalGroupClass.RADICAL and _is_benzene(info, skeleton):
         return "phenyl"
+    # 环（饱和环/苯环）+ 主 FG → FG 类别 kind（正交化）；命名 kind
+    # （cycloalcohol/cycloketone/cycloalkanecarboxylic/benzoic/phenol/...）
+    # 由 L5 typed_kinds 决定。稠环（naphthalene 等）暂保持结构 kind。
+    if scaffold and scaffold.id in ("carbocycle", "benzene"):
+        if selection.group_class in (FunctionalGroupClass.ALCOHOL,
+                                     FunctionalGroupClass.KETONE,
+                                     FunctionalGroupClass.AMINE,
+                                     FunctionalGroupClass.ACID,
+                                     FunctionalGroupClass.ALDEHYDE,
+                                     FunctionalGroupClass.NITRILE,
+                                     FunctionalGroupClass.AMIDE,
+                                     FunctionalGroupClass.ESTER):
+            kind = _chain_kind(selection.group_class, count)
+            if kind is not None:
+                return kind
     return _resolved_ring_kind(scaffold, info, skeleton)
 
 

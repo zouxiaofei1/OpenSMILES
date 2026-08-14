@@ -4,16 +4,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from namepredict.layer2 import kind_registry as _kr
+from namepredict.layer2.principal import legacy_rank
 
 _FIXED_MULTI = {
     "dione": 2, "benzenediol": 2,
-    "cycloalkanediol": 2, "cycloalkanedione": 2,
     "anthraquinone": 2, "benzoquinone": 2, "ortho_benzoquinone": 2,
     "naphthalenediol": 2,
 }
-_DYNAMIC_IDS = {
-    "cycloalkane_polycarboxylic": "cooh_c_idxs",
-}
+_DYNAMIC_IDS: dict[str, str] = {}
 
 
 @dataclass(frozen=True, order=True)
@@ -56,7 +54,10 @@ def from_parent_dict(parent: dict) -> ParentCandidate:
     kind = parent.get("kind") or ""
     if "principal_group_count" not in parent:
         raise ValueError(f"principal_group_count missing for {kind}")
-    facts = P44Facts(_kr.fg_rank(kind), int(parent["principal_group_count"]))
+    # 打分收敛：主官能团等级直接取 actual FG class rank（kind 只兜底，无 facts 时）。
+    pef = parent.get("principal_expression_facts")
+    rank = legacy_rank(pef.group_class) if pef else _kr.fg_rank(kind)
+    facts = P44Facts(rank, int(parent["principal_group_count"]))
     return ParentCandidate(parent, facts)
 
 

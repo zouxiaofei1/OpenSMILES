@@ -10,13 +10,13 @@ from namepredict.namer import SMILESNNamer
 
 
 CASES = [
-    ("O=C(O)c1ccccc1", "benzoic", "benzoic acid"),
-    ("O=Cc1ccccc1", "benzaldehyde", "benzaldehyde"),
-    ("N#Cc1ccccc1", "benzonitrile", "benzonitrile"),
-    ("NC(=O)c1ccccc1", "benzamide", "benzamide"),
-    # phenol 保留名迁 L5：kind=benzene，输出仍 phenol
-    ("Oc1ccccc1", "benzene", "phenol"),
-    ("Nc1ccccc1", "aniline", "aniline"),
+    # 苯环 + FG 的 kind 收敛为 FG 类别；保留名由 L5 typed_kinds 决定。
+    ("O=C(O)c1ccccc1", "acid", "benzoic acid"),
+    ("O=Cc1ccccc1", "aldehyde", "benzaldehyde"),
+    ("N#Cc1ccccc1", "nitrile", "benzonitrile"),
+    ("NC(=O)c1ccccc1", "amide", "benzamide"),
+    ("Oc1ccccc1", "alcohol", "phenol"),
+    ("Nc1ccccc1", "amine", "aniline"),
     ("CCCC(=O)OC", "ester", "methyl butanoate"),
     ("CCCC(=O)N", "amide", "butanamide"),
     ("CCCC=O", "aldehyde", "butanal"),
@@ -46,8 +46,9 @@ def test_open_chain_monoester_is_not_claimed_as_diester():
 
 
 @pytest.mark.parametrize("smiles,kind,group_class", [
-    ("O=C(O)C1CCCCC1", "cycloalkane", "acid"),
-    ("N#CC1CCCCC1", "cycloalkane", "nitrile"),
+    # 饱和环 + FG 的 kind 收敛为 FG 类别；稠环（naphthalene）保持结构 kind。
+    ("O=C(O)C1CCCCC1", "acid", "acid"),
+    ("N#CC1CCCCC1", "nitrile", "nitrile"),
     ("O=C(O)c1ccc2ccccc2c1", "naphthalene", "acid"),
 ])
 def test_ring_principal_uses_base_scaffold_kind(smiles, kind, group_class):

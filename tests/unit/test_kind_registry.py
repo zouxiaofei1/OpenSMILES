@@ -134,10 +134,8 @@ def test_parent_names_match_legacy_arene_fg(kind: str, names: tuple[str, str]) -
 
 
 _FIXED_PARENT_CASES = [
-    # phenol 保留名已迁 L5 typed_kinds：L2 只表达结构 kind=benzene
-    ("Oc1ccccc1", "benzene"),
-    ("Nc1ccccc1", "aniline"),
-    ("O=C(O)c1ccccc1", "benzoic"),
+    # 苯环 + FG 的 kind 已收敛为 FG 类别（alcohol/amine/acid，无注册 stem）；
+    # 此处只验证有 spec stem 的无 FG 环 scaffold kind。
     ("n1ccccc1", "pyridine"),
     ("c1ccc2ccccc2c1", "naphthalene"),
 ]

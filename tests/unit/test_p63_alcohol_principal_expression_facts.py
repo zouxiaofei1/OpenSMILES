@@ -16,8 +16,8 @@ CASES = [
     ("OCCCO", "alcohol", 2, "propane-1,3-diol", "丙烷-1,3-二醇"),
     ("CC(O)C(O)C", "alcohol", 2, "butane-2,3-diol", "丁烷-2,3-二醇"),
     ("OCC(O)CO", "alcohol", 3, "propane-1,2,3-triol", "丙烷-1,2,3-三醇"),
-    ("OC1CCCCC1", "cycloalkane", 1, "cyclohexanol", "环己醇"),
-    ("OC1CCC(O)CC1", "cycloalkane", 2, "cyclohexane-1,4-diol", "环己烷-1,4-二醇"),
+    ("OC1CCCCC1", "alcohol", 1, "cyclohexanol", "环己醇"),
+    ("OC1CCC(O)CC1", "alcohol", 2, "cyclohexane-1,4-diol", "环己烷-1,4-二醇"),
 ]
 
 

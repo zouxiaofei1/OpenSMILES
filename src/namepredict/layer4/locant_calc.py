@@ -129,14 +129,16 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "omit_yne_locant": _omit_unsat(n, kind, oriented),
     }
 def _typed_ring_numbering_kind(oriented: dict, atoms: list[int], cyclo_kind: str) -> str:
-    return cyclo_kind if len(atoms) == 1 and oriented.get("kind") == "cycloalkane" else oriented.get("kind")
+    # 饱和环（scaffold 收敛后 kind 为 FG 类别）；环骨架由 scaffold_id 判定。
+    return cyclo_kind if len(atoms) == 1 and oriented.get("scaffold_id") == "carbocycle" else oriented.get("kind")
 
 
 def _sh_locants_list(oriented: dict) -> list[int] | None:
     loc = _sh_locant(oriented)
     return [loc] if loc is not None else None
 def _omit_ket_loc(oriented: dict, n_subs: int) -> bool:
-    return _omit_ketone(oriented.get("kind"), n_subs, oriented, has_ene=_has_parent_ene)
+    ket_kind = _typed_ring_numbering_kind(oriented, _typed_group_atoms(oriented, "ketone"), "cycloketone")
+    return _omit_ketone(ket_kind, n_subs, oriented, has_ene=_has_parent_ene)
 def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
     """FG 记录 omit 标志:复现旧 _oh_am_locants/_sh_locants/_omit_ket_loc 的计算."""
     if kind == "oh":
