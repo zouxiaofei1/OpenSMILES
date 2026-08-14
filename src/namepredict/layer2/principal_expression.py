@@ -186,10 +186,8 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
 
 
 def _benzoate_ester_fields(info: dict, fields: dict) -> dict:
-    from namepredict.layer2.arene_carbonyl import _benzoate_alkoxy
     e = info["esters"][0]
-    side = _benzoate_alkoxy(info["mol"], e["o_idx"], e["alkoxy_c_idx"]) or {}
-    return {**fields, "o_idx": e["o_idx"], "alkoxy_n": side.get("alkoxy_n")}
+    return {**fields, "o_idx": e["o_idx"], "alkoxy_n": 0}
 
 
 def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
@@ -244,9 +242,7 @@ def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
                   if e["c_idx"] in occurrences[0].characteristic_atoms), None)
     if match is None:
         return fields
-    from namepredict.layer2.arene_carbonyl import _simple_alkoxy_n
-    n = _simple_alkoxy_n(info["mol"], match["alkoxy_c_idx"], match["o_idx"])
-    return {**fields, "o_idx": match["o_idx"], "alkoxy_n": n}
+    return {**fields, "o_idx": match["o_idx"], "alkoxy_n": 0}
 
 
 def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
