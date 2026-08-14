@@ -15,7 +15,6 @@ _KIND_CLASS = {
     "ketone": FG.KETONE,
     "alcohol": FG.ALCOHOL,
     "amine": FG.AMINE,
-    "sec_amine": FG.AMINE, "tert_amine": FG.AMINE,
     "tetraalkylammonium": FG.QUATERNARY_AMMONIUM,
     "alkane": FG.NONE,
 

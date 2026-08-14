@@ -18,7 +18,7 @@ def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
         return None
     return _atom_locant(oriented.get("chain") or [], oriented.get(key), oriented.get("kind"), oriented.get("numbering_scaffold"), oriented.get("numbering_scaffold_required", False))
 _OH_KINDS = ("alcohol",)
-_AMINE_KINDS = ("amine", "sec_amine", "tert_amine")
+_AMINE_KINDS = ("amine")
 def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
     chain = oriented.get("chain") or []
     atoms = _typed_group_atoms(oriented, group)

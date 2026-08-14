@@ -29,7 +29,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         (kind == "alkane" and scaffold == "carbocycle" and not has_ene) or kind == "benzene"
     ) and len(substituents) == 1:
         return True
-    if kind in ("sec_amine", "tert_amine", "amide", "benzamide"):
+    if kind in ("amide", "benzamide"):
         return {s.get("kind") for s in substituents} <= {
             "n_alkyl", "n_phenyl", "n_benzyl", "n_block",
         }

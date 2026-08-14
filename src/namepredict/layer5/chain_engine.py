@@ -337,8 +337,6 @@ _KIND_TABLE = {
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
                     fg="sh", need=1, no_loc="plain", omit_rule=_omit_term_locant),
     "amine": _AMINE_SPEC,
-    "sec_amine": _AMINE_SPEC,
-    "tert_amine": _AMINE_SPEC,
     "aldehyde": _Chain(kind="aldehyde", en_suf="anal", zh_suf="醛", coda="an",
                        no_loc="plain", omit_rule=lambda n, loc, omit: False,
                        plain_maps=(ALDEHYDE_EN, ALDEHYDE_ZH),
