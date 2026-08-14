@@ -150,8 +150,6 @@ def numbering_scaffold_facts(spec_id: str | None, atom_count: int) -> dict | Non
     if spec is None or not spec.numbering.materialize_plan:
         return None
     labels = spec.numbering.standard_path
-    if spec.id in {"cycloalkane", "cycloalkane_polycarboxylic"}:
-        labels = tuple(str(i) for i in range(1, atom_count + 1)) if 3 <= atom_count <= 10 else ()
     return None if not labels or len(labels) != atom_count else {
         "scaffold_id": spec.id, "labels": labels, "relative_stereo": None,
     }

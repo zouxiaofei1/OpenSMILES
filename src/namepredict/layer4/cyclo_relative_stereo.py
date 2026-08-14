@@ -15,7 +15,9 @@ def _locants(ordered, plan) -> str:
 
 def relative_stereo_facts(oriented: dict) -> dict:
     """Materialize names only after NumberingPlan has selected locants."""
-    if oriented.get("kind") != "cycloalkane_polycarboxylic": return {}
+    # 环二酸：kind 收敛为 acid + carbocycle scaffold（原 cycloalkane_polycarboxylic 组合 kind 已删）。
+    if oriented.get("kind") != "acid" or oriented.get("scaffold_id") != "carbocycle":
+        return {}
     ordered = _ordered(oriented)
     if len(ordered) == 2:
         return {"relative_stereo_prefix": "cis" if ordered[0][1] == ordered[1][1] else "trans"}

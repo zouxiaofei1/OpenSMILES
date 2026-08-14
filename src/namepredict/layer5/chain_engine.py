@@ -64,7 +64,7 @@ def _chain_unsat(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
     return None
 
 def _chain_yne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
-    s, zs = _en_stem(n), _chain_zh_base(n)
+    s, zs = spec.stem if spec.stem else (_en_stem(n), _chain_zh_base(n))
     if s is None or zs is None:
         return None
     yne = numbered.get("yne_locant")
@@ -93,7 +93,7 @@ def _fused_ene_suf(spec: "_Chain", m: int) -> tuple[str, str] | None:
     return f"{me}{spec.ene_base[0]}", f"{mz}{spec.ene_base[1]}"
 
 def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
-    s, zs = _en_stem(n), _chain_zh_base(n)
+    s, zs = spec.stem if spec.stem else (_en_stem(n), _chain_zh_base(n))
     if s is None or zs is None:
         return None
     enes = numbered.get("ene_locants")
@@ -170,6 +170,7 @@ class _Chain:
     wrap: object = None                 # (pair, numbered)->pair  整体包裹 (E/Z)
     unsat_polyol: bool = False          # 多 FG 词干支持烯/炔插入 (diol/triol: but-2-ene-1,4-diol)
     variant: dict | None = None         # {multiplicity: 字段覆盖} — 数量派生后缀 (acid/alcohol/amine)
+    stem: tuple | None = None           # (en_stem, zh_stem) — 稠环/杂环 scaffold 词干覆盖 (naphthalen/萘…)
 
 def _chain_zh_base(n: int) -> str | None:
     z = alkane_zh(n)
@@ -226,12 +227,15 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         if spec.cyclic or spec.cyclic_unsat:
             top = (f"cyclo{top[0]}", f"环{top[1]}")
         return spec.wrap(top, numbered) if spec.wrap is not None else top
-    s = _en_stem(n)
-    if spec.zh_full:
-        zf = alkane_zh(n)
-        zs = zf if zf else _chain_zh_base(n)
+    if spec.stem:
+        s, zs = spec.stem
     else:
-        zs = _chain_zh_base(n)
+        s = _en_stem(n)
+        if spec.zh_full:
+            zf = alkane_zh(n)
+            zs = zf if zf else _chain_zh_base(n)
+        else:
+            zs = _chain_zh_base(n)
     if s is None or zs is None:
         return None
     if spec.fg is not None:      # FG 位次 (diol/dione/alcohol/...): 记录缺失或数量不符 → no_loc
@@ -245,7 +249,10 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
             pair = _chain_plain(spec, s, zs, n)
         else:
             loc_s = ",".join(str(x) for x in locs)
-            if spec.unsat_polyol:
+            if spec.stem:
+                # 稠环 scaffold 词干已含完整基座（naphthalen/萘），直接拼后缀。
+                pair = (f"{s}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
+            elif spec.unsat_polyol:
                 poly_stem = _chain_polyol_stem(n, numbered)
                 if poly_stem is not None:
                     es, zs2 = poly_stem
@@ -347,24 +354,11 @@ _KIND_TABLE = {
                           cyclic=True),
     "dione": _Chain(kind="dione", en_suf="dione", zh_suf="二酮", coda="ane",
                     fg="ketone", need=2, no_loc="none", omit_rule=lambda n, loc, omit: False),
-    "cycloalkanedione": _Chain(kind="cycloalkanedione", en_suf="dione", zh_suf="二酮", coda="ane",
-                               fg="ketone", need=2, no_loc="none", omit_rule=lambda n, loc, omit: False,
-                               cyclic=True, zh_full=True),
-    "cycloalcohol": _Chain(kind="cycloalcohol", en_suf="ol", zh_suf="醇", coda="an",
-                           fg="oh", need=1, no_loc="plain", omit_rule=lambda n, loc, omit: omit,
-                           ene_seg=("en", "烯"), ene_omit_aware=True, cyclic=True),
-    "cycloketone": _Chain(kind="cycloketone", en_suf="one", zh_suf="酮", coda="an",
-                          fg="ketone", need=1, no_loc="plain", omit_rule=lambda n, loc, omit: omit,
-                          ene_seg=("en", "烯"), ene_omit_aware=True, cyclic=True),
-    "cycloamine": _Chain(kind="cycloamine", en_suf="amine", zh_suf="胺", coda="an",
-                         fg="amine", need=1, no_loc="plain", omit_rule=lambda n, loc, omit: omit,
-                         cyclic=True),
+    # 命名 kind 正交化：cycloalcohol/cycloketone/cycloamine/cycloalkanediol/cycloalkanedione
+    # 已删——环醇/酮/胺与链状共用同一 _Chain（assembler._names_for 运行时加 cyclic）。
     "anhydride": _Chain(kind="anhydride", en_suf="", zh_suf="", coda="ane",
                         no_loc="plain", omit_rule=lambda n, loc, omit: False,
                         plain_fn=_anhydride_from_acid),
-    "cycloalkanediol": _Chain(kind="cycloalkanediol", en_suf="diol", zh_suf="二醇", coda="ane",
-                              fg="oh", need=2, no_loc="none", omit_rule=lambda n, loc, omit: False,
-                              cyclic=True, zh_full=True),
     "amide": _Chain(kind="amide", en_suf="amide", zh_suf="酰胺", coda="an",
                     no_loc="plain", omit_rule=lambda n, loc, omit: False,
                     plain_maps=(AMIDE_EN, AMIDE_ZH),

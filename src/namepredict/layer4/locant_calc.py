@@ -164,11 +164,23 @@ def _ketone_fg_locants(oriented: dict) -> list[int] | None:
         return locs
     loc = _ketone_locant(oriented)
     return [loc] if loc is not None else None
+def _acid_fg_locants(oriented: dict) -> list[int] | None:
+    # exocyclic 酸的羧基碳在环外；locant 取环上附着原子 ring_attach_idx。
+    attach = oriented.get("ring_attach_idx")
+    if attach is None:
+        return None
+    loc = _atom_locant(oriented.get("chain") or [], attach, oriented.get("kind"),
+                       oriented.get("numbering_scaffold"),
+                       oriented.get("numbering_scaffold_required", False))
+    return [loc] if loc is not None else None
+
+
 _FG_LOCANTS = (
     ("oh", _oh_locants),
     ("amine", _amine_fg_locants),
     ("ketone", _ketone_fg_locants),
     ("sh", _sh_locants_list),
+    ("acid", _acid_fg_locants),
 )
 def _fg_locants(oriented: dict, n_subs: int = 0) -> list[dict]:
     """FG 位次记录: [{kind, locants, omit}] — 稀疏,只产实际存在的 principal FG."""
