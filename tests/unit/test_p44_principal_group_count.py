@@ -17,7 +17,7 @@ from namepredict.types import NameResult
 COUNT_CASES = [
     ({"kind": "alcohol", "principal_group_count": 2}, (5, 2)),
     ({"kind": "amine", "principal_group_count": 3}, (3, 3)),
-    ({"kind": "dione", "principal_group_count": 2}, (6, 2)),
+    ({"kind": "ketone", "principal_group_count": 2}, (6, 2)),
 ]
 
 

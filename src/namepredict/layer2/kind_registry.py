@@ -12,7 +12,7 @@ _KIND_CLASS = {
     "acid": FG.ACID,
     "ester": FG.ESTER,
     "amide": FG.AMIDE, "nitrile": FG.NITRILE, "aldehyde": FG.ALDEHYDE,
-    "ketone": FG.KETONE, "dione": FG.KETONE,
+    "ketone": FG.KETONE,
     "alcohol": FG.ALCOHOL,
     "amine": FG.AMINE,
     "sec_amine": FG.AMINE, "tert_amine": FG.AMINE,

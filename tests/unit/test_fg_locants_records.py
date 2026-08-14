@@ -31,7 +31,7 @@ def test_ketone_record():
 
 
 def test_dione_single_record():
-    fg = _fg_locants({"kind": "dione", "n_carbons": 4, "chain": [0, 1, 2, 3],
+    fg = _fg_locants({"kind": "ketone", "n_carbons": 4, "chain": [0, 1, 2, 3],
                       "ketone_c_idxs": [1, 3]})
     assert fg == [{"kind": "ketone", "locants": [2, 4], "omit": False}]
 

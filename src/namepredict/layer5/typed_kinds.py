@@ -80,12 +80,8 @@ def _typed_ketone_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "ketone":
         return kind
-    # 环骨架由 chain_engine 动态加 cyclo 前缀；kind 只表达 FG 类别（正交化）。
-    if _scaffold(numbered) == "carbocycle":
-        return "ketone" if facts.multiplicity == 1 else "dione"
-    if kind not in {"ketone", "dione"}:
-        return kind
-    return "ketone" if facts.multiplicity == 1 else "dione"
+    # 数量由 multiplicity 承载，kind 恒为 ketone；dione 后缀由 chain_engine variant 切换（对齐 alcohol）。
+    return "ketone"
 
 def _typed_ring_alcohol_kind(kind: str, numbered: dict, facts) -> str | None:
     sid = _scaffold(numbered)

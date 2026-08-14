@@ -31,11 +31,11 @@ class PrincipalExpressionFacts:
     charge_state: PrincipalChargeState
 
 
-# 数量派生 kind 已统一：multiplicity 由 principal_expression_facts 承载，acid/alcohol/amine 对任意数量恒用基团名；仅 KETONE 保留 dione 区分环酮表达。
+# 数量派生 kind 已统一：multiplicity 由 principal_expression_facts 承载，acid/alcohol/amine/ketone 对任意数量恒用基团名；dione 后缀由 L5 chain_engine variant 切换。
 _CHAIN_KINDS = {
     FunctionalGroupClass.ACID: {1: "acid"},
     FunctionalGroupClass.ESTER: {1: "ester"},
-    FunctionalGroupClass.KETONE: {1: "ketone", 2: "dione"},
+    FunctionalGroupClass.KETONE: {1: "ketone"},
     FunctionalGroupClass.ALDEHYDE: {1: "aldehyde"},
     FunctionalGroupClass.NITRILE: {1: "nitrile"},
     FunctionalGroupClass.AMIDE: {1: "amide"},
@@ -64,8 +64,8 @@ def _covered(selection: PrincipalGroupSelection, skeleton: ParentSkeleton):
 
 def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
     if group_class in (FunctionalGroupClass.ACID, FunctionalGroupClass.ALCOHOL,
-                       FunctionalGroupClass.AMINE):
-        # 任意主基团数(≥1)→ 基团名;count=0(仲/叔胺等未覆盖)不产 facts。
+                       FunctionalGroupClass.AMINE, FunctionalGroupClass.KETONE):
+        # 任意主基团数(≥1)→ 基团名;count=0(仲/叔胺等未覆盖)不产 facts;dione 后缀由 L5 variant 切换。
         return _CHAIN_KINDS[group_class][1] if count >= 1 else None
     kinds = _CHAIN_KINDS.get(group_class)
     if kinds is None:
@@ -317,10 +317,6 @@ def _aromatic_scaffold_parent(info: dict, skeleton: ParentSkeleton, atoms: set[i
     if scaffold.id != "naphthalene":
         return {"kind": scaffold.id, "chain": _mono_ring_chain(info, atoms) or list(skeleton.atom_ids),
                 "n_carbons": len(atoms), **_scaffold_fields(info, skeleton, None, scaffold)}
-    from namepredict.layer2.naphthalene import _naph_chains, _naph_parent_dict
-    chains = _naph_chains(info)
-    if chains and set(chains[0]) == atoms:
-        return {**_naph_parent_dict(info, "naphthalene"), **_scaffold_fields(info, skeleton, None, scaffold)}
     return None
 
 

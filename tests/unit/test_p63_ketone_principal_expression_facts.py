@@ -13,8 +13,8 @@ from namepredict.namer import SMILESNNamer
 CASES = [
     ("CC(=O)CC", "ketone", 1, "butan-2-one", "丁-2-酮"),
     ("CCC(=O)CC", "ketone", 1, "pentan-3-one", "戊-3-酮"),
-    ("CC(=O)CC(=O)C", "dione", 2, "pentane-2,4-dione", "戊-2,4-二酮"),
-    ("CC(=O)C(C)=O", "dione", 2, "butane-2,3-dione", "丁-2,3-二酮"),
+    ("CC(=O)CC(=O)C", "ketone", 2, "pentane-2,4-dione", "戊-2,4-二酮"),
+    ("CC(=O)C(C)=O", "ketone", 2, "butane-2,3-dione", "丁-2,3-二酮"),
 ]
 
 

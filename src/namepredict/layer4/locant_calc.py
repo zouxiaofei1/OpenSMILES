@@ -60,7 +60,7 @@ def _ketone_pair_locants(oriented: dict) -> list[int] | None:
     atoms = _typed_group_atoms(oriented, "ketone")
     if len(atoms) > 1:
         return _pair_locants(oriented.get("chain") or [], atoms)
-    return _oriented_pair_locants(oriented, ("dione",), "ketone_c_idxs")
+    return _oriented_pair_locants(oriented, ("ketone",), "ketone_c_idxs")
 def _has_parent_ene(oriented: dict) -> bool:
     return bool(oriented.get("double_bond") or oriented.get("double_bonds"))
 def _ene_locant(oriented: dict) -> int | None:
