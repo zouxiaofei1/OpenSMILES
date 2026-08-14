@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from namepredict.constants import MULT_EN, MULT_ZH
-from namepredict.layer5._stereo_common import _split_stereo_lead as _stereo_lead
+from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
 
 def benzene_prefix(numbered: dict, build_prefix) -> tuple[str, str]:
     en_pre, zh_pre = build_prefix(numbered.get("substituents") or [], 6, "benzene")

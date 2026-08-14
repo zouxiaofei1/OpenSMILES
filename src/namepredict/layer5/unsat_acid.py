@@ -1,10 +1,10 @@
-"""Alkenoic / alkenedioic acid name assembly (E/Z via stereo_ez)."""
+"""Alkenoic / alkenedioic acid name assembly (E/Z via layer5.stereo)."""
 from __future__ import annotations
 
 from namepredict.layer5.stems import (
     ALKANE_EN, ALKANE_ZH, zh_stem,
 )
-from namepredict.layer5.stereo_ez import _ez_prefix
+from namepredict.layer5.stereo import _ez_prefix
 
 
 def _unsat_acid_pair(n, locant, ez, en_sfx, zh_sfx, min_n=2) -> tuple[str, str] | None:

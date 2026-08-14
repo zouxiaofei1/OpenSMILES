@@ -1,6 +1,6 @@
 """Tests for yl_form FG suffix→prefix conversion (P-63.2.2 / P-63.2.1 / P-62.2)."""
 import pytest
-from namepredict.layer3.yl_form import yl_form
+from namepredict.tools.free_to_yl import free_to_yl as yl_form
 
 
 # ── alcohol → alkoxy (P-63.2.2) ──

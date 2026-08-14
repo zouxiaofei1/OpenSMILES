@@ -39,7 +39,7 @@ def _unsupported(n: int, kind: str | None) -> NameResult:
 
 
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
-    from namepredict.layer5.stereo_rs import apply_rs_prefix
+    from namepredict.layer5.stereo import apply_rs_prefix
     kind, n = _parent_n(numbered)
     effective_kind = _typed_expression_kind(kind, numbered)
     names = _names_for(effective_kind, n, numbered)

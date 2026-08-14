@@ -7,7 +7,7 @@ from namepredict.layer5.stems import (
     NITRILE_EN, NITRILE_ZH, _en_stem,
     alkane_zh, zh_stem,
 )
-from namepredict.layer5.stereo_ez import _ez_prefix, ez_for_parent
+from namepredict.layer5.stereo import _ez_prefix, ez_for_parent
 from namepredict.layer5.unsat_acid import alkenamide_names
 from namepredict.constants import MULT_EN, MULT_ZH
 
