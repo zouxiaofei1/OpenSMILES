@@ -115,16 +115,7 @@ def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
             "principal_group_count": len(occurrences), "principal_expression_facts": facts, **fields}
 
 
-_RETAINED_RING_KINDS = {
-    FunctionalGroupClass.RADICAL: "phenyl",
-    FunctionalGroupClass.ACID: "benzoic",
-    FunctionalGroupClass.ESTER: "benzoate",
-    FunctionalGroupClass.ALDEHYDE: "benzaldehyde",
-    FunctionalGroupClass.NITRILE: "benzonitrile",
-    FunctionalGroupClass.AMIDE: "benzamide",
-    FunctionalGroupClass.ALCOHOL: "phenol",
-    FunctionalGroupClass.AMINE: "aniline",
-}
+# 苯系保留名已全部迁往 L5 typed_kinds（_BENZENE_RETAINED）；L2 只表达结构 kind。
 def _is_benzene(info: dict, skeleton: ParentSkeleton) -> bool:
     mol = info["mol"]
     return len(skeleton.atom_ids) == 6 and all(
@@ -171,8 +162,10 @@ def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentS
         return ketone
     if selection.group_class is FunctionalGroupClass.AMINE and count != 1:
         return None
-    if _is_benzene(info, skeleton) and count == 1:
-        return _RETAINED_RING_KINDS.get(selection.group_class)
+    # 苯基取代基 radical 保持 'phenyl'（P-22.2.4），非保留名 parent；
+    # 其余苯系保留名（benzoic/phenol/...）由 L5 typed_kinds 决定。
+    if selection.group_class is FunctionalGroupClass.RADICAL and _is_benzene(info, skeleton):
+        return "phenyl"
     return _resolved_ring_kind(scaffold, info, skeleton)
 
 
@@ -229,7 +222,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     facts = _facts(selection, skeleton, occurrences, info["mol"])
     fields = {**_ring_fact_fields(_ring_fields(selection, occurrences), facts),
               **_scaffold_fields(info, skeleton, facts, scaffold)}
-    if kind == "benzoate":
+    if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
         fields = _benzoate_ester_fields(info, fields)
     return _parent_dict(kind, skeleton, occurrences, fields, facts)
 

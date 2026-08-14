@@ -14,7 +14,8 @@ CASES = [
     ("O=Cc1ccccc1", "benzaldehyde", "benzaldehyde"),
     ("N#Cc1ccccc1", "benzonitrile", "benzonitrile"),
     ("NC(=O)c1ccccc1", "benzamide", "benzamide"),
-    ("Oc1ccccc1", "phenol", "phenol"),
+    # phenol 保留名迁 L5：kind=benzene，输出仍 phenol
+    ("Oc1ccccc1", "benzene", "phenol"),
     ("Nc1ccccc1", "aniline", "aniline"),
     ("CCCC(=O)OC", "ester", "methyl butanoate"),
     ("CCCC(=O)N", "amide", "butanamide"),

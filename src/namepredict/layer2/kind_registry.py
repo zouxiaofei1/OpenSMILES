@@ -21,10 +21,7 @@ _KIND_CLASS = {
     "isocyanate": FG.ISOCYANATE, "isothiocyanate": FG.ISOTHIOCYANATE,
     "sulfide": FG.SULFIDE,
     "tetraalkylammonium": FG.QUATERNARY_AMMONIUM,
-    "benzoic": FG.ACID, 
-    "benzamide": FG.AMIDE, "benzonitrile": FG.NITRILE,
-    "benzaldehyde": FG.ALDEHYDE, "acetophenone": FG.KETONE,
-    "phenol": FG.ALCOHOL, "aniline": FG.AMINE,"alkane":FG.NONE
+    "alkane": FG.NONE
 }
 
 
@@ -53,16 +50,7 @@ _REG: dict[str, KindMeta] = {}
 # --- bootstrap tables (module-level; kept out of function bodies) ---
 # Chain FG ranks come from PRINCIPAL_REGISTRY via _KIND_CLASS (principal.py
 # is the single P-41 authority). _load_chain_fg() registers every mapped kind.
-_ARENE_NAMED: tuple[tuple[str, str, str, int], ...] = (
-    ("benzoic", "benzoic acid", "苯甲酸", 13),
-    ("benzamide", "benzamide", "苯甲酰胺", 9),
-    ("benzonitrile", "benzonitrile", "苯甲腈", 8),
-    ("benzaldehyde", "benzaldehyde", "苯甲醛", 7),
-    ("acetophenone", "acetophenone", "苯乙酮", 6),
-    ("phenol", "phenol", "苯酚", 5),
-    ("aniline", "aniline", "苯胺", 3),
-)
-
+# 苯系保留名 stem 已迁往 L5 (_ARENE_RETAINED_NAMES)，L2 不再注册。
 
 
 def register(meta: KindMeta) -> None:
@@ -150,10 +138,6 @@ def _load_chain_fg() -> None:
         _add(k)
 
 
-def _load_arene_fg_names() -> None:
-    for kind, en, zh, fg in _ARENE_NAMED:
-        _add(kind, en=en, zh=zh, fg=fg, ret=True)
-
 def _load_cyclo_rings() -> None:
     """Cyclo* kinds without stems (Spec stem is None; still need ring meta)."""
     _add("cycloalkane", ring="carbo", n=1)
@@ -180,7 +164,6 @@ def _load_from_scaffold_specs() -> None:
 
 def _bootstrap() -> None:
     _load_chain_fg()
-    _load_arene_fg_names()
     _load_cyclo_rings()
     _load_from_scaffold_specs()  # last: Spec is stem authority
 

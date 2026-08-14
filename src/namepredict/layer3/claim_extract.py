@@ -88,5 +88,6 @@ def extract_claimed_sides(info: dict, parent: dict, existing: list[dict], *, nam
     owned = parent.get("owned_atoms")
     if owned is None:
         return []
-    o_side = parent.get("kind") in _ESTER_O_SIDE_KINDS
+    # benzoate（kind='benzene' + ester FG）靠 o_idx 字段识别 O-side；链状 ester 走 kind 表。
+    o_side = parent.get("kind") in _ESTER_O_SIDE_KINDS or parent.get("o_idx") is not None
     return _named_new_sides(info["mol"], owned, _covered_atoms(existing), name_mode=name_mode, cache=cache, o_side=o_side)

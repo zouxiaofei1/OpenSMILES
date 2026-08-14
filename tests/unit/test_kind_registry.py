@@ -134,7 +134,8 @@ def test_parent_names_match_legacy_arene_fg(kind: str, names: tuple[str, str]) -
 
 
 _FIXED_PARENT_CASES = [
-    ("Oc1ccccc1", "phenol"),
+    # phenol 保留名已迁 L5 typed_kinds：L2 只表达结构 kind=benzene
+    ("Oc1ccccc1", "benzene"),
     ("Nc1ccccc1", "aniline"),
     ("O=C(O)c1ccccc1", "benzoic"),
     ("n1ccccc1", "pyridine"),
