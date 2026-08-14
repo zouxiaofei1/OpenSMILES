@@ -100,7 +100,7 @@ def _thiol_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 如果新 FG 可以作为取代基前缀出现（大多数 FG 都可以），需要：
 
-1. **保留取代名注册**：在 `src/namepredict/tools/anchored_table.py` 的 `_REGISTRY` 中添加 `RetainedSubstituent` 条目，并在 `ANCHOR_TABLE` 添加锚定 canonical-SMILES 条目（如 `"*S" → ("sulfanyl",...)` 或 `"*SH"` 前缀名）
+1. **保留取代名注册**：在 `src/namepredict/tools/anchored_table.py` 的 `_REGISTRY` 中添加 `RetainedSubstituent` 条目，锚定 canonical-SMILES 写在条目 `anchored` 字段（如 `"sulfanyl": RetainedSubstituent(..., anchored=("*S",))`）。只有**非保留**取代基才在 `ANCHOR_TABLE` 内联 `(en, zh, paren, kind)`。构建期校验会检查 anchored 键的 canonical 形式与唯一性，`*C=C-C` 类死条目会立即报错。
 2. **前缀命名**：由 `anchored_table` 查表或 `SubstituentNamer` 兜底完成，通常无需额外代码
 
 ---

@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 import pytest
+from rdkit.Chem import MolFromSmiles, MolToSmiles
 
+import namepredict.tools.anchored_table as at
 from namepredict.tools.anchored_table import (
+    ANCHOR_TABLE,
+    _ANCHOR_INDEX,
     IupacLevel,
     get_retained,
     resolve_name,
@@ -196,3 +200,84 @@ def test_methylsulfanyl_unchanged():
     r = SMILESNNamer(name_mode="general").name("CC(C)SC")
     assert r.success
     assert "methylsulfanyl" in r.en
+
+
+# ── 合表后：锚定索引一致性 / canonical 校验 ──
+
+def test_anchor_index_matches_registry_anchored():
+    """_ANCHOR_INDEX 的每个键必须来自对应 registry 条目的 anchored 字段。"""
+    for smi, key in _ANCHOR_INDEX.items():
+        assert smi in get_retained(key).anchored, f"{smi} -> {key}"
+
+
+def test_anchored_keys_all_canonical():
+    """registry 的 anchored 键必须是 canonical 形式（防 *C=C-C 类死条目）。"""
+    for key, e in at._REGISTRY.items():
+        for smi in e.anchored:
+            m = MolFromSmiles(smi)
+            assert m is not None, f"{key}: 解析失败 {smi}"
+            assert MolToSmiles(m) == smi, f"{key}: {smi} 非 canonical -> {MolToSmiles(m)}"
+
+
+def test_inline_keys_all_canonical_and_no_collision():
+    """内联表键 canonical 且不与 registry 锚定冲突。"""
+    for smi in ANCHOR_TABLE:
+        m = MolFromSmiles(smi)
+        assert m is not None, f"内联键解析失败 {smi}"
+        assert MolToSmiles(m) == smi, f"内联键非 canonical: {smi}"
+        assert smi not in _ANCHOR_INDEX, f"跨表冲突: {smi}"
+
+
+def test_allyl_only_true_topology():
+    """allyl 只对应真烯丙基连接位点 *CC=C；*C=CC 是丙-1-烯基内联条目。"""
+    assert get_retained("allyl").anchored == ("*CC=C",)
+    assert "*C=CC" not in _ANCHOR_INDEX
+    assert "*C=CC" in ANCHOR_TABLE
+    assert "*C=C-C" not in _ANCHOR_INDEX
+    assert "*C=C-C" not in ANCHOR_TABLE
+
+
+def test_unsaturated_isobutyl_isopentyl_not_anchored():
+    """不饱和烯基拓扑不再错挂到饱和保留名 isobutyl/isopentyl。"""
+    assert get_retained("isobutyl").anchored == ("*CC(C)C",)
+    assert get_retained("isopentyl").anchored == ("*CCC(C)C",)
+    assert "*C=C(C)C" not in _ANCHOR_INDEX
+    assert "*C=CC(C)C" not in _ANCHOR_INDEX
+
+
+def test_build_anchor_index_rejects_noncanonical():
+    """非 canonical anchored 键（如 *C=C-C）在构建索引时立即报错。"""
+    orig = at._REGISTRY
+    bad = dict(orig)
+    bad["_fake_noncanon"] = at.RetainedSubstituent(
+        "x", "x", "x", "x", IupacLevel.PIN, anchored=("*C=C-C",))
+    at._REGISTRY = bad
+    try:
+        with pytest.raises(ValueError):
+            at._build_anchor_index()
+    finally:
+        at._REGISTRY = orig
+
+
+def test_build_anchor_index_rejects_collision():
+    """同一锚定键映射两个保留基必须报错。"""
+    orig = at._REGISTRY
+    bad = dict(orig)
+    bad["_fake_dup"] = at.RetainedSubstituent(
+        "x", "x", "x", "x", IupacLevel.PIN, anchored=("*CC(C)C",))
+    at._REGISTRY = bad
+    try:
+        with pytest.raises(ValueError):
+            at._build_anchor_index()
+    finally:
+        at._REGISTRY = orig
+
+
+def test_prop_1_enyl_vs_allyl_resolve():
+    """*C=CC 与 *CC=C 是不同的基团：丙-1-烯基 vs 烯丙基。"""
+    mol1 = MolFromSmiles(r"C/C=C\c1cc(OC)c(OC)cc1OC")
+    assert at.anchored_entry(mol1, frozenset({0, 1, 2})) == (
+        "prop-1-enyl", "丙-1-烯基", True, "alkyl")
+    mol2 = MolFromSmiles("C=CCc1ccccc1")
+    assert at.anchored_entry(mol2, frozenset({0, 1, 2})) == (
+        "allyl", "烯丙基", False, "alkyl")

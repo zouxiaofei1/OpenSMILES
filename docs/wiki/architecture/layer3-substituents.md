@@ -59,13 +59,14 @@ def extract_substituents(info, parent, *, name_mode="general", cache=None) -> li
 
 ### 保留取代基查表 (anchored_table, tools/)
 
-核心机制是**锚定 canonical-SMILES 查表**。`submol_build.build_anchor_submol` 在取代基连接位打上 dummy 原子 `*`，使 canonical SMILES 同时编码形状与附着点（`*C(C)C` 异丙基 vs `*CCC` 正丙基；`*c1ccc(Cl)cc1` 4-氯苯基）。`tools/anchored_table.py` 的 `ANCHOR_TABLE` 覆盖 **128 条**：
+核心机制是**锚定 canonical-SMILES 查表**。`submol_build.build_anchor_submol` 在取代基连接位打上 dummy 原子 `*`，使 canonical SMILES 同时编码形状与附着点（`*C(C)C` 异丙基 vs `*CCC` 正丙基；`*c1ccc(Cl)cc1` 4-氯苯基）。`tools/anchored_table.py` 维护 **58 条内联非保留取代基**（`ANCHOR_TABLE`）+ **69 条保留取代基锚定键**（声明在 `RetainedSubstituent.anchored`，构建期反查生成 `_ANCHOR_INDEX`）：
 
 | 类别 | 条目示例 |
 |------|---------|
 | 线性 n-烷基 C1-C12 | `*C` methyl … `*CCCCCCCCCCC` undecyl |
 | 分支保留烷基 | `*C(C)C` isopropyl、`*C(C)(C)C` tert-butyl、`*C(C)CC` sec-butyl |
-| 烯基保留 | `*C=C` vinyl、`*C=C-C` allyl、`*C(=C)C` isopropenyl |
+| 烯基保留 | `*C=C` vinyl、`*CC=C` allyl（prop-2-en-1-yl）、`*C(=C)C` isopropenyl |
+| 烯基位置异构（内联） | `*C=CC` prop-1-enyl、`*C=C(C)C` 2-methylprop-1-enyl、`*C=CC(C)C` 3-methylbut-1-enyl |
 | 卤代烷基 | `*CCl` chloromethyl、`*CCCl` 2-chloroethyl |
 | 环烷基 C3-C8 | `*C1CC1` cyclopropyl … `*C1CCCCCCC1` cyclooctyl |
 | 芳基/卤代苯基 | `*c1ccccc1` phenyl、`*c1ccc(Cl)cc1` 4-chlorophenyl |
@@ -73,7 +74,7 @@ def extract_substituents(info, parent, *, name_mode="general", cache=None) -> li
 | 含杂叶（FG 前缀） | `*C#N` cyano、`*[N+](=O)[O-]` nitro、`*OC` methoxy、`*S(C)(=O)=O` methylsulfonyl、`*S(=O)(=O)c1ccc(C)cc1` tosyl、`*S(=O)(=O)C(F)(F)F` triflyl、`*N=C=O` isocyanato |
 | 哌啶基/环己基乙基 | `*C1CCNCC1` piperidin-4-yl、`*C(C)C1CCCCC1` 1-cyclohexylethyl |
 
-每条映射为 `(registry_key, en, zh, paren, kind)`。`registry_key` 非 None 时经 `tools/anchored_table.resolve_name` 解析，使 pin 模式输出系统名（如 isopropyl → propan-2-yl）。`kind` 分 `alkyl` / `aryl` / `halo` / `leaf` 四类——**提取器只认领 `alkyl`**，其余类别留给命名器/补全器。
+保留基查表经 `_ANCHOR_INDEX`（registry 锚定键反查）或 `ANCHOR_TABLE`（内联）命中，解析为 `(en, zh, paren, kind)`。registry 键经 `resolve_name` 解析，使 pin 模式输出系统名（如 isopropyl → propan-2-yl）。`kind` 分 `alkyl` / `aryl` / `halo` / `leaf` 四类——**提取器只认领 `alkyl`**，其余类别留给命名器/补全器。构建期校验 anchored 键的 canonical 形式与唯一性。
 
 > **源:** `src/namepredict/tools/anchored_table.py:32`
 
@@ -219,7 +220,7 @@ flowchart LR
 
 | 文件 | 行数 | 描述 |
 |------|------|------|
-| `tools/anchored_table.py` | 357 | **锚定 canonical-SMILES 查表 + 保留取代基注册表**。`ANCHOR_TABLE` 128 条 + `anchored_entry`/`anchored_lookup`/`pick_root`/`resolve_name`/`_REGISTRY`。核心机制。 |
+| `tools/anchored_table.py` | 390 | **锚定 canonical-SMILES 查表 + 保留取代基注册表**。`ANCHOR_TABLE` 58 条内联 + `_ANCHOR_INDEX` 69 条 registry 锚定反查 + `anchored_entry`/`anchored_lookup`/`pick_root`/`resolve_name`/`_REGISTRY`。核心机制。 |
 | `tools/block_cut.py` | 90 | 母体边界块切割：`side_atoms`（全连通分量）/`cut_block`/`side_roots`。 |
 | `tools/chain.py` | 38 | 开链行走原语，L2/L3 共享。 |
 | `tools/free_to_yl.py` | 166 | **-yl 转换**（原 layer5/free_to_yl.py 迁入，layer-agnostic）。 |
