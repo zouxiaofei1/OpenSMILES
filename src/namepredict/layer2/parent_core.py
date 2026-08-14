@@ -5,7 +5,6 @@ and may thin-re-export for compatibility.
 """
 from __future__ import annotations
 
-from namepredict.layer2.fg_helpers import _c_idxs, _no_fgs
 from namepredict.layer2.chain_walk import _longest_chain, _longest_from
 
 # Re-export chain / gate primitives used by producers.

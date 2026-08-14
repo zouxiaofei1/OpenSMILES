@@ -132,39 +132,61 @@ def _typed_ring_numbering_kind(oriented: dict, atoms: list[int], cyclo_kind: str
     return cyclo_kind if len(atoms) == 1 and oriented.get("kind") == "cycloalkane" else oriented.get("kind")
 
 
-def _oh_am_locants(oriented: dict, n: int, n_subs: int = 0) -> dict:
-    oh, am = _oh_locant(oriented), _amine_locant(oriented)
-    kind = _typed_ring_numbering_kind(oriented, _typed_alcohol_atoms(oriented), "cycloalcohol")
-    amine_kind = _typed_ring_numbering_kind(oriented, _typed_amine_atoms(oriented), "cycloamine")
-    return {
-        "oh_locant": oh, "oh_locants": _oh_locants(oriented),
-        "omit_oh_locant": _omit_oh(oh, n, kind, oriented, n_subs),
-        "amine_locant": am, "amine_locants": _amine_pair_locants(oriented),
-        "omit_amine_locant": _omit_amine(am, n, amine_kind, n_subs),
-    }
-def _sh_locants(oriented: dict, n: int) -> dict:
-    sh = _sh_locant(oriented)
-    return {"sh_locant": sh, "omit_sh_locant": _omit_sh(sh, n)}
-def _cooh_locants(oriented: dict) -> list[int] | None:
-    if oriented.get("kind") not in {"polycarboxylic", "benzene_polycarboxylic"}: return None
-    return _pair_locants(oriented.get("chain") or [], oriented.get("cooh_c_idxs"))
+def _sh_locants_list(oriented: dict) -> list[int] | None:
+    loc = _sh_locant(oriented)
+    return [loc] if loc is not None else None
 def _omit_ket_loc(oriented: dict, n_subs: int) -> bool:
     return _omit_ketone(oriented.get("kind"), n_subs, oriented, has_ene=_has_parent_ene)
-def _fg_locants(oriented: dict, n_subs: int = 0) -> dict:
+def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
+    """FG 记录 omit 标志:复现旧 _oh_am_locants/_sh_locants/_omit_ket_loc 的计算."""
+    if kind == "oh":
+        fg_kind = _typed_ring_numbering_kind(oriented, _typed_alcohol_atoms(oriented), "cycloalcohol")
+        return _omit_oh(_oh_locant(oriented), n, fg_kind, oriented, n_subs)
+    if kind == "amine":
+        amine_kind = _typed_ring_numbering_kind(oriented, _typed_amine_atoms(oriented), "cycloamine")
+        return _omit_amine(_amine_locant(oriented), n, amine_kind, n_subs)
+    if kind == "ketone":
+        return _omit_ket_loc(oriented, n_subs)
+    if kind == "sh":
+        return _omit_sh(_sh_locant(oriented), n)
+    return False
+def _amine_fg_locants(oriented: dict) -> list[int] | None:
+    locs = _amine_pair_locants(oriented) or []
+    if locs:
+        return locs
+    loc = _amine_locant(oriented)
+    return [loc] if loc is not None else None
+def _ketone_fg_locants(oriented: dict) -> list[int] | None:
+    locs = _ketone_pair_locants(oriented) or []
+    if locs:
+        return locs
+    loc = _ketone_locant(oriented)
+    return [loc] if loc is not None else None
+_FG_LOCANTS = (
+    ("oh", _oh_locants),
+    ("amine", _amine_fg_locants),
+    ("ketone", _ketone_fg_locants),
+    ("sh", _sh_locants_list),
+)
+def _fg_locants(oriented: dict, n_subs: int = 0) -> list[dict]:
+    """FG 位次记录: [{kind, locants, omit}] — 稀疏,只产实际存在的 principal FG."""
     n = oriented.get("n_carbons", 0)
-    return {
-        **_oh_am_locants(oriented, n, n_subs), **_sh_locants(oriented, n),
-        "ketone_locant": _ketone_locant(oriented),
-        "ketone_locants": _ketone_pair_locants(oriented),
-        "omit_ketone_locant": _omit_ket_loc(oriented, n_subs),
-        "cooh_locants": _cooh_locants(oriented),
-        **_unsat_locants(oriented, n),
-    }
+    records = []
+    for kind, locs_fn in _FG_LOCANTS:
+        locs = locs_fn(oriented)
+        if not locs:
+            continue
+        records.append({
+            "kind": kind, "locants": sorted(locs), "omit": _omit_for(kind, oriented, n, n_subs),
+        })
+    return records
 def _pack(oriented: dict, substituents: list) -> dict:
     from namepredict.layer4.cyclo_relative_stereo import relative_stereo_facts
     facts = relative_stereo_facts(oriented)
+    merged = {**oriented, **facts}
     n_subs = len(substituents or [])
     return {
-        "parent": {**oriented, **facts}, "substituents": substituents,
-        **_fg_locants({**oriented, **facts}, n_subs), **facts,
+        "parent": merged, "substituents": substituents,
+        "fg_locants": _fg_locants(merged, n_subs),
+        **_unsat_locants(merged, merged.get("n_carbons", 0)), **facts,
     }

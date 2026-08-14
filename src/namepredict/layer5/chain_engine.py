@@ -32,6 +32,14 @@ def _with_ez(pair: tuple[str, str] | None, numbered: dict) -> tuple[str, str] | 
     if pair is None: return None
     ez = ez_for_parent(numbered)
     return f"{ez}{pair[0]}", f"{ez}{pair[1]}"
+def _fg_record(numbered: dict, kind: str) -> dict | None:
+    """Look up a principal-FG locant record by kind (sparse fg_locants list)."""
+    return next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == kind), None)
+def _fg_locant(numbered: dict, kind: str) -> int | None:
+    """Single-FG locant (segment ene/yne, chain names); None unless exactly one."""
+    rec = _fg_record(numbered, kind)
+    locs = rec.get("locants") if rec else None
+    return locs[0] if locs and len(locs) == 1 else None
 
 # ===== 链式词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环 (替代 if-kind 枚举) =====
 def _chain_unsat(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
@@ -59,7 +67,7 @@ def _chain_yne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
         if omit or yne is None:
             return f"{s}{spec.yne_suf[0]}", f"{zs}{spec.yne_suf[1]}"
         return f"{s}-{yne}-{spec.yne_suf[0]}", f"{zs}-{yne}-{spec.yne_suf[1]}"
-    fg = numbered.get(spec.loc) if spec.loc else None   # 段式: 需 FG 位次 (醇/酮)
+    fg = _fg_locant(numbered, spec.fg) if spec.fg else None   # 段式: 需 FG 位次 (醇/酮)
     if yne is None or fg is None:
         return None
     return (
@@ -90,7 +98,7 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
             loc = ",".join(str(x) for x in enes)
             return f"{ez}{s}a-{loc}-{fused[0]}", f"{ez}{zs}-{loc}-{fused[1]}"
         if spec.mult_seg is not None:        # 段式多烯 (醇)
-            fg = numbered.get(spec.loc) if spec.loc else None
+            fg = _fg_locant(numbered, spec.fg) if spec.fg else None
             if fg is None:
                 return None
             me, mz = spec.mult_seg.get(len(enes), ("", ""))
@@ -115,7 +123,7 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
         return f"{ez}{s}-{ene}-{fused[0]}", f"{ez}{zs}-{ene}-{fused[1]}"
     if spec.ene_omit_aware:
         ene = _ene_loc_kept(numbered)
-    fg = numbered.get(spec.loc) if spec.loc else None   # 段式单烯 (醇/酮)
+    fg = _fg_locant(numbered, spec.fg) if spec.fg else None   # 段式单烯 (醇/酮)
     if ene is None or fg is None:
         return None
     ez = (spec.ez_ene(numbered) if spec.ez_ene else "") or ""
@@ -130,15 +138,12 @@ class _Chain:
     en_suf: str            # 词缀后缀: "ol" / "one" / "ene" / "oic acid"
     zh_suf: str            # "醇" / "酮" / "烯" / "酸"
     coda: str              # 饱和词干后接 "an"; 烯/炔词干接 ""
-    loc: str | None        # FG 位次字段 (单 locant)
-    omit_key: str
-    default_omit: bool
     no_loc: str            # "plain"=无位次输出普通名; "none"=返回 None
     omit_rule: object      # (n, loc, omit) -> bool  True=省略
-    plain_maps: tuple | None = None     # 俗名表 (en_dict, zh_dict), 查不到时回落生成
-    plain_fn: object = None             # 派生命名 (n)->pair — 酸酐从酸派生
-    locs: str | None = None             # 多 FG 位次字段 (list) — diol/dione/环二酮
-    need: int | None = None             # 多 FG 位次数量要求
+    fg: str | None = None              # FG 类别名 (fg_locants 记录 kind): oh/amine/ketone/sh
+    need: int | None = None            # FG 位次数要求 (need=1 单 FG; diol=2; triol=3 ...)
+    plain_maps: tuple | None = None    # 俗名表 (en_dict, zh_dict), 查不到时回落生成
+    plain_fn: object = None            # 派生命名 (n)->pair — 酸酐从酸派生
     ene_seg: tuple | None = None        # 单烯段 ("en","烯") — 醇/酮
     yne_seg: tuple | None = None        # 炔段 ("yn","炔") — 醇/酮
     mult_seg: dict | None = None        # 多烯段表 {2:("dien","二烯"),...} — 醇
@@ -214,166 +219,134 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         zs = _chain_zh_base(n)
     if s is None or zs is None:
         return None
-    if spec.locs is not None:      # 多 FG 位次 (diol/dione/环二酮...): 无位次 → None
-        locs = numbered.get(spec.locs)
+    if spec.fg is not None:      # FG 位次 (diol/dione/alcohol/...): 记录缺失或数量不符 → no_loc
+        rec = _fg_record(numbered, spec.fg)
+        locs = rec["locants"] if rec else None
         if not locs or (spec.need is not None and len(locs) != spec.need):
-            return None
-        loc_s = ",".join(str(x) for x in locs)
-        if spec.unsat_polyol:
-            poly_stem = _chain_polyol_stem(n, numbered)
-            if poly_stem is not None:
-                es, zs2 = poly_stem
-                pair = (f"{es}-{loc_s}-{spec.en_suf}", f"{zs2}-{loc_s}-{spec.zh_suf}")
-            else:
-                pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
-        else:
-            pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
-    else:
-        loc = numbered.get(spec.loc) if spec.loc else None
-        omit = numbered.get(spec.omit_key, spec.default_omit) if spec.loc else False
-        if loc is None:
             if spec.no_loc == "none":
                 return None
             pair = _chain_plain(spec, s, zs, n)
-        elif spec.omit_rule(n, loc, omit):
+        elif spec.omit_rule(n, locs[0], rec["omit"] if rec else False):
             pair = _chain_plain(spec, s, zs, n)
         else:
-            pair = (f"{s}{spec.coda}-{loc}-{spec.en_suf}", f"{zs}-{loc}-{spec.zh_suf}")
+            loc_s = ",".join(str(x) for x in locs)
+            if spec.unsat_polyol:
+                poly_stem = _chain_polyol_stem(n, numbered)
+                if poly_stem is not None:
+                    es, zs2 = poly_stem
+                    pair = (f"{es}-{loc_s}-{spec.en_suf}", f"{zs2}-{loc_s}-{spec.zh_suf}")
+                else:
+                    pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
+            else:
+                pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
+    else:
+        pair = _chain_plain(spec, s, zs, n)
     if spec.cyclic:
         pair = (f"cyclo{pair[0]}", f"环{pair[1]}")
     return spec.wrap(pair, numbered) if spec.wrap is not None else pair
 
 _AMINE_SPEC = _Chain(kind="amine", en_suf="amine", zh_suf="胺", coda="an",
-                     loc="amine_locant", omit_key="omit_amine_locant", default_omit=False,
-                     no_loc="plain", omit_rule=_omit_term_locant)
+                     fg="amine", need=1, no_loc="plain", omit_rule=_omit_term_locant)
 
 _KIND_TABLE = {
     "alcohol": _Chain(kind="alcohol", en_suf="ol", zh_suf="醇", coda="an",
-                      loc="oh_locant", omit_key="omit_oh_locant", default_omit=False,
-                      no_loc="plain", omit_rule=_omit_term_locant,
+                      fg="oh", need=1, no_loc="plain", omit_rule=_omit_term_locant,
                       plain_maps=(ALCOHOL_EN, ALCOHOL_ZH),
                       ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
                       mult_seg={2: ("dien", "二烯"), 3: ("trien", "三烯"),
                                 4: ("tetraen", "四烯"), 5: ("pentaen", "五烯")},
                       ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent),
     "diol": _Chain(kind="diol", en_suf="diol", zh_suf="二醇", coda="ane",
-                   loc=None, omit_key="", default_omit=False,
-                   no_loc="none", omit_rule=lambda n, loc, omit: False,
-                   locs="oh_locants", need=2, zh_full=True, unsat_polyol=True),
+                   fg="oh", need=2, no_loc="none", omit_rule=lambda n, loc, omit: False,
+                   zh_full=True, unsat_polyol=True),
     "triol": _Chain(kind="triol", en_suf="triol", zh_suf="三醇", coda="ane",
-                    loc=None, omit_key="", default_omit=False,
-                    no_loc="none", omit_rule=lambda n, loc, omit: False,
-                    locs="oh_locants", need=3, zh_full=True, unsat_polyol=True),
+                    fg="oh", need=3, no_loc="none", omit_rule=lambda n, loc, omit: False,
+                    zh_full=True, unsat_polyol=True),
     "ketone": _Chain(kind="ketone", en_suf="one", zh_suf="酮", coda="an",
-                     loc="ketone_locant", omit_key="omit_ketone_locant", default_omit=False,
-                     no_loc="none",
+                     fg="ketone", need=1, no_loc="none",
                      omit_rule=lambda n, loc, omit: n <= 2 and loc == 1,
                      ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
                      ez_ene=ez_for_parent),
- 
     "alkane": _Chain(kind="alkane", en_suf="ane", zh_suf="烷", coda="",
-                     loc="ene_locant", omit_key="omit_ene_locant", default_omit=False, ene_base=("ene", "烯"),
-                                         yne_suf=("yne", "炔"),
-                     no_loc="plain", omit_rule=lambda n, loc, omit: omit or n <= 3, ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
+                     no_loc="plain", omit_rule=lambda n, loc, omit: omit or n <= 3,
+                     ene_base=("ene", "烯"), yne_suf=("yne", "炔"),
+                     ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
                      wrap=_with_ez),
     "acid": _Chain(kind="acid", en_suf="oic acid", zh_suf="酸", coda="an",
-                   loc=None, omit_key="", default_omit=False,
                    no_loc="plain", omit_rule=lambda n, loc, omit: False,
                    plain_maps=(ACID_EN, ACID_ZH),
                    ene_base=("enoic acid", "烯酸"),
                    yne_suf=("ynoic acid", "炔酸"),
                    ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent),
     "ester": _Chain(kind="ester", en_suf="oate", zh_suf="酸", coda="an",
-                    loc=None, omit_key="", default_omit=False,
                     no_loc="plain", omit_rule=lambda n, loc, omit: False,
                     plain_maps=(ESTER_ACYL_EN, ACID_ZH),
                     ene_base=("enoate", "烯酸"),
                     yne_suf=("ynoate", "炔酸"),
                     ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
-                    loc="sh_locant", omit_key="omit_sh_locant", default_omit=False,
-                    no_loc="plain", omit_rule=_omit_term_locant),
+                    fg="sh", need=1, no_loc="plain", omit_rule=_omit_term_locant),
     "amine": _AMINE_SPEC,
     "sec_amine": _AMINE_SPEC,
     "tert_amine": _AMINE_SPEC,
     "aldehyde": _Chain(kind="aldehyde", en_suf="anal", zh_suf="醛", coda="an",
-                       loc=None, omit_key="", default_omit=False,
                        no_loc="plain", omit_rule=lambda n, loc, omit: False,
                        plain_maps=(ALDEHYDE_EN, ALDEHYDE_ZH),
                        ene_base=("enal", "烯醛"),
                        yne_suf=("ynal", "炔醛"),
                        ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent),
     "nitrile": _Chain(kind="nitrile", en_suf="anenitrile", zh_suf="腈", coda="an",
-                      loc=None, omit_key="", default_omit=False,
                       no_loc="plain", omit_rule=lambda n, loc, omit: False,
                       plain_maps=(NITRILE_EN, NITRILE_ZH),
                       ene_base=("enenitrile", "烯腈"),
                       yne_suf=("ynenitrile", "炔腈"),
                       ez_ene=ez_for_parent),
-   
     "cyclopolyene": _Chain(kind="cyclopolyene", en_suf="", zh_suf="", coda="ane",
-                           loc=None, omit_key="", default_omit=False,
                            no_loc="plain", omit_rule=lambda n, loc, omit: False,
                            ene_base=("ene", "烯"), ene_m_min=2,
                            ene_n_min=0, cyclic_unsat=True, zh_full=True),
-   
     "cycloalkane": _Chain(kind="cycloalkane", en_suf="", zh_suf="", coda="ane",
-                          loc=None, omit_key="", default_omit=False,
                           no_loc="plain", omit_rule=lambda n, loc, omit: False,
                           cyclic=True, zh_full=True),
     "cycloalkene": _Chain(kind="cycloalkene", en_suf="ene", zh_suf="烯", coda="",
-                          loc=None, omit_key="", default_omit=False,
                           no_loc="plain", omit_rule=lambda n, loc, omit: False,
                           cyclic=True),
     "dione": _Chain(kind="dione", en_suf="dione", zh_suf="二酮", coda="ane",
-                    loc=None, omit_key="", default_omit=False,
-                    no_loc="none", omit_rule=lambda n, loc, omit: False,
-                    locs="ketone_locants", need=2),
+                    fg="ketone", need=2, no_loc="none", omit_rule=lambda n, loc, omit: False),
     "cycloalkanedione": _Chain(kind="cycloalkanedione", en_suf="dione", zh_suf="二酮", coda="ane",
-                               loc=None, omit_key="", default_omit=False,
-                               no_loc="none", omit_rule=lambda n, loc, omit: False,
-                               locs="ketone_locants", need=2, cyclic=True, zh_full=True),
+                               fg="ketone", need=2, no_loc="none", omit_rule=lambda n, loc, omit: False,
+                               cyclic=True, zh_full=True),
     "cycloalcohol": _Chain(kind="cycloalcohol", en_suf="ol", zh_suf="醇", coda="an",
-                           loc="oh_locant", omit_key="omit_oh_locant", default_omit=True,
-                           no_loc="plain", omit_rule=lambda n, loc, omit: omit,
+                           fg="oh", need=1, no_loc="plain", omit_rule=lambda n, loc, omit: omit,
                            ene_seg=("en", "烯"), ene_omit_aware=True, cyclic=True),
     "cycloketone": _Chain(kind="cycloketone", en_suf="one", zh_suf="酮", coda="an",
-                          loc="ketone_locant", omit_key="omit_ketone_locant", default_omit=True,
-                          no_loc="plain", omit_rule=lambda n, loc, omit: omit,
+                          fg="ketone", need=1, no_loc="plain", omit_rule=lambda n, loc, omit: omit,
                           ene_seg=("en", "烯"), ene_omit_aware=True, cyclic=True),
     "cycloamine": _Chain(kind="cycloamine", en_suf="amine", zh_suf="胺", coda="an",
-                         loc="amine_locant", omit_key="omit_amine_locant", default_omit=True,
-                         no_loc="plain", omit_rule=lambda n, loc, omit: omit,
+                         fg="amine", need=1, no_loc="plain", omit_rule=lambda n, loc, omit: omit,
                          cyclic=True),
     "diacid": _Chain(kind="diacid", en_suf="dioic acid", zh_suf="二酸", coda="ane",
-                     loc=None, omit_key="", default_omit=False,
                      no_loc="plain", omit_rule=lambda n, loc, omit: False,
                      plain_maps=({2: "oxalic acid"}, {2: "草酸"}),
                      ene_base=("enedioic acid", "烯二酸"),
                      ene_single_min=3,
                      ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent),
     "diamine": _Chain(kind="diamine", en_suf="diamine", zh_suf="二胺", coda="ane",
-                      loc=None, omit_key="", default_omit=False,
-                      no_loc="none", omit_rule=lambda n, loc, omit: False,
-                      locs="amine_locants", need=2, zh_full=True),
+                      fg="amine", need=2, no_loc="none", omit_rule=lambda n, loc, omit: False,
+                      zh_full=True),
     "triamine": _Chain(kind="triamine", en_suf="triamine", zh_suf="三胺", coda="ane",
-                       loc=None, omit_key="", default_omit=False,
-                       no_loc="none", omit_rule=lambda n, loc, omit: False,
-                       locs="amine_locants", need=3, zh_full=True),
+                       fg="amine", need=3, no_loc="none", omit_rule=lambda n, loc, omit: False,
+                       zh_full=True),
     "tetraamine": _Chain(kind="tetraamine", en_suf="tetraamine", zh_suf="四胺", coda="ane",
-                         loc=None, omit_key="", default_omit=False,
-                         no_loc="none", omit_rule=lambda n, loc, omit: False,
-                         locs="amine_locants", need=4, zh_full=True),
+                         fg="amine", need=4, no_loc="none", omit_rule=lambda n, loc, omit: False,
+                         zh_full=True),
     "anhydride": _Chain(kind="anhydride", en_suf="", zh_suf="", coda="ane",
-                        loc=None, omit_key="", default_omit=False,
                         no_loc="plain", omit_rule=lambda n, loc, omit: False,
                         plain_fn=_anhydride_from_acid),
     "cycloalkanediol": _Chain(kind="cycloalkanediol", en_suf="diol", zh_suf="二醇", coda="ane",
-                              loc=None, omit_key="", default_omit=False,
-                              no_loc="none", omit_rule=lambda n, loc, omit: False,
-                              locs="oh_locants", need=2, cyclic=True, zh_full=True),
+                              fg="oh", need=2, no_loc="none", omit_rule=lambda n, loc, omit: False,
+                              cyclic=True, zh_full=True),
     "amide": _Chain(kind="amide", en_suf="amide", zh_suf="酰胺", coda="an",
-                    loc=None, omit_key="", default_omit=False,
                     no_loc="plain", omit_rule=lambda n, loc, omit: False,
                     plain_maps=(AMIDE_EN, AMIDE_ZH),
                     ene_base=("enamide", "烯酰胺"),

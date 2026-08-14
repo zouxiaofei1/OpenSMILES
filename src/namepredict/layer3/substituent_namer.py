@@ -62,24 +62,6 @@ class RetainedBackend:
     def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None:
         return _retained_name(mol, claim, name_mode=self._name_mode)
 
-
-def _rooted_tree_name(mol, claim: ClaimedBlock) -> SubstituentName | None:
-    # 占位桩：rooted-tree 系统命名尚未实现，恒返回 None（由 retained/recursive 后端承担）。
-    return None
-
-
-class RootedTreeBackend:
-    """Pure saturated-carbon rooted tree (max_atoms=12, max_depth=3)."""
-
-    name = "rooted_tree"
-
-    def __init__(self, *, name_mode: str = "general") -> None:
-        self._name_mode = name_mode
-
-    def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None:
-        return _rooted_tree_name(mol, claim)
-
-
 class RecursiveBackend:
     """Bounded recursive cut → free-name → yl_form."""
 
@@ -104,7 +86,7 @@ def _from_yl(claim: ClaimedBlock, hit: tuple[str, str, bool]) -> SubstituentName
 
 
 def _default_backends(name_mode: str = "general", cache: CommonNameCache | None = None) -> list[SubstituentBackend]:
-    return [RetainedBackend(name_mode=name_mode), RootedTreeBackend(name_mode=name_mode), RecursiveBackend(name_mode=name_mode, cache=cache)]
+    return [RetainedBackend(name_mode=name_mode),  RecursiveBackend(name_mode=name_mode, cache=cache)]
 
 
 class SubstituentNamer:

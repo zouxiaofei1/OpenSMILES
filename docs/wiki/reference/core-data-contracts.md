@@ -304,19 +304,9 @@ class CoverageLedger:
 {
     "parent":       {...},    # 增强的 parent dict（带 oriented chain + numbering plan）
     "substituents": [...],    # list[subst dict]，每项已注入 locant
-    # 以下为展平到顶层的 locant 字段（来自 _fg_locants + _pack）:
-    "oh_locant":              int | None,
-    "oh_locants":             list[int] | None,
-    "omit_oh_locant":         bool,
-    "amine_locant":           int | None,
-    "amine_locants":          list[int] | None,
-    "omit_amine_locant":      bool,
-    "sh_locant":              int | None,
-    "omit_sh_locant":         bool,
-    "ketone_locant":          int | None,
-    "ketone_locants":         list[int] | None,
-    "omit_ketone_locant":     bool,
-    "cooh_locants":           list[int] | None,
+    # principal FG 位次: 结构化稀疏列表, 只含实际存在的 FG:
+    "fg_locants":   list[dict],  # [{kind, locants, omit}, ...]
+    # 不饱和度位次 (扁平字段, 烯/炔独立于 fg_locants):
     "ene_locant":             int | None,
     "ene_locants":            list[int] | None,
     "omit_ene_locant":        bool,
@@ -331,16 +321,24 @@ class CoverageLedger:
 }
 ```
 
+`fg_locants` 每项结构：
+
+```python
+{
+    "kind":     "oh" | "amine" | "ketone" | "sh",  # FG 类别 (来自 principal_expression_facts.group_class 映射)
+    "locants":  list[int],   # 统一列表 (单 FG 也是 [x]); 由挂载原子经 chain/plan 换算
+    "omit":     bool,        # L4 omit_locants.py 规则算好的省略标志
+}
+```
+
 ### locant 字段详解
 
-`_fg_locants()` at `numbering.py:500-509` 通过聚合三个子函数计算所有位次信息：
+`_fg_locants()` at `src/namepredict/layer4/locant_calc.py` 数据驱动（`_FG_LOCANTS` 表）产出 `fg_locants` 稀疏列表——只产实际存在的 principal FG（oh/amine/ketone/sh），cooh 不产（单/多酸位次隐含，死字段清理）。烯/炔位次由 `_unsat_locants()` 独立产出为扁平字段：
 
-| 子函数 | 产出字段 |
+| 产出方 | 内容 |
 |---|---|
-| `_oh_am_locants()` at `numbering.py:483-491` | `oh_locant`, `oh_locants`, `omit_oh_locant`, `amine_locant`, `amine_locants`, `omit_amine_locant` |
-| `_sh_locants()` at `numbering.py:492-494` | `sh_locant`, `omit_sh_locant` |
-| `_unsat_locants()` at `numbering.py:474-482` | `ene_locant`, `ene_locants`, `omit_ene_locant`, `yne_locant`, `omit_yne_locant` |
-| (inline in `_fg_locants`) | `ketone_locant`, `ketone_locants`, `omit_ketone_locant`, `cooh_locants` |
+| `_fg_locants()` at `locant_calc.py`（`_FG_LOCANTS` 数据表） | `fg_locants`: [{kind, locants, omit}] — 稀疏, 只含实际存在的 principal FG |
+| `_unsat_locants()` at `locant_calc.py:122` | `ene_locant`, `ene_locants`, `omit_ene_locant`, `yne_locant`, `omit_yne_locant` |
 
 ---
 

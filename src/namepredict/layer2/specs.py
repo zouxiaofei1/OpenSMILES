@@ -36,14 +36,14 @@ class ScaffoldSpec:
 
 # Shared fused 5+6 path labels (IUPAC P-22.2.1 / P-25): hetero=1 … 7a.
 FUSED56_LABELS: tuple[str, ...] = (
-    "1", "2", "3", "3a", "4", "5", "6", "7", "7a",
+    # "1", "2", "3", "3a", "4", "5", "6", "7", "7a",
 )
 # Naphthalene / quinoline family path labels (P-25): 1…4a…8a.
 NAPH_LABELS: tuple[str, ...] = (
-    "1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a",
+    # "1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a",
 )
 ANTHRA_LABELS: tuple[str, ...] = (
-    "1", "2", "3", "4", "4a", "10", "10a", "5", "6", "7", "8", "8a", "9", "9a",
+    # "1", "2", "3", "4", "4a", "10", "10a", "5", "6", "7", "8", "8a", "9", "9a",
 )
 
 

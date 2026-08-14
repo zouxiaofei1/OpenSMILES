@@ -10,4 +10,6 @@ def number(parent: dict, substituents: list) -> dict:
     oriented = {**parent, "chain": chain}
     plan = plan_from_chain(chain, oriented.get("scaffold_id") or kind, oriented.get("numbering_scaffold"), required=oriented.get("numbering_scaffold_required", False))
     if plan is not None: oriented["numbering"] = plan
-    return _pack(oriented, _with_locants(chain, substituents, kind, oriented.get("numbering_scaffold")))
+
+    result = _pack(oriented, _with_locants(chain, substituents, kind, oriented.get("numbering_scaffold")))
+    return result

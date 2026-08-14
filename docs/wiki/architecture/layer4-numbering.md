@@ -24,9 +24,10 @@ Layer4 是整个 6 层流水线中**最数学化**的一层：它的大量逻辑
         {**s, "locant": 2},  # 每个取代基被附着了 locant
         ...
     ],
-    "oh_locant": 1,          # 示例：醇羟基定位
-    "ene_locant": 2,         # 示例：双键定位
-    "omit_oh_locant": True,  # 是否省略（如乙醇：无需写 1-醇）
+    "fg_locants": [          # 示例：principal FG 位次记录（稀疏）
+        {"kind": "oh", "locants": [1], "omit": True},  # 如乙醇：省略 1-醇
+    ],
+    "ene_locant": 2,         # 示例：双键定位（扁平字段，独立于 fg_locants）
     ...
 }
 ```
@@ -241,18 +242,7 @@ def number(parent: dict, substituents: list[dict]) -> dict:
 |------|------|------|
 | `parent` | `dict` | 增强版 parent（含 `chain`、`numbering` plan 及立体化学事实） |
 | `substituents` | `list[dict]` | 每个元素增加了 `locant` 字段 |
-| `oh_locant` | `int\|None` | 醇/酚羟基位次 |
-| `oh_locants` | `list[int]\|None` | 多羟基位次集 |
-| `omit_oh_locant` | `bool` | 是否省略 OH 位次 |
-| `amine_locant` | `int\|None` | 胺基位次 |
-| `amine_locants` | `list[int]\|None` | 多胺基位次集 |
-| `omit_amine_locant` | `bool` | 是否省略 amine 位次 |
-| `sh_locant` | `int\|None` | 硫醇位次 |
-| `omit_sh_locant` | `bool` | 是否省略 SH 位次 |
-| `ketone_locant` | `int\|None` | 酮基位次 |
-| `ketone_locants` | `list[int]\|None` | 多酮位次集 |
-| `omit_ketone_locant` | `bool` | 是否省略 ketone 位次 |
-| `cooh_locants` | `list[int]\|None` | 多羧酸位次集 |
+| `fg_locants` | `list[dict]` | principal FG 位次记录（稀疏, 只含实际存在的 FG）: `[{kind, locants, omit}]` |
 | `ene_locant` | `int\|None` | 双键位次 |
 | `ene_locants` | `list[int]\|None` | 多双键位次集 |
 | `omit_ene_locant` | `bool` | 是否省略烯键位次 |
@@ -261,6 +251,11 @@ def number(parent: dict, substituents: list[dict]) -> dict:
 | `stem_en` / `stem_zh` | `str` | polycarboxylic 专用：组装后的英/中词干 |
 | `relative_stereo_prefix` | `str` | 相对立体化学前缀（`"cis"`/`"trans"`） |
 | `relative_stereo_locants` | `str` | 3 取代 r/c/t locant 字符串 |
+
+`fg_locants` 每项结构：`{"kind": "oh"|"amine"|"ketone"|"sh", "locants": [int, ...], "omit": bool}`。
+- `kind` 来自 `principal_expression_facts.group_class` 映射；`locants` 由挂载原子经 chain/plan 换算（统一列表，单 FG 也是 `[x]`）；`omit` 由 `omit_locants.py` 规则算好。
+- **稀疏**：只产实际存在的 FG；cooh 不产（单/多酸位次隐含，死字段清理）。
+- 烯/炔位次独立为扁平字段，不进 `fg_locants`。
 
 **调用方:** `src/namepredict/namer.py:106` 在 `_assemble_candidate` 中调用。
 
