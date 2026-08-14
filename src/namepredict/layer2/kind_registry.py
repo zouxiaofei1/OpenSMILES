@@ -21,7 +21,7 @@ _KIND_CLASS = {
     "isocyanate": FG.ISOCYANATE, "isothiocyanate": FG.ISOTHIOCYANATE,
     "sulfide": FG.SULFIDE,
     "tetraalkylammonium": FG.QUATERNARY_AMMONIUM,
-    "benzoic": FG.ACID, "benzene_polycarboxylic": FG.ACID,
+    "benzoic": FG.ACID, 
     "benzamide": FG.AMIDE, "benzonitrile": FG.NITRILE,
     "benzaldehyde": FG.ALDEHYDE, "acetophenone": FG.KETONE,
     "phenol": FG.ALCOHOL, "aniline": FG.AMINE,"alkane":FG.NONE
@@ -55,9 +55,6 @@ _REG: dict[str, KindMeta] = {}
 # is the single P-41 authority). _load_chain_fg() registers every mapped kind.
 _ARENE_NAMED: tuple[tuple[str, str, str, int], ...] = (
     ("benzoic", "benzoic acid", "苯甲酸", 13),
-    ("benzene_polycarboxylic", "benzene", "苯", 13),
-    ("benzoyl_chloride", "benzoyl chloride", "苯甲酰氯", 10),
-    ("benzoyl_bromide", "benzoyl bromide", "苯甲酰溴", 10),
     ("benzamide", "benzamide", "苯甲酰胺", 9),
     ("benzonitrile", "benzonitrile", "苯甲腈", 8),
     ("benzaldehyde", "benzaldehyde", "苯甲醛", 7),
@@ -65,14 +62,7 @@ _ARENE_NAMED: tuple[tuple[str, str, str, int], ...] = (
     ("phenol", "phenol", "苯酚", 5),
     ("aniline", "aniline", "苯胺", 3),
 )
-# Fused FG kinds without Spec stems still need fg_rank registration.
-# Spec is authority when present; this table only covers residual FG tags.
-_MISC_RING_FG: tuple[tuple[str, int, str, int, bool, str | None, str | None], ...] = (
-    ("cycloalkane_polycarboxylic", 13, "carbo", 1, False, None, None),
-    ("benzenediol", 5, "none", 0, False, None, None),
-    ("cycloalkanediol", 5, "none", 0, False, None, None),
-    ("cycloalkanedione", 6, "none", 0, False, None, None),
-)
+
 
 
 def register(meta: KindMeta) -> None:
@@ -163,32 +153,12 @@ def _load_chain_fg() -> None:
 def _load_arene_fg_names() -> None:
     for kind, en, zh, fg in _ARENE_NAMED:
         _add(kind, en=en, zh=zh, fg=fg, ret=True)
-    _add("benzoate", fg=11, ret=True)
-
-
-def _load_misc_ring_fg() -> None:
-    for k, fg, ring, n, ret, en, zh in _MISC_RING_FG:
-        _add(k, en=en, zh=zh, fg=fg, ring=ring, n=n, ret=ret)
-
 
 def _load_cyclo_rings() -> None:
     """Cyclo* kinds without stems (Spec stem is None; still need ring meta)."""
     _add("cycloalkane", ring="carbo", n=1)
     _add("cycloalkene", ring="carbo", n=1)
     _add("cyclopolyene", ring="carbo", n=1)
-
-
-def _load_bridged() -> None:
-    """Bridged (von Baeyer) bicyclic parent kind."""
-    _add("bridged", ring="carbo", n=2)
-
-
-def _load_sat_hetero_repl() -> None:
-    # stems filled at runtime on parent (stem_en/stem_zh); placeholders for lint
-    _add(
-        "sat_hetero_repl", en="heterocycloalkane", zh="杂环烷",
-        ring="hetero", n=1, ret=False,
-    )
 
 
 def _spec_to_meta(sp) -> KindMeta:
@@ -211,10 +181,7 @@ def _load_from_scaffold_specs() -> None:
 def _bootstrap() -> None:
     _load_chain_fg()
     _load_arene_fg_names()
-    _load_misc_ring_fg()
     _load_cyclo_rings()
-    _load_bridged()
-    _load_sat_hetero_repl()
     _load_from_scaffold_specs()  # last: Spec is stem authority
 
 

@@ -13,7 +13,7 @@ _FIXED_MULTI = {
     "naphthalenediol": 2,
 }
 _DYNAMIC_IDS = {
-    "polycarboxylic": "cooh_c_idxs", "benzene_polycarboxylic": "cooh_c_idxs",
+    "polycarboxylic": "cooh_c_idxs",
     "cycloalkane_polycarboxylic": "cooh_c_idxs",
 }
 

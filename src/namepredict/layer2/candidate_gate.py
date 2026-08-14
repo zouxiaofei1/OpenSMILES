@@ -13,7 +13,6 @@ class GateStatus(Enum):
 
 class GateScope(Enum):
     OPEN_CHAIN_POLYCARBOXYLIC = "open_chain_polycarboxylic"
-    BENZENE_POLYCARBOXYLIC = "benzene_polycarboxylic"
     CYCLOALKANE_POLYCARBOXYLIC = "cycloalkane_polycarboxylic"
 
 
