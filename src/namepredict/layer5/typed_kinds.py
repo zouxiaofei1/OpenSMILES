@@ -13,24 +13,29 @@ _BENZENE_RETAINED = {
 }
 
 
-def _benzene_retained(kind: str, numbered: dict) -> str | None:
-    """Benzene ring + exactly one principal FG → retained ring kind, else None."""
-    if kind != "benzene":
+def _scaffold(numbered: dict) -> str | None:
+    """Parent scaffold id (None for open chain). L2 kind 的环系语义不再被 L5 依赖。"""
+    return (numbered.get("parent") or {}).get("scaffold_id")
+
+
+def _ring_retained(numbered: dict, fg: str) -> str | None:
+    """苯环 + 单主官能团 → P-22.1.3 保留名 kind, else None."""
+    if _scaffold(numbered) != "benzene":
         return None
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.multiplicity != 1:
         return None
-    return _BENZENE_RETAINED.get(facts.group_class.value)
+    return _BENZENE_RETAINED.get(fg)
 
 
 def _typed_acid_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "acid":
         return kind
-    retained = _benzene_retained(kind, numbered)
+    retained = _ring_retained(numbered, "acid")
     if retained:
         return retained
-    if facts.relation.value == "exocyclic" and kind == "cycloalkane":
+    if facts.relation.value == "exocyclic" and _scaffold(numbered) == "carbocycle":
         return "cycloalkanecarboxylic" if facts.multiplicity == 1 else "cycloalkane_polycarboxylic"
     if facts.relation.value == "exocyclic":
         return kind
@@ -41,43 +46,44 @@ def _typed_ester_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "ester":
         return kind
-    return _benzene_retained(kind, numbered) or kind
+    return _ring_retained(numbered, "ester") or kind
 
 
 def _typed_aldehyde_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "aldehyde":
         return kind
-    return _benzene_retained(kind, numbered) or kind
+    return _ring_retained(numbered, "aldehyde") or kind
 
 
 def _typed_nitrile_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "nitrile":
         return kind
-    return _benzene_retained(kind, numbered) or kind
+    return _ring_retained(numbered, "nitrile") or kind
 
 
 def _typed_amide_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "amide":
         return kind
-    return _benzene_retained(kind, numbered) or kind
+    return _ring_retained(numbered, "amide") or kind
 
 def _typed_ketone_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "ketone":
         return kind
-    if kind in {"cycloalkane", "cycloketone", "cycloalkanedione"}:
+    if _scaffold(numbered) == "carbocycle":
         return "cycloketone" if facts.multiplicity == 1 else "cycloalkanedione"
     if kind not in {"ketone", "dione"}:
         return kind
     return "ketone" if facts.multiplicity == 1 else "dione"
 
 def _typed_ring_alcohol_kind(kind: str, numbered: dict, facts) -> str | None:
-    if kind in {"cycloalkane", "cycloalcohol", "cycloalkanediol"}:
+    sid = _scaffold(numbered)
+    if sid == "carbocycle":
         return "cycloalcohol" if facts.multiplicity == 1 else "cycloalkanediol"
-    if kind in {"benzene", "phenol", "benzenediol"}:
+    if sid == "benzene":
         return "phenol" if facts.multiplicity == 1 else "benzenediol"
     parent = numbered.get("parent") or {}
     scaffold = parent.get("scaffold_identity")
@@ -89,7 +95,7 @@ def _typed_alcohol_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "alcohol":
         return kind
-    retained = _benzene_retained(kind, numbered)
+    retained = _ring_retained(numbered, "alcohol")
     if retained:
         return retained
     ring_kind = _typed_ring_alcohol_kind(kind, numbered, facts)
@@ -103,10 +109,10 @@ def _typed_amine_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "amine":
         return kind
-    retained = _benzene_retained(kind, numbered)
+    retained = _ring_retained(numbered, "amine")
     if retained:
         return retained
-    if kind in {"cycloalkane", "cycloamine"} and facts.multiplicity == 1:
+    if _scaffold(numbered) == "carbocycle" and facts.multiplicity == 1:
         return "cycloamine"
     if kind not in {"amine", "diamine", "triamine", "tetraamine"}:
         return kind

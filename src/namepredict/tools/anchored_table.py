@@ -240,6 +240,7 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "methylsulfanyl": RetainedSubstituent( "methylsulfanyl", "甲硫基", "methylsulfanyl", "甲硫基", P, ),
         "ethylsulfanyl": RetainedSubstituent(      "ethylsulfanyl", "乙硫基", "ethylsulfanyl", "乙硫基", P,  ),
         "sulfanyl": RetainedSubstituent(     "sulfanyl", "硫烷基", "sulfanyl", "硫烷基", P,   ),
+        "selanyl": RetainedSubstituent(     "selanyl", "硒烷基", "selanyl", "硒烷基", P,   ),
         "methylsulfinyl": RetainedSubstituent(     "methylsulfinyl", "甲亚磺酰基", "methanesulfinyl", "甲亚磺酰基", P, ),
         "methylsulfonyl": RetainedSubstituent(   "methylsulfonyl", "甲磺酰基", "methanesulfonyl", "甲磺酰基", P, ),
         "sulfo": RetainedSubstituent(     "sulfo", "磺基", "sulfo", "磺基", P, ),
