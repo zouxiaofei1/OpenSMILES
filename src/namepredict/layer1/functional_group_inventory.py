@@ -23,6 +23,7 @@ class FunctionalGroupClass(str, Enum):
     ISOTHIOCYANATE = "isothiocyanate"
     ETHER = "ether"
     SULFIDE = "sulfide"
+    NONE = 'alkane'
 
 
 @dataclass(frozen=True)

@@ -41,11 +41,20 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
 def rule_driven_parent_candidates(info: dict) -> list[dict]:
 
     selection = select_principal_parent_skeletons(info)
-  
+
+    # print(selection)
     if selection.skeletons is None:
         return []
     if selection.principal is None:
+        #return 
         from namepredict.layer2.principal_expression import express_hydrocarbon_principal
         return [p for s in selection.skeletons.candidates
                 if (p := express_hydrocarbon_principal(info, s)) is not None]
+    # print("---")
+    # print(selection)
+    # print(_express_selected(selection, info))
+    # from namepredict.layer2.principal_expression import express_hydrocarbon_principal
+    # print([p for s in selection.skeletons.candidates
+    #              if (p := express_hydrocarbon_principal(info, s)) is not None])
+    # print(_express_selected(selection, info))
     return _express_selected(selection, info)

@@ -24,7 +24,7 @@ _KIND_CLASS = {
     "benzoic": FG.ACID, "benzene_polycarboxylic": FG.ACID,
     "benzamide": FG.AMIDE, "benzonitrile": FG.NITRILE,
     "benzaldehyde": FG.ALDEHYDE, "acetophenone": FG.KETONE,
-    "phenol": FG.ALCOHOL, "aniline": FG.AMINE,
+    "phenol": FG.ALCOHOL, "aniline": FG.AMINE,"alkane":FG.NONE
 }
 
 

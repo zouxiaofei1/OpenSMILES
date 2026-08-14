@@ -86,4 +86,4 @@ def select_principal_group(
     eligible = (group_class for group_class in set(classes) if principal_spec(group_class, registry))
     selected = min(eligible, key=lambda group_class: principal_spec(group_class, registry).priority, default=None)
     occurrences = inventory.occurrences(selected) if selected else ()
-    return PrincipalGroupSelection(selected, occurrences) if selected else None
+    return PrincipalGroupSelection(selected, occurrences) if selected else PrincipalGroupSelection(FG.NONE, occurrences)

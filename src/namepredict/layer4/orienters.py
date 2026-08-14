@@ -269,7 +269,10 @@ def _kind_orienters() -> dict:
     return {**_hetero_orienters(), **_unsat_orienters(), **_carbonyl_orienters(),
             "phenyl": _orient_radical}
 def _orient_by_kind(kind: str, chain: list[int], parent: dict, subs: list) -> list[int]:
+    
     fn = _kind_orienters().get(kind)
+    print("_orient_by_kind: ",fn)
+    #print("orient",kind,chain,parent)
     return _orient_alkane(chain, subs) if fn is None else fn(chain, parent, subs)
 def _typed_ring_acid(parent: dict) -> bool:
     facts = parent.get("principal_expression_facts")
@@ -296,6 +299,7 @@ _TYPED_ALCOHOL_ORIENT_KINDS = frozenset({
 
 
 def _typed_alcohol_orient(parent: dict, chain: list[int], subs: list) -> list[int] | None:
+    print("_typed_alcohol_orient")
     atoms = _typed_group_atoms(parent, "alcohol")
     if not atoms or parent.get("kind") not in _TYPED_ALCOHOL_ORIENT_KINDS:
         return None
@@ -322,6 +326,7 @@ def _typed_amine_orient(parent: dict, chain: list[int], subs: list) -> list[int]
 
 
 def _typed_principal_orient(parent: dict, chain: list[int], subs: list) -> list[int] | None:
+    print("using _typed_principal_orient ")
     for orient in (_typed_alcohol_orient, _typed_amine_orient):
         result = orient(parent, chain, subs)
         if result is not None:
@@ -334,8 +339,10 @@ def _orient_chain(parent: dict, substituents: list) -> list[int]:
     if not chain:
         return chain
     typed = _typed_principal_orient(parent, chain, substituents)
+    print("_orient_chain: ",parent.get("kind"), chain, parent, substituents)
     if typed is not None:
         return typed
     if _typed_ring_acid(parent):
         return _orient_ring_fixed(chain, parent, substituents, "ring_attach_idx")
+
     return _orient_by_kind(parent.get("kind"), chain, parent, substituents)

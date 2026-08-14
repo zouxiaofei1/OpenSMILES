@@ -6,6 +6,7 @@ from namepredict.layer4.orienters import (
 from namepredict.layer4.locant_calc import _amine_locant, _oh_locant, _pack, _sub_locant, _with_locants  # noqa: F401  (re-export for tests)
 def number(parent: dict, substituents: list) -> dict:
     chain, kind = _orient_chain(parent, substituents), parent.get("kind")
+    # print("\n",parent)
     if parent.get("numbering_scaffold_required") and not parent.get("numbering_scaffold"):
         raise ValueError("numbering_scaffold facts required for selected scaffold")
     oriented = {**parent, "chain": chain}

@@ -40,6 +40,7 @@ _CHAIN_KINDS = {
     FunctionalGroupClass.AMIDE: {1: "amide"},
     FunctionalGroupClass.ALCOHOL: {1: "alcohol", 2: "diol", 3: "triol"},
     FunctionalGroupClass.AMINE: {1: "amine", 2: "diamine", 3: "triamine", 4: "tetraamine"},
+    FunctionalGroupClass.NONE: {0: "alkane"}
 }
 _FIELDS = {
     FunctionalGroupClass.RADICAL: ("radical_c_idx", "radical_c_idxs"),
@@ -51,6 +52,7 @@ _FIELDS = {
     FunctionalGroupClass.AMIDE: ("amide_c_idx", "amide_c_idxs"),
     FunctionalGroupClass.ALCOHOL: ("oh_c_idx", "oh_c_idxs"),
     FunctionalGroupClass.AMINE: ("amine_c_idx", "amine_c_idxs"),
+     FunctionalGroupClass.NONE:("none_c_idx","none_c_idxs"),
 }
 
 
@@ -61,8 +63,11 @@ def _covered(selection: PrincipalGroupSelection, skeleton: ParentSkeleton):
 
 def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
     kinds = _CHAIN_KINDS.get(group_class)
-    if kinds is None or count < 1:
+    # print(kinds,count)
+    # print( kinds.get(count, "polycarboxylic" if group_class is FunctionalGroupClass.ACID else None))
+    if kinds is None :
         return None
+
     return kinds.get(count, "polycarboxylic" if group_class is FunctionalGroupClass.ACID else None)
 
 
@@ -203,7 +208,6 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
 
 
 def _benzoate_ester_fields(info: dict, fields: dict) -> dict:
-    """Benzoate（苯环上酯）特有字段：酯 O 与烷氧基侧（L5 命名依赖）。"""
     from namepredict.layer2.arene_carbonyl import _benzoate_alkoxy, _benzoate_side_fields
     e = info["esters"][0]
     side = _benzoate_alkoxy(info["mol"], e["o_idx"], e["alkoxy_c_idx"]) or {}
@@ -270,8 +274,10 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
                             skeleton: ParentSkeleton) -> dict | None:
     if skeleton.topology is not SkeletonTopology.ACYCLIC:
         return None
+    
     occurrences = _covered(selection, skeleton)
     kind = _chain_kind(selection.group_class, len(occurrences))
+
     if kind is None:
         return None
     fields = _chain_unsat_fields(info, skeleton, _chain_fields(selection, occurrences))
