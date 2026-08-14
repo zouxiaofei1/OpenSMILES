@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from namepredict.layer2.specs import all_specs, numbering_scaffold_facts
+from namepredict.layer2.ring_scaffold import all_specs, numbering_scaffold_facts
 from namepredict.layer4.locants.adapt import plan_from_parent
 
 

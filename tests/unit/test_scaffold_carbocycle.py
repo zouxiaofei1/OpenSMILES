@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer2.specs import CARBOCYCLE_SPECS, ScaffoldSpec, get_spec
+from namepredict.layer2.ring_scaffold import CARBOCYCLE_SPECS, ScaffoldSpec, get_spec
 
 
 def test_carbocycle_specs_registered():

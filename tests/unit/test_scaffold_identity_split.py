@@ -1,7 +1,7 @@
 # IUPAC: P-22 / P-25 scaffold identity contract
 # Layer: L2
 from namepredict.layer2.identity import ScaffoldIdentity
-from namepredict.layer2.specs import all_identities, all_specs, get_identity, get_spec
+from namepredict.layer2.ring_scaffold import all_identities, all_specs, get_identity, get_spec
 
 
 def test_scaffold_identity_is_unique_and_stable():
