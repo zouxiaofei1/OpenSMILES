@@ -57,7 +57,7 @@ def _should_skip(claim, covered: set[int]) -> bool:
 
 # Ester acid-side O (alkoxy arm): a claimed side attached to an O atom of an
 # ester/benzoate parent is the O-side alkyl, consumed by L5 join_kind_name.
-_ESTER_O_SIDE_KINDS = frozenset({"ester", "diester", "benzoate"})
+_ESTER_O_SIDE_KINDS = frozenset({"ester","benzoate"})
 
 
 def _append_named(mol, claim, namer, covered: set[int], out: list[dict], *, o_side: bool = False) -> None:

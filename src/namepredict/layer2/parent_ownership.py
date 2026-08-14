@@ -174,20 +174,8 @@ def _single_ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     return out
 
 
-def _diester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Diester: both ester carbonyls + O atoms + alkoxy arms."""
-    c_idxs = parent.get("ester_c_idxs")
-    if not c_idxs:
-        return set()
-    out: set[int] = set()
-    for c in c_idxs:
-        _one_ester_fg(mol, c, out)
-    return out
-
-
 def _ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Ester/benzoate/diester: dispatch to mono or diester handler."""
-    return _single_ester_fg_atoms(mol, parent) or _diester_fg_atoms(mol, parent)
+    return _single_ester_fg_atoms(mol, parent) 
 
 
 def _anhydride_fg_atoms(mol: Mol, parent: dict) -> set[int]:

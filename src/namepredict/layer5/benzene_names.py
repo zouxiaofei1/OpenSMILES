@@ -37,7 +37,6 @@ def _ester_alkoxy_from(numbered) -> tuple[str, str]:
     en0, zh0 = o[0].get("en") or "", (o[0].get("zh") or "").rstrip("基")
     if len(o) == 1:
         return en0, zh0
-    # diester: identical arms aggregate (dimethyl / 二甲)
     if all(s.get("en") == en0 for s in o):
         me, mz = MULT_EN.get(len(o), ""), MULT_ZH.get(len(o), "")
         return f"{me}{en0}", f"{mz}{zh0}"
@@ -75,7 +74,7 @@ def join_kind_name(
     kind: str | None, pre: tuple[str, str], names: tuple[str, str],
     numbered=None,
 ) -> tuple[str, str]:
-    if kind in ("ester", "diester"):
+    if kind in ("ester"):
         return join_ester_name(pre[0], pre[1], names, numbered)
     if kind == "benzoate":
         return join_benzoate_name(pre[0], pre[1], names, numbered)

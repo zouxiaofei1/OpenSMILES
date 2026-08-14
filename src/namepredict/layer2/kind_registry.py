@@ -9,19 +9,18 @@ from namepredict.layer2.principal import legacy_rank
 
 _KIND_CLASS = {
     "acid": FG.ACID, "diacid": FG.ACID, "polycarboxylic": FG.ACID,
-    "anhydride": FG.ANHYDRIDE, "ester": FG.ESTER, "diester": FG.ESTER,
-    "acyl_chloride": FG.ACYL_HALIDE, "acyl_bromide": FG.ACYL_HALIDE,
+    "ester": FG.ESTER, 
     "amide": FG.AMIDE, "nitrile": FG.NITRILE, "aldehyde": FG.ALDEHYDE,
     "ketone": FG.KETONE, "dione": FG.KETONE, "cycloketone": FG.KETONE,
     "alcohol": FG.ALCOHOL, "diol": FG.ALCOHOL, "triol": FG.ALCOHOL,
-    "cycloalcohol": FG.ALCOHOL, "thiol": FG.THIOL, "amine": FG.AMINE,
+    "cycloalcohol": FG.ALCOHOL, "amine": FG.AMINE,
     "diamine": FG.AMINE, "triamine": FG.AMINE, "tetraamine": FG.AMINE,
     "sec_amine": FG.AMINE, "tert_amine": FG.AMINE, "cycloamine": FG.AMINE,
-    "ether": FG.ETHER,
-    "isocyanate": FG.ISOCYANATE, "isothiocyanate": FG.ISOTHIOCYANATE,
-    "sulfide": FG.SULFIDE,
     "tetraalkylammonium": FG.QUATERNARY_AMMONIUM,
-    "alkane": FG.NONE
+    "alkane": FG.NONE,
+
+    #暂时无效的kind
+    "ether": FG.ETHER,"thiol": FG.THIOL, "anhydride": FG.ANHYDRIDE,"acyl_chloride": FG.ACYL_HALIDE, "acyl_bromide": FG.ACYL_HALIDE,
 }
 
 
@@ -46,12 +45,6 @@ class KindMeta:
 
 
 _REG: dict[str, KindMeta] = {}
-
-# --- bootstrap tables (module-level; kept out of function bodies) ---
-# Chain FG ranks come from PRINCIPAL_REGISTRY via _KIND_CLASS (principal.py
-# is the single P-41 authority). _load_chain_fg() registers every mapped kind.
-# 苯系保留名 stem 已迁往 L5 (_ARENE_RETAINED_NAMES)，L2 不再注册。
-
 
 def register(meta: KindMeta) -> None:
     rank = _principal_rank(meta.kind, meta.fg_rank)
