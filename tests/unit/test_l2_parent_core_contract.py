@@ -21,10 +21,8 @@ _L2 = _ROOT / "src" / "namepredict" / "layer2"
 # Helpers that must be sourced from parent_core, not parent_selector.
 _HELPERS = frozenset({
     "_parent_dict",
-    "_no_fgs",
     "_longest_from",
     "_longest_chain",
-    "_c_idxs",
 })
 
 # Modules allowed to re-export / host try surface.

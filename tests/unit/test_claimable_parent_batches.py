@@ -52,7 +52,6 @@ def _assert_coverage_complete(smiles: str) -> None:
     # Rebuild ledger from successful path: re-extract on selected parent
     # After retry, select_parent may still be first rank; use owned from successful name meta
     # Coverage via extract on each candidate until one completes matching name success.
-    from namepredict.layer2.parent_selector import select_parent
     from namepredict.namer import try_candidate
 
     for cand in select_parent(info, all_candidates=True):

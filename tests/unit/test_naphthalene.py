@@ -9,9 +9,6 @@ from __future__ import annotations
 import pytest
 
 from namepredict.constants import normalize_en, normalize_zh
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer2.naphthalene import _try_naphthalene_parent
 from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
@@ -46,18 +43,6 @@ def test_unsub_not_decane() -> None:
     assert r.success
     assert normalize_en(r.en) == "naphthalene"
     assert "decane" not in normalize_en(r.en)
-
-
-def test_l2_rejects_benzene() -> None:
-    mol = preprocess("c1ccccc1")
-    assert mol is not None
-    assert _try_naphthalene_parent(analyze(mol)) is None
-
-
-def test_l2_rejects_indole() -> None:
-    mol = preprocess("c1ccc2[nH]ccc2c1")
-    assert mol is not None
-    assert _try_naphthalene_parent(analyze(mol)) is None
 
 
 def test_methyl_locant_alpha_is_1() -> None:

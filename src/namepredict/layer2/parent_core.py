@@ -10,10 +10,8 @@ from namepredict.layer2.chain_walk import _longest_chain, _longest_from
 # Re-export chain / gate primitives used by producers.
 __all__ = [
     "_parent_dict",
-    "_no_fgs",
     "_longest_from",
     "_longest_chain",
-    "_c_idxs",
 ]
 
 
