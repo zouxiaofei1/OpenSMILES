@@ -11,7 +11,7 @@ from namepredict.types import NameResult
 def _fail(meta: dict | None = None) -> NameResult: return NameResult(en="", zh="", success=False, source="iupac", meta=meta or {})
 def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult: return NameResult(en=en, zh=zh, success=True, source=source, time_ms=time_ms)
 
-# 苯系保留名 stem（原 L2 _ARENE_NAMED 迁此；L2 只产生 kind='benzene'）。
+# 苯系保留名 stem（原 L2 _ARENE_NAMED 迁此；苯 base 由 scaffold_id='benzene' 承载，纯苯 kind 已收敛为 alkane）。
 _ARENE_RETAINED_NAMES = {
     "benzoic": ("benzoic acid", "苯甲酸"),
     "benzaldehyde": ("benzaldehyde", "苯甲醛"),
@@ -84,6 +84,9 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     entry = _KIND_TABLE.get(kind)
     if entry is not None:
         sid = _scaffold_id(numbered)
+        if sid == "benzene" and kind == "alkane":
+            # 苯 base：无主 FG 的苯，母体名由 sid 驱动（L2 已把纯苯 kind 收敛为 alkane）。
+            return ("benzene", "苯")
         if sid in _RING_STEM:
             # 环式 FG 的 locant omit 由 L4 算出的 omit 标志决定。
             entry = replace(entry, stem=_RING_STEM[sid], omit_rule=lambda n, loc, omit: bool(omit))
@@ -95,8 +98,6 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
 
     if kind == "phenyl":
         return "phenyl", "苯基"
-    if kind == "benzene":
-        return ("benzene", "苯")
     if kind in _ARENE_RETAINED_NAMES:
         return _ARENE_RETAINED_NAMES[kind]
     if kind == "benzenediol":

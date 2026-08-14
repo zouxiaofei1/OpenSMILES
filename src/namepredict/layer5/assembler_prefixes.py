@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
-from namepredict.layer5.benzene_names import benzene_prefix
 from namepredict.constants import MULT_EN, MULT_ZH
 def _group_by_stem(substituents: list) -> dict[str, list]:
     groups: dict[str, list] = {}
@@ -24,9 +23,9 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     if kind == "phenyl":
         # 苯基自由基：连接点隐含为 locant 1，因此每个叶子保留其位次（4-chlorophenyl，而非 chlorophenyl）。
         return False
-    # 纯烃饱和环单取代（cycloalkane，kind 收敛为 alkane + carbocycle scaffold）位次隐含；环烯取代基位次必须保留（1-methylcyclohexene）。
+    # 纯烃环单取代位次隐含：环烷烃/苯 base 的 kind 均收敛为 alkane，环系由 scaffold_id 承载；环烯取代基位次必须保留（1-methylcyclohexene）。
     if n_carbons <= 1 or (
-        (kind == "alkane" and scaffold == "carbocycle" and not has_ene) or kind == "benzene"
+        kind == "alkane" and scaffold in ("carbocycle", "benzene") and not has_ene
     ) and len(substituents) == 1:
         return True
     if kind in ("amide", "benzamide"):
@@ -85,7 +84,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     if not substituents:
         return "", ""
     omit = _omit_sub_locants(n_carbons, substituents, kind, scaffold, has_ene)
-    paren = kind == "benzene" and len(substituents) >= 4
+    paren = scaffold == "benzene" and kind == "alkane" and len(substituents) >= 4
     en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit, paren)
     return "-".join(en_parts), "-".join(zh_parts)
 
@@ -100,8 +99,6 @@ def _is_isobutyryl(numbered: dict) -> bool:
     return s.get("en") == "methyl" and int(s.get("locant") or 0) == 2
 
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
-    if kind == "benzene":
-        return benzene_prefix(numbered, _build_prefix)
     if kind == "acyl_bromide" and _is_isobutyryl(numbered):
         return "", ""
     parent = numbered.get("parent") or {}

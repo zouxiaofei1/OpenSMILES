@@ -126,7 +126,10 @@ def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
 
 
 def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str | None:
-    return scaffold.id if scaffold and scaffold.id != "carbocycle" else _generic_ring_kind(info, skeleton)
+    if scaffold and scaffold.id != "carbocycle":
+        # 苯环（纯烃芳香单环）kind 收敛为 alkane，环系由 scaffold_id="benzene" 承载（对齐环烷烃正交化）。
+        return "alkane" if scaffold.id == "benzene" else scaffold.id
+    return _generic_ring_kind(info, skeleton)
 
 
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold) -> str | None:
@@ -183,11 +186,10 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
 
 
 def _benzoate_ester_fields(info: dict, fields: dict) -> dict:
-    from namepredict.layer2.arene_carbonyl import _benzoate_alkoxy, _benzoate_side_fields
+    from namepredict.layer2.arene_carbonyl import _benzoate_alkoxy
     e = info["esters"][0]
     side = _benzoate_alkoxy(info["mol"], e["o_idx"], e["alkoxy_c_idx"]) or {}
-    return {**fields, "o_idx": e["o_idx"], "alkoxy_c_idx": e["alkoxy_c_idx"],
-            **_benzoate_side_fields(side)}
+    return {**fields, "o_idx": e["o_idx"], "alkoxy_n": side.get("alkoxy_n")}
 
 
 def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
@@ -235,16 +237,16 @@ def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> d
 
 
 def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
-    """L5 酯命名的酯烷氧基侧字段（o_idx/alkoxy_c_idx/alkoxy_*）。"""
+    """L5 酯命名的酯烷氧基侧字段：o_idx 供 o_side 识别；仅严格线性给 alkoxy_n 保留名。"""
     if len(occurrences) != 1:
         return fields
     match = next((e for e in (info.get("esters") or [])
                   if e["c_idx"] in occurrences[0].characteristic_atoms), None)
     if match is None:
         return fields
-    from namepredict.tools.alkoxy_side import classify_alkoxy
-    side = classify_alkoxy(info["mol"], match["o_idx"], match["alkoxy_c_idx"])
-    return {**fields, "o_idx": match["o_idx"], "alkoxy_c_idx": match["alkoxy_c_idx"], **side}
+    from namepredict.layer2.arene_carbonyl import _simple_alkoxy_n
+    n = _simple_alkoxy_n(info["mol"], match["alkoxy_c_idx"], match["o_idx"])
+    return {**fields, "o_idx": match["o_idx"], "alkoxy_n": n}
 
 
 def express_chain_principal(info: dict, selection: PrincipalGroupSelection,

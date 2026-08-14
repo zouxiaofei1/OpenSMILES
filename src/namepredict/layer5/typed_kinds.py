@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# 苯环 + 单主官能团 → P-22.1.3 保留名（原 L2 _RETAINED_RING_KINDS 迁此）；L2 只产生结构 kind='benzene'，保留名决策完全在 L5。
+# 苯环 + 单主官能团 → P-22.1.3 保留名（原 L2 _RETAINED_RING_KINDS 迁此）；L2 纯苯 kind 已收敛为 alkane（环系由 scaffold_id='benzene' 承载），保留名决策完全在 L5。
 _BENZENE_RETAINED = {
     "acid": "benzoic",
     "ester": "benzoate",

@@ -17,7 +17,7 @@ def test_pass_gate_keeps_candidates() -> None:
 
 def test_scoped_reject_keeps_unowned_candidate() -> None:
     scope = GateScope.OPEN_CHAIN_POLYCARBOXYLIC
-    candidates = [{"kind": "other", "gate_principal": True}, {"kind": "benzene", "gate_dependencies": (scope,)}]
+    candidates = [{"kind": "other", "gate_principal": True}, {"kind": "pyridine", "gate_dependencies": (scope,)}]
     assert gate_result([scoped_reject(scope, "bad")], candidates) == ([candidates[0]], None)
 
 

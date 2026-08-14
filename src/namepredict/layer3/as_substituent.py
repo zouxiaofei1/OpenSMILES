@@ -4,11 +4,20 @@
 from __future__ import annotations
 
 from rdkit.Chem import CanonicalRankAtoms
-
+from namepredict.constants import C, H
+from rdkit.Chem import Mol
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol, build_cut_submol
 from namepredict.tools.free_to_yl import free_to_yl as yl_form
 
+def _is_arom_c6(mol: Mol, atoms) -> bool:
+    if len(atoms) != 6:
+        return False
+    return all(
+        mol.GetAtomWithIdx(i).GetIsAromatic()
+        and mol.GetAtomWithIdx(i).GetAtomicNum() == C
+        for i in atoms
+    )
 
 def _arene_yl_from_sub(
     sub, result, *, mol, atoms, attach_old, depth: int, name_mode: str, cache: CommonNameCache | None,
@@ -23,9 +32,7 @@ def _arene_yl_from_sub(
     """
     from namepredict.namer import _cache_put, _canonical_result, _name_mol
     from rdkit import Chem
-
     mol_sub = sub.mol
-    from namepredict.layer3.aryl_sub import _is_arom_c6
     if not any(
         len(r) == 6 and sub.attach_new in r and _is_arom_c6(mol_sub, r)
         for r in mol_sub.GetRingInfo().AtomRings()

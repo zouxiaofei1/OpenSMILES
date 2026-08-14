@@ -15,7 +15,7 @@ def _info(smiles: str):
 def _benzene_owned(smiles: str):
     mol, info = _info(smiles)
     for cand in select_parent(info, all_candidates=True):
-        if cand.get("kind") == "benzene":
+        if cand.get("scaffold_id") == "benzene":
             return mol, cand["owned_atoms"]
     raise AssertionError("no benzene parent candidate")
 
