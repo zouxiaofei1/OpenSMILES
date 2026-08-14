@@ -20,7 +20,7 @@ def _strip_n_prefix(stem: str) -> str:
     return stem[2:] if stem.startswith("N-") else stem
 
 def _strip_lead_locant(stem: str) -> str:
-    """Strip one leading locant set: '4-', '1,3-', '1,1,1-', '1H-' (P-14.5)."""
+    """去掉一个前导位次集：'4-'、'1,3-'、'1,1,1-'、'1H-'（P-14.5）。"""
     i = 0
     n = len(stem)
     while i < n and stem[i].isdigit():
@@ -29,7 +29,7 @@ def _strip_lead_locant(stem: str) -> str:
             i += 1
             while i < n and stem[i].isdigit():
                 i += 1
-    # Indicated-hydrogen prefix: 1H-, 2H-, 3H- (P-14.5 / P-65.3.2.5)
+    # 指示氢前缀：1H-、2H-、3H-（P-14.5 / P-65.3.2.5）
     if i and i + 1 < n and stem[i] == "H" and stem[i + 1] == "-":
         i += 1
     return stem[i + 1 :] if i and i < n and stem[i] == "-" else stem
@@ -40,7 +40,7 @@ def _strip_outer_parens(stem: str) -> str:
     return stem
 
 def alkyl_alpha_key(stem: str) -> str:
-    """Alphanumerical-order key: sec-/tert-/N-/parens/leading locants ignored (P-14.5)."""
+    """字母数字序键：忽略 sec-/tert-/N-/括号/前导位次（P-14.5）。"""
     s = _strip_n_prefix(_strip_ital_prefix(stem))
     s = _strip_outer_parens(s)
     return _strip_lead_locant(s)
@@ -60,13 +60,12 @@ def _side_starts(mol: Mol, chain: list[int]) -> list[tuple[int, int]]:
 
 
 def _one_anchored_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int], *, name_mode: str) -> dict | None:
-    """Try the anchored canonical-SMILES table for a side starting at `start`.
+    """尝试用锚定 canonical-SMILES 表解析从 `start` 开始的侧链。
 
-    Uses side_atoms (full non-parent connected component) as the atom set and
-    picks the substituent-side attach atom, then looks up the anchored key
-    under name_mode.  Only "alkyl"-kind entries are claimed here (pure-carbon
-    side chains); hetero leaves (cyano/nitroso/...) stay with the FG/claim
-    extractors.  A miss falls through.
+    使用 side_atoms（完整非母体连通组分）作为原子集合，选取取代基一侧的
+    连接原子，再在 name_mode 下查找锚定键。这里只 claim "alkyl" kind 条目
+    （纯碳侧链）；杂原子叶子（cyano/nitroso/...）仍由 FG/claim 提取器处理。
+    未命中则继续向下。
     """
     from namepredict.tools.anchored_table import anchored_entry
     from namepredict.tools.block_cut import side_atoms
@@ -106,7 +105,7 @@ def _extract_halos(mol: Mol, chain: list[int]) -> list[dict]:
     return [h for c in chain for h in _halo_on_carbon(mol, c)]
 
 def _filter_fg_halos(halos: list, parent: dict) -> list:
-    # Functional-class ether arms already encode F (e.g. HFIP); do not re-prefix.
+    # 官能团类醚臂已编码 F（如 HFIP）；不要重复加前缀。
     if parent.get("kind") == "ether" and parent.get("ether_arms"):
         return []
     if parent.get("kind") not in ("acyl_chloride", "acyl_bromide"):
@@ -114,7 +113,6 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
     cl = parent.get("cl_idx") or parent.get("hal_idx")
     return [h for h in halos if cl not in (h.get("atoms") or [])]
 
-# 组合 kind 已根除（scaffold×FG 正交化）：集合只含活的 FG 类别/保留名 kind。
 _PARENT_OH_KINDS = frozenset({"alcohol", "phenol", "benzenediol"})
 _PARENT_NH2_KINDS = frozenset({"amine", "sec_amine", "tert_amine", "aniline"})
 _PARENT_OXO_KINDS = frozenset({"ketone", "dione"})
@@ -170,8 +168,8 @@ def _extract_core_subs(info: dict, parent: dict) -> list:
     )
 
 def _with_full_atoms(mol, owned, s: dict) -> dict:
-    """Replace a substituent's atoms with its full non-parent connected
-    component (side_atoms), so leaves (halo/alkoxy/nested rings) counted once."""
+    """用取代基的完整非母体连通组分（side_atoms）替换其原子集，
+    使叶子（halo/alkoxy/嵌套环）只计数一次。"""
     from namepredict.tools.block_cut import side_atoms
 
     seed = frozenset(s.get("atoms") or [])

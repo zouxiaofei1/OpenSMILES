@@ -1,14 +1,10 @@
-"""Carbon-count stem tables/generators for alkanes and FG parents (C1–C35+).
-
-C1–C10: retained/table. C11–C19: semi-systematic. C20+: multiplicative compose.
-IUPAC P-14.2.1 / P-21 (icos- preferred over eicos-).
-"""
+"""烷烃与官能团母体的碳数词干表/生成器（C1–C35+）；C1–C10 保留、C11–C19 半系统、C20+ 倍增组词；IUPAC P-14.2.1 / P-21（icos- 优先于 eicos-）。"""
 
 from __future__ import annotations
 
 from namepredict.constants import MULT_EN, MULT_ZH
 
-# --- C1–C10 retained / systematic base (byte-compatible) ---
+# --- C1–C10 保留 / 系统基干（字节兼容） ---
 _ALKANE_EN_BASE = {
     1: "methane", 2: "ethane", 3: "propane", 4: "butane", 5: "pentane",
     6: "hexane", 7: "heptane", 8: "octane", 9: "nonane", 10: "decane",
@@ -54,20 +50,20 @@ def zh_stem(zh_full: str) -> str:
 
 
 def _compose_en_stem(n: int) -> str | None:
-    """C20+ multiplicative stem (icos / henicos / hexacos / triacont / …)."""
+    """C20+ 倍增词干（icos / henicos / hexacos / triacont / …）。"""
     tens, ones = divmod(n, 10)
     t = _TENS.get(tens)
     if not t or ones > 9:
         return None
     if ones == 0:
         return t
-    # icos + do/tri/… → docos/tricos (elide i); hen keeps icos; 30+ no elide
+    # icos + do/tri/… → docos/tricos（省略 i）；hen 保留 icos；30+ 不省略
     base = "cos" if tens == 2 and ones >= 2 else t
     return f"{_UNITS[ones]}{base}"
 
 
 def _en_stem(n: int) -> str | None:
-    """Alkane stem without 'ane' (meth…dec / undec… / icos…)."""
+    """不含 'ane' 的烷烃词干（meth…dec / undec… / icos…）。"""
     if n in _ALKANE_EN_BASE:
         return _ALKANE_EN_BASE[n][:-3]
     if n in _SEMI_EN:
@@ -150,7 +146,7 @@ def ester_acyl_en(n: int) -> str | None:
 
 
 def acid_to_anion_en(en: str) -> str:
-    """dodecanoic acid → dodecanoate; acetic acid → acetate."""
+    """酸转阴离子英文名：dodecanoic acid → dodecanoate；acetic acid → acetate。"""
     if en.endswith("oic acid"):
         return en[:-8] + "oate"
     if en.endswith("ic acid"):
@@ -211,7 +207,7 @@ def _with_acid_salt(en: str, zh: str, salt: dict) -> tuple[str, str]:
 
 
 def maybe_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
-    """Apply alkali metal salt or acid-salt (HCl) suffixes."""
+    """应用碱金属盐或酸式盐（HCl）后缀。"""
     salt = numbered.get("salt") or {}
     if salt.get("metal"):
         return _salt_en(en, salt), _salt_zh(zh, salt)
@@ -247,7 +243,7 @@ def _fill(fn, lo: int = 1, hi: int = 35) -> dict[int, str]:
     return out
 
 
-# Public dict API (C1–C35 filled by generators; C20+ never handwritten)
+# 公共字典 API（C1–C35 由生成器填充；C20+ 从不手写）
 ALKANE_EN = _fill(alkane_en)
 ALKANE_ZH = _fill(alkane_zh)
 ALCOHOL_EN = _fill(alcohol_en)

@@ -1,4 +1,4 @@
-"""L1 typed graph facts for relative faces on a simple saturated ring."""
+"""简单饱和环上相对面的 L1 带类型图事实。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,7 +9,7 @@ from namepredict.constants import H
 
 @dataclass(frozen=True)
 class RingRelativeStereoIR:
-    """Face signs keyed by ring atom; ``None`` means no explicit stereo."""
+    """以环原子为键的面朝向符号；``None`` 表示无显式立体化学。"""
     faces: tuple[tuple[int, int], ...] = ()
     invalid: bool = False
 
@@ -45,7 +45,7 @@ def _relative_faces(faces: list[tuple[int, int]]) -> tuple[tuple[int, int], ...]
 
 
 def ring_relative_stereo(mol: Mol, ring_order: list[int], ligands: dict[int, int]) -> RingRelativeStereoIR:
-    """Derive graph-defined ring face signs without CIP labels or conformers."""
+    """推导由图定义的环面朝向符号，无需 CIP 标记或构象。"""
     tagged = [a.GetIdx() for a in mol.GetAtoms() if a.GetChiralTag() != ChiralType.CHI_UNSPECIFIED]
     if any(atom not in ligands for atom in tagged) or len(ligands) > 3: return RingRelativeStereoIR(invalid=bool(tagged))
     faces = []

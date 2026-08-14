@@ -1,17 +1,14 @@
-"""Open-chain walk primitives (tools layer; shared by L2 chain parents).
-
-Extracted from layer2/chain_walk.py so L3 alkoxy/side detection can reuse
-the longest-open-chain walk without importing a pipeline layer.
-"""
+"""开链游走原语（tools 层；供 L2 链母体共享）。
+从 layer2/chain_walk.py 抽出，使 L3 烷氧基/侧链检测可复用最长开链游走，无需导入流水线层。"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
 
 
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
-    """Open (non-aromatic, non-ring) carbon neighbors for chain FG walks.
+    """链官能团游走用的开链（非芳香、非环）碳邻居。
 
-    Ring atoms must not enter open parents (else 1-cyclohexylethanone → octan-2-one).
+    环原子不得进入开链母体（否则 1-cyclohexylethanone → octan-2-one）。
     """
     atom = mol.GetAtomWithIdx(idx)
     return [

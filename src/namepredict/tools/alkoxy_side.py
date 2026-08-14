@@ -1,4 +1,4 @@
-"""Shared ester/carbamate alkoxy-side topology (P-65.6)."""
+"""酯/氨基甲酸酯烷氧基侧链的共享拓扑（P-65.6）。"""
 from __future__ import annotations
 
 
@@ -21,19 +21,19 @@ def _methyl_count(c, o_idx: int, c_idx: int) -> int:
 
 
 def _is_branched_alkyl_c(mol, c_idx: int, o_idx: int, *, total_nbs: int, n_methyl: int) -> bool:
-    """True if `c_idx` is C with `total_nbs` heavy neighbours, `n_methyl` of them methyl."""
+    """若 `c_idx` 是碳，具有 `total_nbs` 个重原子邻居且其中 `n_methyl` 个为甲基，则返回 True。"""
     c = mol.GetAtomWithIdx(c_idx)
     nbs = _heavy_nbs(c)
     return c.GetAtomicNum() == 6 and len(nbs) == total_nbs and _methyl_count(c, o_idx, c_idx) == n_methyl
 
 
 def _is_tert_butyl_c(mol, c_idx: int, o_idx: int) -> bool:
-    """C attached to O is C(CH3)3."""
+    """与 O 相连的碳为 C(CH3)3。"""
     return _is_branched_alkyl_c(mol, c_idx, o_idx, total_nbs=4, n_methyl=3)
 
 
 def _is_isopropyl_c(mol, c_idx: int, o_idx: int) -> bool:
-    """C attached to O is CH(CH3)2."""
+    """与 O 相连的碳为 CH(CH3)2。"""
     return _is_branched_alkyl_c(mol, c_idx, o_idx, total_nbs=3, n_methyl=2)
 
 
@@ -59,13 +59,13 @@ def _ring_only_parent_link(mol, ring, attach: int, parent: int) -> bool:
 
 
 def _bare_ph_ring(mol, attach: int, parent: int):
-    """Unfused unsubstituted Ph: sole outside bond is attach→parent."""
+    """非稠合、无取代的 Ph：唯一的外部键为 attach→parent。"""
     ring = _sole_c6_at(mol, attach, parent)
     return ring if ring is not None and _ring_only_parent_link(mol, ring, attach, parent) else None
 
 
 def _is_phenyl_c(mol, c_idx: int, o_idx: int) -> bool:
-    """O–Ph bare phenyl only (not heteroaryl / substituted / fused)."""
+    """仅 O–Ph 裸苯基（非杂芳基 / 取代 / 稠合）。"""
     return _bare_ph_ring(mol, c_idx, o_idx) is not None
 
 
@@ -81,7 +81,7 @@ def _is_open_ch2(atom) -> bool:
 
 
 def _benzyl_ph_attach(mol, ch2_idx: int, o_idx: int) -> int | None:
-    """If ch2 is O–CH2–Ph (bare Ph), return Ph attach carbon."""
+    """若 ch2 为 O–CH2–Ph（裸 Ph），返回 Ph 的键合碳。"""
     c = mol.GetAtomWithIdx(ch2_idx)
     if not _is_open_ch2(c):
         return None
@@ -114,8 +114,8 @@ def _benzyl_or_linear(mol, o_idx: int, alkoxy_c: int) -> dict:
 
 
 def classify_alkoxy(mol, o_idx: int, alkoxy_c: int) -> dict:
-    """Return labels for ester/carbamate O-side.
+    """返回酯/氨基甲酸酯 O 侧的标签。
 
-    Keys: alkoxy_en, alkoxy_zh, alkoxy_n (int|None for non-linear specials).
+    Keys: alkoxy_en、alkoxy_zh、alkoxy_n（非线性特殊情况为 int|None）。
     """
     return _special_alkoxy(mol, o_idx, alkoxy_c) or _benzyl_or_linear(mol, o_idx, alkoxy_c)

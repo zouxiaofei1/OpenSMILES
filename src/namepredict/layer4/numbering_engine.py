@@ -1,26 +1,9 @@
-"""Candidate-based parent numbering engine (P-14.4).
-
-Replaces kind-dispatched orienters with a uniform pipeline:
-
-  1. enumerate numbering candidates
-       chain: forward / reversed
-       ring : every atom as locant 1, both directions (2n candidates)
-  2. narrow candidates by P-14.4 rules in order:
-       (c) principal characteristic group  → lowest locant set
-       (e) multiple bonds                  → lowest locant set (double first)
-       (f) substituents                    → lowest locant set
-  3. early-stop when a single candidate survives
-
-Each candidate is an ``{atom: locant}`` dict; the survivor is emitted back as
-an atom-order chain (locant = index + 1), the same shape `_orient_chain`
-returned, so downstream locant packing is untouched.
-"""
 from __future__ import annotations
 
 from namepredict.layer4.locants.adapt import plan_from_chain
 
 
-# ── candidate generation ──────────────────────────────────────────────────
+# ── 候选生成 ──────────────────────────────────────────────────
 
 def _numbered(chain: list[int]) -> dict[int, int]:
     return {a: i + 1 for i, a in enumerate(chain)}
@@ -44,7 +27,7 @@ def _ring_cands(chain: list[int]) -> list[dict[int, int]]:
     return out
 
 
-# ── locant-set keys ───────────────────────────────────────────────────────
+# ── 位次集合键 ───────────────────────────────────────────────────────
 
 def _locant_set(cand: dict[int, int], atoms: list[int]) -> tuple[int, ...] | None:
     locs = sorted(cand[a] for a in atoms if a in cand)
@@ -62,20 +45,20 @@ def _bond_locants(cand: dict[int, int], bonds) -> tuple[int, ...] | None:
 
 
 def _narrow(cands: list[dict], key_fn) -> list[dict]:
-    """Keep candidates with the lowest locant-set key; early-stop at one."""
+    """保留位次集合键最小的候选；得到一个即提前停止。"""
     if len(cands) <= 1:
         return cands
     keys = [key_fn(c) for c in cands]
     if any(k is None for k in keys):
-        return cands  # feature absent everywhere → rule does not apply
+        return cands  # 特征全部缺失 → 规则不适用
     best = min(keys)
     return [c for c, k in zip(cands, keys) if k == best]
 
 
-# ── P-14.4 feature extraction from the parent dict ────────────────────────
+# ── 从 parent dict 提取 P-14.4 特征 ────────────────────────
 
 def _principal_atoms(parent: dict) -> list[int]:
-    """P-14.4(c): principal characteristic group attachment atoms."""
+    """P-14.4(c)：principal characteristic group 的附着原子。"""
     atoms = parent.get("principal_attachment_atoms")
     if atoms:
         return list(atoms)
@@ -88,7 +71,7 @@ def _principal_atoms(parent: dict) -> list[int]:
 
 
 def _unsat_bonds(parent: dict) -> tuple[list, list]:
-    """(all multiple bonds, double bonds) endpoint pairs."""
+    """（全部多重键、双键）端点对。"""
     all_bonds, doubles = [], []
     for key, target in (("double_bond", doubles), ("triple_bond", all_bonds)):
         v = parent.get(key)
@@ -109,15 +92,14 @@ def _is_ring(parent: dict) -> bool:
     return bool(parent.get("scaffold_id"))
 
 
-# P-14.4(a): parent dict fields naming an atom that must be locant 1
-# (heteroatom ring starts, exocyclic carbonyl attach, radical centre).
+# P-14.4(a)：parent dict 中标定必须为 locant 1 的原子的字段（杂环起点、环外羰基连接、自由基中心）。
 _FIXED_START_KEYS = (
     "ring_attach_idx", "n_idx", "nh_idx", "hetero_idx", "radical_c_idx",
 )
 
 
 def _ring_hetero_start(parent: dict, chain: list[int]) -> int | None:
-    """Monohetero ring: the single heteroatom is locant 1 (P-14.4, e.g. pyridine)."""
+    """单杂原子环：唯一的杂原子为 locant 1（P-14.4，如吡啶）。"""
     mol = parent.get("mol")
     if mol is None:
         return None
@@ -134,7 +116,7 @@ def _fixed_start(parent: dict) -> int | None:
 
 
 def _fixed_numbering(parent: dict, chain: list[int]) -> list[int] | None:
-    """P-14.4(a): retained-scaffold fixed numbering via L2 numbering_scaffold."""
+    """P-14.4(a)：经 L2 numbering_scaffold 的保留骨架固定编号。"""
     plan = plan_from_chain(
         chain, parent.get("scaffold_id") or parent.get("kind"),
         parent.get("numbering_scaffold"),
@@ -143,10 +125,10 @@ def _fixed_numbering(parent: dict, chain: list[int]) -> list[int] | None:
     return list(plan.atom_order) if plan is not None else None
 
 
-# ── entry ─────────────────────────────────────────────────────────────────
+# ── 入口 ─────────────────────────────────────────────────────────────────
 
 def orient_numbering(parent: dict, substituents: list) -> list[int] | None:
-    """Return the P-14.4-oriented atom order, or None if not applicable."""
+    """返回 P-14.4 定向后的原子顺序；不适用则返回 None。"""
     chain = parent.get("chain") or []
     if not chain:
         return None
@@ -161,8 +143,7 @@ def orient_numbering(parent: dict, substituents: list) -> list[int] | None:
     if start is not None:
         cands = [c for c in cands if c.get(start) == 1]
     if not cands:
-        # fixed-start atom can never be locant 1 in a chain candidate (e.g.
-        # a hetero/ring atom in the middle of a linear chain): keep original order.
+        # 固定起点原子在链候选中不可能为 locant 1（如线性链中部的杂环原子）：保留原顺序。
         return chain
     principal = _principal_atoms(parent)
     if principal:
@@ -175,8 +156,7 @@ def orient_numbering(parent: dict, substituents: list) -> list[int] | None:
     if subs:
         cands = _narrow(cands, lambda c: _locant_set(c, subs))
     if len(cands) > 1 and substituents:
-        # P-14.4(f) tie: lowest locant set already equal — assign lowest locant
-        # to the alphabetically-first substituent (stem-alpha pairs, P-14.5).
+        # P-14.4(f) 平局：最低位次集合已相同 → 把最低位次给字母序最前的取代基（stem-alpha 对，P-14.5）。
         from namepredict.layer4._chain_orient import _stem_loc_pairs
         cands = _narrow(cands, lambda c: _stem_loc_pairs(_to_chain(c), substituents))
     return _to_chain(cands[0])

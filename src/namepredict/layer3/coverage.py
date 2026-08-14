@@ -1,4 +1,4 @@
-"""Final heavy-atom coverage gate over ownership and named claims."""
+"""对所有权和已命名 claim 的最终重原子覆盖门控。"""
 from __future__ import annotations
 
 from collections import Counter
@@ -54,7 +54,7 @@ def build_coverage_ledger(
     owned_atoms: frozenset[int],
     names: list[SubstituentName],
 ) -> CoverageLedger:
-    """Build gap/overlap ledger for heavy atoms only; H excluded."""
+    """仅针对重原子构建 gap/overlap 台账；排除 H。"""
     heavy = _heavy_atoms(mol)
     covered = _covered_atoms(owned_atoms, names)
     counts = _membership_counts(owned_atoms, names)

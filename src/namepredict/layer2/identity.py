@@ -1,4 +1,4 @@
-"""Topology-only scaffold identity shared by downstream layer facts."""
+"""仅含拓扑的骨架同一性，供下游各层 facts 共享。"""
 from __future__ import annotations
 
 from dataclasses import dataclass

@@ -1,4 +1,4 @@
-"""L1 detection of isocyanate R–N=C=O and isothiocyanate R–N=C=S (P-61.9)."""
+"""L1 检测异氰酸酯 R–N=C=O 和异硫氰酸酯 R–N=C=S（P-61.9）。"""
 from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
@@ -28,7 +28,7 @@ def _pick_z(nbs, z: int):
 
 
 def _cumul_pair(carbon, x_z: int):
-    """(N, X) if carbon is digonal N=C=X; else None."""
+    """若碳为二配位双键结构 N=C=X 则返回 (N, X)；否则返回 None。"""
     if carbon.GetAtomicNum() != C or carbon.GetTotalDegree() != 2:
         return None
     nbs = _heavies(carbon)
@@ -41,7 +41,7 @@ def _cumul_pair(carbon, x_z: int):
 
 
 def _r_of_iso_n(n_atom, carbon) -> int | None:
-    """R carbon single-bonded to N (not the cumulated C)."""
+    """与 N 单键相连的 R 碳（而非累积双键的 C）。"""
     for n in _heavies(n_atom):
         if n.GetIdx() == carbon.GetIdx():
             continue

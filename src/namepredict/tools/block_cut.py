@@ -1,4 +1,4 @@
-"""Parent-boundary block cutting: parent atoms, side roots, connected blocks."""
+"""母体边界块切割：母体原子、侧链根、连通块。"""
 from __future__ import annotations
 
 from collections import deque
@@ -7,13 +7,7 @@ from rdkit.Chem import Mol
 
 
 def parent_atom_set(parent: dict, mol: Mol) -> frozenset[int]:
-    """Parent boundary atoms; caller must supply a finalized parent.
-
-    L2 parent_selector always finalizes (owned_atoms = frozenset) before L3,
-    so this adapter no longer falls back to L2 parent_ownership finalization
-    (keeps block_cut free of pipeline-layer dependencies).
-    """
-    del mol  # not needed once parent is finalized
+    del mol  # 母体定稿后不再需要
     owned = parent.get("owned_atoms")
     if not isinstance(owned, frozenset):
         raise ValueError(f"unfinalized parent (missing owned_atoms): kind={parent.get('kind')!r}")
@@ -30,7 +24,7 @@ def _heavy_outside(mol: Mol, idx: int, parent_atoms: frozenset[int]) -> list[int
 
 
 def side_roots(mol: Mol, parent_atoms: frozenset[int]) -> list[int]:
-    """Neighbor atoms of parent_atoms that are outside the set (block roots)."""
+    """parent_atoms 的邻居原子中位于该集合之外者（块根）。"""
     roots: set[int] = set()
     for p in parent_atoms:
         roots.update(_heavy_outside(mol, p, parent_atoms))
@@ -55,7 +49,7 @@ def _bfs_block(mol: Mol, root: int, parent_atoms: frozenset[int]) -> set[int]:
 
 
 def cut_block(mol: Mol, root: int, parent_atoms: frozenset[int]) -> frozenset[int] | None:
-    """Connected component from root not entering parent_atoms; None if empty/invalid."""
+    """从 root 出发不进入 parent_atoms 的连通分量；为空/无效时返回 None。"""
     if root in parent_atoms or mol.GetAtomWithIdx(root).GetAtomicNum() == 1:
         return None
     seen = _bfs_block(mol, root, parent_atoms)
@@ -66,14 +60,6 @@ def side_atoms(
     mol: Mol, owned_atoms: frozenset[int], attach_idx: int,
     seed_atoms: frozenset[int],
 ) -> frozenset[int]:
-    """Full non-parent connected components of a substituent.
-
-    Root the cut at the seed atoms (the substituent's already-known atoms)
-    adjacent to the parent attach atom, then union their cut_block components.
-    attach_idx is the parent-side atom; seed_atoms are the substituent-side
-    atoms (must contain at least one atom bonded to attach_idx, otherwise the
-    result is empty).
-    """
     roots = {
         n.GetIdx()
         for n in mol.GetAtomWithIdx(attach_idx).GetNeighbors()

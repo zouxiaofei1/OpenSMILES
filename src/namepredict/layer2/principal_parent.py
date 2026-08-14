@@ -1,4 +1,4 @@
-"""Rule-driven principal parent-skeleton selection entry point."""
+"""规则驱动的母体骨架选择入口。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -42,19 +42,12 @@ def rule_driven_parent_candidates(info: dict) -> list[dict]:
 
     selection = select_principal_parent_skeletons(info)
 
-    # print(selection)
+    # 调试用：print(selection)
     if selection.skeletons is None:
         return []
     if selection.principal is None:
-        #return 
+        # 调试用：return
         from namepredict.layer2.principal_expression import express_hydrocarbon_principal
         return [p for s in selection.skeletons.candidates
                 if (p := express_hydrocarbon_principal(info, s)) is not None]
-    # print("---")
-    # print(selection)
-    # print(_express_selected(selection, info))
-    # from namepredict.layer2.principal_expression import express_hydrocarbon_principal
-    # print([p for s in selection.skeletons.candidates
-    #              if (p := express_hydrocarbon_principal(info, s)) is not None])
-    # print(_express_selected(selection, info))
     return _express_selected(selection, info)

@@ -1,4 +1,4 @@
-"""FG locant omit rules (L4; P-14.3.4 / cyclo mono FG)."""
+"""FG 位次省略规则（L4；P-14.3.4 / 环单 FG）。"""
 from __future__ import annotations
 
 
@@ -54,8 +54,7 @@ def omit_unsat(
     n_carbons: int, kind: str | None = None, parent: dict | None = None, *,
     has_ene=None, has_yne=None,
 ) -> bool:
-    # 纯烃环单烯（cycloalkene，kind 收敛为 alkane + carbocycle scaffold）：位次隐含省略；
-    # 环多烯（double_bonds）保留位次。
+    # 纯烃环单烯（cycloalkene，kind 收敛为 alkane + carbocycle scaffold）位次隐含省略；环多烯（double_bonds）保留位次。
     if kind == "alkane" and (parent or {}).get("scaffold_id") == "carbocycle":
         if not (parent or {}).get("double_bonds"):
             return True

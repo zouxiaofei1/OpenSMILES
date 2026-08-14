@@ -1,4 +1,4 @@
-"""Layout-level ring-system fingerprint (sizes + fusion + hetero + aromatic)."""
+"""布局级环系指纹（环大小 + 稠合 + 杂原子 + 芳香性）。"""
 from __future__ import annotations
 
 from namepredict.layer1.ring_ir import RingComponent, RingSystemIR
@@ -39,7 +39,7 @@ def _arom_token(comps: tuple[RingComponent, ...]) -> str:
 
 
 def ring_fingerprint(ir: RingSystemIR) -> str:
-    """Layout fingerprint: topology|sizes|fusion|hetero|aromatic."""
+    """布局指纹：topology|sizes|fusion|hetero|aromatic。"""
     comps = _sorted_comps(ir)
     parts = (
         ir.topology,

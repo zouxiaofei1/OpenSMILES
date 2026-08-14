@@ -1,4 +1,4 @@
-"""NumberingPlan: pure atom→locant labels (L4)."""
+"""NumberingPlan：纯 atom→locant 标签（L4）。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -30,7 +30,7 @@ def make_plan(
     sub_atoms: frozenset[int] = frozenset(),
     constraints_applied: tuple[str, ...] = (),
 ) -> NumberingPlan:
-    """Build a NumberingPlan from aligned atom_order and labels."""
+    """由对齐的 atom_order 与 labels 构建 NumberingPlan。"""
     order, labs = tuple(atom_order), tuple(labels)
     a2l, l2a = _maps(order, labs)
     return NumberingPlan(
@@ -40,5 +40,5 @@ def make_plan(
 
 
 def locant(plan: NumberingPlan, atom: int) -> str | None:
-    """Return locant label for atom, or None if not in plan."""
+    """返回 atom 的 locant 标签；不在 plan 中则返回 None。"""
     return plan.atom_to_label.get(atom)

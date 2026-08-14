@@ -80,9 +80,9 @@ def _chain_set(parent: dict) -> set[int]:
 
 
 def _remap_attach(parent: dict, s: dict) -> dict:
-    """Ensure attach_idx is on parent chain for L4 orient (ring FG attach)."""
+    """确保 attach_idx 位于母体链上，供 L4 orient 使用（环官能团连接）。"""
     if s.get("o_side"):
-        return s  # ester O-side alkyl: keep attach on the ester O, no chain remap
+        return s  # ester O 侧烷基：连接点保留在酯 O 上，不做链重映射
     chain = _chain_set(parent)
     attach = s.get("attach_idx")
     if attach in chain:
@@ -135,7 +135,7 @@ def try_candidate(
     require_complete: bool = True,
     name_mode: str = "general",
 ) -> NameResult | None:
-    """Finalize ownership, extract, optionally require complete ledger, then assemble."""
+    """完成归属、提取取代基、可选要求完整 coverage ledger，然后组装。"""
     t0 = t0 if t0 is not None else time.perf_counter()
     parent, subst, complete = _prepare_candidate(info, parent, name_mode=name_mode)
     if require_complete and not complete:
@@ -179,7 +179,7 @@ def _candidate_phases(info: dict, depth: int) -> list[list[dict]]:
 def _run_candidates(
     info: dict, *, depth: int, t0: float, name_mode: str = "general", cache: CommonNameCache | None = None,
 ) -> NameResult:
-    """Try only the P-44.1.1-senior phase; never capability-downgrade."""
+    """仅尝试 P-44.1.1 高优先级阶段；绝不降级能力。"""
     attempts: list[dict] = []
     phase = _candidate_phases(info, depth)[0]
     prepared = [_prepare_candidate(info, cand, name_mode=name_mode, cache=cache) for cand in phase]
@@ -195,7 +195,7 @@ def _name_mol(
     t0: float | None = None,
     name_mode: str = "general",
 ) -> NameResult:
-    """Run L1–L5 from mol with coverage-gated candidate retry."""
+    """从 mol 运行 L1–L5，带 coverage 门控的候选重试。"""
     t0 = t0 if t0 is not None else time.perf_counter()
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
@@ -221,12 +221,11 @@ def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
 
 
 def _canonical_result(mol, result: NameResult) -> NameResult:
-    """Copy result with meta.parent_chain rewritten to canonical atom ranks.
+    """复制结果并将 meta.parent_chain 重写为规范原子排序。
 
-    Cache entries are keyed only by the substructure SMILES, so the stored
-    parent_chain must not depend on the cut's atom ordering (which varies with
-    the parent molecule). Canonical rank is a stable identifier across cuts of
-    the same substructure, keeping _yl_from_sub locant reuse safe.
+    缓存条目仅以子结构 SMILES 为键，因此存储的 parent_chain 不能依赖
+    切分点的原子顺序（该顺序随母体分子变化）。规范排序是同一子结构
+    跨切分的稳定标识，保证 _yl_from_sub 位次复用安全。
     """
     chain = (result.meta or {}).get("parent_chain") or []
     if not chain:

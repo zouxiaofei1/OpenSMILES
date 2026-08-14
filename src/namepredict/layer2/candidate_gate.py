@@ -1,4 +1,4 @@
-"""Typed Layer 2 candidate-gating contract."""
+"""类型化 Layer 2 候选门控契约。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -17,7 +17,7 @@ class GateScope(Enum):
 
 @dataclass(frozen=True)
 class CandidateGate:
-    """A producer decision constrained to a registered candidate scope."""
+    """受注册候选作用域约束的生产者决策。"""
 
     status: GateStatus
     scope: GateScope
@@ -41,7 +41,7 @@ def global_reject(scope: GateScope, reason: str) -> CandidateGate:
 
 
 def gate_result(gates: list[CandidateGate], candidates: list[dict]) -> tuple[list[dict], str | None]:
-    """Interpret claimed scopes, candidate dependencies, and principals separately."""
+    """分别解释所声明的作用域、候选依赖与主基团（principal）。"""
     global_gate = next((gate for gate in gates if gate.status is GateStatus.GLOBAL_REJECT), None)
     if global_gate is not None:
         return [], global_gate.reason

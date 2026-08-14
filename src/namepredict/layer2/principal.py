@@ -1,4 +1,4 @@
-"""P-41 class / P-43 expression metadata + principal group selection."""
+"""P-41 类 / P-43 表达式元数据 + 主基团选择。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -53,8 +53,7 @@ PRINCIPAL_REGISTRY: dict[FG, PrincipalFeatureSpec] = {
     FG.ISOTHIOCYANATE: PrincipalFeatureSpec(PrincipalPriority(41), PrincipalExpression.LEGACY_COMPAT, 8),
     FG.SULFIDE: PrincipalFeatureSpec(PrincipalPriority(41, (2,)), PrincipalExpression.LEGACY_COMPAT, 2),
     FG.ETHER: PrincipalFeatureSpec(PrincipalPriority(41, (1,)), PrincipalExpression.PREFIX_ONLY),
-    # Legacy_compat: compatibility_rank only (kind_registry fg_rank projection);
-    # never eligible as principal group (principal_spec() gates on SUFFIX).
+    # Legacy_compat：仅取 kind_registry fg_rank 投影的 compatibility_rank，永不作主基团（principal_spec() 以 SUFFIX 为门槛）。
 }
 
 

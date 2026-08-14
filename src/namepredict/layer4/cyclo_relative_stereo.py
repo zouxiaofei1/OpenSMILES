@@ -1,4 +1,4 @@
-"""L4 locant-aligned relative-stereochemistry facts for cyclo polyacids."""
+"""L4 与位次对齐的环多酸相对立体化学事实。"""
 from __future__ import annotations
 
 
@@ -14,8 +14,7 @@ def _locants(ordered, plan) -> str:
 
 
 def relative_stereo_facts(oriented: dict) -> dict:
-    """Materialize names only after NumberingPlan has selected locants."""
-    # 环二酸：kind 收敛为 acid + carbocycle scaffold（原 cycloalkane_polycarboxylic 组合 kind 已删）。
+    """仅在 NumberingPlan 选定位次后生成名称。"""
     if oriented.get("kind") != "acid" or oriented.get("scaffold_id") != "carbocycle":
         return {}
     ordered = _ordered(oriented)

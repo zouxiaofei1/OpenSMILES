@@ -1,4 +1,4 @@
-"""Build induced cut submols with attach capped by H for free naming."""
+"""构建诱导切割子分子，连接点用 H 封端以用于 free-name。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,10 +9,10 @@ from rdkit.Chem import Mol
 
 @dataclass(frozen=True)
 class CutSubmol:
-    mol: object  # RDKit Mol, attach capped with H for free naming
-    atom_map: dict[int, int]  # new_idx -> old_idx
-    inv_map: dict[int, int]  # old_idx -> new_idx
-    attach_new: int  # attach atom index in submol
+    mol: object  # RDKit Mol，连接点用 H 封端以用于 free-name
+    atom_map: dict[int, int]  # new_idx -> old_idx（新索引→旧索引）
+    inv_map: dict[int, int]  # old_idx -> new_idx（旧索引→新索引）
+    attach_new: int  # 子分子中的连接原子索引
     attach_old: int
     atoms_old: frozenset[int]
 
@@ -59,7 +59,7 @@ def _pack(out: Mol, inv: dict[int, int], attach_old: int, atoms: frozenset[int])
 def build_cut_submol(
     mol: Mol, atoms: frozenset[int], attach_old: int,
 ) -> CutSubmol | None:
-    """Induced submol on atoms; free valence at attach filled with H."""
+    """在 atoms 上的诱导子分子；连接处的自由价用 H 填充。"""
     if attach_old not in atoms:
         return None
     em = Chem.RWMol()
@@ -71,24 +71,23 @@ def build_cut_submol(
 
 
 def _add_anchor(em: Chem.RWMol, attach_new: int) -> None:
-    """Mark the attach atom with a dummy atom (`*`) instead of capping with H.
+    """用 dummy 原子（`*`）标记连接原子，而不是用 H 封端。
 
-    The anchor is a canonicalisation-preserving fingerprint of the substituent
-    shape + attachment site: e.g. isopropyl → *C(C)C vs n-propyl → *CCC, and
-    *c1ccc(Cl)cc1 (4-Cl) vs *c1cccc(Cl)c1 (3-Cl) vs *c1ccccc1Cl (2-Cl).  The
-    capped-H variant (build_cut_submol) loses branch/site info because the
-    attach valence is absorbed by H.
+    该锚点是取代基形状 + 连接位点的保 canonical 指纹：例如 isopropyl → *C(C)C
+    对比 n-propyl → *CCC，以及 *c1ccc(Cl)cc1（4-Cl）对比 *c1cccc(Cl)c1（3-Cl）
+    对比 *c1ccccc1Cl（2-Cl）。用 H 封端的变体（build_cut_submol）会丢失分支/
+    位点信息，因为连接价被 H 吸收。
     """
     d = em.AddAtom(Chem.Atom(0))
     em.AddBond(attach_new, d, Chem.BondType.SINGLE)
 
 
 def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol | None:
-    """Induced submol on atoms with the attach site marked by a dummy atom.
+    """在 atoms 上的诱导子分子，连接位点用 dummy 原子标记。
 
-    Returns the sanitized Mol (canonical SMILES is the lookup key), or None
-    when attach_old is not in atoms or sanitize fails.  The dummy atom has
-    atomic number 0 and is not part of the real substituent.
+    返回 sanitize 后的 Mol（canonical SMILES 是查找键），当 attach_old 不在
+    atoms 中或 sanitize 失败时返回 None。dummy 原子的原子序数为 0，不属于
+    真实取代基的一部分。
     """
     if attach_old not in atoms:
         return None

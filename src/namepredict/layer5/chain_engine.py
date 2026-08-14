@@ -33,10 +33,10 @@ def _with_ez(pair: tuple[str, str] | None, numbered: dict) -> tuple[str, str] | 
     ez = ez_for_parent(numbered)
     return f"{ez}{pair[0]}", f"{ez}{pair[1]}"
 def _fg_record(numbered: dict, kind: str) -> dict | None:
-    """Look up a principal-FG locant record by kind (sparse fg_locants list)."""
+    """按 kind 查找主官能团位次记录（稀疏 fg_locants 列表）。"""
     return next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == kind), None)
 def _parent_multiplicity(numbered: dict) -> int | None:
-    """Principal FG count: facts multiplicity, else legacy principal_group_count."""
+    """主官能团数量：facts.multiplicity，否则旧 principal_group_count。"""
     parent = numbered.get("parent") or {}
     facts = parent.get("principal_expression_facts")
     if facts is not None:
@@ -44,7 +44,7 @@ def _parent_multiplicity(numbered: dict) -> int | None:
     count = parent.get("principal_group_count")
     return int(count) if count is not None else None
 def _fg_locant(numbered: dict, kind: str) -> int | None:
-    """Single-FG locant (segment ene/yne, chain names); None unless exactly one."""
+    """单官能团位次（段式烯/炔、链名）；仅当恰好一个时返回，否则 None。"""
     rec = _fg_record(numbered, kind)
     locs = rec.get("locants") if rec else None
     return locs[0] if locs and len(locs) == 1 else None
@@ -348,10 +348,6 @@ _KIND_TABLE = {
                       ez_ene=ez_for_parent),
     "dione": _Chain(kind="dione", en_suf="dione", zh_suf="二酮", coda="ane",
                     fg="ketone", need=2, no_loc="none", omit_rule=lambda n, loc, omit: False),
-    # 命名 kind 正交化：cycloalcohol/cycloketone/cycloamine/cycloalkanediol/cycloalkanedione
-    # 已删——环醇/酮/胺与链状共用同一 _Chain（assembler._names_for 运行时加 cyclic）。
-    # 纯烃环也并入 alkane：cyclo 前缀由 assembler 按 scaffold_id 动态加。cycloalkane/
-    # cycloalkene/cyclopolyene 组合 kind 已删。
     "anhydride": _Chain(kind="anhydride", en_suf="", zh_suf="", coda="ane",
                         no_loc="plain", omit_rule=lambda n, loc, omit: False,
                         plain_fn=_anhydride_from_acid),

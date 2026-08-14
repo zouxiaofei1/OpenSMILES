@@ -1,4 +1,4 @@
-"""Topology-first parent skeleton enumeration for P-44."""
+"""P-44 的拓扑优先母体骨架枚举。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -79,10 +79,7 @@ def _ring_candidate(mol: Mol, system: dict, occurrences) -> ParentSkeleton | Non
 
 
 def _ring_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
-    # scaffold 身份 (scaffold_id) 不参与任何骨架选择决策，且只对最终胜出的
-    # 少数骨架有意义 —— 延迟到表达阶段 resolve_ring_scaffold 再识别（见
-    # ring_scaffold.resolve_ring_scaffold）。此处不跑 producer，避免为每个
-    # 环系统/每个分子支付完整 parent 生成器的成本。
+    # scaffold 身份 (scaffold_id) 不参与骨架选择，只对最终胜出的少数骨架有意义，延迟到表达阶段 resolve_ring_scaffold 再识别；此处不跑 producer，避免为每个环系统支付完整 parent 生成器成本。
     mol = info["mol"]
     basic = [c for system in info.get("ring_systems") or () if (c := _ring_candidate(mol, system, occurrences))]
     return [ParentSkeleton(c.topology, c.atom_ids, c.covered_principal_ids) for c in basic]

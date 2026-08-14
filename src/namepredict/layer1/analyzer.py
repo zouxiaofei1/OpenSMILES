@@ -168,7 +168,7 @@ def _thiol_entries(mol: Mol) -> list[dict]:
     return out
 
 def _is_amide_n(atom) -> bool:
-    """True for amide/urea/guanidine N (not amine parent)."""
+    """酰胺/脲/胍的 N 返回 True（而非胺母体）。"""
     return any(n.GetAtomicNum() == C and _has_double_bonded_o(n)
                for n in atom.GetNeighbors())
 
@@ -216,7 +216,7 @@ def _aldehyde_entries(mol: Mol) -> list[dict]:
     return [{"c_idx": a.GetIdx()} for a in mol.GetAtoms() if _is_aldehyde_carbon(a)]
 
 def _acyl_chloride_entries(mol: Mol) -> list[dict]:
-    """Acyl halide entries (Cl + Br); key kept for L2/L3 compat."""
+    """酰卤条目（Cl + Br）；键保留以兼容 L2/L3。"""
     from namepredict.layer1.acyl_halide import acyl_halide_entries
     return acyl_halide_entries(mol)
 
@@ -321,11 +321,9 @@ def _carbon_ids(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
 
 def _radical_entries(mol: Mol) -> list[dict]:
-    """Dummy-atom (atomic number 0) neighbour carbons: P-41 free-radical sites.
+    """虚拟原子（原子序数 0）的邻居碳：P-41 自由基位点。
 
-    Only molecules carrying a dummy anchor (`*`, from build_anchor_submol) emit
-    entries, so normal SMILES input is unaffected.  Each dummy contributes its
-    heavy neighbour as one radical site.
+    只有携带虚拟锚点（`*`，来自 build_anchor_submol）的分子才产生条目，因此普通 SMILES 输入不受影响。每个虚拟原子将其重邻居贡献为一个自由基位点。
     """
     out: list[dict] = []
     for a in mol.GetAtoms():

@@ -22,7 +22,6 @@ _ARENE_RETAINED_NAMES = {
     "phenol": ("phenol", "苯酚"),
 }
 
-# 稠环/杂环 scaffold 词干：+FG 后缀时覆盖链状烷烃词干（正交化，不枚举萘醇/吲哚醇组合）。
 _RING_STEM = {
     "naphthalene": ("naphthalen", "萘"),
     "indole": ("indol", "吲哚"),
@@ -39,7 +38,7 @@ _RING_BASE = {
 
 
 def _benzenediol_names(numbered: dict) -> tuple[str, str] | None:
-    """Benzene parent + 2 hydroxyls: systematic benzene-N,N-diol (P-22.1.3)."""
+    """苯母体 + 2 个羟基：系统名 benzene-N,N-diol（P-22.1.3）。"""
     rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "oh"), None)
     locs = rec.get("locants") if rec else None
     if not locs or len(locs) != 2:
@@ -77,23 +76,18 @@ def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
 
 
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
-    """Chain-engine dispatch for table kinds, then specific workers."""
+    """链引擎按表 kind 派发，再转具体 worker。"""
     if kind == "acid":
         exo = _exocyclic_acid_names(n, numbered)
         if exo:
             return exo
     entry = _KIND_TABLE.get(kind)
     if entry is not None:
-        # 命名 kind 正交化：环醇/酮/胺/酸与链状共用同一 _Chain，scaffold 信息运行时注入：
-        #   carbocycle → cyclo 前缀；稠环/杂环（naphthalene/indole/...）→ scaffold 词干。
-        # 不再预枚举 cycloalcohol/naphthalenol/indolol 组合 kind。
         sid = _scaffold_id(numbered)
         if sid in _RING_STEM:
             # 环式 FG 的 locant omit 由 L4 算出的 omit 标志决定。
             entry = replace(entry, stem=_RING_STEM[sid], omit_rule=lambda n, loc, omit: bool(omit))
         elif sid == "carbocycle":
-            # 纯烃环（kind=alkane）+ 环系 FG 共用：cyclo 前缀动态加；
-            # 环单烯省略位次（cyclohexene，ene_loc_omit）。
             entry = replace(entry, cyclic=True, ene_loc_omit=True,
                             omit_rule=lambda n, loc, omit: bool(omit))
         return _chain_names(entry, n, numbered)

@@ -1,9 +1,4 @@
-"""Layer2 parent-candidate collection (scored by layer2.scoring, P-44).
-
-Ring parents come from `rule_driven_parent_candidates` (scaffold/core-table
-driven). The former `ring_producers` / `unsat_producers` bootstrap chains in
-kind_registry were removed as dead code.
-"""
+"""Layer2 母体候选收集（由 layer2.scoring 评分，P-44）；环母体来自 `rule_driven_parent_candidates`；kind_registry 中原 `ring_producers`/`unsat_producers` 引导链已作为死代码移除。"""
 from __future__ import annotations
 
 from namepredict.layer2.parent_candidate import with_principal_group_contract

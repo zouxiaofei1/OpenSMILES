@@ -1,4 +1,4 @@
-"""Claim-based side extraction via SubstituentNamer (coverage fill-in)."""
+"""基于 claim 的侧链提取，经由 SubstituentNamer（覆盖填充）。"""
 from __future__ import annotations
 
 from namepredict.cache.common_names import CommonNameCache
@@ -13,8 +13,7 @@ def _claim_kind(slot_value: str) -> str:
     }.get(slot_value, "side")
 
 
-# Anchored-table / retained leaves whose name implies a non-alkyl kind, so the
-# L5 layers keying off `kind` (iso fusion, poly-anisole, halo benzene) fire.
+# 锚定表/保留叶子的名称暗含非烷基 kind，使 L5 以 `kind` 键（iso 稠合、聚茴香醚、卤代苯）触发。
 _NAME_KIND = {
     "fluoro": "halo", "chloro": "halo", "bromo": "halo", "iodo": "halo",
     "nitro": "nitro",
@@ -55,8 +54,7 @@ def _should_skip(claim, covered: set[int]) -> bool:
     return claim.slot == SideSlot.AMIDE_N or bool(set(claim.atoms) & covered)
 
 
-# Ester acid-side O (alkoxy arm): a claimed side attached to an O atom of an
-# ester/benzoate parent is the O-side alkyl, consumed by L5 join_kind_name.
+# 酯酸侧 O（烷氧基臂）：连在酯/苯甲酸酯 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 join_kind_name 消费。
 _ESTER_O_SIDE_KINDS = frozenset({"ester","benzoate"})
 
 
@@ -84,7 +82,7 @@ def _named_new_sides(mol, owned, covered: set[int], *, name_mode: str = "general
 
 
 def extract_claimed_sides(info: dict, parent: dict, existing: list[dict], *, name_mode: str = "general", cache: CommonNameCache | None = None) -> list[dict]:
-    """Name ownership-boundary claims not already covered by legacy extractors."""
+    """为尚未被旧提取器覆盖的所有权边界 claim 命名。"""
     owned = parent.get("owned_atoms")
     if owned is None:
         return []

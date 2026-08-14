@@ -1,4 +1,4 @@
-"""Multi-ene locants for layer4 FG locant computation (P-31.1)."""
+"""多烯位次，供 layer4 FG 位次计算使用（P-31.1）。"""
 from __future__ import annotations
 
 from namepredict.layer4._chain_orient import _bond_min_locs

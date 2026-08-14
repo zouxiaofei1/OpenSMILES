@@ -7,7 +7,7 @@ from namepredict.layer4.omit_locants import (
 from namepredict.layer4.orienters import _typed_group_atoms
 from namepredict.layer4.polyene import ene_locants
 def _atom_locant(chain: list[int], atom: int | None, kind: str | None, facts=None, required=False) -> int | None:
-    """Scaffold facts use a plan; otherwise retain ordinary chain numbering."""
+    """有 scaffold 事实时使用 plan；否则保留普通链编号。"""
     if atom is None or atom not in chain:
         return None
     plan = plan_from_chain(chain, kind, facts, required=required)
@@ -17,7 +17,6 @@ def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
     if oriented.get("kind") not in kinds:
         return None
     return _atom_locant(oriented.get("chain") or [], oriented.get(key), oriented.get("kind"), oriented.get("numbering_scaffold"), oriented.get("numbering_scaffold_required", False))
-# 组合 kind 已根除（scaffold×FG 正交化）：集合只含活的 FG 类别 kind。
 _OH_KINDS = ("alcohol",)
 _AMINE_KINDS = ("amine", "sec_amine", "tert_amine")
 def _typed_atom_locants(oriented: dict, group: str) -> list[int]:

@@ -1,9 +1,4 @@
-"""Shared carbonyl-detection primitives for layer1 detectors.
-
-Extracted verbatim from layer1/analyzer.py and layer1/acyl_halide.py, which
-duplicated this whole block.  The two detectors still keep their own
-`_is_ester_alkoxy_o` predicate (analyzer excludes anhydride-bridge O; acyl
-halide checks formal charge) and pass it into the shared `_ester_alkoxy_of`.
+"""layer1 检测器共享的羰基检测原语；检测器各自保留 `_is_ester_alkoxy_o` 谓词并传入共享的 `_ester_alkoxy_of`。
 """
 from __future__ import annotations
 
@@ -61,10 +56,9 @@ def _alkoxy_c_of(oxygen, carbonyl) -> int | None:
 
 
 def _ester_alkoxy_of(carbon, is_alkoxy_o) -> tuple[int, int] | None:
-    """Find ester-like O on `carbon` whose neighbour C is a valid alkoxy side.
+    """在 `carbon` 上寻找酯样 O，其邻居 C 为有效的烷氧基侧。
 
-    `is_alkoxy_o(oxygen, carbonyl)` is the module-specific predicate: analyzer
-    excludes anhydride-bridge O, acyl_halide checks formal charge.
+    `is_alkoxy_o(oxygen, carbonyl)` 是模块特定的谓词：analyzer 排除酸酐桥 O，acyl_halide 检查形式电荷。
     """
     for n in carbon.GetNeighbors():
         if not is_alkoxy_o(n, carbon):
@@ -86,7 +80,7 @@ def _amide_n_single(carbon, n) -> bool:
 
 
 def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
-    """Return (n_idx, neighbour-C idx list) for the amide N on `carbon`."""
+    """返回 `carbon` 上酰胺 N 的 (n_idx, 邻居 C 索引列表)。"""
     for n in carbon.GetNeighbors():
         if n.GetAtomicNum() != N or not _amide_n_single(carbon, n):
             continue

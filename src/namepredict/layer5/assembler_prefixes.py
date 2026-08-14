@@ -1,4 +1,4 @@
-"""Layer 5 substituent-prefix grouping and bilingual rendering."""
+"""L5 取代基前缀分组与双语渲染。"""
 from __future__ import annotations
 
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
@@ -22,11 +22,9 @@ _KEEP_LOCANT_KINDS = frozenset({
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None,
                       scaffold: str | None = None, has_ene: bool = False) -> bool:
     if kind == "phenyl":
-        # Phenyl radical: attach is implicit locant 1, so every leaf keeps its
-        # locant (4-chlorophenyl, not chlorophenyl).
+        # 苯基自由基：连接点隐含为 locant 1，因此每个叶子保留其位次（4-chlorophenyl，而非 chlorophenyl）。
         return False
-    # 纯烃饱和环单取代（cycloalkane，kind 收敛为 alkane + carbocycle scaffold）位次隐含；
-    # 环烯取代基位次必须保留（1-methylcyclohexene）。
+    # 纯烃饱和环单取代（cycloalkane，kind 收敛为 alkane + carbocycle scaffold）位次隐含；环烯取代基位次必须保留（1-methylcyclohexene）。
     if n_carbons <= 1 or (
         (kind == "alkane" and scaffold == "carbocycle" and not has_ene) or kind == "benzene"
     ) and len(substituents) == 1:
@@ -41,7 +39,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return False
     return n_carbons == 2 and len(substituents) == 1
 def _stem_needs_paren(stem: str, subs: list, omit: bool) -> bool:
-    """Paren: explicit flag, leading-locant stems, or multi CF3 (EN)."""
+    """加括号：显式标记、前导位次词干，或多个 CF3（英文）。"""
     if any(s.get("paren") for s in subs):
         return True
     if stem and stem[0].isdigit():
@@ -82,7 +80,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
                   scaffold: str | None = None, has_ene: bool = False) -> tuple[str, str]:
     if not substituents:
         return "", ""
-    # ester O-side alkyl is consumed by join_kind_name as the alkoxy arm, never a prefix
+    # ester 的 O 侧烷基由 join_kind_name 作为烷氧基臂消费，永不作前缀
     substituents = [s for s in substituents if not s.get("o_side")]
     if not substituents:
         return "", ""
@@ -92,7 +90,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     return "-".join(en_parts), "-".join(zh_parts)
 
 def _is_isobutyryl(numbered: dict) -> bool:
-    """C3 acyl + single methyl at locant 2 (isobutyryl retained topology)."""
+    """C3 酰基 + 2 位单个甲基（异丁酰基保留拓扑）。"""
     if int((numbered.get("parent") or {}).get("n_carbons") or 0) != 3:
         return False
     subs = numbered.get("substituents") or []

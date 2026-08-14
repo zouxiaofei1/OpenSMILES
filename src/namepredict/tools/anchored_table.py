@@ -1,23 +1,5 @@
-"""Anchored canonical-SMILES lookup table for simple substituents.
-
-build_anchor_submol marks the attach site with a dummy atom (*), so the
-canonical SMILES encodes both the substituent shape and the attachment site:
-  isopropyl *C(C)C vs n-propyl *CCC; 4-Cl *c1ccc(Cl)cc1 vs 3-Cl *c1cccc(Cl)c1
-  vs 2-Cl *c1ccccc1Cl.
-
-Each key maps to a (registry_key, en, zh, paren, kind) tuple:
-  - registry_key is a key in the in-file _REGISTRY when the name is name_mode
-    sensitive (isopropyl → propan-2-yl under pin), else None.
-  - en/zh are the general names (also the pin names when registry_key is None);
-    for registry-keyed entries they are unused (resolve_name overrides).
-  - paren: compound prefix needs parentheses in assembled names.
-  - kind classifies the shape: "alkyl" (pure-carbon side chains, the only kind
-    the side-alkyl extractor may claim), "aryl", "halo", or "leaf" (hetero
-    atom prefixes/functions).  The L3 namer accepts all kinds; the extractor
-    filters to "alkyl" so cyano/nitroso etc. are not misclaimed as alkyl sides.
-A hit proves the anchored key uniquely identifies a simple substituent.  The
-full naming path remains the fallback when the key is absent.
-"""
+"""简单取代基的锚定 canonical-SMILES 查表。
+键映射到 (registry_key, en, zh, paren, kind) 元组；命中即证明锚定键唯一标识简单取代基，未命中则回退到完整命名路径。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -28,9 +10,9 @@ from rdkit.Chem import Mol
 from namepredict.layer3.submol_build import build_anchor_submol
 
 
-# anchor SMILES → (registry_key | None, en, zh, requires_parentheses, kind)
+# 锚定 SMILES → (registry_key | None, en, zh, requires_parentheses, kind)
 ANCHOR_TABLE: dict[str, tuple[str | None, str, str, bool, str]] = {
-    # linear n-alkyl (C1–C12; not name_mode sensitive)
+    # 直链正烷基（C1–C12；对 name_mode 不敏感）
     "*C": (None, "methyl", "甲基", False, "alkyl"),
     "*CC": (None, "ethyl", "乙基", False, "alkyl"),
     "*CCC": (None, "propyl", "丙基", False, "alkyl"),
@@ -42,7 +24,7 @@ ANCHOR_TABLE: dict[str, tuple[str | None, str, str, bool, str]] = {
     "*CCCCCCCCC": (None, "nonyl", "壬基", False, "alkyl"),
     "*CCCCCCCCCC": (None, "decyl", "癸基", False, "alkyl"),
     "*CCCCCCCCCCC": (None, "undecyl", "十一烷基", False, "alkyl"),
-    # branched retained (registry keys, name_mode sensitive)
+    # 支链保留基（registry 键，对 name_mode 敏感）
     "*C(C)C": ("isopropyl", None, None, False, "alkyl"),
     "*C(C)(C)C": ("tert-butyl", None, None, False, "alkyl"),
     "*CC(C)C": ("isobutyl", None, None, False, "alkyl"),
@@ -50,13 +32,13 @@ ANCHOR_TABLE: dict[str, tuple[str | None, str, str, bool, str]] = {
     "*CC(C)(C)C": ("neopentyl", None, None, False, "alkyl"),
     "*CCC(C)C": ("isopentyl", None, None, False, "alkyl"),
     "*C(C)(C)CC": ("2-methylbutan-2-yl", None, None, False, "alkyl"),
-    # alkenyl retained
+    # 烯基保留基
     "*C=C": ("vinyl", None, None, False, "alkyl"),
     "*C=C-C": ("allyl", None, None, False, "alkyl"),
     "*C=CC": ("allyl", None, None, False, "alkyl"),
     "*CC=C": ("allyl", None, None, False, "alkyl"),
     "*C(=C)C": ("isopropenyl", None, None, False, "alkyl"),
-    # haloalkyl (compound prefixes need parentheses)
+    # 卤代烷基（复合前缀需括号）
     "*CCl": (None, "chloromethyl", "氯甲基", True, "alkyl"),
     "*CBr": (None, "bromomethyl", "溴甲基", True, "alkyl"),
     "*CCCl": (None, "2-chloroethyl", "2-氯乙基", True, "alkyl"),
@@ -64,11 +46,11 @@ ANCHOR_TABLE: dict[str, tuple[str | None, str, str, bool, str]] = {
     "*CCCCCl": (None, "4-chlorobutyl", "4-氯丁基", True, "alkyl"),
     "*CCCBr": (None, "3-bromopropyl", "3-溴丙基", True, "alkyl"),
     "*CCCCBr": (None, "4-bromobutyl", "4-溴丁基", True, "alkyl"),
-    # 1-cycloalkylethyl (C1(ring)-C(C)H-)
+    # 1-环烷基乙基（C1(ring)-C(C)H-）
     "*C(C)C1CCCCC1": (None, "1-cyclohexylethyl", "1-环己基乙基", True, "alkyl"),
-    # CF3
+    # CF3（三氟甲基）
     "*C(F)(F)F": (None, "trifluoromethyl", "三氟甲基", False, "alkyl"),
-    # heteroatom prefixes — alkoxy / thio / sulfinyl / sulfonyl (registry-keyed)
+    # 杂原子前缀 — 烷氧基 / 硫基 / 亚磺酰基 / 磺酰基（registry 键）
     "*OC": ("methoxy", None, None, False, "leaf"),
     "*SC": ("methylsulfanyl", None, None, False, "leaf"),
     "*S(C)=O": ("methylsulfinyl", None, None, False, "leaf"),
@@ -76,41 +58,41 @@ ANCHOR_TABLE: dict[str, tuple[str | None, str, str, bool, str]] = {
     "*S(=O)(=O)O": ("sulfo", None, None, False, "leaf"),
     "*S(=O)(=O)c1ccc(C)cc1": ("tosyl", None, None, False, "leaf"),
     "*S(=O)(=O)C(F)(F)F": ("triflyl", None, None, False, "leaf"),
-    # nitrogen leaves (registry-keyed)
+    # 含氮端基官能团（registry 键）
     "*N=O": ("nitroso", None, None, False, "leaf"),
     "*N=[N+]=[N-]": ("azido", None, None, False, "leaf"),
     "*[N+]#[C-]": ("isocyano", None, None, False, "leaf"),
     "*C#N": ("cyano", None, None, False, "leaf"),
-    # piperidinyl
+    # 哌啶基
     "*C1CCNCC1": (None, "piperidin-4-yl", "哌啶-4-基", True, "alkyl"),
     "*C1CCCNC1": (None, "piperidin-3-yl", "哌啶-3-基", True, "alkyl"),
     "*[C@@H]1CCCCN1": (None, "piperidin-2-yl", "哌啶-2-基", True, "alkyl"),
-    # alkenyl-branched retained
+    # 烯基支链保留基
     "*C=C(C)C": ("isobutyl", None, None, False, "alkyl"),
     "*C=CC(C)C": ("isopentyl", None, None, False, "alkyl"),
     "*CC=C(C)C": ("3-methylbut-2-enyl", None, None, False, "alkyl"),
-    # cycloalkyl (not name_mode sensitive)
+    # 环烷基（对 name_mode 不敏感）
     "*C1CC1": (None, "cyclopropyl", "环丙基", False, "alkyl"),
     "*C1CCC1": (None, "cyclobutyl", "环丁基", False, "alkyl"),
     "*C1CCCC1": (None, "cyclopentyl", "环戊基", False, "alkyl"),
     "*C1CCCCC1": (None, "cyclohexyl", "环己基", False, "alkyl"),
     "*C1CCCCCC1": (None, "cycloheptyl", "环庚基", False, "alkyl"),
     "*C1CCCCCCC1": (None, "cyclooctyl", "环辛基", False, "alkyl"),
-    # aryl
+    # 芳基
     "*c1ccccc1": (None, "phenyl", "苯基", False, "aryl"),
     "*c1ccc(Cl)cc1": (None, "4-chlorophenyl", "4-氯苯基", True, "aryl"),
     "*c1cccc(Cl)c1": (None, "3-chlorophenyl", "3-氯苯基", True, "aryl"),
     "*c1ccccc1Cl": (None, "2-chlorophenyl", "2-氯苯基", True, "aryl"),
-    # single-atom halogens (always single-bonded; no bond-type ambiguity)
+    # 单原子卤素（始终单键；无键型歧义）
     "*F": (None, "fluoro", "氟", False, "halo"),
     "*Cl": (None, "chloro", "氯", False, "halo"),
     "*Br": (None, "bromo", "溴", False, "halo"),
     "*I": (None, "iodo", "碘", False, "halo"),
-    # multi-atom FG leaves with unique bond topology
+    # 键拓扑唯一的多原子端基官能团
     "*[N+](=O)[O-]": (None, "nitro", "硝基", False, "leaf"),
     "*N=C=O": (None, "isocyanato", "异氰酸根合", False, "leaf"),
     "*N=C=S": (None, "isothiocyanato", "异硫氰酸根合", False, "leaf"),
-    # ── retained aralkyl / unsaturated (registry-keyed) ──
+    # ── 保留的芳烷基 / 不饱和基（registry 键）──
     "*Cc1ccccc1": ("benzyl", None, None, False, "aryl"),
     "*CCc1ccccc1": ("phenethyl", None, None, True, "aryl"),
     "*C(c1ccccc1)c1ccccc1": ("benzhydryl", None, None, False, "aryl"),
@@ -119,7 +101,7 @@ ANCHOR_TABLE: dict[str, tuple[str | None, str, str, bool, str]] = {
     "*C=Cc1ccccc1": ("cinnamyl", None, None, False, "aryl"),
     "*Cc1ccoc1": ("furfuryl", None, None, True, "aryl"),
     "*Cc1ccsc1": ("thenyl", None, None, True, "aryl"),
-    # ── heteroaryl (registry-keyed at the registered position) ──
+    # ── 杂芳基（在注册位置以 registry 键索引）──
     "*c1ccoc1": ("furyl", None, None, True, "aryl"),
     "*c1ccsc1": ("thienyl", None, None, True, "aryl"),
     "*c1ccccn1": ("pyridyl", None, None, True, "aryl"),
@@ -128,7 +110,7 @@ ANCHOR_TABLE: dict[str, tuple[str | None, str, str, bool, str]] = {
     "*c1ccc2cc3ccccc3cc2c1": ("anthryl", None, None, True, "aryl"),
     "*c1cc2ccccc2c2ccccc12": ("phenanthryl", None, None, True, "aryl"),
     "*C1C2CC3CC(C2)CC1C3": ("adamantyl", None, None, True, "aryl"),
-    # ── heteroaryl other positions (non-registered, descriptive names) ──
+    # ── 杂芳基其他位置（非注册，描述性名称）──
     "*c1cccnc1": (None, "pyridin-3-yl", "吡啶-3-基", True, "aryl"),
     "*c1ccncc1": (None, "pyridin-4-yl", "吡啶-4-基", True, "aryl"),
     "*c1ccco1": (None, "furan-3-yl", "呋喃-3-基", True, "aryl"),
@@ -141,15 +123,15 @@ ANCHOR_TABLE: dict[str, tuple[str | None, str, str, bool, str]] = {
     "*c1ccc2ccc3ccccc3c2c1": (None, "phenanthren-1-yl", "菲-1-基", True, "aryl"),
     "*c1ccc2c(ccc3ccccc32)c1": (None, "phenanthren-2-yl", "菲-2-基", True, "aryl"),
     "*C12CC3CC(CC(C3)C1)C2": (None, "adamantan-1-yl", "金刚烷-1-基", True, "aryl"),
-    # ── tolyl (o/m/p split; NOT_RECOMMENDED, descriptive names) ──
+    # ── 甲苯基（o/m/p 拆分；NOT_RECOMMENDED，描述性名称）──
     "*c1ccccc1C": (None, "2-methylphenyl", "2-甲基苯基", True, "aryl"),
     "*c1cccc(C)c1": (None, "3-methylphenyl", "3-甲基苯基", True, "aryl"),
     "*c1ccc(C)cc1": (None, "4-methylphenyl", "4-甲基苯基", True, "aryl"),
-    # ── heteroatom prefixes — O / S (registry-keyed) ──
+    # ── 杂原子前缀 — O / S（registry 键）──
     "*OO": ("hydroperoxy", None, None, False, "leaf"),
     "*SCC": ("ethylsulfanyl", None, None, False, "leaf"),
     "*S": ("sulfanyl", None, None, False, "leaf"),
-    # ── heteroatom prefixes — N (registry-keyed) ──
+    # ── 杂原子前缀 — N（registry 键）──
     "*NN": ("hydrazinyl", None, None, False, "leaf"),
     "*Nc1ccccc1": ("anilino", None, None, False, "leaf"),
     "*NC": ("methylamino", None, None, False, "leaf"),
@@ -161,16 +143,16 @@ ANCHOR_TABLE: dict[str, tuple[str | None, str, str, bool, str]] = {
     "*C(=N)N": ("amidino", None, None, False, "leaf"),
     "*NC(=N)N": ("guanidino", None, None, False, "leaf"),
     "*NC(N)=O": ("ureido", None, None, False, "leaf"),
-    # ── P / B / Se prefixes (registry-keyed) ──
+    # ── P / B / Se 前缀（registry 键）──
     "*P": ("phosphanyl", None, None, False, "leaf"),
     "*B": ("boranyl", None, None, False, "leaf"),
     "*[SeH]": ("selanyl", None, None, False, "leaf"),
-    # ── poly-halo alkyls (registry-keyed; CF3-style) ──
+    # ── 多卤代烷基（registry 键；CF3 型）──
     "*C(Cl)(Cl)Cl": ("trichloromethyl", None, None, False, "alkyl"),
     "*C(Br)(Br)Br": ("tribromomethyl", None, None, False, "alkyl"),
     "*C(F)F": ("difluoromethyl", None, None, False, "alkyl"),
     "*C(F)(F)C(F)(F)F": ("pentafluoroethyl", None, None, False, "alkyl"),
-    # ── acyl prefixes (registry-keyed) ──
+    # ── 酰基前缀（registry 键）──
     "*C=O": ("formyl", None, None, False, "leaf"),
     "*C(C)=O": ("acetyl", None, None, False, "leaf"),
     "*C(=O)c1ccccc1": ("benzoyl", None, None, False, "leaf"),
@@ -184,7 +166,7 @@ ANCHOR_TABLE: dict[str, tuple[str | None, str, str, bool, str]] = {
 }
 
 
-# ── retained-substituent registry (IUPAC 2013 P-29/P-57; dual general/pin names) ──
+# ── 保留取代基注册表（IUPAC 2013 P-29/P-57；general/pin 双语名称）──
 
 class IupacLevel(Enum):
     PIN = "pin"
@@ -284,15 +266,15 @@ _REGISTRY: dict[str, RetainedSubstituent] = _build_registry()
 
 
 def get_retained(key: str) -> RetainedSubstituent | None:
-    """Look up a retained substituent by registry key."""
+    """按 registry 键查找保留取代基。"""
     return _REGISTRY.get(key)
 
 
 def resolve_name(key: str, *, name_mode: str = "general") -> tuple[str, str]:
-    """Return (en, zh) for a registry key under the given naming mode.
+    """返回给定命名模式下 registry 键对应的 (en, zh)。
 
-    - "general": always the retained/common name
-    - "pin": systematic name unless the entry itself is PIN-level
+    - "general"：始终为保留名/常用名
+    - "pin"：除非条目本身为 PIN 级，否则用系统名
     """
     entry = _REGISTRY[key]
     if name_mode == "pin" and entry.level != IupacLevel.PIN:
@@ -301,8 +283,8 @@ def resolve_name(key: str, *, name_mode: str = "general") -> tuple[str, str]:
 
 
 def pick_root(mol: Mol, atoms: frozenset[int]) -> int:
-    """Substituent-side attach atom: the atom in `atoms` bonded to an outside
-    heavy atom (the parent).  Falls back to the lowest index."""
+    """取代基侧键合原子：`atoms` 中与外部重原子（母体）成键的原子。
+    回退到最小索引。"""
     for a in atoms:
         for nb in mol.GetAtomWithIdx(a).GetNeighbors():
             if nb.GetAtomicNum() != 1 and nb.GetIdx() not in atoms:
@@ -339,7 +321,7 @@ def _resolve(
 def anchored_entry(
     mol: Mol, atoms: frozenset[int], attach_old: int | None = None, *, name_mode: str = "general",
 ) -> tuple[str, str, bool, str] | None:
-    """Resolve an atom set to (en, zh, paren, kind) under name_mode, or None."""
+    """在 name_mode 下将原子集解析为 (en, zh, paren, kind)，无命中则返回 None。"""
     got = _table_hit(mol, atoms, attach_old)
     return None if got is None else _resolve(got[1], name_mode=name_mode)
 
@@ -348,10 +330,9 @@ def anchored_lookup(
     mol: Mol, atoms: frozenset[int], attach_old: int | None = None,
     *, name_mode: str = "general",
 ) -> tuple[str, str, bool] | None:
-    """Look up a substituent atom set; returns (en, zh, paren) under name_mode.
+    """查找取代基原子集；在 name_mode 下返回 (en, zh, paren)。
 
-    registry-keyed entries resolve through the in-file resolve_name
-    so pin mode yields e.g. propan-2-yl for isopropyl.  None when no hit.
+    registry 键条目通过文件内 resolve_name 解析，因此 pin 模式对 isopropyl 会生成 propan-2-yl 等。无命中时返回 None。
     """
     entry = anchored_entry(mol, atoms, attach_old, name_mode=name_mode)
     return None if entry is None else (entry[0], entry[1], entry[2])

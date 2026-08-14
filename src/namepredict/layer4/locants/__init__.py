@@ -1,4 +1,4 @@
-"""L4 locants package: NumberingPlan + retained-scaffold adapters."""
+"""L4 locants 包：NumberingPlan + 保留骨架适配器。"""
 from __future__ import annotations
 
 from namepredict.layer4.locants.adapt import (

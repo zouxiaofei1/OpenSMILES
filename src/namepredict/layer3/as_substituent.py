@@ -1,6 +1,5 @@
-"""name_as_substituent: cut submol → free-name pipeline → P-29 -yl form.
-
-No host (benzamide gate / n_block extract) wiring — pure cut→pipeline→yl.
+"""name_as_substituent：切割 submol → free-name 管道 → P-29 -yl 形式。
+无宿主（苯甲酰胺 gate / n_block 提取）接线——纯 cut→pipeline→yl。
 """
 from __future__ import annotations
 
@@ -14,14 +13,13 @@ from namepredict.tools.free_to_yl import free_to_yl as yl_form
 def _arene_yl_from_sub(
     sub, result, *, mol, atoms, attach_old, depth: int, name_mode: str, cache: CommonNameCache | None,
 ) -> tuple[str, str, bool] | None:
-    """Benzene cut → phenyl radical via the P-41 free-radical principal group.
+    """苯环切割 → 经 P-41 自由基主基团得到苯基自由基。
 
-    The free-name pipeline names a substituted benzene as 'chlorobenzene' (or
-    'phenol'/'aniline'/'benzonitrile' when OH/NH2/CN is the principal group),
-    but a phenyl *substituent* must treat those as leaves and number from the
-    anchor carbon (locant 1).  We rebuild the cut in anchored form (dummy `*`
-    at the attach carbon) and re-free-name it: L1 detects the radical, L2 picks
-    the phenyl parent, L4 anchors locant 1, L5 emits {leaf-locants}phenyl.
+    free-name 管道把取代苯命名为 'chlorobenzene'（当 OH/NH2/CN 为主基团时得到
+    'phenol'/'aniline'/'benzonitrile'），但苯基*取代基*必须把这些当作叶子并从
+    锚定碳（位次 1）编号。我们用锚定形式（attach 碳上带 dummy `*`）重建切割
+    并重新 free-name：L1 检出自由基，L2 选苯基母体，L4 锚定位次 1，L5 输出
+    {leaf-locants}phenyl。
     """
     from namepredict.namer import _cache_put, _canonical_result, _name_mol
     from rdkit import Chem
@@ -49,7 +47,7 @@ def _arene_yl_from_sub(
 
 
 def _locant_from_result(mol, result, attach_new: int) -> int | None:
-    """Locant of attach on the parent_chain (canonical ranks; cache-safe across cuts)."""
+    """parent_chain 上的连接位次（canonical rank；跨切割缓存安全）。"""
     chain = (result.meta or {}).get("parent_chain") or []
     if not chain:
         return None
@@ -61,7 +59,7 @@ def _locant_from_result(mol, result, attach_new: int) -> int | None:
 
 
 def _locant_via_hetero(mol, attach_new: int, result) -> int | None:
-    """When attach is a heteroatom (O/S/N) not in chain, use its chain-neighbor."""
+    """当连接原子是不在链中的杂原子（O/S/N）时，使用其链上的邻接原子。"""
     a = mol.GetAtomWithIdx(attach_new)
     if a.GetAtomicNum() not in (8, 16, 7):
         return None
@@ -87,8 +85,7 @@ def _yl_from_sub(
         smiles = Chem.MolToSmiles(sub.mol)
         result = cache.get(smiles)
     if result is None:
-        # 用 canonical SMILES 重解析再命名：命名输入与缓存 key 严格一一对应，
-        # 消除不同 cut 上下文（环断点/手性方向）泄漏进命名的差异。
+        # 用 canonical SMILES 重解析再命名：命名输入与缓存 key 严格一一对应，消除不同 cut 上下文（环断点/手性方向）泄漏进命名的差异。
         named_mol = sub.mol
         if smiles:
             canonical = Chem.MolFromSmiles(smiles)
@@ -117,7 +114,7 @@ def name_as_substituent(
     mol, attach_old: int, atoms, *, depth: int = 0, max_depth: int = 4, name_mode: str = "general",
     cache: CommonNameCache | None = None,
 ) -> tuple[str, str, bool] | None:
-    """Cut atoms at attach_old, free-name the submol, emit -yl dual names."""
+    """在 attach_old 处切割原子，free-name 子分子，输出 -yl 双语名称。"""
     if depth >= max_depth:
         return None
     atoms = frozenset(atoms)

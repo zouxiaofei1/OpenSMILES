@@ -1,4 +1,4 @@
-"""Alkenoic / alkenedioic acid name assembly (E/Z via layer5.stereo)."""
+"""烯酸 / 烯二酸名称组装（E/Z 经 layer5.stereo）。"""
 from __future__ import annotations
 
 from namepredict.layer5.stems import (
@@ -18,7 +18,7 @@ def _unsat_acid_pair(n, locant, ez, en_sfx, zh_sfx, min_n=2) -> tuple[str, str] 
 
 
 def alkenamide_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """acrylamide (retained) / (E)-but-2-enamide with E/Z when stereo defined."""
+    """丙烯酰胺（保留名）/(E)-but-2-enamide；定义立体时带 E/Z。"""
     if n == 3 and numbered.get("ene_locant") == 2 and numbered.get("name_mode") != "pin":
         ez = _ez_prefix(numbered)
         return f"{ez}acrylamide", f"{ez}丙烯酰胺"

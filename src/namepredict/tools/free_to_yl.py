@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-# free_en → (yl_en, yl_zh) when locant is conventional / omitted
+# free_en → (yl_en, yl_zh)（当位次为常规/省略时）
 _RETAINED: dict[str, tuple[str, str]] = {
     "benzene": ("phenyl", "苯基"),
 }
@@ -14,7 +14,7 @@ def _drop_terminal_e(en: str) -> str:
 
 
 def _hetero_locant_prefix(en: str) -> str:
-    """Leading heteroatom locants from free EN: '1,3-thiazole' → '1,3-'."""
+    """取 free EN 的前导杂原子位次：'1,3-thiazole' → '1,3-'。"""
     i = 0
     n = len(en)
     while i < n and en[i].isdigit():
@@ -26,10 +26,10 @@ def _hetero_locant_prefix(en: str) -> str:
     return en[: i + 1] if i and i < n and en[i] == "-" else ""
 
 
-# ── FG suffix → prefix conversion ──
+# ── 官能团后缀 → 前缀转换 ──
 
 def _alkoxy_en(en: str) -> str | None:
-    """alcohol → alkoxy: methanol→methoxy, propan-1-ol→propoxy, propan-2-ol→propan-2-yloxy."""
+    """醇 → 烷氧基：methanol→methoxy, propan-1-ol→propoxy, propan-2-ol→propan-2-yloxy。"""
     if not en.endswith("ol") or "diol" in en or "triol" in en:
         return None
     if en in ("methanol", "ethanol"):
@@ -40,7 +40,7 @@ def _alkoxy_en(en: str) -> str | None:
     m = re.match(r"^(.+)an-(\d+)-ol$", en)
     if m:
         return f"{m.group(1)}an-{m.group(2)}-yloxy"
-    # heptan-1-ol etc. (C7+ with full "ane" stem)
+    # heptan-1-ol 等（C7+，带完整 "ane" 词干）
     m = re.match(r"^(.+)ane-1-ol$", en)
     if m:
         return m.group(1) + "oxy"
@@ -63,14 +63,14 @@ def _alkoxy_zh(zh: str) -> str | None:
 
 
 def _sulfanyl_en(en: str) -> str | None:
-    """thiol → sulfanyl: methanethiol→methylsulfanyl, ethanethiol→ethylsulfanyl, propane-2-thiol→propane-2-ylsulfanyl."""
+    """硫醇 → 硫基：methanethiol→methylsulfanyl, ethanethiol→ethylsulfanyl, propane-2-thiol→propane-2-ylsulfanyl。"""
     if not en.endswith("thiol"):
         return None
-    # propane-2-thiol → propane-2-ylsulfanyl
+    # 例：propane-2-thiol → propane-2-ylsulfanyl
     m = re.match(r"^(.+)ane-(\d+)-thiol$", en)
     if m:
         return f"{m.group(1)}ane-{m.group(2)}-ylsulfanyl"
-    # methanethiol → methylsulfanyl
+    # 例：methanethiol → methylsulfanyl
     m = re.match(r"^(.+)anethiol$", en)
     if m:
         return m.group(1) + "ylsulfanyl"
@@ -88,14 +88,14 @@ def _sulfanyl_zh(zh: str) -> str | None:
 
 
 def _amino_en(en: str) -> str | None:
-    """1° amine → amino: methanamine→methylamino, ethanamine→ethylamino, propan-2-amine→propan-2-ylamino."""
+    """1° 胺 → 氨基：methanamine→methylamino, ethanamine→ethylamino, propan-2-amine→propan-2-ylamino。"""
     if not en.endswith("amine") or "N-" in en:
         return None
-    # propan-2-amine → propan-2-ylamino
+    # 例：propan-2-amine → propan-2-ylamino
     m = re.match(r"^(.+)ane-(\d+)-amine$", en)
     if m:
         return f"{m.group(1)}ane-{m.group(2)}-ylamino"
-    # methanamine → methylamino
+    # 例：methanamine → methylamino
     m = re.match(r"^(.+)anamine$", en)
     if m:
         return m.group(1) + "ylamino"
@@ -112,10 +112,10 @@ def _amino_zh(zh: str) -> str | None:
     return None
 
 
-# ── yl form builders ──
+# ── yl 形式构建器 ──
 
 def _try_fg_prefix(en: str, zh: str) -> tuple[str, str] | None:
-    """Try to convert FG suffix name to substituent prefix form."""
+    """尝试将官能团后缀名转换为取代基前缀形式。"""
     for en_fn, zh_fn in [
         (_alkoxy_en, _alkoxy_zh),
         (_sulfanyl_en, _sulfanyl_zh),
@@ -134,7 +134,7 @@ def _yl_en(en: str, k: int) -> str:
 
 
 def _mirror_azole_locants_zh(zh: str, en: str) -> str:
-    """Insert 1,3- into ZH azole stems when EN has 1,3- but free ZH omits it."""
+    """当 EN 含 1,3- 而 free ZH 省略时，向 ZH 唑类词干插入 1,3-。"""
     pre = _hetero_locant_prefix(en)
     if pre and not zh.startswith(pre):
         return pre + zh
@@ -153,14 +153,13 @@ def _yl_zh(zh: str, k: int, en: str) -> str:
 def free_to_yl(
     en: str, zh: str, attach_locant: int, *, paren: bool = True,
 ) -> tuple[str, str, bool]:
-    """Convert free parent name to P-29 -yl dual form at attach locant.
+    """在键合位次处将 free 母体名转换为 P-29 -yl 双语形式。
 
-    P-63.2.2 alcohol→alkoxy, P-63.2.1 thiol→alkylsulfanyl, P-62.2 1° amine→alkylamino.
+    P-63.2.2 醇→烷氧基, P-63.2.1 硫醇→烷基硫基, P-62.2 1° 胺→烷基氨基。
     """
     fg = _try_fg_prefix(en, zh)
     if fg is not None:
-        # P-29.3.6: compound prefixes (methylamino=CH3-NH-, not plain amino)
-        # need parentheses to distinguish from two separate substituents.
+        # P-29.3.6：复合前缀（methylamino=CH3-NH-，非普通 amino）需括号与两个独立取代基区分。
         need_paren = fg[0].endswith("amino") and fg[0] != "amino"
         return fg[0], fg[1], need_paren
     return _yl_en(en, attach_locant), _yl_zh(zh, attach_locant, en), paren

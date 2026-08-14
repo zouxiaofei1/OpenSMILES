@@ -1,13 +1,10 @@
-"""Typed P-44 parent facts and the legacy producer boundary adapter."""
+"""类型化 P-44 母体 facts 与旧版生产者边界适配器。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 from namepredict.layer2 import kind_registry as _kr
 from namepredict.layer2.principal import legacy_rank
-
-# 组合 kind（anthraquinone/benzoquinone/naphthalenediol 等 scaffold×FG×num）已根除：
-# 多基团计数由 principal_expression_facts.multiplicity 承载，L2 parent 恒有 principal_group_count。
 _FIXED_MULTI: dict[str, int] = {}
 _DYNAMIC_IDS: dict[str, str] = {}
 

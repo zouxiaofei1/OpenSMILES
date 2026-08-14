@@ -1,4 +1,4 @@
-"""Retained / multi-substituted benzene parent and prefix helpers (P-22.1.3)."""
+"""保留名 / 多取代苯母体与前缀辅助（P-22.1.3）。"""
 from __future__ import annotations
 
 from namepredict.constants import MULT_EN, MULT_ZH
@@ -84,7 +84,7 @@ def join_kind_name(
 
 
 def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
-    """Prefix Chinese retained 1H-parents with 1H- when ring is substituted."""
+    """环被取代时，中文保留名 1H- 母体补加 1H- 前缀。"""
     if not prefix or not en_parent.startswith("1H-") or zh_parent.startswith("1H-"):
         return zh_parent
     return f"1H-{zh_parent}"

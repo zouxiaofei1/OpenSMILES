@@ -1,4 +1,4 @@
-"""Aliphatic carbon-chain walks for L2 parent selection."""
+"""L2 母体选择所用的脂肪族碳链行走。"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-# 苯环 + 单主官能团 → P-22.1.3 保留名（原 L2 _RETAINED_RING_KINDS 迁此）。
-# L2 只产生结构 kind='benzene'；保留名决策完全在 L5。
+# 苯环 + 单主官能团 → P-22.1.3 保留名（原 L2 _RETAINED_RING_KINDS 迁此）；L2 只产生结构 kind='benzene'，保留名决策完全在 L5。
 _BENZENE_RETAINED = {
     "acid": "benzoic",
     "ester": "benzoate",
@@ -40,8 +39,7 @@ def _typed_acid_kind(kind: str, numbered: dict) -> str:
     retained = _ring_retained(numbered, "acid")
     if retained:
         return retained
-    # 环酸（carbocycle/稠环）exocyclic：kind 收敛为 FG 类别 acid，
-    # "carboxylic acid" 后缀由 chain_engine 组装（正交化，不再枚举 cycloalkanecarboxylic）。
+    # 环酸（carbocycle/稠环）exocyclic：kind 收敛为 FG 类别 acid，"carboxylic acid" 后缀由 chain_engine 组装（正交化，不再枚举 cycloalkanecarboxylic）。
     if facts.relation.value == "exocyclic" and (
         _scaffold(numbered) == "carbocycle" or _scaffold(numbered) in _RING_FG_SCAFFOLDS
     ):
@@ -91,8 +89,6 @@ def _typed_ketone_kind(kind: str, numbered: dict) -> str:
 
 def _typed_ring_alcohol_kind(kind: str, numbered: dict, facts) -> str | None:
     sid = _scaffold(numbered)
-    # 环醇/二醇：kind 收敛为 FG 类别 alcohol；cyclo 前缀 / 稠环词干 + diol 变体
-    # 由 chain_engine 动态处理（正交化，不枚举 cycloalcohol/naphthalenol 组合 kind）。
     if sid == "carbocycle" or sid in _RING_FG_SCAFFOLDS:
         return "alcohol"
     if sid == "benzene":

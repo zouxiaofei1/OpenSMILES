@@ -18,8 +18,7 @@ def _finalize_ranked(info: dict, cands: list[dict]) -> list[dict]:
     ]
 
 def select_parent(info: dict, *, all_candidates: bool = False) -> dict | list[dict] | None:
-    """Ranked parent candidates, each finalized with immutable owned_atoms.
-    """
+    """排序后的母体候选，每个都以不可变 owned_atoms 完成最终确定。"""
     from namepredict.layer2.candidates import _collect_candidates
    
     cands = _finalize_ranked(info, _collect_candidates(info))

@@ -1,4 +1,4 @@
-"""ParentKind metadata registry — scoring + L5 stem authority (P-44)."""
+"""ParentKind 元数据注册表 —— 评分 + L5 词干权威（P-44）。"""
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -39,7 +39,7 @@ class KindMeta:
     en: str | None = None
     zh: str | None = None
     fg_rank: int = 0
-    ring: str = "none"  # "none" | "hetero" | "carbo"
+    ring: str = "none"  # 可选值："none" | "hetero" | "carbo"
     n_rings: int = 0
     retained: bool = False
 
@@ -135,7 +135,7 @@ def _spec_to_meta(sp) -> KindMeta:
 
 
 def _load_from_scaffold_specs() -> None:
-    """Single stem authority: ScaffoldSpec → KindMeta (overwrite if present)."""
+    """唯一词干权威：ScaffoldSpec → KindMeta（若已存在则覆盖）。"""
     from namepredict.layer2.ring_scaffold import all_specs
 
     for sp in all_specs():
@@ -146,7 +146,7 @@ def _load_from_scaffold_specs() -> None:
 
 def _bootstrap() -> None:
     _load_chain_fg()
-    _load_from_scaffold_specs()  # last: Spec is stem authority
+    _load_from_scaffold_specs()  # 最后：Spec 是词干权威
 
 
 _bootstrap()

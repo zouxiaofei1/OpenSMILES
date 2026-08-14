@@ -1,15 +1,4 @@
-"""Scaffold specs + retained topology registry + ring resolution.
-
-Merged from ``specs.py`` / ``retained_registry.py`` / ``ring_scaffold.py``
-(2026-08-14):
-
-- ``ScaffoldSpec`` / ``NumberingPolicy`` — single source of truth for retained
-  scaffold stems + numbering policy (L2 data only; no naming assembly).
-- ``_TOPOLOGY`` / ``match_systems`` — P-22 / P-25 topology predicates over
-  ``info["ring_systems"]``; en/zh stems resolved via ``get_spec`` at read time.
-- ``resolve_ring_scaffold`` — resolve a ring skeleton to a topology-only
-  scaffold identity.
-"""
+"""骨架规格 + 保留拓扑注册表 + 环解析（2026-08-14 由 ``specs.py`` / ``retained_registry.py`` / ``ring_scaffold.py`` 合并；ScaffoldSpec/NumberingPolicy 是保留骨架词干与编号策略的单一来源）。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -18,9 +7,7 @@ from namepredict.layer2.identity import ScaffoldIdentity, identity_of
 from namepredict.layer2.parent_skeleton import ParentSkeleton
 
 
-# ---------------------------------------------------------------------------
-# ScaffoldSpec registry (was specs.py; L2 data only, no naming assembly)
-# ---------------------------------------------------------------------------
+# ScaffoldSpec 注册表（原 specs.py；仅 L2 数据，不做命名组装）
 
 @dataclass(frozen=True)
 class NumberingPolicy:
@@ -50,16 +37,16 @@ class ScaffoldSpec:
         return identity_of(self)
 
 
-# Shared fused 5+6 path labels (IUPAC P-22.2.1 / P-25): hetero=1 … 7a.
+# 共用的稠合 5+6 位次标签（IUPAC P-22.2.1 / P-25）：hetero=1 … 7a。
 FUSED56_LABELS: tuple[str, ...] = (
-    # "1", "2", "3", "3a", "4", "5", "6", "7", "7a",
+    # 位次标签："1", "2", "3", "3a", "4", "5", "6", "7", "7a",
 )
-# Naphthalene / quinoline family path labels (P-25): 1…4a…8a.
+# 萘 / 喹啉家族位次标签（P-25）：1…4a…8a。
 NAPH_LABELS: tuple[str, ...] = (
-    # "1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a",
+    # 位次标签："1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a",
 )
 ANTHRA_LABELS: tuple[str, ...] = (
-    # "1", "2", "3", "4", "4a", "10", "10a", "5", "6", "7", "8", "8a", "9", "9a",
+    # 位次标签："1", "2", "3", "4", "4a", "10", "10a", "5", "6", "7", "8", "8a", "9", "9a",
 )
 
 
@@ -137,7 +124,7 @@ def all_specs() -> tuple[ScaffoldSpec, ...]:
 
 
 def numbering_scaffold_facts(spec_id: str | None, atom_count: int) -> dict | None:
-    """Materialize pure parent facts; ``relative_stereo`` reserves ring-face constraints."""
+    """物化纯母体 facts；``relative_stereo`` 预留环面约束。"""
     spec = get_spec(spec_id or "")
     if spec is None or not spec.numbering.materialize_plan:
         return None
@@ -148,34 +135,31 @@ def numbering_scaffold_facts(spec_id: str | None, atom_count: int) -> dict | Non
 
 
 def fused56_kind_ids() -> frozenset[str]:
-    """Kind / scaffold ids that use fused56 1…7a labels."""
+    """使用 fused56 1…7a 位次标签的 kind / scaffold id。"""
     return kind_ids_for("fused56")
 
 
 def naph_kind_ids() -> frozenset[str]:
-    """Kind / scaffold ids that use naph 1…8a labels."""
+    """使用 naph 1…8a 位次标签的 kind / scaffold id。"""
     return kind_ids_for("naph_family")
 
 
 def monohetero_kind_ids() -> frozenset[str]:
-    """Kind / scaffold ids for mono-hetero retained scaffolds."""
+    """单杂环保留骨架的 kind / scaffold id。"""
     return kind_ids_for("monohetero")
 
 
 def kind_ids_for(naming_class: str) -> frozenset[str]:
-    """Ids for a naming_class (fused56 / naph_family / monohetero / …)."""
+    """给定 naming_class（fused56 / naph_family / monohetero / …）的 id 集合。"""
     return frozenset(s.id for s in _ALL_SPECS if s.naming_class == naming_class)
 
 
-# ---------------------------------------------------------------------------
-# Retained topology registry (was retained_registry.py; P-22 / P-25)
-# ---------------------------------------------------------------------------
+# Retained topology 注册表（原 retained_registry.py；P-22 / P-25）
 
-# scaffold_id → topology entry (en/zh resolved via get_spec at read time)
-# topology keys: kind, n_rings, n_atoms, hetero_Z (sorted), topology, aromatic
+# scaffold_id → topology 条目（en/zh 读取时经 get_spec 解析）；键：kind, n_rings, n_atoms, hetero_Z(排序), topology, aromatic
 RetainedEntry = dict
 
-# Topology-only table; ids MUST be ⊆ ScaffoldSpec registry.
+# 仅含拓扑的表；id 必须 ⊆ ScaffoldSpec 注册表。
 _TOPOLOGY: dict[str, dict] = {
     "benzene": {
         "kind": "benzene",
@@ -245,7 +229,7 @@ def _system_matches(system: dict, entry: RetainedEntry) -> bool:
 
 
 def match_systems(info: dict) -> list[tuple[str, dict, RetainedEntry]]:
-    """Return (scaffold_id, ring_system, entry) for matching systems."""
+    """返回匹配系统的 (scaffold_id, ring_system, entry)。"""
     out: list[tuple[str, dict, RetainedEntry]] = []
     for system in info.get("ring_systems") or []:
         for sid, topo in _TOPOLOGY.items():
@@ -259,9 +243,7 @@ def match_scaffold_ids(info: dict) -> list[str]:
     return [sid for sid, _, _ in match_systems(info)]
 
 
-# ---------------------------------------------------------------------------
-# Ring resolution (was ring_scaffold.py)
-# ---------------------------------------------------------------------------
+# 环解析（原 ring_scaffold.py）
 
 def _matched_id(info: dict, skeleton: ParentSkeleton) -> str | None:
     atoms = set(skeleton.atom_ids)

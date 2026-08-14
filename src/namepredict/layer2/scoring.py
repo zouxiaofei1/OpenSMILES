@@ -1,13 +1,4 @@
-"""Composable parent-candidate scoring (simplified IUPAC P-44 seniority).
-
-Each candidate parent dict is scored into a tuple (bigger wins):
-(has_principal_fg, fg_class_rank, sides_ok, is_hetero_ring, is_carbo_ring,
- n_rings, ring_size, retained_bonus, n_unsat, n_carbons, -n_unhandled_side)
-
-`sides_ok` sits above the ring bits on purpose: a ring candidate whose
-side chains cannot be expressed as substituents (parent["n_unhandled"]>0)
-must lose to a chain fallback instead of emitting a bare ring name.
-"""
+"""可组合的母体候选评分（简化的 IUPAC P-44 优先规则）：每个候选母体 dict 被评分为元组（越大越优）(has_principal_fg, fg_class_rank, sides_ok, is_hetero_ring, is_carbo_ring, n_rings, ring_size, retained_bonus, n_unsat, n_carbons, -n_unhandled_side)。"""
 from __future__ import annotations
 
 from namepredict.layer2 import kind_registry as _kr
@@ -34,7 +25,6 @@ def _ring_size(parent: dict, kind: str) -> int:
     return len(parent.get("chain") or [])
 
 def _n_unsat(parent: dict) -> int:
-    # 不饱和度从字段判读（正交化后 kind 不再承载环烯组合）；兼容 legacy 烃 kind。
     dbs = parent.get("double_bonds")
     if dbs:
         return len(dbs)

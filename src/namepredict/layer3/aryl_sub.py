@@ -1,7 +1,5 @@
-"""Aryl arms: Ph / OPh / CH2Ph / OCH2Ph with recursive nested leaves (P-29.3).
-
-Ph may carry ≤3 leaves (simple + nested Ph/OPh up to max depth).
-Locants from attach=1 (lowest set).
+"""芳基臂：Ph / OPh / CH2Ph / OCH2Ph 及递归嵌套叶子（P-29.3）。
+Ph 至多携带 ≤3 个叶子（简单 + 嵌套 Ph/OPh 至最大深度）；位次从 attach=1 起（最小集）。
 """
 from __future__ import annotations
 

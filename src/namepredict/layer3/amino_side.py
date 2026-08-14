@@ -1,4 +1,4 @@
-"""Secondary amino substituents on non-amine parents (e.g. N-benzyl on ethanol)."""
+"""非胺母体上的仲氨基取代基（例如乙醇上的 N-苄基）。"""
 from __future__ import annotations
 
 

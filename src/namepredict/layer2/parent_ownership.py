@@ -1,4 +1,4 @@
-"""Terminal parent ownership: immutable owned_atoms finalization."""
+"""末端母体所有权：不可变 owned_atoms 的最终确定。"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
@@ -73,7 +73,7 @@ def _ether_arm_atoms(mol: Mol, o_idx: int, c_idx: int) -> set[int]:
 
 
 def _chalcogen_arm_fg(mol: Mol, parent: dict, kind: str, idx_field: str) -> set[int]:
-    """Chalcogen center + carbon arms (short arm not always in chain)."""
+    """硫族中心 + 碳臂（短臂不一定在链中）。"""
     if parent.get("kind") != kind or parent.get(idx_field) is None:
         return set()
     center = int(parent[idx_field])
@@ -85,17 +85,17 @@ def _chalcogen_arm_fg(mol: Mol, parent: dict, kind: str, idx_field: str) -> set[
 
 
 def _ether_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Ether O + both carbon arms (short arm not always in chain)."""
+    """醚 O + 两条碳臂（短臂不一定在链中）。"""
     return _chalcogen_arm_fg(mol, parent, "ether", "o_idx")
 
 
 def _sulfide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Sulfide S + both carbon arms (short arm not always in chain)."""
+    """硫醚 S + 两条碳臂（短臂不一定在链中）。"""
     return _chalcogen_arm_fg(mol, parent, "sulfide", "s_idx")
 
 
 def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Alcohol/diol/triol: attachment carbon(s) + OH oxygen(s)."""
+    """醇/二醇/三醇：连接碳 + OH 氧。"""
     c_idxs = parent.get("oh_c_idxs") or ([parent.get("oh_c_idx")] if parent.get("oh_c_idx") is not None else [])
     if not c_idxs:
         return set()
@@ -107,7 +107,7 @@ def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _ketone_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Ketone carbonyl C + double-bonded O (+ acetyl methyl when present)."""
+    """酮羰基 C + 双键 O（存在时含乙酰甲基）。"""
     c_idx = parent.get("ketone_c_idx")
     if c_idx is None:
         return set()
@@ -117,7 +117,7 @@ def _ketone_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _amine_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Aniline/amine: ring/chain attachment C(s) + amine N(s)."""
+    """苯胺/胺：环/链连接碳 + 胺氮。"""
     c_idxs = parent.get("amine_c_idxs") or ([parent.get("amine_c_idx")] if parent.get("amine_c_idx") is not None else [])
     if not c_idxs:
         return set()
@@ -131,7 +131,7 @@ def _amine_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _nitrile_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Nitrile/benzonitrile: CN carbon + triple-bonded N."""
+    """腈/苯甲腈：CN 碳 + 三键氮。"""
     c_idx = parent.get("nitrile_c_idx")
     if c_idx is None:
         return set()
@@ -143,7 +143,7 @@ def _nitrile_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _thiol_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Thiol: attachment carbon + SH sulfur."""
+    """硫醇：连接碳 + SH 硫。"""
     c_idx = parent.get("sh_c_idx")
     if c_idx is None:
         return set()
@@ -155,7 +155,7 @@ def _thiol_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _one_ester_fg(mol: Mol, c_idx: int, out: set[int]) -> None:
-    """Add one ester carbonyl C + =O + -O- (acid side only, no alkoxy arm)."""
+    """添加一个酯羰基 C + =O + -O-（仅酸侧，无烷氧基臂）。"""
     out.add(int(c_idx))
     dbl_o = _dbl_o_idx(mol, int(c_idx))
     _add_opt(out, dbl_o)
@@ -165,7 +165,7 @@ def _one_ester_fg(mol: Mol, c_idx: int, out: set[int]) -> None:
 
 
 def _single_ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Mono-ester/benzoate: carbonyl C + =O + -O- + alkoxy arm."""
+    """单酯/苯甲酸酯：羰基 C + =O + -O- + 烷氧基臂。"""
     c_idx = parent.get("ester_c_idx")
     if c_idx is None:
         return set()
@@ -179,7 +179,7 @@ def _ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _anhydride_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Anhydride: both acyl carbons + bridge O + both carbonyl oxygens."""
+    """酸酐：两个酰基碳 + 桥接 O + 两个羰基氧。"""
     out: set[int] = set()
     for key in ("acyl_c_idx", "other_acyl_c_idx"):
         c = parent.get(key)
@@ -191,7 +191,7 @@ def _anhydride_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _acyl_chloride_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """Acyl chloride: acyl C + carbonyl O + Cl."""
+    """酰氯：酰基碳 + 羰基 O + Cl。"""
     c_idx = parent.get("acyl_c_idx")
     if c_idx is None:
         return set()
@@ -201,7 +201,7 @@ def _acyl_chloride_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
-    """FG ownership is field-driven: own every heavy atom of the principal FG."""
+    """FG 所有权由字段驱动：拥有主官能团的每个重原子。"""
     parts = (
         _amide_fg_atoms(mol, parent) if parent.get("amide_c_idx") is not None else set(),
         _aldehyde_fg_atoms(mol, parent) if parent.get("aldehyde_c_idx") is not None else set(),
@@ -224,12 +224,12 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
 
 
 def compute_owned_atoms(parent: dict, mol: Mol) -> frozenset[int]:
-    """Union chain + kind-specific FG atoms (terminal ownership set)."""
+    """链与 kind 特异的 FG 原子的并集（末端所有权集合）。"""
     return frozenset(_chain_atoms(parent) | _kind_fg_atoms(parent, mol))
 
 
 def finalize_parent_ownership(parent: dict, mol: Mol) -> dict:
-    """Copy candidate once with immutable owned_atoms frozenset."""
+    """一次性复制候选，生成不可变 owned_atoms frozenset。"""
     if isinstance(parent.get("owned_atoms"), frozenset):
         return parent
     return {**parent, "owned_atoms": compute_owned_atoms(parent, mol)}

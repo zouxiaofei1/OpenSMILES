@@ -1,4 +1,4 @@
-"""Annotate selected skeletons with principal-group expression facts."""
+"""为选中的骨架标注主基团表达式 facts。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -31,8 +31,7 @@ class PrincipalExpressionFacts:
     charge_state: PrincipalChargeState
 
 
-# 数量派生 kind 已统一:multiplicity 由 principal_expression_facts 承载,
-# acid/alcohol/amine 对任意数量恒用基团名;仅 KETONE 保留 dione 区分环酮表达。
+# 数量派生 kind 已统一：multiplicity 由 principal_expression_facts 承载，acid/alcohol/amine 对任意数量恒用基团名；仅 KETONE 保留 dione 区分环酮表达。
 _CHAIN_KINDS = {
     FunctionalGroupClass.ACID: {1: "acid"},
     FunctionalGroupClass.ESTER: {1: "ester"},
@@ -131,8 +130,7 @@ def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
     if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in skeleton.atom_ids):
         return None
     all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
-    # 纯烃环统一 kind='alkane'（正交化：环系由 scaffold_id 承载，不饱和度由
-    # double_bond/double_bonds 字段承载，命名由 chain_engine 动态加 cyclo 前缀）。
+    # 纯烃环统一 kind='alkane'（正交化：环系由 scaffold_id 承载，不饱和度由 double_bond/double_bonds 字段承载，命名由 chain_engine 动态加 cyclo 前缀）。
     return "alkane" if all_carbon else None
 
 
@@ -143,14 +141,10 @@ def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str |
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold) -> str | None:
     if selection.group_class is FunctionalGroupClass.AMINE and count != 1:
         return None
-    # 苯基取代基 radical 保持 'phenyl'（P-22.2.4），非保留名 parent；
-    # 环 + 主 FG 的 kind 收敛为 FG 类别（正交化），环骨架由 scaffold_id 承载，
-    # 命名 kind（cycloalcohol/cycloketone/benzoic/phenol/...）由 L5 typed_kinds 决定。
+    # 苯基取代基 radical 保持 'phenyl'（P-22.2.4）；环 + 主 FG 的 kind 收敛为 FG 类别（正交化），环骨架由 scaffold_id 承载，命名 kind（cycloalcohol/cycloketone/benzoic/phenol/...）由 L5 typed_kinds 决定。
     if selection.group_class is FunctionalGroupClass.RADICAL and _is_benzene(info, skeleton):
         return "phenyl"
-    # 环（饱和环/苯环）+ 主 FG → FG 类别 kind（正交化）；命名 kind
-    # （cycloalcohol/cycloketone/cycloalkanecarboxylic/benzoic/phenol/...）
-    # 由 L5 typed_kinds 决定。稠环（naphthalene 等）暂保持结构 kind。
+    # 环（饱和环/苯环）+ 主 FG → FG 类别 kind（正交化）；命名 kind（cycloalcohol/cycloketone/cycloalkanecarboxylic/benzoic/phenol/...）由 L5 typed_kinds 决定；稠环（naphthalene 等）暂保持结构 kind。
     if scaffold and scaffold.id in ("carbocycle", "benzene"):
         if selection.group_class in (FunctionalGroupClass.ALCOHOL,
                                      FunctionalGroupClass.KETONE,
@@ -217,8 +211,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     if kind is None:
         return None
     facts = _facts(selection, skeleton, occurrences, info["mol"])
-    # 补环内不饱和字段：kind 正交化后（醇/酮/纯烃环 → FG 类别/alkane），
-    # 烯/炔由 double_bond(s)/triple_bond 字段承载（否则环烯酮/环烯醇/环烯烃烯丢失）。
+    # 补环内不饱和字段：kind 正交化后（醇/酮/纯烃环 → FG 类别/alkane），烯/炔由 double_bond(s)/triple_bond 字段承载（否则环烯酮/环烯醇/环烯烃烯丢失）。
     fields = {**_ring_fact_fields(_ring_fields(selection, occurrences), facts),
               **_chain_unsat_fields(info, skeleton,
                                     _scaffold_fields(info, skeleton, facts, scaffold))}
@@ -234,7 +227,7 @@ def _chain_fields(selection, occurrences) -> dict:
 
 
 def _unsat_bond_fields(dbs: list[dict], tbs: list[dict]) -> dict:
-    """Unsaturation → double/triple-bond field dict (empty for mixed/none)."""
+    """不饱和度 → 双键/三键字段字典（混合/无时为空）。"""
     if len(tbs) == 1 and not dbs:
         return {"triple_bond": (tbs[0]["c1"], tbs[0]["c2"])}
     if len(dbs) == 1 and not tbs:
@@ -245,13 +238,13 @@ def _unsat_bond_fields(dbs: list[dict], tbs: list[dict]) -> dict:
 
 
 def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> dict:
-    """Attach double/triple-bond locant fields for C=C/C≡C inside the skeleton."""
+    """为骨架内的 C=C/C≡C 附加双键/三键位次字段。"""
     dbs, tbs = _chain_polys(info, set(skeleton.atom_ids))
     return {**fields, **_unsat_bond_fields(dbs, tbs)}
 
 
 def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
-    """Ester alkoxy-side fields (o_idx/alkoxy_c_idx/alkoxy_*) for L5 ester naming."""
+    """L5 酯命名的酯烷氧基侧字段（o_idx/alkoxy_c_idx/alkoxy_*）。"""
     if len(occurrences) != 1:
         return fields
     match = next((e for e in (info.get("esters") or [])

@@ -1,4 +1,4 @@
-"""Ownership-only claimable side blocks: topology, attachment, slot - no naming."""
+"""仅所有权可 claim 的侧链块：拓扑、连接、slot——不命名。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -47,7 +47,7 @@ def _owned_carbonyl_c(mol: Mol, n_idx: int, owned: frozenset[int]):
 
 
 def _is_amide_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
-    """Amide N: atomic num 7, single-bonded to owned carbonyl C with dbl O."""
+    """酰胺 N：原子序数 7，与带双键 O 的所属羰基 C 以单键相连。"""
     if mol.GetAtomWithIdx(n_idx).GetAtomicNum() != 7:
         return False
     return _owned_carbonyl_c(mol, n_idx, owned) is not None
@@ -66,7 +66,7 @@ def _carbon_slot(atom) -> SideSlot:
 
 
 def derive_slot(mol: Mol, attach_parent: int, owned_atoms: frozenset[int]) -> SideSlot:
-    """Derive SideSlot exclusively from the owned attachment atom's role."""
+    """仅从所属连接原子的角色推导 SideSlot。"""
     if _is_amide_n(mol, attach_parent, owned_atoms):
         return SideSlot.AMIDE_N
     if _is_ether_o(mol, attach_parent):
@@ -101,7 +101,7 @@ def claim_block(
     root: int,
     slot: SideSlot,
 ) -> ClaimedBlock | None:
-    """Return the complete outside heavy component and its attachment, or None."""
+    """返回完整的外部重原子组分及其连接点，若无则返回 None。"""
     if attach_parent not in owned_atoms:
         return None
     if not _is_outside_root(mol, root, owned_atoms, attach_parent):
@@ -115,7 +115,7 @@ def claim_block(
 def _canonical_edge(
     mol: Mol, atoms: frozenset[int], owned: frozenset[int]
 ) -> tuple[int, int] | None:
-    """Lowest (attach_parent, root) edge between owned and this component."""
+    """所属与该组分之间最小（attach_parent, root）边。"""
     edges = [
         (n.GetIdx(), a)
         for a in atoms
@@ -150,7 +150,7 @@ def _unique_components(mol: Mol, owned: frozenset[int]) -> list[frozenset[int]]:
 
 
 def iter_claims(mol: Mol, owned_atoms: frozenset[int]) -> list[ClaimedBlock]:
-    """Return canonical-order claims for all outside heavy components."""
+    """按 canonical 顺序返回所有外部重原子组分的 claim。"""
     claims = [
         c
         for atoms in _unique_components(mol, owned_atoms)

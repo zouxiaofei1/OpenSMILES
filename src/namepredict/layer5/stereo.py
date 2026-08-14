@@ -1,8 +1,4 @@
-"""Layer5 stereodescriptor prefixes: E/Z (P-91.2/P-93.4) + CIP R/S (P-92/P-93).
-
-Merged from stereo_ez.py, stereo_rs.py and _stereo_common.py (same stereo
-prefix cluster); _split_stereo_lead is the shared stereo-block splitter.
-"""
+"""L5 立体描述符前缀：E/Z（P-91.2/P-93.4）+ CIP R/S（P-92/P-93）；由 stereo_ez.py、stereo_rs.py 与 _stereo_common.py 合并而来，_split_stereo_lead 为共享立体块拆分器。"""
 from __future__ import annotations
 
 from rdkit import Chem
@@ -10,7 +6,7 @@ from rdkit.Chem import BondStereo, Mol
 
 
 def _split_stereo_lead(name: str) -> tuple[str, str]:
-    """Split leading '(…)-' stereo block from a name/stem."""
+    """从名称/词干中切分前导 '(…)-' 立体块。"""
     if not name.startswith("("):
         return "", name
     close = name.find(")-")
@@ -19,7 +15,7 @@ def _split_stereo_lead(name: str) -> tuple[str, str]:
     return name[: close + 2], name[close + 2 :]
 
 
-# --- E/Z stereodescriptors -------------------------------------------------
+# --- E/Z 立体描述符 -------------------------------------------------
 
 def _stereo_tag(st) -> str:
     if st == BondStereo.STEREOE:
@@ -49,7 +45,7 @@ def _bond_min_loc(chain: list[int], pair) -> int | None:
 
 
 def _ez_letter(tag: str) -> str:
-    """'(E)-' → 'E'; empty → ''."""
+    """'(E)-' → 'E'；空 → ''。"""
     return tag[1] if len(tag) >= 3 and tag[0] == "(" else ""
 
 
@@ -60,13 +56,13 @@ def _ez_bond_part(mol, chain: list[int], bond) -> tuple[int, str] | None:
 
 
 def _ez_parts(mol, chain: list[int], bonds) -> list[tuple[int, str]]:
-    """Collect (loc, letter) only for bonds with defined stereo (partial OK)."""
+    """只收集定义了立体化学的键的 (loc, letter)（部分立体也可）。"""
     parts = [_ez_bond_part(mol, chain, b) for b in bonds]
     return sorted((p for p in parts if p is not None), key=lambda x: x[0])
 
 
 def _ez_multi_prefix(numbered: dict) -> str:
-    """Multi-ene prefix from bonds that have stereo: (2E,6Z)- or (14Z)-."""
+    """由有立体化学的键生成多烯前缀：(2E,6Z)- 或 (14Z)-。"""
     parent = numbered.get("parent") or {}
     mol, chain = parent.get("mol"), parent.get("chain") or []
     bonds = list(parent.get("double_bonds") or [])
@@ -79,14 +75,14 @@ def _ez_multi_prefix(numbered: dict) -> str:
 
 
 def ez_for_parent(numbered: dict) -> str:
-    """E/Z prefix for parent: multi-ene when double_bonds, else single bond."""
+    """母体 E/Z 前缀：有 double_bonds 时多烯，否则单键。"""
     parent = numbered.get("parent") or {}
     if parent.get("double_bonds"):
         return _ez_multi_prefix(numbered)
     return _ez_prefix(numbered)
 
 
-# --- CIP R/S stereodescriptors ----------------------------------------------
+# --- CIP R/S 立体描述符 ----------------------------------------------
 
 _RS_KINDS = frozenset({
     "acid", "alcohol", "amine",
@@ -96,7 +92,7 @@ _RS_KINDS = frozenset({
     "oxolane", "oxane",
 })
 
-# Single-center sat-hetero parents omit locant: (R)- not (3R)-.
+# 单中心饱和杂原子母体省略位次：(R)- 而非 (3R)-。
 _RS_OMIT_LOC = frozenset({
     "piperidine", "pyrrolidine", "piperazine", "morpholine",
     "oxolane", "oxane",
@@ -115,7 +111,7 @@ def _cip_code(atom) -> str | None:
 
 
 def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:
-    """Return (locant, R/S) for chiral centers on parent chain."""
+    """返回母体链上手性中心的 (位次, R/S)。"""
     _assign_cip(mol)
     out: list[tuple[int, str]] = []
     for loc, idx in enumerate(chain, 1):
@@ -126,7 +122,7 @@ def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:
 
 
 def _collapsed_parent(parent: dict) -> bool:
-    """Skip RS when parent C1 collapses from a larger/ring molecule."""
+    """当母体 C1 来自更大/环分子折叠时跳过 R/S。"""
     n = int(parent.get("n_carbons") or 0)
     if n > 1:
         return False
@@ -149,7 +145,7 @@ def _rs_parts(numbered: dict) -> list[tuple[int, str]]:
 
 
 def _parse_token(tok: str) -> tuple[int | None, str] | None:
-    """'E'→(None,'E'); '8R'→(8,'R'); '2E'→(2,'E')."""
+    """解析单个 token：'E'→(None,'E')；'8R'→(8,'R')；'2E'→(2,'E')。"""
     if tok in ("E", "Z", "R", "S"):
         return None, tok
     i = 0
@@ -161,7 +157,7 @@ def _parse_token(tok: str) -> tuple[int | None, str] | None:
 
 
 def _parse_stereo(tag: str) -> list[tuple[int | None, str]]:
-    """Parse '(E)-' / '(2E,6Z)-' / '(E,8R)-' into (loc, letter) list."""
+    """将 '(E)-' / '(2E,6Z)-' / '(E,8R)-' 解析为 (loc, letter) 列表。"""
     if not tag.startswith("(") or not tag.endswith(")-"):
         return []
     raw = tag[1:-2]
@@ -188,13 +184,13 @@ def _format_stereo(parts: list[tuple[int | None, str]]) -> str:
 def _merge_parts(
     old: list[tuple[int | None, str]], rs: list[tuple[int | None, str]],
 ) -> list[tuple[int | None, str]]:
-    """Keep non-RS stereo; add R/S by locant."""
+    """保留非 R/S 立体；按位次添加 R/S。"""
     keep = [(loc, let) for loc, let in old if let not in ("R", "S")]
     return keep + list(rs)
 
 
 def _omit_locants(rs: list[tuple[int, str]]) -> list[tuple[int | None, str]]:
-    """Drop locants when a single center needs bare (R)/(S)."""
+    """当单中心需要裸 (R)/(S) 时省略位次。"""
     if len(rs) != 1:
         return [(loc, let) for loc, let in rs]
     return [(None, rs[0][1])]
@@ -217,7 +213,7 @@ def _with_rs(name: str, rs: list[tuple[int | None, str]]) -> str:
 
 
 def _ester_en_rs(en: str, rs: list[tuple[int | None, str]]) -> str:
-    """Insert RS after alkyl word: 'methyl X' → 'methyl (2S)-X'."""
+    """在烷基词后插入 R/S：'methyl X' → 'methyl (2S)-X'。"""
     if not rs or " " not in en:
         return _with_rs(en, rs)
     alkyl, acyl = en.split(" ", 1)

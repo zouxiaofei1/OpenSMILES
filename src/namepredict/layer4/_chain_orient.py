@@ -1,9 +1,3 @@
-"""Shared chain/ring orientation primitives for layer4 numbering.
-
-Pure helpers used by numbering_engine, locant_calc and polyene.  The
-kind-dispatched orienter helpers (locant-table picking, ring pair orienting,
-etc.) were removed together with the orienters they served.
-"""
 from __future__ import annotations
 
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key

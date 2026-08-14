@@ -1,4 +1,4 @@
-"""Typed Layer 1 functional-group inventory built from legacy entry lists."""
+"""由旧条目列表构建的带类型 Layer 1 官能团清单。"""
 from __future__ import annotations
 
 from dataclasses import dataclass

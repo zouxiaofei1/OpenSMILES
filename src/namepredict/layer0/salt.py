@@ -1,6 +1,4 @@
-"""L0 salt dissociation: alkali metal cation or HCl + single organic fragment.
-
-Does not name; returns organic mol and salt metadata for L5.
+"""L0 盐解离：碱金属阳离子或 HCl + 单一有机片段；不命名，返回有机 mol 与盐元数据供 L5 使用。
 """
 from __future__ import annotations
 
@@ -9,7 +7,7 @@ from rdkit.Chem import Mol
 
 from namepredict.constants import Cl, K, Li, Na, O
 
-# atomic number → English metal name (IUPAC functional class salt)
+# 原子序数 → 英文金属名（IUPAC 官能团类盐）
 _ALKALI_EN = {Li: "lithium", Na: "sodium", K: "potassium"}
 _METAL_ZH = {"lithium": "锂", "sodium": "钠", "potassium": "钾"}
 
@@ -31,7 +29,7 @@ def _is_water(mol: Mol) -> bool:
 
 
 def _is_hcl_frag(mol: Mol) -> bool:
-    """Neutral HCl (Cl with 1 H) or free chloride anion [Cl-]."""
+    """中性 HCl（带 1 个 H 的 Cl）或游离氯阴离子 [Cl-]。"""
     if mol.GetNumAtoms() != 1:
         return False
     a = mol.GetAtomWithIdx(0)
@@ -43,7 +41,7 @@ def _is_hcl_frag(mol: Mol) -> bool:
 
 
 def _bucket_frag(f: Mol, metals: list[str], organics: list[Mol]) -> int:
-    """Classify one fragment; return 1 if HCl, else 0."""
+    """对一个片段分类；若为 HCl 返回 1，否则返回 0。"""
     m = _alkali_en(f)
     if m is not None:
         metals.append(m)
@@ -79,7 +77,7 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
     metals, organics, n_hcl = _partition(frags)
     if len(organics) != 1:
         return None
-    # Prefer alkali metal salt; exclusive of HCl co-counterion in first cut.
+    # 优先碱金属盐；第一版排除 HCl 共抗衡离子。
     if metals:
         if n_hcl:
             return None
@@ -90,7 +88,7 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
 
 
 def dissociate_salt(mol: Mol) -> tuple[Mol, dict]:
-    """Return (organic_mol, salt_meta). Empty meta if not a simple salt."""
+    """返回 (organic_mol, salt_meta)；非简单盐时 meta 为空。"""
     frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
     if len(frags) < 2:
         return mol, {}

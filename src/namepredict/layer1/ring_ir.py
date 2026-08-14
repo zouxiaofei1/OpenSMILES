@@ -1,4 +1,4 @@
-"""Typed RingSystemIR from SSSR fusion topology (L1 facts only)."""
+"""由 SSSR 稠合拓扑构建的带类型 RingSystemIR（仅 L1 事实）。"""
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -97,7 +97,7 @@ def _system_ir(
 
 
 def build_ring_ir(mol: Mol) -> list[RingSystemIR]:
-    """Build typed ring-system IR from SSSR fusion graph."""
+    """由 SSSR 稠合图构建带类型的环系 IR。"""
     rings = _sssr(mol)
     systems = build_ring_systems(mol)
     return [_system_ir(mol, rings, s) for s in systems]

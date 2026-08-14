@@ -1,4 +1,4 @@
-"""Capability policy for typed principal expressions on ring scaffolds."""
+"""环骨架上类型化主基团表达式的能力策略。"""
 from __future__ import annotations
 
 from dataclasses import dataclass

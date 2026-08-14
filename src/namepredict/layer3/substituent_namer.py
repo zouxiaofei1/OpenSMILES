@@ -1,4 +1,4 @@
-"""Typed L3 substituent namer: ordered retained → rooted_tree → recursive."""
+"""带类型的 L3 取代基命名器：ordered retained → rooted_tree → recursive。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -16,7 +16,7 @@ class SubstituentName:
     en: str
     zh: str
     requires_parentheses: bool
-    backend: str  # "retained", "rooted_tree", or "recursive"
+    backend: str  # "retained"、"rooted_tree" 或 "recursive"
 
 
 class SubstituentBackend(Protocol):
@@ -32,11 +32,11 @@ def _retained_hit(claim: ClaimedBlock, en: str, zh: str, paren: bool) -> Substit
 
 
 def _try_anchored_lookup(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
-    """Resolve a simple retained leaf through the anchored-canonical-SMILES table.
+    """通过锚定 canonical-SMILES 表解析简单的 retained 叶子。
 
-    The anchor key uniquely identifies shape + attachment site, so a dict lookup
-    covers alkyl/cycloalkyl/aryl/halo/alkoxy/sulfinyl/sulfonyl/N-leaves.  A miss
-    falls through to the rooted_tree/recursive chain.
+    锚定键唯一标识形状 + 连接位点，因此字典查找即可覆盖 alkyl/cycloalkyl/
+    aryl/halo/alkoxy/sulfinyl/sulfonyl/N-leaves。未命中则落入 rooted_tree/
+    recursive 链。
     """
     hit = anchored_lookup(mol, claim.atoms, claim.root, name_mode=name_mode)
     if hit is None:
@@ -46,13 +46,13 @@ def _try_anchored_lookup(mol, claim: ClaimedBlock, *, name_mode: str = "general"
 
 
 def _retained_name(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
-    """Simple retained leaves: alkyl/cycloalkyl/phenyl/halo/alkoxy/sulfinyl/
-    sulfonyl/N-leaves, all resolved through the anchored-canonical-SMILES table."""
+    """简单 retained 叶子：alkyl/cycloalkyl/phenyl/halo/alkoxy/sulfinyl/
+    sulfonyl/N-leaves，全部通过锚定 canonical-SMILES 表解析。"""
     return _try_anchored_lookup(mol, claim, name_mode=name_mode)
 
 
 class RetainedBackend:
-    """Anchored-table retained leaves: alkyl/aryl/halo/alkoxy/sulfinyl/..."""
+    """锚定表 retained 叶子：alkyl/aryl/halo/alkoxy/sulfinyl/..."""
 
     name = "retained"
 
@@ -63,7 +63,7 @@ class RetainedBackend:
         return _retained_name(mol, claim, name_mode=self._name_mode)
 
 class RecursiveBackend:
-    """Bounded recursive cut → free-name → yl_form."""
+    """有界递归 cut → free-name → yl_form。"""
 
     name = "recursive"
 

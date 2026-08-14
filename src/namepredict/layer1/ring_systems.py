@@ -1,8 +1,4 @@
-"""Ring-system topology from SSSR (fusion graph + hetero summary).
-
-Builds connected components where rings share >=2 atoms (ortho-fusion).
-Mono-ring systems sharing exactly 1 atom (spiro) are merged into one spiro system.
-Bridged (von Baeyer) systems detected when rings share 3+ atoms.
+"""由 SSSR 构建环系拓扑（稠合图 + 杂原子汇总）：共享 >=2 个原子（邻位稠合）的环连成分量，共享 1 个原子（螺）的单环系合并为螺环系，共享 3+ 原子检测桥环（von Baeyer）系。
 """
 from __future__ import annotations
 
@@ -17,7 +13,7 @@ def _shared(a: tuple[int, ...], b: tuple[int, ...]) -> frozenset[int]:
     return frozenset(a) & frozenset(b)
 
 def _ring_adjacent(ring: tuple[int, ...], a: int, b: int) -> bool:
-    """True if a and b are adjacent (consecutive) in the ring."""
+    """若 a 与 b 在环中相邻（连续）则返回 True。"""
     n = len(ring)
     for i in range(n):
         if (ring[i] == a and ring[(i + 1) % n] == b) or \
@@ -26,7 +22,7 @@ def _ring_adjacent(ring: tuple[int, ...], a: int, b: int) -> bool:
     return False
 
 def _fusion_edges(rings: list[tuple[int, ...]]) -> list[tuple[int, int, frozenset[int]]]:
-    """Edges (i, j, shared_atoms) for pairs sharing >=2 atoms."""
+    """共享 >=2 个原子的配对边 (i, j, shared_atoms)。"""
     out: list[tuple[int, int, frozenset[int]]] = []
     for i, ri in enumerate(rings):
         for j in range(i + 1, len(rings)):
@@ -36,7 +32,7 @@ def _fusion_edges(rings: list[tuple[int, ...]]) -> list[tuple[int, int, frozense
     return out
 
 def _spiro_pairs(rings: list[tuple[int, ...]]) -> list[tuple[int, int, int]]:
-    """Pairs sharing exactly 1 atom: (i, j, atom)."""
+    """恰好共享 1 个原子的配对：(i, j, atom)。"""
     out: list[tuple[int, int, int]] = []
     for i, ri in enumerate(rings):
         for j in range(i + 1, len(rings)):
@@ -57,7 +53,7 @@ def _uf_union(parent: list[int], a: int, b: int) -> None:
         parent[rb] = ra
 
 def _components(n: int, edges: list[tuple[int, int, frozenset[int]]]) -> list[list[int]]:
-    """Union-find components over ring indices."""
+    """对环索引做并查集连通分量。"""
     parent = list(range(n))
     for i, j, _ in edges:
         _uf_union(parent, i, j)
@@ -92,7 +88,7 @@ def _topology(n_rings: int, n_fusion: int, has_spiro: bool,
     return "other"
 
 def _non_adjacent_pairs(mrings, shared):
-    """Return bridgehead atoms: shared atoms not adjacent in at least one ring."""
+    """返回桥头原子：在至少一个环中不相邻的共享原子。"""
     sh_list, bh_set = sorted(shared), set()
     for i, a in enumerate(sh_list):
         for b in sh_list[i + 1:]:
@@ -102,7 +98,7 @@ def _non_adjacent_pairs(mrings, shared):
 
 def _bridgeheads(rings: list[tuple[int, ...]], members: list[int],
                  shared: frozenset[int]) -> list[int]:
-    """Find bridgehead atoms in a bridged ring component."""
+    """在桥环分量中寻找桥头原子。"""
     mrings = [rings[i] for i in members]
     return sorted(_non_adjacent_pairs(mrings, shared))
 
@@ -114,7 +110,7 @@ def _walk_path(ring, start, end, exclude, direction):
 
 def _paths_between(ring: tuple[int, ...], a: int, b: int,
                    exclude: set[int]) -> list[list[int]]:
-    """All paths in ring from a to b avoiding exclude set (excluding a,b)."""
+    """环中从 a 到 b 避开 exclude 集合的所有路径（不含 a、b）。"""
     try:
         ia, ib = ring.index(a), ring.index(b)
     except ValueError:
@@ -128,12 +124,12 @@ def _member_atoms(rings: list[tuple[int, ...]], members: list[int]) -> set[int]:
     return atom_ids
 
 def _dedup_paths(paths):
-    """Deduplicate paths by frozenset, preserving insertion order."""
+    """按 frozenset 对路径去重，保持插入顺序。"""
     return list({frozenset(p): p for p in paths}.values())
 
 def _bridge_paths(rings: list[tuple[int, ...]], members: list[int],
                   bridgeheads: list[int]) -> list[list[int]]:
-    """Compute bridge paths (atom lists excluding bridgeheads), sorted descending by length."""
+    """计算桥路径（不含桥头原子的原子列表），按长度降序排列。"""
     if len(bridgeheads) < 2:
         return []
     bh_set, a, b = set(bridgeheads), bridgeheads[0], bridgeheads[1]
@@ -143,7 +139,7 @@ def _bridge_paths(rings: list[tuple[int, ...]], members: list[int],
 
 def _bridge_info(rings: list[tuple[int, ...]], members: list[int],
                  bridgeheads: list[int]) -> dict | None:
-    """Compute bridge info for a bridged component."""
+    """计算桥环分量的桥信息。"""
     if len(bridgeheads) < 2:
         return None
     paths = _bridge_paths(rings, members, bridgeheads)
@@ -181,7 +177,7 @@ def _system_dict(
     return result
 
 def _try_bridge_component(rings, members, fusion_edges):
-    """Try to find bridge info: loop fusion edges for 3+ shared atoms in 2-ring component."""
+    """尝试寻找桥信息：在双环分量中遍历 3+ 共享原子的稠合边。"""
     mset = set(members)
     for i, j, sh in fusion_edges:
         if i in mset and j in mset and len(sh) >= 3:
@@ -194,7 +190,7 @@ def _compute_bridged_info(
     rings: list[tuple[int, ...]], members: list[int],
     fusion_edges: list[tuple[int, int, frozenset[int]]],
 ) -> tuple[bool, dict | None]:
-    """Check if component is bridged and compute bridge info."""
+    """检查分量是否桥环并计算桥信息。"""
     if len(members) != 2:
         return False, None
     bi = _try_bridge_component(rings, members, fusion_edges)
@@ -219,7 +215,7 @@ def _spiro_touching(members: list[int], spiro: list[tuple[int, int, int]]) -> bo
 def _collect_merged_fields(
     systems: list[dict], indices: list[int],
 ) -> tuple[set[int], set[int], list[dict]]:
-    """Collect sssr_indices, atom_ids, hetero_atoms from systems to merge."""
+    """收集待合并系统的 sssr_indices、atom_ids、hetero_atoms。"""
     sssr: set[int] = set()
     atoms: set[int] = set()
     hetero: list[dict] = []
@@ -234,7 +230,7 @@ def _merged_spiro_system(
     mol: Mol, rings: list[tuple[int, ...]],
     sys_indices: list[int], systems: list[dict],
 ) -> dict:
-    """Merge several mono-ring systems sharing a spiro atom into one spiro system."""
+    """将共享一个螺原子的多个单环系合并为一个螺环系。"""
     sssr, atoms, hetero = _collect_merged_fields(systems, sys_indices)
     return {
         "atom_ids": sorted(atoms),
@@ -251,7 +247,7 @@ def _merged_spiro_system(
 def _spiro_sys_indices(
     systems: list[dict], spiro_pairs: list[tuple[int, int, int]],
 ) -> list[int]:
-    """Union-find parent array for systems connected by spiro atoms."""
+    """通过螺原子连接的系统并查集父数组。"""
     n = len(systems)
     parent = list(range(n))
     for i, j, _ in spiro_pairs:
@@ -277,7 +273,7 @@ def _merge_spiro(
     mol: Mol, rings: list[tuple[int, ...]],
     systems: list[dict], spiro_pairs: list[tuple[int, int, int]],
 ) -> list[dict]:
-    """Merge mono-ring systems that share a spiro atom into spiro systems."""
+    """将共享螺原子的单环系合并为螺环系。"""
     if not spiro_pairs or len(systems) <= 1:
         return systems
     parent = _spiro_sys_indices(systems, spiro_pairs)
@@ -291,7 +287,7 @@ def _merge_spiro(
     return result
 
 def build_ring_systems(mol: Mol) -> list[dict]:
-    """Return ring systems: fusion-connected + spiro-merged."""
+    """返回环系：稠合连通 + 螺环合并。"""
     rings = _sssr(mol)
     if not rings:
         return []
