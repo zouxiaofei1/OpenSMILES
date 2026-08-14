@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from namepredict.layer4.locants.adapt import plan_from_chain
 
 
 # ── 候选生成 ──────────────────────────────────────────────────
@@ -117,11 +116,7 @@ def _fixed_start(parent: dict) -> int | None:
 
 def _fixed_numbering(parent: dict, chain: list[int]) -> list[int] | None:
     """P-14.4(a)：经 L2 numbering_scaffold 的保留骨架固定编号。"""
-    plan = plan_from_chain(
-        chain, parent.get("scaffold_id") or parent.get("kind"),
-        parent.get("numbering_scaffold"),
-        required=parent.get("numbering_scaffold_required", False),
-    )
+    plan = None
     return list(plan.atom_order) if plan is not None else None
 
 

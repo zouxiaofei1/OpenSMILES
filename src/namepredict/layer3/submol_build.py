@@ -71,24 +71,13 @@ def build_cut_submol(
 
 
 def _add_anchor(em: Chem.RWMol, attach_new: int) -> None:
-    """用 dummy 原子（`*`）标记连接原子，而不是用 H 封端。
-
-    该锚点是取代基形状 + 连接位点的保 canonical 指纹：例如 isopropyl → *C(C)C
-    对比 n-propyl → *CCC，以及 *c1ccc(Cl)cc1（4-Cl）对比 *c1cccc(Cl)c1（3-Cl）
-    对比 *c1ccccc1Cl（2-Cl）。用 H 封端的变体（build_cut_submol）会丢失分支/
-    位点信息，因为连接价被 H 吸收。
-    """
+    #用 dummy 原子（`*`）标记连接原子
     d = em.AddAtom(Chem.Atom(0))
     em.AddBond(attach_new, d, Chem.BondType.SINGLE)
 
 
 def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol | None:
-    """在 atoms 上的诱导子分子，连接位点用 dummy 原子标记。
-
-    返回 sanitize 后的 Mol（canonical SMILES 是查找键），当 attach_old 不在
-    atoms 中或 sanitize 失败时返回 None。dummy 原子的原子序数为 0，不属于
-    真实取代基的一部分。
-    """
+    #在 atoms 上的诱导子分子，连接位点用 dummy 原子标记。
     if attach_old not in atoms:
         return None
     em = Chem.RWMol()

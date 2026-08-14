@@ -32,12 +32,7 @@ def _retained_hit(claim: ClaimedBlock, en: str, zh: str, paren: bool) -> Substit
 
 
 def _try_anchored_lookup(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
-    """通过锚定 canonical-SMILES 表解析简单的 retained 叶子。
-
-    锚定键唯一标识形状 + 连接位点，因此字典查找即可覆盖 alkyl/cycloalkyl/
-    aryl/halo/alkoxy/sulfinyl/sulfonyl/N-leaves。未命中则落入 rooted_tree/
-    recursive 链。
-    """
+    #通过锚定 canonical-SMILES 表解析简单的 retained 叶子。
     hit = anchored_lookup(mol, claim.atoms, claim.root, name_mode=name_mode)
     if hit is None:
         return None

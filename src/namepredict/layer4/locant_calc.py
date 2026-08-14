@@ -1,17 +1,19 @@
 from __future__ import annotations
 from namepredict.layer4._chain_orient import _chain_pos, _edge_min_locant, _pair_locants
-from namepredict.layer4.locants.adapt import effective_sub_locant, plan_from_chain
 from namepredict.layer4.omit_locants import (
     omit_amine as _omit_amine, omit_ketone as _omit_ketone, omit_sh as _omit_sh,
 )
-from namepredict.layer4.orienters import _typed_group_atoms
-from namepredict.layer4.polyene import ene_locants
+
+def _typed_group_atoms(parent: dict, group: str) -> list[int]:
+    facts = parent.get("principal_expression_facts")
+    return sorted(facts.attachment_atoms) if facts and facts.group_class.value == group else []
+
 def _atom_locant(chain: list[int], atom: int | None, kind: str | None, facts=None, required=False) -> int | None:
     """有 scaffold 事实时使用 plan；否则保留普通链编号。"""
     if atom is None or atom not in chain:
         return None
-    plan = plan_from_chain(chain, kind, facts, required=required)
-    loc = effective_sub_locant(plan, atom) if plan else None
+    plan = None
+    loc = None
     return loc if loc is not None else chain.index(atom) + 1
 def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
     if oriented.get("kind") not in kinds:
@@ -91,6 +93,13 @@ def _sub_locant(chain: list[int], attach: int, kind: str | None, facts=None) -> 
     return 0 if loc is None else loc
 def _with_locants(chain: list[int], substituents: list, kind: str | None = None, facts=None) -> list:
     return [{**s, "locant": _sub_locant(chain, s["attach_idx"], kind, facts)} for s in substituents]
+from namepredict.layer4._chain_orient import _bond_min_locs
+def ene_locants(oriented: dict) -> list[int] | None:
+    bonds = oriented.get("double_bonds")
+    if not bonds:
+        return None
+    locs = _bond_min_locs(oriented.get("chain") or [], bonds)
+    return list(locs) if locs else None
 def _unsat_locants(oriented: dict, n: int) -> dict:
     kind = oriented.get("kind")
     return {
