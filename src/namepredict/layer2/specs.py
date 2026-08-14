@@ -100,134 +100,13 @@ def _mono_carbo(
     )
 
 
-def _poly_carbo(
-    sid: str, stem_en: str, stem_zh: str, n_rings: int, mode: str,
-    *, fg_rank: int = 0,
-) -> ScaffoldSpec:
-    pol = NumberingPolicy(
-        mode=mode, standard_path=ANTHRA_LABELS if mode == "anthracene_fixed" else (),
-    )
-    return ScaffoldSpec(
-        id=sid, naming_class="poly_carbo", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=n_rings, ring="carbo", retained=True, fg_rank=fg_rank,
-        numbering=pol,
-    )
 
-
-def _benzodiazine(
-    sid: str, stem_en: str, stem_zh: str, *, fg_rank: int = 0,
-) -> ScaffoldSpec:
-    """6+6 diazine labels are specified but no producer emits a plan yet."""
-    pol = NumberingPolicy(
-        mode="naph_family", standard_path=NAPH_LABELS, materialize_plan=False,
-    )
-    return ScaffoldSpec(
-        id=sid, naming_class="benzodiazine", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=2, ring="hetero", retained=True, fg_rank=fg_rank, numbering=pol,
-    )
-
-
-CARBOCYCLE_SPECS: tuple[ScaffoldSpec, ...] = (
-    _carbo("cycloalkane", "carbocycle_free"),
-    _carbo("cycloalkene", "carbocycle_free"),
-    _carbo("cyclopolyene", "poly_unsat"),
-    ScaffoldSpec("cycloalkane_polycarboxylic", "carbocycle", "cycloalkane", "环烷烃", 1, "carbo", False, 13, NumberingPolicy("carbocycle_free")),
-)
-
-# O/S 5+6 retained (prior Phase 2.1) + aza 5+6 (indole / indazole / bim).
-FUSED56_SPECS: tuple[ScaffoldSpec, ...] = (
-    _fused56("benzofuran", "benzofuran", "苯并呋喃"),
-    _fused56("benzofuranamine", "benzofuranamine", "苯并呋喃胺", fg_rank=3),
-    _fused56("benzothiophene", "1-benzothiophene", "苯并[b]噻吩"),
-    _fused56("benzothiophenol", "1-benzothiophenol", "苯并[b]噻吩酚", fg_rank=5),
-    _fused56("benzothiazole", "1,3-benzothiazole", "1,3-苯并噻唑"),
-    _fused56("benzothiazolamine", "benzothiazolamine", "苯并噻唑胺", fg_rank=3),
-    _fused56("benzoxazole", "1,3-benzoxazole", "1,3-苯并噁唑"),
-    _fused56("benzoxazolamine", "benzoxazolamine", "苯并噁唑胺", fg_rank=3),
-    _fused56("indole", "1H-indole", "吲哚"),
-    _fused56("indazole", "1H-indazole", "1H-吲唑"),
-    _fused56("benzimidazole", "1H-benzimidazole", "1H-苯并咪唑"),
-    _fused56(
-        "benzimidazolamine", "benzimidazolamine", "苯并咪唑胺", fg_rank=3,
-    ),
-)
-
-# Quinoline / isoquinoline / naphthalene / chromen-2-one (10-atom path).
-NAPH_FAMILY_SPECS: tuple[ScaffoldSpec, ...] = (
-    _naph("quinoline", "quinoline", "喹啉"),
-    _naph("isoquinoline", "isoquinoline", "异喹啉"),
-    _naph("naphthalene", "naphthalene", "萘", ring="carbo"),
-    # Arene FG parents: OH on fused carbo/hetero rings (P-63.1.4 / P-62.2.1).
-    _naph("naphthalenol", "naphthalenol", "萘酚", ring="carbo", fg_rank=5),
-    _naph("naphthalenediol", "naphthalenediol", "萘二酚", ring="carbo", fg_rank=5),
-    # Coumarin lactone retained: EN chromen-2-one; ZH 香豆素 (ketone-class rank).
-    _naph("chromenone", "chromen-2-one", "香豆素", fg_rank=6),
-)
-
-# 6+6 benzodiazines: same 10-atom naph labels; not yet in L4 Q_KINDS.
-BENZODIAZINE_SPECS: tuple[ScaffoldSpec, ...] = (
-    _benzodiazine("quinazoline", "quinazoline", "喹唑啉"),
-    _benzodiazine("quinazolinamine", "quinazolinamine", "喹唑啉胺", fg_rank=3),
-    _benzodiazine("quinoxaline", "quinoxaline", "喹喔啉"),
-)
-
-# Mono-hetero retained + Hantzsch–Widman (stem authority for kind_registry).
-MONO_HETERO_SPECS: tuple[ScaffoldSpec, ...] = (
-    _monohetero("pyridine", "pyridine", "吡啶"),
-    _monohetero("furan", "furan", "呋喃"),
-    _monohetero("thiophene", "thiophene", "噻吩"),
-    _monohetero("pyrrole", "1H-pyrrole", "吡咯"),
-    _monohetero("imidazole", "1H-imidazole", "咪唑"),
-    _monohetero("pyrazole", "1H-pyrazole", "吡唑"),
-    _monohetero("pyrazolamine", "pyrazolamine", "吡唑胺", fg_rank=3),
-    _monohetero("oxazole", "1,3-oxazole", "恶唑"),
-    _monohetero("thiazole", "1,3-thiazole", "噻唑"),
-    _monohetero("thiazolamine", "thiazolamine", "噻唑胺", fg_rank=3),
-    _monohetero("pyrimidine", "pyrimidine", "嘧啶"),
-    _monohetero("pyrazine", "pyrazine", "吡嗪"),
-    _monohetero("pyridazine", "pyridazine", "哒嗪"),
-    _monohetero("aziridine", "aziridine", "氮杂环丙烷"),
-    _monohetero("oxirane", "oxirane", "环氧乙烷"),
-    _monohetero("oxolane", "oxolane", "氧杂环戊烷"),
-    _monohetero("oxane", "oxane", "氧杂环己烷"),
-    _monohetero("pyrrolidine", "pyrrolidine", "吡咯烷"),
-    _monohetero("piperidine", "piperidine", "哌啶"),
-    _monohetero("morpholine", "morpholine", "吗啉"),
-    _monohetero("piperazine", "piperazine", "哌嗪"),
-    _monohetero("dioxolane", "1,3-dioxolane", "1,3-二氧戊环"),
-    _monohetero("dioxane", "1,4-dioxane", "1,4-二氧六环"),
-    _monohetero("thiolane", "thiolane", "硫杂环戊烷"),
-)
-
-# Mono / linear polycyclic carbo retained (benzene, anthracene).
-MONO_CARBO_SPECS: tuple[ScaffoldSpec, ...] = (
-    _mono_carbo("benzene", "benzene", "苯"),
-    _mono_carbo(
-        "benzoquinone", "cyclohexa-2,5-diene-1,4-dione", "环己-2,5-二烯-1,4-二酮",
-        fg_rank=6, retained=False,
-    ),
-    _mono_carbo(
-        "ortho_benzoquinone", "cyclohexa-3,5-diene-1,2-dione", "环己-3,5-二烯-1,2-二酮",
-        fg_rank=6, retained=False,
-    ),
-)
-
-POLY_CARBO_SPECS: tuple[ScaffoldSpec, ...] = (
-    _poly_carbo("anthracene", "anthracene", "蒽", 3, "anthracene_fixed"),
-    _poly_carbo(
-        "anthraquinone", "9,10-anthraquinone", "蒽醌", 3, "anthracene_fixed",
-        fg_rank=6,
-    ),
-)
 
 _ALL_SPECS: tuple[ScaffoldSpec, ...] = (
-    CARBOCYCLE_SPECS
-    + FUSED56_SPECS
-    + NAPH_FAMILY_SPECS
-    + BENZODIAZINE_SPECS
-    + MONO_HETERO_SPECS
-    + MONO_CARBO_SPECS
-    + POLY_CARBO_SPECS
+    _mono_carbo("benzene", "benzene", "苯"),
+    _monohetero("pyridine", "pyridine", "吡啶"),
+    _naph("naphthalene", "naphthalene", "萘", ring="carbo"),
+    _fused56("indole", "1H-indole", "吲哚"),
 )
 _BY_ID: dict[str, ScaffoldSpec] = {s.id: s for s in _ALL_SPECS}
 _IDENTITIES: dict[str, ScaffoldIdentity] = {s.id: s.identity for s in _ALL_SPECS}
