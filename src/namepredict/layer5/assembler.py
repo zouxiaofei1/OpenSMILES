@@ -2,7 +2,6 @@ from __future__ import annotations
 from dataclasses import replace
 
 from namepredict.layer5.chain_engine import _KIND_TABLE, _alkane_names, _chain_names
-from namepredict.layer5.typed_kinds import _typed_expression_kind
 from namepredict.layer5.benzene_names import join_kind_name
 from namepredict.layer5.stems import maybe_anion_names, maybe_metal_salt_names
 from namepredict.layer5.assembler_prefixes import _prefix_for
@@ -103,11 +102,11 @@ def _unsupported(n: int, kind: str | None) -> NameResult:
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     from namepredict.layer5.stereo import apply_rs_prefix
     kind, n = _parent_n(numbered)
-    effective_kind = _typed_expression_kind(kind, numbered)
-    names = _names_for(effective_kind, n, numbered)
+    names = _names_for(kind, n, numbered)
     if not names:
         return _unsupported(n, kind)
-    en, zh = join_kind_name(effective_kind, _prefix_for(numbered, effective_kind, n), names, numbered)
+
+    en, zh = join_kind_name(kind, _prefix_for(numbered, kind, n), names, numbered)
     en, zh = maybe_anion_names(numbered, en, zh)
     en, zh = apply_rs_prefix(numbered, en, zh)
     en, zh = maybe_metal_salt_names(numbered, en, zh)

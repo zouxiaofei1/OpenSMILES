@@ -9,6 +9,11 @@ from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology,
 from namepredict.layer2.principal import PrincipalGroupSelection, feature_spec
 
 
+
+def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
+    return {"chain": chain, "n_carbons": len(chain), "kind": kind, **kw}
+
+
 class PrincipalRelation(str, Enum):
     IN_SKELETON = "in_skeleton"
     EXOCYCLIC = "exocyclic"

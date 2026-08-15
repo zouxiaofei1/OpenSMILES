@@ -4,7 +4,6 @@ from namepredict.layer5.stems import (
     ALKANE_EN, ALKANE_ZH, _en_stem, alkane_zh, zh_stem,
 )
 from namepredict.layer5.stereo import _ez_prefix, ez_for_parent
-from namepredict.layer5.unsat_acid import alkenamide_names
 from namepredict.constants import MULT_EN, MULT_ZH
 
 def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:
@@ -51,10 +50,20 @@ def _fg_locant(numbered: dict, kind: str) -> int | None:
     locs = rec.get("locants") if rec else None
     return locs[0] if locs and len(locs) == 1 else None
 
+def _has_ene(numbered: dict) -> bool:
+    p = numbered.get("parent") or {}
+    return bool(
+        numbered.get("ene_locant") or numbered.get("ene_locants")
+        or p.get("double_bond") or p.get("double_bonds")
+    )
+
+
+def _has_yne(numbered: dict) -> bool:
+    p = numbered.get("parent") or {}
+    return bool(numbered.get("yne_locant") or p.get("triple_bond"))
 # ===== 链式词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环 (替代 if-kind 枚举) =====
 def _chain_unsat(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
     """通用不饱和段引擎: 炔段优先, 烯段其次 — 段式(醇/酮)与融合式(酸)均由 spec 数据驱动."""
-    from namepredict.layer5.unsat_acid import _has_ene, _has_yne
     if _has_yne(numbered) and (spec.yne_seg is not None or spec.yne_suf is not None):
         top = _chain_yne(spec, n, numbered)
         if top is not None:
@@ -382,7 +391,7 @@ _KIND_TABLE = {
                       }),
     "amide": _Chain(kind="amide", en_suf="amide", zh_suf="酰胺",
                     ene_base=("enamide", "烯酰胺"),
-                    ene_special=alkenamide_names,
+                 
                     yne_suf=("ynamide", "炔酰胺"),
                     ez_ene=_ez_prefix,
                     variant={

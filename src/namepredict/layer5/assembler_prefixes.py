@@ -76,6 +76,7 @@ def _collect_parts(groups: dict[str, list], omit: bool, paren_cf3: bool = False)
     return en_parts, zh_parts
 def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
                   scaffold: str | None = None, has_ene: bool = False) -> tuple[str, str]:
+    
     if not substituents:
         return "", ""
     # ester 的 O 侧烷基由 join_kind_name 作为烷氧基臂消费，永不作前缀
@@ -87,19 +88,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit, paren)
     return "-".join(en_parts), "-".join(zh_parts)
 
-def _is_isobutyryl(numbered: dict) -> bool:
-    """C3 酰基 + 2 位单个甲基（异丁酰基保留拓扑）。"""
-    if int((numbered.get("parent") or {}).get("n_carbons") or 0) != 3:
-        return False
-    subs = numbered.get("substituents") or []
-    if len(subs) != 1:
-        return False
-    s = subs[0]
-    return s.get("en") == "methyl" and int(s.get("locant") or 0) == 2
-
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
-    if kind == "acyl_bromide" and _is_isobutyryl(numbered):
-        return "", ""
     parent = numbered.get("parent") or {}
     has_ene = bool(parent.get("double_bond") or parent.get("double_bonds"))
     return _build_prefix(numbered.get("substituents") or [], n, kind,

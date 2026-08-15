@@ -82,10 +82,6 @@ def alkane_zh(n: int) -> str | None:
     z = zh_num(n)
     return f"{z}烷" if z else None
 
-
-# FG 俗名生成器已删：C3+ 系统名由 chain_engine 词干生成（_chain_plain 回落），C1/C2 英文保留名迁入 chain_engine._RETAINED。
-
-
 def acid_to_anion_en(en: str) -> str:
     """酸转阴离子英文名：dodecanoic acid → dodecanoate；acetic acid → acetate。"""
     if en.endswith("oic acid"):
@@ -154,25 +150,6 @@ def maybe_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
         return _salt_en(en, salt), _salt_zh(zh, salt)
     return _with_acid_salt(en, zh, salt)
 
-
-def ester_alkyl_en(n: int) -> str | None:
-    retained = {
-        1: "methyl", 2: "ethyl", 3: "propyl", 4: "butyl",
-        5: "pentyl", 6: "hexyl", 7: "heptyl", 8: "octyl",
-        9: "nonyl", 10: "decyl",
-    }
-    if n in retained:
-        return retained[n]
-    s = _en_stem(n)
-    return f"{s}yl" if s else None
-
-
-def ester_alkyl_zh(n: int) -> str | None:
-    base = {
-        1: "甲", 2: "乙", 3: "丙", 4: "丁", 5: "戊", 6: "己", 7: "庚", 8: "辛",
-        9: "壬", 10: "癸",
-    }
-    return base.get(n) or zh_num(n)
 
 
 def _fill(fn, lo: int = 1, hi: int = 35) -> dict[int, str]:

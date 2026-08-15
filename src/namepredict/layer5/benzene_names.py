@@ -11,40 +11,10 @@ def join_parent_name(prefix: str, parent: str) -> str:
     body = f"{prefix}-{stem}" if stem[:1].isdigit() or stem.startswith("1H-") else f"{prefix}{stem}"
     return f"{stereo}{body}"
 
-
-def _ester_alkoxy_from(numbered) -> tuple[str, str]:
-    """O-side alkyl: linear 走 parent.alkoxy_n 保留名表; 特殊基团/复杂回落 o_side 取代基.
-
-    linear (如 hexadecan-16-yl 的 o_side 命名带位次) 必须走 ester_alkyl_en/zh 的
-    "hexadecyl"/"十六", 否则长链 O 侧会带 -16-yl 位次 (ester/benzoate 共用此路径).
-    """
-    if not numbered:
-        return "", ""
-    parent = numbered.get("parent") or {}
-    o = [s for s in (numbered.get("substituents") or []) if s.get("o_side")]
-    if len(o) <= 1 and parent.get("alkoxy_n") is not None:
-        from namepredict.layer5.stems import ester_alkyl_en, ester_alkyl_zh
-        en, zh = ester_alkyl_en(parent["alkoxy_n"]), ester_alkyl_zh(parent["alkoxy_n"])
-        if en and zh:
-            return en, zh
-    if not o:
-        return "", ""
-    en0, zh0 = o[0].get("en") or "", (o[0].get("zh") or "").rstrip("基")
-    if len(o) == 1:
-        return en0, zh0
-    if all(s.get("en") == en0 for s in o):
-        me, mz = MULT_EN.get(len(o), ""), MULT_ZH.get(len(o), "")
-        return f"{me}{en0}", f"{mz}{zh0}"
-    return en0, zh0
-
-
 def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=None) -> tuple[str, str]:
-    """Acid stem + O-side alkyl: methyl butanoate / 丁酸甲酯; stereo after alkyl.
-
-    zh 恒拼"酯"（无烷氧基时保留"苯甲酸酯"，如复杂 O-烷基场景）。
-    """
     en, zh = names
-    alk_en, alk_zh = _ester_alkoxy_from(numbered)
+    o = [s for s in (numbered.get("substituents") or []) if s.get("o_side")]
+    alk_en, alk_zh = o[0].get("en") or "", (o[0].get("zh") or "").rstrip("基")
     st, body = _stereo_lead(en)
     mid = f"{pre_en}{body}" if pre_en else body
     en = f"{alk_en} {st}{mid}" if alk_en else f"{st}{mid}"

@@ -2,14 +2,16 @@
 
 GET /api/v1/code-analysis — per-layer code/comment/blank lines, file counts, share.
 
-Lines are classified coarsely:
+Lines are classified:
   blank    → empty after strip
-  comment  → stripped line starts with "#"
-  code     → everything else (incl. docstrings)
+  comment  → stripped line starts with "#", or falls inside a docstring
+             (module / function / class triple-quoted block)
+  code     → everything else
 """
 
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 from typing import Any
 
@@ -29,13 +31,34 @@ GROUPS = [
 ]
 
 
+def _docstring_lines(tree: ast.Module) -> set[int]:
+    """收集所有 docstring（模块/函数/类首语句字符串）占用的行号。"""
+    lines: set[int] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        body = node.body
+        if not body or not isinstance(body[0], ast.Expr):
+            continue
+        value = body[0].value
+        if isinstance(value, ast.Constant) and isinstance(value.value, str):
+            end = getattr(value, "end_lineno", value.lineno)
+            lines.update(range(value.lineno, end + 1))
+    return lines
+
+
 def _count_lines(text: str) -> tuple[int, int, int]:
     code = comment = blank = 0
-    for line in text.splitlines():
+    doc_lines: set[int] = set()
+    try:
+        doc_lines = _docstring_lines(ast.parse(text))
+    except SyntaxError:
+        pass  # 无法解析时退回逐行分类，docstring 不计入注释
+    for lineno, line in enumerate(text.splitlines(), start=1):
         s = line.strip()
         if not s:
             blank += 1
-        elif s.startswith("#"):
+        elif lineno in doc_lines or s.startswith("#"):
             comment += 1
         else:
             code += 1
