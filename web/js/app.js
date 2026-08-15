@@ -13,7 +13,6 @@ import { initTheme, loadSettings, bindSettings } from "./settings.js";
 import { loadWiki, bindWiki } from "./wiki.js";
 import { loadIupac, bindIupac } from "./iupac.js";
 import { initHistoryPicker } from "./history.js";
-import { bindPrintDebug } from "./print-debug.js";
 
 /* ---------- Page switching ---------- */
 
@@ -36,7 +35,6 @@ function switchPage(name) {
   var caPage = document.getElementById("code-analysis-page");
   var cgPage = document.getElementById("call-graph-page");
   var debugPage = document.getElementById("debug-page");
-  var printDebugPage = document.getElementById("print-debug-page");
   var settingsPage = document.getElementById("settings-page");
   var wikiPage = document.getElementById("wiki-page");
   var iupacPage = document.getElementById("iupac-page");
@@ -48,7 +46,6 @@ function switchPage(name) {
   if (caPage) caPage.classList.add("hidden");
   if (cgPage) cgPage.classList.add("hidden");
   if (debugPage) debugPage.classList.add("hidden");
-  if (printDebugPage) printDebugPage.classList.add("hidden");
   if (settingsPage) settingsPage.classList.add("hidden");
   if (wikiPage) wikiPage.classList.add("hidden");
   if (iupacPage) iupacPage.classList.add("hidden");
@@ -78,8 +75,6 @@ function switchPage(name) {
     });
   } else if (name === "debug") {
     if (debugPage) debugPage.classList.remove("hidden");
-  } else if (name === "print-debug") {
-    if (printDebugPage) printDebugPage.classList.remove("hidden");
   } else if (name === "settings") {
     if (settingsPage) settingsPage.classList.remove("hidden");
     loadSettings();
@@ -218,7 +213,6 @@ function bind() {
   bindBenchmarkRun();
   bindLayerBenchmark();
   bindDebug();
-  bindPrintDebug();
   bindCodeAnalysis();
   bindCallGraph();
   bindSettings();

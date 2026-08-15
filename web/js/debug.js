@@ -1,10 +1,28 @@
-/* Pipeline Debug page: run debug endpoint and render per-layer breakdown. */
+/* Debug page: Pipeline 分层（/api/v1/debug）与 打印调试（/api/v1/debug-print）
+   合并为单一页面，通过顶部开关切换模式，共享同一个 SMILES 输入框。 */
 import { $, escapeHtml, api, API } from "./core.js";
 
 var debugDebounceTimer = null;
 var DEBUG_DEBOUNCE_MS = 400;
+var debugMode = "pipeline"; // "pipeline" | "print"
+
+function setDebugMode(mode) {
+  debugMode = mode;
+  var segBtns = document.querySelectorAll(".debug-mode-btn");
+  for (var i = 0; i < segBtns.length; i++) {
+    segBtns[i].classList.toggle("active", segBtns[i].getAttribute("data-debug-mode") === mode);
+  }
+  var pipeline = document.getElementById("debug-output");
+  var printPanel = document.getElementById("print-debug-panel");
+  if (pipeline) pipeline.hidden = mode !== "pipeline";
+  if (printPanel) printPanel.hidden = mode !== "print";
+  // 已有输入则在新模式下立即执行一次
+  var input = document.getElementById("debug-smiles");
+  if (input && input.value.trim()) runDebug();
+}
 
 export function scheduleLiveDebug() {
+  if (debugMode !== "pipeline") return; // 打印模式跑子进程较重，不实时
   if (debugDebounceTimer) clearTimeout(debugDebounceTimer);
   debugDebounceTimer = setTimeout(function () {
     debugDebounceTimer = null;
@@ -22,14 +40,47 @@ export async function runDebug() {
   if (btn) btn.disabled = true;
 
   try {
-    var res = await api(API.debug, { method: "POST", body: JSON.stringify({ smiles: smiles }) });
-    renderDebug(res);
+    if (debugMode === "print") {
+      var res = await api(API.debugPrint, { method: "POST", body: JSON.stringify({ smiles: smiles }) });
+      renderPrint(res);
+    } else {
+      var res2 = await api(API.debug, { method: "POST", body: JSON.stringify({ smiles: smiles }) });
+      renderDebug(res2);
+    }
   } catch (err) {
     var out = document.getElementById("debug-output");
-    if (out) out.innerHTML = '<div class="debug-empty"><h2>Error</h2><p>' + escapeHtml(String(err)) + '</p></div>';
+    if (out) {
+      if (debugMode === "print") {
+        var po = document.getElementById("print-debug-output");
+        if (po) {
+          po.classList.add("has-error");
+          po.textContent = "Error: " + escapeHtml(String(err));
+        }
+      } else {
+        out.innerHTML = '<div class="debug-empty"><h2>Error</h2><p>' + escapeHtml(String(err)) + '</p></div>';
+      }
+    }
   } finally {
     if (btn) btn.disabled = false;
   }
+}
+
+/* 打印调试：执行 scripts/debug.py 并展示捕获的 stdout —— 命名路径中的所有 print() 输出。 */
+function renderPrint(res) {
+  var out = document.getElementById("print-debug-output");
+  if (!out) return;
+  out.classList.remove("has-error");
+  if (res.error) {
+    out.classList.add("has-error");
+    out.textContent = res.error;
+    return;
+  }
+  var txt = res.stdout || "";
+  if (res.stderr) {
+    txt += (txt ? "\n" : "") + "--- stderr (returncode=" + res.returncode + ") ---\n" + res.stderr;
+    out.classList.add("has-error");
+  }
+  out.textContent = txt || "(无输出)";
 }
 
 function renderDebug(data) {
@@ -334,6 +385,16 @@ export function bindDebug() {
   if (debugRun) debugRun.addEventListener("click", runDebug);
   var debugSmiles = document.getElementById("debug-smiles");
   if (debugSmiles) {
+    debugSmiles.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") runDebug();
+    });
     debugSmiles.addEventListener("input", scheduleLiveDebug);
+  }
+  // 模式开关：Pipeline 分层 / 打印输出
+  var modeBtns = document.querySelectorAll(".debug-mode-btn");
+  for (var i = 0; i < modeBtns.length; i++) {
+    modeBtns[i].addEventListener("click", function () {
+      setDebugMode(this.getAttribute("data-debug-mode"));
+    });
   }
 }

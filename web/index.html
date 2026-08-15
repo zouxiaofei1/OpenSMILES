@@ -28,8 +28,7 @@
           <button class="tab" data-page="layer-benchmark">分层 benchmark</button>
           <button class="tab" data-page="code-analysis">代码量分析</button>
           <button class="tab" data-page="call-graph">调用链</button>
-          <button class="tab" data-page="debug">Pipeline Debug</button>
-          <button class="tab" data-page="print-debug">打印调试</button>
+          <button class="tab" data-page="debug">Debug</button>
           <button class="tab" data-page="settings">设置</button>
           <button class="tab" data-page="wiki">Wiki</button>
           <button class="tab" data-page="iupac">IUPAC</button>
@@ -406,9 +405,13 @@
         </div>
       </div>
 
-      <!-- Debug Page -->
+      <!-- Debug Page（Pipeline 分层 + 打印调试 合并，开关切换） -->
       <div id="debug-page" class="debug-page hidden" role="tabpanel" aria-labelledby="tab-debug">
         <div class="debug-input-bar">
+          <div class="debug-mode-seg" role="group" aria-label="调试模式">
+            <button type="button" class="debug-mode-btn active" data-debug-mode="pipeline">Pipeline 分层</button>
+            <button type="button" class="debug-mode-btn" data-debug-mode="print">打印输出</button>
+          </div>
           <input id="debug-smiles" class="input" type="text"
                  placeholder="Enter SMILES, e.g. c1ccccc1C(=O)O or CC(=O)OC1CCCCC1"
                  autocomplete="off" spellcheck="false">
@@ -425,24 +428,12 @@
             <p>Enter a SMILES above and click Run to trace the naming pipeline layer by layer.</p>
           </div>
         </div>
-      </div>
-
-      <!-- 打印调试 Page -->
-      <div id="print-debug-page" class="debug-page hidden" role="tabpanel" aria-labelledby="tab-print-debug">
-        <div class="debug-input-bar">
-          <input id="print-debug-smiles" class="input" type="text"
-                 placeholder="Enter SMILES, e.g. c1ccccc1C(=O)O or Oc1ccc(Cl)cc1"
-                 autocomplete="off" spellcheck="false">
-          <button id="print-debug-run" class="btn btn-primary" type="button">
-            <span>打印调试</span>
-          </button>
-        </div>
-        <div class="print-panel">
+        <div id="print-debug-panel" class="print-panel" hidden>
           <div class="print-head">
             <span class="print-title">打印调试输出</span>
             <span class="print-hint">执行 scripts/debug.py —— 显示命名路径中所有 print() 输出</span>
           </div>
-          <pre id="print-debug-output" class="print-output">（输入 SMILES，点击"打印调试"执行）</pre>
+          <pre id="print-debug-output" class="print-output">（输入 SMILES，点击"Run"执行）</pre>
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass, replace
+from dataclasses import KW_ONLY, dataclass, replace
 from namepredict.layer5.stems import (
     ACID_EN, ACID_ZH, ALCOHOL_EN, ALCOHOL_ZH,
     ALDEHYDE_EN, ALDEHYDE_ZH, ALKANE_EN, ALKANE_ZH,
@@ -16,6 +16,8 @@ def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:
 def _alkane_names(n: int) -> tuple[str, str] | None: return _pair(ALKANE_EN, ALKANE_ZH, n)
 def _omit_term_locant(n: int, loc: int | None, omit: bool) -> bool:
     return omit or loc is None or (loc == 1 and n <= 2)
+def _NO_OMIT(n: int, loc: int | None, omit: bool) -> bool:
+    return False
 def _pair_loc_str(locs: list[int]) -> str:
     return ",".join(str(x) for x in locs)
 def _acid_names(n: int) -> tuple[str, str] | None:
@@ -105,13 +107,14 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
             ez = spec.ez_ene_multi(numbered) if spec.ez_ene_multi else ""
             loc = ",".join(str(x) for x in enes)
             return f"{ez}{s}a-{loc}-{fused[0]}", f"{ez}{zs}-{loc}-{fused[1]}"
-        if spec.mult_seg is not None:        # 段式多烯 (醇)
+        if spec.fg is not None:              # 段式多烯 (醇/酮/胺/硫醇): MULT[m]+烯段
             fg = _fg_locant(numbered, spec.fg) if spec.fg else None
             if fg is None:
                 return None
-            me, mz = spec.mult_seg.get(len(enes), ("", ""))
-            if not me or not mz:
+            m_en, m_zh = MULT_EN.get(len(enes)), MULT_ZH.get(len(enes))
+            if not m_en or not m_zh:
                 return None
+            me, mz = f"{m_en}{spec.ene_seg[0]}", f"{m_zh}{spec.ene_seg[1]}"
             ez = spec.ez_ene_multi(numbered) if spec.ez_ene_multi else ""
             loc = ",".join(str(x) for x in enes)
             return f"{ez}{s}a-{loc}-{me}-{fg}-{spec.en_suf}", f"{ez}{zs}-{loc}-{mz}-{fg}-{spec.zh_suf}"
@@ -148,16 +151,16 @@ class _Chain:
     kind: str
     en_suf: str            # 词缀后缀: "ol" / "one" / "ene" / "oic acid"
     zh_suf: str            # "醇" / "酮" / "烯" / "酸"
-    coda: str              # 饱和词干后接 "an"; 烯/炔词干接 ""
-    no_loc: str            # "plain"=无位次输出普通名; "none"=返回 None
-    omit_rule: object      # (n, loc, omit) -> bool  True=省略
+    coda: str = "an"       # 饱和词干后接 "an"; alkane/thiol/anhydride 特例 ""/"ane"
+    _: KW_ONLY
+    no_loc: str = "plain"  # "plain"=无位次输出普通名; "none"=返回 None (ketone)
+    omit_rule: object = _NO_OMIT  # (n, loc, omit) -> bool  True=省略
     fg: str | None = None              # FG 类别名 (fg_locants 记录 kind): oh/amine/ketone/sh
-    need: int | None = None            # FG 位次数要求 (need=1 单 FG; diol=2; triol=3 ...)
+    need: int | None = None            # FG 位次数要求 (need=1 单 FG; 多 FG 由数量生成)
     plain_maps: tuple | None = None    # 俗名表 (en_dict, zh_dict), 查不到时回落生成
     plain_fn: object = None            # 派生命名 (n)->pair — 酸酐从酸派生
-    ene_seg: tuple | None = None        # 单烯段 ("en","烯") — 醇/酮
-    yne_seg: tuple | None = None        # 炔段 ("yn","炔") — 醇/酮
-    mult_seg: dict | None = None        # 多烯段表 {2:("dien","二烯"),...} — 醇
+    ene_seg: tuple = ("en", "烯")       # 段式单烯段; thiol 用 ("ene","烯") (P-57 保留 e)
+    yne_seg: tuple = ("yn", "炔")       # 段式炔段; thiol 用 ("yne","炔")
     ene_base: tuple | None = None       # 融合式烯基座 = 单烯后缀 ("enoic acid","烯酸") — 实际后缀 = MULT[m]+基座
     ene_m_min: int = 1                  # 融合式烯最小烯数 (polyene/cyclopolyene 为 2)
     ene_special: object = None          # 融合式单烯俗名钩子 (n, numbered)->pair — amide 丙烯酰胺
@@ -173,8 +176,11 @@ class _Chain:
     zh_full: bool = False               # 中文词干保留完整烷烃后缀 "烷" (环烷/回落)
     wrap: object = None                 # (pair, numbered)->pair  整体包裹 (E/Z)
     unsat_polyol: bool = False          # 多 FG 词干支持烯/炔插入 (diol/triol: but-2-ene-1,4-diol)
-    variant: dict | None = None         # {multiplicity: 字段覆盖} — 数量派生后缀 (acid/alcohol/amine)
+    variant: dict | None = None         # {multiplicity: 生成式之上的特例字段覆盖} — acid 草酸/烯二酸等
     stem: tuple | None = None           # (en_stem, zh_stem) — 稠环/杂环 scaffold 词干覆盖 (naphthalen/萘…)
+    mult_ok: bool = False               # 支持数量后缀生成 (acid/alcohol/amine/ketone)
+    mult_zh_full: bool = False          # 多 FG 中文词干保留完整 "烷" (醇/胺)
+    mult_unsat_polyol: bool = False     # 多 FG 词干支持烯/炔插入 (仅醇)
 
 def _chain_zh_base(n: int) -> str | None:
     z = alkane_zh(n)
@@ -215,13 +221,38 @@ def _chain_polyol_stem(n: int, numbered: dict) -> tuple[str, str] | None:
         return f"{en[:-3]}-{ene}-ene", f"{zh}-{ene}-烯"
     return None
 
+def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
+    """数量后缀生成: MULT[m] + 基础后缀; acid 特判烯基/炔基/俗名; 数量超 MULT 表返回 None."""
+    en_m, zh_m = MULT_EN.get(mult), MULT_ZH.get(mult)
+    if not en_m or not zh_m:
+        return None
+    fields = dict(
+        en_suf=f"{en_m}{spec.en_suf}",
+        zh_suf=f"{zh_m}{spec.zh_suf}",
+        coda="ane", need=mult, no_loc="none",
+        omit_rule=_NO_OMIT,
+        plain_maps=None,
+    )
+    if spec.kind == "acid":
+        # 多酸烯基基座: enedioic/enetri…oic (保留 e); 中文 烯+数量酸。
+        fields["ene_base"] = (f"ene{en_m}oic acid", f"烯{zh_m}酸")
+        fields["yne_suf"] = None
+        fields["ene_single_min"] = 3
+    if spec.mult_zh_full:
+        fields["zh_full"] = True
+    if spec.mult_unsat_polyol:
+        fields["unsat_polyol"] = True
+    return fields
+
+
 def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None:
     """单链词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环; 烯/炔段插入由 spec 数据驱动."""
     mult = _parent_multiplicity(numbered)
-    if mult is not None and mult > 1 and spec.variant:
-        var = spec.variant.get(mult)
+    if mult is not None and mult > 1 and spec.mult_ok:
+        var = _generated_mult_fields(spec, mult)
         if var is None:
-            return None  # 该数量的后缀变体未定义 → 不支持
+            return None
+        var.update((spec.variant or {}).get(mult) or {})   # 特例覆盖 (acid 草酸/烯二酸)
         spec = replace(spec, **var)
     alk = _alkane_names(n)
     if not alk:
@@ -271,89 +302,54 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         pair = (f"cyclo{pair[0]}", f"环{pair[1]}")
     return spec.wrap(pair, numbered) if spec.wrap is not None else pair
 
-_AMINE_SPEC = _Chain(kind="amine", en_suf="amine", zh_suf="胺", coda="an",
-                     fg="amine", need=1, no_loc="plain", omit_rule=_omit_term_locant,
-                     variant={
-                         2: dict(en_suf="diamine", zh_suf="二胺", coda="ane", need=2,
-                                 no_loc="none", omit_rule=lambda n, loc, omit: False, zh_full=True),
-                         3: dict(en_suf="triamine", zh_suf="三胺", coda="ane", need=3,
-                                 no_loc="none", omit_rule=lambda n, loc, omit: False, zh_full=True),
-                         4: dict(en_suf="tetraamine", zh_suf="四胺", coda="ane", need=4,
-                                 no_loc="none", omit_rule=lambda n, loc, omit: False, zh_full=True),
-                     })
-
 _KIND_TABLE = {
-    "alcohol": _Chain(kind="alcohol", en_suf="ol", zh_suf="醇", coda="an",
-                      fg="oh", need=1, no_loc="plain", omit_rule=_omit_term_locant,
+    "alcohol": _Chain(kind="alcohol", en_suf="ol", zh_suf="醇",
+                      fg="oh", need=1, omit_rule=_omit_term_locant,
                       plain_maps=(ALCOHOL_EN, ALCOHOL_ZH),
-                      ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
-                      mult_seg={2: ("dien", "二烯"), 3: ("trien", "三烯"),
-                                4: ("tetraen", "四烯"), 5: ("pentaen", "五烯")},
                       ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                      variant={
-                          2: dict(en_suf="diol", zh_suf="二醇", coda="ane", need=2,
-                                  no_loc="none", omit_rule=lambda n, loc, omit: False,
-                                  zh_full=True, unsat_polyol=True, plain_maps=None),
-                          3: dict(en_suf="triol", zh_suf="三醇", coda="ane", need=3,
-                                  no_loc="none", omit_rule=lambda n, loc, omit: False,
-                                  zh_full=True, unsat_polyol=True, plain_maps=None),
-                          4: dict(en_suf="tetraol", zh_suf="四醇", coda="ane", need=4,
-                                  no_loc="none", omit_rule=lambda n, loc, omit: False,
-                                  zh_full=True, unsat_polyol=True, plain_maps=None),
-                      }),
-    "ketone": _Chain(kind="ketone", en_suf="one", zh_suf="酮", coda="an",
+                      mult_ok=True, mult_zh_full=True, mult_unsat_polyol=True),
+    "ketone": _Chain(kind="ketone", en_suf="one", zh_suf="酮",
                      fg="ketone", need=1, no_loc="none",
                      omit_rule=lambda n, loc, omit: n <= 2 and loc == 1,
-                     ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
-                     ez_ene=ez_for_parent,
-                     variant={
-                         2: dict(en_suf="dione", zh_suf="二酮", coda="ane", need=2,
-                                 no_loc="none", omit_rule=lambda n, loc, omit: False,
-                                 ene_seg=None, yne_seg=None),
-                     }),
+                     ez_ene=ez_for_parent, mult_ok=True),
     "alkane": _Chain(kind="alkane", en_suf="ane", zh_suf="烷", coda="",
-                     no_loc="plain", omit_rule=lambda n, loc, omit: omit or n <= 3,
+                     omit_rule=lambda n, loc, omit: omit or n <= 3,
                      ene_base=("ene", "烯"), yne_suf=("yne", "炔"),
-                     ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
                      wrap=_with_ez),
-    "acid": _Chain(kind="acid", en_suf="oic acid", zh_suf="酸", coda="an",
-                   no_loc="plain", omit_rule=lambda n, loc, omit: False,
+    "acid": _Chain(kind="acid", en_suf="oic acid", zh_suf="酸",
                    plain_maps=(ACID_EN, ACID_ZH),
                    ene_base=("enoic acid", "烯酸"),
                    yne_suf=("ynoic acid", "炔酸"),
                    ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
+                   mult_ok=True,
                    variant={
-                       2: dict(en_suf="dioic acid", zh_suf="二酸", coda="ane",
-                               ene_base=("enedioic acid", "烯二酸"), yne_suf=None,
-                               plain_maps=({2: "oxalic acid"}, {2: "草酸"}),
-                               ene_single_min=3),
+                       2: dict(plain_maps=({2: "oxalic acid"}, {2: "草酸"}),
+                               yne_suf=None, ene_single_min=3),
                    }),
-    "ester": _Chain(kind="ester", en_suf="oate", zh_suf="酸", coda="an",
-                    no_loc="plain", omit_rule=lambda n, loc, omit: False,
+    "ester": _Chain(kind="ester", en_suf="oate", zh_suf="酸",
                     plain_maps=(ESTER_ACYL_EN, ACID_ZH),
                     ene_base=("enoate", "烯酸"),
                     yne_suf=("ynoate", "炔酸"),
                     ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
-                    fg="sh", need=1, no_loc="plain", omit_rule=_omit_term_locant),
-    "amine": _AMINE_SPEC,
-    "aldehyde": _Chain(kind="aldehyde", en_suf="anal", zh_suf="醛", coda="an",
-                       no_loc="plain", omit_rule=lambda n, loc, omit: False,
+                    fg="sh", need=1, omit_rule=_omit_term_locant,
+                    ene_seg=("ene", "烯"), yne_seg=("yne", "炔")),
+    "amine": _Chain(kind="amine", en_suf="amine", zh_suf="胺",
+                    fg="amine", need=1, omit_rule=_omit_term_locant,
+                    mult_ok=True, mult_zh_full=True),
+    "aldehyde": _Chain(kind="aldehyde", en_suf="anal", zh_suf="醛",
                        plain_maps=(ALDEHYDE_EN, ALDEHYDE_ZH),
                        ene_base=("enal", "烯醛"),
                        yne_suf=("ynal", "炔醛"),
                        ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent),
-    "nitrile": _Chain(kind="nitrile", en_suf="anenitrile", zh_suf="腈", coda="an",
-                      no_loc="plain", omit_rule=lambda n, loc, omit: False,
+    "nitrile": _Chain(kind="nitrile", en_suf="anenitrile", zh_suf="腈",
                       plain_maps=(NITRILE_EN, NITRILE_ZH),
                       ene_base=("enenitrile", "烯腈"),
                       yne_suf=("ynenitrile", "炔腈"),
                       ez_ene=ez_for_parent),
     "anhydride": _Chain(kind="anhydride", en_suf="", zh_suf="", coda="ane",
-                        no_loc="plain", omit_rule=lambda n, loc, omit: False,
                         plain_fn=_anhydride_from_acid),
-    "amide": _Chain(kind="amide", en_suf="amide", zh_suf="酰胺", coda="an",
-                    no_loc="plain", omit_rule=lambda n, loc, omit: False,
+    "amide": _Chain(kind="amide", en_suf="amide", zh_suf="酰胺",
                     plain_maps=(AMIDE_EN, AMIDE_ZH),
                     ene_base=("enamide", "烯酰胺"),
                     ene_special=alkenamide_names,

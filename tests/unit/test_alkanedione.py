@@ -21,6 +21,8 @@ CASES = [
     ("CC(=O)CCCC(=O)C", "heptane-2,6-dione", "庚-2,6-二酮"),
     ("CC(=O)CCCCC(=O)C", "octane-2,7-dione", "辛-2,7-二酮"),
     ("CCC(=O)CC(=O)CC", "heptane-3,5-dione", "庚-3,5-二酮"),
+    # positive: trione (multiplicity-generic count suffix)
+    ("CC(=O)CC(=O)CC(=O)C", "heptane-2,4,6-trione", "庚-2,4,6-三酮"),
     # negative: monoketones / cycloketone must not break
     ("CC(=O)C", "propan-2-one", "丙-2-酮"),
     ("CCCC(=O)C", "pentan-2-one", "戊-2-酮"),

@@ -35,6 +35,9 @@ CASES = [
         "(9Z,12Z,15Z)-octadeca-9,12,15-trien-1-ol",
         None,
     ),
+    # polyalkenols beyond triene (multiplicity-generic mult-seg)
+    ("C=CC=CC=CC=CCO", "nona-2,4,6,8-tetraen-1-ol", "壬-2,4,6,8-四烯-1-醇"),
+    ("C=CC=CC=CC=CC=CCO", "undeca-2,4,6,8,10-pentaen-1-ol", "十一-2,4,6,8,10-五烯-1-醇"),
     # negatives
     ("CCCCO", "butan-1-ol", "丁-1-醇"),
     ("C1CCC(O)CC1", "cyclohexanol", "环己醇"),

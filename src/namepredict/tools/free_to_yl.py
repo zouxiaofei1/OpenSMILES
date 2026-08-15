@@ -28,10 +28,13 @@ def _hetero_locant_prefix(en: str) -> str:
 
 # ── 官能团后缀 → 前缀转换 ──
 
+_MULT_OL_SUF = re.compile(r"(?:di|tri|tetra|penta|hexa|hepta|octa|nona|deca)ol\b")
+
+
 def _alkoxy_en(en: str) -> str | None:
     """醇 → 烷氧基：methanol→methoxy, propan-1-ol→propoxy, propan-2-ol→propan-2-yloxy。"""
-    if not en.endswith("ol") or "diol" in en or "triol" in en:
-        return None
+    if not en.endswith("ol") or _MULT_OL_SUF.search(en):
+        return None  # 多醇（diol…decaol）不能去氢成烷氧基
     if en in ("methanol", "ethanol"):
         return en[:-4] + "oxy"
     m = re.match(r"^(.+)an-1-ol$", en)

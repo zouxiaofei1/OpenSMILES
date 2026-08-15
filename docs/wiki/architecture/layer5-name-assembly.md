@@ -83,17 +83,18 @@ assemble(numbered)
 
 ### 3. 链式词干引擎 (`chain_engine.py`)
 
-`chain_engine.py`（365 行）是数据驱动的单链词干引擎——用 `_Chain` spec 描述每类 kind 的命名形态，`_chain_names` 统一渲染，替代了原先按 kind 手写 if 分支。
+`chain_engine.py`（358 行）是数据驱动的单链词干引擎——用 `_Chain` spec 描述每类 kind 的命名形态，`_chain_names` 统一渲染，替代了原先按 kind 手写 if 分支。
 
-**`_Chain` 数据类字段**（frozen dataclass，`146-177`）：
-- 基础：`kind`/`en_suf`/`zh_suf`/`coda`/`no_loc`（"plain"=无位次出普通名）/`omit_rule`
+**`_Chain` 数据类字段**（frozen dataclass，`150-183`）：
+- 基础：`kind`/`en_suf`/`zh_suf` **必填**（每 kind 互异，无合理默认）；`coda`/`no_loc`/`omit_rule` 在 `_: KW_ONLY` 分隔后为 keyword-only 默认值——`coda`="an"、`no_loc`="plain"、`omit_rule`=`_NO_OMIT`，仅特例显式覆盖（alkane `coda=""`、thiol/anhydride `coda="ane"`、ketone `no_loc="none"`、alcohol/thiol/amine `omit_rule=_omit_term_locant`、ketone/alkane 自定义 lambda）
 - FG：`fg`（fg_locants 记录 kind）/`need`（FG 数要求）
 - 俗名/派生：`plain_maps`/`plain_fn`
-- 烯/炔段：`ene_seg`/`yne_seg`/`mult_seg`（{2:("dien","二烯")…}）/`ene_base`/`ene_special`（俗名钩子）/`yne_suf`/`ez_ene`/`ene_loc_omit`（环单烯省略位次）
+- 烯/炔段：`ene_seg`（默认 `("en","烯")`；thiol 用 `("ene","烯")` 保留 e）/`yne_seg`（默认 `("yn","炔")`）/`ene_base`/`ene_special`（俗名钩子）/`yne_suf`/`ez_ene`/`ene_loc_omit`（环单烯省略位次）
 - 环：`cyclic`（恒加 cyclo/环前缀）/`cyclic_unsat`/`zh_full`/`stem`（稠环/杂环词干覆盖，如 naphthalen/萘）
-- **`variant: dict[int, dict]`**（`{multiplicity: 字段覆盖}`）— 按 multiplicity `replace(spec, **var)` 派生数量后缀（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid）。应用前先 `mult > 1` 判断（mult=1 用默认 spec）
+- **`mult_ok`**（acid/alcohol/amine/ketone=True）— 数量后缀由 `_generated_mult_fields`（`224`）生成：`MULT[m]`+基础后缀（diol/triol/tetraol…任意数量，无硬编码上限）；`mult_zh_full`（醇/胺多 FG 中文保留"烷"）/`mult_unsat_polyol`（仅醇）
+- **`variant: dict[int, dict]`**（`{multiplicity: 生成式之上的特例字段覆盖}`）— 现仅 acid 用（`{2: 草酸俗名/炔禁/ene_single_min=3}`）。`_chain_names` 先生成通用数量字段，再 `replace(spec, **extra)` 覆盖特例
 
-**`_KIND_TABLE`**（`285-365`）现有 **15 个 `_Chain` entry**：`alcohol`、`ketone`、`alkane`、`acid`、`ester`、`thiol`、`amine`、`sec_amine`、`tert_amine`、`aldehyde`、`nitrile`、`dione`、`anhydride`、`amide`（`sec_amine`/`tert_amine` 与 `amine` 共用同一 `_AMINE_SPEC`）。**已删除的组合 kind entry**：`cycloalkane`/`cycloalkene`/`cyclopolyene`/`cycloalcohol`/`cycloketone`/`cycloamine`/`cycloalkanediol`/`cycloalkanedione`——纯烃环并入 `alkane`（cyclo 前缀由 assembler 按 scaffold_id 动态加）。
+**`_KIND_TABLE`**（`305-358`）现有 **11 个 `_Chain` entry**：`alcohol`、`ketone`、`alkane`、`acid`、`ester`、`thiol`、`amine`、`aldehyde`、`nitrile`、`anhydride`、`amide`。**已删除的组合 kind entry**：`cycloalkane`/`cycloalkene`/`cyclopolyene`/`cycloalcohol`/`cycloketone`/`cycloamine`/`cycloalkanediol`/`cycloalkanedione` 及数量派生 kind——纯烃环并入 `alkane`（cyclo 前缀由 assembler 按 scaffold_id 动态加），数量统一由 `multiplicity` + `mult_ok` 生成式承载。
 
 > **源:** `src/namepredict/layer5/chain_engine.py`
 
