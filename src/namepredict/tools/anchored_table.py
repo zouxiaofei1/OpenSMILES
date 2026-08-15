@@ -14,7 +14,14 @@ from namepredict.layer3.submol_build import build_anchor_submol
 # 非保留取代基：锚定 SMILES → (en, zh, requires_parentheses, kind)
 # 保留取代基（registry 条目）的锚定键在 RetainedSubstituent.anchored 中声明。
 ANCHOR_TABLE: dict[str, tuple[str, str, bool, str]] = {
-    # 直链正烷基（C1–C12；对 name_mode 不敏感）
+    #基础取代基
+    "*F": ("fluoro", "氟", False, "halo"),
+    "*Cl": ("chloro", "氯", False, "halo"),
+    "*Br": ("bromo", "溴", False, "halo"),
+    "*I": ("iodo", "碘", False, "halo"),
+    "*[N+](=O)[O-]": ("nitro", "硝基", False, "leaf"),
+    "*N=C=O": ("isocyanato", "异氰酸根合", False, "leaf"),
+    "*N=C=S": ("isothiocyanato", "异硫氰酸根合", False, "leaf"),
     "*C": ("methyl", "甲基", False, "alkyl"),
     "*CC": ("ethyl", "乙基", False, "alkyl"),
     "*CCC": ("propyl", "丙基", False, "alkyl"),
@@ -26,46 +33,20 @@ ANCHOR_TABLE: dict[str, tuple[str, str, bool, str]] = {
     "*CCCCCCCCC": ("nonyl", "壬基", False, "alkyl"),
     "*CCCCCCCCCC": ("decyl", "癸基", False, "alkyl"),
     "*CCCCCCCCCCC": ("undecyl", "十一烷基", False, "alkyl"),
-    # 卤代烷基（复合前缀需括号）
-    "*CCl": ("chloromethyl", "氯甲基", True, "alkyl"),
-    "*CBr": ("bromomethyl", "溴甲基", True, "alkyl"),
-    "*CCCl": ("2-chloroethyl", "2-氯乙基", True, "alkyl"),
-    "*CCCCl": ("3-chloropropyl", "3-氯丙基", True, "alkyl"),
-    "*CCCCCl": ("4-chlorobutyl", "4-氯丁基", True, "alkyl"),
-    "*CCCBr": ("3-bromopropyl", "3-溴丙基", True, "alkyl"),
-    "*CCCCBr": ("4-bromobutyl", "4-溴丁基", True, "alkyl"),
-    # CF3（三氟甲基）
     "*C(F)(F)F": ("trifluoromethyl", "三氟甲基", False, "alkyl"),
-    # 哌啶基（描述性位置名；registry 的 piperidyl 为 general 保留名）
-    "*C1CCNCC1": ("piperidin-4-yl", "哌啶-4-基", True, "alkyl"),
-    "*C1CCCNC1": ("piperidin-3-yl", "哌啶-3-基", True, "alkyl"),
-    "*[C@@H]1CCCCN1": ("piperidin-2-yl", "哌啶-2-基", True, "alkyl"),
-    # 烯基位置异构（非保留，描述性名；与 registry 的 allyl 区分连接位点）
-    "*C=CC": ("prop-1-enyl", "丙-1-烯基", True, "alkyl"),
-    "*C=C(C)C": ("2-methylprop-1-enyl", "2-甲基丙-1-烯基", True, "alkyl"),
-    "*C=CC(C)C": ("3-methylbut-1-enyl", "3-甲基丁-1-烯基", True, "alkyl"),
-    # 环烷基（对 name_mode 不敏感）
     "*C1CC1": ("cyclopropyl", "环丙基", False, "alkyl"),
     "*C1CCC1": ("cyclobutyl", "环丁基", False, "alkyl"),
     "*C1CCCC1": ("cyclopentyl", "环戊基", False, "alkyl"),
     "*C1CCCCC1": ("cyclohexyl", "环己基", False, "alkyl"),
     "*C1CCCCCC1": ("cycloheptyl", "环庚基", False, "alkyl"),
     "*C1CCCCCCC1": ("cyclooctyl", "环辛基", False, "alkyl"),
-    # 芳基
     "*c1ccccc1": ("phenyl", "苯基", False, "aryl"),
-    "*c1ccc(Cl)cc1": ("4-chlorophenyl", "4-氯苯基", True, "aryl"),
-    "*c1cccc(Cl)c1": ("3-chlorophenyl", "3-氯苯基", True, "aryl"),
-    "*c1ccccc1Cl": ("2-chlorophenyl", "2-氯苯基", True, "aryl"),
-    # 单原子卤素（始终单键；无键型歧义）
-    "*F": ("fluoro", "氟", False, "halo"),
-    "*Cl": ("chloro", "氯", False, "halo"),
-    "*Br": ("bromo", "溴", False, "halo"),
-    "*I": ("iodo", "碘", False, "halo"),
-    # 键拓扑唯一的多原子端基官能团
-    "*[N+](=O)[O-]": ("nitro", "硝基", False, "leaf"),
-    "*N=C=O": ("isocyanato", "异氰酸根合", False, "leaf"),
-    "*N=C=S": ("isothiocyanato", "异硫氰酸根合", False, "leaf"),
-    # 杂芳基其他位置（非注册，描述性名称）
+    #因未知原因删了会regress的取代基
+    "*CCCl": ("2-chloroethyl", "2-氯乙基", True, "alkyl"),
+    "*CCCCl": ("3-chloropropyl", "3-氯丙基", True, "alkyl"),
+    "*CCCCCl": ("4-chlorobutyl", "4-氯丁基", True, "alkyl"),
+    "*CCCBr": ("3-bromopropyl", "3-溴丙基", True, "alkyl"),
+    "*CCCCBr": ("4-bromobutyl", "4-溴丁基", True, "alkyl"),
     "*c1cccnc1": ("pyridin-3-yl", "吡啶-3-基", True, "aryl"),
     "*c1ccncc1": ("pyridin-4-yl", "吡啶-4-基", True, "aryl"),
     "*c1ccco1": ("furan-3-yl", "呋喃-3-基", True, "aryl"),
@@ -77,7 +58,12 @@ ANCHOR_TABLE: dict[str, tuple[str, str, bool, str]] = {
     "*c1c2ccccc2cc2ccccc12": ("anthracen-9-yl", "蒽-9-基", True, "aryl"),
     "*c1ccc2ccc3ccccc3c2c1": ("phenanthren-1-yl", "菲-1-基", True, "aryl"),
     "*c1ccc2c(ccc3ccccc32)c1": ("phenanthren-2-yl", "菲-2-基", True, "aryl"),
-    "*C12CC3CC(CC(C3)C1)C2": ("adamantan-1-yl", "金刚烷-1-基", True, "aryl"),
+    "*C1CCNCC1": ("piperidin-4-yl", "哌啶-4-基", True, "alkyl"),
+    "*C1CCCNC1": ("piperidin-3-yl", "哌啶-3-基", True, "alkyl"),
+    "*[C@@H]1CCCCN1": ("piperidin-2-yl", "哌啶-2-基", True, "alkyl"),
+    "*CCl": ("chloromethyl", "氯甲基", True, "alkyl"),
+    "*CBr": ("bromomethyl", "溴甲基", True, "alkyl"),
+    #因iupac规则保留的取代基
 }
 
 

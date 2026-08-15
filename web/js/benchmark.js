@@ -13,6 +13,33 @@ function bmEsc(s) {
     .replace(/"/g, "&quot;");
 }
 
+function bmDataFile() {
+  var sel = bm$("data");
+  return (sel && sel.value) || "merged_benchmark.json";
+}
+
+function bmPreviewUrl(apiUrl) {
+  return apiUrl + "?data_file=" + encodeURIComponent(bmDataFile());
+}
+
+async function loadBmDatasets() {
+  var sel = bm$("data");
+  if (!sel) return;
+  try {
+    var data = await api(API.benchmarkDatasets);
+    if (data && data.ok && Array.isArray(data.datasets)) {
+      sel.innerHTML = data.datasets.map(function (name) {
+        var selAttr = name === "merged_benchmark.json" ? " selected" : "";
+        return '<option value="' + name + '"' + selAttr + ">" + name + "</option>";
+      }).join("");
+    } else {
+      sel.innerHTML = '<option value="">无可用测试文件</option>';
+    }
+  } catch (_) {
+    sel.innerHTML = '<option value="">加载失败</option>';
+  }
+}
+
 function showBmSkeleton() {
   var tbody = bm$("tbody");
   if (!tbody) return;
@@ -36,7 +63,7 @@ export async function loadBenchmark() {
   if (empty) empty.hidden = true;
   showBmSkeleton();
   try {
-    var data = await api(API.benchmarkPreview);
+    var data = await api(bmPreviewUrl(API.benchmarkPreview));
     state.bmRows = (data && data.rows) || [];
     state.bmLoaded = true;
     state.bmPage = 1;
@@ -68,14 +95,14 @@ function startBmPolling() {
   if (state.bmPollTimer) return;
   state.bmPollTimer = setInterval(async function () {
     try {
-      var status = await api(API.benchmarkStatus);
+      var status = await api(bmPreviewUrl(API.benchmarkStatus));
       state.bmGenerating = !!(status && status.running);
       state.bmGenDone = (status && status.done) || 0;
       state.bmGenTotal = (status && status.total) || 0;
       if (!state.bmGenerating) {
         // Generation finished — reload data
         stopBmPolling();
-        var data = await api(API.benchmarkPreview);
+        var data = await api(bmPreviewUrl(API.benchmarkPreview));
         state.bmRows = (data && data.rows) || [];
         state.bmGenDone = state.bmGenTotal;
         renderBenchmark();
@@ -99,16 +126,17 @@ export function stopBmPolling() {
 
 async function refreshBenchmark() {
   var btn = bm$("refresh");
+  var name = bmDataFile();
   if (btn) btn.disabled = true;
   stopBmPolling();
   try {
-    var data = await api(API.benchmarkRefresh, { method: "POST" });
+    var data = await api(API.benchmarkRefresh + "?data_file=" + encodeURIComponent(name), { method: "POST" });
     if (data && data.ok) {
       state.bmGenerating = true;
       state.bmGenDone = 0;
       state.bmGenTotal = data.total || 0;
       // Reload to pick up any partial cache
-      var preview = await api(API.benchmarkPreview);
+      var preview = await api(API.benchmarkPreview + "?data_file=" + encodeURIComponent(name));
       state.bmRows = (preview && preview.rows) || [];
       renderBenchmark();
       startBmPolling();
@@ -264,6 +292,18 @@ function renderBenchmark() {
 }
 
 export function bindBenchmark() {
+  // 数据文件下拉：加载可用列表；切换时重载对应文件
+  if (bm$("data")) {
+    loadBmDatasets();
+    bm$("data").addEventListener("change", function () {
+      stopBmPolling();
+      state.bmRows = [];
+      state.bmPage = 1;
+      state.bmLoaded = false;
+      state.bmGenerating = false;
+      loadBenchmark();
+    });
+  }
   if (bm$("q")) {
     var bmTimer = null;
     bm$("q").addEventListener("input", function () {

@@ -3,6 +3,7 @@
 export const API = {
   name: "/api/v1/name",
   benchmarkPreview: "/api/v1/benchmark-preview",
+  benchmarkDatasets: "/api/v1/benchmark-preview/datasets",
   benchmarkRefresh: "/api/v1/benchmark-preview/refresh",
   benchmarkStatus: "/api/v1/benchmark-preview/status",
   benchmarkRun: "/api/v1/benchmark-run",

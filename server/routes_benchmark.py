@@ -1,8 +1,9 @@
-"""Benchmark preview API: run predictions against merged_benchmark.json.
+"""Benchmark preview API: run predictions against a selectable data file.
 
-Data source: data/merged_benchmark.json (4070 gold rows).
-Cache:       tools/benchmark_pred_preview_data.json.
+Data source: data/<data_file>.json (default merged_benchmark.json, 4070 gold rows).
+Cache:       tools/benchmark_pred_preview_<stem>.json (legacy name kept for default).
 
+GET  /api/v1/benchmark-preview/datasets   — list benchmark-shaped data files under data/
 GET  /api/v1/benchmark-preview        — serve cached rows + generation status
 POST /api/v1/benchmark-preview/refresh — start subprocess generation
 GET  /api/v1/benchmark-preview/status  — poll generation progress
@@ -24,33 +25,74 @@ from server import history_store
 router = APIRouter(prefix="/api/v1", tags=["benchmark"])
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "data" / "merged_benchmark.json"
+DATA_DIR = ROOT / "data"
+DEFAULT_DATA_FILE = "merged_benchmark.json"
 CACHE = ROOT / "tools" / "benchmark_pred_preview_data.json"
 
-# Subprocess handle for background generation
+# Subprocess handle for background generation. Only one live generation runs at
+# a time; _proc_data records which data file it targets.
 _proc: subprocess.Popen | None = None
+_proc_data: str | None = None
 _proc_lock = threading.Lock()
 _gen_total = 0
 _captured: list[str] = []  # last stdout lines for diagnostics
 
 
-def _read_cache() -> list[dict]:
+def _resolve_source(data_file: str | None) -> Path:
+    """Resolve a benchmark data file under data/, with traversal guard.
+
+    Accepts a bare filename (resolved against DATA_DIR). Slashes are rejected
+    so callers cannot reach arbitrary files elsewhere on disk.
+    """
+    name = (data_file or DEFAULT_DATA_FILE).strip()
+    if "/" in name or "\\" in name or name in ("", ".", ".."):
+        raise ValueError("invalid data file name")
+    p = (DATA_DIR / name).resolve()
+    if p.suffix.lower() != ".json" or not str(p).startswith(str(DATA_DIR.resolve())):
+        raise ValueError("invalid data file path")
+    return p
+
+
+def _cache_path_for(data_file: str) -> Path:
+    """Per-file preview cache under tools/, keeping the legacy name for default."""
+    if data_file == DEFAULT_DATA_FILE:
+        return CACHE
+    return ROOT / "tools" / f"benchmark_pred_preview_{Path(data_file).stem}.json"
+
+
+def _hist_kind(data_file: str) -> str:
+    """history_store job/cache kind; default file keeps the legacy key."""
+    if data_file == DEFAULT_DATA_FILE:
+        return "benchmark"
+    return f"benchmark_{Path(data_file).stem}"
+
+
+def _data_sig_for(source: Path) -> str:
+    """Signature of a benchmark data file; cache invalidates when it changes."""
+    try:
+        st = source.stat()
+        return f"{st.st_size}:{st.st_mtime_ns}"
+    except OSError:
+        return "missing"
+
+
+def _read_cache(cache: Path) -> list[dict]:
     """Read cached rows, or empty list."""
-    if not CACHE.is_file():
+    if not cache.is_file():
         return []
     try:
-        rows = json.loads(CACHE.read_text(encoding="utf-8"))
+        rows = json.loads(cache.read_text(encoding="utf-8"))
         return rows if isinstance(rows, list) else []
     except Exception:
         return []
 
 
-def _source_total() -> int:
-    """Return the number of rows in merged_benchmark.json, or 0."""
-    if not SOURCE.is_file():
+def _source_total(source: Path) -> int:
+    """Return the number of rows in the data file, or 0."""
+    if not source.is_file():
         return 0
     try:
-        rows = json.loads(SOURCE.read_text(encoding="utf-8"))
+        rows = json.loads(source.read_text(encoding="utf-8"))
         return len(rows) if isinstance(rows, list) else 0
     except Exception:
         return 0
@@ -66,18 +108,18 @@ def _hist_commit(commit: str | None) -> str | None:
         raise HTTPException(status_code=400, detail=f"invalid commit: {commit}")
 
 
-def _hist_rows(full: str) -> list[dict]:
-    cache = history_store.read_cache(full, "benchmark")
-    if cache and cache.get("_data_sig") == history_store.data_sig():
+def _hist_rows(full: str, data_file: str) -> list[dict]:
+    cache = history_store.read_cache(full, _hist_kind(data_file))
+    if cache and cache.get("_data_sig") == _data_sig_for(_resolve_source(data_file)):
         rows = cache.get("rows")
         return rows if isinstance(rows, list) else []
     return []
 
 
-def _hist_benchmark_preview(full: str) -> dict[str, Any]:
-    rows = _hist_rows(full)
-    src_total = _source_total()
-    job = history_store.get_job(full, "benchmark")
+def _hist_benchmark_preview(full: str, data_file: str) -> dict[str, Any]:
+    rows = _hist_rows(full, data_file)
+    src_total = _source_total(_resolve_source(data_file))
+    job = history_store.get_job(full, _hist_kind(data_file))
     generating = job is not None and job.proc is not None and job.proc.poll() is None
     return {
         "rows": rows,
@@ -89,25 +131,51 @@ def _hist_benchmark_preview(full: str) -> dict[str, Any]:
         "gen_total": job.total if job else src_total,
         "commit": full,
         "head": history_store._head(),
+        "data_file": data_file,
     }
 
 
+@router.get("/benchmark-preview/datasets")
+def benchmark_preview_datasets() -> dict[str, Any]:
+    """List data files that look like benchmark rows (list of {smiles, english_name})."""
+    out: list[str] = []
+    for p in sorted(DATA_DIR.glob("*.json")):
+        if not p.is_file():
+            continue
+        try:
+            obj = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(obj, list) or not obj:
+            continue
+        first = obj[0]
+        if isinstance(first, dict) and "smiles" in first and "english_name" in first:
+            out.append(p.name)
+    return {"ok": True, "datasets": out}
+
+
 @router.get("/benchmark-preview")
-def get_benchmark_preview(commit: str | None = None) -> dict[str, Any]:
+def get_benchmark_preview(commit: str | None = None, data_file: str | None = None) -> dict[str, Any]:
     """Return benchmark prediction rows from cache + generation status."""
+    try:
+        source = _resolve_source(data_file)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    data_name = source.name
     full = _hist_commit(commit)
     if full is not None:
-        return _hist_benchmark_preview(full)
+        return _hist_benchmark_preview(full, data_name)
 
-    rows = _read_cache()
-    src_total = _source_total()
-    generating = _proc is not None and _proc.poll() is None
+    cache = _cache_path_for(data_name)
+    rows = _read_cache(cache)
+    src_total = _source_total(source)
+    generating = _proc is not None and _proc.poll() is None and _proc_data == data_name
     gen_done = len(rows)
-    gen_total = _gen_total or src_total
+    gen_total = _gen_total if _proc_data == data_name else src_total
 
     # If the subprocess just finished, do a final read
-    if not generating and _proc is not None and _proc.poll() == 0:
-        rows = _read_cache()
+    if not generating and _proc is not None and _proc.poll() == 0 and _proc_data == data_name:
+        rows = _read_cache(cache)
         gen_done = len(rows)
 
     return {
@@ -118,14 +186,16 @@ def get_benchmark_preview(commit: str | None = None) -> dict[str, Any]:
         "generating": generating,
         "gen_done": gen_done,
         "gen_total": gen_total,
+        "data_file": data_name,
     }
 
 
-def _hist_benchmark_refresh(full: str, force: bool) -> dict[str, Any]:
+def _hist_benchmark_refresh(full: str, force: bool, data_file: str) -> dict[str, Any]:
     """Start background generation of benchmark rows for a past commit."""
-    src_total = _source_total()
+    source = _resolve_source(data_file)
+    src_total = _source_total(source)
     if src_total == 0:
-        return {"ok": False, "error": f"source data not found or empty: {SOURCE}"}
+        return {"ok": False, "error": f"source data not found or empty: {source}"}
     try:
         wt = history_store.ensure_worktree(full)  # refs+1; released in finish_job
     except RuntimeError as exc:
@@ -136,7 +206,8 @@ def _hist_benchmark_refresh(full: str, force: bool) -> dict[str, Any]:
         history_store.release_worktree(full)
         return {"ok": False, "error": f"该 commit 无 namepredict 源码（{full[:7]}），无法运行历史 benchmark"}
 
-    cache_path = history_store.cache_path(full, "benchmark")
+    kind = _hist_kind(data_file)
+    cache_path = history_store.cache_path(full, kind)
     history_store.cache_dir(full).mkdir(parents=True, exist_ok=True)
 
     script = f'''
@@ -150,7 +221,7 @@ RDLogger.logger().setLevel(RDLogger.ERROR)
 
 from namepredict.namer import SMILESNNamer
 from namepredict.constants import normalize_en, normalize_zh
-SOURCE = Path(r"{SOURCE}")
+SOURCE = Path(r"{source}")
 CACHE = Path(r"{cache_path}")
 _SIG = f"{{SOURCE.stat().st_size}}:{{SOURCE.stat().st_mtime_ns}}"
 
@@ -202,7 +273,7 @@ print(f"DONE {{total}} rows {{elapsed:.1f}}s dual_ok={{n_ok}}", flush=True)
         history_store.release_worktree(full)
         return {"ok": False, "error": str(exc)}
 
-    ok, err = history_store.register_job(full, "benchmark", proc, src_total)
+    ok, err = history_store.register_job(full, kind, proc, src_total)
     if not ok:
         try:
             proc.kill()
@@ -211,7 +282,7 @@ print(f"DONE {{total}} rows {{elapsed:.1f}}s dual_ok={{n_ok}}", flush=True)
         history_store.release_worktree(full)
         return {"ok": False, "error": err, "total": src_total}
 
-    job = history_store.get_job(full, "benchmark")
+    job = history_store.get_job(full, kind)
     _streams_done = [0]
 
     def _mark_stream_done() -> None:
@@ -221,7 +292,7 @@ print(f"DONE {{total}} rows {{elapsed:.1f}}s dual_ok={{n_ok}}", flush=True)
             if proc.poll() not in (0, None):
                 tail = "".join(job.captured[-10:]) if job and job.captured else ""
                 error = tail[-500:] if tail else f"exit code {proc.poll()}"
-            history_store.finish_job(full, "benchmark", error=error)
+            history_store.finish_job(full, kind, error=error)
 
     def _drain_stdout() -> None:
         try:
@@ -258,20 +329,25 @@ print(f"DONE {{total}} rows {{elapsed:.1f}}s dual_ok={{n_ok}}", flush=True)
     # stall the child (the live path avoids this with stderr=DEVNULL).
     threading.Thread(target=_drain_stdout, daemon=True).start()
     threading.Thread(target=_drain_stderr, daemon=True).start()
-    return {"ok": True, "started": True, "total": src_total, "commit": full}
+    return {"ok": True, "started": True, "total": src_total, "commit": full, "data_file": data_file}
 
 
 @router.post("/benchmark-preview/refresh")
-def refresh_benchmark_preview(force: bool = False, commit: str | None = None) -> dict[str, Any]:
+def refresh_benchmark_preview(force: bool = False, commit: str | None = None, data_file: str | None = None) -> dict[str, Any]:
     """Start background subprocess to generate benchmark cache.
 
     Set force=true to kill any stuck generation and restart.
     """
+    try:
+        source = _resolve_source(data_file)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    data_name = source.name
     full = _hist_commit(commit)
     if full is not None:
-        return _hist_benchmark_refresh(full, force)
+        return _hist_benchmark_refresh(full, force, data_name)
 
-    global _proc, _gen_total, _captured
+    global _proc, _proc_data, _gen_total, _captured
 
     # Check for a running process
     if _proc is not None:
@@ -283,24 +359,29 @@ def refresh_benchmark_preview(force: bool = False, commit: str | None = None) ->
                 except Exception:
                     pass
                 _proc = None
+                _proc_data = None
                 _captured = []
             else:
+                hint = "" if _proc_data == data_name else f"（正在生成 {_proc_data}）"
                 return {
                     "ok": False,
-                    "error": "generation already in progress (use force=true to reset)",
+                    "error": f"generation already in progress{hint} (use force=true to reset)",
                     "total": _gen_total,
                 }
         else:
             # Process already dead — clean up the stale reference
             _proc = None
+            _proc_data = None
             _captured = []
 
-    src_total = _source_total()
+    src_total = _source_total(source)
     if src_total == 0:
-        return {"ok": False, "error": f"source data not found or empty: {SOURCE}"}
+        return {"ok": False, "error": f"source data not found or empty: {source}"}
 
     _gen_total = src_total
     _captured = []
+    _proc_data = data_name
+    cache_path = _cache_path_for(data_name)
 
     # Build a small inline script that does the generation
     script = f'''
@@ -314,8 +395,8 @@ RDLogger.logger().setLevel(RDLogger.ERROR)
 
 from namepredict.namer import SMILESNNamer
 from namepredict.constants import normalize_en, normalize_zh
-SOURCE = Path(r"{SOURCE}")
-CACHE = Path(r"{CACHE}")
+SOURCE = Path(r"{source}")
+CACHE = Path(r"{cache_path}")
 
 def score_pred(pe, pz, ge, gz):
     en_ok = bool(ge) and normalize_en(pe) == normalize_en(ge)
@@ -363,6 +444,7 @@ print(f"DONE {{total}} rows {{elapsed:.1f}}s dual_ok={{n_ok}}", flush=True)
         )
     except Exception as exc:
         _proc = None
+        _proc_data = None
         return {"ok": False, "error": str(exc)}
 
     # Drain stdout in a daemon thread so the pipe buffer never blocks the child
@@ -377,14 +459,15 @@ print(f"DONE {{total}} rows {{elapsed:.1f}}s dual_ok={{n_ok}}", flush=True)
 
     threading.Thread(target=_drain, daemon=True).start()
 
-    return {"ok": True, "started": True, "total": src_total}
+    return {"ok": True, "started": True, "total": src_total, "data_file": data_name}
 
 
-def _hist_benchmark_status(full: str) -> dict[str, Any]:
+def _hist_benchmark_status(full: str, data_file: str) -> dict[str, Any]:
     """Poll historical generation progress (same shape as live status)."""
-    done = len(_hist_rows(full))
-    total = _source_total()
-    job = history_store.get_job(full, "benchmark")
+    kind = _hist_kind(data_file)
+    done = len(_hist_rows(full, data_file))
+    total = _source_total(_resolve_source(data_file))
+    job = history_store.get_job(full, kind)
 
     proc_running = job is not None and job.proc is not None and job.proc.poll() is None
     proc_exited = job is not None and job.proc is not None and job.proc.poll() is not None
@@ -400,25 +483,31 @@ def _hist_benchmark_status(full: str) -> dict[str, Any]:
             error = "process exited successfully but cache is incomplete"
     if error is None:
         # job removed after finish_job → fall back to the persisted error marker
-        error = history_store.read_error(full, "benchmark")
+        error = history_store.read_error(full, kind)
 
     stuck = not proc_running and not proc_exited and done < total and done > 0 and error is None
     return {"running": running, "done": done, "total": total, "error": error, "stuck": stuck}
 
 
 @router.get("/benchmark-preview/status")
-def benchmark_status(commit: str | None = None) -> dict[str, Any]:
+def benchmark_status(commit: str | None = None, data_file: str | None = None) -> dict[str, Any]:
     """Poll generation progress."""
+    try:
+        source = _resolve_source(data_file)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    data_name = source.name
     full = _hist_commit(commit)
     if full is not None:
-        return _hist_benchmark_status(full)
+        return _hist_benchmark_status(full, data_name)
 
     global _proc
-    done = len(_read_cache())
-    total = _gen_total or _source_total()
+    cache = _cache_path_for(data_name)
+    done = len(_read_cache(cache))
+    total = _gen_total if _proc_data == data_name else _source_total(source)
 
-    proc_running = _proc is not None and _proc.poll() is None
-    proc_exited = _proc is not None and _proc.poll() is not None
+    proc_running = _proc is not None and _proc.poll() is None and _proc_data == data_name
+    proc_exited = _proc is not None and _proc.poll() is not None and _proc_data == data_name
 
     # If the process exited but cache is incomplete, it failed
     running = proc_running and done < total
