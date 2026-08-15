@@ -83,66 +83,7 @@ def alkane_zh(n: int) -> str | None:
     return f"{z}烷" if z else None
 
 
-def alcohol_en(n: int) -> str | None:
-    s = _en_stem(n)
-    return f"{s}anol" if s else None
-
-
-def alcohol_zh(n: int) -> str | None:
-    if n <= 10 and n in _ALKANE_ZH_BASE:
-        return f"{_ALKANE_ZH_BASE[n][0]}醇"
-    z = zh_num(n)
-    return f"{z}醇" if z else None
-
-
-def _en_retained(n: int, one: str, two: str, suffix: str) -> str | None:
-    if n == 1:
-        return one
-    if n == 2:
-        return two
-    s = _en_stem(n)
-    return f"{s}{suffix}" if s else None
-
-
-def _zh_suffixed(n: int, suffix: str) -> str | None:
-    z = zh_num(n)
-    return f"{z}{suffix}" if z else None
-
-
-def acid_en(n: int) -> str | None:
-    return _en_retained(n, "formic acid", "acetic acid", "anoic acid")
-
-
-def acid_zh(n: int) -> str | None:
-    return _zh_suffixed(n, "酸")
-
-
-def aldehyde_en(n: int) -> str | None:
-    return _en_retained(n, "formaldehyde", "acetaldehyde", "anal")
-
-
-def aldehyde_zh(n: int) -> str | None:
-    return _zh_suffixed(n, "醛")
-
-
-def amide_en(n: int) -> str | None:
-    return _en_retained(n, "formamide", "acetamide", "anamide")
-
-
-def amide_zh(n: int) -> str | None:
-    return _zh_suffixed(n, "酰胺")
-
-
-def nitrile_en(n: int) -> str | None:
-    return _en_retained(n, "formonitrile", "acetonitrile", "anenitrile")
-
-
-def nitrile_zh(n: int) -> str | None:
-    return _zh_suffixed(n, "腈")
-
-
-def ester_acyl_en(n: int) -> str | None:
-    return _en_retained(n, "formate", "acetate", "anoate")
+# FG 俗名生成器已删：C3+ 系统名由 chain_engine 词干生成（_chain_plain 回落），C1/C2 英文保留名迁入 chain_engine._RETAINED。
 
 
 def acid_to_anion_en(en: str) -> str:
@@ -246,14 +187,3 @@ def _fill(fn, lo: int = 1, hi: int = 35) -> dict[int, str]:
 # 公共字典 API（C1–C35 由生成器填充；C20+ 从不手写）
 ALKANE_EN = _fill(alkane_en)
 ALKANE_ZH = _fill(alkane_zh)
-ALCOHOL_EN = _fill(alcohol_en)
-ALCOHOL_ZH = _fill(alcohol_zh)
-ACID_EN = _fill(acid_en)
-ACID_ZH = _fill(acid_zh)
-ALDEHYDE_EN = _fill(aldehyde_en)
-ALDEHYDE_ZH = _fill(aldehyde_zh)
-AMIDE_EN = _fill(amide_en)
-AMIDE_ZH = _fill(amide_zh)
-NITRILE_EN = _fill(nitrile_en)
-NITRILE_ZH = _fill(nitrile_zh)
-ESTER_ACYL_EN = _fill(ester_acyl_en)

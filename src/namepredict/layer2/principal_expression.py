@@ -133,8 +133,6 @@ def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str |
 
 
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold) -> str | None:
-    if selection.group_class is FunctionalGroupClass.AMINE and count != 1:
-        return None
     # 苯基取代基 radical 保持 'phenyl'（P-22.2.4）；环 + 主 FG 的 kind 收敛为 FG 类别（正交化），环骨架由 scaffold_id 承载，命名 kind（cycloalcohol/cycloketone/benzoic/phenol/...）由 L5 typed_kinds 决定。
     if selection.group_class is FunctionalGroupClass.RADICAL and _is_benzene(info, skeleton):
         return "phenyl"
