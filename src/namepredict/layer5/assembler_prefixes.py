@@ -98,16 +98,35 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 
 
+_N_PREFIX_KINDS = frozenset({"n_alkyl", "n_phenyl", "n_benzyl", "n_block"})
+
+
 def _sorted_stems(groups: dict[str, list]) -> list[str]:
     """按烷基字母键排序非空词干列表。"""
     return sorted((k for k in groups if k), key=alkyl_alpha_key)
 
 
+def _n_prefix_en(n: int, stem: str) -> str:
+    """英文 N- 前缀：N-methyl / N,N-dimethyl / N,N,N-trimethyl。"""
+    if n == 1:
+        return f"N-{stem}"
+    ns = ",".join("N" for _ in range(n))
+    return f"{ns}-{_mult_en(n)}{stem}"
+
+
+def _n_prefix_zh(n: int, stem: str) -> str:
+    """中文 N- 前缀：N-甲基 / N,N-二甲基。"""
+    if n == 1:
+        return f"N-{stem}"
+    ns = ",".join("N" for _ in range(n))
+    return f"{ns}-{_mult_zh(n)}{stem}"
+
+
 def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> tuple[str, str]:
-    """按词干生成中英文前缀（N- 类取代基强制省略位次）。"""
+    """按词干生成中英文前缀（N- 类取代基加 N- 前缀并强制省略位次）。"""
     zh_stem = subs[0].get("zh") or ""
-    if (subs[0].get("kind") or "") in ("n_alkyl", "n_phenyl", "n_benzyl", "n_block"):
-        omit = True
+    if (subs[0].get("kind") or "") in _N_PREFIX_KINDS:
+        return _n_prefix_en(len(subs), stem), _n_prefix_zh(len(subs), zh_stem)
     return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit, paren_cf3)
 
 

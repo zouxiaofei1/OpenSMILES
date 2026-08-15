@@ -17,7 +17,8 @@ def test_benzamide_owns_core_not_n_phenyl():
     """Benzamide owns aryl + amide C/N/O; N-phenyl carbons stay outside."""
     mol, info = _info("c1ccccc1C(=O)Nc2ccccc2")
     parent = select_parent(info)
-    assert parent["kind"] == "benzamide"
+    assert parent["kind"] == "amide"
+    assert parent.get("scaffold_id") == "benzene"
     owned = parent["owned_atoms"]
     assert isinstance(owned, frozenset)
 

@@ -9,6 +9,7 @@ def _claim_kind(slot_value: str) -> str:
     return {
         "ether_o": "alkoxy",
         "amide_n": "n_block",
+        "amine_n": "n_block",
         "ring_c": "alkyl",
         "chain_c": "alkyl",
     }.get(slot_value, "side")
@@ -26,6 +27,9 @@ def _kind_for_named(named) -> str:
     """由命名结果确定取代基 kind（优先特殊保留名）。"""
     if named.en in ("methoxy", "ethoxy", "propoxy", "butoxy"):
         return "alkoxy"
+    if named.claim.slot.value == "amine_n":
+        # 胺 N 端取代基：苯基/苄基用对应 kind，其余烷基 → n_alkyl（N- 前缀）。
+        return {"phenyl": "n_phenyl", "benzyl": "n_benzyl"}.get(named.en, "n_alkyl")
     return _NAME_KIND.get(named.en, _claim_kind(named.claim.slot.value))
 
 
@@ -54,9 +58,8 @@ def _covered_atoms(subs: list[dict]) -> set[int]:
 
 
 def _should_skip(claim, covered: set[int]) -> bool:
-    """判断 claim 是否应跳过（酰胺 N 或原子已被覆盖）。"""
-    from namepredict.layer3.claimable_block import SideSlot
-    return claim.slot == SideSlot.AMIDE_N or bool(set(claim.atoms) & covered)
+    """判断 claim 是否应跳过（仅原子已被覆盖时）。"""
+    return bool(set(claim.atoms) & covered)
 
 
 # 酯酸侧 O（烷氧基臂）：连在酯 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 join_kind_name 消费。

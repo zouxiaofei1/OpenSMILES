@@ -7,7 +7,7 @@ from enum import Enum
 from rdkit.Chem import Mol
 
 from namepredict.constants import Al, As, B, Bi, C, Ga, Ge, In, N, O, P, Pb, S, Sb, Se, Si, Sn, Te, Tl
-from namepredict.layer1.functional_group_inventory import FunctionalGroupOccurrence
+from namepredict.layer1.functional_group_inventory import FunctionalGroupClass, FunctionalGroupOccurrence
 from namepredict.layer2.chain_walk import _chain_through, _chain_through_two, _longest_chain
 
 
@@ -62,15 +62,34 @@ def _open_chains(mol: Mol, anchors: list[int]) -> list[list[int]]:
 
 
 def _chain_coverage(chain: list[int], occurrences) -> frozenset[str]:
-    """计算链覆盖的 occurrence id 集合（锚点全在链上）。"""
+    """计算链覆盖的 occurrence id 集合（锚点全在链上；胺取任一锚点在链上）。
+
+    二级/三级胺 N 的多条母体臂中任一成为链即覆盖（P-62.2 多臂选优），
+    其余臂作为 N- 取代基留在所有权外。
+    """
     atoms = set(chain)
-    return frozenset(o.id for o in occurrences if o.parent_anchors and o.parent_anchors <= atoms)
+    out: set[str] = set()
+    for o in occurrences:
+        if not o.parent_anchors:
+            continue
+        if o.group_class is FunctionalGroupClass.AMINE:
+            if o.parent_anchors & atoms:
+                out.add(o.id)
+        elif o.parent_anchors <= atoms:
+            out.add(o.id)
+    return frozenset(out)
 
 
 def _ring_attaches(mol: Mol, ring: set[int], occurrence: FunctionalGroupOccurrence) -> bool:
-    """判断 occurrence 是否附着于环（锚点本身或邻居在环内）。"""
+    """判断 occurrence 是否附着于环（锚点本身或邻居在环内；胺仅认锚点直接附着）。
+
+    胺 N 直接连芳环（锚点在环内）才选环母体；N 隔碳连芳环（苄基胺类）
+    环不附着，母体走含 N 链、芳基作取代基（P-62.2.2）。
+    """
     if occurrence.parent_anchors & ring:
         return True
+    if occurrence.group_class is FunctionalGroupClass.AMINE:
+        return False
     return any(n.GetIdx() in ring for a in occurrence.parent_anchors for n in mol.GetAtomWithIdx(a).GetNeighbors())
 
 
@@ -226,5 +245,6 @@ def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOcc
 def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> PrincipalSkeletons:
     """枚举全部骨架候选，并计算未覆盖的 occurrence id。"""
     candidates = tuple(_chain_candidates(info, occurrences) + _ring_candidates(info, occurrences))
+    # print(info,"\n",occurrences)
     covered = frozenset(i for candidate in candidates for i in candidate.covered_principal_ids)
     return PrincipalSkeletons(candidates, frozenset(o.id for o in occurrences) - covered)

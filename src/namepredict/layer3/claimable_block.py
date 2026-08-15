@@ -13,6 +13,7 @@ class SideSlot(str, Enum):
     CHAIN_C = "chain_c"
     RING_C = "ring_c"
     AMIDE_N = "amide_n"
+    AMINE_N = "amine_n"
     ETHER_O = "ether_o"
     OTHER = "other"
 
@@ -64,6 +65,15 @@ def _is_ether_o(mol: Mol, o_idx: int) -> bool:
     return len(heavies) == 2 and all(n.GetAtomicNum() == 6 for n in heavies)
 
 
+def _is_amine_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
+    """胺 N：非芳香 N，至少连一个 owned 内非羰基碳。"""
+    atom = mol.GetAtomWithIdx(n_idx)
+    if atom.GetAtomicNum() != 7 or atom.GetIsAromatic():
+        return False
+    return any(n.GetIdx() in owned and n.GetAtomicNum() == 6 and not _has_dbl_o(n)
+               for n in atom.GetNeighbors())
+
+
 def _carbon_slot(atom) -> SideSlot:
     """按是否成环返回碳原子的 slot 类型。"""
     return SideSlot.RING_C if atom.IsInRing() else SideSlot.CHAIN_C
@@ -73,6 +83,8 @@ def derive_slot(mol: Mol, attach_parent: int, owned_atoms: frozenset[int]) -> Si
     """仅从所属连接原子的角色推导 SideSlot。"""
     if _is_amide_n(mol, attach_parent, owned_atoms):
         return SideSlot.AMIDE_N
+    if _is_amine_n(mol, attach_parent, owned_atoms):
+        return SideSlot.AMINE_N
     if _is_ether_o(mol, attach_parent):
         return SideSlot.ETHER_O
     atom = mol.GetAtomWithIdx(attach_parent)

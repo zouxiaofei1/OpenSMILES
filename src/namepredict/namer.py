@@ -98,20 +98,27 @@ def _remap_attach(parent: dict, s: dict) -> dict:
     attach = s.get("attach_idx")
     if attach in chain:
         return s
-    for key in ("ring_attach_idx", "amide_c_idx", "ketone_c_idx", "oh_c_idx"):
+    for key in ("ring_attach_idx", "amide_c_idx", "amine_c_idx", "ketone_c_idx", "oh_c_idx"):
         alt = parent.get(key)
         if alt in chain:
             return {**s, "attach_idx": alt}
     return s
 
 
+_N_SIDE_KINDS = frozenset({"n_alkyl", "n_phenyl", "n_benzyl", "n_block"})
+
+
 def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
-    """筛选并重映射参与编号的取代基（O 侧与链上连接点）。"""
+    """筛选并重映射参与编号的取代基（O 侧、链上连接点与 N 端）。
+
+    N- 取代基（n_* kind）附着在 N 上而非链上，位次隐含省略（N- 前缀），
+    但仍须保留进 L5 前缀组装。
+    """
     chain = _chain_set(parent)
     out: list[dict] = []
     for s in subst:
         s2 = _remap_attach(parent, s)
-        if s2.get("o_side") or s2.get("attach_idx") in chain:
+        if s2.get("o_side") or s2.get("attach_idx") in chain or s2.get("kind") in _N_SIDE_KINDS:
             out.append(s2)
     return out
 

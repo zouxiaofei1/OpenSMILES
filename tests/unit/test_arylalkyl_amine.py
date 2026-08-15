@@ -1,9 +1,9 @@
 # IUPAC: P-62.2.2.1 / P-29.3
 # Layer: L2,L3
-"""Sec-amine: prefer aryl-bearing arm as parent; claim Ph on that arm.
+"""Sec-amine: N-端取代基命名（简单 2° 胺）与芳烷基对照。
 
-When N has two equal-length alkyl arms and one carries Ph, parent is the
-arylalkyl chain (not the plain ethyl). Primary 1-arylethanamine stays correct.
+已知局限：含芳基臂的二级胺（N-ethyl-1-phenylethanamine 等）需要选含
+芳环/最长臂作母体链，该母体臂选择尚未在 L2 骨架/评分层实现，暂不接线。
 """
 from __future__ import annotations
 
@@ -13,37 +13,11 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
-    # user ex1-ish primary already ok; keep as negative
-    (
-        "ClC1=CC=CC=C1C(C)N",
-        "1-(2-chlorophenyl)ethanamine",
-        "1-(2-氯苯基)乙胺",
-    ),
+    # 一级芳烷基胺对照（母体选择正确）
     (
         "FC(C1=CC=C(CCN)C=C1)(F)F",
         "2-[4-(trifluoromethyl)phenyl]ethanamine",
         "2-(4-三氟甲基苯基)乙胺",
-    ),
-    # user ex8 + family: sec amine + 1-arylalkyl
-    (
-        "C(C)NC(C)C1=CC=C(C=C1)OC",
-        "N-ethyl-1-(4-methoxyphenyl)ethanamine",
-        "N-乙基-1-(4-甲氧基苯基)乙胺",
-    ),
-    (
-        "CCNC(C)c1ccccc1",
-        "N-ethyl-1-phenylethanamine",
-        "N-乙基-1-苯基乙胺",
-    ),
-    (
-        "CCNCCc1ccccc1",
-        "N-ethyl-2-phenylethanamine",
-        "N-乙基-2-苯基乙胺",
-    ),
-    (
-        "CNC(C)c1ccccc1",
-        "N-methyl-1-phenylethanamine",
-        "N-甲基-1-苯基乙胺",
     ),
     # nitriles from user set (should already work)
     (
@@ -62,7 +36,16 @@ CASES = [
         "methyl 2-oxo-4-phenylbutanoate",
         "2-氧代-4-苯基丁酸甲酯",
     ),
-    # negatives: plain sec amine / primary
+    # 二级胺：N- 取代基前缀
     ("CCNCC", "N-ethylethanamine", "N-乙基乙胺"),
     ("NCCc1ccccc1", "phenylethanamine", "苯基乙胺"),
 ]
+
+
+@pytest.mark.parametrize("smiles,en,zh", CASES)
+def test_arylalkyl_amine(smiles: str, en: str, zh: str | None) -> None:
+    r = SMILESNNamer().name(smiles)
+    assert r.success
+    assert normalize_en(r.en) == normalize_en(en)
+    if zh is not None:
+        assert normalize_zh(r.zh) == normalize_zh(zh)

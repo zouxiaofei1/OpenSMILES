@@ -45,15 +45,20 @@ def test_primary_polyamine_typed_facts_and_names(smiles, kind, count, en, zh):
 
 
 @pytest.mark.parametrize("smiles", ["CCNCC", "CN(C)C"])
-def test_sec_tert_amine_remain_outside_primary_typed_path(smiles):
+def test_sec_tert_amine_single_typed_path(smiles):
+    """二级/三级胺走单个胺 typed 路径（母体含 N 链 + N- 取代基），不产生歧义多候选。"""
     parents = _collect_candidates(analyze(Chem.MolFromSmiles(smiles)))
-    assert not any(p.get("principal_expression_facts") for p in parents)
+    amines = [p for p in parents if p.get("kind") == "amine" and p.get("principal_expression_facts")]
+    assert amines
+    assert all(p["principal_expression_facts"].multiplicity == 1 for p in amines)
+    result = SMILESNNamer().name(smiles)
+    assert result.success
 
 
 def test_aniline_stays_on_retained_boundary():
     for smiles, en in [("Nc1ccccc1", "aniline"), ("COc1ccc(N)cc1", "4-methoxyaniline")]:
         parents = _collect_candidates(analyze(Chem.MolFromSmiles(smiles)))
-        assert any(p.get("kind") == "aniline" for p in parents)
+        assert any(p.get("kind") == "amine" and p.get("scaffold_id") == "benzene" for p in parents)
         result = SMILESNNamer().name(smiles)
         assert normalize_en(result.en) == en
 

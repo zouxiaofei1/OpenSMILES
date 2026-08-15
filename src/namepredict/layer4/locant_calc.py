@@ -203,12 +203,24 @@ def _acid_fg_locants(oriented: dict) -> list[int] | None:
     return [loc] if loc is not None else None
 
 
+def _amide_fg_locants(oriented: dict) -> list[int] | None:
+    """返回 exocyclic 酰胺的环上附着原子位次（羰基碳在环外）。"""
+    attach = oriented.get("ring_attach_idx")
+    if attach is None:
+        return None
+    loc = _atom_locant(oriented.get("chain") or [], attach, oriented.get("kind"),
+                       oriented.get("numbering_scaffold"),
+                       oriented.get("numbering_scaffold_required", False))
+    return [loc] if loc is not None else None
+
+
 _FG_LOCANTS = (
     ("oh", _oh_locants),
     ("amine", _amine_fg_locants),
     ("ketone", _ketone_fg_locants),
     ("sh", _sh_locants_list),
     ("acid", _acid_fg_locants),
+    ("amide", _amide_fg_locants),
 )
 
 def _fg_locants(oriented: dict, n_subs: int = 0) -> list[dict]:

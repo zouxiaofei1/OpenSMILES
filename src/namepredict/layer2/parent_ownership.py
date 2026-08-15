@@ -127,12 +127,15 @@ def _ketone_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _amine_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """苯胺/胺：环/链连接碳 + 胺氮。"""
+    """苯胺/胺：母体链连接碳 + 胺氮（N 上非母体臂留在所有权外作 N- 取代基）。"""
     c_idxs = parent.get("amine_c_idxs") or ([parent.get("amine_c_idx")] if parent.get("amine_c_idx") is not None else [])
     if not c_idxs:
         return set()
+    chain = set(parent.get("chain") or [])
     out: set[int] = set()
     for c in c_idxs:
+        if c not in chain:
+            continue  # 非母体链的 N 臂：所有权外，作为 N- 取代基
         out.add(int(c))
         for n in mol.GetAtomWithIdx(int(c)).GetNeighbors():
             if n.GetAtomicNum() == 7:

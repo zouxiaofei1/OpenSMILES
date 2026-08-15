@@ -182,11 +182,12 @@ def _ring_fields(selection: PrincipalGroupSelection, occurrences) -> dict:
 
 
 def _ring_fact_fields(fields: dict, facts: PrincipalExpressionFacts) -> dict:
-    """合并附着原子字段，单附着酸/酯加 ring_attach_idx。"""
+    """合并附着原子字段，单附着酸/酯/酰胺加 ring_attach_idx。"""
     attachments = sorted(facts.attachment_atoms)
     extra = {"principal_attachment_atoms": attachments}
     if len(attachments) == 1 and facts.group_class in (
         FunctionalGroupClass.ACID, FunctionalGroupClass.ESTER,
+        FunctionalGroupClass.AMIDE,
     ):
         extra["ring_attach_idx"] = attachments[0]
     return {**fields, **extra}

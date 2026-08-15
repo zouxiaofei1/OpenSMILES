@@ -89,7 +89,8 @@ _ANCHOR_KEYS = {
     FunctionalGroupClass.KETONE: ("c_idx",),
     FunctionalGroupClass.ALCOHOL: ("c_idx",),
     FunctionalGroupClass.THIOL: ("c_idx",),
-    FunctionalGroupClass.AMINE: ("c_idx",),
+    # 胺：2°/3° 的 N 上所有碳邻居都是候选母体臂锚点（P-62.2 多臂选优）。
+    FunctionalGroupClass.AMINE: ("c_idx", "c_idxs"),
 }
 
 

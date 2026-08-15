@@ -24,7 +24,8 @@ def test_n_phenyl_benzamide_amide_n_claim():
     """N-phenyl benzamide: one AMIDE_N claim with six phenyl atoms."""
     mol, info = _info("c1ccccc1C(=O)Nc2ccccc2")
     parent = select_parent(info)
-    assert parent["kind"] == "benzamide"
+    assert parent["kind"] == "amide"
+    assert parent.get("scaffold_id") == "benzene"
     claims = iter_claims(mol, parent["owned_atoms"])
     assert len(claims) == 1
     c = claims[0]

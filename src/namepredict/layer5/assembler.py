@@ -70,10 +70,42 @@ def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
     return None
 
 
+def _exocyclic_amide_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """环酰胺（carbocycle/稠环/杂环 exocyclic CONH2）→ -carboxamide / -甲酰胺 系统名。
+
+    苯酰胺保留名（benzamide）由 chain_engine variant 处理，此处显式排除。
+    """
+    parent = numbered.get("parent") or {}
+    facts = parent.get("principal_expression_facts")
+    sid = parent.get("scaffold_id")
+    if not facts or facts.group_class.value != "amide" or facts.relation.value != "exocyclic":
+        return None
+    if facts.multiplicity != 1:
+        return None
+    if sid == "benzene":
+        return None
+    if sid == "carbocycle":
+        base = _alkane_names(n)
+        return (f"cyclo{base[0]}carboxamide", f"环{base[1]}甲酰胺") if base else None
+    base = _ring_base(numbered)
+    if base:
+        rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "amide"), None)
+        locs = rec.get("locants") if rec else None
+        if locs:
+            loc = ",".join(str(x) for x in locs)
+            return (f"{base[0]}-{loc}-carboxamide", f"{base[1]}-{loc}-甲酰胺")
+        return (f"{base[0]}carboxamide", f"{base[1]}甲酰胺")
+    return None
+
+
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     """链引擎按表 kind 派发，再转具体 worker。"""
     if kind == "acid":
         exo = _exocyclic_acid_names(n, numbered)
+        if exo:
+            return exo
+    if kind == "amide":
+        exo = _exocyclic_amide_names(n, numbered)
         if exo:
             return exo
     entry = _KIND_TABLE.get(kind)

@@ -8,7 +8,8 @@ from namepredict.layer3.submol_build import build_cut_submol
 def test_cut_n_phenyl_from_benzamide():
     mol = preprocess("c1ccccc1C(=O)Nc2ccccc2")
     parent = select_parent(analyze(mol))
-    assert parent["kind"] == "benzamide"
+    assert parent["kind"] == "amide"
+    assert parent.get("scaffold_id") == "benzene"
     patoms = parent_atom_set(parent, mol)
     # amide N is in parent; N-phenyl ring is outside
     am = analyze(mol)["amides"][0]
