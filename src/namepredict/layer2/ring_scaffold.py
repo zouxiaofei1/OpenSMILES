@@ -1,13 +1,15 @@
-"""骨架规格 + 保留拓扑注册表 + 环解析（2026-08-14 由 ``specs.py`` / ``retained_registry.py`` / ``ring_scaffold.py`` 合并；ScaffoldSpec/NumberingPolicy 是保留骨架词干与编号策略的单一来源）。"""
+"""骨架规格 + 保留 SMILES 模板注册表 + 环解析（2026-08-15 三合一；_TEMPLATES 为唯一事实来源，派生全部 ScaffoldSpec/ScaffoldIdentity）。"""
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 
+from rdkit.Chem import Mol, MolFromSmiles
 
 from namepredict.layer2.parent_skeleton import ParentSkeleton
 
 
-# ScaffoldSpec 注册表（原 specs.py；仅 L2 数据，不做命名组装）
+# ScaffoldSpec 定义（命名/编号元数据；仅 L2 数据，不做命名组装）
 
 @dataclass(frozen=True)
 class NumberingPolicy:
@@ -52,75 +54,82 @@ def identity_of(spec) -> ScaffoldIdentity:
     """由 spec 构造 ScaffoldIdentity。"""
     return ScaffoldIdentity(spec.id, spec.naming_class, spec.n_rings, spec.ring)
 
-# 共用的稠合 5+6 位次标签（IUPAC P-22.2.1 / P-25）：hetero=1 … 7a。
-FUSED56_LABELS: tuple[str, ...] = (
-    # 位次标签："1", "2", "3", "3a", "4", "5", "6", "7", "7a",
-)
-# 萘 / 喹啉家族位次标签（P-25）：1…4a…8a。
-NAPH_LABELS: tuple[str, ...] = (
-    # 位次标签："1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a",
-)
-ANTHRA_LABELS: tuple[str, ...] = (
-    # 位次标签："1", "2", "3", "4", "4a", "10", "10a", "5", "6", "7", "8", "8a", "9", "9a",
-)
+
+# 保留母体 SMILES 模板注册表（唯一事实来源；原 specs.py + retained_templates.py 合并）
+
+# 每个保留母体一条：smiles 模板（`match_retained` 子图同构识别）+ 命名元数据
+# （词干 / 命名类）。`_spec_from_template` 派生 ScaffoldSpec，n_rings/ring 由
+# RDKit 从 smiles 自动算，retained=True、fg_rank=0。新增环系只在此表加一条。
+_NUMBERING_MODE = {
+    "mono_carbo": "fixed_roles",
+    "monohetero": "fixed_hetero",
+    "fused56": "fused56_fixed",
+    "naph_family": "naph_family",
+    "anthra": "anthra",
+}
+
+_TEMPLATES: dict[str, dict] = {
+    # carbocycles
+    "benzene":     {"smiles": "c1ccccc1",             "stem_en": "benzene",    "stem_zh": "苯",   "naming_class": "mono_carbo"},
+    "naphthalene": {"smiles": "c1ccc2ccccc2c1",       "stem_en": "naphthalene","stem_zh": "萘",    "naming_class": "naph_family"},
+    "anthracene":  {"smiles": "c1ccc2cc3ccccc3cc2c1", "stem_en": "anthracene", "stem_zh": "蒽",    "naming_class": "anthra"},
+    # monocyclic heteroarenes
+    "furan":       {"smiles": "c1ccoc1",    "stem_en": "furan",       "stem_zh": "呋喃",   "naming_class": "monohetero"},
+    "thiophene":   {"smiles": "c1ccsc1",    "stem_en": "thiophene",   "stem_zh": "噻吩",   "naming_class": "monohetero"},
+    "pyrrole":     {"smiles": "c1cc[nH]c1", "stem_en": "pyrrole",     "stem_zh": "吡咯",   "naming_class": "monohetero"},
+    "pyridine":    {"smiles": "n1ccccc1",   "stem_en": "pyridine",    "stem_zh": "吡啶",   "naming_class": "monohetero"},
+    "pyridazine":  {"smiles": "c1ccnnc1",   "stem_en": "pyridazine",  "stem_zh": "哒嗪",   "naming_class": "monohetero"},
+    "pyrimidine":  {"smiles": "c1cncnc1",   "stem_en": "pyrimidine",  "stem_zh": "嘧啶",   "naming_class": "monohetero"},
+    "pyrazine":    {"smiles": "c1cnccn1",   "stem_en": "pyrazine",    "stem_zh": "吡嗪",   "naming_class": "monohetero"},
+    "imidazole":   {"smiles": "c1cnc[nH]1", "stem_en": "imidazole",   "stem_zh": "咪唑",   "naming_class": "monohetero"},
+    "pyrazole":    {"smiles": "c1ccn[nH]1", "stem_en": "pyrazole",    "stem_zh": "吡唑",   "naming_class": "monohetero"},
+    "oxazole":     {"smiles": "c1cocn1",    "stem_en": "oxazole",     "stem_zh": "噁唑",   "naming_class": "monohetero"},
+    "thiazole":    {"smiles": "c1cscn1",    "stem_en": "thiazole",    "stem_zh": "噻唑",   "naming_class": "monohetero"},
+    # fused 5+6
+    "indole":         {"smiles": "c1ccc2[nH]ccc2c1", "stem_en": "1H-indole",      "stem_zh": "吲哚",     "naming_class": "fused56"},
+    "indazole":       {"smiles": "c1ccc2cn[nH]c2c1", "stem_en": "indazole",       "stem_zh": "吲唑",     "naming_class": "fused56"},
+    "benzimidazole":  {"smiles": "c1ccc2[nH]cnc2c1", "stem_en": "benzimidazole",  "stem_zh": "苯并咪唑", "naming_class": "fused56"},
+    "benzofuran":     {"smiles": "c1ccc2occc2c1",    "stem_en": "benzofuran",     "stem_zh": "苯并呋喃", "naming_class": "fused56"},
+    "benzothiophene": {"smiles": "c1ccc2sccc2c1",    "stem_en": "benzothiophene", "stem_zh": "苯并噻吩", "naming_class": "fused56"},
+    "benzothiazole":  {"smiles": "c1ccc2scnc2c1",    "stem_en": "benzothiazole",  "stem_zh": "苯并噻唑", "naming_class": "fused56"},
+    "benzoxazole":    {"smiles": "c1ccc2ocnc2c1",    "stem_en": "benzoxazole",    "stem_zh": "苯并噁唑", "naming_class": "fused56"},
+    # fused 6+6
+    "quinoline":    {"smiles": "c1ccc2ncccc2c1", "stem_en": "quinoline",    "stem_zh": "喹啉",   "naming_class": "naph_family"},
+    "isoquinoline": {"smiles": "c1nccc2ccccc21", "stem_en": "isoquinoline", "stem_zh": "异喹啉", "naming_class": "naph_family"},
+    "quinazoline":  {"smiles": "c1ccc2ncncc2c1", "stem_en": "quinazoline",  "stem_zh": "喹唑啉", "naming_class": "naph_family"},
+    "quinoxaline":  {"smiles": "c1ccc2nccnc2c1", "stem_en": "quinoxaline",  "stem_zh": "喹噁啉", "naming_class": "naph_family"},
+    # NOTE: carbonyl mothers（benzoquinone / anthraquinone / chromenone /
+    # ortho_benzoquinone）不入表：模板含环外 =O，匹配集会超出环系统原子集。
+}
+
+# 查询子结构与元素签名，import 时构建一次。
+_Q: dict[str, Mol] = {sid: MolFromSmiles(entry["smiles"]) for sid, entry in _TEMPLATES.items()}
 
 
-def _fused56(
-    sid: str, stem_en: str | None, stem_zh: str | None, fg_rank: int = 0,
-    *, retained: bool = True,
-) -> ScaffoldSpec:
-    """构造稠合 5+6 环保留骨架规格。"""
-    pol = NumberingPolicy(mode="fused56_fixed", standard_path=FUSED56_LABELS)
+def _elem_sig(mol: Mol, atom_ids) -> frozenset:
+    """原子集的元素组成签名（(Z, 计数) 冻结集合）。"""
+    return frozenset(Counter(mol.GetAtomWithIdx(i).GetAtomicNum() for i in atom_ids).items())
+
+
+_TEMPLATE_ELEM: dict[str, frozenset] = {sid: _elem_sig(q, range(q.GetNumAtoms())) for sid, q in _Q.items()}
+
+
+def _spec_from_template(sid: str, entry: dict) -> ScaffoldSpec:
+    """由模板条目派生 ScaffoldSpec（n_rings/ring 从 smiles 自动算）。"""
+    q = _Q[sid]
+    n_rings = len(q.GetRingInfo().AtomRings())
+    ring = "carbo" if all(q.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in range(q.GetNumAtoms())) else "hetero"
+    numbering = NumberingPolicy(mode=_NUMBERING_MODE.get(entry["naming_class"], "fixed"))
     return ScaffoldSpec(
-        id=sid, naming_class="fused56", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=2, ring="hetero", retained=retained, fg_rank=fg_rank,
-        numbering=pol,
+        id=sid, naming_class=entry["naming_class"],
+        stem_en=entry["stem_en"], stem_zh=entry["stem_zh"],
+        n_rings=n_rings, ring=ring, retained=True, fg_rank=0,
+        numbering=numbering,
     )
 
 
-def _naph(
-    sid: str, stem_en: str | None, stem_zh: str | None, *,
-    ring: str = "hetero", fg_rank: int = 0, retained: bool = True,
-) -> ScaffoldSpec:
-    """构造萘族（naph_family）保留骨架规格。"""
-    pol = NumberingPolicy(mode="naph_family", standard_path=NAPH_LABELS)
-    return ScaffoldSpec(
-        id=sid, naming_class="naph_family", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=2, ring=ring, retained=retained, fg_rank=fg_rank, numbering=pol,
-    )
-
-
-def _monohetero(
-    sid: str, stem_en: str, stem_zh: str, *, fg_rank: int = 0,
-) -> ScaffoldSpec:
-    """构造单杂环保留骨架规格。"""
-    pol = NumberingPolicy(mode="fixed_hetero")
-    return ScaffoldSpec(
-        id=sid, naming_class="monohetero", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=1, ring="hetero", retained=True, fg_rank=fg_rank,
-        numbering=pol,
-    )
-
-
-def _mono_carbo(
-    sid: str, stem_en: str, stem_zh: str, *,
-    mode: str = "fixed_roles", fg_rank: int = 0, retained: bool = True,
-) -> ScaffoldSpec:
-    """构造单碳环保留骨架规格。"""
-    pol = NumberingPolicy(mode=mode)
-    return ScaffoldSpec(
-        id=sid, naming_class="mono_carbo", stem_en=stem_en, stem_zh=stem_zh,
-        n_rings=1, ring="carbo", retained=retained, fg_rank=fg_rank, numbering=pol,
-    )
-
-
-
-
-_ALL_SPECS: tuple[ScaffoldSpec, ...] = (
-    _mono_carbo("benzene", "benzene", "苯"),
-    _monohetero("pyridine", "pyridine", "吡啶"),
-    _naph("naphthalene", "naphthalene", "萘", ring="carbo"),
-    _fused56("indole", "1H-indole", "吲哚"),
+_ALL_SPECS: tuple[ScaffoldSpec, ...] = tuple(
+    _spec_from_template(sid, entry) for sid, entry in _TEMPLATES.items()
 )
 _BY_ID: dict[str, ScaffoldSpec] = {s.id: s for s in _ALL_SPECS}
 _IDENTITIES: dict[str, ScaffoldIdentity] = {s.id: s.identity for s in _ALL_SPECS}
@@ -142,7 +151,7 @@ def get_spec(spec_id: str) -> ScaffoldSpec | None:
 
 
 def all_specs() -> tuple[ScaffoldSpec, ...]:
-    """返回全部 ScaffoldSpec 元组。"""
+    """返回全部 ScaffoldSpec（由 _TEMPLATES 派生）。"""
     return _ALL_SPECS
 
 
@@ -158,12 +167,12 @@ def numbering_scaffold_facts(spec_id: str | None, atom_count: int) -> dict | Non
 
 
 def fused56_kind_ids() -> frozenset[str]:
-    """使用 fused56 1…7a 位次标签的 kind / scaffold id。"""
+    """使用 fused56 位次标签的 kind / scaffold id。"""
     return kind_ids_for("fused56")
 
 
 def naph_kind_ids() -> frozenset[str]:
-    """使用 naph 1…8a 位次标签的 kind / scaffold id。"""
+    """使用 naph 位次标签的 kind / scaffold id。"""
     return kind_ids_for("naph_family")
 
 
@@ -177,93 +186,51 @@ def kind_ids_for(naming_class: str) -> frozenset[str]:
     return frozenset(s.id for s in _ALL_SPECS if s.naming_class == naming_class)
 
 
-# Retained topology 注册表（原 retained_registry.py；P-22 / P-25）
+# RetainedEntry（保留母体条目；由 _TEMPLATES 派生，供 registry/get_entry/match_systems 查询）
 
-# scaffold_id → topology 条目（en/zh 读取时经 get_spec 解析）；键：kind, n_rings, n_atoms, hetero_Z(排序), topology, aromatic
 RetainedEntry = dict
 
-# 仅含拓扑的表；id 必须 ⊆ ScaffoldSpec 注册表。
-_TOPOLOGY: dict[str, dict] = {
-    "benzene": {
-        "kind": "benzene",
-        "n_rings": 1,
-        "n_atoms": 6,
-        "hetero_Z": (),
-        "topology": "mono",
-        "aromatic": True,
-    },
-    "pyridine": {
-        "kind": "pyridine",
-        "n_rings": 1,
-        "n_atoms": 6,
-        "hetero_Z": (7,),
-        "topology": "mono",
-        "aromatic": True,
-    },
-    "naphthalene": {
-        "kind": "naphthalene",
-        "n_rings": 2,
-        "n_atoms": 10,
-        "hetero_Z": (),
-        "topology": "fused",
-        "aromatic": True,
-    },
-    "indole": {
-        "kind": "indole",
-        "n_rings": 2,
-        "n_atoms": 9,
-        "hetero_Z": (7,),
-        "topology": "fused",
-        "aromatic": True,
-    },
-}
 
-
-def _entry_with_stems(sid: str, topo: dict) -> RetainedEntry:
-    """拓扑条目补 en/zh 词干（经 ScaffoldSpec 解析）。"""
-    sp = get_spec(sid)
-    en = sp.stem_en if sp else None
-    zh = sp.stem_zh if sp else None
-    return {**topo, "en": en, "zh": zh}
+def _entry_for(sid: str) -> RetainedEntry | None:
+    """由模板条目派生保留条目（拓扑字段 + 词干）。"""
+    entry = _TEMPLATES.get(sid)
+    if entry is None:
+        return None
+    q = _Q[sid]
+    hetero_Z = tuple(sorted(
+        q.GetAtomWithIdx(i).GetAtomicNum() for i in range(q.GetNumAtoms())
+        if q.GetAtomWithIdx(i).GetAtomicNum() != 6
+    ))
+    n_rings = len(q.GetRingInfo().AtomRings())
+    return {
+        "kind": sid,
+        "n_rings": n_rings,
+        "n_atoms": q.GetNumAtoms(),
+        "hetero_Z": hetero_Z,
+        "topology": "fused" if n_rings > 1 else "mono",
+        "aromatic": True,
+        "en": entry["stem_en"],
+        "zh": entry["stem_zh"],
+    }
 
 
 def registry() -> dict[str, RetainedEntry]:
-    """返回带词干的保留拓扑注册表。"""
-    return {sid: _entry_with_stems(sid, t) for sid, t in _TOPOLOGY.items()}
+    """返回带词干的保留拓扑注册表（由 _TEMPLATES 派生）。"""
+    return {sid: _entry_for(sid) for sid in _TEMPLATES}
 
 
 def get_entry(scaffold_id: str) -> RetainedEntry | None:
     """按 scaffold_id 查带词干的保留条目。"""
-    topo = _TOPOLOGY.get(scaffold_id)
-    return None if topo is None else _entry_with_stems(scaffold_id, topo)
-
-
-def _hetero_Z_tuple(system: dict) -> tuple[int, ...]:
-    """环系统杂原子序数排序元组。"""
-    return tuple(sorted(h["Z"] for h in system.get("hetero_atoms") or []))
-
-
-def _system_matches(system: dict, entry: RetainedEntry) -> bool:
-    """判断环系统是否匹配保留条目（拓扑/芳香/杂原子）。"""
-    if system.get("n_rings") != entry["n_rings"]:
-        return False
-    if system.get("n_atoms") != entry["n_atoms"]:
-        return False
-    if system.get("topology") != entry["topology"]:
-        return False
-    if bool(system.get("is_aromatic_mancude")) != bool(entry.get("aromatic")):
-        return False
-    return _hetero_Z_tuple(system) == tuple(entry["hetero_Z"])
+    return _entry_for(scaffold_id)
 
 
 def match_systems(info: dict) -> list[tuple[str, dict, RetainedEntry]]:
-    """返回匹配系统的 (scaffold_id, ring_system, entry)。"""
+    """返回匹配系统的 (scaffold_id, ring_system, entry)（模板子图同构语义）。"""
     out: list[tuple[str, dict, RetainedEntry]] = []
     for system in info.get("ring_systems") or []:
-        for sid, topo in _TOPOLOGY.items():
-            entry = _entry_with_stems(sid, topo)
-            if _system_matches(system, entry):
-                out.append((sid, system, entry))
+        sid = match_retained(info, system.get("atom_ids") or ())
+        if sid:
+            out.append((sid, system, _entry_for(sid)))
     return out
 
 
@@ -272,13 +239,28 @@ def match_scaffold_ids(info: dict) -> list[str]:
     return [sid for sid, _, _ in match_systems(info)]
 
 
-# 环解析（原 ring_scaffold.py）
+def match_retained(info: dict, atom_ids) -> str | None:
+    """返回模板精确覆盖 atom_ids 的保留母体 sid；无命中返回 None。
+
+    元素签名预过滤跳过组成不符的模板，再跑子图同构。多个模板同命中时
+    按模板表顺序取第一个（元素标注下实际不会发生，防御性兜底）。
+    """
+    mol = info["mol"]
+    atoms = frozenset(atom_ids)
+    elem = _elem_sig(mol, atom_ids)
+    for sid, q in _Q.items():
+        if _TEMPLATE_ELEM[sid] != elem:
+            continue
+        if any(set(m) == atoms for m in mol.GetSubstructMatches(q, uniquify=True)):
+            return sid
+    return None
+
+
+# 环解析
 
 def _matched_id(info: dict, skeleton: ParentSkeleton) -> str | None:
-    """按原子集匹配已注册 scaffold id。"""
-    atoms = set(skeleton.atom_ids)
-    return next((sid for sid, system, _ in match_systems(info)
-                 if set(system.get("atom_ids") or ()) == atoms), None)
+    """按模板子图同构匹配骨架的 scaffold id。"""
+    return match_retained(info, skeleton.atom_ids)
 
 
 def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
@@ -290,11 +272,17 @@ def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentit
 
 
 def resolve_ring_scaffold(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
-    """解析骨架的 scaffold 身份（显式/匹配/兜底碳环）。"""
+    """解析骨架的 scaffold 身份（显式/模板匹配/兜底碳环）。
+
+    模板命中即解析出该母体的 ScaffoldIdentity（_TEMPLATES 唯一来源派生）；
+    无模板命中时全碳环兜底 carbocycle，杂环返回 None。
+    """
     direct = get_identity(skeleton.scaffold_id or "")
     if direct:
         return direct
     sid = _matched_id(info, skeleton)
     if sid:
-        return get_identity(sid)
+        identity = get_identity(sid)
+        if identity:
+            return identity
     return _generic_carbocycle(info, skeleton)

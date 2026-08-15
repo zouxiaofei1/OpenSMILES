@@ -30,10 +30,7 @@ def test_diazine_expand(smiles: str, en: str, zh: str | None) -> None:
 
 
 def test_complex_side_not_simple_diazine() -> None:
-    """Pentyl side chain is out of scope A (left for later)."""
+    """Pentyl-substituted pyrimidine now supported (was out of scope A)."""
     r = SMILESNNamer().name("ClC1=NC=C(C=N1)CCCCC")
-    if not r.success:
-        return  # fallback 已删：无候选显式失败
-    en = normalize_en(r.en)
-    assert "pentylpyrimidine" not in en
-    assert "chloropyrimidine" not in en or "pentyl" not in en
+    assert r.success
+    assert normalize_en(r.en) == "2-chloro-5-pentylpyrimidine"

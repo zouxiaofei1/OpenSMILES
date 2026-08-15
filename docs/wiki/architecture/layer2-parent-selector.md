@@ -67,7 +67,7 @@ flowchart TD
 
 3. **`principal_expression.py`** — 把选定的骨架表达为 parent dict：
    - `express_chain_principal()` — 开链主官能团经 `_CHAIN_KINDS`（`:36-46`）按多重度映射 kind。**正交化后**：ACID/ALCOHOL/AMINE 任意 count≥1 恒返回基团名（`acid`/`alcohol`/`amine`，`_chain_kind` `:66` 特判），数量由 `principal_expression_facts.multiplicity` 承载；仅 KETONE 保留 `count==2 → "dione"` 区分环酮表达。骨架内 C=C/C≡C 带 `double_bond`/`triple_bond`/`double_bonds` 字段
-   - `express_ring_principal()` — 环骨架：`resolve_ring_scaffold` 解析骨架身份。**`_RETAINED_RING_KINDS` 已删除**——苯系保留名（benzoic/phenol/aniline/benzaldehyde 等）决策迁往 `layer5/typed_kinds.py`（`_BENZENE_RETAINED`），L2 只表达结构 kind
+   - `express_ring_principal()` — 环骨架：`resolve_ring_scaffold` 解析骨架身份。**环 + 主 FG 一律收敛为 FG 类别 kind**（`_ring_kind`，苯/饱和环/稠环/杂环平等），词干由 scaffold 承载；苯保留名（benzoic/phenol/aniline 等）由 L5 chain_engine variant 提供
    - 每个候选携带 `PrincipalExpressionFacts`（group_class/multiplicity/relation/characteristic_atoms/attachment_atoms/charge_state）与 `ScaffoldIdentity`
    - `express_hydrocarbon_principal()` — **无主官能团（纯烃）**：开链按 C=C/C≡C 分布给 alkane/alkene/alkyne/polyene；环按芳香性分流——**非芳香环 kind 恒为 `"alkane"`**（`_saturated_ring_parent`，不饱和度由 `double_bond(s)` 字段承载），芳香环命中保留 scaffold 时 kind=scaffold.id（如 `benzene`）
 
@@ -92,24 +92,22 @@ kind_registry 是**只读权威**：被 `scoring.py`（模块级派生集合）�
 
 ### Ring 骨架识别机制（`ring_scaffold.py`）
 
-2026-08 重构后，原 `scaffold/` 子包的 `specs.py`（ScaffoldSpec 注册表）、`retained_registry.py`（保留名拓扑表）、`ring_scaffold.py`（环解析）三者**合并进根目录的 `ring_scaffold.py`**（294 行）。其职责分三块：
+`ring_scaffold.py` 以 `_TEMPLATES`（SMILES 模板表）为**唯一事实来源**，派生 ScaffoldSpec/ScaffoldIdentity 与保留条目。职责分两块：
 
-1. **ScaffoldSpec 注册表**（原 specs.py）— `ScaffoldSpec`（`:34-50`，字段：`id, naming_class, stem_en, stem_zh, n_rings, ring, retained, fg_rank, numbering, sub_rules, principal_slots`）+ `NumberingPolicy`（`:25-31`）。`_ALL_SPECS` 仅 4 个：`benzene`（mono_carbo）、`pyridine`（monohetero）、`naphthalene`（naph）、`indole`（fused56）
-2. **保留名拓扑注册表**（原 retained_registry.py）— `_TOPOLOGY`（`:187-220`）是保留名拓扑唯一事实来源，含 `benzene/pyridine/naphthalene/indole` 四项（键：`kind, n_rings, n_atoms, hetero_Z, topology, aromatic`）；`match_systems`/`match_scaffold_ids` 在此，词干读取时经 `get_spec` 解析
-3. **环解析**（原 ring_scaffold.py）— `resolve_ring_scaffold(info, skeleton)`（`:287-294`）优先级：① `get_identity(skeleton.scaffold_id)` 直接命中 → ② `_matched_id`（按 ring_system 原子集合匹配 `_TOPOLOGY`）→ ③ `_generic_carbocycle`（全碳非保留环 → `ScaffoldIdentity("carbocycle",...)`）
+1. **模板注册表（唯一来源）** — `_TEMPLATES`（25 个保留母体，每条 `{smiles, stem_en, stem_zh, naming_class}`）；`_spec_from_template` 派生 ScaffoldSpec（n_rings/ring 从 smiles 算，retained=True，fg_rank=0），`all_specs()`/`get_spec()`/`get_identity()`/`kind_ids_for()` 均由此派生；`kind_registry._load_from_scaffold_specs` 据此注册 KindMeta 词干（活接线，防清扫判死）
+2. **环解析** — `resolve_ring_scaffold(info, skeleton)` 优先级：① `get_identity(skeleton.scaffold_id)` 直接命中 → ② `match_retained`（SMILES 模板子图同构，按环原子集精确覆盖）→ ③ `_generic_carbocycle`（全碳非保留环 → `ScaffoldIdentity("carbocycle",...)`）。`match_systems`/`match_scaffold_ids`/`registry`/`get_entry` 为模板语义查询
 
 ```mermaid
 flowchart LR
     A["ParentSkeleton<br/>atom_ids + scaffold_id"] --> B{"get_identity<br/>直接命中?"}
     B -->|是| ID1["ScaffoldIdentity"]
-    B -->|否| C{"_TOPOLOGY.match_systems<br/>原子集合匹配?"}
+    B -->|否| C{"_TEMPLATES.match_retained<br/>子图同构精确覆盖?"}
     C -->|是| ID2["get_identity(sid)"]
     C -->|否| D["_generic_carbocycle<br/>全碳环 → carbocycle"]
 ```
 
 **新增 ring 母体的步骤:**
-1. 在 `ring_scaffold.py` 的 `_ALL_SPECS` 声明该 kind 的 `ScaffoldSpec`（stem、fg_rank、ring、retained、`NumberingPolicy`）
-2. 若需保留拓扑识别，在 `ring_scaffold.py` 的 `_TOPOLOGY` 添加拓扑条目（n_rings/n_atoms/hetero_Z/topology/aromatic）
+在 `ring_scaffold.py` 的 `_TEMPLATES` 加一条 `{smiles, stem_en, stem_zh, naming_class}`（ScaffoldSpec 自动派生；`_TOPOLOGY` 表与手写 `_ALL_SPECS` 已删除）。位置异构体在元素标注的子图同构下天然区分，无需额外消解。
 
 > **源:** `src/namepredict/layer2/ring_scaffold.py`
 
@@ -190,10 +188,10 @@ Layer2 选完母体后**不做**侧链块切割——侧链识别与命名全部
 
 ### 保留名 (Retained Names)
 
-保留 scaffold 的 stem 与编号策略由 **`ring_scaffold.py` 的 `ScaffoldSpec`** 提供（单一权威），保留拓扑由 **`ring_scaffold.py` 的 `_TOPOLOGY`** 提供：
+保留 scaffold 的 stem 与命名类由 **`ring_scaffold.py` 的 `_TEMPLATES`** 提供（唯一事实来源，派生 ScaffoldSpec）：
 
-- **苯系保留名**：benzoic acid / phenol / aniline / benzaldehyde / benzonitrile / benzamide / benzoate——**决策迁往 layer5**（`typed_kinds._BENZENE_RETAINED`），L2 只表达结构 kind `benzene`
-- **杂环/稠环**：pyridine、naphthalene、indole（`_TOPOLOGY` + ScaffoldSpec）
+- **苯系保留名**：benzoic acid / phenol / aniline / benzaldehyde / benzonitrile / benzamide / benzoate——由 L5 chain_engine variant（`_KIND_TABLE` 各 entry 的 `"benzene"` 键）提供
+- **杂环/稠环**：pyridine、naphthalene、indole 等 25 个保留母体——由 `_TEMPLATES` 派生 ScaffoldSpec/词干，环+FG 时走通用词干命名（naphthalen-1-ol / pyridine-3-carboxylic acid）
 
 保留名通过 `retained_bonus` 在评分中获得优先权，stem 由 `pack_parent_stem` 从 `kind_registry` 注入 parent dict。
 

@@ -155,19 +155,19 @@ def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentS
     # 苯基取代基 radical 保持 'phenyl'（P-22.2.4）；环 + 主 FG 的 kind 收敛为 FG 类别（正交化），环骨架由 scaffold_id 承载，命名 kind（cycloalcohol/cycloketone/benzoic/phenol/...）由 L5 typed_kinds 决定。
     if selection.group_class is FunctionalGroupClass.RADICAL and _is_benzene(info, skeleton):
         return "phenyl"
-    # 环（饱和环/苯环）+ 主 FG → FG 类别 kind（正交化）；命名 kind（cycloalcohol/cycloketone/cycloalkanecarboxylic/benzoic/phenol/...）由 L5 typed_kinds 决定；稠环（naphthalene 等）暂保持结构 kind。
-    if scaffold and scaffold.id in ("carbocycle", "benzene"):
-        if selection.group_class in (FunctionalGroupClass.ALCOHOL,
-                                     FunctionalGroupClass.KETONE,
-                                     FunctionalGroupClass.AMINE,
-                                     FunctionalGroupClass.ACID,
-                                     FunctionalGroupClass.ALDEHYDE,
-                                     FunctionalGroupClass.NITRILE,
-                                     FunctionalGroupClass.AMIDE,
-                                     FunctionalGroupClass.ESTER):
-            kind = _chain_kind(selection.group_class, count)
-            if kind is not None:
-                return kind
+    # 环 + 主 FG → FG 类别 kind（正交化）：苯/饱和环/稠环/杂环一律收敛，
+    # 命名由 L5 chain_engine 通用词干引擎拼接（苯等保留名经 variant 特殊，无 variant 走通用名）。
+    if scaffold is not None and selection.group_class in (FunctionalGroupClass.ALCOHOL,
+                                                          FunctionalGroupClass.KETONE,
+                                                          FunctionalGroupClass.AMINE,
+                                                          FunctionalGroupClass.ACID,
+                                                          FunctionalGroupClass.ALDEHYDE,
+                                                          FunctionalGroupClass.NITRILE,
+                                                          FunctionalGroupClass.AMIDE,
+                                                          FunctionalGroupClass.ESTER):
+        kind = _chain_kind(selection.group_class, count)
+        if kind is not None:
+            return kind
     return _resolved_ring_kind(scaffold, info, skeleton)
 
 

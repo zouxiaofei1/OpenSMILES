@@ -46,10 +46,10 @@ def test_open_chain_monoester_is_not_claimed_as_diester():
 
 
 @pytest.mark.parametrize("smiles,kind,group_class", [
-    # 饱和环 + FG 的 kind 收敛为 FG 类别；稠环（naphthalene）保持结构 kind。
+    # 环 + FG 一律收敛为 FG 类别 kind（苯/饱和环/稠环/杂环平等，词干由 scaffold 承载）。
     ("O=C(O)C1CCCCC1", "acid", "acid"),
     ("N#CC1CCCCC1", "nitrile", "nitrile"),
-    ("O=C(O)c1ccc2ccccc2c1", "naphthalene", "acid"),
+    ("O=C(O)c1ccc2ccccc2c1", "acid", "acid"),
 ])
 def test_ring_principal_uses_base_scaffold_kind(smiles, kind, group_class):
     parents = _collect_candidates(analyze(Chem.MolFromSmiles(smiles)))

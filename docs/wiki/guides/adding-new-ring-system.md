@@ -77,24 +77,21 @@ resolve_ring_scaffold(info, skeleton)
 
 > **源:** `src/namepredict/layer2/ring_scaffold.py`, `src/namepredict/layer2/kind_registry.py:141`
 
-### 2.3 注册保留拓扑（可拓扑匹配的环系）
+### 2.3 注册保留母体（唯一事实来源 `_TEMPLATES`）
 
-如果环系需要**按拓扑识别**（而非骨架 id 直查），在 `ring_scaffold.py` 的 `_TOPOLOGY`（`:187-220`）添加条目：
+环骨架身份由 `resolve_ring_scaffold` 识别：① `get_identity(skeleton.scaffold_id)` 显式命中 → ② **SMILES 模板子图同构**（`match_retained`）→ ③ 兜底 `_generic_carbocycle`（全碳非保留环 → carbocycle）。
 
-```python
-# 键: kind, n_rings, n_atoms, hetero_Z, topology, aromatic
-("pyridine", 1, 6, (7,), "mono", True),
-```
+新增保留环系（如 quinoline）**只改 `ring_scaffold.py` 的 `_TEMPLATES` 一张表**——加一条 `{smiles, stem_en, stem_zh, naming_class}`。ScaffoldSpec 由 `_spec_from_template` 自动派生（n_rings/ring 从 smiles 算，retained=True，fg_rank=0），`kind_registry` 经 `all_specs()` 自动注册词干。位置异构体（quinoline/isoquinoline、二嗪、二唑等）在元素标注的子图同构下天然区分，无需额外消解。
 
-`match_systems`/`match_scaffold_ids` 遍历 `_TOPOLOGY`，按 ring_system 原子集合匹配。词干在读取时经 `get_spec` 解析。
+> `_TOPOLOGY` 五元组表与手写 `_ALL_SPECS` 已删除；`match_systems`/`match_scaffold_ids`/`registry`/`get_entry` 为模板语义查询。
 
 ### 2.4 FG-环组合的 kind（无需手动注册组合 kind）
 
 **不再需要**为 FG-环组合（如 pyridinol、cycloalkanol、naphthalenol）手动注册组合 kind——2026-08 正交化已根除组合 kind。环上带 FG 时：
 
-- **纯烃环 + FG**：`principal_expression.express_ring_principal` 表达结构 kind（环为 `carbocycle` scaffold），FG 类别由 `principal_expression_facts.group_class` 承载
-- **保留 scaffold + FG**：kind 为 scaffold.id（如 `benzene`），FG 保留名（benzoic/phenol/aniline 等）由 **`layer5/typed_kinds.py` 的 `_BENZENE_RETAINED`** 决策
-- 命名时 `chain_engine._KIND_TABLE` 的 entry 按 `scaffold_id` 运行时注入 `cyclic=True` / 稠环词干
+- **环 + 主 FG**：`express_ring_principal` 把 kind **收敛为 FG 类别**（alcohol/acid/amine/...），词干由 scaffold 承载（`pack_parent_stem` 按 scaffold_id 注入）；苯/饱和环/稠环/杂环一律平等
+- **苯 + FG 保留名**：chain_engine variant 提供 phenol/benzoic acid/aniline/benzaldehyde/benzonitrile/benzamide 等（苯专属）；其余 scaffold 走通用词干命名（naphthalen-1-ol / pyridine-3-carboxylic acid / imidazol-2-amine）
+- 命名时 `chain_engine._KIND_TABLE` 的 entry 按 `scaffold_id` 注入词干（`_ring_stem` 从 parent 的 stem_en/zh 派生，IUPAC 词干去尾部 e，苯除外）
 
 ---
 

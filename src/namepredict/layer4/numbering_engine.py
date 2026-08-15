@@ -106,21 +106,31 @@ _FIXED_START_KEYS = (
 
 
 def _ring_hetero_start(parent: dict, chain: list[int]) -> int | None:
-    """单杂原子环：唯一的杂原子为 locant 1（P-14.4，如吡啶）。"""
+    """杂原子环：最优先杂原子（Z 最小）为 locant 1（P-14.4，吡啶/嘧啶等）。
+
+    多杂环（嘧啶双 N、咪唑等）同样固定一个杂原子为起点，其余杂原子在
+    P-14.4 枚举中自然得低位（1,3 / 1,2）。
+    """
     mol = parent.get("mol")
     if mol is None:
         return None
     heteros = [a for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != 6]
-    return heteros[0] if len(heteros) == 1 else None
+    if not heteros:
+        return None
+    return min(heteros, key=lambda a: (mol.GetAtomWithIdx(a).GetAtomicNum(), a))
 
 
 def _fixed_start(parent: dict) -> int | None:
-    """取固定 locant 1 起点原子；无字段则尝试单杂原子环。"""
+    """取固定 locant 1 起点原子：杂原子环优先杂原子（P-14.4，吡啶甲酸 N=1
+    而非羧酸锚点），否则 FG 锚点/自由基字段，最后退化处理。"""
+    hetero = _ring_hetero_start(parent, parent.get("chain") or [])
+    if hetero is not None:
+        return hetero
     for key in _FIXED_START_KEYS:
         v = parent.get(key)
         if v is not None:
             return v
-    return _ring_hetero_start(parent, parent.get("chain") or [])
+    return None
 
 
 def _fixed_numbering(parent: dict, chain: list[int]) -> list[int] | None:

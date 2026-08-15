@@ -100,9 +100,13 @@ def _attach_numbering_scaffold(packed: dict) -> dict:
 
 
 def pack_parent_stem(parent: dict, mol=None) -> dict:
-    """补齐母体词干与编号 scaffold 字段。"""
+    """补齐母体词干与编号 scaffold 字段。
+
+    优先按 scaffold_id 查词干（环+FG 收敛为 FG kind 时，词干属 scaffold 而非 FG 类别）。
+    """
     packed = parent if parent.get("mol") is not None else {**parent, "mol": mol}
-    names = parent_names(packed.get("kind") or "")
+    names = (parent_names(packed.get("scaffold_id") or "")
+             or parent_names(packed.get("kind") or ""))
     if names is not None and not (packed.get("stem_en") or packed.get("stem_zh")):
         packed = {**packed, "stem_en": names[0], "stem_zh": names[1]}
     return _attach_numbering_scaffold(packed)

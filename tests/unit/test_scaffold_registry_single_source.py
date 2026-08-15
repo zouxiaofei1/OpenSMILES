@@ -2,8 +2,8 @@
 # Layer: L2
 """Single source of truth: ScaffoldSpec drives kind_registry stems + retained ids.
 
-正交化后 _ALL_SPECS 只含 4 个保留 scaffold（benzene/pyridine/naphthalene/indole），
-fused56/naph_family/monohetero 的固定位次标签已废弃（standard_path 为空）。
+唯一事实来源 _TEMPLATES 派生全部 ScaffoldSpec（25 个保留母体），编号标签
+standard_path 暂为空（L4 编号消费端为 stub）。
 """
 from __future__ import annotations
 
@@ -51,12 +51,18 @@ def test_spec_meta(sid: str) -> None:
 
 def test_kind_ids_helpers_derive_from_specs() -> None:
     assert kind_ids_for("mono_carbo") == {"benzene"}
-    assert kind_ids_for("monohetero") == {"pyridine"}
-    assert kind_ids_for("naph_family") == {"naphthalene"}
-    assert kind_ids_for("fused56") == {"indole"}
-    assert fused56_kind_ids() == {"indole"}
-    assert naph_kind_ids() == {"naphthalene"}
-    assert monohetero_kind_ids() == {"pyridine"}
+    assert kind_ids_for("monohetero") == {"furan", "thiophene", "pyrrole", "pyridine",
+                                          "pyridazine", "pyrimidine", "pyrazine",
+                                          "imidazole", "pyrazole", "oxazole", "thiazole"}
+    assert kind_ids_for("naph_family") == {"naphthalene", "quinoline", "isoquinoline",
+                                           "quinazoline", "quinoxaline"}
+    assert kind_ids_for("fused56") == {"indole", "indazole", "benzimidazole",
+                                       "benzofuran", "benzothiophene",
+                                       "benzothiazole", "benzoxazole"}
+    assert kind_ids_for("anthra") == {"anthracene"}
+    assert fused56_kind_ids() == kind_ids_for("fused56")
+    assert naph_kind_ids() == kind_ids_for("naph_family")
+    assert monohetero_kind_ids() == kind_ids_for("monohetero")
 
 
 def test_fused56_ids_retained_in_kind_registry() -> None:
