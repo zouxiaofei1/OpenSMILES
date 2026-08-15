@@ -44,7 +44,7 @@ def _spec_from_fg(sp: FgSpec) -> PrincipalFeatureSpec:
 
 
 # 主官能团规格唯一事实来源在 fg_registry.FG_SPECS；此处派生。
-# Legacy_compat：仅取 kind_registry fg_rank 投影的 compatibility_rank，永不作主基团（principal_spec() 以 SUFFIX 为门槛）。
+# Legacy_compat：仅取 compatibility_rank（legacy_rank），永不作主基团（principal_spec() 以 SUFFIX 为门槛）。
 PRINCIPAL_REGISTRY: dict[FG, PrincipalFeatureSpec] = {
     FG(sp.fg): _spec_from_fg(sp) for sp in FG_SPECS if sp.p41
 }

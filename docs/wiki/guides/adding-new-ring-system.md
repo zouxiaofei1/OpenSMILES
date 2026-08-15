@@ -66,7 +66,7 @@ resolve_ring_scaffold(info, skeleton)
 "quinoline": {"smiles": "c1ccc2ncccc2c1", "stem_en": "quinoline", "stem_zh": "喹啉", "naming_class": "fused56"},
 ```
 
-`_spec_from_template`（`:117`）自动派生 `ScaffoldSpec`（n_rings/ring 从 smiles 算，retained=True，fg_rank=0），`all_specs()`/`get_spec()`/`get_identity()`/`all_identities()` 均由此派生；`kind_registry._load_from_scaffold_specs`（`kind_registry.py:123`）据此自动注册 KindMeta 词干（bootstrap 唯一一步，ScaffoldSpec 是词干权威）。位置异构体（quinoline/isoquinoline、二嗪、二唑等）在元素标注的子图同构下天然区分，无需额外消解。
+`_spec_from_template`（`:117`）自动派生 `ScaffoldSpec`（n_rings/ring 从 smiles 算，retained=True），`all_specs()`/`get_spec()`/`get_identity()`/`all_identities()` 均由此派生；`kind_registry._load_from_scaffold_specs`（`kind_registry.py:92`）据此自动注册 KindMeta 词干（bootstrap 唯一一步，ScaffoldSpec 是词干权威）。位置异构体（quinoline/isoquinoline、二嗪、二唑等）在元素标注的子图同构下天然区分，无需额外消解。
 
 > 无 `_TOPOLOGY` 五元组表与手写 `_ALL_SPECS`；`match_systems`/`match_scaffold_ids`/`registry`/`get_entry` 为模板语义查询。
 

@@ -93,6 +93,7 @@ def _yl_from_sub(
             canonical = Chem.MolFromSmiles(smiles)
             if canonical is not None:
                 named_mol = canonical
+        print(smiles)
         result = _name_mol(named_mol, depth=depth, name_mode=name_mode, cache=cache)
         if cache is not None and result.success and result.en:
             # 缓存条目的 parent_chain 必须是 canonical rank，跨 cut 复用才安全。
@@ -104,8 +105,13 @@ def _yl_from_sub(
         sub, result, mol=mol, atoms=atoms, attach_old=attach_old,
         depth=depth, name_mode=name_mode, cache=cache,
     )
+    # print(arene)
     if arene is not None:
         return arene
+    if result.meta and result.meta.get("parent_kind") == "radical":
+        # L5 radical worker 已输出带 -yl 的完整自由基名（pentan-1-yl / pyridin-4-yl），
+        # 直接消费，不再 free_to_yl 二次转换（否则成 pentan-1-yl-{loc}-yl）。
+        return result.en, result.zh, result.en != "phenyl"
     loc = _locant_from_result(sub.mol, result, sub.attach_new)
     if loc is None:
         loc = _locant_via_hetero(sub.mol, sub.attach_new, result)

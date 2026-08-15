@@ -130,8 +130,6 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             entry = replace(entry, variant=sc_variant)
         return _chain_names(entry, n, numbered)
 
-    if kind == "phenyl":
-        return "phenyl", "苯基"
     stem = _parent_stem_names(numbered)
     return stem
 

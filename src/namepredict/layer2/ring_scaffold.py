@@ -29,7 +29,6 @@ class ScaffoldSpec:
     n_rings: int
     ring: str
     retained: bool
-    fg_rank: int
     numbering: NumberingPolicy
     sub_rules: object | None = None
     principal_slots: object | None = None
@@ -59,7 +58,7 @@ def identity_of(spec) -> ScaffoldIdentity:
 
 # 每个保留母体一条：smiles 模板（`match_retained` 子图同构识别）+ 命名元数据
 # （词干 / 命名类）。`_spec_from_template` 派生 ScaffoldSpec，n_rings/ring 由
-# RDKit 从 smiles 自动算，retained=True、fg_rank=0。新增环系只在此表加一条。
+# RDKit 从 smiles 自动算，retained=True。新增环系只在此表加一条。
 _NUMBERING_MODE = {
     "mono_carbo": "fixed_roles",
     "monohetero": "fixed_hetero",
@@ -123,7 +122,7 @@ def _spec_from_template(sid: str, entry: dict) -> ScaffoldSpec:
     return ScaffoldSpec(
         id=sid, naming_class=entry["naming_class"],
         stem_en=entry["stem_en"], stem_zh=entry["stem_zh"],
-        n_rings=n_rings, ring=ring, retained=True, fg_rank=0,
+        n_rings=n_rings, ring=ring, retained=True,
         numbering=numbering,
     )
 

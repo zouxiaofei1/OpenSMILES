@@ -1,24 +1,7 @@
 """ParentKind 元数据注册表 —— 评分 + L5 词干权威（P-44）。"""
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
-
-from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG
-from namepredict.layer2.principal import legacy_rank
-
-
-def _kind_class(kind: str) -> FG | None:
-    """将 kind 字符串转为 FG 枚举，非法返回 None。"""
-
-    try:
-        return FG(kind)
-    except ValueError:
-        return None
-
-def _principal_rank(kind: str, fallback: int = 0) -> int:
-    """取主官能团兼容等级，无对应 FG 时用 fallback。"""
-    group_class = _kind_class(kind)
-    return legacy_rank(group_class) if group_class else fallback
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -26,7 +9,6 @@ class KindMeta:
     kind: str
     en: str | None = None
     zh: str | None = None
-    fg_rank: int = 0
     ring: str = "none"  # 可选值："none" | "hetero" | "carbo"
     n_rings: int = 0
     retained: bool = False
@@ -34,26 +16,9 @@ class KindMeta:
 
 _REG: dict[str, KindMeta] = {}
 
-def register(meta: KindMeta) -> None:
-    """登记 KindMeta，写回以真实 FG 等级为准的副本。"""
-    rank = _principal_rank(meta.kind, meta.fg_rank)
-    _REG[meta.kind] = replace(meta, fg_rank=rank)
-
-
 def get(kind: str) -> KindMeta | None:
     """按 kind 查 KindMeta（未注册返回 None）。"""
     return _REG.get(kind)
-
-
-def fg_rank(kind: str) -> int:
-    """查询 kind 的主官能团兼容等级。"""
-    meta = get(kind)
-    return _principal_rank(kind, meta.fg_rank if meta else 0)
-
-
-def has_principal_fg(kind: str) -> int:
-    """kind 是否有主官能团等级（1/0）。"""
-    return 1 if fg_rank(kind) else 0
 
 
 def is_hetero_ring(kind: str) -> int:
@@ -111,15 +76,6 @@ def pack_parent_stem(parent: dict, mol=None) -> dict:
         packed = {**packed, "stem_en": names[0], "stem_zh": names[1]}
     return _attach_numbering_scaffold(packed)
 
-
-def _spec_to_meta(sp) -> KindMeta:
-    """将 ScaffoldSpec 转换为 KindMeta。"""
-    return KindMeta(
-        sp.id, sp.stem_en, sp.stem_zh, sp.fg_rank, sp.ring, sp.n_rings,
-        sp.retained,
-    )
-
-
 def _load_from_scaffold_specs() -> None:
     """唯一词干权威：ScaffoldSpec → KindMeta（若已存在则覆盖）。"""
     from namepredict.layer2.ring_scaffold import all_specs
@@ -127,7 +83,8 @@ def _load_from_scaffold_specs() -> None:
     for sp in all_specs():
         if sp.stem_en is None or sp.stem_zh is None:
             continue
-        register(_spec_to_meta(sp))
+        meta = KindMeta( sp.id, sp.stem_en, sp.stem_zh, sp.ring, sp.n_rings, sp.retained,)
+        _REG[meta.kind] = meta
 
 
 def _bootstrap() -> None:

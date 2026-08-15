@@ -10,7 +10,7 @@ from namepredict.layer1.functional_group_inventory import (
     FunctionalGroupInventory,
     FunctionalGroupOccurrence,
 )
-from namepredict.layer2 import kind_registry
+from namepredict.layer2.parent_candidate import _kind_rank
 from namepredict.layer2.principal import (
     PRINCIPAL_REGISTRY,
     PrincipalExpression,
@@ -51,27 +51,19 @@ def test_registry_supports_new_p41_class_and_p43_subpath() -> None:
     assert selected is not None and selected.group_class == FG.ISOCYANATE
 
 
-def test_legacy_kind_rank_is_registry_projection() -> None:
-    assert kind_registry.fg_rank("acid") > kind_registry.fg_rank("ester")
-    assert kind_registry.fg_rank("acid") > kind_registry.fg_rank("anhydride")
-    assert kind_registry.fg_rank("nitrile") > kind_registry.fg_rank("aldehyde")
-    assert kind_registry.fg_rank("ether") == 0
-    assert kind_registry.has_principal_fg("ether") == 0
-
-
 @pytest.mark.parametrize("kind,rank", [
     ("sulfide", 2), ("isocyanate", 8),
     # Migrated from _CHAIN_FG fallback to PRINCIPAL_REGISTRY projection:
     # ranks must be preserved exactly.
     ("tetraalkylammonium", 0),
 ])
-def test_unmigrated_legacy_ranks_are_preserved(kind: str, rank: int) -> None:
-    assert kind_registry.fg_rank(kind) == rank
+def test_kind_rank_projection_preserved(kind: str, rank: int) -> None:
+    assert _kind_rank(kind) == rank
 
 
 @pytest.mark.parametrize("kind", ["carboxylate", "formamide_like", "amine_oxide", "unknown_one"])
-def test_kind_projection_never_uses_substring_guessing(kind: str) -> None:
-    assert kind_registry.fg_rank(kind) == 0
+def test_kind_rank_never_uses_substring_guessing(kind: str) -> None:
+    assert _kind_rank(kind) == 0
 
 
 def test_chain_fg_anchor_fields_present() -> None:

@@ -25,13 +25,6 @@ _RETAINED_KINDS = {
     "indole": ("1H-indole", "吲哚"),
 }
 
-# FG 类别 kind → 期望 compatibility rank（P-41/44 主官能团优先级，principal.PRINCIPAL_REGISTRY）。
-_FG_RANK = {
-    "acid": 14, "anhydride": 12, "ester": 11, "amide": 9, "nitrile": 8,
-    "aldehyde": 7, "ketone": 6, "alcohol": 5, "amine": 3,
-}
-
-
 @pytest.mark.parametrize("kind,names", _RETAINED_KINDS.items())
 def test_retained_kind_stems(kind: str, names: tuple[str, str]) -> None:
     m = kr.get(kind)
@@ -40,26 +33,14 @@ def test_retained_kind_stems(kind: str, names: tuple[str, str]) -> None:
     assert m.retained is True
 
 
-@pytest.mark.parametrize("kind,rank", _FG_RANK.items())
-def test_fg_kind_rank(kind: str, rank: int) -> None:
-    assert kr.fg_rank(kind) == rank
-    assert kr.has_principal_fg(kind) == 1
-
-
-def test_ether_meta() -> None:
-    # ether 注册但 fg_rank 0（"暂时无效"kind，非主官能团）。
-    m = kr.get("ether")
-    assert m is not None
-    assert m.fg_rank == 0
-    assert kr.fg_rank("ether") == 0
-    assert kr.has_principal_fg("ether") == 0
+def test_ether_not_registered() -> None:
+    # ether 非主官能团（compat 0），不作为 scaffold 词干注册。
+    assert kr.get("ether") is None
 
 
 def test_unknown_kind_negative() -> None:
     assert kr.get("no_such") is None
     assert kr.parent_names("no_such") is None
-    assert kr.fg_rank("no_such") == 0
-    assert kr.has_principal_fg("no_such") == 0
     assert kr.is_hetero_ring("no_such") == 0
     assert kr.is_carbo_ring("no_such") == 0
     assert kr.n_rings_of("no_such") == 0
@@ -111,7 +92,7 @@ def _p(kind: str, **kw) -> dict:
 
 
 def test_score_parent_tuple_order() -> None:
-    """Legacy score consumes the registry compatibility projection."""
+    """Legacy score consumes the kind-rank fallback for old-style parents."""
     ox = _score_parent({}, _p("oxolane", chain=[0, 1, 2, 3, 4], n_carbons=4))
     eth = _score_parent({}, _p("ether", chain=[0, 1], n_carbons=2))
     assert eth[:2] == (0, 0) and ox[:2] == (0, 0)

@@ -60,6 +60,8 @@ def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
     """按链 FG 类别与个数决定 kind（不支持时 None）。"""
     if group_class is FunctionalGroupClass.NONE:
         return group_class.value if count == 0 else None
+    if group_class is FunctionalGroupClass.RADICAL:
+        return "radical"  # 自由基连接点位次由 L4 radical_c_idx 承载，kind 恒 "radical"（L5 worker 拼 -yl）
     if group_class not in _CHAIN_FG:
         return None
     if group_class not in _MULTI_FG and count != 1:
@@ -118,12 +120,6 @@ def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
 
 
 # 苯系保留名已迁往 L5 chain_engine 苯 variant（按 scaffold_id 注入）；L2 只表达结构 kind。
-def _is_benzene(info: dict, skeleton: ParentSkeleton) -> bool:
-    """判断骨架是否为苯环（6 个芳香碳）。"""
-    mol = info["mol"]
-    return len(skeleton.atom_ids) == 6 and all(
-        mol.GetAtomWithIdx(i).GetAtomicNum() == 6 and mol.GetAtomWithIdx(i).GetIsAromatic()
-        for i in skeleton.atom_ids)
 
 
 def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
@@ -145,10 +141,10 @@ def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str |
 
 
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold) -> str | None:
-    """决定环骨架母体的 kind（苯基/正交化 FG 类/结构 kind）。"""
-    # 苯基取代基 radical 保持 'phenyl'（P-22.2.4）；环 + 主 FG 的 kind 收敛为 FG 类别（正交化），环骨架由 scaffold_id 承载，命名 kind（cycloalcohol/cycloketone/benzoic/phenol/...）由 L5 typed_kinds 决定。
-    if selection.group_class is FunctionalGroupClass.RADICAL and _is_benzene(info, skeleton):
-        return "phenyl"
+    """决定环骨架母体的 kind（radical/正交化 FG 类/结构 kind）。"""
+    if selection.group_class is FunctionalGroupClass.RADICAL:
+        # 苯基取代基保留名（P-22.2.4）由 L5 radical worker 的 benzene variant 表达，L2 只给统一 kind。
+        return "radical"
     # 环 + 主 FG → FG 类别 kind（正交化）：苯/饱和环/稠环/杂环一律收敛，
     # 命名由 L5 chain_engine 通用词干引擎拼接（苯等保留名经 variant 特殊，无 variant 走通用名）。
     if scaffold is not None and selection.group_class in _CHAIN_FG:

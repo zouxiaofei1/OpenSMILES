@@ -3,10 +3,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from namepredict.layer2 import kind_registry as _kr
+from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG
 from namepredict.layer2.principal import legacy_rank
 _FIXED_MULTI: dict[str, int] = {}
 _DYNAMIC_IDS: dict[str, str] = {}
+
+
+def _as_fg(kind: str) -> FG | None:
+    """kind 字符串转 FG 枚举，非法返回 None。"""
+    try:
+        return FG(kind)
+    except ValueError:
+        return None
+
+
+def _kind_rank(kind: str) -> int:
+    """kind 的主官能团兼容等级（旧式 parent 无 pef 时兜底）。"""
+    return legacy_rank(_as_fg(kind))
 
 
 @dataclass(frozen=True, order=True)
@@ -27,7 +40,7 @@ def principal_contract_kind(kind: str) -> str:
         return "dynamic"
     if kind in _FIXED_MULTI:
         return "fixed"
-    return "single" if _kr.fg_rank(kind) else "none"
+    return "single" if _kind_rank(kind) else "none"
 
 
 def _legacy_count(parent: dict, kind: str) -> int:
@@ -55,7 +68,7 @@ def from_parent_dict(parent: dict) -> ParentCandidate:
         raise ValueError(f"principal_group_count missing for {kind}")
     # 打分收敛：主官能团等级直接取 actual FG class rank（kind 只兜底，无 facts 时）。
     pef = parent.get("principal_expression_facts")
-    rank = legacy_rank(pef.group_class) if pef else _kr.fg_rank(kind)
+    rank = legacy_rank(pef.group_class) if pef else _kind_rank(kind)
     facts = P44Facts(rank, int(parent["principal_group_count"]))
     return ParentCandidate(parent, facts)
 

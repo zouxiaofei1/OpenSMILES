@@ -431,7 +431,7 @@ _KIND_TABLE = {
                       }),
     "amide": _Chain(kind="amide", en_suf="amide", zh_suf="酰胺",
                     ene_base=("enamide", "烯酰胺"),
-                 
+
                     yne_suf=("ynamide", "炔酰胺"),
                     ez_ene=_ez_prefix,
                     variant={
@@ -439,4 +439,13 @@ _KIND_TABLE = {
                         "benzene": {1: dict(plain_maps=None,
                                             plain_fn=lambda n: ("benzamide", "苯甲酰胺"))},
                     }),
+    "radical": _Chain(kind="radical", en_suf="yl", zh_suf="基", coda="an",
+                      fg="radical", need=1, no_loc="none",
+                      omit_rule=_NO_OMIT,  # 默认带位次（pentan-1-yl / pyridin-4-yl）；苯 variant 覆盖为省略
+                      ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
+                      variant={
+                          "benzene": {1: dict(plain_maps=None,
+                                              plain_fn=lambda n: ("phenyl", "苯基"),
+                                              omit_rule=lambda n, loc, omit: True)},
+                      }),
 }

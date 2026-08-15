@@ -35,8 +35,8 @@ _KEEP_LOCANT_KINDS = _fg_reg.keep_locant_fgs()
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None,
                       scaffold: str | None = None, has_ene: bool = False) -> bool:
     """判断取代基位次可否省略（环烷烃/苯单取代、酰胺 N- 等情形）。"""
-    if kind == "phenyl":
-        # 苯基自由基：连接点隐含为 locant 1，因此每个叶子保留其位次（4-chlorophenyl，而非 chlorophenyl）。
+    if kind == "radical":
+        # 自由基母体：连接点隐含为 locant 1，因此每个叶子保留其位次（4-chlorophenyl，而非 chlorophenyl）。
         return False
     # 纯烃环单取代位次隐含：环烷烃/苯 base 的 kind 均收敛为 alkane，环系由 scaffold_id 承载；环烯取代基位次必须保留（1-methylcyclohexene）。
     if n_carbons <= 1 or (

@@ -62,18 +62,6 @@ def _pack(out: Mol, inv: dict[int, int], attach_old: int, atoms: frozenset[int])
     return CutSubmol(out, atom_map, inv, inv[attach_old], attach_old, frozenset(atoms))
 
 
-def build_cut_submol(
-    mol: Mol, atoms: frozenset[int], attach_old: int,
-) -> CutSubmol | None:
-    """在 atoms 上的诱导子分子；连接处的自由价用 H 填充。"""
-    if attach_old not in atoms:
-        return None
-    em = Chem.RWMol()
-    inv = _copy_atoms(em, mol, _ordered(atoms))
-    _copy_bonds(em, mol, inv)
-    _cap_attach_h(em, inv[attach_old])
-    out = _sanitize(em)
-    return None if out is None else _pack(out, inv, attach_old, atoms)
 
 
 def _add_anchor(em: Chem.RWMol, attach_new: int) -> None:
@@ -93,3 +81,16 @@ def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol
     _copy_bonds(em, mol, inv)
     _add_anchor(em, inv[attach_old])
     return _sanitize(em)
+
+def build_cut_submol(
+    mol: Mol, atoms: frozenset[int], attach_old: int,
+) -> CutSubmol | None:
+    """在 atoms 上的诱导子分子；连接处的自由价用 H 填充。"""
+    if attach_old not in atoms:
+        return None
+    em = Chem.RWMol()
+    inv = _copy_atoms(em, mol, _ordered(atoms))
+    _copy_bonds(em, mol, inv)
+    _cap_attach_h(em, inv[attach_old])
+    out = _sanitize(em)
+    return None if out is None else _pack(out, inv, attach_old, atoms)

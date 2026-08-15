@@ -21,7 +21,7 @@ class FgSpec:
     p41: int = 0  # P-41 主官能团等级（0 = 非主官能团）
     path: tuple[int, ...] = ()  # P-43 优先级路径
     expr: str = "suffix"  # 表达类型：suffix / prefix_only / legacy_compat
-    compat: int = 0  # 兼容等级（legacy_rank / kind_registry fg_rank 投影）
+    compat: int = 0  # 兼容等级（legacy_rank 消费）
     anchors: tuple[str, ...] = ()  # occurrence payload 锚点 key（空 = 不收集锚点）
     parent_anchor_fields: tuple[str, str] | None = None  # parent 锚点字段（单, 复）
     chain: bool = False  # 可作链式主官能团（_CHAIN_FG）
@@ -41,7 +41,8 @@ _PREFIX = "prefix_only"
 # 新增一个官能团类别：在本表加一条 + L1 analyzer 检测 + L5 chain_engine._KIND_TABLE 命名规格。
 FG_SPECS: tuple[FgSpec, ...] = (
     FgSpec("radical", "radicals", p41=1, compat=1, anchors=("c_idx",),
-           parent_anchor_fields=("radical_c_idx", "radical_c_idxs")),
+           parent_anchor_fields=("radical_c_idx", "radical_c_idxs"),
+           locant_kind="radical"),
     FgSpec("acid", "carboxyls", p41=7, path=(1,), compat=14, anchors=("c_idx",),
            parent_anchor_fields=("cooh_c_idx", "cooh_c_idxs"),
            chain=True, multi=True, rs=True, keep_locant=True, locant_kind="acid"),

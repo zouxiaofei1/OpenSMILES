@@ -60,7 +60,7 @@ flowchart TD
     E -->|无主官能团| G[express_hydrocarbon_principal 纯烃]
 ```
 
-1. **`principal.py`** — `select_principal_group()`（`:86`）按 `PRINCIPAL_REGISTRY`（`principal.py:42-60`，P-41 class 优先级）选出主官能团类。注册表把 FG 分成三档表达权限：**SUFFIX**（radical/acid/anhydride/ester/acyl_halide/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine 等，有资格成为主官能团并 typed 表达）、**LEGACY_COMPAT**（sulfide/isocyanate/isothiocyanate 等，`compatibility_rank` 投影到 fg_rank 但不参与主官能团选择）、**PREFIX_ONLY**（ether，只当前缀）。`principal_spec()` 只放行 SUFFIX 类。
+1. **`principal.py`** — `select_principal_group()`（`:86`）按 `PRINCIPAL_REGISTRY`（`principal.py:42-60`，P-41 class 优先级）选出主官能团类。注册表把 FG 分成三档表达权限：**SUFFIX**（radical/acid/anhydride/ester/acyl_halide/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine 等，有资格成为主官能团并 typed 表达）、**LEGACY_COMPAT**（sulfide/isocyanate/isothiocyanate 等，`compatibility_rank` 经 `legacy_rank` 查询但不参与主官能团选择）、**PREFIX_ONLY**（ether，只当前缀）。`principal_spec()` 只放行 SUFFIX 类。
 
 2. **`parent_skeleton.py`** — `enumerate_principal_skeletons()`（`:243`）从主官能团的附着点出发枚举**开链候选**（`_chain_candidates`）与**环系统候选**（`_ring_candidates`，每个 ring system 一个骨架）。随后 `select_principal_skeletons()`（`:230`）依次施加 `keep_max_principal_coverage` → `keep_p44_1_2`（环优先 + 最高优先级杂原子）→ 按拓扑走 `keep_p44_3`（纯链）/ `keep_p44_2`（环）→ `keep_p44_4_unsaturation`。
 
@@ -76,11 +76,11 @@ flowchart TD
 
 ### Kind Registry: 母体元数据中心
 
-`kind_registry.py`（138 行）是 Layer2 的**母体元数据注册中心 (Registry Authority)**，存储 scaffold 母体种类 (kind) 的元数据并在导入时 bootstrap：
+`kind_registry.py`（107 行）是 Layer2 的**母体元数据注册中心 (Registry Authority)**，存储 scaffold 母体种类 (kind) 的元数据并在导入时 bootstrap：
 
-- **`KindMeta`**（`kind_registry.py:24-32`）: 每个 kind 的评分字段 (`fg_rank`, `ring`, `n_rings`, `retained`) 和命名 stem
-- **bootstrap 顺序**（`_bootstrap` `:133`）**只有一步**：`_load_from_scaffold_specs()`（`:123`）— 从 `ring_scaffold.all_specs()` 读取有词干的 spec，注册为 ring/n_rings/retained 元数据（**Spec 是词干权威**）。无 `_KIND_CLASS`/`_load_chain_fg`/`all_kinds`——链式 FG 的 `fg_rank` 由 `principal.legacy_rank` 实时投影（`_principal_rank` `:18`，无 `_REG` 条目时也照算），不预先注册
-- 公共 API: `register` / `get` / `fg_rank` / `has_principal_fg` / `is_hetero_ring` / `is_carbo_ring` / `n_rings_of` / `retained_bonus` / `parent_names` / `pack_parent_stem`
+- **`KindMeta`**（`kind_registry.py:7-14`）: 每个 kind 的评分字段 (`ring`, `n_rings`, `retained`) 和命名 stem
+- **bootstrap 顺序**（`_bootstrap` `:102`）**只有一步**：`_load_from_scaffold_specs()`（`:92`）— 从 `ring_scaffold.all_specs()` 读取有词干的 spec，注册为 ring/n_rings/retained 元数据（**Spec 是词干权威**）。主官能团等级不存于 `KindMeta`，运行时按 FG 枚举经 `legacy_rank` 实时查询（旧式 parent 兜底在 `parent_candidate._kind_rank`，`parent_candidate.py:20`）
+- 公共 API: `register` / `get` / `is_hetero_ring` / `is_carbo_ring` / `n_rings_of` / `retained_bonus` / `parent_names` / `pack_parent_stem`
 
 kind_registry 是**只读权威**：被 `scoring.py`（模块级派生集合）、`parent_candidate.py`（principal contract 的 kind 分类）、`parent_selector.py`（`pack_parent_stem` 注入 stem）消费，不存在对外注册入口。
 
@@ -90,7 +90,7 @@ kind_registry 是**只读权威**：被 `scoring.py`（模块级派生集合）�
 
 `ring_scaffold.py`（288 行）以 `_TEMPLATES`（SMILES 模板表）为**唯一事实来源**，派生 ScaffoldSpec/ScaffoldIdentity 与保留条目。职责分两块：
 
-1. **模板注册表（唯一来源）** — `_TEMPLATES`（`71` 起，保留母体，每条 `{smiles, stem_en, stem_zh, naming_class}`）；`_spec_from_template`（`:117`）派生 ScaffoldSpec（n_rings/ring 从 smiles 算，retained=True，fg_rank=0），`all_specs()`（`:153`）/`get_spec()`（`:148`）/`get_identity()`（`:138`）/`all_identities()`（`:143`）/`kind_ids_for()`（`:184`）均由此派生；`kind_registry._load_from_scaffold_specs` 据此注册 KindMeta 词干（活接线，防清扫判死）
+1. **模板注册表（唯一来源）** — `_TEMPLATES`（`71` 起，保留母体，每条 `{smiles, stem_en, stem_zh, naming_class}`）；`_spec_from_template`（`:117`）派生 ScaffoldSpec（n_rings/ring 从 smiles 算，retained=True），`all_specs()`（`:153`）/`get_spec()`（`:148`）/`get_identity()`（`:138`）/`all_identities()`（`:143`）/`kind_ids_for()`（`:184`）均由此派生；`kind_registry._load_from_scaffold_specs` 据此注册 KindMeta 词干（活接线，防清扫判死）
 2. **环解析** — `resolve_ring_scaffold(info, skeleton)`（`:287` 附近）优先级：① `get_identity(skeleton.scaffold_id)` 直接命中 → ② `match_retained`（SMILES 模板子图同构，按环原子集精确覆盖）→ ③ `_generic_carbocycle`（全碳非保留环 → `ScaffoldIdentity("carbocycle",...)`）。`match_systems`/`match_scaffold_ids`/`registry`/`get_entry` 为模板语义查询
 
 ```mermaid
@@ -140,7 +140,7 @@ flowchart LR
 
 ### FG 优先级体系
 
-官能团优先级遵循 IUPAC P-41 降序排列，由 `principal.py` 的 `PRINCIPAL_REGISTRY`（`compatibility_rank`）定义，经 `kind_registry._principal_rank` 投影到 kind。**13 个扩展 FG（sulfoxide/sulfone/sulfonate/sulfonamide/sulfonic_acid/sulfonyl_chloride/phosphate/boronic/carbamate/carbonate/urea/guanidine/hydrazine）已在 layer1 删除检测，随之退出 fg_rank 体系**：
+官能团优先级遵循 IUPAC P-41 降序排列，由 `principal.py` 的 `PRINCIPAL_REGISTRY`（`compatibility_rank`）定义，经 `legacy_rank`（`principal.py:64`）按 FG 枚举查询。**13 个扩展 FG（sulfoxide/sulfone/sulfonate/sulfonamide/sulfonic_acid/sulfonyl_chloride/phosphate/boronic/carbamate/carbonate/urea/guanidine/hydrazine）已在 layer1 删除检测，随之退出优先级体系**：
 
 | 优先级 | FG 类别 | kind 示例 |
 |--------|---------|-----------|
@@ -269,7 +269,7 @@ flowchart LR
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
-| `kind_registry.py` | 138 | KindMeta 注册中心, fg_rank, stem, ring 元数据; 从 ScaffoldSpec 同步词干（只读权威） |
+| `kind_registry.py` | 107 | KindMeta 注册中心, stem, ring 元数据; 从 ScaffoldSpec 同步词干（只读权威） |
 | `ring_scaffold.py` | 288 | **`_TEMPLATES` → ScaffoldSpec/ScaffoldIdentity + resolve_ring_scaffold** |
 | `ring_expression_policy.py` | 34 | 环 scaffold 上 typed 主官能团表达的能力策略 |
 | `ring_parent.py` | 22 | 环母体辅助原语: `_o_idx`/`_dbl_o_idx` 等 |
@@ -306,7 +306,7 @@ def select_parent(info: dict, *, all_candidates: bool = False) -> dict | list[di
 
 | 类型 | 位置 | 说明 |
 |------|------|------|
-| `KindMeta` | `kind_registry.py:24-32` | 母体种类元数据: fg_rank, ring, n_rings, retained, en/zh stem |
+| `KindMeta` | `kind_registry.py:7-14` | 母体种类元数据: ring, n_rings, retained, en/zh stem |
 | `ScaffoldSpec` | `ring_scaffold.py:24` | 编号骨架定义: id, naming_class, stem, numbering, retained |
 | `ScaffoldIdentity` | `ring_scaffold.py:46` | 拓扑级身份: id, naming_class, n_rings, ring |
 | `PrincipalFeatureSpec` | `principal.py:27-32` | P-41 表达元数据: priority, expression, compatibility_rank |

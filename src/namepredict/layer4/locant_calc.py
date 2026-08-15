@@ -218,6 +218,17 @@ def _amide_fg_locants(oriented: dict) -> list[int] | None:
     return [loc] if loc is not None else None
 
 
+def _radical_locants(oriented: dict) -> list[int] | None:
+    """返回自由基连接点位次列表（radical_c_idx 在定向链上的位次，连接点隐含 1 或按杂环编号）。"""
+    idx = oriented.get("radical_c_idx")
+    if idx is None:
+        return None
+    loc = _atom_locant(oriented.get("chain") or [], idx, oriented.get("kind"),
+                       oriented.get("numbering_scaffold"),
+                       oriented.get("numbering_scaffold_required", False))
+    return [loc] if loc is not None else None
+
+
 # 位次记录 kind → 位次函数（kind 为 fg_registry.locant_kind，跨 L4/L5 一致性由 spec 承载）。
 # 新增带位次的 FG：在 _LOCANT_FNS 补函数 + fg_registry 设 locant_kind，未登记则 KeyError 显式暴露。
 _LOCANT_FNS = {
@@ -227,6 +238,7 @@ _LOCANT_FNS = {
     "sh": _sh_locants_list,
     "acid": _acid_fg_locants,
     "amide": _amide_fg_locants,
+    "radical": _radical_locants,
 }
 _FG_LOCANTS = tuple(
     (sp.locant_kind, _LOCANT_FNS[sp.locant_kind])
