@@ -22,6 +22,7 @@ class ParentCandidate:
 
 
 def principal_contract_kind(kind: str) -> str:
+    """返回 kind 的主官能团契约模式（dynamic/fixed/single/none）。"""
     if kind in _DYNAMIC_IDS:
         return "dynamic"
     if kind in _FIXED_MULTI:
@@ -30,6 +31,7 @@ def principal_contract_kind(kind: str) -> str:
 
 
 def _legacy_count(parent: dict, kind: str) -> int:
+    """按契约模式计算主官能团个数。"""
     mode = principal_contract_kind(kind)
     if mode == "dynamic":
         return len(parent.get(_DYNAMIC_IDS[kind]) or ())
@@ -39,6 +41,7 @@ def _legacy_count(parent: dict, kind: str) -> int:
 
 
 def with_principal_group_contract(parent: dict) -> dict:
+    """保证候选 dict 带 principal_group_count 字段。"""
     if "principal_group_count" in parent:
         return parent
     kind = parent.get("kind") or ""
@@ -46,6 +49,7 @@ def with_principal_group_contract(parent: dict) -> dict:
 
 
 def from_parent_dict(parent: dict) -> ParentCandidate:
+    """由母体 dict 构造 ParentCandidate 与打分 facts。"""
     kind = parent.get("kind") or ""
     if "principal_group_count" not in parent:
         raise ValueError(f"principal_group_count missing for {kind}")
@@ -57,4 +61,5 @@ def from_parent_dict(parent: dict) -> ParentCandidate:
 
 
 def principal_key(parent: dict) -> P44Facts:
+    """提取母体的主官能团打分键 facts。"""
     return from_parent_dict(parent).facts

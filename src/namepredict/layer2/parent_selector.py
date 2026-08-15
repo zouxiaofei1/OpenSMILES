@@ -1,11 +1,14 @@
+"""排序、终态化并返回母体候选（P-44 选择入口）。"""
 from __future__ import annotations
 
 
 def _rank_candidates(info: dict, cands: list[dict]) -> list[dict]:
+    """按评分降序排列候选母体。"""
     from namepredict.layer2.scoring import _score_parent
     return sorted(cands, key=lambda c: _score_parent(info, c), reverse=True)
 
 def _finalize_ranked(info: dict, cands: list[dict]) -> list[dict]:
+    """补齐契约/词干/编号并固化 owned_atoms。"""
     from namepredict.layer2.kind_registry import pack_parent_stem
     from namepredict.layer2.parent_candidate import with_principal_group_contract
     from namepredict.layer2.parent_ownership import finalize_parent_ownership

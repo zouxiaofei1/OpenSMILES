@@ -34,6 +34,7 @@ class PrincipalFeatureSpec:
 
 def _suffix(p41_class: int, rank: int, *path: int,
             anchor_fields: tuple[str, str] | None = None) -> PrincipalFeatureSpec:
+    """构造 SUFFIX 型主官能团规格。"""
     priority = PrincipalPriority(p41_class, path)
     return PrincipalFeatureSpec(priority, PrincipalExpression.SUFFIX, rank, anchor_fields)
 
@@ -60,15 +61,18 @@ PRINCIPAL_REGISTRY: dict[FG, PrincipalFeatureSpec] = {
 
 
 def feature_spec(group_class: FG, registry: Mapping[FG, PrincipalFeatureSpec] = PRINCIPAL_REGISTRY) -> PrincipalFeatureSpec | None:
+    """查 registry 返回基团类对应的规格（无则 None）。"""
     return registry.get(group_class)
 
 
 def principal_spec(group_class: FG, registry: Mapping[FG, PrincipalFeatureSpec] = PRINCIPAL_REGISTRY) -> PrincipalFeatureSpec | None:
+    """仅返回 SUFFIX 型规格（Legacy 不作主基团）。"""
     spec = feature_spec(group_class, registry)
     return spec if spec and spec.expression is PrincipalExpression.SUFFIX else None
 
 
 def legacy_rank(group_class: FG | None) -> int:
+    """取基团类的兼容等级（无规格为 0）。"""
     spec = feature_spec(group_class) if group_class else None
     return spec.compatibility_rank if spec else 0
 
@@ -83,6 +87,7 @@ def select_principal_group(
     inventory: FunctionalGroupInventory,
     registry: Mapping[FG, PrincipalFeatureSpec] = PRINCIPAL_REGISTRY,
 ) -> PrincipalGroupSelection | None:
+    """按优先级选主官能团类并取全部 occurrence。"""
     classes = (entry.group_class for entry in inventory.entries)
     eligible = (group_class for group_class in set(classes) if principal_spec(group_class, registry))
     selected = min(eligible, key=lambda group_class: principal_spec(group_class, registry).priority, default=None)

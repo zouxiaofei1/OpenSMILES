@@ -1,3 +1,4 @@
+"""L4 定向编号引擎：按 P-14.4 规则筛出链/环原子顺序候选。"""
 from __future__ import annotations
 
 
@@ -5,18 +6,22 @@ from __future__ import annotations
 # ── 候选生成 ──────────────────────────────────────────────────
 
 def _numbered(chain: list[int]) -> dict[int, int]:
+    """把链原子顺序映射为 {原子: 位次}。"""
     return {a: i + 1 for i, a in enumerate(chain)}
 
 
 def _to_chain(cand: dict[int, int]) -> list[int]:
+    """按位次升序还原原子顺序列表。"""
     return sorted(cand, key=cand.get)
 
 
 def _chain_cands(chain: list[int]) -> list[dict[int, int]]:
+    """生成线性链正反两个方向的编号候选。"""
     return [_numbered(chain), _numbered(list(reversed(chain)))]
 
 
 def _ring_cands(chain: list[int]) -> list[dict[int, int]]:
+    """生成环的全部旋转/翻转编号候选。"""
     n = len(chain)
     out: list[dict[int, int]] = []
     for i in range(n):
@@ -29,11 +34,13 @@ def _ring_cands(chain: list[int]) -> list[dict[int, int]]:
 # ── 位次集合键 ───────────────────────────────────────────────────────
 
 def _locant_set(cand: dict[int, int], atoms: list[int]) -> tuple[int, ...] | None:
+    """计算原子集合在候选编号下的排序位次元组。"""
     locs = sorted(cand[a] for a in atoms if a in cand)
     return tuple(locs) if locs else None
 
 
 def _bond_locants(cand: dict[int, int], bonds) -> tuple[int, ...] | None:
+    """计算各键较小端点位次的排序元组。"""
     if not bonds:
         return None
     mins = []
@@ -88,6 +95,7 @@ def _unsat_bonds(parent: dict) -> tuple[list, list]:
 
 
 def _is_ring(parent: dict) -> bool:
+    """按 scaffold_id 判断 parent 是否为环系。"""
     return bool(parent.get("scaffold_id"))
 
 
@@ -107,6 +115,7 @@ def _ring_hetero_start(parent: dict, chain: list[int]) -> int | None:
 
 
 def _fixed_start(parent: dict) -> int | None:
+    """取固定 locant 1 起点原子；无字段则尝试单杂原子环。"""
     for key in _FIXED_START_KEYS:
         v = parent.get(key)
         if v is not None:

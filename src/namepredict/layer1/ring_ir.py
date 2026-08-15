@@ -39,6 +39,7 @@ class RingSystemIR:
 
 
 def _ring_hetero(mol: Mol, atom_ids: tuple[int, ...]) -> tuple[tuple[int, int], ...]:
+    """返回环中非碳原子的 (索引, 原子序数) 元组。"""
     out: list[tuple[int, int]] = []
     for i in atom_ids:
         z = mol.GetAtomWithIdx(i).GetAtomicNum()
@@ -48,6 +49,7 @@ def _ring_hetero(mol: Mol, atom_ids: tuple[int, ...]) -> tuple[tuple[int, int], 
 
 
 def _component(mol: Mol, sssr_idx: int, ring: tuple[int, ...]) -> RingComponent:
+    """将 SSSR 环构建为带类型的 RingComponent。"""
     atoms = tuple(sorted(ring))
     return RingComponent(
         sssr_idx=sssr_idx,
@@ -59,6 +61,7 @@ def _component(mol: Mol, sssr_idx: int, ring: tuple[int, ...]) -> RingComponent:
 
 
 def _shared_bond(mol: Mol, shared: tuple[int, ...]) -> bool:
+    """判断共享原子中前两个是否成键。"""
     if len(shared) < 2:
         return False
     a, b = shared[0], shared[1]
@@ -66,6 +69,7 @@ def _shared_bond(mol: Mol, shared: tuple[int, ...]) -> bool:
 
 
 def _fusion(mol: Mol, edge: tuple) -> FusionEdge:
+    """将稠合边三元组组装为 FusionEdge。"""
     a, b, shared_list = edge
     shared = tuple(shared_list)
     return FusionEdge(a=a, b=b, shared=shared, bond=_shared_bond(mol, shared))
@@ -74,16 +78,19 @@ def _fusion(mol: Mol, edge: tuple) -> FusionEdge:
 def _components(
     mol: Mol, rings: list[tuple[int, ...]], indices: list[int],
 ) -> tuple[RingComponent, ...]:
+    """按索引构建环系内的全部 RingComponent。"""
     return tuple(_component(mol, i, rings[i]) for i in sorted(indices))
 
 
 def _fusions(mol: Mol, edges: list) -> tuple[FusionEdge, ...]:
+    """将所有稠合边组装为 FusionEdge 元组。"""
     return tuple(_fusion(mol, e) for e in edges)
 
 
 def _system_ir(
     mol: Mol, rings: list[tuple[int, ...]], system: dict,
 ) -> RingSystemIR:
+    """由环系 dict 构建 RingSystemIR 并补全指纹。"""
     from namepredict.layer1.ring_fingerprint import ring_fingerprint
 
     ir = RingSystemIR(

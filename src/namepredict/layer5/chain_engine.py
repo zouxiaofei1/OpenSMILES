@@ -1,3 +1,4 @@
+"""L5 链式词干命名引擎：按 _Chain 规格数据驱动生成链状母体名（饱和/烯/炔/环）。"""
 from __future__ import annotations
 from dataclasses import KW_ONLY, dataclass, replace
 from namepredict.layer5.stems import (
@@ -7,14 +8,30 @@ from namepredict.layer5.stereo import _ez_prefix, ez_for_parent
 from namepredict.constants import MULT_EN, MULT_ZH
 
 def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:
+    """从双语映射表取 n 的 (en, zh) 对，缺失返回 None。"""
     en, zh = en_map.get(n), zh_map.get(n); return (en, zh) if en and zh else None
-def _alkane_names(n: int) -> tuple[str, str] | None: return _pair(ALKANE_EN, ALKANE_ZH, n)
+
+
+def _alkane_names(n: int) -> tuple[str, str] | None:
+    """查 C1–C35 烷烃英文/中文名表。"""
+    return _pair(ALKANE_EN, ALKANE_ZH, n)
+
+
 def _omit_term_locant(n: int, loc: int | None, omit: bool) -> bool:
+    """端位/默认位次省略判定：omit、无位次或 C1–C2 的 1 位。"""
     return omit or loc is None or (loc == 1 and n <= 2)
+
+
 def _NO_OMIT(n: int, loc: int | None, omit: bool) -> bool:
+    """恒不省略位次的占位规则。"""
     return False
+
+
 def _pair_loc_str(locs: list[int]) -> str:
+    """位次列表拼接为逗号分隔字符串。"""
     return ",".join(str(x) for x in locs)
+
+
 # C1/C2 开链英文 IUPAC 保留名（formic/acetic…）；C3+ 系统名由词干生成（_chain_plain 回落），中文无保留名。
 _RETAINED = {
     "acid": {1: ("formic acid", "甲酸"), 2: ("acetic acid", "乙酸")},
@@ -23,19 +40,31 @@ _RETAINED = {
     "nitrile": {1: ("formonitrile", "甲腈"), 2: ("acetonitrile", "乙腈")},
     "ester": {1: ("formate", "甲酸"), 2: ("acetate", "乙酸")},
 }
+
+
 def _retained_plain(kind: str):
     """C1/C2 保留名 plain_fn：命中返回 (en,zh)，否则 None 回落词干生成。"""
     table = _RETAINED[kind]
     return lambda n: table.get(n)
+
+
 def _ene_loc_kept(numbered: dict) -> int | None:
+    """取应保留的烯位次：omit_ene_locant 开启时为 None。"""
     return None if numbered.get("omit_ene_locant") else numbered.get("ene_locant")
+
+
 def _with_ez(pair: tuple[str, str] | None, numbered: dict) -> tuple[str, str] | None:
+    """若母体含 E/Z 则给名称对加前缀。"""
     if pair is None: return None
     ez = ez_for_parent(numbered)
     return f"{ez}{pair[0]}", f"{ez}{pair[1]}"
+
+
 def _fg_record(numbered: dict, kind: str) -> dict | None:
     """按 kind 查找主官能团位次记录（稀疏 fg_locants 列表）。"""
     return next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == kind), None)
+
+
 def _parent_multiplicity(numbered: dict) -> int | None:
     """主官能团数量：facts.multiplicity，否则旧 principal_group_count。"""
     parent = numbered.get("parent") or {}
@@ -44,6 +73,8 @@ def _parent_multiplicity(numbered: dict) -> int | None:
         return facts.multiplicity
     count = parent.get("principal_group_count")
     return int(count) if count is not None else None
+
+
 def _fg_locant(numbered: dict, kind: str) -> int | None:
     """单官能团位次（段式烯/炔、链名）；仅当恰好一个时返回，否则 None。"""
     rec = _fg_record(numbered, kind)
@@ -51,6 +82,7 @@ def _fg_locant(numbered: dict, kind: str) -> int | None:
     return locs[0] if locs and len(locs) == 1 else None
 
 def _has_ene(numbered: dict) -> bool:
+    """判断母体是否存在烯键（含父字典 double_bond(s)）。"""
     p = numbered.get("parent") or {}
     return bool(
         numbered.get("ene_locant") or numbered.get("ene_locants")
@@ -59,8 +91,11 @@ def _has_ene(numbered: dict) -> bool:
 
 
 def _has_yne(numbered: dict) -> bool:
+    """判断母体是否存在炔键（yne_locant 或父字典 triple_bond）。"""
     p = numbered.get("parent") or {}
     return bool(numbered.get("yne_locant") or p.get("triple_bond"))
+
+
 # ===== 链式词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环 (替代 if-kind 枚举) =====
 def _chain_unsat(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
     """通用不饱和段引擎: 炔段优先, 烯段其次 — 段式(醇/酮)与融合式(酸)均由 spec 数据驱动."""
@@ -75,6 +110,7 @@ def _chain_unsat(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
     return None
 
 def _chain_yne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
+    """炔段引擎：融合式加炔后缀，段式（醇/酮）需 FG 位次。"""
     s, zs = spec.stem if spec.stem else (_en_stem(n), _chain_zh_base(n))
     if s is None or zs is None:
         return None
@@ -104,6 +140,7 @@ def _fused_ene_suf(spec: "_Chain", m: int) -> tuple[str, str] | None:
     return f"{me}{spec.ene_base[0]}", f"{mz}{spec.ene_base[1]}"
 
 def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
+    """烯段引擎：多烯/单烯、融合式/段式按 spec 字段分支。"""
     s, zs = spec.stem if spec.stem else (_en_stem(n), _chain_zh_base(n))
     if s is None or zs is None:
         return None
@@ -157,6 +194,7 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
 
 @dataclass(frozen=True)
 class _Chain:
+    """链式词干引擎配置规格：词缀后缀、位次规则、烯/炔段与 scaffold 变体等字段。"""
     kind: str
     en_suf: str            # 词缀后缀: "ol" / "one" / "ene" / "oic acid"
     zh_suf: str            # "醇" / "酮" / "烯" / "酸"
@@ -194,6 +232,7 @@ class _Chain:
     aromatic: bool = False              # 芳香环 scaffold 标记 (由 assembler 注入); 醇→酚 语义在此消费
 
 def _chain_zh_base(n: int) -> str | None:
+    """中文烷烃全名去后缀得词干（丁烷→丁）。"""
     z = alkane_zh(n)
     return zh_stem(z) if z else None
 

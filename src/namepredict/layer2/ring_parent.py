@@ -1,3 +1,4 @@
+"""环骨架母体的氧原子查询辅助（=O / -O-）。"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
@@ -17,4 +18,5 @@ def _o_idx(mol: Mol, c_idx: int, bond_name: str) -> int | None:
 
 
 def _dbl_o_idx(mol: Mol, c_idx: int) -> int | None:
+    """返回碳的双键 O 邻居索引。"""
     return _o_idx(mol, c_idx, "DOUBLE")

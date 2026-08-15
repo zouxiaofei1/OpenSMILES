@@ -11,6 +11,7 @@ from namepredict.layer3.submol_build import build_anchor_submol, build_cut_submo
 from namepredict.tools.free_to_yl import free_to_yl as yl_form
 
 def _is_arom_c6(mol: Mol, atoms) -> bool:
+    """判断 6 个原子是否构成芳香碳六元环。"""
     if len(atoms) != 6:
         return False
     return all(
@@ -82,6 +83,7 @@ def _yl_from_sub(
     sub, *, mol, atoms, attach_old, depth: int, name_mode: str = "general",
     cache: CommonNameCache | None = None,
 ) -> tuple[str, str, bool] | None:
+    """对切割子分子 free-name 后转 -yl 双语名称；含苯环特判与跨 cut 缓存。"""
     from namepredict.namer import _cache_put, _canonical_result, _name_mol
     from rdkit import Chem
 

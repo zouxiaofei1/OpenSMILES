@@ -1,16 +1,23 @@
+"""常用名结果缓存：以 SMILES 为键的内存字典，容量满时抛错。"""
+
 from __future__ import annotations
 from namepredict.types import NameResult
 
 
 class CommonNameCache:
+    """SMILES → NameResult 的内存缓存，达上限后拒绝写入。"""
+
     def __init__(self, max_entries: int = 100) -> None:
+        """初始化缓存容量上限与底层字典。"""
         self.max_entries = max_entries
         self._data: dict[str, NameResult] = {}
 
     def get(self, smiles: str) -> NameResult | None:
+        """按 SMILES 键取缓存结果，未命中返回 None。"""
         return self._data.get(smiles)
 
     def put(self, smiles: str, result: NameResult) -> None:
+        """写入缓存；已存在则覆盖，容量满时抛 ValueError。"""
         if smiles in self._data:
             self._data[smiles] = result
             return
@@ -19,4 +26,5 @@ class CommonNameCache:
         self._data[smiles] = result
 
     def __len__(self) -> int:
+        """返回当前缓存的条目数。"""
         return len(self._data)

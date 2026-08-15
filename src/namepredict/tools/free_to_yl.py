@@ -1,3 +1,4 @@
+"""free 母体名 → P-29 -yl 取代基形式的双语转换（含官能团前缀化）。"""
 
 from __future__ import annotations
 
@@ -10,6 +11,7 @@ _RETAINED: dict[str, tuple[str, str]] = {
 
 
 def _drop_terminal_e(en: str) -> str:
+    """去掉英文名末尾的 e（用于拼接 -yl 词干）。"""
     return en[:-1] if en.endswith("e") else en
 
 
@@ -132,6 +134,7 @@ def _try_fg_prefix(en: str, zh: str) -> tuple[str, str] | None:
 
 
 def _yl_en(en: str, k: int) -> str:
+    """生成英文 -yl 形式；保留名用映射，否则按位次拼接。"""
     hit = _RETAINED.get(en)
     return hit[0] if hit is not None else f"{_drop_terminal_e(en)}-{k}-yl"
 
@@ -147,6 +150,7 @@ def _mirror_azole_locants_zh(zh: str, en: str) -> str:
 
 
 def _yl_zh(zh: str, k: int, en: str) -> str:
+    """生成中文 -基形式；保留名用映射，否则按位次拼接。"""
     hit = _RETAINED.get(en)
     if hit is not None:
         return hit[1]

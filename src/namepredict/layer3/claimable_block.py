@@ -26,6 +26,7 @@ class ClaimedBlock:
 
 
 def _has_dbl_o(atom) -> bool:
+    """判断原子是否连有双键氧（羰基特征）。"""
     mol = atom.GetOwningMol()
     return any(
         n.GetAtomicNum() == 8
@@ -36,6 +37,7 @@ def _has_dbl_o(atom) -> bool:
 
 
 def _owned_carbonyl_c(mol: Mol, n_idx: int, owned: frozenset[int]):
+    """返回与 N 单键相连且带双键氧的所属羰基碳。"""
     atom = mol.GetAtomWithIdx(n_idx)
     for n in atom.GetNeighbors():
         if n.GetIdx() not in owned or n.GetAtomicNum() != 6:
@@ -54,6 +56,7 @@ def _is_amide_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
 
 
 def _is_ether_o(mol: Mol, o_idx: int) -> bool:
+    """判断是否为醚氧（两个重原子邻居均为碳）。"""
     atom = mol.GetAtomWithIdx(o_idx)
     if atom.GetAtomicNum() != 8:
         return False
@@ -62,6 +65,7 @@ def _is_ether_o(mol: Mol, o_idx: int) -> bool:
 
 
 def _carbon_slot(atom) -> SideSlot:
+    """按是否成环返回碳原子的 slot 类型。"""
     return SideSlot.RING_C if atom.IsInRing() else SideSlot.CHAIN_C
 
 
@@ -78,6 +82,7 @@ def derive_slot(mol: Mol, attach_parent: int, owned_atoms: frozenset[int]) -> Si
 
 
 def _attach_parents_of(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> set[int]:
+    """返回组分原子在所有权集合中的连接点集合。"""
     out: set[int] = set()
     for a in atoms:
         for n in mol.GetAtomWithIdx(a).GetNeighbors():
@@ -87,6 +92,7 @@ def _attach_parents_of(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -
 
 
 def _is_outside_root(mol: Mol, root: int, owned: frozenset[int], attach: int) -> bool:
+    """判断 root 是否为所有权之外的重原子根。"""
     if root in owned or mol.GetAtomWithIdx(root).GetAtomicNum() == 1:
         return False
     return any(n.GetIdx() == root for n in mol.GetAtomWithIdx(attach).GetNeighbors()
@@ -128,6 +134,7 @@ def _canonical_edge(
 def _try_claim(
     mol: Mol, owned: frozenset[int], atoms: frozenset[int]
 ) -> ClaimedBlock | None:
+    """尝试为单一组分建立 claim 并返回其块。"""
     edge = _canonical_edge(mol, atoms, owned)
     if edge is None:
         return None
@@ -139,6 +146,7 @@ def _try_claim(
 
 
 def _unique_components(mol: Mol, owned: frozenset[int]) -> list[frozenset[int]]:
+    """去重枚举所有权之外的重原子连通组分。"""
     seen: set[frozenset[int]] = set()
     out: list[frozenset[int]] = []
     for root in side_roots(mol, owned):

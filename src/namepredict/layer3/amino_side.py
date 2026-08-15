@@ -4,6 +4,7 @@ from __future__ import annotations
 
 def _make_amino(attach: int, n_idx: int, en: str = "amino", zh: str = "氨基",
                 atoms: list[int] | None = None, paren: bool = False) -> dict:
+    """构造氨基取代基字典（kind=amino）。"""
     return {
         "kind": "amino", "attach_idx": attach,
         "atoms": [n_idx] if atoms is None else list(atoms),
@@ -12,17 +13,20 @@ def _make_amino(attach: int, n_idx: int, en: str = "amino", zh: str = "氨基",
 
 
 def _one_amino(info: dict, a: dict, chain_set: set[int], owned) -> dict | None:
+    """判断单个胺是否位于链上并返回其氨基取代基字典。"""
     if "c_idx" in a and a["c_idx"] in chain_set:
         return _make_amino(a["c_idx"], a["n_idx"])
     return None
 
 
 def _principal_attachments(parent: dict, group: str) -> frozenset[int]:
+    """返回某基团类型的主表达式连接原子集合。"""
     facts = parent.get("principal_expression_facts")
     return facts.attachment_atoms if facts and facts.group_class.value == group else frozenset()
 
 
 def _extract_aminos(info: dict, parent: dict, parent_nh2_kinds: set) -> list[dict]:
+    """提取未被主基团占用的氨基取代基列表。"""
     principal = _principal_attachments(parent, "amine")
     if parent.get("kind") in parent_nh2_kinds and not principal:
         return []

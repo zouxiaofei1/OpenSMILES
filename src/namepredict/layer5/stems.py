@@ -31,7 +31,7 @@ _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈",
 
 
 def zh_num(n: int) -> str | None:
-    """Chinese stem digit for n: 1..10 天干(甲…癸); 11..99 数字组合(十一…九十九)."""
+    """中文数字词干：1–10 用天干（甲…癸），11–99 用数字组合（十一…九十九）。"""
     if n < 1:
         return None
     if n <= 10:
@@ -42,7 +42,7 @@ def zh_num(n: int) -> str | None:
 
 
 def zh_stem(zh_full: str) -> str:
-    """Strip terminal FG/parent suffix from Chinese full name (十一烷→十一)."""
+    """去除中文全名末端的官能团/母体后缀（十一烷→十一）。"""
     for s in _ZH_SUFFIXES:
         if zh_full.endswith(s) and len(zh_full) > len(s):
             return zh_full[: -len(s)]
@@ -72,11 +72,13 @@ def _en_stem(n: int) -> str | None:
 
 
 def alkane_en(n: int) -> str | None:
+    """烷烃英文全名：词干 + 'ane'。"""
     s = _en_stem(n)
     return f"{s}ane" if s else None
 
 
 def alkane_zh(n: int) -> str | None:
+    """烷烃中文全名：查保留表或由 zh_num 生成。"""
     if n in _ALKANE_ZH_BASE:
         return _ALKANE_ZH_BASE[n]
     z = zh_num(n)
@@ -92,17 +94,19 @@ def acid_to_anion_en(en: str) -> str:
 
 
 def acid_to_anion_zh(zh: str) -> str:
+    """中文酸转阴离子：末位补'根'（乙酸→乙酸根）。"""
     return zh if zh.endswith("根") else f"{zh}根"
 
 
 def maybe_anion_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
-    """If parent is carboxylate anion, convert acid suffix to -ate / 酸根."""
+    """若母体为羧酸阴离子，将酸后缀转为 -ate / 酸根。"""
     if not (numbered.get("parent") or {}).get("anion"):
         return en, zh
     return acid_to_anion_en(en), acid_to_anion_zh(zh)
 
 
 def _metal_prefix(metal: str | None, n: int, mult: dict) -> str | None:
+    """金属名加数量前缀（n=1 无前缀；n>1 用 MULT 表）。"""
     if not metal or n < 1:
         return None
     if n == 1:
@@ -112,19 +116,23 @@ def _metal_prefix(metal: str | None, n: int, mult: dict) -> str | None:
 
 
 def _metal_en_prefix(salt: dict) -> str | None:
+    """英文金属数量前缀（源自 salt 记录）。"""
     return _metal_prefix(salt.get("metal"), salt.get("n_metal") or 0, MULT_EN)
 
 
 def _metal_zh_suffix(salt: dict) -> str | None:
+    """中文金属数量后缀（源自 salt 记录）。"""
     return _metal_prefix(salt.get("metal_zh"), salt.get("n_metal") or 0, MULT_ZH)
 
 
 def _salt_en(en: str, salt: dict) -> str:
+    """英文盐名：-ate 结尾时加金属前缀。"""
     pref = _metal_en_prefix(salt)
     return f"{pref} {en}" if pref and en.endswith("ate") else en
 
 
 def _salt_zh(zh: str, salt: dict) -> str:
+    """中文盐名：酸根末尾缀加金属名。"""
     suf = _metal_zh_suffix(salt)
     if not suf or not zh.endswith("酸根"):
         return zh
@@ -132,11 +140,13 @@ def _salt_zh(zh: str, salt: dict) -> str:
 
 
 def _acid_salt_suffix(salt: dict) -> tuple[str, str] | None:
+    """取酸式盐（如 HCl 加成）的 (en, zh) 后缀。"""
     en_s, zh_s = salt.get("acid_salt"), salt.get("acid_salt_zh")
     return (en_s, zh_s or en_s) if en_s else None
 
 
 def _with_acid_salt(en: str, zh: str, salt: dict) -> tuple[str, str]:
+    """给名称追加酸式盐后缀（分号连接）。"""
     suf = _acid_salt_suffix(salt)
     if suf is None:
         return en, zh
@@ -153,6 +163,7 @@ def maybe_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
 
 
 def _fill(fn, lo: int = 1, hi: int = 35) -> dict[int, str]:
+    """用生成函数 fn 填充 C(lo–hi) 的表（值为真才收录）。"""
     out: dict[int, str] = {}
     for n in range(lo, hi + 1):
         v = fn(n)

@@ -18,10 +18,12 @@ class CutSubmol:
 
 
 def _ordered(atoms: frozenset[int]) -> list[int]:
+    """返回排序后的原子索引列表。"""
     return sorted(atoms)
 
 
 def _copy_atoms(em: Chem.RWMol, mol: Mol, order: list[int]) -> dict[int, int]:
+    """复制原子到可写分子并记录新旧映射。"""
     inv: dict[int, int] = {}
     for old in order:
         inv[old] = em.AddAtom(mol.GetAtomWithIdx(old))
@@ -29,6 +31,7 @@ def _copy_atoms(em: Chem.RWMol, mol: Mol, order: list[int]) -> dict[int, int]:
 
 
 def _copy_bonds(em: Chem.RWMol, mol: Mol, inv: dict[int, int]) -> None:
+    """复制诱导子图内的键。"""
     for old_a, new_a in inv.items():
         for bond in mol.GetAtomWithIdx(old_a).GetBonds():
             old_b = bond.GetOtherAtomIdx(old_a)
@@ -38,12 +41,14 @@ def _copy_bonds(em: Chem.RWMol, mol: Mol, inv: dict[int, int]) -> None:
 
 
 def _cap_attach_h(em: Chem.RWMol, attach_new: int) -> None:
+    """让连接原子重新显式计算隐式 H 以允许 H 封端。"""
     atom = em.GetAtomWithIdx(attach_new)
     atom.SetNoImplicit(False)
     atom.UpdatePropertyCache(strict=False)
 
 
 def _sanitize(em: Chem.RWMol) -> Mol | None:
+    """对可写分子做 RDKit 消毒，失败返回 None。"""
     try:
         Chem.SanitizeMol(em)
     except Exception:
@@ -52,6 +57,7 @@ def _sanitize(em: Chem.RWMol) -> Mol | None:
 
 
 def _pack(out: Mol, inv: dict[int, int], attach_old: int, atoms: frozenset[int]) -> CutSubmol:
+    """把结果封装为 CutSubmol 并补全新旧索引映射。"""
     atom_map = {n: o for o, n in inv.items()}
     return CutSubmol(out, atom_map, inv, inv[attach_old], attach_old, frozenset(atoms))
 
@@ -71,12 +77,14 @@ def build_cut_submol(
 
 
 def _add_anchor(em: Chem.RWMol, attach_new: int) -> None:
+    """在连接原子处添加 dummy 原子作锚点。"""
     #用 dummy 原子（`*`）标记连接原子
     d = em.AddAtom(Chem.Atom(0))
     em.AddBond(attach_new, d, Chem.BondType.SINGLE)
 
 
 def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol | None:
+    """构建以 dummy 原子标记连接位点的诱导子分子。"""
     #在 atoms 上的诱导子分子，连接位点用 dummy 原子标记。
     if attach_old not in atoms:
         return None

@@ -1,3 +1,4 @@
+"""L3 取代基提取器：提取核心/烷基侧链并汇总 claim 命名结果。"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
@@ -10,11 +11,13 @@ from namepredict.layer3.amino_side import (
 )
 
 def _strip_ital_prefix(stem: str) -> str:
+    """去掉 sec-/tert- 前缀。"""
     if stem.startswith("tert-") or stem.startswith("sec-"):
         return stem[stem.index("-") + 1 :]
     return stem
 
 def _strip_n_prefix(stem: str) -> str:
+    """去掉 N- 或 N, 前缀。"""
     if stem.startswith("N,"):
         return stem.split("-")[-1] if "-" in stem else stem
     return stem[2:] if stem.startswith("N-") else stem
@@ -35,6 +38,7 @@ def _strip_lead_locant(stem: str) -> str:
     return stem[i + 1 :] if i and i < n and stem[i] == "-" else stem
 
 def _strip_outer_parens(stem: str) -> str:
+    """去掉外层括号。"""
     if len(stem) >= 2 and stem[0] == "(" and stem[-1] == ")":
         return stem[1:-1]
     return stem
@@ -49,6 +53,7 @@ HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
 HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}
 
 def _side_starts(mol: Mol, chain: list[int]) -> list[tuple[int, int]]:
+    """返回链碳上伸出的侧链（链碳, 起点原子）对。"""
     cs = set(chain)
     return [(c, n) for c in chain for n in carbon_neighbors(mol, c) if n not in cs]
 
@@ -84,17 +89,20 @@ def _one_anchored_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int], 
 
 
 def _one_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int], *, name_mode: str = "general") -> dict | None:
+    """尝试命名单个烷基侧链。"""
     anchored = _one_anchored_alkyl(mol, attach, start, chain_set, name_mode=name_mode)
     return anchored
 
 
 def _make_halo(attach: int, halo_idx: int, z: int) -> dict:
+    """构造卤素取代基字典。"""
     return {
         "kind": "halo", "attach_idx": attach, "atoms": [halo_idx],
         "en": HALO_EN[z], "zh": HALO_ZH[z],
     }
 
 def _halo_on_carbon(mol: Mol, c_idx: int) -> list[dict]:
+    """列出碳上直接相连的卤素取代基。"""
     return [
         _make_halo(c_idx, n.GetIdx(), n.GetAtomicNum())
         for n in mol.GetAtomWithIdx(c_idx).GetNeighbors()
@@ -102,9 +110,11 @@ def _halo_on_carbon(mol: Mol, c_idx: int) -> list[dict]:
     ]
 
 def _extract_halos(mol: Mol, chain: list[int]) -> list[dict]:
+    """提取链碳上的全部卤素取代基。"""
     return [h for c in chain for h in _halo_on_carbon(mol, c)]
 
 def _filter_fg_halos(halos: list, parent: dict) -> list:
+    """过滤掉已由官能团编码的卤素。"""
     # 官能团类醚臂已编码 F（如 HFIP）；不要重复加前缀。
     if parent.get("kind") == "ether" and parent.get("ether_arms"):
         return []
@@ -118,18 +128,21 @@ _PARENT_NH2_KINDS = frozenset({"amine","aniline"})
 _PARENT_OXO_KINDS = frozenset({"ketone"})
 
 def _make_hydroxy(attach: int, o_idx: int) -> dict:
+    """构造羟基取代基字典。"""
     return {
         "kind": "hydroxy", "attach_idx": attach, "atoms": [o_idx],
         "en": "hydroxy", "zh": "羟基",
     }
 
 def _make_oxo(attach: int) -> dict:
+    """构造氧代取代基字典。"""
     return {
         "kind": "oxo", "attach_idx": attach, "atoms": [attach],
         "en": "oxo", "zh": "氧代",
     }
 
 def _extract_hydroxys(info: dict, parent: dict) -> list[dict]:
+    """提取链上未被主基团占用的羟基取代基。"""
     principal = _principal_attachments(parent, "alcohol")
     if parent.get("kind") in _PARENT_OH_KINDS and not principal:
         return []
@@ -141,9 +154,11 @@ def _extract_hydroxys(info: dict, parent: dict) -> list[dict]:
     ]
 
 def _extract_aminos(info: dict, parent: dict) -> list[dict]:
+    """提取链上未被主基团占用的氨基取代基。"""
     return _extract_aminos_impl(info, parent, _PARENT_NH2_KINDS)
 
 def _extract_oxos(info: dict, parent: dict) -> list[dict]:
+    """提取链上的氧代取代基。"""
     if parent.get("kind") in _PARENT_OXO_KINDS:
         return []
     chain = set(parent.get("chain") or [])
@@ -152,6 +167,7 @@ def _extract_oxos(info: dict, parent: dict) -> list[dict]:
     ]
 
 def _extract_alkyls_no_aryl(mol: Mol, chain: list[int], *, name_mode: str = "general") -> list[dict]:
+    """提取链上的非芳基烷基侧链。"""
     cs, out = set(chain), []
     for attach, start in _side_starts(mol, chain):
         one = _one_alkyl(mol, attach, start, cs, name_mode=name_mode)
@@ -160,6 +176,7 @@ def _extract_alkyls_no_aryl(mol: Mol, chain: list[int], *, name_mode: str = "gen
     return out
 
 def _extract_core_subs(info: dict, parent: dict) -> list:
+    """汇总核心取代基（卤素/羟基/氨基/氧代）。"""
     mol, chain = info["mol"], parent.get("chain") or []
     halo = _filter_fg_halos(_extract_halos(mol, chain), parent)
     return (
@@ -181,6 +198,7 @@ def _with_full_atoms(mol, owned, s: dict) -> dict:
 
 
 def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> list:
+    """L3 入口：提取核心取代基、烷基侧链与 claim 侧链并合并。"""
     from namepredict.layer3.claim_extract import extract_claimed_sides
 
     mol, chain = info["mol"], parent.get("chain") or []

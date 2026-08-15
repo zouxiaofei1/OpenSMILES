@@ -1,7 +1,11 @@
+"""L4 编号入口：定向编号并组装最终 result 包。"""
 from __future__ import annotations
 from namepredict.layer4.numbering_engine import orient_numbering
 from namepredict.layer4.locant_calc import _amine_locant, _oh_locant, _pack, _sub_locant, _with_locants  # noqa: F401  （为测试转口导出）
+
+
 def number(parent: dict, substituents: list) -> dict:
+    """对 parent 定向编号，校验编号骨架事实后组装位次结果。"""
     chain = orient_numbering(parent, substituents)
     kind = parent.get("kind")
     if parent.get("numbering_scaffold_required") and not parent.get("numbering_scaffold"):

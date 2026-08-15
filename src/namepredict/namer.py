@@ -1,3 +1,5 @@
+"""顶层命名管线：SMILES → L1–L5 双语 IUPAC，带缓存、候选重试与盐拆分。"""
+
 from __future__ import annotations
 
 import copy
@@ -19,6 +21,7 @@ from namepredict.types import NameResult
 
 
 def _fail(time_ms: float = 0.0, reason: str = "parse", **meta) -> NameResult:
+    """构造一个失败命名结果并附带原因与元数据。"""
     return NameResult(
         en="", zh="", success=False, source="iupac",
         time_ms=time_ms, meta={"reason": reason, **meta},
@@ -26,15 +29,18 @@ def _fail(time_ms: float = 0.0, reason: str = "parse", **meta) -> NameResult:
 
 
 def _elapsed_ms(t0: float) -> float:
+    """计算自 t0 起已消耗的毫秒数。"""
     return (time.perf_counter() - t0) * 1000.0
 
 
 def _chain_meta(numbered: dict) -> dict:
+    """从编号结果提取母体链与母体 kind 元数据。"""
     parent = numbered.get("parent") or {}
     return {"parent_chain": list(parent.get("chain") or []), "parent_kind": parent.get("kind")}
 
 
 def _claim_from_sub(s: dict, atoms: frozenset[int]) -> ClaimedBlock:
+    """由取代基 dict 与原子集构建 ClaimedBlock 归属块。"""
     attach = s.get("attach_idx")
     return ClaimedBlock(
         slot=SideSlot.OTHER,
@@ -45,6 +51,7 @@ def _claim_from_sub(s: dict, atoms: frozenset[int]) -> ClaimedBlock:
 
 
 def _one_name_from_sub(s: dict) -> SubstituentName | None:
+    """将单个取代基 dict 转为 SubstituentName，无原子则返回 None。"""
     atoms = frozenset(s.get("atoms") or [])
     if not atoms:
         return None
@@ -58,15 +65,18 @@ def _one_name_from_sub(s: dict) -> SubstituentName | None:
 
 
 def _names_from_subs(subs: list[dict]) -> list[SubstituentName]:
+    """批量将取代基 dict 列表转换为 SubstituentName 列表（跳过无效项）。"""
     return [n for s in subs if (n := _one_name_from_sub(s)) is not None]
 
 
 def _ledger_complete(mol, owned, subst: list[dict]) -> bool:
+    """基于 coverage ledger 判断取代基是否覆盖全部母体原子。"""
     names = _names_from_subs(subst)
     return build_coverage_ledger(mol, owned_atoms=owned, names=names).complete
 
 
 def _ok_result(numbered: dict, *, depth: int, t0: float, name_mode: str = "general") -> NameResult | None:
+    """组装编号结果为 NameResult，成功且非空才返回（附链元数据）。"""
     numbered["name_mode"] = name_mode
     result = assemble(numbered, time_ms=_elapsed_ms(t0))
     if not result.success or not result.en:
@@ -76,6 +86,7 @@ def _ok_result(numbered: dict, *, depth: int, t0: float, name_mode: str = "gener
 
 
 def _chain_set(parent: dict) -> set[int]:
+    """取出母体的链原子索引集合。"""
     return set(parent.get("chain") or [])
 
 
@@ -95,6 +106,7 @@ def _remap_attach(parent: dict, s: dict) -> dict:
 
 
 def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
+    """筛选并重映射参与编号的取代基（O 侧与链上连接点）。"""
     chain = _chain_set(parent)
     out: list[dict] = []
     for s in subst:
@@ -105,6 +117,7 @@ def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
 
 
 def _assemble_candidate(parent, subst, *, depth: int, t0: float, name_mode: str = "general") -> NameResult | None:
+    """对单个候选执行编号+组装，编号异常或失败时返回 None。"""
     try:
         numbered = number(parent, _subs_for_numbering(parent, subst))
     except (ValueError, KeyError, TypeError):
@@ -115,6 +128,7 @@ def _assemble_candidate(parent, subst, *, depth: int, t0: float, name_mode: str 
 def _prepare_candidate(
     info: dict, parent: dict, *, name_mode: str = "general", cache: CommonNameCache | None = None,
 ) -> tuple[dict, list[dict], bool]:
+    """完成母体归属、提取取代基并返回 (parent, subst, complete)。"""
     mol = info["mol"]
     parent = finalize_parent_ownership(parent, mol)
     if not parent.get("owned_atoms"):
@@ -148,6 +162,7 @@ def try_candidate(
 
 
 def _complete_hit(prepared, *, depth, t0, name_mode):
+    """在候选集中寻找 coverage 完整且可组装的命中。"""
     for parent, subst, complete in prepared:
         if complete and (hit := _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)):
             hit.meta = {**(hit.meta or {}), "coverage_complete": True}
@@ -156,6 +171,7 @@ def _complete_hit(prepared, *, depth, t0, name_mode):
 
 
 def _partial_hit(prepared, *, depth, t0, name_mode, attempts):
+    """放宽 coverage 门控，在候选集中找首个可组装的命中。"""
     for parent, subst, complete in prepared:
         hit = _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)
         if hit is not None:
@@ -165,6 +181,7 @@ def _partial_hit(prepared, *, depth, t0, name_mode, attempts):
 
 
 def _try_phase(prepared, *, depth, t0, name_mode, attempts):
+    """依次尝试完整命中与部分命中两阶段。"""
     hit = _complete_hit(prepared, depth=depth, t0=t0, name_mode=name_mode)
     return hit or _partial_hit(
         prepared, depth=depth, t0=t0, name_mode=name_mode, attempts=attempts,
@@ -172,6 +189,7 @@ def _try_phase(prepared, *, depth, t0, name_mode, attempts):
 
 
 def _candidate_phases(info: dict, depth: int) -> list[list[dict]]:
+    """选取候选母体阶段列表（当前仅一个高优先级候选）。"""
     parent = select_parent(info)
     return [[parent]] if parent is not None else [[]]
 
@@ -207,6 +225,7 @@ def _name_mol(
 
 
 def _pipeline(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> NameResult:
+    """预处理 SMILES 后进入 mol 命名流程，解析失败返回失败结果。"""
     mol = preprocess(smiles)
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
@@ -214,6 +233,7 @@ def _pipeline(smiles: str, t0: float, *, name_mode: str = "general", cache: Comm
 
 
 def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
+    """写缓存，容量满的 ValueError 静默忽略。"""
     try:
         cache.put(smiles, result)
     except ValueError:
@@ -243,16 +263,21 @@ def _canonical_result(mol, result: NameResult) -> NameResult:
 
 
 def _name_uncached(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> NameResult:
+    """缓存未命中时直接走完整命名管线。"""
     return _pipeline(smiles, t0, name_mode=name_mode, cache=cache)
 
 
 class SMILESNNamer:
+    """SMILES → IUPAC 命名的顶层命名器（含缓存与命名模式）。"""
+
     def __init__(self, cache: CommonNameCache | None = None, *, name_mode: str = "general") -> None:
+        """初始化命名器，未提供缓存则构造默认 20000 条容量的缓存。"""
         # 容量留足给主分子 + 递归子结构命名（全量去重后约 8.7k 条）
         self.cache = cache if cache is not None else CommonNameCache(max_entries=20000)
         self._name_mode = name_mode
 
     def name(self, smiles: str) -> NameResult:
+        """命名单个 SMILES；先查缓存，未命中则计算并写回成功结果。"""
         t0 = time.perf_counter()
         hit = self.cache.get(smiles)
         if hit is not None:

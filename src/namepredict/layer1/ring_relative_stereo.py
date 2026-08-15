@@ -15,18 +15,21 @@ class RingRelativeStereoIR:
 
 
 def _parity(source: list[int], target: list[int]) -> int:
+    """返回 target 相对 source 的置换奇偶符号。"""
     positions = {value: i for i, value in enumerate(source)}
     order = [positions[value] for value in target]
     return -1 if sum(order[i] > order[j] for i in range(len(order)) for j in range(i + 1, len(order))) % 2 else 1
 
 
 def _orientation(ring_order: list[int]) -> int:
+    """按最小环原子规范化朝向并返回符号。"""
     start = ring_order.index(min(ring_order))
     rotated = ring_order[start:] + ring_order[:start]
     return 1 if rotated[1] < rotated[-1] else -1
 
 
 def _face(mol: Mol, atom_id: int, ring_order: list[int], ligand: int) -> int | None:
+    """推导单个环原子相对于配体的面朝向符号。"""
     atom = mol.GetAtomWithIdx(atom_id); tag = atom.GetChiralTag()
     if tag not in (ChiralType.CHI_TETRAHEDRAL_CW, ChiralType.CHI_TETRAHEDRAL_CCW): return None
     index = ring_order.index(atom_id); previous, following = ring_order[index - 1], ring_order[(index + 1) % len(ring_order)]
@@ -39,6 +42,7 @@ def _face(mol: Mol, atom_id: int, ring_order: list[int], ligand: int) -> int | N
 
 
 def _relative_faces(faces: list[tuple[int, int]]) -> tuple[tuple[int, int], ...]:
+    """将各面朝向按参考面归一化。"""
     ordered = sorted(faces)
     reference = ordered[0][1] if ordered else 1
     return tuple((atom, face * reference) for atom, face in ordered)

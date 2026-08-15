@@ -27,6 +27,7 @@ _POLICIES = (
 
 
 def supports_ring_expression(scaffold: ScaffoldIdentity, facts) -> bool:
+    """判断 scaffold 是否支持该主基团的 typed 环表达。"""
     return any(scaffold.naming_class in policy.naming_classes
                and facts.group_class is policy.group_class
                and facts.relation.value in policy.relations

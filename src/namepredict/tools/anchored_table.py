@@ -1,10 +1,6 @@
-"""简单取代基的锚定 canonical-SMILES 查表。
-
-锚定键（canonical SMILES，dummy 标记连接位点）→ (en, zh, paren, kind)；
-未命中则回退到完整命名路径。registry 保留取代基（IUPAC P-29/P-57）持有
-自己的锚定键（anchored 字段），构建时反查生成 _ANCHOR_INDEX（SMILES→key）；
-非保留取代基直接内联在 ANCHOR_TABLE。构建期校验 canonical 对拍、键唯一性
-与跨表冲突，新增条目立即报错。"""
+"""简单取代基的锚定 canonical-SMILES 查表：锚定键 → (en, zh, paren, kind)。
+未命中回退完整命名路径；保留取代基经 anchored 字段反查索引，非保留取代基
+内联存储；构建期校验 canonical 对拍、键唯一性与跨表冲突。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -88,6 +84,8 @@ ANCHOR_TABLE: dict[str, tuple[str, str, bool, str]] = {
 # ── 保留取代基注册表（IUPAC 2013 P-29/P-57；general/pin 双语名称）──
 
 class IupacLevel(Enum):
+    """IUPAC 命名层级：PIN / general / 不推荐。"""
+
     PIN = "pin"
     GENERAL = "general"
     NOT_RECOMMENDED = "not_rec"
@@ -95,6 +93,8 @@ class IupacLevel(Enum):
 
 @dataclass(frozen=True)
 class RetainedSubstituent:
+    """一个保留取代基条目的双语名称、层级与锚定键。"""
+
     en: str
     zh: str
     systematic_en: str
@@ -106,6 +106,7 @@ class RetainedSubstituent:
 
 
 def _build_registry() -> dict[str, RetainedSubstituent]:
+    """构建保留取代基注册表（键 → RetainedSubstituent 条目）。"""
     P, G, N = IupacLevel.PIN, IupacLevel.GENERAL, IupacLevel.NOT_RECOMMENDED
     return {
         # 支链 / 不饱和烷基
@@ -261,6 +262,7 @@ def pick_root(mol: Mol, atoms: frozenset[int]) -> int:
 
 
 def anchored_key(mol: Mol, atoms: frozenset[int], attach_old: int | None = None) -> str | None:
+    """生成原子集的锚定 canonical-SMILES 键，失败时返回 None。"""
     from rdkit.Chem import MolToSmiles
 
     if attach_old is None:
@@ -284,6 +286,7 @@ def _table_hit(mol: Mol, atoms: frozenset[int], attach_old: int | None) -> tuple
 def _resolve(
     hit: str | tuple[str, str, bool, str], *, name_mode: str,
 ) -> tuple[str, str, bool, str]:
+    """将查表命中解析为 (en, zh, paren, kind)（区分 registry 键与内联条目）。"""
     if isinstance(hit, str):  # registry key → resolve_name + 条目自带 paren/kind
         en, zh = resolve_name(hit, name_mode=name_mode)
         e = _REGISTRY[hit]

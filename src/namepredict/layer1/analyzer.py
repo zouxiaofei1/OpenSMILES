@@ -1,3 +1,4 @@
+"""L1 官能团分析器：枚举分子中各类官能团条目并汇总为分析结果 dict。"""
 from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
@@ -25,18 +26,22 @@ _FG_BOOL_MORE_KEYS = (
 )
 
 def _acyl_hal_of(carbon) -> tuple[int, int] | None:
+    """惰性导入酰卤检测并返回碳上的卤素邻居信息。"""
     from namepredict.layer1.acyl_halide import acyl_hal_of
     return acyl_hal_of(carbon)
 
 def _is_carboxyl_carbon(atom) -> bool:
+    """判断碳是否为羧基碳（羰基双键氧 + 酸性氧邻居）。"""
     if atom.GetAtomicNum() != C:
         return False
     return _has_double_bonded_o(atom) and _has_acid_o_neighbor(atom)
 
 def _carbon_neighbor_count(atom) -> int:
+    """统计原子连有的碳邻居个数。"""
     return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == C])
 
 def _is_amide_carbon(atom) -> bool:
+    """判断碳是否为酰胺羰基碳（排除酸、酯）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
@@ -44,6 +49,7 @@ def _is_amide_carbon(atom) -> bool:
     return _amide_n_info(atom) is not None
 
 def _is_ketone_carbon(atom) -> bool:
+    """判断碳是否为酮羰基碳（非酸、非酰胺、双碳邻居）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom) or _carbon_neighbor_count(atom) != 2:
@@ -51,15 +57,18 @@ def _is_ketone_carbon(atom) -> bool:
     return _amide_n_of(atom) is None and _anhydride_o_of(atom) is None
 
 def _anhydride_o_of(carbon) -> int | None:
+    """返回羰基碳上的酸酐桥氧索引。"""
     for n in carbon.GetNeighbors():
         if _is_anhydride_bridge_o(n):
             return n.GetIdx()
     return None
 
 def _ether_cs(oxygen) -> list:
+    """返回氧原子连有的碳邻居列表。"""
     return [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() == C]
 
 def _is_ether_oxygen(atom) -> bool:
+    """判断 O 是否为醚氧（非酸酐桥、两个非羰基碳）。"""
     if atom.GetAtomicNum() != O or atom.GetTotalNumHs() != 0:
         return False
     if _is_anhydride_bridge_o(atom):
@@ -68,17 +77,21 @@ def _is_ether_oxygen(atom) -> bool:
     return len(cs) == 2 and not any(_has_double_bonded_o(c) for c in cs)
 
 def _ether_entry(atom) -> dict:
+    """组装单个醚条目 dict。"""
     cs = _ether_cs(atom)
     c1, c2 = cs[0].GetIdx(), cs[1].GetIdx()
     return {"o_idx": atom.GetIdx(), "c1": c1, "c2": c2}
 
 def _ether_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有醚条目的列表。"""
     return [_ether_entry(a) for a in mol.GetAtoms() if _is_ether_oxygen(a)]
 
 def _sulfide_cs(sulfur) -> list:
+    """返回硫原子连有的碳邻居列表。"""
     return [n for n in sulfur.GetNeighbors() if n.GetAtomicNum() == C]
 
 def _is_sulfide_sulfur(atom) -> bool:
+    """判断 S 是否为硫醚硫（二配位、两个碳邻居）。"""
     if atom.GetAtomicNum() != S or atom.GetTotalNumHs() != 0:
         return False
     if atom.GetTotalDegree() != 2:
@@ -87,13 +100,16 @@ def _is_sulfide_sulfur(atom) -> bool:
     return len(cs) == 2 and not any(_has_double_bonded_o(c) for c in cs)
 
 def _sulfide_entry(atom) -> dict:
+    """组装单个硫醚条目 dict。"""
     cs = _sulfide_cs(atom)
     return {"s_idx": atom.GetIdx(), "c1": cs[0].GetIdx(), "c2": cs[1].GetIdx()}
 
 def _sulfide_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有硫醚条目的列表。"""
     return [_sulfide_entry(a) for a in mol.GetAtoms() if _is_sulfide_sulfur(a)]
 
 def _is_nitro_nitrogen(atom) -> bool:
+    """判断 N 是否为硝基氮（+1 电荷、两个 O、一个 C）。"""
     if atom.GetAtomicNum() != N or atom.GetFormalCharge() != 1:
         return False
     nbs = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
@@ -102,15 +118,18 @@ def _is_nitro_nitrogen(atom) -> bool:
     return len(nbs) == 3 and len(os_) == 2 and len(cs) == 1
 
 def _nitro_entry(atom) -> dict:
+    """组装单个硝基条目 dict。"""
     nbs = list(atom.GetNeighbors())
     o_idxs = [n.GetIdx() for n in nbs if n.GetAtomicNum() == O]
     c_idx = next(n.GetIdx() for n in nbs if n.GetAtomicNum() == C)
     return {"n_idx": atom.GetIdx(), "c_idx": c_idx, "o_idxs": o_idxs}
 
 def _nitro_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有硝基条目的列表。"""
     return [_nitro_entry(a) for a in mol.GetAtoms() if _is_nitro_nitrogen(a)]
 
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
+    """判断 O 是否为酯烷氧基氧（排除酸酐桥）。"""
     if oxygen.GetAtomicNum() != O or oxygen.GetTotalNumHs() != 0:
         return False
     if _is_anhydride_bridge_o(oxygen):
@@ -118,9 +137,11 @@ def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     return _alkoxy_c_of(oxygen, carbonyl) is not None
 
 def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
+    """在碳上查找酯烷氧基侧并返回 (o_idx, alkoxy_c_idx)。"""
     return _ester_alkoxy_of_common(carbon, _is_ester_alkoxy_o)
 
 def _is_ester_carbon(atom) -> bool:
+    """判断碳是否为酯羰基碳（有酸性氧与烷氧基侧）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is None:
@@ -128,11 +149,13 @@ def _is_ester_carbon(atom) -> bool:
     return True
 
 def _ald_blocked(atom) -> bool:
+    """判断醛碳是否被酯、酰卤、酸酐或酰胺占用。"""
     if _ester_alkoxy_of(atom) is not None or _acyl_hal_of(atom) is not None:
         return True
     return _anhydride_o_of(atom) is not None or _amide_n_of(atom) is not None
 
 def _is_aldehyde_carbon(atom) -> bool:
+    """判断碳是否为醛羰基碳（单碳邻居且未被阻断）。"""
     if atom.GetAtomicNum() != C or atom.GetTotalDegree() < 3:
         return False
     if not _has_double_bonded_o(atom) or _has_acid_o_neighbor(atom):
@@ -142,6 +165,7 @@ def _is_aldehyde_carbon(atom) -> bool:
     return not _ald_blocked(atom)
 
 def _is_hydroxyl_oxygen(atom) -> bool:
+    """判断 O 是否为醇羟基氧（排除羧酸羟基）。"""
     if not _is_single_c_oh(atom):
         return False
     if _is_carboxyl_carbon(_carbon_neighbor(atom)):
@@ -149,15 +173,19 @@ def _is_hydroxyl_oxygen(atom) -> bool:
     return True
 
 def _carbon_neighbor(atom):
+    """返回原子连有的第一个碳邻居。"""
     return next(n for n in atom.GetNeighbors() if n.GetAtomicNum() == C)
 
 def _hydroxyl_entry(atom) -> dict:
+    """组装单个羟基条目 dict。"""
     return {"o_idx": atom.GetIdx(), "c_idx": _carbon_neighbor(atom).GetIdx()}
 
 def _hydroxyl_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有羟基条目的列表。"""
     return [_hydroxyl_entry(a) for a in mol.GetAtoms() if _is_hydroxyl_oxygen(a)]
 
 def _thiol_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有硫醇条目的列表。"""
     out: list[dict] = []
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != S or atom.GetTotalNumHs() < 1:
@@ -173,6 +201,7 @@ def _is_amide_n(atom) -> bool:
                for n in atom.GetNeighbors())
 
 def _amine_degree(atom) -> int | None:
+    """返回胺 N 的取代度（1/2/3）；非胺则返回 None。"""
     if atom.GetAtomicNum() != N or _is_amide_n(atom) or atom.GetIsAromatic():
         return None
     n_c, n_h = _carbon_neighbor_count(atom), atom.GetTotalNumHs()
@@ -181,38 +210,47 @@ def _amine_degree(atom) -> int | None:
     return 2 if n_c == 2 and n_h == 1 else (3 if n_c == 3 and n_h == 0 else None)
 
 def _amine_entry(atom, deg: int) -> dict:
+    """组装单个胺条目 dict，含 N 与碳邻居索引。"""
     cs = [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == C]
     base = {"n_idx": atom.GetIdx(), "degree": deg}
     return {**base, "c_idxs": cs} if deg >= 2 else {**base, "c_idx": cs[0]}
 
 def _quaternary_ammonium_entries(mol: Mol) -> list[dict]:
+    """收集分子中季铵阳离子条目（4 个碳配位 +1 N）。"""
     return [{"n_idx": a.GetIdx(), "c_idxs": [n.GetIdx() for n in a.GetNeighbors()]}
             for a in mol.GetAtoms() if a.GetAtomicNum() == N and a.GetFormalCharge() == 1
             and len(a.GetNeighbors()) == 4 and all(n.GetAtomicNum() == C for n in a.GetNeighbors())]
 
 def _amine_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有胺条目的列表。"""
     return [
         _amine_entry(a, d) for a in mol.GetAtoms()
         if (d := _amine_degree(a)) is not None
     ]
 
 def _carboxyl_entry(atom) -> dict:
+    """组装单个羧基条目 dict（含是否阴离子）。"""
     return {"c_idx": atom.GetIdx(), "anion": _has_carboxylate_o_neighbor(atom)}
 
 def _carboxyl_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有羧基条目的列表。"""
     return [_carboxyl_entry(a) for a in mol.GetAtoms() if _is_carboxyl_carbon(a)]
 
 def _ketone_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有酮条目的列表。"""
     return [{"c_idx": a.GetIdx()} for a in mol.GetAtoms() if _is_ketone_carbon(a)]
 
 def _amide_entry(atom) -> dict:
+    """组装单个酰胺条目 dict。"""
     n_idx, n_cs = _amide_n_info(atom)
     return {"c_idx": atom.GetIdx(), "n_idx": n_idx, "n_c_idxs": n_cs}
 
 def _amide_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有酰胺条目的列表。"""
     return [_amide_entry(a) for a in mol.GetAtoms() if _is_amide_carbon(a)]
 
 def _aldehyde_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有醛条目的列表。"""
     return [{"c_idx": a.GetIdx()} for a in mol.GetAtoms() if _is_aldehyde_carbon(a)]
 
 def _acyl_chloride_entries(mol: Mol) -> list[dict]:
@@ -221,19 +259,23 @@ def _acyl_chloride_entries(mol: Mol) -> list[dict]:
     return acyl_halide_entries(mol)
 
 def _ester_entry(atom) -> dict:
+    """组装单个酯条目 dict（含 O 与烷氧基碳）。"""
     o_idx, alkoxy_c = _ester_alkoxy_of(atom)
     return {"c_idx": atom.GetIdx(), "o_idx": o_idx, "alkoxy_c_idx": alkoxy_c}
 
 def _ester_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有酯条目的列表。"""
     return [_ester_entry(a) for a in mol.GetAtoms() if _is_ester_carbon(a)]
 
 def _anhydride_other_c(oxygen, carbon) -> int:
+    """返回酸酐桥氧另一侧的碳索引。"""
     for n in oxygen.GetNeighbors():
         if n.GetAtomicNum() == C and n.GetIdx() != carbon.GetIdx():
             return n.GetIdx()
     return carbon.GetIdx()
 
 def _anhydride_entry(atom) -> dict:
+    """组装单个酸酐条目 dict，并归一化两碳顺序。"""
     o_idx = _anhydride_o_of(atom)
     o_atom = atom.GetOwningMol().GetAtomWithIdx(o_idx)
     other = _anhydride_other_c(o_atom, atom)
@@ -241,6 +283,7 @@ def _anhydride_entry(atom) -> dict:
     return {"o_idx": o_idx, "c1_idx": c1, "c2_idx": c2}
 
 def _is_anhydride_carbon(atom) -> bool:
+    """判断碳是否为酸酐羰基碳（排除羧酸）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom):
@@ -248,9 +291,11 @@ def _is_anhydride_carbon(atom) -> bool:
     return _anhydride_o_of(atom) is not None
 
 def _anhydride_key(e: dict) -> tuple[int, int, int]:
+    """返回酸酐条目的去重键 (o_idx, c1, c2)。"""
     return e["o_idx"], e["c1_idx"], e["c2_idx"]
 
 def _anhydride_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有去重后的酸酐条目列表。"""
     seen: set[tuple[int, int, int]] = set()
     out: list[dict] = []
     for atom in mol.GetAtoms():
@@ -263,52 +308,64 @@ def _anhydride_entries(mol: Mol) -> list[dict]:
     return out
 
 def _is_cc_double(bond) -> bool:
+    """判断键是否为 C=C 双键（排除芳香键）。"""
     if bond.GetBondType() != BondType.DOUBLE or bond.GetIsAromatic():
         return False
     a, b = bond.GetBeginAtom(), bond.GetEndAtom()
     return a.GetAtomicNum() == C and b.GetAtomicNum() == C
 
 def _is_cc_triple(bond) -> bool:
+    """判断键是否为 C≡C 三键。"""
     if bond.GetBondType() != BondType.TRIPLE:
         return False
     a, b = bond.GetBeginAtom(), bond.GetEndAtom()
     return a.GetAtomicNum() == C and b.GetAtomicNum() == C
 
 def _bond_entry(bond) -> dict:
+    """将 C=C/C≡C 键组装为条目 dict（两碳索引有序）。"""
     a, b = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
     return {"c1": min(a, b), "c2": max(a, b)}
 
 def _filter_bond_entries(mol: Mol, pred, entry_fn) -> list[dict]:
+    """按谓词过滤键并映射为条目列表。"""
     return [entry_fn(bond) for bond in mol.GetBonds() if pred(bond)]
 
 def _double_bond_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有 C=C 双键条目。"""
     return _filter_bond_entries(mol, _is_cc_double, _bond_entry)
 
 def _triple_bond_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有 C≡C 三键条目。"""
     return _filter_bond_entries(mol, _is_cc_triple, _bond_entry)
 
 def _is_cn_triple(bond) -> bool:
+    """判断键是否为 C≡N 三键。"""
     if bond.GetBondType() != BondType.TRIPLE:
         return False
     z = {bond.GetBeginAtom().GetAtomicNum(), bond.GetEndAtom().GetAtomicNum()}
     return z == {6, 7}
 
 def _nitrile_entry(bond) -> dict:
+    """将腈三键组装为条目 dict（C 与 N 索引）。"""
     a, b = bond.GetBeginAtom(), bond.GetEndAtom()
     c = a if a.GetAtomicNum() == C else b
     n = b if a.GetAtomicNum() == C else a
     return {"c_idx": c.GetIdx(), "n_idx": n.GetIdx()}
 
 def _nitrile_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有腈条目的列表。"""
     return _filter_bond_entries(mol, _is_cn_triple, _nitrile_entry)
 
 def _ring_entry(atom_ids: tuple) -> dict:
+    """将环原子索引元组组装为环条目 dict。"""
     return {"atom_ids": atom_ids}
 
 def _ring_entries(mol: Mol) -> list[dict]:
+    """收集分子中所有环条目的列表。"""
     return [_ring_entry(r) for r in mol.GetRingInfo().AtomRings()]
 
 def _ring_meta(mol: Mol) -> dict:
+    """汇总环事实：环条目、环系与数量统计。"""
     from namepredict.layer1.ring_systems import build_ring_systems
     rings = _ring_entries(mol)
     systems = build_ring_systems(mol)
@@ -318,6 +375,7 @@ def _ring_meta(mol: Mol) -> dict:
     }
 
 def _carbon_ids(mol: Mol) -> list[int]:
+    """返回分子中所有碳原子的索引列表。"""
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
 
 def _radical_entries(mol: Mol) -> list[dict]:
@@ -336,18 +394,23 @@ def _radical_entries(mol: Mol) -> list[dict]:
 
 
 def _fg_more_lists(parts: dict) -> dict:
+    """从 parts 中取出扩展官能团列表（醛/胺/腈等）。"""
     keys = (
         "radicals", "aldehydes", "amines", "quaternary_ammoniums", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
         "nitros", "isocyanates", "isothiocyanates",
     )
     return {k: parts[k] for k in keys}
+
 def _fg_lists(parts: dict) -> dict:
+    """从 parts 中汇总全部官能团条目列表。"""
     return {
         "hydroxyls": parts["hydroxyls"], "carboxyls": parts["carboxyls"],
         "esters": parts["esters"], "amides": parts["amides"],
         "ketones": parts["ketones"], **_fg_more_lists(parts)}
+
 def _fg_bools(lists: dict) -> dict:
+    """由官能团列表生成 has_* 布尔标志。"""
     core = {
         "has_alcohol": bool(lists["hydroxyls"]), "has_acid": bool(lists["carboxyls"]),
         "has_ester": bool(lists["esters"]), "has_amide": bool(lists["amides"]),
@@ -358,6 +421,7 @@ def _fg_bools(lists: dict) -> dict:
 
 
 def _fg_parts(mol: Mol) -> dict:
+    """收集分子中所有官能团条目并按其类型组织成 dict。"""
     from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
     return { "carboxyls": _carboxyl_entries(mol),"hydroxyls": _hydroxyl_entries(mol),
         "esters": _ester_entries(mol), "amides": _amide_entries(mol),
@@ -371,12 +435,17 @@ def _fg_parts(mol: Mol) -> dict:
             "nitros": _nitro_entries(mol),"isocyanates": isocyanate_entries(mol), "isothiocyanates": isothiocyanate_entries(mol)}
 
 def _collect_fgs(mol: Mol) -> dict:
+    """聚合官能团列表、布尔标志并构建带类型清单。"""
     from namepredict.layer1.functional_group_inventory import build_inventory
 
     lists = _fg_lists(_fg_parts(mol))
     return {**lists, **_fg_bools(lists), "fg_inventory": build_inventory(lists)}
+
 def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
+    """组装分子分析结果 dict（碳信息 + 官能团 + 环事实）。"""
     base = {"mol": mol, "carbon_ids": carbons, "n_carbons": len(carbons)}
     return {**base, **fgs, **_ring_meta(mol)}
+
 def analyze(mol: Mol) -> dict:
+    """分析分子并返回完整的官能团与结构信息 dict。"""
     return _info(mol, _carbon_ids(mol), _collect_fgs(mol))

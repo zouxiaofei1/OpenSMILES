@@ -34,6 +34,7 @@ class ScaffoldSpec:
 
     @property
     def identity(self) -> ScaffoldIdentity:
+        """返回本规格的 ScaffoldIdentity。"""
         return identity_of(self)
 
 ScaffoldId = str
@@ -48,6 +49,7 @@ class ScaffoldIdentity:
 
 
 def identity_of(spec) -> ScaffoldIdentity:
+    """由 spec 构造 ScaffoldIdentity。"""
     return ScaffoldIdentity(spec.id, spec.naming_class, spec.n_rings, spec.ring)
 
 # 共用的稠合 5+6 位次标签（IUPAC P-22.2.1 / P-25）：hetero=1 … 7a。
@@ -67,6 +69,7 @@ def _fused56(
     sid: str, stem_en: str | None, stem_zh: str | None, fg_rank: int = 0,
     *, retained: bool = True,
 ) -> ScaffoldSpec:
+    """构造稠合 5+6 环保留骨架规格。"""
     pol = NumberingPolicy(mode="fused56_fixed", standard_path=FUSED56_LABELS)
     return ScaffoldSpec(
         id=sid, naming_class="fused56", stem_en=stem_en, stem_zh=stem_zh,
@@ -79,6 +82,7 @@ def _naph(
     sid: str, stem_en: str | None, stem_zh: str | None, *,
     ring: str = "hetero", fg_rank: int = 0, retained: bool = True,
 ) -> ScaffoldSpec:
+    """构造萘族（naph_family）保留骨架规格。"""
     pol = NumberingPolicy(mode="naph_family", standard_path=NAPH_LABELS)
     return ScaffoldSpec(
         id=sid, naming_class="naph_family", stem_en=stem_en, stem_zh=stem_zh,
@@ -89,6 +93,7 @@ def _naph(
 def _monohetero(
     sid: str, stem_en: str, stem_zh: str, *, fg_rank: int = 0,
 ) -> ScaffoldSpec:
+    """构造单杂环保留骨架规格。"""
     pol = NumberingPolicy(mode="fixed_hetero")
     return ScaffoldSpec(
         id=sid, naming_class="monohetero", stem_en=stem_en, stem_zh=stem_zh,
@@ -101,6 +106,7 @@ def _mono_carbo(
     sid: str, stem_en: str, stem_zh: str, *,
     mode: str = "fixed_roles", fg_rank: int = 0, retained: bool = True,
 ) -> ScaffoldSpec:
+    """构造单碳环保留骨架规格。"""
     pol = NumberingPolicy(mode=mode)
     return ScaffoldSpec(
         id=sid, naming_class="mono_carbo", stem_en=stem_en, stem_zh=stem_zh,
@@ -121,18 +127,22 @@ _IDENTITIES: dict[str, ScaffoldIdentity] = {s.id: s.identity for s in _ALL_SPECS
 
 
 def get_identity(spec_id: str) -> ScaffoldIdentity | None:
+    """按 id 查 ScaffoldIdentity（无则 None）。"""
     return _IDENTITIES.get(spec_id)
 
 
 def all_identities() -> tuple[ScaffoldIdentity, ...]:
+    """返回全部 ScaffoldIdentity。"""
     return tuple(_IDENTITIES.values())
 
 
 def get_spec(spec_id: str) -> ScaffoldSpec | None:
+    """按 id 查 ScaffoldSpec（无则 None）。"""
     return _BY_ID.get(spec_id)
 
 
 def all_specs() -> tuple[ScaffoldSpec, ...]:
+    """返回全部 ScaffoldSpec 元组。"""
     return _ALL_SPECS
 
 
@@ -210,6 +220,7 @@ _TOPOLOGY: dict[str, dict] = {
 
 
 def _entry_with_stems(sid: str, topo: dict) -> RetainedEntry:
+    """拓扑条目补 en/zh 词干（经 ScaffoldSpec 解析）。"""
     sp = get_spec(sid)
     en = sp.stem_en if sp else None
     zh = sp.stem_zh if sp else None
@@ -217,19 +228,23 @@ def _entry_with_stems(sid: str, topo: dict) -> RetainedEntry:
 
 
 def registry() -> dict[str, RetainedEntry]:
+    """返回带词干的保留拓扑注册表。"""
     return {sid: _entry_with_stems(sid, t) for sid, t in _TOPOLOGY.items()}
 
 
 def get_entry(scaffold_id: str) -> RetainedEntry | None:
+    """按 scaffold_id 查带词干的保留条目。"""
     topo = _TOPOLOGY.get(scaffold_id)
     return None if topo is None else _entry_with_stems(scaffold_id, topo)
 
 
 def _hetero_Z_tuple(system: dict) -> tuple[int, ...]:
+    """环系统杂原子序数排序元组。"""
     return tuple(sorted(h["Z"] for h in system.get("hetero_atoms") or []))
 
 
 def _system_matches(system: dict, entry: RetainedEntry) -> bool:
+    """判断环系统是否匹配保留条目（拓扑/芳香/杂原子）。"""
     if system.get("n_rings") != entry["n_rings"]:
         return False
     if system.get("n_atoms") != entry["n_atoms"]:
@@ -253,18 +268,21 @@ def match_systems(info: dict) -> list[tuple[str, dict, RetainedEntry]]:
 
 
 def match_scaffold_ids(info: dict) -> list[str]:
+    """返回匹配的 scaffold id 列表。"""
     return [sid for sid, _, _ in match_systems(info)]
 
 
 # 环解析（原 ring_scaffold.py）
 
 def _matched_id(info: dict, skeleton: ParentSkeleton) -> str | None:
+    """按原子集匹配已注册 scaffold id。"""
     atoms = set(skeleton.atom_ids)
     return next((sid for sid, system, _ in match_systems(info)
                  if set(system.get("atom_ids") or ()) == atoms), None)
 
 
 def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
+    """纯碳环兜底为 carbocycle 身份。"""
     mol = info["mol"]
     if not all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids):
         return None
@@ -272,6 +290,7 @@ def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentit
 
 
 def resolve_ring_scaffold(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
+    """解析骨架的 scaffold 身份（显式/匹配/兜底碳环）。"""
     direct = get_identity(skeleton.scaffold_id or "")
     if direct:
         return direct

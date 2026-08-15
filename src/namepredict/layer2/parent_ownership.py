@@ -7,16 +7,19 @@ from namepredict.layer2.ring_parent import _dbl_o_idx, _o_idx
 
 
 def _chain_atoms(parent: dict) -> set[int]:
+    """取母体链原子集合。"""
     return set(parent.get("chain") or [])
 
 
 def _add_opt(out: set[int], idx: int | None) -> set[int]:
+    """非空索引加入集合并返回。"""
     if idx is not None:
         out.add(idx)
     return out
 
 
 def _amide_n_from_c(mol: Mol, c_idx: int) -> int | None:
+    """找连接碳的酰胺氮索引。"""
     carbon = mol.GetAtomWithIdx(c_idx)
     for n in carbon.GetNeighbors():
         if n.GetAtomicNum() == 7:
@@ -25,6 +28,7 @@ def _amide_n_from_c(mol: Mol, c_idx: int) -> int | None:
 
 
 def _amide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """酰胺：羰基 C + =O + N。"""
     c_idx = parent.get("amide_c_idx")
     if c_idx is None:
         return set()
@@ -34,16 +38,19 @@ def _amide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _single_o_idx(mol: Mol, c_idx: int) -> int | None:
+    """跨单键找碳的 O 邻居索引。"""
     return _o_idx(mol, c_idx, "SINGLE")
 
 
 def _acid_o_atoms(mol: Mol, c_idx: int) -> set[int]:
+    """羧酸碳的 =O 与 -O- 氧原子。"""
     out: set[int] = set()
     _add_opt(out, _dbl_o_idx(mol, c_idx))
     return _add_opt(out, _single_o_idx(mol, c_idx))
 
 
 def _cooh_c_idxs(parent: dict) -> list[int]:
+    """归一化取母体的 cooh 碳索引列表。"""
     multi = parent.get("cooh_c_idxs")
     if multi:
         return [int(x) for x in multi]
@@ -52,6 +59,7 @@ def _cooh_c_idxs(parent: dict) -> list[int]:
 
 
 def _acid_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """羧酸各 cooh 碳的 FG 原子并集。"""
     out: set[int] = set()
     for c in _cooh_c_idxs(parent):
         out.add(c)
@@ -60,6 +68,7 @@ def _acid_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _aldehyde_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """醛：羰基 C + =O。"""
     c_idx = parent.get("aldehyde_c_idx")
     if c_idx is None:
         return set()
@@ -68,6 +77,7 @@ def _aldehyde_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _ether_arm_atoms(mol: Mol, o_idx: int, c_idx: int) -> set[int]:
+    """醚氧一侧的碳臂原子集（禁走 O）。"""
     from namepredict.layer2.chain_walk import _longest_from
     return {c_idx, *_longest_from(mol, c_idx, {o_idx})}
 
@@ -175,6 +185,7 @@ def _single_ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """单酯 FG 原子（复用单酯逻辑）。"""
     return _single_ester_fg_atoms(mol, parent) 
 
 

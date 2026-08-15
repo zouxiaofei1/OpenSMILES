@@ -38,16 +38,19 @@ class SkeletonSelection:
 
 
 def _anchors(occurrences: tuple[FunctionalGroupOccurrence, ...]) -> list[int]:
+    """收集所有 occurrence 的主官能团锚点碳（去重排序）。"""
     return sorted({a for occurrence in occurrences for a in occurrence.parent_anchors})
 
 
 def _pair_chains(mol: Mol, anchors: list[int]) -> list[list[int]]:
+    """生成连接两锚点的链（穿过两点的最长链）。"""
     pairs = [(a, b) for i, a in enumerate(anchors) for b in anchors[i + 1:]]
     paths = [(a, b, _chain_through_two(mol, a, b)) for a, b in pairs]
     return [path for a, b, path in paths if a in path and b in path]
 
 
 def _open_chains(mol: Mol, anchors: list[int]) -> list[list[int]]:
+    """开环锚点的单链与两两链候选（无锚点时退化为最长链）。"""
     open_anchors = [a for a in anchors if not mol.GetAtomWithIdx(a).IsInRing()]
     singles = [_chain_through({"mol": mol}, anchor) for anchor in open_anchors]
     out = singles + _pair_chains(mol, open_anchors)
@@ -59,17 +62,20 @@ def _open_chains(mol: Mol, anchors: list[int]) -> list[list[int]]:
 
 
 def _chain_coverage(chain: list[int], occurrences) -> frozenset[str]:
+    """计算链覆盖的 occurrence id 集合（锚点全在链上）。"""
     atoms = set(chain)
     return frozenset(o.id for o in occurrences if o.parent_anchors and o.parent_anchors <= atoms)
 
 
 def _ring_attaches(mol: Mol, ring: set[int], occurrence: FunctionalGroupOccurrence) -> bool:
+    """判断 occurrence 是否附着于环（锚点本身或邻居在环内）。"""
     if occurrence.parent_anchors & ring:
         return True
     return any(n.GetIdx() in ring for a in occurrence.parent_anchors for n in mol.GetAtomWithIdx(a).GetNeighbors())
 
 
 def _ring_candidate(mol: Mol, system: dict, occurrences) -> ParentSkeleton | None:
+    """构造环骨架候选（有 occurrence 时要求附着）。"""
     atoms = set(system.get("atom_ids") or ())
     covered = frozenset(o.id for o in occurrences if _ring_attaches(mol, atoms, o))
     # 有主官能团时要求环附着至少一个 occurrence；纯烃（无 occurrence）则全部枚举。
@@ -79,6 +85,7 @@ def _ring_candidate(mol: Mol, system: dict, occurrences) -> ParentSkeleton | Non
 
 
 def _ring_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
+    """枚举全部环系统的骨架候选。"""
     # scaffold 身份 (scaffold_id) 不参与骨架选择，只对最终胜出的少数骨架有意义，延迟到表达阶段 resolve_ring_scaffold 再识别；此处不跑 producer，避免为每个环系统支付完整 parent 生成器成本。
     mol = info["mol"]
     basic = [c for system in info.get("ring_systems") or () if (c := _ring_candidate(mol, system, occurrences))]
@@ -86,6 +93,7 @@ def _ring_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
 
 
 def _chain_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
+    """枚举去重后的开链骨架候选。"""
     paths = _open_chains(info["mol"], _anchors(occurrences))
     unique = {frozenset(path): path for path in paths if path}
     return [ParentSkeleton(SkeletonTopology.ACYCLIC, tuple(path), _chain_coverage(path, occurrences)) for path in unique.values()]
@@ -95,51 +103,61 @@ _SENIOR_ATOMS = (N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl, O, S, Se, 
 
 
 def _senior_atom(mol: Mol, skeleton: ParentSkeleton) -> int:
+    """骨架中存在的最优先元素原子序数。"""
     present = {mol.GetAtomWithIdx(i).GetAtomicNum() for i in skeleton.atom_ids}
     return next((z for z in _SENIOR_ATOMS if z in present), 0)
 
 
 def keep_senior_atom(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
+    """保留含最优先元素（senior）的候选。"""
     seniority = {z: i for i, z in enumerate(reversed(_SENIOR_ATOMS), 1)}
     best = max((seniority.get(_senior_atom(mol, c), 0) for c in candidates), default=0)
     return tuple(c for c in candidates if seniority.get(_senior_atom(mol, c), 0) == best)
 
 
 def keep_ring_over_chain(candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
+    """混合拓扑时保留环骨架。"""
     topologies = {c.topology for c in candidates}
     return tuple(c for c in candidates if c.topology is SkeletonTopology.RING_SYSTEM) if len(topologies) > 1 else candidates
 
 
 def keep_p44_1_2(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
+    """P-44.1.2：混合拓扑时环优先且取 senior 元素。"""
     topologies = {c.topology for c in candidates}
     return keep_ring_over_chain(keep_senior_atom(mol, candidates)) if len(topologies) > 1 else candidates
 
 
 def _hetero_count(mol: Mol, skeleton: ParentSkeleton) -> int:
+    """统计骨架中非碳（杂）原子数。"""
     return sum(mol.GetAtomWithIdx(i).GetAtomicNum() != 6 for i in skeleton.atom_ids)
 
 
 def _element_counts(mol: Mol, skeleton: ParentSkeleton) -> tuple[int, ...]:
+    """统计骨架中各 senior 元素（除碳）的出现次数元组。"""
     numbers = [mol.GetAtomWithIdx(i).GetAtomicNum() for i in skeleton.atom_ids]
     return tuple(numbers.count(z) for z in _SENIOR_ATOMS if z != 6)
 
 
 def p44_3_key(mol: Mol, skeleton: ParentSkeleton) -> tuple:
+    """P-44.3 比较键：杂原子数、原子数、元素计数。"""
     return _hetero_count(mol, skeleton), len(skeleton.atom_ids), _element_counts(mol, skeleton)
 
 
 def keep_p44_3(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
+    """P-44.3：开链候选按 p44_3_key 取最大。"""
     chains = tuple(c for c in candidates if c.topology is SkeletonTopology.ACYCLIC)
     best = max((p44_3_key(mol, c) for c in chains), default=())
     return tuple(c for c in chains if p44_3_key(mol, c) == best)
 
 
 def _ring_count(mol: Mol, skeleton: ParentSkeleton) -> int:
+    """计算骨架覆盖的完整环数。"""
     atoms = set(skeleton.atom_ids)
     return sum(set(ring) <= atoms for ring in mol.GetRingInfo().AtomRings())
 
 
 def p44_2_key(mol: Mol, skeleton: ParentSkeleton) -> tuple:
+    """P-44.2 比较键：杂原子、N 计数、senior、环数等。"""
     numbers = [mol.GetAtomWithIdx(i).GetAtomicNum() for i in skeleton.atom_ids]
     hetero = [z for z in numbers if z != C]
     has_n = N in hetero
@@ -148,17 +166,20 @@ def p44_2_key(mol: Mol, skeleton: ParentSkeleton) -> tuple:
 
 
 def keep_p44_2(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
+    """P-44.2：环候选按 p44_2_key 取最大。"""
     rings = tuple(c for c in candidates if c.topology is SkeletonTopology.RING_SYSTEM)
     best = max((p44_2_key(mol, c) for c in rings), default=())
     return tuple(c for c in rings if p44_2_key(mol, c) == best)
 
 
 def keep_max_principal_coverage(candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
+    """保留覆盖主官能团最多的候选。"""
     maximum = max((len(c.covered_principal_ids) for c in candidates), default=0)
     return tuple(c for c in candidates if len(c.covered_principal_ids) == maximum)
 
 
 def _principal_multiple_edges(mol: Mol, occurrences) -> set[frozenset[int]]:
+    """收集主官能团特征原子间的多重键边（不计入不饱和）。"""
     edges = set()
     for occurrence in occurrences:
         atoms = occurrence.characteristic_atoms
@@ -168,6 +189,7 @@ def _principal_multiple_edges(mol: Mol, occurrences) -> set[frozenset[int]]:
 
 
 def p44_4_unsaturation_key(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -> tuple[int, int]:
+    """P-44.4 不饱和度键：(多重键数, 双键数)。"""
     atoms, excluded = set(skeleton.atom_ids), _principal_multiple_edges(mol, occurrences)
     bonds = [b for b in mol.GetBonds() if not b.GetIsAromatic()
              and {b.GetBeginAtomIdx(), b.GetEndAtomIdx()} <= atoms
@@ -176,17 +198,20 @@ def p44_4_unsaturation_key(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -
 
 
 def keep_p44_4_unsaturation(mol: Mol, candidates: tuple[ParentSkeleton, ...], occurrences=()) -> tuple[ParentSkeleton, ...]:
+    """P-44.4：按不饱和度键取最大候选。"""
     best = max((p44_4_unsaturation_key(mol, c, occurrences) for c in candidates), default=())
     return tuple(c for c in candidates if p44_4_unsaturation_key(mol, c, occurrences) == best)
 
 
 def _finish_skeleton_selection(info: dict, candidates, occurrences, unsupported) -> SkeletonSelection:
+    """末位应用不饱和度规则并封装选择结果。"""
     candidates = keep_p44_4_unsaturation(info["mol"], candidates, occurrences)
     next_rule = "L4:P-44.4.1.3+" if candidates else None
     return SkeletonSelection(candidates, next_rule, unsupported)
 
 
 def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> SkeletonSelection:
+    """按 P-44 顺序筛选骨架（覆盖度→环/链→P-44.3/2）。"""
     enumerated = enumerate_principal_skeletons(info, occurrences)
     candidates = keep_max_principal_coverage(enumerated.candidates)
     candidates = keep_p44_1_2(info["mol"], candidates)
@@ -199,6 +224,7 @@ def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOcc
 
 
 def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> PrincipalSkeletons:
+    """枚举全部骨架候选，并计算未覆盖的 occurrence id。"""
     candidates = tuple(_chain_candidates(info, occurrences) + _ring_candidates(info, occurrences))
     covered = frozenset(i for candidate in candidates for i in candidate.covered_principal_ids)
     return PrincipalSkeletons(candidates, frozenset(o.id for o in occurrences) - covered)

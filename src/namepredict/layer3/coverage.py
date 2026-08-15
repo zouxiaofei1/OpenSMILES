@@ -18,16 +18,19 @@ class CoverageLedger:
 
     @property
     def complete(self) -> bool:
+        """是否没有缺口也没有重叠。"""
         return not self.gap and not self.overlap
 
 
 def _heavy_atoms(mol: Mol) -> frozenset[int]:
+    """收集所有非氢原子的索引集合。"""
     return frozenset(a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() != 1)
 
 
 def _membership_counts(
     owned: frozenset[int], names: list[SubstituentName]
 ) -> Counter[int]:
+    """统计所有权与命名 claim 的原子归属次数。"""
     counts: Counter[int] = Counter()
     for idx in owned:
         counts[idx] += 1
@@ -38,10 +41,12 @@ def _membership_counts(
 
 
 def _overlap_atoms(counts: Counter[int]) -> frozenset[int]:
+    """取出归属次数大于 1 的重叠原子。"""
     return frozenset(i for i, n in counts.items() if n > 1)
 
 
 def _covered_atoms(owned: frozenset[int], names: list[SubstituentName]) -> frozenset[int]:
+    """合并所有权与命名 claim 的覆盖原子集合。"""
     covered = set(owned)
     for name in names:
         covered |= set(name.claim.atoms)

@@ -13,6 +13,7 @@ _METAL_ZH = {"lithium": "锂", "sodium": "钠", "potassium": "钾"}
 
 
 def _alkali_en(mol: Mol) -> str | None:
+    """若 mol 为单一 +1 碱金属原子则返回其英文名。"""
     if mol.GetNumAtoms() != 1:
         return None
     atom = mol.GetAtomWithIdx(0)
@@ -22,6 +23,7 @@ def _alkali_en(mol: Mol) -> str | None:
 
 
 def _is_water(mol: Mol) -> bool:
+    """判断是否为中性水分子（单个 O 带 2 个 H）。"""
     if mol.GetNumAtoms() != 1:
         return False
     a = mol.GetAtomWithIdx(0)
@@ -54,6 +56,7 @@ def _bucket_frag(f: Mol, metals: list[str], organics: list[Mol]) -> int:
 
 
 def _partition(frags: tuple[Mol, ...]) -> tuple[list[str], list[Mol], int]:
+    """将片段分为碱金属、有机片段并统计 HCl 个数。"""
     metals: list[str] = []
     organics: list[Mol] = []
     n_hcl = sum(_bucket_frag(f, metals, organics) for f in frags)
@@ -61,6 +64,7 @@ def _partition(frags: tuple[Mol, ...]) -> tuple[list[str], list[Mol], int]:
 
 
 def _meta_metal(metals: list[str]) -> dict | None:
+    """生成碱金属盐元数据；金属种类不唯一时返回 None。"""
     if not metals or len(set(metals)) != 1:
         return None
     en = metals[0]
@@ -68,12 +72,14 @@ def _meta_metal(metals: list[str]) -> dict | None:
 
 
 def _meta_hcl(n_hcl: int) -> dict | None:
+    """生成 HCl 盐（盐酸盐）元数据；个数不为 1 时返回 None。"""
     if n_hcl != 1:
         return None
     return {"acid_salt": "hydrochloride", "acid_salt_zh": "盐酸盐"}
 
 
 def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
+    """从片段中提取单一有机分子与盐元数据；不满足则返回 None。"""
     metals, organics, n_hcl = _partition(frags)
     if len(organics) != 1:
         return None

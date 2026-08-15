@@ -8,6 +8,7 @@ from namepredict.layer2.principal import legacy_rank
 
 
 def _kind_class(kind: str) -> FG | None:
+    """将 kind 字符串转为 FG 枚举，非法返回 None。"""
 
     try:
         return FG(kind)
@@ -15,6 +16,7 @@ def _kind_class(kind: str) -> FG | None:
         return None
 
 def _principal_rank(kind: str, fallback: int = 0) -> int:
+    """取主官能团兼容等级，无对应 FG 时用 fallback。"""
     group_class = _kind_class(kind)
     return legacy_rank(group_class) if group_class else fallback
 
@@ -33,44 +35,53 @@ class KindMeta:
 _REG: dict[str, KindMeta] = {}
 
 def register(meta: KindMeta) -> None:
+    """登记 KindMeta，写回以真实 FG 等级为准的副本。"""
     rank = _principal_rank(meta.kind, meta.fg_rank)
     _REG[meta.kind] = replace(meta, fg_rank=rank)
 
 
 def get(kind: str) -> KindMeta | None:
+    """按 kind 查 KindMeta（未注册返回 None）。"""
     return _REG.get(kind)
 
 
 def fg_rank(kind: str) -> int:
+    """查询 kind 的主官能团兼容等级。"""
     meta = get(kind)
     return _principal_rank(kind, meta.fg_rank if meta else 0)
 
 
 def has_principal_fg(kind: str) -> int:
+    """kind 是否有主官能团等级（1/0）。"""
     return 1 if fg_rank(kind) else 0
 
 
 def is_hetero_ring(kind: str) -> int:
+    """kind 是否为杂环（1/0）。"""
     m = get(kind)
     return 1 if m and m.ring == "hetero" else 0
 
 
 def is_carbo_ring(kind: str) -> int:
+    """kind 是否为碳环（1/0）。"""
     m = get(kind)
     return 1 if m and m.ring == "carbo" else 0
 
 
 def n_rings_of(kind: str) -> int:
+    """返回 kind 的环数。"""
     m = get(kind)
     return m.n_rings if m else 0
 
 
 def retained_bonus(kind: str) -> int:
+    """kind 是否为保留名（加分 1/0）。"""
     m = get(kind)
     return 1 if m and m.retained else 0
 
 
 def parent_names(kind: str) -> tuple[str, str] | None:
+    """返回 kind 的 (en, zh) 母体名，缺失返回 None。"""
     m = get(kind)
     if m is None or m.en is None or m.zh is None:
         return None
@@ -78,6 +89,7 @@ def parent_names(kind: str) -> tuple[str, str] | None:
 
 
 def _attach_numbering_scaffold(packed: dict) -> dict:
+    """附加编号 scaffold facts（解析失败则原样返回）。"""
     from namepredict.layer2.ring_scaffold import numbering_scaffold_facts
     facts = numbering_scaffold_facts(
         packed.get("scaffold_id") or packed.get("kind"), len(packed.get("chain") or ()),
@@ -88,6 +100,7 @@ def _attach_numbering_scaffold(packed: dict) -> dict:
 
 
 def pack_parent_stem(parent: dict, mol=None) -> dict:
+    """补齐母体词干与编号 scaffold 字段。"""
     packed = parent if parent.get("mol") is not None else {**parent, "mol": mol}
     names = parent_names(packed.get("kind") or "")
     if names is not None and not (packed.get("stem_en") or packed.get("stem_zh")):
@@ -105,12 +118,14 @@ def _add(
     n: int = 0,
     ret: bool = False,
 ) -> None:
+    """便捷注册：以关键字参数构造 KindMeta。"""
     register(KindMeta(kind, en, zh, fg, ring, n, ret))
 
 
 
 
 def _spec_to_meta(sp) -> KindMeta:
+    """将 ScaffoldSpec 转换为 KindMeta。"""
     return KindMeta(
         sp.id, sp.stem_en, sp.stem_zh, sp.fg_rank, sp.ring, sp.n_rings,
         sp.retained,
@@ -128,6 +143,7 @@ def _load_from_scaffold_specs() -> None:
 
 
 def _bootstrap() -> None:
+    """启动时加载 scaffold 词干注册表。"""
     _load_from_scaffold_specs()  # 最后：Spec 是词干权威
 
 

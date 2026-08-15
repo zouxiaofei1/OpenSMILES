@@ -18,6 +18,7 @@ def _split_stereo_lead(name: str) -> tuple[str, str]:
 # --- E/Z 立体描述符 -------------------------------------------------
 
 def _stereo_tag(st) -> str:
+    """将 RDKit 立体键枚举转成 E/Z 前缀标记。"""
     if st == BondStereo.STEREOE:
         return "(E)-"
     if st == BondStereo.STEREOZ:
@@ -26,6 +27,7 @@ def _stereo_tag(st) -> str:
 
 
 def _bond_stereo(mol: Mol | None, double_bond) -> str:
+    """查指定双键的立体标签（无键/无立体返回空串）。"""
     if mol is None or not double_bond:
         return ""
     c1, c2 = double_bond
@@ -34,11 +36,13 @@ def _bond_stereo(mol: Mol | None, double_bond) -> str:
 
 
 def _ez_prefix(numbered: dict) -> str:
+    """单双键母体的 E/Z 前缀（从父字典取 mol 与 double_bond）。"""
     parent = numbered.get("parent") or {}
     return _bond_stereo(parent.get("mol"), parent.get("double_bond"))
 
 
 def _bond_min_loc(chain: list[int], pair) -> int | None:
+    """求双键两端在母体链中的较小位次（不在链上返回 None）。"""
     if not pair or pair[0] not in chain or pair[1] not in chain:
         return None
     return min(chain.index(pair[0]) + 1, chain.index(pair[1]) + 1)
@@ -50,6 +54,7 @@ def _ez_letter(tag: str) -> str:
 
 
 def _ez_bond_part(mol, chain: list[int], bond) -> tuple[int, str] | None:
+    """计算单条立体双键的 (位次, 字母) 部件。"""
     loc = _bond_min_loc(chain, bond)
     letter = _ez_letter(_bond_stereo(mol, bond))
     return (loc, letter) if loc is not None and letter else None
@@ -100,10 +105,12 @@ _RS_OMIT_LOC = frozenset({
 
 
 def _assign_cip(mol: Mol) -> None:
+    """强制重算分子立体化学（CIP 分配）。"""
     Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
 
 
 def _cip_code(atom) -> str | None:
+    """取原子的 CIP 代码，仅 R/S 有效时返回。"""
     if not atom.HasProp("_CIPCode"):
         return None
     code = atom.GetProp("_CIPCode")
@@ -135,6 +142,7 @@ def _collapsed_parent(parent: dict) -> bool:
 
 
 def _rs_parts(numbered: dict) -> list[tuple[int, str]]:
+    """取母体链上手性中心的 (位次, R/S) 列表（kind 不支持或折叠时为空）。"""
     parent = numbered.get("parent") or {}
     if parent.get("kind") not in _RS_KINDS or _collapsed_parent(parent):
         return []
@@ -170,10 +178,12 @@ def _parse_stereo(tag: str) -> list[tuple[int | None, str]]:
 
 
 def _fmt_part(loc: int | None, letter: str) -> str:
+    """单部件格式化：有位次拼 loc+字母，无位次只给字母。"""
     return letter if loc is None else f"{loc}{letter}"
 
 
 def _format_stereo(parts: list[tuple[int | None, str]]) -> str:
+    """将立体部件列表拼成 '(…)-' 前缀（无部件返回空串）。"""
     if not parts:
         return ""
     ordered = sorted(parts, key=lambda x: (x[0] is not None, x[0] or 0))
@@ -199,12 +209,14 @@ def _omit_locants(rs: list[tuple[int, str]]) -> list[tuple[int | None, str]]:
 def _display_rs(
     kind: str | None, rs: list[tuple[int, str]],
 ) -> list[tuple[int | None, str]]:
+    """按 kind 决定是否省略 R/S 位次（单中心饱和杂原子母体）。"""
     if kind in _RS_OMIT_LOC:
         return _omit_locants(rs)
     return [(loc, let) for loc, let in rs]
 
 
 def _with_rs(name: str, rs: list[tuple[int | None, str]]) -> str:
+    """将 R/S 部件并入名称已有的立体前缀。"""
     if not rs:
         return name
     tag, stem = _split_stereo_lead(name)
@@ -221,6 +233,7 @@ def _ester_en_rs(en: str, rs: list[tuple[int | None, str]]) -> str:
 
 
 def apply_rs_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
+    """对外 R/S 入口：算手性部件并应用到中英文名称（酯特殊插入）。"""
     rs_raw = _rs_parts(numbered)
     if not rs_raw:
         return en, zh

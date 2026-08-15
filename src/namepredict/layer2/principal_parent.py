@@ -18,17 +18,20 @@ class PrincipalParentSelection:
     skeletons: SkeletonSelection | None
 
 def select_principal_parent_skeletons(info: dict) -> PrincipalParentSelection:
+    """选出主官能团并枚举其骨架选择结果。"""
     principal = select_principal_group(inventory_from_info(info))
     occurrences = principal.occurrences if principal else ()
     skeletons = select_principal_skeletons(info, occurrences)
     return PrincipalParentSelection(principal, skeletons)
 
 def _unsupported_typed_ring(parent: dict, selection: PrincipalParentSelection) -> bool:
+    """判断环酮是否因未支持的 typed 表达被排除。"""
     return (selection.principal.group_class is FunctionalGroupClass.KETONE
             and parent.get("scaffold_identity") is not None
             and parent.get("typed_ring_expression_supported") is False)
 
 def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[dict]:
+    """按骨架拓扑表达主基团，过滤不支持者。"""
     parents = []
     for skeleton in selection.skeletons.candidates:
         parent = ((express_ring_principal(info, selection.principal, skeleton))
@@ -39,6 +42,7 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
     return parents
 
 def rule_driven_parent_candidates(info: dict) -> list[dict]:
+    """规则驱动入口：返回最终母体候选（无主官能团时纯烃）。"""
 
     selection = select_principal_parent_skeletons(info)
 

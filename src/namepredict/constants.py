@@ -1,3 +1,5 @@
+"""跨层共享常量：原子序数、倍数前缀与名称文本规范化。"""
+
 from __future__ import annotations
 import re
 
@@ -46,6 +48,7 @@ _WS = re.compile(r"\s+")
 
 
 def normalize_en(name: str) -> str:
+    """规范化英文名：小写、去重空白并统一连字符/逗号。"""
     s = (name or "").strip().lower()
     s = s.replace("–", "-").replace("—", "-")
     s = _WS.sub(" ", s)
@@ -54,4 +57,5 @@ def normalize_en(name: str) -> str:
 
 
 def normalize_zh(name: str) -> str:
+    """规范化中文名：去除首尾空白。"""
     return (name or "").strip()

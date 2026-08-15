@@ -26,6 +26,7 @@ def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
 
 
 def _extend_best(mol: Mol, node: int, path: list[int], forbid: set[int], best: list[int]) -> list[int]:
+    """从 node 尝试每个可用邻居延伸路径，返回当前最长路径。"""
     for nb in _carbon_neighbors(mol, node):
         if nb in path or nb in forbid:
             continue
@@ -36,8 +37,10 @@ def _extend_best(mol: Mol, node: int, path: list[int], forbid: set[int], best: l
 
 
 def _dfs_path(mol: Mol, node: int, path: list[int], forbid: set[int]) -> list[int]:
+    """深度优先寻找从 node 出发的最长开链路径。"""
     return _extend_best(mol, node, path, forbid, path)
 
 
 def _longest_from(mol: Mol, start: int, forbidden: set[int] | None = None) -> list[int]:
+    """从 start 出发找出避开 forbidden 的最长开链路径。"""
     return _dfs_path(mol, start, [start], forbidden or set())
