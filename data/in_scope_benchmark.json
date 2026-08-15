@@ -2744,7 +2744,7 @@
   "id": "tiers-200",
   "smiles": "Cc1cnc(N)nc1",
   "english_name": "5-methylpyrimidin-2-amine",
-  "chinese_name": "2-氨基-5-甲基嘧啶",
+  "chinese_name": "5-甲基嘧啶-2-胺",
   "source": "smiles_tiers",
   "tier": 2,
   "features": [
@@ -3595,8 +3595,8 @@
  {
   "id": "tiers-50874",
   "smiles": "FC(C1=CC2=C(N=C(S2)N)C=C1)(F)F",
-  "english_name": "6-(trifluoromethyl)-1,3-benzothiazol-2-amine",
-  "chinese_name": "2-氨基-6-三氟甲基苯并噻唑",
+  "english_name": "6-(trifluoromethyl)benzothiazol-2-amine",
+  "chinese_name": "6-三氟甲基苯并噻唑-2-胺",
   "source": "smiles_tiers",
   "tier": 3,
   "features": [
@@ -9154,8 +9154,8 @@
  {
   "id": "tiers-35061",
   "smiles": "COC=1C=NC(=NC1)N",
-  "english_name": "5-Methoxy-pyrimidin-2-amine",
-  "chinese_name": "2-氨基-5-甲氧基嘧啶",
+  "english_name": "5-methoxypyrimidin-2-amine",
+  "chinese_name": "5-甲氧基嘧啶-2-胺",
   "source": "smiles_tiers",
   "tier": 2,
   "features": [
