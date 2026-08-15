@@ -156,14 +156,16 @@ def _nitrile_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _thiol_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """硫醇：连接碳 + SH 硫。"""
-    c_idx = parent.get("sh_c_idx")
-    if c_idx is None:
+    """硫醇/二硫醇：连接碳 + SH 硫。"""
+    c_idxs = parent.get("sh_c_idxs") or ([parent.get("sh_c_idx")] if parent.get("sh_c_idx") is not None else [])
+    if not c_idxs:
         return set()
-    out = {int(c_idx)}
-    for n in mol.GetAtomWithIdx(int(c_idx)).GetNeighbors():
-        if n.GetAtomicNum() == 16:
-            out.add(n.GetIdx())
+    out: set[int] = set()
+    for c in c_idxs:
+        out.add(int(c))
+        for n in mol.GetAtomWithIdx(int(c)).GetNeighbors():
+            if n.GetAtomicNum() == 16:
+                out.add(n.GetIdx())
     return out
 
 

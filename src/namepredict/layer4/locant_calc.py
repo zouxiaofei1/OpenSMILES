@@ -154,7 +154,10 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
     }
 
 def _sh_locants_list(oriented: dict) -> list[int] | None:
-    """把单个巯基位次包装成列表返回。"""
+    """巯基位次列表；多硫醇用全部附着原子，单硫醇回退 sh_c_idx。"""
+    locs = _typed_atom_locants(oriented, "thiol")
+    if locs:
+        return locs
     loc = _sh_locant(oriented)
     return [loc] if loc is not None else None
 

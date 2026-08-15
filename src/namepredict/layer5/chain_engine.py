@@ -402,6 +402,7 @@ _KIND_TABLE = {
                     }),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
                     fg="sh", need=1, omit_rule=_omit_term_locant,
+                    mult_ok=True, mult_zh_full=True,
                     ene_seg=("ene", "烯"), yne_seg=("yne", "炔")),
     "amine": _Chain(kind="amine", en_suf="amine", zh_suf="胺",
                     fg="amine", need=1, omit_rule=_omit_term_locant,

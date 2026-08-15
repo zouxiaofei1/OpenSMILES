@@ -119,10 +119,7 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
     # 官能团类醚臂已编码 F（如 HFIP）；不要重复加前缀。
     if parent.get("kind") == "ether" and parent.get("ether_arms"):
         return []
-    if parent.get("kind") not in ("acyl_chloride", "acyl_bromide"):
-        return halos
-    cl = parent.get("cl_idx") or parent.get("hal_idx")
-    return [h for h in halos if cl not in (h.get("atoms") or [])]
+    return halos
 
 # 主 FG 母体 kind → 抑制对应取代基提取（fg_registry 的 parent 标记派生）。
 _PARENT_OH_KINDS = frozenset(sp.fg for sp in FG_SPECS if sp.oh_parent)

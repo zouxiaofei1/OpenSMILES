@@ -15,6 +15,16 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
+    # alkanethiol 正例（P-63.1.5）：C1–C2 omit locant，C≥3 用 alkane-n-thiol
+    ("CS", "methanethiol", "甲硫醇"),
+    ("CCS", "ethanethiol", "乙硫醇"),
+    ("CCCS", "propane-1-thiol", "丙-1-硫醇"),
+    ("CCCCCS", "pentane-1-thiol", "戊-1-硫醇"),
+    ("CC(C)S", "propane-2-thiol", "丙-2-硫醇"),
+    ("CCCC(CC)S", "hexane-3-thiol", "己-3-硫醇"),
+    # 二硫醇（数量后缀生成式，对齐 amine）
+    ("SCCS", "ethane-1,2-dithiol", "乙烷-1,2-二硫醇"),
+    ("SCCCCS", "butane-1,4-dithiol", "丁烷-1,4-二硫醇"),
     # negative: alcohol / amine / thioether (not thiol)
     ("CCO", "ethanol", "乙醇"),
     ("CCN", "ethanamine", "乙胺"),
