@@ -1,6 +1,6 @@
 # NamePredict Wiki
 
-> 最后更新: 2026-08-14 | 源文件: 76 `.py` / 7,399 行 | Wiki 页面: 15
+> 最后更新: 2026-08-15 | 源文件: 61 `.py` / 7,131 行 | Wiki 页面: 15
 
 ## 项目概述
 
@@ -35,10 +35,10 @@ SMILES 输入
 | [[architecture/overview]] | 架构总览：6 层流水线、数据流图、跨层设计模式、namer.py 协调器 |
 | [[architecture/layer0-preprocessor]] | Layer0 预处理：SMILES 解析、盐检测与解离、盐元数据注入 |
 | [[architecture/layer1-analyzer]] | Layer1 官能团分析器：20 类 FG 检测、环系拓扑、排他性优先级 |
-| [[architecture/layer2-parent-selector]] | Layer2 母体选择器：P-44 规则驱动主链管线、kind 正交化（ring_scaffold 三合一）、评分与门控 |
-| [[architecture/layer3-substituents]] | Layer3 取代基提取器：anchored 查表主流程 + claim 补全、SubstituentNamer 有序后端（retained/rooted-tree/recursive）、侧链拓扑事实层 (side_facts)、覆盖台账 |
+| [[architecture/layer2-parent-selector]] | Layer2 母体选择器：P-44 规则驱动主链管线、kind 正交化（ring_scaffold _TEMPLATES 唯一来源）、评分 |
+| [[architecture/layer3-substituents]] | Layer3 取代基提取器：anchored 查表主流程 + claim 补全、SubstituentNamer 有序后端（retained/recursive）、覆盖台账 |
 | [[architecture/layer4-numbering]] | Layer4 编号：P-14.4 候选编号引擎（numbering_engine）、FG 位次计算、omit_locants 规则 |
-| [[architecture/layer5-name-assembly]] | Layer5 名称组装：组装流水线、`chain_engine._KIND_TABLE` 链引擎、`typed_kinds` kind 收敛、立体化学 |
+| [[architecture/layer5-name-assembly]] | Layer5 名称组装：组装流水线、`chain_engine._KIND_TABLE` 链引擎（10 entry）、N- 前缀、立体化学 |
 
 ## 核心概念
 

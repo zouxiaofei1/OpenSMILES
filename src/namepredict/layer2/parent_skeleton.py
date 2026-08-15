@@ -97,9 +97,7 @@ def _ring_candidate(mol: Mol, system: dict, occurrences) -> ParentSkeleton | Non
     """构造环骨架候选（有 occurrence 时要求附着）。"""
     atoms = set(system.get("atom_ids") or ())
     covered = frozenset(o.id for o in occurrences if _ring_attaches(mol, atoms, o))
-    # 有主官能团时要求环附着至少一个 occurrence；纯烃（无 occurrence）则全部枚举。
-    if occurrences and not covered:
-        return None
+  
     return ParentSkeleton(SkeletonTopology.RING_SYSTEM, tuple(sorted(atoms)), covered)
 
 
@@ -245,6 +243,7 @@ def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOcc
 def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> PrincipalSkeletons:
     """枚举全部骨架候选，并计算未覆盖的 occurrence id。"""
     candidates = tuple(_chain_candidates(info, occurrences) + _ring_candidates(info, occurrences))
-    # print(info,"\n",occurrences)
+    # print(candidates)
+    # print("finished")
     covered = frozenset(i for candidate in candidates for i in candidate.covered_principal_ids)
     return PrincipalSkeletons(candidates, frozenset(o.id for o in occurrences) - covered)

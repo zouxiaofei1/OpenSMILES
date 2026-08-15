@@ -26,7 +26,7 @@ Layer5: (en, zh) tuples → NameResult(en="ethanol", zh="乙醇")   ← 双语�
 
 ### 管线的 5 步双语流水线
 
-以 `assemble()` 函数（`src/namepredict/layer5/assembler.py:573-583`）为例，每一步都操作 `(en, zh)` 对：
+以 `assemble()` 函数（`src/namepredict/layer5/assembler.py:196`）为例，每一步都操作 `(en, zh)` 对：
 
 ```
 1. _names_for(kind, n, numbered)     → (en, zh) | None   母体名称
@@ -45,7 +45,7 @@ Layer5: (en, zh) tuples → NameResult(en="ethanol", zh="乙醇")   ← 双语�
 
 ### 母体名称派发中的双语约定
 
-`_names_for` 函数（`src/namepredict/layer5/assembler.py:79-112`）先查 `chain_engine._KIND_TABLE`（15 个 `_Chain` spec，按 `scaffold_id` 运行时注入环前缀/稠环词干），命中即返回；否则落到特殊 worker（`_exocyclic_acid_names`/`phenyl`/`benzene`/`_ARENE_RETAINED_NAMES`/`benzenediol`）或 `_parent_stem_names` 回退。每个 worker 都是返回 `(en, zh)` 或 `None` 的双语函数——返回 `None` 时派发器降级到下一策略。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
+`_names_for` 函数（`src/namepredict/layer5/assembler.py:101-136`）先查 `chain_engine._KIND_TABLE`（10 个 `_Chain` spec，按 `scaffold_id` 运行时注入环前缀/稠环词干），命中即返回；否则落到特殊 worker（`_exocyclic_acid_names`/`_exocyclic_amide_names`/`phenyl`）或 `_parent_stem_names` 回退。每个 worker 都是返回 `(en, zh)` 或 `None` 的双语函数——返回 `None` 时派发器降级到下一策略。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
 
 ## 词干表：双语单词的单一权威来源
 
@@ -70,21 +70,21 @@ _ALKANE_ZH_BASE = {1: "甲烷",  2: "乙烷",   ..., 10: "癸烷"}
 
 英文词干通过 `_compose_en_stem(n)` 按十位（`icos`, `triacont`, `tetracont`...）+ 个位（`hen`, `do`, `tri`...）组合生成，如 C22 = `docos`（do + cos，elide icos 的 i）。中文仍由 `zh_num(n)` 生成数字+烷。
 
-### 官能团词干的派生
+### 烷烃词干与 FG 名称的生成
 
-每种官能团都有独立的一对英/中函数，从烷烃词干派生：
+`stems.py` 提供烷烃英中词干生成器：`alkane_en(n)`/`alkane_zh(n)` 生成 C1-C35 烷烃全名，`_en_stem(n)`/`zh_stem(n)` 取去后缀词干。**FG 名称不由 stems 逐官能团派生**（无 `alcohol_en`/`acid_en`/`amide_en` 等函数）——由 chain_engine 用 `_en_stem` + `_Chain.en_suf`/`zh_suf` 直接拼接，C1/C2 保留名（formic/acetic、甲酸/乙酸）由 chain_engine 的 `_RETAINED` 表提供：
 
-| 官能团 | 英文函数 | 中文函数 | 示例 (C2) | 示例 (C2 中文) |
-|--------|---------|---------|-----------|---------------|
-| 烷烃 | `alkane_en(n)` | `alkane_zh(n)` | `ethane` | `乙烷` |
-| 醇 | `alcohol_en(n)` | `alcohol_zh(n)` | `ethanol` | `乙醇` |
-| 酸 | `acid_en(n)` | `acid_zh(n)` | `acetic acid` | `乙酸` |
-| 醛 | `aldehyde_en(n)` | `aldehyde_zh(n)` | `acetaldehyde` | `乙醛` |
-| 酰胺 | `amide_en(n)` | `amide_zh(n)` | `acetamide` | `乙酰胺` |
-| 腈 | `nitrile_en(n)` | `nitrile_zh(n)` | `acetonitrile` | `乙腈` |
-| 酯酰基 | `ester_acyl_en(n)` | — | `acetate` | — |
+| 官能团 | 生成方式 | 示例 (C2) | 示例 (C2 中文) |
+|--------|---------|-----------|---------------|
+| 烷烃 | `alkane_en(n)` / `alkane_zh(n)` | `ethane` | `乙烷` |
+| 醇 | chain_engine `alcohol` entry（`_en_stem` + `-ol`） | `ethanol` | `乙醇` |
+| 酸 | chain_engine `acid` entry（C1/C2 走 `_RETAINED` 保留名） | `acetic acid` | `乙酸` |
+| 醛 | chain_engine `aldehyde` entry | `acetaldehyde` | `乙醛` |
+| 酰胺 | chain_engine `amide` entry | `acetamide` | `乙酰胺` |
+| 腈 | chain_engine `nitrile` entry | `acetonitrile` | `乙腈` |
+| 酯 | chain_engine `ester` entry | `acetate` | `乙酸` |
 
-所有公开词干表通过 `_fill(fn, lo=1, hi=35)` 自动填充为完整字典（`src/namepredict/layer5/stems.py:333-352`），从 C1 覆盖到 C35，确保长链名称无需手动维护。中文的 C1/C2 酸、醛、酰胺、腈等使用保留名（如 `甲酸`/`乙酸`、`甲醛`/`乙醛`），与英文保留名（`formic acid`/`acetic acid`、`formaldehyde`/`acetaldehyde`）保持对应。
+公开词干表 `ALKANE_EN`/`ALKANE_ZH` 通过 `_fill(fn, lo=1, hi=35)` 自动填充为完整字典（`src/namepredict/layer5/stems.py:176-177`），从 C1 覆盖到 C35，确保长链名称无需手动维护。中文的 C1/C2 酸、醛、酰胺、腈等使用保留名（如 `甲酸`/`乙酸`、`甲醛`/`乙醛`），与英文保留名（`formic acid`/`acetic acid`、`formaldehyde`/`acetaldehyde`）保持对应。
 
 ## 中英文命名差异
 
@@ -119,11 +119,11 @@ _ALKANE_ZH_BASE = {1: "甲烷",  2: "乙烷",   ..., 10: "癸烷"}
 
 - ZH: `苯甲酸甲酯`（苯甲酸 + 甲基 + 酯）
 
-这一差异在代码中由 `benzene_names.py` 的 `benzoate_parent_names` 和 `join_ester_name` 函数处理，分别构造英文和中文的语序。对于不饱和酯和带取代基的酯，中英文的插入位置也有不同的处理逻辑。
+这一差异在代码中由 `assembler.py` 的 `join_ester_name` 函数处理，分别构造英文和中文的语序。对于不饱和酯和带取代基的酯，中英文的插入位置也有不同的处理逻辑。
 
 ### 盐命名的后缀位置反转
 
-盐的命名也体现出语序差异。英文将金属阳离子放在羧酸根名称之前作为前缀（`sodium dodecanoate`），而中文将金属名放在名称末尾（`十二酸钠`）。这一转换由 `stems.py` 中的 `maybe_metal_salt_names` 函数（`src/namepredict/layer5/stems.py:285-290`）完成：
+盐的命名也体现出语序差异。英文将金属阳离子放在羧酸根名称之前作为前缀（`sodium dodecanoate`），而中文将金属名放在名称末尾（`十二酸钠`）。这一转换由 `stems.py` 中的 `maybe_metal_salt_names` 函数（`src/namepredict/layer5/stems.py:156-161`）完成：
 
 - `_salt_en`：将金属名作为前缀拼接到英文名（仅当英文名以 `ate` 结尾时）
 - `_salt_zh`：将金属中文名替换中文名的末尾 `酸根` → `酸{金属}`
@@ -136,9 +136,9 @@ _ALKANE_ZH_BASE = {1: "甲烷",  2: "乙烷",   ..., 10: "癸烷"}
 
 ## `zh_stem` 转换
 
-`zh_stem` 函数（`src/namepredict/layer5/stems.py:45-50`）是一个关键的中文词干提取工具。它从中文全名中剥离末端的官能团/母体后缀，返回"裸词干"供后续拼接。
+`zh_stem` 函数（`src/namepredict/layer5/stems.py:44-49`）是一个关键的中文词干提取工具。它从中文全名中剥离末端的官能团/母体后缀，返回"裸词干"供后续拼接。
 
-**后缀剥离表**（`src/namepredict/layer5/stems.py:31`）：
+**后缀剥离表**（`src/namepredict/layer5/stems.py:30`）：
 
 ```python
 _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈", "胺", "酮", "烯", "炔")
@@ -159,7 +159,7 @@ _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈",
 
 ## `zh_num`：中文数字生成
 
-`zh_num(n)`（`src/namepredict/layer5/stems.py:34-42`）将整数 n（1-99）转换为中文基数词：
+`zh_num(n)`（`src/namepredict/layer5/stems.py:33-41`）将整数 n（1-99）转换为中文基数词：
 
 - 1-9：直接使用 `_DIGIT_ZH` 字符串索引（`一` `二` `三`...`九`）
 - 10-19：`十` + 个位（`十一` `十二`...而非 `一十` `二十`...）
@@ -222,8 +222,5 @@ NamePredict 的双语命名设计遵循以下原则：
 - [[architecture/overview]] — 6 层架构总览，展示双语数据在各层之间的流转
 - [[architecture/layer5-name-assembly]] — Layer5 名称组装层的完整文档，包含 `(en, zh)` 流水线的实现细节
 - [[architecture/layer0-preprocessor]] — Layer0 预处理层，盐元数据的双语字段定义
-- [[concepts/iupac-rules]] — IUPAC 蓝皮书规则映射（P-14, P-21, P-63, P-65）
 - [[reference/core-data-contracts]] — `NameResult` 及 `numbered` 字典的双语字段结构
-- [[reference/api]] — `SMILESNNamer.name()` 中 `name_mode` 参数的公开接口
-- [[reference/molecule-model]] — `NameResult(en, zh, ...)` 的类型定义
 - [[index]] — Wiki 首页

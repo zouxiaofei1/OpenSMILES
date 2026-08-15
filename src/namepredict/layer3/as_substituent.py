@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from rdkit.Chem import CanonicalRankAtoms
-from namepredict.constants import C, H
+from namepredict.constants import C
 from rdkit.Chem import Mol
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol, build_cut_submol

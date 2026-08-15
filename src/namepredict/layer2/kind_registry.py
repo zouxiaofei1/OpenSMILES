@@ -112,22 +112,6 @@ def pack_parent_stem(parent: dict, mol=None) -> dict:
     return _attach_numbering_scaffold(packed)
 
 
-def _add(
-    kind: str,
-    *,
-    en: str | None = None,
-    zh: str | None = None,
-    fg: int = 0,
-    ring: str = "none",
-    n: int = 0,
-    ret: bool = False,
-) -> None:
-    """便捷注册：以关键字参数构造 KindMeta。"""
-    register(KindMeta(kind, en, zh, fg, ring, n, ret))
-
-
-
-
 def _spec_to_meta(sp) -> KindMeta:
     """将 ScaffoldSpec 转换为 KindMeta。"""
     return KindMeta(

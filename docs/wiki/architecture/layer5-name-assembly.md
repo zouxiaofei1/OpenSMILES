@@ -1,6 +1,6 @@
 # Layer5: 名称组装 (Name Assembly)
 
-> **管线位置:** 第 5 层 / 6 层 (输出层) | **源文件:** 6 个 `.py` (1050 行) | **最后更新:** 2026-08-15
+> **管线位置:** 第 5 层 / 6 层 (输出层) | **源文件:** 6 个 `.py` (1239 行) | **最后更新:** 2026-08-15
 
 ---
 
@@ -8,7 +8,7 @@
 
 Layer5 是 NamePredict 6 层命名管线的终端输出层，负责将前序各层产生的结构化中间数据（编号后的母体信息 + 取代基清单 + 位次分配）组装为完整的中英双语 IUPAC 名称。
 
-2026-08 大重构后，layer5 完成了三件事：**① 词干引擎独立为 `chain_engine.py`**（`_KIND_TABLE` 从 assembler 迁出，新增 `variant` 字段按 multiplicity 切换数量后缀）；**② 新增 `typed_kinds.py`**（kind 正交化收敛 + 苯系保留名决策，原 L2 `_RETAINED_RING_KINDS` 迁此）；**③ 立体化学合并为 `stereo.py`**（`stereo_rs.py`/`stereo_ez.py`/`_stereo_common.py` 三合一），删除 `acyl_halide_names.py`/`iso_arene_names.py`。
+Layer5 由 6 个模块组成：**① 词干引擎 `chain_engine.py`**（`_KIND_TABLE` 数据驱动，`variant` 字段按 multiplicity 切换数量后缀）；**② 主组装器 `assembler.py`**（含 `_names_for` 派发与 `join_kind_name` 拼接）；**③ 前缀组装 `assembler_prefixes.py`**（含 N- 前缀）；**④ 双语词干表 `stems.py`**（烷烃词干 + 盐/阴离子后缀）；**⑤ 立体化学 `stereo.py`**（E/Z + CIP R/S）；kind 收敛在 L2 `principal_expression._chain_kind`——L2 直接产生 FG 类别 kind，苯保留名由 chain_engine 各 entry 的 `variant` 提供。
 
 **管线中的位置：**
 
@@ -27,9 +27,9 @@ Layer4: numbering (位次分配)
 | 职责 | 说明 |
 |------|------|
 | 母体名称生成 | 根据 parent kind 和碳数 n 查表/构造双语母体词干 |
-| 取代基前缀组装 | 按字母序排列、重复基团合并 (di/tri/tetra)、位次号拼接 |
+| 取代基前缀组装 | 按字母序排列、重复基团合并 (di/tri/tetra)、位次号拼接、N- 前缀 |
 | 立体化学插入 | R/S (CIP) 和 E/Z (双键) 立体描述符的前缀化 |
-| 功能类命名 | 酯 (ester)、苯甲酸酯 (benzoate)、酸酐 (anhydride) 的特殊名称模式 |
+| 功能类命名 | 酯 (ester)、苯甲酸酯 (benzoate)、环外酸/酰胺 (-carboxamide) 的特殊名称模式 |
 | 双语输出 | 同步生成英文和中文两套 IUPAC 字符串 |
 
 **输入/输出类型：**
@@ -46,165 +46,114 @@ assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> Name
 
 ### 1. 组装总控 (`assemble` 函数)
 
-Layer5 的入口是 `assembler.py` 中的 `assemble` 函数（第 129 行）。它遵循一个清晰的名称变换流水线，每步返回双语元组 `(en, zh)`：
+Layer5 的入口是 `assembler.py` 中的 `assemble` 函数（第 196 行）。它遵循一个清晰的名称变换流水线，每步返回双语元组 `(en, zh)`：
 
 ```
 assemble(numbered)
-  │
-  ├─ 0. _typed_expression_kind(kind, numbered)   # typed_kinds.py — kind 正交化收敛
-  │      (acid→acid, alcohol→alcohol, amine→amine, ketone→ketone/dione;
-  │       苯环单FG 保留名由 chain_engine 苯 variant 输出: phenol/benzoic/aniline…)
-  ├─ 1. _names_for(effective_kind, n, numbered)  # 母体名称 (en, zh)
-  ├─ 2. _prefix_for(numbered, kind, n)          # 取代基前缀 (pre_en, pre_zh)
-  ├─ 3. join_kind_name(kind, pre, names)        # 拼接前缀+母体 (酯专属拼接, zh 恒拼"酯")
-  ├─ 4. maybe_anion_names(numbered, en, zh)     # 羧酸根阴离子后缀
-  ├─ 5. apply_rs_prefix(numbered, en, zh)       # R/S 立体化学前缀
-  └─ 6. maybe_metal_salt_names(...)             # 金属盐/盐酸盐后缀
+  ├─ 1. _names_for(kind, n, numbered)        # 母体名称 (en, zh)
+  ├─ 2. _prefix_for(numbered, kind, n)       # 取代基前缀 (pre_en, pre_zh)
+  ├─ 3. join_kind_name(kind, pre, names)     # 拼接前缀+母体 (酯专属拼接, zh 恒拼"酯")
+  ├─ 4. maybe_anion_names(numbered, en, zh)  # 羧酸根阴离子后缀
+  ├─ 5. apply_rs_prefix(numbered, en, zh)    # R/S 立体化学前缀
+  └─ 6. maybe_metal_salt_names(...)          # 金属盐/盐酸盐后缀
        → NameResult(en, zh)
 ```
 
-> **源:** `src/namepredict/layer5/assembler.py:98`
+> **源:** `src/namepredict/layer5/assembler.py:196`
 
-### 2. kind 正交化收敛 (`typed_kinds.py`)
+### 2. kind 收敛（在 L2）
 
-`typed_kinds.py`（98 行）把 L2 传入的 kind 收敛为 FG 类别（正交化），不再产生命名 kind（苯保留名已下放 chain_engine 苯 variant，见 §3）。
+**kind 收敛由 L2 `principal_expression._chain_kind` 承担**——L2 直接产出 FG 类别 kind（`acid`/`alcohol`/`amine`/`ketone`/`ester`/`amide`/`nitrile`/`aldehyde`），数量统一由 `principal_expression_facts.multiplicity` 承载，无 diacid/diol/diamine 等数量 kind，**也不产生 `dione`**（二酮由 chain_engine 对 `ketone` 的 `mult_ok` 生成式在命名层产出）。Layer5 无独立的 kind 收敛模块（`typed_kinds` 不存在）。
 
-- **恒基团名收敛**：链式 case 下 `_typed_acid_kind`（`14-`）/`_typed_alcohol_kind`（`68-`）/`_typed_amine_kind`（`79-`）恒返回 `"acid"`/`"alcohol"`/`"amine"`（数量统一由 `multiplicity` 承载，不再有 diacid/diol/diamine 等数量 kind）
-- **环系判断基于 scaffold_id**（`_scaffold` 读 `parent.scaffold_id`），不再读 L2 组合 kind：
-  - `carbocycle` → 返回 FG 类别（"acid"/"alcohol"/"amine"/"ketone"），cyclo 前缀由 chain_engine 运行时加
-  - 稠环/杂环 `_RING_FG_SCAFFOLDS = {naphthalene, indole, pyridine, quinoline}` → 同样收敛 FG 类别，词干由 chain_engine 注入
-  - 苯环单 FG → 恒返回 FG 类别（保留名由 chain_engine 苯 variant 输出）
-  - 环外酸（`facts.relation.value == "exocyclic"`）→ `"acid"`（"carboxylic acid" 后缀由 chain_engine 组装）
-- **ketone**（`_typed_ketone_kind` `:55-`）：`carbocycle` scaffold 下按 multiplicity 返回 `"ketone"`（=1）/`"dione"`（=2）
-- 聚合入口 `_typed_expression_kind`（`:90-`）依次调用全部 8 个 `_typed_*_kind`
-
-> **源:** `src/namepredict/layer5/typed_kinds.py`
+苯系保留名（phenol/benzoic acid/aniline/benzaldehyde/benzonitrile/benzamide）由 chain_engine `_KIND_TABLE` 各 entry 的 `variant["benzene"]` 提供（见 §4）。
 
 ### 3. 链式词干引擎 (`chain_engine.py`)
 
-`chain_engine.py`（394 行）是数据驱动的单链词干引擎——用 `_Chain` spec 描述每类 kind 的命名形态，`_chain_names` 统一渲染，替代了原先按 kind 手写 if 分支。
+`chain_engine.py`（441 行）是数据驱动的单链词干引擎——用 `_Chain` spec 描述每类 kind 的命名形态，`_chain_names` 统一渲染，无需按 kind 手写 if 分支。
 
-**`_Chain` 数据类字段**（frozen dataclass，`150-184`）：
-- 基础：`kind`/`en_suf`/`zh_suf` **必填**（每 kind 互异，无合理默认）；`coda`/`no_loc`/`omit_rule` 在 `_: KW_ONLY` 分隔后为 keyword-only 默认值——`coda`="an"、`no_loc`="plain"、`omit_rule`=`_NO_OMIT`，仅特例显式覆盖（alkane `coda=""`、thiol/anhydride `coda="ane"`、ketone `no_loc="none"`、alcohol/thiol/amine `omit_rule=_omit_term_locant`、ketone/alkane 自定义 lambda）
+**`_Chain` 数据类字段**（frozen dataclass，`195-232`）：
+- 基础：`kind`/`en_suf`/`zh_suf` **必填**（每 kind 互异，无合理默认）；`coda`/`no_loc`/`omit_rule` 在 `_: KW_ONLY` 分隔后为 keyword-only 默认值——`coda`="an"、`no_loc`="plain"、`omit_rule`=`_NO_OMIT`，仅特例显式覆盖（alkane `coda=""`、thiol `coda="ane"`、ketone `no_loc="none"`、alcohol/thiol/amine `omit_rule=_omit_term_locant`、ketone/alkane 自定义 lambda）
 - FG：`fg`（fg_locants 记录 kind）/`need`（FG 数要求）
 - 俗名/派生：`plain_maps`/`plain_fn`
-- 烯/炔段：`ene_seg`（默认 `("en","烯")`；thiol 用 `("ene","烯")` 保留 e）/`yne_seg`（默认 `("yn","炔")`）/`ene_base`/`ene_special`（俗名钩子）/`yne_suf`/`ez_ene`/`ene_loc_omit`（环单烯省略位次）
-- 环：`cyclic`（恒加 cyclo/环前缀）/`cyclic_unsat`/`zh_full`/`stem`（稠环/杂环词干覆盖，如 naphthalen/萘）
-- **`mult_ok`**（acid/alcohol/amine/ketone=True）— 数量后缀由 `_generated_mult_fields`（`225`）生成：`MULT[m]`+基础后缀（diol/triol/tetraol…任意数量，无硬编码上限）；`mult_zh_full`（醇/胺多 FG 中文保留"烷"）/`mult_unsat_polyol`（仅醇）
-- **`variant: dict[scaffold, dict[mult, dict]]`**（`{scaffold_id: {multiplicity: 生成式之上的特例字段覆盖}}`，`None` 键=开链）— acid 用 `{None:{2: 草酸俗名/炔禁/ene_single_min=3}}`；苯环保留名用 `{"benzene": {1: {plain_fn=phenol/benzoic…}}}`（**仅单 FG 保留名**；苯环多羟基/三酚等系统名走 `_RING_STEM` 词干 + aromatic 酚，见 §4）。`assembler._names_for` 按 `scaffold_id` 注入当前 scaffold 的 variant 子集后，`_chain_names` 见一维 `{mult: fields}`：多 FG（mult>1）先生成通用数量字段再覆盖特例；单 FG（mult==1）直接 `replace(spec, **extra)`
+- 烯/炔段：`ene_seg`（默认 `("en","烯")`；thiol 用 `("ene","烯")` 保留 e）/`yne_seg`（默认 `("yn","炔")`）/`ene_base`/`ene_special`（俗名钩子）/`yne_suf`/`ez_ene`/`ene_loc_omit`（环单烯省略位次）/`ene_omit_aware`
+- 环：`cyclic`（恒加 cyclo/环前缀）/`cyclic_unsat`/`zh_full`/`stem`（稠环/杂环词干覆盖）/`aromatic`（assembler 注入；醇→酚语义在此消费）
+- **`mult_ok`**（acid/alcohol/amine/ketone=True）— 数量后缀由 `_generated_mult_fields`（`273`）生成：`MULT[m]`+基础后缀（diol/triol/tetraol…任意数量，无硬编码上限）；`mult_zh_full`（醇/胺多 FG 中文保留"烷"）/`mult_unsat_polyol`（仅醇）
+- **`variant: dict[scaffold, dict[mult, dict]]`**（`{scaffold_id: {multiplicity: 生成式之上的特例字段覆盖}}`，`None` 键=开链）— acid 用 `{None:{2: 草酸俗名/炔禁/ene_single_min=3}}`；苯环保留名用 `{"benzene": {1: {plain_fn=phenol/benzoic…}}}`。`assembler._names_for` 按 `scaffold_id` 注入当前 scaffold 的 variant 子集后，`_chain_names` 见一维 `{mult: fields}`：多 FG（mult>1）先生成通用数量字段再覆盖特例；单 FG（mult==1）直接 `replace(spec, **extra)`
+- `wrap`（整体包裹 E/Z，alkane 用 `_with_ez`）
 
-**`_KIND_TABLE`**（`312-394`）现有 **11 个 `_Chain` entry**：`alcohol`、`ketone`、`alkane`、`acid`、`ester`、`thiol`、`amine`、`aldehyde`、`nitrile`、`anhydride`、`amide`。**已删除的组合 kind entry**：`cycloalkane`/`cycloalkene`/`cyclopolyene`/`cycloalcohol`/`cycloketone`/`cycloamine`/`cycloalkanediol`/`cycloalkanedione` 及数量派生 kind——纯烃环并入 `alkane`（cyclo 前缀由 assembler 按 scaffold_id 动态加），数量统一由 `multiplicity` + `mult_ok` 生成式承载。
+**`_KIND_TABLE`**（`363-441`）现有 **10 个 `_Chain` entry**：`alcohol`、`ketone`、`alkane`、`acid`、`ester`、`thiol`、`amine`、`aldehyde`、`nitrile`、`amide`。无 `anhydride` entry（L5 不产生酸酐链式名）及任何组合 kind——纯烃环用 `alkane`（cyclo 前缀由 assembler 按 scaffold_id 动态加），数量统一由 `multiplicity` + `mult_ok` 生成式承载。
 
 > **源:** `src/namepredict/layer5/chain_engine.py`
 
 ### 4. 母体名称派发 (`_names_for`)
 
-`_names_for`（`assembler.py:57-84`）是母体名称的核心派发函数：
+`_names_for`（`assembler.py:101-136`）是母体名称的核心派发函数：
 
-1. `kind == "acid"` 时先试 `_exocyclic_acid_names`（环外 COOH → `cyclohexanecarboxylic acid` / `naphthalene-1-carboxylic acid`，`33-54`）
-2. 查 `_KIND_TABLE.get(kind)`；命中则按 `scaffold_id` 运行时替换 spec：
-   - `sid in _RING_STEM`（naphthalene/indole/pyridine/quinoline/**benzene**）→ `replace(entry, stem=_RING_STEM[sid], ...)`；`_RING_STEM` 为三元组 `(en_stem, zh_stem, aromatic)`，**aromatic + alcohol → 注入 `zh_suf="酚"`**（苯酚系；萘/吡啶/吲哚/喹啉同，主路径自动，非 variant 特例）
-   - `sid == "carbocycle"` → `replace(entry, cyclic=True, ene_loc_omit=True, ...)`
-   - **按 scaffold 注入保留名 variant**：`sc_variant = entry.variant.get(sid)` → `replace(entry, variant=sc_variant)`（`76-78`）——苯环单 FG 取 `"benzene"` 键（phenol/benzoic/aniline…），开链取 `None` 键（acid 草酸）
+1. `kind == "acid"` 时先试 `_exocyclic_acid_names`（环外 COOH → `cyclohexanecarboxylic acid` / `naphthalene-1-carboxylic acid`，`46-70`）
+2. `kind == "amide"` 时先试 `_exocyclic_amide_names`（环外 CONH2 → `cyclohexanecarboxamide` / `naphthalene-1-carboxamide` / `-甲酰胺`，`73-98`；苯酰胺保留名由 chain_engine variant 处理，显式排除）
+3. 查 `_KIND_TABLE.get(kind)`；命中则按 `scaffold_id` 运行时替换 spec：
+   - `sid == "benzene" and kind == "alkane"` → 直接返回 `("benzene", "苯")`（无主 FG 纯苯）
+   - 保留 scaffold 词干（`_ring_stem`，`22-30`）→ `replace(entry, stem=(en_stem, zh_stem), coda="", omit_rule=lambda...: bool(omit), aromatic=True)`——IUPAC 词干去尾部 e（benzene 例外保留完整名），aromatic 使醇注入 `zh_suf="酚"`（苯酚系；萘/吡啶/吲哚/喹啉同，主路径自动）
+   - `sid == "carbocycle"` → `replace(entry, cyclic=True, ene_loc_omit=True, omit_rule=...)`（恒加 cyclo/环前缀）
+   - **按 scaffold 注入保留名 variant**：`sc_variant = entry.variant.get(sid)` → `replace(entry, variant=sc_variant)`（`128-130`）——苯环单 FG 取 `"benzene"` 键（phenol/benzoic/aniline…），开链取 `None` 键（acid 草酸）
    - 然后 `_chain_names(entry, n, numbered)`
-3. 非表内 kind 落到具体 worker：`"phenyl"`→("phenyl","苯基")、否则 `_parent_stem_names`
+4. 非表内 kind 落到具体 worker：`"phenyl"`→("phenyl","苯基")、否则 `_parent_stem_names`（取 parent.stem_en/stem_zh，`138-142`）
 
-> **源:** `src/namepredict/layer5/assembler.py:57-84`
+> **源:** `src/namepredict/layer5/assembler.py:101-136`
 
 ### 5. 双语词干表 (`stems.py`)
 
-`stems.py`（263 行）是整个 Layer5 的数据基础，提供 C1-C35+ 碳数范围的英中双语词干生成器：
+`stems.py`（177 行）提供烷烃英中双语词干生成器与盐/阴离子后缀。**stems 不提供 FG 词干派生函数**（`alcohol_en`/`acid_en`/`amide_en` 等不存在）——FG 名称由 chain_engine 用 `_en_stem` + `spec.en_suf`/`zh_suf` 直接拼接，stems 不为各官能团单独造词：
 
-**C1-C10：保留名/系统名基表。** 如 `methane`/`甲烷`、`propane`/`丙烷`。
-
-**C11-C19：半系统命名。** 英文复合词干（`undec`, `dodec`...），中文数字+烷（`十一烷`...）。`zh_num(n)` 生成中文数字。
-
-**C20+：乘性组合词干。** 英文按十位 (`icos`, `triacont`...) + 个位 (`hen`, `do`...) 组合，例如 C22 = `docos`。优先 `icos-` 而非旧式 `eicos-`。
-
-**FG 词干派生。** 从烷烃词干推导各官能团的英中名称（alcohol/acid/aldehyde/amide/nitrile/ester/acyl halide）。所有公开词干表通过 `_fill(fn, lo=1, hi=35)` 自动填充。
-
-**盐后缀支持：** `maybe_anion_names` 将羧酸转为羧酸根；`maybe_metal_salt_names` 处理碱性金属盐和盐酸盐。
+- **C1-C10：保留名/系统名基表。** `_ALKANE_EN_BASE`/`_ALKANE_ZH_BASE`（`8-15`）：`methane`/`甲烷`、`propane`/`丙烷`...
+- **C11-C19：半系统命名。** `_SEMI_EN`（`16-19`）英文复合词干（`undec`, `dodec`...）；中文 `zh_num(n)` 生成中文数字+烷（`十一烷`...）。
+- **C20+：乘性组合词干。** `_compose_en_stem`（`52-62`）按十位 (`icos`, `triacont`...) + 个位 (`hen`, `do`...) 组合，C22 = `docos`（优先 `icos-` 而非旧式 `eicos-`）。
+- **公开 API：** `ALKANE_EN`/`ALKANE_ZH`（`176-177`，`_fill` 自动填充 C1-C35）、`_en_stem`/`alkane_en`/`alkane_zh`/`zh_stem`/`zh_num`、`acid_to_anion_en`/`_zh`、`maybe_anion_names`（羧酸→羧酸根）、`maybe_metal_salt_names`（碱性金属盐和盐酸盐）。
 
 > **源:** `src/namepredict/layer5/stems.py`
 
 ### 6. 取代基前缀组装 (`assembler_prefixes.py`)
 
-`assembler_prefixes.py`（112 行）遵循 IUPAC P-14.5 规则：按取代基英文名字母序排列，重复基团用 di/tri/tetra 合并位次号。
+`assembler_prefixes.py`（163 行）遵循 IUPAC P-14.5 规则：按取代基英文名字母序排列，重复基团用 di/tri/tetra 合并位次号。
 
-核心函数 `_build_prefix(substituents, n_carbons, kind)`：`_group_by_stem` 分组 → `_locant_str` 位次合并 → 多重度前缀（di/tri/tetra，carboxy 用 bis/tris）→ `_omit_sub_locants` 位次省略 → `_stem_needs_paren` 括号规则 → `_sorted_stems` 字母序排列（用 `alkyl_alpha_key`，与 Layer3 共享同一排序键）。
+核心函数 `_build_prefix(substituents, n_carbons, kind, scaffold, has_ene)`（`144-156`）：滤 O 侧 → `_omit_sub_locants` 位次省略（环烷烃/苯单取代、酰胺 N- 等）→ `_group_by_stem` 分组 → `_locant_str` 位次合并 → 多重度前缀（di/tri/tetra，carboxy 用 bis/tris）→ `_stem_needs_paren` 括号规则 → `_sorted_stems` 字母序排列（用 `alkyl_alpha_key`，与 Layer3 共享同一排序键）。
+
+**N- 前缀（P-62.2 胺 N 端取代基）**：`_N_PREFIX_KINDS = {n_alkyl, n_phenyl, n_benzyl, n_block}`（`101`）。当取代基 kind 命中时，`_parts_for_stem` 走 `_n_prefix_en`/`_n_prefix_zh`（`109-122`）——输出 `N-methyl`/`N,N-dimethyl`/`N,N,N-trimethyl`（英文）/`N-甲基`/`N,N-二甲基`（中文），强制省略位次（N 附着在 N 上而非链上）。这是 8584795 新增的胺 N- 命名支持。
 
 > **源:** `src/namepredict/layer5/assembler_prefixes.py`
 
-### 7. 苯/芳烃/杂环母体命名 (`benzene_names.py`)
+### 7. 名称拼接 (`join_kind_name`)
 
-`benzene_names.py`（90 行）提供苯系/杂环母体的拼接与命名助手：
+`join_kind_name`（`assembler.py:177-186`）是前缀与母体的拼接函数，处理三种拼接模式：酯类拼接（`join_ester_name`，`163-174`）、常规拼接（`join_parent_name`，`155-161`，前缀-母体用连字符，数字/`1H-` 开头需连字符）。中文额外处理 `1H-` 前缀（`zh_1h_parent`，`189-193`）。酯命名统一走 `join_ester_name`（无独立苯甲酸酯拼接）。
 
-- `benzene_prefix` / `join_parent_name` — 前缀与父名拼接（含 stereo lead 保留）
-- `_ester_alkoxy_from` — 酯 O 侧烷基：线性走 `parent.alkoxy_n` 保留名表，特殊基团回落 o_side 取代基
-- `join_ester_name`（methyl butanoate / 丁酸甲酯）、`join_benzoate_name`（ethyl 4-chlorobenzoate / 4-氯苯甲酸乙酯）、`join_kind_name`（酯/苯甲酸酯分流）
-- `zh_1h_parent` — 中文 1H- 保留名加前缀
-
-**isocyanato/isothiocyanatobenzene 命名去向**：`iso_arene_names.py` 删除后，L5 不再有独立的 iso-芳烃保留名函数。它们现由**取代基前缀路径**处理——`tools/anchored_table.py:111-112` 定义锚定叶基团 `"*N=C=O" → ("isocyanato","异氰酸根合")`、`"*N=C=S" → ("isothiocyanato",…)`，`layer3/claim_extract.py:21` 把它们作为取代基 kind 映射。`isocyanatobenzene` 由「取代基前缀 isocyanato + 苯母体」拼出。
-
-> **源:** `src/namepredict/layer5/benzene_names.py`
+> 注：`benzene_names.py` 不存在——苯/芳烃/杂环母体拼接函数全部位于 `assembler.py`。
 
 ### 8. 立体化学 (`stereo.py`)
 
-`stereo.py`（235 行）合并了原 `stereo_rs.py`/`stereo_ez.py`/`_stereo_common.py` 三个模块（同一立体前缀簇），顶部共享 `_split_stereo_lead` 立体块切分器。按两个注释分区组织：
+`stereo.py`（244 行）承担全部立体前缀（E/Z 与 CIP R/S 同一模块），顶部共享 `_split_stereo_lead` 立体块切分器。按两个注释分区组织：
 
 **E/Z 段**（P-91.2/P-93.4）：`_ez_prefix`（单烯）、`_ez_multi_prefix`（多烯 `(2E,6Z)-`）、`ez_for_parent`（多烯走 `_ez_multi_prefix`，否则 `_ez_prefix`）。
 
 **R/S 段**（P-92/P-93）：`_assign_cip`（`Chem.AssignStereochemistry(force=True, cleanIt=True)`）、`_cip_on_chain`（沿母体 chain 检测 `_CIPCode` 手性中心）、`_parse_stereo`/`_format_stereo`/`_merge_parts`（按"先 E/Z 后 R/S"、同类型按位次排序合并）、`_ester_en_rs`（酯在烷基词后插 `(2S)-`）、`apply_rs_prefix`（顶层入口）。
 
-对外被 chain_engine（`_ez_prefix`、`ez_for_parent`）、unsat_acid（`_ez_prefix`）、benzene_names（`_split_stereo_lead`）、assembler（`apply_rs_prefix`）使用。
+对外被 chain_engine（`_ez_prefix`、`ez_for_parent`）与 assembler（`apply_rs_prefix`、`_split_stereo_lead`）使用。
 
 > **源:** `src/namepredict/layer5/stereo.py`
-
-### 9. 不饱和体系的母体命名 (`unsat_acid.py`)
-
-`unsat_acid.py`（42 行）是烯酸/烯酰胺命名助手，被 chain_engine 消费：
-
-- `_unsat_acid_pair(n, locant, ez, en_sfx, zh_sfx, min_n=2)` — 通用烯酸名对构造
-- `alkenamide_names(n, numbered)` — 丙烯酰胺保留名 + `(E)-but-2-enamide` 等；作为 chain_engine `amide` entry 的 `ene_special` 钩子
-- `_has_ene`/`_has_yne` — 不饱和检测，供 chain_engine `_chain_unsat` 判断是否进入烯/炔段引擎
-
-醇/酮的多不饱和词干拼接（`but-2-ene-1,4-diol`）由 chain_engine 的 `_chain_polyol_stem`（`190-216`）负责。
-
-> **源:** `src/namepredict/layer5/unsat_acid.py`
-
-### 10. 名称拼接 (`join_kind_name`)
-
-`join_kind_name` 是前缀与母体的拼接函数（`benzene_names.py`），处理三种拼接模式：酯类拼接（`join_ester_name`）、苯甲酸酯拼接（`join_benzoate_name`）、常规拼接（`join_parent_name`，前缀-母体用连字符，数字/`1H-` 开头需连字符）。中文额外处理 `1H-` 前缀（`zh_1h_parent`）。
 
 ---
 
 ## 文件清单
 
-### 核心组装
-
 | 文件 | 行数 | 说明 |
 |------|------|------|
-| `src/namepredict/layer5/__init__.py` | 5 | 包入口，导出 `assemble` |
-| `src/namepredict/layer5/assembler.py` | 137 | 主组装器：`_typed_expression_kind` 收敛 + `_names_for` 派发（`_KIND_TABLE` 查表 + scaffold_id 运行时替换 + worker）+ 名称变换流水线 |
-| `src/namepredict/layer5/assembler_prefixes.py` | 112 | 取代基前缀：分组、位次合并、字母序排列 |
-| `src/namepredict/layer5/chain_engine.py` | 365 | **链式词干引擎**：`_Chain` spec + `_KIND_TABLE`（15 个 entry）+ `_chain_names` 统一渲染（variant 按 multiplicity 派生数量后缀） |
-| `src/namepredict/layer5/typed_kinds.py` | 138 | **kind 正交化收敛**：`_typed_*_kind` 恒基团名、苯保留名 `_BENZENE_RETAINED`、scaffold_id 环系判断 |
+| `__init__.py` | 6 | 包入口，导出 `assemble` |
+| `assembler.py` | 208 | **主组装器**：`_names_for` 派发（`_KIND_TABLE` 查表 + scaffold_id 运行时替换 + exocyclic acid/amide worker）+ 名称变换流水线 + join_kind_name 拼接 |
+| `assembler_prefixes.py` | 163 | 取代基前缀：分组、位次合并、字母序排列、N- 前缀 |
+| `chain_engine.py` | 441 | **链式词干引擎**：`_Chain` spec + `_KIND_TABLE`（10 个 entry）+ `_chain_names` 统一渲染（variant 按 multiplicity 派生数量后缀） |
+| `stems.py` | 177 | 烷烃双语词干生成器 + 盐/阴离子后缀（FG 名称由 chain_engine 拼接） |
+| `stereo.py` | 244 | **E/Z + R/S 立体前缀**（单模块） |
 
-### 词干表 / 母体命名
-
-| 文件 | 行数 | 说明 |
-|------|------|------|
-| `src/namepredict/layer5/stems.py` | 263 | C1-C35+ 英中双语烷烃及 FG 词干生成器，盐后缀支持 |
-| `src/namepredict/layer5/benzene_names.py` | 90 | 苯/芳烃/杂环母体：join_kind_name、酯/苯甲酸酯拼接、`_ARENE_RETAINED_NAMES` |
-
-### 立体化学 / 不饱和体系
-
-| 文件 | 行数 | 说明 |
-|------|------|------|
-| `src/namepredict/layer5/stereo.py` | 235 | **E/Z + R/S 立体前缀**（原 stereo_rs/stereo_ez/_stereo_common 三合一） |
-| `src/namepredict/layer5/unsat_acid.py` | 42 | 烯酰胺保留名 + 不饱和酸助手（chain_engine `ene_special` 钩子） |
-
-> 已删除: `acyl_halide_names.py`（酰卤前缀判断）、`iso_arene_names.py`（iso-芳烃保留名，isocyanato/isothiocyanato 改走取代基前缀）、`stereo_rs.py`/`stereo_ez.py`/`_stereo_common.py`（并入 stereo.py）、`free_to_yl.py`（移至 `tools/free_to_yl.py`）。
+> 备注：layer5 只有以上 6 个模块。`typed_kinds.py`/`benzene_names.py`/`unsat_acid.py`/`acyl_halide_names.py`/`iso_arene_names.py` 均不存在（kind 收敛在 L2 `_chain_kind`；拼接在 assembler.py；烯酰胺命名由 `_exocyclic_amide_names` + chain_engine amide entry 承担；isocyanato/isothiocyanato 走取代基前缀；`free_to_yl` 在 `tools/free_to_yl.py`）。
 
 ### 跨层依赖
 
@@ -218,25 +167,26 @@ layer5 **不再直接 import layer2 或 tools**。全部外部 import 仅：`con
 
 ```mermaid
 flowchart TD
-    NUMBERED["numbered dict\n(Layer4 输出)"] --> ASSEMBLE["assemble()\nassembler.py:98"]
+    NUMBERED["numbered dict\n(Layer4 输出)"] --> ASSEMBLE["assemble()\nassembler.py:196"]
 
-    ASSEMBLE --> TYPED["_typed_expression_kind\n typed_kinds.py\nacid→acid / alcohol→alcohol\namine→amine / ketone→dione\n(数量收敛; 苯保留名由 chain_engine variant 输出)"]
+    ASSEMBLE --> NAMES_FOR["_names_for(kind, n, numbered)\nassembler.py:101"]
 
-    TYPED --> NAMES_FOR["_names_for(kind, n, numbered)\nassembler.py:57"]
-
-    NAMES_FOR --> EXO{"acid + 环外?"}
-    EXO -->|"是"| EXONAME["_exocyclic_acid_names\ncyclohexanecarboxylic acid"]
-    EXO -->|"否"| CHAIN{"_KIND_TABLE\n链引擎?"}
-    CHAIN -->|"15 种链 kind"| ENG["_chain_names\nchain_engine.py\n词干 + 烯/炔段 + 位次 + 环前缀\n+ variant 数量后缀 (数据驱动)"]
+    NAMES_FOR --> EXO_ACID{"kind == acid\n+ 环外?"}
+    EXO_ACID -->|"是"| EXOACID["_exocyclic_acid_names\ncyclohexanecarboxylic acid"]
+    EXO_ACID -->|"否"| EXO_AMIDE{"kind == amide\n+ 环外?"}
+    EXO_AMIDE -->|"是"| EXOAMIDE["_exocyclic_amide_names\ncyclohexanecarboxamide"]
+    EXO_AMIDE -->|"否"| CHAIN{"_KIND_TABLE\n链引擎?"}
+    CHAIN -->|"10 种链 kind"| ENG["_chain_names\nchain_engine.py\n词干 + 烯/炔段 + 位次 + 环前缀\n+ variant 数量后缀 (数据驱动)"]
     CHAIN -->|"special worker"| WORKER["phenyl / benzene\n_parent_stem_names"]
 
     ENG --> PARENT_NAME["(en, zh) 母体名称"]
     WORKER --> PARENT_NAME
-    EXONAME --> PARENT_NAME
+    EXOACID --> PARENT_NAME
+    EXOAMIDE --> PARENT_NAME
 
-    ASSEMBLE --> PREFIX["_prefix_for(numbered, kind, n)\nassembler_prefixes.py\n分组/位次合并/字母序"]
+    ASSEMBLE --> PREFIX["_prefix_for(numbered, kind, n)\nassembler_prefixes.py\n分组/位次合并/字母序/N-前缀"]
 
-    PARENT_NAME --> JOIN["join_kind_name(kind, pre, names)\nbenzene_names.py\n酯/苯甲酸酯/常规拼接"]
+    PARENT_NAME --> JOIN["join_kind_name(kind, pre, names)\nassembler.py:177\n酯/常规拼接"]
     PREFIX --> JOIN
 
     JOIN --> ANION["maybe_anion_names\nstems.py\n羧酸→羧酸根"]
@@ -247,7 +197,7 @@ flowchart TD
     style NUMBERED fill:#e1f5fe
     style RESULT fill:#c8e6c9
     style CHAIN fill:#fff3e0
-    style TYPED fill:#f3e5f5
+    style EXO_AMIDE fill:#f3e5f5
 ```
 
 ---

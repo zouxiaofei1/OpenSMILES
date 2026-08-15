@@ -42,9 +42,9 @@ graph TD
 
 **全称**: Functional Group Information Dictionary（官能团信息字典）
 
-**产出**: `analyze(mol)` in `src/namepredict/layer1/analyzer.py:383-384`
+**产出**: `analyze(mol)` in `src/namepredict/layer1/analyzer.py:453`
 
-**构建**: `_info(mol, carbons, fgs)` at `analyzer.py:380-382`，由三层合并：
+**构建**: `_info(mol, carbons, fgs)` at `analyzer.py:448`，由三层合并：
 - `base`: `mol`, `carbon_ids`, `n_carbons`
 - `fgs`: 所有 FG 条目列表 + 布尔标志 + `fg_inventory`（`_collect_fgs`）
 - `_ring_meta(mol)`: 环系元信息
@@ -61,7 +61,7 @@ graph TD
 
 ### 官能团条目列表（FG entry lists）
 
-每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 20 个列表键（来自 `_fg_parts` at `analyzer.py:362-373`）：
+每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 20 个列表键（来自 `_fg_parts` at `analyzer.py:427`）：
 
 | 键名 | 条目 dict 典型字段 | 来源 |
 |---|---|---|
@@ -90,7 +90,7 @@ graph TD
 
 ### 布尔标志（Boolean flags）
 
-对应 `_fg_bools(lists)` at `analyzer.py:352-359`，每个 `has_*` 标志 = `bool(对应的 FG 列表)`。共 **18 个**：
+对应 `_fg_bools(lists)` at `analyzer.py:416`，每个 `has_*` 标志 = `bool(对应的 FG 列表)`。共 **18 个**：
 
 | 标志 | 对应列表 | 标志 | 对应列表 |
 |---|---|---|---|
@@ -167,7 +167,7 @@ graph TD
 
 **全称**: Ownership-Only Claimable Side Block
 
-**定义**: `src/namepredict/layer3/claimable_block.py:20-25`
+**定义**: `src/namepredict/layer3/claimable_block.py:21-27`
 
 **用途**: 描述 parent 未覆盖的一个"外侧"原子组件（side block），仅记录拓扑归属信息，不含名称。Layer 3 基于 ClaimedBlock 生成 `SubstituentName`。
 
@@ -182,25 +182,26 @@ class ClaimedBlock:
 
 ### SideSlot 枚举
 
-定义于 `layer3/claimable_block.py:12-17`：
+定义于 `layer3/claimable_block.py:12-18`：
 
 | 值 | 含义 |
 |---|---|
 | `CHAIN_C` | 附着于母体链上的碳原子 |
 | `RING_C` | 附着于母体环上的碳原子 |
 | `AMIDE_N` | 附着于酰胺氮（母体拥有羰基，侧块从氮延伸） |
+| `AMINE_N` | 附着于胺氮（8584795 新增；非芳香 N，至少一个 owned 内非羰基碳邻居 → N- 前缀） |
 | `ETHER_O` | 附着于醚氧 |
 | `OTHER` | 其他类型（如杂原子附着） |
 
 ### 产出函数
 
-`iter_claims(mol, owned_atoms)` at `layer3/claimable_block.py:152-159`：遍历所有外侧重原子组件，为每个组件确定 canonical edge `(attach_parent, root)` 和 slot，返回排序后的 `list[ClaimedBlock]`。
+`iter_claims(mol, owned_atoms)` at `layer3/claimable_block.py:172-179`：遍历所有外侧重原子组件，为每个组件确定 canonical edge `(attach_parent, root)` 和 slot，返回排序后的 `list[ClaimedBlock]`。
 
 ---
 
 ## 4. SubstituentName（L3 内部类型）
 
-**定义**: `src/namepredict/layer3/substituent_namer.py:14-19`
+**定义**: `src/namepredict/layer3/substituent_namer.py:13-19`
 
 **用途**: ClaimedBlock 经过命名后的结果，包含中英文名称和书写规则。
 
@@ -210,10 +211,10 @@ class SubstituentName:
     en: str                    # 英文取代基名称（如 "methyl", "chloro"）
     zh: str                    # 中文取代基名称（如 "甲基", "氯"）
     requires_parentheses: bool # 命名时是否需要括号（如复合取代基）
-    backend: str               # 命名后端: "retained" / "rooted_tree" / "recursive"
+    backend: str               # 命名后端: "retained" / "recursive"
 ```
 
-**产出**: `SubstituentNamer.name(mol, claim)` at `substituent_namer.py:328-333`，依次尝试 retained -> rooted_tree -> recursive 三个后端，返回第一个成功的结果。
+**产出**: `SubstituentNamer.name(mol, claim)` at `substituent_namer.py:103-109`，依次尝试 retained -> recursive 两个后端（无 RootedTreeBackend），返回第一个成功的结果。
 
 ---
 
@@ -229,7 +230,7 @@ class SubstituentName:
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `kind` | `str` | 取代基类型（如 `"alkyl"`, `"alkoxy"`, `"halo"`, `"hydroxy"` 等） |
+| `kind` | `str` | 取代基类型（如 `"alkyl"`, `"alkoxy"`, `"halo"`, `"hydroxy"`, `"n_alkyl"`, `"n_phenyl"` 等） |
 | `en` | `str` | 英文名称（如 `"methyl"`, `"chloro"`, `"hydroxy"`） |
 | `zh` | `str` | 中文名称（如 `"甲基"`, `"氯"`, `"羟基"`） |
 | `attach_idx` | `int` | 附着于母体链上的 atom index（用于编号定位） |
@@ -237,12 +238,13 @@ class SubstituentName:
 | `paren` | `bool` | 命名时是否需要括号包裹 |
 | `n_carbons` | `int` | 取代基中的碳原子数（影响排序优先级） |
 | `backend` | `str` | 命名后端标识 |
+| `o_side` | `bool` | 是否酯 O 侧烷基臂（L5 `join_ester_name` 消费） |
 
 ### L4 注入字段
 
 | 字段 | 类型 | 注入方 | 说明 |
 |---|---|---|---|
-| `locant` | `int` / `str` | `_with_locants()` at `locant_calc.py:93-94` | 该取代基在母体链上的位次编号 |
+| `locant` | `int` / `str` | `_with_locants()` at `locant_calc.py:130` | 该取代基在母体链上的位次编号 |
 
 ---
 
@@ -277,9 +279,9 @@ class CoverageLedger:
 
 **全称**: Numbered Structure Dictionary（编号结构字典）
 
-**产出**: `number(parent, substituents)` at `src/namepredict/layer4/numbering.py:5-15`
+**产出**: `number(parent, substituents)` at `src/namepredict/layer4/numbering.py`
 
-**构建**: `_pack(oriented, subs_with_locants)` at `locant_calc.py:164-173`
+**构建**: `_pack(oriented, subs_with_locants)` at `locant_calc.py:233`
 
 ### 结构
 
@@ -307,22 +309,22 @@ class CoverageLedger:
 
 ```python
 {
-    "kind":     "oh" | "amine" | "ketone" | "sh" | "acid",  # FG 类别 (来自 principal_expression_facts.group_class 映射)
-    "locants":  list[int],   # 统一列表 (单 FG 也是 [x]); 由挂载原子经 chain/plan 换算
+    "kind":     "oh" | "amine" | "ketone" | "sh" | "acid" | "amide",  # FG 类别 (来自 principal_expression_facts.group_class 映射)
+    "locants":  list[int],   # 统一列表 (单 FG 也是 [x]); 由挂载原子经 chain 换算
     "omit":     bool,        # L4 omit_locants.py 规则算好的省略标志
 }
 ```
 
 ### locant 字段详解
 
-`_fg_locants()` at `src/namepredict/layer4/locant_calc.py` 数据驱动（`_FG_LOCANTS` 表）产出 `fg_locants` 稀疏列表——只产实际存在的 principal FG（oh/amine/ketone/sh/acid），cooh 不产（单/多酸位次隐含，死字段清理）。烯/炔位次由 `_unsat_locants()` 独立产出为扁平字段：
+`_fg_locants()` at `src/namepredict/layer4/locant_calc.py` 数据驱动（`_FG_LOCANTS` 表，`locant_calc.py:217-223`）产出 `fg_locants` 稀疏列表——只产实际存在的 principal FG（oh/amine/ketone/sh/acid/amide），cooh 不产（单/多酸位次隐含，死字段清理）。`amide` 记录为 8584795 新增（exocyclic 酰胺取环上附着原子）。烯/炔位次由 `_unsat_locants()` 独立产出为扁平字段：
 
 | 产出方 | 内容 |
 |---|---|
-| `_fg_locants()` at `locant_calc.py`（`_FG_LOCANTS` 数据表 `:145-151`） | `fg_locants`: [{kind, locants, omit}] — 稀疏, 只含实际存在的 principal FG |
-| `_unsat_locants()` at `locant_calc.py:95-103` | `ene_locant`, `ene_locants`, `omit_ene_locant`, `yne_locant`, `omit_yne_locant` |
+| `_fg_locants()` at `locant_calc.py`（`_FG_LOCANTS` 数据表 `:217-223`） | `fg_locants`: [{kind, locants, omit}] — 稀疏, 只含实际存在的 principal FG |
+| `_unsat_locants()` at `locant_calc.py:144` | `ene_locant`, `ene_locants`, `omit_ene_locant`, `yne_locant`, `omit_yne_locant` |
 
-`_with_locants()`（注入取代基 locant）位于 `locant_calc.py:93-94`。
+`_with_locants()`（注入取代基 locant）位于 `locant_calc.py:130`。
 
 ---
 
@@ -385,12 +387,10 @@ class NameResult:
 
 - [[architecture/layer0-preprocessor]] — 预处理与盐拆分
 - [[architecture/layer1-analyzer]] — FG 分析器详解
-- [[architecture/layer2-parent-selector]] — 母体选择器详解（核心）
+- [[architecture/layer2-parent-selector]] — 母体选择器详解（核心）与优先级
 - [[architecture/layer3-substituents]] — 取代基提取与命名
 - [[architecture/layer4-numbering]] — 编号与定位符分配
 - [[architecture/layer5-name-assembly]] — 中英双语名称组装
-- [[concepts/parent-selection]] — 母体选择规则与优先级
-- [[concepts/functional-groups]] — 官能团分类与优先级表
-- [[concepts/iupac-rules]] — IUPAC 蓝皮书规则映射
+- [[concepts/functional-group-priority]] — 官能团分类与优先级表
 - [[concepts/bilingual-naming]] — 中英双语命名约定
 - [[index]] — Wiki 首页

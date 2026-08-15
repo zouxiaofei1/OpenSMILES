@@ -10,7 +10,7 @@
 
 我们以 **thiol（硫醇，R-SH）** 作为工作示例——它是已实现的中优先级（`fg_rank=4`）SUFFIX 类链状 FG，代表"检测于 analyzer.py 内联 + SUFFIX 档母体 + `_KIND_TABLE` 命名"的标准路径。
 
-> 2026-08 重构后，新增 FG 比旧架构简单得多：`_no_fgs` 互斥检查已删除、L4 orienter 注册已不需要、组合 kind 已根除。核心是三步：**L1 检测 → L2 `PRINCIPAL_REGISTRY`/`_CHAIN_KINDS` → L5 `_KIND_TABLE`**。
+> 新增 FG 的核心是三步：**L1 检测 → L2 `PRINCIPAL_REGISTRY`/`_CHAIN_FG` → L5 `_KIND_TABLE`**。无 `_no_fgs` 互斥检查、L4 orienter 注册、组合 kind。
 
 在开始之前，建议先阅读 [[concepts/functional-group-priority]] 了解 FG 优先级体系，以及 [[architecture/overview]] 了解 6 层管线架构。
 
@@ -54,26 +54,25 @@ def _thiol_entries(mol: Mol) -> list[dict]:
 
 ### 2.1 注册 fg_rank
 
-`fg_rank` 的单一权威是 `src/namepredict/layer2/principal.py` 的 `PRINCIPAL_REGISTRY`（FG → `PrincipalFeatureSpec.compatibility_rank`，遵循 IUPAC P-41 顺序）；`kind_registry.py` 的 `_KIND_CLASS` 表把 kind 字符串映射到 FG 枚举，`_load_chain_fg()` 遍历其 keys 注册。新增 chain FG 分两步：
+`fg_rank` 的单一权威是 `src/namepredict/layer2/principal.py` 的 `PRINCIPAL_REGISTRY`（FG → `PrincipalFeatureSpec.compatibility_rank`，遵循 IUPAC P-41 顺序）。`kind_registry` 通过 `_principal_rank`（`kind_registry.py:18`）把 kind 字符串转 FG 枚举后取 `legacy_rank` 实时投影，无预注册表（`_KIND_CLASS`/`_load_chain_fg` 不存在）。新增 chain FG 只需：
 
 1. 在 `PRINCIPAL_REGISTRY` 中注册该 FG 的 `PrincipalFeatureSpec`。SUFFIX 档用 `_suffix(p41_class, rank, *path)`（如 `FG.THIOL: _suffix(17, 4, 2)`）；非 SUFFIX 类（如 sulfide/ether）用 `PrincipalFeatureSpec(..., PrincipalExpression.LEGACY_COMPAT/PREFIX_ONLY, rank)`
-2. 在 `kind_registry.py` 的 `_KIND_CLASS` 中补 kind→FG 映射（如 `"thiol": FG.THIOL`）
 
 ### 2.2 母体接线（按表达权限分档）
 
-**SUFFIX 档**（acid/ester/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine）：在 `principal_expression.py` 的 `_CHAIN_KINDS`（`:36-46`）中声明 kind 与多重度：
+**SUFFIX 档**（acid/ester/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine）：`principal_expression.py` 的 `_CHAIN_FG`（`:41`）限定 8 类可链式表达的 FG，`_chain_kind`（`:65`）按类别与多重度返回 kind：
 
 ```python
-THIOL: {1: "thiol"},
+# _CHAIN_FG 含该 FG 类即自动支持；_chain_kind 返回 group_class.value
 ```
 
-> 正交化后：ACID/ALCOHOL/AMINE 任意 count≥1 恒返回基团名（数量由 `principal_expression_facts.multiplicity` 承载），仅 KETONE 保留 `count==2 → "dione"`。新增 SUFFIX FG 若属同类，照此模式。
+> ACID/ALCOHOL/AMINE/KETONE 任意 count≥1 恒返回基团名（`_MULTI_FG`，数量由 `principal_expression_facts.multiplicity` 承载）；ESTER/AMIDE/NITRILE/ALDEHYDE 仅单基（count≠1 → None）。`dione` 不再由 L2 产生，二酮由 L5 chain_engine `mult_ok` 生成式命名。新增 SUFFIX FG 若属同类，把其类别加进 `_CHAIN_FG` 即可。
 
 **LEGACY_COMPAT 档**（sulfide 等非 SUFFIX 类）：`compatibility_rank` 经 `_principal_rank` 投影为 `fg_rank`，但**不参与主官能团选择**（`principal_spec()` 只放行 SUFFIX）——纯醚/纯亚砜类分子会落入纯烃兜底。
 
 ### 2.3 互斥检查（无需改动）
 
-**`_no_fgs` 互斥谓词已删除**（`fg_helpers.py` 整个文件移除）。互斥由 `select_principal_group` 的结构性单选择实现：P-44 只选单个最高优先级主官能团，低优先级 FG 一律成为取代基。新增 FG 无需配置互斥 keys。
+无 `_no_fgs` 互斥谓词（无 `fg_helpers.py`）。互斥由 `select_principal_group` 的结构性单选择实现：P-44 只选单个最高优先级主官能团，低优先级 FG 一律成为取代基。新增 FG 无需配置互斥 keys。
 
 ### 2.4 添加 ownership 逻辑
 
@@ -128,13 +127,13 @@ Layer5 的母体命名以 `chain_engine.py` 的 **`_KIND_TABLE`** 链引擎为�
 
 **方式 B：特殊拼接 → 在 `_names_for` 添加 worker 分支。** 如 `_exocyclic_acid_names`（`assembler.py:55-76`）、`_sulfide_names` 等。
 
-### 5.2 kind 收敛（如需）
+### 5.2 kind 收敛（无需改动）
 
-`typed_kinds.py` 把 L2 kind 收敛为 FG 类别。链式 FG 在 `_typed_*_kind` 恒返回基团名；若新 FG 是环/苯组合，需在 `_RING_FG_SCAFFOLDS` 或 `_BENZENE_RETAINED` 中登记。
+kind 收敛在 L2 `_chain_kind`，L5 直接按 FG 类别 kind 查 `_KIND_TABLE`（无 `typed_kinds` 模块）。链式 FG 只需加进 `_CHAIN_FG`；若新 FG 是环/苯组合保留名，在 `_KIND_TABLE` 对应 entry 的 `variant` 中登记 `{"benzene": {1: {plain_fn=...}}}` 特例。
 
 ### 5.3 接线到组装流水线
 
-`_names_for` 返回 `(en, zh)` 后，由 `assemble`（`assembler.py:129`）统一完成后续变换——`join_kind_name` 拼接前缀、`maybe_anion_names` 阴离子、`apply_rs_prefix` 立体前缀、`maybe_metal_salt_names` 盐后缀——无需为单个 FG 手动接线。
+`_names_for` 返回 `(en, zh)` 后，由 `assemble`（`assembler.py:196`）统一完成后续变换——`join_kind_name` 拼接前缀、`maybe_anion_names` 阴离子、`apply_rs_prefix` 立体前缀、`maybe_metal_salt_names` 盐后缀——无需为单个 FG 手动接线。
 
 ---
 
@@ -160,13 +159,12 @@ Layer5 的母体命名以 `chain_engine.py` 的 **`_KIND_TABLE`** 链引擎为�
 | L1 | `_carbonyl_common.py` | 共享羰基原语（如涉及 C=O） |
 | L1 | `functional_group_inventory.py` | `FunctionalGroupClass` + `_LIST_CLASSES` + `_ANCHOR_KEYS`（如需类型化类别） |
 | L2 | `principal.py:PRINCIPAL_REGISTRY` | `PrincipalFeatureSpec`（`_suffix` 或 `LEGACY_COMPAT`） |
-| L2 | `kind_registry.py:_KIND_CLASS` | kind→FG 映射 |
-| L2 | `principal_expression.py:_CHAIN_KINDS` | kind 表达表（SUFFIX 类） |
+| L2 | `kind_registry.py` | fg_rank 投影（`_principal_rank`） |
+| L2 | `principal_expression.py:_CHAIN_FG` | 链式 FG 类别集合（SUFFIX 类） |
 | L2 | `parent_ownership.py:_kind_fg_atoms` | FG heteroatom ownership 函数 |
 | L3/tools | `tools/anchored_table.py` | 前缀名注册（如需） |
 | L4 | `omit_locants.py` | 省略位次规则（如需；numbering_engine 无需注册） |
 | L5 | `chain_engine.py:_KIND_TABLE` | `_Chain` spec |
-| L5 | `typed_kinds.py` | kind 收敛（如需） |
 | L5 | `assembler.py:_names_for` | worker 分支（特殊拼接） |
 
 ---
@@ -176,7 +174,7 @@ Layer5 的母体命名以 `chain_engine.py` 的 **`_KIND_TABLE`** 链引擎为�
 1. **忘记添加 `has_*` 布尔键**：如果 `_fg_bools` 中没有映射，L2 无法感知该 FG，母体选择会漏掉它。
 2. **fg_rank 设置错误**：fg_rank 决定评分优先级与 suffix 资格。SUFFIX 类才能成为主官能团。
 3. **ownership 遗漏**：如果 FG 包含 heteroatom（如 S, O, N），必须确保这些原子被标记为 `owned_atoms`。遗漏会导致这些原子被 Layer 3 误识别为"未被 parent 拥有"的取代基碎片。
-4. **数量派生 kind 不要造**：正交化后数量由 `multiplicity` 承载，`_KIND_TABLE` 的 `variant` 字段切换后缀——不要注册 `dithiol`/`trithiol` 之类的新 kind。
+4. **数量派生 kind 不要造**：数量由 `multiplicity` 承载，`_KIND_TABLE` 的 `variant` 字段切换后缀——不要注册 `dithiol`/`trithiol` 之类的新 kind。
 5. **中文命名约定不一致**：中文 stems 应遵循 IUPAC 中文命名规范（CCS 规则）。
 
 ---

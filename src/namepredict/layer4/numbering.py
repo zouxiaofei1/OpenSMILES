@@ -1,7 +1,7 @@
 """L4 编号入口：定向编号并组装最终 result 包。"""
 from __future__ import annotations
 from namepredict.layer4.numbering_engine import orient_numbering
-from namepredict.layer4.locant_calc import _amine_locant, _oh_locant, _pack, _sub_locant, _with_locants  # noqa: F401  （为测试转口导出）
+from namepredict.layer4.locant_calc import _pack, _with_locants
 
 
 def number(parent: dict, substituents: list) -> dict:

@@ -282,7 +282,5 @@ SMILES 字符串到 RDKit 分子对象的转换函数。返回 `None` 表示输�
 - [[architecture/overview]] — 6 层架构总览与层间数据流
 - [[architecture/layer1-analyzer]] — 下一层：官能团分析器（接收 Layer0 输出的 Mol）
 - [[architecture/layer5-name-assembly]] — 盐元数据的最终消费方：中英双语名称拼接
-- [[reference/api]] — `SMILESNNamer.name()` 公开 API
-- [[reference/molecule-model]] — `NameResult` 及 `meta` 字段结构
-- [[concepts/iupac-rules]] — IUPAC 功能类盐命名规则（functional class nomenclature）
+- [[reference/core-data-contracts]] — `NameResult` 及 `meta` 字段结构
 - [[index]] — Wiki 首页
