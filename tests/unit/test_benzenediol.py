@@ -15,6 +15,9 @@ from namepredict.namer import SMILESNNamer
 # ("smiles", "expected_en", "expected_zh_or_None")
 # zh=None skips Chinese assert (chebi rows without chinese gold).
 CASES = [
+    # positive: benzene-diol/triol 走主路径 _RING_STEM 词干 + aromatic 酚（非 variant）
+    ("Oc1ccccc1O", "benzene-1,2-diol", "苯-1,2-二酚"),
+    ("Oc1cc(O)cc(O)c1", "benzene-1,3,5-triol", "苯-1,3,5-三酚"),
     # negative: mono phenol, chain diol/triol, bare benzene, chain alcohol
     ("Oc1ccccc1", "phenol", "苯酚"),
     ("OCCO", "ethane-1,2-diol", "乙烷-1,2-二醇"),

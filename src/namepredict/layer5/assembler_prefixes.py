@@ -15,8 +15,7 @@ def _mult_en(n: int) -> str: return MULT_EN.get(n, "")
 def _mult_zh(n: int) -> str: return MULT_ZH.get(n, "")
 _KEEP_LOCANT_KINDS = frozenset({
     "acid",
-    "benzoic", "benzaldehyde", "acetophenone", "benzoate", "benzonitrile",
-    "benzoyl_chloride", "benzoyl_bromide", "benzamide",
+    "acetophenone", "benzoyl_chloride", "benzoyl_bromide",
 })
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None,
                       scaffold: str | None = None, has_ene: bool = False) -> bool:
@@ -28,7 +27,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         kind == "alkane" and scaffold in ("carbocycle", "benzene") and not has_ene
     ) and len(substituents) == 1:
         return True
-    if kind in ("amide", "benzamide"):
+    if kind == "amide":
         return {s.get("kind") for s in substituents} <= {
             "n_alkyl", "n_phenyl", "n_benzyl", "n_block",
         }

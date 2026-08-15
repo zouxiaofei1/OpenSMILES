@@ -176,11 +176,13 @@ class _Chain:
     zh_full: bool = False               # 中文词干保留完整烷烃后缀 "烷" (环烷/回落)
     wrap: object = None                 # (pair, numbered)->pair  整体包裹 (E/Z)
     unsat_polyol: bool = False          # 多 FG 词干支持烯/炔插入 (diol/triol: but-2-ene-1,4-diol)
-    variant: dict | None = None         # {multiplicity: 生成式之上的特例字段覆盖} — acid 草酸/烯二酸等
+    variant: dict | None = None         # {scaffold: {multiplicity: 生成式之上的特例字段覆盖}}; None 键=开链
+    # assembler._names_for 按 scaffold_id 注入后一维化; 苯环保留名 (phenol/benzoic…)、acid 草酸特例。
     stem: tuple | None = None           # (en_stem, zh_stem) — 稠环/杂环 scaffold 词干覆盖 (naphthalen/萘…)
     mult_ok: bool = False               # 支持数量后缀生成 (acid/alcohol/amine/ketone)
     mult_zh_full: bool = False          # 多 FG 中文词干保留完整 "烷" (醇/胺)
     mult_unsat_polyol: bool = False     # 多 FG 词干支持烯/炔插入 (仅醇)
+    aromatic: bool = False              # 芳香环 scaffold 标记 (由 assembler 注入); 醇→酚 语义在此消费
 
 def _chain_zh_base(n: int) -> str | None:
     z = alkane_zh(n)
@@ -247,13 +249,22 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
 
 def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None:
     """单链词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环; 烯/炔段插入由 spec 数据驱动."""
+    if spec.aromatic and spec.kind == "alcohol":
+        # 芳香环醇统一"酚"（苯酚系；萘/吡啶/吲哚/喹啉同），主路径自动，非 variant 特例。
+        spec = replace(spec, zh_suf="酚")
     mult = _parent_multiplicity(numbered)
-    if mult is not None and mult > 1 and spec.mult_ok:
-        var = _generated_mult_fields(spec, mult)
-        if var is None:
-            return None
-        var.update((spec.variant or {}).get(mult) or {})   # 特例覆盖 (acid 草酸/烯二酸)
-        spec = replace(spec, **var)
+    if mult is not None:
+        if mult > 1 and spec.mult_ok:
+            var = _generated_mult_fields(spec, mult)
+            if var is None:
+                return None
+            var.update((spec.variant or {}).get(mult) or {})   # 特例覆盖 (acid 草酸/烯二酸)
+            spec = replace(spec, **var)
+        elif mult == 1:
+            # 单 FG 保留名覆盖 (苯环 → phenol/benzoic 等); 开链/无该 scaffold variant 时空。
+            var = (spec.variant or {}).get(1)
+            if var:
+                spec = replace(spec, **var)
     alk = _alkane_names(n)
     if not alk:
         return None
@@ -307,7 +318,14 @@ _KIND_TABLE = {
                       fg="oh", need=1, omit_rule=_omit_term_locant,
                       plain_maps=(ALCOHOL_EN, ALCOHOL_ZH),
                       ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                      mult_ok=True, mult_zh_full=True, mult_unsat_polyol=True),
+                      mult_ok=True, mult_zh_full=True, mult_unsat_polyol=True,
+                      variant={
+                          "benzene": {
+                              # 仅保留名走 variant；苯环多羟基 (benzenediol/三酚…) 走主路径 _RING_STEM 词干 + aromatic 酚。
+                              1: dict(plain_maps=None, fg=None,
+                                      plain_fn=lambda n: ("phenol", "苯酚")),
+                          },
+                      }),
     "ketone": _Chain(kind="ketone", en_suf="one", zh_suf="酮",
                      fg="ketone", need=1, no_loc="none",
                      omit_rule=lambda n, loc, omit: n <= 2 and loc == 1,
@@ -323,30 +341,48 @@ _KIND_TABLE = {
                    ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
                    mult_ok=True,
                    variant={
-                       2: dict(plain_maps=({2: "oxalic acid"}, {2: "草酸"}),
-                               yne_suf=None, ene_single_min=3),
+                       None: {2: dict(plain_maps=({2: "oxalic acid"}, {2: "草酸"}),
+                                      yne_suf=None, ene_single_min=3)},
+                       "benzene": {1: dict(plain_maps=None,
+                                           plain_fn=lambda n: ("benzoic acid", "苯甲酸"))},
                    }),
     "ester": _Chain(kind="ester", en_suf="oate", zh_suf="酸",
                     plain_maps=(ESTER_ACYL_EN, ACID_ZH),
                     ene_base=("enoate", "烯酸"),
                     yne_suf=("ynoate", "炔酸"),
-                    ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent),
+                    ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
+                    variant={
+                        "benzene": {1: dict(plain_maps=None,
+                                            plain_fn=lambda n: ("benzoate", "苯甲酸"))},
+                    }),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
                     fg="sh", need=1, omit_rule=_omit_term_locant,
                     ene_seg=("ene", "烯"), yne_seg=("yne", "炔")),
     "amine": _Chain(kind="amine", en_suf="amine", zh_suf="胺",
                     fg="amine", need=1, omit_rule=_omit_term_locant,
-                    mult_ok=True, mult_zh_full=True),
+                    mult_ok=True, mult_zh_full=True,
+                    variant={
+                        "benzene": {1: dict(plain_maps=None, fg=None,
+                                            plain_fn=lambda n: ("aniline", "苯胺"))},
+                    }),
     "aldehyde": _Chain(kind="aldehyde", en_suf="anal", zh_suf="醛",
                        plain_maps=(ALDEHYDE_EN, ALDEHYDE_ZH),
                        ene_base=("enal", "烯醛"),
                        yne_suf=("ynal", "炔醛"),
-                       ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent),
+                       ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
+                       variant={
+                           "benzene": {1: dict(plain_maps=None,
+                                               plain_fn=lambda n: ("benzaldehyde", "苯甲醛"))},
+                       }),
     "nitrile": _Chain(kind="nitrile", en_suf="anenitrile", zh_suf="腈",
                       plain_maps=(NITRILE_EN, NITRILE_ZH),
                       ene_base=("enenitrile", "烯腈"),
                       yne_suf=("ynenitrile", "炔腈"),
-                      ez_ene=ez_for_parent),
+                      ez_ene=ez_for_parent,
+                      variant={
+                          "benzene": {1: dict(plain_maps=None,
+                                              plain_fn=lambda n: ("benzonitrile", "苯甲腈"))},
+                      }),
     "anhydride": _Chain(kind="anhydride", en_suf="", zh_suf="", coda="ane",
                         plain_fn=_anhydride_from_acid),
     "amide": _Chain(kind="amide", en_suf="amide", zh_suf="酰胺",
@@ -354,5 +390,9 @@ _KIND_TABLE = {
                     ene_base=("enamide", "烯酰胺"),
                     ene_special=alkenamide_names,
                     yne_suf=("ynamide", "炔酰胺"),
-                    ez_ene=_ez_prefix),
+                    ez_ene=_ez_prefix,
+                    variant={
+                        "benzene": {1: dict(plain_maps=None,
+                                            plain_fn=lambda n: ("benzamide", "苯甲酰胺"))},
+                    }),
 }

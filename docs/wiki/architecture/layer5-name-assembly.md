@@ -52,64 +52,64 @@ Layer5 的入口是 `assembler.py` 中的 `assemble` 函数（第 129 行）。�
 assemble(numbered)
   │
   ├─ 0. _typed_expression_kind(kind, numbered)   # typed_kinds.py — kind 正交化收敛
-  │      (acid→acid, alcohol→alcohol/苯→phenol, amine→amine/苯→aniline,
-  │       ketone→ketone/dione, 苯环单FG→保留名)
+  │      (acid→acid, alcohol→alcohol, amine→amine, ketone→ketone/dione;
+  │       苯环单FG 保留名由 chain_engine 苯 variant 输出: phenol/benzoic/aniline…)
   ├─ 1. _names_for(effective_kind, n, numbered)  # 母体名称 (en, zh)
   ├─ 2. _prefix_for(numbered, kind, n)          # 取代基前缀 (pre_en, pre_zh)
-  ├─ 3. join_kind_name(kind, pre, names)        # 拼接前缀+母体 (酯/苯甲酸酯有专属拼接)
+  ├─ 3. join_kind_name(kind, pre, names)        # 拼接前缀+母体 (酯专属拼接, zh 恒拼"酯")
   ├─ 4. maybe_anion_names(numbered, en, zh)     # 羧酸根阴离子后缀
   ├─ 5. apply_rs_prefix(numbered, en, zh)       # R/S 立体化学前缀
   └─ 6. maybe_metal_salt_names(...)             # 金属盐/盐酸盐后缀
        → NameResult(en, zh)
 ```
 
-> **源:** `src/namepredict/layer5/assembler.py:129`
+> **源:** `src/namepredict/layer5/assembler.py:98`
 
 ### 2. kind 正交化收敛 (`typed_kinds.py`)
 
-`typed_kinds.py`（138 行）把 L2 传入的 kind 收敛为 FG 类别（正交化），并仅在苯环单官能团时返回保留名。**L2 只产生结构 kind，保留名决策完全在 L5**。
+`typed_kinds.py`（98 行）把 L2 传入的 kind 收敛为 FG 类别（正交化），不再产生命名 kind（苯保留名已下放 chain_engine 苯 variant，见 §3）。
 
-- **恒基团名收敛**：链式 case 下 `_typed_acid_kind`（`36-51`）/`_typed_alcohol_kind`（`102-114`）/`_typed_amine_kind`（`116-128`）恒返回 `"acid"`/`"alcohol"`/`"amine"`（数量统一由 `multiplicity` 承载，不再有 diacid/diol/diamine 等数量 kind）
-- **苯保留名**（`_ring_retained` `:26-33`）：要求 `scaffold_id=="benzene"` **且** `multiplicity==1`，从 `_BENZENE_RETAINED` 表查（acid→benzoic、ester→benzoate、aldehyde→benzaldehyde、nitrile→benzonitrile、amide→benzamide、amine→aniline、alcohol→phenol）
+- **恒基团名收敛**：链式 case 下 `_typed_acid_kind`（`14-`）/`_typed_alcohol_kind`（`68-`）/`_typed_amine_kind`（`79-`）恒返回 `"acid"`/`"alcohol"`/`"amine"`（数量统一由 `multiplicity` 承载，不再有 diacid/diol/diamine 等数量 kind）
 - **环系判断基于 scaffold_id**（`_scaffold` 读 `parent.scaffold_id`），不再读 L2 组合 kind：
   - `carbocycle` → 返回 FG 类别（"acid"/"alcohol"/"amine"/"ketone"），cyclo 前缀由 chain_engine 运行时加
   - 稠环/杂环 `_RING_FG_SCAFFOLDS = {naphthalene, indole, pyridine, quinoline}` → 同样收敛 FG 类别，词干由 chain_engine 注入
-  - 苯环 + 二醇 → `"benzenediol"`
+  - 苯环单 FG → 恒返回 FG 类别（保留名由 chain_engine 苯 variant 输出）
   - 环外酸（`facts.relation.value == "exocyclic"`）→ `"acid"`（"carboxylic acid" 后缀由 chain_engine 组装）
-- **ketone**（`_typed_ketone_kind` `:81-90`）：`carbocycle` scaffold 下按 multiplicity 返回 `"ketone"`（=1）/`"dione"`（=2）
-- 聚合入口 `_typed_expression_kind`（`:130-138`）依次调用全部 8 个 `_typed_*_kind`
+- **ketone**（`_typed_ketone_kind` `:55-`）：`carbocycle` scaffold 下按 multiplicity 返回 `"ketone"`（=1）/`"dione"`（=2）
+- 聚合入口 `_typed_expression_kind`（`:90-`）依次调用全部 8 个 `_typed_*_kind`
 
 > **源:** `src/namepredict/layer5/typed_kinds.py`
 
 ### 3. 链式词干引擎 (`chain_engine.py`)
 
-`chain_engine.py`（358 行）是数据驱动的单链词干引擎——用 `_Chain` spec 描述每类 kind 的命名形态，`_chain_names` 统一渲染，替代了原先按 kind 手写 if 分支。
+`chain_engine.py`（394 行）是数据驱动的单链词干引擎——用 `_Chain` spec 描述每类 kind 的命名形态，`_chain_names` 统一渲染，替代了原先按 kind 手写 if 分支。
 
-**`_Chain` 数据类字段**（frozen dataclass，`150-183`）：
+**`_Chain` 数据类字段**（frozen dataclass，`150-184`）：
 - 基础：`kind`/`en_suf`/`zh_suf` **必填**（每 kind 互异，无合理默认）；`coda`/`no_loc`/`omit_rule` 在 `_: KW_ONLY` 分隔后为 keyword-only 默认值——`coda`="an"、`no_loc`="plain"、`omit_rule`=`_NO_OMIT`，仅特例显式覆盖（alkane `coda=""`、thiol/anhydride `coda="ane"`、ketone `no_loc="none"`、alcohol/thiol/amine `omit_rule=_omit_term_locant`、ketone/alkane 自定义 lambda）
 - FG：`fg`（fg_locants 记录 kind）/`need`（FG 数要求）
 - 俗名/派生：`plain_maps`/`plain_fn`
 - 烯/炔段：`ene_seg`（默认 `("en","烯")`；thiol 用 `("ene","烯")` 保留 e）/`yne_seg`（默认 `("yn","炔")`）/`ene_base`/`ene_special`（俗名钩子）/`yne_suf`/`ez_ene`/`ene_loc_omit`（环单烯省略位次）
 - 环：`cyclic`（恒加 cyclo/环前缀）/`cyclic_unsat`/`zh_full`/`stem`（稠环/杂环词干覆盖，如 naphthalen/萘）
-- **`mult_ok`**（acid/alcohol/amine/ketone=True）— 数量后缀由 `_generated_mult_fields`（`224`）生成：`MULT[m]`+基础后缀（diol/triol/tetraol…任意数量，无硬编码上限）；`mult_zh_full`（醇/胺多 FG 中文保留"烷"）/`mult_unsat_polyol`（仅醇）
-- **`variant: dict[int, dict]`**（`{multiplicity: 生成式之上的特例字段覆盖}`）— 现仅 acid 用（`{2: 草酸俗名/炔禁/ene_single_min=3}`）。`_chain_names` 先生成通用数量字段，再 `replace(spec, **extra)` 覆盖特例
+- **`mult_ok`**（acid/alcohol/amine/ketone=True）— 数量后缀由 `_generated_mult_fields`（`225`）生成：`MULT[m]`+基础后缀（diol/triol/tetraol…任意数量，无硬编码上限）；`mult_zh_full`（醇/胺多 FG 中文保留"烷"）/`mult_unsat_polyol`（仅醇）
+- **`variant: dict[scaffold, dict[mult, dict]]`**（`{scaffold_id: {multiplicity: 生成式之上的特例字段覆盖}}`，`None` 键=开链）— acid 用 `{None:{2: 草酸俗名/炔禁/ene_single_min=3}}`；苯环保留名用 `{"benzene": {1: {plain_fn=phenol/benzoic…}}}`（**仅单 FG 保留名**；苯环多羟基/三酚等系统名走 `_RING_STEM` 词干 + aromatic 酚，见 §4）。`assembler._names_for` 按 `scaffold_id` 注入当前 scaffold 的 variant 子集后，`_chain_names` 见一维 `{mult: fields}`：多 FG（mult>1）先生成通用数量字段再覆盖特例；单 FG（mult==1）直接 `replace(spec, **extra)`
 
-**`_KIND_TABLE`**（`305-358`）现有 **11 个 `_Chain` entry**：`alcohol`、`ketone`、`alkane`、`acid`、`ester`、`thiol`、`amine`、`aldehyde`、`nitrile`、`anhydride`、`amide`。**已删除的组合 kind entry**：`cycloalkane`/`cycloalkene`/`cyclopolyene`/`cycloalcohol`/`cycloketone`/`cycloamine`/`cycloalkanediol`/`cycloalkanedione` 及数量派生 kind——纯烃环并入 `alkane`（cyclo 前缀由 assembler 按 scaffold_id 动态加），数量统一由 `multiplicity` + `mult_ok` 生成式承载。
+**`_KIND_TABLE`**（`312-394`）现有 **11 个 `_Chain` entry**：`alcohol`、`ketone`、`alkane`、`acid`、`ester`、`thiol`、`amine`、`aldehyde`、`nitrile`、`anhydride`、`amide`。**已删除的组合 kind entry**：`cycloalkane`/`cycloalkene`/`cyclopolyene`/`cycloalcohol`/`cycloketone`/`cycloamine`/`cycloalkanediol`/`cycloalkanedione` 及数量派生 kind——纯烃环并入 `alkane`（cyclo 前缀由 assembler 按 scaffold_id 动态加），数量统一由 `multiplicity` + `mult_ok` 生成式承载。
 
 > **源:** `src/namepredict/layer5/chain_engine.py`
 
 ### 4. 母体名称派发 (`_names_for`)
 
-`_names_for`（`assembler.py:79-112`）是母体名称的核心派发函数：
+`_names_for`（`assembler.py:57-84`）是母体名称的核心派发函数：
 
-1. `kind == "acid"` 时先试 `_exocyclic_acid_names`（环外 COOH → `cyclohexanecarboxylic acid` / `naphthalene-1-carboxylic acid`，`55-76`）
+1. `kind == "acid"` 时先试 `_exocyclic_acid_names`（环外 COOH → `cyclohexanecarboxylic acid` / `naphthalene-1-carboxylic acid`，`33-54`）
 2. 查 `_KIND_TABLE.get(kind)`；命中则按 `scaffold_id` 运行时替换 spec：
-   - `sid in _RING_STEM`（naphthalene/indole/pyridine/quinoline）→ `replace(entry, stem=_RING_STEM[sid], ...)`
+   - `sid in _RING_STEM`（naphthalene/indole/pyridine/quinoline/**benzene**）→ `replace(entry, stem=_RING_STEM[sid], ...)`；`_RING_STEM` 为三元组 `(en_stem, zh_stem, aromatic)`，**aromatic + alcohol → 注入 `zh_suf="酚"`**（苯酚系；萘/吡啶/吲哚/喹啉同，主路径自动，非 variant 特例）
    - `sid == "carbocycle"` → `replace(entry, cyclic=True, ene_loc_omit=True, ...)`
+   - **按 scaffold 注入保留名 variant**：`sc_variant = entry.variant.get(sid)` → `replace(entry, variant=sc_variant)`（`76-78`）——苯环单 FG 取 `"benzene"` 键（phenol/benzoic/aniline…），开链取 `None` 键（acid 草酸）
    - 然后 `_chain_names(entry, n, numbered)`
-3. 非表内 kind 落到具体 worker：`"phenyl"`→("phenyl","苯基")、`"benzene"`→("benzene","苯")、`_ARENE_RETAINED_NAMES`（苯保留名，`15-23`，原 L2 `_ARENE_NAMED` 迁此）、`"benzenediol"`→`_benzenediol_names`、否则 `_parent_stem_names`
+3. 非表内 kind 落到具体 worker：`"phenyl"`→("phenyl","苯基")、否则 `_parent_stem_names`
 
-> **源:** `src/namepredict/layer5/assembler.py:79-112`
+> **源:** `src/namepredict/layer5/assembler.py:57-84`
 
 ### 5. 双语词干表 (`stems.py`)
 
@@ -218,17 +218,17 @@ layer5 **不再直接 import layer2 或 tools**。全部外部 import 仅：`con
 
 ```mermaid
 flowchart TD
-    NUMBERED["numbered dict\n(Layer4 输出)"] --> ASSEMBLE["assemble()\nassembler.py:129"]
+    NUMBERED["numbered dict\n(Layer4 输出)"] --> ASSEMBLE["assemble()\nassembler.py:98"]
 
-    ASSEMBLE --> TYPED["_typed_expression_kind\n typed_kinds.py\nacid→acid / alcohol→phenol\namine→aniline / ketone→dione\n(数量收敛 + 苯保留名)"]
+    ASSEMBLE --> TYPED["_typed_expression_kind\n typed_kinds.py\nacid→acid / alcohol→alcohol\namine→amine / ketone→dione\n(数量收敛; 苯保留名由 chain_engine variant 输出)"]
 
-    TYPED --> NAMES_FOR["_names_for(kind, n, numbered)\nassembler.py:79"]
+    TYPED --> NAMES_FOR["_names_for(kind, n, numbered)\nassembler.py:57"]
 
     NAMES_FOR --> EXO{"acid + 环外?"}
     EXO -->|"是"| EXONAME["_exocyclic_acid_names\ncyclohexanecarboxylic acid"]
     EXO -->|"否"| CHAIN{"_KIND_TABLE\n链引擎?"}
     CHAIN -->|"15 种链 kind"| ENG["_chain_names\nchain_engine.py\n词干 + 烯/炔段 + 位次 + 环前缀\n+ variant 数量后缀 (数据驱动)"]
-    CHAIN -->|"special worker"| WORKER["phenyl / benzene\n_ARENE_RETAINED_NAMES\nbenzenediol"]
+    CHAIN -->|"special worker"| WORKER["phenyl / benzene\n_parent_stem_names"]
 
     ENG --> PARENT_NAME["(en, zh) 母体名称"]
     WORKER --> PARENT_NAME

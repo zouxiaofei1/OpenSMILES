@@ -54,8 +54,8 @@ def _should_skip(claim, covered: set[int]) -> bool:
     return claim.slot == SideSlot.AMIDE_N or bool(set(claim.atoms) & covered)
 
 
-# 酯酸侧 O（烷氧基臂）：连在酯/苯甲酸酯 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 join_kind_name 消费。
-_ESTER_O_SIDE_KINDS = frozenset({"ester","benzoate"})
+# 酯酸侧 O（烷氧基臂）：连在酯 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 join_kind_name 消费。
+_ESTER_O_SIDE_KINDS = frozenset({"ester"})
 
 
 def _append_named(mol, claim, namer, covered: set[int], out: list[dict], *, o_side: bool = False) -> None:

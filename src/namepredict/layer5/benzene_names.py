@@ -39,7 +39,10 @@ def _ester_alkoxy_from(numbered) -> tuple[str, str]:
 
 
 def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=None) -> tuple[str, str]:
-    """Acid stem + O-side alkyl: methyl butanoate / 丁酸甲酯; stereo after alkyl."""
+    """Acid stem + O-side alkyl: methyl butanoate / 丁酸甲酯; stereo after alkyl.
+
+    zh 恒拼"酯"（无烷氧基时保留"苯甲酸酯"，如复杂 O-烷基场景）。
+    """
     en, zh = names
     alk_en, alk_zh = _ester_alkoxy_from(numbered)
     st, body = _stereo_lead(en)
@@ -47,22 +50,8 @@ def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=N
     en = f"{alk_en} {st}{mid}" if alk_en else f"{st}{mid}"
     stz, bodyz = _stereo_lead(zh)
     midz = f"{stz}{pre_zh}{bodyz}" if pre_zh else f"{stz}{bodyz}"
-    zh = f"{midz}{alk_zh}酯" if alk_zh else midz
+    zh = f"{midz}{alk_zh}酯"
     return en, zh
-
-
-def join_benzoate_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=None) -> tuple[str, str]:
-    """O-side alkyl + benzoate acid stem: ethyl 4-chlorobenzoate / 4-氯苯甲酸乙酯.
-
-    与 ester 同构: 母体只含酸部分, 烷氧基从 o_side 取代基取; zh 恒拼"酯"
-    (无烷氧基时保留"苯甲酸酯", 如复杂 O-烷基场景).
-    """
-    en, zh = names
-    alk_en, alk_zh = _ester_alkoxy_from(numbered)
-    body = f"{pre_en}{en}" if pre_en else en
-    en = f"{alk_en} {body}" if alk_en else body
-    midz = f"{pre_zh}{zh}" if pre_zh else zh
-    return en, f"{midz}{alk_zh}酯"
 
 
 def join_kind_name(
@@ -71,8 +60,6 @@ def join_kind_name(
 ) -> tuple[str, str]:
     if kind in ("ester"):
         return join_ester_name(pre[0], pre[1], names, numbered)
-    if kind == "benzoate":
-        return join_benzoate_name(pre[0], pre[1], names, numbered)
     en = join_parent_name(pre[0], names[0])
     zh = join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))
     return en, zh

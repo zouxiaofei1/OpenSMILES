@@ -108,7 +108,7 @@ def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
             "principal_group_count": len(occurrences), "principal_expression_facts": facts, **fields}
 
 
-# 苯系保留名已全部迁往 L5 typed_kinds（_BENZENE_RETAINED）；L2 只表达结构 kind。
+# 苯系保留名已迁往 L5 chain_engine 苯 variant（按 scaffold_id 注入）；L2 只表达结构 kind。
 def _is_benzene(info: dict, skeleton: ParentSkeleton) -> bool:
     mol = info["mol"]
     return len(skeleton.atom_ids) == 6 and all(

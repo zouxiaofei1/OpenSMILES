@@ -11,22 +11,14 @@ from namepredict.types import NameResult
 def _fail(meta: dict | None = None) -> NameResult: return NameResult(en="", zh="", success=False, source="iupac", meta=meta or {})
 def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult: return NameResult(en=en, zh=zh, success=True, source=source, time_ms=time_ms)
 
-# 苯系保留名 stem（原 L2 _ARENE_NAMED 迁此；苯 base 由 scaffold_id='benzene' 承载，纯苯 kind 已收敛为 alkane）。
-_ARENE_RETAINED_NAMES = {
-    "benzoic": ("benzoic acid", "苯甲酸"),
-    "benzaldehyde": ("benzaldehyde", "苯甲醛"),
-    "benzonitrile": ("benzonitrile", "苯甲腈"),
-    "benzamide": ("benzamide", "苯甲酰胺"),
-    "benzoate": ("benzoate", "苯甲酸"),
-    "aniline": ("aniline", "苯胺"),
-    "phenol": ("phenol", "苯酚"),
-}
-
+# 稠环/杂环词干（en_stem, zh_stem, aromatic）：主路径按 scaffold_id 注入词干；
+# aromatic 环上的醇统一用"酚"（苯酚系，含萘/吡啶/吲哚/喹啉），非 variant 特例。
 _RING_STEM = {
-    "naphthalene": ("naphthalen", "萘"),
-    "indole": ("indol", "吲哚"),
-    "pyridine": ("pyridin", "吡啶"),
-    "quinoline": ("quinolin", "喹啉"),
+    "naphthalene": ("naphthalen", "萘", True),
+    "indole": ("indol", "吲哚", True),
+    "pyridine": ("pyridin", "吡啶", True),
+    "quinoline": ("quinolin", "喹啉", True),
+    "benzene": ("benzene", "苯", True),
 }
 
 # 稠环/杂环完整 base 名（-carboxylic acid 用完整词干，如 naphthalene-1-carboxylic acid）。
@@ -35,16 +27,6 @@ _RING_BASE = {
     "quinoline": ("quinoline", "喹啉"),
     "pyridine": ("pyridine", "吡啶"),
 }
-
-
-def _benzenediol_names(numbered: dict) -> tuple[str, str] | None:
-    """苯母体 + 2 个羟基：系统名 benzene-N,N-diol（P-22.1.3）。"""
-    rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "oh"), None)
-    locs = rec.get("locants") if rec else None
-    if not locs or len(locs) != 2:
-        return None
-    loc_s = ",".join(str(x) for x in locs)
-    return f"benzene-{loc_s}-diol", f"苯-{loc_s}-二酚"
 
 
 def _scaffold_id(numbered: dict) -> str | None:
@@ -88,21 +70,21 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             # 苯 base：无主 FG 的苯，母体名由 sid 驱动（L2 已把纯苯 kind 收敛为 alkane）。
             return ("benzene", "苯")
         if sid in _RING_STEM:
-            # 环式 FG 的 locant omit 由 L4 算出的 omit 标志决定。
-            entry = replace(entry, stem=_RING_STEM[sid], omit_rule=lambda n, loc, omit: bool(omit))
+            # 环式 FG 的 locant omit 由 L4 算出的 omit 标志决定；aromatic 标记随 spec 传递，由 _chain_names 消费（芳香醇→酚）。
+            stem_en, stem_zh, aromatic = _RING_STEM[sid]
+            entry = replace(entry, stem=(stem_en, stem_zh), omit_rule=lambda n, loc, omit: bool(omit),
+                            aromatic=aromatic)
         elif sid == "carbocycle":
             entry = replace(entry, cyclic=True, ene_loc_omit=True,
                             omit_rule=lambda n, loc, omit: bool(omit))
+        # 苯环单 FG → scaffold 专属保留名 variant (phenol/benzoic…); 开链取 None 键 (acid 草酸)。
+        sc_variant = (entry.variant or {}).get(sid)
+        if sc_variant is not None:
+            entry = replace(entry, variant=sc_variant)
         return _chain_names(entry, n, numbered)
-
 
     if kind == "phenyl":
         return "phenyl", "苯基"
-    if kind in _ARENE_RETAINED_NAMES:
-        return _ARENE_RETAINED_NAMES[kind]
-    if kind == "benzenediol":
-        return _benzenediol_names(numbered)
-
     stem = _parent_stem_names(numbered)
     return stem
 

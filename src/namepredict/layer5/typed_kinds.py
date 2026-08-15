@@ -1,16 +1,5 @@
 from __future__ import annotations
 
-# 苯环 + 单主官能团 → P-22.1.3 保留名（原 L2 _RETAINED_RING_KINDS 迁此）；L2 纯苯 kind 已收敛为 alkane（环系由 scaffold_id='benzene' 承载），保留名决策完全在 L5。
-_BENZENE_RETAINED = {
-    "acid": "benzoic",
-    "ester": "benzoate",
-    "aldehyde": "benzaldehyde",
-    "nitrile": "benzonitrile",
-    "amide": "benzamide",
-    "amine": "aniline",
-    "alcohol": "phenol",
-}
-
 # 稠环/杂环 scaffold：+FG 时返回 FG 类别，词干由 chain_engine 注入（正交化）。
 _RING_FG_SCAFFOLDS = frozenset({
     "naphthalene", "indole", "pyridine", "quinoline",
@@ -22,23 +11,10 @@ def _scaffold(numbered: dict) -> str | None:
     return (numbered.get("parent") or {}).get("scaffold_id")
 
 
-def _ring_retained(numbered: dict, fg: str) -> str | None:
-    """苯环 + 单主官能团 → P-22.1.3 保留名 kind, else None."""
-    if _scaffold(numbered) != "benzene":
-        return None
-    facts = (numbered.get("parent") or {}).get("principal_expression_facts")
-    if not facts or facts.multiplicity != 1:
-        return None
-    return _BENZENE_RETAINED.get(fg)
-
-
 def _typed_acid_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "acid":
         return kind
-    retained = _ring_retained(numbered, "acid")
-    if retained:
-        return retained
     # 环酸（carbocycle/稠环）exocyclic：kind 收敛为 FG 类别 acid，"carboxylic acid" 后缀由 chain_engine 组装（正交化，不再枚举 cycloalkanecarboxylic）。
     if facts.relation.value == "exocyclic" and (
         _scaffold(numbered) == "carbocycle" or _scaffold(numbered) in _RING_FG_SCAFFOLDS
@@ -53,28 +29,28 @@ def _typed_ester_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "ester":
         return kind
-    return _ring_retained(numbered, "ester") or kind
+    return kind
 
 
 def _typed_aldehyde_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "aldehyde":
         return kind
-    return _ring_retained(numbered, "aldehyde") or kind
+    return kind
 
 
 def _typed_nitrile_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "nitrile":
         return kind
-    return _ring_retained(numbered, "nitrile") or kind
+    return kind
 
 
 def _typed_amide_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "amide":
         return kind
-    return _ring_retained(numbered, "amide") or kind
+    return kind
 
 def _typed_ketone_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
@@ -87,17 +63,12 @@ def _typed_ring_alcohol_kind(kind: str, numbered: dict, facts) -> str | None:
     sid = _scaffold(numbered)
     if sid == "carbocycle" or sid in _RING_FG_SCAFFOLDS:
         return "alcohol"
-    if sid == "benzene":
-        return "phenol" if facts.multiplicity == 1 else "benzenediol"
     return None
 
 def _typed_alcohol_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "alcohol":
         return kind
-    retained = _ring_retained(numbered, "alcohol")
-    if retained:
-        return retained
     ring_kind = _typed_ring_alcohol_kind(kind, numbered, facts)
     if ring_kind:
         return ring_kind
@@ -109,9 +80,6 @@ def _typed_amine_kind(kind: str, numbered: dict) -> str:
     facts = (numbered.get("parent") or {}).get("principal_expression_facts")
     if not facts or facts.group_class.value != "amine":
         return kind
-    retained = _ring_retained(numbered, "amine")
-    if retained:
-        return retained
     # 环胺：kind 收敛为 FG 类别 amine；cyclo 前缀 / 稠环词干由 chain_engine 动态加。
     if _scaffold(numbered) == "carbocycle" or _scaffold(numbered) in _RING_FG_SCAFFOLDS:
         return "amine"
