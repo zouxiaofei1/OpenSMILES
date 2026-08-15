@@ -5,6 +5,7 @@ from rdkit.Chem import Mol
 
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.tools.chain import carbon_neighbors
+from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer3.amino_side import (
     _extract_aminos as _extract_aminos_impl,
     _principal_attachments,
@@ -123,9 +124,10 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
     cl = parent.get("cl_idx") or parent.get("hal_idx")
     return [h for h in halos if cl not in (h.get("atoms") or [])]
 
-_PARENT_OH_KINDS = frozenset({"alcohol", "phenol", "benzenediol"})
-_PARENT_NH2_KINDS = frozenset({"amine","aniline"})
-_PARENT_OXO_KINDS = frozenset({"ketone"})
+# 主 FG 母体 kind → 抑制对应取代基提取（fg_registry 的 parent 标记派生）。
+_PARENT_OH_KINDS = frozenset(sp.fg for sp in FG_SPECS if sp.oh_parent)
+_PARENT_NH2_KINDS = frozenset(sp.fg for sp in FG_SPECS if sp.nh2_parent)
+_PARENT_OXO_KINDS = frozenset(sp.fg for sp in FG_SPECS if sp.oxo_parent)
 
 def _make_hydroxy(attach: int, o_idx: int) -> dict:
     """构造羟基取代基字典。"""

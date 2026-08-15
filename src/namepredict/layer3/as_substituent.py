@@ -23,14 +23,7 @@ def _is_arom_c6(mol: Mol, atoms) -> bool:
 def _arene_yl_from_sub(
     sub, result, *, mol, atoms, attach_old, depth: int, name_mode: str, cache: CommonNameCache | None,
 ) -> tuple[str, str, bool] | None:
-    """苯环切割 → 经 P-41 自由基主基团得到苯基自由基。
-
-    free-name 管道把取代苯命名为 'chlorobenzene'（当 OH/NH2/CN 为主基团时得到
-    'phenol'/'aniline'/'benzonitrile'），但苯基*取代基*必须把这些当作叶子并从
-    锚定碳（位次 1）编号。我们用锚定形式（attach 碳上带 dummy `*`）重建切割
-    并重新 free-name：L1 检出自由基，L2 选苯基母体，L4 锚定位次 1，L5 输出
-    {leaf-locants}phenyl。
-    """
+    """苯环切割 → 经 P-41 自由基主基团得到苯基自由基。"""
     from namepredict.namer import _cache_put, _canonical_result, _name_mol
     from rdkit import Chem
     mol_sub = sub.mol

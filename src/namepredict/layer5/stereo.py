@@ -4,6 +4,8 @@ from __future__ import annotations
 from rdkit import Chem
 from rdkit.Chem import BondStereo, Mol
 
+from namepredict.layer1 import fg_registry as _fg_reg
+
 
 def _split_stereo_lead(name: str) -> tuple[str, str]:
     """从名称/词干中切分前导 '(…)-' 立体块。"""
@@ -89,20 +91,7 @@ def ez_for_parent(numbered: dict) -> str:
 
 # --- CIP R/S 立体描述符 ----------------------------------------------
 
-_RS_KINDS = frozenset({
-    "acid", "alcohol", "amine",
-    "ketone", "ester",
-    "amide", "nitrile", "aldehyde", "thiol",
-    "piperidine", "pyrrolidine", "piperazine", "morpholine",
-    "oxolane", "oxane",
-})
-
-# 单中心饱和杂原子母体省略位次：(R)- 而非 (3R)-。
-_RS_OMIT_LOC = frozenset({
-    "piperidine", "pyrrolidine", "piperazine", "morpholine",
-    "oxolane", "oxane",
-})
-
+_RS_KINDS = _fg_reg.rs_fgs()
 
 def _assign_cip(mol: Mol) -> None:
     """强制重算分子立体化学（CIP 分配）。"""
@@ -199,22 +188,6 @@ def _merge_parts(
     return keep + list(rs)
 
 
-def _omit_locants(rs: list[tuple[int, str]]) -> list[tuple[int | None, str]]:
-    """当单中心需要裸 (R)/(S) 时省略位次。"""
-    if len(rs) != 1:
-        return [(loc, let) for loc, let in rs]
-    return [(None, rs[0][1])]
-
-
-def _display_rs(
-    kind: str | None, rs: list[tuple[int, str]],
-) -> list[tuple[int | None, str]]:
-    """按 kind 决定是否省略 R/S 位次（单中心饱和杂原子母体）。"""
-    if kind in _RS_OMIT_LOC:
-        return _omit_locants(rs)
-    return [(loc, let) for loc, let in rs]
-
-
 def _with_rs(name: str, rs: list[tuple[int | None, str]]) -> str:
     """将 R/S 部件并入名称已有的立体前缀。"""
     if not rs:
@@ -238,7 +211,7 @@ def apply_rs_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     if not rs_raw:
         return en, zh
     kind = (numbered.get("parent") or {}).get("kind")
-    rs = _display_rs(kind, rs_raw)
+    rs = rs_raw
     if kind == "ester":
         return _ester_en_rs(en, rs), _with_rs(zh, rs)
     return _with_rs(en, rs), _with_rs(zh, rs)

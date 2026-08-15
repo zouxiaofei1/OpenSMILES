@@ -45,13 +45,4 @@ def rule_driven_parent_candidates(info: dict) -> list[dict]:
     """规则驱动入口：返回最终母体候选（无主官能团时纯烃）。"""
 
     selection = select_principal_parent_skeletons(info)
-
-    # 调试用：print(selection)
-    if selection.skeletons is None:
-        return []
-    if selection.principal is None:
-        # 调试用：return
-        from namepredict.layer2.principal_expression import express_hydrocarbon_principal
-        return [p for s in selection.skeletons.candidates
-                if (p := express_hydrocarbon_principal(info, s)) is not None]
     return _express_selected(selection, info)

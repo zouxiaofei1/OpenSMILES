@@ -1,5 +1,6 @@
 """L4 位次计算：将官能团/取代基附着原子映射为链上位次。"""
 from __future__ import annotations
+from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer4._chain_orient import _chain_pos, _edge_min_locant, _pair_locants
 from namepredict.layer4.omit_locants import (
     omit_amine as _omit_amine, omit_ketone as _omit_ketone, omit_sh as _omit_sh,
@@ -25,7 +26,7 @@ def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
     return _atom_locant(oriented.get("chain") or [], oriented.get(key), oriented.get("kind"), oriented.get("numbering_scaffold"), oriented.get("numbering_scaffold_required", False))
 
 _OH_KINDS = ("alcohol",)
-_AMINE_KINDS = ("amine")
+_AMINE_KINDS = ("amine",)
 
 def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
     """返回指定基团全部附着原子在链上的位次列表。"""
@@ -59,7 +60,7 @@ def _oh_locants(oriented: dict) -> list[int] | None:
     locs = _typed_atom_locants(oriented, "alcohol")
     if locs:
         return locs
-    return _oriented_pair_locants(oriented, ("alcohol", "benzenediol"), "oh_c_idxs")
+    return _oriented_pair_locants(oriented, ("alcohol",), "oh_c_idxs")
 
 def _amine_pair_locants(oriented: dict) -> list[int] | None:
     """返回全部氨基位次；无 typed 原子时回退到 amine_c_idxs。"""
@@ -214,13 +215,19 @@ def _amide_fg_locants(oriented: dict) -> list[int] | None:
     return [loc] if loc is not None else None
 
 
-_FG_LOCANTS = (
-    ("oh", _oh_locants),
-    ("amine", _amine_fg_locants),
-    ("ketone", _ketone_fg_locants),
-    ("sh", _sh_locants_list),
-    ("acid", _acid_fg_locants),
-    ("amide", _amide_fg_locants),
+# 位次记录 kind → 位次函数（kind 为 fg_registry.locant_kind，跨 L4/L5 一致性由 spec 承载）。
+# 新增带位次的 FG：在 _LOCANT_FNS 补函数 + fg_registry 设 locant_kind，未登记则 KeyError 显式暴露。
+_LOCANT_FNS = {
+    "oh": _oh_locants,
+    "amine": _amine_fg_locants,
+    "ketone": _ketone_fg_locants,
+    "sh": _sh_locants_list,
+    "acid": _acid_fg_locants,
+    "amide": _amide_fg_locants,
+}
+_FG_LOCANTS = tuple(
+    (sp.locant_kind, _LOCANT_FNS[sp.locant_kind])
+    for sp in FG_SPECS if sp.locant_kind is not None
 )
 
 def _fg_locants(oriented: dict, n_subs: int = 0) -> list[dict]:

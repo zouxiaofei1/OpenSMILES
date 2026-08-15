@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
 from namepredict.layer2.principal import PrincipalGroupSelection, feature_spec
@@ -38,16 +39,9 @@ class PrincipalExpressionFacts:
 
 
 # 链式主官能团：kind 恒为 FG 类别名；acid/alcohol/amine/ketone 任意数量恒用基团名，其余链 FG 仅单基。
-_CHAIN_FG = frozenset({
-    FunctionalGroupClass.ACID, FunctionalGroupClass.ALCOHOL,
-    FunctionalGroupClass.AMINE, FunctionalGroupClass.KETONE,
-    FunctionalGroupClass.ESTER, FunctionalGroupClass.AMIDE,
-    FunctionalGroupClass.NITRILE, FunctionalGroupClass.ALDEHYDE,
-})
-_MULTI_FG = frozenset({
-    FunctionalGroupClass.ACID, FunctionalGroupClass.ALCOHOL,
-    FunctionalGroupClass.AMINE, FunctionalGroupClass.KETONE,
-})
+# 链/数量集合由 fg_registry 的 chain/multi 标志派生（唯一事实来源）。
+_CHAIN_FG = frozenset(FunctionalGroupClass(v) for v in _fg_reg.chain_fgs())
+_MULTI_FG = frozenset(FunctionalGroupClass(v) for v in _fg_reg.multi_fgs())
 def _anchor_fields(group_class: FunctionalGroupClass) -> tuple[str, str] | None:
     """取基团类的 (单, 复数) anchor 字段名。"""
     if group_class is FunctionalGroupClass.NONE:
@@ -157,14 +151,7 @@ def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentS
         return "phenyl"
     # 环 + 主 FG → FG 类别 kind（正交化）：苯/饱和环/稠环/杂环一律收敛，
     # 命名由 L5 chain_engine 通用词干引擎拼接（苯等保留名经 variant 特殊，无 variant 走通用名）。
-    if scaffold is not None and selection.group_class in (FunctionalGroupClass.ALCOHOL,
-                                                          FunctionalGroupClass.KETONE,
-                                                          FunctionalGroupClass.AMINE,
-                                                          FunctionalGroupClass.ACID,
-                                                          FunctionalGroupClass.ALDEHYDE,
-                                                          FunctionalGroupClass.NITRILE,
-                                                          FunctionalGroupClass.AMIDE,
-                                                          FunctionalGroupClass.ESTER):
+    if scaffold is not None and selection.group_class in _CHAIN_FG:
         kind = _chain_kind(selection.group_class, count)
         if kind is not None:
             return kind
@@ -206,8 +193,7 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
             "typed_ring_expression_supported": supported}
 
 
-def _benzoate_ester_fields(info: dict, fields: dict) -> dict:
-    """苯甲酸酯补 o_idx 与 alkoxy_n=0 字段。"""
+def ester_fields(info: dict, fields: dict) -> dict:
     e = info["esters"][0]
     return {**fields, "o_idx": e["o_idx"], "alkoxy_n": 0}
 
@@ -230,7 +216,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
               **_chain_unsat_fields(info, skeleton,
                                     _scaffold_fields(info, skeleton, facts, scaffold))}
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
-        fields = _benzoate_ester_fields(info, fields)
+        fields = ester_fields(info, fields)
     return _parent_dict(kind, skeleton, occurrences, fields, facts)
 
 
@@ -306,57 +292,3 @@ def _chain_polys(info: dict, atom_set: set[int]) -> tuple[list[dict], list[dict]
     dbs = [d for d in info.get("double_bonds") or [] if d["c1"] in atom_set and d["c2"] in atom_set]
     tbs = [t for t in info.get("triple_bonds") or [] if t["c1"] in atom_set and t["c2"] in atom_set]
     return dbs, tbs
-
-
-def _hydrocarbon_chain_parent(info: dict, skeleton: ParentSkeleton) -> dict:
-    """纯烃开链：按不饱和度定 kind（烷/烯/炔/多烯）。"""
-    chain = list(skeleton.atom_ids)
-    dbs, tbs = _chain_polys(info, set(chain))
-    bf = _unsat_bond_fields(dbs, tbs)
-    if "triple_bond" in bf:
-        kind = "alkyne"
-    elif "double_bond" in bf:
-        kind = "alkene"
-    elif "double_bonds" in bf:
-        kind = "polyene"
-    else:
-        kind = "alkane"
-    return {"kind": kind, "chain": chain, "n_carbons": len(chain), **bf}
-
-
-def _aromatic_scaffold_parent(info: dict, skeleton: ParentSkeleton, atoms: set[int]) -> dict | None:
-    """芳香环：解析到保留 scaffold 则用其 id（benzene/naphthalene 等）。"""
-    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
-    scaffold = resolve_ring_scaffold(info, skeleton)
-    if scaffold is None or scaffold.id == "carbocycle":
-        return None  # 芳香碳环未匹配保留 scaffold（如 anthracene）
-    if scaffold.id != "naphthalene":
-        return {"kind": scaffold.id, "chain": _mono_ring_chain(info, atoms) or list(skeleton.atom_ids),
-                "n_carbons": len(atoms), **_scaffold_fields(info, skeleton, None, scaffold)}
-    return None
-
-
-def _saturated_ring_parent(info: dict, skeleton: ParentSkeleton, atoms: set[int]) -> dict | None:
-    """非芳香环：kind 统一为 alkane（正交化），烯信息由 double_bond(s) 字段承载。"""
-    dbs, tbs = _chain_polys(info, atoms)
-    if tbs:
-        return None  # 环炔暂不支持
-    chain = _mono_ring_chain(info, atoms) or list(skeleton.atom_ids)
-    bf = _unsat_bond_fields(dbs, tbs)  # tbs 已排除：只可能 double_bond/double_bonds/空
-    return {"kind": "alkane", "chain": chain, "n_carbons": len(chain), **bf}
-
-
-def _hydrocarbon_ring_parent(info: dict, skeleton: ParentSkeleton) -> dict | None:
-    """纯烃环：按芳香性分派保留名或饱和环表达。"""
-    atoms = set(skeleton.atom_ids)
-    if _system_is_aromatic(info, atoms):
-        return _aromatic_scaffold_parent(info, skeleton, atoms)
-    parent = _saturated_ring_parent(info, skeleton, atoms)
-    return {**parent, **_scaffold_fields(info, skeleton, None)} if parent else None
-
-
-def express_hydrocarbon_principal(info: dict, skeleton: ParentSkeleton) -> dict | None:
-    """无主官能团时：按拓扑分配纯烃 kind（alkane/ene/yne/polyene/环/保留 scaffold）。"""
-    if skeleton.topology is SkeletonTopology.RING_SYSTEM:
-        return _hydrocarbon_ring_parent(info, skeleton)
-    return _hydrocarbon_chain_parent(info, skeleton)

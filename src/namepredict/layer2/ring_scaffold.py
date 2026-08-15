@@ -185,9 +185,6 @@ def kind_ids_for(naming_class: str) -> frozenset[str]:
     """给定 naming_class（fused56 / naph_family / monohetero / …）的 id 集合。"""
     return frozenset(s.id for s in _ALL_SPECS if s.naming_class == naming_class)
 
-
-# RetainedEntry（保留母体条目；由 _TEMPLATES 派生，供 registry/get_entry/match_systems 查询）
-
 RetainedEntry = dict
 
 

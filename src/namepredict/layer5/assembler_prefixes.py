@@ -1,6 +1,7 @@
 """L5 取代基前缀分组与双语渲染。"""
 from __future__ import annotations
 
+from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 from namepredict.constants import MULT_EN, MULT_ZH
 
@@ -28,10 +29,7 @@ def _mult_zh(n: int) -> str:
     return MULT_ZH.get(n, "")
 
 
-_KEEP_LOCANT_KINDS = frozenset({
-    "acid",
-    "acetophenone", "benzoyl_chloride", "benzoyl_bromide",
-})
+_KEEP_LOCANT_KINDS = _fg_reg.keep_locant_fgs()
 
 
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None,
@@ -49,7 +47,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return {s.get("kind") for s in substituents} <= {
             "n_alkyl", "n_phenyl", "n_benzyl", "n_block",
         }
-    if kind in _KEEP_LOCANT_KINDS or kind == "ketone":
+    if kind in _KEEP_LOCANT_KINDS:
         return False
     if any(s.get("paren") or (s.get("en") or "")[:1] == "(" for s in substituents):
         return False
