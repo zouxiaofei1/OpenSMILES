@@ -56,7 +56,7 @@ def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
         return None
     if sid == "carbocycle":
         base = _alkane_names(n)
-        return (f"cyclo{base[0]}carboxylic acid", f"环{base[1]}羧酸") if base else None
+        return (f"cyclo{base[0]}carboxylic acid", f"环{base[1]}甲酸") if base else None
     if sid == "benzene":
         # 苯甲酸走 chain_engine variant（benzoic acid），不走 base-carboxylic 通用名。
         return None
@@ -67,8 +67,8 @@ def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
         locs = rec.get("locants") if rec else None
         if locs:
             loc = ",".join(str(x) for x in locs)
-            return (f"{base[0]}-{loc}-carboxylic acid", f"{base[1]}-{loc}-羧酸")
-        return (f"{base[0]}carboxylic acid", f"{base[1]}羧酸")
+            return (f"{base[0]}-{loc}-carboxylic acid", f"{base[1]}-{loc}-甲酸")
+        return (f"{base[0]}carboxylic acid", f"{base[1]}甲酸")
     return None
 
 
@@ -159,11 +159,11 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             return ("benzene", "苯")
         ring_stem = _ring_stem(numbered)
         if ring_stem:
-            # 环式 FG 的 locant omit 由 L4 算出的 omit 标志决定；aromatic 标记随 spec 传递，由 _chain_names 消费（芳香醇→酚）。
+            # 环式 FG 的 locant omit 由 L4 算出的 omit 标志决定；aromatic 仅对苯环置真（苯醇→酚，杂环醇→醇）。
             # coda 重置为空：杂环词干（pyridin/furan）已完整，不再接饱和链 "an"。
             stem_en, stem_zh = ring_stem
             entry = replace(entry, stem=(stem_en, stem_zh), coda="",
-                            omit_rule=lambda n, loc, omit: bool(omit), aromatic=True)
+                            omit_rule=lambda n, loc, omit: bool(omit), aromatic=(sid == "benzene"))
         elif sid == "carbocycle":
             # 单环饱和烃自由基按 P-29.2 方法 1 省略自由价 1 位（cyclopentyl/cyclohexyl）；
             # 其余 FG 沿用 L4 omit 标志（cyclohexanol 等）。环烯走 unsat 段不受影响。

@@ -33,7 +33,7 @@ CASES = [
     # negative: near-miss — must not steal benzamide / acetamide / acid / amine
     ("c1ccccc1C(=O)N", "benzamide", "苯甲酰胺"),
     ("CC(=O)N", "acetamide", "乙酰胺"),
-    ("O=C(O)c1ccncc1", "pyridine-4-carboxylic acid", "吡啶-4-羧酸"),
+    ("O=C(O)c1ccncc1", "pyridine-4-carboxylic acid", "吡啶-4-甲酸"),
     ("Nc1ccncc1", "pyridin-4-amine", "吡啶-4-胺"),
     ("O=C(N)C1CCCCC1", "cyclohexanecarboxamide", "环己烷甲酰胺"),
 ]
