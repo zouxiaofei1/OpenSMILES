@@ -45,6 +45,9 @@ HETERO_RADICAL_CASES = [
     ("*N", "amino", "氨基"),
     ("*S", "sulfanyl", "硫基"),
     ("*NO", "hydroxyamino", "羟基氨基"),
+    # 三级胺取代基（azane 双烷基）：同烷基用 di-/二-，异烷基按字母序拼接。
+    ("*N(CC)C", "ethylmethylamino", "乙基甲基氨基"),
+    ("*N(CC)CC", "diethylamino", "二乙基氨基"),
 ]
 
 
@@ -69,6 +72,11 @@ SIDE_CASES = [
     ("CCOc1ccccc1", "ethoxybenzene", "乙氧基苯"),
     # N-O(羟胺)递归:O 递归命名 *O→hydroxy,*NO 组装 hydroxy-azane→hydroxyamino。
     ("O=C(CNO)C1=CC=CC=C1", "2-(hydroxyamino)-1-phenylethanone", "2-(羟基氨基)-1-苯基乙酮"),
+    # 三级胺取代基递归：甲醇/乙醇母体上的 N-烷基氨基不再截断成裸 amino 或 collapse 成甲醇。
+    ("CCN(C)CO", "(ethylmethylamino)methanol", "(乙基甲基氨基)甲醇"),
+    ("CCCN(C)CO", "(methylpropylamino)methanol", "(甲基丙基氨基)甲醇"),
+    ("CCN(CCO)CC", "2-(diethylamino)ethanol", "2-(二乙基氨基)乙醇"),
+    ("CN(C)CO", "dimethylaminomethanol", "二甲氨基甲醇"),
 ]
 
 

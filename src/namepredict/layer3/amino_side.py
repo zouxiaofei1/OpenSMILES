@@ -13,10 +13,12 @@ def _make_amino(attach: int, n_idx: int, en: str = "amino", zh: str = "氨基",
 
 
 def _one_amino(info: dict, a: dict, chain_set: set[int], owned) -> dict | None:
-    """判断单个胺是否位于链上并返回其氨基取代基字典。"""
-    if "c_idx" in a and a["c_idx"] in chain_set:
-        return _make_amino(a["c_idx"], a["n_idx"])
-    return None
+    """判断单个胺是否位于链上并返回其氨基取代基字典。 """
+    if a.get("c_idx") not in chain_set:
+        return None
+    if any(c not in chain_set for c in (a.get("c_idxs") or [])):
+        return None
+    return _make_amino(a["c_idx"], a["n_idx"])
 
 
 def _principal_attachments(parent: dict, group: str) -> frozenset[int]:

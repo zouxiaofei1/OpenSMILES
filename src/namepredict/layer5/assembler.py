@@ -2,6 +2,7 @@
 from __future__ import annotations
 from dataclasses import replace
 
+from namepredict.constants import MULT_EN, MULT_ZH
 from namepredict.layer5.chain_engine import _KIND_TABLE, _alkane_names, _chain_names
 from namepredict.layer5.stems import maybe_anion_names, maybe_metal_salt_names
 from namepredict.layer5.assembler_prefixes import _prefix_for
@@ -110,6 +111,8 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     """杂原子锚点自由基：单核氢化物母体（表 2.1）+ 烷基取代基 → free_to_yl 转标准名。
 
     如 *OCC → "ethyl-oxidane" → ethyloxy；*NCC → "ethyl-azane" → ethylamino。
+    三级胺取代基（azane 双烷基）*N(CC)C → "ethylmethylamino" / 乙基甲基氨基
+    （P-62.2 字母序；相同烷基用 di-/二-，如 *N(C)C → dimethylamino）。
     零/多取代基或名缺失时返回 None（明确失败，不输出错名）。
     """
     parent = numbered.get("parent") or {}
@@ -117,13 +120,23 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     if not stem_en or not stem_zh:
         return None
     subs = [s for s in (numbered.get("substituents") or []) if s.get("en") and s.get("zh")]
-    if len(subs) > 1:
-        return None
     if len(subs) == 0:
         return _MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
-    a = subs[0]
-    return free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
-                      paren=bool(a.get("paren")))[:2]
+    if len(subs) == 1:
+        a = subs[0]
+        return free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
+                          paren=bool(a.get("paren")))[:2]
+    zero = _MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
+    if (stem_en, stem_zh) != ("azane", "氮烷") or zero is None or len(subs) != 2:
+        # 多取代基仅 N（azane）双烷基成立：O/S 双烷基非标准自由基，明确失败。
+        return None
+    ordered = sorted(subs, key=lambda s: s["en"])
+    if len({s["en"] for s in ordered}) == 1:
+        base = ordered[0]
+        return (f"{MULT_EN[len(ordered)]}{base['en']}{zero[0]}",
+                f"{MULT_ZH[len(ordered)]}{base['zh']}{zero[1]}")
+    return ("".join(s["en"] for s in ordered) + zero[0],
+            "".join(s["zh"] for s in ordered) + zero[1])
 
 
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
