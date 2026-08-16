@@ -1,6 +1,6 @@
 # Layer3: 取代基提取器 (Substituent Extractor)
 
-> **最后更新:** 2026-08-15 | **源文件:** 9 `.py` (947 行) | **公开 API:** `extract_substituents(info, parent, *, name_mode, cache) -> list[dict]`
+> **最后更新:** 2026-08-16 | **源文件:** 9 `.py` (906 行) | **公开 API:** `extract_substituents(info, parent, *, name_mode, cache) -> list[dict]`
 
 ## 概述
 
@@ -41,38 +41,35 @@ def extract_substituents(info, parent, *, name_mode="general", cache=None) -> li
     return base + extract_claimed_sides(info, parent, base, name_mode=name_mode, cache=cache)
 ```
 
-> **源:** `src/namepredict/layer3/substituent_extractor.py:200`
+> **源:** `src/namepredict/layer3/substituent_extractor.py:209`
 
 **第一阶段: 核心官能团提取 (`_extract_core_subs`)** — 按固定顺序收集卤素（F/Cl/Br/I，直接连接在链碳上）、羟基（仅当母体不是醇/酚类）、氨基（仅当母体不是胺/苯胺类，委托 `amino_side.py`）、氧代（仅当母体不是酮/醌类）。每个提取器都检查母体类型 (`_PARENT_OH_KINDS`, `_PARENT_NH2_KINDS`, `_PARENT_OXO_KINDS`) 以及 principal-expression 的附着位（`_principal_attachments`），当母体本身以该官能团为主要官能团时，链上相应基团视为母体骨架而非取代基。
 
 卤素提取有特殊过滤 (`_filter_fg_halos`)：对酰氯/酰溴母体排除官能团自身的卤素；对功能性醚（如 HFIP）跳过醚臂上的氟原子。
 
-> **源:** `src/namepredict/layer3/substituent_extractor.py:178-185`
+> **源:** `src/namepredict/layer3/substituent_extractor.py:187`（`_extract_core_subs`）
 
 **第二阶段: 烷基侧链提取 (`_extract_alkyls_no_aryl`)** — 遍历母体主链上的每个碳原子，通过 `_side_starts`（`carbon_neighbors`，来自 `tools/chain`）识别链碳的界外邻居。对每个侧链起点调用 `_one_alkyl` → `_one_anchored_alkyl`：用 `tools.block_cut.side_atoms` 计算全非母体连通分量，再经 `tools.anchored_table.anchored_entry` 查表。**仅 `kind == "alkyl"` 的条目被认领**（纯碳侧链）；cyano/nitroso 等杂叶留给 claim 补全器。未命中则静默回退（由 `extract_claimed_sides` 的 SubstituentNamer 兜底）。
 
-> **源:** `src/namepredict/layer3/substituent_extractor.py:67-94, 169-176`
+> **源:** `src/namepredict/layer3/substituent_extractor.py:78, 178`（`_one_anchored_alkyl` / `_extract_alkyls_no_aryl`）
 
 **第三阶段: 声明侧链补全 (`extract_claimed_sides`)** — 覆盖补全机制（`claim_extract.py`）。遍历 `iter_claims`（`claimable_block.py`）生成的所有 `ClaimedBlock`（ownership 边界处的未覆盖原子块），对每个未被前面阶段覆盖的 claim 调用 `SubstituentNamer.name()` 命名。**仅原子已被覆盖的 claim 跳过**（`_should_skip`；酰胺 N 不再特判跳过）。这是 layer3 的"安全网"——任何逃过前两段的侧链原子（芳基、烷氧基、N-侧链、复杂分支烷基、杂环等）最终在这里被捕获命名。
 
-> **源:** `src/namepredict/layer3/claim_extract.py:60-101`
+> **源:** `src/namepredict/layer3/claim_extract.py:94`
 
 ### 保留取代基查表 (anchored_table, tools/)
 
-核心机制是**锚定 canonical-SMILES 查表**。`submol_build.build_anchor_submol` 在取代基连接位打上 dummy 原子 `*`，使 canonical SMILES 同时编码形状与附着点（`*C(C)C` 异丙基 vs `*CCC` 正丙基；`*c1ccc(Cl)cc1` 4-氯苯基）。`tools/anchored_table.py`（301 行）维护 **内联非保留取代基**（`ANCHOR_TABLE`，含基础取代基 F/Cl/Br/I/nitro/isocyanato/isothiocyanato、直链 n-烷基 C1-C12、环烷基 C3-C8、phenyl 及少量"删了会 regress 的"卤代烷基）+ **保留取代基锚定键**（声明在 `RetainedSubstituent.anchored`，构建期反查生成 `_ANCHOR_INDEX`）：
+核心机制是**锚定 canonical-SMILES 查表**。`submol_build.build_anchor_submol` 在取代基连接位打上 dummy 原子 `*`，使 canonical SMILES 同时编码形状与附着点（`*C(C)C` 异丙基 vs `*CCC` 正丙基；`*c1ccc(Cl)cc1` 4-氯苯基）。`tools/anchored_table.py`（211 行）维护**单一取代基注册表 `_REGISTRY`**（43 条 `RetainedSubstituent`）——基础取代基与 IUPAC 保留取代基统一入表，各带 `anchored` 锚定键；原内联 `ANCHOR_TABLE` 已并入 registry，**长链烷基（C5+）/环烷基/苯基/卤代烷基不再查表**，改走完整递归/radical 命名管线：
 
 | 类别 | 条目示例 |
 |------|---------|
-| 基础取代基 | `*F` fluoro、`*Cl` chloro、`*[N+](=O)[O-]` nitro、`*N=C=O` isocyanato |
-| 线性 n-烷基 C1-C12 | `*C` methyl … `*CCCCCCCCCCC` undecyl |
-| 保留分支烷基 | 经 registry `_REGISTRY` 解析（isopropyl → propan-2-yl 等） |
-| 环烷基 C3-C8 | `*C1CC1` cyclopropyl … `*C1CCCCCCC1` cyclooctyl |
-| 芳基 | `*c1ccccc1` phenyl |
-| 卤代烷基（删了会 regress 的少数） | `*CCCl` 2-chloroethyl、`*CCCCl` 3-chloropropyl 等 |
+| 基础取代基（halo/leaf） | `*F` fluoro、`*Cl` chloro、`*[N+](=O)[O-]` nitro、`*N=C=O` isocyanato、`*N=C=S` isothiocyanato |
+| 线性 n-烷基 C1-C4 | `*C` methyl … `*CCCC` butyl |
+| 支链/烯/炔保留基 | `*C(C)(C)C` tert-butyl、`*C(C)C` isopropyl、`*CC=C` allyl、`*CC#C` propargyl、`*CC(C)(C)C` neopentyl |
+| 含杂原子保留基（leaf） | `*OC` methoxy、`*O` hydroxy、`*SC` methylsulfanyl、`*S(=O)(=O)O` sulfo、`*C#N` cyano、`*N` amino、`*N=N` diazenyl 等 |
+| 芳烷基 | `*Cc1ccccc1` benzyl |
 
-> 注：08602e3 大改 `ANCHOR_TABLE`——原卤代烷基（chloromethyl/bromomethyl 等）、烯基位置异构（prop-1-enyl 等）、哌啶基、卤代苯基等内联条目删除，仅保留"删了会 regress"的一小部分；基础取代基（halo/nitro/isocyanato）从末尾移入头部并标记 `leaf` kind。
-
-保留基查表经 `_ANCHOR_INDEX`（registry 锚定键反查）或 `ANCHOR_TABLE`（内联）命中，解析为 `(en, zh, paren, kind)`。registry 键经 `resolve_name` 解析，使 pin 模式输出系统名（如 isopropyl → propan-2-yl）。`kind` 分 `alkyl` / `aryl` / `halo` / `leaf` 四类——**提取器只认领 `alkyl`**，其余类别留给命名器/补全器。构建期校验 anchored 键的 canonical 形式与唯一性。
+构建期 `_build_anchor_index`（`anchored_table.py:105`）把各条目 `anchored` 键 canonical 化后反查生成 `_ANCHOR_INDEX`；`anchored_entry`（`:177`）/`anchored_lookup`（`:189`）经 `_table_hit`（`:169`）命中即解析为 `(en, zh, paren, kind)`。registry 键经 `resolve_name`（`:131`）解析，使 pin 模式输出系统名（如 isopropyl → propan-2-yl）。`kind` 分 `alkyl` / `aryl` / `halo` / `leaf` 四类——**提取器只认领 `alkyl`**，其余类别留给命名器/补全器。构建期校验 anchored 键的 canonical 形式与唯一性。
 
 > **源:** `src/namepredict/tools/anchored_table.py`
 
@@ -80,7 +77,7 @@ def extract_substituents(info, parent, *, name_mode="general", cache=None) -> li
 
 当直接提取器无法命名或 claim 补全器认领的取代基出现时，`SubstituentNamer` 承担命名职责。它采用有序后端链（`_default_backends`，`substituent_namer.py:92-94`），首个命中即返回：
 
-1. **RetainedBackend** — 保留名/锚定查表。`_try_anchored_lookup` 用 `tools.anchored_table.anchored_lookup` 查 `ANCHOR_TABLE`/registry，命中即返回。
+1. **RetainedBackend** — 保留名/锚定查表。`_try_anchored_lookup` 用 `tools.anchored_table.anchored_lookup` 查 `_REGISTRY`（`_ANCHOR_INDEX` 反查），命中即返回。
 
 2. **RecursiveBackend** — 有界递归切割命名。`as_substituent.name_as_substituent` 将 claim 原子从母分子切出为 submol，作为独立分子跑完整 L1-L5 管道，再转 P-29 -yl 形式。递归深度上限 `max_depth=4`。
 
@@ -90,12 +87,15 @@ def extract_substituents(info, parent, *, name_mode="general", cache=None) -> li
 
 ### 通用 cut→free-name→yl 管道 (as_substituent / submol_build)
 
-`as_substituent.py` 承载 RecursiveBackend 与芳环侧链命名的共同底层管道：
+`as_substituent.py`（59 行）承载 RecursiveBackend 的底层 cut→free-name→yl 管道，核心是**按连接点类型分派的锚定 radical 优先路径**：
 
 - `submol_build.py` 提供 `build_cut_submol`（诱导子分子 + attach 处 H 封端）与 `build_anchor_submol`（attach 打 dummy `*`，供 anchored SMILES 使用），定义 `CutSubmol` 数据类（`atom_map`/`inv_map`/`attach_new`/`attach_old`）。
-- `_yl_from_sub` 用 **canonical SMILES 作为缓存键**与 `_name_mol` 的输入，与主分子共享 `CommonNameCache`（`_cache_put`/`_canonical_result`），消除 cut 上下文（环断点/手性方向）对命名的泄漏。
-- `_arene_yl_from_sub` 处理苯环切割：自由名管线的 `_name_mol` 会把取代苯命名为"chlorobenzene"（或 phenol/aniline），但苯基*取代基*必须把 OH/NH2/CN 当作叶并令附着碳位次为 1。该路径重建锚定 submol 重新自由命名，L1 检测自由基、L2 选苯基母体、L4 锚定位次 1、L5 输出 `{leaf-locants}phenyl`。芳基臂命名即经此路径，无独立芳基命名模块。
+- `_radical_yl_from_sub`（`as_substituent.py:18`）处理**碳连接点**：`build_anchor_submol` 打 `*` 后经完整管线自由命名——L1 检测自由基（p41=1）、L2 选 radical 主基团、L4 锚定位次、L5 输出 `{locants}yl`；canonical SMILES 作缓存键与 `_name_mol` 共享 `CommonNameCache`（`_cache_put`/`_canonical_result`），消除 cut 上下文（环断点/手性方向）对命名的泄漏。仅当 `parent_kind == "radical"` 时采用（理论必达，防御性判断）。
+- `_yl_from_sub`（`:41`）按连接点原子序数分派：碳 → `_radical_yl_from_sub`；非碳路径暂返回 None（留 H 封端 free-name + `free_to_yl` 的扩展位）。
+- `name_as_substituent`（`:53`）为入口，`atoms` 强制 frozenset 后委托 `_yl_from_sub`。
 - yl 转换由 `tools/free_to_yl.free_to_yl` 完成（`as_substituent.py` 直接 `from namepredict.tools.free_to_yl import free_to_yl`，无 `layer3/yl_form.py`），处理官能团后缀到前缀的特殊转换：醇→烷氧基 (P-63.2.2)、硫醇→烷硫基 (P-63.2.1)、伯胺→烷氨基 (P-62.2)。
+
+> 注：芳基/苯环侧链不再走独立 `_arene_yl_from_sub`——苯基等经 `_radical_yl_from_sub` 锚定自由基管线统一命名（苯 variant 保留名）。
 
 > **源:** `src/namepredict/layer3/as_substituent.py`, `src/namepredict/layer3/submol_build.py`
 
@@ -111,9 +111,9 @@ def extract_substituents(info, parent, *, name_mode="general", cache=None) -> li
 
 > **源:** `src/namepredict/layer3/coverage.py`
 
-### 保留取代基注册表 (anchored_table._REGISTRY)
+### 取代基注册表 (anchored_table._REGISTRY)
 
-`tools/anchored_table.py` 维护集中式保留取代基注册表 (`_REGISTRY`)，覆盖 IUPAC 2013 蓝皮书 P-29/P-57/P-61-P-68 的条目。每条 `RetainedSubstituent` 含保留英文名/中文名、系统名、IUPAC 推荐级别（PIN/GENERAL/NOT_RECOMMENDED）、`rule_ref`。`resolve_name(key, name_mode)` 是 anchored_table `registry_key` 的解析后端：`general` 返回保留名，`pin` 仅对 PIN 条目返回保留名否则返回系统名。
+`tools/anchored_table.py` 维护集中式取代基注册表 (`_REGISTRY`)，基础取代基与 IUPAC 2013 蓝皮书 P-29/P-57/P-61-P-68 条目统一入表。每条 `RetainedSubstituent`（L26）含保留英文名/中文名、系统名、IUPAC 推荐级别（PIN/GENERAL/NOT_RECOMMENDED）、`anchored` 锚定键、`paren`、`kind`。`resolve_name(key, name_mode)`（`:131`）是 `anchored_key` 的解析后端：`general` 返回保留名，`pin` 仅对 PIN 条目返回保留名否则返回系统名。
 
 > **源:** `src/namepredict/tools/anchored_table.py`
 
@@ -165,21 +165,21 @@ flowchart TD
 flowchart LR
     subgraph CUT["cut → free-name → yl 管道 (as_substituent.py)"]
         BC["build_cut_submol<br/>诱导子分子 + H 封端"]
-        YL["_yl_from_sub<br/>canonical SMILES 缓存键"]
-        ARENE["_arene_yl_from_sub<br/>苯环 → 锚定苯基自由基"]
+        YL["_yl_from_sub<br/>连接点类型分派"]
+        RAD["_radical_yl_from_sub<br/>锚定 * → radical 主基团管线"]
         FY["tools.free_to_yl<br/>-yl 转换"]
     end
 
     subgraph ANCHOR["锚定查表 (tools/anchored_table.py)"]
         BA["build_anchor_submol<br/>attach 打 dummy *"]
-        AT["ANCHOR_TABLE<br/>内联 + registry 锚定键"]
+        AT["_REGISTRY<br/>43 条 + _ANCHOR_INDEX"]
     end
 
     BC --> YL
-    YL --> ARENE
-    ARENE --> FY
+    YL --> RAD
+    RAD --> FY
     BA --> AT
-    AT -->|"registry_key"| REG["tools/anchored_table<br/>resolve_name"]
+    AT -->|"anchored_key"| REG["tools/anchored_table<br/>resolve_name"]
 ```
 
 ## 文件清单
@@ -187,13 +187,13 @@ flowchart LR
 | 文件 | 行数 | 描述 |
 |------|------|------|
 | `__init__.py` | 6 | 公开 API 导出：`extract_substituents` |
-| `substituent_extractor.py` | 212 | **主提取器**。三段流水线：`_extract_core_subs` + `_extract_alkyls_no_aryl`（anchored 查表）+ `extract_claimed_sides`。含 `alkyl_alpha_key`（字母序排序键，L3/L5 共享）。 |
+| `substituent_extractor.py` | 221 | **主提取器**。三段流水线：`_extract_core_subs` + `_extract_alkyls_no_aryl`（anchored 查表）+ `extract_claimed_sides`。含 `alkyl_alpha_key`（字母序排序键，L3/L5 共享）。 |
 | `substituent_namer.py` | 109 | **命名引擎**。有序后端链：Retained(anchored) → Recursive。 |
-| `as_substituent.py` | 134 | **cut→free-name→yl 通用管道**。`name_as_substituent` + 苯环锚定自由基特殊路径，共享 CommonNameCache。 |
-| `submol_build.py` | 95 | **子分子构建**。`build_cut_submol` / `build_anchor_submol` / `CutSubmol`。 |
+| `as_substituent.py` | 59 | **cut→free-name→yl 管道**。`_yl_from_sub` 碳连接点 → `_radical_yl_from_sub`（锚定 * radical 管线），共享 CommonNameCache。 |
+| `submol_build.py` | 99 | **子分子构建**。`build_cut_submol` / `build_anchor_submol` / `CutSubmol`。 |
 | `claim_extract.py` | 101 | **声明侧链补全**。`extract_claimed_sides` 遍历 `iter_claims`，对未覆盖 claim 调 `SubstituentNamer`。 |
-| `claimable_block.py` | 179 | `ClaimedBlock` / `SideSlot`(CHAIN_C/RING_C/AMIDE_N/**AMINE_N**/ETHER_O/OTHER) / `iter_claims`。 |
-| `amino_side.py` | 40 | 氨基取代基：伯氨基 + 仲氨基（`_extract_aminos`）。 |
+| `claimable_block.py` | 198 | `ClaimedBlock` / `SideSlot`(CHAIN_C/RING_C/AMIDE_N/**AMINE_N**/ETHER_O/OTHER) / `iter_claims`。 |
+| `amino_side.py` | 42 | 氨基取代基：伯氨基 + 仲氨基（`_extract_aminos`）。 |
 | `coverage.py` | 71 | **覆盖台账**。`build_coverage_ledger` 计算 gap/overlap。 |
 
 > 备注：layer3 只有以上 9 个模块。`side_facts.py`/`aryl_sub.py`/`yl_form.py` 均不存在——`carbon_neighbors` 位于 `tools/chain.py`，yl 转换在 `tools/free_to_yl.py`。
@@ -202,10 +202,10 @@ flowchart LR
 
 | 文件 | 行数 | 描述 |
 |------|------|------|
-| `tools/anchored_table.py` | 301 | **锚定 canonical-SMILES 查表 + 保留取代基注册表**。`ANCHOR_TABLE` 内联 + `_ANCHOR_INDEX` registry 锚定反查 + `anchored_entry`/`anchored_lookup`/`pick_root`/`resolve_name`/`_REGISTRY`。核心机制。 |
+| `tools/anchored_table.py` | 211 | **锚定 canonical-SMILES 查表 + 取代基注册表**。`_REGISTRY`（43 条统一 registry）+ `_ANCHOR_INDEX` 锚定反查 + `anchored_entry`/`anchored_lookup`/`pick_root`/`resolve_name`/`anchored_whole_mol`。核心机制。 |
 | `tools/block_cut.py` | 82 | 母体边界块切割：`side_atoms`（全连通分量）/`cut_block`/`side_roots`。 |
 | `tools/chain.py` | 46 | 碳链行走原语 `_carbon_neighbors`/`_longest_from`/`carbon_neighbors`，L2/L3 共享。 |
-| `tools/free_to_yl.py` | 172 | **-yl 转换**（layer-agnostic）。 |
+| `tools/free_to_yl.py` | 197 | **-yl 转换**（layer-agnostic）。 |
 
 > 备注：`tools/alkoxy_side.py` 不存在（酯 O 侧拓扑由 L2 principal_expression + L5 `join_ester_name` 承担）。
 

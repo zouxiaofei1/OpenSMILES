@@ -54,13 +54,13 @@ def _thiol_entries(mol: Mol) -> list[dict]:
 
 ### 2.1 注册 fg_rank
 
-`fg_rank` 的单一权威是 `src/namepredict/layer2/principal.py` 的 `PRINCIPAL_REGISTRY`（FG → `PrincipalFeatureSpec.compatibility_rank`，遵循 IUPAC P-41 顺序）。`kind_registry` 通过 `_principal_rank`（`kind_registry.py:18`）把 kind 字符串转 FG 枚举后取 `legacy_rank` 实时投影，无预注册表（`_KIND_CLASS`/`_load_chain_fg` 不存在）。新增 chain FG 只需：
+`fg_rank` 的单一权威是 `src/namepredict/layer1/fg_registry.py` 的 `FG_SPECS`（`FgSpec.compat`，遵循 IUPAC P-41 顺序；`fg_registry.py:42` 起），`PRINCIPAL_REGISTRY`（`principal.py:48`）由它派生。`kind_registry` 通过 `_principal_rank`（`kind_registry.py:18`）把 kind 字符串转 FG 枚举后取 `legacy_rank` 实时投影，无预注册表（`_KIND_CLASS`/`_load_chain_fg` 不存在）。新增 chain FG 只需：
 
-1. 在 `PRINCIPAL_REGISTRY` 中注册该 FG 的 `PrincipalFeatureSpec`。SUFFIX 档用 `_suffix(p41_class, rank, *path)`（如 `FG.THIOL: _suffix(17, 4, 2)`）；非 SUFFIX 类（如 sulfide/ether）用 `PrincipalFeatureSpec(..., PrincipalExpression.LEGACY_COMPAT/PREFIX_ONLY, rank)`
+1. 在 `fg_registry.FG_SPECS` 加一条 `FgSpec` 声明 `p41`/`compat`/`expr`/`anchors` 等字段。SUFFIX 档 `expr="suffix"`（如 `FgSpec("thiol", "thiols", p41=17, path=(2,), compat=4, ...)`，`fg_registry.py:70`）；非 SUFFIX 类（如 sulfide/ether）用 `expr="legacy_compat"/"prefix_only"`。`PRINCIPAL_REGISTRY` 经 `_spec_from_fg`（`principal.py:36`）自动派生，无需手写 `_suffix`。
 
 ### 2.2 母体接线（按表达权限分档）
 
-**SUFFIX 档**（acid/ester/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine）：`principal_expression.py` 的 `_CHAIN_FG`（`:41`）限定 8 类可链式表达的 FG，`_chain_kind`（`:65`）按类别与多重度返回 kind：
+**SUFFIX 档**（acid/ester/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine）：`principal_expression.py` 的 `_CHAIN_FG`（`:43`）限定 8 类可链式表达的 FG，`_chain_kind`（`:59`）按类别与多重度返回 kind：
 
 ```python
 # _CHAIN_FG 含该 FG 类即自动支持；_chain_kind 返回 group_class.value
@@ -133,7 +133,7 @@ kind 收敛在 L2 `_chain_kind`，L5 直接按 FG 类别 kind 查 `_KIND_TABLE`�
 
 ### 5.3 接线到组装流水线
 
-`_names_for` 返回 `(en, zh)` 后，由 `assemble`（`assembler.py:196`）统一完成后续变换——`join_kind_name` 拼接前缀、`maybe_anion_names` 阴离子、`apply_rs_prefix` 立体前缀、`maybe_metal_salt_names` 盐后缀——无需为单个 FG 手动接线。
+`_names_for` 返回 `(en, zh)` 后，由 `assemble`（`assembler.py:240`）统一完成后续变换——`join_kind_name` 拼接前缀、`maybe_anion_names` 阴离子、`apply_rs_prefix` 立体前缀、`maybe_metal_salt_names` 盐后缀——无需为单个 FG 手动接线。
 
 ---
 
@@ -158,7 +158,7 @@ kind 收敛在 L2 `_chain_kind`，L5 直接按 FG 类别 kind 查 `_KIND_TABLE`�
 | L1 | `analyzer.py` 或新建 `{fg}.py` | 独立检测器（较复杂 FG） |
 | L1 | `_carbonyl_common.py` | 共享羰基原语（如涉及 C=O） |
 | L1 | `functional_group_inventory.py` | `FunctionalGroupClass` + `_LIST_CLASSES` + `_ANCHOR_KEYS`（如需类型化类别） |
-| L2 | `principal.py:PRINCIPAL_REGISTRY` | `PrincipalFeatureSpec`（`_suffix` 或 `LEGACY_COMPAT`） |
+| L2 | `fg_registry.FG_SPECS` → `principal.py:PRINCIPAL_REGISTRY`（派生） | `FgSpec`（`p41`/`compat`/`expr`，非 SUFFIX 用 `legacy_compat`） |
 | L2 | `kind_registry.py` | fg_rank 投影（`_principal_rank`） |
 | L2 | `principal_expression.py:_CHAIN_FG` | 链式 FG 类别集合（SUFFIX 类） |
 | L2 | `parent_ownership.py:_kind_fg_atoms` | FG heteroatom ownership 函数 |

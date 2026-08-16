@@ -91,13 +91,13 @@ info = {
 
 信息 dict 是整个流水线的通用数据合约（data contract），从 L1 产出后贯穿 L2-L5 全部层级。L2 基于它做母体决策，L3 基于它做取代基切除，L4/L5 基于它做位次分配和名称组装。
 
-> 源文件：`src/namepredict/layer1/analyzer.py`（10 个 `.py`，约 1,401 行；仅核心 20 类 FG，无 13 个扩展 FG 检测器）
+> 源文件：`src/namepredict/layer1/analyzer.py`（11 个 `.py`，约 1,511 行；仅核心 20 类 FG，无 13 个扩展 FG 检测器）
 
 ### 2.3 Layer 2 -- Parent Selector（母体选择器）
 
 **职责**：母体氢化物（parent hydride）选择——按 IUPAC P-44 规则驱动管线选出主链/主环母体
 
-这是整个流水线中逻辑最复杂的层之一（15 个文件，1,818 行），位于 `src/namepredict/layer2/`。骨架识别在根目录 `ring_scaffold.py`（`_TEMPLATES` 为唯一事实来源，派生 ScaffoldSpec/ScaffoldIdentity），kind 正交化（纯烃环用 `alkane`、数量由 `multiplicity` 承载），无 `scaffold/` 子包与 `candidate_gate.py`/`arene_carbonyl.py`/`parent_core.py`/`identity.py`/`fg_helpers.py`。
+这是整个流水线中逻辑最复杂的层之一（15 个文件，1,720 行），位于 `src/namepredict/layer2/`。骨架识别在根目录 `ring_scaffold.py`（`_TEMPLATES` 为唯一事实来源，派生 ScaffoldSpec/ScaffoldIdentity），kind 正交化（纯烃环用 `alkane`、数量由 `multiplicity` 承载），无 `scaffold/` 子包与 `candidate_gate.py`/`arene_carbonyl.py`/`parent_core.py`/`identity.py`/`fg_helpers.py`。
 
 **主路径（P-44 规则驱动管线）**：
 
@@ -172,7 +172,7 @@ Coverage Ledger 是 Pass1/Pass2 门控的核心机制（见第 4 节）。参见
 
 **职责**：位次分配 + 链定向 + omit-locant 决策
 
-layer4 是**候选枚举的 P-14.4 编号引擎**（7 个 `.py`，593 行）。`number(parent, substituents)`（`src/namepredict/layer4/numbering.py`）的核心是 `numbering_engine.orient_numbering`：
+layer4 是**候选枚举的 P-14.4 编号引擎**（7 个 `.py`，626 行）。`number(parent, substituents)`（`src/namepredict/layer4/numbering.py`）的核心是 `numbering_engine.orient_numbering`：
 
 1. **候选枚举**：链正反（2 个）/ 环每原子 1 号位 × 双向（2n 个）
 2. **固定起点**：杂原子环固定杂原子（Z 最小）为 1 号位，否则 FG 锚点/自由基字段
@@ -188,7 +188,7 @@ FG 位次由 `locant_calc.py` 的 `_FG_LOCANTS` 数据表产出（稀疏 `fg_loc
 
 **职责**：双语名称组装 + 盐后缀拼接
 
-`assemble(numbered_dict)`（`src/namepredict/layer5/assembler.py`）是流水线的最终输出层（6 个 `.py`，1,239 行）：
+`assemble(numbered_dict)`（`src/namepredict/layer5/assembler.py`）是流水线的最终输出层（6 个 `.py`，1,360 行）：
 
 1. **母体命名**：`_names_for` 查 `chain_engine._KIND_TABLE`（10 个 `_Chain` spec，词干 + 烯/炔段 + 位次 + variant 数量后缀），特殊 case 走 worker（`_exocyclic_acid_names`/`_exocyclic_amide_names`/`_parent_stem_names`）。无 kind 收敛层（`typed_kinds.py`）——L2 直接产出 FG 类别 kind。
 2. **取代基排序**：按字母序（EN）排列前缀取代基，重复基团 di/tri/tetra 合并；N- 类取代基（n_alkyl/n_phenyl/n_benzyl/n_block）走 `N-` 前缀。
@@ -337,14 +337,15 @@ src/namepredict/
 ├── layer0/                   # 预处理器 (3 .py, 122 行)
 │   ├── preprocessor.py       # SMILES → Mol
 │   └── salt.py               # 盐解离
-├── layer1/                   # 分析器 (10 .py, ~1,401 行)
-│   ├── analyzer.py           # FG 检测 (20 列表键/18 bool) + info dict
+├── layer1/                   # 分析器 (11 .py, ~1,511 行)
+│   ├── analyzer.py           # FG 检测 (20 列表键/18 bool) + info dict + P-41 仲裁
+│   ├── fg_registry.py        # FG_SPECS 元数据单一事实来源 (派生 L1-L5 各表)
 │   ├── _carbonyl_common.py   # 共享羰基检测原语 (13 函数)
 │   ├── functional_group_inventory.py  # 类型化 FG 库存 (FunctionalGroupClass)
 │   ├── isocyanate.py         # isocyanate / isothiocyanate 检测
 │   ├── acyl_halide.py        # 酰卤 (Cl/Br) 检测
 │   └── ring_*.py             # 环系拓扑 (systems/ir/fingerprint/relative_stereo)
-├── layer2/                   # 母体选择器 (15 .py, ~1,818 行)
+├── layer2/                   # 母体选择器 (15 .py, ~1,720 行)
 │   ├── principal.py          # P-41 主官能团注册表 + 选择
 │   ├── principal_expression.py  # typed 表达 (chain/ring/hydrocarbon, kind 正交化)
 │   ├── principal_parent.py   # P-44 规则驱动管线编排
@@ -359,7 +360,7 @@ src/namepredict/
 │   ├── ring_scaffold.py      # _TEMPLATES → ScaffoldSpec + resolve_ring_scaffold
 │   └── ring_expression_policy.py / ring_parent.py
 │   (无 candidate_gate.py/arene_carbonyl.py/parent_core.py/identity.py/fg_helpers.py)
-├── layer3/                   # 取代基提取 (9 .py, 947 行)
+├── layer3/                   # 取代基提取 (9 .py, 906 行)
 │   ├── substituent_extractor.py  # 三段流水线 (core + anchored + claim)
 │   ├── substituent_namer.py  # 有序后端命名 (retained / recursive)
 │   ├── as_substituent.py / submol_build.py  # cut→free-name→yl 管道
@@ -367,7 +368,7 @@ src/namepredict/
 │   ├── amino_side.py         # 氨基取代基
 │   └── coverage.py           # Coverage Ledger
 │   (无 side_facts.py/aryl_sub.py/yl_form.py → carbon_neighbors 在 tools/chain)
-├── layer4/                   # 编号 (7 .py, 593 行)
+├── layer4/                   # 编号 (7 .py, 626 行)
 │   ├── numbering.py          # 入口: number()
 │   ├── numbering_engine.py   # P-14.4 候选编号引擎 (orient_numbering)
 │   ├── locant_calc.py        # FG 位次 (_FG_LOCANTS 含 amide) + _pack
@@ -375,10 +376,10 @@ src/namepredict/
 │   ├── omit_locants.py       # omit-locant 决策
 │   └── cyclo_relative_stereo.py  # 环多元酸 cis/trans
 │   (无 orienters.py/polyene.py/locants/ 子包)
-└── layer5/                   # 名称组装 (6 .py, 1,239 行)
+└── layer5/                   # 名称组装 (6 .py, 1,360 行)
     ├── assembler.py          # 组装调度 + _names_for 派发 + join_kind_name 拼接
     ├── assembler_prefixes.py # 取代基前缀 + N- 前缀
-    ├── chain_engine.py       # _KIND_TABLE 链引擎 (10 entry, _Chain spec, variant 数量后缀)
+    ├── chain_engine.py       # _KIND_TABLE 链引擎 (10 entry, _Chain spec, mult_ok 数量后缀 + 混合烯炔)
     ├── stems.py              # 烷烃词干 + 盐/阴离子后缀
     ├── stereo.py             # E/Z + CIP R/S 立体前缀
     └── __init__.py

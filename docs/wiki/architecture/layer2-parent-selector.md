@@ -1,6 +1,6 @@
 # Layer2: Parent Selector（母体选择器）
 
-> **文件数:** 15 source files | **代码:** 1,818 行
+> **文件数:** 15 source files | **代码:** 1,720 行
 > **职责:** 给定 layer1 的官能团 (FG) 信息字典，按 IUPAC P-44 选出母体结构 (parent hydride)
 
 ---
@@ -88,10 +88,10 @@ kind_registry 是**只读权威**：被 `scoring.py`（模块级派生集合）�
 
 ### Ring 骨架识别机制（`ring_scaffold.py`）
 
-`ring_scaffold.py`（288 行）以 `_TEMPLATES`（SMILES 模板表）为**唯一事实来源**，派生 ScaffoldSpec/ScaffoldIdentity 与保留条目。职责分两块：
+`ring_scaffold.py`（279 行）以 `_TEMPLATES`（SMILES 模板表）为**唯一事实来源**，派生 ScaffoldSpec/ScaffoldIdentity 与保留条目。职责分两块：
 
-1. **模板注册表（唯一来源）** — `_TEMPLATES`（`71` 起，保留母体，每条 `{smiles, stem_en, stem_zh, naming_class}`）；`_spec_from_template`（`:117`）派生 ScaffoldSpec（n_rings/ring 从 smiles 算，retained=True），`all_specs()`（`:153`）/`get_spec()`（`:148`）/`get_identity()`（`:138`）/`all_identities()`（`:143`）/`kind_ids_for()`（`:184`）均由此派生；`kind_registry._load_from_scaffold_specs` 据此注册 KindMeta 词干（活接线，防清扫判死）
-2. **环解析** — `resolve_ring_scaffold(info, skeleton)`（`:287` 附近）优先级：① `get_identity(skeleton.scaffold_id)` 直接命中 → ② `match_retained`（SMILES 模板子图同构，按环原子集精确覆盖）→ ③ `_generic_carbocycle`（全碳非保留环 → `ScaffoldIdentity("carbocycle",...)`）。`match_systems`/`match_scaffold_ids`/`registry`/`get_entry` 为模板语义查询
+1. **模板注册表（唯一来源）** — `_TEMPLATES`（`70` 起，保留母体，每条 `{smiles, stem_en, stem_zh, naming_class}`）；`_spec_from_template`（`:116`）派生 ScaffoldSpec（n_rings/ring 从 smiles 算，retained=True），`all_specs()`（`:147`）/`get_spec()`（`:142`）/`get_identity()`（`:137`）/`kind_ids_for()`（`:178`）均由此派生；`kind_registry._load_from_scaffold_specs` 据此注册 KindMeta 词干（活接线，防清扫判死）
+2. **环解析** — `resolve_ring_scaffold(info, skeleton)`（`:265`）优先级：① `get_identity(skeleton.scaffold_id)` 直接命中 → ② `match_retained`（SMILES 模板子图同构，按环原子集精确覆盖）→ ③ `_generic_carbocycle`（全碳非保留环 → `ScaffoldIdentity("carbocycle",...)`）。`match_systems`/`match_scaffold_ids`/`registry`/`get_entry` 为模板语义查询
 
 ```mermaid
 flowchart LR
@@ -259,18 +259,18 @@ flowchart LR
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
-| `principal.py` | 95 | P-41 class / P-43 表达元数据 + 主官能团选择: PRINCIPAL_REGISTRY, select_principal_group |
-| `parent_skeleton.py` | 249 | 骨架枚举 + P-44 筛选: enumerate_principal_skeletons, select_principal_skeletons, keep_p44_1_2/2/3/4 |
-| `principal_expression.py` | 362 | typed 表达: express_chain/ring/hydrocarbon_principal, PrincipalExpressionFacts, _chain_kind |
-| `principal_parent.py` | 57 | 编排: rule_driven_parent_candidates, select_principal_parent_skeletons |
-| `parent_candidate.py` | 65 | principal contract: with_principal_group_contract, principal_key, P44Facts |
+| `principal.py` | 85 | P-41 class / P-43 表达元数据 + 主官能团选择: PRINCIPAL_REGISTRY, select_principal_group |
+| `parent_skeleton.py` | 251 | 骨架枚举 + P-44 筛选: enumerate_principal_skeletons, select_principal_skeletons, keep_p44_1_2/2/3/4 |
+| `principal_expression.py` | 316 | typed 表达: express_chain/ring/hydrocarbon_principal, PrincipalExpressionFacts, _chain_kind |
+| `principal_parent.py` | 48 | 编排: rule_driven_parent_candidates, select_principal_parent_skeletons |
+| `parent_candidate.py` | 78 | principal contract: with_principal_group_contract, principal_key, P44Facts |
 
 ### 注册与元数据 (Registry & Scaffold)
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
-| `kind_registry.py` | 107 | KindMeta 注册中心, stem, ring 元数据; 从 ScaffoldSpec 同步词干（只读权威） |
-| `ring_scaffold.py` | 288 | **`_TEMPLATES` → ScaffoldSpec/ScaffoldIdentity + resolve_ring_scaffold** |
+| `kind_registry.py` | 95 | KindMeta 注册中心, stem, ring 元数据; 从 ScaffoldSpec 同步词干（只读权威） |
+| `ring_scaffold.py` | 279 | **`_TEMPLATES` → ScaffoldSpec/ScaffoldIdentity + resolve_ring_scaffold** |
 | `ring_expression_policy.py` | 34 | 环 scaffold 上 typed 主官能团表达的能力策略 |
 | `ring_parent.py` | 22 | 环母体辅助原语: `_o_idx`/`_dbl_o_idx` 等 |
 
@@ -278,7 +278,7 @@ flowchart LR
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
-| `parent_ownership.py` | 249 | 母体原子归属最终化 (immutable owned_atoms, compute_owned_atoms/finalize_parent_ownership) |
+| `parent_ownership.py` | 253 | 母体原子归属最终化 (immutable owned_atoms, compute_owned_atoms/finalize_parent_ownership) |
 
 > 备注：layer2 只有以上 12 个模块。`fg_helpers.py`/`candidate_gate.py`/`arene_carbonyl.py`/`parent_core.py`/`identity.py`/`spiro_parent.py` 及 `scaffold/` 子包均不存在——互斥由 `select_principal_group` 结构性单选择实现；ScaffoldIdentity 定义于 `ring_scaffold.py`；parent_dict/chain 归 principal_expression/parent_ownership 承担。
 
@@ -308,9 +308,9 @@ def select_parent(info: dict, *, all_candidates: bool = False) -> dict | list[di
 |------|------|------|
 | `KindMeta` | `kind_registry.py:7-14` | 母体种类元数据: ring, n_rings, retained, en/zh stem |
 | `ScaffoldSpec` | `ring_scaffold.py:24` | 编号骨架定义: id, naming_class, stem, numbering, retained |
-| `ScaffoldIdentity` | `ring_scaffold.py:46` | 拓扑级身份: id, naming_class, n_rings, ring |
+| `ScaffoldIdentity` | `ring_scaffold.py:45` | 拓扑级身份: id, naming_class, n_rings, ring |
 | `PrincipalFeatureSpec` | `principal.py:27-32` | P-41 表达元数据: priority, expression, compatibility_rank |
-| `PrincipalExpressionFacts` | `principal_expression.py:30` | typed 主基团表达: group_class, multiplicity, relation, attachment_atoms |
+| `PrincipalExpressionFacts` | `principal_expression.py:31` | typed 主基团表达: group_class, multiplicity, relation, attachment_atoms |
 | `SkeletonSelection` | `parent_skeleton.py:34` | 骨架选择结果: candidates + next_rule |
 | `P44Facts` | `parent_candidate.py:13` | principal contract: principal_group_class + principal_group_count |
 

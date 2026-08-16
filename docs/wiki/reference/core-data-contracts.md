@@ -61,7 +61,7 @@ graph TD
 
 ### 官能团条目列表（FG entry lists）
 
-每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 20 个列表键（来自 `_fg_parts` at `analyzer.py:427`）：
+每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 20 个列表键（来自 `_fg_parts` at `analyzer.py:464`，经 `_arbitrate_parts` P-41 仲裁）：
 
 | 键名 | 条目 dict 典型字段 | 来源 |
 |---|---|---|
@@ -69,7 +69,7 @@ graph TD
 | `hydroxyls` | `o_idx`, `c_idx` | `analyzer.py:_hydroxyl_entries` |
 | `esters` | 酯键原子索引 | `analyzer.py:_ester_entries` |
 | `amides` | 酰胺键原子索引 | `analyzer.py:_amide_entries` |
-| `ketones` | `c_idx` | `analyzer.py:_ketone_entries` |
+| `ketones` | `c_idx` | `analyzer.py:_ketone_entries`（+ `_arbitrate_parts` 降级：组合羰基 FG 被更高优先级压制时羰基碳并入） |
 | `radicals` | 自由基（dummy 位点） | `analyzer.py` |
 | `aldehydes` | `c_idx` | `analyzer.py` |
 | `amines` | `n_idx` | `analyzer.py` |

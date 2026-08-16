@@ -46,7 +46,7 @@ SSSR 利用 RDKit 的 `GetRingInfo().AtomRings()` 获取所有最小环，然后
 
 ### 2.1 骨架识别入口
 
-母体选择统一走 P-44 规则管线（`rule_driven_parent_candidates`），环骨架身份由 **`ring_scaffold.py` 的 `resolve_ring_scaffold`**（`:274`）在表达阶段解析：
+母体选择统一走 P-44 规则管线（`rule_driven_parent_candidates`），环骨架身份由 **`ring_scaffold.py` 的 `resolve_ring_scaffold`**（`:265`）在表达阶段解析：
 
 ```
 resolve_ring_scaffold(info, skeleton)
@@ -62,11 +62,11 @@ resolve_ring_scaffold(info, skeleton)
 **新增保留环系（如 quinoline）只改 `ring_scaffold.py` 的 `_TEMPLATES` 一张表**——加一条 `{smiles, stem_en, stem_zh, naming_class}`：
 
 ```python
-# ring_scaffold.py `_TEMPLATES`（`71` 起）
+# ring_scaffold.py `_TEMPLATES`（`70` 起）
 "quinoline": {"smiles": "c1ccc2ncccc2c1", "stem_en": "quinoline", "stem_zh": "喹啉", "naming_class": "fused56"},
 ```
 
-`_spec_from_template`（`:117`）自动派生 `ScaffoldSpec`（n_rings/ring 从 smiles 算，retained=True），`all_specs()`/`get_spec()`/`get_identity()`/`all_identities()` 均由此派生；`kind_registry._load_from_scaffold_specs`（`kind_registry.py:92`）据此自动注册 KindMeta 词干（bootstrap 唯一一步，ScaffoldSpec 是词干权威）。位置异构体（quinoline/isoquinoline、二嗪、二唑等）在元素标注的子图同构下天然区分，无需额外消解。
+`_spec_from_template`（`:116`）自动派生 `ScaffoldSpec`（n_rings/ring 从 smiles 算，retained=True），`all_specs()`/`get_spec()`/`get_identity()` 均由此派生；`kind_registry._load_from_scaffold_specs`（`kind_registry.py:92`）据此自动注册 KindMeta 词干（bootstrap 唯一一步，ScaffoldSpec 是词干权威）。位置异构体（quinoline/isoquinoline、二嗪、二唑等）在元素标注的子图同构下天然区分，无需额外消解。
 
 > 无 `_TOPOLOGY` 五元组表与手写 `_ALL_SPECS`；`match_systems`/`match_scaffold_ids`/`registry`/`get_entry` 为模板语义查询。
 
@@ -88,9 +88,9 @@ resolve_ring_scaffold(info, skeleton)
 2. `_fixed_start` 固定 1 号位：杂原子环优先杂原子（Z 最小 = locant 1），否则 FG 锚点/自由基字段
 3. 按 principal FG → 多重键 → 取代基位次集逐条收窄
 
-因此**新增环系无需写 orienter**。唯一需要保证的是 L2 正确注入 `scaffold_id`。固定编号事实（稠环 `3a`/`4a` 标签）由 `numbering_scaffold_facts`（`ring_scaffold.py:158`）基于 `_TEMPLATES` 生成，L4 校验其存在性（`numbering_scaffold_required`）。
+因此**新增环系无需写 orienter**。唯一需要保证的是 L2 正确注入 `scaffold_id`。固定编号事实（稠环 `3a`/`4a` 标签）由 `numbering_scaffold_facts`（`ring_scaffold.py:152`）基于 `_TEMPLATES` 生成，L4 校验其存在性（`numbering_scaffold_required`）。
 
-> **源:** `src/namepredict/layer4/numbering_engine.py`, `src/namepredict/layer2/ring_scaffold.py:158`
+> **源:** `src/namepredict/layer4/numbering_engine.py`, `src/namepredict/layer2/ring_scaffold.py:152`
 
 > 注：无 `NumberingPlan` 机制与 `locants/` 子包——编号完全走候选枚举 + `chain.index + 1`，不依赖固定编号 plan。
 

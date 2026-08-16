@@ -1,6 +1,6 @@
 # Layer4: Numbering / Locants（编号与定位符）
 
-> **位置:** `src/namepredict/layer4/` | **行数:** 7 个 `.py` (593 行) | **负责:** 按 P-14.4 给母体链/环原子分配位次号、决定编号方向、计算 FG/不饱和键定位符与省略规则
+> **位置:** `src/namepredict/layer4/` | **行数:** 7 个 `.py` (626 行) | **负责:** 按 P-14.4 给母体链/环原子分配位次号、决定编号方向、计算 FG/不饱和键定位符与省略规则
 
 ---
 
@@ -8,7 +8,7 @@
 
 Layer4 在 Layer3 完成母体选择与取代基提取之后，为母体骨架的每个原子分配 IUPAC 定位符（locant），并决定链/环的编号方向（orientation）。它接收 Layer3 的输出——一个包含母体骨架信息的 `parent` 字典和一个 `substituents` 列表——返回一个"已编号"的字典：母体链的方向已确定，每个取代基已获得其附着点的 locant 数值，官能团（FG）和多重键的 locant 也已计算好。
 
-Layer4 由 7 个模块组成，核心是**基于候选枚举的 P-14.4 编号引擎**（593 行）。统一由 `numbering_engine.orient_numbering` 承担编号方向决策，无 kind 派发 orienter（`orienters.py`/`polyene.py`/`locants/` 子包均不存在）。**`NumberingPlan` 概念不存在**——`_fixed_numbering` 为桩（返回 `None`），编号完全走候选枚举 + `chain.index + 1`。
+Layer4 由 7 个模块组成，核心是**基于候选枚举的 P-14.4 编号引擎**（626 行）。统一由 `numbering_engine.orient_numbering` 承担编号方向决策，无 kind 派发 orienter（`orienters.py`/`polyene.py`/`locants/` 子包均不存在）。**`NumberingPlan` 概念不存在**——`_fixed_numbering` 为桩（返回 `None`），编号完全走候选枚举 + `chain.index + 1`。
 
 **输入数据结构:**
 
@@ -48,7 +48,7 @@ Layer4 由 7 个模块组成，核心是**基于候选枚举的 P-14.4 编号引
 
 ### 候选编号引擎 (`numbering_engine.py`)
 
-`orient_numbering`（`numbering_engine.py:137-176`）实现 **P-14.4 规则管线**（无 kind 派发 orienter）。核心思路：枚举候选编号 → 逐条 P-14.4 规则收窄 → 单候选存活时提前终止。
+`orient_numbering`（`numbering_engine.py:145`）实现 **P-14.4 规则管线**（无 kind 派发 orienter）。核心思路：枚举候选编号 → 逐条 P-14.4 规则收窄 → 单候选存活时提前终止。
 
 ```
 orient_numbering(parent, substituents)
@@ -67,7 +67,7 @@ orient_numbering(parent, substituents)
       → 返回 _to_chain(存活候选)（locant = index + 1）
 ```
 
-> **源:** `src/namepredict/layer4/numbering_engine.py:137-176`
+> **源:** `src/namepredict/layer4/numbering_engine.py:145`
 
 关键实现细节：
 
@@ -79,7 +79,7 @@ orient_numbering(parent, substituents)
 
 ### FG 定位符计算 (`locant_calc.py`)
 
-`locant_calc.py`（249 行）从定向后的 chain + plan 计算各类位次。数据驱动核心是 `_FG_LOCANTS` 表（`locant_calc.py:217-223`），产出稀疏的 `fg_locants` 列表：
+`locant_calc.py`（281 行）从定向后的 chain + plan 计算各类位次。数据驱动核心是 `_FG_LOCANTS` 表（`locant_calc.py:253`），产出稀疏的 `fg_locants` 列表：
 
 | 记录 kind | 取值函数 | 说明 |
 |---|---|---|
@@ -90,11 +90,11 @@ orient_numbering(parent, substituents)
 | `acid` | `_acid_fg_locants` | 环外酸取环上附着原子 `ring_attach_idx` |
 | `amide` | `_amide_fg_locants` | **新增（8584795）**：exocyclic 酰胺取环上附着原子位次（羰基碳在环外） |
 
-**位次来源统一经 `_atom_locant`**（`locant_calc.py:10-17`）：`chain.index(atom) + 1`（无 NumberingPlan 分支）。组合 kind 不存在（scaffold×FG 正交），`_OH_KINDS=("alcohol",)`、`_AMINE_KINDS=("amine",)` 只含 FG 类别 kind。
+**位次来源统一经 `_atom_locant`**（`locant_calc.py:14`）：`chain.index(atom) + 1`（无 NumberingPlan 分支）。组合 kind 不存在（scaffold×FG 正交），`_OH_KINDS=("alcohol",)`、`_AMINE_KINDS=("amine",)` 只含 FG 类别 kind。
 
-**不饱和键位次**由 `_unsat_locants`（`locant_calc.py:144`）独立产出为扁平字段：`ene_locant`（单烯，`_edge_min_locant`）、`ene_locants`（多烯）、`yne_locant`、`omit_*` 标志。
+**不饱和键位次**由 `_unsat_locants`（`locant_calc.py:154`）独立产出为扁平字段：`ene_locant`（单烯，`_edge_min_locant`）、`ene_locants`（多烯）、`yne_locant`、`yne_locants`（多炔，`yne_locants` 函数 `:145`）、`omit_*` 标志。
 
-> **源:** `src/namepredict/layer4/locant_calc.py:217-223`
+> **源:** `src/namepredict/layer4/locant_calc.py:253`
 
 ### 共享方向原语 (`_chain_orient.py`)
 
@@ -127,8 +127,8 @@ orient_numbering(parent, substituents)
 |---|---|---|
 | `__init__.py` | 6 | 导出 `number` 函数 |
 | `numbering.py` | 18 | **入口**：`number()` 调用 `orient_numbering` + `_with_locants` + `_pack` |
-| `numbering_engine.py` | 176 | **候选编号引擎**：`orient_numbering`（P-14.4 规则管线：候选枚举 + 逐条收窄 + 提前终止） |
-| `locant_calc.py` | 249 | **FG 位次计算**：`_fg_locants`/`_with_locants`/`_pack`，`_FG_LOCANTS` 数据表（含 amide） |
+| `numbering_engine.py` | 177 | **候选编号引擎**：`orient_numbering`（P-14.4 规则管线：候选枚举 + 逐条收窄 + 提前终止） |
+| `locant_calc.py` | 281 | **FG 位次计算**：`_fg_locants`/`_with_locants`/`_pack`，`_FG_LOCANTS` 数据表（含 amide）+ `yne_locants` 多炔 |
 | `_chain_orient.py` | 48 | 共享方向原语：`_chain_pos`/`_edge_min_locant`/`_bond_min_locs`/`_pair_locants`/`_stem_loc_pairs` |
 | `omit_locants.py` | 70 | FG/不饱和键位次省略规则（按 scaffold_id 判断环状） |
 | `cyclo_relative_stereo.py` | 26 | 环多元酸的相对立体化学前缀（cis/trans, r/c/t） |
@@ -196,6 +196,7 @@ def number(parent: dict, substituents: list[dict]) -> dict:
 | `ene_locants` | `list[int]\|None` | 多双键位次集 |
 | `omit_ene_locant` | `bool` | 是否省略烯键位次 |
 | `yne_locant` | `int\|None` | 三键位次 |
+| `yne_locants` | `list[int]\|None` | 多三键位次集 |
 | `omit_yne_locant` | `bool` | 是否省略炔键位次 |
 | `relative_stereo_prefix` | `str` | 相对立体化学前缀（`"cis"`/`"trans"`，环二酸） |
 | `relative_stereo_locants` | `str` | 3 取代 r/c/t locant 字符串 |
