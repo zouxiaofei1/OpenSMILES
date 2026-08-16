@@ -101,6 +101,37 @@ _TEMPLATES: dict[str, dict] = {
     # ortho_benzoquinone）不入表：模板含环外 =O，匹配集会超出环系统原子集。
 }
 
+# 保留 fused 母体的固定编号标签（P-25.4）：融合桥头用字母 locant（3a/7a、4a/8a）。
+FUSED56_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
+NAPH_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a")
+
+# 不对称 fused 环（含杂原子）的标准编号：模板原子索引按固定 locant 顺序排列。
+# 起点为最优先杂原子，沿环编号绕开融合桥头（桥头只得字母位）。
+# 对称碳环（naphthalene/anthracene）与单环不在此列，走 P-14.4 通用枚举。
+# _STANDARD_ORDERS[spec] = 模板原子按 locant 顺序；_STANDARD_LABELS[spec] = 对应 locant 标签。
+_STANDARD_ORDERS: dict[str, tuple[int, ...]] = {
+    # naph_family（10 原子）：1,2,3,4,4a,5,6,7,8,8a
+    "quinoline":    (4, 5, 6, 7, 8, 9, 0, 1, 2, 3),
+    "quinazoline":  (4, 5, 6, 7, 8, 9, 0, 1, 2, 3),
+    # fused56（9 原子）：1,2,3,3a,4,5,6,7,7a；杂原子(1)走远离桥头方向，苯环从 3a 起
+    "indole":       (4, 5, 6, 7, 8, 0, 1, 2, 3),
+    "benzofuran":   (4, 5, 6, 7, 8, 0, 1, 2, 3),
+    "benzothiophene": (4, 5, 6, 7, 8, 0, 1, 2, 3),
+    "benzothiazole": (4, 5, 6, 7, 8, 0, 1, 2, 3),
+    "benzoxazole":  (4, 5, 6, 7, 8, 0, 1, 2, 3),
+    "indazole":     (6, 5, 4, 3, 2, 1, 0, 8, 7),
+}
+_STANDARD_LABELS: dict[str, tuple[str, ...]] = {
+    "quinoline": NAPH_LABELS,
+    "quinazoline": NAPH_LABELS,
+    "indole": FUSED56_LABELS,
+    "benzofuran": FUSED56_LABELS,
+    "benzothiophene": FUSED56_LABELS,
+    "benzothiazole": FUSED56_LABELS,
+    "benzoxazole": FUSED56_LABELS,
+    "indazole": FUSED56_LABELS,
+}
+
 # 查询子结构与元素签名，import 时构建一次。
 _Q: dict[str, Mol] = {sid: MolFromSmiles(entry["smiles"]) for sid, entry in _TEMPLATES.items()}
 
@@ -118,7 +149,11 @@ def _spec_from_template(sid: str, entry: dict) -> ScaffoldSpec:
     q = _Q[sid]
     n_rings = len(q.GetRingInfo().AtomRings())
     ring = "carbo" if all(q.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in range(q.GetNumAtoms())) else "hetero"
-    numbering = NumberingPolicy(mode=_NUMBERING_MODE.get(entry["naming_class"], "fixed"))
+    std_labels = _STANDARD_LABELS.get(sid, ())
+    numbering = NumberingPolicy(
+        mode=_NUMBERING_MODE.get(entry["naming_class"], "fixed"),
+        standard_path=std_labels,
+    )
     return ScaffoldSpec(
         id=sid, naming_class=entry["naming_class"],
         stem_en=entry["stem_en"], stem_zh=entry["stem_zh"],
@@ -236,15 +271,38 @@ def match_retained(info: dict, atom_ids) -> str | None:
     元素签名预过滤跳过组成不符的模板，再跑子图同构。多个模板同命中时
     按模板表顺序取第一个（元素标注下实际不会发生，防御性兜底）。
     """
+    hit = _match_with_map(info, atom_ids)
+    return hit[0] if hit else None
+
+
+def _match_with_map(info: dict, atom_ids) -> tuple[str, tuple[int, ...]] | None:
+    """模板精确覆盖 atom_ids 时返回 (sid, match)；match[i]=模板原子 i 对应的分子原子。
+
+    match 供固定编号（standard_path）把模板原子映射到分子原子。
+    """
     mol = info["mol"]
     atoms = frozenset(atom_ids)
     elem = _elem_sig(mol, atom_ids)
     for sid, q in _Q.items():
         if _TEMPLATE_ELEM[sid] != elem:
             continue
-        if any(set(m) == atoms for m in mol.GetSubstructMatches(q, uniquify=True)):
-            return sid
+        for m in mol.GetSubstructMatches(q, uniquify=True):
+            if set(m) == atoms:
+                return sid, m
     return None
+
+
+def standard_chain(spec_id: str | None, match: tuple[int, ...] | None) -> list[int] | None:
+    """把 fused 模板固定编号映射到分子：返回分子原子按标准 locant 顺序的列表。
+
+    无标准顺序或 match 缺失/长度不符时返回 None（走 P-14.4 通用枚举）。
+    """
+    if not match:
+        return None
+    order = _STANDARD_ORDERS.get(spec_id or "")
+    if not order or len(order) != len(match):
+        return None
+    return [match[t] for t in order]
 
 
 # 环解析

@@ -185,7 +185,14 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
     if not scaffold:
         return {}
     supported = supports_ring_expression(scaffold, facts) if facts else False
+    # 保留 fused 模板匹配映射：L4 固定编号（standard_path）据此把模板原子映射到分子原子。
+    match = None
+    from namepredict.layer2.ring_scaffold import _match_with_map, get_spec
+    if get_spec(scaffold.id) and get_spec(scaffold.id).numbering.standard_path:
+        hit = _match_with_map(info, skeleton.atom_ids)
+        match = hit[1] if hit and hit[0] == scaffold.id else None
     return {"scaffold_id": scaffold.id, "scaffold_identity": scaffold,
+            "scaffold_match": match,
             "typed_ring_expression_supported": supported}
 
 

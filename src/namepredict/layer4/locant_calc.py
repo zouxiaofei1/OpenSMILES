@@ -12,12 +12,20 @@ def _typed_group_atoms(parent: dict, group: str) -> list[int]:
     return sorted(facts.attachment_atoms) if facts and facts.group_class.value == group else []
 
 def _atom_locant(chain: list[int], atom: int | None, kind: str | None, facts=None, required=False) -> int | None:
-    """有 scaffold 事实时使用 plan；否则保留普通链编号。"""
+    """有 scaffold 固定编号标签时用标签定位次；否则保留普通链编号。
+
+    fused 芳香环（喹啉/吲哚）的标准 chain 含融合桥头（4a/8a 字母位）；chain.index
+    会把桥头当数字位，致后续 locant 偏移。labels 数组（含字母位）与标准 chain
+    同位，数字标签直接取；字母位（4a/8a）无数字 locant，回退链编号折中。
+    """
     if atom is None or atom not in chain:
         return None
-    plan = None
-    loc = None
-    return loc if loc is not None else chain.index(atom) + 1
+    labels = (facts or {}).get("labels")
+    if labels and len(labels) == len(chain):
+        lbl = labels[chain.index(atom)]
+        if str(lbl).isdigit():
+            return int(lbl)
+    return chain.index(atom) + 1
 
 def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
     """按 key 取单个官能团附着原子并计算其链上位次。"""

@@ -135,9 +135,21 @@ def _fixed_start(parent: dict) -> int | None:
 
 
 def _fixed_numbering(parent: dict, chain: list[int]) -> list[int] | None:
-    """P-14.4(a)：经 L2 numbering_scaffold 的保留骨架固定编号。"""
-    plan = None
-    return list(plan.atom_order) if plan is not None else None
+    """P-14.4(a)：经 L2 保留骨架固定编号（standard_path + 模板匹配映射）。
+
+    fused 芳香环（喹啉/吲哚等）的 IUPAC 编号固定（P-25.4）：起点/方向不随取代基
+    变化，P-14.4 通用环枚举会算错（如喹啉 10-氯 vs 2-氯）。standard_path 定义
+    模板原子按标准 locant 的顺序，scaffold_match 把模板原子映射到分子原子。
+    """
+    match = parent.get("scaffold_match")
+    sid = parent.get("scaffold_id")
+    if not match or not sid:
+        return None
+    from namepredict.layer2.ring_scaffold import standard_chain
+    std_chain = standard_chain(sid, tuple(match))
+    if std_chain is None or set(std_chain) != set(chain):
+        return None
+    return std_chain
 
 
 # ── 入口 ─────────────────────────────────────────────────────────────────
