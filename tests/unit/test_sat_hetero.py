@@ -31,12 +31,11 @@ def test_sat_hetero(smiles: str, en: str, zh: str | None) -> None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
 
 
-def test_n_methylpiperidine_not_parent() -> None:
-    """N-alkyl on ring N is out of scope (negative: must not claim piperidine)."""
+def test_n_methylpiperidine() -> None:
+    """N-alkyl on ring N：饱和杂环支持后命名 1-methylpiperidine（N 为 1 位）。"""
     r = SMILESNNamer().name("CN1CCCCC1")
-    if not r.success:
-        return  # fallback 已删：无候选显式失败
-    assert "piperidine" not in normalize_en(r.en)
+    assert r.success
+    assert normalize_en(r.en) == normalize_en("1-methylpiperidine")
 
 
 def test_piperidine_carboxylic_not_oxolane() -> None:

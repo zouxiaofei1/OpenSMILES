@@ -144,6 +144,9 @@ def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentS
     """决定环骨架母体的 kind（radical/正交化 FG 类/结构 kind）。"""
     if selection.group_class is FunctionalGroupClass.RADICAL:
         # 苯基取代基保留名（P-22.2.4）由 L5 radical worker 的 benzene variant 表达，L2 只给统一 kind。
+        if scaffold is None:
+            # 未知杂环 scaffold：L5 无 -yl 词干可拼，显式失败而非当开链烷基错名。
+            return None
         return "radical"
     # 环 + 主 FG → FG 类别 kind（正交化）：苯/饱和环/稠环/杂环一律收敛，
     # 命名由 L5 chain_engine 通用词干引擎拼接（苯等保留名经 variant 特殊，无 variant 走通用名）。
@@ -218,6 +221,10 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     fields = {**_ring_fact_fields(_ring_fields(selection, occurrences), facts),
               **_chain_unsat_fields(info, skeleton,
                                     _scaffold_fields(info, skeleton, facts, scaffold))}
+    if facts.group_class is FunctionalGroupClass.ACID:
+        # 环酸全阴离子补 anion 标志（链酸经 _chain_fields→_expression_flags 已设）；
+        # L5 据此转 -ate/-酸根，并让金属盐前缀（sodium …）能命中。
+        fields = {**fields, **_expression_flags(selection, occurrences)}
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
         fields = ester_fields(info, fields)
     return _parent_dict(kind, skeleton, occurrences, fields, facts)

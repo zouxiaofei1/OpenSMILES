@@ -84,6 +84,13 @@ _TEMPLATES: dict[str, dict] = {
     "pyrazole":    {"smiles": "c1ccn[nH]1", "stem_en": "pyrazole",    "stem_zh": "吡唑",   "naming_class": "monohetero"},
     "oxazole":     {"smiles": "c1cocn1",    "stem_en": "oxazole",     "stem_zh": "噁唑",   "naming_class": "monohetero"},
     "thiazole":    {"smiles": "c1cscn1",    "stem_en": "thiazole",    "stem_zh": "噻唑",   "naming_class": "monohetero"},
+    # saturated monohetero rings（P-22.2.2；radical/取代基须识别为环而非开链）
+    "pyrrolidine": {"smiles": "C1CCNC1",  "stem_en": "pyrrolidine", "stem_zh": "吡咯烷", "naming_class": "monohetero"},
+    "piperidine":  {"smiles": "C1CCNCC1", "stem_en": "piperidine",  "stem_zh": "哌啶",   "naming_class": "monohetero"},
+    "morpholine":  {"smiles": "C1COCCN1", "stem_en": "morpholine",  "stem_zh": "吗啉",   "naming_class": "monohetero"},
+    "piperazine":  {"smiles": "C1CNCCN1", "stem_en": "piperazine",  "stem_zh": "哌嗪",   "naming_class": "monohetero"},
+    "oxolane":     {"smiles": "C1CCOC1",  "stem_en": "oxolane",     "stem_zh": "四氢呋喃", "naming_class": "monohetero"},
+    "oxane":       {"smiles": "C1CCCOC1", "stem_en": "oxane",       "stem_zh": "四氢吡喃", "naming_class": "monohetero"},
     # fused 5+6
     "indole":         {"smiles": "c1ccc2[nH]ccc2c1", "stem_en": "1H-indole",      "stem_zh": "吲哚",     "naming_class": "fused56"},
     "indazole":       {"smiles": "c1ccc2cn[nH]c2c1", "stem_en": "indazole",       "stem_zh": "吲唑",     "naming_class": "fused56"},
@@ -234,7 +241,7 @@ def _entry_for(sid: str) -> RetainedEntry | None:
         "n_atoms": q.GetNumAtoms(),
         "hetero_Z": hetero_Z,
         "topology": "fused" if n_rings > 1 else "mono",
-        "aromatic": True,
+        "aromatic": all(q.GetAtomWithIdx(i).GetIsAromatic() for i in range(q.GetNumAtoms())),
         "en": entry["stem_en"],
         "zh": entry["stem_zh"],
     }

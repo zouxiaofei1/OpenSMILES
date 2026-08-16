@@ -53,7 +53,9 @@ def test_kind_ids_helpers_derive_from_specs() -> None:
     assert kind_ids_for("mono_carbo") == {"benzene"}
     assert kind_ids_for("monohetero") == {"furan", "thiophene", "pyrrole", "pyridine",
                                           "pyridazine", "pyrimidine", "pyrazine",
-                                          "imidazole", "pyrazole", "oxazole", "thiazole"}
+                                          "imidazole", "pyrazole", "oxazole", "thiazole",
+                                          "pyrrolidine", "piperidine", "morpholine",
+                                          "piperazine", "oxolane", "oxane"}
     assert kind_ids_for("naph_family") == {"naphthalene", "quinoline", "isoquinoline",
                                            "quinazoline", "quinoxaline"}
     assert kind_ids_for("fused56") == {"indole", "indazole", "benzimidazole",

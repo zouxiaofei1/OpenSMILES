@@ -204,11 +204,18 @@ def join_parent_name(prefix: str, parent: str) -> str:
     body = f"{prefix}-{stem}" if stem[:1].isdigit() or stem.startswith("1H-") else f"{prefix}{stem}"
     return f"{stereo}{body}"
 
-def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=None) -> tuple[str, str]:
-    """拼接酯名：O 侧烷基作前缀、酸侧作主体（XX 酸YY酯）。"""
+def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=None) -> tuple[str, str] | None:
+    """拼接酯名：O 侧烷基作前缀、酸侧作主体（XX 酸YY酯）。
+
+    O 侧烷基缺失（无 o_side 取代基，如未识别杂环作烷氧基侧）时输出 bare
+    酸酯名（benzoate/苯甲酸酯），不带 O 侧前缀（alkoxy_complex 基础设施名）。
+    """
     en, zh = names
     o = [s for s in (numbered.get("substituents") or []) if s.get("o_side")]
-    alk_en, alk_zh = o[0].get("en") or "", (o[0].get("zh") or "").rstrip("基")
+    if o:
+        alk_en, alk_zh = o[0].get("en") or "", (o[0].get("zh") or "").rstrip("基")
+    else:
+        alk_en, alk_zh = "", ""
     st, body = _stereo_lead(en)
     mid = f"{pre_en}{body}" if pre_en else body
     en = f"{alk_en} {st}{mid}" if alk_en else f"{st}{mid}"
@@ -221,7 +228,7 @@ def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=N
 def join_kind_name(
     kind: str | None, pre: tuple[str, str], names: tuple[str, str],
     numbered=None,
-) -> tuple[str, str]:
+) -> tuple[str, str] | None:
     """按 kind 分派：酯走酯拼接，其余走普通母体拼接。"""
     if kind in ("ester"):
         return join_ester_name(pre[0], pre[1], names, numbered)
@@ -245,7 +252,10 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     if not names:
         return _unsupported(n, kind)
 
-    en, zh = join_kind_name(kind, _prefix_for(numbered, kind, n), names, numbered)
+    joined = join_kind_name(kind, _prefix_for(numbered, kind, n), names, numbered)
+    if joined is None:
+        return _unsupported(n, kind)
+    en, zh = joined
     en, zh = maybe_anion_names(numbered, en, zh)
     en, zh = apply_rs_prefix(numbered, en, zh)
     en, zh = maybe_metal_salt_names(numbered, en, zh)

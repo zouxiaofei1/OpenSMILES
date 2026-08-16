@@ -202,8 +202,14 @@ def _is_amide_n(atom) -> bool:
                for n in atom.GetNeighbors())
 
 def _amine_degree(atom) -> int | None:
-    """返回胺 N 的取代度（1/2/3）；非胺则返回 None。"""
+    """返回胺 N 的取代度（1/2/3）；非胺则返回 None。
+
+    环内 N（非芳香）是环杂原子而非胺官能团（吡咯烷/哌啶/吗啉/哌嗪的 N），
+    排除以免 L2/L3 把饱和杂环误当胺链 + 氨基取代基。
+    """
     if atom.GetAtomicNum() != N or _is_amide_n(atom) or atom.GetIsAromatic():
+        return None
+    if atom.IsInRing():
         return None
     n_c, n_h = _carbon_neighbor_count(atom), atom.GetTotalNumHs()
     if n_c == 1 and n_h >= 2:

@@ -213,6 +213,25 @@ def _run_candidates(
     return hit or _fail(_elapsed_ms(t0), "no_assemblable_candidate", attempts=attempts)
 
 
+def _apply_salt_suffix(result: NameResult, salt: dict) -> NameResult:
+    """将盐元数据组装为名称后缀（碱金属盐 / HCl 加成盐），仅成功结果生效。
+
+    L5 的 maybe_metal_salt_names 需要 numbered["salt"]，但 numbered 字典由
+    L2–L4 构造、不含 salt（salt 在 L0 解离时才产生）。这里在 _name_mol 出口
+    用独立的 {"salt": salt} 字典调用同一逻辑，避免改动 assemble 的接口。
+    """
+    if not result.success or not salt:
+        return result
+    from namepredict.layer5.stems import maybe_metal_salt_names
+
+    en, zh = maybe_metal_salt_names({"salt": salt}, result.en or "", result.zh or "")
+    if en == (result.en or "") and zh == (result.zh or ""):
+        return result
+    out = copy.copy(result)
+    out.en, out.zh = en, zh
+    return out
+
+
 def _name_mol(
     mol,
     *,
@@ -227,6 +246,7 @@ def _name_mol(
         return _fail(_elapsed_ms(t0), "parse")
     organic, salt = dissociate_salt(mol)
     result = _run_candidates(analyze(organic), depth=depth, t0=t0, name_mode=name_mode, cache=cache)
+    result = _apply_salt_suffix(result, salt)
     if salt and result.success:
         result.meta = {**(result.meta or {}), "salt": salt}
     return result

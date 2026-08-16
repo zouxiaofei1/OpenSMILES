@@ -146,11 +146,11 @@ def _acid_salt_suffix(salt: dict) -> tuple[str, str] | None:
 
 
 def _with_acid_salt(en: str, zh: str, salt: dict) -> tuple[str, str]:
-    """给名称追加酸式盐后缀（分号连接）。"""
+    """给名称追加酸式盐后缀（空格连接，对齐 gold 格式）。"""
     suf = _acid_salt_suffix(salt)
     if suf is None:
         return en, zh
-    return f"{en};{suf[0]}", f"{zh};{suf[1]}"
+    return f"{en} {suf[0]}", f"{zh}{suf[1]}"
 
 
 def maybe_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
