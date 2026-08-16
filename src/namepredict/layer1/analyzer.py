@@ -4,6 +4,7 @@ from __future__ import annotations
 from rdkit.Chem import BondType, Mol
 
 from namepredict.constants import C, H, N, O, S
+from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1._carbonyl_common import (
     _alkoxy_c_of,
     _amide_n_info,
@@ -424,19 +425,56 @@ def _fg_bools(lists: dict) -> dict:
     return {**core, **more}
 
 
+# P-41 优先级仲裁：组合羰基 FG（酸/酯/酰卤/酰胺/醛/酸酐）被更高优先级
+# FG（如自由基）压制时退出主基团，其羰基碳降级入 ketones（oxo 前缀候选），
+# 组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属——不再丢失羰基氧。
+# ketone/alcohol/thiol/amine 是基础成员 FG，永不退出。
+_FG_PARTS_KEY = {  # fg_registry 名 → parts 键（有 p41 的链 FG）
+    "radical": "radicals", "acid": "carboxyls", "anhydride": "anhydrides",
+    "ester": "esters", "acyl_halide": "acyl_chlorides", "amide": "amides",
+    "nitrile": "nitriles", "aldehyde": "aldehydes", "ketone": "ketones",
+    "alcohol": "hydroxyls", "thiol": "thiols", "amine": "amines",
+}
+_CARBONYL_COMPOSITES = {  # 组合羰基 FG 的 parts 键 → fg 名
+    "carboxyls": "acid", "amides": "amide", "esters": "ester",
+    "aldehydes": "aldehyde", "acyl_chlorides": "acyl_halide", "anhydrides": "anhydride",
+}
+
+
+def _fg_carbons(e: dict) -> list[int]:
+    """组合 FG 条目的羰基碳索引（酸酐双羰基）。"""
+    c = e.get("c_idx")
+    return [int(c)] if c is not None else [int(e["c1_idx"]), int(e["c2_idx"])]
+
+
+def _arbitrate_parts(parts: dict) -> dict:
+    """P-41 主基团仲裁：更高优先级 FG 存在时组合羰基 FG 退出，羰基碳降级为 oxo。"""
+    p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
+    present = {fg for fg, key in _FG_PARTS_KEY.items() if parts.get(key)}
+    out = dict(parts)
+    for key, fg in _CARBONYL_COMPOSITES.items():
+        entries = out.get(key)
+        if not entries or not any(p41[h] < p41[fg] for h in present if h != fg):
+            continue
+        out["ketones"] = list(out["ketones"]) + [{"c_idx": c} for e in entries for c in _fg_carbons(e)]
+        out[key] = []
+    return out
+
+
 def _fg_parts(mol: Mol) -> dict:
     """收集分子中所有官能团条目并按其类型组织成 dict。"""
     from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
-    return { "carboxyls": _carboxyl_entries(mol),"hydroxyls": _hydroxyl_entries(mol),
+    return _arbitrate_parts({"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
         "esters": _ester_entries(mol), "amides": _amide_entries(mol),
         "ketones": _ketone_entries(mol), "radicals": _radical_entries(mol),
-            "aldehydes": _aldehyde_entries(mol), "amines": _amine_entries(mol),
-            "quaternary_ammoniums": _quaternary_ammonium_entries(mol),
-            "nitriles": _nitrile_entries(mol), "double_bonds": _double_bond_entries(mol),
-            "triple_bonds": _triple_bond_entries(mol), "acyl_chlorides": _acyl_chloride_entries(mol),
-            "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
-            "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
-            "nitros": _nitro_entries(mol),"isocyanates": isocyanate_entries(mol), "isothiocyanates": isothiocyanate_entries(mol)}
+        "aldehydes": _aldehyde_entries(mol), "amines": _amine_entries(mol),
+        "quaternary_ammoniums": _quaternary_ammonium_entries(mol),
+        "nitriles": _nitrile_entries(mol), "double_bonds": _double_bond_entries(mol),
+        "triple_bonds": _triple_bond_entries(mol), "acyl_chlorides": _acyl_chloride_entries(mol),
+        "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
+        "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
+        "nitros": _nitro_entries(mol), "isocyanates": isocyanate_entries(mol),
+        "isothiocyanates": isothiocyanate_entries(mol)})
 
 def _collect_fgs(mol: Mol) -> dict:
     """聚合官能团列表、布尔标志并构建带类型清单。"""

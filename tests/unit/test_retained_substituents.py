@@ -6,7 +6,6 @@ from rdkit.Chem import MolFromSmiles, MolToSmiles
 
 import namepredict.tools.anchored_table as at
 from namepredict.tools.anchored_table import (
-    ANCHOR_TABLE,
     _ANCHOR_INDEX,
     IupacLevel,
     get_retained,
@@ -219,22 +218,25 @@ def test_anchored_keys_all_canonical():
             assert MolToSmiles(m) == smi, f"{key}: {smi} 非 canonical -> {MolToSmiles(m)}"
 
 
-def test_inline_keys_all_canonical_and_no_collision():
-    """内联表键 canonical 且不与 registry 锚定冲突。"""
-    for smi in ANCHOR_TABLE:
-        m = MolFromSmiles(smi)
-        assert m is not None, f"内联键解析失败 {smi}"
-        assert MolToSmiles(m) == smi, f"内联键非 canonical: {smi}"
-        assert smi not in _ANCHOR_INDEX, f"跨表冲突: {smi}"
+def test_simple_substituents_merged_into_registry():
+    """原 ANCHOR_TABLE 的简单取代基并入 registry，经 anchored 字段反查索引。"""
+    cases = {
+        "*F": "fluoro", "*Cl": "chloro", "*Br": "bromo", "*I": "iodo",
+        "*[N+](=O)[O-]": "nitro", "*N=C=O": "isocyanato", "*N=C=S": "isothiocyanato",
+        "*C": "methyl", "*CC": "ethyl", "*CCC": "propyl", "*CCCC": "butyl",
+    }
+    for smi, key in cases.items():
+        e = get_retained(key)
+        assert e is not None, f"missing key: {key}"
+        assert e.anchored == (smi,), f"{key}: {e.anchored}"
+        assert _ANCHOR_INDEX[smi] == key, f"{smi} -> {_ANCHOR_INDEX[smi]}"
 
 
 def test_allyl_only_true_topology():
-    """allyl 只对应真烯丙基连接位点 *CC=C；*C=CC 是丙-1-烯基内联条目。"""
+    """allyl 只对应真烯丙基连接位点 *CC=C；*C=CC/*C=C-C 均不入锚定索引。"""
     assert get_retained("allyl").anchored == ("*CC=C",)
     assert "*C=CC" not in _ANCHOR_INDEX
-    assert "*C=CC" in ANCHOR_TABLE
     assert "*C=C-C" not in _ANCHOR_INDEX
-    assert "*C=C-C" not in ANCHOR_TABLE
 
 
 def test_unsaturated_isobutyl_isopentyl_not_anchored():

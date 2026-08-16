@@ -48,9 +48,10 @@ _WS = re.compile(r"\s+")
 
 
 def normalize_en(name: str) -> str:
-    """规范化英文名：小写、去重空白并统一连字符/逗号。"""
+    """规范化英文名：小写、去重空白并统一连字符/逗号/括号。"""
     s = (name or "").strip().lower()
     s = s.replace("–", "-").replace("—", "-")
+    s = s.replace("[", "(").replace("]", ")")
     s = _WS.sub(" ", s)
     s = s.replace(" ,", ",")
     return s
