@@ -117,6 +117,30 @@ def _amino_zh(zh: str) -> str | None:
     return None
 
 
+# 单核母体氢化物（P-15.4.1 表 2.1）→ 去氢取代基名（表 1.5 'a' 前缀体系）。
+# 组装名 "ethyl-oxidane" → "ethyloxy" / "乙基-氧化烷" → "乙氧基"。
+_MONONUCLEAR = (("oxidane", "氧化烷", "oxy", "氧基"),
+                ("azane", "氮烷", "amino", "氨基"),
+                ("sulfane", "硫烷", "sulfanyl", "硫基"))
+
+
+def _mononuclear_en(en: str) -> str | None:
+    """单核氢化物 free 名 → 去氢取代基名：ethyl-oxidane → ethyloxy。"""
+    for en_suf, _, yl, _ in _MONONUCLEAR:
+        if en.endswith("-" + en_suf):
+            return en[: -len(en_suf) - 1] + yl
+    return None
+
+
+def _mononuclear_zh(zh: str) -> str | None:
+    """中文组装名去氢：乙基-氧化烷 → 乙氧基、乙基-氮烷 → 乙氨基。"""
+    for _, zh_suf, _, zy in _MONONUCLEAR:
+        if zh.endswith("-" + zh_suf):
+            base = zh[: -len(zh_suf) - 1]
+            return base[: -1] + zy if base.endswith("基") else base + zy
+    return None
+
+
 # ── yl 形式构建器 ──
 
 def _try_fg_prefix(en: str, zh: str) -> tuple[str, str] | None:
@@ -125,6 +149,7 @@ def _try_fg_prefix(en: str, zh: str) -> tuple[str, str] | None:
         (_alkoxy_en, _alkoxy_zh),
         (_sulfanyl_en, _sulfanyl_zh),
         (_amino_en, _amino_zh),
+        (_mononuclear_en, _mononuclear_zh),
     ]:
         en_out = en_fn(en)
         zh_out = zh_fn(zh) if en_out else None

@@ -117,12 +117,14 @@ def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _ketone_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """酮羰基 C + 双键 O（存在时含乙酰甲基）。"""
-    c_idx = parent.get("ketone_c_idx")
-    if c_idx is None:
+    """酮羰基 C + 双键 O（多酮取全部羰基；存在时含乙酰甲基）。"""
+    c_idxs = parent.get("ketone_c_idxs") or ([parent.get("ketone_c_idx")] if parent.get("ketone_c_idx") is not None else [])
+    if not c_idxs:
         return set()
-    out = {int(c_idx)}
-    _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
+    out: set[int] = set()
+    for c in c_idxs:
+        out.add(int(c))
+        _add_opt(out, _dbl_o_idx(mol, int(c)))
     return _add_opt(out, parent.get("acetyl_methyl_idx"))
 
 

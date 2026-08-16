@@ -131,6 +131,8 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         # 杂原子前缀 — O / S
         "methoxy": RetainedSubstituent( "methoxy", "甲氧基", "methoxy", "甲氧基", P, anchored=("*OC", ), paren=False, kind="leaf", ),
         "hydroperoxy": RetainedSubstituent( "hydroperoxy", "氢过氧基", "hydroperoxy", "氢过氧基", P, anchored=("*OO", ), paren=False, kind="leaf", ),
+        "hydroxy": RetainedSubstituent( "hydroxy", "羟基", "hydroxy", "羟基", P, anchored=("*O", ), paren=False, kind="leaf", ),
+        "oxidanyl": RetainedSubstituent( "oxidanyl", "氧基", "oxidanyl", "氧基", P, anchored=("*[O]", ), paren=False, kind="leaf", ),
         "methylsulfanyl": RetainedSubstituent( "methylsulfanyl", "甲硫基", "methylsulfanyl", "甲硫基", P, anchored=("*SC", ), paren=False, kind="leaf", ),
         "ethylsulfanyl": RetainedSubstituent( "ethylsulfanyl", "乙硫基", "ethylsulfanyl", "乙硫基", P, anchored=("*SCC", ), paren=False, kind="leaf", ),
         "sulfanyl": RetainedSubstituent( "sulfanyl", "硫烷基", "sulfanyl", "硫烷基", P, anchored=("*S", ), paren=False, kind="leaf", ),
@@ -143,6 +145,7 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         # 杂原子前缀 — N
         "nitroso": RetainedSubstituent( "nitroso", "亚硝基", "nitroso", "亚硝基", P, anchored=("*N=O", ), paren=False, kind="leaf", ),
         "azido": RetainedSubstituent( "azido", "叠氮基", "azido", "叠氮基", P, anchored=("*N=[N+]=[N-]", ), paren=False, kind="leaf", ),
+        "amino": RetainedSubstituent( "amino", "氨基", "amino", "氨基", P, anchored=("*N", ), paren=False, kind="leaf", ),
         "hydrazinyl": RetainedSubstituent( "hydrazinyl", "肼基", "hydrazinyl", "肼基", P, anchored=("*NN", ), paren=False, kind="leaf", ),
         "anilino": RetainedSubstituent( "anilino", "苯胺基", "phenylamino", "苯氨基", P, anchored=("*Nc1ccccc1", ), paren=False, kind="leaf", ),
         "methylamino": RetainedSubstituent( "methylamino", "甲氨基", "methylamino", "甲氨基", P, anchored=("*NC", ), paren=False, kind="leaf", ),
@@ -257,10 +260,16 @@ def anchored_key(mol: Mol, atoms: frozenset[int], attach_old: int | None = None)
     return MolToSmiles(anchor) if anchor is not None else None
 
 
+# 仅整分子顶层命中的锚定键：单原子杂原子自由基（表 2.1 去氢）。
+# L3 取代基查表（anchored_entry）跳过它们——游离 O/N 原子会被 _one_alkyl
+# 误作侧链提取（酮羰基氧、酯氧、胺氮），命中 *O/*N 会错名成羟基/氨基。
+_WHOLE_ONLY_KEYS = frozenset({"*O", "*[O]", "*N"})
+
+
 def _table_hit(mol: Mol, atoms: frozenset[int], attach_old: int | None) -> tuple[str, str | tuple[str, str, bool, str]] | None:
     """查 registry 锚定索引，再查内联表；返回 (key, payload)。"""
     key = anchored_key(mol, atoms, attach_old)
-    if key is None:
+    if key is None or key in _WHOLE_ONLY_KEYS:
         return None
     reg_key = _ANCHOR_INDEX.get(key)
     if reg_key is not None:

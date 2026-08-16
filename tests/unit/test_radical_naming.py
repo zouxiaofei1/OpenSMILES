@@ -29,6 +29,28 @@ def test_radical_stem(smiles: str, en: str, zh: str) -> None:
     assert normalize_zh(r.zh) == normalize_zh(zh)
 
 
+# 杂原子锚点自由基：单核氢化物母体（P-15.4.1 表 2.1 oxidane/azane/sulfane）
+# + 烷基取代基 → free_to_yl 转标准名；不走碳链 -yl。
+HETERO_RADICAL_CASES = [
+    ("*OCC", "ethyloxy", "乙氧基"),
+    ("*OCCC", "propyloxy", "丙氧基"),
+    ("*NCC", "ethylamino", "乙氨基"),
+    ("*NCCC", "propylamino", "丙氨基"),
+    ("*OCc1ccccc1", "benzyloxy", "苄氧基"),
+    ("*Oc1ccccc1", "phenyloxy", "苯氧基"),
+    ("*NC(=O)C", "acetylamino", "乙酰氨基"),
+    ("*S(=O)(=O)C(C)C", "isopropylsulfanyl", "异丙硫基"),
+]
+
+
+@pytest.mark.parametrize("smiles,en,zh", HETERO_RADICAL_CASES)
+def test_hetero_radical_mononuclear(smiles: str, en: str, zh: str) -> None:
+    r = SMILESNNamer().name(smiles)
+    assert r.success
+    assert normalize_en(r.en) == normalize_en(en)
+    assert normalize_zh(r.zh) == normalize_zh(zh)
+
+
 # 取代基递归:表外变体经 radical worker 拼出带位次的 yl 名,不再 free_to_yl 二次转换。
 SIDE_CASES = [
     # IUPAC 低位次:CH2 连 N 邻位(2),锚定 radical 自洽输出 4-methylpyridin-2-yl;6-yl 是 free_to_yl canonical-rank 反推的旧错误。

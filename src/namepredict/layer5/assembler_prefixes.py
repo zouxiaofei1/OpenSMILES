@@ -157,5 +157,8 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     """从 numbered 提取母体上下文并委托 _build_prefix 构建前缀。"""
     parent = numbered.get("parent") or {}
     has_ene = bool(parent.get("double_bond") or parent.get("double_bonds"))
+    if kind == "radical" and parent.get("radical_anchor_element"):
+        # 杂原子锚点自由基：烷基取代基已并入组装名（ethyloxy），不再加前缀。
+        return "", ""
     return _build_prefix(numbered.get("substituents") or [], n, kind,
                          parent.get("scaffold_id"), has_ene)

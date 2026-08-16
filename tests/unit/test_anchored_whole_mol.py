@@ -34,6 +34,10 @@ def _name(smiles: str, mode: str = "general"):
     ("*S(C)(=O)=O", "methylsulfonyl"),
     ("*C#N", "cyano"),
     ("*C(=O)CC", "propionyl"),
+    ("*O", "hydroxy"),
+    ("*[O]", "oxidanyl"),
+    ("*N", "amino"),
+    ("*S", "sulfanyl"),
 ])
 def test_top_level_star_matches_registry(smi, key):
     for mode in ("general", "pin"):
@@ -83,3 +87,20 @@ def test_star_with_extra_substituent_not_hit():
     r = _name("*c1ccc(Cl)cc1")
     assert (r.meta or {}).get("anchored") is not True
     assert r.en != "phenyl"
+
+
+# ── *O/*[O]/*N 只服务整分子顶层，不进 L3 取代基查表 ──
+
+def test_mononuclear_anchored_whole_mol_only():
+    # 整分子 *O 顶层命中 anchored（hydroxy）
+    r = _name("*O")
+    assert r.en == "hydroxy"
+    assert (r.meta or {}).get("anchored") is True
+
+
+def test_hetero_anchored_not_used_as_substituent_lookup():
+    # 多酮羰基氧不被 L3 误作羟基取代基（*O 不进取代基查表 + _ketone_fg_atoms 修复）
+    assert _name("CC(=O)C(C)=O").en == "butane-2,3-dione"
+    assert _name("CC(=O)CC(=O)C").en == "pentane-2,4-dione"
+    # 真正醚氧取代基仍正常（*OC 在表，非 whole-only）
+    assert _name("*OC").en == "methoxy"

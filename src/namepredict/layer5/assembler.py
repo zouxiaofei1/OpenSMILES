@@ -6,6 +6,7 @@ from namepredict.layer5.chain_engine import _KIND_TABLE, _alkane_names, _chain_n
 from namepredict.layer5.stems import maybe_anion_names, maybe_metal_salt_names
 from namepredict.layer5.assembler_prefixes import _prefix_for
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
+from namepredict.tools.free_to_yl import free_to_yl
 from namepredict.types import NameResult
 
 def _fail(meta: dict | None = None) -> NameResult:
@@ -98,6 +99,24 @@ def _exocyclic_amide_names(n: int, numbered: dict) -> tuple[str, str] | None:
     return None
 
 
+def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
+    """杂原子锚点自由基：单核氢化物母体（表 2.1）+ 烷基取代基 → free_to_yl 转标准名。
+
+    如 *OCC → "ethyl-oxidane" → ethyloxy；*NCC → "ethyl-azane" → ethylamino。
+    零/多取代基或名缺失时返回 None（明确失败，不输出错名）。
+    """
+    parent = numbered.get("parent") or {}
+    stem_en, stem_zh = parent.get("stem_en"), parent.get("stem_zh")
+    if not stem_en or not stem_zh:
+        return None
+    subs = [s for s in (numbered.get("substituents") or []) if s.get("en") and s.get("zh")]
+    if len(subs) != 1:
+        return None
+    a = subs[0]
+    return free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
+                      paren=bool(a.get("paren")))[:2]
+
+
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     """链引擎按表 kind 派发，再转具体 worker。"""
     if kind == "acid":
@@ -108,6 +127,8 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         exo = _exocyclic_amide_names(n, numbered)
         if exo:
             return exo
+    if kind == "radical" and (numbered.get("parent") or {}).get("radical_anchor_element"):
+        return _mononuclear_radical_names(numbered)
     entry = _KIND_TABLE.get(kind)
     if entry is not None:
         sid = _scaffold_id(numbered)

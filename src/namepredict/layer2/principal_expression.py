@@ -1,7 +1,7 @@
 """为选中的骨架标注主基团表达式 facts。"""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 
 from namepredict.layer1 import fg_registry as _fg_reg
@@ -254,18 +254,54 @@ def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
     return {**fields, "o_idx": match["o_idx"], "alkoxy_n": 0}
 
 
+# 表 2.1 单核母体氢化物（P-15.4.1）：杂原子锚点自由基的母体 free 名与元素。
+# 去氢即标准取代基名（oxidane→hydroxy/oxy、azane→amino、sulfane→sulfanyl）。
+_MONONUCLEAR_STEM: dict[int, tuple[str, str, str]] = {
+    7: ("N", "azane", "氮烷"),
+    8: ("O", "oxidane", "氧化烷"),
+    16: ("S", "sulfane", "硫烷"),
+}
+
+
+def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
+                         occurrences) -> tuple[ParentSkeleton, dict] | None:
+    """杂原子锚点自由基收敛为单核氢化物母体骨架（表 2.1）。
+
+    锚点原子非碳时，母体 chain 限定为单原子、注入单核氢化物 free 名
+    （oxidane/azane/sulfane…）与锚点元素；碳侧链留作 L3 取代基，供 L5
+    组装 "alkyl-oxidane" 再经 free_to_yl 转标准取代基名（表 1.5 置换前缀）。
+    仅支持单一锚点；多锚点或碳锚点返回 None 保持现状。
+    """
+    mol = info["mol"]
+    anchors = sorted({i for o in occurrences for i in o.parent_anchors})
+    if len(anchors) != 1:
+        return None
+    spec = _MONONUCLEAR_STEM.get(mol.GetAtomWithIdx(anchors[0]).GetAtomicNum())
+    if spec is None:
+        return None
+    element, stem_en, stem_zh = spec
+    new = replace(skeleton, atom_ids=(anchors[0],))
+    return new, {"radical_anchor_element": element,
+                 "stem_en": stem_en, "stem_zh": stem_zh}
+
+
 def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
                             skeleton: ParentSkeleton) -> dict | None:
     """链骨架：表达主基团并生成母体 dict（不支持返回 None）。"""
     if skeleton.topology is not SkeletonTopology.ACYCLIC:
         return None
-    
+
     occurrences = _covered(selection, skeleton)
     kind = _chain_kind(selection.group_class, len(occurrences))
 
     if kind is None:
         return None
-    fields = _chain_unsat_fields(info, skeleton, _chain_fields(selection, occurrences))
+    extra: dict = {}
+    if kind == "radical":
+        mono = _mononuclear_radical(info, skeleton, occurrences)
+        if mono is not None:
+            skeleton, extra = mono
+    fields = _chain_unsat_fields(info, skeleton, {**_chain_fields(selection, occurrences), **extra})
     if kind == "ester":
         fields = _chain_ester_fields(info, occurrences, fields)
     return _parent_dict(kind, skeleton, occurrences, fields,
