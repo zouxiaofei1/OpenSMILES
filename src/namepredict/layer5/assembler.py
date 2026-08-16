@@ -165,8 +165,11 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             entry = replace(entry, stem=(stem_en, stem_zh), coda="",
                             omit_rule=lambda n, loc, omit: bool(omit), aromatic=True)
         elif sid == "carbocycle":
-            entry = replace(entry, cyclic=True, ene_loc_omit=True,
-                            omit_rule=lambda n, loc, omit: bool(omit))
+            # 单环饱和烃自由基按 P-29.2 方法 1 省略自由价 1 位（cyclopentyl/cyclohexyl）；
+            # 其余 FG 沿用 L4 omit 标志（cyclohexanol 等）。环烯走 unsat 段不受影响。
+            rule = (lambda n, loc, omit: loc == 1) if kind == "radical" \
+                else (lambda n, loc, omit: bool(omit))
+            entry = replace(entry, cyclic=True, ene_loc_omit=True, omit_rule=rule)
         # 苯环单 FG → scaffold 专属保留名 variant (phenol/benzoic…); 开链取 None 键 (acid 草酸)。
         sc_variant = (entry.variant or {}).get(sid)
         if sc_variant is not None:

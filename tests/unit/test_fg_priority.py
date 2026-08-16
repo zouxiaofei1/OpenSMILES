@@ -16,11 +16,12 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 # 正例：radical 主基团抢占后，组合羰基 FG 降级为 oxo（+ 组成基团）前缀。
+# 自由基链自由价在 1 位时省略位次（P-29.2 方法 1）：-ethan-1-yl → -ethyl。
 POSITIVE = [
-    ("C(*)C(N)=O", "2-(amino)-2-oxoethan-1-yl", "2-(氨基)-2-氧代乙-1-基"),
-    ("C(*)C=O", "2-oxoethan-1-yl", "2-氧代乙-1-基"),
-    ("C(*)C(O)=O", "2-(hydroxy)-2-oxoethan-1-yl", "2-(羟基)-2-氧代乙-1-基"),
-    ("C(*)C(=O)OC", "2-methoxy-2-oxoethan-1-yl", "2-甲氧基-2-氧代乙-1-基"),
+    ("C(*)C(N)=O", "2-(amino)-2-oxoethyl", "2-(氨基)-2-氧代乙基"),
+    ("C(*)C=O", "2-oxoethyl", "2-氧代乙基"),
+    ("C(*)C(O)=O", "2-(hydroxy)-2-oxoethyl", "2-(羟基)-2-氧代乙基"),
+    ("C(*)C(=O)OC", "2-methoxy-2-oxoethyl", "2-甲氧基-2-氧代乙基"),
 ]
 
 
@@ -38,8 +39,8 @@ NEGATIVE = [
     ("CC=O", "acetaldehyde", "乙醛"),
     ("CCC(O)=O", "propanoic acid", "丙酸"),
     ("CCC(N)=O", "propanamide", "丙酰胺"),
-    ("C(*)CO", "2-hydroxyethan-1-yl", "2-羟基乙-1-基"),
-    ("C(*)C(C)=O", "2-oxopropan-1-yl", "2-氧代丙-1-基"),
+    ("C(*)CO", "2-hydroxyethyl", "2-羟基乙基"),
+    ("C(*)C(C)=O", "2-oxopropyl", "2-氧代丙基"),
 ]
 
 

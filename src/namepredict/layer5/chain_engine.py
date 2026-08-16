@@ -348,6 +348,15 @@ def _chain_plain(spec: _Chain, s: str, zs: str, n: int) -> tuple[str, str]:
         pair = spec.plain_fn(n)
     return pair if pair is not None else (f"{s}{spec.coda}{spec.en_suf}", f"{zs}{spec.zh_suf}")
 
+
+def _radical_plain(n: int) -> tuple[str, str] | None:
+    """烷基型省略形态: 自由价在 1 位时 'ethan-1-yl' → 'ethyl' (P-29.2 方法 1)。
+
+    中文同步省略 '乙烷-1-基' → '乙基'；词干缺失时回落 None（由调用方兜底）。
+    """
+    s, zs = _en_stem(n), _chain_zh_base(n)
+    return (f"{s}yl", f"{zs}基") if s and zs else None
+
 def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
     """数量后缀生成: MULT[m] + 基础后缀; acid 特判烯基/炔基/俗名; 数量超 MULT 表返回 None."""
     en_m, zh_m = MULT_EN.get(mult), MULT_ZH.get(mult)
@@ -521,7 +530,10 @@ _KIND_TABLE = {
                     }),
     "radical": _Chain(kind="radical", en_suf="yl", zh_suf="基", coda="an",
                       fg="radical", need=1, no_loc="none",
-                      omit_rule=_NO_OMIT,  # 默认带位次（pentan-1-yl / pyridin-4-yl）；苯 variant 覆盖为省略
+                      # 饱和无环链/单环烃自由价在 C-1 时省略位次（P-29.2 方法 1: ethyl/pentyl/2-phenylethyl）；
+                      # 不饱和链（but-3-en-1-yl）与稠环/杂环（naphthalen-1-yl / pyridin-4-yl）走 unsat 段或 loc>1 保留。
+                      omit_rule=lambda n, loc, omit: loc == 1,
+                      plain_fn=_radical_plain,  # 省略位次用烷基型（ethyl/乙基），非 coda 拼接的 ethanyl/乙烷基
                       ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
                       variant={
                           "benzene": {1: dict(plain_maps=None,

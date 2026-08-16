@@ -39,16 +39,26 @@ def _strip_lead_locant(stem: str) -> str:
     return stem[i + 1 :] if i and i < n and stem[i] == "-" else stem
 
 def _strip_outer_parens(stem: str) -> str:
-    """去掉外层括号。"""
-    if len(stem) >= 2 and stem[0] == "(" and stem[-1] == ")":
-        return stem[1:-1]
+    """去掉外层括号；词干以开括号开头即剥（含剥 locant 后残留的前缀括号，如 '(phenyloxy)methyl'）。"""
+    while stem.startswith("("):
+        stem = stem[1:]
+        if stem.endswith(")"):
+            stem = stem[:-1]
     return stem
 
 def alkyl_alpha_key(stem: str) -> str:
-    """字母数字序键：忽略 sec-/tert-/N-/括号/前导位次（P-14.5）。"""
+    """字母数字序键：忽略 sec-/tert-/N-/括号/前导位次（P-14.5）。
+
+    交替剥括号与前导位次直到稳定：'1-(phenyloxy)methyl' 需先剥 locant 露出前缀括号，
+    '(1-methylpropyl)' 需先剥括号露出内部 locant。残留开括号会以 ASCII 优先于字母，
+    把含括号取代基错误排到最前。
+    """
     s = _strip_n_prefix(_strip_ital_prefix(stem))
-    s = _strip_outer_parens(s)
-    return _strip_lead_locant(s)
+    while True:
+        s2 = _strip_lead_locant(_strip_outer_parens(s))
+        if s2 == s:
+            return s
+        s = s2
 
 HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
 HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}

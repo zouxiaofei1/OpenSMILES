@@ -16,8 +16,9 @@ RADICAL_CASES = [
     ("*c1ccncc1", "pyridin-4-yl", "吡啶-4-基"),
     ("*c1cc(C)ccn1", "4-methylpyridin-2-yl", "4-甲基吡啶-2-基"),
     ("*c1ccc2ccccc2c1", "naphthalen-1-yl", "萘-1-基"),
-    ("*CCCCCC", "hexan-1-yl", "己-1-基"),
-    ("*CC(C)C", "2-methylpropan-1-yl", "2-甲基丙-1-基"),
+    # 饱和链自由价在 1 位省略（P-29.2 方法 1）：hexan-1-yl → hexyl。
+    ("*CCCCCC", "hexyl", "己基"),
+    ("*CC(C)C", "isobutyl", "异丁基"),
 ]
 
 
@@ -66,8 +67,8 @@ SIDE_CASES = [
     ("CC(=O)Nc1ccccc1", "N-phenylacetamide", "N-苯基乙酰胺"),
     # 碳连接点锚定优先:4-氯苯基(原 _arene_yl_from_sub 芳基短路,锚定改造后仍正确)。
     ("O=C(O)Cc1ccc(Cl)cc1", "2-(4-chlorophenyl)acetic acid", "2-(4-氯苯基)乙酸"),
-    # 改进:HOCH2CH2- 侧链不再被 free_to_yl 误前缀化成 ethoxy,锚定 radical 给 2-hydroxyethan-1-yl。
-    ("OCCc1ccc(C(=O)O)cc1", "4-(2-hydroxyethan-1-yl)benzoic acid", "4-(2-羟基乙-1-基)苯甲酸"),
+    # 改进:HOCH2CH2- 侧链不再被 free_to_yl 误前缀化成 ethoxy,锚定 radical 给 2-hydroxyethyl(自由价 1 位省略)。
+    ("OCCc1ccc(C(=O)O)cc1", "4-(2-hydroxyethyl)benzoic acid", "4-(2-羟基乙基)苯甲酸"),
     # 非碳连接点(醚氧)仍走 H 封端 + free_to_yl:乙氧基不变。
     ("CCOc1ccccc1", "ethoxybenzene", "乙氧基苯"),
     # N-O(羟胺)递归:O 递归命名 *O→hydroxy,*NO 组装 hydroxy-azane→hydroxyamino。
