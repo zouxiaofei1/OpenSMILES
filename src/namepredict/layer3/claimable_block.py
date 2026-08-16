@@ -143,12 +143,31 @@ def _canonical_edge(
     return min(edges) if edges else None
 
 
+def _has_dbl_o_edge(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> bool:
+    """外部组分中是否存在经双键连接所属的氧（羰基/砜/硝基等主 FG 成分）。
+
+    酮 C=O、砜 S=O 的氧是主官能团组成部分，已由主提取器（oxo 等）命名，
+    不作为独立侧链 claim，避免递归 cut 出 `*O` 污染成羟基。
+    """
+    for a in atoms:
+        if mol.GetAtomWithIdx(a).GetAtomicNum() != 8:
+            continue
+        for n in mol.GetAtomWithIdx(a).GetNeighbors():
+            if n.GetAtomicNum() != 1 and n.GetIdx() in owned:
+                bond = mol.GetBondBetweenAtoms(a, n.GetIdx())
+                if bond is not None and bond.GetBondType() == BondType.DOUBLE:
+                    return True
+    return False
+
+
 def _try_claim(
     mol: Mol, owned: frozenset[int], atoms: frozenset[int]
 ) -> ClaimedBlock | None:
     """尝试为单一组分建立 claim 并返回其块。"""
     edge = _canonical_edge(mol, atoms, owned)
     if edge is None:
+        return None
+    if _has_dbl_o_edge(mol, atoms, owned):
         return None
     attach, root = edge
     slot = derive_slot(mol, attach, owned)

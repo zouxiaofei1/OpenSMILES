@@ -58,8 +58,14 @@ def _init_worker() -> None:
 
 
 def _score_row(row: dict[str, Any]) -> tuple[dict[str, Any], str, str, dict[str, Any]]:
-    """Score one gold row in a worker. Returns (score, pred_en, pred_zh, row)."""
+    """Score one gold row in a worker. Returns (score, pred_en, pred_zh, row).
+
+    每行命名前清空 worker 共享 cache：命名管线依赖 cache 状态（同一 SMILES 的
+    递归子结构命中/未命中路径不同，结果可能不同），行分配/处理顺序在并行下不可
+    预测，共享 cache 会让同名结果跨行漂移。每行从一致初始状态命名保证确定性。
+    """
     try:
+        _WORKER_NAMER.cache.clear()
         result = _WORKER_NAMER.name(str(row.get("smiles") or ""))
         pred_en, pred_zh = result.en or "", result.zh or ""
     except Exception:

@@ -40,9 +40,11 @@ def _yl_from_sub(
 ) -> tuple[str, str, bool] | None:
     """连接点类型分派：碳→锚定 radical 优先；非碳/锚定失败→H 封端 free-name + free_to_yl。"""
     from rdkit import Chem
-    if mol.GetAtomWithIdx(attach_old).GetAtomicNum() == C:
+    
+    if mol.GetAtomWithIdx(attach_old).GetAtomicNum() >1 :
         hit = _radical_yl_from_sub(mol, atoms, attach_old, depth=depth,
-                                   name_mode=name_mode, cache=cache)
+                                    name_mode=name_mode, cache=cache)
+        # print(Chem.MolToSmiles(mol),hit)
         if hit is not None:
             return hit
     return None

@@ -25,6 +25,10 @@ class CommonNameCache:
             raise ValueError(f"cache exceeds max_entries={self.max_entries}")
         self._data[smiles] = result
 
+    def clear(self) -> None:
+        """清空全部缓存条目（并行评测每行独立命名时用于隔离跨行状态）。"""
+        self._data.clear()
+
     def __len__(self) -> int:
         """返回当前缓存的条目数。"""
         return len(self._data)

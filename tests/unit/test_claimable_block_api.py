@@ -101,3 +101,24 @@ def test_claim_block_valid_returns_atoms():
         slot=c.slot,
     )
     assert again == c
+
+
+def test_ketone_carbonyl_o_not_claimed():
+    """外部羰基氧（双键连所属碳）被跳过，不作侧链 claim（主 FG 已处理）。"""
+    mol, info = _info("OC(=O)C(=O)C")
+    parent = select_parent(info)
+    assert parent["kind"] == "acid"
+    claims = iter_claims(mol, parent["owned_atoms"])
+    assert all(
+        mol.GetAtomWithIdx(c.root).GetAtomicNum() != 8 for c in claims
+    )
+
+
+def test_sulfonyl_o_not_claimed():
+    """砜双键氧同样被跳过，避免 cut 出 *O 污染成羟基。"""
+    mol, info = _info("CS(=O)(=O)C")
+    parent = select_parent(info)
+    claims = iter_claims(mol, parent["owned_atoms"])
+    assert all(
+        mol.GetAtomWithIdx(c.root).GetAtomicNum() != 8 for c in claims
+    )

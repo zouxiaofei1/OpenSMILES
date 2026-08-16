@@ -31,6 +31,7 @@ def test_radical_stem(smiles: str, en: str, zh: str) -> None:
 
 # 杂原子锚点自由基：单核氢化物母体（P-15.4.1 表 2.1 oxidane/azane/sulfane）
 # + 烷基取代基 → free_to_yl 转标准名；不走碳链 -yl。
+# 0 取代基（纯单核自由基）→ 直接去氢名；*NO 经递归组装出 hydroxyamino（羟胺基）。
 HETERO_RADICAL_CASES = [
     ("*OCC", "ethyloxy", "乙氧基"),
     ("*OCCC", "propyloxy", "丙氧基"),
@@ -40,6 +41,10 @@ HETERO_RADICAL_CASES = [
     ("*Oc1ccccc1", "phenyloxy", "苯氧基"),
     ("*NC(=O)C", "acetylamino", "乙酰氨基"),
     ("*S(=O)(=O)C(C)C", "isopropylsulfanyl", "异丙硫基"),
+    ("*O", "hydroxy", "羟基"),
+    ("*N", "amino", "氨基"),
+    ("*S", "sulfanyl", "硫基"),
+    ("*NO", "hydroxyamino", "羟基氨基"),
 ]
 
 
@@ -62,6 +67,8 @@ SIDE_CASES = [
     ("OCCc1ccc(C(=O)O)cc1", "4-(2-hydroxyethan-1-yl)benzoic acid", "4-(2-羟基乙-1-基)苯甲酸"),
     # 非碳连接点(醚氧)仍走 H 封端 + free_to_yl:乙氧基不变。
     ("CCOc1ccccc1", "ethoxybenzene", "乙氧基苯"),
+    # N-O(羟胺)递归:O 递归命名 *O→hydroxy,*NO 组装 hydroxy-azane→hydroxyamino。
+    ("O=C(CNO)C1=CC=CC=C1", "2-(hydroxyamino)-1-phenylethanone", "2-(羟基氨基)-1-苯基乙酮"),
 ]
 
 

@@ -99,6 +99,13 @@ def _exocyclic_amide_names(n: int, numbered: dict) -> tuple[str, str] | None:
     return None
 
 
+_MONONUCLEAR_ZERO_YL = {
+    ("oxidane", "氧化烷"): ("hydroxy", "羟基"),
+    ("azane", "氮烷"): ("amino", "氨基"),
+    ("sulfane", "硫烷"): ("sulfanyl", "硫基"),
+}
+
+
 def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     """杂原子锚点自由基：单核氢化物母体（表 2.1）+ 烷基取代基 → free_to_yl 转标准名。
 
@@ -110,8 +117,10 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     if not stem_en or not stem_zh:
         return None
     subs = [s for s in (numbered.get("substituents") or []) if s.get("en") and s.get("zh")]
-    if len(subs) != 1:
+    if len(subs) > 1:
         return None
+    if len(subs) == 0:
+        return _MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
     a = subs[0]
     return free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
                       paren=bool(a.get("paren")))[:2]

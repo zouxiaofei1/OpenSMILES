@@ -90,7 +90,7 @@ def _ring_attaches(mol: Mol, ring: set[int], occurrence: FunctionalGroupOccurren
     """
     if occurrence.parent_anchors & ring:
         return True
-    if occurrence.group_class in (FunctionalGroupClass.AMINE, FunctionalGroupClass.ALCOHOL,FunctionalGroupClass.RADICAL):
+    if occurrence.group_class in (FunctionalGroupClass.AMINE, FunctionalGroupClass.ALCOHOL,FunctionalGroupClass.RADICAL,FunctionalGroupClass.KETONE):
         return False
     return any(n.GetIdx() in ring for a in occurrence.parent_anchors for n in mol.GetAtomWithIdx(a).GetNeighbors())
 
