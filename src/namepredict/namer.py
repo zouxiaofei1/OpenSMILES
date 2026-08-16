@@ -17,6 +17,7 @@ from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer3.substituent_namer import SubstituentName
 from namepredict.layer4.numbering import number
 from namepredict.layer5.assembler import assemble
+from namepredict.tools.anchored_table import anchored_whole_mol
 from namepredict.types import NameResult
 
 
@@ -232,10 +233,23 @@ def _name_mol(
 
 
 def _pipeline(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> NameResult:
-    """预处理 SMILES 后进入 mol 命名流程，解析失败返回失败结果。"""
+    """预处理 SMILES 后进入 mol 命名流程，解析失败返回失败结果。
+
+    整分子 canonical SMILES 命中锚定表时直接返回保留名：带 * 锚点的输入
+    （如 *C(C)C、*OC）本身就是一个锚定键，无需（也无法）经自由基母体
+    管线正确命名——直接复用取代基查表保证与 L3 路径一致。
+    """
     mol = preprocess(smiles)
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
+    whole = anchored_whole_mol(mol, name_mode=name_mode)
+    if whole is not None:
+        en, zh, paren, kind = whole
+        return NameResult(
+            en=en, zh=zh, success=True, source="anchored",
+            time_ms=_elapsed_ms(t0),
+            meta={"parent_kind": "radical", "anchored": True},
+        )
     return _name_mol(mol, depth=0, t0=t0, name_mode=name_mode, cache=cache)
 
 

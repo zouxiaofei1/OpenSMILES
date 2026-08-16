@@ -299,3 +299,23 @@ def anchored_lookup(
     """
     entry = anchored_entry(mol, atoms, attach_old, name_mode=name_mode)
     return None if entry is None else (entry[0], entry[1], entry[2])
+
+
+def anchored_whole_mol(mol: Mol, *, name_mode: str = "general") -> tuple[str, str, bool, str] | None:
+    """整分子 canonical SMILES 命中锚定表时返回 (en, zh, paren, kind)。
+
+    供顶层命名器入口使用：当输入分子本身就是带 * 锚点的一个锚定键
+    （如 *C(C)C、*OC、*Cc1ccccc1）时直接返回保留名，避免自由基母体
+    管线对表内基团的编号/骨架误认。普通分子（锚定表键均带 * 前缀）
+    永不命中，安全走完整命名路径。
+    """
+    from rdkit.Chem import MolToSmiles
+
+    key = MolToSmiles(mol)
+    hit: str | tuple[str, str, bool, str] | None
+    reg_key = _ANCHOR_INDEX.get(key)
+    if reg_key is not None:
+        hit = reg_key
+    else:
+        hit = ANCHOR_TABLE.get(key)
+    return None if hit is None else _resolve(hit, name_mode=name_mode)

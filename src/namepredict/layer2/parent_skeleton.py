@@ -81,14 +81,16 @@ def _chain_coverage(chain: list[int], occurrences) -> frozenset[str]:
 
 
 def _ring_attaches(mol: Mol, ring: set[int], occurrence: FunctionalGroupOccurrence) -> bool:
-    """判断 occurrence 是否附着于环（锚点本身或邻居在环内；胺仅认锚点直接附着）。
+    """判断 occurrence 是否附着于环（锚点本身或邻居在环内；胺/醇仅认锚点直接附着）。
 
     胺 N 直接连芳环（锚点在环内）才选环母体；N 隔碳连芳环（苄基胺类）
-    环不附着，母体走含 N 链、芳基作取代基（P-62.2.2）。
+    环不附着，母体走含 N 链、芳基作取代基（P-62.2.2）。醇同理：羟基碳在
+    环外（苄醇的 CH2、环己基甲醇的 CH2OH）不选环母体，走含羟基链、
+    芳基/环烷基作取代基（P-63 醇侧链），避免环外 OH 被折叠成酚/环醇。
     """
     if occurrence.parent_anchors & ring:
         return True
-    if occurrence.group_class is FunctionalGroupClass.AMINE:
+    if occurrence.group_class in (FunctionalGroupClass.AMINE, FunctionalGroupClass.ALCOHOL,FunctionalGroupClass.RADICAL):
         return False
     return any(n.GetIdx() in ring for a in occurrence.parent_anchors for n in mol.GetAtomWithIdx(a).GetNeighbors())
 
