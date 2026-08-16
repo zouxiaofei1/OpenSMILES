@@ -87,12 +87,14 @@ def _complex_mult_zh(stem: str, n: int) -> str:
 
 
 def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> str:
-    """拼单个中文前缀：数量 + 词干（含 CF3 括号特例）。"""
+    """拼单个中文前缀：数量 + 词干（CF3 特例：简单氟代甲基不加括号）。"""
     mult = _complex_mult_zh(zh_stem, len(subs)) or _mult_zh(len(subs))
     en = subs[0].get("en") or ""
     need = any(s.get("paren") for s in subs) or (en[:1].isdigit() if en else False)
-    if paren_cf3 and zh_stem == "三氟甲基":
-        need = True
+    if zh_stem == "三氟甲基":
+        # 中文三氟甲基是简单取代基（无自身取代），按命名原则不加括号；
+        # paren 标记来自英文规则（英文 trifluoromethyl 加括号），中文不采纳。
+        need = False
     s = _wrap_stem(zh_stem, need)
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 
@@ -125,7 +127,11 @@ def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False) 
     """按词干生成中英文前缀（N- 类取代基加 N- 前缀并强制省略位次）。"""
     zh_stem = subs[0].get("zh") or ""
     if (subs[0].get("kind") or "") in _N_PREFIX_KINDS:
-        return _n_prefix_en(len(subs), stem), _n_prefix_zh(len(subs), zh_stem)
+        # 复合取代基（含 locant 位次/显式 paren）须整体加括号：N-(3-bromophenyl)。
+        need = any(s.get("paren") for s in subs) or bool(stem and stem[0].isdigit())
+        s_en = _wrap_stem(stem, need)
+        s_zh = _wrap_stem(zh_stem, need)
+        return _n_prefix_en(len(subs), s_en), _n_prefix_zh(len(subs), s_zh)
     return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit, paren_cf3)
 
 

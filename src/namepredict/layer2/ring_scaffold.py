@@ -112,9 +112,11 @@ _TEMPLATES: dict[str, dict] = {
 FUSED56_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
 NAPH_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a")
 
-# 不对称 fused 环（含杂原子）的标准编号：模板原子索引按固定 locant 顺序排列。
+# 不对称 fused 环（含杂原子）与 1,3-二唑的标准编号：模板原子索引按固定 locant 顺序排列。
 # 起点为最优先杂原子，沿环编号绕开融合桥头（桥头只得字母位）。
-# 对称碳环（naphthalene/anthracene）与单环不在此列，走 P-14.4 通用枚举。
+# 对称碳环（naphthalene/anthracene）与单杂环（pyrrole/pyridine 等单杂原子）不在此列，
+# 走 P-14.4 通用枚举；1,3-二唑（咪唑/吡唑/噻唑/噁唑）IUPAC 编号固定（N 必须得 1,3 位、
+# 带 H/取代基的 N 为 1），通用枚举会被 principal 最小化翻转，故登记标准编号。
 # _STANDARD_ORDERS[spec] = 模板原子按 locant 顺序；_STANDARD_LABELS[spec] = 对应 locant 标签。
 _STANDARD_ORDERS: dict[str, tuple[int, ...]] = {
     # naph_family（10 原子）：1,2,3,4,4a,5,6,7,8,8a
@@ -127,6 +129,12 @@ _STANDARD_ORDERS: dict[str, tuple[int, ...]] = {
     "benzothiazole": (4, 5, 6, 7, 8, 0, 1, 2, 3),
     "benzoxazole":  (4, 5, 6, 7, 8, 0, 1, 2, 3),
     "indazole":     (6, 5, 4, 3, 2, 1, 0, 8, 7),
+    # monohetero 1,3-二唑（5 原子）：N1(带 H/取代)/C2/N3/C4/C5。
+    # 噻唑/噁唑杂原子异元素（S/O vs N）模板匹配无歧义，登记固定编号；
+    # 咪唑/吡唑双 N 对称（模板 [nH] 对两个 N 可互换匹配），N1 须动态取
+    # 带取代基/H 的 N，走 numbering_engine._ring_hetero_start + 杂原子最小化。
+    "thiazole":     (2, 3, 4, 0, 1),
+    "oxazole":      (2, 3, 4, 0, 1),
 }
 _STANDARD_LABELS: dict[str, tuple[str, ...]] = {
     "quinoline": NAPH_LABELS,
@@ -137,6 +145,8 @@ _STANDARD_LABELS: dict[str, tuple[str, ...]] = {
     "benzothiazole": FUSED56_LABELS,
     "benzoxazole": FUSED56_LABELS,
     "indazole": FUSED56_LABELS,
+    "thiazole": ("1", "2", "3", "4", "5"),
+    "oxazole": ("1", "2", "3", "4", "5"),
 }
 
 # 查询子结构与元素签名，import 时构建一次。

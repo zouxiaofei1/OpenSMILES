@@ -28,7 +28,7 @@ CASES = [
     (
         "ClC=1C=C(C)C(=CC1Cl)C(F)(F)F",
         "1,2-dichloro-4-methyl-5-(trifluoromethyl)benzene",
-        "1,2-二氯-4-甲基-5-(三氟甲基)苯",
+        "1,2-二氯-4-甲基-5-三氟甲基苯",
     ),
     # negative: keep existing correct behaviour
     ("Clc1ccc(Cl)c(Cl)c1", "1,2,4-trichlorobenzene", "1,2,4-三氯苯"),

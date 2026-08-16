@@ -3045,7 +3045,7 @@
     "id": "tiers-28396",
     "smiles": "BrC1=NC=2C(=NC=C(C2)C(=O)OC)N1C",
     "english_name": "Methyl 2-bromo-3-methyl-3H-imidazo[4,5-b]pyridine-6-carboxylate",
-    "chinese_name": "2-溴-3-甲基-3H-咪唑并[4,5-b]吡啶-6-甲酸甲酯",
+    "chinese_name": "2-溴-3-甲基-3H-咪唑并[4,5-b]吡啶-6-羧酸甲酯",
     "source": "smiles_tiers",
     "tier": 3,
     "features": [

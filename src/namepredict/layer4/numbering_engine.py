@@ -107,10 +107,11 @@ _FIXED_START_KEYS = (
 
 
 def _ring_hetero_start(parent: dict, chain: list[int]) -> int | None:
-    """杂原子环：最优先杂原子（Z 最小）为 locant 1（P-14.4，吡啶/嘧啶等）。
+    """杂原子环：最优先杂原子为 locant 1（P-14.4，吡啶/嘧啶等）。
 
     多杂环（嘧啶双 N、咪唑等）同样固定一个杂原子为起点，其余杂原子在
-    P-14.4 枚举中自然得低位（1,3 / 1,2）。
+    P-14.4 枚举中自然得低位（1,3 / 1,2）。1,3-二唑（咪唑/吡唑）N1 优先取
+    带取代基（价 3）的 N、其次带 H 的 N（P-58.2.1）；其余退化为 Z 最小。
     """
     mol = parent.get("mol")
     if mol is None:
@@ -118,6 +119,14 @@ def _ring_hetero_start(parent: dict, chain: list[int]) -> int | None:
     heteros = [a for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != 6]
     if not heteros:
         return None
+    n_sub = [a for a in heteros if mol.GetAtomWithIdx(a).GetAtomicNum() == 7
+             and mol.GetAtomWithIdx(a).GetDegree() == 3]
+    if len(n_sub) == 1:
+        return n_sub[0]
+    n_nh = [a for a in heteros if mol.GetAtomWithIdx(a).GetAtomicNum() == 7
+            and mol.GetAtomWithIdx(a).GetTotalNumHs() > 0]
+    if len(n_nh) == 1:
+        return n_nh[0]
     return min(heteros, key=lambda a: (mol.GetAtomWithIdx(a).GetAtomicNum(), a))
 
 
@@ -172,6 +181,13 @@ def orient_numbering(parent: dict, substituents: list) -> list[int] | None:
     if not cands:
         # 固定起点原子在链候选中不可能为 locant 1（如线性链中部的杂环原子）：保留原顺序。
         return chain
+    mol = parent.get("mol")
+    if mol is not None and _is_ring(parent):
+        # P-14.4：环系编号使杂原子得最低 locant（唑类 N 必须 1,3/1,2）；
+        # 先于 principal 最小化，避免 principal 翻转破坏唑环固定编号。
+        heteros = [a for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != 6]
+        if heteros:
+            cands = _narrow(cands, lambda c: _locant_set(c, heteros))
     principal = _principal_atoms(parent)
     if principal:
         cands = _narrow(cands, lambda c: _locant_set(c, principal))

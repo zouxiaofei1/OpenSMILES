@@ -49,7 +49,7 @@ FG_SPECS: tuple[FgSpec, ...] = (
     FgSpec("anhydride", "anhydrides", p41=8, compat=12),
     FgSpec("ester", "esters", p41=9, compat=11, anchors=("c_idx",),
            parent_anchor_fields=("ester_c_idx", "ester_c_idxs"),
-           chain=True, rs=True),
+           chain=True, rs=True, locant_kind="ester"),
     FgSpec("acyl_halide", "acyl_chlorides", p41=10, compat=10, anchors=("c_idx",)),
     FgSpec("amide", "amides", p41=11, compat=9, anchors=("c_idx",),
            parent_anchor_fields=("amide_c_idx", "amide_c_idxs"),

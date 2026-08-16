@@ -72,6 +72,37 @@ def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
     return None
 
 
+def _exocyclic_ester_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """环酯（carbocycle/稠环/杂环 exocyclic COOR）→ -carboxylate / -甲酸酯 系统名。
+
+    与 _exocyclic_acid_names 对称：酯羰基碳在环外时，正确命名是
+    "thiophene-2-carboxylate"（-oate 直接附环词干是错误收拢）；O 侧烷基
+    由 join_ester_name 拼前缀。苯甲酸酯保留名（benzoate）走 chain_engine
+    variant，此处显式排除。返回酸侧 base（不含 O 侧前缀）。
+    """
+    parent = numbered.get("parent") or {}
+    facts = parent.get("principal_expression_facts")
+    sid = parent.get("scaffold_id")
+    if not facts or facts.group_class.value != "ester" or facts.relation.value != "exocyclic":
+        return None
+    if facts.multiplicity != 1:
+        return None
+    if sid == "benzene":
+        return None
+    if sid == "carbocycle":
+        base = _alkane_names(n)
+        return (f"cyclo{base[0]}carboxylate", f"环{base[1]}甲酸") if base else None
+    base = _ring_base(numbered)
+    if base:
+        rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "ester"), None)
+        locs = rec.get("locants") if rec else None
+        if locs:
+            loc = ",".join(str(x) for x in locs)
+            return (f"{base[0]}-{loc}-carboxylate", f"{base[1]}-{loc}-甲酸")
+        return (f"{base[0]}carboxylate", f"{base[1]}甲酸")
+    return None
+
+
 def _exocyclic_amide_names(n: int, numbered: dict) -> tuple[str, str] | None:
     """环酰胺（carbocycle/稠环/杂环 exocyclic CONH2）→ -carboxamide / -甲酰胺 系统名。
 
@@ -143,6 +174,10 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     """链引擎按表 kind 派发，再转具体 worker。"""
     if kind == "acid":
         exo = _exocyclic_acid_names(n, numbered)
+        if exo:
+            return exo
+    if kind == "ester":
+        exo = _exocyclic_ester_names(n, numbered)
         if exo:
             return exo
     if kind == "amide":
