@@ -139,11 +139,6 @@ def get_identity(spec_id: str) -> ScaffoldIdentity | None:
     return _IDENTITIES.get(spec_id)
 
 
-def all_identities() -> tuple[ScaffoldIdentity, ...]:
-    """返回全部 ScaffoldIdentity。"""
-    return tuple(_IDENTITIES.values())
-
-
 def get_spec(spec_id: str) -> ScaffoldSpec | None:
     """按 id 查 ScaffoldSpec（无则 None）。"""
     return _BY_ID.get(spec_id)

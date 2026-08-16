@@ -310,18 +310,6 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
 
 # ── 无主官能团（纯烃）表达：P-44.1 缺位时按拓扑分配 hydrocarbon kind ──
 
-def _system_is_aromatic(info: dict, atoms: set[int]) -> bool:
-    """判断原子集是否构成芳香 mancude 环系统。"""
-    return any(set(s.get("atom_ids") or ()) == atoms and s.get("is_aromatic_mancude")
-               for s in info.get("ring_systems") or [])
-
-
-def _mono_ring_chain(info: dict, atoms: set[int]) -> list[int] | None:
-    """SSSR 环序（合法顺序），供单环骨架使用。"""
-    return next((list(r["atom_ids"]) for r in info.get("rings") or []
-                 if set(r["atom_ids"]) == atoms), None)
-
-
 def _chain_polys(info: dict, atom_set: set[int]) -> tuple[list[dict], list[dict]]:
     """骨架内的 C=C / C≡C 条目（端点都在 atom_set 中）。"""
     dbs = [d for d in info.get("double_bonds") or [] if d["c1"] in atom_set and d["c2"] in atom_set]
