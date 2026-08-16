@@ -101,7 +101,7 @@ def _ene_locant(oriented: dict) -> int | None:
 
 def _yne_locant(oriented: dict) -> int | None:
     """计算三键的 locant；优先用 yne_locants 列表首位。"""
-    locs = oriented.get("yne_locants") or []
+    locs = yne_locants(oriented)
     if locs:
         return locs[0]
     if oriented.get("kind") == "alkyne" or oriented.get("triple_bond"):
@@ -142,6 +142,15 @@ def ene_locants(oriented: dict) -> list[int] | None:
     locs = _bond_min_locs(oriented.get("chain") or [], bonds)
     return list(locs) if locs else None
 
+
+def yne_locants(oriented: dict) -> list[int] | None:
+    """返回全部三键端点较小位次的排序列表（多炔）。"""
+    bonds = oriented.get("triple_bonds")
+    if not bonds:
+        return None
+    locs = _bond_min_locs(oriented.get("chain") or [], bonds)
+    return list(locs) if locs else None
+
 def _unsat_locants(oriented: dict, n: int) -> dict:
     """打包烯/炔位次及其省略标志。"""
     kind = oriented.get("kind")
@@ -150,6 +159,7 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "ene_locants": ene_locants(oriented),
         "omit_ene_locant": _omit_unsat(n, kind, oriented),
         "yne_locant": _yne_locant(oriented),
+        "yne_locants": yne_locants(oriented),
         "omit_yne_locant": _omit_unsat(n, kind, oriented),
     }
 

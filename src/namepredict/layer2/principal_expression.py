@@ -224,14 +224,17 @@ def _chain_fields(selection, occurrences) -> dict:
 
 
 def _unsat_bond_fields(dbs: list[dict], tbs: list[dict]) -> dict:
-    """不饱和度 → 双键/三键字段字典（混合/无时为空）。"""
-    if len(tbs) == 1 and not dbs:
-        return {"triple_bond": (tbs[0]["c1"], tbs[0]["c2"])}
-    if len(dbs) == 1 and not tbs:
-        return {"double_bond": (dbs[0]["c1"], dbs[0]["c2"])}
-    if len(dbs) >= 2 and not tbs:
-        return {"double_bonds": [(d["c1"], d["c2"]) for d in dbs]}
-    return {}
+    """不饱和度 → 双键/三键字段字典（单数单键、列表多键，烯/炔可共存）。"""
+    fields = {}
+    if len(dbs) == 1:
+        fields["double_bond"] = (dbs[0]["c1"], dbs[0]["c2"])
+    elif len(dbs) >= 2:
+        fields["double_bonds"] = [(d["c1"], d["c2"]) for d in dbs]
+    if len(tbs) == 1:
+        fields["triple_bond"] = (tbs[0]["c1"], tbs[0]["c2"])
+    elif len(tbs) >= 2:
+        fields["triple_bonds"] = [(t["c1"], t["c2"]) for t in tbs]
+    return fields
 
 
 def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> dict:

@@ -31,8 +31,15 @@ def test_radical_stem(smiles: str, en: str, zh: str) -> None:
 
 # 取代基递归:表外变体经 radical worker 拼出带位次的 yl 名,不再 free_to_yl 二次转换。
 SIDE_CASES = [
-    ("O=C(O)Cc1cc(C)ccn1", "2-(4-methylpyridin-6-yl)acetic acid", "2-(4-甲基吡啶-6-基)乙酸"),
+    # IUPAC 低位次:CH2 连 N 邻位(2),锚定 radical 自洽输出 4-methylpyridin-2-yl;6-yl 是 free_to_yl canonical-rank 反推的旧错误。
+    ("O=C(O)Cc1cc(C)ccn1", "2-(4-methylpyridin-2-yl)acetic acid", "2-(4-甲基吡啶-2-基)乙酸"),
     ("CC(=O)Nc1ccccc1", "N-phenylacetamide", "N-苯基乙酰胺"),
+    # 碳连接点锚定优先:4-氯苯基(原 _arene_yl_from_sub 芳基短路,锚定改造后仍正确)。
+    ("O=C(O)Cc1ccc(Cl)cc1", "2-(4-chlorophenyl)acetic acid", "2-(4-氯苯基)乙酸"),
+    # 改进:HOCH2CH2- 侧链不再被 free_to_yl 误前缀化成 ethoxy,锚定 radical 给 2-hydroxyethan-1-yl。
+    ("OCCc1ccc(C(=O)O)cc1", "4-(2-hydroxyethan-1-yl)benzoic acid", "4-(2-羟基乙-1-基)苯甲酸"),
+    # 非碳连接点(醚氧)仍走 H 封端 + free_to_yl:乙氧基不变。
+    ("CCOc1ccccc1", "ethoxybenzene", "乙氧基苯"),
 ]
 
 

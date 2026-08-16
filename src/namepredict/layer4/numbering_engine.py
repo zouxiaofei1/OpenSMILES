@@ -77,14 +77,15 @@ def _principal_atoms(parent: dict) -> list[int]:
 
 
 def _unsat_bonds(parent: dict) -> tuple[list, list]:
-    """（全部多重键、双键）端点对。"""
+    """（全部多重键、双键）端点对：单数 double_bond 亦进 all_bonds（混合烯炔整体最小化）。"""
     all_bonds, doubles = [], []
-    for key, target in (("double_bond", doubles), ("triple_bond", all_bonds)):
+    for key in ("double_bond", "triple_bond"):
         v = parent.get(key)
         if v:
             pair = (v[0], v[1])
-            (target if key == "double_bond" else all_bonds).append(pair)
-   
+            all_bonds.append(pair)
+            if key == "double_bond":
+                doubles.append(pair)
     for key in ("double_bonds", "triple_bonds"):
         for b in parent.get(key) or []:
             pair = (b[0], b[1])

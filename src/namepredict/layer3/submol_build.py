@@ -80,6 +80,7 @@ def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol
     inv = _copy_atoms(em, mol, _ordered(atoms))
     _copy_bonds(em, mol, inv)
     _add_anchor(em, inv[attach_old])
+    # print(Chem.MolToSmiles(em))
     return _sanitize(em)
 
 def build_cut_submol(
@@ -93,4 +94,6 @@ def build_cut_submol(
     _copy_bonds(em, mol, inv)
     _cap_attach_h(em, inv[attach_old])
     out = _sanitize(em)
+    # print(Chem.MolToSmiles(out))
+    # print(out.)
     return None if out is None else _pack(out, inv, attach_old, atoms)

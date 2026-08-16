@@ -98,33 +98,114 @@ def _has_yne(numbered: dict) -> bool:
 
 # ===== 链式词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环 (替代 if-kind 枚举) =====
 def _chain_unsat(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
-    """通用不饱和段引擎: 炔段优先, 烯段其次 — 段式(醇/酮)与融合式(酸)均由 spec 数据驱动."""
-    if _has_yne(numbered) and (spec.yne_seg is not None or spec.yne_suf is not None):
+    """通用不饱和段引擎: 混合烯炔先组合段, 否则炔段优先、烯段其次 — 段式/融合式由 spec 数据驱动."""
+    has_y = _has_yne(numbered) and (spec.yne_seg is not None or spec.yne_suf is not None)
+    has_e = _has_ene(numbered) and (spec.ene_seg is not None or spec.ene_base is not None)
+    if has_e and has_y:
+        top = _chain_enyne(spec, n, numbered)
+        if top is not None:
+            return top
+    if has_y:
         top = _chain_yne(spec, n, numbered)
         if top is not None:
             return top
-    if _has_ene(numbered) and (spec.ene_seg is not None or spec.ene_base is not None):
+    if has_e:
         top = _chain_ene(spec, n, numbered)
         if top is not None:
             return top
     return None
 
+def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
+    """混合烯炔段引擎：烯段(en)前、炔段(yne)后；融合式(烃/酸/醛/腈/酰胺/酯)与段式(醇/酮)均合并两组位次。
+
+    词干加 "a" 当烯/炔任一为多键（P-31.1.1.2 euphonic a）；烯段尾 e 在 yne 前 elide。
+    """
+    s, zs = _chain_stem_pair(spec, n)
+    if s is None or zs is None:
+        return None
+    ene = numbered.get("ene_locant")
+    enes = numbered.get("ene_locants")
+    yne = numbered.get("yne_locant")
+    ynes = numbered.get("yne_locants")
+    ne = len(enes) if enes else (1 if ene is not None else 0)
+    ny = len(ynes) if ynes else (1 if yne is not None else 0)
+    if ne == 0 or ny == 0:
+        return None
+    multi = ne >= 2 or ny >= 2
+    a_en = "a" if multi else ""
+    e_loc = _pair_loc_str(enes) if ne >= 2 else str(ene)
+    y_loc = _pair_loc_str(ynes) if ny >= 2 else str(yne)
+    me, mz = MULT_EN.get(ne), MULT_ZH.get(ne)
+    my_e, my_z = MULT_EN.get(ny), MULT_ZH.get(ny)
+    if me is None or mz is None or my_e is None or my_z is None:
+        return None
+    if spec.ene_base is not None and spec.yne_suf is not None:   # 融合式: 烯段 MULT+en, 炔段 MULT+yne_suf
+        e_seg = (f"{me}en", f"{mz}烯")
+        y_suf = (f"{my_e}{spec.yne_suf[0]}", f"{my_z}{spec.yne_suf[1]}")
+        return (f"{s}{a_en}-{e_loc}-{e_seg[0]}-{y_loc}-{y_suf[0]}",
+                f"{zs}-{e_loc}-{e_seg[1]}-{y_loc}-{y_suf[1]}")
+    if spec.unsat_polyol:
+        # 多 FG 词干模式: 混合烯段 elide e (pent-1-en-4-yne), FG 后缀由 _chain_names 拼接
+        e_seg = (f"{me}en", f"{mz}烯")
+        y_seg = (f"{my_e}yne", f"{my_z}炔")
+        return (f"{s}{a_en}-{e_loc}-{e_seg[0]}-{y_loc}-{y_seg[0]}",
+                f"{zs}-{e_loc}-{e_seg[1]}-{y_loc}-{y_seg[1]}")
+    if spec.fg is not None:                                      # 段式: 烯段/炔段 + FG 位次
+        fg = _fg_locant(numbered, spec.fg)
+        if fg is None:
+            return None
+        e_seg = (f"{me}{spec.ene_seg[0]}", f"{mz}{spec.ene_seg[1]}")
+        y_seg = (f"{my_e}{spec.yne_seg[0]}", f"{my_z}{spec.yne_seg[1]}")
+        return (f"{s}{a_en}-{e_loc}-{e_seg[0]}-{y_loc}-{y_seg[0]}-{fg}-{spec.en_suf}",
+                f"{zs}-{e_loc}-{e_seg[1]}-{y_loc}-{y_seg[1]}-{fg}-{spec.zh_suf}")
+    return None
+
 def _chain_yne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
-    """炔段引擎：融合式加炔后缀，段式（醇/酮）需 FG 位次。"""
-    s, zs = spec.stem if spec.stem else (_en_stem(n), _chain_zh_base(n))
+    """炔段引擎：融合式加炔后缀，段式（醇/酮）需 FG 位次；多炔用 MULT 后缀（hexa-1,5-diyne）。"""
+    s, zs = _chain_stem_pair(spec, n)
     if s is None or zs is None:
         return None
     yne = numbered.get("yne_locant")
+    ynes = numbered.get("yne_locants")
+    multi = bool(ynes and len(ynes) >= 2)
     if spec.yne_suf is not None:      # 融合式: 炔后缀 (酸), omit 时无位次
         if n < 2:
             return None
+        if multi:
+            m_en, m_zh = MULT_EN.get(len(ynes)), MULT_ZH.get(len(ynes))
+            if not m_en or not m_zh:
+                return None
+            loc = _pair_loc_str(ynes)
+            suf = (f"{m_en}{spec.yne_suf[0]}", f"{m_zh}{spec.yne_suf[1]}")
+            return f"{s}a-{loc}-{suf[0]}", f"{zs}-{loc}-{suf[1]}"
         omit = numbered.get("omit_yne_locant", False)
         if omit or yne is None:
             return f"{s}{spec.yne_suf[0]}", f"{zs}{spec.yne_suf[1]}"
         return f"{s}-{yne}-{spec.yne_suf[0]}", f"{zs}-{yne}-{spec.yne_suf[1]}"
+    if spec.unsat_polyol:
+        # 多 FG 词干模式: 炔段保留 e (but-2-yne), FG 后缀由 _chain_names 拼接
+        if yne is None and not ynes:
+            return None
+        if multi:
+            m_en, m_zh = MULT_EN.get(len(ynes)), MULT_ZH.get(len(ynes))
+            if not m_en or not m_zh:
+                return None
+            loc = _pair_loc_str(ynes)
+            return (f"{s}a-{loc}-{m_en}yne", f"{zs}-{loc}-{m_zh}炔")
+        if numbered.get("omit_yne_locant", False):
+            return f"{s}yne", f"{zs}炔"
+        return f"{s}-{yne}-yne", f"{zs}-{yne}-炔"
     fg = _fg_locant(numbered, spec.fg) if spec.fg else None   # 段式: 需 FG 位次 (醇/酮)
     if yne is None or fg is None:
         return None
+    if multi:
+        m_en, m_zh = MULT_EN.get(len(ynes)), MULT_ZH.get(len(ynes))
+        if not m_en or not m_zh:
+            return None
+        loc = _pair_loc_str(ynes)
+        seg = (f"{m_en}{spec.yne_seg[0]}", f"{m_zh}{spec.yne_seg[1]}")
+        return (f"{s}a-{loc}-{seg[0]}-{fg}-{spec.en_suf}",
+                f"{zs}-{loc}-{seg[1]}-{fg}-{spec.zh_suf}")
     return (
         f"{s}-{yne}-{spec.yne_seg[0]}-{fg}-{spec.en_suf}",
         f"{zs}-{yne}-{spec.yne_seg[1]}-{fg}-{spec.zh_suf}",
@@ -141,7 +222,7 @@ def _fused_ene_suf(spec: "_Chain", m: int) -> tuple[str, str] | None:
 
 def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
     """烯段引擎：多烯/单烯、融合式/段式按 spec 字段分支。"""
-    s, zs = spec.stem if spec.stem else (_en_stem(n), _chain_zh_base(n))
+    s, zs = _chain_stem_pair(spec, n)
     if s is None or zs is None:
         return None
     enes = numbered.get("ene_locants")
@@ -153,6 +234,13 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
             ez = spec.ez_ene_multi(numbered) if spec.ez_ene_multi else ""
             loc = ",".join(str(x) for x in enes)
             return f"{ez}{s}a-{loc}-{fused[0]}", f"{ez}{zs}-{loc}-{fused[1]}"
+        if spec.unsat_polyol:
+            # 多 FG 词干模式: 多烯 MULT+ene (buta-1,3-diene), FG 后缀由 _chain_names 拼接
+            m_en, m_zh = MULT_EN.get(len(enes)), MULT_ZH.get(len(enes))
+            if not m_en or not m_zh:
+                return None
+            loc = ",".join(str(x) for x in enes)
+            return f"{s}a-{loc}-{m_en}ene", f"{zs}-{loc}-{m_zh}烯"
         if spec.fg is not None:              # 段式多烯 (醇/酮/胺/硫醇): MULT[m]+烯段
             fg = _fg_locant(numbered, spec.fg) if spec.fg else None
             if fg is None:
@@ -183,6 +271,12 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
         return f"{ez}{s}-{ene}-{fused[0]}", f"{ez}{zs}-{ene}-{fused[1]}"
     if spec.ene_omit_aware:
         ene = _ene_loc_kept(numbered)
+    if spec.unsat_polyol:
+        # 多 FG 词干模式: 烯段保留 e (but-2-ene), FG 后缀由 _chain_names 拼接
+        if ene is None:
+            return None
+        ez = (spec.ez_ene(numbered) if spec.ez_ene else "") or ""
+        return (f"{ez}{s}-{ene}-ene", f"{ez}{zs}-{ene}-烯")
     fg = _fg_locant(numbered, spec.fg) if spec.fg else None   # 段式单烯 (醇/酮)
     if ene is None or fg is None:
         return None
@@ -228,7 +322,7 @@ class _Chain:
     stem: tuple | None = None           # (en_stem, zh_stem) — 稠环/杂环 scaffold 词干覆盖 (naphthalen/萘…)
     mult_ok: bool = False               # 支持数量后缀生成 (acid/alcohol/amine/ketone)
     mult_zh_full: bool = False          # 多 FG 中文词干保留完整 "烷" (醇/胺)
-    mult_unsat_polyol: bool = False     # 多 FG 词干支持烯/炔插入 (仅醇)
+    mult_unsat_polyol: bool = False     # 多 FG 词干支持烯/炔插入 (醇/胺/硫醇: but-2-ene-1,4-diol)
     aromatic: bool = False              # 芳香环 scaffold 标记 (由 assembler 注入); 醇→酚 语义在此消费
 
 def _chain_zh_base(n: int) -> str | None:
@@ -236,39 +330,23 @@ def _chain_zh_base(n: int) -> str | None:
     z = alkane_zh(n)
     return zh_stem(z) if z else None
 
+
+def _chain_stem_pair(spec: "_Chain", n: int) -> tuple[str, str] | None:
+    """取双语词干：unsat_polyol（多 FG）中文保留完整 "烷"（丁烷-2-烯-1,4-二醇）。"""
+    if spec.stem:
+        return spec.stem
+    s = _en_stem(n)
+    zs = alkane_zh(n) if spec.unsat_polyol else _chain_zh_base(n)
+    if s is None or zs is None:
+        return None
+    return s, zs
+
 def _chain_plain(spec: _Chain, s: str, zs: str, n: int) -> tuple[str, str]:
     """普通名: 俗名表 → 派生命名 → 词干拼接."""
     pair = _pair(*spec.plain_maps, n) if spec.plain_maps else None
     if pair is None and spec.plain_fn is not None:
         pair = spec.plain_fn(n)
     return pair if pair is not None else (f"{s}{spec.coda}{spec.en_suf}", f"{zs}{spec.zh_suf}")
-
-def _chain_polyol_stem(n: int, numbered: dict) -> tuple[str, str] | None:
-    """多 FG 不饱和词干: but-2-ene / 丁烷-2-烯 (词干函数驱动; 数量烯用 MULT 表)."""
-    enes = numbered.get("ene_locants")
-    ene = numbered.get("ene_locant")
-    yne = numbered.get("yne_locant")
-    if not (enes or ene or yne):
-        return None
-    s = _en_stem(n)
-    zh = alkane_zh(n)
-    if s is None or zh is None:
-        return None
-    if enes and len(enes) >= 2:
-        me, mz = MULT_EN.get(len(enes)), MULT_ZH.get(len(enes))
-        if not me or not mz:
-            return None
-        loc = _pair_loc_str(enes)
-        return f"{s}a-{loc}-{me}ene", f"{zh}-{loc}-{mz}烯"
-    if yne is not None:
-        if numbered.get("omit_yne_locant", False):
-            return f"{s}yne", f"{zh}炔"
-        return f"{s}-{yne}-yne", f"{zh}-{yne}-炔"
-    if ene is not None:
-        if numbered.get("omit_ene_locant", False):
-            return f"{s}ene", f"{zh}烯"
-        return f"{s}-{ene}-ene", f"{zh}-{ene}-烯"
-    return None
 
 def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
     """数量后缀生成: MULT[m] + 基础后缀; acid 特判烯基/炔基/俗名; 数量超 MULT 表返回 None."""
@@ -316,6 +394,15 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
     if not alk:
         return None
     top = _chain_unsat(spec, n, numbered)
+    if top is not None and spec.unsat_polyol:
+        # 多 FG 词干模式: 词干 + FG 位次 + 多 FG 后缀 (but-2-ene-1,4-diol)
+        rec = _fg_record(numbered, spec.fg)
+        locs = rec["locants"] if rec else None
+        if not locs or (spec.need is not None and len(locs) != spec.need):
+            top = None
+        else:
+            loc_s = ",".join(str(x) for x in locs)
+            top = (f"{top[0]}-{loc_s}-{spec.en_suf}", f"{top[1]}-{loc_s}-{spec.zh_suf}")
     if top is not None:
         if spec.cyclic or spec.cyclic_unsat:
             top = (f"cyclo{top[0]}", f"环{top[1]}")
@@ -345,13 +432,6 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
             if spec.stem:
                 # 稠环 scaffold 词干已含完整基座（naphthalen/萘），直接拼后缀。
                 pair = (f"{s}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
-            elif spec.unsat_polyol:
-                poly_stem = _chain_polyol_stem(n, numbered)
-                if poly_stem is not None:
-                    es, zs2 = poly_stem
-                    pair = (f"{es}-{loc_s}-{spec.en_suf}", f"{zs2}-{loc_s}-{spec.zh_suf}")
-                else:
-                    pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
             else:
                 pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
     else:
@@ -402,11 +482,11 @@ _KIND_TABLE = {
                     }),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
                     fg="sh", need=1, omit_rule=_omit_term_locant,
-                    mult_ok=True, mult_zh_full=True,
+                    mult_ok=True, mult_zh_full=True, mult_unsat_polyol=True,
                     ene_seg=("ene", "烯"), yne_seg=("yne", "炔")),
     "amine": _Chain(kind="amine", en_suf="amine", zh_suf="胺",
                     fg="amine", need=1, omit_rule=_omit_term_locant,
-                    mult_ok=True, mult_zh_full=True,
+                    mult_ok=True, mult_zh_full=True, mult_unsat_polyol=True,
                     variant={
                         "benzene": {1: dict(plain_maps=None, fg=None,
                                             plain_fn=lambda n: ("aniline", "苯胺"))},

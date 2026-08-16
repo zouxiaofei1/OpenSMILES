@@ -5,34 +5,22 @@ from __future__ import annotations
 
 from rdkit.Chem import CanonicalRankAtoms
 from namepredict.constants import C
-from rdkit.Chem import Mol
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol, build_cut_submol
 from namepredict.tools.free_to_yl import free_to_yl as yl_form
 
-def _is_arom_c6(mol: Mol, atoms) -> bool:
-    """判断 6 个原子是否构成芳香碳六元环。"""
-    if len(atoms) != 6:
-        return False
-    return all(
-        mol.GetAtomWithIdx(i).GetIsAromatic()
-        and mol.GetAtomWithIdx(i).GetAtomicNum() == C
-        for i in atoms
-    )
-
-def _arene_yl_from_sub(
-    sub, result, *, mol, atoms, attach_old, depth: int, name_mode: str, cache: CommonNameCache | None,
+def _radical_yl_from_sub(
+    mol, atoms: frozenset, attach_old: int, *, depth: int, name_mode: str,
+    cache: CommonNameCache | None,
 ) -> tuple[str, str, bool] | None:
-    """苯环切割 → 经 P-41 自由基主基团得到苯基自由基。"""
+    """碳连接点：锚定 * 走 radical 主基团管线，L4 权威位次 + P-22.2.4 保留名。
+
+    取代 _is_arom_c6/_arene_yl_from_sub 的 6 元全碳芳环特判：所有碳连接点子结构
+    （芳基/杂环/稠环/开链/烯）统一锚定，radical worker 直接拼 -yl 名。
+    """
     from namepredict.namer import _cache_put, _canonical_result, _name_mol
     from rdkit import Chem
-    mol_sub = sub.mol
-    if not any(
-        len(r) == 6 and sub.attach_new in r and _is_arom_c6(mol_sub, r)
-        for r in mol_sub.GetRingInfo().AtomRings()
-    ):
-        return None
-    anchored = build_anchor_submol(mol, frozenset(atoms), attach_old)
+    anchored = build_anchor_submol(mol, atoms, attach_old)
     if anchored is None:
         return None
     smiles = Chem.MolToSmiles(anchored)
@@ -43,6 +31,9 @@ def _arene_yl_from_sub(
             hit = _canonical_result(anchored, hit)
             _cache_put(cache, smiles, hit)
     if not hit.success or not hit.en:
+        return None
+    if not (hit.meta or {}).get("parent_kind") == "radical":
+        # 锚定分子必被 L1 radical 条目检出、principal 必选（p41=1），理论不可达，防御。
         return None
     return hit.en, hit.zh, hit.en != "phenyl"
 
@@ -76,10 +67,19 @@ def _yl_from_sub(
     sub, *, mol, atoms, attach_old, depth: int, name_mode: str = "general",
     cache: CommonNameCache | None = None,
 ) -> tuple[str, str, bool] | None:
-    """对切割子分子 free-name 后转 -yl 双语名称；含苯环特判与跨 cut 缓存。"""
+    """连接点类型分派：碳→锚定 radical 优先；非碳/锚定失败→H 封端 free-name + free_to_yl。"""
     from namepredict.namer import _cache_put, _canonical_result, _name_mol
     from rdkit import Chem
 
+    # ① 碳连接点：锚定 * 直接走 radical 管线（信息无损——L4 权威位次、P-22.2.4 保留名、
+    #    且 FG 型碳链如 HOCH2CH2- 不再被 free_to_yl 误前缀化成 ethoxy）。
+    if mol.GetAtomWithIdx(attach_old).GetAtomicNum() == C:
+        hit = _radical_yl_from_sub(mol, atoms, attach_old, depth=depth,
+                                   name_mode=name_mode, cache=cache)
+        if hit is not None:
+            return hit
+    # ② 非碳连接点（卤素/烷氧基/氨基/硫基）/ 锚定失败：H 封端子分子 free-name →
+    #    free_to_yl FG 前缀化（甲醇→甲氧基、乙醇→乙氧基），含跨 cut 缓存。
     result = None
     smiles = None
     if cache is not None:
@@ -93,7 +93,7 @@ def _yl_from_sub(
             canonical = Chem.MolFromSmiles(smiles)
             if canonical is not None:
                 named_mol = canonical
-        print(smiles)
+        # print(smiles)
         result = _name_mol(named_mol, depth=depth, name_mode=name_mode, cache=cache)
         if cache is not None and result.success and result.en:
             # 缓存条目的 parent_chain 必须是 canonical rank，跨 cut 复用才安全。
@@ -101,13 +101,6 @@ def _yl_from_sub(
             _cache_put(cache, smiles, result)
     if not result.success or not result.en:
         return None
-    arene = _arene_yl_from_sub(
-        sub, result, mol=mol, atoms=atoms, attach_old=attach_old,
-        depth=depth, name_mode=name_mode, cache=cache,
-    )
-    # print(arene)
-    if arene is not None:
-        return arene
     if result.meta and result.meta.get("parent_kind") == "radical":
         # L5 radical worker 已输出带 -yl 的完整自由基名（pentan-1-yl / pyridin-4-yl），
         # 直接消费，不再 free_to_yl 二次转换（否则成 pentan-1-yl-{loc}-yl）。
@@ -119,12 +112,10 @@ def _yl_from_sub(
 
 
 def name_as_substituent(
-    mol, attach_old: int, atoms, *, depth: int = 0, max_depth: int = 4, name_mode: str = "general",
+    mol, attach_old: int, atoms, *, depth: int = 0, name_mode: str = "general",
     cache: CommonNameCache | None = None,
 ) -> tuple[str, str, bool] | None:
     """在 attach_old 处切割原子，free-name 子分子，输出 -yl 双语名称。"""
-    if depth >= max_depth:
-        return None
     atoms = frozenset(atoms)
     sub = build_cut_submol(mol, atoms, attach_old)
     if sub is None:
