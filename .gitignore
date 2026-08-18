@@ -24,3 +24,4 @@ agent_loop/memory/secrets.json
 /tools/
 profiles/
 server/settings.json
+data/pubchem_analysis
