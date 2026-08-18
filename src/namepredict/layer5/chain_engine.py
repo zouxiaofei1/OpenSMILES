@@ -332,11 +332,12 @@ def _chain_zh_base(n: int) -> str | None:
 
 
 def _chain_stem_pair(spec: "_Chain", n: int) -> tuple[str, str] | None:
-    """取双语词干：unsat_polyol（多 FG）中文保留完整 "烷"（丁烷-2-烯-1,4-二醇）。"""
+    """取双语词干：unsat_polyol（多 FG）中文保留完整 "烷"（丁烷-2-烯-1,4-二醇）。
+    仅当 zh_full（醇/胺/硫醇）或环状（环己烷-3,5-二烯-1,2-二酮）时保留；开链酮用去"烷"词干（戊-2,4-二酮）。"""
     if spec.stem:
         return spec.stem
     s = _en_stem(n)
-    zs = alkane_zh(n) if spec.unsat_polyol else _chain_zh_base(n)
+    zs = alkane_zh(n) if (spec.unsat_polyol and (spec.zh_full or spec.cyclic)) else _chain_zh_base(n)
     if s is None or zs is None:
         return None
     return s, zs
@@ -357,13 +358,19 @@ def _radical_plain(n: int) -> tuple[str, str] | None:
     s, zs = _en_stem(n), _chain_zh_base(n)
     return (f"{s}yl", f"{zs}基") if s and zs else None
 
+def _mult_elide(en_m: str, suf: str) -> str:
+    """英文数量前缀元音省略：前缀以 'a' 结尾（tetra/penta/hexa…）且后缀以元音开头时省略 'a'
+    （P-14.3.2: tetra-+-ol→tetrol, hexa-+-ol→hexol）；di/tri 不受影响。"""
+    return en_m[:-1] if en_m.endswith("a") and suf[:1].lower() in "aeiou" else en_m
+
+
 def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
     """数量后缀生成: MULT[m] + 基础后缀; acid 特判烯基/炔基/俗名; 数量超 MULT 表返回 None."""
     en_m, zh_m = MULT_EN.get(mult), MULT_ZH.get(mult)
     if not en_m or not zh_m:
         return None
     fields = dict(
-        en_suf=f"{en_m}{spec.en_suf}",
+        en_suf=f"{_mult_elide(en_m, spec.en_suf)}{spec.en_suf}",
         zh_suf=f"{zh_m}{spec.zh_suf}",
         coda="ane", need=mult, no_loc="none",
         omit_rule=_NO_OMIT,
@@ -463,7 +470,8 @@ _KIND_TABLE = {
     "ketone": _Chain(kind="ketone", en_suf="one", zh_suf="酮",
                      fg="ketone", need=1, no_loc="none",
                      omit_rule=lambda n, loc, omit: n <= 2 and loc == 1,
-                     ez_ene=ez_for_parent, mult_ok=True),
+                     ez_ene=ez_for_parent, mult_ok=True,
+                     mult_unsat_polyol=True),
     "alkane": _Chain(kind="alkane", en_suf="ane", zh_suf="烷", coda="",
                      omit_rule=lambda n, loc, omit: omit or n <= 3,
                      ene_base=("ene", "烯"), yne_suf=("yne", "炔"),
