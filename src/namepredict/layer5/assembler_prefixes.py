@@ -91,8 +91,8 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False
     mult = _complex_mult_zh(zh_stem, len(subs)) or _mult_zh(len(subs))
     en = subs[0].get("en") or ""
     need = any(s.get("paren") for s in subs) or (en[:1].isdigit() if en else False)
-    if zh_stem == "三氟甲基":
-        need = False
+    # if zh_stem == "三氟甲基":
+    #     need = False
     s = _wrap_stem(zh_stem, need)
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 
