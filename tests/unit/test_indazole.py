@@ -15,7 +15,7 @@ from namepredict.namer import SMILESNNamer
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
     # negative: must not regress indole / benzofuran / pyrazole / quinoline
-    ("c1ccc2[nH]ccc2c1", "1H-indole", "吲哚"),
+    ("c1ccc2[nH]ccc2c1", "1H-indole", "1H-吲哚"),
 ]
 
 

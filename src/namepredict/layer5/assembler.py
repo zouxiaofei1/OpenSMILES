@@ -288,12 +288,17 @@ def _unsupported(n: int, kind: str | None) -> NameResult:
     return _fail({"reason": "unsupported", "n_carbons": n, "kind": kind})
 
 # 名称拼接：前缀与母体组合（原 benzene_names.py 并入；P-22.1.3）。
+def _needs_join_hyphen(body: str) -> bool:
+    """词干以数字（1,3-thiazole）或 1H-（1H-pyrrole）开头时，与前缀需连字符分隔。"""
+    return bool(body) and (body[0].isdigit() or body.startswith("1H-"))
+
+
 def join_parent_name(prefix: str, parent: str) -> str:
     """拼接前缀与母体名（数字/1H- 前导时加连字符）。"""
     if not prefix:
         return parent
     stereo, stem = _stereo_lead(parent)
-    body = f"{prefix}-{stem}" if stem[:1].isdigit() or stem.startswith("1H-") else f"{prefix}{stem}"
+    body = f"{prefix}-{stem}" if _needs_join_hyphen(stem) else f"{prefix}{stem}"
     return f"{stereo}{body}"
 
 def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=None) -> tuple[str, str] | None:
@@ -309,10 +314,11 @@ def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=N
     else:
         alk_en, alk_zh = "", ""
     st, body = _stereo_lead(en)
-    mid = f"{pre_en}{body}" if pre_en else body
+    mid = f"{pre_en}-{body}" if pre_en and _needs_join_hyphen(body) else f"{pre_en}{body}" if pre_en else body
     en = f"{alk_en} {st}{mid}" if alk_en else f"{st}{mid}"
     stz, bodyz = _stereo_lead(zh)
-    midz = f"{stz}{pre_zh}{bodyz}" if pre_zh else f"{stz}{bodyz}"
+    midz = (f"{stz}{pre_zh}-{bodyz}" if pre_zh and _needs_join_hyphen(bodyz)
+            else f"{stz}{pre_zh}{bodyz}" if pre_zh else f"{stz}{bodyz}")
     zh = f"{midz}{alk_zh}酯"
     return en, zh
 

@@ -13,7 +13,7 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 _E2E = [
-    ("c1ccc2[nH]ccc2c1", "1H-indole", "吲哚"),
+    ("c1ccc2[nH]ccc2c1", "1H-indole", "1H-吲哚"),
 ]
 
 

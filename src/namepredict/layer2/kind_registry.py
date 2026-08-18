@@ -64,16 +64,48 @@ def _attach_numbering_scaffold(packed: dict) -> dict:
     }
 
 
+def _ring_keeps_nh_prefix(mol, chain) -> bool:
+    """环内是否含未取代的芳香 NH（决定是否保留 1H- 前缀，P-61.2.4 指示氢）。
+
+    N 全被取代（如 1-甲基咪唑 / 1-苄基吲哚）时 1H- 应省略；mol/chain 缺失时
+    保守保留前缀（与既有 indole 硬编码行为一致，不引入新破坏）。
+    """
+    if mol is None or not chain:
+        return True
+    for i in chain:
+        atom = mol.GetAtomWithIdx(i)
+        if atom.GetAtomicNum() == 7 and atom.GetIsAromatic() and atom.GetTotalNumHs() > 0:
+            return True
+    return False
+
+
+def _strip_locant_prefix(name: str, prefix: str) -> str:
+    """去掉词干已带的前导 locant 前缀（'1H-indole' → 'indole'）。"""
+    return name[len(prefix):] if prefix and name.startswith(prefix) else name
+
+
 def pack_parent_stem(parent: dict, mol=None) -> dict:
     """补齐母体词干与编号 scaffold 字段。
 
     优先按 scaffold_id 查词干（环+FG 收敛为 FG kind 时，词干属 scaffold 而非 FG 类别）。
+    五元杂环 locant 前缀（1H- / 1,3-）在此统一成终态：1,3- 二唑无条件注入；1H- 吡咯型
+    仅当环含未取代 NH 注入（N 全取代则省略，避免 N-取代环误标 1H-）。词干若已带前缀
+    （注册表 indole = "1H-indole"）先剥离再按条件加回，保证 N-取代 indole 输出 "indol-…"。
     """
+    from namepredict.layer2.ring_scaffold import locant_prefix
+
     packed = parent if parent.get("mol") is not None else {**parent, "mol": mol}
     names = (parent_names(packed.get("scaffold_id") or "")
              or parent_names(packed.get("kind") or ""))
     if names is not None and not (packed.get("stem_en") or packed.get("stem_zh")):
-        packed = {**packed, "stem_en": names[0], "stem_zh": names[1]}
+        stem_en, stem_zh = names
+        pref_en, pref_zh, nh_cond = locant_prefix(packed.get("scaffold_id") or "")
+        if pref_en:
+            keep = not nh_cond or _ring_keeps_nh_prefix(packed.get("mol"), packed.get("chain"))
+            bare_en, bare_zh = _strip_locant_prefix(stem_en, pref_en), _strip_locant_prefix(stem_zh, pref_zh)
+            stem_en = pref_en + bare_en if keep else bare_en
+            stem_zh = pref_zh + bare_zh if keep else bare_zh
+        packed = {**packed, "stem_en": stem_en, "stem_zh": stem_zh}
     return _attach_numbering_scaffold(packed)
 
 def _load_from_scaffold_specs() -> None:

@@ -16,7 +16,7 @@ from namepredict.namer import SMILESNNamer
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
     # positive: unsubstituted
-    ("c1ccc2[nH]ccc2c1", "1H-indole", "吲哚"),
+    ("c1ccc2[nH]ccc2c1", "1H-indole", "1H-吲哚"),
     # negative: must not regress naphthalene / imidazole / benzene / pyridine
     ("c1ccc2ccccc2c1", "naphthalene", "萘"),
     ("c1ccccc1", "benzene", "苯"),

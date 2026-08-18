@@ -34,7 +34,7 @@ CASES = [
     ("Cc1cccc2ccccc12", "1-methylnaphthalene", "1-甲基萘"),
     ("BrCC(=O)C1=NC2=CC=CC=C2N=C1C", "2-bromo-1-(3-methylquinoxalin-2-yl)ethanone", None),
     ("ClC1=NC2=CC=CC=C2C(=C1)C(F)(F)F", "2-chloro-4-(trifluoromethyl)quinoline", None),
-    ("c1ccc2[nH]ccc2c1", "1H-indole", "吲哚"),
+    ("c1ccc2[nH]ccc2c1", "1H-indole", "1H-吲哚"),
 ]
 
 
