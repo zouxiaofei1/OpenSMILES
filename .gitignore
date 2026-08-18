@@ -15,7 +15,6 @@ Thumbs.db
 pi/node_modules/
 tools/ketcher-shell/node_modules/
 tools/ketcher-shell/dist/
-data/merged_benchmark.json
 benchmarks/.last_run.json
 agent_loop/memory/sessions/
 agent_loop/prompts/.cycle_current.md
