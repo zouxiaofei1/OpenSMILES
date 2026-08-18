@@ -247,6 +247,17 @@ def _ester_fg_locants(oriented: dict) -> list[int] | None:
     return [loc] if loc is not None else None
 
 
+def _nitrile_fg_locants(oriented: dict) -> list[int] | None:
+    """返回 exocyclic 腈的环上附着原子位次（腈基碳在环外，-carbonitrile 用）。"""
+    attach = oriented.get("ring_attach_idx")
+    if attach is None:
+        return None
+    loc = _atom_locant(oriented.get("chain") or [], attach, oriented.get("kind"),
+                       oriented.get("numbering_scaffold"),
+                       oriented.get("numbering_scaffold_required", False))
+    return [loc] if loc is not None else None
+
+
 def _radical_locants(oriented: dict) -> list[int] | None:
     """返回自由基连接点位次列表（radical_c_idx 在定向链上的位次，连接点隐含 1 或按杂环编号）。"""
     idx = oriented.get("radical_c_idx")
@@ -268,6 +279,7 @@ _LOCANT_FNS = {
     "acid": _acid_fg_locants,
     "amide": _amide_fg_locants,
     "ester": _ester_fg_locants,
+    "nitrile": _nitrile_fg_locants,
     "radical": _radical_locants,
 }
 _FG_LOCANTS = tuple(

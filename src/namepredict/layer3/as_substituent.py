@@ -9,6 +9,13 @@ from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol, build_cut_submol
 from namepredict.tools.free_to_yl import free_to_yl as yl_form
 
+# 简单保留烷氧基作前缀不加括号（ethoxybenzene/phenoxybenzene；与 methoxy 一致，
+# 收拢产物 ethoxy/propoxy/butoxy/phenoxy/isopropoxy 由此免括号）。
+_SIMPLE_ALKOXY_NO_PAREN = frozenset({
+    "methoxy", "ethoxy", "propoxy", "butoxy", "phenoxy", "isopropoxy",
+})
+
+
 def _radical_yl_from_sub(
     mol, atoms: frozenset, attach_old: int, *, depth: int, name_mode: str,
     cache: CommonNameCache | None,
@@ -31,7 +38,7 @@ def _radical_yl_from_sub(
     if not (hit.meta or {}).get("parent_kind") == "radical":
         # 锚定分子必被 L1 radical 条目检出、principal 必选（p41=1），理论不可达，防御。
         return None
-    return hit.en, hit.zh, hit.en != "phenyl"
+    return hit.en, hit.zh, hit.en not in ("phenyl", *_SIMPLE_ALKOXY_NO_PAREN)
 
 
 def _yl_from_sub(

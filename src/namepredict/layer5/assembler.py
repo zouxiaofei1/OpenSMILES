@@ -131,17 +131,69 @@ def _exocyclic_amide_names(n: int, numbered: dict) -> tuple[str, str] | None:
     return None
 
 
+def _exocyclic_nitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """环腈（carbocycle/稠环/杂环 exocyclic C#N）→ -carbonitrile / -甲腈 系统名。
+
+    苯甲腈保留名（benzonitrile）由 chain_engine variant 处理，此处显式排除。
+    """
+    parent = numbered.get("parent") or {}
+    facts = parent.get("principal_expression_facts")
+    sid = parent.get("scaffold_id")
+    if not facts or facts.group_class.value != "nitrile" or facts.relation.value != "exocyclic":
+        return None
+    if facts.multiplicity != 1:
+        return None
+    if sid == "benzene":
+        return None
+    if sid == "carbocycle":
+        base = _alkane_names(n)
+        return (f"cyclo{base[0]}carbonitrile", f"环{base[1]}甲腈") if base else None
+    base = _ring_base(numbered)
+    if base:
+        rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "nitrile"), None)
+        locs = rec.get("locants") if rec else None
+        if locs:
+            loc = ",".join(str(x) for x in locs)
+            return (f"{base[0]}-{loc}-carbonitrile", f"{base[1]}-{loc}-甲腈")
+        return (f"{base[0]}carbonitrile", f"{base[1]}甲腈")
+    return None
+
+
 _MONONUCLEAR_ZERO_YL = {
     ("oxidane", "氧化烷"): ("hydroxy", "羟基"),
     ("azane", "氮烷"): ("amino", "氨基"),
     ("sulfane", "硫烷"): ("sulfanyl", "硫基"),
 }
 
+# O 锚点自由基 -yloxy 非保留名 → IUPAC 保留烷氧基（P-66.5.2.1.2：ethoxy/propoxy/butoxy/phenoxy）。
+# 尾部收拢使带取代基链也命中：2-methoxyethyloxy → 2-methoxyethoxy、3-chlorophenyloxy → 3-chlorophenoxy。
+_ALKOXY_YLOXY_EN = (
+    ("ethyloxy", "ethoxy"), ("propyloxy", "propoxy"), ("butyloxy", "butoxy"),
+    ("phenyloxy", "phenoxy"),
+)
+_ALKOXY_YLOXY_ZH = (
+    ("乙基氧基", "乙氧基"), ("丙基氧基", "丙氧基"), ("丁基氧基", "丁氧基"),
+    ("苯基氧基", "苯氧基"),
+)
+
+
+def _retained_alkoxy(en: str, zh: str) -> tuple[str, str]:
+    """O 锚点 -yloxy 尾部收拢为 IUPAC 保留烷氧基（未命中原样返回）。"""
+    for suf_en, kept_en in _ALKOXY_YLOXY_EN:
+        if en.endswith(suf_en):
+            en = en[: -len(suf_en)] + kept_en
+            break
+    for suf_zh, kept_zh in _ALKOXY_YLOXY_ZH:
+        if zh.endswith(suf_zh):
+            zh = zh[: -len(suf_zh)] + kept_zh
+            break
+    return (en, zh)
+
 
 def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     """杂原子锚点自由基：单核氢化物母体（表 2.1）+ 烷基取代基 → free_to_yl 转标准名。
 
-    如 *OCC → "ethyl-oxidane" → ethyloxy；*NCC → "ethyl-azane" → ethylamino。
+    如 *OCC → "ethyl-oxidane" → ethoxy；*NCC → "ethyl-azane" → ethylamino。
     三级胺取代基（azane 双烷基）*N(CC)C → "ethylmethylamino" / 乙基甲基氨基
     （P-62.2 字母序；相同烷基用 di-/二-，如 *N(C)C → dimethylamino）。
     零/多取代基或名缺失时返回 None（明确失败，不输出错名）。
@@ -155,8 +207,9 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
         return _MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
     if len(subs) == 1:
         a = subs[0]
-        return free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
-                          paren=bool(a.get("paren")))[:2]
+        en, zh = free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
+                            paren=bool(a.get("paren")))[:2]
+        return _retained_alkoxy(en, zh) if stem_en == "oxidane" else (en, zh)
     zero = _MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
     if (stem_en, stem_zh) != ("azane", "氮烷") or zero is None or len(subs) != 2:
         # 多取代基仅 N（azane）双烷基成立：O/S 双烷基非标准自由基，明确失败。
@@ -182,6 +235,10 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             return exo
     if kind == "amide":
         exo = _exocyclic_amide_names(n, numbered)
+        if exo:
+            return exo
+    if kind == "nitrile":
+        exo = _exocyclic_nitrile_names(n, numbered)
         if exo:
             return exo
     if kind == "radical" and (numbered.get("parent") or {}).get("radical_anchor_element"):

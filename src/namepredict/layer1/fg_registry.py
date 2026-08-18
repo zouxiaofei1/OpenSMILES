@@ -56,7 +56,7 @@ FG_SPECS: tuple[FgSpec, ...] = (
            chain=True, rs=True, locant_kind="amide"),
     FgSpec("nitrile", "nitriles", p41=14, compat=8, anchors=("c_idx",),
            parent_anchor_fields=("nitrile_c_idx", "nitrile_c_idxs"),
-           chain=True, rs=True),
+           chain=True, rs=True, locant_kind="nitrile"),
     FgSpec("aldehyde", "aldehydes", p41=15, compat=7, anchors=("c_idx",),
            parent_anchor_fields=("aldehyde_c_idx", "aldehyde_c_idxs"),
            chain=True, rs=True),
