@@ -29,7 +29,7 @@ CASES = [
     ("C#CCC(=O)N", "but-3-ynamide", "丁-3-炔酰胺"),
     ("C#CC(=O)N", "propynamide", "丙炔酰胺"),
     # negatives: ene alcohol, sat alcohol, alkynoic acid, free alkyne
-    ("C/C=C/CO", "(E)-but-2-en-1-ol", "(E)-丁-2-烯-1-醇"),
+    ("C/C=C/CO", "(2E)-but-2-en-1-ol", "(2E)-丁-2-烯-1-醇"),
     ("CCCCO", "butan-1-ol", "丁-1-醇"),
     ("C#CCC(=O)O", "but-3-ynoic acid", "丁-3-炔酸"),
     ("CC#C", "propyne", "丙炔"),

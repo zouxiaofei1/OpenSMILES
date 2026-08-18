@@ -24,7 +24,7 @@ CASES = [
     ("[Li+].[O-]C(=O)C", "lithium acetate", "乙酸锂"),
     # positive: metal after R/S (and optional E/Z) on anion stem
     ("C[C@H](O)C(=O)[O-].[Na+]", "sodium (2S)-2-hydroxypropanoate", "(2S)-2-羟基丙酸钠"),
-    ("C/C=C/[C@H](O)C(=O)[O-].[Na+]", "sodium (E,2S)-2-hydroxypent-3-enoate", "(E,2S)-2-羟基戊-3-烯酸钠"),
+    ("C/C=C/[C@H](O)C(=O)[O-].[Na+]", "sodium (2S,3E)-2-hydroxypent-3-enoate", "(2S,3E)-2-羟基戊-3-烯酸钠"),
     # negative: bare anion / neutral acid / ester must not regress
     ("O=C([O-])C", "acetate", "乙酸根"),
     ("C[C@H](O)C(=O)[O-]", "(2S)-2-hydroxypropanoate", "(2S)-2-羟基丙酸根"),

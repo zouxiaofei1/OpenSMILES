@@ -24,9 +24,9 @@ CASES = [
     ("C=CCCCCO", "hex-5-en-1-ol", "己-5-烯-1-醇"),
     ("CC(C)=CCO", "3-methylbut-2-en-1-ol", "3-甲基丁-2-烯-1-醇"),
     # E/Z mono
-    (r"C(\C=C\CCCCCCCCC)O", "(E)-dodec-2-en-1-ol", "(E)-十二-2-烯-1-醇"),
-    (r"CCCC/C=C\CCCCCCCCCCCCO", "(Z)-octadec-13-en-1-ol", None),
-    (r"C/C=C/CCO", "(E)-pent-3-en-1-ol", "(E)-戊-3-烯-1-醇"),
+    (r"C(\C=C\CCCCCCCCC)O", "(2E)-dodec-2-en-1-ol", "(2E)-十二-2-烯-1-醇"),
+    (r"CCCC/C=C\CCCCCCCCCCCCO", "(13Z)-octadec-13-en-1-ol", None),
+    (r"C/C=C/CCO", "(3E)-pent-3-en-1-ol", "(3E)-戊-3-烯-1-醇"),
     # polyalkenols
     ("C=CC=CCO", "penta-2,4-dien-1-ol", "戊-2,4-二烯-1-醇"),
     (r"CC/C=C\CC/C=C/CO", "(2E,6Z)-nona-2,6-dien-1-ol", "(2E,6Z)-壬-2,6-二烯-1-醇"),

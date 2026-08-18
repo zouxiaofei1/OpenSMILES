@@ -38,9 +38,19 @@ def _bond_stereo(mol: Mol | None, double_bond) -> str:
 
 
 def _ez_prefix(numbered: dict) -> str:
-    """单双键母体的 E/Z 前缀（从父字典取 mol 与 double_bond）。"""
+    """单双键母体的 E/Z 前缀（带位次，如 '(2E)-'；双键不在母体链上时退化为裸 '(E)-'）。"""
     parent = numbered.get("parent") or {}
-    return _bond_stereo(parent.get("mol"), parent.get("double_bond"))
+    mol = parent.get("mol")
+    bond = parent.get("double_bond")
+    tag = _bond_stereo(mol, bond)
+    if not tag:
+        return ""
+    letter = tag[1]  # 'E' or 'Z'
+    chain = parent.get("chain") or []
+    loc = _bond_min_loc(chain, bond)
+    if loc is None:
+        return tag
+    return f"({loc}{letter})-"
 
 
 def _bond_min_loc(chain: list[int], pair) -> int | None:

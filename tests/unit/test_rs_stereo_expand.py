@@ -37,8 +37,8 @@ CASES = [
     # regression E/Z + R/S merge
     (
         "C[C@@H](O)CCCC/C=C/C(=O)O",
-        "(E,8R)-8-hydroxynon-2-enoic acid",
-        "(E,8R)-8-羟基壬-2-烯酸",
+        "(2E,8R)-8-hydroxynon-2-enoic acid",
+        "(2E,8R)-8-羟基壬-2-烯酸",
     ),
     # negatives: no spurious R/S
     ("CCCCCCCCCCCC(=O)O", "dodecanoic acid", "十二酸"),

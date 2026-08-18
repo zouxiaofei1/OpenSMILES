@@ -34,7 +34,7 @@ CASES = [
     ),
     # negative: saturated diacid anion and mono-ene diacid must not regress
     (r"O=C([O-])CCC(=O)[O-]", "butanedioate", "丁二酸根"),
-    (r"O=C(O)/C=C/C(=O)O", "(E)-but-2-enedioic acid", "(E)-丁-2-烯二酸"),
+    (r"O=C(O)/C=C/C(=O)O", "(2E)-but-2-enedioic acid", "(2E)-丁-2-烯二酸"),
 ]
 
 

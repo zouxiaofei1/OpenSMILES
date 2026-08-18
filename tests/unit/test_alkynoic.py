@@ -25,7 +25,7 @@ CASES = [
     ("C#CC(=O)OC", "methyl propynoate", "丙炔酸甲酯"),
     # negative: saturated acid, alkenoic acid, free alkyne must not become ynoic
     ("CCCC(=O)O", "butanoic acid", "丁酸"),
-    ("C/C=C/C(=O)O", "(E)-but-2-enoic acid", "(E)-丁-2-烯酸"),
+    ("C/C=C/C(=O)O", "(2E)-but-2-enoic acid", "(2E)-丁-2-烯酸"),
     ("CC#C", "propyne", "丙炔"),
 ]
 

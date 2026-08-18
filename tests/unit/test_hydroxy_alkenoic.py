@@ -19,8 +19,8 @@ CASES = [
     # positive: mono-ene hydroxyalkenoic acids
     (
         r"OC/C=C/C(=O)O",
-        "(E)-4-hydroxybut-2-enoic acid",
-        "(E)-4-羟基丁-2-烯酸",
+        "(2E)-4-hydroxybut-2-enoic acid",
+        "(2E)-4-羟基丁-2-烯酸",
     ),
     (
         "OCCCCCCC=CC(=O)O",
@@ -34,18 +34,18 @@ CASES = [
     ),
     (
         r"CCCCCCCC[C@H](O)/C=C/CCCCCCC(=O)O",
-        "(E,10S)-10-hydroxyoctadec-8-enoic acid",
-        "(E,10S)-10-羟基十八-8-烯酸",
+        "(8E,10S)-10-hydroxyoctadec-8-enoic acid",
+        "(8E,10S)-10-羟基十八-8-烯酸",
     ),
     (
         r"CCCCCCC(O)C/C=C\CCCCCCCC(=O)[O-]",
-        "(Z)-12-hydroxyoctadec-9-enoate",
-        "(Z)-12-羟基十八-9-烯酸根",
+        "(9Z)-12-hydroxyoctadec-9-enoate",
+        "(9Z)-12-羟基十八-9-烯酸根",
     ),
     (
         r"C[C@@H](O)CCCC/C=C/C(=O)O",
-        "(E,8R)-8-hydroxynon-2-enoic acid",
-        "(E,8R)-8-羟基壬-2-烯酸",
+        "(2E,8R)-8-hydroxynon-2-enoic acid",
+        "(2E,8R)-8-羟基壬-2-烯酸",
     ),
     # positive: multi-ene hydroxyalkenoic acid
     (

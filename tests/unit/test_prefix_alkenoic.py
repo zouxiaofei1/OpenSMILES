@@ -34,14 +34,14 @@ CASES = [
     ),
     (
         r"NC/C=C/C(=O)O",
-        "(E)-4-aminobut-2-enoic acid",
-        "(E)-4-氨基丁-2-烯酸",
+        "(2E)-4-aminobut-2-enoic acid",
+        "(2E)-4-氨基丁-2-烯酸",
     ),
     # positive: oxoalkenoic (mono + multi-ene anion)
     (
         r"CC(=O)/C=C/C(=O)O",
-        "(E)-4-oxopent-2-enoic acid",
-        "(E)-4-氧代戊-2-烯酸",
+        "(2E)-4-oxopent-2-enoic acid",
+        "(2E)-4-氧代戊-2-烯酸",
     ),
     (
         r"CCCCC/C=C\C/C=C\C=C\C(=O)C/C=C\CCCC(=O)[O-]",
@@ -60,8 +60,8 @@ CASES = [
     ("C=CC(=O)O", "prop-2-enoic acid", "丙-2-烯酸"),
     (
         r"OC/C=C/C(=O)O",
-        "(E)-4-hydroxybut-2-enoic acid",
-        "(E)-4-羟基丁-2-烯酸",
+        "(2E)-4-hydroxybut-2-enoic acid",
+        "(2E)-4-羟基丁-2-烯酸",
     ),
     ("C=CCCO", "but-3-en-1-ol", "丁-3-烯-1-醇"),
 ]

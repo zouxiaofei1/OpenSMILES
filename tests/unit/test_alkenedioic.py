@@ -16,9 +16,9 @@ from namepredict.namer import SMILESNNamer
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
     # positive: open-chain alkenedioic acids with E/Z
-    (r"OC(=O)/C=C/C(=O)O", "(E)-but-2-enedioic acid", "(E)-丁-2-烯二酸"),
-    (r"OC(=O)/C=C\C(=O)O", "(Z)-but-2-enedioic acid", "(Z)-丁-2-烯二酸"),
-    (r"O=C(O)/C=C/CCC(=O)O", "(E)-hex-2-enedioic acid", None),
+    (r"OC(=O)/C=C/C(=O)O", "(2E)-but-2-enedioic acid", "(2E)-丁-2-烯二酸"),
+    (r"OC(=O)/C=C\C(=O)O", "(2Z)-but-2-enedioic acid", "(2Z)-丁-2-烯二酸"),
+    (r"O=C(O)/C=C/CCC(=O)O", "(2E)-hex-2-enedioic acid", None),
     # negative: saturated diacids, mono alkenoic acid, non-acids
     ("OC(=O)CC(=O)O", "propanedioic acid", "丙二酸"),
     ("OC(=O)CCC(=O)O", "butanedioic acid", "丁二酸"),
