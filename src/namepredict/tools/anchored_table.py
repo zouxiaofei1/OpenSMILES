@@ -53,17 +53,17 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "propyl": RetainedSubstituent( "propyl", "丙基", "propyl", "丙基", P, anchored=("*CCC", ), paren=False, kind="alkyl", ),
         "butyl": RetainedSubstituent( "butyl", "丁基", "butyl", "丁基", P, anchored=("*CCCC", ), paren=False, kind="alkyl", ),
         # 支链 / 不饱和烷基
-        "tert-butyl": RetainedSubstituent( "tert-butyl", "叔丁基", "1,1-dimethylethyl", "1,1-二甲基乙基", P, anchored=("*C(C)(C)C", ), paren=False, kind="alkyl", ),
-        "isopropyl": RetainedSubstituent( "isopropyl", "异丙基", "propan-2-yl", "丙-2-基", G, anchored=("*C(C)C", ), paren=False, kind="alkyl", ),
+        "tert-butyl": RetainedSubstituent( "tert-butyl", "叔丁基", "tert-butyl", "叔丁基", P, anchored=("*C(C)(C)C", ), paren=False, kind="alkyl", ),
+        "isopropyl": RetainedSubstituent( "propan-2-yl", "丙-2-基", "propan-2-yl", "丙-2-基", G, anchored=("*C(C)C", ), paren=False, kind="alkyl", ),
         "isobutyl": RetainedSubstituent("isobutyl", "异丁基", "2-methylpropyl", "2-甲基丙基", N, anchored=("*CC(C)C", ), paren=False, kind="alkyl", ),
         "sec-butyl": RetainedSubstituent("sec-butyl", "仲丁基", "butan-2-yl", "丁-2-基", N, anchored=("*C(C)CC", ), paren=False, kind="alkyl", ),
         "neopentyl": RetainedSubstituent( "neopentyl", "新戊基", "2,2-dimethylpropyl", "2,2-二甲基丙基", N, anchored=("*CC(C)(C)C", ), paren=False, kind="alkyl", ),
         "isopentyl": RetainedSubstituent( "isopentyl", "异戊基", "3-methylbutyl", "3-甲基丁基", N, anchored=("*CCC(C)C", ), paren=False, kind="alkyl", ),
         "vinyl": RetainedSubstituent( "vinyl", "乙烯基", "ethenyl", "乙烯基", G, anchored=("*C=C", ), paren=False, kind="alkyl", ),
         "allyl": RetainedSubstituent( "allyl", "烯丙基", "prop-2-en-1-yl", "丙-2-烯-1-基", G, anchored=("*CC=C", ), paren=False, kind="alkyl", ),
-        "isopropenyl": RetainedSubstituent( "isopropenyl", "异丙烯基", "prop-1-en-2-yl", "丙-1-烯-2-基", G, anchored=("*C(=C)C", ), paren=False, kind="alkyl", ),
+        "isopropenyl": RetainedSubstituent( "prop-1-en-2-yl", "异丙烯基", "prop-1-en-2-yl", "丙-1-烯-2-基", G, anchored=("*C(=C)C", ), paren=False, kind="alkyl", ),
         "propargyl": RetainedSubstituent( "propargyl", "炔丙基", "prop-2-yn-1-yl", "丙-2-炔-1-基", G, anchored=("*CC#C", ), paren=False, kind="alkyl", ),
-        "benzyl": RetainedSubstituent( "benzyl", "苄基", "phenylmethyl", "苯甲基", P, anchored=("*Cc1ccccc1", ), paren=False, kind="aryl", ),
+        "benzyl": RetainedSubstituent( "benzyl", "苄基", "benzyl", "苄基", P, anchored=("*Cc1ccccc1", ), paren=False, kind="aryl", ),
         "methoxy": RetainedSubstituent( "methoxy", "甲氧基", "methoxy", "甲氧基", P, anchored=("*OC", ), paren=False, kind="leaf", ),
         "hydroperoxy": RetainedSubstituent( "hydroperoxy", "氢过氧基", "hydroperoxy", "氢过氧基", P, anchored=("*OO", ), paren=False, kind="leaf", ),
         "hydroxy": RetainedSubstituent( "hydroxy", "羟基", "hydroxy", "羟基", P, anchored=("*O", ), paren=False, kind="leaf", ),
@@ -137,9 +137,10 @@ def resolve_name(key: str, *, name_mode: str = "general") -> tuple[str, str]:
     - "pin"：除非条目本身为 PIN 级，否则用系统名
     """
     entry = _REGISTRY[key]
-    if name_mode == "pin" and entry.level != IupacLevel.PIN:
-        return entry.systematic_en, entry.systematic_zh
-    return entry.en, entry.zh
+    
+    # if name_mode == "pin" and entry.level != IupacLevel.PIN:
+    #     return entry.systematic_en, entry.systematic_zh
+    return entry.systematic_en, entry.systematic_zh
 
 
 def pick_root(mol: Mol, atoms: frozenset[int]) -> int:
