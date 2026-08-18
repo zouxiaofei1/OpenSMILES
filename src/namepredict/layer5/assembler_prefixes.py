@@ -92,8 +92,6 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False
     en = subs[0].get("en") or ""
     need = any(s.get("paren") for s in subs) or (en[:1].isdigit() if en else False)
     if zh_stem == "三氟甲基":
-        # 中文三氟甲基是简单取代基（无自身取代），按命名原则不加括号；
-        # paren 标记来自英文规则（英文 trifluoromethyl 加括号），中文不采纳。
         need = False
     s = _wrap_stem(zh_stem, need)
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
