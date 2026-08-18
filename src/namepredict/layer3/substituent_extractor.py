@@ -129,6 +129,10 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
     # 官能团类醚臂已编码 F（如 HFIP）；不要重复加前缀。
     if parent.get("kind") == "ether" and parent.get("ether_arms"):
         return []
+    # 酰卤：卤素是母体 FG 原子（hal_idx 在 owned_atoms 内），不作取代基。
+    if parent.get("kind") == "acyl_halide":
+        owned = set(parent.get("owned_atoms") or [])
+        return [h for h in halos if not (set(h.get("atoms") or []) & owned)]
     return halos
 
 # 主 FG 母体 kind → 抑制对应取代基提取（fg_registry 的 parent 标记派生）。

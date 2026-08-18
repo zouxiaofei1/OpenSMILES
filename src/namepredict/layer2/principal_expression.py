@@ -299,6 +299,17 @@ def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
                  "stem_en": stem_en, "stem_zh": stem_zh}
 
 
+def _chain_acyl_halide_fields(info: dict, occurrences, fields: dict) -> dict:
+    """酰卤的卤素字段：hal_idx 供 parent_ownership 把卤素纳入母体原子（Cl 不作取代基）。"""
+    if len(occurrences) != 1:
+        return fields
+    match = next((e for e in (info.get("acyl_chlorides") or [])
+                  if e["c_idx"] in occurrences[0].characteristic_atoms), None)
+    if match is None:
+        return fields
+    return {**fields, "hal_idx": match["hal_idx"], "hal_z": match["hal_z"]}
+
+
 def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
                             skeleton: ParentSkeleton) -> dict | None:
     """链骨架：表达主基团并生成母体 dict（不支持返回 None）。"""
@@ -318,6 +329,8 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
     fields = _chain_unsat_fields(info, skeleton, {**_chain_fields(selection, occurrences), **extra})
     if kind == "ester":
         fields = _chain_ester_fields(info, occurrences, fields)
+    elif kind == "acyl_halide":
+        fields = _chain_acyl_halide_fields(info, occurrences, fields)
     return _parent_dict(kind, skeleton, occurrences, fields,
                         _facts(selection, skeleton, occurrences))
 

@@ -39,6 +39,7 @@ _RETAINED = {
     "amide": {1: ("formamide", "甲酰胺"), 2: ("acetamide", "乙酰胺")},
     "nitrile": {1: ("formonitrile", "甲腈"), 2: ("acetonitrile", "乙腈")},
     "ester": {1: ("formate", "甲酸"), 2: ("acetate", "乙酸")},
+    "acyl_halide": {1: ("formyl chloride", "甲酰氯"), 2: ("acetyl chloride", "乙酰氯")},
 }
 
 
@@ -536,6 +537,16 @@ _KIND_TABLE = {
                         "benzene": {1: dict(plain_maps=None,
                                             plain_fn=lambda n: ("benzamide", "苯甲酰胺"))},
                     }),
+    "acyl_halide": _Chain(kind="acyl_halide", en_suf="oyl chloride", zh_suf="酰氯",
+                          ene_base=("enoyl chloride", "烯酰氯"),
+                          yne_suf=("ynoyl chloride", "炔酰氯"),
+                          ez_ene=_ez_prefix,
+                          variant={
+                              None: {1: dict(plain_maps=None,
+                                             plain_fn=_retained_plain("acyl_halide"))},
+                              "benzene": {1: dict(plain_maps=None,
+                                                  plain_fn=lambda n: ("benzoyl chloride", "苯甲酰氯"))},
+                          }),
     "radical": _Chain(kind="radical", en_suf="yl", zh_suf="基", coda="an",
                       fg="radical", need=1, no_loc="none",
                       # 饱和无环链/单环烃自由价在 C-1 时省略位次（P-29.2 方法 1: ethyl/pentyl/2-phenylethyl）；
