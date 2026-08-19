@@ -143,22 +143,72 @@ def _fixed_start(parent: dict) -> int | None:
     return None
 
 
-def _fixed_numbering(parent: dict, chain: list[int]) -> list[int] | None:
+def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None = None) -> list[int] | None:
     """P-14.4(a)：经 L2 保留骨架固定编号（standard_path + 模板匹配映射）。
 
     fused 芳香环（喹啉/吲哚等）的 IUPAC 编号固定（P-25.4）：起点/方向不随取代基
     变化，P-14.4 通用环枚举会算错（如喹啉 10-氯 vs 2-氯）。standard_path 定义
-    模板原子按标准 locant 的顺序，scaffold_match 把模板原子映射到分子原子。
+    模板原子按标准 locant 的顺序；对称 scaffold（phenanthrene）子图匹配方向随
+    分子原子编号漂移，用模板全部自同构 match 生成等价链，按取代基位次最小化。
     """
-    match = parent.get("scaffold_match")
     sid = parent.get("scaffold_id")
-    if not match or not sid:
+    mol = parent.get("mol")
+    if not sid or mol is None:
         return None
-    from namepredict.layer2.ring_scaffold import standard_chain
-    std_chain = standard_chain(sid, tuple(match))
-    if std_chain is None or set(std_chain) != set(chain):
+    from namepredict.layer2.ring_scaffold import _Q, standard_chain
+    q = _Q.get(sid)
+    if q is None:
         return None
-    return std_chain
+    atoms = frozenset(chain)
+    chains = []
+    for m in mol.GetSubstructMatches(q, uniquify=False):
+        if set(m) == atoms:
+            std = standard_chain(sid, tuple(m))
+            if std is not None and set(std) == atoms:
+                chains.append(std)
+    if not chains:
+        return None
+    if len(chains) == 1:
+        return chains[0]
+    subs = [s["attach_idx"] for s in (substituents or []) if s.get("attach_idx") in chain]
+    if not subs:
+        return chains[0]
+    return min(chains, key=lambda std: tuple(sorted(std.index(a) + 1 for a in subs)))
+
+
+def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
+    """P-25.3.3 稠环编号：仅未注册(非保留模板)芳香稠环系统。
+
+    护栏: 仅 scaffold_id 为 None/"carbocycle" 且全芳香多环走优选取向+外周编号;
+    registered 模板(含对称 naphthalene/anthracene)保持固定编号/P-14.4 不被接管。
+    """
+    sid = parent.get("scaffold_id")
+    if sid not in (None, "carbocycle"):
+        return None
+    mol = parent.get("mol")
+    if mol is None or not chain or not all(mol.GetAtomWithIdx(a).GetIsAromatic() for a in chain):
+        return None
+    from namepredict.layer1.ring_systems import build_ring_systems
+    from namepredict.layer4.fused_orientation import preferred_orientation
+    from namepredict.layer4.fused_numbering import number_fused_system
+    systems = [s for s in build_ring_systems(mol) if (s.get("atom_ids") or []) == sorted(set(chain))]
+    if not systems:
+        return None
+    system = systems[0]
+    if len(system.get("sssr_indices") or []) < 2:
+        return None  # 单环走 P-14.4 通用枚举
+    rings = list(mol.GetRingInfo().AtomRings())
+    orient = preferred_orientation(mol, rings, system["fusion_edges"])
+    if orient is None:
+        return None
+    result = number_fused_system(mol, rings, orient.coord_dict())
+    if result is None:
+        return None
+    fused_chain, labels = result
+    parent["numbering_scaffold"] = {
+        "scaffold_id": "fused", "labels": tuple(labels), "relative_stereo": None,
+    }
+    return fused_chain
 
 
 # ── 入口 ─────────────────────────────────────────────────────────────────
@@ -168,9 +218,12 @@ def orient_numbering(parent: dict, substituents: list) -> list[int] | None:
     chain = parent.get("chain") or []
     if not chain:
         return None
-    fixed = _fixed_numbering(parent, chain)
+    fixed = _fixed_numbering(parent, chain, substituents)
     if fixed is not None:
         return fixed
+    fused = _fused_numbering(parent, chain)
+    if fused is not None:
+        return fused
     if _is_ring(parent):
         cands = _ring_cands(chain)
     else:

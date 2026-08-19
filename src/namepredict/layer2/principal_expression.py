@@ -123,11 +123,17 @@ def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
 
 
 def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
-    """无保留 scaffold 时的通用环 kind（纯烃环为 alkane）。"""
+    """无保留 scaffold 时的通用环 kind(纯烃环为 alkane, 芳香稠环为 fused/fused_hetero)。"""
     mol = info["mol"]
-    if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in skeleton.atom_ids):
+    atoms = set(skeleton.atom_ids)
+    if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms):
+        # 芳香稠环放行为 fused 基团 kind(未注册稠环由 L5 fused_namer 组装稠合名)。
+        n_rings = sum(1 for ring in mol.GetRingInfo().AtomRings() if set(ring) <= atoms)
+        if n_rings >= 2:
+            all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atoms)
+            return "fused" if all_carbon else "fused_hetero"
         return None
-    all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
+    all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atoms)
     # 纯烃环统一 kind='alkane'（正交化：环系由 scaffold_id 承载，不饱和度由 double_bond/double_bonds 字段承载，命名由 chain_engine 动态加 cyclo 前缀）。
     return "alkane" if all_carbon else None
 
@@ -194,9 +200,19 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
     if get_spec(scaffold.id) and get_spec(scaffold.id).numbering.standard_path:
         hit = _match_with_map(info, skeleton.atom_ids)
         match = hit[1] if hit and hit[0] == scaffold.id else None
-    return {"scaffold_id": scaffold.id, "scaffold_identity": scaffold,
-            "scaffold_match": match,
-            "typed_ring_expression_supported": supported}
+    fields = {"scaffold_id": scaffold.id, "scaffold_identity": scaffold,
+              "scaffold_match": match,
+              "typed_ring_expression_supported": supported}
+    # 多环骨架附加稠环拆解结构(fused_info 供调试; fused_tree 为 FusedNode 对象供 L5 稠合名组装)。
+    system = next((s for s in info.get("ring_systems") or []
+                   if (s.get("atom_ids") or []) == list(skeleton.atom_ids)), None)
+    if system is not None and len(system.get("sssr_indices") or ()) >= 2:
+        from namepredict.layer2.fused_system import decompose_fused_system, fused_node_dict
+        node = decompose_fused_system(info, system)
+        if node is not None:
+            fields["fused_info"] = fused_node_dict(node)
+            fields["fused_tree"] = node
+    return fields
 
 
 def ester_fields(info: dict, fields: dict) -> dict:

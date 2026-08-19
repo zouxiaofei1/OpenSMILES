@@ -14,8 +14,9 @@ def _group_by_stem(substituents: list) -> dict[str, list]:
 
 
 def _locant_str(subs: list) -> str:
-    """对位次排序并拼接成逗号分隔串（如 1,3）。"""
-    locs = sorted(int(s["locant"]) for s in subs if "locant" in s)
+    """对位次排序并拼接成逗号分隔串（如 1,3 或 4,4a）。"""
+    from namepredict.layer4.locant_key import locant_str_sort
+    locs = locant_str_sort(s["locant"] for s in subs if "locant" in s)
     return ",".join(str(x) for x in locs)
 
 

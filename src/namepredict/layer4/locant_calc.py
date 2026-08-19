@@ -2,6 +2,7 @@
 from __future__ import annotations
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer4._chain_orient import _chain_pos, _edge_min_locant, _pair_locants
+from namepredict.layer4.locant_key import locant_str_sort
 from namepredict.layer4.omit_locants import (
     omit_amine as _omit_amine, omit_ketone as _omit_ketone, omit_sh as _omit_sh,
 )
@@ -11,20 +12,18 @@ def _typed_group_atoms(parent: dict, group: str) -> list[int]:
     facts = parent.get("principal_expression_facts")
     return sorted(facts.attachment_atoms) if facts and facts.group_class.value == group else []
 
-def _atom_locant(chain: list[int], atom: int | None, kind: str | None, facts=None, required=False) -> int | None:
-    """有 scaffold 固定编号标签时用标签定位次；否则保留普通链编号。
+def _atom_locant(chain: list[int], atom: int | None, kind: str | None, facts=None, required=False) -> int | str | None:
+    """有固定编号标签时用标签定位次(数字 int, 字母位 "4a" 返回 str)；否则保留普通链编号。
 
-    fused 芳香环（喹啉/吲哚）的标准 chain 含融合桥头（4a/8a 字母位）；chain.index
-    会把桥头当数字位，致后续 locant 偏移。labels 数组（含字母位）与标准 chain
-    同位，数字标签直接取；字母位（4a/8a）无数字 locant，回退链编号折中。
+    fused 稠环的标准 chain 含融合桥头(4a/8a 字母位)；labels 数组(含字母位)与
+    标准 chain 同位，数字标签取 int，字母位标签返回字符串原样。
     """
     if atom is None or atom not in chain:
         return None
     labels = (facts or {}).get("labels")
     if labels and len(labels) == len(chain):
         lbl = labels[chain.index(atom)]
-        if str(lbl).isdigit():
-            return int(lbl)
+        return int(lbl) if str(lbl).isdigit() else str(lbl)
     return chain.index(atom) + 1
 
 def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
@@ -42,8 +41,8 @@ def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
     atoms = _typed_group_atoms(oriented, group)
     kind, facts = oriented.get("kind"), oriented.get("numbering_scaffold")
     required = oriented.get("numbering_scaffold_required", False)
-    return sorted(loc for atom in atoms
-                  if (loc := _atom_locant(chain, atom, kind, facts, required)) is not None)
+    return locant_str_sort(loc for atom in atoms
+                           if (loc := _atom_locant(chain, atom, kind, facts, required)) is not None)
 
 
 def _oh_locant(oriented: dict) -> int | None:
@@ -296,7 +295,7 @@ def _fg_locants(oriented: dict, n_subs: int = 0) -> list[dict]:
         if not locs:
             continue
         records.append({
-            "kind": kind, "locants": sorted(locs), "omit": _omit_for(kind, oriented, n, n_subs),
+            "kind": kind, "locants": locant_str_sort(locs), "omit": _omit_for(kind, oriented, n, n_subs),
         })
     return records
 

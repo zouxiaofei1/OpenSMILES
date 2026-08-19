@@ -74,6 +74,8 @@ _NUMBERING_MODE = {
     "benzodioxole": "fused56_fixed",
     "naph_family": "naph_family",
     "anthra": "anthra",
+    "phenanthrene": "phenanthrene",
+    "pyrene": "pyrene",
 }
 
 _TEMPLATES: dict[str, dict] = {
@@ -81,6 +83,8 @@ _TEMPLATES: dict[str, dict] = {
     "benzene":     {"smiles": "c1ccccc1",             "stem_en": "benzene",    "stem_zh": "苯",   "naming_class": "mono_carbo"},
     "naphthalene": {"smiles": "c1ccc2ccccc2c1",       "stem_en": "naphthalene","stem_zh": "萘",    "naming_class": "naph_family"},
     "anthracene":  {"smiles": "c1ccc2cc3ccccc3cc2c1", "stem_en": "anthracene", "stem_zh": "蒽",    "naming_class": "anthra"},
+    "phenanthrene":{"smiles": "c1ccc2c(c1)ccc1ccccc12", "stem_en": "phenanthrene","stem_zh": "菲", "naming_class": "phenanthrene"},
+    "pyrene":      {"smiles": "c1cc2ccc3cccc4ccc(c1)c2c34", "stem_en": "pyrene",  "stem_zh": "芘", "naming_class": "pyrene"},
     # monocyclic heteroarenes
     "furan":       {"smiles": "c1ccoc1",    "stem_en": "furan",       "stem_zh": "呋喃",   "naming_class": "monohetero"},
     "thiophene":   {"smiles": "c1ccsc1",    "stem_en": "thiophene",   "stem_zh": "噻吩",   "naming_class": "monohetero"},
@@ -133,6 +137,10 @@ ACRIDINE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8"
 # phenothiazine（14 原子）：S5、N10；苯环 1-4 / 6-9。
 PHENOTHIAZINE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "9", "9a", "10", "10a", "10b")
 NAPH_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a")
+# phenanthrene(14 原子): 端环 1-4 / 5-8, 桥头 4a/4b/8a/8b, 中环 9/10(P-25.4.1 传统编号)。
+PHENANTHRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "4b", "5", "6", "7", "8", "8a", "8b", "9", "10")
+# pyrene(16 原子): 外周 1-10, 稠合碳 3a/5a/8a/8b/10a/10b(P-25.3.3.3.1 推荐编号)。
+PYRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "5a", "6", "7", "8", "8a", "8b", "9", "10", "10a", "10b")
 
 # 不对称 fused 环（含杂原子）与 1,3-二唑的标准编号：模板原子索引按固定 locant 顺序排列。
 # 起点为最优先杂原子，沿环编号绕开融合桥头（桥头只得字母位）。
@@ -151,6 +159,10 @@ _STANDARD_ORDERS: dict[str, tuple[int, ...]] = {
     "benzothiazole": (4, 5, 6, 7, 8, 0, 1, 2, 3),
     "benzoxazole":  (4, 5, 6, 7, 8, 0, 1, 2, 3),
     "indazole":     (6, 5, 4, 3, 2, 1, 0, 8, 7),
+    # phenanthrene(14 原子): 模板原子按标准 locant 序(端环1-4 + 中环9/10)。
+    "phenanthrene": (9, 10, 11, 12, 13, 8, 5, 0, 1, 2, 3, 4, 6, 7),
+    # pyrene(16 原子): 外周1-10 + 稠合碳 3a/5a/8a/8b/10a/10b(fused_numbering 方向)。
+    "pyrene":       (6, 7, 8, 9, 10, 11, 12, 13, 0, 1, 2, 14, 3, 4, 5, 15),
     # carbazole（13 原子）：1,2,3,4,4a,5,6,7,8,8a,9,9a,9b
     "carbazole":    (6, 7, 8, 9, 5, 12, 0, 1, 2, 11, 4, 3, 10),
     # acridine（14 原子）：1,2,3,4,4a,5,6,7,8,8a,9(N 对位),10(N),10a,10b
@@ -175,6 +187,8 @@ _STANDARD_LABELS: dict[str, tuple[str, ...]] = {
     "benzothiazole": FUSED56_LABELS,
     "benzoxazole": FUSED56_LABELS,
     "indazole": FUSED56_LABELS,
+    "phenanthrene": PHENANTHRENE_LABELS,
+    "pyrene": PYRENE_LABELS,
     "carbazole": CARBAZOLE_LABELS,
     "acridine": ACRIDINE_LABELS,
     "phenothiazine": PHENOTHIAZINE_LABELS,
