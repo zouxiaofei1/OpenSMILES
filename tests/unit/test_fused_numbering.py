@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.ring_systems import build_ring_systems
-from namepredict.layer4.fused_orientation import preferred_orientation
+from namepredict.layer4.fused_orientation import preferred_orientations
 from namepredict.layer4.fused_numbering import number_fused_system
 from namepredict.layer2.ring_scaffold import FUSED56_LABELS, NAPH_LABELS
 
@@ -16,9 +16,9 @@ def _number(smiles: str):
     systems = build_ring_systems(mol)
     assert systems
     rings = list(mol.GetRingInfo().AtomRings())
-    orient = preferred_orientation(mol, rings, systems[0]["fusion_edges"])
-    assert orient is not None
-    return mol, number_fused_system(mol, rings, orient.coord_dict())
+    orients = preferred_orientations(mol, rings, systems[0]["fusion_edges"])
+    assert orients
+    return mol, number_fused_system(mol, rings, [o.coord_dict() for o in orients])
 
 
 def test_naphthalene_labels_match_standard():

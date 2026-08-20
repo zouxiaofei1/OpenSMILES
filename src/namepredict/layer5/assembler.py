@@ -243,6 +243,7 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             return exo
     if kind == "radical" and (numbered.get("parent") or {}).get("radical_anchor_element"):
         return _mononuclear_radical_names(numbered)
+    print(kind)
     if kind in ("fused", "fused_hetero"):
         # 未注册稠环: 用 fused_info 拆解树组装稠合名(benzo[a].../naphtho[...]...); 失败显式 unsupported。
         parent = numbered.get("parent") or {}
@@ -251,6 +252,7 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             from namepredict.layer5.fused_namer import fused_parent_names
             name = fused_parent_names(mol, node)
             if name is not None:
+                print(name,kind)
                 return name
         return None
     entry = _KIND_TABLE.get(kind)

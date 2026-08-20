@@ -112,7 +112,7 @@ async function runName(smiles, opts) {
     if (seq !== state.nameReqSeq) return;
     showNamerResult(result);
     if (result.success) {
-      updateNamerSvg("namer-locants", API.locantsSvg, smiles, seq);
+      updateNamerSvg("namer-locants", API.locantsSvg, smiles, seq, state.namerOrient);
       updateNamerSvg("namer-atom-ids", API.atomIdsSvg, smiles, seq);
     }
     state.lastNamedSmiles = smiles;
@@ -242,16 +242,18 @@ function hideNamerSvg(boxId) {
   }
 }
 
-async function updateNamerSvg(boxId, endpoint, smiles, seq) {
+async function updateNamerSvg(boxId, endpoint, smiles, seq, orient) {
   const box = $(boxId);
   if (!box) return;
   box.hidden = true;
   box.innerHTML = "";
   if (!smiles) return;
+  const payload = { smiles };
+  if (orient !== undefined) payload.orient = orient;
   try {
     const res = await api(endpoint, {
       method: "POST",
-      body: JSON.stringify({ smiles }),
+      body: JSON.stringify(payload),
     });
     if (seq !== state.nameReqSeq) return;
     if (res && res.ok && res.svg) {
@@ -324,6 +326,15 @@ export function bindNamer() {
   $("smiles-input") &&
     $("smiles-input").addEventListener("input", () => {
       scheduleLiveSmilesName();
+    });
+
+  // L4 编号图「水平行」开关: 切换后按新取向重新生成结构图
+  $("namer-orient-toggle") &&
+    $("namer-orient-toggle").addEventListener("change", (ev) => {
+      state.namerOrient = !!(ev.target && ev.target.checked);
+      if (!state.lastNamedSmiles) return;
+      const seq = ++state.nameReqSeq;
+      updateNamerSvg("namer-locants", API.locantsSvg, state.lastNamedSmiles, seq, state.namerOrient);
     });
 
   renderNamerHistory();

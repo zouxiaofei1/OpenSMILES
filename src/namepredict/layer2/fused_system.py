@@ -67,7 +67,7 @@ def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[i
             if rset in visited:
                 continue
             visited.add(rset)
-            print(atoms)
+            # print(atoms)
             sid = match_retained(info, atoms)
             if sid is not None:
                 out.setdefault(atoms, (sid, rset))
@@ -167,16 +167,16 @@ def _numbered_locants(info, rings, fusion_edges, cand):
     idx_map = {i: k for k, i in enumerate(sorted(rset))}
     sub_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in fusion_edges
                  if i in rset and j in rset]
-    from namepredict.layer4.fused_orientation import preferred_orientation
+    from namepredict.layer4.fused_orientation import preferred_orientations
     from namepredict.layer4.fused_numbering import number_fused_system
-    orient = preferred_orientation(info["mol"], sub_rings, sub_edges)
-    if orient is None:
+    orients = preferred_orientations(info["mol"], sub_rings, sub_edges)
+    if not orients:
         return None
-    result = number_fused_system(info["mol"], sub_rings, orient.coord_dict())
+    result = number_fused_system(info["mol"], sub_rings, [o.coord_dict() for o in orients])
     if result is None:
         return None
     chain, labels = result
-    return dict(zip(chain, labels)), len(orient.row)
+    return dict(zip(chain, labels)), len(orients[0].row)
 
 
 def _ring_components(remaining, fusion_edges) -> list[frozenset[int]]:

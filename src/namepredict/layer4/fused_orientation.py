@@ -110,6 +110,22 @@ def _place_ring(order: list[int], coords: dict, a: int, b: int, side: int) -> di
     return out
 
 
+def _opposite_side(coords: dict, prev_ring: tuple, a: int, b: int) -> int:
+    """新环相对共享边(a,b)应取的 side: 使新环质心落在 prev 环质心的对面。
+
+    共享边端点(a,b)顺序来自原子索引排序(_edge_map), 不保证几何方向, 故不能
+    固定 side; 由 prev 环质心相对共享边左法向(-uy,ux)的符号决定(side=+1 时
+    新环质心在左法向侧, -1 在右法向侧)。
+    """
+    ax, ay = coords[a]
+    bx, by = coords[b]
+    mx, my = (ax + bx) / 2, (ay + by) / 2
+    cx = sum(coords[p][0] for p in prev_ring) / len(prev_ring)
+    cy = sum(coords[p][1] for p in prev_ring) / len(prev_ring)
+    d = (cx - mx) * (-(by - ay)) + (cy - my) * (bx - ax)
+    return -1 if d > 0 else 1
+
+
 def _layout(row: tuple[int, ...], rings, fusion_edges) -> dict | None:
     """刚性摆放水平行及其邻接环, 返回 {原子: 坐标}; 失败(奇环行内双侧)返回 None。"""
     edge = _edge_map(fusion_edges)
@@ -130,7 +146,8 @@ def _layout(row: tuple[int, ...], rings, fusion_edges) -> dict | None:
             if n % 2 == 1 and exit_pair is not None:
                 return None  # 行内奇环双侧融合需松弛, 本阶段刚性不可行
             order = ring_cyclic(rings[r], pair[0], pair[1])
-            coords.update(_place_ring(order, coords, pair[0], pair[1], side=-1))
+            side = _opposite_side(coords, rings[prev], pair[0], pair[1])
+            coords.update(_place_ring(order, coords, pair[0], pair[1], side))
         placed.add(r)
     for r in range(len(rings)):
         if r not in placed and not _place_neighbor(r, rings, coords, placed, edge):
@@ -237,14 +254,18 @@ def _quadrant_fractions(coords: dict, rings) -> tuple[tuple[float, float, float,
     return tuple(q), above
 
 
-def preferred_orientation(mol, rings, fusion_edges) -> Orientation | None:
-    """优选取向: 水平行环数最多→右上最多→左下最少→上方最多; 无候选返回 None。"""
+def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
+    """全部优选取向平局候选(水平行环数最多→右上最多→左下最少→上方最多)。
+
+    对称环系(直线 acene 等)的左右/上下镜像 key 相同, 全部返回, 由编号阶段
+    P-25.3.3.1.2 准则(a)-(d) 跨候选收窄; 否则依赖遍历顺序, 编号不稳定。
+    """
     rows = horizontal_rows(rings, fusion_edges)
     if not rows:
-        return None
+        return []
     max_len = len(rows[0])
-    best: Orientation | None = None
     best_key: tuple | None = None
+    bests: list[Orientation] = []
     for row in rows:
         if len(row) < max_len:
             continue
@@ -257,9 +278,19 @@ def preferred_orientation(mol, rings, fusion_edges) -> Orientation | None:
             if not _valid_deform_overlap(coords, rings, fusion_edges):
                 continue
             (q1, q2, q3, q4), above = _quadrant_fractions(coords, rings)
-            key = (len(row), q1, -q3, above)
+            # 面积分数有 ~1e-15 浮点尾差, round 消除后镜像才算平局
+            key = (len(row), round(q1, 9), round(-q3, 9), round(above, 9))
+            orient = Orientation(row, tuple((a, x, y) for a, (x, y) in sorted(coords.items())),
+                                 (q1, q2, q3, q4), above)
             if best_key is None or key > best_key:
                 best_key = key
-                best = Orientation(row, tuple((a, x, y) for a, (x, y) in sorted(coords.items())),
-                                   (q1, q2, q3, q4), above)
-    return best
+                bests = [orient]
+            elif key == best_key:
+                bests.append(orient)
+    return bests
+
+
+def preferred_orientation(mol, rings, fusion_edges) -> Orientation | None:
+    """优选取向(取首个平局候选); 无候选返回 None。"""
+    bests = preferred_orientations(mol, rings, fusion_edges)
+    return bests[0] if bests else None

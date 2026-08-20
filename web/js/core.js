@@ -43,6 +43,7 @@ export const state = {
   liveDebounceTimer: null,
   liveSmilesTimer: null,
   suppressSmilesLive: false,
+  namerOrient: true, // L4 编号图: 稠环按 preferred_orientation 水平摆放
   // benchmark
   currentPage: "namer",
   bmRows: [],

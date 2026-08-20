@@ -356,9 +356,9 @@ def _match_with_map(info: dict, atom_ids) -> tuple[str, tuple[int, ...]] | None:
         if _TEMPLATE_ELEM[sid] != elem:
             continue
         for m in mol.GetSubstructMatches(q, uniquify=True):
-            print(sid,m)
+            # print(sid,m)
             if set(m) == atoms:
-                print("yes")
+                # print("yes")
                 return sid, m
     return None
 

@@ -183,13 +183,13 @@ def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
     registered 模板(含对称 naphthalene/anthracene)保持固定编号/P-14.4 不被接管。
     """
     sid = parent.get("scaffold_id")
-    if sid not in (None, "carbocycle"):
+    if sid not in (None, "carbocycle", "fused_hetero"):
         return None
     mol = parent.get("mol")
     if mol is None or not chain or not all(mol.GetAtomWithIdx(a).GetIsAromatic() for a in chain):
         return None
     from namepredict.layer1.ring_systems import build_ring_systems
-    from namepredict.layer4.fused_orientation import preferred_orientation
+    from namepredict.layer4.fused_orientation import preferred_orientations
     from namepredict.layer4.fused_numbering import number_fused_system
     systems = [s for s in build_ring_systems(mol) if (s.get("atom_ids") or []) == sorted(set(chain))]
     if not systems:
@@ -198,10 +198,11 @@ def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
     if len(system.get("sssr_indices") or []) < 2:
         return None  # 单环走 P-14.4 通用枚举
     rings = list(mol.GetRingInfo().AtomRings())
-    orient = preferred_orientation(mol, rings, system["fusion_edges"])
-    if orient is None:
+    orients = preferred_orientations(mol, rings, system["fusion_edges"])
+    print(orients)
+    if not orients:
         return None
-    result = number_fused_system(mol, rings, orient.coord_dict())
+    result = number_fused_system(mol, rings, [o.coord_dict() for o in orients])
     if result is None:
         return None
     fused_chain, labels = result

@@ -66,24 +66,32 @@ def _prefix_of(sid: str, stem_en: str | None, stem_zh: str | None) -> tuple[str,
 def _component_numbering(mol, node, rings, fusion_edges):
     """组分自身编号: 返回 (外周边界 chain, 并行 labels); 失败返回 (None, None)。
 
-    统一走 P-25.3.3 通用编号(fused_numbering); 单环(苯附加)沿环序编号。
+    保留组分走 P-25.4 标准固定编号(单环杂环融合位次/对称母体取向平局歧义由
+    融合边 shared 或 N1 定位确定); 其余走 P-25.3.3 通用编号(fused_numbering);
+    单环非保留(苯附加等)沿环序编号。
     """
     rset = sorted(node.ring_indices)
     if not rset:
         return None, None
     sub_rings = [rings[i] for i in rset]
+    from namepredict.layer4.fused_numbering import standard_component_numbering
+    shared = node.attached[0].fusion_shared[0] if node.attached else None
+    # 保留组分: 标准固定编号(P-25.4), 对称母体/双 N 二唑上确定(通用 P-25.3.3 取向平局歧义)。
+    std = standard_component_numbering(mol, node.scaffold_id, set().union(*sub_rings), shared)
+    if std is not None:
+        return std
     if len(sub_rings) == 1:
         ring = sub_rings[0]
         return list(ring), [str(i + 1) for i in range(len(ring))]
     idx_map = {i: k for k, i in enumerate(rset)}
     sub_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in fusion_edges
                  if i in idx_map and j in idx_map]
-    from namepredict.layer4.fused_orientation import preferred_orientation
+    from namepredict.layer4.fused_orientation import preferred_orientations
     from namepredict.layer4.fused_numbering import number_fused_system
-    orient = preferred_orientation(mol, sub_rings, sub_edges)
-    if orient is None:
+    orients = preferred_orientations(mol, sub_rings, sub_edges)
+    if not orients:
         return None, None
-    result = number_fused_system(mol, sub_rings, orient.coord_dict())
+    result = number_fused_system(mol, sub_rings, [o.coord_dict() for o in orients])
     if result is None:
         return None, None
     return result[0], result[1]

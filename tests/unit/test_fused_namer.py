@@ -14,7 +14,7 @@ CASES = [
     # benchmark 参考: benzo[e]pyrene(未注册) → 芘 + 苯稠合
     ("c1ccc2c(c1)c1cccc3ccc4cccc2c4c31", "benzo[e]pyrene", "苯并[e]芘"),
     # chrysene(未注册) → 菲 + 苯稠合
-    ("c1cc2c3ccccc3ccc2c2ccccc12", "benzo[b]phenanthrene", "苯并[b]菲"),
+    ("c1cc2c3ccccc3ccc2c2ccccc12", "benzo[a]phenanthrene", "苯并[a]菲"),
 ]
 
 

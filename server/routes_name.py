@@ -24,6 +24,7 @@ class LocantsBody(BaseModel):
     """Request body for POST /name/locants-svg."""
 
     smiles: str = Field(..., min_length=1)
+    orient: bool = True  # 开关: 稠环按 preferred_orientation 水平摆放
 
 
 @router.post("/name")
@@ -36,7 +37,7 @@ def name_smiles(body: NameBody) -> dict[str, Any]:
 @router.post("/name/locants-svg")
 def name_locants_svg(body: LocantsBody) -> dict[str, Any]:
     """SMILES → 带 L4 编号标注的结构图 SVG;编号不可用返回 ok:false。"""
-    res = build_locants_svg(body.smiles)
+    res = build_locants_svg(body.smiles, orient=body.orient)
     return {"ok": True, **res} if res else {"ok": False}
 
 
