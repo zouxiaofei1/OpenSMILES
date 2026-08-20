@@ -54,7 +54,8 @@ def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
         return None
     if facts.multiplicity != 1:
         return None
-    if sid == "carbocycle":
+    if sid == "carbocycle" and not parent.get("fused_tree"):
+        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         base = _alkane_names(n)
         return (f"cyclo{base[0]}carboxylic acid", f"环{base[1]}甲酸") if base else None
     if sid == "benzene":
@@ -89,7 +90,8 @@ def _exocyclic_ester_names(n: int, numbered: dict) -> tuple[str, str] | None:
         return None
     if sid == "benzene":
         return None
-    if sid == "carbocycle":
+    if sid == "carbocycle" and not parent.get("fused_tree"):
+        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         base = _alkane_names(n)
         return (f"cyclo{base[0]}carboxylate", f"环{base[1]}甲酸") if base else None
     base = _ring_base(numbered)
@@ -117,7 +119,8 @@ def _exocyclic_amide_names(n: int, numbered: dict) -> tuple[str, str] | None:
         return None
     if sid == "benzene":
         return None
-    if sid == "carbocycle":
+    if sid == "carbocycle" and not parent.get("fused_tree"):
+        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         base = _alkane_names(n)
         return (f"cyclo{base[0]}carboxamide", f"环{base[1]}甲酰胺") if base else None
     base = _ring_base(numbered)
@@ -145,7 +148,8 @@ def _exocyclic_nitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
         return None
     if sid == "benzene":
         return None
-    if sid == "carbocycle":
+    if sid == "carbocycle" and not parent.get("fused_tree"):
+        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         base = _alkane_names(n)
         return (f"cyclo{base[0]}carbonitrile", f"环{base[1]}甲腈") if base else None
     base = _ring_base(numbered)
@@ -223,6 +227,30 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
             "".join(s["zh"] for s in ordered) + zero[1])
 
 
+def _ensure_fused_stem(numbered: dict) -> bool:
+    """未注册稠环词干注入: parent 无词干但 fused_tree 存在时, 用 fused_parent_names 补词干。
+
+    已注册稠环词干由 L2 pack_parent_stem 注入(stem_en 非空), 不会进入本分支;
+    未注册稠环(全碳 scaffold_id=carbocycle 或 fused_hetero)靠 fused_tree 组装稠合 base 名。
+    返回 False 表示稠合组装失败(显式 unsupported, 避免回落开链词干错名)。
+    """
+    parent = numbered.get("parent") or {}
+    if parent.get("stem_en") and parent.get("stem_zh"):
+        return True
+    node = parent.get("fused_tree")
+    if node is None:
+        return True
+    mol = parent.get("mol")
+    if mol is None:
+        return False
+    from namepredict.layer5.fused_namer import fused_parent_names
+    name = fused_parent_names(mol, node)
+    if name is None or not name[0] or not name[1]:
+        return False
+    parent["stem_en"], parent["stem_zh"] = name
+    return True
+
+
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     """链引擎按表 kind 派发，再转具体 worker。"""
     if kind == "acid":
@@ -243,21 +271,12 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             return exo
     if kind == "radical" and (numbered.get("parent") or {}).get("radical_anchor_element"):
         return _mononuclear_radical_names(numbered)
-    print(kind)
-    if kind in ("fused", "fused_hetero"):
-        # 未注册稠环: 用 fused_info 拆解树组装稠合名(benzo[a].../naphtho[...]...); 失败显式 unsupported。
-        parent = numbered.get("parent") or {}
-        mol, node = parent.get("mol"), parent.get("fused_tree")
-        if mol is not None and node is not None:
-            from namepredict.layer5.fused_namer import fused_parent_names
-            name = fused_parent_names(mol, node)
-            if name is not None:
-                print(name,kind)
-                return name
-        return None
     entry = _KIND_TABLE.get(kind)
     if entry is not None:
         sid = _scaffold_id(numbered)
+        if kind == "alkane" and (numbered.get("parent") or {}).get("fused_tree") and sid != "benzene":
+            # 未注册稠环无 FG: 词干注入(_ensure_fused_stem)已完成, 返回稠合 base 名(不走 chain_engine 拼 ane)。
+            return _parent_stem_names(numbered)
         if sid == "benzene" and kind == "alkane":
             # 苯 base：无主 FG 的苯，母体名由 sid 驱动（L2 已把纯苯 kind 收敛为 alkane）。
             return ("benzene", "苯")
@@ -358,6 +377,8 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     """组装入口：取名 → 前缀 → 阴离子/R-S/金属盐后缀。"""
     from namepredict.layer5.stereo import apply_rs_prefix
     kind, n = _parent_n(numbered)
+    if not _ensure_fused_stem(numbered):
+        return _unsupported(n, kind)
     names = _names_for(kind, n, numbered)
     if not names:
         return _unsupported(n, kind)

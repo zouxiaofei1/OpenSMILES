@@ -123,15 +123,14 @@ def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
 
 
 def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
-    """无保留 scaffold 时的通用环 kind(纯烃环为 alkane, 芳香稠环为 fused/fused_hetero)。"""
+    """无保留 scaffold 时的通用环 kind(统一收敛为 alkane, 环系身份由 scaffold_id/fused_tree 承载)。"""
     mol = info["mol"]
     atoms = set(skeleton.atom_ids)
     if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms):
-        # 芳香稠环放行为 fused 基团 kind(未注册稠环由 L5 fused_namer 组装稠合名)。
+        # 芳香稠环(未注册)kind 收敛 alkane, 骨架身份由 fused_tree + scaffold_id 承载(L5 fused_namer 组装稠合名)。
         n_rings = sum(1 for ring in mol.GetRingInfo().AtomRings() if set(ring) <= atoms)
         if n_rings >= 2:
-            all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atoms)
-            return "fused" if all_carbon else "fused_hetero"
+            return "alkane"
         return None
     all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atoms)
     # 纯烃环统一 kind='alkane'（正交化：环系由 scaffold_id 承载，不饱和度由 double_bond/double_bonds 字段承载，命名由 chain_engine 动态加 cyclo 前缀）。
@@ -139,10 +138,15 @@ def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
 
 
 def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str | None:
-    """按保留 scaffold 解析环 kind（苯收敛为 alkane）。"""
+    """按保留 scaffold 解析环 kind（苯/未注册稠环均收敛为 alkane）。"""
     if scaffold and scaffold.id != "carbocycle":
-        # 苯环（纯烃芳香单环）kind 收敛为 alkane，环系由 scaffold_id="benzene" 承载（对齐环烷烃正交化）。
-        return "alkane" if scaffold.id == "benzene" else scaffold.id
+        if scaffold.id == "benzene":
+            # 苯环（纯烃芳香单环）kind 收敛为 alkane，环系由 scaffold_id="benzene" 承载（对齐环烷烃正交化）。
+            return "alkane"
+        if scaffold.id in ("fused", "fused_hetero"):
+            # 未注册稠环：kind 正交化收敛 alkane，骨架身份由 fused_tree + scaffold_id 承载（L5 fused_namer 组装稠合名）。
+            return "alkane"
+        return scaffold.id
     return _generic_ring_kind(info, skeleton)
 
 

@@ -23,6 +23,12 @@ _POLICIES = (
     RingExpressionPolicy(frozenset({"mono_carbo"}), FG.ALCOHOL, frozenset({"in_skeleton"}), 2),
     RingExpressionPolicy(frozenset({"mono_carbo"}), FG.AMINE, frozenset({"in_skeleton"}), 1),
     RingExpressionPolicy(frozenset({"naph_family"}), FG.ALCOHOL, frozenset({"in_skeleton"}), 1),
+    # 未注册稠环(fused_hetero/fused): kind 已正交化, 主 FG 走 L5 fused_tree 组装, 需放开 typed 表达(否则环酮被 _unsupported_typed_ring 拦截)。
+    RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.ALCOHOL, frozenset({"in_skeleton"}), 2),
+    RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.KETONE, frozenset({"in_skeleton"}), 2),
+    RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.AMINE, frozenset({"in_skeleton"}), 1),
+    RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.ACID, frozenset({"exocyclic"}), 4),
+    RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.NITRILE, frozenset({"exocyclic"}), 4),
 )
 
 

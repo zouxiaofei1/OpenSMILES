@@ -41,7 +41,21 @@ _COMPONENT_STEM = {
     "quinoline": ("quinoline", "喹啉"),
     "isoquinoline": ("isoquinoline", "异喹啉"),
     "indole": ("indole", "吲哚"),
+    "indazole": ("indazole", "吲唑"),
+    "benzimidazole": ("benzimidazole", "苯并咪唑"),
     "benzofuran": ("benzofuran", "苯并呋喃"),
+    "benzothiophene": ("benzothiophene", "苯并噻吩"),
+    "benzothiazole": ("benzothiazole", "苯并噻唑"),
+    "benzoxazole": ("benzoxazole", "苯并噁唑"),
+    "quinazoline": ("quinazoline", "喹唑啉"),
+    "quinoxaline": ("quinoxaline", "喹噁啉"),
+    "benzodioxole": ("benzodioxole", "苯并二氧杂环戊烯"),
+    "pyrrolidine": ("pyrrolidine", "吡咯烷"),
+    "piperidine": ("piperidine", "哌啶"),
+    "morpholine": ("morpholine", "吗啉"),
+    "piperazine": ("piperazine", "哌嗪"),
+    "oxolane": ("oxolane", "四氢呋喃"),
+    "oxane": ("oxane", "四氢吡喃"),
     "carbazole": ("carbazole", "咔唑"),
     "acridine": ("acridine", "吖啶"),
     "phenothiazine": ("phenothiazine", "吩噻嗪"),
@@ -64,37 +78,17 @@ def _prefix_of(sid: str, stem_en: str | None, stem_zh: str | None) -> tuple[str,
 
 
 def _component_numbering(mol, node, rings, fusion_edges):
-    """组分自身编号: 返回 (外周边界 chain, 并行 labels); 失败返回 (None, None)。
-
-    保留组分走 P-25.4 标准固定编号(单环杂环融合位次/对称母体取向平局歧义由
-    融合边 shared 或 N1 定位确定); 其余走 P-25.3.3 通用编号(fused_numbering);
-    单环非保留(苯附加等)沿环序编号。
-    """
+    """组分自身编号: 委托 L4 fused_component_numbering(P-25.4/P-25.3.3), 稠合点作取代基。"""
     rset = sorted(node.ring_indices)
     if not rset:
         return None, None
     sub_rings = [rings[i] for i in rset]
-    from namepredict.layer4.fused_numbering import standard_component_numbering
     shared = node.attached[0].fusion_shared[0] if node.attached else None
-    # 保留组分: 标准固定编号(P-25.4), 对称母体/双 N 二唑上确定(通用 P-25.3.3 取向平局歧义)。
-    std = standard_component_numbering(mol, node.scaffold_id, set().union(*sub_rings), shared)
-    if std is not None:
-        return std
-    if len(sub_rings) == 1:
-        ring = sub_rings[0]
-        return list(ring), [str(i + 1) for i in range(len(ring))]
     idx_map = {i: k for k, i in enumerate(rset)}
     sub_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in fusion_edges
                  if i in idx_map and j in idx_map]
-    from namepredict.layer4.fused_orientation import preferred_orientations
-    from namepredict.layer4.fused_numbering import number_fused_system
-    orients = preferred_orientations(mol, sub_rings, sub_edges)
-    if not orients:
-        return None, None
-    result = number_fused_system(mol, sub_rings, [o.coord_dict() for o in orients])
-    if result is None:
-        return None, None
-    return result[0], result[1]
+    from namepredict.layer4.numbering_engine import fused_component_numbering
+    return fused_component_numbering(mol, node.scaffold_id, sub_rings, shared, sub_edges)
 
 
 def _inner_atoms(node, rings) -> set[int]:
@@ -143,6 +137,7 @@ def _fused_one(mol, parent_node, child_node, rings, fusion_edges) -> tuple[str, 
     parent_chain, _ = _outer_chain_labels(parent_node, rings, parent_chain, [""] * len(parent_chain)) \
         if parent_chain else (None, None)
     child_chain, child_labels = _component_numbering(mol, child_node, rings, fusion_edges)
+    # print(child_chain, child_labels )
     if not parent_chain or not child_labels:
         return None
     prefix = _prefix_of(child_node.scaffold_id, *_stem_of(child_node.scaffold_id))

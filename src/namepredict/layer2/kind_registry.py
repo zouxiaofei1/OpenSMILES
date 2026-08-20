@@ -120,10 +120,8 @@ def _load_from_scaffold_specs() -> None:
 
 
 def _bootstrap() -> None:
-    """启动时加载 scaffold 词干注册表 + 稠环基团 kind。"""
-    _load_from_scaffold_specs()  # 最后：Spec 是词干权威
-    _REG.setdefault("fused", KindMeta("fused", ring="carbo"))        # 未注册芳香稠环(纯碳)
-    _REG.setdefault("fused_hetero", KindMeta("fused_hetero", ring="hetero"))
+    """启动时加载 scaffold 词干注册表（唯一事实来源）。"""
+    _load_from_scaffold_specs()  # Spec 是词干权威
 
 
 _bootstrap()

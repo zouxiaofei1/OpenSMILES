@@ -11,17 +11,6 @@ from namepredict.constants import (
 # P-25.3.3.1.2(b): F > Cl > Br > I > O > S > Se > Te > N > P > ... > Tl（低位次给更优先杂原子）。
 _P145_SENIOR = (F, Cl, Br, I, O, S, Se, Te, N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)
 
-# 单环杂环保留组分的标准编号顺序(模板原子按标准 locant 序): 稠合名组装的组分
-# 融合位次用。咪唑/吡唑双 N 对称 N1 动态; 其余未登记 layer2 _STANDARD_ORDERS
-# (非 fused 母体走 P-14.4), 仅在 standard_component_numbering 使用。
-_SINGLE_RING_STD: dict[str, tuple[int, ...]] = {
-    "pyridine": (0, 1, 2, 3, 4, 5),
-    "pyrimidine": (2, 1, 4, 5, 0, 3),
-    "furan": (3, 2, 1, 0, 4),
-    "thiophene": (3, 2, 1, 0, 4),
-    "imidazole": (4, 3, 2, 1, 0),
-    "pyrazole": (3, 2, 1, 0, 4),
-}
 # 双 N 对称 1,3-/1,2-二唑: N1 须吡咯型 N(价 3 带取代/带 H), 排除双 N 互换的镜像匹配。
 _DIAZOLE_IDS = ("imidazole", "pyrazole")
 
@@ -202,47 +191,3 @@ def number_fused_system(mol, rings, coords) -> tuple[list[int], list[str]] | Non
     if fused_heteros:
         cands = _keep(cands, fused_heteros)  # (d) 低位次给稠合杂原子
     return cands[0]
-
-
-def standard_component_numbering(mol, scaffold_id, atoms, shared=None) -> tuple[list[int], list[str]] | None:
-    """保留组分的标准固定编号(P-25.4): 返回 (chain, labels); 无模板/不匹配返回 None。
-
-    L5 fused_namer 组装稠合名时对保留组分(菲/芘/吡啶/咪唑等)优先用此编号: 对称母体上
-    通用 P-25.3.3 取向平局((a)-(d) 无法区分镜像)会导致融合字母/位次不稳定。
-    对称母体多个标准子图匹配时, 取融合边(shared)位次最小的匹配(chrysene 的 a /
-    benzo[e]pyrene 的 e / 咪唑并[1,2-a]吡啶的 1,2 由此确定)。
-    """
-    if not scaffold_id:
-        return None
-    from namepredict.layer2.ring_scaffold import _Q, _STANDARD_LABELS, standard_chain
-    q = _Q.get(scaffold_id)
-    if q is None:
-        return None
-    atom_set = set(atoms)
-    best_key: tuple | None = None
-    best: tuple[list[int], list[str]] | None = None
-    for match in mol.GetSubstructMatches(q, uniquify=False):
-        if set(match) != atom_set:
-            continue
-        order = _SINGLE_RING_STD.get(scaffold_id)
-        if order is not None:
-            std = [match[t] for t in order]
-            labels = tuple(str(i + 1) for i in range(len(order)))
-            if scaffold_id in _DIAZOLE_IDS:
-                n1 = mol.GetAtomWithIdx(std[0])
-                if not (n1.GetAtomicNum() == 7 and (n1.GetDegree() == 3 or n1.GetTotalNumHs() > 0)):
-                    continue  # N1 须吡咯型 N(带取代/带 H): 排除双 N 互换的镜像匹配
-        else:
-            std = standard_chain(scaffold_id, tuple(match))
-            labels = _STANDARD_LABELS.get(scaffold_id)
-            if std is None or not labels or len(std) != len(labels) or set(std) != atom_set:
-                continue
-        if shared:
-            s = [a for a in shared if a in std]
-            key = tuple(sorted(_label_key(labels[std.index(a)]) for a in s)) if len(s) == 2 else ()
-        else:
-            key = ()
-        if best_key is None or key < best_key:
-            best_key = key
-            best = (std, list(labels))
-    return best

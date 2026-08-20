@@ -199,7 +199,7 @@ def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
         return None  # 单环走 P-14.4 通用枚举
     rings = list(mol.GetRingInfo().AtomRings())
     orients = preferred_orientations(mol, rings, system["fusion_edges"])
-    print(orients)
+    # print(orients)
     if not orients:
         return None
     result = number_fused_system(mol, rings, [o.coord_dict() for o in orients])
@@ -209,7 +209,7 @@ def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
     parent["numbering_scaffold"] = {
         "scaffold_id": "fused", "labels": tuple(labels), "relative_stereo": None,
     }
-    return fused_chain
+    return fused_chain #外环原子顺序
 
 
 # ── 入口 ─────────────────────────────────────────────────────────────────
@@ -257,3 +257,46 @@ def orient_numbering(parent: dict, substituents: list) -> list[int] | None:
         from namepredict.layer4._chain_orient import _stem_loc_pairs
         cands = _narrow(cands, lambda c: _stem_loc_pairs(_to_chain(c), substituents))
     return _to_chain(cands[0])
+
+
+def _component_labels(parent: dict, chain: list[int]) -> list[str]:
+    """orient_numbering 只返回链, 补并行 labels: 优先标准 locant 标签, 否则纯数字。"""
+    scaffold = parent.get("numbering_scaffold")
+    labels = scaffold.get("labels") if scaffold else None
+    if labels and len(labels) == len(chain):
+        return list(labels)
+    from namepredict.layer2.ring_scaffold import _STANDARD_LABELS
+    labels = _STANDARD_LABELS.get(parent.get("scaffold_id") or "")
+    if labels and len(labels) == len(chain):
+        return list(labels)
+    return [str(i + 1) for i in range(len(chain))]
+
+
+def fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edges=None):
+    """稠合组分的自身编号(P-25.4/P-25.3.3), 稠合点 shared 作取代基最小化位次。
+    返回 (chain, labels) 或 (None, None); 供 L5 fused_namer 组装稠合名。"""
+    if not sub_rings:
+        return None, None
+    subs = [{"attach_idx": a} for a in (shared or ())] if shared else []
+    chain0 = sorted(set().union(*sub_rings))
+    from namepredict.layer2.ring_scaffold import _STANDARD_ORDERS
+    if len(sub_rings) == 1 or (scaffold_id and scaffold_id in _STANDARD_ORDERS):
+        if not scaffold_id:
+            ring = list(sub_rings[0])
+            return ring, [str(i + 1) for i in range(len(ring))]
+        parent = {"mol": mol, "scaffold_id": scaffold_id, "chain": chain0}
+        res = orient_numbering(parent, subs)
+        if not res:
+            return None, None
+        return res, _component_labels(parent, res)
+    # 多环无固定编号: P-25.3.3 通用编号(fused_numbering)。
+    from namepredict.layer4.fused_orientation import preferred_orientations
+    from namepredict.layer4.fused_numbering import number_fused_system
+    orients = preferred_orientations(mol, sub_rings, sub_edges or [])
+    if not orients:
+        return None, None
+    result = number_fused_system(mol, sub_rings, [o.coord_dict() for o in orients])
+    # print(result)
+    if result is None:
+        return None, None
+    return result[0], result[1]

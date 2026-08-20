@@ -3,8 +3,12 @@ from __future__ import annotations
 
 
 def _is_cyclo(parent: dict | None) -> bool:
-    """环状 carbocycle（kind 正交化后环系由 scaffold_id 承载，不再虚构 cyclo* kind）。"""
-    return (parent or {}).get("scaffold_id") == "carbocycle"
+    """环状单环 carbocycle（kind 正交化后环系由 scaffold_id 承载，不再虚构 cyclo* kind）。
+
+    未注册全碳稠环 scaffold_id 亦为 carbocycle，但 fused_tree 存在时不作单环环烷烃
+    （位次省略/环烯规则由 L5 fused_namer 按稠合名处理）。
+    """
+    return (parent or {}).get("scaffold_id") == "carbocycle" and not (parent or {}).get("fused_tree")
 
 
 def omit_oh(
