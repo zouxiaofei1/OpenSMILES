@@ -111,6 +111,10 @@ async function runName(smiles, opts) {
     });
     if (seq !== state.nameReqSeq) return;
     showNamerResult(result);
+    if (result.success) {
+      updateNamerSvg("namer-locants", API.locantsSvg, smiles, seq);
+      updateNamerSvg("namer-atom-ids", API.atomIdsSvg, smiles, seq);
+    }
     state.lastNamedSmiles = smiles;
     state.namerHistory.unshift({
       smiles,
@@ -223,6 +227,40 @@ function showNamerResult(result) {
   if ($("namer-en")) $("namer-en").textContent = result.en || "—";
   if ($("namer-zh")) $("namer-zh").textContent = result.zh || "—";
   if ($("namer-source")) $("namer-source").textContent = result.source || "—";
+  // 命名失败时清空并隐藏结构图,避免旧结构残留
+  if (!result.success) {
+    hideNamerSvg("namer-locants");
+    hideNamerSvg("namer-atom-ids");
+  }
+}
+
+function hideNamerSvg(boxId) {
+  const box = $(boxId);
+  if (box) {
+    box.hidden = true;
+    box.innerHTML = "";
+  }
+}
+
+async function updateNamerSvg(boxId, endpoint, smiles, seq) {
+  const box = $(boxId);
+  if (!box) return;
+  box.hidden = true;
+  box.innerHTML = "";
+  if (!smiles) return;
+  try {
+    const res = await api(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ smiles }),
+    });
+    if (seq !== state.nameReqSeq) return;
+    if (res && res.ok && res.svg) {
+      box.innerHTML = res.svg;
+      box.hidden = false;
+    }
+  } catch (_) {
+    /* 结构图失败静默,不干扰命名结果 */
+  }
 }
 
 export function bindNamer() {

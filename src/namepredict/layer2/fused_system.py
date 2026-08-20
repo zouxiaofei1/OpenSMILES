@@ -67,6 +67,7 @@ def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[i
             if rset in visited:
                 continue
             visited.add(rset)
+            print(atoms)
             sid = match_retained(info, atoms)
             if sid is not None:
                 out.setdefault(atoms, (sid, rset))
@@ -233,26 +234,8 @@ def _decompose(info, rings, fusion_edges, ring_indices, fusion_shared=()) -> Fus
 def decompose_fused_system(info, system) -> FusedNode | None:
     """公共入口: 对单个环系拆解为 FusedNode 树（无保留候选返回 None）。"""
     rings = list(info["mol"].GetRingInfo().AtomRings())
-    return _decompose(info, rings, system.get("fusion_edges") or [],
+    node = _decompose(info, rings, system.get("fusion_edges") or [],
                       frozenset(system.get("sssr_indices") or ()))
+    # print(node)
+    return node
 
-
-def fused_info_for_mol(info) -> list[FusedNode]:
-    """对 info 中全部环系逐个拆解（调试入口，未注册稠环也返回拆解树）。"""
-    out = []
-    for system in info.get("ring_systems") or []:
-        node = decompose_fused_system(info, system)
-        if node is not None:
-            out.append(node)
-    return out
-
-
-def fused_node_dict(node: FusedNode) -> dict:
-    """FusedNode 树 → JSON 安全 dict（供 parent dict / debug 接口）。"""
-    return {
-        "scaffold": node.scaffold_id,
-        "atoms": list(node.atom_ids),
-        "ring_indices": sorted(node.ring_indices),
-        "fusion_shared": [sorted(s) for s in node.fusion_shared],
-        "attached_components": [fused_node_dict(a) for a in node.attached],
-    }

@@ -2,6 +2,8 @@
    All feature modules import from here; nothing in core imports back. */
 export const API = {
   name: "/api/v1/name",
+  locantsSvg: "/api/v1/name/locants-svg",
+  atomIdsSvg: "/api/v1/name/atom-ids-svg",
   benchmarkPreview: "/api/v1/benchmark-preview",
   benchmarkDatasets: "/api/v1/benchmark-preview/datasets",
   benchmarkRefresh: "/api/v1/benchmark-preview/refresh",

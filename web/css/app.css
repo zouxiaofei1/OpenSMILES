@@ -977,6 +977,34 @@ select.input {
   }
 }
 
+.namer-svgs {
+  margin-top: var(--space-md);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+
+.namer-svg-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.namer-svg-title {
+  font-size: 12px;
+  color: var(--color-muted-text);
+  font-weight: 500;
+}
+
+.namer-svgs svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
 .result-head {
   display: flex;
   align-items: center;

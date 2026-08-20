@@ -5,7 +5,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 from rdkit.Chem import Mol, MolFromSmiles
-
+from rdkit import Chem
 from namepredict.layer2.parent_skeleton import ParentSkeleton
 
 
@@ -348,13 +348,17 @@ def _match_with_map(info: dict, atom_ids) -> tuple[str, tuple[int, ...]] | None:
     match 供固定编号（standard_path）把模板原子映射到分子原子。
     """
     mol = info["mol"]
+  
     atoms = frozenset(atom_ids)
     elem = _elem_sig(mol, atom_ids)
+    # print(Chem.MolToSmiles(mol))
     for sid, q in _Q.items():
         if _TEMPLATE_ELEM[sid] != elem:
             continue
         for m in mol.GetSubstructMatches(q, uniquify=True):
+            print(sid,m)
             if set(m) == atoms:
+                print("yes")
                 return sid, m
     return None
 
@@ -392,18 +396,34 @@ def _matched_id(info: dict, skeleton: ParentSkeleton) -> str | None:
 
 
 def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
-    """纯碳环兜底为 carbocycle 身份。"""
+    """无模板命中时的通用环身份兜底。
+
+    - 全碳单环/多环 → carbocycle（P-22 泛用环身份；supports_ring_expression
+      的 _POLICIES 只覆盖 carbocycle/mono_carbo/naph_family，改 fused 会关闭
+      未注册稠环的 typed 环表达）；
+    - 非全碳芳香多环 → fused_hetero（kind 与 _generic_ring_kind 对齐，L5
+      fused_namer 按 fused_tree 组装稠合名）；
+    - 其余非全碳（单环/饱和多环）→ None（无保留词干可拼，显式失败而非
+      当开链烷基错名）。
+    """
     mol = info["mol"]
-    if not all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids):
+    all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
+    if not all_carbon:
+        atoms = set(skeleton.atom_ids)
+        if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms):
+            n_rings = sum(1 for ring in mol.GetRingInfo().AtomRings() if set(ring) <= atoms)
+            if n_rings >= 2:
+                return ScaffoldIdentity("fused_hetero", "fused_hetero", n_rings, "hetero")
         return None
     return ScaffoldIdentity("carbocycle", "carbocycle", 1, "carbo")
 
 
 def resolve_ring_scaffold(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
-    """解析骨架的 scaffold 身份（显式/模板匹配/兜底碳环）。
+    """解析骨架的 scaffold 身份（显式/模板匹配/通用兜底）。
 
     模板命中即解析出该母体的 ScaffoldIdentity（_TEMPLATES 唯一来源派生）；
-    无模板命中时全碳环兜底 carbocycle，杂环返回 None。
+    无模板命中时全碳环兜底 carbocycle，非全碳多环兜底 fused_hetero
+    （L5 fused_namer 按 fused_tree 组装），非全碳单环返回 None。
     """
     direct = get_identity(skeleton.scaffold_id or "")
     if direct:

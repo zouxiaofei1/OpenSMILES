@@ -46,7 +46,15 @@ _MAX_CACHE_KEYS = 5
 _SRC_SIG_CACHE: tuple[list[tuple[str, int, int]], str] | None = None
 
 # graphviz 分层 SVG 渲染（dot.exe）
-_DOT_EXE_CANDIDATES = (r"C:\Program Files\Graphviz\bin\dot.exe",)
+# 依次探测常见安装位置（system/用户级/scoop/便携），最后兜底 PATH 中的 dot
+_DOT_EXE_CANDIDATES = (
+    r"C:\Program Files\Graphviz\bin\dot.exe",
+    r"C:\Program Files (x86)\Graphviz\bin\dot.exe",
+    r"%LOCALAPPDATA%\Graphviz\bin\dot.exe",
+    r"%LOCALAPPDATA%\Programs\Graphviz\bin\dot.exe",
+    r"%USERPROFILE%\scoop\apps\graphviz\current\bin\dot.exe",
+    r"C:\Graphviz\bin\dot.exe",
+)
 _MAX_SVG_NODES = 2500
 _SVG_CACHE: dict[str, str] = {}
 _MAX_SVG_KEYS = 10
@@ -290,9 +298,9 @@ def _find_dot() -> str | None:
     if _DOT_EXE:
         return _DOT_EXE
     for cand in _DOT_EXE_CANDIDATES:
-        if Path(cand).is_file():
-            _DOT_EXE = cand
-            return cand
+        if Path(os.path.expandvars(cand)).is_file():
+            _DOT_EXE = os.path.expandvars(cand)
+            return _DOT_EXE
     _DOT_EXE = shutil.which("dot")
     return _DOT_EXE
 

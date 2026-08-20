@@ -45,8 +45,9 @@ def test_azulene_no_longer_misidentified_as_naphthalene():
 
 
 def test_isoindole_no_longer_misidentified_as_indole():
-    # 苯并[c]吡咯：五元组与 indole 字段全等曾误配为 indole；含 N 回落 None。
-    assert _resolve("c1ccc2c(c1)c[nH]c2") is None
+    # 苯并[c]吡咯：五元组与 indole 字段全等曾误配为 indole；未注册非全碳
+    # 多环回落 fused_hetero（L5 按 fused_tree 组装稠合名），仍非 indole。
+    assert _resolve("c1ccc2c(c1)c[nH]c2") == "fused_hetero"
 
 
 def test_substituted_ring_still_resolves():

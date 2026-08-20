@@ -43,6 +43,6 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
 
 def rule_driven_parent_candidates(info: dict) -> list[dict]:
     """规则驱动入口：返回最终母体候选（无主官能团时纯烃）。"""
-
+    
     selection = select_principal_parent_skeletons(info)
     return _express_selected(selection, info)
