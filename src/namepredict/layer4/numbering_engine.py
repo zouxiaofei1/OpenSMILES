@@ -198,6 +198,7 @@ def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
     if len(system.get("sssr_indices") or []) < 2:
         return None  # 单环走 P-14.4 通用枚举
     rings = list(mol.GetRingInfo().AtomRings())
+    print("riings",rings)
     orients = preferred_orientations(mol, rings, system["fusion_edges"])
     # print(orients)
     if not orients:

@@ -156,13 +156,17 @@ def _layout(row: tuple[int, ...], rings, fusion_edges) -> dict | None:
 
 
 def _overlaps_any(cand: dict, rings, r: int, coords: dict) -> bool:
-    """新环与任意非共享环的重叠面积是否超过阈值。"""
+    """新环与任意环(含共享环)的重叠面积是否超过阈值。
+
+    共享环正确摆放时只在共享边处重合(面积≈0), 若新环被摆到共享环同侧则会
+    完全重合; 故不能跳过共享环——否则重合坐标无法被检测。"""
     cand_pts = [cand[a] for a in rings[r]]
+    cand_area = polygon_area(cand_pts)
     for other, o_pts in _ring_polys(rings, coords):
-        if other == r or frozenset(rings[r]) & frozenset(rings[other]):
+        if other == r:
             continue
         inter = overlap_area(cand_pts, o_pts)
-        if inter > OVERLAP_FRAC * min(polygon_area(cand_pts), polygon_area(o_pts)):
+        if inter > OVERLAP_FRAC * min(cand_area, polygon_area(o_pts)):
             return True
     return False
 
@@ -175,13 +179,24 @@ def _ring_polys(rings, coords):
 
 def _place_neighbor(r: int, rings, coords: dict, placed: set[int], edge: dict) -> bool:
     """递归摆放环 r(至少一个共享边已定坐标); 返回是否成功。"""
-    cands = [(j, pair) for (i, j), pair in edge.items() if (i == r and j in placed) or (j == r and i in placed)]
+    # edge 的 key 是 frozenset, 解包 (i, j) 顺序不可靠, 故用集合成员关系确定
+    # 邻环索引(原实现解包顺序若翻转为 (j=r, i=邻环) 时 j 即 r 自身)。
+    cands = []
+    for key, pair in edge.items():
+        if r in key:
+            nb = next(x for x in key if x != r)
+            if nb in placed:
+                cands.append((nb, pair))
     if not cands:
         return False
-    order = ring_cyclic(rings[r], cands[0][1][0], cands[0][1][1])
+    nb, (a, b) = cands[0]
+    order = ring_cyclic(rings[r], a, b)
+    # 首选共享环对侧(与水平行摆放一致的几何判定), 避免默认左法向把新环摆到
+    # 与共享环同侧导致完全重合; 失败再试对侧(_overlaps_any 现含共享环检查)。
+    side = _opposite_side(coords, rings[nb], a, b)
     best = None
-    for side in (+1, -1):
-        cand = _place_ring(order, coords, cands[0][1][0], cands[0][1][1], side)
+    for cand_side in (side, -side):
+        cand = _place_ring(order, coords, a, b, cand_side)
         if not _overlaps_any(cand, rings, r, coords):
             best = cand
             break
@@ -261,6 +276,8 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
     P-25.3.3.1.2 准则(a)-(d) 跨候选收窄; 否则依赖遍历顺序, 编号不稳定。
     """
     rows = horizontal_rows(rings, fusion_edges)
+    print(rows,rings,fusion_edges,"\n")
+    
     if not rows:
         return []
     max_len = len(rows[0])
@@ -271,6 +288,7 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
             continue
         for flip in (False, True):
             coords = _layout(row, rings, fusion_edges)
+            # print("coords:",coords)
             if coords is None:
                 continue
             if flip:
@@ -287,6 +305,7 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
                 bests = [orient]
             elif key == best_key:
                 bests.append(orient)
+    print(bests)
     return bests
 
 

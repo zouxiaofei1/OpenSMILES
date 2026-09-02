@@ -80,6 +80,12 @@ export function ensureKetcher(forceRetry) {
 }
 
 async function resolveSmilesForName() {
+  // 输入框是权威来源: Ketcher 会把同一分子重排成不同原子序的 SMILES
+  // (如 kekulé→芳香式), 用它命名/渲染会让 atom-ids/locants 索引与
+  // 用户输入的 SMILES(以及 /debug 对同一输入的结果)不一致。
+  // 因此输入框有内容时优先采用, 仅在画布手绘(输入框为空)时才回退到 Ketcher。
+  const typed = (($("smiles-input") && $("smiles-input").value) || "").trim();
+  if (typed) return typed;
   let fromEditor = "";
   if (state.ketcherBridge && state.ketcherBridge.isReady()) {
     fromEditor = await state.ketcherBridge.getSmiles();
@@ -89,7 +95,7 @@ async function resolveSmilesForName() {
     if (input) input.value = fromEditor;
     return fromEditor;
   }
-  return (($("smiles-input") && $("smiles-input").value) || "").trim();
+  return "";
 }
 
 async function runName(smiles, opts) {
@@ -135,6 +141,9 @@ async function runName(smiles, opts) {
 
 function scheduleLiveName() {
   if (!state.liveNameEnabled) return;
+  // 载入键入 SMILES 到 Ketcher 会触发一次 onChange: 此时结构并未真正变化,
+  // 若据此用 getSmiles()(重排后的串)重命名会覆盖用户输入、引入另一套原子序。
+  if (state.ketcherMuted) return;
   if (state.liveDebounceTimer) clearTimeout(state.liveDebounceTimer);
   state.liveDebounceTimer = setTimeout(async () => {
     state.liveDebounceTimer = null;
@@ -170,9 +179,12 @@ function scheduleLiveSmilesName() {
     if (!smiles) return;
     const CK = window.ChemNamerKetcher;
     if (CK && CK.shouldSkipLiveName(true, smiles, state.lastNamedSmiles)) return;
-    // Load SMILES into Ketcher (onChange will debounce but shouldSkipLiveName will skip)
+    // Load SMILES into Ketcher. 静默其 onChange(见 scheduleLiveName), 否则
+    // Ketcher 会把它重排成不同原子序的 SMILES 写回输入框并重命名, 导致
+    // atom-ids/locants 用另一套索引(与用户输入及 /debug 不一致)。
     if (state.ketcherBridge && state.ketcherBridge.isReady()) {
       try {
+        state.ketcherMuted = true;
         await state.ketcherBridge.setMolecule(smiles);
       } catch (_) {
         /* ignore ketcher load errors during live input */
@@ -180,6 +192,8 @@ function scheduleLiveSmilesName() {
     }
     // Run naming
     await runName(smiles, { fromLive: true });
+    // 等到 onChange 的去抖窗口过后再解除静默, 避免覆盖上述行为。
+    setTimeout(function () { state.ketcherMuted = false; }, LIVE_NAME_DEBOUNCE_MS + 80);
   }, LIVE_NAME_DEBOUNCE_MS);
 }
 
@@ -285,7 +299,9 @@ export function bindNamer() {
       }
       try {
         setNamerError("");
+        state.ketcherMuted = true;
         await state.ketcherBridge.setMolecule(smiles);
+        setTimeout(function () { state.ketcherMuted = false; }, LIVE_NAME_DEBOUNCE_MS + 80);
       } catch (err) {
         setNamerError(err.message || "载入结构失败");
       }

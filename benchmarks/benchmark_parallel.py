@@ -45,8 +45,14 @@ _WORKER_NAMER: Any = None
 
 
 def _init_worker() -> None:
-    """Create one SMILESNNamer per worker process (avoids pickling namer)."""
+    """Create one SMILESNNamer per worker process (avoids pickling namer).
+
+    Worker 进程 stdout 重定向到 devnull：src 命名管线里遗留的调试 print
+    （如 layer4/fused_orientation.preferred_orientations）会污染 benchmark
+    控制台。worker 只负责计算，进度/结果由主进程统一打印，见 _print_progress。
+    """
     global _WORKER_NAMER
+    sys.stdout = open(os.devnull, "w", encoding="utf-8")
     try:
         from rdkit import RDLogger
         RDLogger.DisableLog("rdApp.*")

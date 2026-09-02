@@ -43,6 +43,7 @@ export const state = {
   liveDebounceTimer: null,
   liveSmilesTimer: null,
   suppressSmilesLive: false,
+  ketcherMuted: false, // 载入键入 SMILES 到 Ketcher 期间静默其 onChange, 避免重排串写回输入框
   namerOrient: true, // L4 编号图: 稠环按 preferred_orientation 水平摆放
   // benchmark
   currentPage: "namer",
