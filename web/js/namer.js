@@ -2,6 +2,46 @@
 import { $, state, api, API, escapeHtml } from "./core.js";
 
 export const LIVE_NAME_DEBOUNCE_MS = 20;
+// 载入引发的 change 全部安静多久后解除静默。必须覆盖 setMolecule 的布局
+// worker 异步 change; 太小则一次迟到 change 会泄漏写回输入框。
+const KETCHER_MUTE_TAIL_MS = 250;
+
+/* Ketcher onChange 静默(引用计数版)。
+   「输入框是权威来源」: Ketcher 会把同一分子重排成不同原子序的 SMILES(如
+   kekulé→芳香式), 若据此用 getSmiles() 写回输入框并命名, 会覆盖用户输入、
+   引入另一套 atom-ids/locants 索引。键入/点「从 SMILES 载入」都会触发
+   setMolecule → onChange, 需要把该 change 静默掉。
+   但一个载入的 change 是异步的、且可能跨越多次并发载入(连续点击), 固定
+   超时(旧的 +100ms)会被并发载入击穿: 先到载入的超时把还没结束的后到载入
+   的静默提前关掉。因此用 引用计数(进行中的载入) + "距最后一次被吞 change
+   的安静期" 判定结束, 只有最后一次载入结束且再无新 change 才解除静默。 */
+function beginKetcherMute() {
+  state.ketcherMuted = true;
+  state.ketcherLoadCount = (state.ketcherLoadCount || 0) + 1;
+  clearKetcherMuteTail();
+}
+
+function endKetcherMute() {
+  state.ketcherLoadCount = Math.max(0, (state.ketcherLoadCount || 0) - 1);
+  if (state.ketcherLoadCount === 0) armKetcherMuteTail();
+}
+
+function armKetcherMuteTail() {
+  clearKetcherMuteTail();
+  state.ketcherMuteTimer = setTimeout(function () {
+    state.ketcherMuteTimer = null;
+    // 仅当已无进行中的载入才解除: 并发载入时由 count 把关, 先到载入的结束
+    // 不会提前解除后到载入的静默。
+    if ((state.ketcherLoadCount || 0) === 0) state.ketcherMuted = false;
+  }, KETCHER_MUTE_TAIL_MS);
+}
+
+function clearKetcherMuteTail() {
+  if (state.ketcherMuteTimer) {
+    clearTimeout(state.ketcherMuteTimer);
+    state.ketcherMuteTimer = null;
+  }
+}
 
 function setNamerError(msg) {
   const errEl = $("namer-error");
@@ -141,9 +181,13 @@ async function runName(smiles, opts) {
 
 function scheduleLiveName() {
   if (!state.liveNameEnabled) return;
-  // 载入键入 SMILES 到 Ketcher 会触发一次 onChange: 此时结构并未真正变化,
+  // 载入键入 SMILES 到 Ketcher 会触发 onChange: 此时结构并未真正变化,
   // 若据此用 getSmiles()(重排后的串)重命名会覆盖用户输入、引入另一套原子序。
-  if (state.ketcherMuted) return;
+  // 该 change 被静默吞掉, 但它是"还有载入在异步收尾"的信号 → 顺延静默期。
+  if (state.ketcherMuted) {
+    armKetcherMuteTail();
+    return;
+  }
   if (state.liveDebounceTimer) clearTimeout(state.liveDebounceTimer);
   state.liveDebounceTimer = setTimeout(async () => {
     state.liveDebounceTimer = null;
@@ -182,18 +226,22 @@ function scheduleLiveSmilesName() {
     // Load SMILES into Ketcher. 静默其 onChange(见 scheduleLiveName), 否则
     // Ketcher 会把它重排成不同原子序的 SMILES 写回输入框并重命名, 导致
     // atom-ids/locants 用另一套索引(与用户输入及 /debug 不一致)。
-    if (state.ketcherBridge && state.ketcherBridge.isReady()) {
-      try {
-        state.ketcherMuted = true;
-        await state.ketcherBridge.setMolecule(smiles);
-      } catch (_) {
-        /* ignore ketcher load errors during live input */
+    // begin/end 配对维持引用计数: 只 await setMolecule(载入引发的 change 都
+    // 紧随其后), 命名本身不改动画布, 不必延长静默。
+    beginKetcherMute();
+    try {
+      if (state.ketcherBridge && state.ketcherBridge.isReady()) {
+        try {
+          await state.ketcherBridge.setMolecule(smiles);
+        } catch (_) {
+          /* ignore ketcher load errors during live input */
+        }
       }
+    } finally {
+      endKetcherMute();
     }
     // Run naming
     await runName(smiles, { fromLive: true });
-    // 等到 onChange 的去抖窗口过后再解除静默, 避免覆盖上述行为。
-    setTimeout(function () { state.ketcherMuted = false; }, LIVE_NAME_DEBOUNCE_MS + 80);
   }, LIVE_NAME_DEBOUNCE_MS);
 }
 
@@ -299,11 +347,14 @@ export function bindNamer() {
       }
       try {
         setNamerError("");
-        state.ketcherMuted = true;
+        // 引用计数 + 安静期判定解除静默, 连续点击(并发载入)不会互相击穿。
+        // 见 KETCHER_MUTE_TAIL_MS 处注释。
+        beginKetcherMute();
         await state.ketcherBridge.setMolecule(smiles);
-        setTimeout(function () { state.ketcherMuted = false; }, LIVE_NAME_DEBOUNCE_MS + 80);
       } catch (err) {
         setNamerError(err.message || "载入结构失败");
+      } finally {
+        endKetcherMute();
       }
     });
   $("btn-clear-ketcher") &&

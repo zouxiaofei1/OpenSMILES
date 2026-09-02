@@ -87,6 +87,42 @@ def _read_cache(cache: Path) -> list[dict]:
         return []
 
 
+def _is_fused(smiles: str) -> bool:
+    """是否含稠合环系: 至少两个环共享 ≥2 原子(P-25.3.3 稠环范畴)。"""
+    from rdkit import Chem
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False
+    rings = mol.GetRingInfo().AtomRings()
+    for i in range(len(rings)):
+        ri = set(rings[i])
+        for j in range(i + 1, len(rings)):
+            if len(ri & set(rings[j])) >= 2:
+                return True
+    return False
+
+
+def _ensure_fused(rows: list[dict], cache: Path) -> list[dict]:
+    """为旧缓存 rows 补算 fused 字段并写回, 避免整体重新生成。
+
+    仅当 rows 完整(非生成中)且缺 fused 字段时调用; 判定 ~1.2s/4k 行,
+    写回后后续请求直接命中。"""
+    if not rows or "fused" in rows[0]:
+        return rows
+    fused_rows = []
+    for r in rows:
+        out = dict(r)
+        out["fused"] = _is_fused(str(out.get("s") or ""))
+        fused_rows.append(out)
+    try:
+        tmp = cache.with_suffix(".tmp")
+        tmp.write_text(json.dumps(fused_rows, ensure_ascii=False), encoding="utf-8")
+        tmp.replace(cache)
+    except OSError:
+        pass  # 写回失败不影响本次返回
+    return fused_rows
+
+
 def _source_total(source: Path) -> int:
     """Return the number of rows in the data file, or 0."""
     if not source.is_file():
@@ -118,6 +154,9 @@ def _hist_rows(full: str, data_file: str) -> list[dict]:
 
 def _hist_benchmark_preview(full: str, data_file: str) -> dict[str, Any]:
     rows = _hist_rows(full, data_file)
+    # 历史缓存可能缺 fused 字段: 内存补算(不改写历史缓存)以支持稠环过滤。
+    if rows and "fused" not in rows[0]:
+        rows = [dict(r, fused=_is_fused(str(r.get("s") or ""))) for r in rows]
     src_total = _source_total(_resolve_source(data_file))
     job = history_store.get_job(full, _hist_kind(data_file))
     generating = job is not None and job.proc is not None and job.proc.poll() is None
@@ -178,6 +217,10 @@ def get_benchmark_preview(commit: str | None = None, data_file: str | None = Non
         rows = _read_cache(cache)
         gen_done = len(rows)
 
+    # 旧缓存补算 fused 字段(一次性写回, 供稠环分类过滤)
+    if not generating and rows:
+        rows = _ensure_fused(rows, cache)
+
     return {
         "rows": rows,
         "cached": len(rows),
@@ -221,9 +264,21 @@ RDLogger.logger().setLevel(RDLogger.ERROR)
 
 from namepredict.namer import SMILESNNamer
 from namepredict.constants import normalize_en, normalize_zh
+from rdkit import Chem
 SOURCE = Path(r"{source}")
 CACHE = Path(r"{cache_path}")
 _SIG = f"{{SOURCE.stat().st_size}}:{{SOURCE.stat().st_mtime_ns}}"
+
+def _fused(smi):
+    mol = Chem.MolFromSmiles(smi)
+    if mol is None: return False
+    rings = mol.GetRingInfo().AtomRings()
+    for i in range(len(rings)):
+        ri = set(rings[i])
+        for j in range(i + 1, len(rings)):
+            if len(ri & set(rings[j])) >= 2:
+                return True
+    return False
 
 def score_pred(pe, pz, ge, gz):
     en_ok = bool(ge) and normalize_en(pe) == normalize_en(ge)
@@ -249,7 +304,7 @@ for i, row in enumerate(rows):
     except Exception:
         pe, pz = "", ""
     sc = score_pred(pe, pz, ge, gz)
-    payload.append({{"s": smi, "en": pe, "zh": pz, "ge": ge, "gz": gz, **sc}})
+    payload.append({{"s": smi, "en": pe, "zh": pz, "ge": ge, "gz": gz, "fused": _fused(smi), **sc}})
     if (i + 1) % 200 == 0 or (i + 1) == total:
         tmp = CACHE.with_suffix(".tmp")
         tmp.write_text(json.dumps({{"_data_sig": _SIG, "rows": payload}}, ensure_ascii=False), encoding="utf-8")
@@ -395,8 +450,20 @@ RDLogger.logger().setLevel(RDLogger.ERROR)
 
 from namepredict.namer import SMILESNNamer
 from namepredict.constants import normalize_en, normalize_zh
+from rdkit import Chem
 SOURCE = Path(r"{source}")
 CACHE = Path(r"{cache_path}")
+
+def _fused(smi):
+    mol = Chem.MolFromSmiles(smi)
+    if mol is None: return False
+    rings = mol.GetRingInfo().AtomRings()
+    for i in range(len(rings)):
+        ri = set(rings[i])
+        for j in range(i + 1, len(rings)):
+            if len(ri & set(rings[j])) >= 2:
+                return True
+    return False
 
 def score_pred(pe, pz, ge, gz):
     en_ok = bool(ge) and normalize_en(pe) == normalize_en(ge)
@@ -422,7 +489,7 @@ for i, row in enumerate(rows):
     except Exception:
         pe, pz = "", ""
     sc = score_pred(pe, pz, ge, gz)
-    payload.append({{"s": smi, "en": pe, "zh": pz, "ge": ge, "gz": gz, **sc}})
+    payload.append({{"s": smi, "en": pe, "zh": pz, "ge": ge, "gz": gz, "fused": _fused(smi), **sc}})
     if (i + 1) % 200 == 0 or (i + 1) == total:
         tmp = CACHE.with_suffix(".tmp")
         tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")

@@ -1,6 +1,6 @@
 # Layer3: 取代基提取器 (Substituent Extractor)
 
-> **最后更新:** 2026-08-16 | **源文件:** 9 `.py` (906 行) | **公开 API:** `extract_substituents(info, parent, *, name_mode, cache) -> list[dict]`
+> **最后更新:** 2026-09-02 | **源文件:** 9 `.py` (917 行) | **公开 API:** `extract_substituents(info, parent, *, name_mode, cache) -> list[dict]`
 
 ## 概述
 

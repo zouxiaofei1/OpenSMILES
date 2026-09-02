@@ -105,7 +105,7 @@ class KindMeta:
 
 ### Layer 5: 后缀分派（Suffix Dispatch）
 
-Layer5 由 `_names_for`（`assembler.py:142`）查 **`chain_engine._KIND_TABLE`**（10 个 `_Chain` spec）渲染词干、不饱和段、位次与环前缀（kind 收敛在 L2 `_chain_kind`，无 `typed_kinds` 模块）。`mult_ok` 生成式按 multiplicity 派生数量后缀（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid），`variant` 仅作 scaffold 特例覆盖。特殊 case 走 worker（`_exocyclic_acid_names`/`_exocyclic_amide_names`/`_parent_stem_names`）。
+Layer5 由 `_names_for`（`assembler.py:254`）查 **`chain_engine._KIND_TABLE`**（11 个 `_Chain` spec）渲染词干、不饱和段、位次与环前缀（kind 收敛在 L2 `_chain_kind`，无 `typed_kinds` 模块）。`mult_ok` 生成式按 multiplicity 派生数量后缀（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid），`variant` 仅作 scaffold 特例覆盖（含 `acyl_halide`）。特殊 case 走 worker（`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_parent_stem_names`）。
 
 调度是分层的：L2 收敛 kind → L5 查链引擎 → 命中后直接返回。这确保了被选为母体的 principal FG 获得后缀，而劣后 FG 在 Layer 3 中被转为取代基前缀（如 hydroxy-、oxo-、amino-）。
 

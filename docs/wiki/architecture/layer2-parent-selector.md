@@ -1,6 +1,6 @@
 # Layer2: Parent Selector（母体选择器）
 
-> **文件数:** 15 source files | **代码:** 1,720 行
+> **文件数:** 16 source files | **代码:** 2,211 行
 > **职责:** 给定 layer1 的官能团 (FG) 信息字典，按 IUPAC P-44 选出母体结构 (parent hydride)
 
 ---
@@ -9,7 +9,7 @@
 
 Layer2 是 NamePredict 六层流水线中逻辑最复杂的一层。它接收 layer1 `analyze()` 产出的 FG 信息字典（包含分子中所有官能团、环系、不饱和键等的结构化描述），从中选出一个 **母体结构 (parent)**——即 IUPAC 命名中作为骨架的核心部分。母体的选择决定了后续所有层的命名方向：layer3 基于母体提取取代基，layer4 在母体骨架上编号，layer5 基于母体类型组装最终名称。
 
-Layer2 由 15 个模块组成：**① 骨架识别在 `ring_scaffold.py`**（`_TEMPLATES` 为唯一事实来源，派生 ScaffoldSpec/ScaffoldIdentity）；**② kind 正交化**（纯烃环 kind 为 `alkane`，数量由 `principal_expression_facts.multiplicity` 承载，无 diacid/diol/diamine 等数量 kind）；**③ 互斥由 `select_principal_group` 结构性单选择实现**（无 `_no_fgs` 谓词）；**④ 无 `candidate_gate.py`/`arene_carbonyl.py`/`parent_core.py`/`identity.py`/`fg_helpers.py`**——kind_registry 无 `_KIND_CLASS`/`_load_chain_fg`/`all_kinds`，链式 FG 的 rank 由 `principal.legacy_rank` 实时投影。
+Layer2 由 16 个模块组成：**① 骨架识别在 `ring_scaffold.py`**（`_TEMPLATES` 为唯一事实来源，派生 ScaffoldSpec/ScaffoldIdentity）；**② kind 正交化**（纯烃/未注册稠环 kind 为 `alkane`，数量由 `principal_expression_facts.multiplicity` 承载，无 diacid/diol/diamine 等数量 kind）；**③ 互斥由 `select_principal_group` 结构性单选择实现**（无 `_no_fgs` 谓词）；**④ 无 `candidate_gate.py`/`arene_carbonyl.py`/`parent_core.py`/`identity.py`/`fg_helpers.py`**——kind_registry 无 `_KIND_CLASS`/`_load_chain_fg`/`all_kinds`，链式 FG 的 rank 由 `principal.legacy_rank` 实时投影；**⑤ 稠环拆解由 `fused_system.decompose_fused_system` 承担**（P-25.3.2.4，产出 `fused_tree` 供 L5 稠合名组装，独立于 scaffold 身份）。
 
 ### 输入与输出
 
@@ -65,10 +65,12 @@ flowchart TD
 2. **`parent_skeleton.py`** — `enumerate_principal_skeletons()`（`:243`）从主官能团的附着点出发枚举**开链候选**（`_chain_candidates`）与**环系统候选**（`_ring_candidates`，每个 ring system 一个骨架）。随后 `select_principal_skeletons()`（`:230`）依次施加 `keep_max_principal_coverage` → `keep_p44_1_2`（环优先 + 最高优先级杂原子）→ 按拓扑走 `keep_p44_3`（纯链）/ `keep_p44_2`（环）→ `keep_p44_4_unsaturation`。
 
 3. **`principal_expression.py`** — 把选定的骨架表达为 parent dict：
-   - `express_chain_principal()` — 开链主官能团经 `_chain_kind`（`:65`，`_CHAIN_FG` frozenset `:41` 限定 8 类）按多重度映射 kind：ACID/ALCOHOL/AMINE/KETONE 任意 count≥1 恒返回基团名（`_MULTI_FG` `:47`，数量由 `principal_expression_facts.multiplicity` 承载）；ESTER/AMIDE/NITRILE/ALDEHYDE 仅单基（count≠1 → None）。骨架内 C=C/C≡C 带 `double_bond`/`triple_bond`/`double_bonds` 字段
-   - `express_ring_principal()` — 环骨架：`resolve_ring_scaffold` 解析骨架身份。**环 + 主 FG 一律收敛为 FG 类别 kind**（`_ring_kind`，苯/饱和环/稠环/杂环平等），词干由 scaffold 承载；苯保留名（benzoic/phenol/aniline 等）由 L5 chain_engine variant 提供
+   - `express_chain_principal()` — 开链主官能团经 `_chain_kind`（`:65`，`_CHAIN_FG` frozenset `:41` 限定 8 类）按多重度映射 kind：ACID/ALCOHOL/AMINE/KETONE 任意 count≥1 恒返回基团名（`_MULTI_FG` `:47`，数量由 `principal_expression_facts.multiplicity` 承载）；ESTER/AMIDE/NITRILE/ALDEHYDE 仅单基（count≠1 → None）。骨架内 C=C/C≡C 带 `double_bond`/`triple_bond`/`double_bonds` 字段；`acyl_halide` 经 `_chain_acyl_halide_fields` 携带 `hal_idx`/`hal_z`（卤素纳入母体原子，不作取代基）
+   - `express_ring_principal()` — 环骨架：`resolve_ring_scaffold` 解析骨架身份。**环 + 主 FG 一律收敛为 FG 类别 kind**（`_ring_kind`，苯/饱和环/未注册稠环/杂环平等），词干由 scaffold 承载；苯保留名（benzoic/phenol/aniline 等）由 L5 chain_engine variant 提供；环酸经 `_expression_flags` 补 anion 标志
+   - **稠环接入** — `_scaffold_fields`（`:192`）解析 scaffold 身份外，额外：① 保留 fused 模板时算 `scaffold_match`（`_match_with_map` 的模板→分子原子映射，供 L4 固定编号 `standard_path`）；② 多环骨架（sssr_indices≥2）调 `decompose_fused_system` 产出 `fused_tree`（`FusedNode`）——**拆解独立于 scaffold 身份**，未注册系统 scaffold=None 时仍产出，供 L5 `fused_namer` 组装稠合名
+   - **kind 正交化扩充** — `_resolved_ring_kind`：苯与未注册稠环（`scaffold.id ∈ {"fused", "fused_hetero"}`）一律收敛 `alkane`；`_generic_ring_kind`：未注册芳香稠环（≥2 环）再收敛 `alkane`；`_ring_kind`：RADICAL + scaffold=None（未知杂环无 `-yl` 词干）显式返回 None 而非当开链烷基错名
    - 每个候选携带 `PrincipalExpressionFacts`（group_class/multiplicity/relation/characteristic_atoms/attachment_atoms/charge_state）与 `ScaffoldIdentity`
-   - `express_hydrocarbon_principal()` — **无主官能团（纯烃）**：开链按 C=C/C≡C 分布给 alkane/alkene/alkyne/polyene；环按芳香性分流——**非芳香环 kind 恒为 `"alkane"`**（不饱和度由 `double_bond(s)` 字段承载），芳香环命中保留 scaffold 时 kind=scaffold.id（如 `benzene`）
+   - `express_hydrocarbon_principal()` — **无主官能团（纯烃）**：开链按 C=C/C≡C 分布给 alkane/alkene/alkyne/polyene；环按芳香性分流——**非芳香环/未注册稠环 kind 恒为 `"alkane"`**（不饱和度由 `double_bond(s)` 字段承载），芳香环命中保留 scaffold 时 kind=scaffold.id（如 `benzene`）
 
 4. **`principal_parent.py`** — `rule_driven_parent_candidates()`（`:44`）编排以上：`select_principal_parent_skeletons` 选主官能团与骨架 → 按拓扑走 `_express_selected`（环酮 typed 不支持时过滤）或 `express_hydrocarbon_principal`。
 
@@ -81,6 +83,7 @@ flowchart TD
 - **`KindMeta`**（`kind_registry.py:7-14`）: 每个 kind 的评分字段 (`ring`, `n_rings`, `retained`) 和命名 stem
 - **bootstrap 顺序**（`_bootstrap` `:102`）**只有一步**：`_load_from_scaffold_specs()`（`:92`）— 从 `ring_scaffold.all_specs()` 读取有词干的 spec，注册为 ring/n_rings/retained 元数据（**Spec 是词干权威**）。主官能团等级不存于 `KindMeta`，运行时按 FG 枚举经 `legacy_rank` 实时查询（旧式 parent 兜底在 `parent_candidate._kind_rank`，`parent_candidate.py:20`）
 - 公共 API: `register` / `get` / `is_hetero_ring` / `is_carbo_ring` / `n_rings_of` / `retained_bonus` / `parent_names` / `pack_parent_stem`
+- **`pack_parent_stem` 前缀注入**（`:70`）— 五元杂环 locant 前缀（`1H-`/`1,3-`）在此统一成终态：`1,3-` 二唑（噻唑/噁唑/苯并噻唑/苯并噁唑）无条件注入；`1H-` 吡咯型（吡咯/咪唑/吡唑/吲哚/吲唑/苯并咪唑/咔唑/吩噻嗪）仅当环含未取代芳香 NH 时注入（`_ring_keeps_nh_prefix`，N 全取代则省略）；词干已带前缀（注册表 indole="1H-indole"）先 `_strip_locant_prefix` 剥离再按条件加回，保证 N-取代 indole 输出 "indol-…"
 
 kind_registry 是**只读权威**：被 `scoring.py`（模块级派生集合）、`parent_candidate.py`（principal contract 的 kind 分类）、`parent_selector.py`（`pack_parent_stem` 注入 stem）消费，不存在对外注册入口。
 
@@ -88,10 +91,11 @@ kind_registry 是**只读权威**：被 `scoring.py`（模块级派生集合）�
 
 ### Ring 骨架识别机制（`ring_scaffold.py`）
 
-`ring_scaffold.py`（279 行）以 `_TEMPLATES`（SMILES 模板表）为**唯一事实来源**，派生 ScaffoldSpec/ScaffoldIdentity 与保留条目。职责分两块：
+`ring_scaffold.py`（436 行）以 `_TEMPLATES`（SMILES 模板表）为**唯一事实来源**，派生 ScaffoldSpec/ScaffoldIdentity 与保留条目。职责分三块：
 
-1. **模板注册表（唯一来源）** — `_TEMPLATES`（`70` 起，保留母体，每条 `{smiles, stem_en, stem_zh, naming_class}`）；`_spec_from_template`（`:116`）派生 ScaffoldSpec（n_rings/ring 从 smiles 算，retained=True），`all_specs()`（`:147`）/`get_spec()`（`:142`）/`get_identity()`（`:137`）/`kind_ids_for()`（`:178`）均由此派生；`kind_registry._load_from_scaffold_specs` 据此注册 KindMeta 词干（活接线，防清扫判死）
+1. **模板注册表（唯一来源）** — `_TEMPLATES`（`70` 起，保留母体，每条 `{smiles, stem_en, stem_zh, naming_class}`）；`_spec_from_template`（`:212`）派生 ScaffoldSpec（n_rings/ring 从 smiles 算，retained=True），`all_specs()`（`:147`）/`get_spec()`（`:142`）/`get_identity()`（`:137`）/`kind_ids_for()`（`:178`）均由此派生；`kind_registry._load_from_scaffold_specs` 据此注册 KindMeta 词干（活接线，防清扫判死）。**本期扩充**：新增 `phenanthrene`/`pyrene`/`carbazole`/`acridine`/`phenothiazine`/`benzodioxole` 及 6 个饱和单杂环（pyrrolidine/piperidine/morpholine/piperazine/oxolane/oxane）模板；`ScaffoldSpec` 加 `standard_path`（固定编号 locant 标签序）、`locant_prefix`（五元杂环 `1H-`/`1,3-` 前缀）、`prefix_nh_conditional`（1H- 仅当环含 NH 注入）；新增 `_STANDARD_ORDERS`/`_STANDARD_LABELS`（不对称 fused 环与 1,3-二唑的 IUPAC 标准编号）
 2. **环解析** — `resolve_ring_scaffold(info, skeleton)`（`:265`）优先级：① `get_identity(skeleton.scaffold_id)` 直接命中 → ② `match_retained`（SMILES 模板子图同构，按环原子集精确覆盖）→ ③ `_generic_carbocycle`（全碳非保留环 → `ScaffoldIdentity("carbocycle",...)`）。`match_systems`/`match_scaffold_ids`/`registry`/`get_entry` 为模板语义查询
+3. **固定编号匹配** — `_match_with_map`（`:345`）在子图同构命中时返回 `(sid, match)`，`match[i]` 给出模板原子 i 对应的分子原子——供 L4 `standard_path` 把模板固定 locant 映射到分子原子；`locant_prefix(spec_id)` 返回 (en, zh, nh_conditional) 供 `kind_registry.pack_parent_stem` 注入词干
 
 ```mermaid
 flowchart LR
@@ -106,6 +110,32 @@ flowchart LR
 在 `ring_scaffold.py` 的 `_TEMPLATES` 加一条 `{smiles, stem_en, stem_zh, naming_class}`（ScaffoldSpec 自动派生；无 `_TOPOLOGY` 表与手写 `_ALL_SPECS`）。位置异构体在元素标注的子图同构下天然区分，无需额外消解。
 
 > **源:** `src/namepredict/layer2/ring_scaffold.py`
+
+### 稠环拆解 (fused_system.py)
+
+`fused_system.py`（241 行）实现 **P-25.3.2.4 稠环拆解**——把含 ≥2 环共享 ≥2 原子的稠合环系拆成**保留母体组分树**（`FusedNode`），供 L5 `fused_namer` 组装 `benzo[a]...`/`naphtho[...]...` 类稠合名。这是**未注册稠环**（无整体保留 scaffold）的命名通道：母体/附加组分均为已注册保留件，但整体系统不在 `_TEMPLATES` 内。
+
+核心数据结构 `FusedNode`（`fused_system.py:26`）：
+
+```python
+@dataclass(frozen=True)
+class FusedNode:
+    scaffold_id: str                 # 母体组分保留模板 id
+    atom_ids: tuple[int, ...]        # 组分原子
+    ring_indices: frozenset[int]     # 组分所含环
+    fusion_shared: tuple[frozenset, ...] = ()  # 与父组分的共享原子集（根节点为 ()）
+    attached: tuple["FusedNode", ...] = ()     # 附加组分树（递归）
+```
+
+拆解管线（`decompose_fused_system`，`:234`）：
+
+1. **增长式候选枚举**（`_candidates_for`，`:46`）— 从"单环精确匹配某保留模板"（`_seedable`）的种子环 DFS 并入邻接环，`match_retained` 精确命中记录候选，元素超集剪枝（`_has_template_superset`），按原子集去重
+2. **P-25.3.2.4 母体组分选择**（`_select_base`，`:89`）— 依次施加 (a) 最优先杂原子 → (b) 环数 → (c) 环大小降序 → (d) 杂原子总数 → (e) 杂原子种类 → (f) 最高优先杂原子数；(g)-(j) 依赖 L4 优选取向/编号（`_numbered_locants`，`:158`，调到 `fused_orientation`+`fused_numbering`）逐准则收窄（水平行环数 / 杂原子位次低 / 逐元素位次 / 稠合碳位次低）；>1 时环集升序兜底
+3. **递归拆解**（`_decompose`，`:208`）— 选定母体组分后，剩余环按融合图**连通分量**（`_ring_components`，`:182`）递归为附加组分，共享原子经 `fusion_shared` 下传
+
+入口 `decompose_fused_system(info, system)`（`:234`）读 `system["fusion_edges"]`/`sssr_indices`（L1 `build_ring_systems` 产出），输出 `FusedNode | None`（无保留候选返回 None）。**拆解独立于 scaffold 身份**——未注册系统 `resolve_ring_scaffold` 解析为 None 时仍产出拆解树。`_P25_SENIOR`（`:14`）/`_P145_SENIOR`（`:16`）为 P-25.3.2.4(a)/(f) 的杂原子优先序常量。
+
+> **源:** `src/namepredict/layer2/fused_system.py`
 
 ### 评分体系 (P-44 Seniority)
 
@@ -261,7 +291,7 @@ flowchart LR
 |------|------|------|
 | `principal.py` | 85 | P-41 class / P-43 表达元数据 + 主官能团选择: PRINCIPAL_REGISTRY, select_principal_group |
 | `parent_skeleton.py` | 251 | 骨架枚举 + P-44 筛选: enumerate_principal_skeletons, select_principal_skeletons, keep_p44_1_2/2/3/4 |
-| `principal_expression.py` | 316 | typed 表达: express_chain/ring/hydrocarbon_principal, PrincipalExpressionFacts, _chain_kind |
+| `principal_expression.py` | 399 | typed 表达: express_chain/ring/hydrocarbon_principal, PrincipalExpressionFacts, _chain_kind; 稠环接入(fused_tree/scaffold_match) + 酰卤字段 |
 | `principal_parent.py` | 48 | 编排: rule_driven_parent_candidates, select_principal_parent_skeletons |
 | `parent_candidate.py` | 78 | principal contract: with_principal_group_contract, principal_key, P44Facts |
 

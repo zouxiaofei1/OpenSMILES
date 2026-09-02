@@ -165,6 +165,7 @@ function bmFiltered() {
     if (f === "ok" && !r.ok) continue;
     if (f === "fail" && r.ok) continue;
     if (f === "wrong" && !(r.ret && !r.ok)) continue;
+    if (f === "fused" && !r.fused) continue;
     if (q) {
       var hay = [r.s, r.en, r.zh, r.ge, r.gz].join(" ").toLowerCase();
       if (hay.indexOf(q) < 0) continue;
@@ -230,6 +231,7 @@ function renderBenchmark() {
   if (bm$("okn")) bm$("okn").textContent = String(state.bmRows.filter(function (r) { return r.ok; }).length);
   if (bm$("enn")) bm$("enn").textContent = String(state.bmRows.filter(function (r) { return r.en_ok; }).length);
   if (bm$("zhn")) bm$("zhn").textContent = String(state.bmRows.filter(function (r) { return r.zh_ok; }).length);
+  if (bm$("fusedn")) bm$("fusedn").textContent = String(state.bmRows.filter(function (r) { return r.fused; }).length);
   if (bm$("page")) bm$("page").textContent = String(state.bmPage);
   if (bm$("pages")) bm$("pages").textContent = String(pages);
   if (bm$("prev")) bm$("prev").disabled = state.bmPage <= 1;

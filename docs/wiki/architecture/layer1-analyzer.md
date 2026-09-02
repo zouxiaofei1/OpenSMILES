@@ -1,6 +1,6 @@
 # Layer 1 -- Analyzer (Functional Group Detector)
 
-> **位置:** `src/namepredict/layer1/` | **行数:** 11 个 `.py` (1,511 行) | **最后更新:** 2026-08-16
+> **位置:** `src/namepredict/layer1/` | **行数:** 11 个 `.py` (1,519 行) | **最后更新:** 2026-09-02
 
 ## 概述
 
@@ -95,7 +95,7 @@ Layer 1 的 FG 检测采用统一的"候选原子判断函数 + 条目构建函�
 
 ### 3.5 FG 元数据单一事实来源（`fg_registry.py`）
 
-`fg_registry.py`（100 行）是各层 FG 注册元数据的**单一事实来源**：`FG_SPECS`（17 条 `FgSpec`）集中每个官能团类别的跨层元数据——L1 检测列表 key、P-41 等级与优先级路径、表达类型（suffix/prefix_only/legacy_compat）、兼容等级、锚点 key、parent 锚点字段、chain/multi/rs/keep_locant 标志、`locant_kind`、醇/胺/酮母体标志。下游表由它派生，不再多重登记：
+`fg_registry.py`（102 行）是各层 FG 注册元数据的**单一事实来源**：`FG_SPECS`（17 条 `FgSpec`）集中每个官能团类别的跨层元数据——L1 检测列表 key、P-41 等级与优先级路径、表达类型（suffix/prefix_only/legacy_compat）、兼容等级、锚点 key、parent 锚点字段、chain/multi/rs/keep_locant 标志、`locant_kind`、醇/胺/酮母体标志。下游表由它派生，不再多重登记：
 
 - `functional_group_inventory._LIST_CLASSES` / `_ANCHOR_KEYS`（`functional_group_inventory.py:66`）
 - `analyzer._FG_PARTS_KEY` / `_CARBONYL_COMPOSITES`（`analyzer.py:432` 起）——**P-41 主基团仲裁**：组合羰基 FG（酸/酯/酰卤/酰胺/醛/酸酐）被更高优先级 FG（如 radical）压制时退出主基团，羰基碳降级入 `ketones`（oxo 前缀候选），组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属，不再丢失羰基氧。`ketone/alcohol/thiol/amine` 是基础成员 FG，永不退出
@@ -166,7 +166,7 @@ analyze(mol)
 | 文件 | 行数 | 说明 |
 |------|------|------|
 | `__init__.py` | 6 | 公开导出 `analyze` 函数 |
-| `analyzer.py` | 493 | **主分析器** -- 核心 FG 检测（acid, alcohol, ester, amide, ketone, aldehyde, amine, quaternary ammonium, nitrile, alkene/alkyne, acyl chloride, anhydride, thiol, ether, sulfide, nitro, radical）+ `_arbitrate_parts` P-41 仲裁 + info dict 组装 + 环系元信息收集 |
+| `analyzer.py` | 499 | **主分析器** -- 核心 FG 检测（acid, alcohol, ester, amide, ketone, aldehyde, amine, quaternary ammonium, nitrile, alkene/alkyne, acyl chloride, anhydride, thiol, ether, sulfide, nitro, radical）+ `_arbitrate_parts` P-41 仲裁 + info dict 组装 + 环系元信息收集；`_amine_degree` 排除**环内非芳香 N**（饱和杂环 N 是环杂原子而非胺官能团） |
 | `_carbonyl_common.py` | 106 | **共享羰基原语**：13 个 `_is_*`/`_*_of` 检测谓词（analyzer 与 acyl_halide 共用） |
 | `fg_registry.py` | 100 | **FG 元数据单一事实来源**：`FG_SPECS`（17 条 `FgSpec`），派生 L1-L5 各下游表 |
 | `functional_group_inventory.py` | 98 | **类型化 FG 库存**：`FunctionalGroupClass`/`FunctionalGroupInventory` 数据容器（供 L2）；`_ANCHOR_KEYS` 从 FG_SPECS 派生，AMINE 为 `("c_idx","c_idxs")` |

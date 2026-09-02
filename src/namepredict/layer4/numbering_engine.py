@@ -40,14 +40,20 @@ def _locant_set(cand: dict[int, int], atoms: list[int]) -> tuple[int, ...] | Non
 
 
 def _bond_locants(cand: dict[int, int], bonds) -> tuple[int, ...] | None:
-    """计算各键较小端点位次的排序元组。"""
+    """计算各多重键两端点位次的全排序元组（P-14.4(e) 多重键低位比较）。
+
+    不能只取每键较小端点：环候选可绕行让闭合键一端成为 locant 1，把真实双键对
+    （如环己-1,3-二烯的 (1,2),(3,4)）误判成更"小"的 (1,2)。两端点全 locant 排序
+    迫使编号把整条不饱和键落到最低连续位置（1-2 与 3-4 → 1,3-diene）。
+    """
     if not bonds:
         return None
-    mins = []
+    locs = []
     for b in bonds:
         if b[0] in cand and b[1] in cand:
-            mins.append(min(cand[b[0]], cand[b[1]]))
-    return tuple(sorted(mins)) if mins else None
+            locs.append(cand[b[0]])
+            locs.append(cand[b[1]])
+    return tuple(sorted(locs)) if locs else None
 
 
 def _narrow(cands: list[dict], key_fn) -> list[dict]:
