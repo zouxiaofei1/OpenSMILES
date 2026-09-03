@@ -48,7 +48,7 @@ _COMPONENT_STEM = {
     "benzothiazole": ("benzothiazole", "苯并噻唑"),
     "benzoxazole": ("benzoxazole", "苯并噁唑"),
     "quinazoline": ("quinazoline", "喹唑啉"),
-    "quinoxaline": ("quinoxaline", "喹噁啉"),
+    "quinoxaline": ("quinoxaline", "喹喔啉"),
     "benzodioxole": ("benzodioxole", "苯并二氧杂环戊烯"),
     "pyrrolidine": ("pyrrolidine", "吡咯烷"),
     "piperidine": ("piperidine", "哌啶"),

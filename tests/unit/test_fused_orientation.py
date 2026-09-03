@@ -75,3 +75,14 @@ def test_azulene_odd_ring_pair_row():
 def test_pyrene_max_row_two():
     o = _orient("c1cc2ccc3cccc4ccc(c1)c2c34")
     assert o is not None and len(o.row) == 2
+
+
+def test_6_5_6_linear_three_ring_row():
+    """6-5-6 线性稠环(中间 5 元奇环两侧稠合) → P-25.3.2.3.2 变形五元环使三环成水平行。"""
+    smi = "ClC1C2NC3C=CC=CC=3C=2N=CN=1"
+    mol = preprocess(smi)
+    rings = list(mol.GetRingInfo().AtomRings())
+    o = _orient(smi)
+    assert o is not None
+    assert len(o.row) == 3
+    assert _shared_vertical(o, rings, o.row)

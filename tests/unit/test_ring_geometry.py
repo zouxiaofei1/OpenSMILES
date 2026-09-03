@@ -12,6 +12,7 @@ from namepredict.layer4.ring_geometry import (
     polygon_area,
     regular_polygon,
     ring_cyclic,
+    ring_shape_template,
 )
 
 
@@ -36,6 +37,21 @@ def test_regular_polygon_odd_mirror_has_two_variants():
         pts = regular_polygon(n, right_edge_vertical=False)
         assert abs(pts[0][0] - pts[1][0]) < 1e-9
         assert pts[0][0] < 0  # 竖直边在左侧
+
+
+def test_ring_shape_template_distorted_pentagon():
+    """5 元行中双侧融合的变形五元环: 两共享边平行(铺行后竖直)、5 顶点、边01 单位对齐。"""
+    order = [0, 1, 2, 3, 4]  # 左共享边(0,1), 右共享边(2,3)
+    tpl = ring_shape_template(order, 2)
+    assert tpl is not None
+    assert len(tpl) == 5
+    assert tpl[0] == (0.0, 0.0) and tpl[1] == (1.0, 0.0)  # 边01 为单位对齐边
+    # 右共享边(2,3) 与左共享边(0,1) 平行(都沿 x) → 铺行后都竖直
+    def _parallel(p0, p1, q0, q1):
+        return abs((p1[1] - p0[1]) * (q1[0] - q0[0]) - (p1[0] - p0[0]) * (q1[1] - q0[1])) < 1e-9
+    assert _parallel(tpl[0], tpl[1], tpl[2], tpl[3])
+    # 非双边(偶环/奇数环端部)返回 None, 调用方保持原弃行逻辑
+    assert ring_shape_template(list(range(6)), 2) is None
 
 
 def test_ring_cyclic_forward_and_reverse():

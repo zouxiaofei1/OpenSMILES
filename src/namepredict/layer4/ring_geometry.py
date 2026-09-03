@@ -9,12 +9,7 @@ OVERLAP_FRAC = 0.05
 
 
 def regular_polygon(n: int, *, right_edge_vertical: bool = True) -> list[tuple[float, float]]:
-    """单位圆内接正 n 边形坐标，一条边竖直。
-
-    顶点 k 取 θ_k = -π/n + 2πk/n；边 (0,1) 竖直在右侧 (x=cos(π/n))，
-    ``right_edge_vertical=False`` 时 x→-x 镜像。偶 n 左、右各一条竖直边，
-    奇 n 仅一侧竖直边另一侧为尖点（P-25.3.2.3.1 奇数环 2 模板）。
-    """
+    """单位圆内接正 n 边形坐标，一条边竖直。 """
     pts = [(math.cos(-math.pi / n + 2 * math.pi * k / n),
             math.sin(-math.pi / n + 2 * math.pi * k / n)) for k in range(n)]
     if not right_edge_vertical:
@@ -23,8 +18,43 @@ def regular_polygon(n: int, *, right_edge_vertical: bool = True) -> list[tuple[f
 
 
 RING_TEMPLATES: dict[int, list[tuple[float, float]]] = {
-    n: regular_polygon(n) for n in range(3, 9)
+    n: regular_polygon(n) for n in range(3, 20)
 }
+
+# 行内中间奇环的"行宽"：铺成水平行时相邻环共享边间的水平间距。
+# 行首环为正六边形(边长 1)时对边距 = sqrt(3)。变形五元/七元模板用该行宽，
+# 使其左右两条共享竖边与邻环衔接。P-25.3.2.3.2：变形环应尽可能小。
+_ROW_WIDTH = 3 ** 0.5
+
+
+def ring_shape_template(order: list[int], exit_idx: int,
+                        row_width: float = _ROW_WIDTH) -> list[tuple[float, float]] | None:
+    """P-25.3.2.3.2 变形环模板：让奇数环在水平行中间也能"两侧竖直边"稠合。 """
+    n = len(order)
+    if n not in (5, 7):
+        return None
+    e = exit_idx % n
+    if n == 5 and e != 2:
+        return None
+    if n == 7 and e not in (2, 3):
+        return None
+    # 逐顶点分配：索引 0,1 为左共享边(单位水平, y=0)；索引 e,e+1 为右共享边(平行水平, y=row_width)。
+    positions: list[tuple[float, float]] = []
+    mid_slot = 0.0  # 已用过的中间剩余顶点计数（n=7 时 2..e-1 会有前向连接顶点）
+    for i in range(n):
+        if i == 0:
+            positions.append((0.0, 0.0))
+        elif i == 1:
+            positions.append((1.0, 0.0))
+        elif i == e:
+            positions.append((1.0, row_width))   # 右共享边起点：正对 order[1] 上方
+        elif i == e + 1:
+            positions.append((0.0, row_width))   # 右共享边终点：正对 order[0] 上方
+        elif i == n - 1:
+            positions.append((-0.4, 0.0))        # 末尾顶点：左侧折线连接 order[n-1]→order[0]
+        else:
+            positions.append((-0.4, row_width * 0.4))  # 其余顶点：左侧中部
+    return positions
 
 
 def ring_cyclic(ring_tuple: tuple[int, ...], a: int, b: int) -> list[int]:
@@ -73,7 +103,8 @@ def rigid_fit(src: list[tuple[float, float]], dst: list[tuple[float, float]]):
     sx = [(x - cx_s, y - cy_s) for x, y in src]
     dx = [(x - cx_d, y - cy_d) for x, y in dst]
     h11 = sum(dx[i][0] * sx[i][0] + dx[i][1] * sx[i][1] for i in range(n))
-    h12 = sum(dx[i][0] * sx[i][1] - dx[i][1] * sx[i][0] for i in range(n))
+    # Kabsch 最优旋转角 θ = atan2(Σ d_y s_x - d_x s_y, Σ d·s)，让 Rθ·s ≈ d。
+    h12 = sum(dx[i][1] * sx[i][0] - dx[i][0] * sx[i][1] for i in range(n))
     theta = math.atan2(h12, h11)
     s_sq = sum(x * x + y * y for x, y in sx)
     d_sq = sum(x * x + y * y for x, y in dx)

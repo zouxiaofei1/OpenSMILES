@@ -15,6 +15,7 @@ from namepredict.layer4.ring_geometry import (
     regular_polygon,
     rigid_fit,
     ring_cyclic,
+    ring_shape_template,
 )
 
 
@@ -89,24 +90,48 @@ def horizontal_rows(rings, fusion_edges) -> list[tuple[int, ...]]:
     return sorted(rows, key=len, reverse=True)
 
 
-def _place_ring(order: list[int], coords: dict, a: int, b: int, side: int) -> dict[int, tuple[float, float]]:
-    """以共享边(a,b)摆放正 n 边形, 顶点0→a 顶点1→b, 心在边侧(side=+1 左法向, -1 右法向)。"""
+def _place_ring(order: list[int], coords: dict, a: int, b: int, side: int,
+                template: list[tuple[float, float]] | None = None,
+                used_tmpl: list | None = None) -> dict[int, tuple[float, float]]:
+    """以共享边(a,b)摆放环, 顶点0→a 顶点1→b, 心在边侧(side=+1 左法向, -1 右法向)。
+
+    ``template`` 为 P-25 变形环模板(长度 n, ``template[0]=(0,0), template[1]=(1,0)``,
+    供旋转/缩放对齐到共享边); 为 None 时用正 n 边形(原刚性布局, 行为不变)。
+    ``used_tmpl`` 传入列表时回传本次实际采用(含镜像)的模板, 供 _ring_deform 作 Kabsch 基准。
+    """
     n = len(order)
     ax, ay = coords[a]
     bx, by = coords[b]
     length = math.hypot(bx - ax, by - ay)
-    scale = length / (2 * math.sin(math.pi / n))
     ux, uy = (bx - ax) / length, (by - ay) / length   # 共享边方向
     vx, vy = -uy, ux                                  # 左法向
+    if template is None:
+        scale = length / (2 * math.sin(math.pi / n))
+        out = {}
+        for k, atom in enumerate(order):
+            tx = math.cos(-math.pi / n + 2 * math.pi * k / n)
+            ty = math.sin(-math.pi / n + 2 * math.pi * k / n)
+            t = (ty + math.sin(math.pi / n)) * scale        # 沿共享边分量(顶点0→1 递增)
+            nn = (math.cos(math.pi / n) - tx) * scale       # 垂直分量(左法向)
+            if side < 0:
+                nn = -nn
+            out[atom] = (ax + t * ux + nn * vx, ay + t * uy + nn * vy)
+        return out
+    # 心侧：side<0 时用模板镜像(模板关于 x 轴反射, 心朝 -y=右法向); 否则朝 +y=左法向。
+    # 用"镜像模板"而非旋转修正心侧：共享边端点(边0,1 在共享边上)镜像后不动,
+    # 不破坏与邻环共享边重合; 镜像模板一并回传给 _ring_deform 作 Kabsch 基准。
+    base = [(tx, -ty) for tx, ty in template] if side < 0 else template
+    p0, p1 = base[0], base[1]
+    t0len = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+    scale = length / t0len
+    theta = math.atan2(by - ay, bx - ax) - math.atan2(p1[1] - p0[1], p1[0] - p0[0])
+    c, s = math.cos(theta), math.sin(theta)
     out = {}
     for k, atom in enumerate(order):
-        tx = math.cos(-math.pi / n + 2 * math.pi * k / n)
-        ty = math.sin(-math.pi / n + 2 * math.pi * k / n)
-        t = (ty + math.sin(math.pi / n)) * scale        # 沿共享边分量(顶点0→1 递增)
-        nn = (math.cos(math.pi / n) - tx) * scale       # 垂直分量(左法向)
-        if side < 0:
-            nn = -nn
-        out[atom] = (ax + t * ux + nn * vx, ay + t * uy + nn * vy)
+        dx, dy = base[k][0] - p0[0], base[k][1] - p0[1]
+        out[atom] = (ax + scale * (c * dx - s * dy), ay + scale * (s * dx + c * dy))
+    if used_tmpl is not None:
+        used_tmpl[:] = [base]
     return out
 
 
@@ -126,12 +151,17 @@ def _opposite_side(coords: dict, prev_ring: tuple, a: int, b: int) -> int:
     return -1 if d > 0 else 1
 
 
-def _layout(row: tuple[int, ...], rings, fusion_edges) -> dict | None:
-    """刚性摆放水平行及其邻接环, 返回 {原子: 坐标}; 失败(奇环行内双侧)返回 None。"""
+def _layout(row: tuple[int, ...], rings, fusion_edges) -> tuple[dict | None, dict] | None:
+    """摆放水平行及其邻接环, 返回 (坐标, 每环实际模板); 失败返回 None。
+
+    行内中间奇数环(P-25.3.2.3.2 变形环)用 ``ring_shape_template`` 变形模板让左右
+    共享边都能竖直, 支持 6-5-6 等线性行; 无法构造变形模板时弃行(保持原逻辑)。
+    """
     edge = _edge_map(fusion_edges)
     coords: dict[int, tuple[float, float]] = {}
+    ring_templates: dict[int, list] = {}
     placed: set[int] = set()
-    for idx, r in enumerate(row):
+    for idx, r in enumerate(row):#遍历水平行每个环
         n = len(rings[r])
         if idx == 0:
             pair = edge.get(frozenset((r, row[1])))
@@ -143,16 +173,28 @@ def _layout(row: tuple[int, ...], rings, fusion_edges) -> dict | None:
             prev = row[idx - 1]
             pair = edge.get(frozenset((r, prev)))
             exit_pair = edge.get(frozenset((r, row[idx + 1]))) if idx < len(row) - 1 else None
-            if n % 2 == 1 and exit_pair is not None:
-                return None  # 行内奇环双侧融合需松弛, 本阶段刚性不可行
             order = ring_cyclic(rings[r], pair[0], pair[1])
+            tpl = None
+            if n % 2 == 1 and exit_pair is not None:
+                # P-25.3.2.3.2：奇环行内双侧融合 → 变形环模板，仅当可构造时才放行。
+                exit_idx = next(
+                    (k for k in range(n) if frozenset((order[k], order[(k + 1) % n])) == frozenset(exit_pair)),
+                    None,
+                )
+                tpl = ring_shape_template(order, exit_idx) if exit_idx is not None else None
+                if tpl is None:
+                    return None  # 无法构造变形环 → 弃行(原逻辑, 不回归)
+                ring_templates[r] = tpl
             side = _opposite_side(coords, rings[prev], pair[0], pair[1])
-            coords.update(_place_ring(order, coords, pair[0], pair[1], side))
+            used_tmpl: list = []
+            coords.update(_place_ring(order, coords, pair[0], pair[1], side, tpl, used_tmpl))
+            if used_tmpl:
+                ring_templates[r] = used_tmpl[0]
         placed.add(r)
     for r in range(len(rings)):
         if r not in placed and not _place_neighbor(r, rings, coords, placed, edge):
             return None
-    return coords
+    return coords, ring_templates
 
 
 def _overlaps_any(cand: dict, rings, r: int, coords: dict) -> bool:
@@ -207,25 +249,37 @@ def _place_neighbor(r: int, rings, coords: dict, placed: set[int], edge: dict) -
     return True
 
 
-def _ring_deform(pts: list, n: int) -> float:
-    """环坐标相对正 n 边形模板的最大偏差(循环移位+镜像最优对齐)。"""
-    tmpl = RING_TEMPLATES[n]
+def _ring_deform(pts: list, n: int, tmpl: list | None = None) -> float:
+    """环坐标相对模板(默认正 n 边形)的最大偏差(循环移位+镜像最优对齐)。
+
+    ``tmpl`` 为 P-25 变形环模板时以它为基准(变形环偏差≈0 可通过)，
+    否则用正多边形 ``RING_TEMPLATES[n]``(原刚性布局验收标准)。
+    """
+    tmpl = tmpl if tmpl is not None else RING_TEMPLATES[n]
+    is_distorted = tmpl is not None and tmpl is not RING_TEMPLATES[n]
     best = float("inf")
     for shift in range(n):
         fwd = pts[shift:] + pts[:shift]
         for rev in (False, True):
             order = list(reversed(fwd)) if rev else fwd
-            params = rigid_fit(order, tmpl)
-            fitted = [apply_rigid(p, params) for p in order]
-            best = min(best, max(math.dist(fitted[k], tmpl[k]) for k in range(n)))
+            variants = [order]
+            if is_distorted:
+                # 变形环(非对称)对 Kabsch 旋转方向敏感；rigid_fit 的方向约定
+                # 对不对称环有二义, 补试镜像 x 后的对齐以覆盖两个手性。
+                variants.append([(-x, y) for x, y in order])
+            for cand in variants:
+                params = rigid_fit(cand, tmpl)
+                fitted = [apply_rigid(p, params) for p in cand]
+                best = min(best, max(math.dist(fitted[k], tmpl[k]) for k in range(n)))
     return best
 
 
-def _valid_deform_overlap(coords: dict, rings, fusion_edges) -> bool:
+def _valid_deform_overlap(coords: dict, rings, fusion_edges, ring_templates: dict | None = None) -> bool:
     """每环刚体拟合偏差与环间重叠检查。"""
-    for ring in rings:
+    ring_templates = ring_templates or {}
+    for r, ring in enumerate(rings):
         pts = [coords[a] for a in ring]
-        dev = _ring_deform(pts, len(ring))
+        dev = _ring_deform(pts, len(ring), ring_templates.get(r))
         length = max(math.dist(pts[k], pts[(k + 1) % len(pts)]) for k in range(len(pts)))
         if length > 1e-9 and dev / length > DEFORM_MAX:
             return False
@@ -287,13 +341,14 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
         if len(row) < max_len:
             continue
         for flip in (False, True):
-            coords = _layout(row, rings, fusion_edges)
+            laid = _layout(row, rings, fusion_edges)
             # print("coords:",coords)
-            if coords is None:
+            if laid is None:
                 continue
+            coords, ring_templates = laid
             if flip:
                 coords = {a: (x, -y) for a, (x, y) in coords.items()}
-            if not _valid_deform_overlap(coords, rings, fusion_edges):
+            if not _valid_deform_overlap(coords, rings, fusion_edges, ring_templates):
                 continue
             (q1, q2, q3, q4), above = _quadrant_fractions(coords, rings)
             # 面积分数有 ~1e-15 浮点尾差, round 消除后镜像才算平局

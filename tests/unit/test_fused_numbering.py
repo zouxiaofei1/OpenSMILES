@@ -51,3 +51,13 @@ def test_azulene_odd_ring_pair_numbering():
     _, (chain, labels) = _number("C1=CC=C2C=CC=CC2=C1")
     assert len(chain) == 10
     assert any(lbl[-1].isalpha() for lbl in labels)
+
+
+def test_6_5_6_three_ring_numbering():
+    """6-5-6 线性稠环(变形五元环居中): 三个 N 得最低位次, 稠合碳得字母位次(a/b/c)。"""
+    mol, (chain, labels) = _number("ClC1C2NC3C=CC=CC=3C=2N=CN=1")
+    assert len(chain) == 13
+    heteros = sorted(labels[chain.index(a)] for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() == 7)
+    assert heteros == ["1", "3", "5"]  # P-25.3.3.2.3 杂原子最低位次
+    fused_letter = [lbl for lbl in labels if lbl[-1].isalpha()]
+    assert len(fused_letter) >= 4  # 稠合碳均有字母位次
