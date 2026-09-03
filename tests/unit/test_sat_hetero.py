@@ -38,6 +38,23 @@ def test_n_methylpiperidine() -> None:
     assert normalize_en(r.en) == normalize_en("1-methylpiperidine")
 
 
+def test_n_branched_alkyl_piperidine_uses_ring_locant() -> None:
+    """环上 N 的支链烷基仍用环编号 1-（非 N-）；与 1-methylpiperidine 一致。"""
+    r = SMILESNNamer().name("CC(C)(CC)N1CCCCC1")
+    assert r.success
+    assert normalize_en(r.en) == normalize_en("1-(3-methylbutan-3-yl)piperidine")
+
+
+def test_n_branched_alkyl_piperidine_carboxamide_uses_ring_locant() -> None:
+    """带 exocyclic carboxamide 的哌啶，环 N 取代基同样以环编号 1- 定位。"""
+    r = SMILESNNamer().name("CC(C(CC)C)N1CCC(C(N)=O)CC1")
+    assert r.success
+    assert normalize_en(r.en) == normalize_en(
+        "1-(3-methylpentan-4-yl)piperidine-4-carboxamide"
+    )
+    assert "N-(3-methylpentan-4-yl)" not in r.en
+
+
 def test_piperidine_carboxylic_not_oxolane() -> None:
     """Principal acid FG: must not invent sat-hetero parent name."""
     r = SMILESNNamer().name("O=C(O)C1CCCCN1")

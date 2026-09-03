@@ -112,12 +112,17 @@ _FIXED_START_KEYS = (
 )
 
 
-def _ring_hetero_start(parent: dict, chain: list[int]) -> int | None:
+def _ring_hetero_start(parent: dict, chain: list[int], float_hetero: bool = False) -> int | None:
     """杂原子环：最优先杂原子为 locant 1（P-14.4，吡啶/嘧啶等）。
 
     多杂环（嘧啶双 N、咪唑等）同样固定一个杂原子为起点，其余杂原子在
     P-14.4 枚举中自然得低位（1,3 / 1,2）。1,3-二唑（咪唑/吡唑）N1 优先取
     带取代基（价 3）的 N、其次带 H 的 N（P-58.2.1）；其余退化为 Z 最小。
+
+    ``float_hetero=True``（仅稠合组分编号 P-25.3.2.5 使用）：对称等价杂环
+    （嘧啶双 N 等）无唯一 NH/Nsub 起点时允许 locant 1 在两个等价杂原子间浮动，
+    交由后续取代基（稠合原子）位次最小化决定——避免按原子序号随机钉死起点
+    得到与规范稠合描述符（d 侧等）不一致的镜像。
     """
     mol = parent.get("mol")
     if mol is None:
@@ -133,13 +138,15 @@ def _ring_hetero_start(parent: dict, chain: list[int]) -> int | None:
             and mol.GetAtomWithIdx(a).GetTotalNumHs() > 0]
     if len(n_nh) == 1:
         return n_nh[0]
+    if float_hetero and len(heteros) > 1:
+        return None
     return min(heteros, key=lambda a: (mol.GetAtomWithIdx(a).GetAtomicNum(), a))
 
 
-def _fixed_start(parent: dict) -> int | None:
+def _fixed_start(parent: dict, float_hetero: bool = False) -> int | None:
     """取固定 locant 1 起点原子：杂原子环优先杂原子（P-14.4，吡啶甲酸 N=1
     而非羧酸锚点），否则 FG 锚点/自由基字段，最后退化处理。"""
-    hetero = _ring_hetero_start(parent, parent.get("chain") or [])
+    hetero = _ring_hetero_start(parent, parent.get("chain") or [], float_hetero)
     if hetero is not None:
         return hetero
     for key in _FIXED_START_KEYS:
@@ -221,8 +228,11 @@ def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
 
 # ── 入口 ─────────────────────────────────────────────────────────────────
 
-def orient_numbering(parent: dict, substituents: list) -> list[int] | None:
-    """返回 P-14.4 定向后的原子顺序；不适用则返回 None。"""
+def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = False) -> list[int] | None:
+    """返回 P-14.4 定向后的原子顺序；不适用则返回 None。
+
+    ``float_hetero`` 见 ``_ring_hetero_start``（仅稠合组分编号路径开启）。
+    """
     chain = parent.get("chain") or []
     if not chain:
         return None
@@ -236,7 +246,7 @@ def orient_numbering(parent: dict, substituents: list) -> list[int] | None:
         cands = _ring_cands(chain)
     else:
         cands = _chain_cands(chain)
-    start = _fixed_start(parent)
+    start = _fixed_start(parent, float_hetero)
     if start is not None:
         cands = [c for c in cands if c.get(start) == 1]
     if not cands:
@@ -292,7 +302,9 @@ def fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edge
             ring = list(sub_rings[0])
             return ring, [str(i + 1) for i in range(len(ring))]
         parent = {"mol": mol, "scaffold_id": scaffold_id, "chain": chain0}
-        res = orient_numbering(parent, subs)
+        # float_hetero: 对称等价杂环(嘧啶双 N 等)的 locant 1 交给稠合原子位次
+        # 最小化决定, 使碱环取向与规范稠合字母(d 侧)一致(见 _ring_hetero_start)。
+        res = orient_numbering(parent, subs, float_hetero=bool(shared))
         if not res:
             return None, None
         return res, _component_labels(parent, res)
