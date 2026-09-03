@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from rdkit import Chem
-from rdkit.Chem import BondStereo, Mol
+from rdkit.Chem import BondStereo, ChiralType, Mol
 
 from namepredict.layer1 import fg_registry as _fg_reg
 
@@ -101,11 +101,20 @@ def ez_for_parent(numbered: dict) -> str:
 
 # --- CIP R/S 立体描述符 ----------------------------------------------
 
-_RS_KINDS = _fg_reg.rs_fgs()
+_RS_KINDS = _fg_reg.rs_fgs() | frozenset({"radical"})
 
 def _assign_cip(mol: Mol) -> None:
-    """强制重算分子立体化学（CIP 分配）。"""
-    Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
+    """强制重算分子立体化学（CIP 分配）；隐式 H 的 [C@]/[C@@] 手性碳先补显式 H 再赋。"""
+    r = Chem.RWMol(mol)
+    for a in list(r.GetAtoms()):
+        if a.GetChiralTag() != ChiralType.CHI_UNSPECIFIED and a.GetTotalNumHs() == 0 and a.GetDegree() < 4:
+            r.AddBond(a.GetIdx(), r.AddAtom(Chem.Atom(1)), Chem.BondType.SINGLE)
+    m = r.GetMol()
+    Chem.AssignStereochemistry(m, force=True, cleanIt=True)
+    for a in mol.GetAtoms():
+        b = m.GetAtomWithIdx(a.GetIdx())
+        if b.HasProp("_CIPCode"):
+            a.SetProp("_CIPCode", b.GetProp("_CIPCode"))
 
 
 def _cip_code(atom) -> str | None:

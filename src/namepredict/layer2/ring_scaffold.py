@@ -103,7 +103,7 @@ _TEMPLATES: dict[str, dict] = {
     "morpholine":  {"smiles": "C1COCCN1", "stem_en": "morpholine",  "stem_zh": "吗啉",   "naming_class": "monohetero"},
     "piperazine":  {"smiles": "C1CNCCN1", "stem_en": "piperazine",  "stem_zh": "哌嗪",   "naming_class": "monohetero"},
     "oxolane":     {"smiles": "C1CCOC1",  "stem_en": "oxolane",     "stem_zh": "四氢呋喃", "naming_class": "monohetero"},
-    "oxane":       {"smiles": "C1CCCOC1", "stem_en": "oxane",       "stem_zh": "四氢吡喃", "naming_class": "monohetero"},
+    "oxane":       {"smiles": "C1CCCOC1", "stem_en": "oxane",       "stem_zh": "氧杂环己烷", "naming_class": "monohetero"},
     # fused 5+6
     "indole":         {"smiles": "c1ccc2[nH]ccc2c1", "stem_en": "1H-indole",      "stem_zh": "吲哚",     "naming_class": "fused56", "locant_prefix": "1H-", "prefix_nh_conditional": True},
     "indazole":       {"smiles": "c1ccc2cn[nH]c2c1", "stem_en": "indazole",       "stem_zh": "吲唑",     "naming_class": "fused56", "locant_prefix": "1H-", "prefix_nh_conditional": True},

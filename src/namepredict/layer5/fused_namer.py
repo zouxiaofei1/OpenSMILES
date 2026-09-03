@@ -52,7 +52,7 @@ _COMPONENT_STEM = {
     "morpholine": ("morpholine", "吗啉"),
     "piperazine": ("piperazine", "哌嗪"),
     "oxolane": ("oxolane", "四氢呋喃"),
-    "oxane": ("oxane", "四氢吡喃"),
+    "oxane": ("oxane", "氧杂环己烷"),
     "carbazole": ("carbazole", "咔唑"),
     "acridine": ("acridine", "吖啶"),
     "phenothiazine": ("phenothiazine", "吩噻嗪"),

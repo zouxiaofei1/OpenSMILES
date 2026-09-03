@@ -3,6 +3,8 @@
 """
 from __future__ import annotations
 
+import copy
+
 from rdkit.Chem import CanonicalRankAtoms
 from namepredict.constants import C
 from namepredict.cache.common_names import CommonNameCache
@@ -14,6 +16,37 @@ from namepredict.tools.free_to_yl import free_to_yl as yl_form
 _SIMPLE_ALKOXY_NO_PAREN = frozenset({
     "methoxy", "ethoxy", "propoxy", "butoxy", "phenoxy", "isopropoxy",
 })
+
+
+def _fix_rs_with_real(mol, atoms: frozenset, anchored, hit):
+    """替换取代基前缀的 R/S：用真实分子 mol 的 CIP 而非 * 锚定子分子。
+    糖苷（O-C 糖-糖连接）被 `*`（原子0）顶替后 CIP 会算反 2/4 位；真实分子 CIP 才与
+    ChEBI 一致。锚定子分子按 sorted(atoms) 复制原子，故锚定索引 i → 真实索引 sorted(atoms)[i]。"""
+    if not (hit.success and hit.en):
+        return hit
+    from namepredict.layer5.stereo import _cip_on_chain, _with_rs
+    parent = hit.meta or {}
+    if parent.get("parent_kind") != "radical":
+        return hit
+    chain = parent.get("parent_chain") or []
+    order = sorted(atoms)
+    # [0]-collapsed 或含 * 的链：本层未产出 R/S，跳过。
+    if len(chain) < 2 or any(i >= len(order) for i in chain):
+        return hit
+    real = [order[i] for i in chain]
+    rs_anch = _cip_on_chain(anchored, chain)      # * 锚定算出的（可能错误）R/S
+    if not rs_anch:
+        return hit                      # 本层未贡献 R/S（由内层 -yl 携带），不重复处理
+    try:
+        rs_real = _cip_on_chain(mol, real)        # 真实分子 CIP
+    except Exception:
+        return hit
+    if rs_real == rs_anch:
+        return hit
+    out = copy.copy(hit)
+    out.en = _with_rs(hit.en, rs_real)
+    out.zh = _with_rs(hit.zh, rs_real)
+    return out
 
 
 def _radical_yl_from_sub(
@@ -30,6 +63,7 @@ def _radical_yl_from_sub(
     hit = cache.get(smiles) if cache is not None else None
     if hit is None:
         hit = _name_mol(anchored, depth=depth, name_mode=name_mode, cache=cache)
+        hit = _fix_rs_with_real(mol, atoms, anchored, hit)
         if cache is not None and hit.success and hit.en:
             hit = _canonical_result(anchored, hit)
             _cache_put(cache, smiles, hit)

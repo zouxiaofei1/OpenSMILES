@@ -47,6 +47,19 @@ CASES = [
         "(2E,8R)-8-hydroxynon-2-enoic acid",
         "(2E,8R)-8-羟基壬-2-烯酸",
     ),
+    # 取代基/自由基母体：手性环成为取代基前缀时也应携带自身 R/S
+    # （修复1：implicit-H 的 [C@]/[C@@] 被 RDKit 判为 3 配位而非立体中心）
+    (
+        "O[C@@]1[C@@](C*)OC(O)[C@](N)[C@]1O",
+        "[(2R,3R,4S,5R)-5-amino-3,4,6-trihydroxyoxan-2-yl]methyl",
+        "[(2R,3R,4S,5R)-5-氨基-3,4,6-三羟基氧杂环己烷-2-基]甲基",
+    ),
+    # 糖苷（O-C 糖-糖连接）取代基：R/S 必须取自真实分子 CIP（修复2），2/4 位 R 不再被 *封端翻成 S
+    (
+        "N[C@H]1[C@H](O[C@H]2[C@H](O)[C@@H](N)[C@H](O[C@H]3[C@H](O)[C@@H](N)C(O)O[C@@H]3CO)O[C@@H]2CO)O[C@H](CO)[C@@H](O)[C@@H]1O",
+        "(2R,3S,4R,5R,6S)-6-[(2R,3S,4R,5R,6S)-6-[(2R,3S,4R,5R)-5-amino-4,6-dihydroxy-2-(hydroxymethyl)oxan-3-yloxy]-5-amino-4-hydroxy-2-(hydroxymethyl)oxan-3-yloxy]-5-amino-2-(hydroxymethyl)oxan-3,4-diol",
+        "(2R,3S,4R,5R,6S)-6-[(2R,3S,4R,5R,6S)-6-[(2R,3S,4R,5R)-5-氨基-4,6-二羟基-2-(羟基甲基)氧杂环己烷-3-氧基]-5-氨基-4-羟基-2-(羟基甲基)氧杂环己烷-3-氧基]-5-氨基-2-(羟基甲基)氧杂环己烷-3,4-二醇",
+    ),
     # negatives: no spurious R/S
     ("CCCCCCCCCCCC(=O)O", "dodecanoic acid", "十二酸"),
     ("C=CCCO", "but-3-en-1-ol", "丁-3-烯-1-醇"),

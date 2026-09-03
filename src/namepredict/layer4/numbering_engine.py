@@ -162,6 +162,10 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
     if len(chains) == 1:
         return chains[0]
     subs = [s["attach_idx"] for s in (substituents or []) if s.get("attach_idx") in chain]
+    # 自由基主基团：自由价连接点（radical_c_idx）同样按 P-14.4 最低化到 locant 1，
+    # 避免咔唑类对称 scaffold 取首个镜像方向而把自由价标成 8（应 1）。
+    if parent.get("radical_c_idx") in chain:
+        subs.append(parent["radical_c_idx"])
     if not subs:
         return chains[0]
     return min(chains, key=lambda std: tuple(sorted(std.index(a) + 1 for a in subs)))
