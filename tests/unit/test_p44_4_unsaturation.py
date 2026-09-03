@@ -2,7 +2,11 @@
 # Layer: L2
 from rdkit import Chem
 
-from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, keep_p44_4_unsaturation
+from namepredict.layer2.parent_skeleton import (
+    ParentSkeleton,
+    SkeletonTopology,
+    keep_p44_4_unsaturation,
+)
 
 
 def _chain(atoms):
@@ -21,7 +25,15 @@ def test_p44_4_prefers_more_double_bonds_when_total_ties():
     assert keep_p44_4_unsaturation(mol, (enyne, diene)) == (diene,)
 
 
-def test_p44_4_ignores_aromatic_bonds_and_preserves_ties():
+def test_p44_4_aromatic_counts_as_kekule_multiple_bonds():
     mol = Chem.MolFromSmiles("c1ccccc1.C1CCCCC1")
     aromatic, saturated = _chain(range(6)), _chain(range(6, 12))
-    assert keep_p44_4_unsaturation(mol, (aromatic, saturated)) == (aromatic, saturated)
+    assert keep_p44_4_unsaturation(mol, (aromatic, saturated)) == (aromatic,)
+
+
+def test_p44_4_pyrimidine_beats_saturated_ring():
+    # 哌嗪-嘧啶环环相连：嘧啶(芳香,3 多重键当量)应优先于哌嗪(饱和,0)。
+    mol = Chem.MolFromSmiles("C1C(N2C(C)CNCC2)=NC=NC=1")
+    pymidine = ParentSkeleton(SkeletonTopology.RING_SYSTEM, tuple([0, 1, 9, 10, 11, 12]), frozenset())
+    piperazine = ParentSkeleton(SkeletonTopology.RING_SYSTEM, tuple([2, 3, 5, 6, 7, 8]), frozenset())
+    assert keep_p44_4_unsaturation(mol, (pymidine, piperazine)) == (pymidine,)
