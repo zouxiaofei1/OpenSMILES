@@ -64,10 +64,7 @@ def _alkoxy_c_of(oxygen, carbonyl) -> int | None:
 
 
 def _ester_alkoxy_of(carbon, is_alkoxy_o) -> tuple[int, int] | None:
-    """在 `carbon` 上寻找酯样 O，其邻居 C 为有效的烷氧基侧。
-
-    `is_alkoxy_o(oxygen, carbonyl)` 是模块特定的谓词：analyzer 排除酸酐桥 O，acyl_halide 检查形式电荷。
-    """
+    """在 `carbon` 上找酯样 O 及其有效烷氧基侧 C；is_alkoxy_o 为模块特定谓词（analyzer 排除酸酐桥 O，acyl_halide 查形式电荷）。"""
     for n in carbon.GetNeighbors():
         if not is_alkoxy_o(n, carbon):
             continue

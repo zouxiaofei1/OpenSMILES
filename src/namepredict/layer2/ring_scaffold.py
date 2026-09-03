@@ -333,20 +333,13 @@ def match_scaffold_ids(info: dict) -> list[str]:
 
 
 def match_retained(info: dict, atom_ids) -> str | None:
-    """返回模板精确覆盖 atom_ids 的保留母体 sid；无命中返回 None。
-
-    元素签名预过滤跳过组成不符的模板，再跑子图同构。多个模板同命中时
-    按模板表顺序取第一个（元素标注下实际不会发生，防御性兜底）。
-    """
+    """返回模板精确覆盖 atom_ids 的保留母体 sid，无命中 None；元素签名预过滤后子图同构，同命中取表序第一个（防御性兜底）。"""
     hit = _match_with_map(info, atom_ids)
     return hit[0] if hit else None
 
 
 def _match_with_map(info: dict, atom_ids) -> tuple[str, tuple[int, ...]] | None:
-    """模板精确覆盖 atom_ids 时返回 (sid, match)；match[i]=模板原子 i 对应的分子原子。
-
-    match 供固定编号（standard_path）把模板原子映射到分子原子。
-    """
+    """模板精确覆盖 atom_ids 时返回 (sid, match)；match[i] 供 standard_path 把模板原子映射到分子原子。"""
     mol = info["mol"]
   
     atoms = frozenset(atom_ids)
@@ -364,11 +357,7 @@ def _match_with_map(info: dict, atom_ids) -> tuple[str, tuple[int, ...]] | None:
 
 
 def locant_prefix(spec_id: str | None) -> tuple[str, str, bool]:
-    """返回 scaffold 的 locant 前缀 (en, zh, nh_conditional)；无则 ("", "", False)。
-
-    供 kind_registry.pack_parent_stem 注入词干：1,3- 二唑（噻唑/噁唑/苯并噻唑/苯并噁唑）
-    无条件注入；1H- 吡咯型（吡咯/咪唑/吡唑/吲哚/吲唑/苯并咪唑）仅当环含未取代 NH 注入。
-    """
+    """返回 scaffold 的 locant 前缀 (en, zh, nh_conditional)，无则空；1,3- 二唑无条件注入词干、1H- 吡咯型仅环含未取代 NH 时注入。"""
     spec = get_spec(spec_id or "")
     if spec is None or not spec.locant_prefix:
         return "", "", False
@@ -376,10 +365,7 @@ def locant_prefix(spec_id: str | None) -> tuple[str, str, bool]:
 
 
 def standard_chain(spec_id: str | None, match: tuple[int, ...] | None) -> list[int] | None:
-    """把 fused 模板固定编号映射到分子：返回分子原子按标准 locant 顺序的列表。
-
-    无标准顺序或 match 缺失/长度不符时返回 None（走 P-14.4 通用枚举）。
-    """
+    """把 fused 模板固定编号映射到分子，返回原子按标准 locant 顺序的列表；无标准顺序/match 长度不符返回 None（走 P-14.4 通用枚举）。"""
     if not match:
         return None
     order = _STANDARD_ORDERS.get(spec_id or "")
@@ -396,16 +382,7 @@ def _matched_id(info: dict, skeleton: ParentSkeleton) -> str | None:
 
 
 def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
-    """无模板命中时的通用环身份兜底。
-
-    - 全碳单环/多环 → carbocycle（P-22 泛用环身份；supports_ring_expression
-      的 _POLICIES 只覆盖 carbocycle/mono_carbo/naph_family，改 fused 会关闭
-      未注册稠环的 typed 环表达）；
-    - 非全碳芳香多环 → fused_hetero（kind 与 _generic_ring_kind 对齐，L5
-      fused_namer 按 fused_tree 组装稠合名）；
-    - 其余非全碳（单环/饱和多环）→ None（无保留词干可拼，显式失败而非
-      当开链烷基错名）。
-    """
+    """无模板命中时的通用环身份兜底：全碳单/多环→carbocycle；非全碳芳香多环→fused_hetero；其余→None（显式失败，避免当开链烷基错名）。"""
     mol = info["mol"]
     all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
     if not all_carbon:
@@ -419,12 +396,7 @@ def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentit
 
 
 def resolve_ring_scaffold(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
-    """解析骨架的 scaffold 身份（显式/模板匹配/通用兜底）。
-
-    模板命中即解析出该母体的 ScaffoldIdentity（_TEMPLATES 唯一来源派生）；
-    无模板命中时全碳环兜底 carbocycle，非全碳多环兜底 fused_hetero
-    （L5 fused_namer 按 fused_tree 组装），非全碳单环返回 None。
-    """
+    """解析骨架的 scaffold 身份（显式/模板匹配/通用兜底：全碳→carbocycle，非全碳多环→fused_hetero，非全碳单环→None）。"""
     direct = get_identity(skeleton.scaffold_id or "")
     if direct:
         return direct

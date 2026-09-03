@@ -9,26 +9,14 @@ def _rank_candidates(info: dict, cands: list[dict]) -> list[dict]:
 
 
 def _p45_2_prefix_count(info: dict, parent: dict) -> int:
-    """P-45.2.1 键：以前缀引用的取代基团数目。
-
-    母体 arm 选择在骨架/评分打平（如 N 上两条等长臂）时，IUPAC P-45.2.1
-    要求优选以前缀引用的取代基团数目最多的母体结构。数目等于母体
-    owned_atoms 边界之外的取代基组分（claim）个数，由 L3 claimable_block
-    的 iter_claims 直接枚举（无需递归命名，无 name_mode/cache 依赖）。
-    """
+    """P-45.2.1 键：以前缀引用的取代基团数目（=owned_atoms 边界外的 claim 个数，由 L3 iter_claims 枚举，无 name_mode/cache 依赖）。"""
     mol = info["mol"]
     from namepredict.layer3.claimable_block import iter_claims
     return len(iter_claims(mol, parent.get("owned_atoms") or frozenset()))
 
 
 def _reorder_p45_2(info: dict, cands: list[dict]) -> list[dict]:
-    """P-45.2 流水线：按前缀取代基团数目最多（P-45.2.1）重排候选。
-
-    稳定排序：同数目候选保持既有评分顺序；仅当候选数同、评分打平
-    时（P-45.2.1 无法分出的骨架余隙）由 P-45.2.2/P-45.2.3 兜底——
-    此处 P-45.2.2/2.3 的位次集合需 L4 编号后才可得，故只先接 P-45.2.1，
-    完全打平的候选维持其余额顺序交由下游评分/覆盖门控处理。
-    """
+    """P-45.2 流水线：按前缀取代基团数目最多（P-45.2.1）稳定重排打平候选；P-45.2.2/2.3 的位次需 L4 编号后才可得，只先接 P-45.2.1。"""
     if len(cands) <= 1:
         return cands
     return sorted(cands, key=lambda c: _p45_2_prefix_count(info, c), reverse=True)
@@ -48,11 +36,7 @@ def _finalize_ranked(info: dict, cands: list[dict]) -> list[dict]:
     ]
 
 def select_parent(info: dict, *, all_candidates: bool = False) -> dict | list[dict] | None:
-    """排序后的母体候选，每个都以不可变 owned_atoms 完成最终确定。
-
-    先按 P-44 简化评分降序，再经 P-45.2 流水线按前缀取代基团数目（P-45.2.1）
-    重排打平候选，取首位为选定母体。
-    """
+    """排序并终态化母体候选（P-44 评分降序 → P-45.2 重排打平 → owned_atoms 固化）：取首位为选定母体，all_candidates 时全返回。"""
     from namepredict.layer2.candidates import _collect_candidates
 
     cands = _finalize_ranked(info, _collect_candidates(info))

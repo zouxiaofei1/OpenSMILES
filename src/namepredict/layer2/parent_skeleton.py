@@ -62,11 +62,7 @@ def _open_chains(mol: Mol, anchors: list[int]) -> list[list[int]]:
 
 
 def _chain_coverage(chain: list[int], occurrences) -> frozenset[str]:
-    """计算链覆盖的 occurrence id 集合（锚点全在链上；胺取任一锚点在链上）。
-
-    二级/三级胺 N 的多条母体臂中任一成为链即覆盖（P-62.2 多臂选优），
-    其余臂作为 N- 取代基留在所有权外。
-    """
+    """计算链覆盖的 occurrence id 集合：锚点全在链上（二级/三级胺 N 任一臂在链即覆盖，P-62.2 多臂选优，余臂作 N- 取代基留在所有权外）。"""
     atoms = set(chain)
     out: set[str] = set()
     for o in occurrences:
@@ -81,13 +77,7 @@ def _chain_coverage(chain: list[int], occurrences) -> frozenset[str]:
 
 
 def _ring_attaches(mol: Mol, ring: set[int], occurrence: FunctionalGroupOccurrence) -> bool:
-    """判断 occurrence 是否附着于环（锚点本身或邻居在环内；胺/醇仅认锚点直接附着）。
-
-    胺 N 直接连芳环（锚点在环内）才选环母体；N 隔碳连芳环（苄基胺类）
-    环不附着，母体走含 N 链、芳基作取代基（P-62.2.2）。醇同理：羟基碳在
-    环外（苄醇的 CH2、环己基甲醇的 CH2OH）不选环母体，走含羟基链、
-    芳基/环烷基作取代基（P-63 醇侧链），避免环外 OH 被折叠成酚/环醇。
-    """
+    """判断 occurrence 是否附着于环（锚点本身/邻居在环内；胺/醇/酮/自由基仅认锚点直接附着），避免苄基胺、苄醇等隔碳连芳环错选环母体。"""
     if occurrence.parent_anchors & ring:
         return True
     if occurrence.group_class in (FunctionalGroupClass.AMINE, FunctionalGroupClass.ALCOHOL,FunctionalGroupClass.RADICAL,FunctionalGroupClass.KETONE):

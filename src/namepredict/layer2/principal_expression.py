@@ -307,13 +307,7 @@ _MONONUCLEAR_STEM: dict[int, tuple[str, str, str]] = {
 
 def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
                          occurrences) -> tuple[ParentSkeleton, dict] | None:
-    """杂原子锚点自由基收敛为单核氢化物母体骨架（表 2.1）。
-
-    锚点原子非碳时，母体 chain 限定为单原子、注入单核氢化物 free 名
-    （oxidane/azane/sulfane…）与锚点元素；碳侧链留作 L3 取代基，供 L5
-    组装 "alkyl-oxidane" 再经 free_to_yl 转标准取代基名（表 1.5 置换前缀）。
-    仅支持单一锚点；多锚点或碳锚点返回 None 保持现状。
-    """
+    """杂原子锚点自由基收敛为单核氢化物母体骨架（表 2.1）：chain 限定单原子、注入 oxidane/azane 等 free 名，碳侧链留 L3 供 L5 经 free_to_yl 转标准取代基名；仅支持单一锚点。"""
     mol = info["mol"]
     anchors = sorted({i for o in occurrences for i in o.parent_anchors})
     if len(anchors) != 1:

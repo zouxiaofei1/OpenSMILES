@@ -45,8 +45,7 @@ def _try_anchored_lookup(mol, claim: ClaimedBlock, *, name_mode: str = "general"
 
 
 def _retained_name(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
-    """简单 retained 叶子：alkyl/cycloalkyl/phenyl/halo/alkoxy/sulfinyl/
-    sulfonyl/N-leaves，全部通过锚定 canonical-SMILES 表解析。"""
+    """简单 retained 叶子（alkyl/cycloalkyl/phenyl/halo/alkoxy/sulfinyl/sulfonyl/N-leaves），经锚定 canonical-SMILES 表解析。"""
     return _try_anchored_lookup(mol, claim, name_mode=name_mode)
 
 

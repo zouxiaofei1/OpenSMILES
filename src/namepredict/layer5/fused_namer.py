@@ -1,8 +1,5 @@
-"""P-25.3.2 稠合名称组装: 用 fused_info 拆解树生成 benzo[a].../naphtho[...]... 类稠合名。
-
-供未注册稠环(母体/附加均为已注册保留组分)的 base 名; 单边融合支持, 多边/跨位放后续。
-L5 分层纯净: 组件词干用本地表(与 L2 _TEMPLATES 需同步), 编号走 L4 fused_numbering。
-"""
+"""P-25.3.2 稠合名称组装: fused_info 拆解树生成 benzo[a]/naphtho[...] 稠合 base 名
+(未注册稠环; 组件词干用本地表与 L2 _TEMPLATES 同步, 编号走 L4 fused_numbering)。"""
 from __future__ import annotations
 
 from collections import Counter
@@ -78,12 +75,7 @@ def _prefix_of(sid: str, stem_en: str | None, stem_zh: str | None) -> tuple[str,
 
 
 def _component_numbering(mol, node, rings, fusion_edges, shared=None):
-    """组分自身编号: 委托 L4 fused_component_numbering(P-25.4/P-25.3.3), 稠合点作取代基。
-
-    ``shared`` 为本组分与父组分的共享原子集(fused 到父级)。母体组分与附加组分
-    各自的编号都需要把「被稠合掉的原子」当作取代基最小化位次——这样组分取向
-    才能与规范稠合描述符一致(见 numbering_engine._ring_hetero_start float_hetero)。
-    """
+    """组分自身编号：委托 L4 fused_component_numbering(P-25.4/P-25.3.3)，把稠合掉的 shared 原子当取代基最小化位次，使取向与规范稠合描述符一致。"""
     rset = sorted(node.ring_indices)
     if not rset:
         return None, None

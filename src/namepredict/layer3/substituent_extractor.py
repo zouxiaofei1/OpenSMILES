@@ -47,12 +47,7 @@ def _strip_outer_parens(stem: str) -> str:
     return stem
 
 def alkyl_alpha_key(stem: str) -> str:
-    """字母数字序键：忽略 sec-/tert-/N-/括号/前导位次（P-14.5）。
-
-    交替剥括号与前导位次直到稳定：'1-(phenyloxy)methyl' 需先剥 locant 露出前缀括号，
-    '(1-methylpropyl)' 需先剥括号露出内部 locant。残留开括号会以 ASCII 优先于字母，
-    把含括号取代基错误排到最前。
-    """
+    """字母数字序键：忽略 sec-/tert-/N-/括号/前导位次（P-14.5）；交替剥括号与前导位次直到稳定，避免残留开括号按 ASCII 错误排最前。"""
     s = _strip_n_prefix(_strip_ital_prefix(stem))
     while True:
         s2 = _strip_lead_locant(_strip_outer_parens(s))
@@ -76,13 +71,7 @@ def _side_starts(mol: Mol, chain: list[int]) -> list[tuple[int, int]]:
 
 
 def _one_anchored_alkyl(mol: Mol, attach: int, start: int, chain_set: set[int], *, name_mode: str) -> dict | None:
-    """尝试用锚定 canonical-SMILES 表解析从 `start` 开始的侧链。
-
-    使用 side_atoms（完整非母体连通组分）作为原子集合，选取取代基一侧的
-    连接原子，再在 name_mode 下查找锚定键。这里只 claim "alkyl" kind 条目
-    （纯碳侧链）；杂原子叶子（cyano/nitroso/...）仍由 FG/claim 提取器处理。
-    未命中则继续向下。
-    """
+    """用锚定 canonical-SMILES 表解析从 `start` 起的侧链：以 side_atoms 为原子集、取连接原子后在 name_mode 下查锚定键；只 claim 纯碳 "alkyl" 条目，杂原子叶子仍由 FG/claim 提取器处理。"""
     from namepredict.tools.anchored_table import anchored_entry
     from namepredict.tools.block_cut import side_atoms
 
@@ -198,8 +187,7 @@ def _extract_core_subs(info: dict, parent: dict) -> list:
     )
 
 def _with_full_atoms(mol, owned, s: dict) -> dict:
-    """用取代基的完整非母体连通组分（side_atoms）替换其原子集，
-    使叶子（halo/alkoxy/嵌套环）只计数一次。"""
+    """用取代基完整非母体连通组分（side_atoms）替换其原子集，使叶子（halo/alkoxy/嵌套环）只计数一次。"""
     from namepredict.tools.block_cut import side_atoms
 
     seed = frozenset(s.get("atoms") or [])

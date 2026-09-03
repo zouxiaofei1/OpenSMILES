@@ -58,10 +58,7 @@ def ring_shape_template(order: list[int], exit_idx: int,
 
 
 def ring_cyclic(ring_tuple: tuple[int, ...], a: int, b: int) -> list[int]:
-    """由 RDKit AtomRings 环元组求以 (a,b) 为第一条边（a→b）的环序。
-
-    b 为 a 在元组中的后继则正序，否则反序；返回以 a 开头、b 第二的顺序。
-    """
+    """由 RDKit AtomRings 环元组求以 (a,b) 为首边（a→b 正序/反序）的环序，返回 a 开头、b 第二。"""
     n = len(ring_tuple)
     i = ring_tuple.index(a)
     if ring_tuple[(i + 1) % n] == b:
@@ -93,10 +90,7 @@ def apply_rigid(p: tuple[float, float], params) -> tuple[float, float]:
 
 
 def rigid_fit(src: list[tuple[float, float]], dst: list[tuple[float, float]]):
-    """Procrustes 最优刚体+缩放: src→dst，返回 (scale, cos, sin, tx, ty)。
-
-    用于把环实际坐标贴合到正则模板并计算偏差打分（Kabsch 2D）。
-    """
+    """Procrustes 最优刚体+缩放 src→dst (Kabsch 2D)，返回 (scale, cos, sin, tx, ty) 供贴合模板与偏差打分。"""
     n = len(src)
     cx_s, cy_s = centroid(src)
     cx_d, cy_d = centroid(dst)

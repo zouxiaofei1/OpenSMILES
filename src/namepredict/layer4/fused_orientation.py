@@ -41,10 +41,7 @@ def _edge_map(fusion_edges) -> dict[frozenset[int], tuple[int, int]]:
 
 
 def opposite_bonds(ring: tuple[int, ...], bond: tuple[int, int]) -> list[tuple[int, int]]:
-    """偶环严格对面 1 条边; 奇环对面两条(P-25.3.2.3.1 奇数环 2 模板)。
-
-    先由端点 index 定边位置 k(边为 (k, k+1) 或 (k+1, k)), 再取对面边。
-    """
+    """偶环对面 1 条边、奇环对面两条(P-25.3.2.3.1)；按端点 index 定边位 k 再取对面边。"""
     n = len(ring)
     i, j = ring.index(bond[0]), ring.index(bond[1])
     k = i if (i + 1) % n == j else j
@@ -93,12 +90,7 @@ def horizontal_rows(rings, fusion_edges) -> list[tuple[int, ...]]:
 def _place_ring(order: list[int], coords: dict, a: int, b: int, side: int,
                 template: list[tuple[float, float]] | None = None,
                 used_tmpl: list | None = None) -> dict[int, tuple[float, float]]:
-    """以共享边(a,b)摆放环, 顶点0→a 顶点1→b, 心在边侧(side=+1 左法向, -1 右法向)。
-
-    ``template`` 为 P-25 变形环模板(长度 n, ``template[0]=(0,0), template[1]=(1,0)``,
-    供旋转/缩放对齐到共享边); 为 None 时用正 n 边形(原刚性布局, 行为不变)。
-    ``used_tmpl`` 传入列表时回传本次实际采用(含镜像)的模板, 供 _ring_deform 作 Kabsch 基准。
-    """
+    """以共享边(a,b)摆放环：顶点0→a、1→b、心在边侧(side=+1 左法向/-1 右法向)；template 为 P-25 变形环模板/None 用正 n 边形，used_tmpl 回传实际采用模板供 _ring_deform 作基准。"""
     n = len(order)
     ax, ay = coords[a]
     bx, by = coords[b]
@@ -136,12 +128,7 @@ def _place_ring(order: list[int], coords: dict, a: int, b: int, side: int,
 
 
 def _opposite_side(coords: dict, prev_ring: tuple, a: int, b: int) -> int:
-    """新环相对共享边(a,b)应取的 side: 使新环质心落在 prev 环质心的对面。
-
-    共享边端点(a,b)顺序来自原子索引排序(_edge_map), 不保证几何方向, 故不能
-    固定 side; 由 prev 环质心相对共享边左法向(-uy,ux)的符号决定(side=+1 时
-    新环质心在左法向侧, -1 在右法向侧)。
-    """
+    """新环相对共享边(a,b)的 side：按 prev 环质心相对共享边左法向(-uy,ux)的符号定侧，使新环质心落在 prev 对面。"""
     ax, ay = coords[a]
     bx, by = coords[b]
     mx, my = (ax + bx) / 2, (ay + by) / 2
@@ -152,11 +139,7 @@ def _opposite_side(coords: dict, prev_ring: tuple, a: int, b: int) -> int:
 
 
 def _layout(row: tuple[int, ...], rings, fusion_edges) -> tuple[dict | None, dict] | None:
-    """摆放水平行及其邻接环, 返回 (坐标, 每环实际模板); 失败返回 None。
-
-    行内中间奇数环(P-25.3.2.3.2 变形环)用 ``ring_shape_template`` 变形模板让左右
-    共享边都能竖直, 支持 6-5-6 等线性行; 无法构造变形模板时弃行(保持原逻辑)。
-    """
+    """摆放水平行及其邻接环, 返回 (坐标, 每环实际模板); 失败返回 None。中间奇数环用变形模板(P-25.3.2.3.2)支撑 6-5-6 线性行。"""
     edge = _edge_map(fusion_edges)
     coords: dict[int, tuple[float, float]] = {}
     ring_templates: dict[int, list] = {}
@@ -198,10 +181,7 @@ def _layout(row: tuple[int, ...], rings, fusion_edges) -> tuple[dict | None, dic
 
 
 def _overlaps_any(cand: dict, rings, r: int, coords: dict) -> bool:
-    """新环与任意环(含共享环)的重叠面积是否超过阈值。
-
-    共享环正确摆放时只在共享边处重合(面积≈0), 若新环被摆到共享环同侧则会
-    完全重合; 故不能跳过共享环——否则重合坐标无法被检测。"""
+    """新环与任意环(含共享环)重叠面积是否超阈值——不能跳过共享环，否则同侧完全重合无法被检测。"""
     cand_pts = [cand[a] for a in rings[r]]
     cand_area = polygon_area(cand_pts)
     for other, o_pts in _ring_polys(rings, coords):
@@ -250,11 +230,7 @@ def _place_neighbor(r: int, rings, coords: dict, placed: set[int], edge: dict) -
 
 
 def _ring_deform(pts: list, n: int, tmpl: list | None = None) -> float:
-    """环坐标相对模板(默认正 n 边形)的最大偏差(循环移位+镜像最优对齐)。
-
-    ``tmpl`` 为 P-25 变形环模板时以它为基准(变形环偏差≈0 可通过)，
-    否则用正多边形 ``RING_TEMPLATES[n]``(原刚性布局验收标准)。
-    """
+    """环坐标相对模板(默认正 n 边形)的最大偏差(循环移位+镜像最优对齐；变形环以其模板为基准)。"""
     tmpl = tmpl if tmpl is not None else RING_TEMPLATES[n]
     is_distorted = tmpl is not None and tmpl is not RING_TEMPLATES[n]
     best = float("inf")
@@ -324,11 +300,7 @@ def _quadrant_fractions(coords: dict, rings) -> tuple[tuple[float, float, float,
 
 
 def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
-    """全部优选取向平局候选(水平行环数最多→右上最多→左下最少→上方最多)。
-
-    对称环系(直线 acene 等)的左右/上下镜像 key 相同, 全部返回, 由编号阶段
-    P-25.3.3.1.2 准则(a)-(d) 跨候选收窄; 否则依赖遍历顺序, 编号不稳定。
-    """
+    """全部优选取向平局候选(水平行环数→右上→左下→上方最多)；对称环系镜像全部返回，交由编号准则(a)-(d) 跨候选收窄。"""
     rows = horizontal_rows(rings, fusion_edges)
     print(rows,rings,fusion_edges,"\n")
     

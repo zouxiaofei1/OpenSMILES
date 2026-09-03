@@ -1,7 +1,5 @@
-"""取代基锚定 canonical-SMILES 查表：registry 条目经 anchored 字段反查索引。
-
-未命中回退完整命名路径；简单取代基（氟/氯/溴/碘/硝基/正构烷基等）与保留
-取代基统一存于 registry；构建期校验 canonical 对拍与锚定键唯一性。"""
+"""取代基锚定 canonical-SMILES 查表（registry 经 anchored 反查索引），未命中回退完整命名路径；
+简单/保留取代基统一存 registry；构建期校验 canonical 对拍与锚定键唯一性。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -72,8 +70,7 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "ethylsulfanyl": RetainedSubstituent( "ethylsulfanyl", "乙硫基", "ethylsulfanyl", "乙硫基", P, anchored=("*SCC", ), paren=False, kind="leaf", ),
         "sulfanyl": RetainedSubstituent( "sulfanyl", "硫烷基", "sulfanyl", "硫烷基", P, anchored=("*S", ), paren=False, kind="leaf", ),
         "selanyl": RetainedSubstituent( "selanyl", "硒烷基", "selanyl", "硒烷基", P, anchored=("*[SeH]", ), paren=False, kind="leaf", ),
-        "methylsulfinyl": RetainedSubstituent( "methylsulfinyl", "甲亚磺酰基", "methanesulfinyl", "甲亚磺酰基", P, anchored=("*S(C)=O", ), paren=False, kind="leaf", ),
-        "methylsulfonyl": RetainedSubstituent( "methylsulfonyl", "甲磺酰基", "methanesulfonyl", "甲磺酰基", P, anchored=("*S(C)(=O)=O", ), paren=False, kind="leaf", ),
+        "methylsulfonyl": RetainedSubstituent( "methylsulfonyl", "甲磺酰基", "methylsulfonyl", "甲磺酰基", P, anchored=("*S(C)(=O)=O", ), paren=False, kind="leaf", ),
         "sulfo": RetainedSubstituent( "sulfo", "磺基", "sulfo", "磺基", P, anchored=("*S(=O)(=O)O", ), paren=False, kind="leaf", ),
         "tosyl": RetainedSubstituent( "tosyl", "对甲苯磺酰基", "4-methylbenzenesulfonyl", "4-甲基苯磺酰基", N, anchored=("*S(=O)(=O)c1ccc(C)cc1", ), paren=False, kind="leaf", ),
         "carboxy": RetainedSubstituent( "carboxy", "羧基", "carboxy", "羧基", P, anchored=("*C(=O)O", ), paren=False, kind="leaf", ),
@@ -105,10 +102,7 @@ def _canon(smi: str) -> str:
 
 
 def _build_anchor_index() -> dict[str, str]:
-    """从 registry 反查锚定 canonical-SMILES → registry key。
-
-    校验：anchored 键必须已是 canonical 形式（防 *C=C-C 类死条目）、
-    跨 key 唯一（一个锚定键只映射一个保留基）。"""
+    """从 registry 反查锚定 canonical-SMILES → registry key，并校验 anchored 键已是 canonical 形式且跨 key 唯一。"""
     index: dict[str, str] = {}
     for key, entry in _REGISTRY.items():
         for smi in entry.anchored:
@@ -131,11 +125,7 @@ def get_retained(key: str) -> RetainedSubstituent | None:
 
 
 def resolve_name(key: str, *, name_mode: str = "general") -> tuple[str, str]:
-    """返回给定命名模式下 registry 键对应的 (en, zh)。
-
-    - "general"：始终为保留名/常用名
-    - "pin"：除非条目本身为 PIN 级，否则用系统名
-    """
+    """返回 registry 键对应的 (en, zh)；当前恒走系统名（systematic_en/zh），general/pin 分派已被注释停用。"""
     entry = _REGISTRY[key]
     
     # if name_mode == "pin" and entry.level != IupacLevel.PIN:
@@ -144,8 +134,7 @@ def resolve_name(key: str, *, name_mode: str = "general") -> tuple[str, str]:
 
 
 def pick_root(mol: Mol, atoms: frozenset[int]) -> int:
-    """取代基侧键合原子：`atoms` 中与外部重原子（母体）成键的原子。
-    回退到最小索引。"""
+    """取代基侧键合原子：atoms 中与外部重原子（母体）成键者，无则回退最小索引。"""
     for a in atoms:
         for nb in mol.GetAtomWithIdx(a).GetNeighbors():
             if nb.GetAtomicNum() != 1 and nb.GetIdx() not in atoms:
@@ -193,10 +182,7 @@ def anchored_lookup(
     mol: Mol, atoms: frozenset[int], attach_old: int | None = None,
     *, name_mode: str = "general",
 ) -> tuple[str, str, bool] | None:
-    """查找取代基原子集；在 name_mode 下返回 (en, zh, paren)。
-
-    registry 键条目通过文件内 resolve_name 解析，因此 pin 模式对 isopropyl 会生成 propan-2-yl 等。无命中时返回 None。
-    """
+    """查找取代基原子集，按 name_mode 经 resolve_name 返回 (en, zh, paren)；无命中返回 None。"""
     entry = anchored_entry(mol, atoms, attach_old, name_mode=name_mode)
     return None if entry is None else (entry[0], entry[1], entry[2])
 

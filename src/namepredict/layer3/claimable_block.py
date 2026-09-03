@@ -66,12 +66,7 @@ def _is_ether_o(mol: Mol, o_idx: int) -> bool:
 
 
 def _is_amine_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
-    """胺 N：非芳香、非环员 N，至少连一个 owned 内非羰基碳。
-
-    环员 N（哌啶/吡咯烷等保留杂环的编号环氮）不是功能胺 N：其上的取代基
-    用环上位次（1-…）定位，而非 N- 前缀；芳香环 N（吡咯）同理被排除。仅
-    外环功能氨基（-NH2/-NHR 与链胺 N）才走 N- 前缀路径。
-    """
+    """胺 N：非芳香、非环员 N（环 N 用环上位次定位，不走 N- 前缀），且至少连一个 owned 内非羰基碳。"""
     atom = mol.GetAtomWithIdx(n_idx)
     if atom.GetAtomicNum() != 7 or atom.GetIsAromatic() or atom.IsInRing():
         return False
@@ -149,11 +144,7 @@ def _canonical_edge(
 
 
 def _has_dbl_o_edge(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> bool:
-    """外部组分中是否存在经双键连接所属的氧（羰基/砜/硝基等主 FG 成分）。
-
-    酮 C=O、砜 S=O 的氧是主官能团组成部分，已由主提取器（oxo 等）命名，
-    不作为独立侧链 claim，避免递归 cut 出 `*O` 污染成羟基。
-    """
+    """外部组分是否有经双键连 owned 重原子的氧（羰基/砜等主 FG 成分已由主提取器命名，不作侧链 claim，避免 cut 出 *O 污染成羟基）。"""
     for a in atoms:
         if mol.GetAtomWithIdx(a).GetAtomicNum() != 8:
             continue

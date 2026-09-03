@@ -14,10 +14,7 @@ def carbon_neighbors(mol: Mol, atom: int) -> list[int]:
 
 
 def _carbon_neighbors(mol: Mol, idx: int) -> list[int]:
-    """链官能团游走用的开链（非芳香、非环）碳邻居。
-
-    环原子不得进入开链母体（否则 1-cyclohexylethanone → octan-2-one）。
-    """
+    """链官能团游走用的开链（非芳香、非环）碳邻居——环原子不得进入开链母体。"""
     atom = mol.GetAtomWithIdx(idx)
     return [
         n.GetIdx() for n in atom.GetNeighbors()

@@ -117,10 +117,7 @@ def _chain_unsat(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
     return None
 
 def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
-    """混合烯炔段引擎：烯段(en)前、炔段(yne)后；融合式(烃/酸/醛/腈/酰胺/酯)与段式(醇/酮)均合并两组位次。
-
-    词干加 "a" 当烯/炔任一为多键（P-31.1.1.2 euphonic a）；烯段尾 e 在 yne 前 elide。
-    """
+    """混合烯炔段引擎：烯(en)前、炔(yne)后，合并两组位次；任一段为多键时词干加 "a"（P-31.1.1.2 euphonic a），烯段尾 e 在 yne 前省略。"""
     s, zs = _chain_stem_pair(spec, n)
     if s is None or zs is None:
         return None
@@ -333,8 +330,7 @@ def _chain_zh_base(n: int) -> str | None:
 
 
 def _chain_stem_pair(spec: "_Chain", n: int) -> tuple[str, str] | None:
-    """取双语词干：unsat_polyol（多 FG）中文保留完整 "烷"（丁烷-2-烯-1,4-二醇）。
-    仅当 zh_full（醇/胺/硫醇）或环状（环己烷-3,5-二烯-1,2-二酮）时保留；开链酮用去"烷"词干（戊-2,4-二酮）。"""
+    """取双语词干：unsat_polyol（多 FG）中文仅当 zh_full（醇/胺/硫醇）或环状时保留完整 "烷"，否则用去"烷"词干（戊-2,4-二酮）。"""
     if spec.stem:
         return spec.stem
     s = _en_stem(n)
@@ -352,16 +348,12 @@ def _chain_plain(spec: _Chain, s: str, zs: str, n: int) -> tuple[str, str]:
 
 
 def _radical_plain(n: int) -> tuple[str, str] | None:
-    """烷基型省略形态: 自由价在 1 位时 'ethan-1-yl' → 'ethyl' (P-29.2 方法 1)。
-
-    中文同步省略 '乙烷-1-基' → '乙基'；词干缺失时回落 None（由调用方兜底）。
-    """
+    """烷基型省略形态：自由价在 1 位时 'ethan-1-yl'→'ethyl'（中文 '乙烷-1-基'→'乙基'，P-29.2 方法 1）；词干缺失回落 None 由调用方兜底。"""
     s, zs = _en_stem(n), _chain_zh_base(n)
     return (f"{s}yl", f"{zs}基") if s and zs else None
 
 def _mult_elide(en_m: str, suf: str) -> str:
-    """英文数量前缀元音省略：前缀以 'a' 结尾（tetra/penta/hexa…）且后缀以元音开头时省略 'a'
-    （P-14.3.2: tetra-+-ol→tetrol, hexa-+-ol→hexol）；di/tri 不受影响。"""
+    """英文数量前缀元音省略：前缀尾 'a' 且后缀元音开头时去 'a'（P-14.3.2：tetra-ol→tetrol）；di/tri 不受影响。"""
     return en_m[:-1] if en_m.endswith("a") and suf[:1].lower() in "aeiou" else en_m
 
 

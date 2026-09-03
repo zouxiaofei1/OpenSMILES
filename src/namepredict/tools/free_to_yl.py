@@ -185,10 +185,7 @@ def _yl_zh(zh: str, k: int, en: str) -> str:
 def free_to_yl(
     en: str, zh: str, attach_locant: int, *, paren: bool = True,
 ) -> tuple[str, str, bool]:
-    """在键合位次处将 free 母体名转换为 P-29 -yl 双语形式。
-
-    P-63.2.2 醇→烷氧基, P-63.2.1 硫醇→烷基硫基, P-62.2 1° 胺→烷基氨基。
-    """
+    """在键合位次处把 free 母体名转 P-29 -yl 双语形式（P-63.2.2 醇→烷氧基、P-63.2.1 硫醇→烷基硫基、P-62.2 1° 胺→烷基氨基）。"""
     fg = _try_fg_prefix(en, zh)
     if fg is not None:
         # P-29.3.6：复合前缀（methylamino=CH3-NH-，非普通 amino）需括号与两个独立取代基区分。

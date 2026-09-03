@@ -202,11 +202,7 @@ def _is_amide_n(atom) -> bool:
                for n in atom.GetNeighbors())
 
 def _amine_degree(atom) -> int | None:
-    """返回胺 N 的取代度（1/2/3）；非胺则返回 None。
-
-    环内 N（非芳香）是环杂原子而非胺官能团（吡咯烷/哌啶/吗啉/哌嗪的 N），
-    排除以免 L2/L3 把饱和杂环误当胺链 + 氨基取代基。
-    """
+    """返回胺 N 取代度（1/2/3），非胺返回 None；排除芳香/酰胺/环内 N（吡咯烷等的环 N 是环杂原子，非胺官能团）。"""
     if atom.GetAtomicNum() != N or _is_amide_n(atom) or atom.GetIsAromatic():
         return None
     if atom.IsInRing():
@@ -217,11 +213,7 @@ def _amine_degree(atom) -> int | None:
     return 2 if n_c == 2 and n_h == 1 else (3 if n_c == 3 and n_h == 0 else None)
 
 def _amine_entry(atom, deg: int) -> dict:
-    """组装单个胺条目 dict，含 N 与碳邻居索引。
-
-    2°/3° 胺同时填单数 c_idx（首个碳邻居）供 L2 骨架锚点取用，
-    避免 parent_anchors 为空导致母体链不含 N。
-    """
+    """组装胺条目 dict（含 N 与碳邻居索引）；2°/3° 胺填单数 c_idx（首个碳邻居）供 L2 骨架锚点取用。"""
     cs = [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == C]
     base = {"n_idx": atom.GetIdx(), "degree": deg, "c_idx": cs[0]}
     return {**base, "c_idxs": cs} if deg >= 2 else base
@@ -390,10 +382,7 @@ def _carbon_ids(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
 
 def _radical_entries(mol: Mol) -> list[dict]:
-    """虚拟原子（原子序数 0）的邻居碳：P-41 自由基位点。
-
-    只有携带虚拟锚点（`*`，来自 build_anchor_submol）的分子才产生条目，因此普通 SMILES 输入不受影响。每个虚拟原子将其重邻居贡献为一个自由基位点。
-    """
+    """虚拟原子（原子序 0）邻居碳的 P-41 自由基位点；仅带 `*` 锚点（build_anchor_submol）的分子产生条目，普通 SMILES 不受影响。"""
     out: list[dict] = []
     for a in mol.GetAtoms():
         if a.GetAtomicNum() != 0:

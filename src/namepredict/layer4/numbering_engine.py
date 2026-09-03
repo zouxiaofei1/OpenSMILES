@@ -40,12 +40,7 @@ def _locant_set(cand: dict[int, int], atoms: list[int]) -> tuple[int, ...] | Non
 
 
 def _bond_locants(cand: dict[int, int], bonds) -> tuple[int, ...] | None:
-    """计算各多重键两端点位次的全排序元组（P-14.4(e) 多重键低位比较）。
-
-    不能只取每键较小端点：环候选可绕行让闭合键一端成为 locant 1，把真实双键对
-    （如环己-1,3-二烯的 (1,2),(3,4)）误判成更"小"的 (1,2)。两端点全 locant 排序
-    迫使编号把整条不饱和键落到最低连续位置（1-2 与 3-4 → 1,3-diene）。
-    """
+    """计算各多重键两端点位次的全排序元组（P-14.4(e) 低位比较：两端点都参与排序，避免环候选把闭合键端当 locant 1 误判）。"""
     if not bonds:
         return None
     locs = []
@@ -113,17 +108,7 @@ _FIXED_START_KEYS = (
 
 
 def _ring_hetero_start(parent: dict, chain: list[int], float_hetero: bool = False) -> int | None:
-    """杂原子环：最优先杂原子为 locant 1（P-14.4，吡啶/嘧啶等）。
-
-    多杂环（嘧啶双 N、咪唑等）同样固定一个杂原子为起点，其余杂原子在
-    P-14.4 枚举中自然得低位（1,3 / 1,2）。1,3-二唑（咪唑/吡唑）N1 优先取
-    带取代基（价 3）的 N、其次带 H 的 N（P-58.2.1）；其余退化为 Z 最小。
-
-    ``float_hetero=True``（仅稠合组分编号 P-25.3.2.5 使用）：对称等价杂环
-    （嘧啶双 N 等）无唯一 NH/Nsub 起点时允许 locant 1 在两个等价杂原子间浮动，
-    交由后续取代基（稠合原子）位次最小化决定——避免按原子序号随机钉死起点
-    得到与规范稠合描述符（d 侧等）不一致的镜像。
-    """
+    """杂原子环 locant 1 起点（P-14.4/P-58.2.1：取代 N>带 H 的 N 优先，其余 Z 最小；float_hetero 时对称等价杂环放行、由稠合原子位次最小化定镜像）。"""
     mol = parent.get("mol")
     if mol is None:
         return None
@@ -144,8 +129,7 @@ def _ring_hetero_start(parent: dict, chain: list[int], float_hetero: bool = Fals
 
 
 def _fixed_start(parent: dict, float_hetero: bool = False) -> int | None:
-    """取固定 locant 1 起点原子：杂原子环优先杂原子（P-14.4，吡啶甲酸 N=1
-    而非羧酸锚点），否则 FG 锚点/自由基字段，最后退化处理。"""
+    """取固定 locant 1 起点原子：杂环优先杂原子（吡啶甲酸 N=1 而非羧酸锚点），否则 FG 锚点/自由基字段，最后退化。"""
     hetero = _ring_hetero_start(parent, parent.get("chain") or [], float_hetero)
     if hetero is not None:
         return hetero
@@ -157,13 +141,7 @@ def _fixed_start(parent: dict, float_hetero: bool = False) -> int | None:
 
 
 def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None = None) -> list[int] | None:
-    """P-14.4(a)：经 L2 保留骨架固定编号（standard_path + 模板匹配映射）。
-
-    fused 芳香环（喹啉/吲哚等）的 IUPAC 编号固定（P-25.4）：起点/方向不随取代基
-    变化，P-14.4 通用环枚举会算错（如喹啉 10-氯 vs 2-氯）。standard_path 定义
-    模板原子按标准 locant 的顺序；对称 scaffold（phenanthrene）子图匹配方向随
-    分子原子编号漂移，用模板全部自同构 match 生成等价链，按取代基位次最小化。
-    """
+    """P-14.4(a)：fused 环经模板 standard_path 映射固定编号（P-25.4 起点方向不随取代基变，避免如喹啉 10-氯 vs 2-氯 算错）；对称 scaffold 用全自同构等价链按取代基位次最小化。"""
     sid = parent.get("scaffold_id")
     mol = parent.get("mol")
     if not sid or mol is None:
@@ -190,11 +168,7 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
 
 
 def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
-    """P-25.3.3 稠环编号：仅未注册(非保留模板)芳香稠环系统。
-
-    护栏: 仅 scaffold_id 为 None/"carbocycle" 且全芳香多环走优选取向+外周编号;
-    registered 模板(含对称 naphthalene/anthracene)保持固定编号/P-14.4 不被接管。
-    """
+    """P-25.3.3 稠环编号（护栏：仅 scaffold_id=None/carbocycle/fused_hetero 的全芳香多环走优选取向+外周编号；registered 模板保持固定编号/P-14.4 不被接管）。"""
     sid = parent.get("scaffold_id")
     if sid not in (None, "carbocycle", "fused_hetero"):
         return None
@@ -229,10 +203,7 @@ def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
 # ── 入口 ─────────────────────────────────────────────────────────────────
 
 def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = False) -> list[int] | None:
-    """返回 P-14.4 定向后的原子顺序；不适用则返回 None。
-
-    ``float_hetero`` 见 ``_ring_hetero_start``（仅稠合组分编号路径开启）。
-    """
+    """返回 P-14.4 定向后的原子顺序；不适用返回 None（float_hetero 见 _ring_hetero_start，仅稠合组分编号路径开启）。"""
     chain = parent.get("chain") or []
     if not chain:
         return None
@@ -290,8 +261,7 @@ def _component_labels(parent: dict, chain: list[int]) -> list[str]:
 
 
 def fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edges=None):
-    """稠合组分的自身编号(P-25.4/P-25.3.3), 稠合点 shared 作取代基最小化位次。
-    返回 (chain, labels) 或 (None, None); 供 L5 fused_namer 组装稠合名。"""
+    """稠合组分自身编号（P-25.4/P-25.3.3），稠合点 shared 作取代基最小化位次；返回 (chain, labels) 或 (None, None)。"""
     if not sub_rings:
         return None, None
     subs = [{"attach_idx": a} for a in (shared or ())] if shared else []

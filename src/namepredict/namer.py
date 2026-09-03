@@ -110,11 +110,7 @@ _N_SIDE_KINDS = frozenset({"n_alkyl", "n_phenyl", "n_benzyl", "n_block"})
 
 
 def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
-    """筛选并重映射参与编号的取代基（O 侧、链上连接点与 N 端）。
-
-    N- 取代基（n_* kind）附着在 N 上而非链上，位次隐含省略（N- 前缀），
-    但仍须保留进 L5 前缀组装。
-    """
+    """筛选并重映射参与编号的取代基（O 侧、链上连接点与 N 端）；N- 取代基（n_* kind）位次隐含省略但仍保留进 L5 前缀组装。"""
     chain = _chain_set(parent)
     out: list[dict] = []
     for s in subst:
@@ -214,12 +210,7 @@ def _run_candidates(
 
 
 def _apply_salt_suffix(result: NameResult, salt: dict) -> NameResult:
-    """将盐元数据组装为名称后缀（碱金属盐 / HCl 加成盐），仅成功结果生效。
-
-    L5 的 maybe_metal_salt_names 需要 numbered["salt"]，但 numbered 字典由
-    L2–L4 构造、不含 salt（salt 在 L0 解离时才产生）。这里在 _name_mol 出口
-    用独立的 {"salt": salt} 字典调用同一逻辑，避免改动 assemble 的接口。
-    """
+    """将盐元数据组装为名称后缀（碱金属盐/HCl 加成盐），仅成功结果生效；numbered 由 L2–L4 构造不含 salt，故用独立 {"salt": salt} 字典调 L5 逻辑。"""
     if not result.success or not salt:
         return result
     from namepredict.layer5.stems import maybe_metal_salt_names
@@ -253,12 +244,7 @@ def _name_mol(
 
 
 def _pipeline(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> NameResult:
-    """预处理 SMILES 后进入 mol 命名流程，解析失败返回失败结果。
-
-    整分子 canonical SMILES 命中锚定表时直接返回保留名：带 * 锚点的输入
-    （如 *C(C)C、*OC）本身就是一个锚定键，无需（也无法）经自由基母体
-    管线正确命名——直接复用取代基查表保证与 L3 路径一致。
-    """
+    """预处理 SMILES 后进入 mol 命名流程，解析失败返回失败结果；整分子命中锚定表（带 * 锚点输入本身即锚定键）直接返回保留名，免经自由基母体管线。"""
     mol = preprocess(smiles)
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
@@ -282,12 +268,7 @@ def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
 
 
 def _canonical_result(mol, result: NameResult) -> NameResult:
-    """复制结果并将 meta.parent_chain 重写为规范原子排序。
-
-    缓存条目仅以子结构 SMILES 为键，因此存储的 parent_chain 不能依赖
-    切分点的原子顺序（该顺序随母体分子变化）。规范排序是同一子结构
-    跨切分的稳定标识，保证 _yl_from_sub 位次复用安全。
-    """
+    """复制结果并把 meta.parent_chain 重写为规范原子排序——缓存以子结构 SMILES 为键，parent_chain 不能依赖随母体变化的切分点原子顺序。"""
     chain = (result.meta or {}).get("parent_chain") or []
     if not chain:
         return result

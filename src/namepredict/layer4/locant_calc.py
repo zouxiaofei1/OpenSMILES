@@ -13,11 +13,7 @@ def _typed_group_atoms(parent: dict, group: str) -> list[int]:
     return sorted(facts.attachment_atoms) if facts and facts.group_class.value == group else []
 
 def _atom_locant(chain: list[int], atom: int | None, kind: str | None, facts=None, required=False) -> int | str | None:
-    """有固定编号标签时用标签定位次(数字 int, 字母位 "4a" 返回 str)；否则保留普通链编号。
-
-    fused 稠环的标准 chain 含融合桥头(4a/8a 字母位)；labels 数组(含字母位)与
-    标准 chain 同位，数字标签取 int，字母位标签返回字符串原样。
-    """
+    """按固定标签定位次(数字 int / 字母位 "4a" 原样 str)，否则保留普通链编号——fused 桥头 4a/8a 字母位由此保留。"""
     if atom is None or atom not in chain:
         return None
     labels = (facts or {}).get("labels")

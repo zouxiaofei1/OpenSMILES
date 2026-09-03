@@ -73,11 +73,7 @@ def _exterior_edges(rings) -> frozenset[frozenset[int]]:
 
 def _boundary_walk(coords: dict, neighbors: dict, exterior: frozenset[frozenset[int]],
                    start: int) -> list[int]:
-    """沿外部边外边界行走, 用鞋带面积强制顺时针方向。
-
-    稠合系统外边界是由全部外部边组成的单闭环; 每原子恰好 2 个外部边邻居,
-    从 start 沿唯一未访问方向走回起点即可。逆时针则整体反转(start 保持首位)。
-    """
+    """沿外部边单闭环行走外边界（每原子恰 2 个外部边邻居，从 start 沿唯一未访问方向走回起点），鞋带面积强制顺时针；逆时针整体反转、start 保持首位。"""
     walk = [start]
     prev, cur = None, start
     while True:
@@ -155,11 +151,7 @@ def _locant_tuples(chain: list[int], labels: list[str], atoms: list[int]) -> tup
 
 
 def number_fused_system(mol, rings, coords) -> tuple[list[int], list[str]] | None:
-    """P-25.3.3 稠环编号; 依次应用准则(a)-(d) 收窄; 返回 (chain, labels) 或 None。
-
-    ``coords`` 可传单个坐标 dict 或优选取向平局列表(list[dict]): 全部候选
-    一并枚举, 由准则(a)-(d) 跨镜像收窄(P-25.3.3.1.2)。
-    """
+    """P-25.3.3 稠环编号: 依准则(a)-(d) 收窄; 返回 (chain, labels) 或 None。coords 可为单 dict 或平局候选列表，一并枚举跨镜像收窄。"""
     fused = fused_atoms(rings)
     heteros = _hetero_set(mol, fused) | _hetero_set(mol, set().union(*rings))
     coords_list = [coords] if isinstance(coords, dict) else list(coords)

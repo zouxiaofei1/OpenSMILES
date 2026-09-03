@@ -44,11 +44,7 @@ def _seedable(info, ring_atoms) -> bool:
 
 
 def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[int], tuple[str, frozenset[int]]]:
-    """增长式枚举环集内全部保留母体候选: {原子 frozenset: (scaffold_id, 环 frozenset)}。
-
-    只用 ``ring_indices`` 内的诱导融合边；从可种子环 DFS 并入邻接环，
-    ``match_retained`` 精确命中记录候选，元素超集剪枝，按原子集去重。
-    """
+    """增长式枚举环集内全部保留母体候选 {原子集: (scaffold_id, 环集)}：从可种子环 DFS 并入邻接环，match_retained 精确命中记录、超集剪枝、原子集去重。"""
     mol = info["mol"]
     adj: dict[int, set[int]] = {r: set() for r in ring_indices}
     for i, j, _ in fusion_edges:
@@ -87,10 +83,7 @@ def _keep_best(cands, key, *, reverse: bool = False):
 
 
 def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozenset[int], frozenset[int]] | None:
-    """P-25.3.2.4(a)-(f) 选母体组分; 返回 (scaffold_id, 原子 frozenset, 环 frozenset) 或 None。
-
-    (g)-(j) 依赖 L4 优选取向/编号，第一阶段不做；仍 >1 时取环集升序最小的确定性兜底。
-    """
+    """P-25.3.2.4 按准则(a)-(j) 选母体组分，返回 (scaffold_id, 原子 frozenset, 环 frozenset) 或 None；仍 >1 时取环集升序最小的确定性兜底。"""
     cands = [(atoms, sid, rset) for atoms, (sid, rset) in
              _candidates_for(info, rings, fusion_edges, ring_indices).items()]
     if not cands:
@@ -156,10 +149,7 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
 
 
 def _numbered_locants(info, rings, fusion_edges, cand):
-    """候选母体(子环集)的编号: 返回 ({原子: locant串}, 水平行环数) 或 None。
-
-    子环集重索引后经 L4 优选取向 + P-25.3.3 编号; 计算失败返回 None(该准则跳过)。
-    """
+    """候选母体(子环集)经 L4 优选取向+P-25.3.3 编号，返回 ({原子: locant 串}, 水平行环数) 或 None(该准则跳过)。"""
     _, _, rset = cand
     if len(rset) < 1:
         return None
@@ -206,11 +196,7 @@ def _ring_components(remaining, fusion_edges) -> list[frozenset[int]]:
 
 
 def _decompose(info, rings, fusion_edges, ring_indices, fusion_shared=()) -> FusedNode | None:
-    """递归拆解: 选母体组分，剩余环按连通分量递归为附加组分。
-
-    ``fusion_shared`` 为本组分与父组分的共享原子集（根节点为 ()）；附加组分的
-    融合边由父层经此参数传入。
-    """
+    """递归拆解为 FusedNode 树：选母体组分后，剩余环按连通分量递归为附加组分（fusion_shared 为本组分与父组分的共享原子集）。"""
     base = _select_base(info, rings, fusion_edges, ring_indices)
     if base is None:
         return None

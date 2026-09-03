@@ -74,13 +74,7 @@ def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
 
 
 def _exocyclic_ester_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """环酯（carbocycle/稠环/杂环 exocyclic COOR）→ -carboxylate / -甲酸酯 系统名。
-
-    与 _exocyclic_acid_names 对称：酯羰基碳在环外时，正确命名是
-    "thiophene-2-carboxylate"（-oate 直接附环词干是错误收拢）；O 侧烷基
-    由 join_ester_name 拼前缀。苯甲酸酯保留名（benzoate）走 chain_engine
-    variant，此处显式排除。返回酸侧 base（不含 O 侧前缀）。
-    """
+    """环酯 exocyclic COOR → -carboxylate/-甲酸酯 系统名（羰基碳在环外，-oate 直接附环词干是错误收拢）；苯甲酸酯保留名走 chain_engine，此处排除。"""
     parent = numbered.get("parent") or {}
     facts = parent.get("principal_expression_facts")
     sid = parent.get("scaffold_id")
@@ -106,10 +100,7 @@ def _exocyclic_ester_names(n: int, numbered: dict) -> tuple[str, str] | None:
 
 
 def _exocyclic_amide_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """环酰胺（carbocycle/稠环/杂环 exocyclic CONH2）→ -carboxamide / -甲酰胺 系统名。
-
-    苯酰胺保留名（benzamide）由 chain_engine variant 处理，此处显式排除。
-    """
+    """环酰胺 exocyclic CONH2 → -carboxamide/-甲酰胺 系统名；苯酰胺保留名（benzamide）由 chain_engine 处理，此处排除。"""
     parent = numbered.get("parent") or {}
     facts = parent.get("principal_expression_facts")
     sid = parent.get("scaffold_id")
@@ -135,10 +126,7 @@ def _exocyclic_amide_names(n: int, numbered: dict) -> tuple[str, str] | None:
 
 
 def _exocyclic_nitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """环腈（carbocycle/稠环/杂环 exocyclic C#N）→ -carbonitrile / -甲腈 系统名。
-
-    苯甲腈保留名（benzonitrile）由 chain_engine variant 处理，此处显式排除。
-    """
+    """环腈 exocyclic C#N → -carbonitrile/-甲腈 系统名；苯甲腈保留名（benzonitrile）由 chain_engine 处理，此处排除。"""
     parent = numbered.get("parent") or {}
     facts = parent.get("principal_expression_facts")
     sid = parent.get("scaffold_id")
@@ -195,13 +183,7 @@ def _retained_alkoxy(en: str, zh: str) -> tuple[str, str]:
 
 
 def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
-    """杂原子锚点自由基：单核氢化物母体（表 2.1）+ 烷基取代基 → free_to_yl 转标准名。
-
-    如 *OCC → "ethyl-oxidane" → ethoxy；*NCC → "ethyl-azane" → ethylamino。
-    三级胺取代基（azane 双烷基）*N(CC)C → "ethylmethylamino" / 乙基甲基氨基
-    （P-62.2 字母序；相同烷基用 di-/二-，如 *N(C)C → dimethylamino）。
-    零/多取代基或名缺失时返回 None（明确失败，不输出错名）。
-    """
+    """杂原子锚点自由基：单核氢化物母体+烷基取代基经 free_to_yl 转标准名（*OCC→ethoxy；azane 双烷基按 P-62.2 字母序、同烷基 di-）；零/多取代基或名缺失返回 None 明确失败。"""
     parent = numbered.get("parent") or {}
     stem_en, stem_zh = parent.get("stem_en"), parent.get("stem_zh")
     if not stem_en or not stem_zh:
@@ -228,12 +210,7 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
 
 
 def _ensure_fused_stem(numbered: dict) -> bool:
-    """未注册稠环词干注入: parent 无词干但 fused_tree 存在时, 用 fused_parent_names 补词干。
-
-    已注册稠环词干由 L2 pack_parent_stem 注入(stem_en 非空), 不会进入本分支;
-    未注册稠环(全碳 scaffold_id=carbocycle 或 fused_hetero)靠 fused_tree 组装稠合 base 名。
-    返回 False 表示稠合组装失败(显式 unsupported, 避免回落开链词干错名)。
-    """
+    """未注册稠环词干注入：parent 无词干但有 fused_tree 时用 fused_parent_names 组装稠合 base 名（已注册词干由 L2 注入不进入）；返回 False 表示组装失败（显式 unsupported）。"""
     parent = numbered.get("parent") or {}
     if parent.get("stem_en") and parent.get("stem_zh"):
         return True
@@ -333,11 +310,7 @@ def join_parent_name(prefix: str, parent: str) -> str:
     return f"{stereo}{body}"
 
 def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=None) -> tuple[str, str] | None:
-    """拼接酯名：O 侧烷基作前缀、酸侧作主体（XX 酸YY酯）。
-
-    O 侧烷基缺失（无 o_side 取代基，如未识别杂环作烷氧基侧）时输出 bare
-    酸酯名（benzoate/苯甲酸酯），不带 O 侧前缀（alkoxy_complex 基础设施名）。
-    """
+    """拼接酯名：O 侧烷基作前缀、酸侧作主体（XX 酸 YY 酯）；无 O 侧取代基时输出 bare 酸酯名（benzoate/苯甲酸酯）。"""
     en, zh = names
     o = [s for s in (numbered.get("substituents") or []) if s.get("o_side")]
     if o:
