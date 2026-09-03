@@ -208,12 +208,26 @@ def _principal_multiple_edges(mol: Mol, occurrences) -> set[frozenset[int]]:
 
 
 def p44_4_unsaturation_key(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -> tuple[int, int]:
-    """P-44.4 不饱和度键：(多重键数, 双键数)。"""
+    """P-44.4 不饱和度键：(多重键数, 双键数)。
+
+    多重键统计骨架内所有多重键：非芳香 C=C/C≡C/C=N 等按实际键级计入；
+    芳香键按 Kekulé 双键当量计入（每 2 个芳香键折 1 个双键，如苯=3、嘧啶=3），
+    使不饱和芳香环优先于同环数饱和环（P-44.4.1.1 标准 a）。
+    主官能团特征原子间的多重键不计入（避免与 P-44.1.1 特征基团竞争）。
+    """
     atoms, excluded = set(skeleton.atom_ids), _principal_multiple_edges(mol, occurrences)
-    bonds = [b for b in mol.GetBonds() if not b.GetIsAromatic()
-             and {b.GetBeginAtomIdx(), b.GetEndAtomIdx()} <= atoms
-             and frozenset((b.GetBeginAtomIdx(), b.GetEndAtomIdx())) not in excluded]
-    return sum(b.GetBondTypeAsDouble() > 1 for b in bonds), sum(b.GetBondTypeAsDouble() == 2 for b in bonds)
+    non_arom: list = []
+    n_arom = 0
+    for b in mol.GetBonds():
+        edge = frozenset((b.GetBeginAtomIdx(), b.GetEndAtomIdx()))
+        if edge <= atoms and edge not in excluded:
+            if b.GetIsAromatic():
+                n_arom += 1
+            else:
+                non_arom.append(b)
+    n_multi = sum(b.GetBondTypeAsDouble() > 1 for b in non_arom) + n_arom // 2
+    n_db = sum(b.GetBondTypeAsDouble() == 2 for b in non_arom) + n_arom // 2
+    return (n_multi, n_db)
 
 
 def keep_p44_4_unsaturation(mol: Mol, candidates: tuple[ParentSkeleton, ...], occurrences=()) -> tuple[ParentSkeleton, ...]:
