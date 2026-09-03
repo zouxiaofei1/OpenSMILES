@@ -2,8 +2,9 @@
 # Layer: L2,L3
 """Sec-amine: N-端取代基命名（简单 2° 胺）与芳烷基对照。
 
-已知局限：含芳基臂的二级胺（N-ethyl-1-phenylethanamine 等）需要选含
-芳环/最长臂作母体链，该母体臂选择尚未在 L2 骨架/评分层实现，暂不接线。
+含芳基臂的二级胺（N-ethyl-1-phenylethanamine 等）通过 L2 P-45.2.1 流水线
+选出前缀取代基团数目更多（芳环臂作为母体骨架取代基）的母体链，主链臂
+优先保留为母体、另一臂作 N-取代基。
 """
 from __future__ import annotations
 
@@ -39,6 +40,17 @@ CASES = [
     # 二级胺：N- 取代基前缀
     ("CCNCC", "N-ethylethanamine", "N-乙基乙胺"),
     ("NCCc1ccccc1", "phenylethanamine", "苯基乙胺"),
+    # 含芳基臂的二级胺：母体选前缀取代基更多的链（P-45.2.1），芳环臂作母体骨架取代基
+    (
+        "C(C)NC(C)C1=CC=C(C=C1)OC",
+        "N-ethyl-1-(4-methoxyphenyl)ethanamine",
+        "N-乙基-1-(4-甲氧基苯基)乙胺",
+    ),
+    (
+        "C(C)NC(C)c1ccccc1",
+        "N-ethyl-1-phenylethanamine",
+        "N-乙基-1-苯基乙胺",
+    ),
 ]
 
 
