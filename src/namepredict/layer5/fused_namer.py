@@ -77,13 +77,20 @@ def _prefix_of(sid: str, stem_en: str | None, stem_zh: str | None) -> tuple[str,
     return (en, zh) if en else None
 
 
-def _component_numbering(mol, node, rings, fusion_edges):
-    """组分自身编号: 委托 L4 fused_component_numbering(P-25.4/P-25.3.3), 稠合点作取代基。"""
+def _component_numbering(mol, node, rings, fusion_edges, shared=None):
+    """组分自身编号: 委托 L4 fused_component_numbering(P-25.4/P-25.3.3), 稠合点作取代基。
+
+    ``shared`` 为本组分与父组分的共享原子集(fused 到父级)。母体组分与附加组分
+    各自的编号都需要把「被稠合掉的原子」当作取代基最小化位次——这样组分取向
+    才能与规范稠合描述符一致(见 numbering_engine._ring_hetero_start float_hetero)。
+    """
     rset = sorted(node.ring_indices)
     if not rset:
         return None, None
     sub_rings = [rings[i] for i in rset]
-    shared = node.attached[0].fusion_shared[0] if node.attached else None
+    if shared is None:
+        # 兜底: 沿用旧逻辑(节点自身的附加组分之一, 无附加时为空)。
+        shared = node.attached[0].fusion_shared[0] if node.attached else None
     idx_map = {i: k for k, i in enumerate(rset)}
     sub_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in fusion_edges
                  if i in idx_map and j in idx_map]
@@ -133,11 +140,12 @@ def _fusion_numbers(child_chain, child_labels, parent_chain, shared) -> tuple:
 
 def _fused_one(mol, parent_node, child_node, rings, fusion_edges) -> tuple[str, str] | None:
     """单级: 附加组分前缀 + 融合描述符(数字-字母)。"""
-    parent_chain, _ = _component_numbering(mol, parent_node, rings, fusion_edges)
+    # 母体与附加组分各自编号都以同一稠合原子集作取代基(P-25.3.1.3: 位次尽可能低)。
+    shared = child_node.fusion_shared[0] if child_node.fusion_shared else None
+    parent_chain, _ = _component_numbering(mol, parent_node, rings, fusion_edges, shared)
     parent_chain, _ = _outer_chain_labels(parent_node, rings, parent_chain, [""] * len(parent_chain)) \
         if parent_chain else (None, None)
-    child_chain, child_labels = _component_numbering(mol, child_node, rings, fusion_edges)
-    # print(child_chain, child_labels )
+    child_chain, child_labels = _component_numbering(mol, child_node, rings, fusion_edges, shared)
     if not parent_chain or not child_labels:
         return None
     prefix = _prefix_of(child_node.scaffold_id, *_stem_of(child_node.scaffold_id))
