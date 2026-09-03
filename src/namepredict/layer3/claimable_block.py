@@ -66,9 +66,14 @@ def _is_ether_o(mol: Mol, o_idx: int) -> bool:
 
 
 def _is_amine_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
-    """胺 N：非芳香 N，至少连一个 owned 内非羰基碳。"""
+    """胺 N：非芳香、非环员 N，至少连一个 owned 内非羰基碳。
+
+    环员 N（哌啶/吡咯烷等保留杂环的编号环氮）不是功能胺 N：其上的取代基
+    用环上位次（1-…）定位，而非 N- 前缀；芳香环 N（吡咯）同理被排除。仅
+    外环功能氨基（-NH2/-NHR 与链胺 N）才走 N- 前缀路径。
+    """
     atom = mol.GetAtomWithIdx(n_idx)
-    if atom.GetAtomicNum() != 7 or atom.GetIsAromatic():
+    if atom.GetAtomicNum() != 7 or atom.GetIsAromatic() or atom.IsInRing():
         return False
     return any(n.GetIdx() in owned and n.GetAtomicNum() == 6 and not _has_dbl_o(n)
                for n in atom.GetNeighbors())
