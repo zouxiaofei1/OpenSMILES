@@ -1,9 +1,8 @@
 /* ChemAgent Namer — Dark OLED · Design System v2 */
-/* Typography: Inter (UI) + Fira Code (mono/data) */
+/* Typography: Inter (UI) + Fira Code (mono/data) — 完全离线可用 */
 /* Palette: Deep navy OLED + emerald accent + blue-data secondary */
-
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap");
+/* 字体策略: 不再 @import Google Fonts; 变量保留字体名,
+   本机装有则优先用, 否则回退系统字体 (Segoe UI / Cascadia Code 等)。 */
 
 :root {
   /* ── Surface tokens ── */
