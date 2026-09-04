@@ -58,14 +58,14 @@ CASES = [
     # （本行的 5-amino / 6-[糖] 前缀顺序随烷基字母序规则（P-14.5）调整，立体描述符未变。）
     (
         "N[C@H]1[C@H](O[C@H]2[C@H](O)[C@@H](N)[C@H](O[C@H]3[C@H](O)[C@@H](N)C(O)O[C@@H]3CO)O[C@@H]2CO)O[C@H](CO)[C@@H](O)[C@@H]1O",
-        "(2R,3S,4R,5R,6S)-5-amino-6-[(2R,3S,4R,5R,6S)-5-amino-6-[(2R,3S,4R,5R)-5-amino-4,6-dihydroxy-2-(hydroxymethyl)oxan-3-yloxy]-4-hydroxy-2-(hydroxymethyl)oxan-3-yloxy]-2-(hydroxymethyl)oxan-3,4-diol",
+        "(2R,3S,4R,5R,6S)-5-amino-6-[(2R,3S,4R,5R,6S)-5-amino-6-[(2R,3S,4R,5R)-5-amino-4,6-dihydroxy-2-(hydroxymethyl)oxan-3-yloxy]-4-hydroxy-2-(hydroxymethyl)oxan-3-yloxy]-2-(hydroxymethyl)oxane-3,4-diol",
         "(2R,3S,4R,5R,6S)-5-氨基-6-[(2R,3S,4R,5R,6S)-5-氨基-6-[(2R,3S,4R,5R)-5-氨基-4,6-二羟基-2-(羟基甲基)氧杂环己烷-3-氧基]-4-羟基-2-(羟基甲基)氧杂环己烷-3-氧基]-2-(羟基甲基)氧杂环己烷-3,4-二醇",
     ),
     # 更深的糖苷嵌套（三糖）：末端糖环 R/S 须回完整根分子重算（修复3）——异头碳被中间锚定碎片
     # 的配基顶替后会翻成 S，根分子 CIP 才与 ChEBI 一致 → 末端 oxan-2-yl 应为 2R。
     (
         "OC[C@H]1O[C@@H](O[C@H]2[C@H](O)[C@@H](O[C@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O)C(O)O[C@@H]2CO)[C@H](O)[C@@H](O)[C@H]1O",
-        "(2S,3R,4S,5R,6R)-2-[(2R,3S,4S,5R)-4,6-dihydroxy-2-(hydroxymethyl)-5-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yloxy]oxan-3-yloxy]-6-(hydroxymethyl)oxan-3,4,5-triol",
+        "(2S,3R,4S,5R,6R)-2-[(2R,3S,4S,5R)-4,6-dihydroxy-2-(hydroxymethyl)-5-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yloxy]oxan-3-yloxy]-6-(hydroxymethyl)oxane-3,4,5-triol",
         "(2S,3R,4S,5R,6R)-2-[(2R,3S,4S,5R)-4,6-二羟基-2-(羟基甲基)-5-[(2R,3R,4S,5S,6R)-3,4,5-三羟基-6-(羟基甲基)氧杂环己烷-2-氧基]氧杂环己烷-3-氧基]-6-(羟基甲基)氧杂环己烷-3,4,5-三醇",
     ),
     # negatives: no spurious R/S

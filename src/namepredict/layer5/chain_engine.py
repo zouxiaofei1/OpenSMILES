@@ -339,12 +339,19 @@ def _chain_stem_pair(spec: "_Chain", n: int) -> tuple[str, str] | None:
         return None
     return s, zs
 
+def _elide_parent_e(stem: str, suffix: str) -> str:
+    """母体氢化物结尾 'e' 的省略（P-60.2(a)）：仅后缀以元音 a/i/o/u/y 开头时省略，
+    辅音结尾 (diol/dione/diamine/carbaldehyde) 保留（oxolane-3,4-diol，非 oxolan-3,4-diol）。
+    经 `_ring_stem` 无差别 rstrip('e') 是此 bug 根因，故把判断下沉到拼接端、用最终 en_suf。"""
+    return stem[:-1] if stem.endswith("e") and suffix[:1].lower() in "aeiouy" else stem
+
+
 def _chain_plain(spec: _Chain, s: str, zs: str, n: int) -> tuple[str, str]:
     """普通名: 俗名表 → 派生命名 → 词干拼接."""
     pair = _pair(*spec.plain_maps, n) if spec.plain_maps else None
     if pair is None and spec.plain_fn is not None:
         pair = spec.plain_fn(n)
-    return pair if pair is not None else (f"{s}{spec.coda}{spec.en_suf}", f"{zs}{spec.zh_suf}")
+    return pair if pair is not None else (f"{_elide_parent_e(s, spec.en_suf)}{spec.coda}{spec.en_suf}", f"{zs}{spec.zh_suf}")
 
 
 def _radical_plain(n: int) -> tuple[str, str] | None:
@@ -439,8 +446,9 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         else:
             loc_s = ",".join(str(x) for x in locs)
             if spec.stem:
-                # 稠环 scaffold 词干已含完整基座（naphthalen/萘），直接拼后缀。
-                pair = (f"{s}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
+                # 稠环 scaffold 词干已含完整基座（naphthalen/萘），直接拼后缀；
+                # 结尾 'e' 按后缀首字母决定是否省略（P-60.2(a)，见 _elide_parent_e）。
+                pair = (f"{_elide_parent_e(s, spec.en_suf)}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
             else:
                 pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
     else:

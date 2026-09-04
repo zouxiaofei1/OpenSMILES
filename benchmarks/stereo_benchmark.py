@@ -12,7 +12,16 @@ import re
 import sys
 import time
 from collections import Counter
+from contextlib import redirect_stdout
 from pathlib import Path
+
+# 未 pip install -e 时也能从仓库根直接跑：把 src/ 加进 sys.path（与 tests/conftest.py 同法）
+_SRC = Path(__file__).resolve().parents[1] / "src"
+if str(_SRC) not in sys.path:
+    sys.path.insert(0, str(_SRC))
+
+# 静音 src 命名管线里的调试 print（Orientation/环元组等），保持输出干净
+_DEVNULL = open(os.devnull, "w", encoding="utf-8")
 
 from namepredict.namer import SMILESNNamer
 
@@ -45,8 +54,8 @@ _NAMER = None  # 惰性单例命名器（进程内复用；跨根片段缓存已
 def _name_row(r: dict) -> dict:
     """对单行命名并返回立体比对字段（异常记 errored）。"""
     ref_t = stereo_tokens(r.get("english_name") or "")
-    out = {"ref_tokens": sorted(ref_t), "our_tokens": [], "errored": False,
-           "stereo_equal": False, "count_equal": False, "flip_free": False}
+    out = {"ref_tokens": sorted(ref_t), "our_tokens": [], "pred_en": "",
+           "errored": False, "stereo_equal": False, "count_equal": False, "flip_free": False}
     if not ref_t:
         return out
     try:
@@ -56,6 +65,7 @@ def _name_row(r: dict) -> dict:
         return out
     our_t = stereo_tokens(rr.en if rr.success else "")
     out["our_tokens"] = sorted(our_t)
+    out["pred_en"] = rr.en if rr.success else ""
     if not (rr.success and rr.en and our_t):
         return out
     equal = Counter(our_t) == Counter(ref_t)
@@ -89,7 +99,8 @@ def run_rows(rows: list[dict], *, workers: int = 0) -> dict:
         with ProcessPoolExecutor(max_workers=workers, initializer=_quiet_worker) as ex:
             results = list(ex.map(_name_row, rows))
     else:
-        results = [_name_row(r) for r in rows]
+        with redirect_stdout(_DEVNULL):  # 静音命名管线调试 print
+            results = [_name_row(r) for r in rows]
     stats = {"rows": len(rows), "named_ok": 0, "errored": 0, "our_stereo": 0,
              "stereo_equal": 0, "count_equal": 0, "flip_free": 0}
     items = {}
@@ -194,6 +205,33 @@ def _print_diffs(diffs: list[dict]) -> None:
         print(f"   CHANGE {d['key']}  tokens {len(d['prev_tokens'])} -> {len(d['cur_tokens'])}")
 
 
+def dump_errors(rows: list[dict], report: dict, path: Path) -> None:
+    """把立体不匹配行导出为精简 JSON：只含 key / pred_en / english_name。
+
+    只记录有预测名（pred_en 非空）且立体不匹配（stereo_equal=False）的行；
+    命名报错/无产出的行不导出。smiles 需按 key 回查 data/merged_benchmark.json。
+    """
+    items = report.get("items") or {}
+    bad: list[dict] = []
+    for i, row in enumerate(rows):
+        res = items.get(_row_key(row, i))
+        if res is None or res.get("errored"):
+            continue
+        if res.get("stereo_equal"):
+            continue
+        pred_en = res.get("pred_en") or ""
+        if not pred_en:
+            continue
+        bad.append({
+            "key": _row_key(row, i),
+            "pred_en": pred_en,
+            "english_name": row.get("english_name") or "",
+        })
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(bad, f, ensure_ascii=False, indent=1)
+    print(f"errors written to {path}: {len(bad)}/{len(rows)}")
+
+
 def _select_rows(data: list[dict], *, min_len: int, sample: int) -> list[dict]:
     """选立体行：参考名含立体 token；min_len 过滤名长；sample>0 取最长 sample 条（确定性）。"""
     rows = [
@@ -214,12 +252,16 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--workers", type=int, default=0, help="并行 worker 数（0=串行）")
     p.add_argument("--snapshot", type=Path, default=_SNAPSHOT_PATH)
     p.add_argument("--no-snapshot", action="store_true", help="不读写快照")
+    p.add_argument("--errors", type=Path, default=None,
+                   help="把立体不匹配/命名报错的行导出为 JSON")
     args = p.parse_args(argv)
 
     t0 = time.perf_counter()
     rows = _select_rows(_load_rows(args.data), min_len=args.min_len, sample=args.sample)
     report = run_rows(rows, workers=args.workers)
     elapsed = time.perf_counter() - t0
+    if args.errors is not None:
+        dump_errors(rows, report, args.errors)
 
     if args.no_snapshot:
         _print_summary(report, elapsed)

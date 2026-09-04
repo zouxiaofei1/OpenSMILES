@@ -89,7 +89,7 @@ def multi_fgs() -> frozenset[str]:
     return frozenset(sp.fg for sp in FG_SPECS if sp.multi)
 
 
-def rs_fgs() -> frozenset[str]:
+def srs_fgs() -> frozenset[str]:
     """支持 R/S 的 FG 值集合。"""
     return frozenset(sp.fg for sp in FG_SPECS if sp.rs)
 

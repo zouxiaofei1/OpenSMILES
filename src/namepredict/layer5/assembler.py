@@ -22,14 +22,12 @@ def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult:
 # 稠环/杂环词干（en_stem, zh_stem）：由 L2 注入 parent 的 stem_en/stem_zh 派生。
 # IUPAC 词干 = 母体名去尾部 e（benzene 例外，保留完整名）；aromatic 恒 True（保留母体均芳香）。
 def _ring_stem(numbered: dict) -> tuple[str, str] | None:
-    """保留 scaffold 的 IUPAC 词干（用于 -ol/-amine 等 FG 后缀拼接）。"""
+    """保留 scaffold 的完整 IUPAC 词干（用于 -ol/-diol/-amine 等 FG 后缀拼接）。
+    结尾 'e' 的省略移交给 chain_engine._elide_parent_e 按后缀首字母判断（P-60.2(a)），
+    不再在此无差别剥 e；否则 oxolane-3,4-diol 会被错拼成 oxolan-3,4-diol。"""
     parent = numbered.get("parent") or {}
     en, zh = parent.get("stem_en"), parent.get("stem_zh")
-    if not en or not zh:
-        return None
-    sid = parent.get("scaffold_id")
-    en = en if sid == "benzene" else en.rstrip("e")
-    return (en, zh)
+    return (en, zh) if en and zh else None
 
 
 # 稠环/杂环完整 base 名（-carboxylic acid 用完整词干，如 naphthalene-1-carboxylic acid）。

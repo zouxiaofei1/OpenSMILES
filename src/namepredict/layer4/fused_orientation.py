@@ -9,7 +9,6 @@ from namepredict.layer4.ring_geometry import (
     OVERLAP_FRAC,
     RING_TEMPLATES,
     apply_rigid,
-    centroid,
     overlap_area,
     polygon_area,
     regular_polygon,
@@ -272,30 +271,72 @@ def _valid_deform_overlap(coords: dict, rings, fusion_edges, ring_templates: dic
     return True
 
 
-def _quadrant_fractions(coords: dict, rings) -> tuple[tuple[float, float, float, float], float]:
-    """四象限(Q1右上,Q2左上,Q3左下,Q4右下)与水平轴上方环面积分数。"""
-    cx, cy = centroid(list(coords.values()))
-    big = 1e6
+def _row_center(coords: dict, rings, row: tuple[int, ...]) -> tuple[float, float]:
+    """水平行的中心 (P-25.3.2.3.3(b))：行中环数为偶数时取中心共同键，为奇数时取中心环的中心。"""
+    n = len(row)
+    if n % 2 == 0:
+        a, b = row[n // 2 - 1], row[n // 2]      # 中间一对相邻环
+        shared = set(rings[a]) & set(rings[b])   # 中心共同键(竖直共用边)
+        pts = [coords[x] for x in shared]
+        return sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)
+    c = row[n // 2]                              # 中心环
+    pts = [coords[a] for a in rings[c]]
+    return sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)
+
+
+def _ring_quadrant_contrib(pts, cx: float, cy: float) -> tuple[float, float, float, float]:
+    """IUPAC 环计数法下单个环的四象限贡献：被两条轴平分各 1/4，被一条轴平分两侧各 1/2，否则整环在一个象限。"""
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    cross_v = min(xs) < cx and max(xs) > cx      # 顶点严格跨竖直轴(仅触轴不算)
+    cross_h = min(ys) < cy and max(ys) > cy      # 顶点严格跨水平轴
+    gx = sum(xs) / len(xs)
+    gy = sum(ys) / len(ys)
+    q = [0.0, 0.0, 0.0, 0.0]
+    if cross_v and cross_h:                      # 被两条轴平分 → 四象限各 1/4
+        return (0.25, 0.25, 0.25, 0.25)
+    if cross_h:                                  # 只被水平轴平分 → 上下各 1/2，所在左右由质心定
+        if gx >= cx:                             # 右：上 Q1 / 下 Q4
+            q[0] = q[3] = 0.5
+        else:                                    # 左：上 Q2 / 下 Q3
+            q[1] = q[2] = 0.5
+        return tuple(q)
+    if cross_v:                                  # 只被竖直轴平分 → 左右各 1/2，所在上下由质心定
+        if gy >= cy:                             # 上：左 Q2 / 右 Q1
+            q[1] = q[0] = 0.5
+        else:                                    # 下：左 Q3 / 右 Q4
+            q[2] = q[3] = 0.5
+        return tuple(q)
+    k = 0 if (gx >= cx and gy >= cy) else \
+        1 if (gx < cx and gy >= cy) else \
+        3 if (gx >= cx and gy < cy) else 2       # Q1/Q2/Q4/Q3
+    q[k] = 1.0
+    return tuple(q)
+
+
+def _above_contrib(pts, cy: float) -> float:
+    """单个环在水平轴上方环数：被水平轴平分计 1/2，完全在上方计 1，否则 0。"""
+    ys = [p[1] for p in pts]
+    if min(ys) < cy and max(ys) > cy:
+        return 0.5
+    return 1.0 if sum(ys) / len(ys) >= cy else 0.0
+
+
+def _quadrant_fractions(coords: dict, rings, row) -> tuple[tuple[float, float, float, float], float]:
+    """四象限(Q1右上,Q2左上,Q3左下,Q4右下)与水平轴上方环数 (P-25.3.2.3.3(b)(c)(d) 环计数法)。
+
+    原点取水平行中心(中心共同键/中心环中心)，逐环按"被轴平分计半环/四分之一环"离散计数，
+    而非按环面积占比。
+    """
+    cx, cy = _row_center(coords, rings, row)
     q = [0.0, 0.0, 0.0, 0.0]
     above = 0.0
     for ring in rings:
         pts = [coords[a] for a in ring]
-        area = polygon_area(pts)
-        if area < 1e-12:
-            continue
-        from namepredict.layer4.ring_geometry import clip_polygon
-        # 各象限裁剪矩形(以 cx,cy 为角, 逆时针; 足够大覆盖整个环系)。
-        corners = [
-            [(cx, cy), (cx + big, cy), (cx + big, cy + big), (cx, cy + big)],  # Q1 右上
-            [(cx, cy), (cx, cy + big), (cx - big, cy + big), (cx - big, cy)],  # Q2 左上
-            [(cx, cy), (cx - big, cy), (cx - big, cy - big), (cx, cy - big)],  # Q3 左下
-            [(cx, cy), (cx, cy - big), (cx + big, cy - big), (cx + big, cy)],  # Q4 右下
-        ]
-        for k, clip in enumerate(corners):
-            inter = clip_polygon(pts, clip)
-            q[k] += polygon_area(inter) / area
-        top = clip_polygon(pts, [(cx - big, cy), (cx + big, cy), (cx + big, cy + big), (cx - big, cy + big)])
-        above += polygon_area(top) / area
+        cr = _ring_quadrant_contrib(pts, cx, cy)
+        for k in range(4):
+            q[k] += cr[k]
+        above += _above_contrib(pts, cy)
     return tuple(q), above
 
 
@@ -322,8 +363,8 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
                 coords = {a: (x, -y) for a, (x, y) in coords.items()}
             if not _valid_deform_overlap(coords, rings, fusion_edges, ring_templates):
                 continue
-            (q1, q2, q3, q4), above = _quadrant_fractions(coords, rings)
-            # 面积分数有 ~1e-15 浮点尾差, round 消除后镜像才算平局
+            (q1, q2, q3, q4), above = _quadrant_fractions(coords, rings, row)
+            # 环数离散值无连续尾差, round 仍消除浮点累计的 ~1e-15 噪声
             key = (len(row), round(q1, 9), round(-q3, 9), round(above, 9))
             orient = Orientation(row, tuple((a, x, y) for a, (x, y) in sorted(coords.items())),
                                  (q1, q2, q3, q4), above)
