@@ -105,14 +105,20 @@ def _sulfide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """醇/二醇/三醇：连接碳 + OH 氧。"""
+    """醇/二醇/三醇：连接碳 + 全部末端羟基氧(degree-1 单键 O 邻居)。
+    """
     c_idxs = parent.get("oh_c_idxs") or ([parent.get("oh_c_idx")] if parent.get("oh_c_idx") is not None else [])
     if not c_idxs:
         return set()
     out: set[int] = set()
     for c in c_idxs:
-        out.add(int(c))
-        _add_opt(out, _single_o_idx(mol, int(c)))
+        c = int(c)
+        out.add(c)
+        carbon = mol.GetAtomWithIdx(c)
+        for nb in carbon.GetNeighbors():
+            bond = mol.GetBondBetweenAtoms(c, nb.GetIdx())
+            if nb.GetAtomicNum() == 8 and nb.GetDegree() == 1 and bond.GetBondType().name == "SINGLE":
+                out.add(nb.GetIdx())
     return out
 
 

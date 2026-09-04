@@ -206,10 +206,12 @@ def _print_diffs(diffs: list[dict]) -> None:
 
 
 def dump_errors(rows: list[dict], report: dict, path: Path) -> None:
-    """把立体不匹配行导出为精简 JSON：只含 key / pred_en / english_name。
+    """把立体不匹配行导出为精简 JSON：含 key / smiles / pred_en / english_name。
 
-    只记录有预测名（pred_en 非空）且立体不匹配（stereo_equal=False）的行；
-    命名报错/无产出的行不导出。smiles 需按 key 回查 data/merged_benchmark.json。
+    只导出"纯立体错"行：立体不匹配（stereo_equal=False）且 pred_en 与
+    english_name 末尾三字母一致（尾缀功能团相同）、长度相差不超过一倍
+    （较长 ≤ 较短两倍），以排除整名/主结构就错的非立体失败；命名报错/
+    无产出的行不导出。smiles 直接随行给出。
     """
     items = report.get("items") or {}
     bad: list[dict] = []
@@ -222,10 +224,17 @@ def dump_errors(rows: list[dict], report: dict, path: Path) -> None:
         pred_en = res.get("pred_en") or ""
         if not pred_en:
             continue
+        english_name = row.get("english_name") or ""
+        if not english_name or pred_en[-3:] != english_name[-3:]:
+            continue
+        # 长度悬殊（较长 ≥ 较短两倍）说明整名级偏差，非纯立体错，排除
+        if max(len(pred_en), len(english_name)) >= 2 * min(len(pred_en), len(english_name)):
+            continue
         bad.append({
             "key": _row_key(row, i),
+            "smiles": row.get("smiles") or "",
             "pred_en": pred_en,
-            "english_name": row.get("english_name") or "",
+            "english_name": english_name,
         })
     with open(path, "w", encoding="utf-8") as f:
         json.dump(bad, f, ensure_ascii=False, indent=1)

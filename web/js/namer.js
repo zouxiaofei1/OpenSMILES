@@ -275,6 +275,8 @@ async function onName(ev) {
 function showNamerResult(result) {
   const box = $("namer-result");
   if (!box) return;
+  // 新命名/新分子先清掉旧 PubChem 结果,避免残留给上一个结构
+  hidePubchem();
   // Force re-trigger reveal animation
   box.classList.remove("hidden");
   box.style.animation = "none";
@@ -289,10 +291,113 @@ function showNamerResult(result) {
   if ($("namer-en")) $("namer-en").textContent = result.en || "—";
   if ($("namer-zh")) $("namer-zh").textContent = result.zh || "—";
   if ($("namer-source")) $("namer-source").textContent = result.source || "—";
+  // 基准答案(merged_benchmark): 命中才显示,失败/未命中一律隐藏
+  renderNamerGold(result.success ? result.gold : null);
   // 命名失败时清空并隐藏结构图,避免旧结构残留
   if (!result.success) {
     hideNamerSvg("namer-locants");
     hideNamerSvg("namer-atom-ids");
+  }
+}
+
+/* 结果卡内显示 merged_benchmark 命中记录(gold): 无命中/传入 null 时隐藏并清空。 */
+function renderNamerGold(gold) {
+  const box = $("namer-gold");
+  if (!box) return;
+  if (!gold) {
+    box.hidden = true;
+    return;
+  }
+  if ($("namer-gold-en")) $("namer-gold-en").textContent = gold.en || "—";
+  if ($("namer-gold-zh")) $("namer-gold-zh").textContent = gold.zh || "—";
+  const tier = $("namer-gold-tier");
+  if (tier) {
+    if (gold.tier !== undefined && gold.tier !== null) {
+      tier.hidden = false;
+      tier.textContent = "tier " + gold.tier;
+    } else {
+      tier.hidden = true;
+    }
+  }
+  if ($("namer-gold-source")) {
+    const src = gold.source || "";
+    $("namer-gold-source").textContent = src ? "· " + src : "";
+  }
+  box.hidden = false;
+}
+
+/* 隐藏并清空 PubChem IUPAC 结果块(换分子 / 查询失败 / 命名失败时调用)。 */
+function hidePubchem() {
+  const box = $("namer-pubchem");
+  if (box) box.hidden = true;
+}
+
+/* 渲染 PubChem 2.1.1 查询结果: 命中显示 iupac + CID 链接;未收录给提示。 */
+function renderPubchem(res) {
+  const box = $("namer-pubchem");
+  if (!box) return;
+  const note = $("namer-pubchem-note");
+  const link = $("namer-pubchem-link");
+  if (res && res.ok) {
+    const nameEl = $("namer-pubchem-name");
+    if (nameEl) nameEl.textContent = (res.iupac || "").trim() || "—";
+    if (link) {
+      if (res.cid) {
+        link.hidden = false;
+        link.textContent = "PubChem CID " + res.cid;
+        link.href = res.url || "https://pubchem.ncbi.nlm.nih.gov/";
+      } else {
+        link.hidden = true;
+      }
+    }
+    if (note) {
+      let msg = "";
+      if (!res.found) msg = "PubChem 未收录可用的 2.1.1 IUPAC 名称";
+      else if (res.racemic) msg = "精确立体无记录，已按非立体（外消旋）形式匹配";
+      note.hidden = !msg;
+      note.textContent = msg;
+    }
+    box.hidden = false;
+  } else {
+    // 后端明确失败(ok:false / 无法解析 / 网络错误)→ 块隐藏,错误走 namer-error
+    hidePubchem();
+    if (note) note.hidden = true;
+    if (res && res.error) setNamerError(res.error);
+  }
+}
+
+async function onPubchem(ev) {
+  ev.preventDefault();
+  const smiles = await resolveSmilesForName();
+  if (!smiles) {
+    setNamerError("请输入或绘制 SMILES 再查 PubChem");
+    return;
+  }
+  const panel = $("namer-result");
+  // 结果卡尚未展示或命中的分子不是当前输入 → 先命名,让面板对应本分子(顺带刷新 gold)
+  if (!panel || panel.classList.contains("hidden") || state.lastNamedSmiles !== smiles) {
+    await runName(smiles, { fromLive: false });
+  }
+  const btn = $("btn-pubchem");
+  const origLabel = btn ? btn.textContent : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "查询中…";
+  }
+  try {
+    const res = await api(API.pubchemIupac, {
+      method: "POST",
+      body: JSON.stringify({ smiles }),
+    });
+    renderPubchem(res);
+  } catch (err) {
+    hidePubchem();
+    setNamerError(err.message || String(err));
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = origLabel;
+    }
   }
 }
 
@@ -329,6 +434,8 @@ async function updateNamerSvg(boxId, endpoint, smiles, seq, orient) {
 
 export function bindNamer() {
   $("namer-form") && $("namer-form").addEventListener("submit", onName);
+  $("btn-pubchem") &&
+    $("btn-pubchem").addEventListener("click", onPubchem);
   $("btn-clear-history") &&
     $("btn-clear-history").addEventListener("click", () => {
       state.namerHistory = [];

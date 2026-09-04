@@ -237,8 +237,9 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
             m_en, m_zh = MULT_EN.get(len(enes)), MULT_ZH.get(len(enes))
             if not m_en or not m_zh:
                 return None
+            ez = spec.ez_ene_multi(numbered) if spec.ez_ene_multi else ""
             loc = ",".join(str(x) for x in enes)
-            return f"{s}a-{loc}-{m_en}ene", f"{zs}-{loc}-{m_zh}烯"
+            return f"{ez}{s}a-{loc}-{m_en}ene", f"{ez}{zs}-{loc}-{m_zh}烯"
         if spec.fg is not None:              # 段式多烯 (醇/酮/胺/硫醇): MULT[m]+烯段
             fg = _fg_locant(numbered, spec.fg) if spec.fg else None
             if fg is None:
@@ -471,7 +472,8 @@ _KIND_TABLE = {
     "ketone": _Chain(kind="ketone", en_suf="one", zh_suf="酮",
                      fg="ketone", need=1, no_loc="none",
                      omit_rule=lambda n, loc, omit: n <= 2 and loc == 1,
-                     ez_ene=ez_for_parent, mult_ok=True,
+                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
+                     mult_ok=True,
                      mult_unsat_polyol=True),
     "alkane": _Chain(kind="alkane", en_suf="ane", zh_suf="烷", coda="",
                      omit_rule=lambda n, loc, omit: omit or n <= 3,
@@ -500,10 +502,12 @@ _KIND_TABLE = {
                     }),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
                     fg="sh", need=1, omit_rule=_omit_term_locant,
+                    ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
                     mult_ok=True, mult_zh_full=True, mult_unsat_polyol=True,
                     ene_seg=("ene", "烯"), yne_seg=("yne", "炔")),
     "amine": _Chain(kind="amine", en_suf="amine", zh_suf="胺",
                     fg="amine", need=1, omit_rule=_omit_term_locant,
+                    ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
                     mult_ok=True, mult_zh_full=True, mult_unsat_polyol=True,
                     variant={
                         "benzene": {1: dict(plain_maps=None, fg=None,
@@ -521,7 +525,7 @@ _KIND_TABLE = {
     "nitrile": _Chain(kind="nitrile", en_suf="enitrile", zh_suf="腈",
                       ene_base=("enenitrile", "烯腈"),
                       yne_suf=("ynenitrile", "炔腈"),
-                      ez_ene=ez_for_parent,
+                      ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
                       variant={
                           None: {1: dict(plain_maps=None, plain_fn=_retained_plain("nitrile"))},
                           "benzene": {1: dict(plain_maps=None,
@@ -531,7 +535,7 @@ _KIND_TABLE = {
                     ene_base=("enamide", "烯酰胺"),
 
                     yne_suf=("ynamide", "炔酰胺"),
-                    ez_ene=_ez_prefix,
+                    ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
                     variant={
                         None: {1: dict(plain_maps=None, plain_fn=_retained_plain("amide"))},
                         "benzene": {1: dict(plain_maps=None,
@@ -540,7 +544,7 @@ _KIND_TABLE = {
     "acyl_halide": _Chain(kind="acyl_halide", en_suf="oyl chloride", zh_suf="酰氯",
                           ene_base=("enoyl chloride", "烯酰氯"),
                           yne_suf=("ynoyl chloride", "炔酰氯"),
-                          ez_ene=_ez_prefix,
+                          ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
                           variant={
                               None: {1: dict(plain_maps=None,
                                              plain_fn=_retained_plain("acyl_halide"))},
@@ -554,6 +558,9 @@ _KIND_TABLE = {
                       omit_rule=lambda n, loc, omit: loc == 1,
                       plain_fn=_radical_plain,  # 省略位次用烷基型（ethyl/乙基），非 coda 拼接的 ethanyl/乙烷基
                       ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
+                      # 烯基自由基（取代基链含立体双键）需 E/Z 前缀：苯环母体上 prop-1-en-1-yl 等由
+                      # 递归 * 锚定命名产出，切子分子已保立体（submol_build），此处按链位次拼 (1Z)-。
+                      wrap=_with_ez,
                       variant={
                           "benzene": {1: dict(plain_maps=None,
                                               plain_fn=lambda n: ("phenyl", "苯基"),

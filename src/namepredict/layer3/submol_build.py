@@ -40,6 +40,56 @@ def _copy_bonds(em: Chem.RWMol, mol: Mol, inv: dict[int, int]) -> None:
             em.AddBond(new_a, inv[old_b], bond.GetBondType())
 
 
+def _carry_alkene_stereo(em: Chem.RWMol, mol: Mol, inv: dict[int, int],
+                         dummy: int | None = None) -> None:
+    """迁移诱导子图内双键的 E/Z 立体到子分子。
+
+    _copy_bonds 只重建键型会丢奇偶，故在此补回：把源双键的 E/Z 标签照搬到子分子
+    （子分子只是命名替身，标签取原分子即真实立体，不随配基被切/被 * 顶替而重判）。
+    两端引用邻接被保留则映射到新索引；锚定情形下被切掉的配基由连在本端 sp2 碳上的
+    dummy 顶替；无法唯一解析（如 H 封端把 sp2 端变成非手性 CH2）则跳过留无立体。
+    """
+    if em is None or mol is None:
+        return
+    for b in mol.GetBonds():
+        if b.GetBondType() is not Chem.BondType.DOUBLE:
+            continue
+        st = b.GetStereo()
+        if st not in (Chem.BondStereo.STEREOE, Chem.BondStereo.STEREOZ):
+            continue
+        ca, cb = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
+        if ca not in inv or cb not in inv:
+            continue
+        refs = b.GetStereoAtoms()
+        if len(refs) < 2:
+            continue
+        ref_a, ref_b = refs
+
+        def _resolve(carbon: int, ref: int) -> int | None:
+            """把源端引用映射到子分子：保内则平移，切掉则仅当 dummy 连在本端时以其顶替。"""
+            if ref in inv:
+                return inv[ref]
+            if dummy is not None and em.GetBondBetweenAtoms(dummy, inv[carbon]) is not None:
+                return dummy
+            return None
+
+        na = _resolve(ca, ref_a)
+        nbb = _resolve(cb, ref_b)
+        if na is None or nbb is None:
+            continue
+        nb = em.GetBondBetweenAtoms(inv[ca], inv[cb])
+        if nb is None:
+            continue
+        # RDKit SetStereoAtoms 要求两个引用分别连在新键 begin/end 端原子上；begin/end 由 AddBond
+        # 归一化（较小索引），E/Z 只取决于两引用是否同侧，故按 begin/end 换序传参即可。
+        bgn, end = nb.GetBeginAtomIdx(), nb.GetEndAtomIdx()
+        first, second = (na, nbb) if bgn == inv[ca] else (nbb, na)
+        if em.GetBondBetweenAtoms(bgn, first) is None or em.GetBondBetweenAtoms(end, second) is None:
+            continue
+        nb.SetStereo(st)
+        nb.SetStereoAtoms(first, second)
+
+
 def _cap_attach_h(em: Chem.RWMol, attach_new: int) -> None:
     """让连接原子重新显式计算隐式 H 以允许 H 封端。"""
     atom = em.GetAtomWithIdx(attach_new)
@@ -64,11 +114,12 @@ def _pack(out: Mol, inv: dict[int, int], attach_old: int, atoms: frozenset[int])
 
 
 
-def _add_anchor(em: Chem.RWMol, attach_new: int) -> None:
-    """在连接原子处添加 dummy 原子作锚点。"""
+def _add_anchor(em: Chem.RWMol, attach_new: int) -> int:
+    """在连接原子处添加 dummy 原子作锚点，返回其索引。"""
     #用 dummy 原子（`*`）标记连接原子
     d = em.AddAtom(Chem.Atom(0))
     em.AddBond(attach_new, d, Chem.BondType.SINGLE)
+    return d
 
 
 def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol | None:
@@ -79,7 +130,8 @@ def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol
     em = Chem.RWMol()
     inv = _copy_atoms(em, mol, _ordered(atoms))
     _copy_bonds(em, mol, inv)
-    _add_anchor(em, inv[attach_old])
+    d = _add_anchor(em, inv[attach_old])
+    _carry_alkene_stereo(em, mol, inv, d)
     # print(Chem.MolToSmiles(em))
     return _sanitize(em)
 
@@ -93,6 +145,7 @@ def build_cut_submol(
     inv = _copy_atoms(em, mol, _ordered(atoms))
     _copy_bonds(em, mol, inv)
     _cap_attach_h(em, inv[attach_old])
+    _carry_alkene_stereo(em, mol, inv)
     out = _sanitize(em)
     # print(Chem.MolToSmiles(out))
     # print(out.)

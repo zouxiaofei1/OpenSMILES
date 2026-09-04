@@ -101,7 +101,7 @@ def ez_for_parent(numbered: dict) -> str:
 
 # --- CIP R/S 立体描述符 ----------------------------------------------
 
-_RS_KINDS = _fg_reg.rs_fgs() | frozenset({"radical"})
+_RS_KINDS = _fg_reg.srs_fgs() | frozenset({"radical"})
 
 def _assign_cip(mol: Mol) -> None:
     """强制重算分子立体化学（CIP 分配）；隐式 H 的 [C@]/[C@@] 手性碳先补显式 H 再赋。"""

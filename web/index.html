@@ -122,6 +122,10 @@
                   </svg>
                   <span>Name</span>
                 </button>
+                <button type="button" id="btn-pubchem" class="btn btn-secondary"
+                        title="经 PubChem 2.1.1 (IUPACName) 查询该结构的 IUPAC 名">
+                  PubChem
+                </button>
               </div>
               <label class="live-toggle">
                 <input type="checkbox" id="live-name-toggle" checked />
@@ -140,6 +144,30 @@
                 <div><dt>zh</dt><dd id="namer-zh" class="mono">—</dd></div>
                 <div><dt>source</dt><dd id="namer-source" class="mono">—</dd></div>
               </dl>
+              <!-- merged_benchmark 命中时显示标准答案(gold);未命中保持隐藏 -->
+              <div id="namer-gold" class="namer-gold" hidden>
+                <div class="namer-gold-head">
+                  <span class="namer-gold-title">基准名称 · merged_benchmark</span>
+                  <span id="namer-gold-tier" class="chip" hidden></span>
+                  <span id="namer-gold-source" class="muted-text small mono"></span>
+                </div>
+                <dl class="kv">
+                  <div><dt>gold en</dt><dd id="namer-gold-en" class="mono">—</dd></div>
+                  <div><dt>gold zh</dt><dd id="namer-gold-zh" class="mono">—</dd></div>
+                </dl>
+              </div>
+              <!-- PubChem 2.1.1 计算 IUPAC 名;点击 #btn-pubchem 后填充 -->
+              <div id="namer-pubchem" class="namer-pubchem" hidden>
+                <div class="namer-pubchem-head">
+                  <span class="namer-pubchem-title">PubChem IUPAC · 2.1.1</span>
+                  <a id="namer-pubchem-link" class="namer-pubchem-link" href="#"
+                     target="_blank" rel="noopener noreferrer" hidden></a>
+                </div>
+                <dl class="kv">
+                  <div><dt>iupac</dt><dd id="namer-pubchem-name" class="mono">—</dd></div>
+                </dl>
+                <p id="namer-pubchem-note" class="muted-text small" hidden></p>
+              </div>
               <div class="namer-svgs">
                 <div class="namer-svg-block">
                   <div class="namer-svg-title">

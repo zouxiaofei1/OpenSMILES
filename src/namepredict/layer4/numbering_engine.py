@@ -40,15 +40,27 @@ def _locant_set(cand: dict[int, int], atoms: list[int]) -> tuple[int, ...] | Non
 
 
 def _bond_locants(cand: dict[int, int], bonds) -> tuple[int, ...] | None:
-    """计算各多重键两端点位次的全排序元组（P-14.4(e) 低位比较：两端点都参与排序，避免环候选把闭合键端当 locant 1 误判）。"""
+    """计算各多重键沿编号方向占据的边位置（seam 感知，每条键一个数）。"""
     if not bonds:
         return None
+    order = sorted(cand, key=cand.get)  # locant 升序 → 环/链遍历顺序
+    n = len(order)
+    pos = {a: i for i, a in enumerate(order)}
     locs = []
-    for b in bonds:
-        if b[0] in cand and b[1] in cand:
-            locs.append(cand[b[0]])
-            locs.append(cand[b[1]])
-    return tuple(sorted(locs)) if locs else None
+    for a, b in bonds:
+        if a not in pos or b not in pos:
+            continue
+        ia, ib = pos[a], pos[b]
+        if ia > ib:
+            ia, ib = ib, ia
+        if ib - ia == 1:
+            locs.append(ia + 1)              # 普通相邻边
+        elif ia == 0 and ib == n - 1:
+            locs.append(n)                   # seam 闭合边：跨编号首尾，记 n
+        else:
+            return None                      # 端点不沿编号相邻：判据不适用
+    print(cand, bonds)
+    return tuple(sorted(locs)) if len(locs) == len(bonds) else None
 
 
 def _narrow(cands: list[dict], key_fn) -> list[dict]:
