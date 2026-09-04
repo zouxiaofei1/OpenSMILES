@@ -1,6 +1,6 @@
 # Layer4: Numbering / Locants（编号与定位符）
 
-> **位置:** `src/namepredict/layer4/` | **行数:** 11 个 `.py` (1448 行) | **负责:** 按 P-14.4 给母体链/环原子分配位次号、决定编号方向、计算 FG/不饱和键定位符与省略规则；稠环（fused-ring）编号走几何摆放 + 外围骨架通道
+> **位置:** `src/namepredict/layer4/` | **行数:** 11 个 `.py` (1540 行) | **负责:** 按 P-14.4 给母体链/环原子分配位次号、决定编号方向、计算 FG/不饱和键定位符与省略规则；稠环（fused-ring）编号走几何摆放 + 外围骨架通道
 
 ---
 
@@ -8,11 +8,11 @@
 
 Layer4 在 Layer3 完成母体选择与取代基提取之后，为母体骨架的每个原子分配 IUPAC 定位符（locant），并决定链/环的编号方向（orientation）。它接收 Layer3 的输出——一个包含母体骨架信息的 `parent` 字典和一个 `substituents` 列表——返回一个"已编号"的字典：母体链的方向已确定，每个取代基已获得其附着点的 locant 数值，官能团（FG）和多重键的 locant 也已计算好。
 
-Layer4 由 11 个模块组成，统一由 `numbering_engine.orient_numbering`（`numbering_engine.py:218`）作为**编号方向总调度器**。它按优先级分派三条路径：
+Layer4 由 11 个模块组成，统一由 `numbering_engine.orient_numbering`（`numbering_engine.py:221`）作为**编号方向总调度器**。它按优先级分派三条路径：
 
-1. **`_fixed_numbering`**（`:146`）— registered 保留骨架（模板有 `standard_path`，如喹啉/萘/菲/芘）走固定编号：`scaffold_match` + `_STANDARD_ORDERS` 把模板原子映射为标准 locant 序，`standard_chain` 产出固定链。
-2. **`_fused_numbering`**（`:179`）— 未注册全芳香多环（`scaffold_id ∈ (None, "carbocycle", "fused_hetero")` 且全芳香、≥2 环）走稠环几何/编号通道。
-3. **普用 P-14.4 候选枚举**（`:229`）— 以上均不满足时（单环、非芳香、开链）枚举候选编号逐条收窄。
+1. **`_fixed_numbering`**（`:155`）— registered 保留骨架（模板有 `standard_path`，如喹啉/萘/菲/芘）走固定编号：`scaffold_match` + `_STANDARD_ORDERS` 把模板原子映射为标准 locant 序，`standard_chain` 产出固定链。
+2. **`_fused_numbering`**（`:186`）— 未注册全芳香多环（`scaffold_id ∈ (None, "carbocycle", "fused_hetero")` 且全芳香、≥2 环）走稠环几何/编号通道。
+3. **普用 P-14.4 候选枚举**（`:232`）— 以上均不满足时（单环、非芳香、开链）枚举候选编号逐条收窄。
 
 **关键概念变更（相较此前"`_fixed_numbering` 为桩、无固定编号"）**：本期 `_fixed_numbering` 由桩实现为真实固定编号引擎——凡 registered 模板登记了标准 locant（`_STANDARD_LABELS`/`standard_path`），L4 即按该固定编号产出，避免被通用枚举翻转错位。位次不再一律 `chain.index+1`：稠环/固定编号下 locant 可为**数字+字母混合**（`"4a"` 型融合桥头位）。
 
@@ -51,26 +51,26 @@ Layer4 由 11 个模块组成，统一由 `numbering_engine.orient_numbering`（
 
 ### 编号方向总调度 (`numbering_engine.orient_numbering`)
 
-`orient_numbering`（`numbering_engine.py:218`）是三层编号分派器，`_fused_numbering` 只在无保留模板固定编号且为未注册全芳香多环时接管，已注册模板/单环/非芳香环全部回落 P-14.4 通用枚举（避免萘/喹啉被通用枚举算错）：
+`orient_numbering`（`numbering_engine.py:221`）是三层编号分派器，`_fused_numbering` 只在无保留模板固定编号且为未注册全芳香多环时接管，已注册模板/单环/非芳香环全部回落 P-14.4 通用枚举（避免萘/喹啉被通用枚举算错）：
 
 ```
 orient_numbering(parent, substituents)
-  ├─ 1. _fixed_numbering(:146)   # registered 保留骨架固定编号 → 非空则返回
-  ├─ 2. _fused_numbering(:179)   # 未注册全芳香多环稠环 → 非空则返回
-  └─ 3. 普用 P-14.4 枚举(:229)   # 链正反 / 环 2n 候选 + 逐条收窄
+  ├─ 1. _fixed_numbering(:155)   # registered 保留骨架固定编号 → 非空则返回
+  ├─ 2. _fused_numbering(:186)   # 未注册全芳香多环稠环 → 非空则返回
+  └─ 3. 普用 P-14.4 枚举(:232)   # 链正反 / 环 2n 候选 + 逐条收窄
 ```
 
-**`_fixed_numbering`**（`:146`，P-14.4(a)）— 用 `scaffold_id` 查模板 Mol（`_Q`），`mol.GetSubstructMatches(q)` 找子图匹配并筛出 `set(m)==原子集`；再 `standard_chain(sid, tuple(m))` 投射标准 locant 序的分子链。对称 scaffold（菲/芘）多自同构匹配时生成等价链，按取代基位次最小化（`:173-176`）。
+**`_fixed_numbering`**（`:155`，P-14.4(a)）— 用 `scaffold_id` 查模板 Mol（`_Q`），`mol.GetSubstructMatches(q)` 找子图匹配并筛出 `set(m)==原子集`；再 `standard_chain(sid, tuple(m))` 投射标准 locant 序的分子链。对称 scaffold（菲/芘）多自同构匹配时生成等价链，按取代基位次最小化（`:176-183`）；取代基位次最小化列表现含自由基连接点 `radical_c_idx`（`:179-180`），使对称 scaffold（如咔唑）的自由价镜像取 locant 1 而非 8。
 
-**`_fused_numbering`**（`:179`）— 稠环主链整体编号：
-- 护栏（`:186`）：仅 `scaffold_id ∈ (None, "carbocycle", "fused_hetero")` 且全芳香多环（≥2 环）才接管
-- `build_ring_systems(mol)` 过滤出 `atom_ids == sorted(set(chain))` 的系统（`:194`），取 `system["fusion_edges"]`；`rings = list(mol.GetRingInfo().AtomRings())`（`:200`）
-- `preferred_orientations(mol, rings, system["fusion_edges"])` → `number_fused_system(mol, rings, [o.coord_dict() for o in orients])`（`:202-206`）
-- 写回 `parent["numbering_scaffold"] = {"scaffold_id":"fused", "labels":..., "relative_stereo":None}`（`:210-212`），返回 `fused_chain`
+**`_fused_numbering`**（`:186`）— 稠环主链整体编号：
+- 护栏（`:189`，≥2 环 `:201`）：仅 `scaffold_id ∈ (None, "carbocycle", "fused_hetero")` 且全芳香多环才接管
+- `build_ring_systems(mol)` 过滤出 `atom_ids == sorted(set(chain))` 的系统（`:197`），取 `system["fusion_edges"]`；`rings = list(mol.GetRingInfo().AtomRings())`（`:203`）
+- `preferred_orientations(mol, rings, system["fusion_edges"])` → `number_fused_system(mol, rings, [o.coord_dict() for o in orients])`（`:205-209`）
+- 写回 `parent["numbering_scaffold"] = {"scaffold_id":"fused", "labels":..., "relative_stereo":None}`（`:213-215`），返回 `fused_chain`
 
 ### 普用 P-14.4 候选编号引擎
 
-非稠环路径（`numbering_engine.py:229-260`）实现 **P-14.4 规则管线**（无 kind 派发 orienter）。核心思路：枚举候选编号 → 逐条 P-14.4 规则收窄 → 单候选存活时提前终止。
+非稠环路径（`numbering_engine.py:232-263`）实现 **P-14.4 规则管线**（无 kind 派发 orienter）。核心思路：枚举候选编号 → 逐条 P-14.4 规则收窄 → 单候选存活时提前终止。
 
 ```
 普用路径
@@ -82,11 +82,13 @@ orient_numbering(parent, substituents)
   └─ 平局：_stem_loc_pairs 按取代基英文名 α 序收窄（P-14.5）→ _to_chain
 ```
 
-> **源:** `src/namepredict/layer4/numbering_engine.py:229`
+> **P-14.4(e) 多重键 seam 感知判据（`_bond_locants`，`numbering_engine.py:42`）**：比较多重键"最低位次"时，对**每条多重键**沿编号方向求一个"边位置"数——两端点在编号顺序 order（locant 升序）中相邻 → 记 `ia+1`（`ia` 为较小端序号）；跨编号首尾的闭合 seam 边（`ia==0 and ib==n-1`）→ 记 `n`；端点不沿编号相邻 → 判据不适用返回 None。随后以 `(全部多重键元组, 双键元组)` 双层收窄（双键优先，`_bond_locants` 返回值经排序供比较）。与旧实现（取两端点全 locant 排序）的差异：旧法在环候选绕行时会把闭合键一端误判成 locant 1，把真双键对误判更"小"；新法迫使每条多重键占据其沿编号方向的边位，让整条不饱和键落到最低连续位置（如环己二烯 1,3-双键整体起于 locant 1）。
+>
+> **源:** `src/namepredict/layer4/numbering_engine.py:232`
 
 ### 稠环几何摆放（`fused_orientation.py`）
 
-`fused_orientation.py`（315 行）实现 **P-25.3.2.3 优选取向**——把稠环系"水平行摆放"到平面坐标，计算四象限面积分数，按优选取向准则挑出**平局候选列表**（它只解决"怎么摆/摆哪"，不做编号）。
+`fused_orientation.py`（383 行）实现 **P-25.3.2.3 优选取向**——把稠环系"水平行摆放"到平面坐标，按 IUPAC 环计数法离散计数四象限/上方环数，按优选取向准则挑出**平局候选列表**（它只解决"怎么摆/摆哪"，不做编号）。行内中间奇数环（双侧融合）由变形环模板支撑，见下文两段。
 
 核心数据结构 `Orientation`（`fused_orientation.py:21`，frozen dataclass）：
 
@@ -95,70 +97,76 @@ orient_numbering(parent, substituents)
 class Orientation:
     row: tuple[int, ...]                 # 水平行环索引（左→右）
     coords: tuple[(atom, x, y), ...]     # 原子坐标（可哈希）
-    quad: tuple[float, float, float, float]  # Q1右上/Q2左上/Q3左下/Q4右下 面积分数
-    above: float                         # 水平轴上方环面积分数
+    quad: tuple[float, float, float, float]  # Q1右上/Q2左上/Q3左下/Q4右下 环计数（IUPAC，被轴平分计 1/4 或 1/2）
+    above: float                         # 水平轴上方环数（被轴平分计 1/2）
     def coord_dict(self) -> {atom:(x,y)}  # 供 number_fused_system 使用
 ```
 
-优选取向（`preferred_orientations`，`:272`）：对每个 `(row, flip)` 摆位算 `key = (len(row), round(q1,9), round(-q3,9), round(above,9))`，**最大化**（`:300`）——即优先级：**① 水平行环数最多 → ② Q1右上面积最多 → ③ Q3左下面积最少 → ④ 水平轴上方面积最多**。镜像/左右对称环系各 key 相同 → 全部返回为平局候选，交由编号阶段准则(a)-(d) 跨候选收窄（否则编号依赖遍历顺序不稳定）。
+优选取向（`preferred_orientations`，`:343`）：对每个 `(row, flip)` 摆位算 `key = (len(row), round(q1,9), round(-q3,9), round(above,9))`，**最大化**（`:371`）——即优先级：**① 水平行环数最多 → ② Q1右上环数最多 → ③ Q3左下环数最少 → ④ 水平轴上方环数最多**。镜像/左右对称环系各 key 相同 → 全部返回为平局候选，交由编号阶段准则(a)-(d) 跨候选收窄（否则编号依赖遍历顺序不稳定）。
 
-> **源:** `src/namepredict/layer4/fused_orientation.py:272`
+四象限/上方现按 **IUPAC 环计数法**（P-25.3.2.3.3 准则(b)(c)(d)）由 `_quadrant_fractions`（`:325`）逐环离散计数，替代旧的多边形裁剪面积占比：原点取水平行中心（`_row_center`，`:274`——偶数环数取中心共同键中点、奇数取中心环中心），经 `_ring_quadrant_contrib`（`:287`）/`_above_contrib`（`:317`）累加——被两轴平分计 1/4、被单轴平分两侧各 1/2、完全在一侧计整环；round 只消浮点尾差。
+
+行内中间奇数环双侧融合（**P-25.3.2.3.2 变形环**，如 6-5-6 线性行）：`_layout`（`:140`）对中间奇数环双侧均有稠合边时用 `ring_shape_template` 构造变形五/七元模板，构造不出才弃行（原逻辑直接返回 None，刚性不可行）；现返回 `(coords, ring_templates)`（ring idx→实际模板）。`_place_ring`（`:89`）支持 template（`side<0` 用镜像模板，保持共享边两端点不动并把镜像模板回传作为 `_ring_deform` 基准）；`_ring_deform`（`:231`）相对各环实际模板测最大偏差——变形环对 Kabsch 旋转方向敏感，补试镜像 x 覆盖两手性；`_valid_deform_overlap`（`:252`）以各环模板为基准做刚体偏差 + 重叠检查。
+
+> **源:** `src/namepredict/layer4/fused_orientation.py:343`
 
 ### 稠环编号（`fused_numbering.py`）
 
-`fused_numbering.py`（193 行）实现 **P-25.3.3 稠环编号**——在已摆好坐标的稠环系上生成**外围骨架编号**（数字）+ **稠合碳字母位次**（a/b/c），并按准则(a)-(d) 收敛到唯一编号。
+`fused_numbering.py`（185 行）实现 **P-25.3.3 稠环编号**——在已摆好坐标的稠环系上生成**外围骨架编号**（数字）+ **稠合碳字母位次**（a/b/c），并按准则(a)-(d) 收敛到唯一编号。
 
-核心函数 `number_fused_system(mol, rings, coords)`（`:157`）：
+核心函数 `number_fused_system(mol, rings, coords)`（`:153`）：
 - 输入 `coords` 既可为单个坐标 dict，也可为优选取向平局列表 `list[dict]`；遍历每个候选坐标枚举全部 `(chain, labels)`。
 - 返回 `(chain: list[int], labels: list[str])`（chain=外周/稠合原子顺序，labels=对应 locant 串含 `"4a"` 字母位），无候选返回 `None`。
 
 关键内部：
 - `fused_atoms(rings)`（`:24`）— 出现在 ≥2 环的原子（稠合原子）集合
-- `_candidates(mol, rings, coords, fused)`（`:127`）— P-25.3.3.1.1 全部编号候选：最上端环（`_top_rings`，环心 cy 最大→cx 最大）× 最上端非稠合原子（`_top_atoms`）起点；最上端环无候选时沿相邻环兜底
+- `_candidates(mol, rings, coords, fused)`（`:123`）— P-25.3.3.1.1 全部编号候选：最上端环（`_top_rings`，环心 cy 最大→cx 最大）× 最上端非稠合原子（`_top_atoms`）起点；最上端环无候选时沿相邻环兜底
 - `_boundary_walk`（`:74`）— 沿外部边行走外边界（鞋带面积转顺时针），`_exterior_edges`（`:64`）取只属一环的外部边
-- `_assign_labels`（`:103`）— 非稠合原子/稠合杂原子→下一个数字；稠合碳→紧邻前数字 + `a/b/c` 递增
-- 准则收缩 `_keep(cands, atoms)`（`:175`）— 保留"该原子集 locant 位次集最小"的候选，依次：(a) 杂原子集合低位（`:181`）→ (b) 按 `_P145_SENIOR` 逐元素（`:186`）→ (c) 稠合碳低位（`:190`）→ (d) 稠合杂原子低位（`:192`）；最终 `cands[0]`
+- `_assign_labels`（`:99`）— 非稠合原子/稠合杂原子→下一个数字；稠合碳→紧邻前数字 + `a/b/c` 递增
+- 准则收缩 `_keep(cands, atoms)`（`:167`）— 保留"该原子集 locant 位次集最小"的候选，依次：(a) 杂原子集合低位（`:172-173`）→ (b) 按 `_P145_SENIOR` 逐元素（`:178-180`）→ (c) 稠合碳低位（`:181-182`）→ (d) 稠合杂原子低位（`:183-184`）；最终 `cands[0]`
 
-> **源:** `src/namepredict/layer4/fused_numbering.py:157`
+> **源:** `src/namepredict/layer4/fused_numbering.py:153`
 
 ### 平面几何原语（`ring_geometry.py`）
 
-`ring_geometry.py`（135 行）提供稠环摆放到平面所需的自建正 n 边形模板坐标与几何原语（**不含编号逻辑**）：
+`ring_geometry.py`（160 行）提供稠环摆放到平面所需的自建正 n 边形/变形环模板坐标与几何原语（**不含编号逻辑**）：
 
 - `regular_polygon(n, *, right_edge_vertical=True)`（`:11`）— 单位圆内接正 n 边形，奇偶环边/尖点模板不同（奇数环 2 模板）
-- `RING_TEMPLATES`（`:25`）— `{n: regular_polygon(n) for n in range(3,9)}`，3-8 元环模板
-- `ring_cyclic`（`:30`）/ `centroid`（`:52`）/ `apply_rigid`（`:58`）/ `rigid_fit`（`:65`，Kabsch 2D 刚体+缩放拟合）/ `clip_polygon`（`:104`，Sutherland–Hodgman）/ `polygon_area`（`:125`）/ `overlap_area`（`:133`）
+- `RING_TEMPLATES`（`:20`）— `{n: regular_polygon(n) for n in range(3,20)}`，3-19 元环模板（本期由 3-8 扩到 3-19）
+- `ring_shape_template(order, exit_idx, row_width=_ROW_WIDTH)`（`:30`）— **P-25.3.2.3.2 变形环模板**：让奇数环在水平行中间也能以两侧竖直边稠合；仅 n=5 & `exit_idx==2`、n=7 & `exit_idx∈(2,3)` 可构造，否则 None
+- `_ROW_WIDTH = sqrt(3)`（`:27`）— 行宽：行首正六边形（边长 1）对边距，使变形五/七元环左右共享竖边与邻环衔接
+- `ring_cyclic`（`:60`）/ `centroid`（`:79`）/ `apply_rigid`（`:85`）/ `rigid_fit`（`:92`，Kabsch 2D 刚体+缩放，h12 符号修正定最优旋转方向）/ `clip_polygon`（`:129`，Sutherland–Hodgman）/ `polygon_area`（`:150`）/ `overlap_area`（`:158`）
 - 阈值：`DEFORM_MAX = 0.30`（`:7`，单原子最大偏差/环边长上限）、`OVERLAP_FRAC = 0.05`（`:8`，重叠面积/较小环面积上限）
 
 > **源:** `src/namepredict/layer4/ring_geometry.py`
 
 ### Locant 排序键（`locant_key.py`）
 
-稠环编号引入 `"4a"` 这类**数字+字母**混合 locant 后，普通数值 `sorted` 会错序（如 `"10"` 排在 `"4"` 前、`"4a"` 与 `"4"` 混排）。`locant_key.py`（18 行）定义统一可比较键：
+稠环编号引入 `"4a"` 这类**数字+字母**混合 locant 后，普通数值 `sorted` 会错序（如 `"10"` 排在 `"4"` 前、`"4a"` 与 `"4"` 混排）。`locant_key.py`（15 行）定义统一可比较键：
 
 - `locant_key(x)`（`:7`）— `"4a" → (4, 'a')`、`"10" → (10, '')`、`4 → (4, '')`，保证 `"4" < "4a" < "5" < "10"`
-- `locant_str_sort(locs)`（`:16`）— 按 `locant_key` 排序（兼容 int 与 `"4a"` 混合）
+- `locant_str_sort(locs)`（`:13`）— 按 `locant_key` 排序（兼容 int 与 `"4a"` 混合）
 
-被 `locant_calc._typed_atom_locants`（`:44`）与 `_fg_locants`（`:298`）及 `fused_numbering._locant_tuples`（`:152`）使用。
+被 `locant_calc._typed_atom_locants`（`:34`）与 `_fg_locants`（`:299`）及 `fused_numbering._locant_tuples`（`:146`）使用。
 
 > **源:** `src/namepredict/layer4/locant_key.py`
 
 ### 稠合组分编号 (`fused_component_numbering`)
 
-`numbering_engine.py:276` 的 `fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edges=None)` 供 L5 `fused_namer` 组装稠合名时对**每个稠合组分单独编号**（P-25.4/P-25.3.3），返回 `(chain, labels)` 或 `(None, None)`：
+`numbering_engine.py:279` 的 `fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edges=None)` 供 L5 `fused_namer` 组装稠合名时对**每个稠合组分单独编号**（P-25.4/P-25.3.3），返回 `(chain, labels)` 或 `(None, None)`：
 
-- 单环或 `scaffold_id ∈ _STANDARD_ORDERS`（已登记固定编号）：单环直接 `(ring, [str(i+1)])`，否则构造 `parent` 走 `orient_numbering`（`:288-291`），labels 用 `_component_labels`
-- 多环无固定编号（`:293-303`）：`preferred_orientations(mol, sub_rings, sub_edges)` → `number_fused_system(mol, sub_rings, [o.coord_dict()...])` → `(result[0], result[1])`
+- 单环或 `scaffold_id ∈ _STANDARD_ORDERS`（已登记固定编号）：单环直接 `(ring, [str(i+1)])`，否则构造 `parent` 走 `orient_numbering(parent, subs, float_hetero=bool(shared))`（`:290-293`），labels 用 `_component_labels`——`float_hetero` 经 `_ring_hetero_start`（`numbering_engine.py:122`）在多个对称等价杂原子（嘧啶双 N 等）时不钉死 locant-1 杂原子（N-H 唯一情形仍优先），把镜像留给稠合原子位次最小化决定，使碱环取向与规范稠合描述符字母一致（修复对称杂环碱环的稠合描述符字母）
+- 多环无固定编号（`:298-305`）：`preferred_orientations(mol, sub_rings, sub_edges)` → `number_fused_system(mol, sub_rings, [o.coord_dict()...])` → `(result[0], result[1])`
 
 **组分编号 vs 整体系统编号的区别**：整体系统（`_fused_numbering`）对整条 parent 骨架原子用全分子 `rings`+`fusion_edges` 编号，产物作为 parent 的 `numbering_scaffold`；组分编号针对**某个稠合组合的子环集** `sub_rings`，其稠合点（`fused_shared`）被当作取代基做位次最小化——用于 L5 把大母体拆成"基底稠合名 + 附加稠合片段"逐片段编号。
 
 ### `_component_labels` (labels 并行生成)
 
-`orient_numbering` 只返回 `chain`，`_component_labels`（`:263`）补并行 `labels`：优先 `numbering_scaffold["labels"]`，其次 `_STANDARD_LABELS`，否则纯数字 `[str(i+1)]`。
+`orient_numbering` 只返回 `chain`，`_component_labels`（`:266`）补并行 `labels`：优先 `numbering_scaffold["labels"]`，其次 `_STANDARD_LABELS`，否则纯数字 `[str(i+1)]`。
 
 ### FG 定位符计算 (`locant_calc.py`)
 
-`locant_calc.py`（312 行）从定向后的 chain + labels 计算各类位次。数据驱动核心是 `_FG_LOCANTS` 表（`locant_calc.py:284`），产出稀疏的 `fg_locants` 列表：
+`locant_calc.py`（322 行）从定向后的 chain + labels 计算各类位次。数据驱动核心是 `_LOCANT_FNS`（`locant_calc.py:282`，kind→位次函数）+ 其 `_FG_LOCANTS` 投影（`:294`，仅保留 FG_SPECS 登记的 locant_kind），产出稀疏的 `fg_locants` 列表：
 
 | 记录 kind | 取值函数 | 说明 |
 |---|---|---|
@@ -166,18 +174,19 @@ class Orientation:
 | `amine` | `_amine_fg_locants` | amine/sec_amine/tert_amine |
 | `ketone` | `_ketone_fg_locants` | ketone/dione |
 | `sh` | `_sh_locants_list` | thiol |
-| `acid` | `_acid_fg_locants` | 环外酸取环上附着原子 `ring_attach_idx` |
+| `aldehyde` | `_aldehyde_fg_locants` | **本期新增**：外环 -CHO（-carbaldehyde 单/多通用）环上附着原子位次；开链醛（in_skeleton）不计数 |
+| `acid` | `_acid_fg_locants` | 多羧酸（multiplicity≥2）取全部附着原子位次（走 `_typed_atom_locants`），单酸回退环上 `ring_attach_idx` |
 | `amide` | `_amide_fg_locants` | exocyclic 酰胺取环上附着原子位次（羰基碳在环外） |
 | `ester` | `_ester_fg_locants` | **本期**：exocyclic 酯的环上附着原子位次 |
 | `nitrile` | `_nitrile_fg_locants` | **本期**：exocyclic 腈的环上附着原子位次 |
 
-**位次来源经 `_atom_locant`**（`locant_calc.py:15`，现支持 labels 分支）：`labels` 存在且长度等于 `chain` 时，取 `labels[chain.index(atom)]`——数字标签转 `int`，字母位（`"4a"`）返回 `str` 原样；否则回退 `chain.index(atom)+1`。排序统一经 `locant_str_sort`（`locant_key.py:16`）。
+**位次来源经 `_atom_locant`**（`locant_calc.py:15`，现支持 labels 分支）：`labels` 存在且长度等于 `chain` 时，取 `labels[chain.index(atom)]`——数字标签转 `int`，字母位（`"4a"`）返回 `str` 原样；否则回退 `chain.index(atom)+1`。排序统一经 `locant_str_sort`（`locant_key.py:13`）。
 
-> **源:** `src/namepredict/layer4/locant_calc.py:253`
+> **源:** `src/namepredict/layer4/locant_calc.py:299`
 
 ### Locant 省略规则（Omit Locants）
 
-`omit_locants.py`（74 行）实现 IUPAC P-14.3.4 与环单 FG 的省略规则。**环状单环判断基于 `scaffold_id=="carbocycle"` 且无 `fused_tree`**（未注册全碳稠环 scaffold_id 亦为 carbocycle，但有 `fused_tree` 时不作单环环烷烃——位次省略/环烯规则由 L5 `fused_namer` 按稠合名处理）。
+`omit_locants.py`（70 行）实现 IUPAC P-14.3.4 与环单 FG 的省略规则。**环状单环判断基于 `scaffold_id=="carbocycle"` 且无 `fused_tree`**（未注册全碳稠环 scaffold_id 亦为 carbocycle，但有 `fused_tree` 时不作单环环烷烃——位次省略/环烯规则由 L5 `fused_namer` 按稠合名处理）。
 
 - **环单醇/单胺/单酮**（`_is_cyclo(parent)`，`:5`）：无取代基时省略位次（P-14.3.4）；含内环双键时保留位次
 - **乙醇/乙胺/硫醇**（C1-C2）：FG 在 1 位且碳数 <=2 时省略
@@ -200,14 +209,14 @@ class Orientation:
 |---|---|---|
 | `__init__.py` | 6 | 导出 `number` 函数 |
 | `numbering.py` | 18 | **入口**：`number()` 调用 `orient_numbering` + `_with_locants` + `_pack` |
-| `numbering_engine.py` | 303 | **编号方向总调度**：`orient_numbering` 三层分派（`_fixed_numbering`/`_fused_numbering`/P-14.4 枚举）+ `fused_component_numbering`/`_component_labels` |
-| `fused_orientation.py` | 315 | **稠环几何摆放**：`preferred_orientations`（P-25.3.2.3 优选取向，四象限加权），`Orientation` 结构 |
-| `fused_numbering.py` | 193 | **稠环编号**：`number_fused_system`（P-25.3.3 外围骨架 + 字母位 + 准则(a)-(d)），`fused_atoms`/`_boundary_walk`/`_assign_labels` |
-| `ring_geometry.py` | 135 | 平面几何原语：`regular_polygon`/`RING_TEMPLATES`/`rigid_fit`(Kabsch)/`clip_polygon`/`overlap_area` |
-| `locant_key.py` | 18 | locant 统一排序键：`locant_key`/`locant_str_sort`（数字+字母混合） |
-| `locant_calc.py` | 312 | **FG 位次计算**：`_fg_locants`/`_with_locants`/`_pack`，`_FG_LOCANTS` 表（含 amide/ester/nitrile）+ `_atom_locant` labels 分支 + `locant_str_sort` |
+| `numbering_engine.py` | 307 | **编号方向总调度**：`orient_numbering` 三层分派（`_fixed_numbering`/`_fused_numbering`/P-14.4 枚举）+ `_bond_locants`(P-14.4(e) seam)/`_ring_hetero_start`(float_hetero) + `fused_component_numbering`/`_component_labels` |
+| `fused_orientation.py` | 383 | **稠环几何摆放**：`preferred_orientations`（P-25.3.2.3 优选取向：水平行 + 变形环模板 + IUPAC 环计数），`Orientation` 结构 |
+| `fused_numbering.py` | 185 | **稠环编号**：`number_fused_system`（P-25.3.3 外围骨架 + 字母位 + 准则(a)-(d)），`fused_atoms`/`_boundary_walk`/`_assign_labels` |
+| `ring_geometry.py` | 160 | 平面几何原语：`regular_polygon`/`RING_TEMPLATES`(3-19)/`ring_shape_template`(变形环)/`rigid_fit`(Kabsch)/`clip_polygon`/`overlap_area` |
+| `locant_key.py` | 15 | locant 统一排序键：`locant_key`/`locant_str_sort`（数字+字母混合） |
+| `locant_calc.py` | 322 | **FG 位次计算**：`_fg_locants`/`_with_locants`/`_pack`，`_LOCANT_FNS` 表（含 aldehyde/amide/ester/nitrile；多羧酸多位次）+ `_atom_locant` labels 分支 + `locant_str_sort` |
 | `_chain_orient.py` | 48 | 共享方向原语：`_chain_pos`/`_edge_min_locant`/`_bond_min_locs`/`_pair_locants`/`_stem_loc_pairs` |
-| `omit_locants.py` | 74 | FG/不饱和键位次省略规则（按 scaffold_id 判单环，排除 fused_tree） |
+| `omit_locants.py` | 70 | FG/不饱和键位次省略规则（按 scaffold_id 判单环，排除 fused_tree） |
 | `cyclo_relative_stereo.py` | 26 | 环多元酸的相对立体化学前缀（cis/trans, r/c/t） |
 
 > 备注：layer4 共 11 模块。本期新增 `fused_orientation.py`/`fused_numbering.py`/`ring_geometry.py`/`locant_key.py`，增强 `numbering_engine.py`/`locant_calc.py`/`omit_locants.py`。无 `orienters.py`/`polyene.py`/`locants/` 子包，无 `NumberingPlan` 概念——但 `_fixed_numbering` 已由桩实现为真实固定编号。
@@ -232,9 +241,9 @@ flowchart TD
 
     FUSED --> BRS["build_ring_systems()<br/>→ system: fusion_edges/atom_ids"]
     FUSED --> RINGS["rings = mol.AtomRings()"]
-    BRS --> ORIENT2["preferred_orientations()<br/>fused_orientation.py:272<br/>(行环数,Q1,-Q3,above)"]
+    BRS --> ORIENT2["preferred_orientations()<br/>fused_orientation.py:343<br/>(行环数,Q1,-Q3,above)"]
     RINGS --> ORIENT2
-    ORIENT2 -->|"list[Orientation]"| NF["number_fused_system()<br/>fused_numbering.py:157<br/>外边界 + 字母位 + 准则(a)-(d)"]
+    ORIENT2 -->|"list[Orientation]"| NF["number_fused_system()<br/>fused_numbering.py:153<br/>外边界 + 字母位 + 准则(a)-(d)"]
     NF -->|"(chain, labels)"| SCAFF["parent.numbering_scaffold<br/>= {scaffold_id:'fused', labels}"]
     LEFT --> SCAFF
 
@@ -288,7 +297,7 @@ def number(parent: dict, substituents: list[dict]) -> dict:
 | `relative_stereo_prefix` | `str` | 相对立体化学前缀（`"cis"`/`"trans"`，环二酸） |
 | `relative_stereo_locants` | `str` | 3 取代 r/c/t locant 字符串 |
 
-`fg_locants` 每项结构：`{"kind": "oh"|"amine"|"ketone"|"sh"|"acid"|"amide"|"ester"|"nitrile", "locants": [int|str, ...], "omit": bool}`。locants 可含字母位（`"4a"`）。
+`fg_locants` 每项结构：`{"kind": "oh"|"amine"|"ketone"|"sh"|"aldehyde"|"acid"|"amide"|"ester"|"nitrile", "locants": [int|str, ...], "omit": bool}`。locants 可含字母位（`"4a"`）。
 
 **调用方:** `src/namepredict/namer.py` 在 `_assemble_candidate` 中调用。
 

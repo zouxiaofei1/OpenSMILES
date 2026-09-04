@@ -1,6 +1,6 @@
 # Layer 1 -- Analyzer (Functional Group Detector)
 
-> **位置:** `src/namepredict/layer1/` | **行数:** 11 个 `.py` (1,519 行) | **最后更新:** 2026-09-02
+> **位置:** `src/namepredict/layer1/` | **行数:** 11 个 `.py` (1,537 行) | **最后更新:** 2026-09-04
 
 ## 概述
 
@@ -35,7 +35,7 @@ Layer 1 的 FG 检测采用统一的"候选原子判断函数 + 条目构建函�
 
 ### 2. 信息字典结构（Info Dict）
 
-`analyze(mol)`（`analyzer.py:491`）返回的字典由 `_info()` 构建（`analyzer.py:486`），结构如下：
+`analyze(mol)`（`analyzer.py:521`）返回的字典由 `_info()` 构建（`analyzer.py:516`），结构如下：
 
 ```python
 {
@@ -44,7 +44,7 @@ Layer 1 的 FG 检测采用统一的"候选原子判断函数 + 条目构建函�
     "carbon_ids": [0, 1, 2, ...], # 所有碳原子索引
     "n_carbons": 10,              # 碳原子总数
 
-    # FG 条目列表（20 个，来自 _fg_parts analyzer.py:464，经 _arbitrate_parts P-41 仲裁）
+    # FG 条目列表（20 个，来自 _fg_parts analyzer.py:494，经 _arbitrate_parts(mol, …) P-41 仲裁 + 降级成员回收）
     "carboxyls": [{"c_idx": 5, "anion": False}, ...],
     "hydroxyls": [{"o_idx": 3, "c_idx": 2}, ...],
     "esters": [{"c_idx": 4, "o_idx": 6, "alkoxy_c_idx": 7}, ...],
@@ -58,7 +58,7 @@ Layer 1 的 FG 检测采用统一的"候选原子判断函数 + 条目构建函�
     "ethers": [...], "sulfides": [...], "nitros": [...],
     "isocyanates": [...], "isothiocyanates": [...],
 
-    # 布尔标志（18 个，_fg_bools analyzer.py:417）
+    # 布尔标志（18 个，_fg_bools analyzer.py:412）
     "has_alcohol": True, "has_acid": False, "has_ester": True,
     "has_amide": False, "has_ketone": False,
     "has_aldehyde": False, "has_amine": True, "has_nitrile": False,
@@ -95,10 +95,10 @@ Layer 1 的 FG 检测采用统一的"候选原子判断函数 + 条目构建函�
 
 ### 3.5 FG 元数据单一事实来源（`fg_registry.py`）
 
-`fg_registry.py`（102 行）是各层 FG 注册元数据的**单一事实来源**：`FG_SPECS`（17 条 `FgSpec`）集中每个官能团类别的跨层元数据——L1 检测列表 key、P-41 等级与优先级路径、表达类型（suffix/prefix_only/legacy_compat）、兼容等级、锚点 key、parent 锚点字段、chain/multi/rs/keep_locant 标志、`locant_kind`、醇/胺/酮母体标志。下游表由它派生，不再多重登记：
+`fg_registry.py`（99 行）是各层 FG 注册元数据的**单一事实来源**：`FG_SPECS`（17 条 `FgSpec`）集中每个官能团类别的跨层元数据——L1 检测列表 key、P-41 等级与优先级路径、表达类型（suffix/prefix_only/legacy_compat）、兼容等级、锚点 key、parent 锚点字段、chain/multi/rs/keep_locant 标志、`locant_kind`、醇/胺/酮母体标志。下游表由它派生，不再多重登记。aldehyde 现亦带 `locant_kind="aldehyde"`（供 L4 环外醛位次、-carbaldehyde 系统名）；R/S FG 集合提供函数已由 `rs_fgs()` 更名为 `srs_fgs()`（`fg_registry.py:92`，全仓唯一调用方 `layer5/stereo.py:104`）：
 
 - `functional_group_inventory._LIST_CLASSES` / `_ANCHOR_KEYS`（`functional_group_inventory.py:66`）
-- `analyzer._FG_PARTS_KEY` / `_CARBONYL_COMPOSITES`（`analyzer.py:432` 起）——**P-41 主基团仲裁**：组合羰基 FG（酸/酯/酰卤/酰胺/醛/酸酐）被更高优先级 FG（如 radical）压制时退出主基团，羰基碳降级入 `ketones`（oxo 前缀候选），组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属，不再丢失羰基氧。`ketone/alcohol/thiol/amine` 是基础成员 FG，永不退出
+- `analyzer._FG_PARTS_KEY` / `_CARBONYL_COMPOSITES`（`analyzer.py:427` / `:433`）——**P-41 主基团仲裁**（`_arbitrate_parts`，`analyzer.py:471`）：组合羰基 FG（酸/酯/酰卤/酰胺/醛/酸酐）被更高优先级 FG（如 radical）压制时退出主基团，羰基碳降级入 `ketones`（oxo 前缀候选）；并新增**降级成员回收**——被降级酰胺的伯酰胺 N（-CONH2，N 未取代/中性/非芳香/非环、带 2 个 H，经 `_demoted_amide_amine`）回收为 `amines` 条目，被降级中性羧酸的单键醇 OH（经 `_demoted_acid_hydroxyl`）回收为 `hydroxyls` 条目，使 amino/hydroxy 前缀走正规 L1 前缀通道而非丢出；N-取代酰胺（`n_c_idxs` 非空）与阴离子酸仍归 L3。`ketone/alcohol/thiol/amine` 是基础成员 FG，永不退出
 - `principal_expression._CHAIN_FG`/`_MULTI_FG`、`stereo._RS_KINDS`、`assembler_prefixes._KEEP_LOCANT_KINDS`、`layer4.fg_locants` 位次记录 kind
 
 > **源:** `src/namepredict/layer1/fg_registry.py`
@@ -114,7 +114,7 @@ Layer 1 的 FG 检测采用统一的"候选原子判断函数 + 条目构建函�
 
 ### 5. 共享羰基原语 (`_carbonyl_common.py`)
 
-`_carbonyl_common.py`（106 行）从 analyzer.py 与 acyl_halide.py 抽取重复的羰基检测原语，提供 **13 个共享函数**（`_is_single_c_oh`/`_dbl_o_on`/`_has_double_bonded_o`/`_is_carboxylate_o`/`_has_carboxylate_o_neighbor`/`_has_acid_o_neighbor`/`_is_anhydride_bridge_o`/`_alkoxy_c_of`/`_ester_alkoxy_of`/`_amide_n_rest`/`_amide_n_single`/`_amide_n_info`/`_amide_n_of`）。两个调用方（`analyzer.py`、`acyl_halide.py`）各自保留自己的 `_is_ester_alkoxy_o` 谓词并传入共享的 `_ester_alkoxy_of`（analyzer 排除 anhydride 桥氧；acyl halide 检查形式电荷）。
+`_carbonyl_common.py`（103 行）从 analyzer.py 与 acyl_halide.py 抽取重复的羰基检测原语，提供 **13 个共享函数**（`_is_single_c_oh`/`_dbl_o_on`/`_has_double_bonded_o`/`_is_carboxylate_o`/`_has_carboxylate_o_neighbor`/`_has_acid_o_neighbor`/`_is_anhydride_bridge_o`/`_alkoxy_c_of`/`_ester_alkoxy_of`/`_amide_n_rest`/`_amide_n_single`/`_amide_n_info`/`_amide_n_of`）。两个调用方（`analyzer.py`、`acyl_halide.py`）各自保留自己的 `_is_ester_alkoxy_o` 谓词并传入共享的 `_ester_alkoxy_of`（analyzer 排除 anhydride 桥氧；acyl halide 检查形式电荷）。
 
 > **源:** `src/namepredict/layer1/_carbonyl_common.py`
 
@@ -146,14 +146,14 @@ Layer 1 的 FG 检测采用统一的"候选原子判断函数 + 条目构建函�
 
 ### 9. 收集与组装流程
 
-`analyze()` 函数的完整调用链（`analyzer.py:491`）:
+`analyze()` 函数的完整调用链（`analyzer.py:521`）:
 
 ```
 analyze(mol)
   └─ _info(mol, _carbon_ids(mol), _collect_fgs(mol))
        ├─ _carbon_ids(mol) → 所有碳原子索引
        └─ _collect_fgs(mol)
-            ├─ _fg_lists(_fg_parts(mol))   # 20 个 FG 列表键
+            ├─ _fg_lists(_fg_parts(mol))   # 20 个 FG 列表键（内部经 _arbitrate_parts(mol, …) P-41 仲裁，含降级成员回收）
             ├─ _fg_bools(lists)            # 18 个 has_* 布尔键
             └─ inventory_from_info(info)   # 类型化 FunctionalGroupInventory
        └─ _ring_meta(mol) → 环系信息
@@ -166,9 +166,9 @@ analyze(mol)
 | 文件 | 行数 | 说明 |
 |------|------|------|
 | `__init__.py` | 6 | 公开导出 `analyze` 函数 |
-| `analyzer.py` | 499 | **主分析器** -- 核心 FG 检测（acid, alcohol, ester, amide, ketone, aldehyde, amine, quaternary ammonium, nitrile, alkene/alkyne, acyl chloride, anhydride, thiol, ether, sulfide, nitro, radical）+ `_arbitrate_parts` P-41 仲裁 + info dict 组装 + 环系元信息收集；`_amine_degree` 排除**环内非芳香 N**（饱和杂环 N 是环杂原子而非胺官能团） |
-| `_carbonyl_common.py` | 106 | **共享羰基原语**：13 个 `_is_*`/`_*_of` 检测谓词（analyzer 与 acyl_halide 共用） |
-| `fg_registry.py` | 100 | **FG 元数据单一事实来源**：`FG_SPECS`（17 条 `FgSpec`），派生 L1-L5 各下游表 |
+| `analyzer.py` | 523 | **主分析器** -- 核心 FG 检测（acid, alcohol, ester, amide, ketone, aldehyde, amine, quaternary ammonium, nitrile, alkene/alkyne, acyl chloride, anhydride, thiol, ether, sulfide, nitro, radical）+ `_arbitrate_parts(mol, …)` P-41 仲裁（含降级成员回收：伯酰胺 N→amino、中性酸 OH→hydroxy，`_demoted_amide_amine`:445 / `_demoted_acid_hydroxyl`:457）+ info dict 组装 + 环系元信息收集；`_amine_degree` 排除**环内非芳香 N**（饱和杂环 N 是环杂原子而非胺官能团） |
+| `_carbonyl_common.py` | 103 | **共享羰基原语**：13 个 `_is_*`/`_*_of` 检测谓词（analyzer 与 acyl_halide 共用） |
+| `fg_registry.py` | 99 | **FG 元数据单一事实来源**：`FG_SPECS`（17 条 `FgSpec`），派生 L1-L5 各下游表；`srs_fgs()` 提供 R/S FG 集合 |
 | `functional_group_inventory.py` | 98 | **类型化 FG 库存**：`FunctionalGroupClass`/`FunctionalGroupInventory` 数据容器（供 L2）；`_ANCHOR_KEYS` 从 FG_SPECS 派生，AMINE 为 `("c_idx","c_idxs")` |
 | `isocyanate.py` | 97 | **异氰酸酯** (R-N=C=O) 和**异硫氰酸酯** (R-N=C=S) 检测 (P-61.9) |
 | `acyl_halide.py` | 66 | **酰卤** (R-C(=O)-X, X=Cl/Br) 检测 (P-65.5) |
@@ -258,9 +258,11 @@ flowchart TD
 
 ## 源码引用
 
-> **源:** `src/namepredict/layer1/analyzer.py:491` -- `analyze()` 函数入口，组装所有 FG 检测结果和环系元信息
+> **源:** `src/namepredict/layer1/analyzer.py:521` -- `analyze()` 函数入口，组装所有 FG 检测结果和环系元信息
 
-> **源:** `src/namepredict/layer1/analyzer.py:464` -- `_fg_parts()` 函数，汇总全部 20 个 FG 条目列表（经 `_arbitrate_parts` P-41 仲裁）
+> **源:** `src/namepredict/layer1/analyzer.py:494` -- `_fg_parts()` 函数，汇总全部 20 个 FG 条目列表（经 `_arbitrate_parts(mol, …)` P-41 仲裁）
+
+> **源:** `src/namepredict/layer1/analyzer.py:471` -- `_arbitrate_parts()` P-41 主基团仲裁，含降级成员回收（伯酰胺 N→amino、中性酸 OH→hydroxy；`_demoted_amide_amine`:445 / `_demoted_acid_hydroxyl`:457）
 
 > **源:** `src/namepredict/layer1/functional_group_inventory.py:8-26` -- `FunctionalGroupClass` 枚举，17 个类别 + NONE
 

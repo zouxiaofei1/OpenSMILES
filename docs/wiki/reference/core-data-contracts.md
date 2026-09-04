@@ -42,12 +42,14 @@ graph TD
 
 **全称**: Functional Group Information Dictionary（官能团信息字典）
 
-**产出**: `analyze(mol)` in `src/namepredict/layer1/analyzer.py:453`
+**产出**: `analyze(mol)` in `src/namepredict/layer1/analyzer.py:521`
 
-**构建**: `_info(mol, carbons, fgs)` at `analyzer.py:448`，由三层合并：
+**构建**: `_info(mol, carbons, fgs)` at `analyzer.py:516`，由三层合并：
 - `base`: `mol`, `carbon_ids`, `n_carbons`
 - `fgs`: 所有 FG 条目列表 + 布尔标志 + `fg_inventory`（`_collect_fgs`）
 - `_ring_meta(mol)`: 环系元信息
+
+`namer._name_mol` 在 `analyze()` 返回后再注入 `root_ctx`（见基础字段表）供 Layer3 取代基 R/S 回根重算——不属于 `_info` 的三层合并。
 
 **输入方**: Layer 2 (`select_parent(info)`), Layer 3 (`extract_substituents(info, parent)`), Layer 4 (间接通过 parent), Layer 5 (间接)
 
@@ -58,10 +60,11 @@ graph TD
 | `mol` | `rdkit.Chem.Mol` | 原始 RDKit 分子对象引用（有机部分，已去盐） |
 | `carbon_ids` | `list[int]` | 分子中所有碳原子的 atom index |
 | `n_carbons` | `int` | 碳原子总数（= `len(carbon_ids)`） |
+| `root_ctx` | `tuple[Mol, list[int]]` | 根分子上下文 `(根Mol, 本分子原子→根索引映射)`，由 `namer._name_mol` 注入；供 Layer3 取代基 R/S 在完整根分子上重算（`_fix_rs_with_real`） |
 
 ### 官能团条目列表（FG entry lists）
 
-每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 20 个列表键（来自 `_fg_parts` at `analyzer.py:464`，经 `_arbitrate_parts` P-41 仲裁）：
+每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 20 个列表键（来自 `_fg_parts` at `analyzer.py:494`，经 `_arbitrate_parts(mol, parts)` P-41 仲裁——被更高优先级主基团压制而退出的组合羰基 FG，其羰基碳降级并入 `ketones`（oxo 前缀候选），组成成员伯酰胺 N / 中性羧酸 OH 分别回收进 `amines` / `hydroxyls`）：
 
 | 键名 | 条目 dict 典型字段 | 来源 |
 |---|---|---|
@@ -69,7 +72,7 @@ graph TD
 | `hydroxyls` | `o_idx`, `c_idx` | `analyzer.py:_hydroxyl_entries` |
 | `esters` | 酯键原子索引 | `analyzer.py:_ester_entries` |
 | `amides` | 酰胺键原子索引 | `analyzer.py:_amide_entries` |
-| `ketones` | `c_idx` | `analyzer.py:_ketone_entries`（+ `_arbitrate_parts` 降级：组合羰基 FG 被更高优先级压制时羰基碳并入） |
+| `ketones` | `c_idx` | `analyzer.py:_ketone_entries`（+ `_arbitrate_parts` 降级：组合羰基 FG 被更高优先级压制时羰基碳并入；其组成成员经 `_demoted_amide_amine`/`_demoted_acid_hydroxyl` 回收——伯酰胺 N → amines、中性羧酸 OH → hydroxyls） |
 | `radicals` | 自由基（dummy 位点） | `analyzer.py` |
 | `aldehydes` | `c_idx` | `analyzer.py` |
 | `amines` | `n_idx` | `analyzer.py` |
@@ -222,7 +225,7 @@ class SubstituentName:
 
 **全称**: Substituent Dictionary（取代基字典）
 
-**产出**: `extract_substituents(info, parent)` at `src/namepredict/layer3/substituent_extractor.py:434-444`
+**产出**: `extract_substituents(info, parent)` at `src/namepredict/layer3/substituent_extractor.py:219`（now `extract_substituents(info, parent, *, name_mode, cache)`，root_ctx 由内部 claim_extract 自 `info.get("root_ctx")` 注入）
 
 **用途**: 每个 dict 描述一个待编号的取代基。Layer 4 通过 `_with_locants()` 向每个 substit dict 注入 `locant` 字段。
 
@@ -244,7 +247,7 @@ class SubstituentName:
 
 | 字段 | 类型 | 注入方 | 说明 |
 |---|---|---|---|
-| `locant` | `int` / `str` | `_with_locants()` at `locant_calc.py:130` | 该取代基在母体链上的位次编号 |
+| `locant` | `int` / `str` | `_with_locants()` at `locant_calc.py:134` | 该取代基在母体链上的位次编号 |
 
 ---
 
@@ -281,7 +284,7 @@ class CoverageLedger:
 
 **产出**: `number(parent, substituents)` at `src/namepredict/layer4/numbering.py`
 
-**构建**: `_pack(oriented, subs_with_locants)` at `locant_calc.py:233`
+**构建**: `_pack(oriented, subs_with_locants)` at `locant_calc.py:312`
 
 ### 结构
 
@@ -309,7 +312,7 @@ class CoverageLedger:
 
 ```python
 {
-    "kind":     "oh" | "amine" | "ketone" | "sh" | "acid" | "amide",  # FG 类别 (来自 principal_expression_facts.group_class 映射)
+    "kind":     "oh" | "amine" | "ketone" | "sh" | "acid" | "amide" | "ester" | "nitrile" | "aldehyde" | "radical",  # FG 类别 (fg_registry locant_kind)
     "locants":  list[int],   # 统一列表 (单 FG 也是 [x]); 由挂载原子经 chain 换算
     "omit":     bool,        # L4 omit_locants.py 规则算好的省略标志
 }
@@ -317,14 +320,14 @@ class CoverageLedger:
 
 ### locant 字段详解
 
-`_fg_locants()` at `src/namepredict/layer4/locant_calc.py` 数据驱动（`_FG_LOCANTS` 表，`locant_calc.py:217-223`）产出 `fg_locants` 稀疏列表——只产实际存在的 principal FG（oh/amine/ketone/sh/acid/amide），cooh 不产（单/多酸位次隐含，死字段清理）。`amide` 记录为 8584795 新增（exocyclic 酰胺取环上附着原子）。烯/炔位次由 `_unsat_locants()` 独立产出为扁平字段：
+`_fg_locants()`（`locant_calc.py:299`）数据驱动（`_FG_LOCANTS` 表，`locant_calc.py:294-297`，由 `fg_registry.FgSpec.locant_kind` 派生）产出 `fg_locants` 稀疏列表——只产实际存在的 principal FG。locant_kind 覆盖 acid/ester/amide/nitrile/aldehyde/ketone/oh/amine/sh/radical；其中 `aldehyde`（`_aldehyde_fg_locants`，外环醛取环上附着原子，单/多 -carbaldehyde 通用）与 `acid` 的多羧酸（multiplicity≥2 取全部附着原子位次）为本次新增。烯/炔位次由 `_unsat_locants()` 独立产出为扁平字段：
 
 | 产出方 | 内容 |
 |---|---|
-| `_fg_locants()` at `locant_calc.py`（`_FG_LOCANTS` 数据表 `:217-223`） | `fg_locants`: [{kind, locants, omit}] — 稀疏, 只含实际存在的 principal FG |
-| `_unsat_locants()` at `locant_calc.py:144` | `ene_locant`, `ene_locants`, `omit_ene_locant`, `yne_locant`, `omit_yne_locant` |
+| `_fg_locants()` at `locant_calc.py:299`（`_FG_LOCANTS` 数据表 `:294-297`） | `fg_locants`: [{kind, locants, omit}] — 稀疏, 只含实际存在的 principal FG |
+| `_unsat_locants()` at `locant_calc.py:157` | `ene_locant`, `ene_locants`, `omit_ene_locant`, `yne_locant`, `omit_yne_locant` |
 
-`_with_locants()`（注入取代基 locant）位于 `locant_calc.py:130`。
+`_with_locants()`（注入取代基 locant）位于 `locant_calc.py:134`。
 
 ---
 
@@ -349,21 +352,22 @@ class NameResult:
 
 ### meta 字段
 
-由 `_ok_result()` at `src/namepredict/namer.py:68-73` 填充：
+由 `_ok_result()` at `src/namepredict/namer.py:79` 填充：
 
 | 字段 | 类型 | 来源 | 说明 |
 |---|---|---|---|
-| `parent_chain` | `list[int]` | `_chain_meta()` at `namer.py:31-33` | 母体链的原子索引列表 |
+| `parent_chain` | `list[int]` | `_chain_meta()` at `namer.py:37-40` | 母体链的原子索引列表 |
 | `parent_kind` | `str` | `_chain_meta()` | 母体类型标识符 |
 | `depth` | `int` | `_ok_result()` 参数 | 递归深度（一般化合物为 0） |
 | `coverage_complete` | `bool` | 硬编码为 `True` | 仅当 CoverageLedger.complete 时调用 |
+| `parent_substituent_count` | `int` | `_ok_result()` | 母体取代基数量（`len(numbered["substituents"])`），供 Layer3 递归取代基判定"词干是否复合"时直读 |
 | `salt` | `str` | (如有盐) | 盐部分的名称 |
 | `reason` | `str` | (如失败) | 失败原因（如 `"parse"`, `"no_candidate"`） |
 
 ### 实例化路径
 
-- **成功路径**: `namer.py:68-70` → `_ok_result()` → `assemble(numbered, time_ms=...)` → `NameResult(en=..., zh=..., success=True, ...)`
-- **失败路径**: `namer.py:20-21` → `_fail()` → `NameResult(en="", zh="", success=False, reason="...")`
+- **成功路径**: `namer.py:79` → `_ok_result()` → `assemble(numbered, time_ms=...)` → `NameResult(en=..., zh=..., success=True, ...)`
+- **失败路径**: `namer.py:24` → `_fail()` → `NameResult(en="", zh="", success=False, reason="...")`
 
 ---
 

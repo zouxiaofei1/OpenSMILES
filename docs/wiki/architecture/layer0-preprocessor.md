@@ -1,12 +1,12 @@
 # Layer0: 预处理 (Preprocessor)
 
-> **管线位置:** 第 0 层 / 6 层 | **源文件:** 3 个 `.py` | **最后更新:** 2026-07-20
+> **管线位置:** 第 0 层 / 6 层 | **源文件:** 4 个 `.py` | **最后更新:** 2026-09-04
 
 ---
 
 ## 概述
 
-Layer0 是 NamePredict 6 层命名管线的入口层，负责将外部输入的 SMILES 字符串转换为内部可操作的分子表示（RDKit `Mol` 对象），并执行盐（salt）检测与解离。它是整个管线中唯一与"原始文本"打交道的层，也是错误处理的第一道防线。
+Layer0 是 NamePredict 6 层命名管线的入口层，负责将外部输入的 SMILES 字符串转换为内部可操作的分子表示（RDKit `Mol` 对象），并执行盐（salt）检测与解离。`preprocess` 除解析与消毒外，还会做**立体初步指派**与**酰胺烯醇互变异构归一化**（把非芳香中性的 `C(OH)=N` 位点归一为酮式 `C(=O)-NH`，见 §1.1）。它是整个管线中唯一与"原始文本"打交道的层，也是错误处理的第一道防线。
 
 **管线中的位置：**
 
@@ -27,8 +27,8 @@ SMILES 字符串
 
 | 职责 | 说明 |
 |------|------|
-| SMILES 解析 | 将文本输入转换为 `rdkit.Chem.Mol` 对象 |
-| 输入验证 | 检测空字符串、纯空白、无效 SMILES 语法 |
+| SMILES 解析与归一化 | 将文本输入转换为 `rdkit.Chem.Mol` 对象：空白校验 → `MolFromSmiles(sanitize=False)` → `SanitizeMol` → `AssignStereochemistry`（立体初步指派）→ `normalize_amide_tautomer`（酰胺烯醇 → 酮式） |
+| 输入验证 | 检测空字符串、纯空白、无效 SMILES 语法，及消毒/归一化异常 |
 | 盐解离 | 识别碱性金属盐（Li/Na/K）和盐酸盐（HCl），分离有机片段 |
 | 盐元数据生成 | 生成中英双语盐名称元数据，供 Layer5 拼接 |
 
@@ -53,17 +53,27 @@ dissociate_salt(mol: Mol) -> tuple[Mol, dict]
 
 ### 1. SMILES 解析 (`preprocess`)
 
-`preprocess` 函数是 NamePredict 中最简洁但最关键的函数之一。其核心逻辑仅三步：
+`preprocess` 函数是 NamePredict 管线入口中最关键的函数之一，负责把原始 SMILES 规整为可供下游各层直接消费的分子形态。其内部为四步：
 
 1. **空白校验**：检查输入是否为 `None`、空字符串或纯空白字符串。任何无法形成有效文本的输入均立即返回 `None`，避免将空值传递给 RDKit 造成异常。
-2. **SMILES 解析**：调用 `Chem.MolFromSmiles(str(smiles).strip())` 进行解析。RDKit 的 `MolFromSmiles` 在遇到无效 SMILES 语法时返回 `None`（而非抛出异常），这与 NamePredict 的错误处理策略一致——所有解析失败都统一为"静默失败"，由上层 `_pipeline` 函数捕获并生成 `success=False` 的 `NameResult`，其中 `meta={"reason": "parse"}` 标记失败原因。
-3. **Mol 对象返回**：解析成功时返回标准的 RDKit `Mol` 对象。该对象尚未经过任何化学修饰（如加氢、Kekulize 化、Sanitization），完全保持 RDKit 默认解析行为。后续层（尤其是 Layer1）会在此基础上进行进一步的化学分析。
+2. **解析与消毒**：调用 `Chem.MolFromSmiles(str(smiles).strip(), sanitize=False)` 先做语法解析，成功后再以 `Chem.SanitizeMol(mol)` 完成消毒。RDKit 的 `MolFromSmiles` 在遇到无效 SMILES 语法时返回 `None`（而非抛出异常），这与 NamePredict 的错误处理策略一致——所有解析失败都统一为"静默失败"，由上层 `_pipeline` 函数捕获并生成 `success=False` 的 `NameResult`，其中 `meta={"reason": "parse"}` 标记失败原因。
+3. **立体初步指派**：调用 `Chem.AssignStereochemistry(mol, force=True, cleanIt=False, flagPossibleStereoCenters=True)`，在进入 L1 前即对手性中心 / 双键预先指派 R/S、E/Z，供 L4 位次与 L5 立体描述符使用。
+4. **酰胺烯醇互变异构归一化**：调用 `normalize_amide_tautomer(mol)`（`tautomer.py`），把分子内非芳香中性的 `C(OH)=N` 烯醇位点归一化为酮式 `C(=O)-NH`（见下 §1.1），使下游面对统一的酰胺形态。以上任一步抛出异常（如消毒失败）都会返回 `None`。
 
 **错误分类**：Layer0 能检测两类输入错误：
 - **空白输入**：`""`、`None`、`"   "` -- 在进入 RDKit 之前即被拦截
 - **语法无效**：如 `"CCOO"` 中碳的五价——由 RDKit `MolFromSmiles` 返回 `None` 拦截
 
-> **源:** `src/namepredict/layer0/preprocessor.py:7-11`
+> **源:** `src/namepredict/layer0/preprocessor.py:10-23`
+
+#### 1.1 酰胺烯醇互变异构归一化 (`tautomer.py`)
+
+新增模块 `src/namepredict/layer0/tautomer.py`（67 行）专门做互变异构规范化：
+
+- 位点判定：`_is_amide_enol_o`（`tautomer.py:14`）要求与碳**单键**相连、中性、仅带隐氢的羟基 O；`_is_amide_enol_n`（`tautomer.py:25`）要求与碳**双键**相连、非芳香、中性、无显式 H 的亚胺 N。遍历排除芳香 C 后由 `_amide_enol_sites(mol)`（`tautomer.py:35`）汇总全部 `(c_idx, n_idx, o_idx)` 位点。
+- 改写方式：`normalize_amide_tautomer(mol)`（`tautomer.py:50`）对每个位点把 C=N 双键降为单键、C–O 单键升为 C=O 双键，**只改键级**并靠 RDKit 隐氢重算完成质子迁移——不增删重原子、不改原子序；改写后再次 `SanitizeMol` + `AssignStereochemistry`。
+- 保守跳过：带电 N、O⁻ 阴离子、显式 `[H]`、硫类似物（C=S 等）位点一律不处理，不做质子化 / 阴离子改写。
+- 返回约定：无位点，或改写后消毒失败时，原样返回输入的 `mol`。
 
 ### 2. 盐检测与解离 (`dissociate_salt`)
 
@@ -129,7 +139,7 @@ Layer0 在 `namer.py` 的 `_pipeline` 函数中被调用（`namer.py:203-207`）
 ```
 SMILESNNamer.name(smiles)
   → _pipeline(smiles, t0)            # namer.py:218
-      → preprocess(smiles)            # layer0/preprocessor.py:7
+      → preprocess(smiles)            # layer0/preprocessor.py:10
       → if None: _fail("parse")       # 解析失败终止
       → _name_mol(mol, ...)           # namer.py:207
           → dissociate_salt(mol)       # layer0/salt.py:90
@@ -150,9 +160,10 @@ SMILESNNamer.name(smiles)
 
 | 文件 | 行数 | 说明 |
 |------|------|------|
-| `src/namepredict/layer0/__init__.py` | 6 | 包入口，导出 `preprocess` 和 `dissociate_salt` 两个公共接口 |
-| `src/namepredict/layer0/preprocessor.py` | 11 | SMILES 解析器：`preprocess(smiles) -> Mol | None`，输入验证 + RDKit 解析 |
-| `src/namepredict/layer0/salt.py` | 96 | 盐解离引擎：检测 Li/Na/K 金属盐和 HCl 盐酸盐，返回有机片段与双语元数据 |
+| `src/namepredict/layer0/__init__.py` | 7 | 包入口，导出 `preprocess` 和 `dissociate_salt` 两个公共接口 |
+| `src/namepredict/layer0/preprocessor.py` | 23 | SMILES 预处理：`preprocess(smiles) -> Mol | None`，空白校验 + 解析消毒 + 立体初步指派 + 酰胺烯醇互变异构归一化 |
+| `src/namepredict/layer0/tautomer.py` | 67 | 酰胺烯醇互变异构归一化：非芳香中性 `C(OH)=N` → `C(=O)-NH`，`normalize_amide_tautomer` 供 preprocess 复用 |
+| `src/namepredict/layer0/salt.py` | 102 | 盐解离引擎：检测 Li/Na/K 金属盐和 HCl 盐酸盐，返回有机片段与双语元数据 |
 
 ---
 
@@ -167,7 +178,9 @@ flowchart TD
     C --> D["_pipeline: _fail('parse')"]
     D --> E["NameResult(success=false)"]
 
-    B -->|"有效 SMILES"| F["RDKit Mol 对象"]
+    B -->|"有效 SMILES"| P2["MolFromSmiles(sanitize=False)<br/>+ SanitizeMol<br/>+ AssignStereochemistry(立体初步指派)"]
+    P2 --> P3["normalize_amide_tautomer<br/>(C(OH)=N → C(=O)-NH)"]
+    P3 --> F["RDKit Mol 对象(酮式酰胺)"]
     F --> G{"dissociate_salt()"}
     G --> H{"碎片数 ≥ 2?"}
 
@@ -238,7 +251,7 @@ flowchart LR
 
 ### `preprocess(smiles: str) -> Mol | None`
 
-SMILES 字符串到 RDKit 分子对象的转换函数。返回 `None` 表示输入无效。
+SMILES 字符串到 RDKit 分子对象的转换函数；返回的 `Mol` 已完成消毒、立体初步指派与酰胺烯醇互变异构归一化。返回 `None` 表示输入无效或归一化失败。
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
@@ -246,8 +259,8 @@ SMILES 字符串到 RDKit 分子对象的转换函数。返回 `None` 表示输�
 
 | 返回值 | 说明 |
 |--------|------|
-| `rdkit.Chem.Mol` | 解析成功的分子对象 |
-| `None` | 空输入或无效 SMILES |
+| `rdkit.Chem.Mol` | 消毒后、立体已指派并完成酰胺烯醇归一化的分子对象 |
+| `None` | 空输入、无效 SMILES，或解析/消毒/归一化抛异常 |
 
 **调用者:** 仅 `namer.py:_pipeline` 直接调用。
 

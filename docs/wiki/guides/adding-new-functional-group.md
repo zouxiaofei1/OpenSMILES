@@ -54,21 +54,21 @@ def _thiol_entries(mol: Mol) -> list[dict]:
 
 ### 2.1 注册 fg_rank
 
-`fg_rank` 的单一权威是 `src/namepredict/layer1/fg_registry.py` 的 `FG_SPECS`（`FgSpec.compat`，遵循 IUPAC P-41 顺序；`fg_registry.py:42` 起），`PRINCIPAL_REGISTRY`（`principal.py:48`）由它派生。`kind_registry` 通过 `_principal_rank`（`kind_registry.py:18`）把 kind 字符串转 FG 枚举后取 `legacy_rank` 实时投影，无预注册表（`_KIND_CLASS`/`_load_chain_fg` 不存在）。新增 chain FG 只需：
+`fg_rank` 的单一权威是 `src/namepredict/layer1/fg_registry.py` 的 `FG_SPECS`（`FgSpec.compat`，遵循 IUPAC P-41 顺序；`FG_SPECS` 于 `fg_registry.py:39`），`PRINCIPAL_REGISTRY`（`principal.py:48`）由它派生。主官能团等级**不存于 `kind_registry`**——kind_registry 仅注册 scaffold 词干（`KindMeta`）；旧式 parent 的等级兜底由 `parent_candidate._kind_rank`（`parent_candidate.py:20`）按 kind → `legacy_rank`（`principal.py:64`）实时投影。新增 chain FG 只需：
 
-1. 在 `fg_registry.FG_SPECS` 加一条 `FgSpec` 声明 `p41`/`compat`/`expr`/`anchors` 等字段。SUFFIX 档 `expr="suffix"`（如 `FgSpec("thiol", "thiols", p41=17, path=(2,), compat=4, ...)`，`fg_registry.py:70`）；非 SUFFIX 类（如 sulfide/ether）用 `expr="legacy_compat"/"prefix_only"`。`PRINCIPAL_REGISTRY` 经 `_spec_from_fg`（`principal.py:36`）自动派生，无需手写 `_suffix`。
+1. 在 `fg_registry.FG_SPECS` 加一条 `FgSpec` 声明 `p41`/`compat`/`expr`/`anchors`/`parent_anchor_fields`/`chain`/`multi`/`rs`/`locant_kind` 等字段。SUFFIX 档 `expr="suffix"`（默认，如 `FgSpec("thiol", "thiols", p41=17, path=(2,), compat=4, ...)`，`fg_registry.py:69`）；非 SUFFIX 类（如 sulfide/ether）用 `expr="legacy_compat"/"prefix_only"`。需在 L4 `fg_locants` 记主基团位次的设 `locant_kind`（aldehyde/acid/amide 等即如此），支持 R/S 的设 `rs=True`。`PRINCIPAL_REGISTRY` 经 `_spec_from_fg`（`principal.py:36`）自动派生，无需手写 `_suffix`。
 
 ### 2.2 母体接线（按表达权限分档）
 
-**SUFFIX 档**（acid/ester/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine）：`principal_expression.py` 的 `_CHAIN_FG`（`:43`）限定 8 类可链式表达的 FG，`_chain_kind`（`:59`）按类别与多重度返回 kind：
+**SUFFIX 档**：`principal_expression.py` 的 `_CHAIN_FG`（`:43`）限定可链式表达的 FG——由 `fg_registry.chain_fgs()` 派生，含 acid/ester/acyl_halide/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine，`_chain_kind`（`:59`）按类别与多重度返回 kind：
 
 ```python
 # _CHAIN_FG 含该 FG 类即自动支持；_chain_kind 返回 group_class.value
 ```
 
-> ACID/ALCOHOL/AMINE/KETONE 任意 count≥1 恒返回基团名（`_MULTI_FG`，数量由 `principal_expression_facts.multiplicity` 承载）；ESTER/AMIDE/NITRILE/ALDEHYDE 仅单基（count≠1 → None）。`dione` 不再由 L2 产生，二酮由 L5 chain_engine `mult_ok` 生成式命名。新增 SUFFIX FG 若属同类，把其类别加进 `_CHAIN_FG` 即可。
+> ACID/ALCOHOL/AMINE/KETONE 任意 count≥1 恒返回基团名（`_MULTI_FG`，数量由 `principal_expression_facts.multiplicity` 承载）；ESTER/AMIDE/NITRILE/ACYL_HALIDE 仅单基（count≠1 → None）；ALDEHYDE 开链亦仅单基，但环骨架外环 -CHO 例外（`_ring_kind` 放行多醛，母体 kind 仍 `aldehyde`，供 L5 `_exocyclic_aldehyde_names` 拼 -carbaldehyde/-dicarbaldehyde，P-66.6.1.1.3）。`dione` 不再由 L2 产生，二酮由 L5 chain_engine `mult_ok` 生成式命名。新增 SUFFIX FG 若属同类，把其类别加进 `_CHAIN_FG` 即可。
 
-**LEGACY_COMPAT 档**（sulfide 等非 SUFFIX 类）：`compatibility_rank` 经 `_principal_rank` 投影为 `fg_rank`，但**不参与主官能团选择**（`principal_spec()` 只放行 SUFFIX）——纯醚/纯亚砜类分子会落入纯烃兜底。
+**LEGACY_COMPAT 档**（sulfide/isocyanate/isothiocyanate 等非 SUFFIX 类）：仅取 `compatibility_rank`（按 FG 枚举经 `legacy_rank` 查询，`principal.py:64`），但**不参与主官能团选择**（`principal_spec()` 只放行 SUFFIX 表达）——纯醚/纯硫醚类分子会落入纯烃兜底。
 
 ### 2.3 互斥检查（无需改动）
 
@@ -111,7 +111,7 @@ def _thiol_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 1. 枚举候选编号（链正反/环 2n）
 2. 按 P-14.4 逐条收窄：principal FG 最低位次集 → 多重键 → 取代基位次集
 
-**新增 FG 无需注册 orienter**——只要 parent dict 携带正确的 FG 定位字段，引擎自动把主官能团放到最低位次。FG 位次由 `locant_calc.py` 的 `_FG_LOCANTS` 表产出；若新 FG 的位次需要省略规则，在 `omit_locants.py` 中添加。
+**新增 FG 无需注册 orienter**——只要 parent dict 携带正确的 FG 定位字段，引擎自动把主官能团放到最低位次。FG 位次由 `locant_calc.py` 的 `_fg_locants` 产出（`_FG_LOCANTS` 由 `fg_registry.FgSpec.locant_kind` 派生）：需记主基团位次的 FG 在 FgSpec 设 `locant_kind` 并在 `locant_calc._LOCANT_FNS` 补位次函数（如 `_aldehyde_fg_locants`/`_acid_fg_locants`）；若新 FG 的位次需要省略规则，在 `omit_locants.py` 中添加。
 
 > **源:** `src/namepredict/layer4/numbering_engine.py`
 
@@ -125,7 +125,7 @@ Layer5 的母体命名以 `chain_engine.py` 的 **`_KIND_TABLE`** 链引擎为�
 
 **方式 A：链状/环状 FG → 在 `_KIND_TABLE` 添加 `_Chain` spec。** 例如 `thiol`（`chain_engine.py`）声明 `en_suf="thiol"`、`zh_suf="硫醇"`、`fg="sh"` 等。`_chain_names` 统一渲染词干、位次与省略规则——新增此类 FG 通常只需一行 spec，无需修改派发逻辑。
 
-**方式 B：特殊拼接 → 在 `_names_for` 添加 worker 分支。** 如 `_exocyclic_acid_names`（`assembler.py:55-76`）、`_sulfide_names` 等。
+**方式 B：特殊拼接 → 在 `_names_for` 添加 worker 分支**（先于 chain_engine 查表尝试）。如 `_exocyclic_acid_names`（`assembler.py:46`）、`_exocyclic_aldehyde_names`（`assembler.py:170`，外环 -CHO）、`_mononuclear_radical_names`（`assembler.py:244`，杂原子锚点自由基）等。
 
 ### 5.2 kind 收敛（无需改动）
 
@@ -133,7 +133,7 @@ kind 收敛在 L2 `_chain_kind`，L5 直接按 FG 类别 kind 查 `_KIND_TABLE`�
 
 ### 5.3 接线到组装流水线
 
-`_names_for` 返回 `(en, zh)` 后，由 `assemble`（`assembler.py:240`）统一完成后续变换——`join_kind_name` 拼接前缀、`maybe_anion_names` 阴离子、`apply_rs_prefix` 立体前缀、`maybe_metal_salt_names` 盐后缀——无需为单个 FG 手动接线。
+`_names_for` 返回 `(en, zh)` 后，由 `assemble`（`assembler.py:412`）统一完成后续变换——`join_kind_name` 拼接前缀、`maybe_anion_names` 阴离子、`apply_rs_prefix` 立体前缀、`maybe_metal_salt_names` 盐后缀——无需为单个 FG 手动接线。
 
 ---
 
@@ -158,8 +158,8 @@ kind 收敛在 L2 `_chain_kind`，L5 直接按 FG 类别 kind 查 `_KIND_TABLE`�
 | L1 | `analyzer.py` 或新建 `{fg}.py` | 独立检测器（较复杂 FG） |
 | L1 | `_carbonyl_common.py` | 共享羰基原语（如涉及 C=O） |
 | L1 | `functional_group_inventory.py` | `FunctionalGroupClass` + `_LIST_CLASSES` + `_ANCHOR_KEYS`（如需类型化类别） |
-| L2 | `fg_registry.FG_SPECS` → `principal.py:PRINCIPAL_REGISTRY`（派生） | `FgSpec`（`p41`/`compat`/`expr`，非 SUFFIX 用 `legacy_compat`） |
-| L2 | `kind_registry.py` | fg_rank 投影（`_principal_rank`） |
+| L2 | `fg_registry.FG_SPECS` → `principal.py:PRINCIPAL_REGISTRY`（派生） | `FgSpec`（`p41`/`compat`/`expr`/`chain`/`multi`/`rs`/`locant_kind`；非 SUFFIX 用 `legacy_compat`） |
+| L2 | `kind_registry.py` | 一般无需改动——只注册 scaffold 词干，FG 主基团等级不存于此 |
 | L2 | `principal_expression.py:_CHAIN_FG` | 链式 FG 类别集合（SUFFIX 类） |
 | L2 | `parent_ownership.py:_kind_fg_atoms` | FG heteroatom ownership 函数 |
 | L3/tools | `tools/anchored_table.py` | 前缀名注册（如需） |

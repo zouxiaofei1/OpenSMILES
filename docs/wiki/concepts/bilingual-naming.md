@@ -1,6 +1,6 @@
 # 中英双语命名约定 (Bilingual Naming Convention)
 
-> **概念页面** | **最后更新:** 2026-07-20
+> **概念页面** | **最后更新:** 2026-09-04
 
 ---
 
@@ -26,7 +26,7 @@ Layer5: (en, zh) tuples → NameResult(en="ethanol", zh="乙醇")   ← 双语�
 
 ### 管线的 5 步双语流水线
 
-以 `assemble()` 函数（`src/namepredict/layer5/assembler.py:240`）为例，每一步都操作 `(en, zh)` 对：
+以 `assemble()` 函数（`src/namepredict/layer5/assembler.py:412`）为例，每一步都操作 `(en, zh)` 对：
 
 ```
 1. _names_for(kind, n, numbered)     → (en, zh) | None   母体名称
@@ -45,7 +45,7 @@ Layer5: (en, zh) tuples → NameResult(en="ethanol", zh="乙醇")   ← 双语�
 
 ### 母体名称派发中的双语约定
 
-`_names_for` 函数（`src/namepredict/layer5/assembler.py:254`）先查 `chain_engine._KIND_TABLE`（11 个 `_Chain` spec，按 `scaffold_id` 运行时注入环前缀/稠环词干），命中即返回；否则落到特殊 worker（`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`phenyl`）或 `_parent_stem_names` 回退。每个 worker 都是返回 `(en, zh)` 或 `None` 的双语函数——返回 `None` 时派发器降级到下一策略。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
+`_names_for` 函数（`src/namepredict/layer5/assembler.py:290`）先查 `chain_engine._KIND_TABLE`（12 个 `_Chain` spec，按 `scaffold_id` 运行时注入环前缀/稠环词干），命中即返回；否则落到特殊 worker（`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names`/`phenyl`）或 `_parent_stem_names` 回退。每个 worker 都是返回 `(en, zh)` 或 `None` 的双语函数——返回 `None` 时派发器降级到下一策略。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
 
 ## 词干表：双语单词的单一权威来源
 

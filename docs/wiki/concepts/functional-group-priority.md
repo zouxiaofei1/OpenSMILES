@@ -8,7 +8,7 @@
 
 IUPAC 有机命名中，一个分子可能同时含有多种官能团（Functional Group, FG），例如羟基酸（含 -COOH 和 -OH）、氨基酮（含 -NH&#8322; 和 >C=O）、氰基酯（含 -CN 和 -COOR）等。按照 IUPAC P-41 规则，这些官能团之间存在严格的**优先顺序**：优先级最高的官能团成为 **principal characteristic group（主特征基团）**，以母体后缀（suffix）表达；较低优先级的官能团退化为取代基前缀（prefix）。
 
-NamePredict 将这一优先级体系的**单一事实来源放在 `fg_registry.FG_SPECS.compat`**（`fg_registry.py:25`），由 `principal.py` 的 `PRINCIPAL_REGISTRY` 派生（`compatibility_rank`），`legacy_rank`（`principal.py:64`）按 FG 枚举查询，并在三层流水线中接力使用：
+NamePredict 将这一优先级体系的**单一事实来源放在 `fg_registry.FG_SPECS.compat`**（`FG_SPECS` 于 `fg_registry.py:39`），由 `principal.py` 的 `PRINCIPAL_REGISTRY` 派生（`compatibility_rank`），`legacy_rank`（`principal.py:64`）按 FG 枚举查询，并在三层流水线中接力使用：
 
 1. **Layer 1（`analyzer.py`）**: 检测 FG 时采用排他性优先级（如 carboxyl 排斥 ester/amide/anhydride）
 2. **Layer 2（`scoring.py`）**: 将主官能团等级（`principal_group_class`，来自 `P44Facts`）作为 P-44 评分 tuple 的第二维，决定母体选择
@@ -59,7 +59,7 @@ class KindMeta:
     retained: bool         # 是否为 IUPAC 保留名（retained name），影响 L2 评分
 ```
 
-所有 scaffold 母体种类通过模块级 `_bootstrap()` 函数统一注册（`kind_registry.py:102-107`），注册**只有一步**：`_load_from_scaffold_specs()`（从 `ring_scaffold.all_specs()` 读取，`:92`）。**`ring_scaffold.py` 的 `_TEMPLATES`** 是 **stem 的最终权威来源**。链式 FG kind 不预先注册——主官能团等级不存于 `KindMeta`，运行时按 FG 枚举经 `legacy_rank` 实时投影（旧式 parent 兜底在 `parent_candidate._kind_rank`）。
+所有 scaffold 母体种类通过模块级 `_bootstrap()` 函数统一注册（`kind_registry.py:112`），注册**只有一步**：`_load_from_scaffold_specs()`（从 `ring_scaffold.all_specs()` 读取，`kind_registry.py:101`）。**`ring_scaffold.py` 的 `_TEMPLATES`** 是 **stem 的最终权威来源**。链式 FG kind 不预先注册——主官能团等级不存于 `KindMeta`，运行时按 FG 枚举经 `legacy_rank` 实时投影（旧式 parent 兜底在 `parent_candidate._kind_rank`）。
 
 ---
 
@@ -105,11 +105,11 @@ class KindMeta:
 
 ### Layer 5: 后缀分派（Suffix Dispatch）
 
-Layer5 由 `_names_for`（`assembler.py:254`）查 **`chain_engine._KIND_TABLE`**（11 个 `_Chain` spec）渲染词干、不饱和段、位次与环前缀（kind 收敛在 L2 `_chain_kind`，无 `typed_kinds` 模块）。`mult_ok` 生成式按 multiplicity 派生数量后缀（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid），`variant` 仅作 scaffold 特例覆盖（含 `acyl_halide`）。特殊 case 走 worker（`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_parent_stem_names`）。
+Layer5 由 `_names_for`（`assembler.py:290`）查 **`chain_engine._KIND_TABLE`**（12 个 `_Chain` spec）渲染词干、不饱和段、位次与环前缀（kind 收敛在 L2 `_chain_kind`，无 `typed_kinds` 模块）。`mult_ok` 生成式按 multiplicity 派生数量后缀（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid），`variant` 仅作 scaffold 特例覆盖（含 `acyl_halide`）。环外（exocyclic）FG 走 worker——`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names` 按 multiplicity 拼 …-carboxylic acid/…-carbaldehyde（多羧酸 → -dicarboxylic acid，环外二醛 → -dicarbaldehyde，P-66.6.1.1.3）——否则落 `_parent_stem_names` 回退。
 
 调度是分层的：L2 收敛 kind → L5 查链引擎 → 命中后直接返回。这确保了被选为母体的 principal FG 获得后缀，而劣后 FG 在 Layer 3 中被转为取代基前缀（如 hydroxy-、oxo-、amino-）。
 
-> **源:** `src/namepredict/layer5/chain_engine.py`, `src/namepredict/layer5/assembler.py:142` | 详情见 [[architecture/layer5-name-assembly]]
+> **源:** `src/namepredict/layer5/chain_engine.py`, `src/namepredict/layer5/assembler.py:290` | 详情见 [[architecture/layer5-name-assembly]]
 
 ---
 
@@ -123,7 +123,7 @@ IUPAC P-41 规定某些 FG 之间不能作为母体共存。NamePredict 通过 *
 
 ## 注册体系：kind_registry 作为词干注册中心
 
-`src/namepredict/layer2/kind_registry.py` 是**词干与环元数据的注册查询中心**：保留 scaffold 的 stem/ring/n_rings/retained 由 `ring_scaffold.py` 的 `_TEMPLATES` 派生（bootstrap 唯一一步 `_load_from_scaffold_specs`，`kind_registry.py:92`），**不承载主官能团等级**（等级单一权威在 `fg_registry.FG_SPECS.compat` → `principal.PRINCIPAL_REGISTRY`）。公共 API：
+`src/namepredict/layer2/kind_registry.py` 是**词干与环元数据的注册查询中心**：保留 scaffold 的 stem/ring/n_rings/retained 由 `ring_scaffold.py` 的 `_TEMPLATES` 派生（bootstrap 唯一一步 `_load_from_scaffold_specs`，`kind_registry.py:101`），**不承载主官能团等级**（等级单一权威在 `fg_registry.FG_SPECS.compat` → `principal.PRINCIPAL_REGISTRY`）。公共 API：
 
 | API | 功能 |
 |---|---|

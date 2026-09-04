@@ -76,11 +76,11 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 #### 醛 (Aldehyde)
 
-醛母体拥有 **醛基碳 + C=O 双键氧**。
+醛母体拥有 **醛基碳 + C=O 双键氧**。支持单醛（`aldehyde_c_idx`）与多醛（`aldehyde_c_idxs`）——环上外环 -CHO 的多醛（-dicarbaldehyde）也取全部醛基碳。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:62-68`
+> **源:** `src/namepredict/layer2/parent_ownership.py:70-82`
 
-归属: `{C_aldehyde} ∪ {=O}`。
+归属（每个醛基）: `{C_aldehyde} ∪ {=O}`。
 
 #### 酮 (Ketone)
 
