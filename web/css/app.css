@@ -1509,161 +1509,6 @@ select.input {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   Layer Benchmark Page
-   ════════════════════════════════════════════════════════════════ */
-
-.layer-benchmark-page {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: var(--space-xl);
-  flex: 1;
-  min-height: 0;
-  animation: pageFadeIn 0.25s var(--ease-out);
-}
-
-.layer-benchmark-page.hidden {
-  display: none !important;
-}
-
-.lb-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  padding: var(--space-lg) var(--space-sm);
-  border-right: 1px solid rgba(71, 85, 105, 0.3);
-  align-self: start;
-  position: sticky;
-  top: var(--space-lg);
-}
-
-.lb-sidebar-title {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted-text);
-  padding: 0 var(--space-sm) var(--space-sm);
-}
-
-.lb-item {
-  text-align: left;
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-sm, 6px);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--color-text, inherit);
-  font: inherit;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.lb-item:hover {
-  background: rgba(71, 85, 105, 0.12);
-}
-
-.lb-item.active {
-  background: var(--color-accent);
-  color: #fff;
-  border-color: var(--color-accent);
-}
-
-.lb-content {
-  min-width: 0;
-}
-
-.lb-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-lg);
-  margin-top: var(--space-lg);
-}
-
-.lb-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-  flex: 1;
-  min-width: 260px;
-}
-
-.lb-field input[type="range"] {
-  width: 100%;
-  accent-color: var(--color-accent);
-}
-
-.lb-actions {
-  display: flex;
-  gap: var(--space-md);
-  align-items: center;
-}
-
-.lb-one-controls {
-  display: flex;
-  gap: var(--space-md);
-  margin-top: var(--space-md);
-}
-
-.lb-one-controls .input {
-  flex: 1;
-  min-height: 40px;
-}
-
-.lb-one-result {
-  margin-top: var(--space-lg);
-}
-
-.lb-one-result .kv dd {
-  word-break: break-all;
-}
-
-.lb-progress-stats {
-  display: flex;
-  gap: var(--space-lg);
-  margin-top: var(--space-sm);
-}
-
-.lb-score-row {
-  display: grid;
-  grid-template-columns: minmax(140px, 1fr) 2fr auto;
-  align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-sm) 0;
-  border-bottom: 1px solid rgba(71, 85, 105, 0.15);
-}
-
-.lb-score-label {
-  font-size: 13px;
-  color: var(--color-text, inherit);
-}
-
-.lb-score-bar-wrap {
-  height: 8px;
-  border-radius: 4px;
-  background: rgba(71, 85, 105, 0.15);
-  overflow: hidden;
-}
-
-.lb-score-bar {
-  height: 100%;
-  border-radius: 4px;
-  background: linear-gradient(90deg, var(--color-accent), #38bdf8);
-}
-
-.lb-score-value {
-  font-size: 13px;
-  min-width: 96px;
-  text-align: right;
-  color: var(--color-muted-text);
-}
-
-.lb-diff-table td {
-  max-width: 340px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ══════════════════════════════════════════════════════════════════
    Code Analysis Page
    ════════════════════════════════════════════════════════════════ */
 
@@ -2831,7 +2676,7 @@ details.mol-details pre {
 
 /* ---- Wiki ---- */
 
-.wiki-page {
+.docs-page {
   display: flex;
   flex-direction: column;
 }
@@ -2851,15 +2696,6 @@ details.mol-details pre {
   padding: var(--space-md);
   max-height: calc(100vh - var(--topbar-h) - 40px);
   overflow-y: auto;
-}
-
-.wiki-sidebar-head {
-  font-weight: 700;
-  color: var(--color-muted-text);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-sm);
 }
 
 .wiki-tree { font-size: 13px; }
@@ -2932,9 +2768,19 @@ details.mol-details pre {
 
 .wiki-doc a { color: var(--color-accent); }
 
-/* IUPAC CN translation page: reuses .wiki-* layout; wider sidebar for zh titles */
-.iupac-page .wiki-sidebar { width: 300px; }
-.iupac-page .wiki-file { white-space: normal; }
+/* 文档页来源切换：IUPAC 中文条目名更长，用更宽侧栏并允许换行 */
+.docs-page[data-src="iupac"] .wiki-sidebar { width: 300px; }
+.docs-page[data-src="iupac"] .wiki-file { white-space: normal; }
+
+/* Wiki / IUPAC 来源切换分段按钮 */
+.wiki-source-seg { display: flex; gap: 4px; padding: 2px; margin-bottom: var(--space-md); background: var(--color-surface-2); border: 1px solid rgba(71, 85, 105, 0.25); border-radius: var(--radius); }
+.wiki-source-seg .src-btn { flex: 1; padding: 4px 6px; font-size: 12px; font-weight: 600; color: var(--color-muted-text); background: transparent; border: none; border-radius: 6px; cursor: pointer; }
+.wiki-source-seg .src-btn:hover { color: var(--color-foreground); }
+.wiki-source-seg .src-btn.active { color: var(--color-accent); background: var(--color-accent-subtle); }
+
+/* 设置齿轮入口（topbar-right） */
+.topbar-right .gear-tab { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; flex: 0 0 auto; }
+.topbar-right .gear-tab svg { width: 18px; height: 18px; }
 
 /* History version picker (topbar right) */
 .history-picker { display: flex; align-items: center; gap: var(--space-sm); }

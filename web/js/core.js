@@ -13,12 +13,6 @@ export const API = {
   benchmarkRunDatasets: "/api/v1/benchmark-run/datasets",
   benchmarkRunStatus: "/api/v1/benchmark-run/status",
   benchmarkRunResult: "/api/v1/benchmark-run/result",
-  layerSample: "/api/v1/layer-benchmark/sample",
-  layerSampleStatus: "/api/v1/layer-benchmark/sample-status",
-  layerData: "/api/v1/layer-benchmark/data",
-  layerScore: "/api/v1/layer-benchmark/score",
-  layerScoreResult: "/api/v1/layer-benchmark/score-result",
-  layerAnalyzeOne: "/api/v1/layer-benchmark/analyze-one",
   codeAnalysis: "/api/v1/code-analysis",
   callGraph: "/api/v1/call-graph",
   callGraphProgress: "/api/v1/call-graph/progress",
@@ -62,11 +56,6 @@ export const state = {
   brRunning: false,
   brPollTimer: null,
   brDatasetsLoaded: false,
-  // layer benchmark
-  lbLayer: 0,
-  lbGenerating: false,
-  lbPollTimer: null,
-  lbScore: null,
   // code analysis
   caData: null,
   // call graph
@@ -76,7 +65,8 @@ export const state = {
   cgSvg: null,
   cgSvgLoading: false,
   cgSourceTotal: 0,
-  wikiCurrent: "",
+  docsSource: "wiki", // 文档页当前来源: "wiki" | "iupac"
+  wikiCurrent: "", // 文档页 · 各来源记住上次打开的文档
   iupacCurrent: "",
   cgRank: {
     calls: { asc: false, all: false },

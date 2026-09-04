@@ -5,13 +5,11 @@ import { state } from "./core.js";
 import { bindNamer, ensureKetcher } from "./namer.js";
 import { loadBenchmark, stopBmPolling, bindBenchmark } from "./benchmark.js";
 import { stopBrPolling, bindBenchmarkRun } from "./benchmark-run.js";
-import { renderLbPanel, stopLbPolling, bindLayerBenchmark } from "./layer-benchmark.js";
 import { bindDebug } from "./debug.js";
 import { loadCodeAnalysis, bindCodeAnalysis } from "./code-analysis.js";
 import { loadCallGraph, loadCallGraphSvg, bindCallGraph } from "./callgraph.js";
 import { initTheme, loadSettings, bindSettings } from "./settings.js";
-import { loadWiki, bindWiki } from "./wiki.js";
-import { loadIupac, bindIupac } from "./iupac.js";
+import { loadDocs, bindDocs } from "./docs.js";
 import { initHistoryPicker } from "./history.js";
 
 /* ---------- Page switching ---------- */
@@ -31,28 +29,23 @@ function switchPage(name) {
   var namerLayout = document.getElementById("namer-layout");
   var bmPage = document.getElementById("benchmark-page");
   var brPage = document.getElementById("benchmark-run-page");
-  var lbPage = document.getElementById("layer-benchmark-page");
   var caPage = document.getElementById("code-analysis-page");
   var cgPage = document.getElementById("call-graph-page");
   var debugPage = document.getElementById("debug-page");
   var settingsPage = document.getElementById("settings-page");
-  var wikiPage = document.getElementById("wiki-page");
-  var iupacPage = document.getElementById("iupac-page");
+  var docsPage = document.getElementById("docs-page");
   // Hide all first
   if (namerLayout) namerLayout.classList.add("hidden");
   if (bmPage) bmPage.classList.add("hidden");
   if (brPage) brPage.classList.add("hidden");
-  if (lbPage) lbPage.classList.add("hidden");
   if (caPage) caPage.classList.add("hidden");
   if (cgPage) cgPage.classList.add("hidden");
   if (debugPage) debugPage.classList.add("hidden");
   if (settingsPage) settingsPage.classList.add("hidden");
-  if (wikiPage) wikiPage.classList.add("hidden");
-  if (iupacPage) iupacPage.classList.add("hidden");
+  if (docsPage) docsPage.classList.add("hidden");
   // Stop polling
   stopBmPolling();
   stopBrPolling();
-  stopLbPolling();
   // Show active page
   if (name === "benchmark") {
     if (bmPage) bmPage.classList.remove("hidden");
@@ -61,9 +54,6 @@ function switchPage(name) {
     }
   } else if (name === "benchmark-run") {
     if (brPage) brPage.classList.remove("hidden");
-  } else if (name === "layer-benchmark") {
-    if (lbPage) lbPage.classList.remove("hidden");
-    renderLbPanel(state.lbLayer);
   } else if (name === "code-analysis") {
     if (caPage) caPage.classList.remove("hidden");
     loadCodeAnalysis();
@@ -78,12 +68,9 @@ function switchPage(name) {
   } else if (name === "settings") {
     if (settingsPage) settingsPage.classList.remove("hidden");
     loadSettings();
-  } else if (name === "wiki") {
-    if (wikiPage) wikiPage.classList.remove("hidden");
-    loadWiki();
-  } else if (name === "iupac") {
-    if (iupacPage) iupacPage.classList.remove("hidden");
-    loadIupac();
+  } else if (name === "docs") {
+    if (docsPage) docsPage.classList.remove("hidden");
+    loadDocs(state.docsSource);
   } else {
     if (namerLayout) namerLayout.classList.remove("hidden");
   }
@@ -211,13 +198,11 @@ function bind() {
   bindNamer();
   bindBenchmark();
   bindBenchmarkRun();
-  bindLayerBenchmark();
   bindDebug();
   bindCodeAnalysis();
   bindCallGraph();
   bindSettings();
-  bindWiki();
-  bindIupac();
+  bindDocs();
 }
 
 async function init() {

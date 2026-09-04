@@ -33,13 +33,10 @@
           <button class="tab" data-page="namer" aria-current="page">Namer</button>
           <button class="tab" data-page="benchmark">Benchmark 预览</button>
           <button class="tab" data-page="benchmark-run">Benchmark 跑分</button>
-          <button class="tab" data-page="layer-benchmark">分层 benchmark</button>
           <button class="tab" data-page="code-analysis">代码量分析</button>
           <button class="tab" data-page="call-graph">调用链</button>
           <button class="tab" data-page="debug">Debug</button>
-          <button class="tab" data-page="settings">设置</button>
-          <button class="tab" data-page="wiki">Wiki</button>
-          <button class="tab" data-page="iupac">IUPAC</button>
+          <button class="tab" data-page="docs">文档</button>
         </nav>
       </div>
       <div class="topbar-right">
@@ -50,6 +47,13 @@
           <datalist id="history-commit-list"></datalist>
         </div>
         <span id="history-badge" class="chip">HEAD</span>
+        <button type="button" class="tab gear-tab" data-page="settings"
+                title="设置" aria-label="设置">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </button>
         <button type="button" id="nav-toggle" class="nav-toggle" aria-expanded="false"
                 aria-controls="nav-drawer" aria-label="打开菜单" title="打开菜单">
           <span class="nav-toggle-bars" aria-hidden="true">
@@ -334,23 +338,6 @@
         </div>
       </div>
 
-      <!-- Layer Benchmark Page -->
-      <div id="layer-benchmark-page" class="layer-benchmark-page hidden" role="tabpanel" aria-labelledby="tab-layer-benchmark">
-        <aside class="lb-sidebar" role="navigation" aria-label="Layer 选择">
-          <div class="lb-sidebar-title">Layer</div>
-          <button type="button" class="lb-item active" data-lb-layer="0">Layer 0</button>
-          <button type="button" class="lb-item" data-lb-layer="1">Layer 1</button>
-          <button type="button" class="lb-item" data-lb-layer="2">Layer 2</button>
-          <button type="button" class="lb-item" data-lb-layer="3">Layer 3</button>
-          <button type="button" class="lb-item" data-lb-layer="4">Layer 4</button>
-          <button type="button" class="lb-item" data-lb-layer="5">Layer 5</button>
-        </aside>
-        <section class="lb-content" role="tabpanel">
-          <!-- Layer 面板（0/1 实装，2-5 占位）由 JS 动态渲染 -->
-          <div id="lb-content" class="lb-content" role="tabpanel"></div>
-        </section>
-      </div>
-
       <!-- Code Analysis Page -->
       <div id="code-analysis-page" class="code-analysis-page hidden" role="tabpanel" aria-labelledby="tab-code-analysis">
         <div class="ca-toolbar">
@@ -494,31 +481,19 @@
         </div>
       </div>
 
-      <!-- Wiki Page -->
-      <div id="wiki-page" class="wiki-page hidden" role="tabpanel" aria-labelledby="tab-wiki">
+      <!-- Docs Page: docs/wiki 目录树 + IUPAC 中文翻译共用查看器，侧边栏做来源切换 -->
+      <div id="docs-page" class="docs-page hidden" role="tabpanel" data-src="wiki">
         <div class="wiki-layout">
-          <aside class="wiki-sidebar">
-            <div class="wiki-sidebar-head">docs/wiki</div>
-            <div id="wiki-tree" class="wiki-tree"></div>
-          </aside>
-          <section class="wiki-content">
-            <div id="wiki-doc" class="wiki-doc">
-              <p class="muted-text">选择左侧文档查看</p>
+          <aside class="wiki-sidebar" role="navigation" aria-label="文档来源与目录">
+            <div class="wiki-source-seg" role="group" aria-label="文档来源">
+              <button type="button" class="src-btn active" data-src="wiki">Wiki</button>
+              <button type="button" class="src-btn" data-src="iupac">IUPAC</button>
             </div>
-          </section>
-        </div>
-      </div>
-
-      <!-- IUPAC CN Translation Page -->
-      <div id="iupac-page" class="iupac-page hidden" role="tabpanel" aria-labelledby="tab-iupac">
-        <div class="wiki-layout">
-          <aside class="wiki-sidebar">
-            <div class="wiki-sidebar-head">IUPAC 中文翻译</div>
-            <div id="iupac-list" class="wiki-tree"></div>
+            <div id="docs-tree" class="wiki-tree"></div>
           </aside>
           <section class="wiki-content">
-            <div id="iupac-doc" class="wiki-doc">
-              <p class="muted-text">选择左侧条目查看</p>
+            <div id="docs-doc" class="wiki-doc">
+              <p class="muted-text">选择左侧文档查看</p>
             </div>
           </section>
         </div>
