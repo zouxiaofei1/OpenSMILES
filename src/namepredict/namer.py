@@ -230,13 +230,26 @@ def _name_mol(
     cache: CommonNameCache | None = None,
     t0: float | None = None,
     name_mode: str = "general",
+    root_ctx: tuple | None = None,
 ) -> NameResult:
-    """从 mol 运行 L1–L5，带 coverage 门控的候选重试。"""
+    """从 mol 运行 L1–L5，带 coverage 门控的候选重试；root_ctx=(根分子, 本分子原子→根索引映射)
+    供取代基 R/S 回根分子重算（糖苷异头碳 CIP 随配基翻转，须在完整根分子上取值）。"""
     t0 = t0 if t0 is not None else time.perf_counter()
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
     organic, salt = dissociate_salt(mol)
-    result = _run_candidates(analyze(organic), depth=depth, t0=t0, name_mode=name_mode, cache=cache)
+    if root_ctx is None:
+        root_mol, to_root = organic, list(range(organic.GetNumAtoms()))
+        # 顶层整分子：内部 `*` 片段名仅在本分子运行内共享（同根立体一致）；
+        # 跨分子/跨根的片段缓存会把别的宿主的异头立体带入，须禁用。
+        run_cache = CommonNameCache(max_entries=2000) if cache is not None else None
+    else:
+        root_mol, to_root = root_ctx
+        # 无盐时 organic 即 mol、索引不变；锚定碎片必为单片段不含盐，映射直接沿用。
+        run_cache = cache
+    info = analyze(organic)
+    info["root_ctx"] = (root_mol, to_root)
+    result = _run_candidates(info, depth=depth, t0=t0, name_mode=name_mode, cache=run_cache)
     result = _apply_salt_suffix(result, salt)
     if salt and result.success:
         result.meta = {**(result.meta or {}), "salt": salt}

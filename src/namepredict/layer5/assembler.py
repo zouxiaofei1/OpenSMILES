@@ -57,7 +57,7 @@ def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
     if sid == "carbocycle" and not parent.get("fused_tree"):
         # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         base = _alkane_names(n)
-        return (f"cyclo{base[0]}carboxylic acid", f"环{base[1]}甲酸") if base else None
+        return (f"cyclo{base[0]}carboxylic acid", f"环{base[1]}羧酸") if base else None
     if sid == "benzene":
         # 苯甲酸走 chain_engine variant（benzoic acid），不走 base-carboxylic 通用名。
         return None
@@ -68,8 +68,8 @@ def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
         locs = rec.get("locants") if rec else None
         if locs:
             loc = ",".join(str(x) for x in locs)
-            return (f"{base[0]}-{loc}-carboxylic acid", f"{base[1]}-{loc}-甲酸")
-        return (f"{base[0]}carboxylic acid", f"{base[1]}甲酸")
+            return (f"{base[0]}-{loc}-carboxylic acid", f"{base[1]}-{loc}-羧酸")
+        return (f"{base[0]}carboxylic acid", f"{base[1]}羧酸")
     return None
 
 
@@ -87,15 +87,15 @@ def _exocyclic_ester_names(n: int, numbered: dict) -> tuple[str, str] | None:
     if sid == "carbocycle" and not parent.get("fused_tree"):
         # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         base = _alkane_names(n)
-        return (f"cyclo{base[0]}carboxylate", f"环{base[1]}甲酸") if base else None
+        return (f"cyclo{base[0]}carboxylate", f"环{base[1]}羧酸") if base else None
     base = _ring_base(numbered)
     if base:
         rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "ester"), None)
         locs = rec.get("locants") if rec else None
         if locs:
             loc = ",".join(str(x) for x in locs)
-            return (f"{base[0]}-{loc}-carboxylate", f"{base[1]}-{loc}-甲酸")
-        return (f"{base[0]}carboxylate", f"{base[1]}甲酸")
+            return (f"{base[0]}-{loc}-carboxylate", f"{base[1]}-{loc}-羧酸")
+        return (f"{base[0]}carboxylate", f"{base[1]}羧酸")
     return None
 
 

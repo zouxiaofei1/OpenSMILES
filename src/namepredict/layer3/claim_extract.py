@@ -80,12 +80,12 @@ def _append_named(mol, claim, namer, covered: set[int], out: list[dict], *, o_si
     covered |= set(named.claim.atoms)
 
 
-def _named_new_sides(mol, owned, covered: set[int], *, name_mode: str = "general", cache: CommonNameCache | None = None, o_side: bool = False) -> list[dict]:
+def _named_new_sides(mol, owned, covered: set[int], *, name_mode: str = "general", cache: CommonNameCache | None = None, o_side: bool = False, root_ctx: tuple | None = None) -> list[dict]:
     """为所有权边界的所有 claim 生成命名侧链。"""
     from namepredict.layer3.claimable_block import iter_claims
     from namepredict.layer3.substituent_namer import SubstituentNamer
 
-    namer, out = SubstituentNamer(name_mode=name_mode, cache=cache), []
+    namer, out = SubstituentNamer(name_mode=name_mode, cache=cache, root_ctx=root_ctx), []
     for claim in iter_claims(mol, owned):
         _append_named(mol, claim, namer, covered, out, o_side=o_side)
     return out
@@ -98,4 +98,4 @@ def extract_claimed_sides(info: dict, parent: dict, existing: list[dict], *, nam
         return []
     # benzoate（苯 base + ester FG）靠 o_idx 字段识别 O-side；链状 ester 走 kind 表。
     o_side = parent.get("kind") in _ESTER_O_SIDE_KINDS or parent.get("o_idx") is not None
-    return _named_new_sides(info["mol"], owned, _covered_atoms(existing), name_mode=name_mode, cache=cache, o_side=o_side)
+    return _named_new_sides(info["mol"], owned, _covered_atoms(existing), name_mode=name_mode, cache=cache, o_side=o_side, root_ctx=info.get("root_ctx"))

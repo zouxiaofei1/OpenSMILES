@@ -1,6 +1,8 @@
 """L3 取代基提取器：提取核心/烷基侧链并汇总 claim 命名结果。"""
 from __future__ import annotations
 
+import re
+
 from rdkit.Chem import Mol
 
 from namepredict.cache.common_names import CommonNameCache
@@ -46,11 +48,27 @@ def _strip_outer_parens(stem: str) -> str:
             stem = stem[:-1]
     return stem
 
+_STEREO_LEAD_RE = re.compile(
+    r"^\((?:\d*[a-zA-Z]*[EeZzRrSs])(?:,(?:\d*[a-zA-Z]*[EeZzRrSs]))*\)-"
+)
+
+
+def _strip_lead_stereo(stem: str) -> str:
+    """剥除词干最前的立体描述符组 '(2S,3R)-' / '(E)-' 及其后的连字符（P-14.5：字母数字序不含立体描述符）。"""
+    m = _STEREO_LEAD_RE.match(stem)
+    return stem[m.end():] if m else stem
+
+
+def _strip_lead_bracket(stem: str) -> str:
+    """剥一个前导 '['：复合前缀整体被方括号包裹（如 '[[(2R,…)-…oxan-2-yloxy]methyl]'）时，开括号本身不参与字母序，须剥到其后的实质词干（P-14.5）。"""
+    return stem[1:] if stem.startswith("[") else stem
+
+
 def alkyl_alpha_key(stem: str) -> str:
-    """字母数字序键：忽略 sec-/tert-/N-/括号/前导位次（P-14.5）；交替剥括号与前导位次直到稳定，避免残留开括号按 ASCII 错误排最前。"""
+    """字母数字序键：忽略 sec-/tert-/N-/括号/前导位次/前导立体组（P-14.5）；交替剥括号、立体组与前导位次直到稳定，避免残留开括号/位次数字按 ASCII 错误排最前。"""
     s = _strip_n_prefix(_strip_ital_prefix(stem))
     while True:
-        s2 = _strip_lead_locant(_strip_outer_parens(s))
+        s2 = _strip_lead_locant(_strip_outer_parens(_strip_lead_stereo(_strip_lead_bracket(s))))
         if s2 == s:
             return s
         s = s2

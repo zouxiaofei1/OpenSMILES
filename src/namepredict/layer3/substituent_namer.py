@@ -67,14 +67,15 @@ class RecursiveBackend:
 
     name = "recursive"
 
-    def __init__(self, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> None:
-        """记录命名模式与共享缓存。"""
+    def __init__(self, *, name_mode: str = "general", cache: CommonNameCache | None = None, root_ctx: tuple | None = None) -> None:
+        """记录命名模式、共享缓存与根分子上下文。"""
         self._name_mode = name_mode
         self._cache = cache
+        self._root_ctx = root_ctx
 
     def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None:
         """通过递归 cut → free-name → yl_form 尝试命名。"""
-        hit = name_as_substituent(mol, claim.root, claim.atoms, depth=depth, name_mode=self._name_mode, cache=self._cache)
+        hit = name_as_substituent(mol, claim.root, claim.atoms, depth=depth, name_mode=self._name_mode, cache=self._cache, root_ctx=self._root_ctx)
         return None if hit is None else _from_yl(claim, hit)
 
 
@@ -88,16 +89,16 @@ def _from_yl(claim: ClaimedBlock, hit: tuple[str, str, bool]) -> SubstituentName
     )
 
 
-def _default_backends(name_mode: str = "general", cache: CommonNameCache | None = None) -> list[SubstituentBackend]:
+def _default_backends(name_mode: str = "general", cache: CommonNameCache | None = None, root_ctx: tuple | None = None) -> list[SubstituentBackend]:
     """构造默认命名后端列表（retained → recursive）。"""
-    return [RetainedBackend(name_mode=name_mode),  RecursiveBackend(name_mode=name_mode, cache=cache)]
+    return [RetainedBackend(name_mode=name_mode),  RecursiveBackend(name_mode=name_mode, cache=cache, root_ctx=root_ctx)]
 
 
 class SubstituentNamer:
 
-    def __init__(self, backends: Sequence[SubstituentBackend] | None = None, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> None:
-        """初始化后端列表，缺省时用默认后端。"""
-        self._backends = list(backends) if backends is not None else _default_backends(name_mode, cache=cache)
+    def __init__(self, backends: Sequence[SubstituentBackend] | None = None, *, name_mode: str = "general", cache: CommonNameCache | None = None, root_ctx: tuple | None = None) -> None:
+        """初始化后端列表，缺省时用默认后端；root_ctx 供递归取代基命名回根分子校正 R/S。"""
+        self._backends = list(backends) if backends is not None else _default_backends(name_mode, cache=cache, root_ctx=root_ctx)
 
     def name(self, mol, claim: ClaimedBlock, *, depth: int = 0) -> SubstituentName | None:
         """按序尝试各后端命名 claim，返回首个命中。"""

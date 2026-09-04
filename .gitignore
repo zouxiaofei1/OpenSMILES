@@ -16,12 +16,14 @@ pi/node_modules/
 tools/ketcher-shell/node_modules/
 tools/ketcher-shell/dist/
 benchmarks/.last_run.json
+benchmarks/.last_stereo.json
 agent_loop/memory/sessions/
 agent_loop/prompts/.cycle_current.md
 agent_loop/memory/STATE.json
 agent_loop/memory/STOP
 agent_loop/memory/secrets.json
 /tools/
+/tmp/
 profiles/
 server/settings.json
 data/pubchem_analysis

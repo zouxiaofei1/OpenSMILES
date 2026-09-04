@@ -18,10 +18,10 @@ _SIMPLE_ALKOXY_NO_PAREN = frozenset({
 })
 
 
-def _fix_rs_with_real(mol, atoms: frozenset, anchored, hit):
-    """替换取代基前缀的 R/S：用真实分子 mol 的 CIP 而非 * 锚定子分子。
-    糖苷（O-C 糖-糖连接）被 `*`（原子0）顶替后 CIP 会算反 2/4 位；真实分子 CIP 才与
-    ChEBI 一致。锚定子分子按 sorted(atoms) 复制原子，故锚定索引 i → 真实索引 sorted(atoms)[i]。"""
+def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
+    """用原始根分子 CIP 校正取代基 R/S：糖苷（O-C 糖-糖）异头位被 `*` 顶替后 CIP 会随配基
+    翻转，须回到完整根分子重算才与 ChEBI 一致。锚定子结构按 block_root_order 复制原子，
+    故其链索引 i → 根索引 block_root_order[i]（本层块内排序与锚定分子索引一致）。"""
     if not (hit.success and hit.en):
         return hit
     from namepredict.layer5.stereo import _cip_on_chain, _with_rs
@@ -29,16 +29,15 @@ def _fix_rs_with_real(mol, atoms: frozenset, anchored, hit):
     if parent.get("parent_kind") != "radical":
         return hit
     chain = parent.get("parent_chain") or []
-    order = sorted(atoms)
     # [0]-collapsed 或含 * 的链：本层未产出 R/S，跳过。
-    if len(chain) < 2 or any(i >= len(order) for i in chain):
+    if len(chain) < 2 or any(i >= len(block_root_order) for i in chain):
         return hit
-    real = [order[i] for i in chain]
+    real = [block_root_order[i] for i in chain]
     rs_anch = _cip_on_chain(anchored, chain)      # * 锚定算出的（可能错误）R/S
     if not rs_anch:
         return hit                      # 本层未贡献 R/S（由内层 -yl 携带），不重复处理
     try:
-        rs_real = _cip_on_chain(mol, real)        # 真实分子 CIP
+        rs_real = _cip_on_chain(root_mol, real)   # 原始根分子 CIP
     except Exception:
         return hit
     if rs_real == rs_anch:
@@ -51,22 +50,31 @@ def _fix_rs_with_real(mol, atoms: frozenset, anchored, hit):
 
 def _radical_yl_from_sub(
     mol, atoms: frozenset, attach_old: int, *, depth: int, name_mode: str,
-    cache: CommonNameCache | None,
+    cache: CommonNameCache | None, root_ctx: tuple | None = None,
 ) -> tuple[str, str, bool] | None:
     """碳连接点：锚定 * 走 radical 主基团管线，L4 权威位次 + P-22.2.4 保留名。"""
-    from namepredict.namer import _cache_put, _canonical_result, _name_mol
+    from namepredict.namer import _cache_put, _name_mol
     from rdkit import Chem
     anchored = build_anchor_submol(mol, atoms, attach_old)
     if anchored is None:
         return None
+    # 根分子上下文：本层块原子 → 原始根分子索引，供 R/S 在完整分子上重算
+    # （糖苷异头碳 CIP 随配基翻转，切断后的中间碎片会算反）。
+    root_mol, to_root = root_ctx if root_ctx is not None else (mol, None)
+    order = sorted(atoms)
+    block_root_order = order if to_root is None else [to_root[o] for o in order]
+    anchored_to_root = block_root_order + [-1]          # 锚定子结构按 order 复制 + 末尾 dummy
     smiles = Chem.MolToSmiles(anchored)
     hit = cache.get(smiles) if cache is not None else None
     if hit is None:
-        hit = _name_mol(anchored, depth=depth, name_mode=name_mode, cache=cache)
-        hit = _fix_rs_with_real(mol, atoms, anchored, hit)
+        hit = _name_mol(anchored, depth=depth, name_mode=name_mode, cache=cache,
+                        root_ctx=(root_mol, anchored_to_root))
         if cache is not None and hit.success and hit.en:
-            hit = _canonical_result(anchored, hit)
-            _cache_put(cache, smiles, hit)
+            # 只缓存片段自身的自由基名（保留锚定链、不做任何宿主校正）；
+            # 立体随宿主根分子变化，须每次按当前根重算，不能跨根共享。
+            _cache_put(cache, smiles, copy.copy(hit))
+    # R/S 取决于宿主根分子：fresh 与 cache 命中都按当前根分子校正一次。
+    hit = _fix_rs_with_real(root_mol, block_root_order, anchored, hit)
     if not hit.success or not hit.en:
         return None
     if not (hit.meta or {}).get("parent_kind") == "radical":
@@ -77,14 +85,14 @@ def _radical_yl_from_sub(
 
 def _yl_from_sub(
      *, mol, atoms, attach_old, depth: int, name_mode: str = "general",
-    cache: CommonNameCache | None = None,
+    cache: CommonNameCache | None = None, root_ctx: tuple | None = None,
 ) -> tuple[str, str, bool] | None:
     """连接点类型分派：碳→锚定 radical 优先；非碳/锚定失败→H 封端 free-name + free_to_yl。"""
     from rdkit import Chem
     
     if mol.GetAtomWithIdx(attach_old).GetAtomicNum() >1 :
         hit = _radical_yl_from_sub(mol, atoms, attach_old, depth=depth,
-                                    name_mode=name_mode, cache=cache)
+                                    name_mode=name_mode, cache=cache, root_ctx=root_ctx)
         # print(Chem.MolToSmiles(mol),hit)
         if hit is not None:
             return hit
@@ -92,9 +100,9 @@ def _yl_from_sub(
 
 def name_as_substituent(
     mol, attach_old: int, atoms, *, depth: int = 0, name_mode: str = "general",
-    cache: CommonNameCache | None = None,
+    cache: CommonNameCache | None = None, root_ctx: tuple | None = None,
 ) -> tuple[str, str, bool] | None:
     """在 attach_old 处切割原子，free-name 子分子，输出 -yl 双语名称。"""
     atoms = frozenset(atoms)
     return _yl_from_sub( mol=mol, atoms=atoms, attach_old=attach_old,
-                        depth=depth + 1, name_mode=name_mode, cache=cache)
+                        depth=depth + 1, name_mode=name_mode, cache=cache, root_ctx=root_ctx)
