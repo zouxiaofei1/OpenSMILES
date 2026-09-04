@@ -77,12 +77,18 @@ def _ledger_complete(mol, owned, subst: list[dict]) -> bool:
 
 
 def _ok_result(numbered: dict, *, depth: int, t0: float, name_mode: str = "general") -> NameResult | None:
-    """组装编号结果为 NameResult，成功且非空才返回（附链元数据）。"""
+    """组装编号结果为 NameResult，成功且非空才返回（附链元数据）。
+
+    接口：radical 子分子命名把母体取代基数写入 meta（L3 递归取代基判定
+    "词干是否复合"时直读，不再反编译名字）。
+    """
     numbered["name_mode"] = name_mode
     result = assemble(numbered, time_ms=_elapsed_ms(t0))
     if not result.success or not result.en:
         return None
-    result.meta = {**(result.meta or {}), **_chain_meta(numbered), "depth": depth, "coverage_complete": True}
+    result.meta = {**(result.meta or {}), **_chain_meta(numbered),
+                   "depth": depth, "coverage_complete": True,
+                   "parent_substituent_count": len(numbered.get("substituents") or [])}
     return result
 
 

@@ -80,7 +80,11 @@ def _radical_yl_from_sub(
     if not (hit.meta or {}).get("parent_kind") == "radical":
         # 锚定分子必被 L1 radical 条目检出、principal 必选（p41=1），理论不可达，防御。
         return None
-    return hit.en, hit.zh, hit.en not in ("phenyl", *_SIMPLE_ALKOXY_NO_PAREN)
+    # PIN（P-16.5.1.1）：复合前缀（词干带取代）必括；未取代简单基免括。
+    # 词干是否复合由自由基命名的母体取代基数给出（namer meta 接口），不反编译名字。
+    composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0
+    need_paren = composite and hit.en not in ("phenyl", *_SIMPLE_ALKOXY_NO_PAREN)
+    return hit.en, hit.zh, need_paren
 
 
 def _yl_from_sub(
