@@ -44,30 +44,48 @@ def _scaffold_id(numbered: dict) -> str | None:
 
 
 def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """环酸（carbocycle/稠环 exocyclic COOH）→ cyclohexanecarboxylic acid 式系统名。"""
+    """环酸（carbocycle/稠环 exocyclic COOH）→ cyclohexanecarboxylic acid 式系统名。
+    多羧酸（multiplicity≥2）→ …-di/tricarboxylic acid，位次必带（P-65.2.2），
+    不做链式 Xanedioic acid 模板；苯单酸仍回落 chain_engine benzoic acid 保留名。"""
     parent = numbered.get("parent") or {}
     facts = parent.get("principal_expression_facts")
     sid = parent.get("scaffold_id")
     if not facts or facts.group_class.value != "acid" or facts.relation.value != "exocyclic":
         return None
-    if facts.multiplicity != 1:
+    mult = facts.multiplicity
+    if mult == 1 and sid == "benzene":
+        # 苯甲酸走 chain_engine variant（benzoic acid），不走 base-carboxylic 通用名。
+        return None
+    rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "acid"), None)
+    locs = rec.get("locants") if rec else None
+    loc = ",".join(str(x) for x in locs) if locs else None
+    if mult == 1:
+        suf_en, suf_zh = "carboxylic acid", "羧酸"
+        need_loc = False
+    else:
+        m_en, m_zh = MULT_EN.get(mult), MULT_ZH.get(mult)
+        if not m_en or not m_zh:
+            return None
+        suf_en, suf_zh = f"{m_en}carboxylic acid", f"{m_zh}羧酸"
+        need_loc = True
+    if need_loc and not loc:
         return None
     if sid == "carbocycle" and not parent.get("fused_tree"):
         # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         base = _alkane_names(n)
-        return (f"cyclo{base[0]}carboxylic acid", f"环{base[1]}羧酸") if base else None
-    if sid == "benzene":
-        # 苯甲酸走 chain_engine variant（benzoic acid），不走 base-carboxylic 通用名。
-        return None
+        if not base:
+            return None
+        if mult == 1:
+            return (f"cyclo{base[0]}carboxylic acid", f"环{base[1]}羧酸")
+        return (f"cyclo{base[0]}-{loc}-{suf_en}", f"环{base[1]}-{loc}-{suf_zh}")
     base = _ring_base(numbered)
     if base:
-        # 羧基位次：L4 已算出的酸 locant；无则默认省略（1 位）。
-        rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "acid"), None)
-        locs = rec.get("locants") if rec else None
-        if locs:
-            loc = ",".join(str(x) for x in locs)
-            return (f"{base[0]}-{loc}-carboxylic acid", f"{base[1]}-{loc}-羧酸")
-        return (f"{base[0]}carboxylic acid", f"{base[1]}羧酸")
+        # 羧基位次：L4 已算出的酸 locant；单酸无则默认省略（1 位）。
+        if mult == 1:
+            if loc:
+                return (f"{base[0]}-{loc}-carboxylic acid", f"{base[1]}-{loc}-羧酸")
+            return (f"{base[0]}carboxylic acid", f"{base[1]}羧酸")
+        return (f"{base[0]}-{loc}-{suf_en}", f"{base[1]}-{loc}-{suf_zh}")
     return None
 
 

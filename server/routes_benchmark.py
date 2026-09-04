@@ -253,78 +253,20 @@ def _hist_benchmark_refresh(full: str, force: bool, data_file: str) -> dict[str,
     cache_path = history_store.cache_path(full, kind)
     history_store.cache_dir(full).mkdir(parents=True, exist_ok=True)
 
-    script = f'''
-import json, sys, time, os
-from pathlib import Path
-sys.path.insert(0, r"{wt / 'src'}")
-
-# Suppress RDKit C++ warnings — they flood stderr and block the pipe buffer
-from rdkit import RDLogger
-RDLogger.logger().setLevel(RDLogger.ERROR)
-
-from namepredict.namer import SMILESNNamer
-from namepredict.constants import normalize_en, normalize_zh
-from rdkit import Chem
-SOURCE = Path(r"{source}")
-CACHE = Path(r"{cache_path}")
-_SIG = f"{{SOURCE.stat().st_size}}:{{SOURCE.stat().st_mtime_ns}}"
-
-def _fused(smi):
-    mol = Chem.MolFromSmiles(smi)
-    if mol is None: return False
-    rings = mol.GetRingInfo().AtomRings()
-    for i in range(len(rings)):
-        ri = set(rings[i])
-        for j in range(i + 1, len(rings)):
-            if len(ri & set(rings[j])) >= 2:
-                return True
-    return False
-
-def score_pred(pe, pz, ge, gz, ee=None, ez=None):
-    # 对齐 benchmarks/benchmark.py score_record: 显式 eval_en/eval_zh 标记优先,
-    # eval_zh=False 的行不考核中文(ok 只取决于英文)。无 eval 字段的源
-    # (chebi20_test_1k.json 等) 回退旧行为: gold 非空即考核。
-    use_en = bool(ge) if ee is None else bool(ee)
-    use_zh = bool(gz) if ez is None else bool(ez)
-    en_ok = None if not use_en else normalize_en(pe) == normalize_en(ge)
-    zh_ok = None if not use_zh else normalize_zh(pz) == normalize_zh(gz)
-    if en_ok is not None and zh_ok is not None: dual = en_ok and zh_ok
-    elif en_ok is not None: dual = en_ok
-    elif zh_ok is not None: dual = zh_ok
-    else: dual = False
-    return {{"en_ok": en_ok, "zh_ok": zh_ok, "ok": dual, "ret": bool(pe or pz)}}
-
-rows = json.loads(SOURCE.read_text(encoding="utf-8"))
-total = len(rows)
-namer = SMILESNNamer()
-payload = []
-t0 = time.perf_counter()
-for i, row in enumerate(rows):
-    smi = str(row.get("smiles") or "")
-    ge = row.get("english_name") or ""
-    gz = row.get("chinese_name") or ""
-    try:
-        r = namer.name(smi)
-        pe, pz = r.en or "", r.zh or ""
-    except Exception:
-        pe, pz = "", ""
-    sc = score_pred(pe, pz, ge, gz, row.get("eval_en"), row.get("eval_zh"))
-    payload.append({{"s": smi, "en": pe, "zh": pz, "ge": ge, "gz": gz, "fused": _fused(smi), **sc}})
-    if (i + 1) % 200 == 0 or (i + 1) == total:
-        tmp = CACHE.with_suffix(".tmp")
-        tmp.write_text(json.dumps({{"_data_sig": _SIG, "rows": payload}}, ensure_ascii=False), encoding="utf-8")
-        tmp.replace(CACHE)
-        elapsed = time.perf_counter() - t0
-        print(f"PROGRESS {{i+1}}/{{total}} {{(i+1)/elapsed:.1f}}r/s", flush=True)
-
-elapsed = time.perf_counter() - t0
-n_ok = sum(1 for r in payload if r["ok"])
-print(f"DONE {{total}} rows {{elapsed:.1f}}s dual_ok={{n_ok}}", flush=True)
-'''
-
+    # Parallel generator subprocess (benchmarks.benchmark_preview_parallel):
+    # same module as the live preview, but imports namepredict from the commit's
+    # worktree (--src) and wraps cache rows with the data signature (--sig).
+    cmd = [
+        sys.executable, "-m", "benchmarks.benchmark_preview_parallel",
+        "--data", str(source),
+        "--cache", str(cache_path),
+        "--src", str(wt / "src"),
+        "--sig",
+    ]
     try:
         proc = subprocess.Popen(
-            [sys.executable, "-c", script],
+            cmd,
+            cwd=str(ROOT),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -443,80 +385,20 @@ def refresh_benchmark_preview(force: bool = False, commit: str | None = None, da
     _proc_data = data_name
     cache_path = _cache_path_for(data_name)
 
-    # Build a small inline script that does the generation
-    script = f'''
-import json, sys, time
-from pathlib import Path
-sys.path.insert(0, r"{ROOT / 'src'}")
-
-# Suppress RDKit C++ warnings — they flood stderr and block the pipe buffer
-from rdkit import RDLogger
-RDLogger.logger().setLevel(RDLogger.ERROR)
-
-from namepredict.namer import SMILESNNamer
-from namepredict.constants import normalize_en, normalize_zh
-from rdkit import Chem
-SOURCE = Path(r"{source}")
-CACHE = Path(r"{cache_path}")
-
-def _fused(smi):
-    mol = Chem.MolFromSmiles(smi)
-    if mol is None: return False
-    rings = mol.GetRingInfo().AtomRings()
-    for i in range(len(rings)):
-        ri = set(rings[i])
-        for j in range(i + 1, len(rings)):
-            if len(ri & set(rings[j])) >= 2:
-                return True
-    return False
-
-def score_pred(pe, pz, ge, gz, ee=None, ez=None):
-    # 对齐 benchmarks/benchmark.py score_record: 显式 eval_en/eval_zh 标记优先,
-    # eval_zh=False 的行不考核中文(ok 只取决于英文)。无 eval 字段的源
-    # (chebi20_test_1k.json 等) 回退旧行为: gold 非空即考核。
-    use_en = bool(ge) if ee is None else bool(ee)
-    use_zh = bool(gz) if ez is None else bool(ez)
-    en_ok = None if not use_en else normalize_en(pe) == normalize_en(ge)
-    zh_ok = None if not use_zh else normalize_zh(pz) == normalize_zh(gz)
-    if en_ok is not None and zh_ok is not None: dual = en_ok and zh_ok
-    elif en_ok is not None: dual = en_ok
-    elif zh_ok is not None: dual = zh_ok
-    else: dual = False
-    return {{"en_ok": en_ok, "zh_ok": zh_ok, "ok": dual, "ret": bool(pe or pz)}}
-
-rows = json.loads(SOURCE.read_text(encoding="utf-8"))
-total = len(rows)
-namer = SMILESNNamer()
-payload = []
-t0 = time.perf_counter()
-for i, row in enumerate(rows):
-    smi = str(row.get("smiles") or "")
-    ge = row.get("english_name") or ""
-    gz = row.get("chinese_name") or ""
-    try:
-        r = namer.name(smi)
-        pe, pz = r.en or "", r.zh or ""
-    except Exception:
-        pe, pz = "", ""
-    sc = score_pred(pe, pz, ge, gz, row.get("eval_en"), row.get("eval_zh"))
-    payload.append({{"s": smi, "en": pe, "zh": pz, "ge": ge, "gz": gz, "fused": _fused(smi), **sc}})
-    if (i + 1) % 200 == 0 or (i + 1) == total:
-        tmp = CACHE.with_suffix(".tmp")
-        tmp.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-        tmp.replace(CACHE)
-        elapsed = time.perf_counter() - t0
-        print(f"PROGRESS {{i+1}}/{{total}} {{(i+1)/elapsed:.1f}}r/s", flush=True)
-
-elapsed = time.perf_counter() - t0
-n_ok = sum(1 for r in payload if r["ok"])
-print(f"DONE {{total}} rows {{elapsed:.1f}}s dual_ok={{n_ok}}", flush=True)
-'''
-
+    # Parallel generator subprocess (benchmarks.benchmark_preview_parallel):
+    # process pool over gold rows; keeps cache a continuous prefix + prints
+    # PROGRESS n/total so /status and the drain below track progress.
+    cmd = [
+        sys.executable, "-m", "benchmarks.benchmark_preview_parallel",
+        "--data", str(source),
+        "--cache", str(cache_path),
+    ]
     try:
         _proc = subprocess.Popen(
-            [sys.executable, "-c", script],
+            cmd,
+            cwd=str(ROOT),
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,  # RDKit warnings go to stderr; suppress to avoid pipe blocking
+            stderr=subprocess.DEVNULL,  # worker chatter is silenced in the module
             text=True,
         )
     except Exception as exc:

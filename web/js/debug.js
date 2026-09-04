@@ -5,9 +5,12 @@ import { $, escapeHtml, api, API } from "./core.js";
 var debugDebounceTimer = null;
 var DEBUG_DEBOUNCE_MS = 400;
 var debugMode = "pipeline"; // "pipeline" | "print"
+var printStreamCtrl = null; // 打印流的 AbortController
+var printStreamSeq = 0;     // 每次 run 递增，用序号丢弃过期回调
 
 function setDebugMode(mode) {
   debugMode = mode;
+  if (mode !== "print") stopPrintStream(); // 离开打印模式即中止进行中的流
   var segBtns = document.querySelectorAll(".debug-mode-btn");
   for (var i = 0; i < segBtns.length; i++) {
     segBtns[i].classList.toggle("active", segBtns[i].getAttribute("data-debug-mode") === mode);
@@ -22,7 +25,8 @@ function setDebugMode(mode) {
 }
 
 export function scheduleLiveDebug() {
-  if (debugMode !== "pipeline") return; // 打印模式跑子进程较重，不实时
+  // 两种模式都实时：输入/更改停顿 DEBUG_DEBOUNCE_MS 后自动执行，无需点 Run。
+  // pipeline 走 /debug；print 走流式，新一轮 runPrintStream 会自动中止旧子进程。
   if (debugDebounceTimer) clearTimeout(debugDebounceTimer);
   debugDebounceTimer = setTimeout(function () {
     debugDebounceTimer = null;
@@ -36,51 +40,90 @@ export async function runDebug() {
   var smiles = input.value.trim();
   if (!smiles) return;
 
+  if (debugMode === "print") {
+    await runPrintStream(smiles);
+    return;
+  }
+
   var btn = document.getElementById("debug-run");
   if (btn) btn.disabled = true;
 
   try {
-    if (debugMode === "print") {
-      var res = await api(API.debugPrint, { method: "POST", body: JSON.stringify({ smiles: smiles }) });
-      renderPrint(res);
-    } else {
-      var res2 = await api(API.debug, { method: "POST", body: JSON.stringify({ smiles: smiles }) });
-      renderDebug(res2);
-    }
+    var res = await api(API.debug, { method: "POST", body: JSON.stringify({ smiles: smiles }) });
+    renderDebug(res);
   } catch (err) {
     var out = document.getElementById("debug-output");
     if (out) {
-      if (debugMode === "print") {
-        var po = document.getElementById("print-debug-output");
-        if (po) {
-          po.classList.add("has-error");
-          po.textContent = "Error: " + escapeHtml(String(err));
-        }
-      } else {
-        out.innerHTML = '<div class="debug-empty"><h2>Error</h2><p>' + escapeHtml(String(err)) + '</p></div>';
-      }
+      out.innerHTML = '<div class="debug-empty"><h2>Error</h2><p>' + escapeHtml(String(err)) + '</p></div>';
     }
   } finally {
     if (btn) btn.disabled = false;
   }
 }
 
-/* 打印调试：执行 scripts/debug.py 并展示捕获的 stdout —— 命名路径中的所有 print() 输出。 */
-function renderPrint(res) {
+/* 打印调试 · 流式：读取 /debug-print-stream，子进程 stdout 每分块一到就增量更新
+   显示，内容一变化即“实时”呈现，而不是等整次跑完。 */
+function stopPrintStream() {
+  if (printStreamCtrl) {
+    try { printStreamCtrl.abort(); } catch (_) { /* ignore */ }
+    printStreamCtrl = null;
+  }
+}
+
+async function runPrintStream(smiles) {
   var out = document.getElementById("print-debug-output");
   if (!out) return;
+  stopPrintStream(); // 新一轮 run 先取消仍在跑的旧流
+  var mySeq = ++printStreamSeq;
+  var ctrl = new AbortController();
+  printStreamCtrl = ctrl;
+
   out.classList.remove("has-error");
-  if (res.error) {
+  out.textContent = "(运行中…)";
+  try {
+    var res = await fetch(API.debugPrintStream, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "text/plain" },
+      body: JSON.stringify({ smiles: smiles }),
+      signal: ctrl.signal,
+    });
+    if (!res.ok || !res.body) {
+      var errText = "";
+      try { errText = await res.text(); } catch (_) { /* ignore */ }
+      out.classList.add("has-error");
+      out.textContent = "Error: " + (errText || (res.status + " " + res.statusText));
+      return;
+    }
+
+    var reader = res.body.getReader();
+    var dec = new TextDecoder("utf-8");
+    var text = "";
+    var atBottom = true;
+    out.textContent = "";
+    for (;;) {
+      var chunk = await reader.read();
+      if (chunk.done) break;
+      if (mySeq !== printStreamSeq) { // 已被新一轮/切模式取消，丢弃
+        try { reader.cancel(); } catch (_) { /* ignore */ }
+        return;
+      }
+      text += dec.decode(chunk.value, { stream: true });
+      out.textContent = text;
+      // 原本贴底则跟随滚动；用户上翻查看时不被强制拉底
+      if (atBottom && out.scrollHeight - out.scrollTop - out.clientHeight < 24) {
+        out.scrollTop = out.scrollHeight;
+      }
+    }
+    text += dec.decode();
+    out.textContent = text || "(无输出)";
+  } catch (err) {
+    if (mySeq !== printStreamSeq) return; // 被取消，正常路径已处理
+    if (err && err.name === "AbortError") return;
     out.classList.add("has-error");
-    out.textContent = res.error;
-    return;
+    out.textContent = "Error: " + (err && err.message ? err.message : String(err));
+  } finally {
+    if (mySeq === printStreamSeq) printStreamCtrl = null;
   }
-  var txt = res.stdout || "";
-  if (res.stderr) {
-    txt += (txt ? "\n" : "") + "--- stderr (returncode=" + res.returncode + ") ---\n" + res.stderr;
-    out.classList.add("has-error");
-  }
-  out.textContent = txt || "(无输出)";
 }
 
 function renderDebug(data) {
@@ -118,7 +161,8 @@ function renderDebug(data) {
     var l2 = layers[ld2.key];
     if (!l2) continue;
     var hasError = !!l2.error;
-    html += '<div class="layer-card' + (hasError ? ' error' : '') + '" data-layer="' + ld2.key + '">';
+    // 默认 open: 分层始终展开，用户无需每次手动点开（仍可点标题临时收起）
+    html += '<div class="layer-card open' + (hasError ? ' error' : '') + '" data-layer="' + ld2.key + '">';
     html += '<div class="layer-head" onclick="ChemNamerDebug.toggleLayer(this)">';
     html += '<div class="layer-icon ' + ld2.icon + '">' + ld2.key[1] + '</div>';
     html += '<div class="layer-info"><div class="layer-name">' + ld2.name + '</div>';

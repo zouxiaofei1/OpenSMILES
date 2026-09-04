@@ -450,7 +450,8 @@ function render(data) {
     const l = layers[ld.key];
     if (!l) continue;
     const hasError = !!l.error;
-    html += '<div class="layer-card' + (hasError ? ' error' : '') + '" data-layer="' + ld.key + '">';
+    // 默认 open: 分层始终展开，无需每次手动点开（仍可点标题临时收起）
+    html += '<div class="layer-card open' + (hasError ? ' error' : '') + '" data-layer="' + ld.key + '">';
     html += '<div class="layer-head" onclick="toggleLayer(this)">';
     html += '<div class="layer-icon ' + ld.icon + '">' + ld.key[1] + '</div>';
     html += '<div class="layer-info"><div class="layer-name">' + ld.name + '</div>';

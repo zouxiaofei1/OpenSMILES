@@ -5,11 +5,13 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from rdkit import Chem
 
@@ -318,3 +320,96 @@ def debug_print(body: DebugBody) -> dict[str, Any]:
         "stderr": proc.stderr,
         "smiles": body.smiles,
     }
+
+
+# 命名路径中 print() 产物需能在产生时立刻看到，/debug-print 是跑完才一次性
+# 返回，故这里用 Popen + 流式响应：stdout 逐行即时下发(实时滚出)，stderr 由
+# 守护线程并行收集(避免管道写满阻塞子进程)，结束时把 stderr/退出码补在尾部。
+_DEBUG_STREAM_TIMEOUT = 60  # 与旧 /debug-print 的 timeout 保持一致
+_ERR_KEEP_LINES = 400
+
+
+def _debug_print_stream(smiles: str):
+    """Yield debug.py stdout lines live, then stderr tail / exit code at the end."""
+    script = _ROOT / "scripts" / "debug.py"
+    # PYTHONUNBUFFERED + -u: 子进程写管道默认块缓冲，会把 src 命名管线的 print
+    # 攒到缓冲满才出现；去掉缓冲才能逐行实时到达。
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1"}
+    try:
+        proc = subprocess.Popen(
+            [sys.executable, "-u", str(script), smiles],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+            errors="replace",
+            env=env,
+            cwd=str(_ROOT),
+        )
+    except Exception as exc:
+        yield f"[error] 启动 debug.py 失败: {exc}\n"
+        return
+
+    err_lines: list[str] = []
+
+    def _drain_err() -> None:
+        if proc.stderr is None:
+            return
+        try:
+            for line in proc.stderr:
+                err_lines.append(line)
+                if len(err_lines) > _ERR_KEEP_LINES + 100:
+                    del err_lines[: len(err_lines) - _ERR_KEEP_LINES]
+        except Exception:
+            pass
+
+    drain_thread = threading.Thread(target=_drain_err, daemon=True)
+    drain_thread.start()
+    guard = threading.Timer(_DEBUG_STREAM_TIMEOUT, proc.kill)  # 兜底, 避免永久挂起
+    guard.start()
+
+    try:
+        if proc.stdout is not None:
+            for line in proc.stdout:
+                yield line
+    except GeneratorExit:
+        # 前端取消/断开: 立即终止子进程, 丢弃尾部
+        guard.cancel()
+        try:
+            proc.kill()
+        except Exception:
+            pass
+        try:
+            proc.wait(timeout=10)
+        except Exception:
+            pass
+        drain_thread.join(timeout=3)
+        raise
+    finally:
+        guard.cancel()
+        try:
+            proc.wait(timeout=15)
+        except Exception:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        drain_thread.join(timeout=3)
+
+    # 正常跑完后把退出码 / stderr 追到末尾, 与 /debug-print 的展示对齐
+    if proc.returncode != 0 or err_lines:
+        yield "\n"
+        if proc.returncode != 0:
+            yield f"--- 退出码 {proc.returncode} ---\n"
+        if err_lines:
+            yield "--- stderr ---\n"
+            for line in err_lines:
+                yield line
+
+
+@router.post("/debug-print-stream")
+def debug_print_stream(body: DebugBody) -> StreamingResponse:
+    """Stream scripts/debug.py output live (text/plain), line by line."""
+    return StreamingResponse(
+        _debug_print_stream(body.smiles),
+        media_type="text/plain; charset=utf-8",
+    )

@@ -209,8 +209,12 @@ def _ketone_fg_locants(oriented: dict) -> list[int] | None:
     return [loc] if loc is not None else None
 
 def _acid_fg_locants(oriented: dict) -> list[int] | None:
-    """返回 exocyclic 酸的环上附着原子位次（羧基碳在环外）。"""
-    # exocyclic 酸的羧基碳在环外；locant 取环上附着原子 ring_attach_idx。
+    """返回 exocyclic 酸的环上附着原子位次（羧基碳在环外）。
+    多羧酸（multiplicity≥2）取全部附着原子位次列表（与 _aldehyde_fg_locants 一致），
+    单酸回退 ring_attach_idx 单点；无 typed 记录时返回 None。"""
+    locs = _typed_atom_locants(oriented, "acid")
+    if locs:
+        return locs
     attach = oriented.get("ring_attach_idx")
     if attach is None:
         return None

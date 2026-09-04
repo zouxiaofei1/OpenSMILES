@@ -43,6 +43,32 @@ def test_zh_strip_exact():
     assert r["dual_ok"] is True
 
 
+# 括号种类(圆/方)仅是括注外观，不判分：中文 1-氯-3-(氯(苯基)甲基)苯 与
+# 1-氯-3-[氯(苯基)甲基]苯 视为相同；英文 normalize_en 早已折叠，一并固化。
+def test_zh_bracket_kind_ignored():
+    row = {
+        "english_name": "",
+        "chinese_name": "1-氯-3-(氯(苯基)甲基)苯",
+        "eval_en": False,
+        "eval_zh": True,
+    }
+    r = score_record("", "1-氯-3-[氯(苯基)甲基]苯", row)
+    assert r["zh_ok"] is True
+    assert r["dual_ok"] is True
+
+
+def test_en_bracket_kind_ignored():
+    row = {
+        "english_name": "1-chloro-3-[chloro(phenyl)methyl]benzene",
+        "chinese_name": "",
+        "eval_en": True,
+        "eval_zh": False,
+    }
+    r = score_record("1-chloro-3-(chloro(phenyl)methyl)benzene", "", row)
+    assert r["en_ok"] is True
+    assert r["dual_ok"] is True
+
+
 def test_neither_flag_dual_false():
     row = {"english_name": "x", "chinese_name": "y", "eval_en": False, "eval_zh": False}
     r = score_record("x", "y", row)

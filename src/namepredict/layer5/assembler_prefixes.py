@@ -134,15 +134,33 @@ def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False) 
     return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit, paren_cf3)
 
 
-def _collect_parts(groups: dict[str, list], omit: bool, paren_cf3: bool = False) -> tuple[list[str], list[str]]:
-    """汇总所有词干的中英文前缀部件列表。"""
+def _collect_parts(groups: dict[str, list], omit: bool, paren_cf3: bool = False,
+                   bracket: bool = False) -> tuple[list[str], list[str]]:
+    """汇总所有词干的中英文前缀部件列表；bracket(单碳多不同取代, P-16.5.1.3.1)时
+    第二词干起整体加圆括号(倍增前缀不括入)，词干间无连字符。"""
     en_parts: list[str] = []
     zh_parts: list[str] = []
-    for stem in _sorted_stems(groups):
-        en_p, zh_p = _parts_for_stem(stem, groups[stem], omit, paren_cf3)
+    for i, stem in enumerate(_sorted_stems(groups)):
+        subs = groups[stem]
+        if bracket and i >= 1:
+            en_parts.append(f"{_mult_en(len(subs))}({stem})")
+            zh_parts.append(f"{_mult_zh(len(subs))}({subs[0].get('zh') or ''})")
+            continue
+        en_p, zh_p = _parts_for_stem(stem, subs, omit, paren_cf3)
         en_parts.append(en_p)
         zh_parts.append(zh_p)
     return en_parts, zh_parts
+
+
+def _groups_simple(groups: dict[str, list]) -> bool:
+    """全部词干为简单取代基(无显式括号、无数字/locant 前导、非 N- 类)才适用括号式。"""
+    for subs in groups.values():
+        for s in subs:
+            if s.get("paren") or (s.get("en") or "")[:1].isdigit():
+                return False
+            if (s.get("kind") or "") in _N_PREFIX_KINDS:
+                return False
+    return True
 
 
 def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
@@ -156,8 +174,14 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
         return "", ""
     omit = _omit_sub_locants(n_carbons, substituents, kind, scaffold, has_ene)
     paren = scaffold == "benzene" and kind == "alkane" and len(substituents) >= 4
-    en_parts, zh_parts = _collect_parts(_group_by_stem(substituents), omit, paren)
-    return "-".join(en_parts), "-".join(zh_parts)
+    groups = _group_by_stem(substituents)
+    # P-16.5.1.3.1/.3.2：单碳(meth)母链带 ≥2 个不同简单取代基且位次省略 → 首词干平铺、
+    # 第二及以后各自括号。单碳链所有取代基必同处唯一碳，括号式即 locant 省略时的消歧写法。
+    bracket = bool(omit) and n_carbons == 1 and kind == "radical" \
+        and len(groups) >= 2 and _groups_simple(groups)
+    en_parts, zh_parts = _collect_parts(groups, omit, paren, bracket)
+    sep = "" if bracket else "-"
+    return sep.join(en_parts), sep.join(zh_parts)
 
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     """从 numbered 提取母体上下文并委托 _build_prefix 构建前缀。"""

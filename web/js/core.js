@@ -19,6 +19,7 @@ export const API = {
   callGraphSvg: "/api/v1/call-graph/svg",
   debug: "/api/v1/debug",
   debugPrint: "/api/v1/debug-print",
+  debugPrintStream: "/api/v1/debug-print-stream",
   settings: "/api/v1/settings",
   wiki: "/api/v1/wiki",
   wikiDoc: "/api/v1/wiki/doc",

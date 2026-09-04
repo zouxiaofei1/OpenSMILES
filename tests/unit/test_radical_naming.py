@@ -87,3 +87,25 @@ def test_radical_side_recursive(smiles: str, en: str, zh: str) -> None:
     assert r.success
     assert normalize_en(r.en) == normalize_en(en)
     assert normalize_zh(r.zh) == normalize_zh(zh)
+
+
+# P-16.5.1.3.1/3.2：唯一可取代的单碳（meth）母体带多个不同取代基、位次省略时，
+# 首个词干不带括号，第二及以后各词干整体加圆括号（倍增前缀在括号外），词干间无连字符。
+# 参照例：butyl(ethyl)(methyl)(propyl)silane、cyclopropyl(phenyl)methanol、bromo(nitro)(phenyl)acetic acid。
+SINGLE_CARBON_BRACKET_CASES = [
+    ("*C(F)(I)c1ccccc1", "fluoro(iodo)(phenyl)methyl", "氟(碘)(苯基)甲基"),
+    ("*C(Cl)(F)c1ccccc1", "chloro(fluoro)(phenyl)methyl", "氯(氟)(苯基)甲基"),
+    # 同基团两氟 + 不同苯基：倍增前缀不括入，difluoro(phenyl)。
+    ("*C(F)(F)c1ccccc1", "difluoro(phenyl)methyl", "二氟(苯基)甲基"),
+    # ≥2 碳链母体给 locant（1-fluoro-1-iodoethyl），不走括号式（对照组）。
+    ("*C(F)(I)C", "1-fluoro-1-iodoethyl", "1-氟-1-碘乙基"),
+    ("*C(C)c1ccccc1", "1-phenylethyl", "1-苯基乙基"),
+]
+
+
+@pytest.mark.parametrize("smiles,en,zh", SINGLE_CARBON_BRACKET_CASES)
+def test_single_carbon_multi_substituent_bracket(smiles: str, en: str, zh: str) -> None:
+    r = SMILESNNamer().name(smiles)
+    assert r.success
+    assert normalize_en(r.en) == normalize_en(en)
+    assert normalize_zh(r.zh) == normalize_zh(zh)
