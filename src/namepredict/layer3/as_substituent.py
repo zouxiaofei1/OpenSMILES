@@ -104,5 +104,7 @@ def name_as_substituent(
 ) -> tuple[str, str, bool] | None:
     """在 attach_old 处切割原子，free-name 子分子，输出 -yl 双语名称。"""
     atoms = frozenset(atoms)
+    # print(_yl_from_sub( mol=mol, atoms=atoms, attach_old=attach_old,
+    #                     depth=depth + 1, name_mode=name_mode, cache=cache, root_ctx=root_ctx))
     return _yl_from_sub( mol=mol, atoms=atoms, attach_old=attach_old,
                         depth=depth + 1, name_mode=name_mode, cache=cache, root_ctx=root_ctx)

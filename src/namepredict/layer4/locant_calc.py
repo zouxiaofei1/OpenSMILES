@@ -253,6 +253,15 @@ def _nitrile_fg_locants(oriented: dict) -> list[int] | None:
     return [loc] if loc is not None else None
 
 
+def _aldehyde_fg_locants(oriented: dict) -> list[int] | None:
+    """返回外环醛(-CHO)在环上的附着原子位次（单/多 -carbaldehyde 通用）。
+    开链醛的醛碳在骨架内（in_skeleton），本路径不计数。"""
+    facts = oriented.get("principal_expression_facts")
+    if not facts or facts.group_class.value != "aldehyde" or facts.relation.value != "exocyclic":
+        return None
+    return _typed_atom_locants(oriented, "aldehyde")
+
+
 def _radical_locants(oriented: dict) -> list[int] | None:
     """返回自由基连接点位次列表（radical_c_idx 在定向链上的位次，连接点隐含 1 或按杂环编号）。"""
     idx = oriented.get("radical_c_idx")
@@ -271,6 +280,7 @@ _LOCANT_FNS = {
     "amine": _amine_fg_locants,
     "ketone": _ketone_fg_locants,
     "sh": _sh_locants_list,
+    "aldehyde": _aldehyde_fg_locants,
     "acid": _acid_fg_locants,
     "amide": _amide_fg_locants,
     "ester": _ester_fg_locants,

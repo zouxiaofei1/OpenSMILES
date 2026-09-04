@@ -280,12 +280,17 @@ def _fused(smi):
                 return True
     return False
 
-def score_pred(pe, pz, ge, gz):
-    en_ok = bool(ge) and normalize_en(pe) == normalize_en(ge)
-    zh_ok = bool(gz) and normalize_zh(pz) == normalize_zh(gz)
-    if ge and gz: dual = en_ok and zh_ok
-    elif ge: dual = en_ok
-    elif gz: dual = zh_ok
+def score_pred(pe, pz, ge, gz, ee=None, ez=None):
+    # 对齐 benchmarks/benchmark.py score_record: 显式 eval_en/eval_zh 标记优先,
+    # eval_zh=False 的行不考核中文(ok 只取决于英文)。无 eval 字段的源
+    # (chebi20_test_1k.json 等) 回退旧行为: gold 非空即考核。
+    use_en = bool(ge) if ee is None else bool(ee)
+    use_zh = bool(gz) if ez is None else bool(ez)
+    en_ok = None if not use_en else normalize_en(pe) == normalize_en(ge)
+    zh_ok = None if not use_zh else normalize_zh(pz) == normalize_zh(gz)
+    if en_ok is not None and zh_ok is not None: dual = en_ok and zh_ok
+    elif en_ok is not None: dual = en_ok
+    elif zh_ok is not None: dual = zh_ok
     else: dual = False
     return {{"en_ok": en_ok, "zh_ok": zh_ok, "ok": dual, "ret": bool(pe or pz)}}
 
@@ -303,7 +308,7 @@ for i, row in enumerate(rows):
         pe, pz = r.en or "", r.zh or ""
     except Exception:
         pe, pz = "", ""
-    sc = score_pred(pe, pz, ge, gz)
+    sc = score_pred(pe, pz, ge, gz, row.get("eval_en"), row.get("eval_zh"))
     payload.append({{"s": smi, "en": pe, "zh": pz, "ge": ge, "gz": gz, "fused": _fused(smi), **sc}})
     if (i + 1) % 200 == 0 or (i + 1) == total:
         tmp = CACHE.with_suffix(".tmp")
@@ -465,12 +470,17 @@ def _fused(smi):
                 return True
     return False
 
-def score_pred(pe, pz, ge, gz):
-    en_ok = bool(ge) and normalize_en(pe) == normalize_en(ge)
-    zh_ok = bool(gz) and normalize_zh(pz) == normalize_zh(gz)
-    if ge and gz: dual = en_ok and zh_ok
-    elif ge: dual = en_ok
-    elif gz: dual = zh_ok
+def score_pred(pe, pz, ge, gz, ee=None, ez=None):
+    # 对齐 benchmarks/benchmark.py score_record: 显式 eval_en/eval_zh 标记优先,
+    # eval_zh=False 的行不考核中文(ok 只取决于英文)。无 eval 字段的源
+    # (chebi20_test_1k.json 等) 回退旧行为: gold 非空即考核。
+    use_en = bool(ge) if ee is None else bool(ee)
+    use_zh = bool(gz) if ez is None else bool(ez)
+    en_ok = None if not use_en else normalize_en(pe) == normalize_en(ge)
+    zh_ok = None if not use_zh else normalize_zh(pz) == normalize_zh(gz)
+    if en_ok is not None and zh_ok is not None: dual = en_ok and zh_ok
+    elif en_ok is not None: dual = en_ok
+    elif zh_ok is not None: dual = zh_ok
     else: dual = False
     return {{"en_ok": en_ok, "zh_ok": zh_ok, "ok": dual, "ret": bool(pe or pz)}}
 
@@ -488,7 +498,7 @@ for i, row in enumerate(rows):
         pe, pz = r.en or "", r.zh or ""
     except Exception:
         pe, pz = "", ""
-    sc = score_pred(pe, pz, ge, gz)
+    sc = score_pred(pe, pz, ge, gz, row.get("eval_en"), row.get("eval_zh"))
     payload.append({{"s": smi, "en": pe, "zh": pz, "ge": ge, "gz": gz, "fused": _fused(smi), **sc}})
     if (i + 1) % 200 == 0 or (i + 1) == total:
         tmp = CACHE.with_suffix(".tmp")

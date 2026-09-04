@@ -63,7 +63,6 @@ def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[i
             if rset in visited:
                 continue
             visited.add(rset)
-            # print(atoms)
             sid = match_retained(info, atoms)
             if sid is not None:
                 out.setdefault(atoms, (sid, rset))
@@ -222,6 +221,5 @@ def decompose_fused_system(info, system) -> FusedNode | None:
     rings = list(info["mol"].GetRingInfo().AtomRings())
     node = _decompose(info, rings, system.get("fusion_edges") or [],
                       frozenset(system.get("sssr_indices") or ()))
-    # print(node)
     return node
 

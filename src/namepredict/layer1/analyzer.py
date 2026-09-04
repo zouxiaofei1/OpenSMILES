@@ -442,8 +442,35 @@ def _fg_carbons(e: dict) -> list[int]:
     return [int(c)] if c is not None else [int(e["c1_idx"]), int(e["c2_idx"])]
 
 
-def _arbitrate_parts(parts: dict) -> dict:
-    """P-41 主基团仲裁：更高优先级 FG 存在时组合羰基 FG 退出，羰基碳降级为 oxo。"""
+def _demoted_amide_amine(mol: Mol, e: dict) -> dict | None:
+    """酰胺被更高优先级主基团降级后，其伯酰胺 N（-CONH2）回收为胺条目，走正规 amino 前缀。"""
+    if e.get("n_c_idxs"):
+        return None  # N-取代酰胺仍由 L3 归属，不回收为 amino
+    atom = mol.GetAtomWithIdx(e["n_idx"])
+    if atom.GetAtomicNum() != N or atom.GetFormalCharge() != 0:
+        return None
+    if atom.GetIsAromatic() or atom.IsInRing() or atom.GetTotalNumHs() != 2:
+        return None
+    return {"n_idx": atom.GetIdx(), "c_idx": e["c_idx"], "degree": 1}
+
+
+def _demoted_acid_hydroxyl(mol: Mol, e: dict) -> dict | None:
+    """羧酸被更高优先级主基团降级后，其中性 -COOH 的醇 OH 回收为羟基条目，走正规 hydroxy 前缀。"""
+    if e.get("anion"):
+        return None
+    c = mol.GetAtomWithIdx(e["c_idx"])
+    for nb in c.GetNeighbors():
+        if nb.GetAtomicNum() != O:
+            continue
+        b = mol.GetBondBetweenAtoms(c.GetIdx(), nb.GetIdx())
+        if b is not None and b.GetBondType() == BondType.SINGLE and nb.GetTotalNumHs() >= 1:
+            return {"o_idx": nb.GetIdx(), "c_idx": c.GetIdx()}
+    return None
+
+
+def _arbitrate_parts(mol: Mol, parts: dict) -> dict:
+    """P-41 主基团仲裁：更高优先级 FG 存在时组合羰基 FG 退出，羰基碳降级为 oxo，
+    其组成成员（伯酰胺 N → amino、中性羧酸 OH → hydroxy）回收进 L1 正规前缀通道。"""
     p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
     present = {fg for fg, key in _FG_PARTS_KEY.items() if parts.get(key)}
     out = dict(parts)
@@ -451,6 +478,14 @@ def _arbitrate_parts(parts: dict) -> dict:
         entries = out.get(key)
         if not entries or not any(p41[h] < p41[fg] for h in present if h != fg):
             continue
+        if key == "amides":
+            rec = [a for e in entries if (a := _demoted_amide_amine(mol, e)) is not None]
+            if rec:
+                out["amines"] = list(out["amines"]) + rec
+        elif key == "carboxyls":
+            rec = [h for e in entries if (h := _demoted_acid_hydroxyl(mol, e)) is not None]
+            if rec:
+                out["hydroxyls"] = list(out["hydroxyls"]) + rec
         out["ketones"] = list(out["ketones"]) + [{"c_idx": c} for e in entries for c in _fg_carbons(e)]
         out[key] = []
     return out
@@ -459,7 +494,7 @@ def _arbitrate_parts(parts: dict) -> dict:
 def _fg_parts(mol: Mol) -> dict:
     """收集分子中所有官能团条目并按其类型组织成 dict。"""
     from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
-    return _arbitrate_parts({"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
+    return _arbitrate_parts(mol, {"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
         "esters": _ester_entries(mol), "amides": _amide_entries(mol),
         "ketones": _ketone_entries(mol), "radicals": _radical_entries(mol),
         "aldehydes": _aldehyde_entries(mol), "amines": _amine_entries(mol),

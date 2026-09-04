@@ -249,7 +249,5 @@ def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOcc
 def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> PrincipalSkeletons:
     """枚举全部骨架候选，并计算未覆盖的 occurrence id。"""
     candidates = tuple(_chain_candidates(info, occurrences) + _ring_candidates(info, occurrences))
-    # print(candidates)
-    # print("finished")
     covered = frozenset(i for candidate in candidates for i in candidate.covered_principal_ids)
     return PrincipalSkeletons(candidates, frozenset(o.id for o in occurrences) - covered)

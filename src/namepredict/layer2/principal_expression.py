@@ -164,6 +164,10 @@ def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentS
         kind = _chain_kind(selection.group_class, count)
         if kind is not None:
             return kind
+    if scaffold is not None and selection.group_class is FunctionalGroupClass.ALDEHYDE:
+        # 环上外环 -CHO 可多个同作主官能团（-carbaldehyde / -dicarbaldehyde，P-66.6.1.1.3）。
+        # aldehyde 不在 _MULTI_FG（开链二醛仍不支撑），此处仅环骨架放行，避免改变开链表达。
+        return "aldehyde"
     return _resolved_ring_kind(scaffold, info, skeleton)
 
 
@@ -184,6 +188,7 @@ def _ring_fact_fields(fields: dict, facts: PrincipalExpressionFacts) -> dict:
     if len(attachments) == 1 and facts.group_class in (
         FunctionalGroupClass.ACID, FunctionalGroupClass.ESTER,
         FunctionalGroupClass.AMIDE, FunctionalGroupClass.NITRILE,
+        FunctionalGroupClass.ALDEHYDE,
     ):
         extra["ring_attach_idx"] = attachments[0]
     return {**fields, **extra}

@@ -149,6 +149,49 @@ def _exocyclic_nitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
     return None
 
 
+def _exocyclic_aldehyde_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """环醛 exocyclic -CHO → -carbaldehyde/-甲醛 系统名（P-66.6.1.1.3）。
+    苯单醛保留名（benzaldehyde/苯甲醛）仍走 chain_engine variant，此处仅排除单基团苯；
+    双醛（benzene-1,2-dicarbaldehyde）及杂环/稠环走 base-carbaldehyde 通用名。
+    multiplicity≥2 时后缀加 di/tri…（-dicarbaldehyde/-二甲醛）。"""
+    parent = numbered.get("parent") or {}
+    facts = parent.get("principal_expression_facts")
+    sid = parent.get("scaffold_id")
+    if not facts or facts.group_class.value != "aldehyde" or facts.relation.value != "exocyclic":
+        return None
+    mult = facts.multiplicity
+    if mult == 1 and sid == "benzene":
+        # 苯环单 CHO → benzaldehyde 保留名（P-66.6.1.2），回落 chain_engine。
+        return None
+    if mult == 1:
+        suf_en, suf_zh = "carbaldehyde", "甲醛"
+    else:
+        m_en, m_zh = MULT_EN.get(mult), MULT_ZH.get(mult)
+        if not m_en or not m_zh:
+            return None
+        suf_en, suf_zh = f"{m_en}carbaldehyde", f"{m_zh}甲醛"
+    rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "aldehyde"), None)
+    locs = rec.get("locants") if rec else None
+    loc = ",".join(str(x) for x in locs) if locs else None
+    if sid == "carbocycle" and not parent.get("fused_tree"):
+        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支；单环环烷烃用词干。
+        base = _alkane_names(n)
+        if not base:
+            return None
+        if mult == 1:
+            # 单醛：唯一自由编号的环烷，羧基/醛基位次 1 隐含省略（cyclohexanecarbaldehyde）。
+            return (f"cyclo{base[0]}carbaldehyde", f"环{base[1]}甲醛")
+        if loc:
+            return (f"cyclo{base[0]}-{loc}-{suf_en}", f"环{base[1]}-{loc}-{suf_zh}")
+        return (f"cyclo{base[0]}{suf_en}", f"环{base[1]}{suf_zh}")
+    base = _ring_base(numbered)
+    if base:
+        if loc:
+            return (f"{base[0]}-{loc}-{suf_en}", f"{base[1]}-{loc}-{suf_zh}")
+        return (f"{base[0]}{suf_en}", f"{base[1]}{suf_zh}")
+    return None
+
+
 _MONONUCLEAR_ZERO_YL = {
     ("oxidane", "氧化烷"): ("hydroxy", "羟基"),
     ("azane", "氮烷"): ("amino", "氨基"),
@@ -242,6 +285,10 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             return exo
     if kind == "nitrile":
         exo = _exocyclic_nitrile_names(n, numbered)
+        if exo:
+            return exo
+    if kind == "aldehyde":
+        exo = _exocyclic_aldehyde_names(n, numbered)
         if exo:
             return exo
     if kind == "radical" and (numbered.get("parent") or {}).get("radical_anchor_element"):

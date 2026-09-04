@@ -68,12 +68,17 @@ def _acid_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _aldehyde_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """醛：羰基 C + =O。"""
-    c_idx = parent.get("aldehyde_c_idx")
-    if c_idx is None:
+    """醛：羰基 C + =O（多醛取全部，如环上外环 -CHO 的 -dicarbaldehyde）。"""
+    c_idxs = parent.get("aldehyde_c_idxs") or ([parent.get("aldehyde_c_idx")]
+                                               if parent.get("aldehyde_c_idx") is not None else [])
+    if not c_idxs:
         return set()
-    out = {int(c_idx)}
-    return _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
+    out: set[int] = set()
+    for c in c_idxs:
+        c = int(c)
+        out.add(c)
+        _add_opt(out, _dbl_o_idx(mol, c))
+    return out
 
 
 def _ether_arm_atoms(mol: Mol, o_idx: int, c_idx: int) -> set[int]:
@@ -228,7 +233,7 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
     """FG 所有权由字段驱动：拥有主官能团的每个重原子。"""
     parts = (
         _amide_fg_atoms(mol, parent) if parent.get("amide_c_idx") is not None else set(),
-        _aldehyde_fg_atoms(mol, parent) if parent.get("aldehyde_c_idx") is not None else set(),
+        _aldehyde_fg_atoms(mol, parent) if parent.get("aldehyde_c_idx") is not None or parent.get("aldehyde_c_idxs") else set(),
         _acid_fg_atoms(mol, parent),
         _ether_fg_atoms(mol, parent),
         _sulfide_fg_atoms(mol, parent),

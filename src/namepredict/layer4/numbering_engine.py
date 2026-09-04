@@ -59,7 +59,7 @@ def _bond_locants(cand: dict[int, int], bonds) -> tuple[int, ...] | None:
             locs.append(n)                   # seam 闭合边：跨编号首尾，记 n
         else:
             return None                      # 端点不沿编号相邻：判据不适用
-    print(cand, bonds)
+    # print(cand, bonds)
     return tuple(sorted(locs)) if len(locs) == len(bonds) else None
 
 
@@ -201,7 +201,7 @@ def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
     if len(system.get("sssr_indices") or []) < 2:
         return None  # 单环走 P-14.4 通用枚举
     rings = list(mol.GetRingInfo().AtomRings())
-    print("riings",rings)
+    # print("riings",rings)
     orients = preferred_orientations(mol, rings, system["fusion_edges"])
     # print(orients)
     if not orients:

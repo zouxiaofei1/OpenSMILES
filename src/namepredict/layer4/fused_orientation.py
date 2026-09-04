@@ -343,7 +343,7 @@ def _quadrant_fractions(coords: dict, rings, row) -> tuple[tuple[float, float, f
 def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
     """全部优选取向平局候选(水平行环数→右上→左下→上方最多)；对称环系镜像全部返回，交由编号准则(a)-(d) 跨候选收窄。"""
     rows = horizontal_rows(rings, fusion_edges)
-    print(rows,rings,fusion_edges,"\n")
+    # print(rows,rings,fusion_edges,"\n")
     
     if not rows:
         return []
@@ -373,7 +373,7 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
                 bests = [orient]
             elif key == best_key:
                 bests.append(orient)
-    print(bests)
+    # print(bests)
     return bests
 
 
