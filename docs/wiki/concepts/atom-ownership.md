@@ -160,13 +160,21 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 归属: `{C_acyl1} ∪ {C_acyl2} ∪ {=O1} ∪ {=O2} ∪ {O_bridge}`。
 
-#### 酰氯 (Acyl Chloride)
+#### 酰卤 (Acyl Halide)
 
-酰氯母体拥有 **酰基碳 + 羰基氧 + 卤素 (Cl 或 Br)**。通过 `cl_idx` 或 `hal_idx` 字段定位卤原子。
+酰卤母体拥有 **酰基碳 + 羰基氧 + 卤素 (F/Cl/Br/I)**。通过 `cl_idx` 或 `hal_idx` 字段定位卤原子。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:193-201`
+> **源:** `src/namepredict/layer2/parent_ownership.py`
 
-归属: `{C_acyl} ∪ {=O} ∪ {Cl}`。
+归属: `{C_acyl} ∪ {=O} ∪ {X}`。
+
+#### 酰基残基 (Acyl)
+
+`*`-锚定酰基残基/环外酰基头（苯甲酰、furan-2-carbonyl，`_acyl_fg_atoms` `parent_ownership.py:232`）母体拥有 **羰基头碳 + 羰基氧**（=O 归母体，不落入 oxo 前缀）。
+
+> **源:** `src/namepredict/layer2/parent_ownership.py:232`
+
+归属: `{C_acyl_head} ∪ {=O}`。
 
 ### FG 原子聚合
 

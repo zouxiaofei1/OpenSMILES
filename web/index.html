@@ -104,7 +104,18 @@
         </div>
         <div class="namer-side">
           <div class="card namer-card">
-            <h3 class="card-title">SMILES Namer</h3>
+            <div class="namer-card-head">
+              <h3 class="card-title">SMILES Namer</h3>
+              <div class="namer-engine-seg" role="group" aria-label="命名引擎">
+                <span class="namer-engine-caption">引擎</span>
+                <button type="button" class="namer-engine-btn active" data-engine="src"
+                        title="现役 src/namepredict">src</button>
+                <button type="button" class="namer-engine-btn" data-engine="v2"
+                        title="tools/namepredict-v2">v2</button>
+                <button type="button" class="namer-engine-btn" data-engine="v3"
+                        title="tools/namepredict-v3">v3</button>
+              </div>
+            </div>
             <form id="namer-form" class="namer-form" autocomplete="off">
               <label class="field-label" for="smiles-input">SMILES</label>
               <div class="namer-row">
@@ -141,6 +152,7 @@
             <div id="namer-result" class="namer-result hidden" aria-live="polite">
               <div class="result-head">
                 <span id="namer-success" class="badge">—</span>
+                <span id="namer-engine-tag" class="chip" title="本次命名的引擎" hidden></span>
                 <span id="namer-time" class="muted-text small mono"></span>
               </div>
               <dl class="kv">

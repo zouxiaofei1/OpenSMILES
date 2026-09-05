@@ -64,7 +64,7 @@ graph TD
 
 ### 官能团条目列表（FG entry lists）
 
-每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 20 个列表键（来自 `_fg_parts` at `analyzer.py:494`，经 `_arbitrate_parts(mol, parts)` P-41 仲裁——被更高优先级主基团压制而退出的组合羰基 FG，其羰基碳降级并入 `ketones`（oxo 前缀候选），组成成员伯酰胺 N / 中性羧酸 OH 分别回收进 `amines` / `hydroxyls`）：
+每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 **23 个列表键**（来自 `_fg_parts` at `analyzer.py:537`，经 `_arbitrate_parts(mol, parts)` P-41 仲裁——被更高优先级主基团压制而退出的组合羰基 FG，其伯酰胺 N 回收进 `amines`，中性 -COOH 整组进 `demoted_carboxyls`（carboxy 叶）、腈进 `demoted_nitriles`（cyano 叶），降级酰胺羰基/阴离子酸碳并入 `ketones`（oxo 前缀候选））：
 
 | 键名 | 条目 dict 典型字段 | 来源 |
 |---|---|---|
@@ -72,15 +72,18 @@ graph TD
 | `hydroxyls` | `o_idx`, `c_idx` | `analyzer.py:_hydroxyl_entries` |
 | `esters` | 酯键原子索引 | `analyzer.py:_ester_entries` |
 | `amides` | 酰胺键原子索引 | `analyzer.py:_amide_entries` |
-| `ketones` | `c_idx` | `analyzer.py:_ketone_entries`（+ `_arbitrate_parts` 降级：组合羰基 FG 被更高优先级压制时羰基碳并入；其组成成员经 `_demoted_amide_amine`/`_demoted_acid_hydroxyl` 回收——伯酰胺 N → amines、中性羧酸 OH → hydroxyls） |
-| `radicals` | 自由基（dummy 位点） | `analyzer.py` |
+| `ketones` | `c_idx` | `analyzer.py:_ketone_entries`（+ `_arbitrate_parts` 降级：降级酰胺羰基/阴离子酸碳并入——伯酰胺 N 经 `_demoted_amide_amine`:484 回收进 amines） |
+| `radicals` | `c_idx`, `rad_idx` | `analyzer.py:_radical_entries`（`*` 锚点自由基，排除已判 acyl 头的碳） |
+| `acyls` | `c_idx`, `rad_idx` | `analyzer.py:_acyl_entries`（锚定酰基头，`_is_acyl_head`:389，P-65.1.7.2） |
+| `demoted_carboxyls` | `c_idx` | `analyzer.py:_arbitrate_parts`（被压制中性 -COOH → carboxy 叶 P-61.1.3） |
+| `demoted_nitriles` | `c_idx` | `analyzer.py:_arbitrate_parts`（被压制腈 → cyano 叶 P-61.1.3） |
 | `aldehydes` | `c_idx` | `analyzer.py` |
 | `amines` | `n_idx` | `analyzer.py` |
 | `quaternary_ammoniums` | 季铵 | `analyzer.py` |
 | `nitriles` | `c_idx`, `n_idx` | `analyzer.py` |
 | `double_bonds` | 双键原子对 | `analyzer.py` |
 | `triple_bonds` | 三键原子对 | `analyzer.py` |
-| `acyl_chlorides` | — | `analyzer.py` |
+| `acyl_chlorides` | `c_idx`, `hal_idx`, `hal_z` | `analyzer.py`/`layer1/acyl_halide.py`（F/Cl/Br/I） |
 | `anhydrides` | — | `analyzer.py` |
 | `thiols` | `s_idx` | `analyzer.py` |
 | `ethers` | `o_idx` | `analyzer.py` |
@@ -93,7 +96,7 @@ graph TD
 
 ### 布尔标志（Boolean flags）
 
-对应 `_fg_bools(lists)` at `analyzer.py:416`，每个 `has_*` 标志 = `bool(对应的 FG 列表)`。共 **18 个**：
+对应 `_fg_bools(lists)` at `analyzer.py:451`，每个 `has_*` 标志 = `bool(对应的 FG 列表)`。共 **18 个**（`acyls`/两条 demoted 列表不单独映射 has_*）：
 
 | 标志 | 对应列表 | 标志 | 对应列表 |
 |---|---|---|---|
@@ -107,7 +110,7 @@ graph TD
 | `has_sulfide` | `sulfides` | `has_nitro` | `nitros` |
 | `has_isocyanate` | `isocyanates` | `has_isothiocyanate` | `isothiocyanates` |
 
-另有类型化键 `fg_inventory`：`FunctionalGroupInventory`（17 个 `FunctionalGroupClass` 类别，由 `functional_group_inventory.inventory_from_info` 构建）。
+另有类型化键 `fg_inventory`：`FunctionalGroupInventory`（18 个 `FunctionalGroupClass` 类别，含新增 `ACYL`，由 `functional_group_inventory.inventory_from_info` 构建）。
 
 ### 环系元信息
 
@@ -158,6 +161,10 @@ graph TD
 | `ester_c_idx` | `int` | `ester` 系 | 酯基碳的原子索引 |
 | `amide_c_idx` | `int` | `amide` 系 | 酰胺基碳的原子索引 |
 | `sh_c_idx` | `int` | `thiol` 系 | 硫醇所连碳的原子索引 |
+| `radical_c_idx` | `int` / `list[int]` | `radical` 系 | `*` 自由基锚定碳索引（对称 scaffold 镜像取 locant 1） |
+| `acyl_c_idx` | `int` / `list[int]` | `acyl` 系 | 酰基残基羰基头碳索引（`parent_anchor_fields=("acyl_c_idx","acyl_c_idxs")`） |
+| `hal_z` / `hal_idx` | `int` | `acyl_halide` 系（链/环外） | 酰卤实际卤素原子序（F/Cl/Br/I）与卤原子索引——环外酰卤（苯甲酰卤）亦由 `express_ring_principal` 注入 |
+| `ring_attach_idx` | `int` | 环 + 单附着 exocyclic FG（acid/ester/amide/nitrile/aldehyde/**acyl**） | 环上附着原子索引（环外 -carboxylic acid/-carbonyl 词形 locant） |
 | `double_bond` | `tuple[int,int]` | `alkene` 系 | 双键原子对 |
 | `triple_bond` | `tuple[int,int]` | `alkyne` 系 | 三键原子对 |
 | `numbering_scaffold` | `dict` / `None` | fused ring 系 | 稠环编号骨架事实（来自 L2 scaffold specs） |

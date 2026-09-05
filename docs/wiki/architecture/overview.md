@@ -92,13 +92,13 @@ info = {
 
 信息 dict 是整个流水线的通用数据合约（data contract），从 L1 产出后贯穿 L2-L5 全部层级。L2 基于它做母体决策，L3 基于它做取代基切除，L4/L5 基于它做位次分配和名称组装。
 
-> 源文件：`src/namepredict/layer1/analyzer.py`（11 个 `.py`，1,537 行；仅核心 20 类 FG，无 13 个扩展 FG 检测器；`_amine_degree` 排除环内非芳香 N——饱和杂环 N 是环杂原子而非胺官能团）。`_arbitrate_parts(mol, parts)`（`analyzer.py:471`）P-41 仲裁在"组合羰基 FG 退出、羰基碳降级 oxo"基础上，把降级伯酰胺 N 回收为 `amines`、中性羧酸 OH 回收为 `hydroxyls`（→ amino/hydroxy 前缀，helper `_demoted_amide_amine`:445 / `_demoted_acid_hydroxyl`:457）。`fg_registry.FG_SPECS` 的 aldehyde 现带 `locant_kind="aldehyde"`（供 L4 环外醛位次），支持 R/S 的查询函数由 `rs_fgs()` 更名 `srs_fgs()`（`fg_registry.py:92`）。
+> 源文件：`src/namepredict/layer1/analyzer.py`（11 个 `.py`，1,589 行；`FG_SPECS` 18 条 FgSpec/18 个 `FunctionalGroupClass`，无 13 个扩展 FG 检测器；`_amine_degree` 排除环内非芳香 N——饱和杂环 N 是环杂原子而非胺官能团）。`_arbitrate_parts(mol, parts)`（`analyzer.py:496`）P-41 仲裁在"组合羰基 FG 退出"基础上：降级伯酰胺 N 回收为 `amines`（amino 前缀，`_demoted_amide_amine`:484）、中性 -COOH 整组进 `demoted_carboxyls` 保留 carboxy 叶（P-61.1.3）、腈进 `demoted_nitriles` 保留 cyano 叶（不再回收中性酸 OH，`_demoted_acid_hydroxyl` 已删）。**新增锚定酰基头检测**：`_is_acyl_head`:389/`_acyl_entries`:414（`*C(=O)-` 自由价连羰基头，α 环/芳可——苯甲酰/furan-2-carbonyl 进 acyl 通道），`fg_registry.FG_SPECS` 加 `FgSpec("acyl")`；`acyl_halide` 检测扩到 F/Cl/Br/I。支持 R/S 的查询函数 `srs_fgs()`（`fg_registry.py:96`）。
 
 ### 2.3 Layer 2 -- Parent Selector（母体选择器）
 
 **职责**：母体氢化物（parent hydride）选择——按 IUPAC P-44 规则驱动管线选出主链/主环母体
 
-这是整个流水线中逻辑最复杂的层之一（16 个文件，2,183 行），位于 `src/namepredict/layer2/`。骨架识别在根目录 `ring_scaffold.py`（`_TEMPLATES` 为唯一事实来源，派生 ScaffoldSpec/ScaffoldIdentity；本期扩充 8 个稠环模板 + `standard_path`/`locant_prefix` 固定编号，并修正 acridine 固定编号标签与 oxane/quinoxaline 中文词干），kind 正交化（纯烃/未注册稠环用 `alkane`、数量由 `multiplicity` 承载），**稠环拆解在 `fused_system.py`**（P-25.3.2.4 拆解 `fused_tree` 供 L5 稠合名组装），无 `scaffold/` 子包与 `candidate_gate.py`/`arene_carbonyl.py`/`parent_core.py`/`identity.py`/`fg_helpers.py`。
+这是整个流水线中逻辑最复杂的层之一（16 个文件，2,280 行），位于 `src/namepredict/layer2/`。骨架识别在根目录 `ring_scaffold.py`（`_TEMPLATES` 为唯一事实来源，派生 ScaffoldSpec/ScaffoldIdentity；已扩充 8 个稠环模板 + `standard_path`/`locant_prefix` 固定编号，并修正 acridine 固定编号标签与 oxane/quinoxaline 中文词干），kind 正交化（纯烃/未注册稠环用 `alkane`、数量由 `multiplicity` 承载），**稠环拆解在 `fused_system.py`**（P-25.3.2.4 拆解 `fused_tree` 供 L5 稠合名组装），无 `scaffold/` 子包与 `candidate_gate.py`/`arene_carbonyl.py`/`parent_core.py`/`identity.py`/`fg_helpers.py`。**本期**：链行走（`chain_walk.py`，195 行）全链带 `banned` 禁走集合、`_all_chains_through` 等长最长链全枚举（开链候选不再任选一条平局链）；`parent_skeleton._demoted_acid_carbons` 把 L1 降级羧酸/腈叶碳排除在开链主链外；`parent_ownership` 加 `_acyl_fg_atoms`。
 
 **主路径（P-44 规则驱动管线 + P-45.2 打平）**：
 
@@ -114,8 +114,11 @@ info = {
 3. **typed 表达**（`principal_expression.py`）：`express_chain/ring_principal` 产出带
    `PrincipalExpressionFacts` 与 `ScaffoldIdentity` 的 parent dict。**kind 正交化**：
    ACID/ALCOHOL/AMINE/KETONE 任意主基团数恒返回基团名（数量由 `multiplicity` 承载），
-   `dione` 不产生；环上外环 -CHO 现在也放行为 kind `aldehyde`（多醛 → -di/carbaldehyde，
-   P-66.6.1.1.3，`_ring_kind`）；苯保留名决策由 `layer5/chain_engine` variant 提供；
+   `dione` 不产生；环上外环 -CHO 放行为 kind `aldehyde`（多醛 → -di/carbaldehyde，
+   P-66.6.1.1.3，`_ring_kind`）；**锚定酰基残基与环外酰基头放行为 kind `acyl`**
+   （`_chain_kind` ACYL 分支，P-65.1.7.2；`_ring_fact_fields` 单附着 ACYL/ALDEHYDE 设
+   `ring_attach_idx`）；环外酰卤（苯甲酰卤）经 `express_ring_principal` 补 `hal_z`/`hal_idx`；
+   苯保留名决策由 `layer5/chain_engine` variant 提供；
    无主官能团的纯烃走 `express_hydrocarbon_principal`（alkane/alkene/alkyne/polyene/保留 scaffold，
    非芳香环 kind 恒为 `alkane`）
 4. **P-45.2 母体打平**（`parent_selector.py`）：P-44 评分降序后按 **P-45.2.1 前缀取代基团数最多**稳定重排
@@ -175,19 +178,19 @@ class CoverageLedger:
 
 Coverage Ledger 是 Pass1/Pass2 门控的核心机制（见第 4 节）。参见 [[concepts/atom-ownership]]。
 
-> 源文件：`src/namepredict/layer3/substituent_extractor.py`, `src/namepredict/layer3/coverage.py`, `src/namepredict/layer3/substituent_namer.py`（9 个 `.py`，1,020 行）
+> 源文件：`src/namepredict/layer3/substituent_extractor.py`, `src/namepredict/layer3/coverage.py`, `src/namepredict/layer3/substituent_namer.py`（9 个 `.py`，1,023 行）
 
 ### 2.5 Layer 4 -- Numbering（编号层）
 
 **职责**：位次分配 + 链定向 + omit-locant 决策
 
-layer4 是**编号方向总调度 + 稠环编号引擎**（11 个 `.py`，1,540 行）。`number(parent, substituents)`（`src/namepredict/layer4/numbering.py`）的核心是 `numbering_engine.orient_numbering`（`numbering_engine.py:221`，三层分派）：
+layer4 是**编号方向总调度 + 稠环编号引擎**（11 个 `.py`，1,619 行）。`number(parent, substituents)`（`src/namepredict/layer4/numbering.py`）的核心是 `numbering_engine.orient_numbering`（`numbering_engine.py:276`，三层分派）：
 
 1. **`_fixed_numbering`** — registered 保留骨架（模板有 `standard_path`）按固定编号（`scaffold_match` + `_STANDARD_ORDERS` → `standard_chain`）；取代基/自由基位次最小化决定对称 scaffold 的镜像取向（`radical_c_idx` 参与）
-2. **`_fused_numbering`** — 未注册全芳香多环走几何 + 外围骨架编号（`fused_orientation` 优选取向 + `fused_numbering` 外边界/字母位 + `ring_geometry` 平面原语 + `locant_key` 混合 locant 排序）。优选取向按 **IUPAC 环计数法**计四象限/上方针环数（P-25.3.2.3.3），并以 **P-25.3.2.3.2 变形环模板**放行水平行中间奇数环（6-5-6 等）；对称等价杂环碱环（嘧啶双 N）通过 `float_hetero` 放行镜像，由稠合原子位次最小化决定，使稠合描述符字母与规范一致
-3. **普用 P-14.4 候选枚举** — 链正反（2 个）/ 环每原子 1 号位 × 双向（2n 个）→ 固定起点 → P-14.4(c)(e)(f) 逐条收窄（principal FG 最低位次集 → **seam 感知多重键** → 取代基）→ stem-alpha 平局决胜（P-14.5）。`_bond_locants` 现按每条多重键沿编号方向占据的边位置记位（闭合 seam 边记 n），把整条不饱和键压到最低连续位次
+2. **`_fused_numbering`** — 未注册全芳香多环走几何 + 外围骨架编号（`fused_orientation` 优选取向 + `fused_numbering` 外边界/字母位 + `ring_geometry` 平面原语 + `locant_key` 混合 locant 排序）。优选取向按 **IUPAC 环计数法**计四象限/上方针环数（P-25.3.2.3.3），并以 **P-25.3.2.3.2 变形环模板**放行水平行中间奇数环（6-5-6 等）；对称等价杂环碱环（嘧啶双 N）通过 `float_hetero` 放行镜像，由稠合原子位次最小化决定，使稠合描述符字母与规范一致。**rings 只取稠合系统自身环**（`sssr_indices` 子集，不含取代基上的无关环）
+3. **普用 P-14.4 候选枚举** — 链正反（2 个）/ 环每原子 1 号位 × 双向（2n 个）→ 固定起点 → P-14.4(c)(e)(f) 逐条收窄（principal FG 最低位次集 → **seam 感知多重键** → 取代基）→ stem-alpha 平局（P-14.5）→ **P-14.4(j) CIP 立体平局**（R/M/r 位次优先于 S/P/s）。入口先分岔：**杂环走 `_narrow_hetero_ring` 元素序窄化**（P-22.2.2.1.3：全杂原子最低位次→逐元素序→唑 NH=1，先行于 principal），碳环/链走 `_fixed_start` 固定 locant 1（含 `acyl_c_idx`；固定原子无法置 1 时并入 principal 竞争最低位次）。`_bond_locants` 按每条多重键沿编号方向占据的边位置记位（闭合 seam 边记 n），把整条不饱和键压到最低连续位次
 
-FG 位次由 `locant_calc.py` 的 `_LOCANT_FNS`/`_FG_LOCANTS` 数据表产出（稀疏 `fg_locants`，kind 含 acid/ester/amide/nitrile/**aldehyde**/ketone/oh/amine/sh/radical；酸/醛记录为环外 -carboxylic acid/-carbaldehyde 系统名提供附着位次，多羧酸/多醛取全部附着原子），omit 标志由 `omit_locants.py` 基于 `scaffold_id` 判定。无 `locants/` 子包（`engine.py`/`constraints.py`/`generate.py`/`plan.py`/`adapt.py`）、`orienters.py`、`polyene.py`，无 `NumberingPlan` 概念。
+FG 位次由 `locant_calc.py` 的 `_LOCANT_FNS`/`_FG_LOCANTS` 数据表产出（稀疏 `fg_locants`，kind 含 acid/ester/amide/nitrile/aldehyde/**acyl**/ketone/oh/amine/sh/radical；酸/醛/环外酰基记录为环外 -carboxylic acid/-carbaldehyde/-carbonyl 系统名提供附着位次，多羧酸/多醛取全部附着原子），omit 标志由 `omit_locants.py` 基于 `scaffold_id` 判定。无 `locants/` 子包（`engine.py`/`constraints.py`/`generate.py`/`plan.py`/`adapt.py`）、`orienters.py`、`polyene.py`，无 `NumberingPlan` 概念。
 
 **omit-locant 标志**：L4 判定哪些位次可以被省略（如末端取代基 locant 为 1 时可省略），设置 omit 标志传递至 L5。
 
@@ -197,10 +200,10 @@ FG 位次由 `locant_calc.py` 的 `_LOCANT_FNS`/`_FG_LOCANTS` 数据表产出（
 
 **职责**：双语名称组装 + 盐后缀拼接
 
-`assemble(numbered_dict)`（`src/namepredict/layer5/assembler.py:412`）是流水线的最终输出层（7 个 `.py`，1,808 行）：
+`assemble(numbered_dict)`（`src/namepredict/layer5/assembler.py:539`）是流水线的最终输出层（7 个 `.py`，1,992 行）：
 
-1. **母体命名**：`_names_for`（`:290`）查 `chain_engine._KIND_TABLE`（12 个 `_Chain` spec：11 链式 FG kind + `radical`，词干 + 烯/炔段 + 位次 + variant 数量后缀），特殊 case 走 worker（`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names`/`_mononuclear_radical_names`/`_parent_stem_names`）；`_ring_stem` 返回完整词干不再剥尾 `e`（省略下沉到 `chain_engine._elide_parent_e`，P-60.2(a)，-diol/-diamine 保留 e）；未注册稠环经 `_ensure_fused_stem` 调 `fused_namer.fused_parent_names` 组装稠合 base 名（母体/附加组分共用同一稠合共享原子集编号）。无 kind 收敛层（`typed_kinds.py`）——L2 直接产出 FG 类别 kind。
-2. **取代基排序**：按字母序（EN）排列前缀取代基，重复基团 di/tri/tetra 合并；N- 类取代基（n_alkyl/n_phenyl/n_benzyl/n_block）走 `N-` 前缀；单碳母链多取代基按 P-16.5.1.3.1 括号式（第二词干起各自括注、无连字符）。
+1. **母体命名**：`_names_for`（`:409`）查 `chain_engine._KIND_TABLE`（13 个 `_Chain` spec：12 链式 FG kind 含 `acyl`、逐卤素 `acyl_halide` + `radical`，词干 + 烯/炔段 + 位次 + variant 数量后缀），特殊 case 走 worker（`_exocyclic_acyl_names`/`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names`/`_mononuclear_radical_names`/`_parent_stem_names`）；`acyl_halide` 按 `parent.hal_z` 选 F/Cl/Br/I 对应 spec；`_ring_stem` 返回完整词干不再剥尾 `e`（省略下沉到 `chain_engine._elide_parent_e`，P-60.2(a)，-diol/-diamine 保留 e）；单环环烷/环烯的环外系统名（acid/ester/amide/nitrile/aldehyde/acyl）共走 `_ring_carbocycle_stem` + `_ring_extra_prefix_located`（环烯或另带前缀取代时后缀 locant 显式）；未注册稠环经 `_ensure_fused_stem` 调 `fused_namer.fused_parent_names` 组装稠合 base 名（母体/附加组分共用同一稠合共享原子集编号）。无 kind 收敛层（`typed_kinds.py`）——L2 直接产出 FG 类别 kind。stems 词干扩到 C1–C99（复用 constants `en_num_term`）。
+2. **取代基排序**：按字母序（EN）排列前缀取代基，重复基团 di/tri/tetra 合并（复合组分用 bis/tris/tetrakis）；N- 类取代基（n_alkyl/n_phenyl/n_benzyl/n_block）走 `N-` 前缀（N/C 混合位次如 N,N,2-trimethyl 由 `_locant_str` 渲染）；单碳母链多取代基按 P-16.5.1.3.1 括号式（第二词干起各自括注、无连字符）；带立体描述符的 `-yl]oxy/-yl]sulfanyl` O/S 桥走平铺式（括号闭在 -yl 后）。
 3. **双语生成**：同时产出英文和中文名称 -- 英文遵循 IUPAC Blue Book，中文遵循中国化学会《有机化学命名原则》。
 4. **立体化学**：`stereo.py` 承担 E/Z 与 CIP R/S 前缀——多烯/烯基自由基现也拼 (…)- E/Z 前缀；R/S 覆盖链 FG kind（`srs_fgs()`）与环/稠合骨架母体（scaffold_id，L4 整环 walk 上手性中心），`_assign_cip` 对隐式 H 手性碳补显式 H 再赋。
 5. **盐后缀追加**：如果 L0 的 salt_meta 存在，追加 "sodium"/"钠"、"potassium"/"钾"、"hydrochloride"/"盐酸盐" 等。
@@ -216,7 +219,7 @@ FG 位次由 `locant_calc.py` 的 `_LOCANT_FNS`/`_FG_LOCANTS` 数据表产出（
 ```
 name(smiles)                                # namer.py:320（缓存命中直接返回整分子缓存结果）
   └─ _name_uncached → _pipeline(smiles, t0)  # namer.py:306 / :265
-       └─ preprocess(smiles)                → Mol | None（解析/消毒 + 立体指派 + 酰胺烯醇归一化）
+       └─ preprocess(smiles)                → Mol | None（解析/消毒 + 立体指派 + 酰胺烯醇归一化 + 酸性质子收敛）
        └─ if None: _fail("parse")           → 解析失败快速返回
        └─ anchored_whole_mol(mol)           → 整分子命中锚定查表（带 * 输入本身即锚定键）直接返回保留名
        └─ _name_mol(mol, depth=0)           # namer.py:232
@@ -333,36 +336,37 @@ src/namepredict/
 ├── namer.py                  # Orchestrator (SMILESNNamer + pipeline)
 ├── types.py                  # NameResult dataclass
 ├── cache/                    # 常用名缓存
-├── constants.py              # 化学常量 (元素符号, MULT_EN/MULT_ZH 等)
-├── layer0/                   # 预处理器 (4 .py, 199 行)
-│   ├── preprocessor.py       # SMILES → Mol（解析+消毒+立体指派+互变异构归一化）
+├── constants.py              # 化学常量 (元素符号, MULT_EN/MULT_ZH 1-99, HALIDE_EN, AMIDO_RETAINED, en_num_term 等)
+├── layer0/                   # 预处理器 (5 .py, 353 行)
+│   ├── preprocessor.py       # SMILES → Mol（解析+消毒+立体指派+酰胺烯醇归一化+酸性质子收敛）
 │   ├── tautomer.py           # 酰胺烯醇互变异构归一化 (C(OH)=N → C(=O)-NH)
+│   ├── charge.py             # 酸性质子重定位 (normalize_acid_charge: 负电荷收敛到最强酸)
 │   └── salt.py               # 盐解离
-├── layer1/                   # 分析器 (11 .py, 1,537 行)
-│   ├── analyzer.py           # FG 检测 (20 列表键/18 bool) + info dict + P-41 仲裁（降级成员回收 amino/hydroxy）
-│   ├── fg_registry.py        # FG_SPECS 元数据单一事实来源 (派生 L1-L5 各表)
+├── layer1/                   # 分析器 (11 .py, 1,589 行)
+│   ├── analyzer.py           # FG 检测 (23 列表键/18 bool) + info dict + P-41 仲裁（伯酰胺 N→amino、中性 COOH/腈→降级叶 carboxy/cyano）+ 锚定酰基头检测 (_is_acyl_head/_acyl_entries)
+│   ├── fg_registry.py        # FG_SPECS 元数据单一事实来源 (18 条, 含 acyl; 派生 L1-L5 各表)
 │   ├── _carbonyl_common.py   # 共享羰基检测原语 (13 函数)
-│   ├── functional_group_inventory.py  # 类型化 FG 库存 (FunctionalGroupClass)
+│   ├── functional_group_inventory.py  # 类型化 FG 库存 (FunctionalGroupClass, 18 类)
 │   ├── isocyanate.py         # isocyanate / isothiocyanate 检测
-│   ├── acyl_halide.py        # 酰卤 (Cl/Br) 检测
+│   ├── acyl_halide.py        # 酰卤 (F/Cl/Br/I) 检测
 │   └── ring_*.py             # 环系拓扑 (systems/ir/fingerprint/relative_stereo)
-├── layer2/                   # 母体选择器 (16 .py, 2,183 行)
+├── layer2/                   # 母体选择器 (16 .py, 2,280 行)
 │   ├── principal.py          # P-41 主官能团注册表 + 选择 (select_principal_group)
 │   ├── principal_expression.py  # typed 表达 (chain/ring/hydrocarbon, kind 正交化) + fused_tree/scaffold_match
 │   ├── principal_parent.py   # P-44 规则驱动管线编排
-│   ├── parent_skeleton.py    # 骨架枚举 + P-44 筛选
+│   ├── parent_skeleton.py    # 骨架枚举 + P-44 筛选 (+ _demoted_acid_carbons 降级叶禁走 + 等长最长链全枚举)
 │   ├── candidates.py         # 候选收集去重
 │   ├── parent_selector.py    # select_parent 入口 (P-44 评分 + P-45.2 前缀取代基打平)
 │   ├── scoring.py            # 候选评分 (P-44 tuple)
 │   ├── parent_candidate.py   # principal contract (with_principal_group_contract/principal_key)
-│   ├── chain_walk.py         # 碳链行走原语
-│   ├── parent_ownership.py   # owned_atoms 归属
+│   ├── chain_walk.py         # 碳链行走原语 (_seed_carbons/_all_chains_through, banned 禁走)
+│   ├── parent_ownership.py   # owned_atoms 归属 (+ _acyl_fg_atoms)
 │   ├── kind_registry.py      # 母体元数据注册中心（只读权威）+ locant 前缀注入
 │   ├── fused_system.py       # P-25.3.2.4 稠环拆解 → FusedNode 树 (fused_tree)
-│   ├── ring_scaffold.py      # _TEMPLATES → ScaffoldSpec + 固定编号 + 新 8 稠环模板
+│   ├── ring_scaffold.py      # _TEMPLATES → ScaffoldSpec + 固定编号 + 8 稠环模板
 │   └── ring_expression_policy.py / ring_parent.py  (typed 环表达不再按 multiplicity 截断)
 │   (无 candidate_gate.py/arene_carbonyl.py/parent_core.py/identity.py/fg_helpers.py)
-├── layer3/                   # 取代基提取 (9 .py, 1,020 行)
+├── layer3/                   # 取代基提取 (9 .py, 1,023 行)
 │   ├── substituent_extractor.py  # 三段流水线 (core + anchored + claim)
 │   ├── substituent_namer.py  # 有序后端命名 (retained / recursive)
 │   ├── as_substituent.py / submol_build.py  # cut→free-name→yl 管道（E/Z 照搬 + R/S 回根重算 root_ctx）
@@ -370,24 +374,24 @@ src/namepredict/
 │   ├── amino_side.py         # 氨基取代基
 │   └── coverage.py           # Coverage Ledger
 │   (无 side_facts.py/aryl_sub.py/yl_form.py → carbon_neighbors 在 tools/chain)
-├── layer4/                   # 编号 (11 .py, 1,540 行)
+├── layer4/                   # 编号 (11 .py, 1,619 行)
 │   ├── numbering.py          # 入口: number()
-│   ├── numbering_engine.py   # 编号方向调度 (orient_numbering 三层分派 + fused_component_numbering)
+│   ├── numbering_engine.py   # 编号方向调度 (orient_numbering 三层分派 + _narrow_hetero_ring 元素序窄化 + P-14.4(j) 立体平局 + fused_component_numbering)
 │   ├── fused_orientation.py  # 稠环几何摆放 (P-25.3.2.3 优选取向：环计数法 + 变形环模板)
 │   ├── fused_numbering.py    # 稠环编号 (P-25.3.3 外围骨架 + 字母位)
 │   ├── ring_geometry.py      # 平面几何原语 (正 n 边形模板/重叠面积/Kabsch 拟合)
 │   ├── locant_key.py         # 混合 locant 排序键 ("4a")
-│   ├── locant_calc.py        # FG 位次 (_LOCANT_FNS：acid/ester/amide/nitrile/aldehyde/… 多羧酸/多醛全附着) + _pack
+│   ├── locant_calc.py        # FG 位次 (_LOCANT_FNS：acid/ester/amide/nitrile/aldehyde/acyl/… 多羧酸/多醛全附着) + _pack
 │   ├── _chain_orient.py      # 共享方向原语
 │   ├── omit_locants.py       # omit-locant 决策 (排除 fused_tree)
 │   └── cyclo_relative_stereo.py  # 环多元酸 cis/trans
 │   (无 orienters.py/polyene.py/locants/ 子包)
-└── layer5/                   # 名称组装 (7 .py, 1,808 行)
-    ├── assembler.py          # 组装调度 + _names_for 派发 + exocyclic worker(酸/醛…) + join_kind_name 拼接
-    ├── assembler_prefixes.py # 取代基前缀 + N- 前缀 + 单碳括号式 (P-16.5.1.3.1)
-    ├── chain_engine.py       # _KIND_TABLE 链引擎 (12 entry, _Chain spec, mult_ok 数量后缀 + 混合烯炔 + _elide_parent_e + E/Z)
+└── layer5/                   # 名称组装 (7 .py, 1,992 行)
+    ├── assembler.py          # 组装调度 + _names_for 派发 + exocyclic worker(acyl/酸/醛…) + 单环环烷/环烯词干 + join_kind_name 拼接
+    ├── assembler_prefixes.py # 取代基前缀 + N- 前缀/N-C 混合 locant + bis/tris/tetrakis + O/S 桥平铺式 (P-16.5.1.3.1)
+    ├── chain_engine.py       # _KIND_TABLE 链引擎 (13 entry 含 acyl + 逐卤素 acyl_halide, _Chain spec, mult_ok 数量后缀 + 短链烯融合 + _elide_parent_e + E/Z)
     ├── fused_namer.py        # 稠合名组装 (fused_parent_names: benzo[a]…/naphtho[…]-)
-    ├── stems.py              # 烷烃词干 + 盐/阴离子后缀
+    ├── stems.py              # 烷烃词干 C1-C99 (复用 constants.en_num_term) + 盐/阴离子后缀
     ├── stereo.py             # E/Z + CIP R/S 立体前缀
     └── __init__.py
     (无 typed_kinds.py/benzene_names.py/unsat_acid.py)

@@ -60,7 +60,7 @@ def _thiol_entries(mol: Mol) -> list[dict]:
 
 ### 2.2 母体接线（按表达权限分档）
 
-**SUFFIX 档**：`principal_expression.py` 的 `_CHAIN_FG`（`:43`）限定可链式表达的 FG——由 `fg_registry.chain_fgs()` 派生，含 acid/ester/acyl_halide/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine，`_chain_kind`（`:59`）按类别与多重度返回 kind：
+**SUFFIX 档**：`principal_expression.py` 的 `_CHAIN_FG`（`:43`）限定可链式表达的 FG——由 `fg_registry.chain_fgs()` 派生，含 acid/ester/acyl_halide/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine/**acyl**（锚定酰基残基/环外酰基头，`_chain_kind` 特判返回 "acyl"，P-65.1.7.2；radical 亦在 `_chain_kind` 前支特判，不在 `chain_fgs()`），`_chain_kind`（`:59`）按类别与多重度返回 kind：
 
 ```python
 # _CHAIN_FG 含该 FG 类即自动支持；_chain_kind 返回 group_class.value

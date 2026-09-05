@@ -6,7 +6,9 @@ import json
 import threading
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
+
+from server.legacy_engines import name_result as legacy_name_result
 
 import httpx
 from fastapi import APIRouter
@@ -237,9 +239,13 @@ def pubchem_iupac(smiles: str) -> dict[str, Any]:
 
 
 class NameBody(BaseModel):
-    """Request body for POST /name. `smiles` 可以是 SMILES 或 merged_benchmark id。"""
+    """Request body for POST /name. `smiles` 可以是 SMILES 或 merged_benchmark id。
+
+    `engine` 选命名引擎: "src"=现役 src/namepredict; "v2"/"v3"=tools 下历史引擎。
+    """
 
     smiles: str = Field(..., min_length=1)
+    engine: Literal["src", "v2", "v3"] = "src"
 
 
 class ResolveBody(BaseModel):
@@ -257,13 +263,18 @@ class LocantsBody(BaseModel):
 
 @router.post("/name")
 def name_smiles(body: NameBody) -> dict[str, Any]:
-    """Run SMILESNNamer.name and return serialized NameResult + merged_benchmark gold.
+    """Run src/v3 engine .name and return serialized result + merged_benchmark gold.
 
     入参若是 merged_benchmark id(chebi-1 / tiers-1)先解析为该行 SMILES 再命名。
+    gold 与引擎无关(基准答案), 两个引擎都附上便于对照。
     """
     smi = _id_or_text(body.smiles)
-    result = get_namer().name(smi)
-    payload = name_result_dict(result)
+    if body.engine == "src":
+        result = get_namer().name(smi)
+        payload = name_result_dict(result)
+    else:
+        payload = legacy_name_result(smi, body.engine)
+    payload["engine"] = body.engine
     payload["gold"] = lookup_gold(smi)
     return payload
 

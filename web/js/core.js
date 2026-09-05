@@ -44,6 +44,7 @@ export const state = {
   ketcherLoadCount: 0, // 进行中的载入数(引用计数); 全部结束后才解除静默
   ketcherMuteTimer: null, // 解除静默的延时器(距最后一次被吞 change 的安静期)
   namerOrient: true, // L4 编号图: 稠环按 preferred_orientation 水平摆放
+  engine: "src", // 命名引擎: "src" | "v2" | "v3"; namer 页开关会写回并持久化到 localStorage
   // benchmark
   currentPage: "namer",
   bmRows: [],

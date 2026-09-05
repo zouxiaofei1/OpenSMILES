@@ -1,6 +1,6 @@
 # Layer2: Parent Selector（母体选择器）
 
-> **文件数:** 16 source files | **代码:** 2,183 行
+> **文件数:** 16 source files | **代码:** 2,280 行 | **最后更新:** 2026-09-05
 > **职责:** 给定 layer1 的官能团 (FG) 信息字典，按 IUPAC P-44 选出母体结构 (parent hydride)
 
 ---
@@ -60,15 +60,17 @@ flowchart TD
     E -->|无主官能团| G[express_hydrocarbon_principal 纯烃]
 ```
 
-1. **`principal.py`** — `select_principal_group()`（`:86`）按 `PRINCIPAL_REGISTRY`（`principal.py:42-60`，P-41 class 优先级）选出主官能团类。注册表把 FG 分成三档表达权限：**SUFFIX**（radical/acid/anhydride/ester/acyl_halide/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine 等，有资格成为主官能团并 typed 表达）、**LEGACY_COMPAT**（sulfide/isocyanate/isothiocyanate 等，`compatibility_rank` 经 `legacy_rank` 查询但不参与主官能团选择）、**PREFIX_ONLY**（ether，只当前缀）。`principal_spec()` 只放行 SUFFIX 类。
+1. **`principal.py`** — `select_principal_group()`（`:76`）按 `PRINCIPAL_REGISTRY`（`principal.py:48` 起，由 `FG_SPECS` 派生，P-41 class 优先级）选出主官能团类。注册表把 FG 分成三档表达权限：**SUFFIX**（radical/acid/anhydride/ester/acyl_halide/amide/nitrile/aldehyde/ketone/alcohol/thiol/amine 等，有资格成为主官能团并 typed 表达；**acyl 亦为 SUFFIX**，p41=1 同 radical）、**LEGACY_COMPAT**（sulfide/isocyanate/isothiocyanate 等，`compatibility_rank` 经 `legacy_rank` 查询但不参与主官能团选择）、**PREFIX_ONLY**（ether，只当前缀）。`principal_spec()` 只放行 SUFFIX 类。
 
-2. **`parent_skeleton.py`** — `enumerate_principal_skeletons()`（`:249`）从主官能团的附着点出发枚举**开链候选**（`_chain_candidates`）与**环系统候选**（`_ring_candidates`，每个 ring system 一个骨架）。随后 `select_principal_skeletons()`（`:236`）依次施加 `keep_max_principal_coverage` → `keep_p44_1_2`（环优先 + 最高优先级杂原子）→ 按拓扑走 `keep_p44_3`（纯链）/ `keep_p44_2`（环）→ `keep_p44_4_unsaturation`（`:223`）。**P-44.4 不饱和度统计现把芳香键按 Kekulé 双键当量计入**（键 `p44_4_unsaturation_key` `:200`：每 2 条芳香键折 1 个多重键 + 1 个双键，如苯 = 3），使不饱和芳香环优先于同环数饱和环（P-44.4.1.1 标准 a）；主官能团特征原子间的多重键仍不计入。
+2. **`parent_skeleton.py`** — `enumerate_principal_skeletons()`（`:259`）从主官能团的附着点出发枚举**开链候选**（`_chain_candidates`）与**环系统候选**（`_ring_candidates`，每个 ring system 一个骨架）。随后 `select_principal_skeletons()`（`:246`）依次施加 `keep_max_principal_coverage` → `keep_p44_1_2`（环优先 + 最高优先级杂原子）→ 按拓扑走 `keep_p44_3`（纯链）/ `keep_p44_2`（环）→ `keep_p44_4_unsaturation`（`:233`）。**P-44.4 不饱和度统计现把芳香键按 Kekulé 双键当量计入**（键 `p44_4_unsaturation_key` `:210`：每 2 条芳香键折 1 个多重键 + 1 个双键，如苯 = 3），使不饱和芳香环优先于同环数饱和环（P-44.4.1.1 标准 a）；主官能团特征原子间的多重键仍不计入。
+   - **等长最长链全枚举**（`_open_chains`，`parent_skeleton.py:61`）— 穿过锚点的**全部等长最长开链**都作候选（`_all_chains_through`，`chain_walk.py:103` 逐一枚举组件与最深叶子），避免单条 DFS 任选一路丢掉平局候选（如醛端 C3 连甲基端与羟甲基端同长，须两条都留让 P-44.4/P-45.2 裁决主链）。开链碳子图为森林时组件 DFS 取最深叶子作臂、等深全枚举。
+   - **降级叶碳禁走**（`_demoted_acid_carbons`，`parent_skeleton.py:45`）— L1 判为降级叶的中性羧酸碳（carboxy 叶）与腈碳（cyano 叶）组成 `banned` 集合传入链游走：这些碳不得进入开链主链（P-44.3 链不含取代基羧基碳），否则词干链会把酸/腈碳当饱和碳吞掉、杂原子悬空误命名成 hydroxy/amino。
 
 3. **`principal_expression.py`** — 把选定的骨架表达为 parent dict：
-   - `express_chain_principal()` — 开链主官能团经 `_chain_kind`（`:65`，`_CHAIN_FG` frozenset `:41` 限定 8 类）按多重度映射 kind：ACID/ALCOHOL/AMINE/KETONE 任意 count≥1 恒返回基团名（`_MULTI_FG` `:47`，数量由 `principal_expression_facts.multiplicity` 承载）；ESTER/AMIDE/NITRILE/ALDEHYDE 仅单基（count≠1 → None）。骨架内 C=C/C≡C 带 `double_bond`/`triple_bond`/`double_bonds` 字段；`acyl_halide` 经 `_chain_acyl_halide_fields` 携带 `hal_idx`/`hal_z`（卤素纳入母体原子，不作取代基）
-   - `express_ring_principal()` — 环骨架：`resolve_ring_scaffold` 解析骨架身份。**环 + 主 FG 一律收敛为 FG 类别 kind**（`_ring_kind`，苯/饱和环/未注册稠环/杂环平等），词干由 scaffold 承载；苯保留名（benzoic/phenol/aniline 等）由 L5 chain_engine variant 提供；环酸经 `_expression_flags` 补 anion 标志
-   - **环醛 -carbaldehyde/-dicarbaldehyde** — `_ring_kind`（`principal_expression.py:153`，ALDEHYDE 分支 `:167`）对骨架 + ALDEHYDE 主基团返回 kind `"aldehyde"`：环上外环 -CHO 可多个同作主官能团（P-66.6.1.1.3）；aldehyde 不在 `_MULTI_FG`，故仅环骨架放行、开链二醛表达不变。`_ring_fact_fields`（`principal_expression.py:184`）的单附着点组扩充 ALDEHYDE → 设 `ring_attach_idx`（原为 ACID/ESTER/AMIDE/NITRILE）
-   - **稠环接入** — `_scaffold_fields`（`:197`）解析 scaffold 身份外，额外：① 保留 fused 模板时算 `scaffold_match`（`_match_with_map` 的模板→分子原子映射，供 L4 固定编号 `standard_path`）；② 多环骨架（sssr_indices≥2）调 `decompose_fused_system` 产出 `fused_tree`（`FusedNode`）——**拆解独立于 scaffold 身份**，未注册系统 scaffold=None 时仍产出，供 L5 `fused_namer` 组装稠合名
+   - `express_chain_principal()` — 开链主官能团经 `_chain_kind`（`:59`，`_CHAIN_FG` frozenset `:43` 限定 9 类，由 `fg_registry.chain_fgs()` 派生）按多重度映射 kind：**ACYL → `"acyl"`**（酰基残基：羰基头为 locant 1，L5 拼 -oyl/酰，P-65.1.7.2）；ACID/ALCOHOL/AMINE/KETONE 任意 count≥1 恒返回基团名（`_MULTI_FG` `:44`，数量由 `principal_expression_facts.multiplicity` 承载）；ESTER/AMIDE/NITRILE/ALDEHYDE 仅单基（count≠1 → None）。骨架内 C=C/C≡C 带 `double_bond`/`triple_bond`/`double_bonds` 字段；`acyl_halide` 经 `_chain_acyl_halide_fields` 携带 `hal_idx`/`hal_z`（卤素纳入母体原子，不作取代基）
+   - `express_ring_principal()` — 环骨架：`resolve_ring_scaffold` 解析骨架身份。**环 + 主 FG 一律收敛为 FG 类别 kind**（`_ring_kind`，苯/饱和环/未注册稠环/杂环平等），词干由 scaffold 承载；苯保留名（benzoic/phenol/aniline 等）由 L5 chain_engine variant 提供；环酸经 `_expression_flags` 补 anion 标志；**环外酰卤（苯甲酰卤等）同样经 `_chain_acyl_halide_fields` 补 `hal_z`/`hal_idx`**（`express_ring_principal` `principal_expression.py:267`，卤素随实际 F/Cl/Br/I 选后缀、纳入母体原子）
+   - **环醛 -carbaldehyde/-dicarbaldehyde / 环外酰基头** — `_ring_kind`（`principal_expression.py:155`，ALDEHYDE 分支 `:169`）对骨架 + ALDEHYDE 主基团返回 kind `"aldehyde"`：环上外环 -CHO 可多个同作主官能团（P-66.6.1.1.3）；aldehyde 不在 `_MULTI_FG`，故仅环骨架放行、开链二醛表达不变。**环外 ACYL（苯甲酰/furan-2-carbonyl）经 `_chain_kind` → kind `"acyl"`**（环酸衍生酰基，P-65.1.7.2）。`_ring_fact_fields`（`principal_expression.py:186`）的单附着点组扩充 ALDEHYDE 与 **ACYL** → 设 `ring_attach_idx`（环附着原子位次供 L4 算 -carbonyl/benzoyl 词形 locant；原为 ACID/ESTER/AMIDE/NITRILE/ALDEHYDE）
+   - **稠环接入** — `_scaffold_fields`（`:201`）解析 scaffold 身份外，额外：① 保留 fused 模板时算 `scaffold_match`（`_match_with_map` 的模板→分子原子映射，供 L4 固定编号 `standard_path`）；② 多环骨架（sssr_indices≥2）调 `decompose_fused_system` 产出 `fused_tree`（`FusedNode`）——**拆解独立于 scaffold 身份**，未注册系统 scaffold=None 时仍产出，供 L5 `fused_namer` 组装稠合名
    - **kind 正交化扩充** — `_resolved_ring_kind`：苯与未注册稠环（`scaffold.id ∈ {"fused", "fused_hetero"}`）一律收敛 `alkane`；`_generic_ring_kind`：未注册芳香稠环（≥2 环）再收敛 `alkane`；`_ring_kind`：RADICAL + scaffold=None（未知杂环无 `-yl` 词干）显式返回 None 而非当开链烷基错名
    - 每个候选携带 `PrincipalExpressionFacts`（group_class/multiplicity/relation/characteristic_atoms/attachment_atoms/charge_state）与 `ScaffoldIdentity`
    - `express_hydrocarbon_principal()` — **无主官能团（纯烃）**：开链按 C=C/C≡C 分布给 alkane/alkene/alkyne/polyene；环按芳香性分流——**非芳香环/未注册稠环 kind 恒为 `"alkane"`**（不饱和度由 `double_bond(s)` 字段承载），芳香环命中保留 scaffold 时 kind=scaffold.id（如 `benzene`）
@@ -163,7 +165,7 @@ class FusedNode:
 母体选择的核心分歧点是**链状母体 vs 环状母体**，由 `parent_skeleton.keep_p44_1_2`（环优先 + 最高优先级杂原子）在筛选阶段解决：
 
 1. **环系统候选**（`_ring_candidates`）— 每个 `ring_systems` 条目生成一个骨架
-2. **开链候选**（`_chain_candidates`）— 从主官能团附着点出发的最长链/覆盖对；`chain_walk.py`（126 行）提供 `_all_carbons`/`_side_count`/`_chain_key`/`_better`/`_best_among` 等碳链行走原语（经 `tools/chain` 借用 `_carbon_neighbors`/`_longest_from`），后者排除芳香碳和环碳
+2. **开链候选**（`_chain_candidates`）— 从主官能团附着点出发，经 `_open_chains`（`parent_skeleton.py:61`）产出**穿过锚点的全部等长最长链**（单锚点 `_all_chains_through`）与两两锚点最长链（`_pair_chains`/`_chain_through_two`），并把 `_demoted_acid_carbons`（羧酸/腈叶碳）作 `banned` 排除；`chain_walk.py`（195 行）提供 `_all_carbons`/`_side_count`/`_better`/`_best_among`/`_longest_chain`/`_seed_carbons`/`_all_chains_through`/`_component_leaves` 等碳链行走原语（经 `tools/chain` 借用 `_carbon_neighbors`/`_longest_from`，后者排除芳香碳和环碳，`banned` 全局禁走再排除羧酸/腈叶碳）。`_better` 长度优先、仅等长才数支链度（`chain_walk.py:26`）；`_seed_carbons`（`chain_walk.py:35`）在开链为多碳树时仅用开链叶做种子等价加速最长链搜索。原 `_chain_key`/`_arms_from`/`_chain_through` 已删除——单锚点等长链全枚举由 `_all_chains_through` 承担
 
 当环候选不被评分选中或环无法承载特征官能团时，链状母体成为选择。
 
@@ -171,14 +173,14 @@ class FusedNode:
 
 ### FG 优先级体系
 
-官能团优先级遵循 IUPAC P-41 降序排列，由 `principal.py` 的 `PRINCIPAL_REGISTRY`（`compatibility_rank`）定义，经 `legacy_rank`（`principal.py:64`）按 FG 枚举查询。**13 个扩展 FG（sulfoxide/sulfone/sulfonate/sulfonamide/sulfonic_acid/sulfonyl_chloride/phosphate/boronic/carbamate/carbonate/urea/guanidine/hydrazine）已在 layer1 删除检测，随之退出优先级体系**：
+官能团优先级遵循 IUPAC P-41 降序排列，由 `principal.py` 的 `PRINCIPAL_REGISTRY`（`compatibility_rank`）定义，经 `legacy_rank`（`principal.py:64`）按 FG 枚举查询。**`PRINCIPAL_REGISTRY` 由 `fg_registry.FG_SPECS` 自动派生**（`principal.py:46-51`，取 `sp.p41` 的条目）——新增的 **`acyl`（p41=1，同 radical）自动成为 SUFFIX 可主基团**（`principal_spec` 以 SUFFIX 为门槛放行）。**13 个扩展 FG（sulfoxide/sulfone/sulfonate/sulfonamide/sulfonic_acid/sulfonyl_chloride/phosphate/boronic/carbamate/carbonate/urea/guanidine/hydrazine）已在 layer1 删除检测，随之退出优先级体系**：
 
 | 优先级 | FG 类别 | kind 示例 |
 |--------|---------|-----------|
 | 14 | 羧酸 | acid, benzoic |
 | 12 | 酸酐 | anhydride（registry 保留，但 `_CHAIN_FG` 无此类别，链式 acid 无酸酐表达） |
 | 11 | 酯 | ester, benzoate |
-| 10 | 酰卤 | acyl_chloride, acyl_bromide |
+| 10 | 酰卤 | acyl_halide（kind 单一；L5 按 `hal_z` 选 -oyl fluoride/chloride/bromide/iodide，苯 → benzoyl halide） |
 | 9 | 酰胺 | amide |
 | 8 | 腈 / 异氰酸酯 | nitrile, isocyanate, isothiocyanate |
 | 7 | 醛 | aldehyde |
@@ -189,7 +191,7 @@ class FusedNode:
 | 2 | 硫醚 | sulfide（LEGACY_COMPAT） |
 | 0 | 醚 / 烷 | ether（PREFIX_ONLY，不参与主官能团选择）; alkane/alkene/alkyne 纯烃 |
 
-> **源:** `src/namepredict/layer2/principal.py:42-60` `PRINCIPAL_REGISTRY`
+> **源:** `src/namepredict/layer2/principal.py:48-56` `PRINCIPAL_REGISTRY`（由 `FG_SPECS` 派生）
 
 ### 多官能团母体
 
@@ -199,7 +201,7 @@ class FusedNode:
 
 ### Atom Ownership: 母体原子归属
 
-选出母体骨架后，`parent_ownership.py`（264 行）确定**母体"拥有"哪些原子**——`compute_owned_atoms(parent, mol)`（`:255`）取 `_chain_atoms`（骨架原子，`:9`）与 `_kind_fg_atoms`（FG 异原子，`:232`，按母体类型分派到 `_acid_o_atoms`/`_ketone_fg_atoms`/`_amine_fg_atoms`/`_ester_fg_atoms`/`_anhydride_fg_atoms` 等）的并集。`finalize_parent_ownership`（`:260`）注入不可变 `owned_atoms` frozenset（幂等）。owned_atoms 是 layer3 提取取代基的关键边界。详见 [[concepts/atom-ownership]]。
+选出母体骨架后，`parent_ownership.py`（275 行）确定**母体"拥有"哪些原子**——`compute_owned_atoms(parent, mol)`（`:266`）取 `_chain_atoms`（骨架原子，`:9`）与 `_kind_fg_atoms`（FG 异原子，`:242`，按母体类型分派到 `_acid_o_atoms`/`_ketone_fg_atoms`/`_amine_fg_atoms`/`_ester_fg_atoms`/`_anhydride_fg_atoms`/`_acyl_fg_atoms` 等）的并集。**新增 `_acyl_fg_atoms`**（`parent_ownership.py:232`）：酰基残基拥有其羰基头碳 + 羰基 O（=O 归母体，不落入 oxo 前缀）。`finalize_parent_ownership`（`:271`）注入不可变 `owned_atoms` frozenset（幂等）。owned_atoms 是 layer3 提取取代基的关键边界。详见 [[concepts/atom-ownership]]。
 
 > **源:** `src/namepredict/layer2/parent_ownership.py:255-260`
 
@@ -283,7 +285,7 @@ flowchart LR
 | `candidates.py` | 34 | 候选收集+去重 (_collect_candidates → rule_driven_parent_candidates 单一路径) |
 | `parent_selector.py` | 46 | `select_parent` 入口: P-44 评分降序 + owned_atoms 固化 (`_finalize_ranked`) → P-45.2 前缀取代基重排 (`_reorder_p45_2`) |
 | `scoring.py` | 63 | P-44 评分 tuple, `_score_parent`, `_p44_1_1`/`_later_score` |
-| `chain_walk.py` | 126 | 碳链行走原语: `_all_carbons`, `_side_count`, `_best_among` 等 |
+| `chain_walk.py` | 195 | 碳链行走原语: `_all_carbons`, `_side_count`, `_better`, `_best_among`, `_longest_chain`, `_seed_carbons`(叶降集), `_all_chains_through`(等长全枚举), `_component_leaves`, `_chain_through_two`；全链 `banned` 禁走集合 |
 | `__init__.py` | 6 | 导出 `select_parent` |
 
 ### P-44 规则驱动管线 (Rule-Driven Principal Pipeline)
@@ -291,8 +293,8 @@ flowchart LR
 | 文件 | 行数 | 职责 |
 |------|------|------|
 | `principal.py` | 85 | P-41 class / P-43 表达元数据 + 主官能团选择: PRINCIPAL_REGISTRY, select_principal_group |
-| `parent_skeleton.py` | 253 | 骨架枚举 + P-44 筛选: enumerate_principal_skeletons, select_principal_skeletons, keep_p44_1_2/2/3/4, p44_4_unsaturation_key |
-| `principal_expression.py` | 370 | typed 表达: express_chain/ring/hydrocarbon_principal, PrincipalExpressionFacts, _chain_kind; 环醛(_ring_kind ALDEHYDE 分支) + 稠环接入(fused_tree/scaffold_match) + 酰卤字段 |
+| `parent_skeleton.py` | 263 | 骨架枚举 + P-44 筛选: enumerate_principal_skeletons, select_principal_skeletons, keep_p44_1_2/2/3/4, p44_4_unsaturation_key, _open_chains(等长全枚举), _demoted_acid_carbons(降级叶禁走) |
+| `principal_expression.py` | 377 | typed 表达: express_chain/ring/hydrocarbon_principal, PrincipalExpressionFacts, _chain_kind(ACYL→acyl); 环醛(_ring_kind ALDEHYDE 分支)/环外酰基头 ACYL + 稠环接入(fused_tree/scaffold_match) + 链/环外酰卤字段 |
 | `principal_parent.py` | 48 | 编排: rule_driven_parent_candidates, select_principal_parent_skeletons |
 | `parent_candidate.py` | 78 | principal contract: with_principal_group_contract, principal_key, P44Facts |
 | `fused_system.py` | 225 | P-25.3.2.4 稠环拆解: decompose_fused_system → FusedNode 树（供 L5 稠合名组装） |
@@ -310,7 +312,7 @@ flowchart LR
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
-| `parent_ownership.py` | 264 | 母体原子归属最终化 (immutable owned_atoms, compute_owned_atoms/finalize_parent_ownership) |
+| `parent_ownership.py` | 275 | 母体原子归属最终化 (immutable owned_atoms, compute_owned_atoms/finalize_parent_ownership, _acyl_fg_atoms) |
 
 > 备注：layer2 只有以上 16 个模块。`fg_helpers.py`/`candidate_gate.py`/`arene_carbonyl.py`/`parent_core.py`/`identity.py`/`spiro_parent.py` 及 `scaffold/` 子包均不存在——互斥由 `select_principal_group` 结构性单选择实现；ScaffoldIdentity 定义于 `ring_scaffold.py`；parent_dict/chain 归 principal_expression/parent_ownership 承担。
 

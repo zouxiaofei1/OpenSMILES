@@ -167,7 +167,7 @@ pyridine 走**数据驱动**识别，全部在 `ring_scaffold.py`：
 
 ### Step 3 — 编号
 
-无需 orienter。`numbering_engine` 的 P-14.4 候选管线对环枚举 2n 个候选；`_ring_hetero_start`（`numbering_engine.py`）把单杂环的唯一杂原子固定为 1 号位（P-14.4，pyridine 的 N=1）。
+无需 orienter。`numbering_engine` 的 P-14.4 候选管线对环枚举 2n 个候选；`_narrow_hetero_ring`（`numbering_engine.py`）对杂环做元素序窄化（P-22.2.2.1.3：全杂原子最低位次→逐元素序→唑 NH=1，先行于 principal），使单杂环的唯一杂原子/吡啶的 N 定于 1 号位。
 
 ### Step 4 — 命名
 

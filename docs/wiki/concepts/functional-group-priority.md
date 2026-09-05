@@ -27,7 +27,7 @@ NamePredict 将这一优先级体系的**单一事实来源放在 `fg_registry.F
 | **14** | `acid` | -oic acid | -酸 | P-65.1: 羧酸为最高优先级链状 FG |
 | **12** | `anhydride` | -oic anhydride | -酸酐 | 羧酸酐（registry 保留；`_CHAIN_FG` 无此类，链式 acid 无酸酐表达） |
 | **11** | `ester` | -oate | -酸酯 | 羧酸衍生物（酯类） |
-| **10** | `acyl_chloride`, `acyl_bromide` | -oyl chloride / -oyl bromide | -酰氯 / -酰溴 | 酰卤 |
+| **10** | `acyl_halide` | -oyl chloride 等（随 F/Cl/Br/I） | -酰氯 等（酰氟/酰氯/酰溴/酰碘） | 酰卤——后缀随实际卤素（`parent.hal_z`）变：F/Cl/Br/I 分别 -oyl fluoride/chloride/bromide/iodide，苯 → benzoyl fluoride/chloride/… |
 | **9** | `amide` | -amide | -酰胺 | 酰胺 |
 | **8** | `nitrile`, `isocyanate`, `isothiocyanate` | -nitrile / isocyanate | -腈 / 异氰酸酯 | C&#8801;N 和累积双键系统 |
 | **7** | `aldehyde` | -al / carbaldehyde | -醛 / 甲醛 | 醛基 |
@@ -74,7 +74,7 @@ class KindMeta:
 
 13 个扩展 FG（carbamate/carbonate/urea/guanidine/sulfoxide/sulfone/...）在 layer1 中不存在，因此无跨模块排他链（carbamate 排除 ester、urea 排除 amide 等）——排他检测只发生在 analyzer.py 内部的核心羰基族。共享的羰基检测原语集中在 `_carbonyl_common.py`。
 
-所有检测到的 FG 被汇总为结构化列表（20 个 FG 列表键 + 18 个布尔标志）和类型化的 `fg_inventory`，构成 info dict 传递给 Layer 2。
+所有检测到的 FG 被汇总为结构化列表（23 个 FG 列表键，含 `acyls`/`demoted_carboxyls`/`demoted_nitriles` + 18 个布尔标志）和类型化的 `fg_inventory`，构成 info dict 传递给 Layer 2。
 
 > **源:** `src/namepredict/layer1/analyzer.py`, `src/namepredict/layer1/_carbonyl_common.py` | 详情见 [[architecture/layer1-analyzer]]
 
@@ -105,11 +105,11 @@ class KindMeta:
 
 ### Layer 5: 后缀分派（Suffix Dispatch）
 
-Layer5 由 `_names_for`（`assembler.py:290`）查 **`chain_engine._KIND_TABLE`**（12 个 `_Chain` spec）渲染词干、不饱和段、位次与环前缀（kind 收敛在 L2 `_chain_kind`，无 `typed_kinds` 模块）。`mult_ok` 生成式按 multiplicity 派生数量后缀（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid），`variant` 仅作 scaffold 特例覆盖（含 `acyl_halide`）。环外（exocyclic）FG 走 worker——`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names` 按 multiplicity 拼 …-carboxylic acid/…-carbaldehyde（多羧酸 → -dicarboxylic acid，环外二醛 → -dicarbaldehyde，P-66.6.1.1.3）——否则落 `_parent_stem_names` 回退。
+Layer5 由 `_names_for`（`assembler.py:409`）查 **`chain_engine._KIND_TABLE`**（13 个 `_Chain` spec：12 链式 FG kind 含 `acyl`、逐卤素 `acyl_halide` + `radical`）渲染词干、不饱和段、位次与环前缀（kind 收敛在 L2 `_chain_kind`，无 `typed_kinds` 模块）。`mult_ok` 生成式按 multiplicity 派生数量后缀（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid），`variant` 仅作 scaffold 特例覆盖（苯 → benzoyl/benzoyl halide/phenol 等）。环外（exocyclic）FG 走 worker——`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names` 按 multiplicity 拼 …-carboxylic acid/…-carbaldehyde（多羧酸 → -dicarboxylic acid，环外二醛 → -dicarbaldehyde，P-66.6.1.1.3），**`_exocyclic_acyl_names` 拼 -carbonyl/-羰基**（furan-2-carbonyl，P-65.1.7.2；苯 → benzoyl 回落 variant）——否则落 `_parent_stem_names` 回退。单环环烷/环烯的环外系统名共用 `_ring_carbocycle_stem`（环烯/另带前缀取代时后缀 locant 显式）。
 
 调度是分层的：L2 收敛 kind → L5 查链引擎 → 命中后直接返回。这确保了被选为母体的 principal FG 获得后缀，而劣后 FG 在 Layer 3 中被转为取代基前缀（如 hydroxy-、oxo-、amino-）。
 
-> **源:** `src/namepredict/layer5/chain_engine.py`, `src/namepredict/layer5/assembler.py:290` | 详情见 [[architecture/layer5-name-assembly]]
+> **源:** `src/namepredict/layer5/chain_engine.py`, `src/namepredict/layer5/assembler.py:409` | 详情见 [[architecture/layer5-name-assembly]]
 
 ---
 

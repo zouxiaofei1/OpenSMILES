@@ -1,6 +1,6 @@
 # 中英双语命名约定 (Bilingual Naming Convention)
 
-> **概念页面** | **最后更新:** 2026-09-04
+> **概念页面** | **最后更新:** 2026-09-05
 
 ---
 
@@ -26,7 +26,7 @@ Layer5: (en, zh) tuples → NameResult(en="ethanol", zh="乙醇")   ← 双语�
 
 ### 管线的 5 步双语流水线
 
-以 `assemble()` 函数（`src/namepredict/layer5/assembler.py:412`）为例，每一步都操作 `(en, zh)` 对：
+以 `assemble()` 函数（`src/namepredict/layer5/assembler.py:539`）为例，每一步都操作 `(en, zh)` 对：
 
 ```
 1. _names_for(kind, n, numbered)     → (en, zh) | None   母体名称
@@ -45,15 +45,15 @@ Layer5: (en, zh) tuples → NameResult(en="ethanol", zh="乙醇")   ← 双语�
 
 ### 母体名称派发中的双语约定
 
-`_names_for` 函数（`src/namepredict/layer5/assembler.py:290`）先查 `chain_engine._KIND_TABLE`（12 个 `_Chain` spec，按 `scaffold_id` 运行时注入环前缀/稠环词干），命中即返回；否则落到特殊 worker（`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names`/`phenyl`）或 `_parent_stem_names` 回退。每个 worker 都是返回 `(en, zh)` 或 `None` 的双语函数——返回 `None` 时派发器降级到下一策略。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
+`_names_for` 函数（`src/namepredict/layer5/assembler.py:409`）先查 `chain_engine._KIND_TABLE`（13 个 `_Chain` spec，按 `scaffold_id` 运行时注入环前缀/稠环词干），命中即返回；否则落到特殊 worker（`_exocyclic_acyl_names`/`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names`/`phenyl`）或 `_parent_stem_names` 回退。每个 worker 都是返回 `(en, zh)` 或 `None` 的双语函数——返回 `None` 时派发器降级到下一策略。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
 
 ## 词干表：双语单词的单一权威来源
 
-`src/namepredict/layer5/stems.py` 是整个 NamePredict 双语命名的数据基础。它定义了从 C1 到 C35+ 碳数范围的英中双语词干生成器，确保整个系统中同一碳数的烷烃词干、官能团名称保持一致性。
+`src/namepredict/layer5/stems.py` 是整个 NamePredict 双语命名的数据基础。它定义了从 C1 到 C99 碳数范围的英中双语词干生成器，确保整个系统中同一碳数的烷烃词干、官能团名称保持一致性。
 
 ### 基表结构
 
-**C1-C10 保留名基表**（`src/namepredict/layer5/stems.py:9-17`）：
+**C1-C10 保留名基表**（`src/namepredict/layer5/stems.py:8-15`）：
 
 ```python
 _ALKANE_EN_BASE = {1: "methane", 2: "ethane", ..., 10: "decane"}
@@ -62,17 +62,11 @@ _ALKANE_ZH_BASE = {1: "甲烷",  2: "乙烷",   ..., 10: "癸烷"}
 
 英文和中文基表严格一一对应，使用相同的整数 key。这种 `{n: str}` 的字典结构确保了查找效率和数据的不可变性。
 
-**C11-C19 半系统命名**（`src/namepredict/layer5/stems.py:18-21`）：
-
-英文使用复合词干 `_SEMI_EN`（`undec`, `dodec`, `tridec`...），中文则由 `zh_num(n)` 函数动态生成 `十一烷`、`十二烷`...。
-
-**C20+ 乘性组合**（`src/namepredict/layer5/stems.py:53-63`）：
-
-英文词干通过 `_compose_en_stem(n)` 按十位（`icos`, `triacont`, `tetracont`...）+ 个位（`hen`, `do`, `tri`...）组合生成，如 C22 = `docos`（do + cos，elide icos 的 i）。中文仍由 `zh_num(n)` 生成数字+烷。
+**C11+ 英文词干复用 `constants.en_num_term`**（数量词与母链碳数同源）：`_en_stem`（`stems.py:40`）对 n≥11 直接 `en_num_term(n)[:-1]` 去尾 'a'（undec、icos、docos…）；旧 `_SEMI_EN`/`_compose_en_stem` 本地复合表已删，`constants.MULT_EN/MULT_ZH` 亦扩到 1–99。中文则由 `zh_num(n)` 函数动态生成 `十一烷`、`十二烷`...。
 
 ### 烷烃词干与 FG 名称的生成
 
-`stems.py` 提供烷烃英中词干生成器：`alkane_en(n)`/`alkane_zh(n)` 生成 C1-C35 烷烃全名，`_en_stem(n)`/`zh_stem(n)` 取去后缀词干。**FG 名称不由 stems 逐官能团派生**（无 `alcohol_en`/`acid_en`/`amide_en` 等函数）——由 chain_engine 用 `_en_stem` + `_Chain.en_suf`/`zh_suf` 直接拼接，C1/C2 保留名（formic/acetic、甲酸/乙酸）由 chain_engine 的 `_RETAINED` 表提供：
+`stems.py` 提供烷烃英中词干生成器：`alkane_en(n)`/`alkane_zh(n)` 生成 C1-C99 烷烃全名，`_en_stem(n)`/`zh_stem(n)` 取去后缀词干。**FG 名称不由 stems 逐官能团派生**（无 `alcohol_en`/`acid_en`/`amide_en` 等函数）——由 chain_engine 用 `_en_stem` + `_Chain.en_suf`/`zh_suf` 直接拼接，C1/C2 保留名（formic/acetic、甲酸/乙酸）由 chain_engine 的 `_RETAINED` 表提供：
 
 | 官能团 | 生成方式 | 示例 (C2) | 示例 (C2 中文) |
 |--------|---------|-----------|---------------|
@@ -84,7 +78,7 @@ _ALKANE_ZH_BASE = {1: "甲烷",  2: "乙烷",   ..., 10: "癸烷"}
 | 腈 | chain_engine `nitrile` entry | `acetonitrile` | `乙腈` |
 | 酯 | chain_engine `ester` entry | `acetate` | `乙酸` |
 
-公开词干表 `ALKANE_EN`/`ALKANE_ZH` 通过 `_fill(fn, lo=1, hi=35)` 自动填充为完整字典（`src/namepredict/layer5/stems.py:176-177`），从 C1 覆盖到 C35，确保长链名称无需手动维护。中文的 C1/C2 酸、醛、酰胺、腈等使用保留名（如 `甲酸`/`乙酸`、`甲醛`/`乙醛`），与英文保留名（`formic acid`/`acetic acid`、`formaldehyde`/`acetaldehyde`）保持对应。
+公开词干表 `ALKANE_EN`/`ALKANE_ZH` 通过 `_fill(fn, lo=1, hi=99)` 自动填充为完整字典（`src/namepredict/layer5/stems.py:139-150`），从 C1 覆盖到 C99，确保长链名称无需手动维护。中文的 C1/C2 酸、醛、酰胺、腈等使用保留名（如 `甲酸`/`乙酸`、`甲醛`/`乙醛`），与英文保留名（`formic acid`/`acetic acid`、`formaldehyde`/`acetaldehyde`）保持对应。
 
 ## 中英文命名差异
 
@@ -165,7 +159,7 @@ _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈",
 - 10-19：`十` + 个位（`十一` `十二`...而非 `一十` `二十`...）
 - 20-99：十位 + `十` + 个位（`二十五`、`九十九`）
 
-该函数是中文 C11+ 烷烃名称（`十一烷`、`三十五烷` 等）的数据源，同时也是 C20+ 乘性组合名称中中文部分的唯一来源。`zh_num` 不存在对应的英文函数，因为英文 C11+ 使用半系统词干表 `_SEMI_EN` 而非数字前缀。
+该函数是中文 C11+ 烷烃名称（`十一烷`、`三十五烷` 等）的数据源。`zh_num` 不存在对应的英文函数，因为英文 C11+ 词干由 `constants.en_num_term`（数量词同源）去尾 'a' 派生（undec/icos/docos…），而非中文数字前缀。
 
 ## `name_mode` 的双语传播
 

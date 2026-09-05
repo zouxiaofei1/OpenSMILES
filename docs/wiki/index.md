@@ -1,6 +1,6 @@
 # NamePredict Wiki
 
-> 最后更新: 2026-09-04 | 源文件: 67 `.py` / 9,223 行（含 `tools/` 与根目录，排除 `__pycache__`/`cache`）| Wiki 页面: 15
+> 最后更新: 2026-09-05 | 源文件: 68 `.py` / 9,853 行（含 `tools/` 与根目录，排除 `__pycache__`/`cache`）| Wiki 页面: 15
 
 ## 项目概述
 
@@ -33,12 +33,12 @@ SMILES 输入
 | 页面 | 内容 |
 |------|------|
 | [[architecture/overview]] | 架构总览：6 层流水线、数据流图、跨层设计模式、namer.py 协调器 |
-| [[architecture/layer0-preprocessor]] | Layer0 预处理：SMILES 解析 + 立体初步指派 + 酰胺烯醇互变异构归一化、盐检测与解离、盐元数据注入 |
-| [[architecture/layer1-analyzer]] | Layer1 官能团分析器：20 类 FG 检测、环系拓扑、排他性优先级 |
+| [[architecture/layer0-preprocessor]] | Layer0 预处理：SMILES 解析 + 立体初步指派 + 酰胺烯醇互变异构归一化 + 酸性质子收敛（charge.py）、盐检测与解离、盐元数据注入 |
+| [[architecture/layer1-analyzer]] | Layer1 官能团分析器：18 类别/23 列表键 FG 检测（含锚定酰基头 acyl）、环系拓扑、排他性优先级、降级叶（carboxy/cyano） |
 | [[architecture/layer2-parent-selector]] | Layer2 母体选择器：P-44 规则驱动主链管线（含 P-44.4 芳香不饱和）+ P-45.2 前缀取代基打平、kind 正交化（ring_scaffold _TEMPLATES 唯一来源）、稠环拆解（fused_system）、评分 |
 | [[architecture/layer3-substituents]] | Layer3 取代基提取器：anchored 查表主流程 + claim 补全、SubstituentNamer 有序后端（retained/recursive）、覆盖台账 |
 | [[architecture/layer4-numbering]] | Layer4 编号：P-14.4 候选编号引擎 + 稠环编号（fused_orientation/fused_numbering/ring_geometry/locant_key）、FG 位次计算、omit_locants 规则 |
-| [[architecture/layer5-name-assembly]] | Layer5 名称组装：组装流水线、`chain_engine._KIND_TABLE` 链引擎（12 entry：11 链式 FG kind + `radical`）、环外酸/醛系统名、稠合名组装（fused_namer）、N- 前缀、立体化学（E/Z + R/S 含环骨架） |
+| [[architecture/layer5-name-assembly]] | Layer5 名称组装：组装流水线、`chain_engine._KIND_TABLE` 链引擎（13 entry：12 链式 FG kind 含 `acyl`、逐卤素 `acyl_halide` + `radical`）、环外酸/醛/酰基系统名（-carbonyl，词干 C1–C99）、稠合名组装（fused_namer）、N- 前缀、立体化学（E/Z + R/S 含环骨架） |
 
 ## 核心概念
 

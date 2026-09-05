@@ -176,7 +176,7 @@ async function runName(smiles, opts) {
   try {
     const result = await api(API.name, {
       method: "POST",
-      body: JSON.stringify({ smiles }),
+      body: JSON.stringify({ smiles, engine: state.engine || "src" }),
     });
     if (seq !== state.nameReqSeq) return;
     showNamerResult(result);
@@ -323,6 +323,15 @@ function showNamerResult(result) {
     badge.textContent = result.success ? "success" : "failed";
     badge.className = "badge " + (result.success ? "ok" : "fail");
   }
+  const engTag = $("namer-engine-tag");
+  if (engTag) {
+    if (result.engine) {
+      engTag.textContent = result.engine;
+      engTag.hidden = false;
+    } else {
+      engTag.hidden = true;
+    }
+  }
   if ($("namer-time")) $("namer-time").textContent = Math.round(result.time_ms || 0) + " ms";
   if ($("namer-en")) $("namer-en").textContent = result.en || "—";
   if ($("namer-zh")) $("namer-zh").textContent = result.zh || "—";
@@ -468,7 +477,53 @@ async function updateNamerSvg(boxId, endpoint, smiles, seq, orient) {
   }
 }
 
+/* 引擎开关(src/v2/v3): 设 active 态 + 持久化。仅影响 /name 的 en/zh 输出;
+   gold/PubChem/L4 编号/Atom 索引等结构图仍走原(src)管线, 与引擎无关。 */
+const ENGINE_VALUES = ["src", "v2", "v3"];
+
+function applyEngineUI(engine) {
+  state.engine = ENGINE_VALUES.indexOf(engine) >= 0 ? engine : "src";
+  document.querySelectorAll(".namer-engine-btn").forEach(function (b) {
+    b.classList.toggle("active", b.getAttribute("data-engine") === state.engine);
+  });
+  try {
+    localStorage.setItem("namer.engine", state.engine);
+  } catch (_) {
+    /* localStorage 不可用时仅本次会话生效 */
+  }
+}
+
+function bindEngineSwitch() {
+  const btns = document.querySelectorAll(".namer-engine-btn");
+  if (!btns.length) return;
+  // 恢复上次选择; 首次访问缺省 src
+  let stored = "src";
+  try {
+    const v = localStorage.getItem("namer.engine");
+    if (ENGINE_VALUES.indexOf(v) >= 0) stored = v;
+  } catch (_) {
+    /* 忽略读取失败 */
+  }
+  applyEngineUI(stored);
+  btns.forEach(function (b) {
+    b.addEventListener("click", async function () {
+      const next =
+        ENGINE_VALUES.indexOf(b.getAttribute("data-engine")) >= 0
+          ? b.getAttribute("data-engine")
+          : state.engine;
+      if (next === state.engine) return;
+      applyEngineUI(next);
+      // 当前已有分子(输入框/画板/上次命名)则立刻用新引擎重命名, 便于即时对照
+      if (state.lastNamedSmiles) {
+        const smiles = await resolveSmilesForName();
+        if (smiles) runName(smiles, { fromLive: false });
+      }
+    });
+  });
+}
+
 export function bindNamer() {
+  bindEngineSwitch();
   $("namer-form") && $("namer-form").addEventListener("submit", onName);
   $("btn-pubchem") &&
     $("btn-pubchem").addEventListener("click", onPubchem);
