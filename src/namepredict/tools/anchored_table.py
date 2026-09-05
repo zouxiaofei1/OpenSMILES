@@ -70,6 +70,7 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "ethylsulfanyl": RetainedSubstituent( "ethylsulfanyl", "乙硫基", "ethylsulfanyl", "乙硫基", P, anchored=("*SCC", ), paren=False, kind="leaf", ),
         "sulfanyl": RetainedSubstituent( "sulfanyl", "巯基", "sulfanyl", "巯基", P, anchored=("*S", ), paren=False, kind="leaf", ),
         "selanyl": RetainedSubstituent( "selanyl", "氢硒基", "selanyl", "氢硒基", P, anchored=("*[SeH]", ), paren=False, kind="leaf", ),
+        "methylsulfinyl": RetainedSubstituent( "methylsulfinyl", "甲基亚磺酰", "methylsulfinyl", "甲基亚磺酰", P, anchored=("*S(C)=O", ), paren=False, kind="leaf", ),
         "methylsulfonyl": RetainedSubstituent( "methylsulfonyl", "甲磺酰基", "methylsulfonyl", "甲磺酰基", P, anchored=("*S(C)(=O)=O", ), paren=False, kind="leaf", ),
         "sulfo": RetainedSubstituent( "sulfo", "磺基", "sulfo", "磺基", P, anchored=("*S(=O)(=O)O", ), paren=False, kind="leaf", ),
         "tosyl": RetainedSubstituent( "tosyl", "对甲苯磺酰基", "4-methylbenzenesulfonyl", "4-甲基苯磺酰基", N, anchored=("*S(=O)(=O)c1ccc(C)cc1", ), paren=False, kind="leaf", ),

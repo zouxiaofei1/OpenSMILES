@@ -10,6 +10,9 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
+    # ── methylsulfinyl (PIN P-65.3.1) ──
+    ("CS(C)=O",
+     "methylsulfinylmethane", None),
     # ── methylsulfonyl (PIN P-65.3.2) ──
     ("CS(=O)(=O)CC[C@H](N)C(=O)O",
      "(2S)-2-amino-4-methylsulfonylbutanoic acid", None),
