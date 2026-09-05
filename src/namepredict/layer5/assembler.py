@@ -273,6 +273,40 @@ def _exocyclic_aldehyde_names(n: int, numbered: dict) -> tuple[str, str] | None:
     return None
 
 
+def _exocyclic_acyl_names(n: int, numbered: dict) -> tuple[str, str] | None:
+    """环外酰基头（羰基头连环/芳骨架的 -CO-X）→ 环酸衍生酰基名（P-65.1.7.2）：
+    苯 → benzoyl/苯甲酰基 保留名（回落 chain_engine variant）；
+    杂环/稠环/单环碳环 → 母体名/locant + -carbonyl/-羰基（furan-2-carboxylic acid→furan-2-carbonyl、
+    cyclopropanecarboxylic acid→cyclopropanecarbonyl）。反例 -oyl 直拼（furanoyl）——丢环酸羧基位次、词干不符金标准。"""
+    parent = numbered.get("parent") or {}
+    facts = parent.get("principal_expression_facts")
+    sid = parent.get("scaffold_id")
+    if not facts or facts.group_class.value != "acyl" or facts.relation.value != "exocyclic":
+        return None
+    if facts.multiplicity != 1:
+        return None
+    if sid == "benzene":
+        # 苯单酰基头 → benzoyl 保留名，回落 chain_engine._KIND_TABLE["acyl"].variant["benzene"]。
+        return None
+    rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "acyl"), None)
+    locs = rec.get("locants") if rec else None
+    loc = ",".join(str(x) for x in locs) if locs else None
+    if sid == "carbocycle" and not parent.get("fused_tree"):
+        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
+        en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
+        if en_ring is None:
+            return None
+        if (has_unsat or _ring_extra_prefix_located(numbered)) and loc:
+            return (f"{en_ring}-{loc}-carbonyl", f"{zh_ring}-{loc}-羰基")
+        return (f"{en_ring}carbonyl", f"{zh_ring}羰基")
+    base = _ring_base(numbered)
+    if base:
+        if loc:
+            return (f"{base[0]}-{loc}-carbonyl", f"{base[1]}-{loc}-羰基")
+        return (f"{base[0]}carbonyl", f"{base[1]}羰基")
+    return None
+
+
 _MONONUCLEAR_ZERO_YL = {
     ("oxidane", "氧化烷"): ("hydroxy", "羟基"),
     ("azane", "氮烷"): ("amino", "氨基"),
@@ -355,6 +389,11 @@ def _ensure_fused_stem(numbered: dict) -> bool:
 
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     """链引擎按表 kind 派发，再转具体 worker。"""
+    if kind == "acyl":
+        # 环外酰基头走 exocyclic worker（苯→None 回落 chain_engine benzoyl variant）；开链 acyl 无关（relation in_skeleton）。
+        exo = _exocyclic_acyl_names(n, numbered)
+        if exo:
+            return exo
     if kind == "acid":
         exo = _exocyclic_acid_names(n, numbered)
         if exo:

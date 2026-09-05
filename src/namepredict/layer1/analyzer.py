@@ -387,7 +387,11 @@ def _is_anchored(atom) -> bool:
 
 
 def _is_acyl_head(mol: Mol, atom) -> bool:
-    """锚定羰基碳是否为无环酰基头：带 =O、恰好 1 个非环非芳碳单键邻居，且无其它重邻居（P-65.1.7.2 酸衍生）。"""
+    """锚定羰基碳是否为酰基头：带 =O、恰好 1 个单键碳邻居（α 可开链、亦可是环/芳——酸衍生酰基头），且无其它重邻居（P-65.1.7.2 酸衍生）。
+
+    环内酮/内酯/酰胺的羰基碳两侧分别被环碳或 N/O 占据：环酮 carbs=2、内酯/酰胺因杂原子
+    neighbor 置 hetero，故均不误判为酰基头；放开 α 环/芳限制后，苯甲酰/furan-2-carbonyl 等
+    环酸衍生酰基头进入 acyl 通道（此前被 `not alpha.IsInRing()/IsAromatic()` 挡成 oxomethyl）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom) or not _is_anchored(atom):
         return False
     carbs: list = []
@@ -397,15 +401,14 @@ def _is_acyl_head(mol: Mol, atom) -> bool:
             continue
         b = mol.GetBondBetweenAtoms(atom.GetIdx(), nb.GetIdx())
         if b is not None and b.GetBondType() == BondType.DOUBLE:
-            continue  # 羰基 =O
+            continue  # 羰基 =O（或醛 C=C 等其它双键；真实酰基头无第二个双键）
         if nb.GetAtomicNum() == C:
             carbs.append(nb)
         elif nb.GetAtomicNum() != H:
             hetero = True
     if hetero or len(carbs) != 1:
         return False
-    alpha = carbs[0]
-    return not alpha.IsInRing() and not alpha.GetIsAromatic()
+    return True
 
 
 def _acyl_entries(mol: Mol) -> list[dict]:

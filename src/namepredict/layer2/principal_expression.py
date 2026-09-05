@@ -190,8 +190,10 @@ def _ring_fact_fields(fields: dict, facts: PrincipalExpressionFacts) -> dict:
     if len(attachments) == 1 and facts.group_class in (
         FunctionalGroupClass.ACID, FunctionalGroupClass.ESTER,
         FunctionalGroupClass.AMIDE, FunctionalGroupClass.NITRILE,
-        FunctionalGroupClass.ALDEHYDE,
+        FunctionalGroupClass.ALDEHYDE, FunctionalGroupClass.ACYL,
     ):
+        # ACYL：exocyclic 酰基头（苯甲酰/furan-2-carbonyl）的环附着原子位次，
+        # 供 L4 在 locant_calc 计算 -carbonyl/benzoyl 词形所需 locant。
         extra["ring_attach_idx"] = attachments[0]
     return {**fields, **extra}
 

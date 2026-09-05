@@ -278,11 +278,20 @@ def _radical_locants(oriented: dict) -> list[int] | None:
 
 
 def _acyl_locants(oriented: dict) -> list[int] | None:
-    """返回酰基头碳位次列表（acyl_c_idx，P-65.1.7.2 酸碳恒为 locant 1）。"""
+    """返回酰基头位次列表：开链酰基头碳 acyl_c_idx（P-65.1.7.2 酸碳恒 locant 1），
+    exocyclic 环酰基（羰基头在环外）回退环附着原子 ring_attach_idx（furan-2-carbonyl 的 2）。"""
     idx = oriented.get("acyl_c_idx")
-    if idx is None:
+    chain = oriented.get("chain") or []
+    if idx is not None:
+        loc = _atom_locant(chain, idx, oriented.get("kind"),
+                           oriented.get("numbering_scaffold"),
+                           oriented.get("numbering_scaffold_required", False))
+        if loc is not None:
+            return [loc]
+    attach = oriented.get("ring_attach_idx")
+    if attach is None:
         return None
-    loc = _atom_locant(oriented.get("chain") or [], idx, oriented.get("kind"),
+    loc = _atom_locant(chain, attach, oriented.get("kind"),
                        oriented.get("numbering_scaffold"),
                        oriented.get("numbering_scaffold_required", False))
     return [loc] if loc is not None else None
