@@ -444,7 +444,9 @@ def _fg_lists(parts: dict) -> dict:
     return {
         "hydroxyls": parts["hydroxyls"], "carboxyls": parts["carboxyls"],
         "esters": parts["esters"], "amides": parts["amides"],
-        "ketones": parts["ketones"], **_fg_more_lists(parts)}
+        "ketones": parts["ketones"], **_fg_more_lists(parts),
+        "demoted_carboxyls": parts.get("demoted_carboxyls") or [],
+        "demoted_nitriles": parts.get("demoted_nitriles") or []}
 
 def _fg_bools(lists: dict) -> dict:
     """由官能团列表生成 has_* 布尔标志。"""
@@ -507,7 +509,8 @@ def _demoted_acid_hydroxyl(mol: Mol, e: dict) -> dict | None:
 
 def _arbitrate_parts(mol: Mol, parts: dict) -> dict:
     """P-41 主基团仲裁：更高优先级 FG 存在时组合羰基 FG 退出，羰基碳降级为 oxo，
-    其组成成员（伯酰胺 N → amino、中性羧酸 OH → hydroxy）回收进 L1 正规前缀通道。"""
+    其组成成员（伯酰胺 N → amino、中性羧酸 OH → hydroxy）回收进 L1 正规前缀通道；
+    腈同样退出为 cyano 叶（保留腈碳不进开链主链）。"""
     p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
     present = {fg for fg, key in _FG_PARTS_KEY.items() if parts.get(key)}
     out = dict(parts)
@@ -519,12 +522,29 @@ def _arbitrate_parts(mol: Mol, parts: dict) -> dict:
             rec = [a for e in entries if (a := _demoted_amide_amine(mol, e)) is not None]
             if rec:
                 out["amines"] = list(out["amines"]) + rec
+            # 降级酰胺羰基保持链化 oxo（伯酰胺 N → amino、羰基 C 仍进 ketones）。
+            out["ketones"] = list(out["ketones"]) + [{"c_idx": c} for e in entries for c in _fg_carbons(e)]
         elif key == "carboxyls":
-            rec = [h for e in entries if (h := _demoted_acid_hydroxyl(mol, e)) is not None]
-            if rec:
-                out["hydroxyls"] = list(out["hydroxyls"]) + rec
-        out["ketones"] = list(out["ketones"]) + [{"c_idx": c} for e in entries for c in _fg_carbons(e)]
+            # 中性 -COOH 被压制后保留"羧酸叶"身份（P-61.1.3 carboxy 前缀），
+            # 既不回收 OH 成 hydroxy、也不把酸碳打成 oxo：整组由 L3 claim 成 carboxy，
+            # L2 链游走把其酸碳排除在开链外（P-44.3 链不含取代基羧基碳）。
+            neutrals = [e for e in entries if not e.get("anion")]
+            if neutrals:
+                out["demoted_carboxyls"] = list(out.get("demoted_carboxyls") or []) + neutrals
+            # 阴离子羧酸（-COO-）无 OH 可回收，仍按旧路径进 ketones(oxo)，不含中性 COOH。
+            anions = [e for e in entries if e.get("anion")]
+            if anions:
+                out["ketones"] = list(out["ketones"]) + [{"c_idx": c} for e in anions for c in _fg_carbons(e)]
+        else:
+            out["ketones"] = list(out["ketones"]) + [{"c_idx": c} for e in entries for c in _fg_carbons(e)]
         out[key] = []
+    # 腈被更高优先级主基团压制（自由基/羧酸/酰胺/酯…）→ 保留 cyano 叶身份：
+    # 同羧酸叶（P-61.1.3），腈碳须排除在开链主链外，整组 C≡N 由 L3 claim 成 cyano，
+    # 否则腈碳会被词干链吞掉、N 悬空误命名成 amino。
+    nitriles = out.get("nitriles")
+    if nitriles and any(p41[h] < p41["nitrile"] for h in present if h != "nitrile"):
+        out["demoted_nitriles"] = list(out.get("demoted_nitriles") or []) + nitriles
+        out["nitriles"] = []
     return out
 
 

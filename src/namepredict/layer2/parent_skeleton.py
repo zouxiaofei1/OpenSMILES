@@ -42,23 +42,32 @@ def _anchors(occurrences: tuple[FunctionalGroupOccurrence, ...]) -> list[int]:
     return sorted({a for occurrence in occurrences for a in occurrence.parent_anchors})
 
 
-def _pair_chains(mol: Mol, anchors: list[int]) -> list[list[int]]:
+def _demoted_acid_carbons(info: dict) -> set[int]:
+    """被压制（降级）为前缀叶的主基团碳集合：中性羧酸碳（carboxy 叶，P-61.1.3）
+    与腈碳（cyano 叶）不得进入开链主链——否则词干链会把酸/腈碳当饱和碳吞掉、
+    其杂原子悬空误命名成 hydroxy/amino。"""
+    acids = {int(e["c_idx"]) for e in (info.get("demoted_carboxyls") or []) if e.get("c_idx") is not None}
+    nitriles = {int(e["c_idx"]) for e in (info.get("demoted_nitriles") or []) if e.get("c_idx") is not None}
+    return acids | nitriles
+
+
+def _pair_chains(mol: Mol, anchors: list[int], banned: set[int] = frozenset()) -> list[list[int]]:
     """生成连接两锚点的链（穿过两点的最长链）。"""
     pairs = [(a, b) for i, a in enumerate(anchors) for b in anchors[i + 1:]]
-    paths = [(a, b, _chain_through_two(mol, a, b)) for a, b in pairs]
+    paths = [(a, b, _chain_through_two(mol, a, b, banned)) for a, b in pairs]
     return [path for a, b, path in paths if a in path and b in path]
 
 
-def _open_chains(mol: Mol, anchors: list[int]) -> list[list[int]]:
+def _open_chains(mol: Mol, anchors: list[int], banned: set[int] = frozenset()) -> list[list[int]]:
     """开环锚点的单链与两两链候选（无锚点时退化为最长链）。"""
     open_anchors = [a for a in anchors if not mol.GetAtomWithIdx(a).IsInRing()]
     # 穿过锚点的等长最长链全部枚举（平局候选让 P-44.4/P-45.2 裁决，如醛端连甲基 vs 羟甲基）。
-    singles = [chain for anchor in open_anchors for chain in _all_chains_through(mol, anchor)]
-    out = singles + _pair_chains(mol, open_anchors)
+    singles = [chain for anchor in open_anchors for chain in _all_chains_through(mol, anchor, banned)]
+    out = singles + _pair_chains(mol, open_anchors, banned)
     if out:
         return out
     # 无主官能团（纯烃）：最长链作为唯一开链骨架候选。
-    chain = _longest_chain(mol)
+    chain = _longest_chain(mol, banned=banned)
     return [chain] if chain else []
 
 
@@ -104,7 +113,7 @@ def _ring_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
 
 def _chain_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     """枚举去重后的开链骨架候选。"""
-    paths = _open_chains(info["mol"], _anchors(occurrences))
+    paths = _open_chains(info["mol"], _anchors(occurrences), _demoted_acid_carbons(info))
     unique = {frozenset(path): path for path in paths if path}
     return [ParentSkeleton(SkeletonTopology.ACYCLIC, tuple(path), _chain_coverage(path, occurrences)) for path in unique.values()]
 

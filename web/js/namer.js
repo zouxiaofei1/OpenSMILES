@@ -232,41 +232,51 @@ function scheduleLiveName() {
   }, LIVE_NAME_DEBOUNCE_MS);
 }
 
+/* 输入框 SMILES 变化 → 自动执行「从 SMILES 载入」(同步画板结构)。画板同步独立于
+   「实时命名」开关: 关掉开关后输入变化仍会载入画板, 只是不再自动跑命名。 */
 function scheduleLiveSmilesName() {
-  if (!state.liveNameEnabled) return;
   if (state.suppressSmilesLive) {
+    // 本次 input 事件来自画布写回输入框(scheduleLiveName): 输入框与画板本就一致,
+    // 不必再 setMolecule 回灌(runName 已由写回路径执行)。
     state.suppressSmilesLive = false;
     return;
   }
   if (state.liveSmilesTimer) clearTimeout(state.liveSmilesTimer);
   state.liveSmilesTimer = setTimeout(async () => {
     state.liveSmilesTimer = null;
-    if (!state.liveNameEnabled) return;
     const typed = (($("smiles-input") && $("smiles-input").value) || "").trim();
     if (!typed) return;
     // 用户可输 merged_benchmark id(chebi-1 / tiers-1): 先解析成真实 SMILES,
     // 之后载入画板 / 命名 / SVG 都用这一个权威串, 与直接输入该 SMILES 一致。
     const smiles = await resolveTextToSmiles(typed);
+    if (!smiles) return;
     const CK = window.ChemNamerKetcher;
-    if (CK && CK.shouldSkipLiveName(true, smiles, state.lastNamedSmiles)) return;
-    // Load SMILES into Ketcher. 静默其 onChange(见 scheduleLiveName), 否则
-    // Ketcher 会把它重排成不同原子序的 SMILES 写回输入框并重命名, 导致
-    // atom-ids/locants 用另一套索引(与用户输入及 /debug 不一致)。
-    // begin/end 配对维持引用计数: 只 await setMolecule(载入引发的 change 都
-    // 紧随其后), 命名本身不改动画布, 不必延长静默。
-    beginKetcherMute();
-    try {
-      if (state.ketcherBridge && state.ketcherBridge.isReady()) {
+    // 1) 画板同步(不依赖「实时命名」开关)。载入会让 Ketcher 把结构重排成不同
+    //    原子序的 SMILES 并触发 onChange, 需静默(见 scheduleLiveName 注释), 否则会
+    //    写回输入框并引入另一套 atom-ids/locants 索引。begin/end 配对引用计数。
+    if (state.ketcherBridge && state.ketcherBridge.isReady()) {
+      let needLoad = true;
+      try {
+        // 画板已是该结构(含 Ketcher 重排后的等价串)则跳过, 避免无谓 setMolecule
+        const cur = await state.ketcherBridge.getSmiles();
+        needLoad = (cur || "") !== smiles;
+      } catch (_) {
+        needLoad = true;
+      }
+      if (needLoad) {
+        beginKetcherMute();
         try {
           await state.ketcherBridge.setMolecule(smiles);
         } catch (_) {
-          /* ignore ketcher load errors during live input */
+          /* 逐键输入时中间态(如 "CC(")可能解析失败: 忽略, 等下一次输入 */
+        } finally {
+          endKetcherMute();
         }
       }
-    } finally {
-      endKetcherMute();
     }
-    // Run naming
+    // 2) 命名仅当「实时命名」开启时执行
+    if (!state.liveNameEnabled) return;
+    if (CK && CK.shouldSkipLiveName(true, smiles, state.lastNamedSmiles)) return;
     await runName(smiles, { fromLive: true });
   }, LIVE_NAME_DEBOUNCE_MS);
 }

@@ -17,13 +17,15 @@ from namepredict.namer import SMILESNNamer
 
 # 正例：radical 主基团抢占后，组合羰基 FG 降级为 oxo（+ 组成基团）前缀。
 # 自由基链自由价在 1 位时省略位次（P-29.2 方法 1）：-ethan-1-yl → -ethyl。
-# 组成成员（伯酰胺 N → amino、羧酸 OH → hydroxy）由 L1 回收进正规前缀，
+# 组成成员（伯酰胺 N → amino、酯烷氧基 → methoxy）由 L1 回收进正规前缀，
 # 简单单核前缀不带括号。
-# 注：*CC(=O)O 命中 anchored 保留名 carboxymethyl（非降级路径），故用 *CCC(=O)O 测羟基回收。
+# 注：*CC(=O)O 命中 anchored 保留名 carboxymethyl（非降级路径）；*CCC(=O)O 的游离
+# 中性 COOH 被 radical 压制后保持羧酸叶身份作 carboxy 前缀（P-61.1.3），不再降级成
+# 同碳 oxo+hydroxy 也不占链长（A4 修复，gold 2-carboxyethyl）。
 POSITIVE = [
     ("C(*)C(N)=O", "2-amino-2-oxoethyl", "2-氨基-2-氧代乙基"),
     ("C(*)C=O", "2-oxoethyl", "2-氧代乙基"),
-    ("*CCC(=O)O", "3-hydroxy-3-oxopropyl", "3-羟基-3-氧代丙基"),
+    ("*CCC(=O)O", "2-carboxyethyl", "2-羧基乙基"),
     ("C(*)C(=O)OC", "2-methoxy-2-oxoethyl", "2-甲氧基-2-氧代乙基"),
 ]
 

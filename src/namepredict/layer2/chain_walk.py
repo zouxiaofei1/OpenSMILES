@@ -32,16 +32,16 @@ def _better(mol: Mol, cand: list[int], best: list[int]) -> bool:
     return _side_count(mol, cand) > _side_count(mol, best)
 
 
-def _seed_carbons(mol: Mol) -> list[int]:
+def _seed_carbons(mol: Mol, banned: set[int] = frozenset()) -> list[int]:
     """最长链种子降集：开链子图为无「带臂环/芳碳」的多碳树时仅用开链叶（等价且远少于全碳），否则回退全碳种子。"""
-    carbons = _all_carbons(mol)
+    carbons = [c for c in _all_carbons(mol) if c not in banned]
     if not carbons:
         return []
     has_ring_root = False
     leaves: list[int] = []
     for c in carbons:
         atom = mol.GetAtomWithIdx(c)
-        nbs = _carbon_neighbors(mol, c)
+        nbs = _carbon_neighbors(mol, c, banned)
         if atom.IsInRing() or atom.GetIsAromatic():
             if nbs:
                 has_ring_root = True
@@ -50,25 +50,25 @@ def _seed_carbons(mol: Mol) -> list[int]:
     return carbons if (has_ring_root or not leaves) else leaves
 
 
-def _best_among(mol: Mol, seeds: list[int]) -> list[int]:
+def _best_among(mol: Mol, seeds: list[int], banned: set[int] = frozenset()) -> list[int]:
     """在若干种子碳中选出最长链。"""
     best: list[int] = []
     for c in seeds:
-        path = _longest_from(mol, c)
+        path = _longest_from(mol, c, banned=banned)
         if _better(mol, path, best):
             best = path
     return best
 
 
-def _longest_chain(mol: Mol, seeds: list[int] | None = None) -> list[int]:
+def _longest_chain(mol: Mol, seeds: list[int] | None = None, banned: set[int] = frozenset()) -> list[int]:
     """返回分子中最长碳链（可选种子约束；缺省用降集种子等价加速）。"""
-    return _best_among(mol, _seed_carbons(mol) if seeds is None else seeds)
+    return _best_among(mol, _seed_carbons(mol, banned) if seeds is None else seeds, banned)
 
 
-def _arms_from(mol: Mol, center: int) -> list[list[int]]:
+def _arms_from(mol: Mol, center: int, banned: set[int] = frozenset()) -> list[list[int]]:
     """以 center 为中心，返回各碳邻居出发的最长臂（禁走 center）。"""
     forbid = {center}
-    return [_longest_from(mol, nb, forbid) for nb in _carbon_neighbors(mol, center)]
+    return [_longest_from(mol, nb, forbid, banned) for nb in _carbon_neighbors(mol, center, banned)]
 
 
 def _join_through(center: int, arms: list[list[int]]) -> list[int]:
@@ -81,20 +81,20 @@ def _join_through(center: int, arms: list[list[int]]) -> list[int]:
     return list(reversed(arms[0])) + [center] + arms[1]
 
 
-def _chain_through(info: dict, c_idx: int) -> list[int]:
+def _chain_through(info: dict, c_idx: int, banned: set[int] = frozenset()) -> list[int]:
     """返回穿过给定碳原子的最长开链。"""
     mol: Mol = info["mol"]
-    return _join_through(c_idx, _arms_from(mol, c_idx))
+    return _join_through(c_idx, _arms_from(mol, c_idx, banned))
 
 
-def _component_leaves(mol: Mol, neighbor: int, forbid: int) -> tuple[dict, list[int], int]:
+def _component_leaves(mol: Mol, neighbor: int, forbid: int, banned: set[int] = frozenset()) -> tuple[dict, list[int], int]:
     """从 neighbor 出发（禁走 forbid）DFS 其开链碳组件：返回 (parent, 最深叶子列表, 最深深度)。
     组件内 parent/距离以 forbid 为根；叶子 = 无更远碳子节点的原子。"""
     parent: dict = {neighbor: forbid}
     order = [neighbor]
     dist = {neighbor: 1}
     for x in order:
-        for y in _carbon_neighbors(mol, x):
+        for y in _carbon_neighbors(mol, x, banned):
             if y == forbid or y in parent:
                 continue
             parent[y] = x
@@ -102,7 +102,7 @@ def _component_leaves(mol: Mol, neighbor: int, forbid: int) -> tuple[dict, list[
             order.append(y)
     maxd, leaves = 0, []
     for x in order:
-        if any(y != forbid and parent.get(y) == x for y in _carbon_neighbors(mol, x)):
+        if any(y != forbid and parent.get(y) == x for y in _carbon_neighbors(mol, x, banned)):
             continue
         d = dist[x]
         if d > maxd:
@@ -122,13 +122,13 @@ def _component_path(parent: dict, leaf: int, root: int) -> list[int]:
     return [root] + list(reversed(seg))
 
 
-def _all_chains_through(mol: Mol, c_idx: int) -> list[list[int]]:
+def _all_chains_through(mol: Mol, c_idx: int, banned: set[int] = frozenset()) -> list[list[int]]:
     """返回穿过给定碳原子的全部等长最长开链（供 P-44.4/P-45.2 平局裁决）。
     开链碳子图为森林：从 c_idx 各碳邻居分出的组件里取最深叶子作臂；臂长平局时
     逐一枚举组件与叶子，避免单条 DFS 任选一路导致等长候选链丢失（如醛端 C3 连
     甲基端与羟甲基端同为最长，须两条都作候选让 P-45.2.1 决定主链）。"""
-    neighbors = _carbon_neighbors(mol, c_idx)
-    comps = {n: _component_leaves(mol, n, c_idx) for n in neighbors}
+    neighbors = _carbon_neighbors(mol, c_idx, banned)
+    comps = {n: _component_leaves(mol, n, c_idx, banned) for n in neighbors}
     if not comps:
         return [[c_idx]]
     chains: set[tuple[int, ...]] = set()
@@ -161,15 +161,15 @@ def _all_chains_through(mol: Mol, c_idx: int) -> list[list[int]]:
     return [list(c) for c in chains]
 
 
-def _bfs_expand(mol: Mol, cur: int, prev: dict, q: list) -> None:
+def _bfs_expand(mol: Mol, cur: int, prev: dict, q: list, banned: set[int] = frozenset()) -> None:
     """BFS 扩展当前节点的碳邻居并记录前驱。"""
-    for nb in _carbon_neighbors(mol, cur):
+    for nb in _carbon_neighbors(mol, cur, banned):
         if nb not in prev:
             prev[nb] = cur
             q.append(nb)
 
 
-def _bfs_prev(mol: Mol, start: int, goal: int) -> dict | None:
+def _bfs_prev(mol: Mol, start: int, goal: int, banned: set[int] = frozenset()) -> dict | None:
     """BFS 求 start 到 goal 的最短路径前驱表。"""
     prev: dict = {start: None}
     q = [start]
@@ -177,7 +177,7 @@ def _bfs_prev(mol: Mol, start: int, goal: int) -> dict | None:
         cur = q.pop(0)
         if cur == goal:
             return prev
-        _bfs_expand(mol, cur, prev, q)
+        _bfs_expand(mol, cur, prev, q, banned)
     return None
 
 
@@ -189,29 +189,29 @@ def _rebuild_path(prev: dict, end: int) -> list[int]:
     return list(reversed(path))
 
 
-def _path_between(mol: Mol, a: int, b: int) -> list[int]:
+def _path_between(mol: Mol, a: int, b: int, banned: set[int] = frozenset()) -> list[int]:
     """返回两碳原子间的最短路径（含两端）。"""
     if a == b:
         return [a]
-    prev = _bfs_prev(mol, a, b)
+    prev = _bfs_prev(mol, a, b, banned)
     return _rebuild_path(prev, b) if prev else [a]
 
 
-def _best_arm_away(mol: Mol, from_c: int, forbid: set[int]) -> list[int]:
+def _best_arm_away(mol: Mol, from_c: int, forbid: set[int], banned: set[int] = frozenset()) -> list[int]:
     """返回从 from_c 出发避开 forbid 集合的最长臂。"""
     best: list[int] = []
-    for nb in _carbon_neighbors(mol, from_c):
+    for nb in _carbon_neighbors(mol, from_c, banned):
         if nb in forbid:
             continue
-        path = _longest_from(mol, nb, forbid | {from_c})
+        path = _longest_from(mol, nb, forbid | {from_c}, banned)
         if len(path) > len(best):
             best = path
     return best
 
 
-def _chain_through_two(mol: Mol, c1: int, c2: int) -> list[int]:
+def _chain_through_two(mol: Mol, c1: int, c2: int, banned: set[int] = frozenset()) -> list[int]:
     """返回同时穿过 c1、c2 的最长链。"""
-    path = _path_between(mol, c1, c2)
-    left = _best_arm_away(mol, path[0], set(path[1:]))
-    right = _best_arm_away(mol, path[-1], set(path[:-1]))
+    path = _path_between(mol, c1, c2, banned)
+    left = _best_arm_away(mol, path[0], set(path[1:]), banned)
+    right = _best_arm_away(mol, path[-1], set(path[:-1]), banned)
     return list(reversed(left)) + path + right

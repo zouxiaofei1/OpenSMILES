@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dataclasses import replace
 
-from namepredict.constants import MULT_EN, MULT_ZH
+from namepredict.constants import AMIDO_RETAINED, MULT_EN, MULT_ZH
 from namepredict.layer5.chain_engine import _ACYL_HALIDE_BY_HAL, _KIND_TABLE, _alkane_names, _chain_names
 from namepredict.layer5.stems import maybe_anion_names, maybe_metal_salt_names
 from namepredict.layer5.assembler_prefixes import _prefix_for
@@ -313,6 +313,14 @@ _MONONUCLEAR_ZERO_YL = {
     ("sulfane", "硫烷"): ("sulfanyl", "硫基"),
 }
 
+
+def _azane_acyl_stereo_lead(en: str) -> bool:
+    """单 N-酰基残基名是否带前导立体描述符且为酰基词干（azane 方法 2 需括起 acyl 再缀 amino）。"""
+    if not en.startswith("("):
+        return False
+    tag, stem = _stereo_lead(en)
+    return bool(tag) and (stem.endswith("oyl") or "carbonyl" in stem)
+
 # O 锚点自由基 -yloxy 非保留名 → IUPAC 保留烷氧基（P-66.5.2.1.2：ethoxy/propoxy/butoxy/phenoxy）。
 # 尾部收拢使带取代基链也命中：2-methoxyethyloxy → 2-methoxyethoxy、3-chlorophenyloxy → 3-chlorophenoxy。
 _ALKOXY_YLOXY_EN = (
@@ -349,6 +357,17 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
         return _MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
     if len(subs) == 1:
         a = subs[0]
+        if stem_en == "azane":
+            # P-66.1.1.4.3 方法 1：单 N-酰基（乙酰/甲酰/苯甲酰）残基收成 amido 保留式
+            # （acetamido…），不走 free_to_yl 的 acylamino 系统式；其余 R 保持方法 2。
+            amido = AMIDO_RETAINED.get(a.get("en") or "")
+            if amido is not None:
+                return amido
+            # 带立体描述符的复杂酰基残基（肽类 N-酰基氨基酸）：方法 2 需把酰基名整体
+            # 括起再加 amino（[…propanoyl]amino，P-29.3.2 复合前缀括号），否则 (2S)-2-
+            # amino-…propanoylamino 融合式会与 N-端 amino 位次歧义；无立体简单酰保持融合。
+            if _azane_acyl_stereo_lead(a.get("en") or ""):
+                return f"[{a['en']}]amino", f"[{a['zh']}]氨基"
         en, zh = free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
                             paren=bool(a.get("paren")))[:2]
         return _retained_alkoxy(en, zh) if stem_en == "oxidane" else (en, zh)

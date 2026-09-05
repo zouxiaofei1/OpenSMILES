@@ -6,7 +6,7 @@ from __future__ import annotations
 import copy
 
 from rdkit.Chem import CanonicalRankAtoms
-from namepredict.constants import C
+from namepredict.constants import AMIDO_RETAINED_EN, C
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol, build_cut_submol
 from namepredict.tools.free_to_yl import free_to_yl as yl_form
@@ -82,8 +82,11 @@ def _radical_yl_from_sub(
         return None
     # PIN（P-16.5.1.1）：复合前缀（词干带取代）必括；未取代简单基免括。
     # 词干是否复合由自由基命名的母体取代基数给出（namer meta 接口），不反编译名字。
+    # acetamido/formamido/benzamido 是 amido 保留式（P-66.1.1.4.3 方法 1），作简单前缀免括号
+    # （同 -alkoxy 保留式），否则 3,5-二乙酰基苯环会被倍增成 bis(acetylamino) 而非 diacetamido。
     composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0
-    need_paren = composite and hit.en not in ("phenyl", *_SIMPLE_ALKOXY_NO_PAREN)
+    need_paren = composite and hit.en not in (
+        "phenyl", *_SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN)
     return hit.en, hit.zh, need_paren
 
 

@@ -88,6 +88,16 @@ def zh_numeral(n: int) -> str | None:
 MULT_EN = {n: (en_num_term(n) or "") for n in range(1, 100)}
 MULT_ZH = {n: (zh_numeral(n) or "") for n in range(1, 100)}
 
+# P-66.1.1.4.3 方法 1 保留式收缩：单 N-酰基残基 R-C(=O)-NH-* 在 R=乙酰/甲酰/苯甲酰时
+# 用 amido 保留名（acetamido/formamido/benzamido；gold/ChEBI 全量仅此三词），其余 R
+# （长链/烯酰/被取代苯甲酰/杂环羰酰）保持 acylamino 方法 2，不入表。键 = N-酰基取代基 en 词干。
+AMIDO_RETAINED = {
+    "acetyl": ("acetamido", "乙酰胺基"),
+    "formyl": ("formamido", "甲酰胺基"),
+    "benzoyl": ("benzamido", "苯甲酰胺基"),
+}
+AMIDO_RETAINED_EN = frozenset(v[0] for v in AMIDO_RETAINED.values())
+
 # ── 文本规范化 ──────────────────────────────────────────────────
 _WS = re.compile(r"\s+")
 
