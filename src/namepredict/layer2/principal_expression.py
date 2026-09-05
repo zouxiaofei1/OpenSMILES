@@ -60,6 +60,8 @@ def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
     """按链 FG 类别与个数决定 kind（不支持时 None）。"""
     if group_class is FunctionalGroupClass.NONE:
         return group_class.value if count == 0 else None
+    if group_class is FunctionalGroupClass.ACYL:
+        return "acyl"  # 酰基残基：羰基头为 locant 1，L5 拼 -oyl/酰（P-65.1.7.2）
     if group_class is FunctionalGroupClass.RADICAL:
         return "radical"  # 自由基连接点位次由 L4 radical_c_idx 承载，kind 恒 "radical"（L5 worker 拼 -yl）
     if group_class not in _CHAIN_FG:

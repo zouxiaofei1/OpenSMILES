@@ -229,6 +229,16 @@ def _acyl_chloride_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     return _add_opt(out, parent.get("cl_idx") if parent.get("cl_idx") is not None else parent.get("hal_idx"))
 
 
+def _acyl_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """酰基残基：羰基头碳 + 羰基 O（=O 归母体，不落入 oxo 前缀）。"""
+    c_idx = parent.get("acyl_c_idx")
+    if c_idx is None:
+        return set()
+    out = {int(c_idx)}
+    _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
+    return out
+
+
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
     """FG 所有权由字段驱动：拥有主官能团的每个重原子。"""
     parts = (
@@ -245,6 +255,7 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
         _ester_fg_atoms(mol, parent),
         _anhydride_fg_atoms(mol, parent),
         _acyl_chloride_fg_atoms(mol, parent),
+        _acyl_fg_atoms(mol, parent),
     )
     out: set[int] = set()
     for part in parts:

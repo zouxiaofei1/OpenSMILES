@@ -40,6 +40,10 @@ FG_SPECS: tuple[FgSpec, ...] = (
     FgSpec("radical", "radicals", p41=1, compat=1, anchors=("c_idx",),
            parent_anchor_fields=("radical_c_idx", "radical_c_idxs"),
            locant_kind="radical"),
+    # 酰基残基（自由价锚定羰基碳的 R-C(=O)- 片段）：按酸衍生 -oyl/酰 命名（P-65.1.7.2）。
+    FgSpec("acyl", "acyls", p41=1, compat=1, anchors=("c_idx",),
+           parent_anchor_fields=("acyl_c_idx", "acyl_c_idxs"),
+           chain=True, rs=True, keep_locant=True, locant_kind="acyl"),
     FgSpec("acid", "carboxyls", p41=7, path=(1,), compat=14, anchors=("c_idx",),
            parent_anchor_fields=("cooh_c_idx", "cooh_c_idxs"),
            chain=True, multi=True, rs=True, keep_locant=True, locant_kind="acid"),

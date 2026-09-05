@@ -381,14 +381,48 @@ def _carbon_ids(mol: Mol) -> list[int]:
     """返回分子中所有碳原子的索引列表。"""
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
 
-def _radical_entries(mol: Mol) -> list[dict]:
+def _is_anchored(atom) -> bool:
+    """原子是否直接连着 `*` 自由基锚点（原子序 0 邻居）。"""
+    return any(n.GetAtomicNum() == 0 for n in atom.GetNeighbors())
+
+
+def _is_acyl_head(mol: Mol, atom) -> bool:
+    """锚定羰基碳是否为无环酰基头：带 =O、恰好 1 个非环非芳碳单键邻居，且无其它重邻居（P-65.1.7.2 酸衍生）。"""
+    if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom) or not _is_anchored(atom):
+        return False
+    carbs: list = []
+    hetero = False
+    for nb in atom.GetNeighbors():
+        if nb.GetAtomicNum() == 0:
+            continue
+        b = mol.GetBondBetweenAtoms(atom.GetIdx(), nb.GetIdx())
+        if b is not None and b.GetBondType() == BondType.DOUBLE:
+            continue  # 羰基 =O
+        if nb.GetAtomicNum() == C:
+            carbs.append(nb)
+        elif nb.GetAtomicNum() != H:
+            hetero = True
+    if hetero or len(carbs) != 1:
+        return False
+    alpha = carbs[0]
+    return not alpha.IsInRing() and not alpha.GetIsAromatic()
+
+
+def _acyl_entries(mol: Mol) -> list[dict]:
+    """虚拟原子邻居中判为酰基头的羰基碳条目（取代 radical 成为主基团，避免醛→酮误降级）。"""
+    return [{"c_idx": n.GetIdx(), "rad_idx": a.GetIdx()}
+            for a in mol.GetAtoms() if a.GetAtomicNum() == 0
+            for n in a.GetNeighbors() if n.GetAtomicNum() != H and _is_acyl_head(mol, n)]
+
+
+def _radical_entries(mol: Mol, exclude: frozenset[int] = frozenset()) -> list[dict]:
     """虚拟原子（原子序 0）邻居碳的 P-41 自由基位点；仅带 `*` 锚点（build_anchor_submol）的分子产生条目，普通 SMILES 不受影响。"""
     out: list[dict] = []
     for a in mol.GetAtoms():
         if a.GetAtomicNum() != 0:
             continue
         for n in a.GetNeighbors():
-            if n.GetAtomicNum() != 1:
+            if n.GetAtomicNum() != H and n.GetIdx() not in exclude:
                 out.append({"c_idx": n.GetIdx(), "rad_idx": a.GetIdx()})
     return out
 
@@ -396,7 +430,7 @@ def _radical_entries(mol: Mol) -> list[dict]:
 def _fg_more_lists(parts: dict) -> dict:
     """从 parts 中取出扩展官能团列表（醛/胺/腈等）。"""
     keys = (
-        "radicals", "aldehydes", "amines", "quaternary_ammoniums", "nitriles", "double_bonds", "triple_bonds",
+        "radicals", "acyls", "aldehydes", "amines", "quaternary_ammoniums", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
         "nitros", "isocyanates", "isothiocyanates",
     )
@@ -425,7 +459,7 @@ def _fg_bools(lists: dict) -> dict:
 # 组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属——不再丢失羰基氧。
 # ketone/alcohol/thiol/amine 是基础成员 FG，永不退出。
 _FG_PARTS_KEY = {  # fg_registry 名 → parts 键（有 p41 的链 FG）
-    "radical": "radicals", "acid": "carboxyls", "anhydride": "anhydrides",
+    "radical": "radicals", "acyl": "acyls", "acid": "carboxyls", "anhydride": "anhydrides",
     "ester": "esters", "acyl_halide": "acyl_chlorides", "amide": "amides",
     "nitrile": "nitriles", "aldehyde": "aldehydes", "ketone": "ketones",
     "alcohol": "hydroxyls", "thiol": "thiols", "amine": "amines",
@@ -494,10 +528,14 @@ def _arbitrate_parts(mol: Mol, parts: dict) -> dict:
 def _fg_parts(mol: Mol) -> dict:
     """收集分子中所有官能团条目并按其类型组织成 dict。"""
     from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
+    acyls = _acyl_entries(mol)
+    heads = frozenset(e["c_idx"] for e in acyls)
     return _arbitrate_parts(mol, {"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
         "esters": _ester_entries(mol), "amides": _amide_entries(mol),
-        "ketones": _ketone_entries(mol), "radicals": _radical_entries(mol),
-        "aldehydes": _aldehyde_entries(mol), "amines": _amine_entries(mol),
+        "ketones": _ketone_entries(mol), "radicals": _radical_entries(mol, heads),
+        "acyls": acyls,
+        "aldehydes": [e for e in _aldehyde_entries(mol) if e["c_idx"] not in heads],
+        "amines": _amine_entries(mol),
         "quaternary_ammoniums": _quaternary_ammonium_entries(mol),
         "nitriles": _nitrile_entries(mol), "double_bonds": _double_bond_entries(mol),
         "triple_bonds": _triple_bond_entries(mol), "acyl_chlorides": _acyl_chloride_entries(mol),

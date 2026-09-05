@@ -77,8 +77,8 @@ def _radical_yl_from_sub(
     hit = _fix_rs_with_real(root_mol, block_root_order, anchored, hit)
     if not hit.success or not hit.en:
         return None
-    if not (hit.meta or {}).get("parent_kind") == "radical":
-        # 锚定分子必被 L1 radical 条目检出、principal 必选（p41=1），理论不可达，防御。
+    if not (hit.meta or {}).get("parent_kind") in ("radical", "acyl"):
+        # 锚定分子必被 L1 radical/acyl 条目检出、principal 必选（p41=1），理论不可达，防御。
         return None
     # PIN（P-16.5.1.1）：复合前缀（词干带取代）必括；未取代简单基免括。
     # 词干是否复合由自由基命名的母体取代基数给出（namer meta 接口），不反编译名字。

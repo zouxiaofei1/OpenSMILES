@@ -9,6 +9,7 @@ from namepredict.layer1.fg_registry import FG_SPECS
 
 class FunctionalGroupClass(str, Enum):
     RADICAL = "radical"
+    ACYL = "acyl"
     ACID = "acid"
     ANHYDRIDE = "anhydride"
     ESTER = "ester"

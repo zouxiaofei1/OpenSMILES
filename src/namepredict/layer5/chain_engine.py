@@ -35,6 +35,7 @@ def _pair_loc_str(locs: list[int]) -> str:
 # C1/C2 开链英文 IUPAC 保留名（formic/acetic…）；C3+ 系统名由词干生成（_chain_plain 回落），中文无保留名。
 _RETAINED = {
     "acid": {1: ("formic acid", "甲酸"), 2: ("acetic acid", "乙酸")},
+    "acyl": {1: ("formyl", "甲酰基"), 2: ("acetyl", "乙酰基")},
     "aldehyde": {1: ("formaldehyde", "甲醛"), 2: ("acetaldehyde", "乙醛")},
     "amide": {1: ("formamide", "甲酰胺"), 2: ("acetamide", "乙酰胺")},
     "nitrile": {1: ("formonitrile", "甲腈"), 2: ("acetonitrile", "乙腈")},
@@ -508,6 +509,14 @@ _KIND_TABLE = {
                         "benzene": {1: dict(plain_maps=None,
                                             plain_fn=lambda n: ("benzoate", "苯甲酸"))},
                     }),
+    # 酰基残基（P-65.1.7.2）：酸碳恒 locant 1、C3+ 系统名词干 coda "an" + "oyl"（propanoyl…），
+    # C1/C2 走保留名（formyl/acetyl）；烯/炔与立体照 acid 融合式（enoyl/ynoyl）。
+    "acyl": _Chain(kind="acyl", en_suf="oyl", zh_suf="酰基",
+                   ene_base=("enoyl", "烯酰基"),
+                   yne_suf=("ynoyl", "炔酰基"),
+                   ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
+                   variant={None: {1: dict(plain_maps=None,
+                                           plain_fn=_retained_plain("acyl"))}}),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
                     fg="sh", need=1, omit_rule=_omit_term_locant,
                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,

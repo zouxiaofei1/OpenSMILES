@@ -167,7 +167,7 @@ def _is_ring(parent: dict) -> bool:
 # P-14.4(a)：parent dict 中标定必须为 locant 1 的原子的字段（环外羰基连接、自由基中心）。
 # 杂环起点已改由 _narrow_hetero_ring 按元素序决定，不在此列。
 _FIXED_START_KEYS = (
-    "ring_attach_idx", "n_idx", "nh_idx", "hetero_idx", "radical_c_idx",
+    "ring_attach_idx", "n_idx", "nh_idx", "hetero_idx", "radical_c_idx", "acyl_c_idx",
 )
 
 
