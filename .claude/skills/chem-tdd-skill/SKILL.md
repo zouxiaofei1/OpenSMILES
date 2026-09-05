@@ -5,37 +5,23 @@ description: SMILES→IUPAC 编写的 TDD 流程
 
 # chem-tdd-skill
 
-本 skill 约束 **每一轮** Agent 对 `namepredict` 的规则实现。编排器会将本路径注入 cycle prompt；**必须全文遵守**，不得跳过红→绿门禁。
+本 skill 包含  Agent 编写 `namepredict` 代码时 TDD的规则实现。
 
 ## 目标
 
 在不破坏架构与全局准确率的前提下，用 **可复现的单元测试** 精确定义本轮 IUPAC 规则，再实现 Layer 代码，使该规则通过 TDD，并通过 lint 与全量 benchmark 门禁。
 
-## 硬流程（先测后码；先红后绿）
+## TDD流程（按照本流程执行）
 
-**禁止**先写/改生产代码再补测试。每轮必须按序：
+1. **抽例**：从失败簇抽取 **3–5 个 SMILES** 作为正例，并至少 **1 个近邻负例**（结构相近但应得到不同名称，或本规则不应误伤的已正确分子）。
+2. **写测试**（仅 `tests/unit/`）：按模板新建/扩展用例；文件头标注 `IUPAC:` 与 `Layer:`。
+3. **跑 pytest → 必须先红**：在尚未实现本轮规则时，新增断言必须失败。若已绿，说明用例无效或规则已存在——重写用例，禁止「假绿」。
+4. **实现代码**（仅允许路径内 Layer/入口/cache）：使上述用例变绿；遵守 S3 与行数/函数长度约束。
+5. **再跑 pytest → 必须绿**。
 
-1. **读上下文**：本轮失败簇摘要、建议 Layer、相关 `docs/cleaned` / `docs/iupac` 路径、`agent_loop/memory/progress.md`。
-2. **抽例**：从失败簇抽取 **3–10 个 SMILES** 作为正例，并至少 **1 个近邻负例**（结构相近但应得到不同名称，或本规则不应误伤的已正确分子）。
-3. **写测试**（仅 `tests/unit/`）：按模板新建/扩展用例；文件头标注 `IUPAC:` 与 `Layer:`。
-4. **跑 pytest → 必须先红**：在尚未实现本轮规则时，新增断言必须失败。若已绿，说明用例无效或规则已存在——重写用例，禁止「假绿」。
-5. **实现代码**（仅允许路径内 Layer/入口/cache）：使上述用例变绿；遵守 S3 与行数/函数长度约束。
-6. **再跑 pytest → 必须绿**。
-7. **structure_lint** → **full benchmark**。
-8. 按门禁决定 commit 或依赖编排器 reset；写 **回合小结**。
 
 红→绿证据：同一批新增/修改的测试，实现前失败、实现后通过。不得删除/弱化断言来换绿。
 
-## 抽例规则（3–10 SMILES + ≥1 负例）
-
-| 类型 | 数量 | 要求 |
-|------|------|------|
-| 正例 | 3–10 | 来自本轮失败簇；覆盖规则边界（最短链/最长相关、有无侧链、关键异构等） |
-| 负例 | ≥1 | 近邻但 **不应** 被本规则改名错误；或应保持现有正确输出 |
-
-- 负例的期望名取自金标或当前已正确行为；断言其输出 **不被** 本轮改动破坏。
-- 禁止只用 1–2 个正例「过关」；少于 3 正例或 0 负例视为流程违规。
-- 用例数据写在测试文件的 `CASES` 中，不写进生产代码。
 
 ## 双语断言规则
 
@@ -47,7 +33,7 @@ description: SMILES→IUPAC 编写的 TDD 流程
 - 不得手写「近似相等」、子串包含、忽略位次等放宽匹配。
 - 导入：`from namepredict.constants import normalize_en, normalize_zh`。
 
-## 测试文件头（强制）
+## 测试文件头
 
 每个本轮新增/主改的 `tests/unit/test_*.py` 顶部注释必须含：
 
@@ -102,7 +88,6 @@ python -m benchmarks.benchmark --data data/merged_benchmark.json
 |------|------|
 | `src/namepredict/`（namer 入口、layer0–5、cache） | `data/*` 金标与合并集 |
 | `tests/unit/` | `benchmarks/benchmark.py` |
-| （记忆区由编排器为主）`agent_loop/memory/` | `docs/iupac/**`、`docs/cleaned/**` |
 
 ## 门禁含义（Agent 自检）
 
@@ -111,40 +96,3 @@ python -m benchmarks.benchmark --data data/merged_benchmark.json
 | TDD (pytest) | 本轮规则被测试精确定义且实现为真 |
 | structure_lint | 层职责、行数、无 SMILES 特判、缓存上限 |
 | benchmark | 全局 dual 不回退 >0.5%；dual↑ 或 fails↓ 才算提升 |
-
-## 回合小结格式（每轮结束必须输出）
-
-```markdown
-## 回合小结
-- **iter**: <N>
-- **IUPAC**: <主规则ID>；（附属: ...）
-- **Layer**: <Lx,...>
-- **簇**: <cluster key / 一句话>
-- **TDD**: 正例 <n> + 负例 <m>；红→绿：是/否；新增测试文件：<paths>
-- **改动文件**: <list>
-- **pytest**: pass/fail
-- **lint**: pass/fail
-- **bench**: dual <before>% → <after>%；fails <a> → <b>
-- **决策建议**: commit / reset（及原因）
-- **规则说明**（≤200字）: ...
-- **修改过程**（100–200字）: ...
-```
-
-进度记忆（若本轮负责写 `progress.md` 日志行）对齐：
-
-```text
-[#hash][IUPAC P-xx.x] 标题 [+n tests, dual a%→b%]
-  规则说明（≤200字）
-  修改过程（100–200字）
-```
-
-## 检查清单
-
-开始实现前与提交前，对照 `skills/chem-tdd-skill/checklist.md` 逐项打勾。
-
-## 快速参考
-
-- 模板：`skills/chem-tdd-skill/templates/test_rule.py.tmpl`
-- 失败簇工具：`tools/fail_cluster.py` → `cluster_failures`
-- 归一化：`namepredict.constants.normalize_en` / `normalize_zh`
-- 入口：`namepredict.namer.SMILESNNamer`
