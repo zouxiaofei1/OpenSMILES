@@ -74,6 +74,57 @@ def _narrow(cands: list[dict], key_fn) -> list[dict]:
     return [c for c, k in zip(cands, keys) if k == best]
 
 
+# ── P-14.4(j)：CIP 立体描述符平局破（低位次给 R/M/r，优先于 S/P/s）─────
+
+_RS_HI = frozenset({"R", "M", "r"})   # 编号优先级高的 CIP 描述符（P-91.2）
+_RS_LO = frozenset({"S", "P", "s"})   # 与之成对、取较低位次的次位描述符
+
+
+def _assign_cip_for_numbering(mol) -> None:
+    """强制重算分子 CIP（隐式 H 手性碳先补显式 H），与 L5 stereo 打印用同一赋值。"""
+    from rdkit import Chem
+    from rdkit.Chem import ChiralType, rdCIPLabeler
+
+    r = Chem.RWMol(mol)
+    for a in list(r.GetAtoms()):
+        if a.GetChiralTag() != ChiralType.CHI_UNSPECIFIED and a.GetTotalNumHs() == 0 and a.GetDegree() < 4:
+            r.AddBond(a.GetIdx(), r.AddAtom(Chem.Atom(1)), Chem.BondType.SINGLE)
+    m = r.GetMol()
+    Chem.AssignStereochemistry(m, force=True, cleanIt=True)
+    rdCIPLabeler.AssignCIPLabels(m)
+    for a in mol.GetAtoms():
+        if a.HasProp("_CIPCode"):
+            a.ClearProp("_CIPCode")
+        b = m.GetAtomWithIdx(a.GetIdx())
+        if b.HasProp("_CIPCode"):
+            a.SetProp("_CIPCode", b.GetProp("_CIPCode"))
+
+
+def _chain_rs_codes(mol, chain: list[int]) -> dict[int, str]:
+    """取母体链原子上的 CIP 代码映射；键上 E/Z 与无双键歧义不入此表（(j) 原子级破局只需 R/S）。"""
+    if mol is None or not chain:
+        return {}
+    _assign_cip_for_numbering(mol)
+    codes: dict[int, str] = {}
+    for idx in chain:
+        a = mol.GetAtomWithIdx(int(idx))
+        if a.HasProp("_CIPCode") and a.GetProp("_CIPCode") in _RS_HI | _RS_LO:
+            codes[int(idx)] = a.GetProp("_CIPCode")
+    return codes
+
+
+def _rs_locant_key(codes: dict[int, str], chain: list[int]) -> tuple:
+    """P-14.4(j) 排序键：R/M/r 描述符位次升序在前、S/P/s 位次在后，字典序小者取低位次。"""
+    hi, lo = [], []
+    for loc, idx in enumerate(chain, 1):
+        code = codes.get(int(idx))
+        if code in _RS_HI:
+            hi.append(loc)
+        elif code in _RS_LO:
+            lo.append(loc)
+    return tuple(hi), tuple(lo)
+
+
 # ── 从 parent dict 提取 P-14.4 特征 ────────────────────────
 
 def _principal_atoms(parent: dict) -> list[int]:
@@ -270,6 +321,12 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
         # P-14.4(f) 平局：最低位次集合已相同 → 把最低位次给字母序最前的取代基（stem-alpha 对，P-14.5）。
         from namepredict.layer4._chain_orient import _stem_loc_pairs
         cands = _narrow(cands, lambda c: _stem_loc_pairs(_to_chain(c), substituents))
+    if len(cands) > 1:
+        # P-14.4(j) 立体平局：镜像/反向等价编号仍等优时，按 CIP 立体描述符定方向——
+        # 较低位次赋予 R/M/r（优先于对应的 S/P/s），避免随输入原子序漂移（如内消旋环 1R/7S vs 1S/7R）。
+        codes = _chain_rs_codes(mol, chain)
+        if codes:
+            cands = _narrow(cands, lambda c: _rs_locant_key(codes, _to_chain(c)))
     return _to_chain(cands[0])
 
 

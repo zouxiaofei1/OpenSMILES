@@ -33,7 +33,7 @@ CASES = [
     ),
     # 二级胺：N- 取代基前缀
     ("CCNCC", "N-ethylethanamine", "N-乙基乙胺"),
-    ("NCCc1ccccc1", "phenylethanamine", "苯基乙胺"),
+    ("NCCc1ccccc1", "2-phenylethanamine", "2-苯基乙胺"),
     # 含芳基臂的二级胺：母体选前缀取代基更多的链（P-45.2.1），芳环臂作母体骨架取代基
     (
         "C(C)NC(C)C1=CC=C(C=C1)OC",

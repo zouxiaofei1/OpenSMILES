@@ -17593,7 +17593,7 @@
   {
     "id": "chebi-2118",
     "smiles": "CC(C)C1CC[C@H](C)CCC[C@H](C)CC1",
-    "english_name": "(1S,7R)-1,7-dimethyl-4-propan-2-ylcyclodecane",
+    "english_name": "(1R,7S)-1,7-dimethyl-4-propan-2-ylcyclodecane",
     "chinese_name": "",
     "source": "chebi",
     "tier": 1,

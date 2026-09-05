@@ -1,6 +1,8 @@
 """L5 取代基前缀分组与双语渲染。"""
 from __future__ import annotations
 
+import re
+
 from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 from namepredict.constants import MULT_EN, MULT_ZH
@@ -14,10 +16,15 @@ def _group_by_stem(substituents: list) -> dict[str, list]:
 
 
 def _locant_str(subs: list) -> str:
-    """对位次排序并拼接成逗号分隔串（如 1,3 或 4,4a）。"""
+    """按位次排序拼接成逗号串；N-型取代基渲染为字母位次 N（与 C 数字位次并排，N 自然排最前）。"""
     from namepredict.layer4.locant_key import locant_str_sort
-    locs = locant_str_sort(s["locant"] for s in subs if "locant" in s)
-    return ",".join(str(x) for x in locs)
+    tokens = []
+    for s in subs:
+        if "locant" not in s:
+            continue
+        kind = s.get("kind") or ""
+        tokens.append("N" if kind in _N_PREFIX_KINDS else s["locant"])
+    return ",".join(str(x) for x in locant_str_sort(tokens))
 
 
 def _mult_en(n: int) -> str:
@@ -53,7 +60,12 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return False
     if any(s.get("paren") or (s.get("en") or "")[:1] == "(" for s in substituents):
         return False
-    return n_carbons == 2 and len(substituents) == 1
+    # C2 单取代省略仅对端碳(FG 所在 C1)无可取代 H 的母体成立(腈/酸/酯/醛/酰胺等)。
+    # 醇/胺/硫醇的 C1 带可取代 H，2- 位取代构成不同异构体(P-14.3.4.4)，2- 必须保留。
+    return (
+        n_carbons == 2 and len(substituents) == 1
+        and kind not in ("alcohol", "amine", "thiol")
+    )
 
 
 def _stem_needs_paren(stem: str, subs: list, omit: bool) -> bool:
@@ -70,10 +82,35 @@ def _wrap_stem(stem: str, need: bool) -> str:
     return stem if not need else (f"[{stem}]" if "(" in stem else f"({stem})")
 
 
+# O/S 桥后缀（gold 平铺式 -yl]oxy/-yl]sulfanyl：括号闭在 -yl 后、后缀放括号外，见 P-63.2.2）。
+_BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl")
+
+
+def _split_bridge_suffix(stem: str) -> tuple[str, str] | None:
+    """带立体描述符的基 -<N>-yl]oxy/-yl]sulfanyl 拆分：(base-yl, 桥后缀)。
+    仅拆 base 含手性描述符(如 2R/3S)的情形——gold 对糖/环基 O(S)桥用平铺式，
+    而对无手性 acyclic/苄基(…methylsulfanyl/…propan-2-yloxy 等)整括不拆。"""
+    for suf in _BRIDGE_SUFFIX_EN:
+        if not stem.endswith(suf):
+            continue
+        base = stem[: -len(suf)]
+        if not (base.endswith("yl") and re.search(r"\d[RrSs]", base)):
+            continue
+        return base, suf
+    return None
+
+
 def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
     """拼单个英文前缀：数量 + 词干（可省略位次时省略 locant）。"""
     mult = _complex_mult_en(stem, len(subs)) or _mult_en(len(subs))
-    s = _wrap_stem(stem, _stem_needs_paren(stem, subs, omit))
+    need = _stem_needs_paren(stem, subs, omit)
+    if not omit and not mult and need:
+        sp = _split_bridge_suffix(stem)
+        if sp is not None:
+            # O/S 桥平铺式：括号闭在 -yl 后，-oxy/-sulfanyl 追加在括号外（gold 449:0 形式）。
+            base, suf = sp
+            return f"{_locant_str(subs)}-{_wrap_stem(base, True)}{suf}"
+    s = _wrap_stem(stem, need)
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 
 
@@ -125,7 +162,9 @@ def _n_prefix_zh(n: int, stem: str) -> str:
 def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> tuple[str, str]:
     """按词干生成中英文前缀（N- 类取代基加 N- 前缀并强制省略位次）。"""
     zh_stem = subs[0].get("zh") or ""
-    if (subs[0].get("kind") or "") in _N_PREFIX_KINDS:
+    # 整组全为 N-型取代基才走 N-计数前缀；同词干混入 C-型时落入数字通道，
+    # N-型成员由 _locant_str 渲染为 N（如 N,N,2-trimethyl，而非 N-N 计数吞掉 C 位）。
+    if subs and all((s.get("kind") or "") in _N_PREFIX_KINDS for s in subs):
         # 复合取代基（含 locant 位次/显式 paren）须整体加括号：N-(3-bromophenyl)。
         need = any(s.get("paren") for s in subs) or bool(stem and stem[0].isdigit())
         s_en = _wrap_stem(stem, need)

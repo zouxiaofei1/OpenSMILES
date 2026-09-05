@@ -15,11 +15,12 @@ CASES = [
         "2-benzylbutanedioic acid",
         "2-苄基丁二酸",
     ),
-    # phenylmethanamine system name
-    ("c1ccc(CCN)cc1", "phenylethanamine", "苯基乙胺"),
+    # phenylmethanamine system name；乙胺 C1 有可取代 H，2- 不可省略（P-14.3.4.4）
+    ("c1ccc(CCN)cc1", "2-phenylethanamine", "2-苯基乙胺"),
     # regressions
     ("CC(=O)O", "acetic acid", None),
-    ("NCCO", "aminoethanol", None),
+    # P-14.3.4.4 异构体测试：乙醇 C1 有可取代 H，2- 不可省略
+    ("NCCO", "2-aminoethanol", None),
 ]
 
 

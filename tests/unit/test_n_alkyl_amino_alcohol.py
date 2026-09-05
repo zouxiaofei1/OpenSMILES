@@ -28,8 +28,8 @@ CASES = [
     ("OCCNCc1ccccc1", "2-(benzylamino)ethanol", "2-(苄氨基)乙醇"),
     # N 桥接二醇（母体链不含 N，两侧都是侧链）
     ("OCCNCCO", "2-(2-hydroxyethylamino)ethanol", "2-(2-羟基乙氨基)乙醇"),
-    # 一级胺不受影响：仍是简单 aminoethanol
-    ("NCCO", "aminoethanol", "氨基乙醇"),
+    # 一级胺取代乙醇：C1 有可取代 H，2- 不可省略（P-14.3.4.4）
+    ("NCCO", "2-aminoethanol", "2-氨基乙醇"),
     # 大分子保持多层递归（饱和链自由价 1 位省略：ethylamino/pentylamino）
     (
         "NCCNCCCCCNCCNCCNCCCNCCCNCCO",

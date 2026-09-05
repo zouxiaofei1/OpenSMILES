@@ -13,8 +13,8 @@ from namepredict.namer import SMILESNNamer
 CASES = [
     # Positive: simple CH3S- on primary amine chain
     ("CSCCCN", "3-methylsulfanylpropan-1-amine", None),
-    # Positive: CH3S- on ethanol (matching methoxy naming pattern)
-    ("CSCCO", "methylsulfanylethanol", None),
+    # Positive: CH3S- on ethanol (C1 有可取代 H，2- 不可省略；匹配 methoxy 命名模式)
+    ("CSCCO", "2-methylsulfanylethanol", None),
     # Positive: CH3S- on acetic acid
     ("CSCC(=O)O", "2-methylsulfanylacetic acid", None),
     # Negative: methoxy analogue — must remain unchanged
