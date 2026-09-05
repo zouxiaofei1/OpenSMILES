@@ -277,6 +277,9 @@ def _print_one_diff(d: dict[str, Any]) -> None:
 
 _MAX_PRINT_DIFFS = 200
 
+# diff 显示优先级：三类并存时按 IMPROVE -> REGRESS -> CHANGE 分组展示。
+_KIND_ORDER = {"IMPROVE": 0, "REGRESS": 1, "CHANGE": 2}
+
 
 def _print_diffs(diffs: list[dict[str, Any]]) -> None:
     if not diffs:
@@ -285,8 +288,9 @@ def _print_diffs(diffs: list[dict[str, Any]]) -> None:
     n_reg = sum(1 for d in diffs if d["kind"] == "REGRESS")
     n_imp = sum(1 for d in diffs if d["kind"] == "IMPROVE")
     n_chg = sum(1 for d in diffs if d["kind"] == "CHANGE")
-    print(f"diff_vs_last: total={len(diffs)} REGRESS={n_reg} IMPROVE={n_imp} CHANGE={n_chg}")
-    shown = diffs[:_MAX_PRINT_DIFFS]
+    print(f"diff_vs_last: total={len(diffs)} IMPROVE={n_imp} REGRESS={n_reg} CHANGE={n_chg}")
+    # 稳定排序：三类各自成组且保持组内原顺序（Python sort 稳定）。
+    shown = sorted(diffs, key=lambda d: _KIND_ORDER.get(d["kind"], 3))[:_MAX_PRINT_DIFFS]
     for d in shown:
         _print_one_diff(d)
     n_hidden = len(diffs) - len(shown)

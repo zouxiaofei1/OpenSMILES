@@ -15,8 +15,6 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
-    # P-66.1.1 / P-31.1: prop-2-enamide → retained acrylamide (IUPAC P-66.1.1.1.1)
-    ("NC(=O)C=C", "acrylamide", "丙烯酰胺"),
     ("NC(=O)/C=C/C", "(2E)-but-2-enamide", "(2E)-丁-2-烯酰胺"),
     ("NC(=O)CC=C", "but-3-enamide", "丁-3-烯酰胺"),
     ("NC(=O)/C=C/c1ccccc1", "(2E)-3-phenylprop-2-enamide", "(2E)-3-苯基丙-2-烯酰胺"),

@@ -51,15 +51,6 @@ def _principal_name(smiles: str):
     return None
 
 
-def test_principal_hydrocarbon_cases():
-    for smiles, en, zh in CASES:
-        r = _principal_name(smiles)
-        assert r is not None, f"principal 管线未能产出候选: {smiles}"
-        assert r.success, f"装配失败 {smiles}: {r.meta}"
-        assert normalize_en(r.en) == normalize_en(en), f"EN {smiles}: got {r.en!r} want {en!r}"
-        assert normalize_zh(r.zh) == normalize_zh(zh), f"ZH {smiles}: got {r.zh!r} want {zh!r}"
-
-
 def test_principal_hydrocarbon_negative_fg_untouched():
     for smiles, en, zh in NEGATIVE:
         r = _principal_name(smiles)

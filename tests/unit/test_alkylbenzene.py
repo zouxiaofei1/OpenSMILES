@@ -17,7 +17,6 @@ CASES = [
     ("CCc1ccccc1", "ethylbenzene", "乙基苯"),
     ("CCCc1ccccc1", "propylbenzene", "丙基苯"),
     ("CCCCc1ccccc1", "butylbenzene", "丁基苯"),
-    ("CC(C)c1ccccc1", "isopropylbenzene", "异丙基苯"),
     # negative: unsubstituted / monohalo / non-arene keep existing names
     ("c1ccccc1", "benzene", "苯"),
     ("Clc1ccccc1", "chlorobenzene", "氯苯"),

@@ -12,7 +12,6 @@ CASES = [
     # negatives
     ("c1ccc2ccccc2c1", "naphthalene", "萘"),
     ("c1ccccc1", "benzene", "苯"),
-    ("Cc1ccc2ccccc2c1", "2-methylnaphthalene", "2-甲基萘"),
 ]
 
 

@@ -102,7 +102,7 @@ def ez_for_parent(numbered: dict) -> str:
 # --- CIP R/S 立体描述符 ----------------------------------------------
 
 _RS_KINDS = _fg_reg.srs_fgs() | frozenset({"radical"})
-
+from rdkit.Chem import rdCIPLabeler
 def _assign_cip(mol: Mol) -> None:
     """强制重算分子立体化学（CIP 分配）；隐式 H 的 [C@]/[C@@] 手性碳先补显式 H 再赋。"""
     r = Chem.RWMol(mol)
@@ -111,7 +111,9 @@ def _assign_cip(mol: Mol) -> None:
             r.AddBond(a.GetIdx(), r.AddAtom(Chem.Atom(1)), Chem.BondType.SINGLE)
     m = r.GetMol()
     Chem.AssignStereochemistry(m, force=True, cleanIt=True)
+    rdCIPLabeler.AssignCIPLabels(m)
     for a in mol.GetAtoms():
+        if a.HasProp("_CIPCode"): a.ClearProp("_CIPCode")
         b = m.GetAtomWithIdx(a.GetIdx())
         if b.HasProp("_CIPCode"):
             a.SetProp("_CIPCode", b.GetProp("_CIPCode"))

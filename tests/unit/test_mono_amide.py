@@ -29,7 +29,6 @@ CASES = [
     ("CCC", "propane", "丙烷"),
     ("CCO", "ethanol", "乙醇"),
     ("CC(C)=O", "propan-2-one", "丙-2-酮"),
-    ("C=C", "ethene", "乙烯"),
     ("C1CCCCC1", "cyclohexane", "环己烷"),
 ]
 

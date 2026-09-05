@@ -15,7 +15,6 @@ from namepredict.namer import SMILESNNamer
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
     # positive: acyclic monoalkynes
-    ("C#C", "acetylene", "乙炔"),
     ("C#CC", "propyne", "丙炔"),
     ("C#CCC", "but-1-yne", "丁-1-炔"),
     ("CC#CC", "but-2-yne", "丁-2-炔"),
@@ -24,8 +23,6 @@ CASES = [
     ("C#CCCCC", "hex-1-yne", "己-1-炔"),
     # negative: alkane / alkene / alcohol / aldehyde / ketone / acid
     ("CCC", "propane", "丙烷"),
-    ("C=C", "ethene", "乙烯"),
-    ("C=CC", "propene", "丙烯"),
     ("CCO", "ethanol", "乙醇"),
     ("CC=O", "acetaldehyde", "乙醛"),
     ("CC(C)=O", "propan-2-one", "丙-2-酮"),

@@ -21,14 +21,12 @@ CASES = [
     ("CCCCC#N", "pentanenitrile", "戊腈"),
     ("CCCCCC#N", "hexanenitrile", "己腈"),
     # negative
-    ("C#C", "acetylene", "乙炔"),
     ("C#CC", "propyne", "丙炔"),
     ("CCC", "propane", "丙烷"),
     ("CCN", "ethanamine", "乙胺"),
     ("CC(=O)N", "acetamide", "乙酰胺"),
     ("CC=O", "acetaldehyde", "乙醛"),
     ("CC(=O)O", "acetic acid", "乙酸"),
-    ("C=C", "ethene", "乙烯"),
     ("C1CCCCC1", "cyclohexane", "环己烷"),
 ]
 

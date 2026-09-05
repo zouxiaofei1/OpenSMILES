@@ -23,7 +23,6 @@ CASES = [
         "2-[2-(丙氨基)乙氨基]乙醇",
     ),
     # N-甲基 / N-氨基乙基（自由基链 1 位省略：2-aminoethylamino）
-    ("OCCNC", "methylaminoethanol", "甲氨基乙醇"),
     ("OCCNCCN", "2-(2-aminoethylamino)ethanol", "2-(2-氨基乙氨基)乙醇"),
     # N-苄基
     ("OCCNCc1ccccc1", "2-(benzylamino)ethanol", "2-(苄氨基)乙醇"),

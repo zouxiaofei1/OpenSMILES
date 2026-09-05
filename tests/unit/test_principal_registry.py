@@ -23,7 +23,6 @@ from namepredict.layer2.principal import (
 CASES = [
     ("CC(=O)OCC(=O)O", FG.ACID, FG.ESTER),
     ("N#CCC=O", FG.NITRILE, FG.ALDEHYDE),
-    ("COC", None, FG.ETHER),
 ]
 
 

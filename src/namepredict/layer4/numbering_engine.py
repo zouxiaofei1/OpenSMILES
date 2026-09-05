@@ -234,6 +234,8 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     if fused is not None:
         return fused
     mol = parent.get("mol")
+    # 固定 locant 1 失败（链中部自由基/锚点）时，把该原子并入 principal 竞争最低位次；杂环分支无此回退。
+    anchor_as_principal = None
     if mol is not None and _is_ring(parent) and any(
             mol.GetAtomWithIdx(a).GetAtomicNum() != 6 for a in chain):
         # 杂环：P-22.2.2.1.3 元素序窄化先于 principal（唑类 N 必须 1,3/1,2、吡啶甲酸 N=1
@@ -244,11 +246,17 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
         cands = _ring_cands(chain) if _is_ring(parent) else _chain_cands(chain)
         start = _fixed_start(parent)
         if start is not None:
-            cands = [c for c in cands if c.get(start) == 1]
-        if not cands:
-            # 固定起点原子在链候选中不可能为 locant 1（如线性链中部的杂环原子）：保留原顺序。
-            return chain
+            forced = [c for c in cands if c.get(start) == 1]
+            if forced:
+                cands = forced
+            else:
+                # 固定起点原子在链候选中不可能为 locant 1（如链中部的自由基/锚点）：
+                # 不原样保留链序（否则自由价/双键/取代基位次全不最小化，编号随上游原子序漂移），
+                # 回退全候选并把该原子并入 P-14.4(c) principal 竞争最低位次。
+                anchor_as_principal = start
     principal = _principal_atoms(parent)
+    if anchor_as_principal is not None:
+        principal = sorted(set(principal) | {anchor_as_principal})
     if principal:
         cands = _narrow(cands, lambda c: _locant_set(c, principal))
     bonds, doubles = _unsat_bonds(parent)

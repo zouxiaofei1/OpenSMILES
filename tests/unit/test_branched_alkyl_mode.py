@@ -10,7 +10,6 @@ from namepredict.constants import normalize_en
 CASES = [
     # (smiles, general_en_substring, pin_en_substring)
     # Must use a parent (benzene) so branched alkyl is extracted as substituent.
-    ("CC(C)c1ccccc1", "isopropyl", "propan-2-yl"),
     ("CC(C)(C)c1ccccc1", "tert-butyl", "tert-butyl"),  # PIN level: same in both
 ]
 

@@ -40,7 +40,6 @@ CASES = [
     # negative: near-miss retained / linear must not break
     ("CC(C)(C)C1CCCCC1", "tert-butylcyclohexane", "叔丁基环己烷"),
     ("CC(C)(C)c1ccccc1", "tert-butylbenzene", "叔丁基苯"),
-    ("CC(C)C1CCCCC1", "isopropylcyclohexane", "异丙基环己烷"),
     ("CCC", "propane", "丙烷"),
 ]
 

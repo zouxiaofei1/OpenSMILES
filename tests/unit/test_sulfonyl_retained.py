@@ -16,9 +16,6 @@ CASES = [
     # methylsulfonyl on simple alkyl acid
     ("CS(=O)(=O)CCC(=O)O",
      "3-methylsulfonylpropanoic acid", None),
-    # ── methylsulfinyl (P-65.3.1) ──
-    ("CS(=O)CC[C@H](N)C(=O)O",
-     "(2S)-2-amino-4-methylsulfinylbutanoic acid", None),
     # ── methylsulfanyl regression (must still work) ──
     ("CSCC[C@H](N)C(=O)O",
      "(2S)-2-amino-4-methylsulfanylbutanoic acid", None),

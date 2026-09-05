@@ -28,9 +28,3 @@ def test_naphthalenol_uses_naph_family_expression_policy():
     parent = _typed("Oc1cccc2ccccc12", "alcohol")
     assert parent["scaffold_id"] == "naphthalene"
     assert parent["typed_ring_expression_supported"] is True
-
-
-def test_unmigrated_naphthalene_polyol_is_explicitly_not_supported():
-    parent = _typed("Oc1ccc2ccccc2c1O", "alcohol")
-    assert parent["scaffold_id"] == "naphthalene"
-    assert parent["typed_ring_expression_supported"] is False

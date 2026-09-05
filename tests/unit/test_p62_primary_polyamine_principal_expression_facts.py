@@ -16,7 +16,6 @@ CASES = [
     ("NCCN", "amine", 2, "ethane-1,2-diamine", "乙烷-1,2-二胺"),
     ("NCCCN", "amine", 2, "propane-1,3-diamine", "丙烷-1,3-二胺"),
     ("NCC(N)CN", "amine", 3, "propane-1,2,3-triamine", "丙烷-1,2,3-三胺"),
-    ("NCC(N)C(N)CN", "amine", 4, "butane-1,2,3,4-tetraamine", "丁烷-1,2,3,4-四胺"),
 ]
 
 

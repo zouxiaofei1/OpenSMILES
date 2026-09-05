@@ -185,6 +185,29 @@ def test_print_diffs_format(capsys):
     assert "smiles=CCO" in out
 
 
+def test_print_diffs_groups_improve_regress_change(capsys):
+    # 三类并存时按 IMPROVE -> REGRESS -> CHANGE 分组显示，组内保持原顺序。
+    def d(kind, key):
+        return {
+            "kind": kind, "key": key,
+            "prev": _entry(key, False),
+            "cur": _entry(key, True),
+        }
+
+    diffs = [
+        d("CHANGE", "id:c1"),
+        d("IMPROVE", "id:i1"),
+        d("REGRESS", "id:r1"),
+        d("IMPROVE", "id:i2"),
+        d("CHANGE", "id:c2"),
+    ]
+    _print_diffs(diffs)
+    out = capsys.readouterr().out
+    assert "IMPROVE=2 REGRESS=1 CHANGE=2" in out
+    assert out.index("[IMPROVE]") < out.index("[REGRESS]") < out.index("[CHANGE]")
+    assert out.index("[CHANGE] id:c1") < out.index("[CHANGE] id:c2")  # 组内稳定
+
+
 def test_print_diffs_none(capsys):
     _print_diffs([])
     out = capsys.readouterr().out

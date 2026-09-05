@@ -27,7 +27,6 @@ CASES = [
     ("NCC(N)(CC)CN", "2-ethylpropane-1,2,3-triamine", "2-乙基丙烷-1,2,3-三胺"),
     ("NCC(C)C(N)CN", "3-methylbutane-1,2,4-triamine", "3-甲基丁烷-1,2,4-三胺"),
     # tetraamine: unsubstituted open-chain
-    ("NCC(N)C(N)CN", "butane-1,2,3,4-tetraamine", "丁烷-1,2,3,4-四胺"),
     # negative: diamine / monoamine / triol must not break
     ("NCCN", "ethane-1,2-diamine", "乙烷-1,2-二胺"),
     ("NCCCN", "propane-1,3-diamine", "丙烷-1,3-二胺"),

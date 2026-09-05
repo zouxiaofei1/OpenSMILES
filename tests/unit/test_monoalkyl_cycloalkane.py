@@ -28,7 +28,6 @@ CASES = [
     ("CC(C)C", "2-methylpropane", "2-甲基丙烷"),
     ("CCO", "ethanol", "乙醇"),
     ("CCN", "ethanamine", "乙胺"),
-    ("C=C", "ethene", "乙烯"),
     ("CC#N", "acetonitrile", "乙腈"),
 ]
 

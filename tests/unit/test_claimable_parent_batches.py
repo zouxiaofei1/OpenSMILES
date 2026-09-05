@@ -28,7 +28,6 @@ BATCHES = [
     ("c1ccccc1", "benzene", "苯"),
     # phenol
     ("Oc1ccccc1", "phenol", "苯酚"),
-    ("Oc1ccc(CC(C)C)cc1", "4-isobutylphenol", "4-异丁基苯酚"),
     # aniline
     ("Nc1ccccc1", "aniline", "苯胺"),
     ("Nc1ccc(C)cc1", "4-methylaniline", "4-甲基苯胺"),

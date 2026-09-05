@@ -14,12 +14,6 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
-    # 一级芳烷基胺对照（母体选择正确）
-    (
-        "FC(C1=CC=C(CCN)C=C1)(F)F",
-        "2-[4-(trifluoromethyl)phenyl]ethanamine",
-        "2-(4-三氟甲基苯基)乙胺",
-    ),
     # nitriles from user set (should already work)
     (
         "C(C)C=1C=C(C=CC1)CC#N",

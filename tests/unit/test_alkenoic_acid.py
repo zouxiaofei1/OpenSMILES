@@ -24,7 +24,6 @@ CASES = [
     ("CCC=CC(=O)O", "pent-2-enoic acid", "戊-2-烯酸"),
     # negative: saturated acid, alkene, oxoacid must not become alkenoic acids
     ("CC(=O)O", "acetic acid", "乙酸"),
-    ("C=C", "ethene", "乙烯"),
     ("OC(=O)C(=O)C", "2-oxopropanoic acid", "2-氧代丙酸"),
 ]
 

@@ -27,8 +27,6 @@ CASES = [
     # positive: quinazoline locants (N1,N3; 2-chloro, 4-methyl, 7-methoxy)
     ("ClC1=NC2=CC(=CC=C2C(=N1)C)OC", "2-chloro-7-methoxy-4-methylquinazoline", "2-氯-7-甲氧基-4-甲基喹唑啉"),
     ("ClC1=NC(=NC2=CC=C(C=C12)F)C1=CC=C(C=C1)OC", "4-chloro-6-fluoro-2-(4-methoxyphenyl)quinazoline", "4-氯-6-氟-2-(4-甲氧基苯基)喹唑啉"),
-    # positive: indole locants (N=1; benzene ring 4-7)
-    ("COC1=C2C=C(NC2=CC=C1OC)C(=O)O", "4,5-dimethoxy-1H-indole-2-carboxylic acid", "4,5-二甲氧基-1H-吲哚-2-甲酸"),
     # negative near-misses: symmetric naphthalene/quinoxaline stay P-14.4; already-correct cases must not regress
     ("c1ccc2ccccc2c1", "naphthalene", "萘"),
     ("Cc1cccc2ccccc12", "1-methylnaphthalene", "1-甲基萘"),

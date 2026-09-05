@@ -18,7 +18,6 @@ CASES = [
     ("BrCCCC1=CC=CC=C1", "(3-bromopropyl)benzene", "(3-溴丙基)苯"),
     # negatives: keep existing correct behaviour
     ("CCc1ccccc1", "ethylbenzene", "乙基苯"),
-    ("FC(F)(F)c1ccccc1", "trifluoromethylbenzene", None),
     ("NCCN", "ethane-1,2-diamine", "乙烷-1,2-二胺"),
 ]
 

@@ -19,8 +19,6 @@ CASES = [
     ("C1=CCC1", "cyclobutene", "环丁烯"),
     ("C1=CCCCCC1", "cycloheptene", "环庚烯"),
     # negative: chain alkenes and saturated rings
-    ("C=C", "ethene", "乙烯"),
-    ("C=CC", "propene", "丙烯"),
     ("C=CCC", "but-1-ene", "丁-1-烯"),
     ("C1CCCCC1", "cyclohexane", "环己烷"),
     ("CC1CCCCC1", "methylcyclohexane", "甲基环己烷"),

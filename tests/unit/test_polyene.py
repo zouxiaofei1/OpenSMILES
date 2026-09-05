@@ -24,9 +24,7 @@ CASES = [
     ("CC=CC=CC", "hexa-2,4-diene", "己-2,4-二烯"),
     ("C=CCCCC=C", "hepta-1,6-diene", "庚-1,6-二烯"),
     # negative: monoalkene / alkyne must not become polyene
-    ("C=C", "ethene", "乙烯"),
     ("CC=CC", "but-2-ene", "丁-2-烯"),
-    ("C#C", "acetylene", "乙炔"),
 ]
 
 

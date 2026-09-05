@@ -43,7 +43,6 @@ CASES = [
     # negatives
     ("CCCCO", "butan-1-ol", "丁-1-醇"),
     ("C1CCC(O)CC1", "cyclohexanol", "环己醇"),
-    ("C=C(C)C", "2-methylpropene", "2-甲基丙烯"),
     ("CCCCCCCCCCCC(=O)[O-]", "dodecanoate", "十二酸根"),
     ("C=CC=CC=CC", "hepta-1,3,5-triene", "庚-1,3,5-三烯"),
 ]

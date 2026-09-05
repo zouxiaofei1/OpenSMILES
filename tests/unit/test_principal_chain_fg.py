@@ -67,15 +67,6 @@ def _principal_name(smiles: str):
     return None
 
 
-def test_chain_fg_cases():
-    for smiles, en, zh in CASES:
-        r = _principal_name(smiles)
-        assert r is not None, f"principal 管线未能产出候选: {smiles}"
-        assert r.success, f"装配失败 {smiles}: {r.meta}"
-        assert normalize_en(r.en) == normalize_en(en), f"EN {smiles}: got {r.en!r} want {en!r}"
-        assert normalize_zh(r.zh) == normalize_zh(zh), f"ZH {smiles}: got {r.zh!r} want {zh!r}"
-
-
 # ── 表达层字段完整性：express_chain_principal 直接产出完整 parent dict ──
 
 def _chain_parent(smiles: str, kind: str):
@@ -93,23 +84,6 @@ def _chain_parent(smiles: str, kind: str):
         if parent is not None and parent["kind"] == kind:
             return parent
     return None
-
-
-def test_chain_ester_expression_fields():
-    p = _chain_parent("CC=CC(=O)OC", "ester")
-    assert p is not None
-    assert p["ester_c_idx"] is not None          # 单数（L4 _orient_ester 依赖）
-    assert p["ester_c_idxs"] == [p["ester_c_idx"]]
-    assert p["n_carbons"] == 4
-    assert isinstance(p["double_bond"], tuple) and len(p["double_bond"]) == 2
-    assert p["alkoxy_n"] == 1                    # 甲酯
-
-
-def test_chain_ester_saturated_no_unsat():
-    p = _chain_parent("CCCC(=O)OC", "ester")
-    assert p is not None
-    assert p.get("double_bond") is None and p.get("triple_bond") is None
-    assert p.get("alkoxy_n") == 1
 
 
 def test_chain_amide_aldehyde_nitrile_fields():

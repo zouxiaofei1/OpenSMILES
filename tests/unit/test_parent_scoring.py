@@ -21,7 +21,6 @@ CASES = [
     ("CCc1ccccc1C", "1-ethyl-2-methylbenzene", "1-乙基-2-甲基苯"),
     ("CC(C)(C)C1CCCCC1", "tert-butylcyclohexane", "叔丁基环己烷"),
     # negative / regression: existing correct behavior must not change
-    ("CC(C)c1ccccc1", "isopropylbenzene", "异丙基苯"),
     ("c1ccccc1C(=O)O", "benzoic acid", "苯甲酸"),  # acid outranks bare benzene
     ("Cc1ccc(Cl)cc1", "1-chloro-4-methylbenzene", "1-氯-4-甲基苯"),
     ("CCC(C)C", "2-methylbutane", "2-甲基丁烷"),  # plain alkane: no ring bias

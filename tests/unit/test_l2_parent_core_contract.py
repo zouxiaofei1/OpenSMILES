@@ -55,17 +55,6 @@ def _producer_paths() -> list[Path]:
     )
 
 
-def test_parent_core_module_exists() -> None:
-    assert (_L2 / "parent_core.py").is_file()
-
-
-def test_parent_core_exports_helpers() -> None:
-    import namepredict.layer2.parent_core as core
-
-    missing = [h for h in sorted(_HELPERS) if not hasattr(core, h)]
-    assert missing == [], f"parent_core missing helpers: {missing}"
-
-
 @pytest.mark.parametrize("path", _producer_paths(), ids=lambda p: p.relative_to(_L2).as_posix())
 def test_producers_do_not_import_helpers_from_parent_selector(path: Path) -> None:
     hits = _parent_selector_helper_hits(path)

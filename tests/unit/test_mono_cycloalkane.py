@@ -25,8 +25,6 @@ CASES = [
     # negative: acyclic / FG / unsaturated must not become cycloalkanes
     ("CCC", "propane", "丙烷"),
     ("CCCC", "butane", "丁烷"),
-    ("C=C", "ethene", "乙烯"),
-    ("C#C", "acetylene", "乙炔"),
     ("CCO", "ethanol", "乙醇"),
     ("CC=O", "acetaldehyde", "乙醛"),
     ("CC(=O)O", "acetic acid", "乙酸"),

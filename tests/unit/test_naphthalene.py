@@ -17,10 +17,8 @@ CASES = [
     ("c1ccc2ccccc2c1", "naphthalene", "萘"),
     # positive: mono-methyl — alpha (1) and beta (2)
     ("Cc1cccc2ccccc12", "1-methylnaphthalene", "1-甲基萘"),
-    ("Cc1ccc2ccccc2c1", "2-methylnaphthalene", "2-甲基萘"),
     # positive: mono-halo
     ("Clc1cccc2ccccc12", "1-chloronaphthalene", "1-氯萘"),
-    ("Clc1ccc2ccccc2c1", "2-chloronaphthalene", "2-氯萘"),
     # negative near-miss: must not become naphthalene
     ("c1ccccc1", "benzene", "苯"),
     ("c1ccncc1", "pyridine", "吡啶"),

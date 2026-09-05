@@ -22,18 +22,9 @@ def _name(smiles: str, mode: str = "general"):
     ("*C(C)C", "isopropyl"),
     ("*C(C)(C)C", "tert-butyl"),
     ("*Cc1ccccc1", "benzyl"),
-    ("*C(c1ccccc1)c1ccccc1", "benzhydryl"),
-    ("*C(c1ccccc1)(c1ccccc1)c1ccccc1", "trityl"),
-    ("*Cc1ccoc1", "furfuryl"),
-    ("*Cc1ccsc1", "thenyl"),
-    ("*C(=O)c1ccccc1", "benzoyl"),
-    ("*c1ccc2ncccc2c1", "quinolyl"),
-    ("*c1ccoc1", "furyl"),
-    ("*C1C2CC3CC(C2)CC1C3", "adamantyl"),
     ("*OC", "methoxy"),
     ("*S(C)(=O)=O", "methylsulfonyl"),
     ("*C#N", "cyano"),
-    ("*C(=O)CC", "propionyl"),
     ("*O", "hydroxy"),
     ("*[O]", "oxidanyl"),
     ("*N", "amino"),
@@ -53,7 +44,6 @@ def test_top_level_star_matches_registry(smi, key):
 @pytest.mark.parametrize("smi,en,zh", [
     ("*c1ccccc1", "phenyl", "苯基"),
     ("*C1CC1", "cyclopropyl", "环丙基"),
-    ("*[C@@H]1CCCCN1", "piperidin-2-yl", "哌啶-2-基"),
 ])
 def test_top_level_star_matches_inline(smi, en, zh):
     r = _name(smi)

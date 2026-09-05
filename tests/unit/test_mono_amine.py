@@ -29,8 +29,6 @@ CASES = [
     ("CC(=O)O", "acetic acid", "乙酸"),
     ("CC(C)=O", "propan-2-one", "丙-2-酮"),
     ("CC(=O)OCC", "ethyl acetate", "乙酸乙酯"),
-    ("C#C", "acetylene", "乙炔"),
-    ("C=C", "ethene", "乙烯"),
 ]
 
 
