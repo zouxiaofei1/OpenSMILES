@@ -121,11 +121,6 @@ def _build_anchor_index() -> dict[str, str]:
 _ANCHOR_INDEX: dict[str, str] = _build_anchor_index()
 
 
-def get_retained(key: str) -> RetainedSubstituent | None:
-    """按 registry 键查找保留取代基。"""
-    return _REGISTRY.get(key)
-
-
 def resolve_name(key: str, *, name_mode: str = "general") -> tuple[str, str]:
     """返回 registry 键对应的 (en, zh)；当前恒走系统名（systematic_en/zh），general/pin 分派已被注释停用。"""
     entry = _REGISTRY[key]

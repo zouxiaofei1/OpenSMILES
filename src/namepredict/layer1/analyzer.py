@@ -493,20 +493,6 @@ def _demoted_amide_amine(mol: Mol, e: dict) -> dict | None:
     return {"n_idx": atom.GetIdx(), "c_idx": e["c_idx"], "degree": 1}
 
 
-def _demoted_acid_hydroxyl(mol: Mol, e: dict) -> dict | None:
-    """羧酸被更高优先级主基团降级后，其中性 -COOH 的醇 OH 回收为羟基条目，走正规 hydroxy 前缀。"""
-    if e.get("anion"):
-        return None
-    c = mol.GetAtomWithIdx(e["c_idx"])
-    for nb in c.GetNeighbors():
-        if nb.GetAtomicNum() != O:
-            continue
-        b = mol.GetBondBetweenAtoms(c.GetIdx(), nb.GetIdx())
-        if b is not None and b.GetBondType() == BondType.SINGLE and nb.GetTotalNumHs() >= 1:
-            return {"o_idx": nb.GetIdx(), "c_idx": c.GetIdx()}
-    return None
-
-
 def _arbitrate_parts(mol: Mol, parts: dict) -> dict:
     """P-41 主基团仲裁：更高优先级 FG 存在时组合羰基 FG 退出，羰基碳降级为 oxo，
     其组成成员（伯酰胺 N → amino、中性羧酸 OH → hydroxy）回收进 L1 正规前缀通道；

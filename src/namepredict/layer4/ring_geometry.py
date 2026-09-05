@@ -66,16 +66,6 @@ def ring_cyclic(ring_tuple: tuple[int, ...], a: int, b: int) -> list[int]:
     return [ring_tuple[(i - k) % n] for k in range(n)]
 
 
-def translate(pts: list[tuple[float, float]], dx: float, dy: float) -> list[tuple[float, float]]:
-    """整体平移坐标。"""
-    return [(x + dx, y + dy) for x, y in pts]
-
-
-def reflect_y(pts: list[tuple[float, float]]) -> list[tuple[float, float]]:
-    """y 轴对称翻转（x → -x）。"""
-    return [(-x, y) for x, y in pts]
-
-
 def centroid(pts: list[tuple[float, float]]) -> tuple[float, float]:
     """点集质心。"""
     n = len(pts)

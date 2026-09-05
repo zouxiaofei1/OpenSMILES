@@ -65,28 +65,6 @@ def _longest_chain(mol: Mol, seeds: list[int] | None = None, banned: set[int] = 
     return _best_among(mol, _seed_carbons(mol, banned) if seeds is None else seeds, banned)
 
 
-def _arms_from(mol: Mol, center: int, banned: set[int] = frozenset()) -> list[list[int]]:
-    """以 center 为中心，返回各碳邻居出发的最长臂（禁走 center）。"""
-    forbid = {center}
-    return [_longest_from(mol, nb, forbid, banned) for nb in _carbon_neighbors(mol, center, banned)]
-
-
-def _join_through(center: int, arms: list[list[int]]) -> list[int]:
-    """按臂长排序拼接穿过 center 的最长链。"""
-    arms = sorted(arms, key=len, reverse=True)
-    if not arms:
-        return [center]
-    if len(arms) == 1:
-        return list(reversed(arms[0])) + [center]
-    return list(reversed(arms[0])) + [center] + arms[1]
-
-
-def _chain_through(info: dict, c_idx: int, banned: set[int] = frozenset()) -> list[int]:
-    """返回穿过给定碳原子的最长开链。"""
-    mol: Mol = info["mol"]
-    return _join_through(c_idx, _arms_from(mol, c_idx, banned))
-
-
 def _component_leaves(mol: Mol, neighbor: int, forbid: int, banned: set[int] = frozenset()) -> tuple[dict, list[int], int]:
     """从 neighbor 出发（禁走 forbid）DFS 其开链碳组件：返回 (parent, 最深叶子列表, 最深深度)。
     组件内 parent/距离以 forbid 为根；叶子 = 无更远碳子节点的原子。"""
