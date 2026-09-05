@@ -26,6 +26,15 @@ CASES = [
     ("BrC(C)CC(C)C", "2-bromo-4-methylpentane", "2-溴-4-甲基戊烷"),
     ("BrCBr", "dibromomethane", None),
     ("ClCCCCCCCCCC", "1-chlorodecane", "1-氯癸烷"),
+    # 数量前缀 >10 必须显示（回归：MULT 原只到 10，十五氟曾丢数量只剩 fluoro）
+    ("FC(F)(F)C(F)(F)C(F)(F)C(F)(F)F",
+     "1,1,1,2,2,3,3,4,4,4-decafluorobutane", "1,1,1,2,2,3,3,4,4,4-十氟丁烷"),
+    ("O=C(C(C(C(C(C(C(C(CF)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)O",
+     "2,2,3,3,4,4,5,5,6,6,7,7,8,8,9-pentadecafluorononanoic acid",
+     "2,2,3,3,4,4,5,5,6,6,7,7,8,8,9-十五氟壬酸"),
+    ("FC(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F",
+     "1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-octadecafluorooctane",
+     "1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,8-十八氟辛烷"),
     # negative: alcohols / unsubstituted alkane must stay correct
     ("CCO", "ethanol", "乙醇"),
     ("CC(C)CO", "2-methylpropan-1-ol", "2-甲基丙-1-醇"),

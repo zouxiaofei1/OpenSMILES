@@ -14,7 +14,7 @@ _src_str = str(_SRC)
 if _src_str not in sys.path:
     sys.path.insert(0, _src_str)
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.constants import nospace, normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 _MISSING_DATA_HINT = (
@@ -28,11 +28,13 @@ _SNAPSHOT_PATH = Path(__file__).resolve().parent / ".last_run.json"
 
 
 def _check_en(pred: str, gold: str) -> bool:
-    return normalize_en(pred) == normalize_en(gold)
+    # 空格不敏感：gold/预测在分词空格上可存在书写差异（如 acid 盐后缀前空格）
+    return nospace(normalize_en(pred)) == nospace(normalize_en(gold))
 
 
 def _check_zh(pred: str, gold: str) -> bool:
-    return normalize_zh(pred) == normalize_zh(gold)
+    # 空格不敏感：中文名内部无空格与空格并存（如 X盐酸盐 / X 盐酸盐）
+    return nospace(normalize_zh(pred)) == nospace(normalize_zh(gold))
 
 
 def score_record(pred_en: str, pred_zh: str, row: dict[str, Any]) -> dict[str, Any]:

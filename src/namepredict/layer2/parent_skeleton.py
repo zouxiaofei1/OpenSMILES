@@ -8,7 +8,7 @@ from rdkit.Chem import Mol
 
 from namepredict.constants import Al, As, B, Bi, C, Ga, Ge, In, N, O, P, Pb, S, Sb, Se, Si, Sn, Te, Tl
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass, FunctionalGroupOccurrence
-from namepredict.layer2.chain_walk import _chain_through, _chain_through_two, _longest_chain
+from namepredict.layer2.chain_walk import _all_chains_through, _chain_through_two, _longest_chain
 
 
 class SkeletonTopology(str, Enum):
@@ -52,7 +52,8 @@ def _pair_chains(mol: Mol, anchors: list[int]) -> list[list[int]]:
 def _open_chains(mol: Mol, anchors: list[int]) -> list[list[int]]:
     """开环锚点的单链与两两链候选（无锚点时退化为最长链）。"""
     open_anchors = [a for a in anchors if not mol.GetAtomWithIdx(a).IsInRing()]
-    singles = [_chain_through({"mol": mol}, anchor) for anchor in open_anchors]
+    # 穿过锚点的等长最长链全部枚举（平局候选让 P-44.4/P-45.2 裁决，如醛端连甲基 vs 羟甲基）。
+    singles = [chain for anchor in open_anchors for chain in _all_chains_through(mol, anchor)]
     out = singles + _pair_chains(mol, open_anchors)
     if out:
         return out

@@ -264,8 +264,11 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
         base = ordered[0]
         return (f"{MULT_EN[len(ordered)]}{base['en']}{zero[0]}",
                 f"{MULT_ZH[len(ordered)]}{base['zh']}{zero[1]}")
-    return ("".join(s["en"] for s in ordered) + zero[0],
-            "".join(s["zh"] for s in ordered) + zero[1])
+    # 双不同 N-取代基：字母序首基平铺，其后各基分别加括号紧贴 amino
+    # （P-62.2.2.1：多取代氨基须逐基消歧，2-chloroethylethylamino → 2-chloroethyl(ethyl)amino）。
+    first, rest = ordered[0], ordered[1:]
+    return (first["en"] + "".join(f"({s['en']})" for s in rest) + zero[0],
+            first["zh"] + "".join(f"({s['zh']})" for s in rest) + zero[1])
 
 
 def _ensure_fused_stem(numbered: dict) -> bool:

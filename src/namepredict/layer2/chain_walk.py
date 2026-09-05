@@ -23,14 +23,31 @@ def _side_count(mol: Mol, chain: list[int]) -> int:
     return n
 
 
-def _chain_key(mol: Mol, path: list[int]) -> tuple:
-    """构造链比较键：(长度, 支链度)。"""
-    return (len(path), _side_count(mol, path))
-
-
 def _better(mol: Mol, cand: list[int], best: list[int]) -> bool:
-    """候选链是否优于当前最佳链（无最佳则胜出）。"""
-    return (not best) or _chain_key(mol, cand) > _chain_key(mol, best)
+    """候选是否优于当前最佳：长度优先，仅等长才数支链度（避免无谓全链扫描）。"""
+    if not best:
+        return True
+    if len(cand) != len(best):
+        return len(cand) > len(best)
+    return _side_count(mol, cand) > _side_count(mol, best)
+
+
+def _seed_carbons(mol: Mol) -> list[int]:
+    """最长链种子降集：开链子图为无「带臂环/芳碳」的多碳树时仅用开链叶（等价且远少于全碳），否则回退全碳种子。"""
+    carbons = _all_carbons(mol)
+    if not carbons:
+        return []
+    has_ring_root = False
+    leaves: list[int] = []
+    for c in carbons:
+        atom = mol.GetAtomWithIdx(c)
+        nbs = _carbon_neighbors(mol, c)
+        if atom.IsInRing() or atom.GetIsAromatic():
+            if nbs:
+                has_ring_root = True
+        elif len(nbs) == 1:
+            leaves.append(c)
+    return carbons if (has_ring_root or not leaves) else leaves
 
 
 def _best_among(mol: Mol, seeds: list[int]) -> list[int]:
@@ -44,8 +61,8 @@ def _best_among(mol: Mol, seeds: list[int]) -> list[int]:
 
 
 def _longest_chain(mol: Mol, seeds: list[int] | None = None) -> list[int]:
-    """返回分子中最长碳链（可选种子约束）。"""
-    return _best_among(mol, seeds or _all_carbons(mol))
+    """返回分子中最长碳链（可选种子约束；缺省用降集种子等价加速）。"""
+    return _best_among(mol, _seed_carbons(mol) if seeds is None else seeds)
 
 
 def _arms_from(mol: Mol, center: int) -> list[list[int]]:
@@ -68,6 +85,80 @@ def _chain_through(info: dict, c_idx: int) -> list[int]:
     """返回穿过给定碳原子的最长开链。"""
     mol: Mol = info["mol"]
     return _join_through(c_idx, _arms_from(mol, c_idx))
+
+
+def _component_leaves(mol: Mol, neighbor: int, forbid: int) -> tuple[dict, list[int], int]:
+    """从 neighbor 出发（禁走 forbid）DFS 其开链碳组件：返回 (parent, 最深叶子列表, 最深深度)。
+    组件内 parent/距离以 forbid 为根；叶子 = 无更远碳子节点的原子。"""
+    parent: dict = {neighbor: forbid}
+    order = [neighbor]
+    dist = {neighbor: 1}
+    for x in order:
+        for y in _carbon_neighbors(mol, x):
+            if y == forbid or y in parent:
+                continue
+            parent[y] = x
+            dist[y] = dist[x] + 1
+            order.append(y)
+    maxd, leaves = 0, []
+    for x in order:
+        if any(y != forbid and parent.get(y) == x for y in _carbon_neighbors(mol, x)):
+            continue
+        d = dist[x]
+        if d > maxd:
+            maxd, leaves = d, [x]
+        elif d == maxd:
+            leaves.append(x)
+    return parent, leaves, maxd
+
+
+def _component_path(parent: dict, leaf: int, root: int) -> list[int]:
+    """沿 parent 表重建 root→leaf 的链（含两端）。"""
+    seg = []
+    x = leaf
+    while x != root:
+        seg.append(x)
+        x = parent[x]
+    return [root] + list(reversed(seg))
+
+
+def _all_chains_through(mol: Mol, c_idx: int) -> list[list[int]]:
+    """返回穿过给定碳原子的全部等长最长开链（供 P-44.4/P-45.2 平局裁决）。
+    开链碳子图为森林：从 c_idx 各碳邻居分出的组件里取最深叶子作臂；臂长平局时
+    逐一枚举组件与叶子，避免单条 DFS 任选一路导致等长候选链丢失（如醛端 C3 连
+    甲基端与羟甲基端同为最长，须两条都作候选让 P-45.2.1 决定主链）。"""
+    neighbors = _carbon_neighbors(mol, c_idx)
+    comps = {n: _component_leaves(mol, n, c_idx) for n in neighbors}
+    if not comps:
+        return [[c_idx]]
+    chains: set[tuple[int, ...]] = set()
+    ns = list(comps)
+    if len(ns) == 1:
+        # 锚点为链端点：链从最深叶子走向锚点（平局全枚举），叶子在链首、锚点收尾。
+        parent, leaves, _ = comps[ns[0]]
+        for leaf in leaves:
+            chains.add(tuple(reversed(_component_path(parent, leaf, c_idx))))
+    else:
+        # 锚点在链内：两臂取自两个组件，取深度和最大的组合（平局组合全枚举）；
+        # 结果按 左叶子…锚点…右叶子 排成真实键连路径（两端是叶子、相邻原子有键）。
+        pairs: list[tuple[int, int]] = []
+        best = 0
+        for i in range(len(ns)):
+            for j in range(i + 1, len(ns)):
+                s = comps[ns[i]][2] + comps[ns[j]][2]
+                if s > best:
+                    best, pairs = s, [(i, j)]
+                elif s == best:
+                    pairs.append((i, j))
+        for i, j in pairs:
+            p1, leaves1, _ = comps[ns[i]]
+            p2, leaves2, _ = comps[ns[j]]
+            for l1 in leaves1:
+                for l2 in leaves2:
+                    left = list(reversed(_component_path(p1, l1, c_idx)))[:-1]  # 叶→锚点前
+                    right = _component_path(p2, l2, c_idx)                      # 锚点→右叶
+                    chains.add(tuple(left + right))
+    return [list(c) for c in chains]
 
 
 def _bfs_expand(mol: Mol, cur: int, prev: dict, q: list) -> None:

@@ -1,8 +1,8 @@
-"""烷烃与官能团母体的碳数词干表/生成器（C1–C35+）；C1–C10 保留、C11–C19 半系统、C20+ 倍增组词；IUPAC P-14.2.1 / P-21（icos- 优先于 eicos-）。"""
+"""烷烃与官能团母体的碳数词干表/生成器（C1–C99）；C1–C10 保留字、C11+ 复用 constants.en_num_term 去尾 'a'（undec/icos/docos…）；IUPAC P-14.2.1 / P-21（icos- 优先于 eicos-）。"""
 
 from __future__ import annotations
 
-from namepredict.constants import MULT_EN, MULT_ZH
+from namepredict.constants import MULT_EN, MULT_ZH, en_num_term
 
 # --- C1–C10 保留 / 系统基干（字节兼容） ---
 _ALKANE_EN_BASE = {
@@ -12,18 +12,6 @@ _ALKANE_EN_BASE = {
 _ALKANE_ZH_BASE = {
     1: "甲烷", 2: "乙烷", 3: "丙烷", 4: "丁烷", 5: "戊烷",
     6: "己烷", 7: "庚烷", 8: "辛烷", 9: "壬烷", 10: "癸烷",
-}
-_SEMI_EN = {
-    11: "undec", 12: "dodec", 13: "tridec", 14: "tetradec", 15: "pentadec",
-    16: "hexadec", 17: "heptadec", 18: "octadec", 19: "nonadec",
-}
-_UNITS = {
-    1: "hen", 2: "do", 3: "tri", 4: "tetra", 5: "penta",
-    6: "hexa", 7: "hepta", 8: "octa", 9: "nona",
-}
-_TENS = {
-    2: "icos", 3: "triacont", 4: "tetracont", 5: "pentacont",
-    6: "hexacont", 7: "heptacont", 8: "octacont", 9: "nonacont",
 }
 _HS_NUMBER = "甲乙丙丁戊己庚辛壬癸"
 _DIGIT_ZH = "零一二三四五六七八九"
@@ -49,26 +37,12 @@ def zh_stem(zh_full: str) -> str:
     return zh_full
 
 
-def _compose_en_stem(n: int) -> str | None:
-    """C20+ 倍增词干（icos / henicos / hexacos / triacont / …）。"""
-    tens, ones = divmod(n, 10)
-    t = _TENS.get(tens)
-    if not t or ones > 9:
-        return None
-    if ones == 0:
-        return t
-    # icos + do/tri/… → docos/tricos（省略 i）；hen 保留 icos；30+ 不省略
-    base = "cos" if tens == 2 and ones >= 2 else t
-    return f"{_UNITS[ones]}{base}"
-
-
 def _en_stem(n: int) -> str | None:
-    """不含 'ane' 的烷烃词干（meth…dec / undec… / icos…）。"""
+    """不含 'ane' 的烷烃词干（meth…dec 保留；≥11 由 en_num_term 去尾 'a'：undec/icos…）。"""
     if n in _ALKANE_EN_BASE:
         return _ALKANE_EN_BASE[n][:-3]
-    if n in _SEMI_EN:
-        return _SEMI_EN[n]
-    return _compose_en_stem(n) if n >= 20 else None
+    t = en_num_term(n)
+    return t[:-1] if t else None
 
 
 def alkane_en(n: int) -> str | None:
@@ -162,7 +136,7 @@ def maybe_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
 
 
 
-def _fill(fn, lo: int = 1, hi: int = 35) -> dict[int, str]:
+def _fill(fn, lo: int = 1, hi: int = 99) -> dict[int, str]:
     """用生成函数 fn 填充 C(lo–hi) 的表（值为真才收录）。"""
     out: dict[int, str] = {}
     for n in range(lo, hi + 1):

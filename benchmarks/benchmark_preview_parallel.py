@@ -87,7 +87,7 @@ def _score(pe: str, pz: str, row: dict[str, Any]) -> dict[str, Any]:
     显式 eval_en/eval_zh 标记优先; eval_zh=False 的行不考核中文(ok 只取决于
     英文)。无 eval 字段的源 (chebi20_test_1k.json 等) 回退旧行为: gold 非空即考核。
     """
-    from namepredict.constants import normalize_en, normalize_zh
+    from namepredict.constants import nospace, normalize_en, normalize_zh
 
     ge = str(row.get("english_name") or "")
     gz = str(row.get("chinese_name") or "")
@@ -95,8 +95,9 @@ def _score(pe: str, pz: str, row: dict[str, Any]) -> dict[str, Any]:
     ez = row.get("eval_zh")
     use_en = bool(ge) if ee is None else bool(ee)
     use_zh = bool(gz) if ez is None else bool(ez)
-    en_ok = None if not use_en else normalize_en(pe) == normalize_en(ge)
-    zh_ok = None if not use_zh else normalize_zh(pz) == normalize_zh(gz)
+    # 空格不敏感：与 benchmark.py 判分一致，分词空格差异不判分
+    en_ok = None if not use_en else nospace(normalize_en(pe)) == nospace(normalize_en(ge))
+    zh_ok = None if not use_zh else nospace(normalize_zh(pz)) == nospace(normalize_zh(gz))
     if en_ok is not None and zh_ok is not None:
         dual = en_ok and zh_ok
     elif en_ok is not None:

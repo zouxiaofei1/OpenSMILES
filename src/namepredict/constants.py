@@ -37,11 +37,55 @@ HALO_Z = frozenset({F, Cl, Br, I})
 HALO_EN = {F: "fluoro", Cl: "chloro", Br: "bromo", I: "iodo"}
 HALO_ZH = {F: "氟", Cl: "氯", Br: "溴", I: "碘"}
 
-# ── 倍数前缀 ────────────────────────────────────────────────────
-MULT_EN = {1: "", 2: "di", 3: "tri", 4: "tetra", 5: "penta",
-           6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
-MULT_ZH = {1: "", 2: "二", 3: "三", 4: "四", 5: "五",
-           6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
+# ── 倍数前缀（P-14.2 Table 1.4；数量词与母链碳数同源，支持到 99）──
+# en 数量词（deca/undeca/…/icosa/henicosa…）同时供 layer5.stems 生成长链母链词干，
+# 故下沉到本层：en_num_term 是唯一来源，stems 取词干仅去其尾 'a'。
+_MULT_EN_10 = {1: "", 2: "di", 3: "tri", 4: "tetra", 5: "penta",
+               6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
+_MULT_ZH_10 = {1: "", 2: "二", 3: "三", 4: "四", 5: "五",
+               6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
+_EN_UNIT = {1: "hen", 2: "do", 3: "tri", 4: "tetra", 5: "penta",
+            6: "hexa", 7: "hepta", 8: "octa", 9: "nona"}
+_EN_DECADE = {1: "deca", 2: "icosa", 3: "triaconta", 4: "tetraconta",
+              5: "pentaconta", 6: "hexaconta", 7: "heptaconta",
+              8: "octaconta", 9: "nonaconta"}
+_ZH_DIGITS = "一二三四五六七八九"
+
+
+def en_num_term(n: int) -> str | None:
+    """英文数值词干（数量词/链词共用，末带 'a'）：≤10 查表，11=undeca，
+    12–99 按个位(hen/do)+十位组合，icosa 的 i 在元音后省略。"""
+    if n < 1 or n > 99:
+        return None
+    if n <= 10:
+        return _MULT_EN_10[n]
+    if n == 11:
+        return "undeca"
+    tens, ones = divmod(n, 10)
+    if tens == 1:  # 12–19：个位 + deca
+        return f"{_EN_UNIT[ones]}deca"
+    dec = _EN_DECADE[tens]
+    if ones == 0:
+        return dec
+    unit = _EN_UNIT[ones]
+    if tens == 2 and unit[-1] in "aeiou":  # 20s 前导 i 省略：docosa/tricosa…
+        dec = "cosa"
+    return f"{unit}{dec}"
+
+
+def zh_numeral(n: int) -> str | None:
+    """中文数值词（倍数用，1 返空）：≤10 查表，11–99 按十一/二十二组合。"""
+    if n < 1 or n > 99:
+        return None
+    if n <= 10:
+        return _MULT_ZH_10[n]
+    tens, ones = divmod(n, 10)
+    head = "十" if tens == 1 else f"{_ZH_DIGITS[tens-1]}十"
+    return head if ones == 0 else f"{head}{_ZH_DIGITS[ones-1]}"
+
+
+MULT_EN = {n: (en_num_term(n) or "") for n in range(1, 100)}
+MULT_ZH = {n: (zh_numeral(n) or "") for n in range(1, 100)}
 
 # ── 文本规范化 ──────────────────────────────────────────────────
 _WS = re.compile(r"\s+")
@@ -62,3 +106,8 @@ def normalize_zh(name: str) -> str:
     s = (name or "").strip()
     s = s.replace("[", "(").replace("]", ")")
     return s
+
+
+def nospace(name: str) -> str:
+    """删去全部空白字符 """
+    return "".join((name or "").split())
