@@ -119,13 +119,36 @@ export function ensureKetcher(forceRetry) {
   state.ketcherBridge.init();
 }
 
+/* 输入可能是 merged_benchmark id(chebi-1 / tiers-1), 判断其形态。
+   真正的 SMILES 不可能整串匹配 ^[A-Za-z0-9]+-\d+$; 非 id 无需网络往返。 */
+function isBenchmarkId(text) {
+  return /^[A-Za-z0-9]+-\d+$/.test(text);
+}
+
+/* 把可能为 merged_benchmark id 的输入解析成该行的权威 smiles 串再往下走:
+   命中 → 真实 SMILES; 否则原样返回(坏输入照旧交给 namer 报「无法解析」)。
+   这样命名 / SVG / history 与直接输入那条 SMILES 完全一致, 不引入第二套索引。 */
+async function resolveTextToSmiles(text) {
+  if (!isBenchmarkId(text)) return text;
+  try {
+    const r = await api(API.resolveName, {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+    if (r && r.ok && r.kind === "id" && r.smiles) return r.smiles;
+  } catch (_) {
+    /* 网络失败按原样当 SMILES 走, 不阻断命名 */
+  }
+  return text;
+}
+
 async function resolveSmilesForName() {
   // 输入框是权威来源: Ketcher 会把同一分子重排成不同原子序的 SMILES
   // (如 kekulé→芳香式), 用它命名/渲染会让 atom-ids/locants 索引与
   // 用户输入的 SMILES(以及 /debug 对同一输入的结果)不一致。
   // 因此输入框有内容时优先采用, 仅在画布手绘(输入框为空)时才回退到 Ketcher。
   const typed = (($("smiles-input") && $("smiles-input").value) || "").trim();
-  if (typed) return typed;
+  if (typed) return resolveTextToSmiles(typed);
   let fromEditor = "";
   if (state.ketcherBridge && state.ketcherBridge.isReady()) {
     fromEditor = await state.ketcherBridge.getSmiles();
@@ -219,8 +242,11 @@ function scheduleLiveSmilesName() {
   state.liveSmilesTimer = setTimeout(async () => {
     state.liveSmilesTimer = null;
     if (!state.liveNameEnabled) return;
-    const smiles = (($("smiles-input") && $("smiles-input").value) || "").trim();
-    if (!smiles) return;
+    const typed = (($("smiles-input") && $("smiles-input").value) || "").trim();
+    if (!typed) return;
+    // 用户可输 merged_benchmark id(chebi-1 / tiers-1): 先解析成真实 SMILES,
+    // 之后载入画板 / 命名 / SVG 都用这一个权威串, 与直接输入该 SMILES 一致。
+    const smiles = await resolveTextToSmiles(typed);
     const CK = window.ChemNamerKetcher;
     if (CK && CK.shouldSkipLiveName(true, smiles, state.lastNamedSmiles)) return;
     // Load SMILES into Ketcher. 静默其 onChange(见 scheduleLiveName), 否则
@@ -443,8 +469,8 @@ export function bindNamer() {
     });
   $("btn-load-smiles") &&
     $("btn-load-smiles").addEventListener("click", async () => {
-      const smiles = (($("smiles-input") && $("smiles-input").value) || "").trim();
-      if (!smiles) {
+      const typed = (($("smiles-input") && $("smiles-input").value) || "").trim();
+      if (!typed) {
         setNamerError("请输入 SMILES 再载入画板");
         return;
       }
@@ -454,6 +480,8 @@ export function bindNamer() {
       }
       try {
         setNamerError("");
+        // 输入可能为 merged_benchmark id → 先解析成该行真实 SMILES 再载入画板
+        const smiles = await resolveTextToSmiles(typed);
         // 引用计数 + 安静期判定解除静默, 连续点击(并发载入)不会互相击穿。
         // 见 KETCHER_MUTE_TAIL_MS 处注释。
         beginKetcherMute();
