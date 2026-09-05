@@ -23,6 +23,10 @@ CARBALDEHYDE = [
     ("O=Cc1ccc(C=O)cc1", "benzene-1,4-dicarbaldehyde", "苯-1,4-二甲醛"),
     # 单环环烷烃：醛基位次 1 隐含省略
     ("O=CC1CCCCC1", "cyclohexanecarbaldehyde", "环己烷甲醛"),
+    # 哒嗪-3-甲醛（两个相邻等价环 N，方向不能随 SMILES 书写顺序变，
+    # P-14.4(c)：后缀醛占低位次 3，CF3 前缀只得 6 —— 同分子两种写法必须同名）
+    ("FC(C1=CC=C(N=N1)C=O)(F)F", "6-(trifluoromethyl)pyridazine-3-carbaldehyde", "6-(三氟甲基)哒嗪-3-甲醛"),
+    ("C1(C(F)(F)F)N=NC(C=O)=CC=1", "6-(trifluoromethyl)pyridazine-3-carbaldehyde", "6-(三氟甲基)哒嗪-3-甲醛"),
 ]
 
 FORMYL_PREFIX = [

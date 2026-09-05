@@ -280,6 +280,14 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
     if ene is None or fg is None:
         return None
     ez = (spec.ez_ene(numbered) if spec.ez_ene else "") or ""
+    if n <= 2 and ene == 1 and fg == 1:
+        # 短链 (C≤2) 单烯单 FG：烯只能 1(-2)、后缀锚定 1，位次无歧义省略并融合
+        # (P-14.3.4.2/4.4；eth-1-en-1-amine → ethenamine，乙-1-烯-1-胺 → 乙烯胺)。
+        # 另一端的取代基（如 2-nitro）位次照常由前缀保留。
+        return (
+            f"{ez}{s}{spec.ene_seg[0]}{spec.en_suf}",
+            f"{ez}{zs}{spec.ene_seg[1]}{spec.zh_suf}",
+        )
     return (
         f"{ez}{s}-{ene}-{spec.ene_seg[0]}-{fg}-{spec.en_suf}",
         f"{ez}{zs}-{ene}-{spec.ene_seg[1]}-{fg}-{spec.zh_suf}",

@@ -16,6 +16,8 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
+    # C2 单烯醇：烯 1-2 + OH 1 无歧义，位次省略融合 ethenol (P-14.3.4)
+    ("C=CO", "ethenol", "乙烯醇"),
     # mono-alkenols
     ("C=CCCO", "but-3-en-1-ol", "丁-3-烯-1-醇"),
     ("C=CCO", "prop-2-en-1-ol", "丙-2-烯-1-醇"),

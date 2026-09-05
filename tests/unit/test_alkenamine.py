@@ -14,8 +14,14 @@ from namepredict.constants import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 CASES = [
+    # C≥3：烯/胺位次需区分位置异构 → 保留 (P-62.2.6.2)
     ("C=CCCN", "but-3-en-1-amine", "丁-3-烯-1-胺"),
     ("CC=CCN", "but-2-en-1-amine", "丁-2-烯-1-胺"),
+    # C2：烯只能 1-2、胺后缀锚定 1，位次无歧义省略融合 (P-14.3.4)
+    ("C=CN", "ethenamine", "乙烯胺"),
+    # #502：短链省略仅去掉两个 '1'，另一端硝基位次 2 仍保留
+    (r"C(C1=CC=CC=C1)N/C=C\[N+](=O)[O-]",
+     "(1Z)-N-benzyl-2-nitroethenamine", "(1Z)-N-苄基-2-硝基乙烯胺"),
 ]
 
 

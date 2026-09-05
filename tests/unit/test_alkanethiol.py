@@ -15,6 +15,8 @@ from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh_or_None")
 CASES = [
+    # C2 烯硫醇：烯 1-2 + SH 1 无歧义，位次省略融合 ethenethiol (P-14.3.4)
+    ("C=CS", "ethenethiol", "乙烯硫醇"),
     # alkanethiol 正例（P-63.1.5）：C1–C2 omit locant，C≥3 用 alkane-n-thiol
     ("CS", "methanethiol", "甲硫醇"),
     ("CCS", "ethanethiol", "乙硫醇"),

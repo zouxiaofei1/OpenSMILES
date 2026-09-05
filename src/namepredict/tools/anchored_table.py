@@ -76,6 +76,7 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "carboxy": RetainedSubstituent( "carboxy", "羧基", "carboxy", "羧基", P, anchored=("*C(=O)O", ), paren=False, kind="leaf", ),
         "formyl": RetainedSubstituent( "formyl", "甲酰", "formyl", "甲酰", P, anchored=("*C=O", ), paren=False, kind="leaf", ),
         "carboxymethyl": RetainedSubstituent( "carboxymethyl", "羧甲基", "carboxymethyl", "羧甲基", P, anchored=("*CC(=O)O", ), paren=False, kind="leaf", ),
+        "hydroxymethyl": RetainedSubstituent( "hydroxymethyl", "羟甲基", "hydroxymethyl", "羟甲基", P, anchored=("*CO", ), paren=True, kind="leaf", ),
         "nitroso": RetainedSubstituent( "nitroso", "亚硝基", "nitroso", "亚硝基", P, anchored=("*N=O", ), paren=False, kind="leaf", ),
         "azido": RetainedSubstituent( "azido", "叠氮基", "azido", "叠氮基", P, anchored=("*N=[N+]=[N-]", ), paren=False, kind="leaf", ),
         "amino": RetainedSubstituent( "amino", "氨基", "amino", "氨基", P, anchored=("*N", ), paren=False, kind="leaf", ),

@@ -45,13 +45,13 @@ CASES = [
     ),
     (
         "C[C@@H]1COCCN1",
-        "(2R)-2-methylmorpholine",
-        "(2R)-2-甲基吗啉",
+        "(3R)-3-methylmorpholine",
+        "(3R)-3-甲基吗啉",
     ),
     (
         "C[C@@H]1CNCCN1",
-        "(3R)-3-methylpiperazine",
-        "(3R)-3-甲基哌嗪",
+        "(2R)-2-methylpiperazine",
+        "(2R)-2-甲基哌嗪",
     ),
     # negatives — 无手性中心不伪造 R/S
     ("C[C@H]1CCCCC1", "methylcyclohexane", "甲基环己烷"),
