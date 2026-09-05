@@ -102,7 +102,7 @@ def _split_bridge_suffix(stem: str) -> tuple[str, str] | None:
 
 def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
     """拼单个英文前缀：数量 + 词干（可省略位次时省略 locant）。"""
-    mult = _complex_mult_en(stem, len(subs)) or _mult_en(len(subs))
+    mult = _complex_mult_en(stem, subs, len(subs)) or _mult_en(len(subs))
     need = _stem_needs_paren(stem, subs, omit)
     if not omit and not mult and need:
         sp = _split_bridge_suffix(stem)
@@ -114,19 +114,26 @@ def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 
 
-def _complex_mult_en(stem: str, n: int) -> str:
-    """英文复杂数量前缀：carboxy 词干用 bis/tris。"""
-    return {2: "bis", 3: "tris"}.get(n, "") if "carboxy" in stem else ""
+def _is_compound_mult(stem: str, subs: list) -> bool:
+    """待倍增组分是否为复合/被取代前缀(须用 bis/tris 而非 di/tri, P-16.3.2)：
+    retained 组合叶(carboxy-/hydroxymethyl 等整叶名含修饰前缀)由词干子串兜底，
+    递归命名/括号组分由组成员 paren 标记体现。"""
+    return ("carboxy" in stem) or any(s.get("paren") for s in subs)
 
 
-def _complex_mult_zh(stem: str, n: int) -> str:
-    """中文复杂数量前缀：羧基词干用 双/三。"""
-    return {2: "双", 3: "三"}.get(n, "") if "羧" in stem else ""
+def _complex_mult_en(stem: str, subs: list, n: int) -> str:
+    """英文复杂数量前缀：复合组分用 bis/tris/tetrakis。"""
+    return {2: "bis", 3: "tris", 4: "tetrakis"}.get(n, "") if _is_compound_mult(stem, subs) else ""
+
+
+def _complex_mult_zh(stem: str, subs: list, n: int) -> str:
+    """中文复杂数量前缀：复合组分用 双/三/四。"""
+    return {2: "双", 3: "三", 4: "四"}.get(n, "") if (("羧" in stem) or any(s.get("paren") for s in subs)) else ""
 
 
 def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> str:
     """拼单个中文前缀：数量 + 词干（CF3 特例：简单氟代甲基不加括号）。"""
-    mult = _complex_mult_zh(zh_stem, len(subs)) or _mult_zh(len(subs))
+    mult = _complex_mult_zh(zh_stem, subs, len(subs)) or _mult_zh(len(subs))
     en = subs[0].get("en") or ""
     need = any(s.get("paren") for s in subs) or (en[:1].isdigit() if en else False)
     # if zh_stem == "三氟甲基":

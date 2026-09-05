@@ -5,7 +5,7 @@ from namepredict.layer5.stems import (
     ALKANE_EN, ALKANE_ZH, _en_stem, alkane_zh, zh_stem,
 )
 from namepredict.layer5.stereo import _ez_prefix, ez_for_parent
-from namepredict.constants import MULT_EN, MULT_ZH
+from namepredict.constants import MULT_EN, MULT_ZH, HALIDE_EN, HALO_ZH
 
 def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:
     """从双语映射表取 n 的 (en, zh) 对，缺失返回 None。"""
@@ -40,7 +40,6 @@ _RETAINED = {
     "amide": {1: ("formamide", "甲酰胺"), 2: ("acetamide", "乙酰胺")},
     "nitrile": {1: ("formonitrile", "甲腈"), 2: ("acetonitrile", "乙腈")},
     "ester": {1: ("formate", "甲酸"), 2: ("acetate", "乙酸")},
-    "acyl_halide": {1: ("formyl chloride", "甲酰氯"), 2: ("acetyl chloride", "乙酰氯")},
 }
 
 
@@ -467,6 +466,28 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         pair = (f"cyclo{pair[0]}", f"环{pair[1]}")
     return spec.wrap(pair, numbered) if spec.wrap is not None else pair
 
+
+def _ac_hal_chain(hal_z: int) -> _Chain | None:
+    """构造某卤素的酰卤链 spec（P-65.5）：后缀 -oyl halide/酰卤 与保留名（C1/C2、苯甲酰）都随卤素变。"""
+    he = HALIDE_EN.get(hal_z)
+    hz = HALO_ZH.get(hal_z)
+    if he is None or hz is None:
+        return None
+    retained = {1: (f"formyl {he}", f"甲酰{hz}"), 2: (f"acetyl {he}", f"乙酰{hz}")}
+    return _Chain(kind="acyl_halide", en_suf=f"oyl {he}", zh_suf=f"酰{hz}",
+                  ene_base=(f"enoyl {he}", f"烯酰{hz}"),
+                  yne_suf=(f"ynoyl {he}", f"炔酰{hz}"),
+                  ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
+                  variant={
+                      None: {1: dict(plain_maps=None, plain_fn=lambda n, t=retained: t.get(n))},
+                      "benzene": {1: dict(plain_maps=None,
+                                          plain_fn=lambda n: (f"benzoyl {he}", f"苯甲酰{hz}"))},
+                  })
+
+
+# 按卤素原子序数索引的酰卤链 spec（F/Cl/Br/I）。
+_ACYL_HALIDE_BY_HAL = {z: _ac_hal_chain(z) for z in HALIDE_EN}
+
 _KIND_TABLE = {
     "alcohol": _Chain(kind="alcohol", en_suf="ol", zh_suf="醇",
                       fg="oh", need=1, omit_rule=_omit_term_locant,
@@ -558,16 +579,8 @@ _KIND_TABLE = {
                         "benzene": {1: dict(plain_maps=None,
                                             plain_fn=lambda n: ("benzamide", "苯甲酰胺"))},
                     }),
-    "acyl_halide": _Chain(kind="acyl_halide", en_suf="oyl chloride", zh_suf="酰氯",
-                          ene_base=("enoyl chloride", "烯酰氯"),
-                          yne_suf=("ynoyl chloride", "炔酰氯"),
-                          ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
-                          variant={
-                              None: {1: dict(plain_maps=None,
-                                             plain_fn=_retained_plain("acyl_halide"))},
-                              "benzene": {1: dict(plain_maps=None,
-                                                  plain_fn=lambda n: ("benzoyl chloride", "苯甲酰氯"))},
-                          }),
+    # 默认 chloride 由 _ac_hal_chain 生成，与按 parent.hal_z 选的 spec 同构（assembler._names_for 覆盖）。
+    "acyl_halide": _ACYL_HALIDE_BY_HAL[17],
     "radical": _Chain(kind="radical", en_suf="yl", zh_suf="基", coda="an",
                       fg="radical", need=1, no_loc="none",
                       # 饱和无环链/单环烃自由价在 C-1 时省略位次（P-29.2 方法 1: ethyl/pentyl/2-phenylethyl）；

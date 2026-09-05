@@ -262,6 +262,9 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
         fields = {**fields, **_expression_flags(selection, occurrences)}
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
         fields = ester_fields(info, fields)
+    if facts.group_class is FunctionalGroupClass.ACYL_HALIDE and facts.multiplicity == 1:
+        # 环外酰卤（苯甲酰卤等）同样要卤素字段：hal_z 供 L5 选氟氯溴碘后缀，hal_idx 纳入母体原子。
+        fields = _chain_acyl_halide_fields(info, occurrences, fields)
     return _parent_dict(kind, skeleton, occurrences, fields, facts)
 
 

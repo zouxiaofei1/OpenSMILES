@@ -1,9 +1,9 @@
-"""L1 检测酰卤 R–C(=O)–X（X = Cl/Br），依据 IUPAC P-65.5。"""
+"""L1 检测酰卤 R–C(=O)–X（X = F/Cl/Br/I），依据 IUPAC P-65.5。"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.constants import Br, C, Cl, O
+from namepredict.constants import Br, C, Cl, F, I, O
 from namepredict.layer1._carbonyl_common import (
     _alkoxy_c_of,
     _amide_n_of,
@@ -12,8 +12,8 @@ from namepredict.layer1._carbonyl_common import (
     _has_double_bonded_o,
 )
 
-# 酰卤检测仅覆盖 Cl/Br（P-65.5）；F/I 下游不处理
-_HAL_Z = frozenset({Cl, Br})
+# 酰卤检测覆盖 F/Cl/Br/I（P-65.5）。
+_HAL_Z = frozenset({F, Cl, Br, I})
 
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     """判断 O 是否为酰卤碳上的中性烷氧基氧。"""
@@ -28,7 +28,7 @@ def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
     return _ester_alkoxy_of_common(carbon, _is_ester_alkoxy_o)
 
 def _acyl_hal_of(carbon) -> tuple[int, int] | None:
-    """返回 Cl/Br 邻居的 (hal_idx, hal_z)；否则返回 None。"""
+    """返回 F/Cl/Br/I 邻居的 (hal_idx, hal_z)；否则返回 None。"""
     for n in carbon.GetNeighbors():
         z = n.GetAtomicNum()
         if z in _HAL_Z:

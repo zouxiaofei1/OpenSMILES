@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from namepredict.constants import MULT_EN, MULT_ZH
-from namepredict.layer5.chain_engine import _KIND_TABLE, _alkane_names, _chain_names
+from namepredict.layer5.chain_engine import _ACYL_HALIDE_BY_HAL, _KIND_TABLE, _alkane_names, _chain_names
 from namepredict.layer5.stems import maybe_anion_names, maybe_metal_salt_names
 from namepredict.layer5.assembler_prefixes import _prefix_for
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
@@ -378,6 +378,9 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "radical" and (numbered.get("parent") or {}).get("radical_anchor_element"):
         return _mononuclear_radical_names(numbered)
     entry = _KIND_TABLE.get(kind)
+    if kind == "acyl_halide":
+        # 酰卤后缀随实际卤素（F/Cl/Br/I）变：由 L1 检测、L2 保留的 parent.hal_z 选择 spec。
+        entry = _ACYL_HALIDE_BY_HAL.get((numbered.get("parent") or {}).get("hal_z")) or entry
     if entry is not None:
         sid = _scaffold_id(numbered)
         if kind == "alkane" and (numbered.get("parent") or {}).get("fused_tree") and sid != "benzene":

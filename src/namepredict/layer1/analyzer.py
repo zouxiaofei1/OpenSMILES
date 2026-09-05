@@ -257,7 +257,7 @@ def _aldehyde_entries(mol: Mol) -> list[dict]:
     return [{"c_idx": a.GetIdx()} for a in mol.GetAtoms() if _is_aldehyde_carbon(a)]
 
 def _acyl_chloride_entries(mol: Mol) -> list[dict]:
-    """酰卤条目（Cl + Br）；键保留以兼容 L2/L3。"""
+    """酰卤条目（F/Cl/Br/I）；键保留以兼容 L2/L3。"""
     from namepredict.layer1.acyl_halide import acyl_halide_entries
     return acyl_halide_entries(mol)
 

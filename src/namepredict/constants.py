@@ -36,6 +36,7 @@ Bi = 83
 HALO_Z = frozenset({F, Cl, Br, I})
 HALO_EN = {F: "fluoro", Cl: "chloro", Br: "bromo", I: "iodo"}
 HALO_ZH = {F: "氟", Cl: "氯", Br: "溴", I: "碘"}
+HALIDE_EN = {F: "fluoride", Cl: "chloride", Br: "bromide", I: "iodide"}
 
 # ── 倍数前缀（P-14.2 Table 1.4；数量词与母链碳数同源，支持到 99）──
 # en 数量词（deca/undeca/…/icosa/henicosa…）同时供 layer5.stems 生成长链母链词干，
