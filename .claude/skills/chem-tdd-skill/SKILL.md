@@ -1,6 +1,6 @@
 ---
 name: chem-tdd-skill
-description: SMILES→IUPAC 自循环 Agent 的强制 TDD 流程：失败簇抽例、先红后绿、双语断言、S3 粒度、门禁命令与回合小结。编排器每轮注入本 skill。
+description: SMILES→IUPAC 编写的 TDD 流程
 ---
 
 # chem-tdd-skill

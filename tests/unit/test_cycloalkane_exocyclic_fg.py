@@ -24,6 +24,13 @@ CASES = [
     ("CC(N)=O", "acetamide", "乙酰胺"),
     ("O=Cc1ccccc1", "benzaldehyde", "苯甲醛"),
     ("N#Cc1ccccc1", "benzonitrile", "苯甲腈"),
+    # positive: ring carries another located prefix → FG locant 1 must be explicit
+    ("O=C1CCC(C(=O)[O-])C1", "3-oxocyclopentane-1-carboxylate", "3-氧代环戊烷-1-羧酸根"),
+    ("CC1CCCC1C(=O)O", "2-methylcyclopentane-1-carboxylic acid", "2-甲基环戊烷-1-羧酸"),
+    ("OC1CCCC1C=O", "2-hydroxycyclopentane-1-carbaldehyde", "2-羟基环戊烷-1-甲醛"),
+    # positive: no extra prefix → locant 1 elided (unchanged)
+    ("OC(=O)C1CCCCC1", "cyclohexanecarboxylic acid", "环己烷羧酸"),
+    ("O=CC1CCCCC1", "cyclohexanecarbaldehyde", "环己烷甲醛"),
 ]
 
 

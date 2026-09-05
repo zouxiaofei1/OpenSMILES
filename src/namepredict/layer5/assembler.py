@@ -69,6 +69,23 @@ def _ring_carbocycle_stem(n: int, numbered: dict) -> tuple[str | None, str | Non
     return f"cyclo{en_core}-{ene}-ene", f"环{zh_core}-{ene}-烯", True
 
 
+def _ring_extra_prefix_located(numbered: dict) -> bool:
+    """单环环烷上是否另带被编号前缀（oxo/烷基/卤素/羟基…）。
+
+    exocyclic 主基后缀锚定环上 locant 1 后，任何其它环位取代（O 侧酯烷基、
+    N 端胺取代除外）必带前缀位次打印；此时后缀 locant 不可省略
+    （P-66.6.1 例 4-formylcyclohexane-1-carboxylic acid vs 无取代省略 cyclohexanecarbaldehyde）。
+    """
+    chain = set((numbered.get("parent") or {}).get("chain") or [])
+    for s in numbered.get("substituents") or []:
+        if s.get("o_side"):
+            continue
+        a = s.get("attach_idx")
+        if a is not None and a in chain:
+            return True
+    return False
+
+
 def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
     """环酸（carbocycle/稠环 exocyclic COOH）→ cyclohexanecarboxylic acid 式系统名。
     多羧酸（multiplicity≥2）→ …-di/tricarboxylic acid，位次必带（P-65.2.2），
@@ -102,8 +119,9 @@ def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
         if en_ring is None:
             return None
         if mult == 1:
-            # 环烯使编号不再唯一，羧基位次须显式（P-65.2.2.1）；饱和单酸位次 1 隐含省略。
-            if has_unsat and loc:
+            # 环烯使编号不再唯一，羧基位次须显式（P-65.2.2.1）；饱和单酸若环上另带
+            # 前缀取代（必带位次）则主基 locant 1 亦须给出，否则 1 位隐含省略。
+            if (has_unsat or _ring_extra_prefix_located(numbered)) and loc:
                 return (f"{en_ring}-{loc}-{suf_en}", f"{zh_ring}-{loc}-{suf_zh}")
             return (f"{en_ring}{suf_en}", f"{zh_ring}{suf_zh}")
         return (f"{en_ring}-{loc}-{suf_en}", f"{zh_ring}-{loc}-{suf_zh}")
@@ -137,8 +155,8 @@ def _exocyclic_ester_names(n: int, numbered: dict) -> tuple[str, str] | None:
         en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
         if en_ring is None:
             return None
-        if has_unsat:
-            # 环烯使编号不再唯一，酯基位次须显式（P-65.2.2.1）。
+        if (has_unsat or _ring_extra_prefix_located(numbered)) and loc:
+            # 环烯使编号不再唯一，酯基位次须显式（P-65.2.2.1）；另有前缀取代同须带位次。
             return (f"{en_ring}-{loc}-carboxylate", f"{zh_ring}-{loc}-羧酸")
         return (f"{en_ring}carboxylate", f"{zh_ring}羧酸")
     base = _ring_base(numbered)
@@ -168,7 +186,7 @@ def _exocyclic_amide_names(n: int, numbered: dict) -> tuple[str, str] | None:
         en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
         if en_ring is None:
             return None
-        if has_unsat:
+        if (has_unsat or _ring_extra_prefix_located(numbered)) and loc:
             return (f"{en_ring}-{loc}-carboxamide", f"{zh_ring}-{loc}-甲酰胺")
         return (f"{en_ring}carboxamide", f"{zh_ring}甲酰胺")
     base = _ring_base(numbered)
@@ -198,7 +216,7 @@ def _exocyclic_nitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
         en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
         if en_ring is None:
             return None
-        if has_unsat:
+        if (has_unsat or _ring_extra_prefix_located(numbered)) and loc:
             return (f"{en_ring}-{loc}-carbonitrile", f"{zh_ring}-{loc}-甲腈")
         return (f"{en_ring}carbonitrile", f"{zh_ring}甲腈")
     base = _ring_base(numbered)
@@ -239,9 +257,9 @@ def _exocyclic_aldehyde_names(n: int, numbered: dict) -> tuple[str, str] | None:
         if en_ring is None:
             return None
         if mult == 1:
-            # 饱和单醛：唯一自由编号的环烷，醛基位次 1 隐含省略（cyclohexanecarbaldehyde）；
-            # 环烯使编号不再唯一，醛基位次须显式（cyclohexene-1-carbaldehyde）。
-            if has_unsat and loc:
+            # 饱和单醛：仅当无其它前缀取代时 1 位隐含省略（cyclohexanecarbaldehyde）；
+            # 环烯或环上另带前缀取代时编号不再唯一，醛基位次须显式（cyclohexene-1-carbaldehyde）。
+            if (has_unsat or _ring_extra_prefix_located(numbered)) and loc:
                 return (f"{en_ring}-{loc}-{suf_en}", f"{zh_ring}-{loc}-{suf_zh}")
             return (f"{en_ring}{suf_en}", f"{zh_ring}{suf_zh}")
         if loc:
