@@ -47,6 +47,7 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "isocyanato": RetainedSubstituent( "isocyanato", "异氰酸基", "isocyanato", "异氰酸基", P, anchored=("*N=C=O", ), paren=False, kind="leaf", ),
         "isothiocyanato": RetainedSubstituent( "isothiocyanato", "异硫氰酸基", "isothiocyanato", "异硫氰酸基", P, anchored=("*N=C=S", ), paren=False, kind="leaf", ),
         "methyl": RetainedSubstituent( "methyl", "甲基", "methyl", "甲基", P, anchored=("*C", ), paren=False, kind="alkyl", ),
+        "methylidene": RetainedSubstituent( "methylidene", "亚甲基", "methylidene", "亚甲基", P, anchored=("*=C", ), paren=False, kind="alkyl", ),
         "ethyl": RetainedSubstituent( "ethyl", "乙基", "ethyl", "乙基", P, anchored=("*CC", ), paren=False, kind="alkyl", ),
         "propyl": RetainedSubstituent( "propyl", "丙基", "propyl", "丙基", P, anchored=("*CCC", ), paren=False, kind="alkyl", ),
         "butyl": RetainedSubstituent( "butyl", "丁基", "butyl", "丁基", P, anchored=("*CCCC", ), paren=False, kind="alkyl", ),

@@ -16,7 +16,9 @@ CASES = [
     # 混合烯炔（纯烃）：ene 前 yne 后，双键得低位
     ("C#CCC=C", "pent-1-en-4-yne", "戊-1-烯-4-炔"),
     ("C=CC#C", "but-1-en-3-yne", "丁-1-烯-3-炔"),
-    ("C=C(C#C)C=C", "3-methylpent-1-en-4-yne", "3-甲基戊-1-烯-4-炔"),
+    # 3 位侧基 =CH2 是外环亚甲基（P-56.4 methylidene）；旧 'methyl' 丢双键致式量错
+    # （C=C(C#C)C=C 为 C6H6，饱和甲基对应 C6H10，不同分子）。
+    ("C=C(C#C)C=C", "3-methylidenepent-1-en-4-yne", "3-亚甲基戊-1-烯-4-炔"),
     # 多炔：词干插 a，MULT 后缀
     ("C#CCCC#C", "hexa-1,5-diyne", "己-1,5-二炔"),
     ("C#CC#C", "buta-1,3-diyne", "丁-1,3-二炔"),

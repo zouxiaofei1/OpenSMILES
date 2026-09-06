@@ -114,11 +114,26 @@ def _pack(out: Mol, inv: dict[int, int], attach_old: int, atoms: frozenset[int])
 
 
 
-def _add_anchor(em: Chem.RWMol, attach_new: int) -> int:
-    """在连接原子处添加 dummy 原子作锚点，返回其索引。"""
-    #用 dummy 原子（`*`）标记连接原子
+def _external_bond_type(mol: Mol, attach_old: int, atoms: frozenset[int]):
+    """返回连接原子与母体(外)原子间的真实键型；无外部邻居(孤立自由基)回退单键。
+
+    取代基叶若以双键连母体（外环 =CH2 等 *ylidene），锚点键型须保留真实键级，
+    否则 canonical 被收成 *C 命成饱和 alkyl（methyl 而非 methylidene，式量丢 H2）。
+    """
+    for nb in mol.GetAtomWithIdx(attach_old).GetNeighbors():
+        if nb.GetAtomicNum() != 1 and nb.GetIdx() not in atoms:
+            b = mol.GetBondBetweenAtoms(attach_old, nb.GetIdx())
+            if b is not None:
+                return b.GetBondType()
+    return Chem.BondType.SINGLE
+
+
+def _add_anchor(em: Chem.RWMol, attach_new: int,
+                bond_type: Chem.BondType = Chem.BondType.SINGLE) -> int:
+    """在连接原子处添加 dummy 原子作锚点（键型随母体-取代基真实键级），返回其索引。"""
+    #用 dummy 原子（`*`）标记连接原子；双键叶(=CH2)需用双键，键型由调用方给出。
     d = em.AddAtom(Chem.Atom(0))
-    em.AddBond(attach_new, d, Chem.BondType.SINGLE)
+    em.AddBond(attach_new, d, bond_type)
     return d
 
 
@@ -130,7 +145,7 @@ def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol
     em = Chem.RWMol()
     inv = _copy_atoms(em, mol, _ordered(atoms))
     _copy_bonds(em, mol, inv)
-    d = _add_anchor(em, inv[attach_old])
+    d = _add_anchor(em, inv[attach_old], _external_bond_type(mol, attach_old, atoms))
     _carry_alkene_stereo(em, mol, inv, d)
     # print(Chem.MolToSmiles(em))
     return _sanitize(em)
