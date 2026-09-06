@@ -477,9 +477,10 @@ async function updateNamerSvg(boxId, endpoint, smiles, seq, orient) {
   }
 }
 
-/* 引擎开关(src/v2/v3): 设 active 态 + 持久化。仅影响 /name 的 en/zh 输出;
-   gold/PubChem/L4 编号/Atom 索引等结构图仍走原(src)管线, 与引擎无关。 */
-const ENGINE_VALUES = ["src", "v2", "v3"];
+/* 引擎开关(src/v2/v3/ml): 设 active 态 + 持久化。仅影响 /name 的 en/zh 输出;
+   gold/PubChem/L4 编号/Atom 索引等结构图仍走原(src)管线, 与引擎无关。
+   ml 为本地神经网络(仅英文), 每次请求 CPU 生成约几百 ms。 */
+const ENGINE_VALUES = ["src", "v2", "v3", "ml"];
 
 function applyEngineUI(engine) {
   state.engine = ENGINE_VALUES.indexOf(engine) >= 0 ? engine : "src";

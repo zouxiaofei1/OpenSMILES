@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from server.legacy_engines import name_result as legacy_name_result
+from server.ml_engine import name_result as ml_name_result
 
 import httpx
 from fastapi import APIRouter
@@ -241,11 +242,12 @@ def pubchem_iupac(smiles: str) -> dict[str, Any]:
 class NameBody(BaseModel):
     """Request body for POST /name. `smiles` 可以是 SMILES 或 merged_benchmark id。
 
-    `engine` 选命名引擎: "src"=现役 src/namepredict; "v2"/"v3"=tools 下历史引擎。
+    `engine` 选命名引擎: "src"=现役规则引擎; "v2"/"v3"=tools 历史规则引擎;
+    "ml"=本地神经网络 SMILES2IUPAC(仅英文)。
     """
 
     smiles: str = Field(..., min_length=1)
-    engine: Literal["src", "v2", "v3"] = "src"
+    engine: Literal["src", "v2", "v3", "ml"] = "src"
 
 
 class ResolveBody(BaseModel):
@@ -269,10 +271,12 @@ def name_smiles(body: NameBody) -> dict[str, Any]:
     gold 与引擎无关(基准答案), 两个引擎都附上便于对照。
     """
     smi = _id_or_text(body.smiles)
-    if body.engine == "src":
+    if body.engine == "ml":
+        payload = ml_name_result(smi)
+    elif body.engine == "src":
         result = get_namer().name(smi)
         payload = name_result_dict(result)
-    else:
+    else:  # v2 / v3 历史规则引擎
         payload = legacy_name_result(smi, body.engine)
     payload["engine"] = body.engine
     payload["gold"] = lookup_gold(smi)
