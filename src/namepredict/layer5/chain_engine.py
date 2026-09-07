@@ -397,6 +397,21 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
     return fields
 
 
+def _radical_terminal_yl_elide(pair: tuple[str, str], n: int) -> tuple[str, str]:
+    """无环自由基自由价在 C-1 时省略 -1-（饱和链 P-29.2 方法 1 的烯/炔拓展）：
+    丙-1-烯-1-基→丙-1-烯基、丁-3-烯-1-炔-1-基→丁-3-烯-1-炔基；C2 烯/炔（乙-1-炔-1-基→乙炔基、
+    eth-1-yn-1-yl→ethynyl）位次 1 也省略，因短链烯/炔位次无歧义（同 _omit_term_locant C1–C2 1 位）。"""
+    en, zh = pair
+    if en.endswith("-1-yl"):
+        en = en[:-5] + "yl"
+    if zh.endswith("-1-基"):
+        zh = zh[:-4] + "基"
+    if n <= 2:
+        en = en.replace("-1-", "", 1)
+        zh = zh.replace("-1-", "", 1)
+    return en, zh
+
+
 def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None:
     """单链词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环; 烯/炔段插入由 spec 数据驱动."""
     if spec.aromatic and spec.kind == "alcohol":
@@ -428,6 +443,10 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         else:
             loc_s = ",".join(str(x) for x in locs)
             top = (f"{top[0]}-{loc_s}-{spec.en_suf}", f"{top[1]}-{loc_s}-{spec.zh_suf}")
+    if top is not None and spec.kind == "radical" and spec.stem is None \
+            and not spec.cyclic and not spec.cyclic_unsat:
+        # 开链自由基母体：自由价在 C-1 时省略 -1-（环自由基/稠环词干不受影响，见 _radical_terminal_yl_elide）。
+        top = _radical_terminal_yl_elide(top, n)
     if top is not None:
         if spec.cyclic or spec.cyclic_unsat:
             top = (f"cyclo{top[0]}", f"环{top[1]}")

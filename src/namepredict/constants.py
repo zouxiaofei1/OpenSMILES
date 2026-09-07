@@ -92,10 +92,13 @@ MULT_ZH = {n: (zh_numeral(n) or "") for n in range(1, 100)}
 # 用 amido 保留名（acetamido/formamido/benzamido；gold/ChEBI 全量仅此三词），其余 R
 # （长链/烯酰/被取代苯甲酰/杂环羰酰）保持 acylamino 方法 2，不入表。键 = N-酰基取代基 en 词干。
 AMIDO_RETAINED = {
-    "acetyl": ("acetamido", "乙酰胺基"),
+    "acetyl": ("acetamido", "乙酰氨基"),
     "formyl": ("formamido", "甲酰胺基"),
     "benzoyl": ("benzamido", "苯甲酰胺基"),
 }
+# 注：retained amido 的中文按 P-66 CN 译本/gold 取「酰氨基」式（acetyl→乙酰氨基），
+# 与 acylamino 方法 2 的 …酰氨基 词形一致，amido/acylamino 的区分由 en 词干承担。
+# formyl/benzoyl 中文（甲酰胺基/苯甲酰胺基）因对应 gold 尚未统一，暂留（TODO 对齐）。
 AMIDO_RETAINED_EN = frozenset(v[0] for v in AMIDO_RETAINED.values())
 
 # ── 文本规范化 ──────────────────────────────────────────────────

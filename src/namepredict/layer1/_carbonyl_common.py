@@ -86,14 +86,21 @@ def _amide_n_single(carbon, n) -> bool:
     return b is not None and b.GetBondType() == BondType.SINGLE
 
 
+def _amide_n_substituent_ok(x) -> bool:
+    """酰胺 N 上除羰基碳/H 外的一个取代基是否可接受：C，或不再连碳的羟基 O。 """
+    if x.GetAtomicNum() == C:
+        return True
+    return x.GetAtomicNum() == O and not any(n.GetAtomicNum() == C for n in x.GetNeighbors())
+
+
 def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
-    """返回 `carbon` 上酰胺 N 的 (n_idx, 邻居 C 索引列表)。"""
+    """返回 `carbon` 上酰胺 N 的 (n_idx, 邻居 C 索引列表)；C 之外的 N-羟基 O 只参与判定不进列表。"""
     for n in carbon.GetNeighbors():
         if n.GetAtomicNum() != N or not _amide_n_single(carbon, n):
             continue
         o = _amide_n_rest(n, carbon)
-        if len(o) <= 2 and all(x.GetAtomicNum() == C for x in o):
-            return n.GetIdx(), [x.GetIdx() for x in o]
+        if len(o) <= 2 and all(_amide_n_substituent_ok(x) for x in o):
+            return n.GetIdx(), [x.GetIdx() for x in o if x.GetAtomicNum() == C]
     return None
 
 
