@@ -124,12 +124,18 @@ _TEMPLATES: dict[str, dict] = {
     "isoquinoline": {"smiles": "c1nccc2ccccc21", "stem_en": "isoquinoline", "stem_zh": "异喹啉", "naming_class": "naph_family"},
     "quinazoline":  {"smiles": "c1ccc2ncncc2c1", "stem_en": "quinazoline",  "stem_zh": "喹唑啉", "naming_class": "naph_family"},
     "quinoxaline":  {"smiles": "c1ccc2nccnc2c1", "stem_en": "quinoxaline",  "stem_zh": "喹喔啉", "naming_class": "naph_family"},
+    # 保留名（表 2.8）：purine=嘌呤（5+6，特殊编号 1–9，PIN 7H-purine，P-25 表 2.8 第16项）；
+    # pteridine=蝶啶（6+6 四 N，naph-family 编号，N 在 1/3/5/8、CH 在 2/4/6/7）。无环外 =O，故可入表。
+    "purine":       {"smiles": "c1ncc2[nH]cnc2n1", "stem_en": "7H-purine",     "stem_zh": "嘌呤",   "naming_class": "purine", "locant_prefix": "7H-", "prefix_nh_conditional": True},
+    "pteridine":    {"smiles": "c1cnc2ncncc2n1",    "stem_en": "pteridine",    "stem_zh": "蝶啶",   "naming_class": "naph_family"},
     # NOTE: carbonyl mothers（benzoquinone / anthraquinone / chromenone /
     # ortho_benzoquinone）不入表：模板含环外 =O，匹配集会超出环系统原子集。
 }
 
 # 保留 fused 母体的固定编号标签（P-25.4）：融合桥头用字母 locant（3a/7a、4a/8a）。
 FUSED56_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
+# purine（嘌呤，5+6 九原子）保留传统编号：桥头为 C4/C5 得纯数字 4、5，无 a/b 字母位（P-25.3.3 例外）。
+PURINE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "5", "6", "7", "8", "9")
 # carbazole（13 原子）：N9，苯环 1-4 / 5-8，桥头 4a/8a/9a/9b（P-25.4.1.4）。
 CARBAZOLE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a", "9", "9a", "9b")
 # acridine（14 原子）：N10，对位 C9 连接取代基；苯环 1-4 / 5-8。
@@ -152,6 +158,11 @@ _STANDARD_ORDERS: dict[str, tuple[int, ...]] = {
     # naph_family（10 原子）：1,2,3,4,4a,5,6,7,8,8a
     "quinoline":    (4, 5, 6, 7, 8, 9, 0, 1, 2, 3),
     "quinazoline":  (4, 5, 6, 7, 8, 9, 0, 1, 2, 3),
+    # purine（嘌呤）9 原子：模板 c1ncc2[nH]cnc2n1 原子按 locant 1–9 顺序（N1、C2、N3、C4、C5、C6、N7、C8、N9；
+    # 桥头 C4/C5 得数字位，N7 为指示氢所在）。locant→模板原子：1→1,2→0,3→8,4→7,5→3,6→2,7→4,8→5,9→6。
+    "purine":       (1, 0, 8, 7, 3, 2, 4, 5, 6),
+    # pteridine（蝶啶）10 原子：模板 c1cnc2ncncc2n1 原子沿外周按 1,2,3,4,4a,5,6,7,8,8a 编号（N 在 1/3/5/8）。
+    "pteridine":    (4, 5, 6, 7, 8, 9, 0, 1, 2, 3),
     # fused56（9 原子）：1,2,3,3a,4,5,6,7,7a；杂原子(1)走远离桥头方向，苯环从 3a 起
     "indole":       (4, 5, 6, 7, 8, 0, 1, 2, 3),
     "benzofuran":   (4, 5, 6, 7, 8, 0, 1, 2, 3),
@@ -181,6 +192,8 @@ _STANDARD_ORDERS: dict[str, tuple[int, ...]] = {
 _STANDARD_LABELS: dict[str, tuple[str, ...]] = {
     "quinoline": NAPH_LABELS,
     "quinazoline": NAPH_LABELS,
+    "pteridine": NAPH_LABELS,
+    "purine": PURINE_LABELS,
     "indole": FUSED56_LABELS,
     "benzofuran": FUSED56_LABELS,
     "benzothiophene": FUSED56_LABELS,

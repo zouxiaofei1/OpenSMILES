@@ -56,6 +56,71 @@ def _salt_name(n_oh: int, salt: dict) -> tuple[str, str] | None:
     return (f"{metal_en} {_tail_en(n_oh)}", f"磷酸{_hyd_zh(n_oh)}{metal_zh}")
 
 
+def _arm_ester_zh(zh: str) -> str:
+    """磷酸酯/酯盐臂中文词：多位纯中文数字根的直链烷基补'烷'（十三基→十三烷基）对齐金标；
+    单字根（甲/乙…己）、复合/带位次/立体（含连字符、括号）原样保留。"""
+    if (zh.endswith("基") and "-" not in zh and not zh.startswith("(")):
+        stem = zh[:-1]
+        if len(stem) >= 2 and all(c in "一二三四五六七八九十" for c in stem):
+            return f"{stem}烷基"
+    return zh
+
+
+def _ester_salt_names(n_oh: int, salt: dict, arms: list[dict]) -> tuple[str, str] | None:
+    """碱金属 + 烷基酯臂（n_om>0, k>0）：metal + 臂 + [dihydrogen|hydrogen] phosphate /
+    磷酸[二氢|氢]{臂}酯 {金属}盐。如 disodium tridecyl phosphate / 磷酸十三烷基酯 二钠盐。"""
+    metal_en = _metal_en_prefix(salt)
+    metal_zh = _metal_zh_suffix(salt)
+    if not metal_en or not metal_zh:
+        return None
+    groups = _group_arms(arms)
+    if not groups:
+        return None
+    en_parts: list[str] = []
+    zh_parts: list[str] = []
+    for en, zh, m in groups:
+        zh_w = _arm_ester_zh(zh)
+        if m > 1:
+            m_en, m_zh = MULT_EN.get(m), MULT_ZH.get(m)
+            if not m_en or not m_zh:
+                return None
+            en_w = f"{m_en}{en}"
+            zh_w = f"{m_zh}{zh_w}"
+        else:
+            en_w = en
+        en_parts.append(en_w)
+        zh_parts.append(zh_w)
+    en = f"{metal_en} {' '.join(en_parts)} {_tail_en(n_oh)}"
+    zh = f"磷酸{_hyd_zh(n_oh)}{''.join(zh_parts)}酯 {metal_zh}盐"
+    return (en, zh)
+
+
+def _free_anion_names(n_oh: int, arms: list[dict]) -> tuple[str, str] | None:
+    """游离磷酸根/磷酸酯阴离子（n_om>0, 无抗衡金属）：[臂 + ]{tail} /
+    磷酸[二氢|氢][臂]酯（有臂）或 磷酸[二氢|氢]根（无臂）。负电荷不标注，用基本根词。"""
+    groups = _group_arms(arms)
+    if groups:
+        en_parts: list[str] = []
+        zh_parts: list[str] = []
+        for en, zh, m in groups:
+            zh_w = _arm_ester_zh(zh)
+            if m > 1:
+                m_en, m_zh = MULT_EN.get(m), MULT_ZH.get(m)
+                if not m_en or not m_zh:
+                    return None
+                en_w = f"{m_en}{en}"
+                zh_w = f"{m_zh}{zh_w}"
+            else:
+                en_w = en
+            en_parts.append(en_w)
+            zh_parts.append(zh_w)
+        return (f"{' '.join(en_parts)} {_tail_en(n_oh)}",
+                f"磷酸{_hyd_zh(n_oh)}{''.join(zh_parts)}酯")
+    if n_oh > 0:
+        return (f"{_tail_en(n_oh)}", f"磷酸{_hyd_zh(n_oh)}根")
+    return ("phosphate", "磷酸根")
+
+
 def phosphate_names(numbered: dict) -> tuple[str, str] | None:
     """组装磷酸整名；不支持形态返回 None。"""
     parent = numbered.get("parent") or {}
@@ -67,9 +132,11 @@ def phosphate_names(numbered: dict) -> tuple[str, str] | None:
     arms = [s for s in (numbered.get("substituents") or []) if s.get("o_side")]
 
     if n_om > 0:
-        if arms or not salt.get("metal"):
-            return None
-        return _salt_name(n_oh, salt)
+        if not salt.get("metal"):
+            return _free_anion_names(n_oh, arms)
+        if not arms:
+            return _salt_name(n_oh, salt)
+        return _ester_salt_names(n_oh, salt, arms)
     if not arms:
         if n_oh == 3 and not salt:
             return ("phosphoric acid", "磷酸")
