@@ -200,6 +200,9 @@ def _try_phase(prepared, *, depth, t0, name_mode, attempts):
 
 def _candidate_phases(info: dict, depth: int) -> list[list[dict]]:
     """选取候选母体阶段列表（当前仅一个高优先级候选）。"""
+    ph = info.get("phosphate_parent")
+    if ph is not None:
+        return [[ph]]
     parent = select_parent(info)
     return [[parent]] if parent is not None else [[]]
 
@@ -216,8 +219,13 @@ def _run_candidates(
 
 
 def _apply_salt_suffix(result: NameResult, salt: dict) -> NameResult:
-    """将盐元数据组装为名称后缀（碱金属盐/HCl 加成盐），仅成功结果生效；numbered 由 L2–L4 构造不含 salt，故用独立 {"salt": salt} 字典调 L5 逻辑。"""
+    """将盐元数据组装为名称后缀（碱金属盐/HCl 加成盐），仅成功结果生效；numbered 由 L2–L4 构造不含 salt，故用独立 {"salt": salt} 字典调 L5 逻辑。
+
+    kind=phosphate 的碱金属盐由 L5 phosphate worker 读 parent.salt_meta 组装完成，此处跳过以免二次加金属。
+    """
     if not result.success or not salt:
+        return result
+    if (result.meta or {}).get("parent_kind") == "phosphate":
         return result
     from namepredict.layer5.stems import maybe_metal_salt_names
 
@@ -244,17 +252,24 @@ def _name_mol(
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
     organic, salt = dissociate_salt(mol)
-    if root_ctx is None:
+    if root_ctx is None:  # 顶层整分子：检测整分子磷酸母体（递归自由基命名 root_ctx 恒非 None，不检测）
+        from namepredict.layer1.phosphate import detect_phosphate_whole
+        from namepredict.layer2.phosphate import build_phosphate_parent
+
+        det = detect_phosphate_whole(organic)
+        ph_parent = build_phosphate_parent(det, salt) if det is not None else None
         root_mol, to_root = organic, list(range(organic.GetNumAtoms()))
         # 顶层整分子：内部 `*` 片段名仅在本分子运行内共享（同根立体一致）；
         # 跨分子/跨根的片段缓存会把别的宿主的异头立体带入，须禁用。
         run_cache = CommonNameCache(max_entries=2000) if cache is not None else None
     else:
+        ph_parent = None
         root_mol, to_root = root_ctx
         # 无盐时 organic 即 mol、索引不变；锚定碎片必为单片段不含盐，映射直接沿用。
         run_cache = cache
     info = analyze(organic)
     info["root_ctx"] = (root_mol, to_root)
+    info["phosphate_parent"] = ph_parent
     result = _run_candidates(info, depth=depth, t0=t0, name_mode=name_mode, cache=run_cache)
     result = _apply_salt_suffix(result, salt)
     if salt and result.success:

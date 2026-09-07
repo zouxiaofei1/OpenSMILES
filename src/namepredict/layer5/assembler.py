@@ -408,6 +408,11 @@ def _ensure_fused_stem(numbered: dict) -> bool:
 
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     """链引擎按表 kind 派发，再转具体 worker。"""
+    if kind == "phosphate":
+        # 无机功能母体整名（P 中心无碳词干）：由 numbered 母体计数 + o_side 臂组装。
+        from namepredict.layer5.phosphate import phosphate_names
+
+        return phosphate_names(numbered)
     if kind == "acyl":
         # 环外酰基头走 exocyclic worker（苯→None 回落 chain_engine benzoyl variant）；开链 acyl 无关（relation in_skeleton）。
         exo = _exocyclic_acyl_names(n, numbered)

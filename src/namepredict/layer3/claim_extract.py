@@ -62,8 +62,9 @@ def _should_skip(claim, covered: set[int]) -> bool:
     return bool(set(claim.atoms) & covered)
 
 
-# 酯酸侧 O（烷氧基臂）：连在酯 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 join_kind_name 消费。
-_ESTER_O_SIDE_KINDS = frozenset({"ester"})
+# O-侧酸侧（烷氧基臂）：连在 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 酯/磷酸整名消费。
+# ester：酯酸侧烷氧臂；phosphate：磷酸酯 O–R 臂（kind=phosphate 母体，见 layer1/phosphate.py）。
+_ESTER_O_SIDE_KINDS = frozenset({"ester", "phosphate"})
 
 
 def _append_named(mol, claim, namer, covered: set[int], out: list[dict], *, o_side: bool = False) -> None:

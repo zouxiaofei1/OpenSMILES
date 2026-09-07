@@ -239,6 +239,18 @@ def _acyl_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     return out
 
 
+def _phosphate_fg_atoms(mol: Mol, parent: dict) -> set[int]:
+    """磷酸母体：P 中心 + 其全部 4 个 O（=O 与 3 个单键 O，含 O–R 桥 O）。 """
+    p_idx = parent.get("p_idx")
+    if parent.get("kind") != "phosphate" or p_idx is None:
+        return set()
+    out = {int(p_idx)}
+    for n in mol.GetAtomWithIdx(int(p_idx)).GetNeighbors():
+        if n.GetAtomicNum() == 8:
+            out.add(n.GetIdx())
+    return out
+
+
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
     """FG 所有权由字段驱动：拥有主官能团的每个重原子。"""
     parts = (
@@ -256,6 +268,7 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
         _anhydride_fg_atoms(mol, parent),
         _acyl_chloride_fg_atoms(mol, parent),
         _acyl_fg_atoms(mol, parent),
+        _phosphate_fg_atoms(mol, parent),
     )
     out: set[int] = set()
     for part in parts:
