@@ -48,6 +48,28 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
     return out
 
 
+def _obridge_front_simple(mol, atoms, attach_old, *, depth, name_mode, cache, root_ctx):
+    """O/S 桥前端是否简单取代基：attach 为二价 O/S 桥原子、去桥后余单一片段；
+    该片段按 retained→recursive 全命名后端取名，paren False 即简单（前端无需括号）。
+    无法判定（非桥/多前端/命名失败）返回 None，由调用方维持原 paren。"""
+    a = mol.GetAtomWithIdx(attach_old)
+    if a.GetAtomicNum() not in (8, 16) or a.GetDegree() != 2:
+        return None
+    ins = [n.GetIdx() for n in a.GetNeighbors()
+           if n.GetAtomicNum() != 1 and n.GetIdx() in atoms]
+    if len(ins) != 1:
+        return None
+    front = frozenset(atoms) - {attach_old}
+    f = ins[0]
+    from namepredict.tools.anchored_table import anchored_lookup
+    ret = anchored_lookup(mol, front, f, name_mode=name_mode)
+    if ret is not None:
+        return not ret[2]
+    fr = name_as_substituent(mol, f, front, depth=depth + 1, name_mode=name_mode,
+                             cache=cache, root_ctx=root_ctx)
+    return None if fr is None else (not fr[2])
+
+
 def _radical_yl_from_sub(
     mol, atoms: frozenset, attach_old: int, *, depth: int, name_mode: str,
     cache: CommonNameCache | None, root_ctx: tuple | None = None,
@@ -87,6 +109,16 @@ def _radical_yl_from_sub(
     composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0
     need_paren = composite and hit.en not in (
         "phenyl", *_SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN)
+    # 简单取代基 + 氧/硫桥（propan-2-yloxy/acetyloxy/hexadecanoyloxy/benzyloxy/
+    # …ylsulfanyl/sulfooxy 等）：P-63.2.1/.2.2 前端 R 为简单取代基时整个 O/S 前缀
+    # 不加围栏（gold/ChEBI 平铺式），与 free_to_yl 的醇→烷氧基/硫醇→硫基一致。
+    # 前端是否简单仍由引擎自己的命名后端(retained→recursive)判定，不反编译名字。
+    if need_paren and hit.en.endswith(("oxy", "sulfanyl")):
+        simple = _obridge_front_simple(
+            mol, atoms, attach_old, depth=depth, name_mode=name_mode,
+            cache=cache, root_ctx=root_ctx)
+        if simple is True:
+            need_paren = False
     return hit.en, hit.zh, need_paren
 
 

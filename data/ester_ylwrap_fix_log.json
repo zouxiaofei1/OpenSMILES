@@ -1,0 +1,1067 @@
+{
+  "applied": 177,
+  "rows": [
+    {
+      "id": "tiers-94891",
+      "smiles": "FC1=C(C(=O)OC2=COC(=CC2=O)CSC=2N(C=CN2)C)C=CC=C1",
+      "before": "[6-[(1-methylimidazol-2-yl)sulfanylmethyl]-4-oxopyran-3-yl] 2-fluorobenzoate",
+      "after": "6-[(1-methylimidazol-2-yl)sulfanylmethyl]-4-oxopyran-3-yl 2-fluorobenzoate"
+    },
+    {
+      "id": "tiers-138535",
+      "smiles": "C(C1=CC=CC=C1)(=O)OCC(COC(C1=CC=CC=C1)=O)(COC(C1=CC=CC=C1)=O)NC(C)=O",
+      "before": "[2-acetamido-3-benzoyloxy-2-(benzoyloxymethyl)propyl] benzoate",
+      "after": "2-acetamido-3-benzoyloxy-2-(benzoyloxymethyl)propyl benzoate"
+    },
+    {
+      "id": "tiers-94890",
+      "smiles": "COC=1C=C(C(=O)OC2=COC(=CC2=O)CSC=2N(C=CN2)C)C=C(C1OC)OC",
+      "before": "[6-[(1-methylimidazol-2-yl)sulfanylmethyl]-4-oxopyran-3-yl] 3,4,5-trimethoxybenzoate",
+      "after": "6-[(1-methylimidazol-2-yl)sulfanylmethyl]-4-oxopyran-3-yl 3,4,5-trimethoxybenzoate"
+    },
+    {
+      "id": "tiers-112727",
+      "smiles": "ClC=1C(=NC(=CC1)Cl)C(=O)OCC(=O)NC1=C(C=CC(=C1)S(=O)(=O)C)Cl",
+      "before": "[2-(2-chloro-5-methylsulfonylanilino)-2-oxoethyl] 3,6-dichloropyridine-2-carboxylate",
+      "after": "2-(2-chloro-5-methylsulfonylanilino)-2-oxoethyl 3,6-dichloropyridine-2-carboxylate"
+    },
+    {
+      "id": "tiers-107658",
+      "smiles": "C(C)(=O)OC1=C(C=C(C(=C1)OC)OC(C)=O)C(C)=O",
+      "before": "(2-acetyl-4-acetyloxy-5-methoxyphenyl) acetate",
+      "after": "2-acetyl-4-acetyloxy-5-methoxyphenyl acetate"
+    },
+    {
+      "id": "chebi-16",
+      "smiles": "CC(=O)O[C@@H]1C[C@H]2C(C)(C)C(=O)C=C[C@]2(C)[C@H]2CC[C@]3(C)C(=CC(=O)[C@@H]3c3ccoc3)[C@@]21C",
+      "before": "[(5R,7R,8R,9R,10R,13S,17S)-17-(furan-3-yl)-4,4,8,10,13-pentamethyl-3,16-dioxo-6,7,9,11,12,17-hexahydro-5H-cyclopenta[a]phenanthren-7-yl] acetate",
+      "after": "(5R,7R,8R,9R,10R,13S,17S)-17-(furan-3-yl)-4,4,8,10,13-pentamethyl-3,16-dioxo-6,7,9,11,12,17-hexahydro-5H-cyclopenta[a]phenanthren-7-yl acetate"
+    },
+    {
+      "id": "chebi-21",
+      "smiles": "CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC(=O)OC(CO)COC(=O)CCCCCCCCCCCCCCCCC",
+      "before": "(1-hydroxy-3-octadecanoyloxypropan-2-yl) (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate",
+      "after": "1-hydroxy-3-octadecanoyloxypropan-2-yl (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate"
+    },
+    {
+      "id": "chebi-49",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)OC[C@H](COP(=O)(O)OCC(O)COP(=O)(O)OC[C@@H](COC(=O)CCCCCCC/C=C\\CCCCCCCC)OC(=O)CCCCCCC/C=C\\CCCCCCCC)OC(=O)CCCCCCC/C=C\\CCCCCCCC",
+      "before": "[3-[[3-[(2R)-2,3-di[(9Z)-octadec-9-enoyloxy]propoxy-hydroxyphosphoryl]oxy-2-hydroxypropoxy]-hydroxyphosphoryl]oxy-(2R)-2-[(9Z)-octadec-9-enoyloxy]propyl] (9Z)-octadec-9-enoate",
+      "after": "3-[[3-[(2R)-2,3-di[(9Z)-octadec-9-enoyloxy]propoxy-hydroxyphosphoryl]oxy-2-hydroxypropoxy]-hydroxyphosphoryl]oxy-(2R)-2-[(9Z)-octadec-9-enoyloxy]propyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-58",
+      "smiles": "COc1cc(/C=C/C=O)cc(OC)c1OC(C)=O",
+      "before": "[2,6-dimethoxy-4-[(1E)-3-oxoprop-1-enyl]phenyl] acetate",
+      "after": "2,6-dimethoxy-4-[(1E)-3-oxoprop-1-enyl]phenyl acetate"
+    },
+    {
+      "id": "chebi-123",
+      "smiles": "Cc1ccc(C(=O)Oc2ccc(C(O)CNC(C)(C)C)cc2OC(=O)c2ccc(C)cc2)cc1",
+      "before": "[4-[2-(tert-butylamino)-1-hydroxyethyl]-2-(4-methylbenzoyl)oxyphenyl] 4-methylbenzoate",
+      "after": "4-[2-(tert-butylamino)-1-hydroxyethyl]-2-(4-methylbenzoyl)oxyphenyl 4-methylbenzoate"
+    },
+    {
+      "id": "chebi-166",
+      "smiles": "CCCCCCCCCCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCC)COP(=O)(O)O",
+      "before": "[(2R)-1-decanoyloxy-3-phosphonooxypropan-2-yl] octadecanoate",
+      "after": "(2R)-1-decanoyloxy-3-phosphonooxypropan-2-yl octadecanoate"
+    },
+    {
+      "id": "chebi-178",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)OCC(=O)COP(=O)(O)O",
+      "before": "(2-oxo-3-phosphonooxypropyl) (9Z)-octadec-9-enoate",
+      "after": "2-oxo-3-phosphonooxypropyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-179",
+      "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCC(=O)OC[C@H](CO)OC(=O)CCCCCCC/C=C\\CCCCCCCC",
+      "before": "[(2S)-1-hydroxy-3-[(9Z,12Z)-octadeca-9,12-dienoyloxy]propan-2-yl] (9Z)-octadec-9-enoate",
+      "after": "(2S)-1-hydroxy-3-[(9Z,12Z)-octadeca-9,12-dienoyloxy]propan-2-yl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-181",
+      "smiles": "COc1cc(/C=C/C(=O)O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)cc(OC)c1O",
+      "before": "[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl] (2E)-3-(4-hydroxy-3,5-dimethoxyphenyl)prop-2-enoate",
+      "after": "(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl (2E)-3-(4-hydroxy-3,5-dimethoxyphenyl)prop-2-enoate"
+    },
+    {
+      "id": "chebi-195",
+      "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCC(=O)OC[C@@H](CO)OC(=O)CCCCCCC/C=C\\CCCCCCCC",
+      "before": "[(2R)-1-hydroxy-3-[(9Z,12Z)-octadeca-9,12-dienoyloxy]propan-2-yl] (9Z)-octadec-9-enoate",
+      "after": "(2R)-1-hydroxy-3-[(9Z,12Z)-octadeca-9,12-dienoyloxy]propan-2-yl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-201",
+      "smiles": "O=C(Oc1cc(O)c2c(c1)OC(c1cc(O)c(OC(=O)c3cc(O)c(O)c(O)c3)c(O)c1)CC2)c1cc(O)c(O)c(O)c1",
+      "before": "[2-[3,5-dihydroxy-4-(3,4,5-trihydroxybenzoyl)oxyphenyl]-5-hydroxy-3,4-dihydro-2H-chromen-7-yl] 3,4,5-trihydroxybenzoate",
+      "after": "2-[3,5-dihydroxy-4-(3,4,5-trihydroxybenzoyl)oxyphenyl]-5-hydroxy-3,4-dihydro-2H-chromen-7-yl 3,4,5-trihydroxybenzoate"
+    },
+    {
+      "id": "chebi-204",
+      "smiles": "COC[C@H]1OC(=O)c2coc3c2[C@@]1(C)C1=C(C3=O)[C@@H]2CCC(=O)[C@@]2(C)C[C@H]1OC(C)=O",
+      "before": "[(1R,3R,5S,9R,18S)-18-(methoxymethyl)-1,5-dimethyl-6,11,16-trioxo-13,17-dioxapentacyclo[10.6.1.02,10.05,9.015,19]nonadeca-2(10),12(19),14-trien-3-yl] acetate",
+      "after": "(1R,3R,5S,9R,18S)-18-(methoxymethyl)-1,5-dimethyl-6,11,16-trioxo-13,17-dioxapentacyclo[10.6.1.02,10.05,9.015,19]nonadeca-2(10),12(19),14-trien-3-yl acetate"
+    },
+    {
+      "id": "chebi-217",
+      "smiles": "C/C(=C\\C(=O)N([O-])CCC[C@@H]1N=C(O)[C@H](CCCN([O-])C(=O)/C=C(\\C)CCOC(=O)[C@@H](N)CCCN([O-])C(=O)/C=C(\\C)CCO)N=C1O)CCO",
+      "before": "[(3E)-5-[3-[(2S,5S)-5-[3-[[(2E)-5-hydroxy-3-methylpent-2-enoyl]-oxidoamino]propyl]-3,6-dioxopiperazin-2-yl]propyl-oxidoamino]-3-methyl-5-oxopent-3-enyl] (2S)-2-amino-5-[[(2E)-5-hydroxy-3-methylpent-2-enoyl]-oxidoamino]pentanoate",
+      "after": "(3E)-5-[3-[(2S,5S)-5-[3-[[(2E)-5-hydroxy-3-methylpent-2-enoyl]-oxidoamino]propyl]-3,6-dioxopiperazin-2-yl]propyl-oxidoamino]-3-methyl-5-oxopent-3-enyl (2S)-2-amino-5-[[(2E)-5-hydroxy-3-methylpent-2-enoyl]-oxidoamino]pentanoate"
+    },
+    {
+      "id": "chebi-227",
+      "smiles": "NCC(=O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1O",
+      "before": "[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl] 2-aminoacetate",
+      "after": "[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl 2-aminoacetate"
+    },
+    {
+      "id": "chebi-249",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)O[C@H]1CC[C@@](C)(OC(C)=O)[C@@H]2O[C@H](C[C@]1(C)O)[C@@H]1[C@H]2[C@@H](C(C)C)[C@H](OC(C)=O)[C@H](OC(C)=O)[C@@]12CO2",
+      "before": "[(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-triacetyloxy-10-hydroxy-10,14-dimethyl-3-propan-2-ylspiro[15-oxatricyclo[6.6.1.02,7]pentadecane-6,2'-oxirane]-11-yl] hexadecanoate",
+      "after": "(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-triacetyloxy-10-hydroxy-10,14-dimethyl-3-propan-2-ylspiro[15-oxatricyclo[6.6.1.02,7]pentadecane-6,2'-oxirane]-11-yl hexadecanoate"
+    },
+    {
+      "id": "chebi-258",
+      "smiles": "COC[C@]12CN(C)C3[C@@H]4[C@H](OC)[C@H]1[C@@]3([C@@H](OC)C[C@H]2O)[C@@H]1C[C@@]2(O)[C@H](OC(=O)c3ccccc3)[C@@H]1[C@]4(O)[C@@H](O)[C@@H]2OC",
+      "before": "[(1S,2R,3R,4R,5R,6S,7S,8R,9R,13R,14R,16S,17S,18R)-5,7,8,14-tetrahydroxy-6,16,18-trimethoxy-13-(methoxymethyl)-11-methyl-11-azahexacyclo[7.7.2.12,5.01,10.03,8.013,17]nonadecan-4-yl] benzoate",
+      "after": "(1S,2R,3R,4R,5R,6S,7S,8R,9R,13R,14R,16S,17S,18R)-5,7,8,14-tetrahydroxy-6,16,18-trimethoxy-13-(methoxymethyl)-11-methyl-11-azahexacyclo[7.7.2.12,5.01,10.03,8.013,17]nonadecan-4-yl benzoate"
+    },
+    {
+      "id": "chebi-286",
+      "smiles": "O=C(ON1C(=O)CCC1=O)C1CCN(S(=O)(=O)c2ccccc2-c2c3ccc(N4Cc5ccccc5C4)cc3[o+]c3cc(N4Cc5ccccc5C4)ccc23)CC1.[Cl-]",
+      "before": "(2,5-dioxopyrrolidin-1-yl) 1-[2-[3-(1,3-dihydroisoindol-2-ium-2-ylidene)-6-(1,3-dihydroisoindol-2-yl)xanthen-9-yl]phenyl]sulfonylpiperidine-4-carboxylate chloride",
+      "after": "2,5-dioxopyrrolidin-1-yl 1-[2-[3-(1,3-dihydroisoindol-2-ium-2-ylidene)-6-(1,3-dihydroisoindol-2-yl)xanthen-9-yl]phenyl]sulfonylpiperidine-4-carboxylate chloride"
+    },
+    {
+      "id": "chebi-303",
+      "smiles": "CC(C)[C@@H](Nc1ccc(C(F)(F)F)cc1Cl)C(=O)OC(C#N)c1cccc(Oc2ccccc2)c1",
+      "before": "[cyano-(3-phenoxyphenyl)methyl] (2R)-2-[2-chloro-4-(trifluoromethyl)anilino]-3-methylbutanoate",
+      "after": "cyano-(3-phenoxyphenyl)methyl (2R)-2-[2-chloro-4-(trifluoromethyl)anilino]-3-methylbutanoate"
+    },
+    {
+      "id": "chebi-310",
+      "smiles": "O=C(Cc1ccc(O)c(O)c1)O[C@H]1[C@H](OCCc2ccc(O)c(O)c2)O[C@H](CO)[C@@H](O)[C@@H]1O",
+      "before": "[(2R,3R,4S,5S,6R)-2-[2-(3,4-dihydroxyphenyl)ethoxy]-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl] 2-(3,4-dihydroxyphenyl)acetate",
+      "after": "(2R,3R,4S,5S,6R)-2-[2-(3,4-dihydroxyphenyl)ethoxy]-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl 2-(3,4-dihydroxyphenyl)acetate"
+    },
+    {
+      "id": "chebi-322",
+      "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCC(=O)OC[C@@H](COC(=O)CCCCCCC/C=C\\CCCCCCCC)OC(=O)CCCCCCC/C=C\\CCCCCCCC",
+      "before": "[(2R)-3-[(9Z,12Z)-octadeca-9,12-dienoyloxy]-2-[(9Z)-octadec-9-enoyloxy]propyl] (9Z)-octadec-9-enoate",
+      "after": "(2R)-3-[(9Z,12Z)-octadeca-9,12-dienoyloxy]-2-[(9Z)-octadec-9-enoyloxy]propyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-325",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(=O)(O)OCCN",
+      "before": "[(2R)-3-[2-aminoethoxy(hydroxy)phosphoryl]oxy-2-hydroxypropyl] hexadecanoate",
+      "after": "(2R)-3-[2-aminoethoxy(hydroxy)phosphoryl]oxy-2-hydroxypropyl hexadecanoate"
+    },
+    {
+      "id": "chebi-334",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCC)COP(=O)(O)O",
+      "before": "[(2R)-1-phosphonooxy-3-tetradecanoyloxypropan-2-yl] (9Z)-octadec-9-enoate",
+      "after": "(2R)-1-phosphonooxy-3-tetradecanoyloxypropan-2-yl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-347",
+      "smiles": "C[C@@H]1O[C@H](O[C@@H]2[C@@H](O[C@@H]3OC[C@](C)(CO)[C@H]3O)[C@H](O[C@H]3[C@H](O[C@H]4[C@H](OC(=O)[C@]56CCC(C)(C)C[C@H]5C5=CC[C@@H]7[C@@]8(C)C[C@H](O)[C@H](O[C@@H]9O[C@H](CO)[C@@H](O)[C@H](O)[C@H]9O[C@@H]9OC[C@](O)(CO)[C@H]9O)[C@@](C)(CO)[C@@H]8[C@H](O)C[C@@]7(C)[C@]5(C)CC6)OC[C@H](O)[C@@H]4O)O[C@@H](C)[C@H](O)[C@H]3O)OC[C@H]2O)[C@H](O)[C@H](O)[C@H]1O",
+      "before": "[(2S,3R,4S,5S)-3-[(2S,3R,4R,5R,6S)-4,5-dihydroxy-3-[(2S,3R,4S,5R)-5-hydroxy-3-[(2S,3R,4S)-3-hydroxy-4-(hydroxymethyl)-4-methyloxolan-2-yl]oxy-4-[(2R,3R,4R,5R,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-6-methyloxan-2-yl]oxy-4,5-dihydroxyoxan-2-yl] (4aS,6aR,6aS,6bR,8R,8aR,9R,10R,11S,12aR,14bS)-10-[(2R,3R,4S,5S,6R)-3-[(2S,3R,4R)-3,4-dihydroxy-4-(hydroxymethyl)oxolan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-8,11-dihydroxy-9-(hydroxymethyl)-2,2,6a,6b,9,12a-hexamethyl-1,3,4,5,6,6a,7,8,8a,10,11,12,13,14b-tetradecahydropicene-4a-carboxylate",
+      "after": "(2S,3R,4S,5S)-3-[(2S,3R,4R,5R,6S)-4,5-dihydroxy-3-[(2S,3R,4S,5R)-5-hydroxy-3-[(2S,3R,4S)-3-hydroxy-4-(hydroxymethyl)-4-methyloxolan-2-yl]oxy-4-[(2R,3R,4R,5R,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-6-methyloxan-2-yl]oxy-4,5-dihydroxyoxan-2-yl (4aS,6aR,6aS,6bR,8R,8aR,9R,10R,11S,12aR,14bS)-10-[(2R,3R,4S,5S,6R)-3-[(2S,3R,4R)-3,4-dihydroxy-4-(hydroxymethyl)oxolan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-8,11-dihydroxy-9-(hydroxymethyl)-2,2,6a,6b,9,12a-hexamethyl-1,3,4,5,6,6a,7,8,8a,10,11,12,13,14b-tetradecahydropicene-4a-carboxylate"
+    },
+    {
+      "id": "chebi-348",
+      "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCC(=O)OC[C@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)OC(=O)CCCCC/C=C\\C/C=C\\CCCCC",
+      "before": "[(2S)-2-[(7Z,10Z)-hexadeca-7,10-dienoyloxy]-3-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxypropyl] (9Z,12Z)-octadeca-9,12-dienoate",
+      "after": "(2S)-2-[(7Z,10Z)-hexadeca-7,10-dienoyloxy]-3-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxypropyl (9Z,12Z)-octadeca-9,12-dienoate"
+    },
+    {
+      "id": "chebi-351",
+      "smiles": "CC(=O)O[C@@H]1C[C@@H]2[C@@]3(C)CCCC(C)(C)[C@@H]3CC[C@@]2(C)[C@@H]2CC=C3C(=O)O[C@@H](O)[C@@H]3[C@@]12C",
+      "before": "[(1R,5aS,5bR,7aS,11aS,11bR,13R,13aS,13bR)-1-hydroxy-5b,8,8,11a,13a-pentamethyl-3-oxo-5,5a,6,7,7a,9,10,11,11b,12,13,13b-dodecahydro-1H-phenanthro[2,1-e][2]benzofuran-13-yl] acetate",
+      "after": "(1R,5aS,5bR,7aS,11aS,11bR,13R,13aS,13bR)-1-hydroxy-5b,8,8,11a,13a-pentamethyl-3-oxo-5,5a,6,7,7a,9,10,11,11b,12,13,13b-dodecahydro-1H-phenanthro[2,1-e][2]benzofuran-13-yl acetate"
+    },
+    {
+      "id": "chebi-359",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)OC[C@H](CO[C@@H]1O[C@H](CO[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@H](O)[C@H](O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC",
+      "before": "[(2S)-2-hexadecanoyloxy-3-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-[[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxypropyl] hexadecanoate",
+      "after": "(2S)-2-hexadecanoyloxy-3-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-[[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxypropyl hexadecanoate"
+    },
+    {
+      "id": "chebi-360",
+      "smiles": "CCCC[N+]1(C)[C@@H]2CC(OC(=O)[C@H](CO)c3ccccc3)C[C@H]1[C@@H]1O[C@@H]12",
+      "before": "[(1S,2S,4R,5R)-9-butyl-9-methyl-3-oxa-9-azoniatricyclo[3.3.1.02,4]nonan-7-yl] (2S)-3-hydroxy-2-phenylpropanoate",
+      "after": "(1S,2S,4R,5R)-9-butyl-9-methyl-3-oxa-9-azoniatricyclo[3.3.1.02,4]nonan-7-yl (2S)-3-hydroxy-2-phenylpropanoate"
+    },
+    {
+      "id": "chebi-370",
+      "smiles": "CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC(O)=NCCOP(=O)(O)OC[C@@H](COC(=O)CCCCCCC/C=C\\CCCCCCCC)OC(=O)CCCCCCC/C=C\\CCCCCCCC",
+      "before": "[(2R)-3-[hydroxy-[2-[[(5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoyl]amino]ethoxy]phosphoryl]oxy-2-[(9Z)-octadec-9-enoyl]oxypropyl](9Z)-octadec-9-enoate",
+      "after": "(2R)-3-[hydroxy-[2-[[(5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoyl]amino]ethoxy]phosphoryl]oxy-2-[(9Z)-octadec-9-enoyl]oxypropyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-390",
+      "smiles": "C=C(C)[C@@]12OC3(/C=C/CCCCCCC)O[C@@H]1C1C4OC4(CO)C(O)C4(O)CC(C)=CC4C1(O3)C(C)C2OC(=O)/C=C/c1ccccc1",
+      "before": "[(12R,16S)-6,7-dihydroxy-8-(hydroxymethyl)-4,18-dimethyl-14-[(1E)-non-1-enyl]-16-prop-1-en-2-yl-9,13,15,19-tetraoxahexacyclo[12.4.1.01,11.02,6.08,10.012,16]nonadec-3-en-17-yl] (2E)-3-phenylprop-2-enoate",
+      "after": "(12R,16S)-6,7-dihydroxy-8-(hydroxymethyl)-4,18-dimethyl-14-[(1E)-non-1-enyl]-16-prop-1-en-2-yl-9,13,15,19-tetraoxahexacyclo[12.4.1.01,11.02,6.08,10.012,16]nonadec-3-en-17-yl (2E)-3-phenylprop-2-enoate"
+    },
+    {
+      "id": "chebi-401",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)OC[C@H](COC(=O)CCCCCCCCCCCCC)OC(=O)CCCCCCC/C=C\\CCCCCCCC",
+      "before": "[(2S)-2-[(9Z)-octadec-9-enoyloxy]-3-tetradecanoyloxypropyl] (9Z)-octadec-9-enoate",
+      "after": "(2S)-2-[(9Z)-octadec-9-enoyloxy]-3-tetradecanoyloxypropyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-440",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)OC[C@@H](COC(=O)CCCCCCCCCCCCCCCC)OC(=O)CCCCCCC/C=C\\CCCCCCCC",
+      "before": "[(2R)-3-heptadecanoyloxy-2-[(9Z)-octadec-9-enoyl]oxypropyl](9Z)-octadec-9-enoate",
+      "after": "(2R)-3-heptadecanoyloxy-2-[(9Z)-octadec-9-enoyl]oxypropyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-463",
+      "smiles": "C/C=C/C1=CC2=CC(=O)[C@@](C)(OC(=O)c3c(C)cc(O)cc3O)C(=O)[C@@]2(O)CO1",
+      "before": "[(7R,8aS)-8a-hydroxy-7-methyl-6,8-dioxo-3-[(1E)-prop-1-enyl]-1H-isochromen-7-yl] 2,4-dihydroxy-6-methylbenzoate",
+      "after": "(7R,8aS)-8a-hydroxy-7-methyl-6,8-dioxo-3-[(1E)-prop-1-enyl]-1H-isochromen-7-yl 2,4-dihydroxy-6-methylbenzoate"
+    },
+    {
+      "id": "chebi-488",
+      "smiles": "CC1(C)O[C@]23[C@H](OC(=O)c4cccnc4)[C@H]1C[C@@H](OC(=O)c1ccccc1)[C@]2(C)[C@@H](OC(=O)c1ccccc1)CC[C@]3(C)O",
+      "before": "[(1S,2S,5S,6S,7R,9R,12R)-5,7-dibenzoyloxy-2-hydroxy-2,6,10,10-tetramethyl-11-oxatricyclo[7.2.1.01,6]dodecan-12-yl] pyridine-3-carboxylate",
+      "after": "(1S,2S,5S,6S,7R,9R,12R)-5,7-dibenzoyloxy-2-hydroxy-2,6,10,10-tetramethyl-11-oxatricyclo[7.2.1.01,6]dodecan-12-yl pyridine-3-carboxylate"
+    },
+    {
+      "id": "chebi-520",
+      "smiles": "CC(=O)O[C@@H]1[C@@H](C)/C=C/C(C)(C)[C@H](OC(C)=O)C[C@@H](OC(C)=O)/C(C)=C/[C@H]2[C@@H](OC(=O)c3ccccc3)[C@H](C)C[C@]12OC(C)=O",
+      "before": "[(1S,2R,3aR,4R,5S,6E,9R,11R,12E,13aS)-3a,4,9,11-tetraacetyloxy-2,5,8,8,12-pentamethyl-2,3,4,5,9,10,11,13a-octahydro-1H-cyclopenta[12]annulen-1-yl] benzoate",
+      "after": "(1S,2R,3aR,4R,5S,6E,9R,11R,12E,13aS)-3a,4,9,11-tetraacetyloxy-2,5,8,8,12-pentamethyl-2,3,4,5,9,10,11,13a-octahydro-1H-cyclopenta[12]annulen-1-yl benzoate"
+    },
+    {
+      "id": "chebi-529",
+      "smiles": "CC1(C)CC[C@]2(C(=O)O[C@@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O)CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)C[C@@H](O)[C@H](O)[C@@](C)(CO)[C@@H]5CC[C@]43C)[C@@H]2C1",
+      "before": "[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl] (4aS,6aR,6aS,6bR,8aR,9R,10R,11R,12aR,14bS)-10,11-dihydroxy-9-(hydroxymethyl)-2,2,6a,6b,9,12a-hexamethyl-1,3,4,5,6,6a,7,8,8a,10,11,12,13,14b-tetradecahydropicene-4a-carboxylate",
+      "after": "(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl (4aS,6aR,6aS,6bR,8aR,9R,10R,11R,12aR,14bS)-10,11-dihydroxy-9-(hydroxymethyl)-2,2,6a,6b,9,12a-hexamethyl-1,3,4,5,6,6a,7,8,8a,10,11,12,13,14b-tetradecahydropicene-4a-carboxylate"
+    },
+    {
+      "id": "chebi-536",
+      "smiles": "CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC(=O)O[C@H](COC(=O)CCCCCCC/C=C\\CCCCCCCC)COP(=O)(O)OC1[C@H](O)[C@H](O)C(O)[C@H](O)[C@H]1O",
+      "before": "[(2R)-1-[hydroxy-[(2R,3S,5R,6R)-2,3,4,5,6-pentahydroxycyclohexyl]oxyphosphoryl]oxy-3-[(9Z)-octadec-9-enoyloxy]propan-2-yl] (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate",
+      "after": "(2R)-1-[hydroxy-[(2R,3S,5R,6R)-2,3,4,5,6-pentahydroxycyclohexyl]oxyphosphoryl]oxy-3-[(9Z)-octadec-9-enoyloxy]propan-2-yl (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate"
+    },
+    {
+      "id": "chebi-569",
+      "smiles": "CCCCCCCCCCC/C=C\\CCCCC(=O)OC[C@H](COP(=O)(O)OCCN)OC(=O)CCCC/C=C\\CCCCCCCCCCC",
+      "before": "[(2R)-3-[2-aminoethoxy(hydroxy)phosphoryl]oxy-2-[(6Z)-octadec-6-enoyloxy]propyl] (6Z)-octadec-6-enoate",
+      "after": "(2R)-3-[2-aminoethoxy(hydroxy)phosphoryl]oxy-2-[(6Z)-octadec-6-enoyloxy]propyl (6Z)-octadec-6-enoate"
+    },
+    {
+      "id": "chebi-582",
+      "smiles": "CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCCCC)COP(=O)(O)OC1[C@H](O)[C@H](O)C(O)[C@H](O)[C@H]1O",
+      "before": "[(2R)-1-[hydroxy-[(2R,3R,5S,6R)-2,3,4,5,6-pentahydroxycyclohexyl]oxyphosphoryl]oxy-3-octadecanoyloxypropan-2-yl] (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate",
+      "after": "(2R)-1-[hydroxy-[(2R,3R,5S,6R)-2,3,4,5,6-pentahydroxycyclohexyl]oxyphosphoryl]oxy-3-octadecanoyloxypropan-2-yl (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate"
+    },
+    {
+      "id": "chebi-584",
+      "smiles": "CC(=O)O[C@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)CC[C@]4(C)[C@H]3CC[C@]12C",
+      "before": "[(8R,9S,10R,13S,14S,17S)-10,13-dimethyl-3-oxo-1,2,6,7,8,9,11,12,14,15,16,17-dodecahydrocyclopenta[a]phenanthren-17-yl] acetate",
+      "after": "(8R,9S,10R,13S,14S,17S)-10,13-dimethyl-3-oxo-1,2,6,7,8,9,11,12,14,15,16,17-dodecahydrocyclopenta[a]phenanthren-17-yl acetate"
+    },
+    {
+      "id": "chebi-654",
+      "smiles": "CCCCCCCCCCCCCCCC[C@H](C)C[C@H](C)C[C@H](C)/C=C(\\C)C(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](O[C@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2OS(=O)(=O)O)[C@@H]1OC(=O)CCCCCCC",
+      "before": "[(2R,3R,4S,5R,6R)-2-[(2R,3R,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-sulfooxyoxan-2-yl]oxy-5-hydroxy-6-(hydroxymethyl)-3-octanoyloxyoxan-4-yl] (2E,4S,6S,8S)-2,4,6,8-tetramethyltetracos-2-enoate",
+      "after": "(2R,3R,4S,5R,6R)-2-[(2R,3R,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-sulfooxyoxan-2-yl]oxy-5-hydroxy-6-(hydroxymethyl)-3-octanoyloxyoxan-4-yl (2E,4S,6S,8S)-2,4,6,8-tetramethyltetracos-2-enoate"
+    },
+    {
+      "id": "chebi-674",
+      "smiles": "CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCCCC)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2ccc(=N)nc2O)[C@H](O)[C@@H]1O",
+      "before": "[(2R)-1-[[[(2R,3S,4R,5R)-5-(4-amino-2-oxopyrimidin-1-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxy-hydroxyphosphoryl]oxy-3-octadecanoyloxypropan-2-yl] (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate",
+      "after": "(2R)-1-[[[(2R,3S,4R,5R)-5-(4-amino-2-oxopyrimidin-1-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxy-hydroxyphosphoryl]oxy-3-octadecanoyloxypropan-2-yl (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate"
+    },
+    {
+      "id": "chebi-707",
+      "smiles": "Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)(O)O)[C@@H](OC(=O)[C@@H](N)CO)[C@H]1O",
+      "before": "[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-2-(phosphonooxymethyl)oxolan-3-yl] (2S)-2-amino-3-hydroxypropanoate",
+      "after": "(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-2-(phosphonooxymethyl)oxolan-3-yl (2S)-2-amino-3-hydroxypropanoate"
+    },
+    {
+      "id": "chebi-745",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(=O)(O)OCCN=C(O)CCCCCCCCCCCCCCC",
+      "before": "[(2R)-3-[2-(hexadecanoylamino)ethoxy-hydroxyphosphoryl]oxy-2-hydroxypropyl] hexadecanoate",
+      "after": "(2R)-3-[2-(hexadecanoylamino)ethoxy-hydroxyphosphoryl]oxy-2-hydroxypropyl hexadecanoate"
+    },
+    {
+      "id": "chebi-758",
+      "smiles": "C[C@H]1[C@H](C)C[C@H](O)[C@]2(C(=O)O[C@@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O)CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@]43C)[C@H]12",
+      "before": "[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl] (1S,2R,4S,4aS,6aR,6aS,6bR,8aR,10S,12aR,14bS)-4,10-dihydroxy-1,2,6a,6b,9,9,12a-heptamethyl-2,3,4,5,6,6a,7,8,8a,10,11,12,13,14b-tetradecahydro-1H-picene-4a-carboxylate",
+      "after": "(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl (1S,2R,4S,4aS,6aR,6aS,6bR,8aR,10S,12aR,14bS)-4,10-dihydroxy-1,2,6a,6b,9,9,12a-heptamethyl-2,3,4,5,6,6a,7,8,8a,10,11,12,13,14b-tetradecahydro-1H-picene-4a-carboxylate"
+    },
+    {
+      "id": "chebi-778",
+      "smiles": "CCCCCCCCCCCCCCCCOC[C@H](COC(=O)CCCCCCC)OC(C)=O",
+      "before": "[(2R)-2-acetyloxy-3-hexadecoxypropyl] octanoate",
+      "after": "(2R)-2-acetyloxy-3-hexadecoxypropyl octanoate"
+    },
+    {
+      "id": "chebi-780",
+      "smiles": "CCCCCCCCCCCCCCCCCC(=O)OC[C@@H](COC(=O)CCCCCCCCCCCCC)OC(=O)CCCCCCCCCCCCCCC",
+      "before": "[(2R)-2-hexadecanoyloxy-3-tetradecanoyloxypropyl] octadecanoate",
+      "after": "(2R)-2-hexadecanoyloxy-3-tetradecanoyloxypropyl octadecanoate"
+    },
+    {
+      "id": "chebi-782",
+      "smiles": "C=C1C(=O)O[C@@H]2C[C@@H](C)/C=C\\C(=O)[C@@](C)(O)[C@H](OC(C)=O)[C@@H](OC(=O)CC(C)C)[C@@H]12",
+      "before": "[(3aS,4S,5R,6S,8Z,10R,11aR)-5-acetyloxy-6-hydroxy-6,10-dimethyl-3-methylidene-2,7-dioxo-3a,4,5,10,11,11a-hexahydrocyclodeca[b]furan-4-yl] 3-methylbutanoate",
+      "after": "(3aS,4S,5R,6S,8Z,10R,11aR)-5-acetyloxy-6-hydroxy-6,10-dimethyl-3-methylidene-2,7-dioxo-3a,4,5,10,11,11a-hexahydrocyclodeca[b]furan-4-yl 3-methylbutanoate"
+    },
+    {
+      "id": "chebi-787",
+      "smiles": "C/C=C/C(=O)Oc1c(C(C)CCCCCC)cc([N+](=O)[O-])cc1[N+](=O)[O-]",
+      "before": "(2,4-dinitro-6-octan-2-ylphenyl) (2E)-but-2-enoate",
+      "after": "2,4-dinitro-6-octan-2-ylphenyl (2E)-but-2-enoate"
+    },
+    {
+      "id": "chebi-820",
+      "smiles": "CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC(=O)OC(COC(=O)CCCCCCCCCCCCCCCCC)COP(=O)(O)O",
+      "before": "(1-octadecanoyloxy-3-phosphonooxypropan-2-yl) (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate",
+      "after": "1-octadecanoyloxy-3-phosphonooxypropan-2-yl (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate"
+    },
+    {
+      "id": "chebi-839",
+      "smiles": "C/C=C(\\C)C(=O)O[C@@H](C[C@@]1(C)[C@H](C)C[C@H](OC(C)=O)[C@]2(COC(C)=O)[C@@H]1[C@H](OC(=O)/C(C)=C/C)CC[C@]2(O)CCl)C1=CC(=O)OC1",
+      "before": "[(1R,4R,4aR,5S,7R,8S,8aR)-5-acetyloxy-4a-(acetyloxymethyl)-4-(chloromethyl)-4-hydroxy-7,8-dimethyl-8-[(2S)-2-[(2E)-2-methylbut-2-enoyl]oxy-2-(5-oxo-2H-furan-3-yl)ethyl]-2,3,5,6,7,8a-hexahydro-1H-naphthalen-1-yl] (2E)-2-methylbut-2-enoate",
+      "after": "(1R,4R,4aR,5S,7R,8S,8aR)-5-acetyloxy-4a-(acetyloxymethyl)-4-(chloromethyl)-4-hydroxy-7,8-dimethyl-8-[(2S)-2-[(2E)-2-methylbut-2-enoyl]oxy-2-(5-oxo-2H-furan-3-yl)ethyl]-2,3,5,6,7,8a-hexahydro-1H-naphthalen-1-yl (2E)-2-methylbut-2-enoate"
+    },
+    {
+      "id": "chebi-912",
+      "smiles": "CCCCCCC(=O)OC/C=C(C)/C=C/C=C(C)/C=C/C1=C(C)CCCC1(C)C",
+      "before": "[(2E,4E,6E,8E)-3,7-dimethyl-9-(2,6,6-trimethylcyclohexen-1-yl)nona-2,4,6,8-tetraenyl] heptanoate",
+      "after": "(2E,4E,6E,8E)-3,7-dimethyl-9-(2,6,6-trimethylcyclohexen-1-yl)nona-2,4,6,8-tetraenyl heptanoate"
+    },
+    {
+      "id": "chebi-948",
+      "smiles": "C=C1C[C@@]23CC[C@H]4[C@@](C)(CCC[C@@]4(C)C(=O)O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4O)[C@@H]2CC[C@]1(O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)C3",
+      "before": "[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl] (1R,4S,5R,9S,10R,13S)-13-[(2S,3R,4S,5R,6R)-5-hydroxy-6-(hydroxymethyl)-3,4-bis[[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy]oxan-2-yl]oxy-5,9-dimethyl-14-methylidenetetracyclo[11.2.1.01,10.04,9]hexadecane-5-carboxylate",
+      "after": "(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl (1R,4S,5R,9S,10R,13S)-13-[(2S,3R,4S,5R,6R)-5-hydroxy-6-(hydroxymethyl)-3,4-bis[[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy]oxan-2-yl]oxy-5,9-dimethyl-14-methylidenetetracyclo[11.2.1.01,10.04,9]hexadecane-5-carboxylate"
+    },
+    {
+      "id": "chebi-966",
+      "smiles": "C[C@H]1[C@@H]2CC[C@@H]1[C@H](OC(=O)c1ccccc1)/C=C\\C=C\\C(=O)O[C@H]1[C@@H](C)C[C@@H]3[C@]1(O)[C@H](O)[C@@]1(CO)O[C@H]1[C@H]1[C@H]4O[C@]5(c6ccccc6)O[C@@H]([C@@H](C)[C@@]13O5)[C@@]4(O)[C@](C)(O)C2",
+      "before": "[(1R,2S,3S,5R,6S,7S,8R,10S,11S,14E,16Z,18R,19S,22R,24R,25S,26R,28S,30S,31R,33S)-6,7,24,25-tetrahydroxy-5-(hydroxymethyl)-10,24,31,33-tetramethyl-13-oxo-28-phenyl-4,12,27,29,32-pentaoxaoctacyclo[26.3.1.119,22.01,8.02,26.03,5.07,11.025,30]tritriaconta-14,16-dien-18-yl] benzoate",
+      "after": "(1R,2S,3S,5R,6S,7S,8R,10S,11S,14E,16Z,18R,19S,22R,24R,25S,26R,28S,30S,31R,33S)-6,7,24,25-tetrahydroxy-5-(hydroxymethyl)-10,24,31,33-tetramethyl-13-oxo-28-phenyl-4,12,27,29,32-pentaoxaoctacyclo[26.3.1.119,22.01,8.02,26.03,5.07,11.025,30]tritriaconta-14,16-dien-18-yl benzoate"
+    },
+    {
+      "id": "chebi-968",
+      "smiles": "CC(C)[C@@]12C[C@@H](OC(=O)CO)[C@@](C)(O1)[C@@H]1CC[C@@H](C)[C@H]1[C@@H]2OC(=O)/C=C/c1ccccc1",
+      "before": "[(1S,2R,5R,6R,7S,8R,10R)-10-(2-hydroxyacetyl)oxy-1,5-dimethyl-8-propan-2-yl-11-oxatricyclo[6.2.1.02,6]undecan-7-yl] (2E)-3-phenylprop-2-enoate",
+      "after": "(1S,2R,5R,6R,7S,8R,10R)-10-(2-hydroxyacetyl)oxy-1,5-dimethyl-8-propan-2-yl-11-oxatricyclo[6.2.1.02,6]undecan-7-yl (2E)-3-phenylprop-2-enoate"
+    },
+    {
+      "id": "chebi-1002",
+      "smiles": "C[C@]12CC[C@H]3[C@@H](CCC4=CC(=O)CC[C@@H]43)[C@@H]1CC[C@@H]2OC(=O)CCc1ccccc1",
+      "before": "[(8R,9S,10R,13S,14S,17S)-13-methyl-3-oxo-2,6,7,8,9,10,11,12,14,15,16,17-dodecahydro-1H-cyclopenta[a]phenanthren-17-yl] 3-phenylpropanoate",
+      "after": "(8R,9S,10R,13S,14S,17S)-13-methyl-3-oxo-2,6,7,8,9,10,11,12,14,15,16,17-dodecahydro-1H-cyclopenta[a]phenanthren-17-yl 3-phenylpropanoate"
+    },
+    {
+      "id": "chebi-1005",
+      "smiles": "CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC(=O)O[C@H](COC(=O)CCCCCCC/C=C\\CCCCCCCC)COP(=O)(O)OCCN",
+      "before": "[(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-[(9Z)-octadec-9-enoyloxy]propan-2-yl] (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate",
+      "after": "(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-[(9Z)-octadec-9-enoyloxy]propan-2-yl (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate"
+    },
+    {
+      "id": "chebi-1013",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)OC[C@H](CO)OC(=O)CCCCCCCCCCCCCCC",
+      "before": "[(2S)-2-hexadecanoyloxy-3-hydroxypropyl] hexadecanoate",
+      "after": "(2S)-2-hexadecanoyloxy-3-hydroxypropyl hexadecanoate"
+    },
+    {
+      "id": "chebi-1069",
+      "smiles": "CCCCCCCCCCCCCCCCOC[C@H](COP(=O)(O)OCCN)OC(C)=O",
+      "before": "[(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-hexadecoxypropan-2-yl] acetate",
+      "after": "(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-hexadecoxypropan-2-yl acetate"
+    },
+    {
+      "id": "chebi-1121",
+      "smiles": "CCCCCC(=O)OC1c2cc3c(c4c2C(C(=O)C(=O)OC)(CO4)/C(=C\\C(=O)OC)CC(C)C1C)OCO3",
+      "before": "[(5Z)-4-(2-methoxy-2-oxoacetyl)-5-(2-methoxy-2-oxoethylidene)-7,8-dimethyl-2,13,15-trioxatetracyclo[8.6.1.04,17.012,16]heptadeca-1(17),10,12(16)-trien-9-yl] hexanoate",
+      "after": "(5Z)-4-(2-methoxy-2-oxoacetyl)-5-(2-methoxy-2-oxoethylidene)-7,8-dimethyl-2,13,15-trioxatetracyclo[8.6.1.04,17.012,16]heptadeca-1(17),10,12(16)-trien-9-yl hexanoate"
+    },
+    {
+      "id": "chebi-1177",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)O[C@@H](CO)COC(=O)CCCCCCCCCCC",
+      "before": "[(2S)-1-dodecanoyloxy-3-hydroxypropan-2-yl] (9Z)-octadec-9-enoate",
+      "after": "(2S)-1-dodecanoyloxy-3-hydroxypropan-2-yl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-1196",
+      "smiles": "C=C1C(=O)O[C@@H]2/C=C(\\CO)CC/C=C(\\CO)C[C@H](OC(=O)C(C)C)[C@@H]12",
+      "before": "[(3aR,4S,6Z,10Z,11aR)-6,10-bis(hydroxymethyl)-3-methylidene-2-oxo-3a,4,5,8,9,11a-hexahydrocyclodeca[b]furan-4-yl] 2-methylpropanoate",
+      "after": "(3aR,4S,6Z,10Z,11aR)-6,10-bis(hydroxymethyl)-3-methylidene-2-oxo-3a,4,5,8,9,11a-hexahydrocyclodeca[b]furan-4-yl 2-methylpropanoate"
+    },
+    {
+      "id": "chebi-1209",
+      "smiles": "O=C(O[C@H]1C[N+]2(CCCOc3ccccc3)CCC1CC2)C(O)(c1cccs1)c1cccs1",
+      "before": "[(3R)-1-(3-phenoxypropyl)-1-azoniabicyclo[2.2.2]octan-3-yl] 2-hydroxy-2,2-dithiophen-2-ylacetate",
+      "after": "(3R)-1-(3-phenoxypropyl)-1-azoniabicyclo[2.2.2]octan-3-yl 2-hydroxy-2,2-dithiophen-2-ylacetate"
+    },
+    {
+      "id": "chebi-1211",
+      "smiles": "CC(=O)Oc1cc2c(s1)CCN([C@H](C(=O)C1CC1)c1ccccc1F)C2",
+      "before": "[5-[(1S)-2-cyclopropyl-1-(2-fluorophenyl)-2-oxoethyl]-6,7-dihydro-4H-thieno[3,2-c]pyridin-2-yl] acetate",
+      "after": "5-[(1S)-2-cyclopropyl-1-(2-fluorophenyl)-2-oxoethyl]-6,7-dihydro-4H-thieno[3,2-c]pyridin-2-yl acetate"
+    },
+    {
+      "id": "chebi-1218",
+      "smiles": "CCCCCCCCCCCCCCCCCC(=O)OCC(COC(=O)CCCCCCCCCCCCCCCCC)OC(=O)CCCCCCCCCCCCCCC",
+      "before": "(2-hexadecanoyloxy-3-octadecanoyloxypropyl) octadecanoate",
+      "after": "2-hexadecanoyloxy-3-octadecanoyloxypropyl octadecanoate"
+    },
+    {
+      "id": "chebi-1267",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)OCC(O)COC(=O)CCCCCCCCCCCCCCC",
+      "before": "(3-hexadecanoyloxy-2-hydroxypropyl) (9Z)-octadec-9-enoate",
+      "after": "3-hexadecanoyloxy-2-hydroxypropyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-1272",
+      "smiles": "O=S(=O)(O)O/N=C(/CCc1ccccc1)S[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O",
+      "before": "[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl] (1Z)-3-phenyl-N-sulfooxypropanimidothioate",
+      "after": "(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl (1Z)-3-phenyl-N-sulfooxypropanimidothioate"
+    },
+    {
+      "id": "chebi-1276",
+      "smiles": "CO[C@@H]1OC(=O)C2=CC[C@H]3[C@]4(C)CC[C@H]5C(C)(C)CCC[C@]5(C)[C@H]4C[C@@H](OC(C)=O)[C@]3(C)[C@H]21",
+      "before": "[(1R,5aS,5bR,7aS,11aS,11bR,13R,13aS,13bR)-1-methoxy-5b,8,8,11a,13a-pentamethyl-3-oxo-5,5a,6,7,7a,9,10,11,11b,12,13,13b-dodecahydro-1H-phenanthro[2,1-e][2]benzofuran-13-yl] acetate",
+      "after": "(1R,5aS,5bR,7aS,11aS,11bR,13R,13aS,13bR)-1-methoxy-5b,8,8,11a,13a-pentamethyl-3-oxo-5,5a,6,7,7a,9,10,11,11b,12,13,13b-dodecahydro-1H-phenanthro[2,1-e][2]benzofuran-13-yl acetate"
+    },
+    {
+      "id": "chebi-1286",
+      "smiles": "CCC(=O)Oc1cccc(O)c1",
+      "before": "(3-hydroxyphenyl) propanoate",
+      "after": "3-hydroxyphenyl propanoate"
+    },
+    {
+      "id": "chebi-1292",
+      "smiles": "CCCCCCCCCCCC(=O)O[C@@H]1[C@@H](O)[C@@H](OC(=O)/C=C/c2ccccc2)[C@H](O[C@@H]2[C@@H](O)[C@@H](OC(=O)CCCCCCCCCCC)[C@H](O[C@@H]3[C@@H](O)[C@H]4OC(=O)CCCCCCCCC[C@H](CCCCC)O[C@@H]5O[C@H](C)[C@H](O)[C@H](O)[C@H]5O[C@@H]4O[C@H]3C)O[C@H]2C)O[C@H]1C",
+      "before": "[(2S,3R,4R,5R,6S)-6-[(2S,3R,4R,5R,6S)-5-dodecanoyloxy-4-hydroxy-2-methyl-6-[[(1R,3S,5S,6R,7R,8R,20S,22R,24R,25R,26S)-7,25,26-trihydroxy-5,24-dimethyl-10-oxo-20-pentyl-2,4,9,21,23-pentaoxatricyclo[20.4.0.03,8]hexacosan-6-yl]oxy]oxan-3-yl]oxy-4-hydroxy-2-methyl-5-[(2E)-3-phenylprop-2-enoyloxy]oxan-3-yl] dodecanoate",
+      "after": "(2S,3R,4R,5R,6S)-6-[(2S,3R,4R,5R,6S)-5-dodecanoyloxy-4-hydroxy-2-methyl-6-[[(1R,3S,5S,6R,7R,8R,20S,22R,24R,25R,26S)-7,25,26-trihydroxy-5,24-dimethyl-10-oxo-20-pentyl-2,4,9,21,23-pentaoxatricyclo[20.4.0.03,8]hexacosan-6-yl]oxy]oxan-3-yl]oxy-4-hydroxy-2-methyl-5-[(2E)-3-phenylprop-2-enoyloxy]oxan-3-yl dodecanoate"
+    },
+    {
+      "id": "chebi-1354",
+      "smiles": "CC/C=C\\C/C=C\\C/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCCCCC)COP(=O)(O)OCCN",
+      "before": "[(2R)-3-[2-aminoethoxy(hydroxy)phosphoryl]oxy-2-[(9Z,12Z,15Z)-octadeca-9,12,15-trienoyloxy]propyl] nonadecanoate",
+      "after": "(2R)-3-[2-aminoethoxy(hydroxy)phosphoryl]oxy-2-[(9Z,12Z,15Z)-octadeca-9,12,15-trienoyloxy]propyl nonadecanoate"
+    },
+    {
+      "id": "chebi-1379",
+      "smiles": "COc1ccc([C@@H]2C[C@@H]3O[C@H]4[C@H](Oc5c(C)c(O)c(C)c(c53)O2)O[C@H](CO)[C@@H](O)[C@@H]4OC(C)=O)cc1",
+      "before": "[(3S,5R,6R,7S,8R,10S,12S)-6,16-dihydroxy-5-(hydroxymethyl)-12-(4-methoxyphenyl)-15,17-dimethyl-2,4,9,13-tetraoxatetracyclo[8.7.1.03,8.014,18]octadeca-1(17),14(18),15-trien-7-yl] acetate",
+      "after": "(3S,5R,6R,7S,8R,10S,12S)-6,16-dihydroxy-5-(hydroxymethyl)-12-(4-methoxyphenyl)-15,17-dimethyl-2,4,9,13-tetraoxatetracyclo[8.7.1.03,8.014,18]octadeca-1(17),14(18),15-trien-7-yl acetate"
+    },
+    {
+      "id": "chebi-1387",
+      "smiles": "CCCCCCCCCCCC(=O)OC/C=C(C)/C=C/C=C(C)/C=C/C1=C(C)CCCC1(C)C",
+      "before": "[(2E,4E,6E,8E)-3,7-dimethyl-9-(2,6,6-trimethylcyclohexen-1-yl)nona-2,4,6,8-tetraenyl] dodecanoate",
+      "after": "(2E,4E,6E,8E)-3,7-dimethyl-9-(2,6,6-trimethylcyclohexen-1-yl)nona-2,4,6,8-tetraenyl dodecanoate"
+    },
+    {
+      "id": "chebi-1397",
+      "smiles": "CCCCCC(=O)O[C@H]1CC[C@@]2(C)C(=CC[C@H]3[C@@H]4CC[C@H]([C@H](C)CC[C@H](O)C(C)C)[C@@]4(C)CC[C@@H]32)C1",
+      "before": "[(3S,8S,9S,10R,13R,14S,17R)-17-[(2R,5S)-5-hydroxy-6-methylheptan-2-yl]-10,13-dimethyl-2,3,4,7,8,9,11,12,14,15,16,17-dodecahydro-1H-cyclopenta[a]phenanthren-3-yl] hexanoate",
+      "after": "(3S,8S,9S,10R,13R,14S,17R)-17-[(2R,5S)-5-hydroxy-6-methylheptan-2-yl]-10,13-dimethyl-2,3,4,7,8,9,11,12,14,15,16,17-dodecahydro-1H-cyclopenta[a]phenanthren-3-yl hexanoate"
+    },
+    {
+      "id": "chebi-1443",
+      "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCC(=O)O[C@H]1CC[C@@]2(C)C(=CC[C@H]3[C@@H]4CC[C@H]([C@H](C)CCCC(C)C)[C@@]4(C)CC[C@@H]32)C1",
+      "before": "[(3S,8S,9S,10R,13R,14S,17R)-10,13-dimethyl-17-[(2R)-6-methylheptan-2-yl]-2,3,4,7,8,9,11,12,14,15,16,17-dodecahydro-1H-cyclopenta[a]phenanthren-3-yl] (9Z,12Z)-octadeca-9,12-dienoate",
+      "after": "(3S,8S,9S,10R,13R,14S,17R)-10,13-dimethyl-17-[(2R)-6-methylheptan-2-yl]-2,3,4,7,8,9,11,12,14,15,16,17-dodecahydro-1H-cyclopenta[a]phenanthren-3-yl (9Z,12Z)-octadeca-9,12-dienoate"
+    },
+    {
+      "id": "chebi-1474",
+      "smiles": "O=C(Cc1ccc(O)c(O)c1)O[C@H]1[C@H](OCCc2cc(O)c(O)cc2O)O[C@H](CO)[C@@H](O)[C@@H]1O",
+      "before": "[(2R,3R,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-2-[2-(2,4,5-trihydroxyphenyl)ethoxy]oxan-3-yl] 2-(3,4-dihydroxyphenyl)acetate",
+      "after": "(2R,3R,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-2-[2-(2,4,5-trihydroxyphenyl)ethoxy]oxan-3-yl 2-(3,4-dihydroxyphenyl)acetate"
+    },
+    {
+      "id": "chebi-1475",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)O[C@H](CO)COC(=O)CCCCCCCCCCCCCCCCC",
+      "before": "[(2R)-3-hydroxy-2-[(9Z)-octadec-9-enoyl]oxypropyl] octadecanoate",
+      "after": "(2R)-3-hydroxy-2-[(9Z)-octadec-9-enoyl]oxypropyl octadecanoate"
+    },
+    {
+      "id": "chebi-1482",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(=O)(O)OC1[C@H](O)[C@H](O)C(OP(=O)(O)O)[C@H](O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC",
+      "before": "[(2R)-2-hexadecanoyloxy-3-[hydroxy-[(2R,3R,5S,6R)-2,3,5,6-tetrahydroxy-4-phosphonooxycyclohexyl]oxyphosphoryl]oxypropyl] hexadecanoate",
+      "after": "(2R)-2-hexadecanoyloxy-3-[hydroxy-[(2R,3R,5S,6R)-2,3,5,6-tetrahydroxy-4-phosphonooxycyclohexyl]oxyphosphoryl]oxypropyl hexadecanoate"
+    },
+    {
+      "id": "chebi-1487",
+      "smiles": "CCCCCCCCCCCCCCCCCC(=O)OC[C@@H](COC(=O)CCCCCCCCCCCCCCC)OC(=O)CCCCCCCCCCCCCCCCC",
+      "before": "[(2R)-3-hexadecanoyloxy-2-octadecanoyloxypropyl] octadecanoate",
+      "after": "(2R)-3-hexadecanoyloxy-2-octadecanoyloxypropyl octadecanoate"
+    },
+    {
+      "id": "chebi-1492",
+      "smiles": "CCCCCCCCCCCCCCCCCC(=O)OC/C=C(C)/C=C/C=C(C)/C=C/C1=C(C)CCCC1(C)C",
+      "before": "[(2E,4E,6E,8E)-3,7-dimethyl-9-(2,6,6-trimethylcyclohexen-1-yl)nona-2,4,6,8-tetraenyl] octadecanoate",
+      "after": "(2E,4E,6E,8E)-3,7-dimethyl-9-(2,6,6-trimethylcyclohexen-1-yl)nona-2,4,6,8-tetraenyl octadecanoate"
+    },
+    {
+      "id": "chebi-1507",
+      "smiles": "COc1cc(/C=C/COC(C)=O)ccc1O",
+      "before": "[(2E)-3-(4-hydroxy-3-methoxyphenyl)prop-2-enyl] acetate",
+      "after": "(2E)-3-(4-hydroxy-3-methoxyphenyl)prop-2-enyl acetate"
+    },
+    {
+      "id": "chebi-1509",
+      "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCC(=O)O[C@H](CO/C=C\\CCCCCCCCCCCCCC)COP(=O)(O)OCCN",
+      "before": "[(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-[(1Z)-hexadec-1-enoxy]propan-2-yl] (9Z,12Z)-octadeca-9,12-dienoate",
+      "after": "(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-[(1Z)-hexadec-1-enoxy]propan-2-yl (9Z,12Z)-octadeca-9,12-dienoate"
+    },
+    {
+      "id": "chebi-1538",
+      "smiles": "CCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(=O)(O)O)OC(=O)CCCCCCCCCCCCC",
+      "before": "[(2R)-3-phosphonooxy-2-tetradecanoyloxypropyl] heptadecanoate",
+      "after": "(2R)-3-phosphonooxy-2-tetradecanoyloxypropyl heptadecanoate"
+    },
+    {
+      "id": "chebi-1546",
+      "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCC)COP(=O)(O)OC[C@@H](O)CO",
+      "before": "[(2R)-1-[(2S)-2,3-dihydroxypropoxy(hydroxy)phosphoryl]oxy-3-hexadecanoyloxypropan-2-yl] (9Z,12Z)-octadeca-9,12-dienoate",
+      "after": "(2R)-1-[(2S)-2,3-dihydroxypropoxy(hydroxy)phosphoryl]oxy-3-hexadecanoyloxypropan-2-yl (9Z,12Z)-octadeca-9,12-dienoate"
+    },
+    {
+      "id": "chebi-1550",
+      "smiles": "O=S(=O)(O)O/N=C(\\Cc1c[nH]c2ccccc12)S[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O",
+      "before": "[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl] (1E)-2-(1H-indol-3-yl)-N-sulfooxyethanimidothioate",
+      "after": "(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl (1E)-2-(1H-indol-3-yl)-N-sulfooxyethanimidothioate"
+    },
+    {
+      "id": "chebi-1565",
+      "smiles": "COc1cc(C(=O)O[C@H]2[C@H](O[C@@H]3[C@@H](OC(C)=O)[C@H](O[C@H]4C[C@H]5[C@@H]6CC=C7C[C@@H](O[C@@H]8O[C@H](CO[C@@H]9O[C@H](CO)[C@@H](O[C@@H]%10O[C@H](CO)[C@@H](O)[C@H](O)[C@H]%10O)[C@H](O)[C@H]9O)[C@@H](O)[C@H](O)[C@H]8O)CC[C@]7(C)[C@H]6CC[C@]5(C)[C@@]4(O)[C@@H](C)C(=O)CCC(C)C)OC[C@@H]3O)OC[C@@H](O)[C@@H]2O)cc(OC)c1OC",
+      "before": "[(2S,3R,4S,5R)-2-[(2S,3R,4S,5S)-3-acetyloxy-2-[[(3S,8R,9S,10R,13S,14S,16S,17S)-3-[(2R,3R,4S,5S,6R)-6-[[(2R,3R,4R,5S,6R)-3,4-dihydroxy-6-(hydroxymethyl)-5-[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,4,5-trihydroxyoxan-2-yl]oxy-17-hydroxy-10,13-dimethyl-17-[(2R)-6-methyl-3-oxoheptan-2-yl]-1,2,3,4,7,8,9,11,12,14,15,16-dodecahydrocyclopenta[a]phenanthren-16-yl]oxy]-5-hydroxyoxan-4-yl]oxy-4,5-dihydroxyoxan-3-yl] 3,4,5-trimethoxybenzoate",
+      "after": "(2S,3R,4S,5R)-2-[(2S,3R,4S,5S)-3-acetyloxy-2-[[(3S,8R,9S,10R,13S,14S,16S,17S)-3-[(2R,3R,4S,5S,6R)-6-[[(2R,3R,4R,5S,6R)-3,4-dihydroxy-6-(hydroxymethyl)-5-[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,4,5-trihydroxyoxan-2-yl]oxy-17-hydroxy-10,13-dimethyl-17-[(2R)-6-methyl-3-oxoheptan-2-yl]-1,2,3,4,7,8,9,11,12,14,15,16-dodecahydrocyclopenta[a]phenanthren-16-yl]oxy]-5-hydroxyoxan-4-yl]oxy-4,5-dihydroxyoxan-3-yl 3,4,5-trimethoxybenzoate"
+    },
+    {
+      "id": "chebi-1589",
+      "smiles": "CCCCCC/C=C\\CCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCC)CO[C@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O",
+      "before": "[(2S)-1-hexadecanoyloxy-3-[(2S,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxypropan-2-yl] (11Z)-octadec-11-enoate",
+      "after": "(2S)-1-hexadecanoyloxy-3-[(2S,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxypropan-2-yl (11Z)-octadec-11-enoate"
+    },
+    {
+      "id": "chebi-1592",
+      "smiles": "N#C[C@@H](O[C@@H]1O[C@H](CO[C@@H]2OC[C@@H](OC(=O)/C=C/c3ccc(O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4O)cc3)[C@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O)c1ccccc1",
+      "before": "[(3R,4R,5R,6R)-6-[[(2R,3S,4S,5R,6R)-6-[(S)-cyano(phenyl)methoxy]-3,4,5-trihydroxyoxan-2-yl]methoxy]-4,5-dihydroxyoxan-3-yl] (2E)-3-[4-[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyphenyl]prop-2-enoate",
+      "after": "(3R,4R,5R,6R)-6-[[(2R,3S,4S,5R,6R)-6-[(S)-cyano(phenyl)methoxy]-3,4,5-trihydroxyoxan-2-yl]methoxy]-4,5-dihydroxyoxan-3-yl (2E)-3-[4-[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyphenyl]prop-2-enoate"
+    },
+    {
+      "id": "chebi-1599",
+      "smiles": "CO[C@H]1/C=C/O[C@@]2(C)Oc3c(C)c(O)c4c(O)c(c5c(nc6cc(C)ccn65)c4c3C2=O)N=C(O)/C(C)=C\\C=C\\[C@H](C)[C@H](O)[C@@H](C)[C@@H](O)[C@@H](C)[C@H](OC(C)=O)[C@@H]1C",
+      "before": "[(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,36-tetrahydroxy-11-methoxy-3,7,12,14,16,18,22,30-octamethyl-6,23-dioxo-8,37-dioxa-24,27,33-triazahexacyclo[23.10.1.14,7.05,35.026,34.027,32]heptatriaconta-1(35),2,4,9,19,21,25(36),26(34),28,30,32-undecaen-13-yl] acetate",
+      "after": "(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,36-tetrahydroxy-11-methoxy-3,7,12,14,16,18,22,30-octamethyl-6,23-dioxo-8,37-dioxa-24,27,33-triazahexacyclo[23.10.1.14,7.05,35.026,34.027,32]heptatriaconta-1(35),2,4,9,19,21,25(36),26(34),28,30,32-undecaen-13-yl acetate"
+    },
+    {
+      "id": "chebi-1662",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(=O)(O)O[C@H]1[C@H](O)[C@@H](OP(=O)(O)O)[C@H](O)[C@@H](O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC",
+      "before": "[(2R)-2-hexadecanoyloxy-3-[hydroxy-[(1R,2R,3R,4R,5S,6R)-2,3,4,6-tetrahydroxy-5-phosphonooxycyclohexyl]oxyphosphoryl]oxypropyl] hexadecanoate",
+      "after": "(2R)-2-hexadecanoyloxy-3-[hydroxy-[(1R,2R,3R,4R,5S,6R)-2,3,4,6-tetrahydroxy-5-phosphonooxycyclohexyl]oxyphosphoryl]oxypropyl hexadecanoate"
+    },
+    {
+      "id": "chebi-1683",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)OC[C@@H](O)COP(=O)(O)OCCN=C(O)CCCCCCC/C=C\\CCCCCCCC",
+      "before": "[(2R)-2-hydroxy-3-[hydroxy-[2-[[(9Z)-octadec-9-enoyl]amino]ethoxy]phosphoryl]oxypropyl](9Z)-octadec-9-enoate",
+      "after": "(2R)-2-hydroxy-3-[hydroxy-[2-[[(9Z)-octadec-9-enoyl]amino]ethoxy]phosphoryl]oxypropyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-1687",
+      "smiles": "C/C(=C\\C(=O)OCCCCCCCC(O)=Nc1c(O)nc2cssc1-2)[C@@H](O)[C@@H]1OC[C@H](C/C=C/[C@@H](C)[C@H](C)O)[C@@H](O)[C@H]1O",
+      "before": "[8-oxo-8-[(5-oxo-4H-dithiolo[4,3-b]pyrrol-6-yl)amino]octyl] (2E,4R)-4-[(2S,3R,4R,5S)-3,4-dihydroxy-5-[(2E,4R,5S)-5-hydroxy-4-methylhex-2-enyl]oxan-2-yl]-4-hydroxy-3-methylbut-2-enoate",
+      "after": "8-oxo-8-[(5-oxo-4H-dithiolo[4,3-b]pyrrol-6-yl)amino]octyl (2E,4R)-4-[(2S,3R,4R,5S)-3,4-dihydroxy-5-[(2E,4R,5S)-5-hydroxy-4-methylhex-2-enyl]oxan-2-yl]-4-hydroxy-3-methylbut-2-enoate"
+    },
+    {
+      "id": "chebi-1693",
+      "smiles": "CC(=O)O[C@@H](CCCCc1ccc(O)cc1)CCc1ccc(O)c(O)c1",
+      "before": "[(3S)-1-(3,4-dihydroxyphenyl)-7-(4-hydroxyphenyl)heptan-3-yl] acetate",
+      "after": "(3S)-1-(3,4-dihydroxyphenyl)-7-(4-hydroxyphenyl)heptan-3-yl acetate"
+    },
+    {
+      "id": "chebi-1701",
+      "smiles": "C/C=C(\\C)C(=O)O[C@@H](C[C@@]1(C)[C@H](C)C[C@H](OC(C)=O)[C@]2(COC(C)=O)[C@@H]1CCC[C@]21CO1)C1=CC(=O)OC1",
+      "before": "[(1S)-2-[(1S,2R,4S,4aR,5R,8aR)-4-acetyloxy-4a-(acetyloxymethyl)-1,2-dimethylspiro[3,4,6,7,8,8a-hexahydro-2H-naphthalene-5,2'-oxirane]-1-yl]-1-(5-oxo-2H-furan-3-yl)ethyl] (2E)-2-methylbut-2-enoate",
+      "after": "(1S)-2-[(1S,2R,4S,4aR,5R,8aR)-4-acetyloxy-4a-(acetyloxymethyl)-1,2-dimethylspiro[3,4,6,7,8,8a-hexahydro-2H-naphthalene-5,2'-oxirane]-1-yl]-1-(5-oxo-2H-furan-3-yl)ethyl (2E)-2-methylbut-2-enoate"
+    },
+    {
+      "id": "chebi-1722",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)OCC(COP(=O)(O)O)OC(=O)CCCCCCC/C=C\\CCCCCCCC",
+      "before": "(2-[(9Z)-octadec-9-enoyloxy]-3-phosphonooxypropyl) (9Z)-octadec-9-enoate",
+      "after": "2-[(9Z)-octadec-9-enoyloxy]-3-phosphonooxypropyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-1740",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)OC[C@@H](COP(O)(O)=S)OC",
+      "before": "[(2S)-3-dihydroxyphosphinothioyloxy-2-methoxypropyl] (9Z)-octadec-9-enoate",
+      "after": "(2S)-3-dihydroxyphosphinothioyloxy-2-methoxypropyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-1762",
+      "smiles": "CCCCCCCCCCCCCCCCCC(=O)O[C@H](CO)COP(=O)(O)OCCN",
+      "before": "[(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-hydroxypropan-2-yl] octadecanoate",
+      "after": "(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-hydroxypropan-2-yl octadecanoate"
+    },
+    {
+      "id": "chebi-1813",
+      "smiles": "COC(=O)Cc1c(O)cc(O)cc1OC(=O)c1cc(OC)c(O)c(OC)c1",
+      "before": "[3,5-dihydroxy-2-(2-methoxy-2-oxoethyl)phenyl] 4-hydroxy-3,5-dimethoxybenzoate",
+      "after": "3,5-dihydroxy-2-(2-methoxy-2-oxoethyl)phenyl 4-hydroxy-3,5-dimethoxybenzoate"
+    },
+    {
+      "id": "chebi-1815",
+      "smiles": "CO[C@H]1C[C@H](O[C@H]2CC[C@@]3(C)C(=CC[C@]4(O)[C@@H]3C[C@@H](OC(=O)/C=C(\\C)C(C)C)[C@@]3(C)[C@]4(O)CC[C@@]3(O)C(C)=O)C2)O[C@H](C)[C@H]1O",
+      "before": "[(3S,8S,9R,10R,12R,13S,14R,17S)-17-acetyl-8,14,17-trihydroxy-3-[(2R,4S,5R,6R)-5-hydroxy-4-methoxy-6-methyloxan-2-yl]oxy-10,13-dimethyl-1,2,3,4,7,9,11,12,15,16-decahydrocyclopenta[a]phenanthren-12-yl] (2E)-3,4-dimethylpent-2-enoate",
+      "after": "(3S,8S,9R,10R,12R,13S,14R,17S)-17-acetyl-8,14,17-trihydroxy-3-[(2R,4S,5R,6R)-5-hydroxy-4-methoxy-6-methyloxan-2-yl]oxy-10,13-dimethyl-1,2,3,4,7,9,11,12,15,16-decahydrocyclopenta[a]phenanthren-12-yl (2E)-3,4-dimethylpent-2-enoate"
+    },
+    {
+      "id": "chebi-1817",
+      "smiles": "CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCCC(=O)O[C@@H](CO)COC(=O)CCCCCCCCCCCCCCCCC",
+      "before": "[(2S)-1-hydroxy-3-octadecanoyloxypropan-2-yl] (7Z,10Z,13Z,16Z)-docosa-7,10,13,16-tetraenoate",
+      "after": "(2S)-1-hydroxy-3-octadecanoyloxypropan-2-yl (7Z,10Z,13Z,16Z)-docosa-7,10,13,16-tetraenoate"
+    },
+    {
+      "id": "chebi-1822",
+      "smiles": "CC1=CC(=O)CC(C)(C)[C@@]1(O)/C=C/C(C)=C/C(=O)OC1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O",
+      "before": "[(3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl] (2E,4E)-5-[(1S)-1-hydroxy-2,6,6-trimethyl-4-oxocyclohex-2-en-1-yl]-3-methylpenta-2,4-dienoate",
+      "after": "(3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl (2E,4E)-5-[(1S)-1-hydroxy-2,6,6-trimethyl-4-oxocyclohex-2-en-1-yl]-3-methylpenta-2,4-dienoate"
+    },
+    {
+      "id": "chebi-1833",
+      "smiles": "C/C=C(/C)C(=O)O[C@H]1c2cc3c(c(OC)c2-c2c(cc4c(c2OC)OCO4)C[C@H](C)[C@]1(C)O)OCO3",
+      "before": "[(11S,12S,13S)-12-hydroxy-3,22-dimethoxy-12,13-dimethyl-5,7,18,20-tetraoxapentacyclo[13.7.0.02,10.04,8.017,21]docosa-1(22),2,4(8),9,15,17(21)-hexaen-11-yl] (2Z)-2-methylbut-2-enoate",
+      "after": "(11S,12S,13S)-12-hydroxy-3,22-dimethoxy-12,13-dimethyl-5,7,18,20-tetraoxapentacyclo[13.7.0.02,10.04,8.017,21]docosa-1(22),2,4(8),9,15,17(21)-hexaen-11-yl (2Z)-2-methylbut-2-enoate"
+    },
+    {
+      "id": "chebi-1883",
+      "smiles": "C[C@H](CCCCCCCCCCCC(=O)O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)O[C@@H]1O[C@@H](C)[C@H](O)C[C@H]1O",
+      "before": "[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl] (13R)-13-[(2R,3R,5R,6S)-3,5-dihydroxy-6-methyloxan-2-yl]oxytetradecanoate",
+      "after": "(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl (13R)-13-[(2R,3R,5R,6S)-3,5-dihydroxy-6-methyloxan-2-yl]oxytetradecanoate"
+    },
+    {
+      "id": "chebi-1916",
+      "smiles": "O=C(CCCCCN=C(O)COc1ccc(/C=C/c2ccc3n2[B-](F)(F)[N+]2=C(C4=S=CC=C4)C=CC2=C3)cc1)ON1C(=O)CCC1=O",
+      "before": "(2,5-dioxopyrrolidin-1-yl) 6-[[2-[4-[(1E)-2-(2,2-difluoro-12-thiophen-2-yl-3-aza-1-azonia-2-boranuidatricyclo[7.3.0.03,7]dodeca-1(12),4,6,8,10-pentaen-4-yl)ethenyl]phenoxy]acetyl]amino]hexanoate",
+      "after": "2,5-dioxopyrrolidin-1-yl 6-[[2-[4-[(1E)-2-(2,2-difluoro-12-thiophen-2-yl-3-aza-1-azonia-2-boranuidatricyclo[7.3.0.03,7]dodeca-1(12),4,6,8,10-pentaen-4-yl)ethenyl]phenoxy]acetyl]amino]hexanoate"
+    },
+    {
+      "id": "chebi-1923",
+      "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCC(=O)OC[C@@H](COC(=O)CCCCCCC/C=C\\CCCCCCCC)OC(=O)CCCCCCC/C=C\\C/C=C\\CCCCC",
+      "before": "[(2R)-2,3-di[(9Z,12Z)-octadeca-9,12-dienoyloxy]propyl] (9Z)-octadec-9-enoate",
+      "after": "(2R)-2,3-di[(9Z,12Z)-octadeca-9,12-dienoyloxy]propyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-1959",
+      "smiles": "C=C[C@H]1[C@H](O[C@@H]2O[C@H](COC(C)=O)[C@@H](OC(=O)c3cccc(O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4O)c3O)[C@H](OC(C)=O)[C@H]2OC(C)=O)OC=C2C(=O)OCC[C@H]21",
+      "before": "[(2R,3R,4S,5R,6S)-4,5-diacetyloxy-2-(acetyloxymethyl)-6-[[(3S,4R,4aS)-4-ethenyl-8-oxo-4,4a,5,6-tetrahydro-3H-pyrano[3,4-c]pyran-3-yl]oxy]oxan-3-yl] 2-hydroxy-3-[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxybenzoate",
+      "after": "(2R,3R,4S,5R,6S)-4,5-diacetyloxy-2-(acetyloxymethyl)-6-[[(3S,4R,4aS)-4-ethenyl-8-oxo-4,4a,5,6-tetrahydro-3H-pyrano[3,4-c]pyran-3-yl]oxy]oxan-3-yl 2-hydroxy-3-[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxybenzoate"
+    },
+    {
+      "id": "chebi-1987",
+      "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCC(=O)OC[C@H](COP(=O)(O)OCC(O)CO)OC(=O)C/C=C/CCCCCCCCCCCC",
+      "before": "[(2R)-3-[2,3-dihydroxypropoxy(hydroxy)phosphoryl]oxy-2-[(3E)-hexadec-3-enoyloxy]propyl] (9Z,12Z)-octadeca-9,12-dienoate",
+      "after": "(2R)-3-[2,3-dihydroxypropoxy(hydroxy)phosphoryl]oxy-2-[(3E)-hexadec-3-enoyloxy]propyl (9Z,12Z)-octadeca-9,12-dienoate"
+    },
+    {
+      "id": "chebi-1995",
+      "smiles": "CC(=O)O[C@]1(C(C)=O)CC[C@H]2[C@@H]3CCC4=CC(=O)CCC4=C3[C@@H](c3ccc(N(C)C)cc3)C[C@@]21C",
+      "before": "[(8S,11R,13S,14S,17R)-17-acetyl-11-[4-(dimethylamino)phenyl]-13-methyl-3-oxo-1,2,6,7,8,11,12,14,15,16-decahydrocyclopenta[a]phenanthren-17-yl] acetate",
+      "after": "(8S,11R,13S,14S,17R)-17-acetyl-11-[4-(dimethylamino)phenyl]-13-methyl-3-oxo-1,2,6,7,8,11,12,14,15,16-decahydrocyclopenta[a]phenanthren-17-yl acetate"
+    },
+    {
+      "id": "chebi-2031",
+      "smiles": "CCC/C(=N/OS(=O)(=O)O)S[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O",
+      "before": "[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl] (1Z)-N-sulfooxybutanimidothioate",
+      "after": "(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl (1Z)-N-sulfooxybutanimidothioate"
+    },
+    {
+      "id": "chebi-2043",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)OCCC(C)CC/C=C(/C)CC/C=C(\\C)CC/C=C(\\C)CCC=C(C)C",
+      "before": "[(6Z,10E,14E)-3,7,11,15,19-pentamethylicosa-6,10,14,18-tetraenyl] hexadecanoate",
+      "after": "(6Z,10E,14E)-3,7,11,15,19-pentamethylicosa-6,10,14,18-tetraenyl hexadecanoate"
+    },
+    {
+      "id": "chebi-2056",
+      "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCCCC)COP(=O)(O)O[C@H]1[C@H](O)[C@@H](OP(=O)(O)O)[C@H](O)[C@@H](O)[C@H]1O",
+      "before": "[(2R)-3-[hydroxy-[(1R,2R,3R,4R,5S,6R)-2,3,4,6-tetrahydroxy-5-phosphonooxycyclohexyl]oxyphosphoryl]oxy-2-[(9Z,12Z)-octadeca-9,12-dienoyloxy]propyl] octadecanoate",
+      "after": "(2R)-3-[hydroxy-[(1R,2R,3R,4R,5S,6R)-2,3,4,6-tetrahydroxy-5-phosphonooxycyclohexyl]oxyphosphoryl]oxy-2-[(9Z,12Z)-octadeca-9,12-dienoyloxy]propyl octadecanoate"
+    },
+    {
+      "id": "chebi-2070",
+      "smiles": "C[C@@H](N)C(=O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1O",
+      "before": "[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl] (2R)-2-aminopropanoate",
+      "after": "[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl (2R)-2-aminopropanoate"
+    },
+    {
+      "id": "chebi-2087",
+      "smiles": "CCCCCCCCCCCCCCC[C@@H](C[C@@H](O)C[C@@H](O)C[C@@H](O)C[C@@H](O)C[C@H]1CC=CC(=O)O1)OC(C)=O",
+      "before": "[(2R,4R,6S,8S,10S)-2,4,6,8-tetrahydroxy-1-[(2R)-6-oxo-2,3-dihydropyran-2-yl]pentacosan-10-yl] acetate",
+      "after": "(2R,4R,6S,8S,10S)-2,4,6,8-tetrahydroxy-1-[(2R)-6-oxo-2,3-dihydropyran-2-yl]pentacosan-10-yl acetate"
+    },
+    {
+      "id": "chebi-2110",
+      "smiles": "C[N+]1(C)[C@@H]2CC(OC(=O)C(O)(c3cccs3)c3cccs3)C[C@H]1[C@@H]1O[C@@H]12.[Br-]",
+      "before": "[(1R,2R,4S,5S)-9,9-dimethyl-3-oxa-9-azoniatricyclo[3.3.1.02,4]nonan-7-yl] 2-hydroxy-2,2-dithiophen-2-ylacetate bromide",
+      "after": "(1R,2R,4S,5S)-9,9-dimethyl-3-oxa-9-azoniatricyclo[3.3.1.02,4]nonan-7-yl 2-hydroxy-2,2-dithiophen-2-ylacetate bromide"
+    },
+    {
+      "id": "chebi-2111",
+      "smiles": "CO[C@@H]1C[C@@H](C)O[C@H]2O[C@@H]3C=C4CC[C@@H]5[C@H](CC[C@]6(C)[C@@H](C7=CC(=O)OC7)[C@@H](OC(C)=O)C[C@]56O)[C@@]4(C)C[C@H]3O[C@]21O",
+      "before": "[(3R,5S,7R,9R,10S,12R,14R,15S,18R,19R,20S,22S,23R)-10,22-dihydroxy-9-methoxy-7,14,18-trimethyl-19-(5-oxo-2H-furan-3-yl)-4,6,11-trioxahexacyclo[12.11.0.03,12.05,10.015,23.018,22]pentacos-1-en-20-yl] acetate",
+      "after": "(3R,5S,7R,9R,10S,12R,14R,15S,18R,19R,20S,22S,23R)-10,22-dihydroxy-9-methoxy-7,14,18-trimethyl-19-(5-oxo-2H-furan-3-yl)-4,6,11-trioxahexacyclo[12.11.0.03,12.05,10.015,23.018,22]pentacos-1-en-20-yl acetate"
+    },
+    {
+      "id": "chebi-2116",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)O[C@H](CO)COP(=O)(O)OC[C@H](O)CO",
+      "before": "[(2R)-1-[[(2R)-2,3-dihydroxypropoxy]-hydroxyphosphoryl]oxy-3-hydroxypropan-2-yl] (9Z)-octadec-9-enoate",
+      "after": "(2R)-1-[[(2R)-2,3-dihydroxypropoxy]-hydroxyphosphoryl]oxy-3-hydroxypropan-2-yl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-2128",
+      "smiles": "COc1ccc([C@@H]2Sc3ccccc3N(CCN(C)C)C(=O)[C@@H]2OC(C)=O)cc1",
+      "before": "[(2S,3S)-5-[2-(dimethylamino)ethyl]-2-(4-methoxyphenyl)-4-oxo-2,3-dihydro-1,5-benzothiazepin-3-yl] acetate",
+      "after": "(2S,3S)-5-[2-(dimethylamino)ethyl]-2-(4-methoxyphenyl)-4-oxo-2,3-dihydro-1,5-benzothiazepin-3-yl acetate"
+    },
+    {
+      "id": "chebi-2142",
+      "smiles": "O=C(CCCCCN=C(O)COc1ccc(/C=C/c2ccc3n2[B-](F)(F)[N+]2=C(c4ccc[nH]4)C=CC2=C3)cc1)ON1C(=O)CCC1=O",
+      "before": "(2,5-dioxopyrrolidin-1-yl) 6-[[2-[4-[(1E)-2-[2,2-difluoro-12-(1H-pyrrol-2-yl)-3-aza-1-azonia-2-boranuidatricyclo[7.3.0.03,7]dodeca-1(12),4,6,8,10-pentaen-4-yl]ethenyl]phenoxy]acetyl]amino]hexanoate",
+      "after": "2,5-dioxopyrrolidin-1-yl 6-[[2-[4-[(1E)-2-[2,2-difluoro-12-(1H-pyrrol-2-yl)-3-aza-1-azonia-2-boranuidatricyclo[7.3.0.03,7]dodeca-1(12),4,6,8,10-pentaen-4-yl]ethenyl]phenoxy]acetyl]amino]hexanoate"
+    },
+    {
+      "id": "chebi-2159",
+      "smiles": "CCCC1=CC2=C(CO1)C(=O)[C@](C)(OC(=O)c1c(C)cc(O)c(O)c1OC)[C@H](O)C2",
+      "before": "[(6R,7R)-6-hydroxy-7-methyl-8-oxo-3-propyl-5,6-dihydro-1H-isochromen-7-yl] 3,4-dihydroxy-2-methoxy-6-methylbenzoate",
+      "after": "(6R,7R)-6-hydroxy-7-methyl-8-oxo-3-propyl-5,6-dihydro-1H-isochromen-7-yl 3,4-dihydroxy-2-methoxy-6-methylbenzoate"
+    },
+    {
+      "id": "chebi-2184",
+      "smiles": "CC(=O)O[C@H]1/C(C)=C\\C[C@H]2[C@@H](/C=C(\\C)C(=O)[C@@]3(OC(=O)c4ccccc4)C[C@H](C)[C@H](O)[C@H]13)C2(C)C",
+      "before": "[(1R,3E,5R,7S,9Z,11R,12R,13S,14S)-11-acetyloxy-13-hydroxy-3,6,6,10,14-pentamethyl-2-oxo-1-tricyclo[10.3.0.05,7]pentadeca-3,9-dienyl] benzoate",
+      "after": "(1R,3E,5R,7S,9Z,11R,12R,13S,14S)-11-acetyloxy-13-hydroxy-3,6,6,10,14-pentamethyl-2-oxo-1-tricyclo[10.3.0.05,7]pentadeca-3,9-dienyl benzoate"
+    },
+    {
+      "id": "chebi-2192",
+      "smiles": "CCCCCCCCCCCCCCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCC)COP(=O)(O)OCCN",
+      "before": "[(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-pentadecanoyloxypropan-2-yl] docosanoate",
+      "after": "(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-pentadecanoyloxypropan-2-yl docosanoate"
+    },
+    {
+      "id": "chebi-2197",
+      "smiles": "CCC[C@H](CCCCCCCc1cc(O)cc(O)c1C(=O)O[C@H](CCC)CCCCCCCc1cc(O)cc(O)c1)OC(C)=O",
+      "before": "[(4R)-11-(3,5-dihydroxyphenyl)undecan-4-yl] 2-[(8R)-8-acetyloxyundecyl]-4,6-dihydroxybenzoate",
+      "after": "(4R)-11-(3,5-dihydroxyphenyl)undecan-4-yl 2-[(8R)-8-acetyloxyundecyl]-4,6-dihydroxybenzoate"
+    },
+    {
+      "id": "chebi-2203",
+      "smiles": "C=C(C)[C@@]12OC3(c4ccccc4)O[C@@H]1[C@@H]1[C@H]4O[C@@]4(C)[C@@H](O)[C@]4(O)C(=O)[C@@H](C)C[C@H]4[C@@]1(O3)[C@H](C)[C@@H]2OC(=O)c1ccccc1",
+      "before": "[(1R,2R,4S,6S,7S,8S,10R,11S,12R,16S,17S,18R)-6,7-dihydroxy-4,8,18-trimethyl-5-oxo-14-phenyl-16-prop-1-en-2-yl-9,13,15,19-tetraoxahexacyclo[12.4.1.01,11.02,6.08,10.012,16]nonadecan-17-yl] benzoate",
+      "after": "(1R,2R,4S,6S,7S,8S,10R,11S,12R,16S,17S,18R)-6,7-dihydroxy-4,8,18-trimethyl-5-oxo-14-phenyl-16-prop-1-en-2-yl-9,13,15,19-tetraoxahexacyclo[12.4.1.01,11.02,6.08,10.012,16]nonadecan-17-yl benzoate"
+    },
+    {
+      "id": "chebi-2240",
+      "smiles": "CCCC(=O)O[C@]1(C(=O)CO)CC[C@H]2[C@@H]3CCC4=CC(=O)CC[C@]4(C)[C@H]3[C@@H](O)C[C@@]21C",
+      "before": "[(8S,9S,10R,11S,13S,14S,17R)-11-hydroxy-17-(2-hydroxyacetyl)-10,13-dimethyl-3-oxo-2,6,7,8,9,11,12,14,15,16-decahydro-1H-cyclopenta[a]phenanthren-17-yl] butanoate",
+      "after": "(8S,9S,10R,11S,13S,14S,17R)-11-hydroxy-17-(2-hydroxyacetyl)-10,13-dimethyl-3-oxo-2,6,7,8,9,11,12,14,15,16-decahydro-1H-cyclopenta[a]phenanthren-17-yl butanoate"
+    },
+    {
+      "id": "chebi-2300",
+      "smiles": "CC(=O)O[C@H](CCCCc1ccc(O)cc1)CCc1ccc(O)c(O)c1",
+      "before": "[(3R)-1-(3,4-dihydroxyphenyl)-7-(4-hydroxyphenyl)heptan-3-yl] acetate",
+      "after": "(3R)-1-(3,4-dihydroxyphenyl)-7-(4-hydroxyphenyl)heptan-3-yl acetate"
+    },
+    {
+      "id": "chebi-2317",
+      "smiles": "CCCCCCCCCCCCCCCCCC(=O)O[C@H]1[C@@H](O[C@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2OS(=O)(=O)O)O[C@H](CO)[C@@H](O)[C@@H]1OC(=O)[C@@H](C)C[C@@H](C)C[C@@H](C)C[C@@H](C)C[C@@H](C)C[C@@H](C)C[C@@H](C)C[C@@H](C)C(O)CCCCCCCCCCCCCCC",
+      "before": "[(2R,3R,4S,5R,6R)-2-[(2R,3R,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-sulfooxyoxan-2-yl]oxy-5-hydroxy-6-(hydroxymethyl)-3-octadecanoyloxyoxan-4-yl] (2S,4S,6S,8S,10R,12R,14R,16R)-17-hydroxy-2,4,6,8,10,12,14,16-octamethyldotriacontanoate",
+      "after": "(2R,3R,4S,5R,6R)-2-[(2R,3R,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-sulfooxyoxan-2-yl]oxy-5-hydroxy-6-(hydroxymethyl)-3-octadecanoyloxyoxan-4-yl (2S,4S,6S,8S,10R,12R,14R,16R)-17-hydroxy-2,4,6,8,10,12,14,16-octamethyldotriacontanoate"
+    },
+    {
+      "id": "chebi-2331",
+      "smiles": "COc1cc(C(=O)O[C@@H]2Cc3c(O)cc(O)cc3O[C@@H]2c2ccc(O)c(O)c2)cc(O)c1O",
+      "before": "[(2R,3R)-2-(3,4-dihydroxyphenyl)-5,7-dihydroxy-3,4-dihydro-2H-chromen-3-yl] 3,4-dihydroxy-5-methoxybenzoate",
+      "after": "(2R,3R)-2-(3,4-dihydroxyphenyl)-5,7-dihydroxy-3,4-dihydro-2H-chromen-3-yl 3,4-dihydroxy-5-methoxybenzoate"
+    },
+    {
+      "id": "chebi-2336",
+      "smiles": "CC(=O)O[C@H]1[C@H](O[C@H]2CC[C@]34C[C@]35CC[C@]3(C)[C@@H]([C@@]6(C)CC[C@@H](C(C)(C)O)O6)[C@@H](O)C[C@@]3(C)[C@@H]5C[C@H](O[C@@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O)[C@H]4C2(C)C)OC[C@@H](O)[C@@H]1O",
+      "before": "[(2S,3R,4S,5R)-4,5-dihydroxy-2-[[(1S,3R,6S,8R,9S,11S,12S,14S,15R,16R)-14-hydroxy-15-[(2R,5S)-5-(2-hydroxypropan-2-yl)-2-methyloxolan-2-yl]-7,7,12,16-tetramethyl-9-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-pentacyclo[9.7.0.01,3.03,8.012,16]octadecanyl]oxy]oxan-3-yl] acetate",
+      "after": "(2S,3R,4S,5R)-4,5-dihydroxy-2-[[(1S,3R,6S,8R,9S,11S,12S,14S,15R,16R)-14-hydroxy-15-[(2R,5S)-5-(2-hydroxypropan-2-yl)-2-methyloxolan-2-yl]-7,7,12,16-tetramethyl-9-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-pentacyclo[9.7.0.01,3.03,8.012,16]octadecanyl]oxy]oxan-3-yl acetate"
+    },
+    {
+      "id": "chebi-2358",
+      "smiles": "CC(=O)O[C@@H]1C[C@@H](C)[C@](O)(CCC2=CC(=O)OC2)[C@@]2(C)CCCC(C)(C)[C@H]12",
+      "before": "[(1R,3R,4R,4aS,8aS)-4-hydroxy-3,4a,8,8-tetramethyl-4-[2-(5-oxo-2H-furan-3-yl)ethyl]-2,3,5,6,7,8a-hexahydro-1H-naphthalen-1-yl] acetate",
+      "after": "(1R,3R,4R,4aS,8aS)-4-hydroxy-3,4a,8,8-tetramethyl-4-[2-(5-oxo-2H-furan-3-yl)ethyl]-2,3,5,6,7,8a-hexahydro-1H-naphthalen-1-yl acetate"
+    },
+    {
+      "id": "chebi-2414",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)O[C@H]1[C@@H](O[C@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2OS(=O)(=O)O)O[C@H](CO)[C@@H](O)[C@@H]1OC(=O)CCCCCCCCCCCCCCCO",
+      "before": "[(2R,3R,4S,5R,6R)-2-[(2R,3R,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-sulfooxyoxan-2-yl]oxy-3-hexadecanoyloxy-5-hydroxy-6-(hydroxymethyl)oxan-4-yl] 16-hydroxyhexadecanoate",
+      "after": "(2R,3R,4S,5R,6R)-2-[(2R,3R,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-sulfooxyoxan-2-yl]oxy-3-hexadecanoyloxy-5-hydroxy-6-(hydroxymethyl)oxan-4-yl 16-hydroxyhexadecanoate"
+    },
+    {
+      "id": "chebi-2420",
+      "smiles": "CC(=O)O[C@@H]1CC[C@]2(C)C3=C(CC[C@H]2C1(C)C)[C@]1(C)CC[C@H]([C@@H](C/C=C/C(C)(C)O)C(=O)O[C@@H]2OC[C@@H](O)[C@H](O)[C@H]2O)[C@@]1(C)CC3",
+      "before": "[(2S,3R,4S,5R)-3,4,5-trihydroxyoxan-2-yl] (2R,4E)-2-[(3R,5R,10S,13R,14R,17R)-3-acetyloxy-4,4,10,13,14-pentamethyl-2,3,5,6,7,11,12,15,16,17-decahydro-1H-cyclopenta[a]phenanthren-17-yl]-6-hydroxy-6-methylhept-4-enoate",
+      "after": "(2S,3R,4S,5R)-3,4,5-trihydroxyoxan-2-yl (2R,4E)-2-[(3R,5R,10S,13R,14R,17R)-3-acetyloxy-4,4,10,13,14-pentamethyl-2,3,5,6,7,11,12,15,16,17-decahydro-1H-cyclopenta[a]phenanthren-17-yl]-6-hydroxy-6-methylhept-4-enoate"
+    },
+    {
+      "id": "chebi-2426",
+      "smiles": "CC(=O)O[C@H]1C(=O)[C@@]2(C)[C@H]([C@H](OC(=O)c3ccccc3)[C@]3(O)C[C@H](O)C(C)=C1C3(C)C)[C@]1(OC(C)=O)CO[C@@H]1C[C@@H]2O",
+      "before": "[(1S,2S,3R,4S,7R,9S,10S,12R,15S)-4,12-diacetyloxy-1,9,15-trihydroxy-10,14,17,17-tetramethyl-11-oxo-6-oxatetracyclo[11.3.1.03,10.04,7]heptadec-13-en-2-yl] benzoate",
+      "after": "(1S,2S,3R,4S,7R,9S,10S,12R,15S)-4,12-diacetyloxy-1,9,15-trihydroxy-10,14,17,17-tetramethyl-11-oxo-6-oxatetracyclo[11.3.1.03,10.04,7]heptadec-13-en-2-yl benzoate"
+    },
+    {
+      "id": "chebi-2448",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)OC[C@H](CO)OC(=O)CCCCCCCCCCC",
+      "before": "[(2S)-2-dodecanoyloxy-3-hydroxypropyl] (9Z)-octadec-9-enoate",
+      "after": "(2S)-2-dodecanoyloxy-3-hydroxypropyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-2449",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCCC)COP(=O)(O)O",
+      "before": "[(2R)-1-heptadecanoyloxy-3-phosphonooxypropan-2-yl] (9Z)-octadec-9-enoate",
+      "after": "(2R)-1-heptadecanoyloxy-3-phosphonooxypropan-2-yl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-2453",
+      "smiles": "C=C(C)[C@H]1C=C[C@@H](OC(C)=O)[C@]23CO[C@](O)([C@@](C)(O)[C@H]12)[C@@]1(OC(C)=O)C[C@H](C)[C@H](OC(C)=O)[C@@H]1[C@H]3OC(=O)c1cccnc1",
+      "before": "[(1R,2R,3R,4S,5S,7R,8R,9S,10R,11S,14R)-4,7,14-triacetyloxy-8,9-dihydroxy-5,9-dimethyl-11-prop-1-en-2-yl-16-oxatetracyclo[6.6.2.01,10.03,7]hexadec-12-en-2-yl] pyridine-3-carboxylate",
+      "after": "(1R,2R,3R,4S,5S,7R,8R,9S,10R,11S,14R)-4,7,14-triacetyloxy-8,9-dihydroxy-5,9-dimethyl-11-prop-1-en-2-yl-16-oxatetracyclo[6.6.2.01,10.03,7]hexadec-12-en-2-yl pyridine-3-carboxylate"
+    },
+    {
+      "id": "chebi-2458",
+      "smiles": "CC1(C)C[C@@H](OC(=O)c2ccccc2)[C@]2(CO)[C@@H](O)C[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O[C@@H]6OC[C@H](O)[C@H](O[C@@H]7O[C@H](CO)[C@@H](O)[C@H](O)[C@H]7O)[C@H]6O)C(C)(C)[C@@H]5CC[C@]43C)[C@@H]2C1",
+      "before": "[(4R,4aR,5S,6aR,6aS,6bR,8aR,10S,12aR,14bS)-10-[(2S,3R,4S,5S)-3,5-dihydroxy-4-[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-5-hydroxy-4a-(hydroxymethyl)-2,2,6a,6b,9,9,12a-heptamethyl-1,3,4,5,6,6a,7,8,8a,10,11,12,13,14b-tetradecahydropicen-4-yl] benzoate",
+      "after": "(4R,4aR,5S,6aR,6aS,6bR,8aR,10S,12aR,14bS)-10-[(2S,3R,4S,5S)-3,5-dihydroxy-4-[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-5-hydroxy-4a-(hydroxymethyl)-2,2,6a,6b,9,9,12a-heptamethyl-1,3,4,5,6,6a,7,8,8a,10,11,12,13,14b-tetradecahydropicen-4-yl benzoate"
+    },
+    {
+      "id": "chebi-2495",
+      "smiles": "C/C=C(/C)C(=O)O[C@H]1c2cc(OC)c(OC)c(OC)c2-c2c(cc3c(c2OC)OCO3)[C@H](OC(=O)C(C)C)[C@H](C)[C@@H]1C",
+      "before": "[(8R,9S,10R,11R)-3,4,5,19-tetramethoxy-9,10-dimethyl-11-(2-methylpropanoyloxy)-15,17-dioxatetracyclo[10.7.0.02,7.014,18]nonadeca-1(19),2,4,6,12,14(18)-hexaen-8-yl] (2Z)-2-methylbut-2-enoate",
+      "after": "(8R,9S,10R,11R)-3,4,5,19-tetramethoxy-9,10-dimethyl-11-(2-methylpropanoyloxy)-15,17-dioxatetracyclo[10.7.0.02,7.014,18]nonadeca-1(19),2,4,6,12,14(18)-hexaen-8-yl (2Z)-2-methylbut-2-enoate"
+    },
+    {
+      "id": "chebi-2516",
+      "smiles": "CCCCCCCC(=O)OC[C@H](COP(=O)(O)OC1[C@H](O)[C@H](O)C(O)[C@H](O)[C@H]1O)OC(=O)CCCCCCC",
+      "before": "[(2R)-3-[hydroxy-[(2R,3R,5S,6R)-2,3,4,5,6-pentahydroxycyclohexyl]oxyphosphoryl]oxy-2-octanoyloxypropyl] octanoate",
+      "after": "(2R)-3-[hydroxy-[(2R,3R,5S,6R)-2,3,4,5,6-pentahydroxycyclohexyl]oxyphosphoryl]oxy-2-octanoyloxypropyl octanoate"
+    },
+    {
+      "id": "chebi-2531",
+      "smiles": "CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC(=O)OC[C@H](CO)OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC",
+      "before": "[(2S)-3-hydroxy-2-[(5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoyl]oxypropyl] (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate",
+      "after": "(2S)-3-hydroxy-2-[(5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoyl]oxypropyl (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoate"
+    },
+    {
+      "id": "chebi-2545",
+      "smiles": "CC(=O)OC(C)(C)/C=C/C(=O)[C@](C)(O)[C@H]1[C@H](O)C[C@@]2(C)[C@@H]3CC=C4[C@@H](C[C@H](O)C(=O)C4(C)C)[C@]3(C)C(=O)C[C@]12C",
+      "before": "[(3E,6R)-6-[(2S,8S,9R,10R,13R,14S,16R,17R)-2,16-dihydroxy-4,4,9,13,14-pentamethyl-3,11-dioxo-2,7,8,10,12,15,16,17-octahydro-1H-cyclopenta[a]phenanthren-17-yl]-6-hydroxy-2-methyl-5-oxohept-3-en-2-yl] acetate",
+      "after": "(3E,6R)-6-[(2S,8S,9R,10R,13R,14S,16R,17R)-2,16-dihydroxy-4,4,9,13,14-pentamethyl-3,11-dioxo-2,7,8,10,12,15,16,17-octahydro-1H-cyclopenta[a]phenanthren-17-yl]-6-hydroxy-2-methyl-5-oxohept-3-en-2-yl acetate"
+    },
+    {
+      "id": "chebi-2563",
+      "smiles": "CCCCCCCCCCCCCCCCCC(=O)O[C@@H](COC(=O)CCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCC",
+      "before": "[(2S)-1-dodecanoyloxy-3-hexadecanoyloxypropan-2-yl] octadecanoate",
+      "after": "(2S)-1-dodecanoyloxy-3-hexadecanoyloxypropan-2-yl octadecanoate"
+    },
+    {
+      "id": "chebi-2610",
+      "smiles": "CCCCCC(=O)OC[C@@H](CO)OC(=O)CCCCC",
+      "before": "[(2R)-2-hexanoyloxy-3-hydroxypropyl] hexanoate",
+      "after": "(2R)-2-hexanoyloxy-3-hydroxypropyl hexanoate"
+    },
+    {
+      "id": "chebi-2621",
+      "smiles": "N=C(O)C[C@H](N)C(=O)O[C@H]1[C@@H](O)[C@H](n2cnc3c(N)ncnc32)O[C@@H]1COP(=O)(O)O",
+      "before": "[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-2-(phosphonooxymethyl)oxolan-3-yl] (2S)-2,4-diamino-4-oxobutanoate",
+      "after": "(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-2-(phosphonooxymethyl)oxolan-3-yl (2S)-2,4-diamino-4-oxobutanoate"
+    },
+    {
+      "id": "chebi-2644",
+      "smiles": "CC[C@H](C)CC/C=C/C=C(\\C)[C@@H](O)C/C=C/C=C/C(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@]2(OCc3cc(O)cc(O)c32)[C@@H]1O",
+      "before": "[(3S,3'R,4'S,5'R,6'R)-3',4,5',6-tetrahydroxy-6'-(hydroxymethyl)spiro[1H-2-benzofuran-3,2'-oxane]-4'-yl] (2E,4E,7S,8E,10E,14S)-7-hydroxy-8,14-dimethylhexadeca-2,4,8,10-tetraenoate",
+      "after": "(3S,3'R,4'S,5'R,6'R)-3',4,5',6-tetrahydroxy-6'-(hydroxymethyl)spiro[1H-2-benzofuran-3,2'-oxane]-4'-yl (2E,4E,7S,8E,10E,14S)-7-hydroxy-8,14-dimethylhexadeca-2,4,8,10-tetraenoate"
+    },
+    {
+      "id": "chebi-2664",
+      "smiles": "CCCCCCCCCCCCCC(=O)O[C@H]1C=C[C@H]2[C@H]3Cc4ccc(OCc5ccccc5)c5c4[C@@]2(CCN3C)[C@H]1O5",
+      "before": "[(4R,4aR,7S,7aR,12bS)-3-methyl-9-benzyloxy-2,4,4a,7,7a,13-hexahydro-1H-4,12-methanobenzofuro[3,2-e]isoquinolin-7-yl] tetradecanoate",
+      "after": "(4R,4aR,7S,7aR,12bS)-3-methyl-9-benzyloxy-2,4,4a,7,7a,13-hexahydro-1H-4,12-methanobenzofuro[3,2-e]isoquinolin-7-yl tetradecanoate"
+    },
+    {
+      "id": "chebi-2665",
+      "smiles": "CO[C@H]1/C=C/O[C@@]2(C)Oc3c(C)c(O)c4c(O)c(c(/C=N/N5CCN(C)CC5)c(O)c4c3C2=O)N=C(O)/C(C)=C\\C=C\\[C@H](C)[C@H](O)[C@@H](C)[C@@H](O)[C@@H](C)[C@H](OC(C)=O)[C@@H]1C",
+      "before": "[(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,27,29-pentahydroxy-11-methoxy-3,7,12,14,16,18,22-heptamethyl-26-[(26E)-(4-methylpiperazin-1-yl)iminomethyl]-6,23-dioxo-8,30-dioxa-24-azatetracyclo[23.3.1.14,7.05,28]triaconta-1(29),2,4,9,19,21,25,27-octaen-13-yl] acetate",
+      "after": "(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,27,29-pentahydroxy-11-methoxy-3,7,12,14,16,18,22-heptamethyl-26-[(26E)-(4-methylpiperazin-1-yl)iminomethyl]-6,23-dioxo-8,30-dioxa-24-azatetracyclo[23.3.1.14,7.05,28]triaconta-1(29),2,4,9,19,21,25,27-octaen-13-yl acetate"
+    },
+    {
+      "id": "chebi-2698",
+      "smiles": "CCCCC/C=C\\C/C=C\\C/C=C\\CCCCCCCCC(=O)OC[C@H](COP(=O)(O)OC1[C@H](O)[C@H](O)C(O)[C@H](O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC",
+      "before": "[(2R)-2-hexadecanoyloxy-3-[hydroxy-[(2R,3S,5R,6R)-2,3,4,5,6-pentahydroxycyclohexyl]oxyphosphoryl]oxypropyl] (10Z,13Z,16Z)-docosa-10,13,16-trienoate",
+      "after": "(2R)-2-hexadecanoyloxy-3-[hydroxy-[(2R,3S,5R,6R)-2,3,4,5,6-pentahydroxycyclohexyl]oxyphosphoryl]oxypropyl (10Z,13Z,16Z)-docosa-10,13,16-trienoate"
+    },
+    {
+      "id": "chebi-2699",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(=O)(O)OC[C@H](O)COP(=O)(O)OC[C@@H](COC(=O)CCCCCCCCCCCN)OC(=O)CCCCCCCCCCCCCCC)OC(=O)CCCCCCCCCCCCCCC",
+      "before": "[(2R)-3-[[(2S)-3-[[(2R)-3-(12-aminododecanoyloxy)-2-hexadecanoyloxypropoxy]-hydroxyphosphoryl]oxy-2-hydroxypropoxy]-hydroxyphosphoryl]oxy-2-hexadecanoyloxypropyl] hexadecanoate",
+      "after": "(2R)-3-[[(2S)-3-[[(2R)-3-(12-aminododecanoyloxy)-2-hexadecanoyloxypropoxy]-hydroxyphosphoryl]oxy-2-hydroxypropoxy]-hydroxyphosphoryl]oxy-2-hexadecanoyloxypropyl hexadecanoate"
+    },
+    {
+      "id": "chebi-2700",
+      "smiles": "CC(=O)O[C@@H]1C[C@H]2C(C)(C)C(=O)C=C[C@]2(C)[C@H]2CC[C@]3(C)C(=CC(=O)[C@@]3(O)c3ccoc3)[C@@]21C",
+      "before": "[(5R,7R,8R,9R,10R,13R,17S)-17-(furan-3-yl)-17-hydroxy-4,4,8,10,13-pentamethyl-3,16-dioxo-5,6,7,9,11,12-hexahydrocyclopenta[a]phenanthren-7-yl] acetate",
+      "after": "(5R,7R,8R,9R,10R,13R,17S)-17-(furan-3-yl)-17-hydroxy-4,4,8,10,13-pentamethyl-3,16-dioxo-5,6,7,9,11,12-hexahydrocyclopenta[a]phenanthren-7-yl acetate"
+    },
+    {
+      "id": "chebi-2757",
+      "smiles": "N#CC(OC(=O)C1(c2ccccc2)CC1(Cl)Cl)c1cccc(Oc2ccccc2)c1",
+      "before": "[cyano-(3-phenoxyphenyl)methyl] 2,2-dichloro-1-phenylcyclopropane-1-carboxylate",
+      "after": "cyano-(3-phenoxyphenyl)methyl 2,2-dichloro-1-phenylcyclopropane-1-carboxylate"
+    },
+    {
+      "id": "chebi-2774",
+      "smiles": "CCCCC[C@H]1C[C@@H]2CCC[C@@H](C[C@@H](OC)C[C@@H]3C[C@@H](OC(=O)/C=C\\CCc4coc(/C=C\\CN=C(O)OC)n4)C[C@H](CC(=O)O1)O3)O2",
+      "before": "[(1S,3R,5R,7R,9R,13S,15S)-3-methoxy-11-oxo-13-pentyl-12,19,20-trioxatricyclo[13.3.1.15,9]icosan-7-yl] (2Z)-5-[2-[(1Z)-3-(methoxycarbonylamino)prop-1-enyl]-1,3-oxazol-4-yl]pent-2-enoate",
+      "after": "(1S,3R,5R,7R,9R,13S,15S)-3-methoxy-11-oxo-13-pentyl-12,19,20-trioxatricyclo[13.3.1.15,9]icosan-7-yl (2Z)-5-[2-[(1Z)-3-(methoxycarbonylamino)prop-1-enyl]-1,3-oxazol-4-yl]pent-2-enoate"
+    },
+    {
+      "id": "chebi-2777",
+      "smiles": "CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCC(=O)O[C@H](COC(=O)CCCCCCC/C=C\\CCCCCCCC)COP(=O)(O)O",
+      "before": "[(2R)-1-[(9Z)-octadec-9-enoyl]oxy-3-phosphonooxypropan-2-yl] (4Z,7Z,10Z,13Z,16Z,19Z)-docosa-4,7,10,13,16,19-hexaenoate",
+      "after": "(2R)-1-[(9Z)-octadec-9-enoyl]oxy-3-phosphonooxypropan-2-yl (4Z,7Z,10Z,13Z,16Z,19Z)-docosa-4,7,10,13,16,19-hexaenoate"
+    },
+    {
+      "id": "chebi-2795",
+      "smiles": "CC(C)(O)C/C(=N\\OS(=O)(=O)O)S[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O",
+      "before": "[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl] (1E)-3-hydroxy-3-methyl-N-sulfooxybutanimidothioate",
+      "after": "(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl (1E)-3-hydroxy-3-methyl-N-sulfooxybutanimidothioate"
+    },
+    {
+      "id": "chebi-2803",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)O[C@H]1CCCn2c1nc(C)c(CCN1CCC(c3noc4cc(F)ccc34)CC1)c2=O",
+      "before": "[(9S)-3-[2-[4-(6-fluoro-1,2-benzoxazol-3-yl)piperidin-1-yl]ethyl]-2-methyl-4-oxo-6,7,8,9-tetrahydropyrido[1,2-a]pyrimidin-9-yl] hexadecanoate",
+      "after": "(9S)-3-[2-[4-(6-fluoro-1,2-benzoxazol-3-yl)piperidin-1-yl]ethyl]-2-methyl-4-oxo-6,7,8,9-tetrahydropyrido[1,2-a]pyrimidin-9-yl hexadecanoate"
+    },
+    {
+      "id": "chebi-2808",
+      "smiles": "CCCC(=O)O[C@H]1c2cc3c(c(OC)c2-c2c(cc(OC)c(OC)c2OC)[C@H](OC(C)=O)[C@@H](C)[C@H]1C)OCO3",
+      "before": "[(8R,9S,10R,11R)-8-acetyloxy-3,4,5,19-tetramethoxy-9,10-dimethyl-15,17-dioxatetracyclo[10.7.0.02,7.014,18]nonadeca-1(19),2,4,6,12,14(18)-hexaen-11-yl] butanoate",
+      "after": "(8R,9S,10R,11R)-8-acetyloxy-3,4,5,19-tetramethoxy-9,10-dimethyl-15,17-dioxatetracyclo[10.7.0.02,7.014,18]nonadeca-1(19),2,4,6,12,14(18)-hexaen-11-yl butanoate"
+    },
+    {
+      "id": "chebi-2836",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCCCC)COP(=O)(O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O",
+      "before": "[(2R)-3-[hydroxy-[(1R,2R,3S,4R,5R,6S)-2,3,6-trihydroxy-4,5-diphosphonooxycyclohexyl]oxyphosphoryl]oxy-2-[(9Z)-octadec-9-enoyl]oxypropyl] octadecanoate",
+      "after": "(2R)-3-[hydroxy-[(1R,2R,3S,4R,5R,6S)-2,3,6-trihydroxy-4,5-diphosphonooxycyclohexyl]oxyphosphoryl]oxy-2-[(9Z)-octadec-9-enoyl]oxypropyl octadecanoate"
+    },
+    {
+      "id": "chebi-2842",
+      "smiles": "COc1c2c(cc3c1-c1c(cc4c(c1OC)OCO4)[C@H](OC(=O)c1ccccc1)[C@@H](C)[C@@H](C)C3)OCO2",
+      "before": "[(11R,12S,13S)-3,22-dimethoxy-12,13-dimethyl-5,7,18,20-tetraoxapentacyclo[13.7.0.02,10.04,8.017,21]docosa-1(22),2,4(8),9,15,17(21)-hexaen-11-yl] benzoate",
+      "after": "(11R,12S,13S)-3,22-dimethoxy-12,13-dimethyl-5,7,18,20-tetraoxapentacyclo[13.7.0.02,10.04,8.017,21]docosa-1(22),2,4(8),9,15,17(21)-hexaen-11-yl benzoate"
+    },
+    {
+      "id": "chebi-2896",
+      "smiles": "CC(=O)OCC(=O)[C@@]1(O)CC[C@H]2[C@@H]3C[C@H](F)C4=CC(=O)CC[C@]4(C)[C@H]3[C@@H](O)C[C@@]21C",
+      "before": "[2-[(6S,8S,9S,10R,11S,13S,14S,17R)-6-fluoro-11,17-dihydroxy-10,13-dimethyl-3-oxo-2,6,7,8,9,11,12,14,15,16-decahydro-1H-cyclopenta[a]phenanthren-17-yl]-2-oxoethyl] acetate",
+      "after": "2-[(6S,8S,9S,10R,11S,13S,14S,17R)-6-fluoro-11,17-dihydroxy-10,13-dimethyl-3-oxo-2,6,7,8,9,11,12,14,15,16-decahydro-1H-cyclopenta[a]phenanthren-17-yl]-2-oxoethyl acetate"
+    },
+    {
+      "id": "chebi-2907",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)O[C@H](CCCCCCCCCCC)CC(O)=N[C@H]1[C@@H](OP(=O)(O)O[C@H]2OC[C@H](N)[C@H](O)[C@H]2O)O[C@H](CO[C@@H]2O[C@H](CO)[C@@H](OP(=O)(O)O)[C@H](OC(=O)C[C@H](O)CCCCCCCCCCC)[C@H]2N=C(O)C[C@H](O)CCCCCCCCCCC)[C@@H](O)[C@@H]1OC(=O)C[C@H](O)CCCCCCCCCCC",
+      "before": "[(3R)-1-[[(2R,3R,4R,5S,6R)-2-[[(2R,3R,4S,5S)-5-amino-3,4-dihydroxyoxan-2-yl]oxy-hydroxyphosphoryl]oxy-5-hydroxy-6-[[(2R,3R,4R,5S,6R)-6-(hydroxymethyl)-3-[[(3R)-3-hydroxytetradecanoyl]amino]-4-[(3R)-3-hydroxytetradecanoyl]oxy-5-phosphonooxyoxan-2-yl]oxymethyl]-4-[(3R)-3-hydroxytetradecanoyl]oxyoxan-3-yl]amino]-1-oxotetradecan-3-yl] hexadecanoate",
+      "after": "(3R)-1-[[(2R,3R,4R,5S,6R)-2-[[(2R,3R,4S,5S)-5-amino-3,4-dihydroxyoxan-2-yl]oxy-hydroxyphosphoryl]oxy-5-hydroxy-6-[[(2R,3R,4R,5S,6R)-6-(hydroxymethyl)-3-[[(3R)-3-hydroxytetradecanoyl]amino]-4-[(3R)-3-hydroxytetradecanoyl]oxy-5-phosphonooxyoxan-2-yl]oxymethyl]-4-[(3R)-3-hydroxytetradecanoyl]oxyoxan-3-yl]amino]-1-oxotetradecan-3-yl hexadecanoate"
+    },
+    {
+      "id": "chebi-2909",
+      "smiles": "CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCC)COP(=O)(O)OCCN",
+      "before": "[(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-hexadecanoyloxypropan-2-yl] (7Z,10Z,13Z,16Z)-docosa-7,10,13,16-tetraenoate",
+      "after": "(2R)-1-[2-aminoethoxy(hydroxy)phosphoryl]oxy-3-hexadecanoyloxypropan-2-yl (7Z,10Z,13Z,16Z)-docosa-7,10,13,16-tetraenoate"
+    },
+    {
+      "id": "chebi-2917",
+      "smiles": "O=C(O[C@@H]1Cc2c(O)cc(O)c([C@@H]3c4c(O)cc(O)cc4O[C@H](c4ccc(O)c(O)c4)[C@@H]3O)c2O[C@@H]1c1ccc(O)c(O)c1)c1cc(O)c(O)c(O)c1",
+      "before": "[(2R,3R)-2-(3,4-dihydroxyphenyl)-8-[(2R,3R,4S)-2-(3,4-dihydroxyphenyl)-3,5,7-trihydroxy-3,4-dihydro-2H-chromen-4-yl]-5,7-dihydroxy-3,4-dihydro-2H-chromen-3-yl] 3,4,5-trihydroxybenzoate",
+      "after": "(2R,3R)-2-(3,4-dihydroxyphenyl)-8-[(2R,3R,4S)-2-(3,4-dihydroxyphenyl)-3,5,7-trihydroxy-3,4-dihydro-2H-chromen-4-yl]-5,7-dihydroxy-3,4-dihydro-2H-chromen-3-yl 3,4,5-trihydroxybenzoate"
+    },
+    {
+      "id": "chebi-2938",
+      "smiles": "C=C1C(=O)O[C@@H]2C[C@@H](C)/C=C\\C(=O)[C@@](C)(O)[C@H](OC(=O)CC(C)C)[C@@H](O)[C@@H]12",
+      "before": "[(3aR,4S,5R,6S,8Z,10R,11aR)-4,6-dihydroxy-6,10-dimethyl-3-methylidene-2,7-dioxo-3a,4,5,10,11,11a-hexahydrocyclodeca[b]furan-5-yl] 3-methylbutanoate",
+      "after": "(3aR,4S,5R,6S,8Z,10R,11aR)-4,6-dihydroxy-6,10-dimethyl-3-methylidene-2,7-dioxo-3a,4,5,10,11,11a-hexahydrocyclodeca[b]furan-5-yl 3-methylbutanoate"
+    },
+    {
+      "id": "chebi-2962",
+      "smiles": "N=C(N)NCCC[C@H](N)C(=O)O[C@H]1[C@@H](O)[C@H](n2cnc3c(N)ncnc32)O[C@@H]1COP(=O)(O)O",
+      "before": "[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-2-(phosphonooxymethyl)oxolan-3-yl] (2S)-2-amino-5-(diaminomethylideneamino)pentanoate",
+      "after": "(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-2-(phosphonooxymethyl)oxolan-3-yl (2S)-2-amino-5-(diaminomethylideneamino)pentanoate"
+    },
+    {
+      "id": "chebi-2963",
+      "smiles": "CO[C@H]1/C=C/O[C@@]2(C)Oc3c(C)c(O)c4c(O)c(cc(O)c4c3C2=O)N=C(O)/C(C)=C\\C=C\\[C@H](C)[C@H](O)[C@@H](C)[C@@H](O)[C@@H](C)[C@H](OC(C)=O)[C@@H]1C",
+      "before": "[(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,27,29-pentahydroxy-11-methoxy-3,7,12,14,16,18,22-heptamethyl-6,23-dioxo-8,30-dioxa-24-azatetracyclo[23.3.1.14,7.05,28]triaconta-1(29),2,4,9,19,21,25,27-octaen-13-yl] acetate",
+      "after": "(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,27,29-pentahydroxy-11-methoxy-3,7,12,14,16,18,22-heptamethyl-6,23-dioxo-8,30-dioxa-24-azatetracyclo[23.3.1.14,7.05,28]triaconta-1(29),2,4,9,19,21,25,27-octaen-13-yl acetate"
+    },
+    {
+      "id": "chebi-2980",
+      "smiles": "CC1(C)OC[C@H](c2c(O)ccc3c2O[C@H](c2ccccc2)CC3=O)[C@@H]1OC(=O)/C=C/c1ccccc1",
+      "before": "[(3S,4S)-4-[(2S)-7-hydroxy-4-oxo-2-phenyl-2,3-dihydrochromen-8-yl]-2,2-dimethyloxolan-3-yl] (2E)-3-phenylprop-2-enoate",
+      "after": "(3S,4S)-4-[(2S)-7-hydroxy-4-oxo-2-phenyl-2,3-dihydrochromen-8-yl]-2,2-dimethyloxolan-3-yl (2E)-3-phenylprop-2-enoate"
+    },
+    {
+      "id": "chebi-3009",
+      "smiles": "CCCCCCCC/C=C\\CCCCCCCC(=O)OCC(O)COP(=O)(O)OCCN",
+      "before": "[3-[2-aminoethoxy(hydroxy)phosphoryl]oxy-2-hydroxypropyl] (9Z)-octadec-9-enoate",
+      "after": "3-[2-aminoethoxy(hydroxy)phosphoryl]oxy-2-hydroxypropyl (9Z)-octadec-9-enoate"
+    },
+    {
+      "id": "chebi-3049",
+      "smiles": "C=C(OC)C(O)=Nc1cc(OC)c(OC)cc1C(=O)O[C@H]1C[C@H](O[C@@H]2C(=O)C(N=C(O)OC)=C3/C(=C\\CSSSC)[C@]2(O)C#C/C=C\\C#C[C@H]3O[C@@H]2O[C@H](C)[C@@H](NO[C@H]3C[C@H](O)[C@H](SC)[C@@H](C)O3)[C@H](O)[C@H]2O[C@H]2C[C@H](OC)[C@@H](NC(C)C)CO2)O[C@@H](C)[C@H]1O",
+      "before": "[(2S,3R,4S,6S)-3-hydroxy-6-[[(2R,5Z,9R,10S,13E)-9-hydroxy-2-[(2R,3R,4S,5S,6R)-4-hydroxy-5-[[(2S,4S,5S,6R)-4-hydroxy-6-methyl-5-methylsulfanyloxan-2-yl]oxyamino]-3-[(2S,4S,5S)-4-methoxy-5-(propan-2-ylamino)oxan-2-yl]oxy-6-methyloxan-2-yl]oxy-12-(methoxycarbonylamino)-13-[2-(methyltrisulfanyl)ethylidene]-11-oxo-10-bicyclo[7.3.1]trideca-1(12),5-dien-3,7-diynyl]oxy]-2-methyloxan-4-yl] 4,5-dimethoxy-2-(2-methoxyprop-2-enoylamino)benzoate",
+      "after": "(2S,3R,4S,6S)-3-hydroxy-6-[[(2R,5Z,9R,10S,13E)-9-hydroxy-2-[(2R,3R,4S,5S,6R)-4-hydroxy-5-[[(2S,4S,5S,6R)-4-hydroxy-6-methyl-5-methylsulfanyloxan-2-yl]oxyamino]-3-[(2S,4S,5S)-4-methoxy-5-(propan-2-ylamino)oxan-2-yl]oxy-6-methyloxan-2-yl]oxy-12-(methoxycarbonylamino)-13-[2-(methyltrisulfanyl)ethylidene]-11-oxo-10-bicyclo[7.3.1]trideca-1(12),5-dien-3,7-diynyl]oxy]-2-methyloxan-4-yl 4,5-dimethoxy-2-(2-methoxyprop-2-enoylamino)benzoate"
+    },
+    {
+      "id": "chebi-3071",
+      "smiles": "CCCCC/C=C\\C/C=C\\CCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCCCCCCCCCC)COP(=O)(O)O",
+      "before": "[(2R)-2-[(9Z,12Z)-octadeca-9,12-dienoyloxy]-3-phosphonooxypropyl] octadecanoate",
+      "after": "(2R)-2-[(9Z,12Z)-octadeca-9,12-dienoyloxy]-3-phosphonooxypropyl octadecanoate"
+    },
+    {
+      "id": "chebi-3088",
+      "smiles": "CCCCCCCCCCCCCCCC(=O)OCC(COP(=O)(O)OC1[C@H](O[C@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)C(O)[C@H](O)[C@H]1O[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]1O)OC(=O)CCCCCCCCC(C)CCCCCCCC",
+      "before": "[1-hexadecanoyloxy-3-[hydroxy-[(2R,3S,5R,6R)-3,4,5-trihydroxy-2,6-bis[[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy]cyclohexyl]oxyphosphoryl]oxypropan-2-yl] 10-methyloctadecanoate",
+      "after": "1-hexadecanoyloxy-3-[hydroxy-[(2R,3S,5R,6R)-3,4,5-trihydroxy-2,6-bis[[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy]cyclohexyl]oxyphosphoryl]oxypropan-2-yl 10-methyloctadecanoate"
+    },
+    {
+      "id": "chebi-3122",
+      "smiles": "CO[C@@H]1OCC2=CC[C@H]3[C@]4(C)CC[C@H]5C(C)(C)CCC[C@]5(C)[C@H]4C[C@@H](OC(C)=O)[C@]3(C)[C@H]21",
+      "before": "[(1R,5aS,5bR,7aS,11aS,11bR,13R,13aS,13bS)-1-methoxy-5b,8,8,11a,13a-pentamethyl-1,3,5,5a,6,7,7a,9,10,11,11b,12,13,13b-tetradecahydrophenanthro[2,1-e][2]benzofuran-13-yl] acetate",
+      "after": "(1R,5aS,5bR,7aS,11aS,11bR,13R,13aS,13bS)-1-methoxy-5b,8,8,11a,13a-pentamethyl-1,3,5,5a,6,7,7a,9,10,11,11b,12,13,13b-tetradecahydrophenanthro[2,1-e][2]benzofuran-13-yl acetate"
+    },
+    {
+      "id": "chebi-3130",
+      "smiles": "CCCCCCCCCCCCCC(=O)O[C@H]1CC[C@@](C)(OC(C)=O)[C@@H]2O[C@H](C[C@]1(C)O)[C@@H]1[C@H]2[C@@H](C(C)C)[C@H](OC(C)=O)[C@H](OC(C)=O)[C@@]12CO2",
+      "before": "[(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-triacetyloxy-10-hydroxy-10,14-dimethyl-3-propan-2-ylspiro[15-oxatricyclo[6.6.1.02,7]pentadecane-6,2'-oxirane]-11-yl] tetradecanoate",
+      "after": "(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-triacetyloxy-10-hydroxy-10,14-dimethyl-3-propan-2-ylspiro[15-oxatricyclo[6.6.1.02,7]pentadecane-6,2'-oxirane]-11-yl tetradecanoate"
+    },
+    {
+      "id": "chebi-3228",
+      "smiles": "CCCCCCCCCCCCCCCCCCCCCC(=O)O[C@H]1CC[C@@]2(C)C(=CC[C@H]3[C@@H]4CC[C@H]([C@H](C)CCCC(C)C)[C@@]4(C)CC[C@@H]32)C1",
+      "before": "[(3S,8S,9S,10R,13R,14S,17R)-10,13-dimethyl-17-[(2R)-6-methylheptan-2-yl]-2,3,4,7,8,9,11,12,14,15,16,17-dodecahydro-1H-cyclopenta[a]phenanthren-3-yl] docosanoate",
+      "after": "(3S,8S,9S,10R,13R,14S,17R)-10,13-dimethyl-17-[(2R)-6-methylheptan-2-yl]-2,3,4,7,8,9,11,12,14,15,16,17-dodecahydro-1H-cyclopenta[a]phenanthren-3-yl docosanoate"
+    },
+    {
+      "id": "chebi-3249",
+      "smiles": "CC(=O)O[C@H]1C[C@]2(C)[C@H]3[C@H](O)C(=O)[C@]4(C)[C@@H](c5ccc(=O)oc5)CC[C@]4(O)[C@@H]3CC[C@]2(O)C[C@H]1OC(C)=O",
+      "before": "[(2S,3R,5S,8R,9S,10R,11S,13R,14S,17R)-3-acetyloxy-5,11,14-trihydroxy-10,13-dimethyl-12-oxo-17-(6-oxopyran-3-yl)-1,2,3,4,6,7,8,9,11,15,16,17-dodecahydrocyclopenta[a]phenanthren-2-yl] acetate",
+      "after": "(2S,3R,5S,8R,9S,10R,11S,13R,14S,17R)-3-acetyloxy-5,11,14-trihydroxy-10,13-dimethyl-12-oxo-17-(6-oxopyran-3-yl)-1,2,3,4,6,7,8,9,11,15,16,17-dodecahydrocyclopenta[a]phenanthren-2-yl acetate"
+    }
+  ]
+}
