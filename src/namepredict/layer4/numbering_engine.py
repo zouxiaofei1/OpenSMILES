@@ -64,8 +64,7 @@ def _bond_locants(cand: dict[int, int], bonds) -> tuple[int, ...] | None:
             locs.append(n)                   # seam 闭合边：跨编号首尾，记 n
         else:
             return None                      # 端点不沿编号相邻：判据不适用
-    # print(cand, bonds)
-    return tuple(sorted(locs)) if len(locs) == len(bonds) else None
+    return tuple(sorted(locs)) if len(locs) == len(bonds) else None  # print(cand, bonds)
 
 
 def _narrow(cands: list[dict], key_fn) -> list[dict]:
@@ -186,8 +185,7 @@ def _fixed_start(parent: dict) -> int | None:
 
 
 def _narrow_hetero_ring(cands: list[dict], mol, chain: list[int], float_hetero: bool) -> list[dict]:
-    """杂环编号 P-22.2.2.1.3/P-25.3.3.1.2(b)：(a) 全杂原子集最低位次→(b) 按 F>…>O>S>…>N>… 元素序逐元素收窄→
-    (c) 同元素 N 中带 H/3 价取代者得低位（唑 NH=1）。float_hetero（稠合组分）跳过 (c)，镜像方向留共享原子定。"""
+    """杂环编号 P-22.2.2.1.3/P-25.3.3.1.2(b)：(a) 全杂原子集最低位次→(b) 按 F>…>O>S>…>N>… 元素序逐元素收窄→(c) 同元素 N 中带 H/3 价取代者得低位（唑 NH=1）；float_hetero（稠合组分）跳过 (c)。"""
     from namepredict.layer4.fused_numbering import _P145_SENIOR
     heteros = [a for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != 6]
     cands = _narrow(cands, lambda c: _locant_set(c, heteros))            # (a)
@@ -230,9 +228,7 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
     if len(chains) == 1:
         return chains[0]
     subs = [s["attach_idx"] for s in (substituents or []) if s.get("attach_idx") in chain]
-    # 自由基主基团：自由价连接点（radical_c_idx）同样按 P-14.4 最低化到 locant 1，
-    # 避免咔唑类对称 scaffold 取首个镜像方向而把自由价标成 8（应 1）。
-    if parent.get("radical_c_idx") in chain:
+    if parent.get("radical_c_idx") in chain:  # 自由基主基团：自由价连接点（radical_c_idx）按 P-14.4 最低化到 locant 1，避免咔唑类对称 scaffold 取镜像首方向把自由价标成 8（应 1）
         subs.append(parent["radical_c_idx"])
     if not subs:
         return chains[0]
@@ -258,22 +254,15 @@ def _fused_numbering(parent: dict, chain: list[int],
     sssr = list(system.get("sssr_indices") or [])
     if len(sssr) < 2:
         return None  # 单环走 P-14.4 通用枚举
-    # 仅取稠合系统自身环（传入全分子 AtomRings 会把取代基上的无关环也算进 layout，
-    # orientation 必失败 → 退回通用单环枚举把桥头碳当普通数字位次，chebi-300 thieno 甲基 6,7 应 5,6）。
-    # rings 过滤后索引重排，fusion_edges 的 SSSR 索引须同步重映射，否则分子含额外环时
-    # horizontal_rows 取不到环索引直接 KeyError（被候选重试吞掉，静默退化成只命名侧链）。
-    atom_rings = list(mol.GetRingInfo().AtomRings())
+    atom_rings = list(mol.GetRingInfo().AtomRings())  # 仅取稠合系统自身环（全分子 AtomRings 会把取代基无关环算进 layout 致 orientation 失败，如 chebi-300）；rings 过滤后索引重排，fusion_edges 的 SSSR 索引须同步重映射，否则 horizontal_rows KeyError 退化成只命名侧链。
     rings = [atom_rings[i] for i in sssr]
     idx_map = {orig: new for new, orig in enumerate(sssr)}
     fusion_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in (system.get("fusion_edges") or [])
                     if i in idx_map and j in idx_map]
-    # print("riings",rings)
-    orients = preferred_orientations(mol, rings, fusion_edges)
-    # print(orients)
+    orients = preferred_orientations(mol, rings, fusion_edges)  # print("riings",rings) / print(orients)
     if not orients:
         return None
-    # 环外附着原子按优先级分层：纯碳环上准则 (a)-(d) 全平局，靠它逐层收窄镜像取向。
-    chain_set = set(chain)
+    chain_set = set(chain)  # 环外附着原子按优先级分层：纯碳环上准则 (a)-(d) 全平局，靠它逐层收窄镜像取向
     layers: list[list[int]] = []
     radical = parent.get("radical_c_idx")
     if radical in chain_set:
@@ -313,26 +302,19 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     if fused is not None:
         return fused
     mol = parent.get("mol")
-    # 固定 locant 1 失败（链中部自由基/锚点）时，把该原子并入 principal 竞争最低位次；杂环分支无此回退。
-    anchor_as_principal = None
+    anchor_as_principal = None  # 固定 locant 1 失败（链中部自由基/锚点）时把该原子并入 principal 竞争最低位次；杂环分支无此回退
     if mol is not None and _is_ring(parent) and any(
             mol.GetAtomWithIdx(a).GetAtomicNum() != 6 for a in chain):
-        # 杂环：P-22.2.2.1.3 元素序窄化先于 principal（唑类 N 必须 1,3/1,2、吡啶甲酸 N=1
-        # 后由 principal 定方向），不走 FG 锚点/自由基字段，避免醛基环碳抢占 locant 1。
-        cands = _narrow_hetero_ring(_ring_cands(chain), mol, chain, float_hetero)
+        cands = _narrow_hetero_ring(_ring_cands(chain), mol, chain, float_hetero)  # 杂环：P-22.2.2.1.3 元素序窄化先于 principal（唑类 N 必须 1,3/1,2、吡啶甲酸 N=1 后由 principal 定方向），不走 FG 锚点/自由基字段，避免醛基环碳抢占 locant 1
     else:
-        # 碳环/链：P-14.4(a) 固定 locant 1（FG 锚/自由基字段）锚定后退化。
-        cands = _ring_cands(chain) if _is_ring(parent) else _chain_cands(chain)
+        cands = _ring_cands(chain) if _is_ring(parent) else _chain_cands(chain)  # 碳环/链：P-14.4(a) 固定 locant 1（FG 锚/自由基字段）锚定后退化
         start = _fixed_start(parent)
         if start is not None:
             forced = [c for c in cands if c.get(start) == 1]
             if forced:
                 cands = forced
             else:
-                # 固定起点原子在链候选中不可能为 locant 1（如链中部的自由基/锚点）：
-                # 不原样保留链序（否则自由价/双键/取代基位次全不最小化，编号随上游原子序漂移），
-                # 回退全候选并把该原子并入 P-14.4(c) principal 竞争最低位次。
-                anchor_as_principal = start
+                anchor_as_principal = start  # 固定起点在链候选中不可能为 locant 1（如链中部自由基/锚点）：不原样保留链序（否则自由价/双键/取代基位次全不最小化、随上游原子序漂移），回退全候选并并入 P-14.4(c) principal 竞争最低位次
     principal = _principal_atoms(parent)
     if anchor_as_principal is not None:
         principal = sorted(set(principal) | {anchor_as_principal})
@@ -346,13 +328,10 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     if subs:
         cands = _narrow(cands, lambda c: _locant_set(c, subs))
     if len(cands) > 1 and substituents:
-        # P-14.4(f) 平局：最低位次集合已相同 → 把最低位次给字母序最前的取代基（stem-alpha 对，P-14.5）。
-        from namepredict.layer4._chain_orient import _stem_loc_pairs
+        from namepredict.layer4._chain_orient import _stem_loc_pairs  # P-14.4(f) 平局：最低位次集合已相同 → 把最低位次给字母序最前的取代基（stem-alpha 对，P-14.5）
         cands = _narrow(cands, lambda c: _stem_loc_pairs(_to_chain(c), substituents))
     if len(cands) > 1:
-        # P-14.4(j) 立体平局：镜像/反向等价编号仍等优时，按 CIP 立体描述符定方向——
-        # 较低位次赋予 R/M/r（优先于对应的 S/P/s），避免随输入原子序漂移（如内消旋环 1R/7S vs 1S/7R）。
-        codes = _chain_rs_codes(mol, chain)
+        codes = _chain_rs_codes(mol, chain)  # P-14.4(j) 立体平局：镜像/反向等价编号仍等优时按 CIP 立体描述符定方向——较低位次赋予 R/M/r（优先于对应的 S/P/s），避免随输入原子序漂移（如内消旋环 1R/7S vs 1S/7R）
         if codes:
             cands = _narrow(cands, lambda c: _rs_locant_key(codes, _to_chain(c)))
     return _to_chain(cands[0])
@@ -383,21 +362,16 @@ def fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edge
             ring = list(sub_rings[0])
             return ring, [str(i + 1) for i in range(len(ring))]
         parent = {"mol": mol, "scaffold_id": scaffold_id, "chain": chain0}
-        # float_hetero: 对称等价杂环(嘧啶双 N 等)经元素序窄化后保留两镜像方向，
-        # locant 1 交给稠合原子位次最小化决定, 使碱环取向与规范稠合字母(d 侧)一致
-        # (见 _narrow_hetero_ring 的 (c)-skip)。
-        res = orient_numbering(parent, subs, float_hetero=bool(shared))
+        res = orient_numbering(parent, subs, float_hetero=bool(shared))  # float_hetero: 对称等价杂环(嘧啶双 N 等)经元素序窄化后保留两镜像方向，locant 1 交给稠合原子位次最小化决定，使碱环取向与规范稠合字母(d 侧)一致（见 _narrow_hetero_ring 的 (c)-skip）
         if not res:
             return None, None
         return res, _component_labels(parent, res)
-    # 多环无固定编号: P-25.3.3 通用编号(fused_numbering)。
-    from namepredict.layer4.fused_orientation import preferred_orientations
+    from namepredict.layer4.fused_orientation import preferred_orientations  # 多环无固定编号: P-25.3.3 通用编号(fused_numbering)
     from namepredict.layer4.fused_numbering import number_fused_system
     orients = preferred_orientations(mol, sub_rings, sub_edges or [])
     if not orients:
         return None, None
     result = number_fused_system(mol, sub_rings, [o.coord_dict() for o in orients])
-    # print(result)
-    if result is None:
+    if result is None:  # print(result)
         return None, None
     return result[0], result[1]

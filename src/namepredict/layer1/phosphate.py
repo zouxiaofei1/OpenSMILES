@@ -66,23 +66,20 @@ def _one_phosphate(mol: Mol, p_idx: int) -> dict | None:
         if a.GetFormalCharge() == -1 and a.GetTotalNumHs() == 0 and heavy == [p_idx]:
             n_om += 1
             continue
-        # O–R：中性无 H、除 P 外另连 1 个重原子
-        if a.GetFormalCharge() != 0 or a.GetTotalNumHs() != 0 or p_idx not in heavy:
+        if a.GetFormalCharge() != 0 or a.GetTotalNumHs() != 0 or p_idx not in heavy:  # O–R：中性无 H、除 P 外另连 1 个重原子
             return None
         others = [j for j in heavy if j != p_idx]
         if len(others) != 1 or mol.GetAtomWithIdx(others[0]).GetAtomicNum() != C:
             return None
         comp = _arm_component(mol, others[0], core)
-        # 组分只贴 1 个 core 原子（桥 O）；不能连到 P 或其它 O
-        attaches = [j for i in comp for j in _heavy(mol, mol.GetAtomWithIdx(i)) if j in core]
+        attaches = [j for i in comp for j in _heavy(mol, mol.GetAtomWithIdx(i)) if j in core]  # 组分只贴 1 个 core 原子（桥 O）；不能连到 P 或其它 O
         if not attaches or len(set(attaches)) != 1 or attaches[0] != o_idx:
             return None
         arm_all |= comp
         n_arms += 1
     if n_oh + n_om + n_arms != 3:
         return None
-    # 整分子纯度：重原子 = core ∪ 臂（排除臂间成环、P–O–P 焦磷酸等）
-    all_heavy = {a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() != 1}
+    all_heavy = {a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() != 1}  # 整分子纯度：重原子 = core ∪ 臂（排除臂间成环、P–O–P 焦磷酸等）
     if all_heavy != (core | arm_all):
         return None
     return {"p_idx": p_idx, "n_oh": n_oh, "n_om": n_om, "n_arms": n_arms}

@@ -14,8 +14,7 @@ def carbon_neighbors(mol: Mol, atom: int) -> list[int]:
 
 
 def _carbon_neighbors(mol: Mol, idx: int, banned: set[int] = frozenset()) -> list[int]:
-    """链官能团游走用的开链（非芳香、非环）碳邻居——环原子不得进入开链母体；
-    banned 为全局禁走碳（如被降级的羧酸碳），供 L2 排除取代基羧基叶、环原子外不含链。"""
+    """链官能团游走用的开链（非芳香、非环）碳邻居，排除 banned 禁走碳（如被降级的羧酸碳）。"""
     atom = mol.GetAtomWithIdx(idx)
     return [
         n.GetIdx() for n in atom.GetNeighbors()

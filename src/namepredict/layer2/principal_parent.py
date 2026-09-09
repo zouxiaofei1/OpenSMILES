@@ -14,6 +14,7 @@ from namepredict.layer2.principal import PrincipalGroupSelection, select_princip
 
 @dataclass(frozen=True)
 class PrincipalParentSelection:
+    """L2 选择结果：主官能团选择与骨架选择（各自可能为 None）。"""
     principal: PrincipalGroupSelection | None
     skeletons: SkeletonSelection | None
 

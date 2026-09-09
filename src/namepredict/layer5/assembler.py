@@ -22,9 +22,7 @@ def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult:
 # 稠环/杂环词干（en_stem, zh_stem）：由 L2 注入 parent 的 stem_en/stem_zh 派生。
 # IUPAC 词干 = 母体名去尾部 e（benzene 例外，保留完整名）；aromatic 恒 True（保留母体均芳香）。
 def _ring_stem(numbered: dict) -> tuple[str, str] | None:
-    """保留 scaffold 的完整 IUPAC 词干（用于 -ol/-diol/-amine 等 FG 后缀拼接）。
-    结尾 'e' 的省略移交给 chain_engine._elide_parent_e 按后缀首字母判断（P-60.2(a)），
-    不再在此无差别剥 e；否则 oxolane-3,4-diol 会被错拼成 oxolan-3,4-diol。"""
+    """保留 scaffold 的完整 IUPAC 词干（用于 -ol/-diol/-amine 等 FG 后缀拼接）；结尾 'e' 的省略交给 chain_engine._elide_parent_e 按后缀首字母判断（P-60.2(a)），避免 oxolane-3,4-diol 被错拼成 oxolan-3,4-diol。"""
     parent = numbered.get("parent") or {}
     en, zh = parent.get("stem_en"), parent.get("stem_zh")
     return (en, zh) if en and zh else None
@@ -44,11 +42,7 @@ def _scaffold_id(numbered: dict) -> str | None:
 
 
 def _ring_carbocycle_stem(n: int, numbered: dict) -> tuple[str | None, str | None, bool]:
-    """单环 carbocycle 母体词干（含环内烯不饱和度）：返回 (en_stem, zh_stem, has_unsat)。
-
-    en 单烯位 1 省略（P-31.1.2 环己烯），多烯/非 1 位次显式（cyclohex-3-ene / cyclohexa-1,3-diene）；
-    中文环烯位次恒显式（环己-1-烯 / 环己-1,3-二烯）。has_unsat=True 时调用方须显式给出 FG 位次
-    （P-65/P-66 中烯使环编号不再唯一）。en/zh 为 None 表示不支持（调用方应回落/失败）。"""
+    """单环 carbocycle 母体词干（含环内烯不饱和度）：返回 (en_stem, zh_stem, has_unsat)；en 单烯 1 位省略（P-31.1.2）、多烯/非 1 位显式，中文位次恒显式，has_unsat=True 时调用方须显式给出 FG 位次（P-65/P-66 中烯使环编号不再唯一），en/zh 为 None 表示不支持。"""
     base = _alkane_names(n)
     if not base:
         return None, None, False
@@ -70,12 +64,7 @@ def _ring_carbocycle_stem(n: int, numbered: dict) -> tuple[str | None, str | Non
 
 
 def _ring_extra_prefix_located(numbered: dict) -> bool:
-    """单环环烷上是否另带被编号前缀（oxo/烷基/卤素/羟基…）。
-
-    exocyclic 主基后缀锚定环上 locant 1 后，任何其它环位取代（O 侧酯烷基、
-    N 端胺取代除外）必带前缀位次打印；此时后缀 locant 不可省略
-    （P-66.6.1 例 4-formylcyclohexane-1-carboxylic acid vs 无取代省略 cyclohexanecarbaldehyde）。
-    """
+    """单环环烷上是否另带被编号前缀（oxo/烷基/卤素/羟基…）；exocyclic 主基后缀锚定 locant 1 后，任何其它环位取代（O 侧酯烷基、N 端胺取代除外）必带前缀位次，此时后缀 locant 不可省略（P-66.6.1：4-formylcyclohexane-1-carboxylic acid vs 无取代的 cyclohexanecarbaldehyde）。"""
     chain = set((numbered.get("parent") or {}).get("chain") or [])
     for s in numbered.get("substituents") or []:
         if s.get("o_side"):
@@ -87,17 +76,14 @@ def _ring_extra_prefix_located(numbered: dict) -> bool:
 
 
 def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """环酸（carbocycle/稠环 exocyclic COOH）→ cyclohexanecarboxylic acid 式系统名。
-    多羧酸（multiplicity≥2）→ …-di/tricarboxylic acid，位次必带（P-65.2.2），
-    不做链式 Xanedioic acid 模板；苯单酸仍回落 chain_engine benzoic acid 保留名。"""
+    """环酸（carbocycle/稠环 exocyclic COOH）→ cyclohexanecarboxylic acid 式系统名；多羧酸（multiplicity≥2）位次必带（P-65.2.2）不用链式 Xanedioic acid 模板，苯单酸回落 chain_engine benzoic acid 保留名。"""
     parent = numbered.get("parent") or {}
     facts = parent.get("principal_expression_facts")
     sid = parent.get("scaffold_id")
     if not facts or facts.group_class.value != "acid" or facts.relation.value != "exocyclic":
         return None
     mult = facts.multiplicity
-    if mult == 1 and sid == "benzene":
-        # 苯甲酸走 chain_engine variant（benzoic acid），不走 base-carboxylic 通用名。
+    if mult == 1 and sid == "benzene":  # 苯甲酸走 chain_engine variant（benzoic acid），不走 base-carboxylic 通用名。
         return None
     rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "acid"), None)
     locs = rec.get("locants") if rec else None
@@ -113,21 +99,17 @@ def _exocyclic_acid_names(n: int, numbered: dict) -> tuple[str, str] | None:
         need_loc = True
     if need_loc and not loc:
         return None
-    if sid == "carbocycle" and not parent.get("fused_tree"):
-        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
+    if sid == "carbocycle" and not parent.get("fused_tree"):  # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
         if en_ring is None:
             return None
-        if mult == 1:
-            # 环烯使编号不再唯一，羧基位次须显式（P-65.2.2.1）；饱和单酸若环上另带
-            # 前缀取代（必带位次）则主基 locant 1 亦须给出，否则 1 位隐含省略。
+        if mult == 1:  # 环烯使编号不再唯一，羧基位次须显式（P-65.2.2.1）；饱和单酸若环上另带前缀取代（必带位次）则主基 locant 1 亦须给出。
             if (has_unsat or _ring_extra_prefix_located(numbered)) and loc:
                 return (f"{en_ring}-{loc}-{suf_en}", f"{zh_ring}-{loc}-{suf_zh}")
             return (f"{en_ring}{suf_en}", f"{zh_ring}{suf_zh}")
         return (f"{en_ring}-{loc}-{suf_en}", f"{zh_ring}-{loc}-{suf_zh}")
     base = _ring_base(numbered)
-    if base:
-        # 羧基位次：L4 已算出的酸 locant；单酸无则默认省略（1 位）。
+    if base:  # 羧基位次：L4 已算出的酸 locant；单酸无则默认省略（1 位）。
         if mult == 1:
             if loc:
                 return (f"{base[0]}-{loc}-carboxylic acid", f"{base[1]}-{loc}-羧酸")
@@ -150,13 +132,11 @@ def _exocyclic_ester_names(n: int, numbered: dict) -> tuple[str, str] | None:
     rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "ester"), None)
     locs = rec.get("locants") if rec else None
     loc = ",".join(str(x) for x in locs) if locs else None
-    if sid == "carbocycle" and not parent.get("fused_tree"):
-        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
+    if sid == "carbocycle" and not parent.get("fused_tree"):  # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
         if en_ring is None:
             return None
-        if (has_unsat or _ring_extra_prefix_located(numbered)) and loc:
-            # 环烯使编号不再唯一，酯基位次须显式（P-65.2.2.1）；另有前缀取代同须带位次。
+        if (has_unsat or _ring_extra_prefix_located(numbered)) and loc:  # 环烯使编号不再唯一，酯基位次须显式（P-65.2.2.1）；另有前缀取代同须带位次。
             return (f"{en_ring}-{loc}-carboxylate", f"{zh_ring}-{loc}-羧酸")
         return (f"{en_ring}carboxylate", f"{zh_ring}羧酸")
     base = _ring_base(numbered)
@@ -181,8 +161,7 @@ def _exocyclic_amide_names(n: int, numbered: dict) -> tuple[str, str] | None:
     rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "amide"), None)
     locs = rec.get("locants") if rec else None
     loc = ",".join(str(x) for x in locs) if locs else None
-    if sid == "carbocycle" and not parent.get("fused_tree"):
-        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
+    if sid == "carbocycle" and not parent.get("fused_tree"):  # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
         if en_ring is None:
             return None
@@ -211,8 +190,7 @@ def _exocyclic_nitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
     rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "nitrile"), None)
     locs = rec.get("locants") if rec else None
     loc = ",".join(str(x) for x in locs) if locs else None
-    if sid == "carbocycle" and not parent.get("fused_tree"):
-        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
+    if sid == "carbocycle" and not parent.get("fused_tree"):  # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
         if en_ring is None:
             return None
@@ -228,18 +206,14 @@ def _exocyclic_nitrile_names(n: int, numbered: dict) -> tuple[str, str] | None:
 
 
 def _exocyclic_aldehyde_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """环醛 exocyclic -CHO → -carbaldehyde/-甲醛 系统名（P-66.6.1.1.3）。
-    苯单醛保留名（benzaldehyde/苯甲醛）仍走 chain_engine variant，此处仅排除单基团苯；
-    双醛（benzene-1,2-dicarbaldehyde）及杂环/稠环走 base-carbaldehyde 通用名。
-    multiplicity≥2 时后缀加 di/tri…（-dicarbaldehyde/-二甲醛）。"""
+    """环醛 exocyclic -CHO → -carbaldehyde/-甲醛 系统名（P-66.6.1.1.3）；苯单醛保留名（benzaldehyde/苯甲醛）仍走 chain_engine variant，双醛及杂环/稠环走 base-carbaldehyde 通用名，multiplicity≥2 后缀加 di/tri…。"""
     parent = numbered.get("parent") or {}
     facts = parent.get("principal_expression_facts")
     sid = parent.get("scaffold_id")
     if not facts or facts.group_class.value != "aldehyde" or facts.relation.value != "exocyclic":
         return None
     mult = facts.multiplicity
-    if mult == 1 and sid == "benzene":
-        # 苯环单 CHO → benzaldehyde 保留名（P-66.6.1.2），回落 chain_engine。
+    if mult == 1 and sid == "benzene":  # 苯环单 CHO → benzaldehyde 保留名（P-66.6.1.2），回落 chain_engine。
         return None
     if mult == 1:
         suf_en, suf_zh = "carbaldehyde", "甲醛"
@@ -251,14 +225,11 @@ def _exocyclic_aldehyde_names(n: int, numbered: dict) -> tuple[str, str] | None:
     rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "aldehyde"), None)
     locs = rec.get("locants") if rec else None
     loc = ",".join(str(x) for x in locs) if locs else None
-    if sid == "carbocycle" and not parent.get("fused_tree"):
-        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支；单环环烷烃用词干。
+    if sid == "carbocycle" and not parent.get("fused_tree"):  # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支；单环环烷烃用词干。
         en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
         if en_ring is None:
             return None
-        if mult == 1:
-            # 饱和单醛：仅当无其它前缀取代时 1 位隐含省略（cyclohexanecarbaldehyde）；
-            # 环烯或环上另带前缀取代时编号不再唯一，醛基位次须显式（cyclohexene-1-carbaldehyde）。
+        if mult == 1:  # 饱和单醛：无其它前缀取代时 1 位隐含省略（cyclohexanecarbaldehyde）；环烯或另带前缀取代时编号不再唯一，醛基位次须显式（cyclohexene-1-carbaldehyde）。
             if (has_unsat or _ring_extra_prefix_located(numbered)) and loc:
                 return (f"{en_ring}-{loc}-{suf_en}", f"{zh_ring}-{loc}-{suf_zh}")
             return (f"{en_ring}{suf_en}", f"{zh_ring}{suf_zh}")
@@ -274,10 +245,7 @@ def _exocyclic_aldehyde_names(n: int, numbered: dict) -> tuple[str, str] | None:
 
 
 def _exocyclic_acyl_names(n: int, numbered: dict) -> tuple[str, str] | None:
-    """环外酰基头（羰基头连环/芳骨架的 -CO-X）→ 环酸衍生酰基名（P-65.1.7.2）：
-    苯 → benzoyl/苯甲酰基 保留名（回落 chain_engine variant）；
-    杂环/稠环/单环碳环 → 母体名/locant + -carbonyl/-羰基（furan-2-carboxylic acid→furan-2-carbonyl、
-    cyclopropanecarboxylic acid→cyclopropanecarbonyl）。反例 -oyl 直拼（furanoyl）——丢环酸羧基位次、词干不符金标准。"""
+    """环外酰基头（羰基头连环/芳骨架的 -CO-X）→ 环酸衍生酰基名（P-65.1.7.2）；苯→benzoyl/苯甲酰基 保留名，杂环/稠环/单环碳环→母体名/locant + -carbonyl/-羰基，-oyl 直拼（furanoyl）会丢环酸羧基位次故不用。"""
     parent = numbered.get("parent") or {}
     facts = parent.get("principal_expression_facts")
     sid = parent.get("scaffold_id")
@@ -285,14 +253,12 @@ def _exocyclic_acyl_names(n: int, numbered: dict) -> tuple[str, str] | None:
         return None
     if facts.multiplicity != 1:
         return None
-    if sid == "benzene":
-        # 苯单酰基头 → benzoyl 保留名，回落 chain_engine._KIND_TABLE["acyl"].variant["benzene"]。
+    if sid == "benzene":  # 苯单酰基头 → benzoyl 保留名，回落 chain_engine._KIND_TABLE["acyl"].variant["benzene"]。
         return None
     rec = next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == "acyl"), None)
     locs = rec.get("locants") if rec else None
     loc = ",".join(str(x) for x in locs) if locs else None
-    if sid == "carbocycle" and not parent.get("fused_tree"):
-        # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
+    if sid == "carbocycle" and not parent.get("fused_tree"):  # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
         en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
         if en_ring is None:
             return None
@@ -358,31 +324,23 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     if len(subs) == 1:
         a = subs[0]
         if stem_en == "azane":
-            # P-66.1.1.4.3 方法 1：单 N-酰基（乙酰/甲酰/苯甲酰）残基收成 amido 保留式
-            # （acetamido…），不走 free_to_yl 的 acylamino 系统式；其余 R 保持方法 2。
-            amido = AMIDO_RETAINED.get(a.get("en") or "")
+            amido = AMIDO_RETAINED.get(a.get("en") or "")  # P-66.1.1.4.3 方法 1：单 N-酰基（乙酰/甲酰/苯甲酰）残基收成 amido 保留式（acetamido…），不走 free_to_yl 的 acylamino 系统式；其余 R 保持方法 2。
             if amido is not None:
                 return amido
-            # 带立体描述符的复杂酰基残基（肽类 N-酰基氨基酸）：方法 2 需把酰基名整体
-            # 括起再加 amino（[…propanoyl]amino，P-29.3.2 复合前缀括号），否则 (2S)-2-
-            # amino-…propanoylamino 融合式会与 N-端 amino 位次歧义；无立体简单酰保持融合。
-            if _azane_acyl_stereo_lead(a.get("en") or ""):
+            if _azane_acyl_stereo_lead(a.get("en") or ""):  # 带立体描述符的复杂酰基残基（肽类 N-酰基氨基酸）：方法 2 需把酰基名整体括起再加 amino（[…propanoyl]amino，P-29.3.2 复合前缀括号），否则融合式会与 N-端 amino 位次歧义；无立体简单酰保持融合。
                 return f"[{a['en']}]amino", f"[{a['zh']}]氨基"
         en, zh = free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
                             paren=bool(a.get("paren")))[:2]
         return _retained_alkoxy(en, zh) if stem_en == "oxidane" else (en, zh)
     zero = _MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
-    if (stem_en, stem_zh) != ("azane", "氮烷") or zero is None or len(subs) != 2:
-        # 多取代基仅 N（azane）双烷基成立：O/S 双烷基非标准自由基，明确失败。
+    if (stem_en, stem_zh) != ("azane", "氮烷") or zero is None or len(subs) != 2:  # 多取代基仅 N（azane）双烷基成立：O/S 双烷基非标准自由基，明确失败。
         return None
     ordered = sorted(subs, key=lambda s: s["en"])
     if len({s["en"] for s in ordered}) == 1:
         base = ordered[0]
         return (f"{MULT_EN[len(ordered)]}{base['en']}{zero[0]}",
                 f"{MULT_ZH[len(ordered)]}{base['zh']}{zero[1]}")
-    # 双不同 N-取代基：字母序首基平铺，其后各基分别加括号紧贴 amino
-    # （P-62.2.2.1：多取代氨基须逐基消歧，2-chloroethylethylamino → 2-chloroethyl(ethyl)amino）。
-    first, rest = ordered[0], ordered[1:]
+    first, rest = ordered[0], ordered[1:]  # 双不同 N-取代基：字母序首基平铺，其后各基分别加括号紧贴 amino（P-62.2.2.1：多取代氨基须逐基消歧，2-chloroethylethylamino → 2-chloroethyl(ethyl)amino）。
     return (first["en"] + "".join(f"({s['en']})" for s in rest) + zero[0],
             first["zh"] + "".join(f"({s['zh']})" for s in rest) + zero[1])
 
@@ -402,19 +360,18 @@ def _ensure_fused_stem(numbered: dict) -> bool:
     name = fused_parent_names(mol, node)
     if name is None or not name[0] or not name[1]:
         return False
-    parent["stem_en"], parent["stem_zh"] = name
+    pre = parent.get("indicated_h") or ""  # L4 已按整体编号算好指示氢前缀（P-58.2.1），稠合名此前不带，统一在此补到最前端。
+    parent["stem_en"], parent["stem_zh"] = pre + name[0], pre + name[1]
     return True
 
 
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     """链引擎按表 kind 派发，再转具体 worker。"""
-    if kind == "phosphate":
-        # 无机功能母体整名（P 中心无碳词干）：由 numbered 母体计数 + o_side 臂组装。
+    if kind == "phosphate":  # 无机功能母体整名（P 中心无碳词干）：由 numbered 母体计数 + o_side 臂组装。
         from namepredict.layer5.phosphate import phosphate_names
 
         return phosphate_names(numbered)
-    if kind == "acyl":
-        # 环外酰基头走 exocyclic worker（苯→None 回落 chain_engine benzoyl variant）；开链 acyl 无关（relation in_skeleton）。
+    if kind == "acyl":  # 环外酰基头走 exocyclic worker（苯→None 回落 chain_engine benzoyl variant）；开链 acyl 无关（relation in_skeleton）。
         exo = _exocyclic_acyl_names(n, numbered)
         if exo:
             return exo
@@ -441,32 +398,24 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "radical" and (numbered.get("parent") or {}).get("radical_anchor_element"):
         return _mononuclear_radical_names(numbered)
     entry = _KIND_TABLE.get(kind)
-    if kind == "acyl_halide":
-        # 酰卤后缀随实际卤素（F/Cl/Br/I）变：由 L1 检测、L2 保留的 parent.hal_z 选择 spec。
+    if kind == "acyl_halide":  # 酰卤后缀随实际卤素（F/Cl/Br/I）变：由 L1 检测、L2 保留的 parent.hal_z 选择 spec。
         entry = _ACYL_HALIDE_BY_HAL.get((numbered.get("parent") or {}).get("hal_z")) or entry
     if entry is not None:
         sid = _scaffold_id(numbered)
-        if kind == "alkane" and (numbered.get("parent") or {}).get("fused_tree") and sid != "benzene":
-            # 未注册稠环无 FG: 词干注入(_ensure_fused_stem)已完成, 返回稠合 base 名(不走 chain_engine 拼 ane)。
+        if kind == "alkane" and (numbered.get("parent") or {}).get("fused_tree") and sid != "benzene":  # 未注册稠环无 FG: 词干注入(_ensure_fused_stem)已完成, 返回稠合 base 名(不走 chain_engine 拼 ane)。
             return _parent_stem_names(numbered)
-        if sid == "benzene" and kind == "alkane":
-            # 苯 base：无主 FG 的苯，母体名由 sid 驱动（L2 已把纯苯 kind 收敛为 alkane）。
+        if sid == "benzene" and kind == "alkane":  # 苯 base：无主 FG 的苯，母体名由 sid 驱动（L2 已把纯苯 kind 收敛为 alkane）。
             return ("benzene", "苯")
         ring_stem = _ring_stem(numbered)
-        if ring_stem:
-            # 环式 FG 的 locant omit 由 L4 算出的 omit 标志决定；aromatic 仅对苯环置真（苯醇→酚，杂环醇→醇）。
-            # coda 重置为空：杂环词干（pyridin/furan）已完整，不再接饱和链 "an"。
+        if ring_stem:  # 环式 FG 的 locant omit 由 L4 的 omit 标志决定，aromatic 仅对苯环置真（苯醇→酚，杂环醇→醇）；coda 重置为空（杂环词干 pyridin/furan 已完整，不再接饱和链 "an"）。
             stem_en, stem_zh = ring_stem
             entry = replace(entry, stem=(stem_en, stem_zh), coda="",
                             omit_rule=lambda n, loc, omit: bool(omit), aromatic=(sid == "benzene"))
-        elif sid == "carbocycle":
-            # 单环饱和烃自由基按 P-29.2 方法 1 省略自由价 1 位（cyclopentyl/cyclohexyl）；
-            # 其余 FG 沿用 L4 omit 标志（cyclohexanol 等）。环烯走 unsat 段不受影响。
+        elif sid == "carbocycle":  # 单环饱和烃自由基按 P-29.2 方法 1 省略自由价 1 位（cyclopentyl/cyclohexyl）；其余 FG 沿用 L4 omit 标志（cyclohexanol 等）。环烯走 unsat 段不受影响。
             rule = (lambda n, loc, omit: loc == 1) if kind == "radical" \
                 else (lambda n, loc, omit: bool(omit))
             entry = replace(entry, cyclic=True, ene_loc_omit=True, omit_rule=rule)
-        # 苯环单 FG → scaffold 专属保留名 variant (phenol/benzoic…); 开链取 None 键 (acid 草酸)。
-        sc_variant = (entry.variant or {}).get(sid)
+        sc_variant = (entry.variant or {}).get(sid)  # 苯环单 FG → scaffold 专属保留名 variant (phenol/benzoic…); 开链取 None 键 (acid 草酸)。
         if sc_variant is not None:
             entry = replace(entry, variant=sc_variant)
         return _chain_names(entry, n, numbered)

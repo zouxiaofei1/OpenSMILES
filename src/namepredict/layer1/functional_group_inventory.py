@@ -8,6 +8,7 @@ from namepredict.layer1.fg_registry import FG_SPECS
 
 
 class FunctionalGroupClass(str, Enum):
+    """官能团类别枚举（对应 fg_registry 的 p41 优先级体系）。"""
     RADICAL = "radical"
     ACYL = "acyl"
     ACID = "acid"
@@ -32,6 +33,7 @@ class FunctionalGroupClass(str, Enum):
 
 @dataclass(frozen=True)
 class FunctionalGroupOccurrence:
+    """单个官能团出现：id、类别、特征原子、母体锚点与附加负载。"""
     id: str
     group_class: FunctionalGroupClass
     characteristic_atoms: frozenset[int]
@@ -46,6 +48,7 @@ class FunctionalGroupOccurrence:
 
 @dataclass(frozen=True)
 class FunctionalGroupInventory:
+    """官能团清单：承载全部 FunctionalGroupOccurrence 并提供按类查询/统计。"""
     entries: tuple[FunctionalGroupOccurrence, ...]
 
     def occurrences(self, group_class: FunctionalGroupClass) -> tuple[FunctionalGroupOccurrence, ...]:

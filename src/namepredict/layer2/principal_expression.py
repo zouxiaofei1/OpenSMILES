@@ -17,11 +17,13 @@ def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
 
 
 class PrincipalRelation(str, Enum):
+    """主基团相对骨架的位置关系（骨架内/环外）。"""
     IN_SKELETON = "in_skeleton"
     EXOCYCLIC = "exocyclic"
 
 
 class PrincipalChargeState(str, Enum):
+    """主基团的电荷状态（中性/全阴离子/阴离子混合）。"""
     NEUTRAL = "neutral"
     ANION = "anion"
     MIXED = "mixed"
@@ -29,6 +31,7 @@ class PrincipalChargeState(str, Enum):
 
 @dataclass(frozen=True)
 class PrincipalExpressionFacts:
+    """主基团表达事实：类别、个数、与骨架关系、特征/附着原子集与电荷态。"""
     group_class: FunctionalGroupClass
     multiplicity: int
     relation: PrincipalRelation
@@ -129,25 +132,21 @@ def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
     mol = info["mol"]
     atoms = set(skeleton.atom_ids)
     if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms):
-        # 芳香稠环(未注册)kind 收敛 alkane, 骨架身份由 fused_tree + scaffold_id 承载(L5 fused_namer 组装稠合名)。
-        n_rings = sum(1 for ring in mol.GetRingInfo().AtomRings() if set(ring) <= atoms)
+        n_rings = sum(1 for ring in mol.GetRingInfo().AtomRings() if set(ring) <= atoms)  # 芳香稠环(未注册)kind 收敛 alkane, 骨架身份由 fused_tree + scaffold_id 承载(L5 fused_namer 组装稠合名)。
         if n_rings >= 2:
             return "alkane"
         return None
     all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atoms)
-    # 纯烃环统一 kind='alkane'（正交化：环系由 scaffold_id 承载，不饱和度由 double_bond/double_bonds 字段承载，命名由 chain_engine 动态加 cyclo 前缀）。
-    return "alkane" if all_carbon else None
+    return "alkane" if all_carbon else None  # 纯烃环统一 kind='alkane'（正交化：环系由 scaffold_id 承载，不饱和度由 double_bond/double_bonds 字段承载，命名由 chain_engine 动态加 cyclo 前缀）。
 
 
 def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str | None:
     """按保留 scaffold 解析环 kind（苯/未注册稠环均收敛为 alkane）。"""
     if scaffold and scaffold.id != "carbocycle":
         if scaffold.id == "benzene":
-            # 苯环（纯烃芳香单环）kind 收敛为 alkane，环系由 scaffold_id="benzene" 承载（对齐环烷烃正交化）。
-            return "alkane"
+            return "alkane"  # 苯环（纯烃芳香单环）kind 收敛为 alkane，环系由 scaffold_id="benzene" 承载（对齐环烷烃正交化）。
         if scaffold.id in ("fused", "fused_hetero"):
-            # 未注册稠环：kind 正交化收敛 alkane，骨架身份由 fused_tree + scaffold_id 承载（L5 fused_namer 组装稠合名）。
-            return "alkane"
+            return "alkane"  # 未注册稠环：kind 正交化收敛 alkane，骨架身份由 fused_tree + scaffold_id 承载（L5 fused_namer 组装稠合名）。
         return scaffold.id
     return _generic_ring_kind(info, skeleton)
 
@@ -155,21 +154,15 @@ def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str |
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold) -> str | None:
     """决定环骨架母体的 kind（radical/正交化 FG 类/结构 kind）。"""
     if selection.group_class is FunctionalGroupClass.RADICAL:
-        # 苯基取代基保留名（P-22.2.4）由 L5 radical worker 的 benzene variant 表达，L2 只给统一 kind。
-        if scaffold is None:
-            # 未知杂环 scaffold：L5 无 -yl 词干可拼，显式失败而非当开链烷基错名。
-            return None
+        if scaffold is None:  # 苯基取代基保留名（P-22.2.4）由 L5 radical worker 的 benzene variant 表达，L2 只给统一 kind。
+            return None  # 未知杂环 scaffold：L5 无 -yl 词干可拼，显式失败而非当开链烷基错名。
         return "radical"
-    # 环 + 主 FG → FG 类别 kind（正交化）：苯/饱和环/稠环/杂环一律收敛，
-    # 命名由 L5 chain_engine 通用词干引擎拼接（苯等保留名经 variant 特殊，无 variant 走通用名）。
-    if scaffold is not None and selection.group_class in _CHAIN_FG:
+    if scaffold is not None and selection.group_class in _CHAIN_FG:  # 环 + 主 FG → FG 类别 kind（正交化）：苯/饱和环/稠环/杂环一律收敛，命名由 L5 chain_engine 通用词干引擎拼接（苯等保留名经 variant 特殊，无 variant 走通用名）。
         kind = _chain_kind(selection.group_class, count)
         if kind is not None:
             return kind
     if scaffold is not None and selection.group_class is FunctionalGroupClass.ALDEHYDE:
-        # 环上外环 -CHO 可多个同作主官能团（-carbaldehyde / -dicarbaldehyde，P-66.6.1.1.3）。
-        # aldehyde 不在 _MULTI_FG（开链二醛仍不支撑），此处仅环骨架放行，避免改变开链表达。
-        return "aldehyde"
+        return "aldehyde"  # 环上外环 -CHO 可多个同作主官能团（-carbaldehyde / -dicarbaldehyde，P-66.6.1.1.3）；aldehyde 不在 _MULTI_FG（开链二醛仍不支撑），此处仅环骨架放行，避免改变开链表达。
     return _resolved_ring_kind(scaffold, info, skeleton)
 
 
@@ -192,9 +185,7 @@ def _ring_fact_fields(fields: dict, facts: PrincipalExpressionFacts) -> dict:
         FunctionalGroupClass.AMIDE, FunctionalGroupClass.NITRILE,
         FunctionalGroupClass.ALDEHYDE, FunctionalGroupClass.ACYL,
     ):
-        # ACYL：exocyclic 酰基头（苯甲酰/furan-2-carbonyl）的环附着原子位次，
-        # 供 L4 在 locant_calc 计算 -carbonyl/benzoyl 词形所需 locant。
-        extra["ring_attach_idx"] = attachments[0]
+        extra["ring_attach_idx"] = attachments[0]  # ACYL：exocyclic 酰基头（苯甲酰/furan-2-carbonyl）的环附着原子位次，供 L4 在 locant_calc 计算 -carbonyl/benzoyl 词形所需 locant。
     return {**fields, **extra}
 
 
@@ -204,29 +195,21 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
     from namepredict.layer2.ring_expression_policy import supports_ring_expression
     if scaffold is None:
         from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
-        scaffold = resolve_ring_scaffold(info, skeleton)
-    # print(scaffold)
+        scaffold = resolve_ring_scaffold(info, skeleton)  # print(scaffold)
     fields: dict = {}
     if scaffold:
         supported = supports_ring_expression(scaffold, facts) if facts else False
-        # 保留 fused 模板匹配映射：L4 固定编号（standard_path）据此把模板原子映射到分子原子。
-        match = None
+        match = None  # 保留 fused 模板匹配映射：L4 固定编号（standard_path）据此把模板原子映射到分子原子。
         from namepredict.layer2.ring_scaffold import _match_with_map, get_spec
         if get_spec(scaffold.id) and get_spec(scaffold.id).numbering.standard_path:
             hit = _match_with_map(info, skeleton.atom_ids)
             match = hit[1] if hit and hit[0] == scaffold.id else None
-        # print( {"scaffold_id": scaffold.id, "scaffold_identity": scaffold,
-        #                 "scaffold_match": match,
-        #                 "typed_ring_expression_supported": supported})
 
         fields = {"scaffold_id": scaffold.id, "scaffold_identity": scaffold,
                   "scaffold_match": match,
-                  "typed_ring_expression_supported": supported}
-    # 多环骨架附加稠环拆解结构（fused_tree 为 FusedNode 对象供 L5 稠合名组装）。
-    # 拆解独立于 scaffold 身份：未注册系统 scaffold 解析为 None 时仍产出拆解树，
-    # 供 L5 fused_namer 组装稠合名（P-25.3.2）。
+                  "typed_ring_expression_supported": supported}  # print({"scaffold_id": scaffold.id, "scaffold_identity": scaffold, "scaffold_match": match, "typed_ring_expression_supported": supported})
     system = next((s for s in info.get("ring_systems") or []
-                   if (s.get("atom_ids") or []) == list(skeleton.atom_ids)), None)
+                   if (s.get("atom_ids") or []) == list(skeleton.atom_ids)), None)  # 多环骨架附加稠环拆解结构（fused_tree 为 FusedNode 对象供 L5 稠合名组装）；拆解独立于 scaffold 身份：未注册系统 scaffold 解析为 None 时仍产出拆解树，供 L5 fused_namer 组装稠合名（P-25.3.2）。
 
     if system is not None and len(system.get("sssr_indices") or ()) >= 2:
         from namepredict.layer2.fused_system import decompose_fused_system
@@ -237,6 +220,7 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
 
 
 def ester_fields(info: dict, fields: dict) -> dict:
+    """取首个酯的 o_idx 并写入酯字段（alkoxy_n 恒 0）。"""
     e = info["esters"][0]
     return {**fields, "o_idx": e["o_idx"], "alkoxy_n": 0}
 
@@ -246,27 +230,22 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     """环骨架：表达主基团并生成母体 dict（不支持返回 None）。"""
     if skeleton.topology is not SkeletonTopology.RING_SYSTEM:
         return None
-    # 骨架原子集已确定：一次识别 scaffold，下游复用（不再重复调 _producer_id）。
-    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
+    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold  # 骨架原子集已确定：一次识别 scaffold，下游复用（不再重复调 _producer_id）。
     scaffold = resolve_ring_scaffold(info, skeleton)
     occurrences = _covered(selection, skeleton)
     kind = _ring_kind(info, selection, skeleton, len(occurrences), scaffold)
     if kind is None:
         return None
     facts = _facts(selection, skeleton, occurrences, info["mol"])
-    # 补环内不饱和字段：kind 正交化后（醇/酮/纯烃环 → FG 类别/alkane），烯/炔由 double_bond(s)/triple_bond 字段承载（否则环烯酮/环烯醇/环烯烃烯丢失）。
     fields = {**_ring_fact_fields(_ring_fields(selection, occurrences), facts),
               **_chain_unsat_fields(info, skeleton,
-                                    _scaffold_fields(info, skeleton, facts, scaffold))}
+                                    _scaffold_fields(info, skeleton, facts, scaffold))}  # 补环内不饱和字段：kind 正交化后（醇/酮/纯烃环 → FG 类别/alkane），烯/炔由 double_bond(s)/triple_bond 字段承载（否则环烯酮/环烯醇/环烯烃烯丢失）。
     if facts.group_class is FunctionalGroupClass.ACID:
-        # 环酸全阴离子补 anion 标志（链酸经 _chain_fields→_expression_flags 已设）；
-        # L5 据此转 -ate/-酸根，并让金属盐前缀（sodium …）能命中。
-        fields = {**fields, **_expression_flags(selection, occurrences)}
+        fields = {**fields, **_expression_flags(selection, occurrences)}  # 环酸全阴离子补 anion 标志（链酸经 _chain_fields→_expression_flags 已设）；L5 据此转 -ate/-酸根，并让金属盐前缀（sodium …）能命中。
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
         fields = ester_fields(info, fields)
     if facts.group_class is FunctionalGroupClass.ACYL_HALIDE and facts.multiplicity == 1:
-        # 环外酰卤（苯甲酰卤等）同样要卤素字段：hal_z 供 L5 选氟氯溴碘后缀，hal_idx 纳入母体原子。
-        fields = _chain_acyl_halide_fields(info, occurrences, fields)
+        fields = _chain_acyl_halide_fields(info, occurrences, fields)  # 环外酰卤（苯甲酰卤等）同样要卤素字段：hal_z 供 L5 选氟氯溴碘后缀，hal_idx 纳入母体原子。
     return _parent_dict(kind, skeleton, occurrences, fields, facts)
 
 
@@ -298,11 +277,7 @@ def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> d
 
 
 def _chain_phosphate_fields(info: dict, occurrences, fields: dict) -> dict | None:
-    """L5 phosphate_names 消费的计数与盐元数据；盐门控不通过返回 None（该形态不可命名）。
-
-    盐门控（同旧 build_phosphate_parent）：n_om>0 时若有碱金属须同数配对；中性酸/酯不允许
-    带金属；完全无抗衡金属的游离磷酸根/磷酸酯阴离子放行。
-    """
+    """L5 phosphate_names 消费的计数与盐元数据，盐门控不通过返回 None（同旧 build_phosphate_parent）：n_om>0 时若有碱金属须同数配对；中性酸/酯不允许带金属；完全无抗衡金属的游离磷酸根/磷酸酯阴离子放行。"""
     if len(occurrences) != 1:
         return None
     payload = occurrences[0].payload

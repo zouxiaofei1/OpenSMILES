@@ -82,8 +82,7 @@ def _component_numbering(mol, node, rings, fusion_edges, shared=None):
     if not rset:
         return None, None
     sub_rings = [rings[i] for i in rset]
-    if shared is None:
-        # 兜底: 沿用旧逻辑(节点自身的附加组分之一, 无附加时为空)。
+    if shared is None:  # 兜底: 沿用旧逻辑(节点自身的附加组分之一, 无附加时为空)。
         shared = node.attached[0].fusion_shared[0] if node.attached else None
     idx_map = {i: k for k, i in enumerate(rset)}
     sub_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in fusion_edges
@@ -134,8 +133,7 @@ def _fusion_numbers(child_chain, child_labels, parent_chain, shared) -> tuple:
 
 def _fused_one(mol, parent_node, child_node, rings, fusion_edges) -> tuple[str, str] | None:
     """单级: 附加组分前缀 + 融合描述符(数字-字母)。"""
-    # 母体与附加组分各自编号都以同一稠合原子集作取代基(P-25.3.1.3: 位次尽可能低)。
-    shared = child_node.fusion_shared[0] if child_node.fusion_shared else None
+    shared = child_node.fusion_shared[0] if child_node.fusion_shared else None  # 母体与附加组分各自编号都以同一稠合原子集作取代基(P-25.3.1.3: 位次尽可能低)。
     parent_chain, _ = _component_numbering(mol, parent_node, rings, fusion_edges, shared)
     parent_chain, _ = _outer_chain_labels(parent_node, rings, parent_chain, [""] * len(parent_chain)) \
         if parent_chain else (None, None)
@@ -153,8 +151,7 @@ def _fused_one(mol, parent_node, child_node, rings, fusion_edges) -> tuple[str, 
             break
     if not letter:
         return None
-    # 单环烃附加(benzo 等)省略数字位次(P-25.3.8.1)。
-    desc = f"[{letter}]" if child_node.scaffold_id == "benzene" else f"[{','.join(map(str, numbers))}-{letter}]"
+    desc = f"[{letter}]" if child_node.scaffold_id == "benzene" else f"[{','.join(map(str, numbers))}-{letter}]"  # 单环烃附加(benzo 等)省略数字位次(P-25.3.8.1)。
     return prefix[0] + desc, prefix[1] + desc
 
 

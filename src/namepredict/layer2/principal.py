@@ -15,11 +15,13 @@ from namepredict.layer1.functional_group_inventory import (
 
 @dataclass(frozen=True, order=True)
 class PrincipalPriority:
+    """主基团优先级：P-41 类号 + P-43 路径（可比较排序）。"""
     p41_class: int
     p43_path: tuple[int, ...] = ()
 
 
 class PrincipalExpression(str, Enum):
+    """主基团的表达方式（作后缀/仅作前缀/仅兼容等级）。"""
     SUFFIX = "suffix"
     PREFIX_ONLY = "prefix_only"
     LEGACY_COMPAT = "legacy_compat"
@@ -27,6 +29,7 @@ class PrincipalExpression(str, Enum):
 
 @dataclass(frozen=True)
 class PrincipalFeatureSpec:
+    """主官能团规格：优先级、表达方式、兼容等级与锚点字段名。"""
     priority: PrincipalPriority
     expression: PrincipalExpression
     compatibility_rank: int = 0
@@ -69,6 +72,7 @@ def legacy_rank(group_class: FG | None) -> int:
 
 @dataclass(frozen=True)
 class PrincipalGroupSelection:
+    """选中的主官能团类及其全部 occurrence。"""
     group_class: FG
     occurrences: tuple[FunctionalGroupOccurrence, ...]
 

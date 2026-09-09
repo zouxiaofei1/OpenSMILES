@@ -28,8 +28,7 @@ def _kind_for_named(named) -> str:
     if named.en in ("methoxy", "ethoxy", "propoxy", "butoxy"):
         return "alkoxy"
     if named.claim.slot.value == "amine_n":
-        # 胺 N 端取代基：苯基/苄基用对应 kind，其余烷基 → n_alkyl（N- 前缀）。
-        return {"phenyl": "n_phenyl", "benzyl": "n_benzyl"}.get(named.en, "n_alkyl")
+        return {"phenyl": "n_phenyl", "benzyl": "n_benzyl"}.get(named.en, "n_alkyl")  # 胺 N 端取代基：苯基/苄基用对应 kind，其余烷基 → n_alkyl（N- 前缀）。
     return _NAME_KIND.get(named.en, _claim_kind(named.claim.slot.value))
 
 
@@ -97,6 +96,5 @@ def extract_claimed_sides(info: dict, parent: dict, existing: list[dict], *, nam
     owned = parent.get("owned_atoms")
     if owned is None:
         return []
-    # benzoate（苯 base + ester FG）靠 o_idx 字段识别 O-side；链状 ester 走 kind 表。
-    o_side = parent.get("kind") in _ESTER_O_SIDE_KINDS or parent.get("o_idx") is not None
+    o_side = parent.get("kind") in _ESTER_O_SIDE_KINDS or parent.get("o_idx") is not None  # benzoate（苯 base + ester FG）靠 o_idx 字段识别 O-side；链状 ester 走 kind 表。
     return _named_new_sides(info["mol"], owned, _covered_atoms(existing), name_mode=name_mode, cache=cache, o_side=o_side, root_ctx=info.get("root_ctx"))

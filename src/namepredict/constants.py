@@ -54,8 +54,7 @@ _ZH_DIGITS = "一二三四五六七八九"
 
 
 def en_num_term(n: int) -> str | None:
-    """英文数值词干（数量词/链词共用，末带 'a'）：≤10 查表，11=undeca，
-    12–99 按个位(hen/do)+十位组合，icosa 的 i 在元音后省略。"""
+    """英文数值词干（数量词/链词共用，末带 'a'）：≤10 查表，11=undeca，12–99 按个位(hen/do)+十位组合。"""
     if n < 1 or n > 99:
         return None
     if n <= 10:

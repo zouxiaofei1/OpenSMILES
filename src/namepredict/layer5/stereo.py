@@ -152,12 +152,7 @@ def _collapsed_parent(parent: dict) -> bool:
 
 
 def _rs_parts(numbered: dict) -> list[tuple[int, str]]:
-    """取母体上手性中心的 (位次, R/S) 列表（kind 不支持、折叠环或空链时为空）。
-
-    链式主官能团母体按 kind ∈ _RS_KINDS 放行；环/稠合骨架母体以 scaffold_id 识别
-    （其 chain 是 L4 定向编号的整环 walk，环上 sp3 手性中心可被 _cip_on_chain 扫到）。
-    折叠环仍由 _collapsed_parent 跳过。
-    """
+    """取母体上手性中心的 (位次, R/S) 列表（kind 不支持、折叠环或空链时为空）；链式主官能团母体按 kind ∈ _RS_KINDS 放行，环/稠合骨架母体以 scaffold_id 识别（chain 是 L4 定向编号的整环 walk，环上 sp3 手性中心可被 _cip_on_chain 扫到），折叠环由 _collapsed_parent 跳过。"""
     parent = numbered.get("parent") or {}
     kind = parent.get("kind")
     is_ring_parent = bool(parent.get("scaffold_id"))

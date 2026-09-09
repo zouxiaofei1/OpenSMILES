@@ -24,12 +24,14 @@ def _kind_rank(kind: str) -> int:
 
 @dataclass(frozen=True, order=True)
 class P44Facts:
+    """P-44 打分事实：主官能团类等级与个数。"""
     principal_group_class: int
     principal_group_count: int
 
 
 @dataclass(frozen=True)
 class ParentCandidate:
+    """候选母体 dict 及其 P-44 打分事实。"""
     parent: dict
     facts: P44Facts
 
@@ -66,8 +68,7 @@ def from_parent_dict(parent: dict) -> ParentCandidate:
     kind = parent.get("kind") or ""
     if "principal_group_count" not in parent:
         raise ValueError(f"principal_group_count missing for {kind}")
-    # 打分收敛：主官能团等级直接取 actual FG class rank（kind 只兜底，无 facts 时）。
-    pef = parent.get("principal_expression_facts")
+    pef = parent.get("principal_expression_facts")  # 打分收敛：主官能团等级直接取 actual FG class rank（kind 只兜底，无 facts 时）。
     rank = legacy_rank(pef.group_class) if pef else _kind_rank(kind)
     facts = P44Facts(rank, int(parent["principal_group_count"]))
     return ParentCandidate(parent, facts)

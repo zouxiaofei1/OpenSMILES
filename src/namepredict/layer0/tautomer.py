@@ -1,6 +1,5 @@
 """L0 酰胺烯醇互变异构归一化：非芳香中性 C(OH)=N 位点 → C(=O)-NH。
-
-只改键级并靠 RDKit 隐氢重算完成质子迁移，不增删重原子、不改原子序；
+只改键级并靠 RDKit 隐氢重算完成质子迁移，不增删重原子、不改原子序。
 带电 N / O⁻ 阴离子 / 显式 H / 硫类似物位点一律跳过（保守，不做质子化/阴离子改写）。
 """
 from __future__ import annotations
@@ -18,8 +17,7 @@ def _is_amide_enol_o(atom, carbon) -> bool:
     bond = carbon.GetOwningMol().GetBondBetweenAtoms(carbon.GetIdx(), atom.GetIdx())
     if bond is None or bond.GetBondType() != Chem.BondType.SINGLE:
         return False
-    # 只处理隐氢羟基（数据中即此形态）；显式 [OH]/H 原子跳过往 H 记账复杂化。
-    return atom.GetNumImplicitHs() >= 1 and atom.GetNumExplicitHs() == 0
+    return atom.GetNumImplicitHs() >= 1 and atom.GetNumExplicitHs() == 0  # 只处理隐氢羟基（数据中即此形态）；显式 [OH]/H 原子跳过以免 H 记账复杂化。
 
 
 def _is_amide_enol_n(atom, carbon) -> bool:

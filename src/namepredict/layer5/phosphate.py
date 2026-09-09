@@ -57,8 +57,7 @@ def _salt_name(n_oh: int, salt: dict) -> tuple[str, str] | None:
 
 
 def _arm_ester_zh(zh: str) -> str:
-    """磷酸酯/酯盐臂中文词：多位纯中文数字根的直链烷基补'烷'（十三基→十三烷基）对齐金标；
-    单字根（甲/乙…己）、复合/带位次/立体（含连字符、括号）原样保留。"""
+    """磷酸酯/酯盐臂中文词：多位纯中文数字根的直链烷基补'烷'（十三基→十三烷基）对齐金标，单字根（甲/乙…己）、复合/带位次/立体（含连字符、括号）原样保留。"""
     if (zh.endswith("基") and "-" not in zh and not zh.startswith("(")):
         stem = zh[:-1]
         if len(stem) >= 2 and all(c in "一二三四五六七八九十" for c in stem):
@@ -67,8 +66,7 @@ def _arm_ester_zh(zh: str) -> str:
 
 
 def _ester_salt_names(n_oh: int, salt: dict, arms: list[dict]) -> tuple[str, str] | None:
-    """碱金属 + 烷基酯臂（n_om>0, k>0）：metal + 臂 + [dihydrogen|hydrogen] phosphate /
-    磷酸[二氢|氢]{臂}酯 {金属}盐。如 disodium tridecyl phosphate / 磷酸十三烷基酯 二钠盐。"""
+    """碱金属 + 烷基酯臂（n_om>0, k>0）：metal + 臂 + [dihydrogen|hydrogen] phosphate / 磷酸[二氢|氢]{臂}酯 {金属}盐，如 disodium tridecyl phosphate / 磷酸十三烷基酯 二钠盐。"""
     metal_en = _metal_en_prefix(salt)
     metal_zh = _metal_zh_suffix(salt)
     if not metal_en or not metal_zh:
@@ -96,8 +94,7 @@ def _ester_salt_names(n_oh: int, salt: dict, arms: list[dict]) -> tuple[str, str
 
 
 def _free_anion_names(n_oh: int, arms: list[dict]) -> tuple[str, str] | None:
-    """游离磷酸根/磷酸酯阴离子（n_om>0, 无抗衡金属）：[臂 + ]{tail} /
-    磷酸[二氢|氢][臂]酯（有臂）或 磷酸[二氢|氢]根（无臂）。负电荷不标注，用基本根词。"""
+    """游离磷酸根/磷酸酯阴离子（n_om>0, 无抗衡金属）：[臂 + ]{tail} / 磷酸[二氢|氢][臂]酯（有臂）或 磷酸[二氢|氢]根（无臂）；负电荷不标注，用基本根词。"""
     groups = _group_arms(arms)
     if groups:
         en_parts: list[str] = []
@@ -143,8 +140,7 @@ def phosphate_names(numbered: dict) -> tuple[str, str] | None:
         return None
     if salt:
         return None  # 中性酯不应带金属（盐+酯混合不在本轮）
-    # 中性磷酸酯：k = len(arms) > 0，h = 3 − k
-    groups = _group_arms(arms)
+    groups = _group_arms(arms)  # 中性磷酸酯：k = len(arms) > 0，h = 3 − k
     if not groups:
         return None
     en_parts: list[str] = []

@@ -37,8 +37,7 @@ class RetainedSubstituent:
 def _build_registry() -> dict[str, RetainedSubstituent]:
     """构建取代基注册表（键 → RetainedSubstituent 条目）；简单取代基一并入表。"""
     P, G, N = IupacLevel.PIN, IupacLevel.GENERAL, IupacLevel.NOT_RECOMMENDED
-    out: dict[str, RetainedSubstituent] = {
-        # 基础取代基（原 ANCHOR_TABLE 并入 registry）
+    out: dict[str, RetainedSubstituent] = {  # 基础取代基（原 ANCHOR_TABLE 并入 registry）
         "fluoro": RetainedSubstituent( "fluoro", "氟", "fluoro", "氟", P, anchored=("*F", ), paren=False, kind="halo", ),
         "chloro": RetainedSubstituent( "chloro", "氯", "chloro", "氯", P, anchored=("*Cl", ), paren=False, kind="halo", ),
         "bromo": RetainedSubstituent( "bromo", "溴", "bromo", "溴", P, anchored=("*Br", ), paren=False, kind="halo", ),
@@ -51,8 +50,7 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "ethyl": RetainedSubstituent( "ethyl", "乙基", "ethyl", "乙基", P, anchored=("*CC", ), paren=False, kind="alkyl", ),
         "propyl": RetainedSubstituent( "propyl", "丙基", "propyl", "丙基", P, anchored=("*CCC", ), paren=False, kind="alkyl", ),
         "butyl": RetainedSubstituent( "butyl", "丁基", "butyl", "丁基", P, anchored=("*CCCC", ), paren=False, kind="alkyl", ),
-        # 支链 / 不饱和烷基
-        "tert-butyl": RetainedSubstituent( "tert-butyl", "叔丁基", "tert-butyl", "叔丁基", P, anchored=("*C(C)(C)C", ), paren=False, kind="alkyl", ),
+        "tert-butyl": RetainedSubstituent( "tert-butyl", "叔丁基", "tert-butyl", "叔丁基", P, anchored=("*C(C)(C)C", ), paren=False, kind="alkyl", ),  # 支链 / 不饱和烷基
         "isopropyl": RetainedSubstituent( "propan-2-yl", "丙-2-基", "propan-2-yl", "丙-2-基", G, anchored=("*C(C)C", ), paren=False, kind="alkyl", ),
         "isobutyl": RetainedSubstituent("isobutyl", "异丁基", "2-methylpropyl", "2-甲基丙基", N, anchored=("*CC(C)C", ), paren=False, kind="alkyl", ),
         "sec-butyl": RetainedSubstituent("sec-butyl", "仲丁基", "butan-2-yl", "丁-2-基", N, anchored=("*C(C)CC", ), paren=False, kind="alkyl", ),
@@ -76,8 +74,7 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "sulfo": RetainedSubstituent( "sulfo", "磺基", "sulfo", "磺基", P, anchored=("*S(=O)(=O)O", ), paren=False, kind="leaf", ),
         "tosyl": RetainedSubstituent( "tosyl", "对甲苯磺酰基", "4-methylbenzenesulfonyl", "4-甲基苯磺酰基", N, anchored=("*S(=O)(=O)c1ccc(C)cc1", ), paren=False, kind="leaf", ),
         "carboxy": RetainedSubstituent( "carboxy", "羧基", "carboxy", "羧基", P, anchored=("*C(=O)O", ), paren=False, kind="leaf", ),
-        # 磷酸降级前缀（P-67.1.5.1：羧酸等更高优先级 FG 存在时磷酸以 phosphonooxy 前缀表达）
-        "phosphonooxy": RetainedSubstituent( "phosphonooxy", "膦酸氧基", "phosphonooxy", "膦酸氧基", P, anchored=("*OP(=O)(O)O", ), paren=False, kind="leaf", ),
+        "phosphonooxy": RetainedSubstituent( "phosphonooxy", "膦酸氧基", "phosphonooxy", "膦酸氧基", P, anchored=("*OP(=O)(O)O", ), paren=False, kind="leaf", ),  # 磷酸降级前缀（P-67.1.5.1：羧酸等更高优先级 FG 存在时磷酸以 phosphonooxy 前缀表达）
         "phosphonatooxy": RetainedSubstituent( "phosphonatooxy", "膦酸氧基", "phosphonatooxy", "膦酸氧基", P, anchored=("*OP(=O)([O-])O", "*OP(=O)([O-])[O-]"), paren=False, kind="leaf", ),
         "phosphonooxymethyl": RetainedSubstituent( "phosphonooxymethyl", "膦酸氧甲基", "phosphonooxymethyl", "膦酸氧甲基", P, anchored=("*COP(=O)(O)O", ), paren=False, kind="leaf", ),
         "phosphonatooxymethyl": RetainedSubstituent( "phosphonatooxymethyl", "膦酸氧甲基", "phosphonatooxymethyl", "膦酸氧甲基", P, anchored=("*COP(=O)([O-])O", ), paren=False, kind="leaf", ),
@@ -132,9 +129,7 @@ def resolve_name(key: str, *, name_mode: str = "general") -> tuple[str, str]:
     """返回 registry 键对应的 (en, zh)；当前恒走系统名（systematic_en/zh），general/pin 分派已被注释停用。"""
     entry = _REGISTRY[key]
     
-    # if name_mode == "pin" and entry.level != IupacLevel.PIN:
-    #     return entry.systematic_en, entry.systematic_zh
-    return entry.systematic_en, entry.systematic_zh
+    return entry.systematic_en, entry.systematic_zh  # 原 pin 分派（name_mode == "pin" 且 level != IupacLevel.PIN）已停用
 
 
 def pick_root(mol: Mol, atoms: frozenset[int]) -> int:

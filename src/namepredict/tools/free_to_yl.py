@@ -45,8 +45,7 @@ def _alkoxy_en(en: str) -> str | None:
     m = re.match(r"^(.+)an-(\d+)-ol$", en)
     if m:
         return f"{m.group(1)}an-{m.group(2)}-yloxy"
-    # heptan-1-ol 等（C7+，带完整 "ane" 词干）
-    m = re.match(r"^(.+)ane-1-ol$", en)
+    m = re.match(r"^(.+)ane-1-ol$", en)  # heptan-1-ol 等（C7+，带完整 "ane" 词干）
     if m:
         return m.group(1) + "oxy"
     return None
@@ -71,12 +70,10 @@ def _sulfanyl_en(en: str) -> str | None:
     """硫醇 → 硫基：methanethiol→methylsulfanyl, ethanethiol→ethylsulfanyl, propane-2-thiol→propane-2-ylsulfanyl。"""
     if not en.endswith("thiol"):
         return None
-    # 例：propane-2-thiol → propane-2-ylsulfanyl
-    m = re.match(r"^(.+)ane-(\d+)-thiol$", en)
+    m = re.match(r"^(.+)ane-(\d+)-thiol$", en)  # 例：propane-2-thiol → propane-2-ylsulfanyl
     if m:
         return f"{m.group(1)}ane-{m.group(2)}-ylsulfanyl"
-    # 例：methanethiol → methylsulfanyl
-    m = re.match(r"^(.+)anethiol$", en)
+    m = re.match(r"^(.+)anethiol$", en)  # 例：methanethiol → methylsulfanyl
     if m:
         return m.group(1) + "ylsulfanyl"
     return None
@@ -96,12 +93,10 @@ def _amino_en(en: str) -> str | None:
     """1° 胺 → 氨基：methanamine→methylamino, ethanamine→ethylamino, propan-2-amine→propan-2-ylamino。"""
     if not en.endswith("amine") or "N-" in en:
         return None
-    # 例：propan-2-amine → propan-2-ylamino
-    m = re.match(r"^(.+)ane-(\d+)-amine$", en)
+    m = re.match(r"^(.+)ane-(\d+)-amine$", en)  # 例：propan-2-amine → propan-2-ylamino
     if m:
         return f"{m.group(1)}ane-{m.group(2)}-ylamino"
-    # 例：methanamine → methylamino
-    m = re.match(r"^(.+)anamine$", en)
+    m = re.match(r"^(.+)anamine$", en)  # 例：methanamine → methylamino
     if m:
         return m.group(1) + "ylamino"
     return None
@@ -188,7 +183,6 @@ def free_to_yl(
     """在键合位次处把 free 母体名转 P-29 -yl 双语形式（P-63.2.2 醇→烷氧基、P-63.2.1 硫醇→烷基硫基、P-62.2 1° 胺→烷基氨基）。"""
     fg = _try_fg_prefix(en, zh)
     if fg is not None:
-        # P-29.3.6：复合前缀（methylamino=CH3-NH-，非普通 amino）需括号与两个独立取代基区分。
-        need_paren = fg[0].endswith("amino") and fg[0] != "amino"
+        need_paren = fg[0].endswith("amino") and fg[0] != "amino"  # P-29.3.6：复合前缀（methylamino=CH3-NH-，非普通 amino）需括号与两个独立取代基区分。
         return fg[0], fg[1], need_paren
     return _yl_en(en, attach_locant), _yl_zh(zh, attach_locant, en), paren

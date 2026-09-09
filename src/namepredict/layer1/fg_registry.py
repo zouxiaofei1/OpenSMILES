@@ -8,10 +8,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class FgSpec:
-    """一个官能团类别在命名管线各层的注册元数据。
-
-    字段全部为纯数据，不依赖下游类型，consumer 自行转换成所需形态。
-    """
+    """一个官能团类别在命名管线各层的注册元数据（字段纯数据，不依赖下游类型）。"""
 
     fg: str  # FunctionalGroupClass 值（权威枚举字符串，如 "alcohol"）
     list_key: str  # L1 analyzer 列表复数 key（如 "hydroxyls"）

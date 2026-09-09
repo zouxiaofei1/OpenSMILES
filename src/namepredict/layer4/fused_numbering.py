@@ -129,8 +129,7 @@ def _candidates(mol, rings, coords, fused: set[int]) -> list[tuple[list[int], li
     for sr in _top_rings(coords, rings):
         starts = _top_atoms(coords, rings[sr], fused)
         if not starts:
-            # 最上端环无非稠合原子: 沿顺时针取相邻环中最上端者(P-25.3.3.1.1 兜底)。
-            for nb_ring in rings:
+            for nb_ring in rings:  # 最上端环无非稠合原子: 沿顺时针取相邻环中最上端者(P-25.3.3.1.1 兜底)
                 if set(nb_ring) & set(rings[sr]):
                     starts = _top_atoms(coords, nb_ring, fused)
                     if starts:
@@ -152,12 +151,7 @@ def _locant_tuples(chain: list[int], labels: list[str], atoms: list[int]) -> tup
 
 def number_fused_system(mol, rings, coords, sub_layers=None,
                         alpha_subs=None) -> tuple[list[int], list[str]] | None:
-    """P-25.3.3 稠环编号: 依准则(a)-(d) 收窄; 返回 (chain, labels) 或 None。coords 可为单 dict 或平局候选列表，一并枚举跨镜像收窄。
-
-    sub_layers 为按优先级排列的环外附着原子组（如 [游离价连接点]、[principal 附着原子]、[取代基附着原子]）：
-    纯碳环上 (a)-(d) 全平局（萘的镜像取向位次集合相同），须逐层做位次集合最小化收窄，否则编号方向随候选枚举顺序漂移。
-    alpha_subs 为 [(字母序键, 附着原子)]：取代基位次集合仍相同时按 P-14.5 把最低位次给字母序最前者。
-    """
+    """P-25.3.3 稠环编号: 依准则(a)-(d) 收窄; 返回 (chain, labels) 或 None。coords 可为单 dict 或平局候选列表，一并枚举跨镜像收窄。sub_layers 为按优先级排列的环外附着原子组（纯碳环上 (a)-(d) 全平局，须逐层做位次集合最小化收窄，否则编号方向随候选枚举顺序漂移）；alpha_subs 为 [(字母序键, 附着原子)]，位次集合仍相同时按 P-14.5 把最低位次给字母序最前者。"""
     fused = fused_atoms(rings)
     heteros = _hetero_set(mol, fused) | _hetero_set(mol, set().union(*rings))
     coords_list = [coords] if isinstance(coords, dict) else list(coords)
@@ -177,8 +171,7 @@ def number_fused_system(mol, rings, coords, sub_layers=None,
 
     if all_heteros:
         cands = _keep(cands, all_heteros)  # (a) 低位次给杂原子集合
-    # (b) 按 F>Tl 顺序逐元素收窄该元素原子位次
-    hetero_by_z = defaultdict(list)
+    hetero_by_z = defaultdict(list)  # (b) 按 F>Tl 顺序逐元素收窄该元素原子位次
     for a in all_heteros:
         hetero_by_z[mol.GetAtomWithIdx(a).GetAtomicNum()].append(a)
     for z in _P145_SENIOR:
@@ -193,9 +186,9 @@ def number_fused_system(mol, rings, coords, sub_layers=None,
             break
         if layer:
             cands = _keep(cands, sorted(layer))  # 镜像平局: 逐层按位次集合最小化收窄
-    if len(cands) > 1 and alpha_subs:
-        # P-14.5: 位次集合仍相同时，字母序最前的取代基得最低位次
+    if len(cands) > 1 and alpha_subs:  # P-14.5: 位次集合仍相同时，字母序最前的取代基得最低位次
         def _alpha_key(c):
+            """字母序键：[(取代基字母序键, 其位次键)] 排序元组。"""
             return tuple(sorted((k, _label_key(c[1][c[0].index(a)]))
                                 for k, a in alpha_subs if a in c[0]))
         best = min(_alpha_key(c) for c in cands)

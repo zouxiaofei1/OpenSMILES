@@ -83,8 +83,7 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
     metals, organics, n_hcl = _partition(frags)
     if len(organics) != 1:
         return None
-    # 优先碱金属盐；第一版排除 HCl 共抗衡离子。
-    if metals:
+    if metals:  # 优先碱金属盐；第一版排除 HCl 共抗衡离子。
         if n_hcl:
             return None
         meta = _meta_metal(metals)

@@ -142,8 +142,7 @@ def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
         y_suf = (f"{my_e}{spec.yne_suf[0]}", f"{my_z}{spec.yne_suf[1]}")
         return (f"{s}{a_en}-{e_loc}-{e_seg[0]}-{y_loc}-{y_suf[0]}",
                 f"{zs}-{e_loc}-{e_seg[1]}-{y_loc}-{y_suf[1]}")
-    if spec.unsat_polyol:
-        # 多 FG 词干模式: 混合烯段 elide e (pent-1-en-4-yne), FG 后缀由 _chain_names 拼接
+    if spec.unsat_polyol:  # 多 FG 词干模式: 混合烯段 elide e (pent-1-en-4-yne), FG 后缀由 _chain_names 拼接
         e_seg = (f"{me}en", f"{mz}烯")
         y_seg = (f"{my_e}yne", f"{my_z}炔")
         return (f"{s}{a_en}-{e_loc}-{e_seg[0]}-{y_loc}-{y_seg[0]}",
@@ -180,8 +179,7 @@ def _chain_yne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
         if omit or yne is None:
             return f"{s}{spec.yne_suf[0]}", f"{zs}{spec.yne_suf[1]}"
         return f"{s}-{yne}-{spec.yne_suf[0]}", f"{zs}-{yne}-{spec.yne_suf[1]}"
-    if spec.unsat_polyol:
-        # 多 FG 词干模式: 炔段保留 e (but-2-yne), FG 后缀由 _chain_names 拼接
+    if spec.unsat_polyol:  # 多 FG 词干模式: 炔段保留 e (but-2-yne), FG 后缀由 _chain_names 拼接
         if yne is None and not ynes:
             return None
         if multi:
@@ -232,8 +230,7 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
             ez = spec.ez_ene_multi(numbered) if spec.ez_ene_multi else ""
             loc = ",".join(str(x) for x in enes)
             return f"{ez}{s}a-{loc}-{fused[0]}", f"{ez}{zs}-{loc}-{fused[1]}"
-        if spec.unsat_polyol:
-            # 多 FG 词干模式: 多烯 MULT+ene (buta-1,3-diene), FG 后缀由 _chain_names 拼接
+        if spec.unsat_polyol:  # 多 FG 词干模式: 多烯 MULT+ene (buta-1,3-diene), FG 后缀由 _chain_names 拼接
             m_en, m_zh = MULT_EN.get(len(enes)), MULT_ZH.get(len(enes))
             if not m_en or not m_zh:
                 return None
@@ -264,14 +261,12 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
         if fused is None:
             return None
         ez = spec.ez_ene(numbered) if spec.ez_ene else ""
-        if spec.ene_loc_omit and numbered.get("omit_ene_locant"):
-            # 环状单烯 (cyclohexene)：位次 1 隐含省略 (P-31.1.2)。
+        if spec.ene_loc_omit and numbered.get("omit_ene_locant"):  # 环状单烯 (cyclohexene)：位次 1 隐含省略 (P-31.1.2)。
             return f"{ez}{s}{fused[0]}", f"{ez}{zs}{fused[1]}"
         return f"{ez}{s}-{ene}-{fused[0]}", f"{ez}{zs}-{ene}-{fused[1]}"
     if spec.ene_omit_aware:
         ene = _ene_loc_kept(numbered)
-    if spec.unsat_polyol:
-        # 多 FG 词干模式: 烯段保留 e (but-2-ene), FG 后缀由 _chain_names 拼接
+    if spec.unsat_polyol:  # 多 FG 词干模式: 烯段保留 e (but-2-ene), FG 后缀由 _chain_names 拼接
         if ene is None:
             return None
         ez = (spec.ez_ene(numbered) if spec.ez_ene else "") or ""
@@ -280,10 +275,7 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
     if ene is None or fg is None:
         return None
     ez = (spec.ez_ene(numbered) if spec.ez_ene else "") or ""
-    if n <= 2 and ene == 1 and fg == 1:
-        # 短链 (C≤2) 单烯单 FG：烯只能 1(-2)、后缀锚定 1，位次无歧义省略并融合
-        # (P-14.3.4.2/4.4；eth-1-en-1-amine → ethenamine，乙-1-烯-1-胺 → 乙烯胺)。
-        # 另一端的取代基（如 2-nitro）位次照常由前缀保留。
+    if n <= 2 and ene == 1 and fg == 1:  # 短链 (C≤2) 单烯单 FG：烯只能 1(-2)、后缀锚定 1，位次无歧义省略并融合 (P-14.3.4.2/4.4；eth-1-en-1-amine → ethenamine，乙-1-烯-1-胺 → 乙烯胺)；另一端取代基（如 2-nitro）位次照常由前缀保留。
         return (
             f"{ez}{s}{spec.ene_seg[0]}{spec.en_suf}",
             f"{ez}{zs}{spec.ene_seg[1]}{spec.zh_suf}",
@@ -349,9 +341,7 @@ def _chain_stem_pair(spec: "_Chain", n: int) -> tuple[str, str] | None:
     return s, zs
 
 def _elide_parent_e(stem: str, suffix: str) -> str:
-    """母体氢化物结尾 'e' 的省略（P-60.2(a)）：仅后缀以元音 a/i/o/u/y 开头时省略，
-    辅音结尾 (diol/dione/diamine/carbaldehyde) 保留（oxolane-3,4-diol，非 oxolan-3,4-diol）。
-    经 `_ring_stem` 无差别 rstrip('e') 是此 bug 根因，故把判断下沉到拼接端、用最终 en_suf。"""
+    """母体氢化物结尾 'e' 的省略（P-60.2(a)）：仅后缀以元音 a/i/o/u/y 开头时省略，辅音结尾 (diol/dione/diamine/carbaldehyde) 保留（oxolane-3,4-diol）；判断下沉到拼接端、用最终 en_suf，避免 `_ring_stem` 无差别 rstrip('e') 的 bug。"""
     return stem[:-1] if stem.endswith("e") and suffix[:1].lower() in "aeiouy" else stem
 
 
@@ -385,8 +375,7 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
         omit_rule=_NO_OMIT,
         plain_maps=None,
     )
-    if spec.kind == "acid":
-        # 多酸烯基基座: enedioic/enetri…oic (保留 e); 中文 烯+数量酸。
+    if spec.kind == "acid":  # 多酸烯基基座: enedioic/enetri…oic (保留 e); 中文 烯+数量酸。
         fields["ene_base"] = (f"ene{en_m}oic acid", f"烯{zh_m}酸")
         fields["yne_suf"] = None
         fields["ene_single_min"] = 3
@@ -398,9 +387,7 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
 
 
 def _radical_terminal_yl_elide(pair: tuple[str, str], n: int) -> tuple[str, str]:
-    """无环自由基自由价在 C-1 时省略 -1-（饱和链 P-29.2 方法 1 的烯/炔拓展）：
-    丙-1-烯-1-基→丙-1-烯基、丁-3-烯-1-炔-1-基→丁-3-烯-1-炔基；C2 烯/炔（乙-1-炔-1-基→乙炔基、
-    eth-1-yn-1-yl→ethynyl）位次 1 也省略，因短链烯/炔位次无歧义（同 _omit_term_locant C1–C2 1 位）。"""
+    """无环自由基自由价在 C-1 时省略 -1-（饱和链 P-29.2 方法 1 的烯/炔拓展）；丙-1-烯-1-基→丙-1-烯基、丁-3-烯-1-炔-1-基→丁-3-烯-1-炔基，C2 烯/炔（乙-1-炔-1-基→乙炔基、eth-1-yn-1-yl→ethynyl）位次 1 也省略，因短链位次无歧义（同 _omit_term_locant C1–C2 1 位）。"""
     en, zh = pair
     if en.endswith("-1-yl"):
         en = en[:-5] + "yl"
@@ -414,8 +401,7 @@ def _radical_terminal_yl_elide(pair: tuple[str, str], n: int) -> tuple[str, str]
 
 def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None:
     """单链词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环; 烯/炔段插入由 spec 数据驱动."""
-    if spec.aromatic and spec.kind == "alcohol":
-        # 芳香环醇统一"酚"（苯酚系；萘/吡啶/吲哚/喹啉同），主路径自动，非 variant 特例。
+    if spec.aromatic and spec.kind == "alcohol":  # 芳香环醇统一"酚"（苯酚系；萘/吡啶/吲哚/喹啉同），主路径自动，非 variant 特例。
         spec = replace(spec, zh_suf="酚")
     mult = _parent_multiplicity(numbered)
     if mult is not None:
@@ -425,8 +411,7 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
                 return None
             var.update((spec.variant or {}).get(mult) or {})   # 特例覆盖 (acid 草酸/烯二酸)
             spec = replace(spec, **var)
-        elif mult == 1:
-            # 单 FG 保留名覆盖 (苯环 → phenol/benzoic 等); 开链/无该 scaffold variant 时空。
+        elif mult == 1:  # 单 FG 保留名覆盖 (苯环 → phenol/benzoic 等); 开链/无该 scaffold variant 时空。
             var = (spec.variant or {}).get(1)
             if var:
                 spec = replace(spec, **var)
@@ -434,8 +419,7 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
     if not alk:
         return None
     top = _chain_unsat(spec, n, numbered)
-    if top is not None and spec.unsat_polyol:
-        # 多 FG 词干模式: 词干 + FG 位次 + 多 FG 后缀 (but-2-ene-1,4-diol)
+    if top is not None and spec.unsat_polyol:  # 多 FG 词干模式: 词干 + FG 位次 + 多 FG 后缀 (but-2-ene-1,4-diol)
         rec = _fg_record(numbered, spec.fg)
         locs = rec["locants"] if rec else None
         if not locs or (spec.need is not None and len(locs) != spec.need):
@@ -445,8 +429,7 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
             top = (f"{top[0]}-{loc_s}-{spec.en_suf}", f"{top[1]}-{loc_s}-{spec.zh_suf}")
     if top is not None and spec.kind == "radical" and spec.stem is None \
             and not spec.cyclic and not spec.cyclic_unsat:
-        # 开链自由基母体：自由价在 C-1 时省略 -1-（环自由基/稠环词干不受影响，见 _radical_terminal_yl_elide）。
-        top = _radical_terminal_yl_elide(top, n)
+        top = _radical_terminal_yl_elide(top, n)  # 开链自由基母体：自由价在 C-1 时省略 -1-（环自由基/稠环词干不受影响，见 _radical_terminal_yl_elide）。
     if top is not None:
         if spec.cyclic or spec.cyclic_unsat:
             top = (f"cyclo{top[0]}", f"环{top[1]}")
@@ -473,9 +456,7 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
             pair = _chain_plain(spec, s, zs, n)
         else:
             loc_s = ",".join(str(x) for x in locs)
-            if spec.stem:
-                # 稠环 scaffold 词干已含完整基座（naphthalen/萘），直接拼后缀；
-                # 结尾 'e' 按后缀首字母决定是否省略（P-60.2(a)，见 _elide_parent_e）。
+            if spec.stem:  # 稠环 scaffold 词干已含完整基座（naphthalen/萘），直接拼后缀；结尾 'e' 按后缀首字母决定是否省略（P-60.2(a)，见 _elide_parent_e）。
                 pair = (f"{_elide_parent_e(s, spec.en_suf)}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
             else:
                 pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")

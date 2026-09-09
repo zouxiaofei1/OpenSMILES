@@ -35,8 +35,7 @@ def _strip_lead_locant(stem: str) -> str:
             i += 1
             while i < n and stem[i].isdigit():
                 i += 1
-    # 指示氢前缀：1H-、2H-、3H-（P-14.5 / P-65.3.2.5）
-    if i and i + 1 < n and stem[i] == "H" and stem[i + 1] == "-":
+    if i and i + 1 < n and stem[i] == "H" and stem[i + 1] == "-":  # 指示氢前缀：1H-、2H-、3H-（P-14.5 / P-65.3.2.5）
         i += 1
     return stem[i + 1 :] if i and i < n and stem[i] == "-" else stem
 
@@ -133,11 +132,9 @@ def _extract_halos(mol: Mol, chain: list[int]) -> list[dict]:
 
 def _filter_fg_halos(halos: list, parent: dict) -> list:
     """过滤掉已由官能团编码的卤素。"""
-    # 官能团类醚臂已编码 F（如 HFIP）；不要重复加前缀。
-    if parent.get("kind") == "ether" and parent.get("ether_arms"):
+    if parent.get("kind") == "ether" and parent.get("ether_arms"):  # 官能团类醚臂已编码 F（如 HFIP）；不要重复加前缀。
         return []
-    # 酰卤：卤素是母体 FG 原子（hal_idx 在 owned_atoms 内），不作取代基。
-    if parent.get("kind") == "acyl_halide":
+    if parent.get("kind") == "acyl_halide":  # 酰卤：卤素是母体 FG 原子（hal_idx 在 owned_atoms 内），不作取代基。
         owned = set(parent.get("owned_atoms") or [])
         return [h for h in halos if not (set(h.get("atoms") or []) & owned)]
     return halos

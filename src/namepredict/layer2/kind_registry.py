@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class KindMeta:
+    """母体 kind 元数据：中英词干、环类型、环数与是否保留名。"""
     kind: str
     en: str | None = None
     zh: str | None = None

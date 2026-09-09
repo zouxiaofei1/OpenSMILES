@@ -38,8 +38,7 @@ def ring_shape_template(order: list[int], exit_idx: int,
         return None
     if n == 7 and e not in (2, 3):
         return None
-    # 逐顶点分配：索引 0,1 为左共享边(单位水平, y=0)；索引 e,e+1 为右共享边(平行水平, y=row_width)。
-    positions: list[tuple[float, float]] = []
+    positions: list[tuple[float, float]] = []  # 逐顶点分配：索引 0,1 为左共享边(单位水平, y=0)；索引 e,e+1 为右共享边(平行水平, y=row_width)
     mid_slot = 0.0  # 已用过的中间剩余顶点计数（n=7 时 2..e-1 会有前向连接顶点）
     for i in range(n):
         if i == 0:
@@ -87,8 +86,7 @@ def rigid_fit(src: list[tuple[float, float]], dst: list[tuple[float, float]]):
     sx = [(x - cx_s, y - cy_s) for x, y in src]
     dx = [(x - cx_d, y - cy_d) for x, y in dst]
     h11 = sum(dx[i][0] * sx[i][0] + dx[i][1] * sx[i][1] for i in range(n))
-    # Kabsch 最优旋转角 θ = atan2(Σ d_y s_x - d_x s_y, Σ d·s)，让 Rθ·s ≈ d。
-    h12 = sum(dx[i][1] * sx[i][0] - dx[i][0] * sx[i][1] for i in range(n))
+    h12 = sum(dx[i][1] * sx[i][0] - dx[i][0] * sx[i][1] for i in range(n))  # Kabsch 最优旋转角 θ = atan2(Σ d_y s_x - d_x s_y, Σ d·s)，让 Rθ·s ≈ d
     theta = math.atan2(h12, h11)
     s_sq = sum(x * x + y * y for x, y in sx)
     d_sq = sum(x * x + y * y for x, y in dx)

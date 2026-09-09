@@ -11,6 +11,7 @@ from namepredict.layer3.substituent_namer import SubstituentName
 
 @dataclass(frozen=True)
 class CoverageLedger:
+    """所有权与命名 claim 的重原子覆盖台账：缺口与重叠原子集。"""
     owned_atoms: frozenset[int]
     named_claims: tuple[SubstituentName, ...]
     gap: frozenset[int]

@@ -1,9 +1,6 @@
 """L0 酸性质子重定位/电荷归一化：去质子化弱酸位(酚氧/烯醇/酰胺 O⁻、N⁻) 与质子化强酸位
-(默认羧酸 C(=O)OH) 同片段共存时，把质子从强酸搬到弱酸位——等价负电荷收敛到最强酸，
-使 carboxylate→-oate 的既有 L1–L5 能力作用于输入侧电荷错位的结构（如 chebi-433）。
-
-只改 FormalCharge 与 H 记账，不增删重原子；走 RWMol 原子级编辑，
-改后 SanitizeMol + AssignStereochemistry；含 * dummy 或改动失败时保守跳过。
+(默认羧酸 C(=O)OH) 同片段共存时，把质子从强酸搬到弱酸位——等价负电荷收敛到最强酸。
+只改 FormalCharge 与 H 记账，走 RWMol 原子级编辑；含 * dummy 或消毒失败时保守跳过。
 """
 from __future__ import annotations
 
@@ -21,10 +18,7 @@ _ACCEPTOR_Z = frozenset({O, N})
 
 
 def _oxo_neighbor(atom, heavy: int, min_oxo: int = 1):
-    """返回 atom 邻接的 heavy 原子（非芳香）若其带有 ≥min_oxo 个双键氧；否则 None。
-
-    heavy 为羧基碳/磷/硫等成酸中心：C(=O)、P(=O)、S(=O)n。
-    """
+    """返回 atom 邻接的成酸中心原子（非芳香）若其带 ≥min_oxo 个双键氧（C(=O)/P(=O)/S(=O)n）；否则 None。"""
     for n in atom.GetNeighbors():
         if n.GetAtomicNum() != heavy or n.GetIsAromatic():
             continue
@@ -40,11 +34,7 @@ def _oxo_neighbor(atom, heavy: int, min_oxo: int = 1):
 
 
 def _acid_kind_of_oh(atom) -> str | None:
-    """判定中性含 H 的 O 是否为质子化强酸 OH，返回 acid kind；否则 None。
-
-    carboxyl：O-H 连到 C(=O)；phospho：连到 P(=O)；sulfo：连到 S(=O)n。
-    醇/酚/酯 O 无对应成酸中心，天然返回 None（酯烷氧 O 无 H、酚 O 不连 =O 中心）。
-    """
+    """判定中性含 H 的 O 是否为质子化强酸 OH：carboxyl 连 C(=O)、phospho 连 P(=O)、sulfo 连 S(=O)n；否则 None。"""
     if atom.GetAtomicNum() != O or atom.GetFormalCharge() != 0 or atom.GetTotalNumHs() < 1:
         return None
     if _oxo_neighbor(atom, C, 1):
@@ -73,21 +63,15 @@ def _is_weak_anion(atom) -> bool:
     """判定位点是否为去质子化的弱酸位（可接受质子）。"""
     if atom.GetFormalCharge() != -1 or atom.GetAtomicNum() not in _ACCEPTOR_Z:
         return False
-    # 邻接 +1 电荷 → 硝基/N-氧化物等内平衡写法，不当作弱酸位
-    if any(n.GetFormalCharge() == 1 for n in atom.GetNeighbors()):
+    if any(n.GetFormalCharge() == 1 for n in atom.GetNeighbors()):  # 邻接 +1 电荷 → 硝基/N-氧化物等内平衡写法，不当作弱酸位
         return False
-    # 已是强酸共轭碱（羧酸/磷酸/磺酸根），电荷位置合理
-    if _is_strong_conj_base(atom):
+    if _is_strong_conj_base(atom):  # 已是强酸共轭碱（羧酸/磷酸/磺酸根），电荷位置合理
         return False
     return True
 
 
 def _relocate_proton(mol: Mol, a_idx: int, d_idx: int) -> Mol | None:
-    """把质子从强酸供体 d_idx 搬到弱酸受体 a_idx：受体变中性 +1H，供体变 -1 -1H。
-
-    只做原子级 FormalCharge/H 记账（不重写 SMILES，保立体中心不随邻居重排翻转）；
-    SanitizeMol 失败返回 None（保守跳过）。
-    """
+    """把质子从强酸供体 d_idx 搬到弱酸受体 a_idx：受体中性 +1H、供体 -1 -1H；只做 FormalCharge/H 记账，SanitizeMol 失败返回 None。"""
     m = RWMol(mol)
     acc = m.GetAtomWithIdx(a_idx)
     don = m.GetAtomWithIdx(d_idx)
@@ -112,12 +96,7 @@ def _frag_of(mol: Mol) -> dict[int, int]:
 
 
 def normalize_acid_charge(mol: Mol) -> Mol:
-    """同一片段内【质子化羧酸】与【去质子化弱酸位】共存时，逐次把质子搬到弱酸位，
-    使负电荷收敛到最强酸。无改动返回原 mol 对象；含 * dummy 或消毒失败时保守跳过。
-
-    方向性保证：供体只取强酸 OH、受体只取弱酸阴离子 → 单调收敛，每次搬走一对
-    (供体→ -1 强酸根、受体→中性) 后不再进入候选，终止于无配对。
-    """
+    """同一片段内【质子化羧酸】与【去质子化弱酸位】共存时逐次搬质子使负电荷收敛到最强酸；供体只取强酸 OH、受体只取弱酸阴离子故单调收敛，无改动返回原 mol。"""
     if any(a.GetAtomicNum() == 0 for a in mol.GetAtoms()):
         return mol
     out = mol
@@ -134,8 +113,7 @@ def normalize_acid_charge(mol: Mol) -> Mol:
         if not donors or not acceptors:
             break
         ranks = list(Chem.CanonicalRankAtoms(out))
-        # 供体：酸更强(更负 prio 取负序)优先，再取 canonical rank 最小保证确定性
-        donors.sort(key=lambda i: (-_KIND_PRIO.get(_acid_kind_of_oh(out.GetAtomWithIdx(i)), 0), ranks[i]))
+        donors.sort(key=lambda i: (-_KIND_PRIO.get(_acid_kind_of_oh(out.GetAtomWithIdx(i)), 0), ranks[i]))  # 供体：酸更强(更负 prio 取负序)优先，再取 canonical rank 最小保证确定性
         d_idx = donors[0]
         dfrag = frag_of[d_idx]
         same_frag = [i for i in acceptors if frag_of[i] == dfrag]

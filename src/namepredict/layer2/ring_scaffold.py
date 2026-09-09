@@ -13,6 +13,7 @@ from namepredict.layer2.parent_skeleton import ParentSkeleton
 
 @dataclass(frozen=True)
 class NumberingPolicy:
+    """骨架编号策略：模式、固定编号路径、物化开关、锚点与可取代位。"""
     mode: str
     standard_path: tuple = ()
     materialize_plan: bool = True
@@ -22,6 +23,7 @@ class NumberingPolicy:
 
 @dataclass(frozen=True)
 class ScaffoldSpec:
+    """骨架规格：命名类/词干/环数/编号策略与 locant 前缀等命名元数据。"""
     id: str
     naming_class: str
     stem_en: str | None
@@ -48,6 +50,7 @@ ScaffoldId = str
 
 @dataclass(frozen=True)
 class ScaffoldIdentity:
+    """骨架身份：id、命名类、环数与环类型。"""
     id: ScaffoldId
     naming_class: str
     n_rings: int
@@ -382,15 +385,12 @@ def _match_with_map(info: dict, atom_ids) -> tuple[str, tuple[int, ...]] | None:
     mol = info["mol"]
   
     atoms = frozenset(atom_ids)
-    elem = _elem_sig(mol, atom_ids)
-    # print(Chem.MolToSmiles(mol))
+    elem = _elem_sig(mol, atom_ids)  # print(Chem.MolToSmiles(mol))
     for sid, q in _Q.items():
         if _TEMPLATE_ELEM[sid] != elem:
             continue
-        for m in mol.GetSubstructMatches(q, uniquify=True):
-            # print(sid,m)
-            if set(m) == atoms:
-                # print("yes")
+        for m in mol.GetSubstructMatches(q, uniquify=True):  # print(sid,m)
+            if set(m) == atoms:  # print("yes")
                 return sid, m
     return None
 

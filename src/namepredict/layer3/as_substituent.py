@@ -19,9 +19,7 @@ _SIMPLE_ALKOXY_NO_PAREN = frozenset({
 
 
 def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
-    """用原始根分子 CIP 校正取代基 R/S：糖苷（O-C 糖-糖）异头位被 `*` 顶替后 CIP 会随配基
-    翻转，须回到完整根分子重算才与 ChEBI 一致。锚定子结构按 block_root_order 复制原子，
-    故其链索引 i → 根索引 block_root_order[i]（本层块内排序与锚定分子索引一致）。"""
+    """用原始根分子 CIP 校正取代基 R/S：糖苷异头位被 `*` 顶替后 CIP 随配基翻转，须回完整根分子重算；锚定子结构按 block_root_order 复制原子，链索引 i → 根索引 block_root_order[i]。"""
     if not (hit.success and hit.en):
         return hit
     from namepredict.layer5.stereo import _cip_on_chain, _with_rs
@@ -29,8 +27,7 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
     if parent.get("parent_kind") != "radical":
         return hit
     chain = parent.get("parent_chain") or []
-    # [0]-collapsed 或含 * 的链：本层未产出 R/S，跳过。
-    if len(chain) < 2 or any(i >= len(block_root_order) for i in chain):
+    if len(chain) < 2 or any(i >= len(block_root_order) for i in chain):  # [0]-collapsed 或含 * 的链：本层未产出 R/S，跳过。
         return hit
     real = [block_root_order[i] for i in chain]
     rs_anch = _cip_on_chain(anchored, chain)      # * 锚定算出的（可能错误）R/S
@@ -49,9 +46,7 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
 
 
 def _obridge_front_simple(mol, atoms, attach_old, *, depth, name_mode, cache, root_ctx):
-    """O/S 桥前端是否简单取代基：attach 为二价 O/S 桥原子、去桥后余单一片段；
-    该片段按 retained→recursive 全命名后端取名，paren False 即简单（前端无需括号）。
-    无法判定（非桥/多前端/命名失败）返回 None，由调用方维持原 paren。"""
+    """O/S 桥前端是否简单取代基：attach 为二价 O/S 桥原子、去桥后余单一片段，该片段按 retained→recursive 后端取名，paren False 即简单；无法判定（非桥/多前端/命名失败）返回 None。"""
     a = mol.GetAtomWithIdx(attach_old)
     if a.GetAtomicNum() not in (8, 16) or a.GetDegree() != 2:
         return None
@@ -80,9 +75,7 @@ def _radical_yl_from_sub(
     anchored = build_anchor_submol(mol, atoms, attach_old)
     if anchored is None:
         return None
-    # 根分子上下文：本层块原子 → 原始根分子索引，供 R/S 在完整分子上重算
-    # （糖苷异头碳 CIP 随配基翻转，切断后的中间碎片会算反）。
-    root_mol, to_root = root_ctx if root_ctx is not None else (mol, None)
+    root_mol, to_root = root_ctx if root_ctx is not None else (mol, None)  # 根分子上下文：块原子→原始根分子索引，供 R/S 在完整分子上重算（糖苷异头碳 CIP 随配基翻转，切断碎片会算反）。
     order = sorted(atoms)
     block_root_order = order if to_root is None else [to_root[o] for o in order]
     anchored_to_root = block_root_order + [-1]          # 锚定子结构按 order 复制 + 末尾 dummy
@@ -92,28 +85,16 @@ def _radical_yl_from_sub(
         hit = _name_mol(anchored, depth=depth, name_mode=name_mode, cache=cache,
                         root_ctx=(root_mol, anchored_to_root))
         if cache is not None and hit.success and hit.en:
-            # 只缓存片段自身的自由基名（保留锚定链、不做任何宿主校正）；
-            # 立体随宿主根分子变化，须每次按当前根重算，不能跨根共享。
-            _cache_put(cache, smiles, copy.copy(hit))
-    # R/S 取决于宿主根分子：fresh 与 cache 命中都按当前根分子校正一次。
-    hit = _fix_rs_with_real(root_mol, block_root_order, anchored, hit)
+            _cache_put(cache, smiles, copy.copy(hit))  # 只缓存片段自身自由基名（保留锚定链、不做宿主校正）；立体随宿主根变化，须按当前根重算，不能跨根共享。
+    hit = _fix_rs_with_real(root_mol, block_root_order, anchored, hit)  # R/S 取决于宿主根分子：fresh 与 cache 命中都按当前根分子校正一次。
     if not hit.success or not hit.en:
         return None
     if not (hit.meta or {}).get("parent_kind") in ("radical", "acyl"):
-        # 锚定分子必被 L1 radical/acyl 条目检出、principal 必选（p41=1），理论不可达，防御。
-        return None
-    # PIN（P-16.5.1.1）：复合前缀（词干带取代）必括；未取代简单基免括。
-    # 词干是否复合由自由基命名的母体取代基数给出（namer meta 接口），不反编译名字。
-    # acetamido/formamido/benzamido 是 amido 保留式（P-66.1.1.4.3 方法 1），作简单前缀免括号
-    # （同 -alkoxy 保留式），否则 3,5-二乙酰基苯环会被倍增成 bis(acetylamino) 而非 diacetamido。
-    composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0
+        return None  # 锚定分子必被 L1 radical/acyl 条目检出、principal 必选（p41=1），理论不可达，防御。
+    composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0  # PIN（P-16.5.1.1）：复合前缀必括，由 meta.parent_substituent_count 判定；amido 保留式（P-66.1.1.4.3）免括，否则苯环二酰基倍增成 bis(acetylamino)。
     need_paren = composite and hit.en not in (
         "phenyl", *_SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN)
-    # 简单取代基 + 氧/硫桥（propan-2-yloxy/acetyloxy/hexadecanoyloxy/benzyloxy/
-    # …ylsulfanyl/sulfooxy 等）：P-63.2.1/.2.2 前端 R 为简单取代基时整个 O/S 前缀
-    # 不加围栏（gold/ChEBI 平铺式），与 free_to_yl 的醇→烷氧基/硫醇→硫基一致。
-    # 前端是否简单仍由引擎自己的命名后端(retained→recursive)判定，不反编译名字。
-    if need_paren and hit.en.endswith(("oxy", "sulfanyl")):
+    if need_paren and hit.en.endswith(("oxy", "sulfanyl")):  # 简单取代基+O/S 桥（…oxy/…sulfanyl 等）：P-63.2.1/.2.2 前端 R 为简单取代基时整个 O/S 前缀不加围栏（gold/ChEBI 平铺式），前端是否简单由命名后端 retained→recursive 判定。
         simple = _obridge_front_simple(
             mol, atoms, attach_old, depth=depth, name_mode=name_mode,
             cache=cache, root_ctx=root_ctx)
@@ -132,8 +113,7 @@ def _yl_from_sub(
     if mol.GetAtomWithIdx(attach_old).GetAtomicNum() >1 :
         hit = _radical_yl_from_sub(mol, atoms, attach_old, depth=depth,
                                     name_mode=name_mode, cache=cache, root_ctx=root_ctx)
-        # print(Chem.MolToSmiles(mol),hit)
-        if hit is not None:
+        if hit is not None:  # print(Chem.MolToSmiles(mol),hit)
             return hit
     return None
 
@@ -143,7 +123,5 @@ def name_as_substituent(
 ) -> tuple[str, str, bool] | None:
     """在 attach_old 处切割原子，free-name 子分子，输出 -yl 双语名称。"""
     atoms = frozenset(atoms)
-    # print(_yl_from_sub( mol=mol, atoms=atoms, attach_old=attach_old,
-    #                     depth=depth + 1, name_mode=name_mode, cache=cache, root_ctx=root_ctx))
-    return _yl_from_sub( mol=mol, atoms=atoms, attach_old=attach_old,
+    return _yl_from_sub( mol=mol, atoms=atoms, attach_old=attach_old,  # print(_yl_from_sub(...)) 调试用
                         depth=depth + 1, name_mode=name_mode, cache=cache, root_ctx=root_ctx)

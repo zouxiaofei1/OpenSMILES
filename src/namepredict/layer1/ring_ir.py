@@ -14,6 +14,7 @@ from namepredict.layer1.ring_systems import (
 
 @dataclass(frozen=True)
 class RingComponent:
+    """单个 SSSR 环组件：环序号、环大小、原子索引与杂原子、芳香性。"""
     sssr_idx: int
     size: int
     atom_ids: tuple[int, ...]
@@ -23,6 +24,7 @@ class RingComponent:
 
 @dataclass(frozen=True)
 class FusionEdge:
+    """两环之间的稠合边：两侧环序号、共享原子索引与是否键合共享。"""
     a: int
     b: int
     shared: tuple[int, ...]
@@ -31,6 +33,7 @@ class FusionEdge:
 
 @dataclass(frozen=True)
 class RingSystemIR:
+    """环系统 IR：原子集合、环组件、稠合边与拓扑/指纹（仅 L1 事实）。"""
     atom_ids: tuple[int, ...]
     components: tuple[RingComponent, ...]
     fusions: tuple[FusionEdge, ...]

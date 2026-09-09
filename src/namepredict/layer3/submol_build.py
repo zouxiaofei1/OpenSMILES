@@ -9,6 +9,7 @@ from rdkit.Chem import Mol
 
 @dataclass(frozen=True)
 class CutSubmol:
+    """切割子分子及其新旧索引映射（连接点用 H 封端以用于 free-name）。"""
     mol: object  # RDKit Mol，连接点用 H 封端以用于 free-name
     atom_map: dict[int, int]  # new_idx -> old_idx（新索引→旧索引）
     inv_map: dict[int, int]  # old_idx -> new_idx（旧索引→新索引）
@@ -42,13 +43,7 @@ def _copy_bonds(em: Chem.RWMol, mol: Mol, inv: dict[int, int]) -> None:
 
 def _carry_alkene_stereo(em: Chem.RWMol, mol: Mol, inv: dict[int, int],
                          dummy: int | None = None) -> None:
-    """迁移诱导子图内双键的 E/Z 立体到子分子。
-
-    _copy_bonds 只重建键型会丢奇偶，故在此补回：把源双键的 E/Z 标签照搬到子分子
-    （子分子只是命名替身，标签取原分子即真实立体，不随配基被切/被 * 顶替而重判）。
-    两端引用邻接被保留则映射到新索引；锚定情形下被切掉的配基由连在本端 sp2 碳上的
-    dummy 顶替；无法唯一解析（如 H 封端把 sp2 端变成非手性 CH2）则跳过留无立体。
-    """
+    """迁移诱导子图内双键的 E/Z 立体到子分子：_copy_bonds 只重建键型会丢奇偶，故把源双键 E/Z 标签照搬（标签取原分子即真实立体，不随配基被切/被 * 顶替而重判）；两端引用被保留则映射到新索引，被切配基由本端 sp2 碳上的 dummy 顶替，无法唯一解析（如 H 封端成非手性 CH2）则跳过留无立体。"""
     if em is None or mol is None:
         return
     for b in mol.GetBonds():
@@ -80,9 +75,7 @@ def _carry_alkene_stereo(em: Chem.RWMol, mol: Mol, inv: dict[int, int],
         nb = em.GetBondBetweenAtoms(inv[ca], inv[cb])
         if nb is None:
             continue
-        # RDKit SetStereoAtoms 要求两个引用分别连在新键 begin/end 端原子上；begin/end 由 AddBond
-        # 归一化（较小索引），E/Z 只取决于两引用是否同侧，故按 begin/end 换序传参即可。
-        bgn, end = nb.GetBeginAtomIdx(), nb.GetEndAtomIdx()
+        bgn, end = nb.GetBeginAtomIdx(), nb.GetEndAtomIdx()  # RDKit SetStereoAtoms 要求两引用分别连在新键 begin/end 端；begin/end 由 AddBond 归一化（较小索引），E/Z 只取决于两引用是否同侧，故按 begin/end 换序传参。
         first, second = (na, nbb) if bgn == inv[ca] else (nbb, na)
         if em.GetBondBetweenAtoms(bgn, first) is None or em.GetBondBetweenAtoms(end, second) is None:
             continue
@@ -115,11 +108,7 @@ def _pack(out: Mol, inv: dict[int, int], attach_old: int, atoms: frozenset[int])
 
 
 def _external_bond_type(mol: Mol, attach_old: int, atoms: frozenset[int]):
-    """返回连接原子与母体(外)原子间的真实键型；无外部邻居(孤立自由基)回退单键。
-
-    取代基叶若以双键连母体（外环 =CH2 等 *ylidene），锚点键型须保留真实键级，
-    否则 canonical 被收成 *C 命成饱和 alkyl（methyl 而非 methylidene，式量丢 H2）。
-    """
+    """返回连接原子与母体(外)原子间的真实键型，无外部邻居(孤立自由基)回退单键；取代基叶若以双键连母体（外环 =CH2 等 *ylidene）须保留真实键级，否则 canonical 收成 *C 会命成饱和 alkyl（methyl 而非 methylidene，式量丢 H2）。"""
     for nb in mol.GetAtomWithIdx(attach_old).GetNeighbors():
         if nb.GetAtomicNum() != 1 and nb.GetIdx() not in atoms:
             b = mol.GetBondBetweenAtoms(attach_old, nb.GetIdx())
@@ -131,15 +120,13 @@ def _external_bond_type(mol: Mol, attach_old: int, atoms: frozenset[int]):
 def _add_anchor(em: Chem.RWMol, attach_new: int,
                 bond_type: Chem.BondType = Chem.BondType.SINGLE) -> int:
     """在连接原子处添加 dummy 原子作锚点（键型随母体-取代基真实键级），返回其索引。"""
-    #用 dummy 原子（`*`）标记连接原子；双键叶(=CH2)需用双键，键型由调用方给出。
-    d = em.AddAtom(Chem.Atom(0))
+    d = em.AddAtom(Chem.Atom(0))  # 用 dummy 原子（`*`）标记连接原子；双键叶(=CH2)需用双键，键型由调用方给出。
     em.AddBond(attach_new, d, bond_type)
     return d
 
 
 def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol | None:
     """构建以 dummy 原子标记连接位点的诱导子分子。"""
-    #在 atoms 上的诱导子分子，连接位点用 dummy 原子标记。
     if attach_old not in atoms:
         return None
     em = Chem.RWMol()
@@ -147,8 +134,7 @@ def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol
     _copy_bonds(em, mol, inv)
     d = _add_anchor(em, inv[attach_old], _external_bond_type(mol, attach_old, atoms))
     _carry_alkene_stereo(em, mol, inv, d)
-    # print(Chem.MolToSmiles(em))
-    return _sanitize(em)
+    return _sanitize(em)  # print(Chem.MolToSmiles(em))
 
 def build_cut_submol(
     mol: Mol, atoms: frozenset[int], attach_old: int,
@@ -162,6 +148,4 @@ def build_cut_submol(
     _cap_attach_h(em, inv[attach_old])
     _carry_alkene_stereo(em, mol, inv)
     out = _sanitize(em)
-    # print(Chem.MolToSmiles(out))
-    # print(out.)
-    return None if out is None else _pack(out, inv, attach_old, atoms)
+    return None if out is None else _pack(out, inv, attach_old, atoms)  # print(Chem.MolToSmiles(out)) / print(out.)

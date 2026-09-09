@@ -12,12 +12,14 @@ from namepredict.layer2.chain_walk import _all_chains_through, _chain_through_tw
 
 
 class SkeletonTopology(str, Enum):
+    """母体骨架拓扑类型（开链/环系）。"""
     ACYCLIC = "acyclic"
     RING_SYSTEM = "ring_system"
 
 
 @dataclass(frozen=True)
 class ParentSkeleton:
+    """一个母体骨架候选：拓扑、原子集、覆盖的主基团 id 与 scaffold 身份。"""
     topology: SkeletonTopology
     atom_ids: tuple[int, ...]
     covered_principal_ids: frozenset[str]
@@ -26,12 +28,14 @@ class ParentSkeleton:
 
 @dataclass(frozen=True)
 class PrincipalSkeletons:
+    """骨架枚举结果：全部候选与未被任何候选覆盖的 occurrence id。"""
     candidates: tuple[ParentSkeleton, ...]
     unsupported_ids: frozenset[str]
 
 
 @dataclass(frozen=True)
 class SkeletonSelection:
+    """骨架筛选结果：胜出候选、交 L4 的下一规则标记与未覆盖 id。"""
     candidates: tuple[ParentSkeleton, ...]
     next_rule: str | None
     unsupported_ids: frozenset[str] = frozenset()
@@ -43,9 +47,7 @@ def _anchors(occurrences: tuple[FunctionalGroupOccurrence, ...]) -> list[int]:
 
 
 def _demoted_acid_carbons(info: dict) -> set[int]:
-    """被压制（降级）为前缀叶的主基团碳集合：中性羧酸碳（carboxy 叶，P-61.1.3）
-    与腈碳（cyano 叶）不得进入开链主链——否则词干链会把酸/腈碳当饱和碳吞掉、
-    其杂原子悬空误命名成 hydroxy/amino。"""
+    """被压制（降级）为前缀叶的主基团碳集合：中性羧酸碳（carboxy 叶，P-61.1.3）与腈碳（cyano 叶）不得进入开链主链——否则词干链会把酸/腈碳当饱和碳吞掉、其杂原子悬空误命名成 hydroxy/amino。"""
     acids = {int(e["c_idx"]) for e in (info.get("demoted_carboxyls") or []) if e.get("c_idx") is not None}
     nitriles = {int(e["c_idx"]) for e in (info.get("demoted_nitriles") or []) if e.get("c_idx") is not None}
     return acids | nitriles
@@ -61,13 +63,11 @@ def _pair_chains(mol: Mol, anchors: list[int], banned: set[int] = frozenset()) -
 def _open_chains(mol: Mol, anchors: list[int], banned: set[int] = frozenset()) -> list[list[int]]:
     """开环锚点的单链与两两链候选（无锚点时退化为最长链）。"""
     open_anchors = [a for a in anchors if not mol.GetAtomWithIdx(a).IsInRing()]
-    # 穿过锚点的等长最长链全部枚举（平局候选让 P-44.4/P-45.2 裁决，如醛端连甲基 vs 羟甲基）。
-    singles = [chain for anchor in open_anchors for chain in _all_chains_through(mol, anchor, banned)]
+    singles = [chain for anchor in open_anchors for chain in _all_chains_through(mol, anchor, banned)]  # 穿过锚点的等长最长链全部枚举（平局候选让 P-44.4/P-45.2 裁决，如醛端连甲基 vs 羟甲基）。
     out = singles + _pair_chains(mol, open_anchors, banned)
     if out:
         return out
-    # 无主官能团（纯烃）：最长链作为唯一开链骨架候选。
-    chain = _longest_chain(mol, banned=banned)
+    chain = _longest_chain(mol, banned=banned)  # 无主官能团（纯烃）：最长链作为唯一开链骨架候选。
     return [chain] if chain else []
 
 
@@ -105,8 +105,7 @@ def _ring_candidate(mol: Mol, system: dict, occurrences) -> ParentSkeleton | Non
 
 def _ring_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     """枚举全部环系统的骨架候选。"""
-    # scaffold 身份 (scaffold_id) 不参与骨架选择，只对最终胜出的少数骨架有意义，延迟到表达阶段 resolve_ring_scaffold 再识别；此处不跑 producer，避免为每个环系统支付完整 parent 生成器成本。
-    mol = info["mol"]
+    mol = info["mol"]  # scaffold 身份 (scaffold_id) 不参与骨架选择，只对最终胜出的少数骨架有意义，延迟到表达阶段 resolve_ring_scaffold 再识别；此处不跑 producer，避免为每个环系统支付完整 parent 生成器成本。
     basic = [c for system in info.get("ring_systems") or () if (c := _ring_candidate(mol, system, occurrences))]
     return [ParentSkeleton(c.topology, c.atom_ids, c.covered_principal_ids) for c in basic]
 

@@ -12,6 +12,7 @@ from namepredict.tools.anchored_table import anchored_lookup
 
 @dataclass(frozen=True)
 class SubstituentName:
+    """取代基命名结果：claim、双语名、是否需括号与后端来源。"""
     claim: ClaimedBlock
     en: str
     zh: str
@@ -20,6 +21,7 @@ class SubstituentName:
 
 
 class SubstituentBackend(Protocol):
+    """取代基命名后端协议：各后端实现 try_name 尝试为 claim 命名。"""
     name: str
 
     def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None:
@@ -36,7 +38,6 @@ def _retained_hit(claim: ClaimedBlock, en: str, zh: str, paren: bool) -> Substit
 
 def _try_anchored_lookup(mol, claim: ClaimedBlock, *, name_mode: str = "general") -> SubstituentName | None:
     """尝试通过锚定 canonical-SMILES 表解析 retained 叶子。"""
-    #通过锚定 canonical-SMILES 表解析简单的 retained 叶子。
     hit = anchored_lookup(mol, claim.atoms, claim.root, name_mode=name_mode)
     if hit is None:
         return None
@@ -95,6 +96,7 @@ def _default_backends(name_mode: str = "general", cache: CommonNameCache | None 
 
 
 class SubstituentNamer:
+    """按序尝试各后端为 claim 命名，返回首个命中的命名器。"""
 
     def __init__(self, backends: Sequence[SubstituentBackend] | None = None, *, name_mode: str = "general", cache: CommonNameCache | None = None, root_ctx: tuple | None = None) -> None:
         """初始化后端列表，缺省时用默认后端；root_ctx 供递归取代基命名回根分子校正 R/S。"""

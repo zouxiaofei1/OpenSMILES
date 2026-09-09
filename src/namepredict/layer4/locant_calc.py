@@ -209,9 +209,7 @@ def _ketone_fg_locants(oriented: dict) -> list[int] | None:
     return [loc] if loc is not None else None
 
 def _acid_fg_locants(oriented: dict) -> list[int] | None:
-    """返回 exocyclic 酸的环上附着原子位次（羧基碳在环外）。
-    多羧酸（multiplicity≥2）取全部附着原子位次列表（与 _aldehyde_fg_locants 一致），
-    单酸回退 ring_attach_idx 单点；无 typed 记录时返回 None。"""
+    """返回 exocyclic 酸的环上附着原子位次（羧基碳在环外）；多羧酸（multiplicity≥2）取全部附着原子位次列表（与 _aldehyde_fg_locants 一致），单酸回退 ring_attach_idx 单点；无 typed 记录时返回 None。"""
     locs = _typed_atom_locants(oriented, "acid")
     if locs:
         return locs
@@ -258,8 +256,7 @@ def _nitrile_fg_locants(oriented: dict) -> list[int] | None:
 
 
 def _aldehyde_fg_locants(oriented: dict) -> list[int] | None:
-    """返回外环醛(-CHO)在环上的附着原子位次（单/多 -carbaldehyde 通用）。
-    开链醛的醛碳在骨架内（in_skeleton），本路径不计数。"""
+    """返回外环醛(-CHO)在环上的附着原子位次（单/多 -carbaldehyde 通用）；开链醛的醛碳在骨架内（in_skeleton），本路径不计数。"""
     facts = oriented.get("principal_expression_facts")
     if not facts or facts.group_class.value != "aldehyde" or facts.relation.value != "exocyclic":
         return None
@@ -278,8 +275,7 @@ def _radical_locants(oriented: dict) -> list[int] | None:
 
 
 def _acyl_locants(oriented: dict) -> list[int] | None:
-    """返回酰基头位次列表：开链酰基头碳 acyl_c_idx（P-65.1.7.2 酸碳恒 locant 1），
-    exocyclic 环酰基（羰基头在环外）回退环附着原子 ring_attach_idx（furan-2-carbonyl 的 2）。"""
+    """返回酰基头位次列表：开链酰基头碳 acyl_c_idx（P-65.1.7.2 酸碳恒 locant 1），exocyclic 环酰基（羰基头在环外）回退环附着原子 ring_attach_idx（furan-2-carbonyl 的 2）。"""
     idx = oriented.get("acyl_c_idx")
     chain = oriented.get("chain") or []
     if idx is not None:

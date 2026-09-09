@@ -77,11 +77,7 @@ def _ledger_complete(mol, owned, subst: list[dict]) -> bool:
 
 
 def _ok_result(numbered: dict, *, depth: int, t0: float, name_mode: str = "general") -> NameResult | None:
-    """组装编号结果为 NameResult，成功且非空才返回（附链元数据）。
-
-    接口：radical 子分子命名把母体取代基数写入 meta（L3 递归取代基判定
-    "词干是否复合"时直读，不再反编译名字）。
-    """
+    """组装编号结果为 NameResult，成功且非空才返回；meta 附链元数据与母体取代基数（供 L3 判定词干是否复合）。"""
     numbered["name_mode"] = name_mode
     result = assemble(numbered, time_ms=_elapsed_ms(t0))
     if not result.success or not result.en:
@@ -216,10 +212,7 @@ def _run_candidates(
 
 
 def _apply_salt_suffix(result: NameResult, salt: dict) -> NameResult:
-    """将盐元数据组装为名称后缀（碱金属盐/HCl 加成盐），仅成功结果生效；numbered 由 L2–L4 构造不含 salt，故用独立 {"salt": salt} 字典调 L5 逻辑。
-
-    kind=phosphate 的碱金属盐由 L5 phosphate worker 读 parent.salt_meta 组装完成，此处跳过以免二次加金属。
-    """
+    """将盐元数据组装为名称后缀（碱金属盐/HCl 加成盐），仅成功结果生效；kind=phosphate 由 L5 phosphate worker 自行组装，此处跳过。"""
     if not result.success or not salt:
         return result
     if (result.meta or {}).get("parent_kind") == "phosphate":
@@ -243,20 +236,16 @@ def _name_mol(
     name_mode: str = "general",
     root_ctx: tuple | None = None,
 ) -> NameResult:
-    """从 mol 运行 L1–L5，带 coverage 门控的候选重试；root_ctx=(根分子, 本分子原子→根索引映射)
-    供取代基 R/S 回根分子重算（糖苷异头碳 CIP 随配基翻转，须在完整根分子上取值）。"""
+    """从 mol 运行 L1–L5，带 coverage 门控的候选重试；root_ctx=(根分子, 原子→根索引映射) 供取代基 R/S 回根分子重算。"""
     t0 = t0 if t0 is not None else time.perf_counter()
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
     organic, salt = dissociate_salt(mol)
     if root_ctx is None:  # 顶层整分子
         root_mol, to_root = organic, list(range(organic.GetNumAtoms()))
-        # 顶层整分子：内部 `*` 片段名仅在本分子运行内共享（同根立体一致）；
-        # 跨分子/跨根的片段缓存会把别的宿主的异头立体带入，须禁用。
-        run_cache = CommonNameCache(max_entries=2000) if cache is not None else None
+        run_cache = CommonNameCache(max_entries=2000) if cache is not None else None  # 顶层整分子：内部 `*` 片段名仅在本分子运行内共享（同根立体一致）；跨根缓存会带入别的宿主异头立体，须禁用。
     else:
-        root_mol, to_root = root_ctx
-        # 无盐时 organic 即 mol、索引不变；锚定碎片必为单片段不含盐，映射直接沿用。
+        root_mol, to_root = root_ctx  # 无盐时 organic 即 mol、索引不变；锚定碎片必为单片段不含盐，映射直接沿用。
         run_cache = cache
     info = analyze(organic)
     info["root_ctx"] = (root_mol, to_root)
@@ -319,8 +308,7 @@ class SMILESNNamer:
 
     def __init__(self, cache: CommonNameCache | None = None, *, name_mode: str = "general") -> None:
         """初始化命名器，未提供缓存则构造默认 20000 条容量的缓存。"""
-        # 容量留足给主分子 + 递归子结构命名（全量去重后约 8.7k 条）
-        self.cache = cache if cache is not None else CommonNameCache(max_entries=20000)
+        self.cache = cache if cache is not None else CommonNameCache(max_entries=20000)  # 容量留足给主分子 + 递归子结构命名（全量去重后约 8.7k 条）
         self._name_mode = name_mode
 
     def name(self, smiles: str) -> NameResult:

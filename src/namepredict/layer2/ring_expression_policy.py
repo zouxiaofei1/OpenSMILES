@@ -9,6 +9,7 @@ from namepredict.layer2.ring_scaffold import ScaffoldIdentity
 
 @dataclass(frozen=True)
 class RingExpressionPolicy:
+    """一条能力策略：命名类集合 + 主基团类 + 允许的关系集合。"""
     naming_classes: frozenset[str]
     group_class: FG
     relations: frozenset[str]

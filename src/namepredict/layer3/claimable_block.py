@@ -10,6 +10,7 @@ from namepredict.tools.block_cut import cut_block, side_roots
 
 
 class SideSlot(str, Enum):
+    """侧链连接原子的角色槽位（链碳/环碳/酰胺 N/胺 N/醚 O/其他）。"""
     CHAIN_C = "chain_c"
     RING_C = "ring_c"
     AMIDE_N = "amide_n"
@@ -20,6 +21,7 @@ class SideSlot(str, Enum):
 
 @dataclass(frozen=True)
 class ClaimedBlock:
+    """可 claim 的外部重原子组分：槽位、连接原子、根原子与原子集。"""
     slot: SideSlot
     attach_parent: int
     root: int

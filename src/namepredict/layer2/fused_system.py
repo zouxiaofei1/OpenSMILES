@@ -114,16 +114,17 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
         return (-_P145_SENIOR.index(top), hc[top])
 
     cands = _keep_best(cands, _key_f)  # (f) 最高优先性杂原子数更多
-    # (g)-(j): 依赖 L4 优选取向/编号, 逐准则按水平行环数/位次收窄(候选无法编号则跳过该准则)。
-    numbering = {c: _numbered_locants(info, rings, fusion_edges, c) for c in cands}
+    numbering = {c: _numbered_locants(info, rings, fusion_edges, c) for c in cands}  # (g)-(j): 依赖 L4 优选取向/编号, 逐准则按水平行环数/位次收窄(候选无法编号则跳过该准则)。
     from namepredict.layer4.fused_numbering import fused_atoms
     from namepredict.layer4.locant_key import locant_key
 
     def _locant_tup(c, atoms):
+        """取候选下指定原子集的 locant 排序元组。"""
         labels = numbering[c][0]
         return tuple(sorted((locant_key(labels[a]) for a in atoms if a in labels)))
 
     def _gj(key_fn, *, reverse=False):
+        """按 key_fn 对可编号候选取最优值收窄（候选不足 2 个则原样返回）。"""
         scored = [(c, key_fn(c)) for c in cands if numbering[c] is not None]
         if len(scored) < 2:
             return cands
@@ -138,6 +139,7 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
                                                    if mol.GetAtomWithIdx(a).GetAtomicNum() == z]), reverse=True)
 
     def _fused_carbons(c):
+        """取候选子环集稠合原子的碳原子列表。"""
         fused = fused_atoms([rings[i] for i in sorted(c[2])])
         return [a for a in fused if mol.GetAtomWithIdx(a).GetAtomicNum() == C]
 
