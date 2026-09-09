@@ -1,6 +1,6 @@
 # Layer0: 预处理 (Preprocessor)
 
-> **管线位置:** 第 0 层 / 6 层 | **源文件:** 5 个 `.py` | **最后更新:** 2026-09-05
+> **管线位置:** 第 0 层 / 6 层 | **源文件:** 5 个 `.py` | **最后更新:** 2026-09-09
 
 ---
 
@@ -67,23 +67,23 @@ dissociate_salt(mol: Mol) -> tuple[Mol, dict]
 - **空白输入**：`""`、`None`、`"   "` -- 在进入 RDKit 之前即被拦截
 - **语法无效**：如 `"CCOO"` 中碳的五价——由 RDKit `MolFromSmiles` 返回 `None` 拦截
 
-> **源:** `src/namepredict/layer0/preprocessor.py:11-26`
+> **源:** `src/namepredict/layer0/preprocessor.py:11-25`
 
 #### 1.1 酰胺烯醇互变异构归一化 (`tautomer.py`)
 
-新增模块 `src/namepredict/layer0/tautomer.py`（67 行）专门做互变异构规范化：
+模块 `src/namepredict/layer0/tautomer.py`（65 行）专门做互变异构规范化：
 
-- 位点判定：`_is_amide_enol_o`（`tautomer.py:14`）要求与碳**单键**相连、中性、仅带隐氢的羟基 O；`_is_amide_enol_n`（`tautomer.py:25`）要求与碳**双键**相连、非芳香、中性、无显式 H 的亚胺 N。遍历排除芳香 C 后由 `_amide_enol_sites(mol)`（`tautomer.py:35`）汇总全部 `(c_idx, n_idx, o_idx)` 位点。
+- 位点判定：`_is_amide_enol_o`（`tautomer.py:13`）要求与碳**单键**相连、中性、仅带隐氢的羟基 O；`_is_amide_enol_n`（`tautomer.py:23`）要求与碳**双键**相连、非芳香、中性、无显式 H 的亚胺 N。遍历排除芳香 C 后由 `_amide_enol_sites(mol)`（`tautomer.py:33`）汇总全部 `(c_idx, n_idx, o_idx)` 位点。
 - 改写方式：`normalize_amide_tautomer(mol)`（`tautomer.py:50`）对每个位点把 C=N 双键降为单键、C–O 单键升为 C=O 双键，**只改键级**并靠 RDKit 隐氢重算完成质子迁移——不增删重原子、不改原子序；改写后再次 `SanitizeMol` + `AssignStereochemistry`。
 - 保守跳过：带电 N、O⁻ 阴离子、显式 `[H]`、硫类似物（C=S 等）位点一律不处理，不做质子化 / 阴离子改写。
 - 返回约定：无位点，或改写后消毒失败时，原样返回输入的 `mol`。
 
 #### 1.2 酸性质子重定位 (`charge.py`)
 
-新增模块 `src/namepredict/layer0/charge.py`（151 行）专门处理输入侧**电荷错位**结构——同一片段内去质子化弱酸位（酚氧/烯醇氧/酰胺 O⁻、去质子化 N⁻）与质子化强酸位（默认羧酸 `C(=O)OH`）共存时，把质子从强酸搬到弱酸位：等价负电荷收敛到最强酸，使既有 carboxylate→-oate 的 L1–L5 命名能力作用于此类输入（如 chebi-433）。**只改 FormalCharge 与 H 记账，不增删重原子**，走 RWMol 原子级编辑，改后 `SanitizeMol` + `AssignStereochemistry`；含 `*` dummy 或改动失败时保守跳过。
+模块 `src/namepredict/layer0/charge.py`（129 行）专门处理输入侧**电荷错位**结构——同一片段内去质子化弱酸位（酚氧/烯醇氧/酰胺 O⁻、去质子化 N⁻）与质子化强酸位（默认羧酸 `C(=O)OH`）共存时，把质子从强酸搬到弱酸位：等价负电荷收敛到最强酸，使既有 carboxylate→-oate 的 L1–L5 命名能力作用于此类输入（如 chebi-433）。**只改 FormalCharge 与 H 记账，不增删重原子**，走 RWMol 原子级编辑，改后 `SanitizeMol` + `AssignStereochemistry`；含 `*` dummy 或改动失败时保守跳过。
 
 - 强弱判定：`_acid_kind_of_oh`（`charge.py:42`）识别中性含 H 的 O 是否质子化强酸 OH（carboxyl：O–H 连 `C(=O)`；phospho：连 `P(=O)`；sulfo：连 `S(=O)n`；醇/酚/酯 O 无成酸中心天然返回 None）；`_is_weak_anion`（`charge.py:72`）识别去质子化弱酸位（-1 电荷、O/N、非强酸共轭碱、邻接无 +1 内平衡写法）。
-- 方向性保证：供体只取 `_DONOR_KIND` 中酸类（`charge.py:17`，默认只开 `"carboxyl"`，磷酸/磺酸 donor 经实测不贡献修复只扩大 blast radius）、受体只取弱酸阴离子 → 单调收敛，每次搬走一对后不再进入候选，终止于无配对。搬运序以酸 kind 优先级（`_KIND_PRIO` `charge.py:18`）加 canonical rank 最小保证确定性。
+- 方向性保证：供体只取 `_DONOR_KIND` 中酸类（`charge.py:14`，默认只开 `"carboxyl"`，磷酸/磺酸 donor 经实测不贡献修复只扩大 blast radius）、受体只取弱酸阴离子 → 单调收敛，每次搬走一对后不再进入候选，终止于无配对。搬运序以酸 kind 优先级（`_KIND_PRIO` `charge.py:15`）加 canonical rank 最小保证确定性。
 - 搬运方式：`_relocate_proton`（`charge.py:85`）把强酸 OH 质子搬到弱酸受体——受体变中性 +1 显式 H，供体变 -1 减 1 H；**原子级记账而非重写 SMILES**，保立体中心不随邻居重排翻转；`SanitizeMol` 失败返回 `None` 保守跳过。
 - 返回约定：无改动返回原 `mol` 对象；同片段成对质子全部搬运（上界 `mol.GetNumAtoms()` 次循环，每次消耗一对 donor/acceptor）。
 
@@ -113,7 +113,7 @@ dissociate_salt(mol: Mol) -> tuple[Mol, dict]
 
 两种表示均被识别为同一类反离子。这一设计处理了 SMILES 输入的不同写法（如 `CCO.Cl` 产生 HCl 碎片、`CCO.[Cl-]` 产生 Cl⁻ 碎片），确保两种写法都能正确生成 "hydrochloride / 盐酸盐" 的元数据。
 
-> **源:** `src/namepredict/layer0/salt.py:31-40`
+> **源:** `src/namepredict/layer0/salt.py:33-43`
 
 #### 2.4 水分子的静默忽略 (`_is_water`)
 
@@ -128,7 +128,7 @@ dissociate_salt(mol: Mol) -> tuple[Mol, dict]
 3. **同种金属约束**：多个金属阳离子碎片必须为同一种金属（`len(set(metals)) == 1`），否则拒绝识别。这处理了混合碱盐（如 LiNa 混合盐）的罕见情况。
 4. **单 HCl 约束**：仅支持恰好 1 个 HCl 反离子。多个 HCl 的情况（如二盐酸盐 `dihydrochloride`）不在当前支持范围内。
 
-> **源:** `src/namepredict/layer0/salt.py:56-87`
+> **源:** `src/namepredict/layer0/salt.py:58-93`
 
 #### 2.6 盐元数据结构
 
@@ -146,15 +146,15 @@ dissociate_salt(mol: Mol) -> tuple[Mol, dict]
 
 ### 3. 管线集成
 
-Layer0 在 `namer.py` 的 `_pipeline` 函数中被调用（`namer.py:203-207`），是管线的第一个处理步骤。调用流程：
+Layer0 在 `namer.py` 的 `_pipeline` 函数中被调用（`namer.py:288-292`），是管线的第一个处理步骤。调用流程：
 
 ```
 SMILESNNamer.name(smiles)
-  → _pipeline(smiles, t0)            # namer.py:218
-      → preprocess(smiles)            # layer0/preprocessor.py:10
+  → _pipeline(smiles, t0)            # namer.py:288
+      → preprocess(smiles)            # layer0/preprocessor.py:11
       → if None: _fail("parse")       # 解析失败终止
-      → _name_mol(mol, ...)           # namer.py:207
-          → dissociate_salt(mol)       # layer0/salt.py:90
+      → _name_mol(mol, ...)           # namer.py:258
+          → dissociate_salt(mol)       # layer0/salt.py:95
           → analyze(organic)           # 进入 Layer1
           → _run_candidates(...)       # Layer2-5
           → if salt: result.meta["salt"] = salt  # 注入盐元数据
@@ -162,9 +162,9 @@ SMILESNNamer.name(smiles)
 
 当 `preprocess` 返回 `None` 时，`_pipeline` 通过 `_fail` 生成 `NameResult(en="", zh="", success=False, meta={"reason": "parse"})` 并直接返回，不再进入后续层。这是 NamePredict 的快速失败（fail-fast）策略——在管线最前端拦截无效输入，避免下游层对空对象进行无效计算。
 
-盐解离发生在 `_name_mol` 中（`namer.py:196`），在 Layer1 分析之前。这意味着 Layer1-5 始终处理的是解离后的纯有机片段，保证了各层代码无需关心盐的存在，实现了关注点分离。
+盐解离发生在 `_name_mol` 中（`namer.py:271`），在 Layer1 分析之前。这意味着 Layer1-5 始终处理的是解离后的纯有机片段，保证了各层代码无需关心盐的存在，实现了关注点分离。
 
-> **源:** `src/namepredict/namer.py:203-207`
+> **源:** `src/namepredict/namer.py:288-292`
 
 ---
 
@@ -173,10 +173,10 @@ SMILESNNamer.name(smiles)
 | 文件 | 行数 | 说明 |
 |------|------|------|
 | `src/namepredict/layer0/__init__.py` | 7 | 包入口，导出 `preprocess` 和 `dissociate_salt` 两个公共接口 |
-| `src/namepredict/layer0/preprocessor.py` | 26 | SMILES 预处理：`preprocess(smiles) -> Mol | None`，空白校验 + 解析消毒 + 立体初步指派 + 酰胺烯醇归一化 + 酸性质子重定位 |
-| `src/namepredict/layer0/tautomer.py` | 67 | 酰胺烯醇互变异构归一化：非芳香中性 `C(OH)=N` → `C(=O)-NH`，`normalize_amide_tautomer` 供 preprocess 复用 |
-| `src/namepredict/layer0/charge.py` | 151 | 酸性质子重定位：同片段质子化强酸 + 去质子化弱酸位共存时收敛负电荷到最强酸，`normalize_acid_charge` 供 preprocess 复用 |
-| `src/namepredict/layer0/salt.py` | 102 | 盐解离引擎：检测 Li/Na/K 金属盐和 HCl 盐酸盐，返回有机片段与双语元数据 |
+| `src/namepredict/layer0/preprocessor.py` | 25 | SMILES 预处理：`preprocess(smiles) -> Mol | None`，空白校验 + 解析消毒 + 立体初步指派 + 酰胺烯醇归一化 + 酸性质子重定位 |
+| `src/namepredict/layer0/tautomer.py` | 65 | 酰胺烯醇互变异构归一化：非芳香中性 `C(OH)=N` → `C(=O)-NH`，`normalize_amide_tautomer` 供 preprocess 复用 |
+| `src/namepredict/layer0/charge.py` | 129 | 酸性质子重定位：同片段质子化强酸 + 去质子化弱酸位共存时收敛负电荷到最强酸，`normalize_acid_charge` 供 preprocess 复用 |
+| `src/namepredict/layer0/salt.py` | 101 | 盐解离引擎：检测 Li/Na/K 金属盐和 HCl 盐酸盐，返回有机片段与双语元数据 |
 
 ---
 

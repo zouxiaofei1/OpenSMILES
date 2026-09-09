@@ -8,19 +8,19 @@
 
 IUPAC 有机命名中，一个分子可能同时含有多种官能团（Functional Group, FG），例如羟基酸（含 -COOH 和 -OH）、氨基酮（含 -NH&#8322; 和 >C=O）、氰基酯（含 -CN 和 -COOR）等。按照 IUPAC P-41 规则，这些官能团之间存在严格的**优先顺序**：优先级最高的官能团成为 **principal characteristic group（主特征基团）**，以母体后缀（suffix）表达；较低优先级的官能团退化为取代基前缀（prefix）。
 
-NamePredict 将这一优先级体系的**单一事实来源放在 `fg_registry.FG_SPECS.compat`**（`FG_SPECS` 于 `fg_registry.py:39`），由 `principal.py` 的 `PRINCIPAL_REGISTRY` 派生（`compatibility_rank`），`legacy_rank`（`principal.py:64`）按 FG 枚举查询，并在三层流水线中接力使用：
+NamePredict 将这一优先级体系的**单一事实来源放在 `fg_registry.FG_SPECS.compat`**（`FG_SPECS` 于 `fg_registry.py:36`），由 `principal.py` 的 `PRINCIPAL_REGISTRY`（`principal.py:51`）派生（`compatibility_rank`），`legacy_rank`（`principal.py:67`）按 FG 枚举查询，并在三层流水线中接力使用：
 
 1. **Layer 1（`analyzer.py`）**: 检测 FG 时采用排他性优先级（如 carboxyl 排斥 ester/amide/anhydride）
 2. **Layer 2（`scoring.py`）**: 将主官能团等级（`principal_group_class`，来自 `P44Facts`）作为 P-44 评分 tuple 的第二维，决定母体选择
 3. **Layer 5（`chain_engine.py`）**: 直接查 `_KIND_TABLE` 分派后缀（kind 收敛在 L2 `_chain_kind`，无 `typed_kinds` 模块），高优先级 FG 获得后缀，低优先级 FG 转为前缀
 
-> 13 个扩展 FG（sulfoxide/sulfone/sulfonate/sulfonamide/sulfonic_acid/sulfonyl_chloride/phosphate/boronic/carbamate/carbonate/urea/guanidine/hydrazine）在 layer1 检测中不存在，随之退出优先级体系。
+> 磷酸/磷酸酯（`phosphate`）由 `layer1/phosphate.py` 检测，并在 `FG_SPECS` 登记为 `FgSpec("phosphate", "phosphates", p41=9, path=(1,), compat=10, anchors=("p_idx",), chain=True)`（`fg_registry.py:51`），已进入优先级体系；其余 12 个扩展 FG（sulfoxide/sulfone/sulfonate/sulfonamide/sulfonic_acid/sulfonyl_chloride/boronic/carbamate/carbonate/urea/guanidine/hydrazine）在 layer1 检测中不存在，随之退出优先级体系。
 
 ---
 
 ## compatibility_rank 优先级表
 
-以下表格展示 NamePredict 中实现的官能团优先级，遵循 IUPAC P-41 顺序（数值越大优先级越高）。表格依据 `src/namepredict/layer2/principal.py` 的 `PRINCIPAL_REGISTRY`（`compatibility_rank`）生成，经 `legacy_rank`（`principal.py:64`）按 FG 枚举查询；kind→等级投影仅作旧式 parent 兜底（`parent_candidate._kind_rank`，`parent_candidate.py:20`）。
+以下表格展示 NamePredict 中实现的官能团优先级，遵循 IUPAC P-41 顺序（数值越大优先级越高）。表格依据 `src/namepredict/layer2/principal.py` 的 `PRINCIPAL_REGISTRY`（`compatibility_rank`）生成，经 `legacy_rank`（`principal.py:67`）按 FG 枚举查询；kind→等级投影仅作旧式 parent 兜底（`parent_candidate._kind_rank`，`parent_candidate.py:20`）。
 
 | `compatibility_rank` | 官能团种类 (kind) | 英文后缀示例 | 中文后缀示例 | 说明 |
 |:---:|---|---|---|---|
@@ -28,6 +28,7 @@ NamePredict 将这一优先级体系的**单一事实来源放在 `fg_registry.F
 | **12** | `anhydride` | -oic anhydride | -酸酐 | 羧酸酐（registry 保留；`_CHAIN_FG` 无此类，链式 acid 无酸酐表达） |
 | **11** | `ester` | -oate | -酸酯 | 羧酸衍生物（酯类） |
 | **10** | `acyl_halide` | -oyl chloride 等（随 F/Cl/Br/I） | -酰氯 等（酰氟/酰氯/酰溴/酰碘） | 酰卤——后缀随实际卤素（`parent.hal_z`）变：F/Cl/Br/I 分别 -oyl fluoride/chloride/bromide/iodide，苯 → benzoyl fluoride/chloride/… |
+| **10** | `phosphate` | -phosphate / phosphoric acid | -磷酸 / -磷酸酯 | 磷酸/磷酸酯（P-41 类别 9 酯，P-67.1.3.2）——整名由 L5 `phosphate_names` 组装（P 中心无碳词干）；`path=(1,)` 使同类内羧酸酯（`path=()`）优先，含羧酸/羧酸酯（7a < 9）时降级为 `phosphonooxy` 前缀（P-67.1.5.1） |
 | **9** | `amide` | -amide | -酰胺 | 酰胺 |
 | **8** | `nitrile`, `isocyanate`, `isothiocyanate` | -nitrile / isocyanate | -腈 / 异氰酸酯 | C&#8801;N 和累积双键系统 |
 | **7** | `aldehyde` | -al / carbaldehyde | -醛 / 甲醛 | 醛基 |
@@ -59,7 +60,7 @@ class KindMeta:
     retained: bool         # 是否为 IUPAC 保留名（retained name），影响 L2 评分
 ```
 
-所有 scaffold 母体种类通过模块级 `_bootstrap()` 函数统一注册（`kind_registry.py:112`），注册**只有一步**：`_load_from_scaffold_specs()`（从 `ring_scaffold.all_specs()` 读取，`kind_registry.py:101`）。**`ring_scaffold.py` 的 `_TEMPLATES`** 是 **stem 的最终权威来源**。链式 FG kind 不预先注册——主官能团等级不存于 `KindMeta`，运行时按 FG 枚举经 `legacy_rank` 实时投影（旧式 parent 兜底在 `parent_candidate._kind_rank`）。
+所有 scaffold 母体种类通过模块级 `_bootstrap()` 函数统一注册（`kind_registry.py:113`），注册**只有一步**：`_load_from_scaffold_specs()`（从 `ring_scaffold.all_specs()` 读取，`kind_registry.py:102`）。**`ring_scaffold.py` 的 `_TEMPLATES`** 是 **stem 的最终权威来源**。链式 FG kind 不预先注册——主官能团等级不存于 `KindMeta`，运行时按 FG 枚举经 `legacy_rank` 实时投影（旧式 parent 兜底在 `parent_candidate._kind_rank`）。
 
 ---
 
@@ -71,16 +72,18 @@ class KindMeta:
 
 - **Carboxyl 优先于 ester/amide/anhydride**: `_is_carboxyl_carbon()` 匹配 C(=O)OH 或 C(=O)O⁻ 模式，ester/amide 检测显式判定酸性氧邻居为 False 后才匹配。
 - **Anhydride 桥氧从 ether 中排除**: `_is_ether_oxygen()` 先检查 `_is_anhydride_bridge_o()`。
+- **环内 N 不作酰胺**: `_amide_n_info`（`_carbonyl_common.py:96`）排除环内 N（P-66.1.1），故 N-酰基环胺（1-(pyrrolidin-1-yl)ethanone）的羰基改由 `_is_ketone_carbon`（`analyzer.py:57`）按"单碳邻居 + 环内 N"判为酮母体。
+- **醛/酮边界**: `_is_aldehyde_carbon`（`analyzer.py:169`）要求环外羰基带 H（否则是 N-酰基等，不作醛），环内羰基仍走原判定作 oxo 前缀来源——两函数互斥，同一羰基不会被酮/醛双计。
 
-13 个扩展 FG（carbamate/carbonate/urea/guanidine/sulfoxide/sulfone/...）在 layer1 中不存在，因此无跨模块排他链（carbamate 排除 ester、urea 排除 amide 等）——排他检测只发生在 analyzer.py 内部的核心羰基族。共享的羰基检测原语集中在 `_carbonyl_common.py`。
+12 个扩展 FG（carbamate/carbonate/urea/guanidine/sulfoxide/sulfone/...）在 layer1 中不存在，因此无跨模块排他链（carbamate 排除 ester、urea 排除 amide 等）——排他检测只发生在 analyzer.py 内部的核心羰基族。共享的羰基检测原语集中在 `_carbonyl_common.py`。磷酸走独立模块 `layer1/phosphate.py`：`phosphate_entries` 识别 P(=O)(O)₃ 中心（恰好 1 个 =O、3 个单键 O，整分子重原子须全部落在中心与臂内），产出 `{p_idx, n_oh, n_om, n_arms}`，不与羰基族互斥。
 
-所有检测到的 FG 被汇总为结构化列表（23 个 FG 列表键，含 `acyls`/`demoted_carboxyls`/`demoted_nitriles` + 18 个布尔标志）和类型化的 `fg_inventory`，构成 info dict 传递给 Layer 2。
+所有检测到的 FG 被汇总为结构化列表（24 个 FG 列表键，含 `acyls`/`demoted_carboxyls`/`demoted_nitriles`/`phosphates` + 19 个布尔标志）和类型化的 `fg_inventory`，构成 info dict 传递给 Layer 2。
 
 > **源:** `src/namepredict/layer1/analyzer.py`, `src/namepredict/layer1/_carbonyl_common.py` | 详情见 [[architecture/layer1-analyzer]]
 
 ### Layer 2: 评分与选择（Score & Select）
 
-`src/namepredict/layer2/scoring.py:48-51` 定义了 11 维 P-44 评分 tuple，主官能团等级经 `principal_group_class` 编码在第二维（来自 `parent_candidate.P44Facts`，`parent_candidate.py:25-28`）：
+`src/namepredict/layer2/scoring.py:59-62` 定义了 11 维 P-44 评分 tuple，主官能团等级经 `principal_group_class` 编码在第二维（来自 `parent_candidate.P44Facts`，`parent_candidate.py:26-29`）：
 
 ```python
 (principal_group_class,   # FG 类别 rank（principal contract，rank=0 即无主官能团）
@@ -101,15 +104,19 @@ class KindMeta:
 母体候选的生成以 **P-44 规则驱动管线**为主（`rule_driven_parent_candidates`，见
 [[architecture/layer2-parent-selector]]）。`P44Facts.principal_group_class` 优先取 `principal_expression_facts.group_class` 的 `legacy_rank`（主链路）；旧式 parent 无 `pef` 时由 `_kind_rank`（`parent_candidate.py:20`）按 kind 投影兜底（P-41 `compatibility_rank` 为单一权威）。
 
-> **源:** `src/namepredict/layer2/scoring.py:48-51`, `src/namepredict/layer2/parent_candidate.py:20-28` | 详情见 [[architecture/layer2-parent-selector]]
+P-44 评分并列时不再直接取首位：`select_parent_tied`（`parent_selector.py:55`）返回 P-45.2.1 并列组（上限 `_MAX_TIED_CANDIDATES=4`，`namer.py:115`），`namer` 对每个候选各跑一次 L3–L5，再由 `_best_hit`（`namer.py:184`）裁决——P-44.1.1 后缀位次集合（`suffix_locant_set`，`candidate_keys.py:7`）已分胜负时保持候选顺序，仍并列时才取 P-45.2.2 前缀位次集合（`prefix_locant_set`，`candidate_keys.py:22`）最小者。
+
+> **源:** `src/namepredict/layer2/scoring.py:59-62`, `src/namepredict/layer2/parent_candidate.py:20-29` | 详情见 [[architecture/layer2-parent-selector]]
 
 ### Layer 5: 后缀分派（Suffix Dispatch）
 
-Layer5 由 `_names_for`（`assembler.py:409`）查 **`chain_engine._KIND_TABLE`**（13 个 `_Chain` spec：12 链式 FG kind 含 `acyl`、逐卤素 `acyl_halide` + `radical`）渲染词干、不饱和段、位次与环前缀（kind 收敛在 L2 `_chain_kind`，无 `typed_kinds` 模块）。`mult_ok` 生成式按 multiplicity 派生数量后缀（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid），`variant` 仅作 scaffold 特例覆盖（苯 → benzoyl/benzoyl halide/phenol 等）。环外（exocyclic）FG 走 worker——`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names` 按 multiplicity 拼 …-carboxylic acid/…-carbaldehyde（多羧酸 → -dicarboxylic acid，环外二醛 → -dicarbaldehyde，P-66.6.1.1.3），**`_exocyclic_acyl_names` 拼 -carbonyl/-羰基**（furan-2-carbonyl，P-65.1.7.2；苯 → benzoyl 回落 variant）——否则落 `_parent_stem_names` 回退。单环环烷/环烯的环外系统名共用 `_ring_carbocycle_stem`（环烯/另带前缀取代时后缀 locant 显式）。
+Layer5 由 `_names_for`（`assembler.py:368`）查 **`chain_engine._KIND_TABLE`**（13 个 `_Chain` spec：12 链式 FG kind 含 `acyl`、逐卤素 `acyl_halide` + `radical`）渲染词干、不饱和段、位次与环前缀（kind 收敛在 L2 `_chain_kind`，无 `typed_kinds` 模块）。`mult_ok` 生成式按 multiplicity 派生数量后缀（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid），`variant` 仅作 scaffold 特例覆盖（苯 → benzoyl/benzoyl halide/phenol 等）。环外（exocyclic）FG 走 worker——`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names` 按 multiplicity 拼 …-carboxylic acid/…-carbaldehyde（多羧酸 → -dicarboxylic acid，环外二醛 → -dicarbaldehyde，P-66.6.1.1.3），**`_exocyclic_acyl_names` 拼 -carbonyl/-羰基**（furan-2-carbonyl，P-65.1.7.2；苯 → benzoyl 回落 variant）——否则落 `_parent_stem_names` 回退。单环环烷/环烯的环外系统名共用 `_ring_carbocycle_stem`（环烯/另带前缀取代时后缀 locant 显式）。
+
+`phosphate` 是例外分支：`_names_for` 首条即 `kind == "phosphate"`（`assembler.py:370`），不经 `_KIND_TABLE`，直接调 `layer5/phosphate.py` 的 `phosphate_names` 组装整名——P 中心无碳词干，用 L2 `_chain_phosphate_fields`（`principal_expression.py:279`）注入的 `n_oh`/`n_om`/`n_arms`/`salt_meta` 与 `o_side` 臂（`claim_extract._ESTER_O_SIDE_KINDS` 含 `"phosphate"`，`claim_extract.py:66`）拼装；`namer._apply_salt_suffix`（`namer.py:242`）对 `parent_kind == "phosphate"` 跳过通用金属盐后缀（盐形态已在整名内处理）。
 
 调度是分层的：L2 收敛 kind → L5 查链引擎 → 命中后直接返回。这确保了被选为母体的 principal FG 获得后缀，而劣后 FG 在 Layer 3 中被转为取代基前缀（如 hydroxy-、oxo-、amino-）。
 
-> **源:** `src/namepredict/layer5/chain_engine.py`, `src/namepredict/layer5/assembler.py:409` | 详情见 [[architecture/layer5-name-assembly]]
+> **源:** `src/namepredict/layer5/chain_engine.py`, `src/namepredict/layer5/assembler.py:368` | 详情见 [[architecture/layer5-name-assembly]]
 
 ---
 
@@ -123,7 +130,7 @@ IUPAC P-41 规定某些 FG 之间不能作为母体共存。NamePredict 通过 *
 
 ## 注册体系：kind_registry 作为词干注册中心
 
-`src/namepredict/layer2/kind_registry.py` 是**词干与环元数据的注册查询中心**：保留 scaffold 的 stem/ring/n_rings/retained 由 `ring_scaffold.py` 的 `_TEMPLATES` 派生（bootstrap 唯一一步 `_load_from_scaffold_specs`，`kind_registry.py:101`），**不承载主官能团等级**（等级单一权威在 `fg_registry.FG_SPECS.compat` → `principal.PRINCIPAL_REGISTRY`）。公共 API：
+`src/namepredict/layer2/kind_registry.py` 是**词干与环元数据的注册查询中心**：保留 scaffold 的 stem/ring/n_rings/retained 由 `ring_scaffold.py` 的 `_TEMPLATES` 派生（bootstrap 唯一一步 `_load_from_scaffold_specs`，`kind_registry.py:102`），**不承载主官能团等级**（等级单一权威在 `fg_registry.FG_SPECS.compat` → `principal.PRINCIPAL_REGISTRY`）。公共 API：
 
 | API | 功能 |
 |---|---|

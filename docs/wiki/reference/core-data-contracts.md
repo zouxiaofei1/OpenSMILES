@@ -42,14 +42,14 @@ graph TD
 
 **全称**: Functional Group Information Dictionary（官能团信息字典）
 
-**产出**: `analyze(mol)` in `src/namepredict/layer1/analyzer.py:521`
+**产出**: `analyze(mol)` in `src/namepredict/layer1/analyzer.py:569`
 
-**构建**: `_info(mol, carbons, fgs)` at `analyzer.py:516`，由三层合并：
+**构建**: `_info(mol, carbons, fgs)` at `analyzer.py:564`，由三层合并：
 - `base`: `mol`, `carbon_ids`, `n_carbons`
 - `fgs`: 所有 FG 条目列表 + 布尔标志 + `fg_inventory`（`_collect_fgs`）
 - `_ring_meta(mol)`: 环系元信息
 
-`namer._name_mol` 在 `analyze()` 返回后再注入 `root_ctx`（见基础字段表）供 Layer3 取代基 R/S 回根重算——不属于 `_info` 的三层合并。
+`namer._name_mol` 在 `analyze()` 返回后再注入 `root_ctx`（见基础字段表）供 Layer3 取代基 R/S 回根重算，并注入 `salt`（`namer.py:280`，磷酸母体的盐门控与 `salt_meta` 来源）——不属于 `_info` 的三层合并。
 
 **输入方**: Layer 2 (`select_parent(info)`), Layer 3 (`extract_substituents(info, parent)`), Layer 4 (间接通过 parent), Layer 5 (间接)
 
@@ -61,10 +61,11 @@ graph TD
 | `carbon_ids` | `list[int]` | 分子中所有碳原子的 atom index |
 | `n_carbons` | `int` | 碳原子总数（= `len(carbon_ids)`） |
 | `root_ctx` | `tuple[Mol, list[int]]` | 根分子上下文 `(根Mol, 本分子原子→根索引映射)`，由 `namer._name_mol` 注入；供 Layer3 取代基 R/S 在完整根分子上重算（`_fix_rs_with_real`） |
+| `salt` | `dict` | Layer0 盐元数据（`metal`/`metal_zh`/`n_metal`/`acid_salt`/…），由 `namer._name_mol` 注入（`namer.py:280`）；磷酸母体 producer（`principal_expression._chain_phosphate_fields`）据此做盐门控并写入 `salt_meta` |
 
 ### 官能团条目列表（FG entry lists）
 
-每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 **23 个列表键**（来自 `_fg_parts` at `analyzer.py:537`，经 `_arbitrate_parts(mol, parts)` P-41 仲裁——被更高优先级主基团压制而退出的组合羰基 FG，其伯酰胺 N 回收进 `amines`，中性 -COOH 整组进 `demoted_carboxyls`（carboxy 叶）、腈进 `demoted_nitriles`（cyano 叶），降级酰胺羰基/阴离子酸碳并入 `ketones`（oxo 前缀候选））：
+每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 **24 个列表键**（来自 `_fg_parts` at `analyzer.py:536`，经 `_arbitrate_parts(mol, parts)` P-41 仲裁——被更高优先级主基团压制而退出的组合羰基 FG，其伯酰胺 N 回收进 `amines`，中性 -COOH 整组进 `demoted_carboxyls`（carboxy 叶）、腈进 `demoted_nitriles`（cyano 叶），降级酰胺羰基/阴离子酸碳并入 `ketones`（oxo 前缀候选））：
 
 | 键名 | 条目 dict 典型字段 | 来源 |
 |---|---|---|
@@ -72,9 +73,9 @@ graph TD
 | `hydroxyls` | `o_idx`, `c_idx` | `analyzer.py:_hydroxyl_entries` |
 | `esters` | 酯键原子索引 | `analyzer.py:_ester_entries` |
 | `amides` | 酰胺键原子索引 | `analyzer.py:_amide_entries` |
-| `ketones` | `c_idx` | `analyzer.py:_ketone_entries`（+ `_arbitrate_parts` 降级：降级酰胺羰基/阴离子酸碳并入——伯酰胺 N 经 `_demoted_amide_amine`:484 回收进 amines） |
+| `ketones` | `c_idx` | `analyzer.py:_ketone_entries`（+ `_arbitrate_parts` 降级：降级酰胺羰基/阴离子酸碳并入——伯酰胺 N 经 `_demoted_amide_amine`:493 回收进 amines） |
 | `radicals` | `c_idx`, `rad_idx` | `analyzer.py:_radical_entries`（`*` 锚点自由基，排除已判 acyl 头的碳） |
-| `acyls` | `c_idx`, `rad_idx` | `analyzer.py:_acyl_entries`（锚定酰基头，`_is_acyl_head`:389，P-65.1.7.2） |
+| `acyls` | `c_idx`, `rad_idx` | `analyzer.py:_acyl_entries`（锚定酰基头，`_is_acyl_head`:402，P-65.1.7.2） |
 | `demoted_carboxyls` | `c_idx` | `analyzer.py:_arbitrate_parts`（被压制中性 -COOH → carboxy 叶 P-61.1.3） |
 | `demoted_nitriles` | `c_idx` | `analyzer.py:_arbitrate_parts`（被压制腈 → cyano 叶 P-61.1.3） |
 | `aldehydes` | `c_idx` | `analyzer.py` |
@@ -91,12 +92,13 @@ graph TD
 | `nitros` | — | `analyzer.py` |
 | `isocyanates` | `c_idx`, `n_idx`, `x_idx`, `r_c_idx` | `layer1/isocyanate.py` |
 | `isothiocyanates` | `c_idx`, `n_idx`, `x_idx`, `r_c_idx` | `layer1/isocyanate.py` |
+| `phosphates` | `p_idx`, `n_oh`, `n_om`, `n_arms` | `layer1/phosphate.py:phosphate_entries`（P(=O)(O)₃ 中心；`n_oh`/`n_om` 为酸式/阴离子氧数，`n_arms` 为 O–R 臂数） |
 
-> 13 个扩展 FG 列表键（`phosphates`/`phosphonics`/`carbamates`/`carbonates`/`sulfoxides`/`ureas`/`hydrazines`/`guanidines`/`sulfonamides`/`sulfonates`/`sulfonyl_chlorides`/`sulfonic_acids`/`sulfones`/`boronics`）已随检测模块删除。
+> 其余扩展 FG 列表键（`phosphonics`/`carbamates`/`carbonates`/`sulfoxides`/`ureas`/`hydrazines`/`guanidines`/`sulfonamides`/`sulfonates`/`sulfonyl_chlorides`/`sulfonic_acids`/`sulfones`/`boronics`）未实现；`phosphates` 已由 `layer1/phosphate.py` 检测。
 
 ### 布尔标志（Boolean flags）
 
-对应 `_fg_bools(lists)` at `analyzer.py:451`，每个 `has_*` 标志 = `bool(对应的 FG 列表)`。共 **18 个**（`acyls`/两条 demoted 列表不单独映射 has_*）：
+对应 `_fg_bools(lists)` at `analyzer.py:460`，每个 `has_*` 标志 = `bool(对应的 FG 列表)`。共 **19 个**（`acyls`/两条 demoted 列表不单独映射 has_*）：
 
 | 标志 | 对应列表 | 标志 | 对应列表 |
 |---|---|---|---|
@@ -109,8 +111,9 @@ graph TD
 | `has_thiol` | `thiols` | `has_ether` | `ethers` |
 | `has_sulfide` | `sulfides` | `has_nitro` | `nitros` |
 | `has_isocyanate` | `isocyanates` | `has_isothiocyanate` | `isothiocyanates` |
+| `has_phosphate` | `phosphates` | | |
 
-另有类型化键 `fg_inventory`：`FunctionalGroupInventory`（18 个 `FunctionalGroupClass` 类别，含新增 `ACYL`，由 `functional_group_inventory.inventory_from_info` 构建）。
+另有类型化键 `fg_inventory`：`FunctionalGroupInventory`（19 个 `FunctionalGroupClass` 类别，含 `ACYL` 与 `PHOSPHATE`，由 `functional_group_inventory.inventory_from_info` 构建）。
 
 ### 环系元信息
 
@@ -130,9 +133,9 @@ graph TD
 
 **全称**: Parent Structure Dictionary（母体结构字典）
 
-**产出**: `select_parent(info)` at `src/namepredict/layer2/parent_selector.py:27-28`；候选列表由 `iter_parent_candidates(info)` at `parent_selector.py:23-24` 生成。
+**产出**: `select_parent(info)` at `src/namepredict/layer2/parent_selector.py:44`；P-45.2.1 并列最优组由 `select_parent_tied(info)` at `parent_selector.py:55` 返回（供 L4 编号后按 P-45.2.2 位次集合裁决，上限 `namer._MAX_TIED_CANDIDATES=4`）。
 
-**构建**: 每个候选由 `_collect_candidates(info)` 生成，经 `_finalize_ranked(info, cands)` 排序并注入 `owned_atoms`（frozenset）。
+**构建**: 每个候选由 `_collect_candidates(info)`（`layer2/candidates.py:31`）生成，经 `_finalize_ranked(info, cands)`（`parent_selector.py:31`）排序并注入 `owned_atoms`（frozenset）。
 
 ### 通用字段
 
@@ -163,6 +166,9 @@ graph TD
 | `sh_c_idx` | `int` | `thiol` 系 | 硫醇所连碳的原子索引 |
 | `radical_c_idx` | `int` / `list[int]` | `radical` 系 | `*` 自由基锚定碳索引（对称 scaffold 镜像取 locant 1） |
 | `acyl_c_idx` | `int` / `list[int]` | `acyl` 系 | 酰基残基羰基头碳索引（`parent_anchor_fields=("acyl_c_idx","acyl_c_idxs")`） |
+| `p_idx` / `p_idxs` | `int` / `list[int]` | `phosphate` 系 | 磷酸 P 中心原子索引（`parent_anchor_fields=("p_idx","p_idxs")`） |
+| `n_oh` / `n_om` / `n_arms` | `int` | `phosphate` 系 | 酸式 H 氧数 / 阴离子氧数 / O–R 臂数（L1 `layer1/phosphate.py` 计数，L2 `_chain_phosphate_fields` 透传） |
+| `salt_meta` | `dict` / `None` | `phosphate` 系 | 盐门控通过后的 Layer0 盐元数据（`_chain_phosphate_fields`，`principal_expression.py:279` 写入；门控不通过则候选被丢弃） |
 | `hal_z` / `hal_idx` | `int` | `acyl_halide` 系（链/环外） | 酰卤实际卤素原子序（F/Cl/Br/I）与卤原子索引——环外酰卤（苯甲酰卤）亦由 `express_ring_principal` 注入 |
 | `ring_attach_idx` | `int` | 环 + 单附着 exocyclic FG（acid/ester/amide/nitrile/aldehyde/**acyl**） | 环上附着原子索引（环外 -carboxylic acid/-carbonyl 词形 locant） |
 | `double_bond` | `tuple[int,int]` | `alkene` 系 | 双键原子对 |
@@ -177,7 +183,7 @@ graph TD
 
 **全称**: Ownership-Only Claimable Side Block
 
-**定义**: `src/namepredict/layer3/claimable_block.py:21-27`
+**定义**: `src/namepredict/layer3/claimable_block.py:23-28`
 
 **用途**: 描述 parent 未覆盖的一个"外侧"原子组件（side block），仅记录拓扑归属信息，不含名称。Layer 3 基于 ClaimedBlock 生成 `SubstituentName`。
 
@@ -192,7 +198,7 @@ class ClaimedBlock:
 
 ### SideSlot 枚举
 
-定义于 `layer3/claimable_block.py:12-18`：
+定义于 `layer3/claimable_block.py:12-20`：
 
 | 值 | 含义 |
 |---|---|
@@ -205,13 +211,13 @@ class ClaimedBlock:
 
 ### 产出函数
 
-`iter_claims(mol, owned_atoms)` at `layer3/claimable_block.py:172-179`：遍历所有外侧重原子组件，为每个组件确定 canonical edge `(attach_parent, root)` 和 slot，返回排序后的 `list[ClaimedBlock]`。
+`iter_claims(mol, owned_atoms)` at `layer3/claimable_block.py:189-199`：遍历所有外侧重原子组件，为每个组件确定 canonical edge `(attach_parent, root)` 和 slot，返回排序后的 `list[ClaimedBlock]`。
 
 ---
 
 ## 4. SubstituentName（L3 内部类型）
 
-**定义**: `src/namepredict/layer3/substituent_namer.py:13-19`
+**定义**: `src/namepredict/layer3/substituent_namer.py:14-20`
 
 **用途**: ClaimedBlock 经过命名后的结果，包含中英文名称和书写规则。
 
@@ -224,7 +230,7 @@ class SubstituentName:
     backend: str               # 命名后端: "retained" / "recursive"
 ```
 
-**产出**: `SubstituentNamer.name(mol, claim)` at `substituent_namer.py:103-109`，依次尝试 retained -> recursive 两个后端（无 RootedTreeBackend），返回第一个成功的结果。
+**产出**: `SubstituentNamer.name(mol, claim)` at `substituent_namer.py:105`，依次尝试 retained -> recursive 两个后端（无 RootedTreeBackend），返回第一个成功的结果。
 
 ---
 
@@ -232,7 +238,7 @@ class SubstituentName:
 
 **全称**: Substituent Dictionary（取代基字典）
 
-**产出**: `extract_substituents(info, parent)` at `src/namepredict/layer3/substituent_extractor.py:219`（now `extract_substituents(info, parent, *, name_mode, cache)`，root_ctx 由内部 claim_extract 自 `info.get("root_ctx")` 注入）
+**产出**: `extract_substituents(info, parent)` at `src/namepredict/layer3/substituent_extractor.py:216`（now `extract_substituents(info, parent, *, name_mode, cache)`，root_ctx 由内部 claim_extract 自 `info.get("root_ctx")` 注入）
 
 **用途**: 每个 dict 描述一个待编号的取代基。Layer 4 通过 `_with_locants()` 向每个 substit dict 注入 `locant` 字段。
 
@@ -248,7 +254,7 @@ class SubstituentName:
 | `paren` | `bool` | 命名时是否需要括号包裹 |
 | `n_carbons` | `int` | 取代基中的碳原子数（影响排序优先级） |
 | `backend` | `str` | 命名后端标识 |
-| `o_side` | `bool` | 是否酯 O 侧烷基臂（L5 `join_ester_name` 消费） |
+| `o_side` | `bool` | 是否 O 侧烷基臂——酯酸侧（L5 `join_ester_name` 消费）或磷酸酯 O–R 臂（L5 `phosphate_names` 消费；`claim_extract._ESTER_O_SIDE_KINDS` 含 `"phosphate"`，`claim_extract.py:66`） |
 
 ### L4 注入字段
 
@@ -262,7 +268,7 @@ class SubstituentName:
 
 **全称**: Heavy-Atom Coverage Ledger（重原子覆盖台账）
 
-**定义**: `src/namepredict/layer3/coverage.py:12-21`
+**定义**: `src/namepredict/layer3/coverage.py:13-23`
 
 **用途**: 验证 parent + named claims 是否完整覆盖分子的所有重原子（排除氢），无遗漏（gap）、无重叠（overlap）。
 
@@ -279,9 +285,9 @@ class CoverageLedger:
         return not self.gap and not self.overlap
 ```
 
-**构建**: `build_coverage_ledger(mol, owned_atoms=owned, names=names)` at `coverage.py:51-66`
+**构建**: `build_coverage_ledger(mol, owned_atoms=owned, names=names)` at `coverage.py:57-73`
 
-**使用**: `namer.py:_ledger_complete()` at `namer.py:63-65`。只有当 `complete == True` 时，命名结果才被视为有效（`coverage_complete: True` 写入 NameResult.meta）。
+**使用**: `namer.py:_ledger_complete()` at `namer.py:74-78`。只有当 `complete == True` 时，命名结果才被视为有效（`coverage_complete: True` 写入 NameResult.meta）。
 
 ---
 
@@ -291,7 +297,7 @@ class CoverageLedger:
 
 **产出**: `number(parent, substituents)` at `src/namepredict/layer4/numbering.py`
 
-**构建**: `_pack(oriented, subs_with_locants)` at `locant_calc.py:312`
+**构建**: `_pack(oriented, subs_with_locants)` at `locant_calc.py:329`
 
 ### 结构
 
@@ -327,11 +333,11 @@ class CoverageLedger:
 
 ### locant 字段详解
 
-`_fg_locants()`（`locant_calc.py:299`）数据驱动（`_FG_LOCANTS` 表，`locant_calc.py:294-297`，由 `fg_registry.FgSpec.locant_kind` 派生）产出 `fg_locants` 稀疏列表——只产实际存在的 principal FG。locant_kind 覆盖 acid/ester/amide/nitrile/aldehyde/ketone/oh/amine/sh/radical；其中 `aldehyde`（`_aldehyde_fg_locants`，外环醛取环上附着原子，单/多 -carbaldehyde 通用）与 `acid` 的多羧酸（multiplicity≥2 取全部附着原子位次）为本次新增。烯/炔位次由 `_unsat_locants()` 独立产出为扁平字段：
+`_fg_locants()`（`locant_calc.py:316`）数据驱动（`_FG_LOCANTS` 表，`locant_calc.py:311-314`，由 `fg_registry.FgSpec.locant_kind` 派生）产出 `fg_locants` 稀疏列表——只产实际存在的 principal FG。locant_kind 覆盖 acid/ester/amide/nitrile/aldehyde/ketone/oh/amine/sh/radical；其中 `aldehyde`（`_aldehyde_fg_locants`，外环醛取环上附着原子，单/多 -carbaldehyde 通用）与 `acid` 的多羧酸（multiplicity≥2 取全部附着原子位次）为本次新增。烯/炔位次由 `_unsat_locants()` 独立产出为扁平字段：
 
 | 产出方 | 内容 |
 |---|---|
-| `_fg_locants()` at `locant_calc.py:299`（`_FG_LOCANTS` 数据表 `:294-297`） | `fg_locants`: [{kind, locants, omit}] — 稀疏, 只含实际存在的 principal FG |
+| `_fg_locants()` at `locant_calc.py:316`（`_FG_LOCANTS` 数据表 `:311-314`） | `fg_locants`: [{kind, locants, omit}] — 稀疏, 只含实际存在的 principal FG |
 | `_unsat_locants()` at `locant_calc.py:157` | `ene_locant`, `ene_locants`, `omit_ene_locant`, `yne_locant`, `omit_yne_locant` |
 
 `_with_locants()`（注入取代基 locant）位于 `locant_calc.py:134`。
@@ -342,7 +348,7 @@ class CoverageLedger:
 
 **全称**: Named Result Dataclass
 
-**定义**: `src/namepredict/types.py:6-13`
+**定义**: `src/namepredict/types.py:9-17`
 
 **用途**: NamePredict 的最终对外返回值，包含中英文 IUPAC 名称及元信息。
 
@@ -359,22 +365,24 @@ class NameResult:
 
 ### meta 字段
 
-由 `_ok_result()` at `src/namepredict/namer.py:79` 填充：
+由 `_ok_result()` at `src/namepredict/namer.py:80` 填充：
 
 | 字段 | 类型 | 来源 | 说明 |
 |---|---|---|---|
-| `parent_chain` | `list[int]` | `_chain_meta()` at `namer.py:37-40` | 母体链的原子索引列表 |
-| `parent_kind` | `str` | `_chain_meta()` | 母体类型标识符 |
+| `parent_chain` | `list[int]` | `_chain_meta()` at `namer.py:38` | 母体链的原子索引列表 |
+| `parent_kind` | `str` | `_chain_meta()` | 母体类型标识符（`"phosphate"` 触发 L5 磷酸整名与盐后缀跳过） |
 | `depth` | `int` | `_ok_result()` 参数 | 递归深度（一般化合物为 0） |
 | `coverage_complete` | `bool` | 硬编码为 `True` | 仅当 CoverageLedger.complete 时调用 |
 | `parent_substituent_count` | `int` | `_ok_result()` | 母体取代基数量（`len(numbered["substituents"])`），供 Layer3 递归取代基判定"词干是否复合"时直读 |
-| `salt` | `str` | (如有盐) | 盐部分的名称 |
+| `p44_1_1_key` | `tuple` | `_assemble_candidate()` at `namer.py:137` | P-44.1.1 后缀位次集合（`candidate_keys.suffix_locant_set`），并列候选裁决键 |
+| `p45_2_2_key` | `tuple` | `_assemble_candidate()` at `namer.py:138` | P-45.2.2 前缀位次集合（`candidate_keys.prefix_locant_set`），`_best_hit()` 取最小者 |
+| `salt` | `dict` | (如有盐) | Layer0 盐元数据字典（`namer.py:281-282`） |
 | `reason` | `str` | (如失败) | 失败原因（如 `"parse"`, `"no_candidate"`） |
 
 ### 实例化路径
 
-- **成功路径**: `namer.py:79` → `_ok_result()` → `assemble(numbered, time_ms=...)` → `NameResult(en=..., zh=..., success=True, ...)`
-- **失败路径**: `namer.py:24` → `_fail()` → `NameResult(en="", zh="", success=False, reason="...")`
+- **成功路径**: `namer.py:80` → `_ok_result()` → `assemble(numbered, time_ms=...)` → `NameResult(en=..., zh=..., success=True, ...)`
+- **失败路径**: `namer.py:25` → `_fail()` → `NameResult(en="", zh="", success=False, reason="...")`
 
 ---
 

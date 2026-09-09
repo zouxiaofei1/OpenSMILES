@@ -46,7 +46,7 @@ SSSR 利用 RDKit 的 `GetRingInfo().AtomRings()` 获取所有最小环，然后
 
 ### 2.1 骨架识别入口
 
-母体选择统一走 P-44 规则管线（`rule_driven_parent_candidates`），环骨架身份由 **`ring_scaffold.py` 的 `resolve_ring_scaffold`**（`:398`）在表达阶段解析：
+母体选择统一走 P-44 规则管线（`rule_driven_parent_candidates`），环骨架身份由 **`ring_scaffold.py` 的 `resolve_ring_scaffold`**（`:437`）在表达阶段解析：
 
 ```
 resolve_ring_scaffold(info, skeleton)
@@ -62,11 +62,15 @@ resolve_ring_scaffold(info, skeleton)
 **新增保留环系（如 quinoline）只改 `ring_scaffold.py` 的 `_TEMPLATES` 一张表**——加一条 `{smiles, stem_en, stem_zh, naming_class}`：
 
 ```python
-# ring_scaffold.py `_TEMPLATES`（`81` 起）
+# ring_scaffold.py `_TEMPLATES`（`84` 起）
 "quinoline": {"smiles": "c1ccc2ncccc2c1", "stem_en": "quinoline", "stem_zh": "喹啉", "naming_class": "fused56"},
 ```
 
-`_spec_from_template`（`:212`）自动派生 `ScaffoldSpec`（n_rings/ring 从 smiles 算，retained=True），`all_specs()`/`get_spec()`/`get_identity()` 均由此派生；`kind_registry._load_from_scaffold_specs`（`kind_registry.py:101`）据此自动注册 KindMeta 词干（bootstrap 唯一一步，ScaffoldSpec 是词干权威）。位置异构体（quinoline/isoquinoline、二嗪、二唑等）在元素标注的子图同构下天然区分，无需额外消解。
+可选字段：`locant_prefix`（如 `"1,3-"`/`"1H-"`，位置异构体与指示氢前缀）、`prefix_nh_conditional`（NH 存在时才加 `1H-`）。近年扩充的条目均以此登记——杂芳环（`isoxazole`/`triazole`/`tetrazole`/`triazine`）、3/4 元与含硫饱和环（`oxirane`/`aziridine`/`oxetane`/`azetidine`/`thiolane`/`thiane`）、双氧/三氧环（`dioxolane`/`dioxane`/`trioxane`）、饱和双杂环（`oxazolidine`/`imidazolidine`/`thiazolidine`）、部分不饱和环（`dihydrofuran`/`dihydropyran`/`dihydropyrrole`/`dihydroimidazole`/`dihydrothiazole`）；`benzofuran`/`benzothiophene` 补 `locant_prefix="1-"`。
+
+`_spec_from_template`（`:254`）自动派生 `ScaffoldSpec`（n_rings/ring 从 smiles 算，retained=True），`all_specs()`/`get_spec()`/`get_identity()` 均由此派生；`kind_registry._load_from_scaffold_specs`（`kind_registry.py:102`）据此自动注册 KindMeta 词干（bootstrap 唯一一步，ScaffoldSpec 是词干权威）。位置异构体（quinoline/isoquinoline、二嗪、二唑等）在元素标注的子图同构下天然区分，无需额外消解。
+
+若新环的保留编号不是"按模板原子序从 1 起"，还需在 `_STANDARD_ORDERS`（`ring_scaffold.py:186`）登记 locant→模板原子映射，并在 `_STANDARD_LABELS`（`:221`）指定标签序列（如 `purine` 用 `PURINE_LABELS`（`:167`）的纯数字 1–9，无 3a/7a 字母位，P-25.3.3 例外）。
 
 > 无 `_TOPOLOGY` 五元组表与手写 `_ALL_SPECS`；`match_systems`/`match_scaffold_ids`/`registry`/`get_entry` 为模板语义查询。
 
@@ -88,9 +92,9 @@ resolve_ring_scaffold(info, skeleton)
 2. `_fixed_start` 固定 1 号位：杂原子环优先杂原子（Z 最小 = locant 1），否则 FG 锚点/自由基字段
 3. 按 principal FG → 多重键 → 取代基位次集逐条收窄
 
-因此**新增环系无需写 orienter**。唯一需要保证的是 L2 正确注入 `scaffold_id`。固定编号事实（稠环 `3a`/`4a` 标签）由 `numbering_scaffold_facts`（`ring_scaffold.py:254`）基于 `_TEMPLATES` 生成，L4 校验其存在性（`numbering_scaffold_required`）。
+因此**新增环系无需写 orienter**。唯一需要保证的是 L2 正确注入 `scaffold_id`。固定编号事实（稠环 `3a`/`4a` 标签）由 `numbering_scaffold_facts`（`ring_scaffold.py:296`）基于 `_TEMPLATES` 生成，L4 校验其存在性（`numbering_scaffold_required`）。
 
-> **源:** `src/namepredict/layer4/numbering_engine.py`, `src/namepredict/layer2/ring_scaffold.py:254`
+> **源:** `src/namepredict/layer4/numbering_engine.py`, `src/namepredict/layer2/ring_scaffold.py:296`
 
 > 注：无 `NumberingPlan` 机制与 `locants/` 子包——编号完全走候选枚举 + `chain.index + 1`，不依赖固定编号 plan。
 
@@ -103,7 +107,7 @@ resolve_ring_scaffold(info, skeleton)
 对于保留名环系（苯、吡啶、萘、吲哚等），词干在 `ring_scaffold.py` 的 `_TEMPLATES`（`stem_en`/`stem_zh`）定义。`chain_engine._KIND_TABLE` 的 entry 在 `_names_for` 中按 `scaffold_id` 运行时替换：
 
 ```python
-# assembler.py `_names_for`（:290）
+# assembler.py `_names_for`（:368）
 ring_stem = _ring_stem(numbered)          # 从 parent 的 stem_en/stem_zh 派生
 if ring_stem:                             # 稠环/杂环 scaffold 词干
     entry = replace(entry, stem=ring_stem, coda="", omit_rule=..., aromatic=True)
@@ -129,7 +133,7 @@ FG-环组合的命名由以下路径承担：
 - **苯系保留名**（benzoic/phenol/aniline/benzaldehyde/benzonitrile/benzamide/benzoate）：`chain_engine._KIND_TABLE` 各 entry 的 `variant["benzene"]`（要求 `scaffold_id=="benzene"` 且 `multiplicity==1`）
 - **稠环/杂环 FG 收敛**：`express_ring_principal` 收敛为 FG 类别，词干由 `_ring_stem` 注入
 - **环外酸**（`facts.relation == "exocyclic"`）：`assembler._exocyclic_acid_names` → `cyclohexanecarboxylic acid`；多羧酸（multiplicity≥2）拼 …-di/tricarboxylic acid 且位次必带（P-65.2.2），苯单酸回落 benzoic acid 保留名
-- **环外醛**（`facts.relation == "exocyclic"`）：`assembler._exocyclic_aldehyde_names`（`assembler.py:170`）→ `cyclohexanecarbaldehyde`；多醛 → -dicarbaldehyde（P-66.6.1.1.3）；苯单醛仍走 benzaldehyde 保留名
+- **环外醛**（`facts.relation == "exocyclic"`）：`assembler._exocyclic_aldehyde_names`（`assembler.py:208`）→ `cyclohexanecarbaldehyde`；多醛 → -dicarbaldehyde（P-66.6.1.1.3）；苯单醛仍走 benzaldehyde 保留名
 - **环外酰胺**（`facts.relation == "exocyclic"`）：`assembler._exocyclic_amide_names` → `cyclohexanecarboxamide`
 - **环二酸立体化学**：`layer4/cyclo_relative_stereo.py`（`acid` + `scaffold_id=="carbocycle"` → cis/trans）
 
@@ -140,7 +144,7 @@ FG-环组合的命名由以下路径承担：
 | Layer | 文件 | 改动内容 |
 |-------|------|---------|
 | L1 | `layer1/ring_systems.py` | 特殊环检测（通常无需改动） |
-| L2 | `layer2/ring_scaffold.py` | 在 `_TEMPLATES` 新增 `{smiles, stem_en, stem_zh, naming_class}` |
+| L2 | `layer2/ring_scaffold.py` | 在 `_TEMPLATES` 新增 `{smiles, stem_en, stem_zh, naming_class}`（+ 可选 `locant_prefix`/`prefix_nh_conditional`）；非默认编号时另加 `_STANDARD_ORDERS`/`_STANDARD_LABELS` |
 | L2 | `layer2/kind_registry.py` | 通常无需改动（`_load_from_scaffold_specs` 自动注册） |
 | L4 | `layer4/numbering_engine.py` | 通常无需改动（P-14.4 候选管线自动适用） |
 | L5 | `layer5/assembler.py` | `_ring_stem` 词干注入 / exocyclic worker |
@@ -198,9 +202,9 @@ SMILES 测试用例示例：
 
 ### Q: ScaffoldSpec 和 KindMeta 的关系？
 
-`ScaffoldSpec` 是 stem 和编号的单一权威来源（Single Authority）。`kind_registry.py` 在 bootstrap 的唯一一步（`_load_from_scaffold_specs`，`:101`）读取所有 `ScaffoldSpec` 并转换为 `KindMeta` 注册。如果一个 kind 同时有 ScaffoldSpec 和手动 KindMeta 注册，ScaffoldSpec 覆盖前者（因为最后执行）。
+`ScaffoldSpec` 是 stem 和编号的单一权威来源（Single Authority）。`kind_registry.py` 在 bootstrap 的唯一一步（`_load_from_scaffold_specs`，`:102`）读取所有 `ScaffoldSpec` 并转换为 `KindMeta` 注册。如果一个 kind 同时有 ScaffoldSpec 和手动 KindMeta 注册，ScaffoldSpec 覆盖前者（因为最后执行）。
 
-> **源:** `src/namepredict/layer2/kind_registry.py:101`
+> **源:** `src/namepredict/layer2/kind_registry.py:102`
 
 ---
 

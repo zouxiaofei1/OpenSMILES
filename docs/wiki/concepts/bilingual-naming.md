@@ -26,7 +26,7 @@ Layer5: (en, zh) tuples → NameResult(en="ethanol", zh="乙醇")   ← 双语�
 
 ### 管线的 5 步双语流水线
 
-以 `assemble()` 函数（`src/namepredict/layer5/assembler.py:539`）为例，每一步都操作 `(en, zh)` 对：
+以 `assemble()` 函数（`src/namepredict/layer5/assembler.py:493`）为例，每一步都操作 `(en, zh)` 对：
 
 ```
 1. _names_for(kind, n, numbered)     → (en, zh) | None   母体名称
@@ -45,7 +45,7 @@ Layer5: (en, zh) tuples → NameResult(en="ethanol", zh="乙醇")   ← 双语�
 
 ### 母体名称派发中的双语约定
 
-`_names_for` 函数（`src/namepredict/layer5/assembler.py:409`）先查 `chain_engine._KIND_TABLE`（13 个 `_Chain` spec，按 `scaffold_id` 运行时注入环前缀/稠环词干），命中即返回；否则落到特殊 worker（`_exocyclic_acyl_names`/`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names`/`phenyl`）或 `_parent_stem_names` 回退。每个 worker 都是返回 `(en, zh)` 或 `None` 的双语函数——返回 `None` 时派发器降级到下一策略。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
+`_names_for` 函数（`src/namepredict/layer5/assembler.py:368`）先查 `chain_engine._KIND_TABLE`（13 个 `_Chain` spec，按 `scaffold_id` 运行时注入环前缀/稠环词干），命中即返回；`kind == "phosphate"` 例外——直接调 `layer5/phosphate.py` 的 `phosphate_names`（`assembler.py:370`）组装磷酸整名；其余落到特殊 worker（`_exocyclic_acyl_names`/`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names`/`phenyl`）或 `_parent_stem_names` 回退。每个 worker 都是返回 `(en, zh)` 或 `None` 的双语函数——返回 `None` 时派发器降级到下一策略。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
 
 ## 词干表：双语单词的单一权威来源
 
@@ -78,7 +78,18 @@ _ALKANE_ZH_BASE = {1: "甲烷",  2: "乙烷",   ..., 10: "癸烷"}
 | 腈 | chain_engine `nitrile` entry | `acetonitrile` | `乙腈` |
 | 酯 | chain_engine `ester` entry | `acetate` | `乙酸` |
 
-公开词干表 `ALKANE_EN`/`ALKANE_ZH` 通过 `_fill(fn, lo=1, hi=99)` 自动填充为完整字典（`src/namepredict/layer5/stems.py:139-150`），从 C1 覆盖到 C99，确保长链名称无需手动维护。中文的 C1/C2 酸、醛、酰胺、腈等使用保留名（如 `甲酸`/`乙酸`、`甲醛`/`乙醛`），与英文保留名（`formic acid`/`acetic acid`、`formaldehyde`/`acetaldehyde`）保持对应。
+公开词干表 `ALKANE_EN`/`ALKANE_ZH` 通过 `_fill(fn, lo=1, hi=99)` 自动填充为完整字典（`src/namepredict/layer5/stems.py:139`），从 C1 覆盖到 C99，确保长链名称无需手动维护。中文的 C1/C2 酸、醛、酰胺、腈等使用保留名（如 `甲酸`/`乙酸`、`甲醛`/`乙醛`），与英文保留名（`formic acid`/`acetic acid`、`formaldehyde`/`acetaldehyde`）保持对应。
+
+### amido 保留式的双语词形
+
+N-酰基取代基有两条表达路径，双语词形由 `constants.AMIDO_RETAINED`（`constants.py:93`）区分：
+
+| 路径 | 英文 | 中文 | 说明 |
+|---|---|---|---|
+| retained amido（P-66.1.1.4.3 方法 1） | `acetamido` / `formamido` / `benzamido` | `乙酰氨基` / `甲酰胺基` / `苯甲酰胺基` | 仅 acetyl/formyl/benzoyl 三词入表；中文按 P-66 CN 译本取「酰氨基」式 |
+| acylamino（方法 2） | `acetylamino` 等 | `…酰氨基` | 长链/烯酰/被取代苯甲酰/杂环羰酰，不入表 |
+
+amido 与 acylamino 的区分由**英文词干**承担（`AMIDO_RETAINED_EN` 供 L3 判定免括号），中文两者词形一致（`乙酰氨基`）。formyl/benzoyl 的中文（`甲酰胺基`/`苯甲酰胺基`）待与 gold 统一。
 
 ## 中英文命名差异
 
@@ -97,6 +108,7 @@ _ALKANE_ZH_BASE = {1: "甲烷",  2: "乙烷",   ..., 10: "癸烷"}
 | **酸后缀** | `-oic acid` / `-ic acid` | `酸` |
 | **酮后缀** | `-one` | `酮` |
 | **酯命名** | `methyl benzoate` (醇在前、酸在后) | `苯甲酸甲酯` (酸在前、醇在后) |
+| **磷酸酯命名** | `trimethyl phosphate` (烷基在前) | `磷酸三甲酯` (酸在前、醇在后) |
 | **盐命名** | `sodium acetate` (阳离子在前) | `乙酸钠` (阳离子在末尾) |
 | **盐酸盐** | `;hydrochloride` | `;盐酸盐` |
 | **立体化学** | `(E,2S)-` | `(E,2S)-` (与英文一致，不翻译) |
@@ -115,14 +127,27 @@ _ALKANE_ZH_BASE = {1: "甲烷",  2: "乙烷",   ..., 10: "癸烷"}
 
 这一差异在代码中由 `assembler.py` 的 `join_ester_name` 函数处理，分别构造英文和中文的语序。对于不饱和酯和带取代基的酯，中英文的插入位置也有不同的处理逻辑。
 
+### 磷酸/磷酸酯的双语词形
+
+磷酸/磷酸酯（`kind == "phosphate"`）由 L5 `layer5/phosphate.py` 的 `phosphate_names`（`phosphate.py:121`）整体组装，不经 `join_ester_name`：
+
+- **中性酯**：EN `{臂} {tail}`（`trimethyl phosphate`），ZH `磷酸{臂}酯`（`磷酸三甲酯`）——同样是"酸在前、醇在后"的中文语序
+- **酸式词尾**：`_tail_en`/`_hyd_zh` 按剩余酸式 H 数（`n_oh`）给出 `phosphate`/`hydrogen phosphate`/`dihydrogen phosphate` ↔ `磷酸`/`氢`/`二氢`
+- **碱金属盐**：EN 金属名前置（`disodium tridecyl phosphate`），ZH 金属名置末（`磷酸十三烷基酯 二钠盐`）——与羧酸盐相同的语序反转，由 `_salt_name`/`_ester_salt_names` 分别构造
+- **游离阴离子**（无抗衡金属）：`phosphate`/`磷酸根`、`dihydrogen phosphate`/`磷酸二氢根`，负电荷不标注
+
+中文臂词形分两档：`_arm_zh_root`（`phosphate.py:26`）对单字根（甲基→甲、苯基→苯）去「基」用于中性酯；`_arm_ester_zh`（`phosphate.py:59`）对多位纯中文数字根（十三基→十三烷基）补「烷」以对齐 gold。相同英文的臂由 `_group_arms`（`phosphate.py:34`）合并计数后按英文序排列。
+
 ### 盐命名的后缀位置反转
 
-盐的命名也体现出语序差异。英文将金属阳离子放在羧酸根名称之前作为前缀（`sodium dodecanoate`），而中文将金属名放在名称末尾（`十二酸钠`）。这一转换由 `stems.py` 中的 `maybe_metal_salt_names` 函数（`src/namepredict/layer5/stems.py:156-161`）完成：
+盐的命名也体现出语序差异。英文将金属阳离子放在羧酸根名称之前作为前缀（`sodium dodecanoate`），而中文将金属名放在名称末尾（`十二酸钠`）。这一转换由 `stems.py` 中的 `maybe_metal_salt_names` 函数（`src/namepredict/layer5/stems.py:130`）完成：
 
 - `_salt_en`：将金属名作为前缀拼接到英文名（仅当英文名以 `ate` 结尾时）
 - `_salt_zh`：将金属中文名替换中文名的末尾 `酸根` → `酸{金属}`
 
 盐酸盐（HCl salt）采用不同的机制：通过 `acid_salt` 字段追加 `;hydrochloride` / `;盐酸盐` 后缀。
+
+磷酸/磷酸酯是例外：盐形态（含 `disodium … phosphate` / `磷酸…酯 二钠盐` 语序）由 L5 `phosphate_names` 在整名内组装，`namer._apply_salt_suffix`（`namer.py:242`）对 `parent_kind == "phosphate"` 直接返回，不再追加通用盐后缀。
 
 ### 取代基前缀的排序一致性
 
@@ -130,9 +155,9 @@ _ALKANE_ZH_BASE = {1: "甲烷",  2: "乙烷",   ..., 10: "癸烷"}
 
 ## `zh_stem` 转换
 
-`zh_stem` 函数（`src/namepredict/layer5/stems.py:44-49`）是一个关键的中文词干提取工具。它从中文全名中剥离末端的官能团/母体后缀，返回"裸词干"供后续拼接。
+`zh_stem` 函数（`src/namepredict/layer5/stems.py:32-38`）是一个关键的中文词干提取工具。它从中文全名中剥离末端的官能团/母体后缀，返回"裸词干"供后续拼接。
 
-**后缀剥离表**（`src/namepredict/layer5/stems.py:30`）：
+**后缀剥离表**（`src/namepredict/layer5/stems.py:27`）：
 
 ```python
 _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈", "胺", "酮", "烯", "炔")
@@ -168,14 +193,14 @@ _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈",
 **传播路径：**
 
 ```
-SMILESNNamer(name_mode="general")         # namer.py:222
-  → _pipeline(smiles, t0, name_mode)       # namer.py:203
-    → _name_mol(mol, ..., name_mode)       # namer.py:187
-      → _run_candidates(info, ..., name_mode)  # namer.py:145
-        → _prepare_candidate(info, parent, name_mode)  # namer.py:112
+SMILESNNamer(name_mode="general")         # namer.py:336
+  → _pipeline(smiles, t0, name_mode)       # namer.py:288
+    → _name_mol(mol, ..., name_mode)       # namer.py:258
+      → _run_candidates(info, ..., name_mode)  # namer.py:231
+        → _prepare_candidate(info, parent, name_mode)  # namer.py:142
           → extract_substituents(info, parent, name_mode)  # Layer3
-        → _assemble_candidate(parent, subst, ..., name_mode)  # namer.py:104
-          → _ok_result(numbered, ..., name_mode)  # namer.py:68
+        → _assemble_candidate(parent, subst, ..., name_mode)  # namer.py:129
+          → _ok_result(numbered, ..., name_mode)  # namer.py:80
             → numbered["name_mode"] = name_mode
 ```
 
@@ -183,7 +208,7 @@ SMILESNNamer(name_mode="general")         # namer.py:222
 
 ## 盐元数据的双语结构
 
-Layer0 的 `dissociate_salt` 函数（`src/namepredict/layer0/salt.py:90-96`）在检测到盐结构时，返回的元数据字典包含完整的中英双语字段：
+Layer0 的 `dissociate_salt` 函数（`src/namepredict/layer0/salt.py:95`）在检测到盐结构时，返回的元数据字典包含完整的中英双语字段：
 
 | 字段 | 示例值 | 说明 |
 |------|--------|------|
@@ -193,7 +218,7 @@ Layer0 的 `dissociate_salt` 函数（`src/namepredict/layer0/salt.py:90-96`）�
 | `acid_salt` | `"hydrochloride"` | 英文酸盐后缀 |
 | `acid_salt_zh` | `"盐酸盐"` | 中文酸盐后缀 |
 
-这些元数据在 `_name_mol` 中注入 `NameResult.meta["salt"]`（`src/namepredict/namer.py:198-199`），供 Layer5 组装器在生成中英双语名称时追加盐后缀。由于盐解离在 Layer1 之前完成，Layer1-5 处理的始终是解离后的纯有机片段，各层代码无需关心盐的存在。
+这些元数据在 `_name_mol` 中先注入 `info["salt"]`（`src/namepredict/namer.py:280`，磷酸母体的盐门控与 `salt_meta` 来源），命名成功后再注入 `NameResult.meta["salt"]`（`src/namepredict/namer.py:281-282`），供 Layer5 组装器在生成中英双语名称时追加盐后缀。由于盐解离在 Layer1 之前完成，Layer1-5 处理的始终是解离后的纯有机片段；除磷酸需按 `n_om` 与金属数配平外，各层代码无需关心盐的存在。
 
 ## 设计原则总结
 

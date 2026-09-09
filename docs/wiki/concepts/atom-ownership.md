@@ -13,7 +13,7 @@ IUPAC 命名的本质是：选定一个母体结构作为骨架，然后将分�
 
 原子归属由 **Layer2 设置边界**，**Layer3 在边界外提取取代基**，**Coverage Ledger 在 Layer3 输出后进行最终验证**。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:226-228`
+> **源:** `src/namepredict/layer2/parent_ownership.py:279-282`
 > ```python
 > def compute_owned_atoms(parent: dict, mol: Mol) -> frozenset[int]:
 >     """Union chain + kind-specific FG atoms (terminal ownership set)."""
@@ -34,13 +34,13 @@ IUPAC 命名的本质是：选定一个母体结构作为骨架，然后将分�
 owned_atoms = chain_atoms ∪ fg_atoms
 ```
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:226-228`
+> **源:** `src/namepredict/layer2/parent_ownership.py:279-282`
 
 ### 不可变性
 
 `owned_atoms` 被存储为 Python `frozenset[int]` 类型，在 Layer2 最终确定后 **不可修改**。这个不可变性保证了 Layer3 提取取代基时不会意外地修改母体边界，也避免了官能团原子的重复计入。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:231-235`
+> **源:** `src/namepredict/layer2/parent_ownership.py:284-287`
 > ```python
 > def finalize_parent_ownership(parent: dict, mol: Mol) -> dict:
 >     if isinstance(parent.get("owned_atoms"), frozenset):
@@ -70,7 +70,7 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 羧酸母体拥有 **每个羧基碳 + C=O 双键氧 + O-H 单键氧**。支持单羧酸（`cooh_c_idx`）和多羧酸（`cooh_c_idxs`）两种情况。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:40-59`
+> **源:** `src/namepredict/layer2/parent_ownership.py:45-68`
 
 实际归属: `{C_carboxyl} ∪ {=O} ∪ {-OH}` 对于每个羧基。`_acid_o_atoms()` 通过检测碳原子的双键氧邻居 (`_dbl_o_idx`) 和单键氧邻居 (`_single_o_idx`) 来确定这两个氧原子，`_acid_fg_atoms()` 遍历 `_cooh_c_idxs()` 合并所有羧基。
 
@@ -86,7 +86,7 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 酮母体拥有 **羰基碳 + C=O 双键氧**。对于乙酰基类酮（如 acetophenone），还会额外包含 **乙酰甲基碳** (`acetyl_methyl_idx`)。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:109-117`
+> **源:** `src/namepredict/layer2/parent_ownership.py:130-140`
 
 归属: `{C_carbonyl} ∪ {=O} ∪ {acetyl_methyl}`（如存在）。
 
@@ -94,7 +94,7 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 醇类母体拥有 **每个连接碳 + 对应的羟基氧**。支持单醇（`oh_c_idx`）和多元醇（`oh_c_idxs`）。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:97-107`
+> **源:** `src/namepredict/layer2/parent_ownership.py:112-128`
 
 归属（每个 OH 基团）: `{C_attach} ∪ {-OH}`。
 
@@ -102,7 +102,7 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 胺类母体拥有 **每个连接碳 + 与其单个键合的氮原子**。支持单胺和多胺。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:119-131`
+> **源:** `src/namepredict/layer2/parent_ownership.py:142-157`
 
 归属: `{C_attach} ∪ {N}`。注意：氮上连接的氢原子不算重原子，不计入 `owned_atoms`；氮上若连接额外的碳链取代基，那些碳在母体边界之外，将由 Layer3 提取。
 
@@ -110,7 +110,7 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 酰胺母体拥有 **酰胺羰基碳 + C=O 双键氧 + 酰胺氮**。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:27-34`
+> **源:** `src/namepredict/layer2/parent_ownership.py:30-38`
 
 归属: `{C_amide} ∪ {=O} ∪ {N}`。`_amide_n_from_c()` 通过查找羰基碳上原子序数为 7 的邻居来确定酰胺氮。
 
@@ -118,7 +118,7 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 酯母体拥有 **酯羰基碳 + C=O 双键氧 + 酯氧 (-O-)**。当前实现只覆盖单酯/苯甲酸酯（`ester_c_idx`），不纳入烷氧臂原子。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:157-178`
+> **源:** `src/namepredict/layer2/parent_ownership.py:185-208`
 
 归属: `{C_ester} ∪ {=O} ∪ {-O-}`。`_one_ester_fg` 加入羰基碳、双键氧与单键酯氧（acid 侧，不含 alkoxy 臂）。
 
@@ -126,7 +126,7 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 醚母体拥有 **醚氧 + 两侧碳臂完整碳链**。两侧碳臂均通过 `_longest_from` 走最长路径获取。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:87-90`
+> **源:** `src/namepredict/layer2/parent_ownership.py:84-105`
 
 归属: `{O_ether} ∪ {arm1_atoms} ∪ {arm2_atoms}`。
 
@@ -134,13 +134,13 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 硫醚母体的归属模式与醚完全对称，将 O 替换为 S：`{S_sulfide} ∪ {arm1_atoms} ∪ {arm2_atoms}`。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:92-95`
+> **源:** `src/namepredict/layer2/parent_ownership.py:90-110`
 
 #### 硫醇 (Thiol)
 
 硫醇母体拥有 **连接碳 + 巯基硫**。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:145-154`
+> **源:** `src/namepredict/layer2/parent_ownership.py:171-183`
 
 归属: `{C_attach} ∪ {S}`。
 
@@ -148,7 +148,7 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 腈母体拥有 **氰基碳 + 三键氮**。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:133-143`
+> **源:** `src/namepredict/layer2/parent_ownership.py:159-169`
 
 归属: `{C_nitrile} ∪ {N≡}`。
 
@@ -156,7 +156,7 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 酸酐母体拥有 **两个酰基碳 + 桥氧 + 两个羰基氧**。
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:181-190`
+> **源:** `src/namepredict/layer2/parent_ownership.py:210-220`
 
 归属: `{C_acyl1} ∪ {C_acyl2} ∪ {=O1} ∪ {=O2} ∪ {O_bridge}`。
 
@@ -176,13 +176,21 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 归属: `{C_acyl_head} ∪ {=O}`。
 
+#### 磷酸 (Phosphate)
+
+磷酸/磷酸酯母体（`kind == "phosphate"`）拥有 **P 中心 + 全部 4 个氧**（1 个 =O 与 3 个单键 O，含 O–R 桥氧）。桥氧归母体，O 上的烷基臂在母体边界之外，由 Layer3 以 `o_side` 取代基提取（`claim_extract._ESTER_O_SIDE_KINDS` 含 `"phosphate"`），最终由 L5 `phosphate_names` 拼进磷酸酯整名。
+
+> **源:** `src/namepredict/layer2/parent_ownership.py:242-252`
+
+归属: `{P} ∪ {=O} ∪ {O_single × 3}`。
+
 ### FG 原子聚合
 
 所有 FG 特定的原子集合通过 `_kind_fg_atoms()` 函数统一聚合并集。它的实现是纯"字段驱动"的——检查 parent 字典中是否存在某个 FG 定位字段，若存在则调用对应的子函数计算原子集，最后取所有非空子集的并集：
 
-> **源:** `src/namepredict/layer2/parent_ownership.py:203-224`
+> **源:** `src/namepredict/layer2/parent_ownership.py:254-277`
 
-> 注：13 个扩展 FG（磺酸/亚砜/砜/磷酸/硼酸/氨基甲酸酯/脲/胍/肼等）已从 layer1 检测移除，其归属函数（`_sulfonic_*`/`_sulfoxide_*`/`_phosphate_*`/`_boronic_*`/`_carbamate_*`/`_urea_*` 等）随之删除。
+> 注：12 个扩展 FG（磺酸/亚砜/砜/硼酸/氨基甲酸酯/脲/胍/肼等）未实现，其归属函数（`_sulfonic_*`/`_sulfoxide_*`/`_boronic_*`/`_carbamate_*`/`_urea_*` 等）不存在；磷酸已实现（`_phosphate_fg_atoms`，`parent_ownership.py:242`）。
 
 这种字段驱动设计使得添加新的 FG 类型只需新增两个函数（FG 原子计算函数 + 条件判断），不影响其他类型的逻辑。
 
@@ -203,7 +211,7 @@ class ClaimedBlock:
     atoms: frozenset[int]  # 取代基包含的所有重原子
 ```
 
-> **源:** `src/namepredict/layer3/claimable_block.py:20-25`
+> **源:** `src/namepredict/layer3/claimable_block.py:23-28`
 
 `ClaimedBlock` 是一个冻结的 dataclass，不可变，保证在命名过程中不会被意外修改。
 
@@ -220,7 +228,7 @@ class ClaimedBlock:
 | `ETHER_O` | 醚氧上的连接 (已被取代基臂占据) | 连接原子是 O，恰好两个碳邻居（无氢邻居） |
 | `OTHER` | 其他杂原子的连接 | 不满足以上任何条件 |
 
-> **源:** `src/namepredict/layer3/claimable_block.py:12-18, 52-93`
+> **源:** `src/namepredict/layer3/claimable_block.py:12-20, 84-96`
 
 SideSlot 的推导由 `derive_slot()` 函数完成，它仅根据母体侧已归属原子的化学环境判断槽位类型。例如，检测酰胺氮的逻辑 (`_is_amide_n`) 会验证：该原子为氮 (Z=7)、单键连接到一个已归属的羰基碳，且该碳带有双键氧。`AMINE_N` 的推导 (`_is_amine_n`) 验证：非芳香 N 至少一个邻居是 owned 内非羰基碳——供 L5 生成 `N-` 前缀取代基（P-62.2）。
 
@@ -233,11 +241,11 @@ SideSlot 的推导由 `derive_slot()` 函数完成，它仅根据母体侧已归
 3. 通过 `cut_block()` 将整个外部组件从 root 开始切割出来
 4. 验证该组件仅有 **唯一一个** 连接回母体的点（多连接点=桥连=不是简单取代基，返回 None）
 
-> **源:** `src/namepredict/layer3/claimable_block.py:96-112`
+> **源:** `src/namepredict/layer3/claimable_block.py:116-133`
 
 然后 `iter_claims()` 遍历所有外部重原子组件（通过 `side_roots()` 获取所有母体外的起点，`cut_block()` 切割出组件，`_unique_components()` 去重），并为每个组件创建 ClaimedBlock。结果按 `(attach_parent, root, slot)` 三元组排序，保证输出顺序确定。
 
-> **源:** `src/namepredict/layer3/claimable_block.py:152-159`
+> **源:** `src/namepredict/layer3/claimable_block.py:189-196`
 
 ## Coverage Ledger: Gap 与 Overlap 验证
 
@@ -265,7 +273,7 @@ class CoverageLedger:
         return not self.gap and not self.overlap
 ```
 
-> **源:** `src/namepredict/layer3/coverage.py:12-21`
+> **源:** `src/namepredict/layer3/coverage.py:13-23`
 
 ### 构建过程
 
@@ -277,7 +285,7 @@ class CoverageLedger:
 4. 计算每个原子的"被计数次数"（在 owned_atoms 中计 1 次，在每个取代基中计对应的次数）
 5. overlap = 计数次数 > 1 的原子集合
 
-> **源:** `src/namepredict/layer3/coverage.py:51-66`
+> **源:** `src/namepredict/layer3/coverage.py:57-72`
 
 ### gap 与 overlap 的含义
 
@@ -297,7 +305,7 @@ subst = extract_substituents(info, parent, name_mode=name_mode)
 complete = _ledger_complete(mol, parent["owned_atoms"], subst)
 ```
 
-> **源:** `src/namepredict/namer.py:119-121`
+> **源:** `src/namepredict/namer.py:152-153`
 
 只有当 `CoverageLedger.complete` 为 `True` 时（无 gap、无 overlap），命名流程才会继续进入编号和组装阶段。
 
