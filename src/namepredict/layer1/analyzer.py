@@ -50,11 +50,21 @@ def _is_amide_carbon(atom) -> bool:
         return False
     return _amide_n_info(atom) is not None
 
+def _has_ring_n_neighbor(atom) -> bool:
+    """判断原子是否连有环内氮（环内 N 的酰基按酮命名，见 _is_ketone_carbon）。"""
+    return any(n.GetAtomicNum() == N and n.IsInRing() for n in atom.GetNeighbors())
+
 def _is_ketone_carbon(atom) -> bool:
-    """判断碳是否为酮羰基碳（非酸、非酰胺、双碳邻居）。"""
+    """判断碳是否为酮羰基碳（非酸、非酰胺）；双碳邻居，或单碳邻居 + 环内 N（N-酰基环胺 → ethanone 型母体）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
-    if _has_acid_o_neighbor(atom) or _carbon_neighbor_count(atom) != 2:
+    if _has_acid_o_neighbor(atom):
+        return False
+    n_c = _carbon_neighbor_count(atom)
+    if n_c == 1:  # 环外单碳羰基才作酮；环内假醛（吡啶嗪酮/吡唑酮等）留给 _is_aldehyde_carbon 兜底，避免同一羰基双计 oxo。
+        if not _has_ring_n_neighbor(atom) or _is_aldehyde_carbon(atom):
+            return False
+    elif n_c != 2:
         return False
     return _amide_n_of(atom) is None and _anhydride_o_of(atom) is None
 
@@ -157,12 +167,14 @@ def _ald_blocked(atom) -> bool:
     return _anhydride_o_of(atom) is not None or _amide_n_of(atom) is not None
 
 def _is_aldehyde_carbon(atom) -> bool:
-    """判断碳是否为醛羰基碳（单碳邻居且未被阻断）。"""
+    """判断碳是否为醛羰基碳（单碳邻居且未被阻断）；环外羰基须带 H（否则是 N-酰基/其他羰基，不作醛），环内羰基沿用原判定作 oxo 前缀来源。"""
     if atom.GetAtomicNum() != C or atom.GetTotalDegree() < 3:
         return False
     if not _has_double_bonded_o(atom) or _has_acid_o_neighbor(atom):
         return False
     if _carbon_neighbor_count(atom) > 1:
+        return False
+    if not atom.IsInRing() and atom.GetTotalNumHs() < 1:
         return False
     return not _ald_blocked(atom)
 

@@ -94,9 +94,9 @@ def _amide_n_substituent_ok(x) -> bool:
 
 
 def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
-    """返回 `carbon` 上酰胺 N 的 (n_idx, 邻居 C 索引列表)；C 之外的 N-羟基 O 只参与判定不进列表。"""
+    """返回 `carbon` 上酰胺 N 的 (n_idx, 邻居 C 索引列表)；环内 N 不作酰胺（P-66.1.1，其酰基衍生物按酮命名，如 1-(pyrrolidin-1-yl)ethanone），C 之外的 N-羟基 O 只参与判定不进列表。"""
     for n in carbon.GetNeighbors():
-        if n.GetAtomicNum() != N or not _amide_n_single(carbon, n):
+        if n.GetAtomicNum() != N or n.IsInRing() or not _amide_n_single(carbon, n):
             continue
         o = _amide_n_rest(n, carbon)
         if len(o) <= 2 and all(_amide_n_substituent_ok(x) for x in o):

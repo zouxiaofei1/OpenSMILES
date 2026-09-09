@@ -45,7 +45,10 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     """判断取代基位次可否省略（环烷烃/苯单取代、酰胺 N- 等情形）。"""
     if kind == "radical":  # 自由基母体：连接点隐含为 locant 1，每个叶子保留位次（4-chlorophenyl）；单碳链（methyl 型）取代基都在唯一 C1，位次无信息量故省略（(phenyloxy)methyl）。
         return n_carbons == 1
-    if n_carbons <= 1 or (  # 纯烃环单取代位次隐含：环烷烃/苯 base 的 kind 均收敛为 alkane，环系由 scaffold_id 承载；环烯取代基位次必须保留（1-methylcyclohexene）。
+    if n_carbons <= 1:  # 单碳母体位次隐含省略；但 N- 型与 C- 型取代基共存时 C 侧必须带数字位次消歧（P-62.2.4.1.2：胺的数字位次含单核母体的 '1'，与 'N' 位次并引，1,1-dimethoxy-N,N-dimethylmethanamine）。
+        kinds = {(s.get("kind") or "") for s in substituents}
+        return not (kinds & _N_PREFIX_KINDS and kinds - _N_PREFIX_KINDS)
+    if (  # 纯烃环单取代位次隐含：环烷烃/苯 base 的 kind 均收敛为 alkane，环系由 scaffold_id 承载；环烯取代基位次必须保留（1-methylcyclohexene）。
         kind == "alkane" and scaffold in ("carbocycle", "benzene") and not has_ene
     ) and len(substituents) == 1:
         return True
