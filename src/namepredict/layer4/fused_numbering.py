@@ -150,8 +150,14 @@ def _locant_tuples(chain: list[int], labels: list[str], atoms: list[int]) -> tup
     return tuple(locs)
 
 
-def number_fused_system(mol, rings, coords) -> tuple[list[int], list[str]] | None:
-    """P-25.3.3 稠环编号: 依准则(a)-(d) 收窄; 返回 (chain, labels) 或 None。coords 可为单 dict 或平局候选列表，一并枚举跨镜像收窄。"""
+def number_fused_system(mol, rings, coords, sub_layers=None,
+                        alpha_subs=None) -> tuple[list[int], list[str]] | None:
+    """P-25.3.3 稠环编号: 依准则(a)-(d) 收窄; 返回 (chain, labels) 或 None。coords 可为单 dict 或平局候选列表，一并枚举跨镜像收窄。
+
+    sub_layers 为按优先级排列的环外附着原子组（如 [游离价连接点]、[principal 附着原子]、[取代基附着原子]）：
+    纯碳环上 (a)-(d) 全平局（萘的镜像取向位次集合相同），须逐层做位次集合最小化收窄，否则编号方向随候选枚举顺序漂移。
+    alpha_subs 为 [(字母序键, 附着原子)]：取代基位次集合仍相同时按 P-14.5 把最低位次给字母序最前者。
+    """
     fused = fused_atoms(rings)
     heteros = _hetero_set(mol, fused) | _hetero_set(mol, set().union(*rings))
     coords_list = [coords] if isinstance(coords, dict) else list(coords)
@@ -182,4 +188,16 @@ def number_fused_system(mol, rings, coords) -> tuple[list[int], list[str]] | Non
         cands = _keep(cands, fused_carbons)  # (c) 低位次给稠合碳
     if fused_heteros:
         cands = _keep(cands, fused_heteros)  # (d) 低位次给稠合杂原子
+    for layer in (sub_layers or ()):
+        if len(cands) <= 1:
+            break
+        if layer:
+            cands = _keep(cands, sorted(layer))  # 镜像平局: 逐层按位次集合最小化收窄
+    if len(cands) > 1 and alpha_subs:
+        # P-14.5: 位次集合仍相同时，字母序最前的取代基得最低位次
+        def _alpha_key(c):
+            return tuple(sorted((k, _label_key(c[1][c[0].index(a)]))
+                                for k, a in alpha_subs if a in c[0]))
+        best = min(_alpha_key(c) for c in cands)
+        cands = [c for c in cands if _alpha_key(c) == best]
     return cands[0]

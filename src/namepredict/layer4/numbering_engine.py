@@ -1,6 +1,11 @@
 """L4 定向编号引擎：按 P-14.4 规则筛出链/环原子顺序候选。"""
 from __future__ import annotations
 
+# P-25.3.3：这些保留骨架按传统编号，不走 P-25.3.3.1 的优选取向自动编号。
+# xanthene 及其硫属类似物、cyclopenta[a]phenanthrene 尚未登记模板，登记时须一并列入。
+_TRADITIONAL_NUMBERING_IDS = frozenset({
+    "anthracene", "phenanthrene", "acridine", "carbazole", "purine",
+})
 
 
 # ── 候选生成 ──────────────────────────────────────────────────
@@ -234,10 +239,11 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
     return min(chains, key=lambda std: tuple(sorted(std.index(a) + 1 for a in subs)))
 
 
-def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
-    """P-25.3.3 稠环编号（护栏：仅 scaffold_id=None/carbocycle/fused_hetero 的全芳香多环走优选取向+外周编号；registered 模板保持固定编号/P-14.4 不被接管）。"""
+def _fused_numbering(parent: dict, chain: list[int],
+                     substituents: list | None = None) -> list[int] | None:
+    """P-25.3.3 稠环编号（护栏：P-25.3.3 传统编号例外骨架保持固定编号，其余全芳香多环走优选取向+外周编号）。"""
     sid = parent.get("scaffold_id")
-    if sid not in (None, "carbocycle", "fused_hetero"):
+    if sid in _TRADITIONAL_NUMBERING_IDS:
         return None
     mol = parent.get("mol")
     if mol is None or not chain or not all(mol.GetAtomWithIdx(a).GetIsAromatic() for a in chain):
@@ -249,19 +255,41 @@ def _fused_numbering(parent: dict, chain: list[int]) -> list[int] | None:
     if not systems:
         return None
     system = systems[0]
-    if len(system.get("sssr_indices") or []) < 2:
+    sssr = list(system.get("sssr_indices") or [])
+    if len(sssr) < 2:
         return None  # 单环走 P-14.4 通用枚举
-    # 仅取稠合系统自身环（sssr_indices 与 fusion_edges 同为全分子 SSSR 索引）：
-    # 传入全分子 AtomRings 会把取代基上的无关环也算进 layout，orientation 必失败
-    # → 退回通用单环枚举把桥头碳当普通数字位次（chebi-300 thieno 甲基 6,7 应 5,6）。
+    # 仅取稠合系统自身环（传入全分子 AtomRings 会把取代基上的无关环也算进 layout，
+    # orientation 必失败 → 退回通用单环枚举把桥头碳当普通数字位次，chebi-300 thieno 甲基 6,7 应 5,6）。
+    # rings 过滤后索引重排，fusion_edges 的 SSSR 索引须同步重映射，否则分子含额外环时
+    # horizontal_rows 取不到环索引直接 KeyError（被候选重试吞掉，静默退化成只命名侧链）。
     atom_rings = list(mol.GetRingInfo().AtomRings())
-    rings = [atom_rings[i] for i in system["sssr_indices"]]
+    rings = [atom_rings[i] for i in sssr]
+    idx_map = {orig: new for new, orig in enumerate(sssr)}
+    fusion_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in (system.get("fusion_edges") or [])
+                    if i in idx_map and j in idx_map]
     # print("riings",rings)
-    orients = preferred_orientations(mol, rings, system["fusion_edges"])
+    orients = preferred_orientations(mol, rings, fusion_edges)
     # print(orients)
     if not orients:
         return None
-    result = number_fused_system(mol, rings, [o.coord_dict() for o in orients])
+    # 环外附着原子按优先级分层：纯碳环上准则 (a)-(d) 全平局，靠它逐层收窄镜像取向。
+    chain_set = set(chain)
+    layers: list[list[int]] = []
+    radical = parent.get("radical_c_idx")
+    if radical in chain_set:
+        layers.append([radical])  # P-29: 取代基游离价连接点优先得最低位次
+    principal_atoms = sorted(a for a in (parent.get("principal_attachment_atoms") or [])
+                             if a in chain_set)
+    if principal_atoms:
+        layers.append(principal_atoms)  # P-14.4(c): principal 特征基团优先于取代基
+    sub_atoms = sorted(s["attach_idx"] for s in (substituents or [])
+                       if s.get("attach_idx") in chain_set)
+    if sub_atoms:
+        layers.append(sub_atoms)  # P-14.4(f): 取代基位次集合最小化
+    from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+    alpha_subs = [(alkyl_alpha_key(s.get("en") or ""), s["attach_idx"])
+                  for s in (substituents or []) if s.get("attach_idx") in chain_set]
+    result = number_fused_system(mol, rings, [o.coord_dict() for o in orients], layers, alpha_subs)
     if result is None:
         return None
     fused_chain, labels = result
@@ -281,7 +309,7 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     fixed = _fixed_numbering(parent, chain, substituents)
     if fixed is not None:
         return fixed
-    fused = _fused_numbering(parent, chain)
+    fused = _fused_numbering(parent, chain, substituents)
     if fused is not None:
         return fused
     mol = parent.get("mol")
