@@ -11,6 +11,7 @@ class FunctionalGroupClass(str, Enum):
     RADICAL = "radical"
     ACYL = "acyl"
     ACID = "acid"
+    PHOSPHATE = "phosphate"
     ANHYDRIDE = "anhydride"
     ESTER = "ester"
     ACYL_HALIDE = "acyl_halide"

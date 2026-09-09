@@ -208,13 +208,7 @@ def _principal_multiple_edges(mol: Mol, occurrences) -> set[frozenset[int]]:
 
 
 def p44_4_unsaturation_key(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -> tuple[int, int]:
-    """P-44.4 不饱和度键：(多重键数, 双键数)。
-
-    多重键统计骨架内所有多重键：非芳香 C=C/C≡C/C=N 等按实际键级计入；
-    芳香键按 Kekulé 双键当量计入（每 2 个芳香键折 1 个双键，如苯=3、嘧啶=3），
-    使不饱和芳香环优先于同环数饱和环（P-44.4.1.1 标准 a）。
-    主官能团特征原子间的多重键不计入（避免与 P-44.1.1 特征基团竞争）。
-    """
+    """P-44.4 不饱和度键：(多重键数, 双键数)。 """
     atoms, excluded = set(skeleton.atom_ids), _principal_multiple_edges(mol, occurrences)
     non_arom: list = []
     n_arom = 0

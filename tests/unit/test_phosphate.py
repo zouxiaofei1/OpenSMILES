@@ -1,14 +1,14 @@
 # IUPAC: P-67.1.3
-# Layer: L2,L3,L5
-"""磷酸整名（kind=phosphate 真集成，P 中心无机功能母体 + O-侧递归命名）。
+# Layer: L1,L2,L3,L5
+"""磷酸整名（kind=phosphate 正规 FgSpec 集成，P 中心无机功能母体 + O-侧递归命名）。
 
-磷酸作为整分子主官能团母体 kind=phosphate：链=[P 单原子]、owned={P+4O}，
-O–R 臂由 L3 iter_claims 作 o_side 取代基整体递归命名（任意复杂：支链/芳环/
-含 OH/胺/手性/糖环），L5 phosphate_names 按 n_oh 插 hydrogen/dihydrogen 组装。
+磷酸注册为 FG_SPECS 的 phosphate 类（p41=9/path=(1)，P-67.1.3.2 归入酯类），
+走 L1 检测 → L2 P-44 选择 → L5 phosphate_names 组装：链=[P 单原子]、
+owned={P+4O}，O–R 臂由 L3 iter_claims 作 o_side 取代基整体递归命名（任意复杂：
+支链/芳环/含 OH/胺/手性/糖环），L5 按 n_oh 插 hydrogen/dihydrogen 组装。
 
-此前实现把磷酸做在 namer 顶层短路、O-侧退化为直链烷基表；本测试锁定真 kind
-路径下的任意复杂度 O-侧。臂内更高 FG（COOH 等 → phosphonooxy 降级）与
-C–P 膦酸 / P–O–P / P(III) 不在本轮，谓词返回 None 放行旧路径。
+臂内更高优先级 FG 存在时磷酸落选、降级为 phosphonooxy/膦酸氧基前缀
+（P-67.1.5.1）；C–P 膦酸 / P–O–P 焦磷酸 / P(III) 不产出磷酸条目。
 """
 from __future__ import annotations
 
@@ -45,6 +45,14 @@ POSITIVE = [
     ("O=P(O)(O)Oc1ncccc1", "pyridin-2-yl dihydrogen phosphate", None),
     ("O=P(O)(O)Oc1nccs1", "1,3-thiazol-2-yl dihydrogen phosphate", None),
     ("O=P(O)(O)OCc1ccncc1", "pyridin-4-ylmethyl dihydrogen phosphate", None),
+    # 臂内/分子内更高优先级 FG（羧酸、羧酸酯）→ 磷酸落选并降级为 phosphonooxy 前缀（P-67.1.5.1）
+    ("O=C(O)COP(=O)(O)O", "2-phosphonooxyacetic acid", "2-膦酸氧基乙酸"),
+    ("CCCCCCCC[C@H](O)[C@H](CCCCCCCC(=O)O)OP(=O)(O)O",
+     "(9S,10S)-10-hydroxy-9-phosphonooxyoctadecanoic acid", "(9S,10S)-10-羟基-9-膦酸氧基十八酸"),
+    ("CCCCCCCC/C=C\\CCCCCCCC(=O)OCC(=O)COP(=O)(O)O",
+     "2-oxo-3-phosphonooxypropyl (9Z)-octadec-9-enoate", None),
+    ("CCCCCCCCCCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCCCC)COP(=O)(O)O",
+     "(2R)-1-decanoyloxy-3-phosphonooxypropan-2-yl octadecanoate", None),
 ]
 
 
@@ -74,13 +82,11 @@ def test_non_phosphate_guard(smiles: str, en: str, zh: str | None) -> None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
 
 
-# 结构近邻负例：detector 必须返回 None（不命中磷酸整名），维持旧行为。
-# P(III) / P–O–P 焦磷酸 / P–C 膦酸 / 臂内更高 FG（COOH → phosphonooxy 属 M2）。
+# 结构近邻负例：不产出磷酸条目。P(III) / P–O–P 焦磷酸 / P–C 膦酸。
 EXCLUDED = [
     "OP(O)O",                 # 亚磷酸 P(III)，无 P=O
     "O=P(O)(O)OP(=O)(O)O",   # 焦磷酸 P–O–P
     "CCP(=O)(O)O",            # 膦酸 P–C
-    "O=C(O)COP(=O)(O)O",      # 臂内含 COOH（需磷酸降级，非整分子磷酸）
 ]
 
 
@@ -88,8 +94,8 @@ EXCLUDED = [
 def test_phosphate_detector_excludes(smiles: str) -> None:
     from namepredict.layer0.preprocessor import preprocess
     from namepredict.layer0.salt import dissociate_salt
-    from namepredict.layer1.phosphate import detect_phosphate_whole
+    from namepredict.layer1.phosphate import phosphate_entries
 
     mol = preprocess(smiles)
     organic, _salt = dissociate_salt(mol)
-    assert detect_phosphate_whole(organic) is None, smiles
+    assert phosphate_entries(organic) == [], smiles

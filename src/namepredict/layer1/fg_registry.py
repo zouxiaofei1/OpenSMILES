@@ -47,6 +47,12 @@ FG_SPECS: tuple[FgSpec, ...] = (
     FgSpec("acid", "carboxyls", p41=7, path=(1,), compat=14, anchors=("c_idx",),
            parent_anchor_fields=("cooh_c_idx", "cooh_c_idxs"),
            chain=True, multi=True, rs=True, keep_locant=True, locant_kind="acid"),
+    # 磷酸/磷酸酯。P(=O)(O)₃ 中心：n_arms=0 为游离磷酸（P-41 类别 7d），n_arms≥1 为磷酸酯
+    # （P-67.1.3.2 归入类别 9 酯）。检测器不区分两者，故按占多数的酯形态登记 p41=9、path=(1,)，
+    # 使同类内羧酸酯（path=()）优先——含羧酸酯或羧酸（7a < 9）时磷酸降级为 phosphonooxy 前缀
+    # （P-67.1.5.1）。游离磷酸无竞争 FG，分类差异不影响选择结果。
+    FgSpec("phosphate", "phosphates", p41=9, path=(1,), compat=10, anchors=("p_idx",),
+           parent_anchor_fields=("p_idx", "p_idxs"), chain=True),
     FgSpec("anhydride", "anhydrides", p41=8, compat=12),
     FgSpec("ester", "esters", p41=9, compat=11, anchors=("c_idx",),
            parent_anchor_fields=("ester_c_idx", "ester_c_idxs"),

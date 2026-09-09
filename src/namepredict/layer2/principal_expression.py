@@ -297,6 +297,26 @@ def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> d
     return {**fields, **_unsat_bond_fields(dbs, tbs)}
 
 
+def _chain_phosphate_fields(info: dict, occurrences, fields: dict) -> dict | None:
+    """L5 phosphate_names 消费的计数与盐元数据；盐门控不通过返回 None（该形态不可命名）。
+
+    盐门控（同旧 build_phosphate_parent）：n_om>0 时若有碱金属须同数配对；中性酸/酯不允许
+    带金属；完全无抗衡金属的游离磷酸根/磷酸酯阴离子放行。
+    """
+    if len(occurrences) != 1:
+        return None
+    payload = occurrences[0].payload
+    n_oh, n_om = int(payload.get("n_oh", 0)), int(payload.get("n_om", 0))
+    salt = dict(info.get("salt") or {})
+    if n_om > 0:
+        if salt.get("metal") and int(salt.get("n_metal") or 0) != n_om:
+            return None
+    elif salt.get("metal"):
+        return None
+    return {**fields, "n_oh": n_oh, "n_om": n_om,
+            "n_arms": int(payload.get("n_arms", 0)), "salt_meta": salt or None}
+
+
 def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
     """L5 酯命名的酯烷氧基侧字段：o_idx 供 o_side 识别；仅严格线性给 alkoxy_n 保留名。"""
     if len(occurrences) != 1:
@@ -365,6 +385,10 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         fields = _chain_ester_fields(info, occurrences, fields)
     elif kind == "acyl_halide":
         fields = _chain_acyl_halide_fields(info, occurrences, fields)
+    elif kind == "phosphate":
+        fields = _chain_phosphate_fields(info, occurrences, fields)
+        if fields is None:
+            return None
     return _parent_dict(kind, skeleton, occurrences, fields,
                         _facts(selection, skeleton, occurrences))
 

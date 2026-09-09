@@ -24,6 +24,7 @@ _FG_BOOL_MORE_KEYS = (
     ("has_anhydride", "anhydrides"), ("has_thiol", "thiols"),
     ("has_ether", "ethers"), ("has_sulfide", "sulfides"), ("has_nitro", "nitros"),
     ("has_isocyanate", "isocyanates"), ("has_isothiocyanate", "isothiocyanates"),
+    ("has_phosphate", "phosphates"),
 )
 
 def _acyl_hal_of(carbon) -> tuple[int, int] | None:
@@ -435,7 +436,7 @@ def _fg_more_lists(parts: dict) -> dict:
     keys = (
         "radicals", "acyls", "aldehydes", "amines", "quaternary_ammoniums", "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
-        "nitros", "isocyanates", "isothiocyanates",
+        "nitros", "isocyanates", "isothiocyanates", "phosphates",
     )
     return {k: parts[k] for k in keys}
 
@@ -537,6 +538,7 @@ def _arbitrate_parts(mol: Mol, parts: dict) -> dict:
 def _fg_parts(mol: Mol) -> dict:
     """收集分子中所有官能团条目并按其类型组织成 dict。"""
     from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
+    from namepredict.layer1.phosphate import phosphate_entries
     acyls = _acyl_entries(mol)
     heads = frozenset(e["c_idx"] for e in acyls)
     return _arbitrate_parts(mol, {"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
@@ -551,7 +553,8 @@ def _fg_parts(mol: Mol) -> dict:
         "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
         "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
         "nitros": _nitro_entries(mol), "isocyanates": isocyanate_entries(mol),
-        "isothiocyanates": isothiocyanate_entries(mol)})
+        "isothiocyanates": isothiocyanate_entries(mol),
+        "phosphates": phosphate_entries(mol)})
 
 def _collect_fgs(mol: Mol) -> dict:
     """聚合官能团列表、布尔标志并构建带类型清单。"""
