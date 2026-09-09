@@ -4,7 +4,6 @@
 import { state } from "./core.js";
 import { bindNamer, ensureKetcher } from "./namer.js";
 import { loadBenchmark, stopBmPolling, bindBenchmark } from "./benchmark.js";
-import { stopBrPolling, bindBenchmarkRun } from "./benchmark-run.js";
 import { bindDebug } from "./debug.js";
 import { loadCodeAnalysis, bindCodeAnalysis } from "./code-analysis.js";
 import { loadCallGraph, loadCallGraphSvg, bindCallGraph } from "./callgraph.js";
@@ -28,7 +27,6 @@ function switchPage(name) {
   // Show/hide pages
   var namerLayout = document.getElementById("namer-layout");
   var bmPage = document.getElementById("benchmark-page");
-  var brPage = document.getElementById("benchmark-run-page");
   var caPage = document.getElementById("code-analysis-page");
   var cgPage = document.getElementById("call-graph-page");
   var debugPage = document.getElementById("debug-page");
@@ -37,7 +35,6 @@ function switchPage(name) {
   // Hide all first
   if (namerLayout) namerLayout.classList.add("hidden");
   if (bmPage) bmPage.classList.add("hidden");
-  if (brPage) brPage.classList.add("hidden");
   if (caPage) caPage.classList.add("hidden");
   if (cgPage) cgPage.classList.add("hidden");
   if (debugPage) debugPage.classList.add("hidden");
@@ -45,15 +42,12 @@ function switchPage(name) {
   if (docsPage) docsPage.classList.add("hidden");
   // Stop polling
   stopBmPolling();
-  stopBrPolling();
   // Show active page
   if (name === "benchmark") {
     if (bmPage) bmPage.classList.remove("hidden");
     if (!state.bmLoaded) {
       loadBenchmark();
     }
-  } else if (name === "benchmark-run") {
-    if (brPage) brPage.classList.remove("hidden");
   } else if (name === "code-analysis") {
     if (caPage) caPage.classList.remove("hidden");
     loadCodeAnalysis();
@@ -197,7 +191,6 @@ function bind() {
   // Per-page control wiring lives in each module.
   bindNamer();
   bindBenchmark();
-  bindBenchmarkRun();
   bindDebug();
   bindCodeAnalysis();
   bindCallGraph();

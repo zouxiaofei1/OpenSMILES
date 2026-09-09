@@ -32,7 +32,6 @@
         <nav class="topbar-nav" role="navigation" aria-label="页面">
           <button class="tab" data-page="namer" aria-current="page">Namer</button>
           <button class="tab" data-page="benchmark">Benchmark 预览</button>
-          <button class="tab" data-page="benchmark-run">Benchmark 跑分</button>
           <button class="tab" data-page="code-analysis">代码量分析</button>
           <button class="tab" data-page="call-graph">调用链</button>
           <button class="tab" data-page="debug">Debug</button>
@@ -275,81 +274,6 @@
           正确命名 = benchmark 金标 english_name / chinese_name。
           match = 预测与金标一致。结构由 SmilesDrawer 渲染。
         </footer>
-      </div>
-
-      <!-- Benchmark Run Page -->
-      <div id="benchmark-run-page" class="benchmark-run-page hidden" role="tabpanel" aria-labelledby="tab-benchmark-run">
-        <div class="card" style="margin-bottom: var(--space-2xl)">
-          <div class="card-head row-between">
-            <h3 class="card-title">Benchmark 跑分</h3>
-            <span id="br-status" class="chip">就绪</span>
-          </div>
-          <div class="br-controls">
-            <div class="br-field">
-              <label class="field-label" for="br-workers">Workers</label>
-              <input id="br-workers" class="input" type="number" value="0" min="0" max="64" style="width:90px" />
-              <span class="muted-text small">0 = auto</span>
-            </div>
-            <div class="br-field">
-              <label class="field-label" for="br-timeout">Timeout (s)</label>
-              <input id="br-timeout" class="input" type="number" value="1.0" min="0.1" max="60" step="0.1" style="width:90px" />
-            </div>
-            <div class="br-field">
-              <label class="field-label" for="br-limit">Limit</label>
-              <input id="br-limit" class="input" type="number" value="" min="1" placeholder="全部" style="width:90px" />
-            </div>
-            <div class="br-field">
-              <label class="field-label" for="br-data">测试文件</label>
-              <select id="br-data" class="input" style="width:220px">
-                <option value="">加载中…</option>
-              </select>
-            </div>
-            <button id="br-run" class="btn btn-primary" type="button">▶ 开始跑分</button>
-          </div>
-          <!-- Progress -->
-          <div id="br-progress" class="hidden" style="margin-top:var(--space-xl)">
-            <div class="br-progress-bar-wrap">
-              <div id="br-progress-bar" class="br-progress-bar" style="width:0%"></div>
-            </div>
-            <div class="br-progress-stats">
-              <span id="br-prog-text" class="muted-text small">0 / 0</span>
-              <span id="br-prog-rate" class="muted-text small mono"></span>
-              <span id="br-prog-eta" class="muted-text small"></span>
-            </div>
-            <div id="br-prog-sofar" class="muted-text small" style="margin-top:var(--space-sm)"></div>
-          </div>
-        </div>
-
-        <!-- Results -->
-        <div id="br-result" class="hidden">
-          <div class="card" style="margin-bottom:var(--space-2xl)">
-            <div class="card-head row-between">
-              <h3 class="card-title">总体准确率</h3>
-              <span id="br-timing" class="muted-text small mono"></span>
-            </div>
-            <div class="br-acc-grid">
-              <div class="br-acc-card">
-                <div class="br-acc-label">English</div>
-                <div class="br-acc-value" id="br-acc-en">—</div>
-                <div class="br-acc-detail" id="br-acc-en-detail"></div>
-              </div>
-              <div class="br-acc-card">
-                <div class="br-acc-label">中文</div>
-                <div class="br-acc-value" id="br-acc-zh">—</div>
-                <div class="br-acc-detail" id="br-acc-zh-detail"></div>
-              </div>
-              <div class="br-acc-card">
-                <div class="br-acc-label">Dual</div>
-                <div class="br-acc-value" id="br-acc-dual">—</div>
-                <div class="br-acc-detail" id="br-acc-dual-detail"></div>
-              </div>
-              <div class="br-acc-card">
-                <div class="br-acc-label">Fails</div>
-                <div class="br-acc-value" id="br-fails">—</div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- Code Analysis Page -->

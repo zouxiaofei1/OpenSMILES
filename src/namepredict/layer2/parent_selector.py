@@ -15,11 +15,17 @@ def _p45_2_prefix_count(info: dict, parent: dict) -> int:
     return len(iter_claims(mol, parent.get("owned_atoms") or frozenset()))
 
 
-def _reorder_p45_2(info: dict, cands: list[dict]) -> list[dict]:
-    """P-45.2 流水线：按前缀取代基团数目最多（P-45.2.1）稳定重排打平候选；P-45.2.2/2.3 的位次需 L4 编号后才可得，只先接 P-45.2.1。"""
+def _reorder_p45_2(info: dict, cands: list[dict], *, tied: bool = False) -> list[dict]:
+    """P-45.2 流水线：按前缀取代基团数目最多（P-45.2.1）稳定重排打平候选；tied 时只返回并列最大组。
+    P-45.2.2/2.3 的位次需 L4 编号后才可得，只先接 P-45.2.1。"""
     if len(cands) <= 1:
         return cands
-    return sorted(cands, key=lambda c: _p45_2_prefix_count(info, c), reverse=True)
+    keyed = sorted(((_p45_2_prefix_count(info, c), i, c) for i, c in enumerate(cands)),
+                   key=lambda t: (-t[0], t[1]))
+    if not tied:
+        return [c for _, _, c in keyed]
+    top = keyed[0][0]
+    return [c for k, _, c in keyed if k == top]
 
 
 def _finalize_ranked(info: dict, cands: list[dict]) -> list[dict]:
@@ -44,3 +50,11 @@ def select_parent(info: dict, *, all_candidates: bool = False) -> dict | list[di
     if all_candidates:
         return cands
     return next(iter(cands), None)
+
+
+def select_parent_tied(info: dict) -> list[dict]:
+    """返回 P-45.2.1 并列最优的候选组（供 L4 编号后按 P-45.2.2 位次集合裁决）。"""
+    from namepredict.layer2.candidates import _collect_candidates
+
+    cands = _finalize_ranked(info, _collect_candidates(info))
+    return _reorder_p45_2(info, cands, tied=True)

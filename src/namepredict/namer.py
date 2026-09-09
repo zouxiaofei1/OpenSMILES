@@ -11,10 +11,11 @@ from namepredict.layer0.salt import dissociate_salt
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
 from namepredict.layer2.parent_ownership import finalize_parent_ownership
-from namepredict.layer2.parent_selector import select_parent
+from namepredict.layer2.parent_selector import select_parent_tied
 from namepredict.layer3.coverage import build_coverage_ledger
 from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer3.substituent_namer import SubstituentName
+from namepredict.layer4.candidate_keys import prefix_locant_set, suffix_locant_set
 from namepredict.layer4.numbering import number
 from namepredict.layer5.assembler import assemble
 from namepredict.tools.anchored_table import anchored_whole_mol
@@ -110,6 +111,9 @@ def _remap_attach(parent: dict, s: dict) -> dict:
 
 _N_SIDE_KINDS = frozenset({"n_alkyl", "n_phenyl", "n_benzyl", "n_block"})
 
+# P-45.2.2 需要为每个并列候选各跑一次 L3–L5，上限防止组合爆炸（benchmark 中并列组多为 2–4 个）。
+_MAX_TIED_CANDIDATES = 4
+
 
 def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
     """筛选并重映射参与编号的取代基（O 侧、链上连接点与 N 端）；N- 取代基（n_* kind）位次隐含省略但仍保留进 L5 前缀组装。"""
@@ -123,12 +127,16 @@ def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
 
 
 def _assemble_candidate(parent, subst, *, depth: int, t0: float, name_mode: str = "general") -> NameResult | None:
-    """对单个候选执行编号+组装，编号异常或失败时返回 None。"""
+    """对单个候选执行编号+组装，编号异常或失败时返回 None（meta 附 P-44.1.1 / P-45.2.2 位次键）。"""
     try:
         numbered = number(parent, _subs_for_numbering(parent, subst))
     except (ValueError, KeyError, TypeError):
         return None
-    return _ok_result(numbered, depth=depth, t0=t0, name_mode=name_mode)
+    hit = _ok_result(numbered, depth=depth, t0=t0, name_mode=name_mode)
+    if hit is not None:
+        hit.meta = {**(hit.meta or {}), "p44_1_1_key": suffix_locant_set(numbered),
+                    "p45_2_2_key": prefix_locant_set(numbered)}
+    return hit
 
 
 def _prepare_candidate(
@@ -167,23 +175,43 @@ def try_candidate(
     return hit
 
 
+def _candidate_key(hit: NameResult) -> tuple:
+    """候选裁决键：(P-44.1.1 后缀位次集合, P-45.2.2 前缀位次集合)。"""
+    meta = hit.meta or {}
+    return meta.get("p44_1_1_key") or (), meta.get("p45_2_2_key") or ()
+
+
+def _best_hit(hits: list[tuple]) -> NameResult | None:
+    """候选裁决：P-44.1.1 后缀位次集合未决（并列）时才按 P-45.2.2 前缀位次集合取最小，否则保持候选顺序。"""
+    if not hits:
+        return None
+    if len({suffix for suffix, _, _, _ in hits}) > 1:
+        return hits[0][3]  # P-44.1.1 已决：保持候选顺序（当前即首选）
+    return min(hits, key=lambda t: (t[1], t[2]))[3]
+
+
 def _complete_hit(prepared, *, depth, t0, name_mode):
-    """在候选集中寻找 coverage 完整且可组装的命中。"""
-    for parent, subst, complete in prepared:
-        if complete and (hit := _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)):
+    """在候选集中寻找 coverage 完整且可组装的命中（并列候选取裁决键最小者）。"""
+    hits = []
+    for order, (parent, subst, complete) in enumerate(prepared):
+        if not complete:
+            continue
+        hit = _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)
+        if hit is not None:
             hit.meta = {**(hit.meta or {}), "coverage_complete": True}
-            return hit
-    return None
+            hits.append((*_candidate_key(hit), order, hit))
+    return _best_hit(hits)
 
 
 def _partial_hit(prepared, *, depth, t0, name_mode, attempts):
-    """放宽 coverage 门控，在候选集中找首个可组装的命中。"""
-    for parent, subst, complete in prepared:
+    """放宽 coverage 门控，在候选集中找可组装的命中（并列候选取裁决键最小者）。"""
+    hits = []
+    for order, (parent, subst, complete) in enumerate(prepared):
         hit = _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)
         if hit is not None:
             hit.meta = {**(hit.meta or {}), "coverage_complete": complete, "fallback": "no_coverage_gate", "attempts": attempts}
-            return hit
-    return None
+            hits.append((*_candidate_key(hit), order, hit))
+    return _best_hit(hits)
 
 
 def _try_phase(prepared, *, depth, t0, name_mode, attempts):
@@ -195,9 +223,9 @@ def _try_phase(prepared, *, depth, t0, name_mode, attempts):
 
 
 def _candidate_phases(info: dict, depth: int) -> list[list[dict]]:
-    """选取候选母体阶段列表（当前仅一个高优先级候选）。"""
-    parent = select_parent(info)
-    return [[parent]] if parent is not None else [[]]
+    """选取候选母体阶段列表（P-45.2.1 并列组，上限 _MAX_TIED_CANDIDATES 个）。"""
+    group = select_parent_tied(info)
+    return [group[:_MAX_TIED_CANDIDATES]] if group else [[]]
 
 
 def _run_candidates(

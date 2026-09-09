@@ -76,8 +76,8 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "carboxy": RetainedSubstituent( "carboxy", "羧基", "carboxy", "羧基", P, anchored=("*C(=O)O", ), paren=False, kind="leaf", ),
         "phosphonooxy": RetainedSubstituent( "phosphonooxy", "膦酸氧基", "phosphonooxy", "膦酸氧基", P, anchored=("*OP(=O)(O)O", ), paren=False, kind="leaf", ),  # 磷酸降级前缀（P-67.1.5.1：羧酸等更高优先级 FG 存在时磷酸以 phosphonooxy 前缀表达）
         "phosphonatooxy": RetainedSubstituent( "phosphonatooxy", "膦酸氧基", "phosphonatooxy", "膦酸氧基", P, anchored=("*OP(=O)([O-])O", "*OP(=O)([O-])[O-]"), paren=False, kind="leaf", ),
-        "phosphonooxymethyl": RetainedSubstituent( "phosphonooxymethyl", "膦酸氧甲基", "phosphonooxymethyl", "膦酸氧甲基", P, anchored=("*COP(=O)(O)O", ), paren=False, kind="leaf", ),
-        "phosphonatooxymethyl": RetainedSubstituent( "phosphonatooxymethyl", "膦酸氧甲基", "phosphonatooxymethyl", "膦酸氧甲基", P, anchored=("*COP(=O)([O-])O", ), paren=False, kind="leaf", ),
+        "phosphonooxymethyl": RetainedSubstituent( "phosphonooxymethyl", "膦酸氧甲基", "phosphonooxymethyl", "膦酸氧甲基", P, anchored=("*COP(=O)(O)O", ), paren=True, kind="leaf", ),
+        "phosphonatooxymethyl": RetainedSubstituent( "phosphonatooxymethyl", "膦酸氧甲基", "phosphonatooxymethyl", "膦酸氧甲基", P, anchored=("*COP(=O)([O-])O", ), paren=True, kind="leaf", ),
         "formyl": RetainedSubstituent( "formyl", "甲酰", "formyl", "甲酰", P, anchored=("*C=O", ), paren=False, kind="leaf", ),
         "carboxymethyl": RetainedSubstituent( "carboxymethyl", "羧甲基", "carboxymethyl", "羧甲基", P, anchored=("*CC(=O)O", ), paren=False, kind="leaf", ),
         "hydroxymethyl": RetainedSubstituent( "hydroxymethyl", "羟甲基", "hydroxymethyl", "羟甲基", P, anchored=("*CO", ), paren=True, kind="leaf", ),

@@ -1434,139 +1434,6 @@ select.input {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   Benchmark Run Page
-   ════════════════════════════════════════════════════════════════ */
-
-.benchmark-run-page {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  animation: pageFadeIn 0.25s var(--ease-out);
-}
-
-.benchmark-run-page.hidden {
-  display: none !important;
-}
-
-/* Controls area */
-.br-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-xl);
-  align-items: flex-end;
-  margin-top: var(--space-xl);
-  padding: var(--space-lg);
-  background: var(--color-surface-1);
-  border-radius: var(--radius);
-  border: 1px solid rgba(71, 85, 105, 0.2);
-}
-
-.br-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-/* Progress bar */
-.br-progress-bar-wrap {
-  width: 100%;
-  height: 10px;
-  background: var(--color-surface-2);
-  border-radius: 5px;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-}
-
-.br-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #22c55e, #4ade80, #22c55e);
-  background-size: 200% 100%;
-  border-radius: 5px;
-  transition: width 0.4s var(--ease-out);
-  position: relative;
-  animation: progressShimmer 2s linear infinite;
-}
-
-@keyframes progressShimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.br-progress-stats {
-  display: flex;
-  gap: var(--space-2xl);
-  margin-top: var(--space-sm);
-  flex-wrap: wrap;
-}
-
-/* Accuracy stat cards */
-.br-acc-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: var(--space-lg);
-  margin-top: var(--space-xl);
-}
-
-.br-acc-card {
-  background: var(--color-surface-2);
-  border: 1px solid rgba(71, 85, 105, 0.3);
-  border-radius: var(--radius-lg);
-  padding: var(--space-xl);
-  text-align: center;
-  transition: all var(--transition), transform var(--transition);
-  position: relative;
-  overflow: hidden;
-}
-
-.br-acc-card:hover {
-  border-color: rgba(34, 197, 94, 0.3);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  transform: translateY(-2px);
-}
-
-.br-acc-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
-  opacity: 0;
-  transition: opacity var(--transition);
-}
-
-.br-acc-card:hover::before {
-  opacity: 1;
-}
-
-.br-acc-label {
-  font-size: 11px;
-  color: var(--color-muted-text);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 600;
-  margin-bottom: var(--space-sm);
-}
-
-.br-acc-value {
-  font-size: 34px;
-  font-weight: 700;
-  font-family: var(--mono);
-  color: var(--color-accent);
-  letter-spacing: -0.02em;
-}
-
-.br-acc-detail {
-  font-size: 12px;
-  color: var(--color-muted-text);
-  font-family: var(--mono);
-  margin-top: var(--space-xs);
-}
-
-/* ══════════════════════════════════════════════════════════════════
    Code Analysis Page
    ════════════════════════════════════════════════════════════════ */
 
@@ -2621,10 +2488,6 @@ details.mol-details pre {
     min-width: 140px;
   }
 
-  .br-acc-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .btn span {
     display: none;
   }
@@ -2659,11 +2522,6 @@ details.mol-details pre {
   .nav-drawer {
     padding-left: var(--space-md);
     padding-right: var(--space-md);
-  }
-
-  .br-controls {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .benchmark-table-wrap {

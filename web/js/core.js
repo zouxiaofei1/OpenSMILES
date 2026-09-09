@@ -10,10 +10,6 @@ export const API = {
   benchmarkDatasets: "/api/v1/benchmark-preview/datasets",
   benchmarkRefresh: "/api/v1/benchmark-preview/refresh",
   benchmarkStatus: "/api/v1/benchmark-preview/status",
-  benchmarkRun: "/api/v1/benchmark-run",
-  benchmarkRunDatasets: "/api/v1/benchmark-run/datasets",
-  benchmarkRunStatus: "/api/v1/benchmark-run/status",
-  benchmarkRunResult: "/api/v1/benchmark-run/result",
   codeAnalysis: "/api/v1/code-analysis",
   callGraph: "/api/v1/call-graph",
   callGraphProgress: "/api/v1/call-graph/progress",
@@ -55,10 +51,6 @@ export const state = {
   bmGenTotal: 0,
   bmGenTotal: 0,
   bmPollTimer: null,
-  // benchmark run
-  brRunning: false,
-  brPollTimer: null,
-  brDatasetsLoaded: false,
   // code analysis
   caData: null,
   // call graph
