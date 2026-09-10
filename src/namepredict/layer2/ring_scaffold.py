@@ -78,6 +78,10 @@ NAPH_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8
 PHENANTHRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "4b", "5", "6", "7", "8", "8a", "8b", "9", "10")
 # pyrene(16 原子): 外周 1-10, 稠合碳 3a/5a/8a/8b/10a/10b(P-25.3.3.3.1 推荐编号)。
 PYRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "5a", "6", "7", "8", "8a", "8b", "9", "10", "10a", "10b")
+# xanthene/thioxanthene(14 原子): 外周 1-8, 中央碳 9、O/S 10, 稠合碳 4a/8a/9a/10a(P-25.3.3 传统编号；位次形态同 acridine)。
+XANTHENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a", "9", "9a", "10", "10a")
+# cyclopenta[a]phenanthrene(17 原子): 传统甾体编号 1-17 全数字(10/13 为角甲基碳, 非字母桥头)。
+STEROID_LABELS: tuple[str, ...] = tuple(str(i) for i in range(1, 18))
 
 
 # 固定编号登记（P-25.4/P-25.3.3）：模板条目 `standard` = (labels, order) 二元组，
@@ -184,6 +188,16 @@ _TEMPLATES: dict[str, dict] = {
     # 桥头 C4/C5 得数字位，N7 为指示氢所在；pteridine 10 原子沿外周按 1,2,3,4,4a,5…8,8a（N 在 1/3/5/8）。
     "purine":       {"smiles": "c1ncc2[nH]cnc2n1", "stem_en": "7H-purine",     "stem_zh": "嘌呤",   "naming_class": "purine", "fused": True, "fused_stem": ("purine", "嘌呤"), "locant_prefix": "7H-", "prefix_nh_conditional": True, "standard": (PURINE_LABELS, (1, 0, 8, 7, 3, 2, 4, 5, 6))},
     "pteridine":    {"smiles": "c1cnc2ncncc2n1",    "stem_en": "pteridine",    "stem_zh": "蝶啶",   "naming_class": "naph_family", "fused": True, "standard": (NAPH_LABELS, (4, 5, 6, 7, 8, 9, 0, 1, 2, 3))},
+    # 呫吨/噻吨（表 2.8 第 22 项；P-25.3.3 传统编号）：外周两苯环 1-8，中央碳 9（CH2/C=O）、O(或 S) 10，
+    # 四个稠合碳 4a/8a/9a/10a（走行方向同 acridine）。未登记时 xanthone 被拆成 benzo[b]chromen-13-one
+    # 之类 chromene 体系（该体系无 13 位），并出现 benzo[b]benzo[b]thian 前缀重复。
+    "xanthene":     {"smiles": "C1c2ccccc2Oc2ccccc21", "stem_en": "xanthene",     "stem_zh": "氧杂蒽", "naming_class": "xanthene", "fused": True, "standard": (XANTHENE_LABELS, (12, 11, 10, 9, 8, 5, 4, 3, 2, 1, 0, 13, 7, 6))},
+    "thioxanthene": {"smiles": "C1c2ccccc2Sc2ccccc21", "stem_en": "thioxanthene", "stem_zh": "噻吨",   "naming_class": "xanthene", "fused": True, "standard": (XANTHENE_LABELS, (12, 11, 10, 9, 8, 5, 4, 3, 2, 1, 0, 13, 7, 6))},
+    # cyclopenta[a]phenanthrene（P-25.3.3 传统甾体编号 1-17，无字母位；10/13 为角甲基碳）。
+    # 母体模板为 7 对非累积双键的 mancude 型（2=3/4=5/6=7/8=9/11=12/14=15/16=17），1 位为 CH2。
+    # 甾体及其加氢衍生物经氢化骨架匹配（_fixed_numbering 的 _Q_H 回退）走此模板，否则外周编号
+    # 会产生 4a,6a-dimethyl、-2-en-2-yl 等非甾体定位。
+    "cyclopenta[a]phenanthrene": {"smiles": "C1=CCC2C(=C1)C=CC1=C2C=CC2C=CC=C12", "stem_en": "cyclopenta[a]phenanthrene", "stem_zh": "环戊[a]菲", "naming_class": "steroid", "fused": True, "standard": (STEROID_LABELS, (2, 1, 0, 5, 4, 6, 7, 8, 9, 3, 10, 11, 12, 16, 15, 14, 13))},
     # NOTE: carbonyl mothers（benzoquinone / anthraquinone / chromenone /
    }
 

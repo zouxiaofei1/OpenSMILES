@@ -78,15 +78,19 @@ def _amine_locant(oriented: dict) -> int | None:
     return locs[0] if len(locs) == 1 else _fg_locant(oriented, _AMINE_KINDS, "amine_c_idx")
 
 def _ketone_locant(oriented: dict) -> int | None:
-    """计算酮羰基的唯一 locant。"""
+    """计算酮羰基的唯一 locant（保留稠环母体按 standard 标签取，如呫吨 9、甾体 3；未登记标签回退链位）。"""
     atoms = _typed_group_atoms(oriented, "ketone")
-    return _chain_pos(oriented.get("chain") or [], atoms[0]) if len(atoms) == 1 else _fg_locant(oriented, ("ketone",), "ketone_c_idx")
+    if len(atoms) == 1:
+        return _atom_locant(oriented.get("chain") or [], atoms[0], oriented.get("kind"),
+                            oriented.get("numbering_scaffold"),
+                            oriented.get("numbering_scaffold_required", False))
+    return _fg_locant(oriented, ("ketone",), "ketone_c_idx")
 
 def _ketone_pair_locants(oriented: dict) -> list[int] | None:
-    """返回酮羰基位次列表，多羰基时优先用附着原子对。"""
-    atoms = _typed_group_atoms(oriented, "ketone")
-    if len(atoms) > 1:
-        return _pair_locants(oriented.get("chain") or [], atoms)
+    """返回酮羰基位次列表，多羰基时优先用附着原子（保留母体按 standard 标签）。"""
+    locs = _typed_atom_locants(oriented, "ketone")
+    if locs:
+        return locs
     return _oriented_pair_locants(oriented, ("ketone",), "ketone_c_idxs")
 
 def _has_parent_ene(oriented: dict) -> bool:
