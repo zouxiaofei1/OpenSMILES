@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.constants import Br, C, Cl, F, I, O
+from namepredict.constants import C, HALO_Z, O
 from namepredict.layer1._carbonyl_common import (
     _alkoxy_c_of,
     _amide_n_of,
@@ -11,9 +11,6 @@ from namepredict.layer1._carbonyl_common import (
     _has_acid_o_neighbor,
     _has_double_bonded_o,
 )
-
-# 酰卤检测覆盖 F/Cl/Br/I（P-65.5）。
-_HAL_Z = frozenset({F, Cl, Br, I})
 
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     """判断 O 是否为酰卤碳上的中性烷氧基氧。"""
@@ -31,7 +28,7 @@ def _acyl_hal_of(carbon) -> tuple[int, int] | None:
     """返回 F/Cl/Br/I 邻居的 (hal_idx, hal_z)；否则返回 None。"""
     for n in carbon.GetNeighbors():
         z = n.GetAtomicNum()
-        if z in _HAL_Z:
+        if z in HALO_Z:  # 酰卤检测覆盖 F/Cl/Br/I（P-65.5）
             return n.GetIdx(), z
     return None
 

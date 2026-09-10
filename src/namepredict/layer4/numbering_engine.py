@@ -84,8 +84,8 @@ _RS_HI = frozenset({"R", "M", "r"})   # 编号优先级高的 CIP 描述符（P-
 _RS_LO = frozenset({"S", "P", "s"})   # 与之成对、取较低位次的次位描述符
 
 
-def _assign_cip_for_numbering(mol) -> None:
-    """强制重算分子 CIP（隐式 H 手性碳先补显式 H），与 L5 stereo 打印用同一赋值。"""
+def assign_cip(mol) -> None:
+    """强制重算分子 CIP（隐式 H 手性碳先补显式 H）；编号期与 L5 stereo 打印共用此唯一实现。"""
     from rdkit import Chem
     from rdkit.Chem import ChiralType, rdCIPLabeler
 
@@ -108,7 +108,7 @@ def _chain_rs_codes(mol, chain: list[int]) -> dict[int, str]:
     """取母体链原子上的 CIP 代码映射；键上 E/Z 与无双键歧义不入此表（(j) 原子级破局只需 R/S）。"""
     if mol is None or not chain:
         return {}
-    _assign_cip_for_numbering(mol)
+    assign_cip(mol)
     codes: dict[int, str] = {}
     for idx in chain:
         a = mol.GetAtomWithIdx(int(idx))
@@ -186,13 +186,13 @@ def _fixed_start(parent: dict) -> int | None:
 
 def _narrow_hetero_ring(cands: list[dict], mol, chain: list[int], float_hetero: bool) -> list[dict]:
     """杂环编号 P-22.2.2.1.3/P-25.3.3.1.2(b)：(a) 全杂原子集最低位次→(b) 按 F>…>O>S>…>N>… 元素序逐元素收窄→(c) 同元素 N 中带 H/3 价取代者得低位（唑 NH=1）；float_hetero（稠合组分）跳过 (c)。"""
-    from namepredict.layer4.fused_numbering import _P145_SENIOR
+    from namepredict.constants import P145_SENIOR
     heteros = [a for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != 6]
     cands = _narrow(cands, lambda c: _locant_set(c, heteros))            # (a)
     by_z: dict[int, list[int]] = {}
     for a in heteros:
         by_z.setdefault(mol.GetAtomWithIdx(a).GetAtomicNum(), []).append(a)
-    for z in _P145_SENIOR:                                              # (b)
+    for z in P145_SENIOR:                                               # (b)
         atoms = by_z.get(z)
         if atoms:
             cands = _narrow(cands, lambda c, at=sorted(atoms): _locant_set(c, at))

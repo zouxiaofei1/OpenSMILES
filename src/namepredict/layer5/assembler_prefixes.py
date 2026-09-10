@@ -5,7 +5,7 @@ import re
 
 from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
-from namepredict.constants import MULT_EN, MULT_ZH
+from namepredict.constants import MULT_EN, MULT_ZH, N_PREFIX_KINDS
 
 def _group_by_stem(substituents: list) -> dict[str, list]:
     """按 en 词干对取代基分组，返回词干到列表的映射。"""
@@ -23,7 +23,7 @@ def _locant_str(subs: list) -> str:
         if "locant" not in s:
             continue
         kind = s.get("kind") or ""
-        tokens.append("N" if kind in _N_PREFIX_KINDS else s["locant"])
+        tokens.append("N" if kind in N_PREFIX_KINDS else s["locant"])
     return ",".join(str(x) for x in locant_str_sort(tokens))
 
 
@@ -47,15 +47,13 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return n_carbons == 1
     if n_carbons <= 1:  # 单碳母体位次隐含省略；但 N- 型与 C- 型取代基共存时 C 侧必须带数字位次消歧（P-62.2.4.1.2：胺的数字位次含单核母体的 '1'，与 'N' 位次并引，1,1-dimethoxy-N,N-dimethylmethanamine）。
         kinds = {(s.get("kind") or "") for s in substituents}
-        return not (kinds & _N_PREFIX_KINDS and kinds - _N_PREFIX_KINDS)
+        return not (kinds & N_PREFIX_KINDS and kinds - N_PREFIX_KINDS)
     if (  # 纯烃环单取代位次隐含：环烷烃/苯 base 的 kind 均收敛为 alkane，环系由 scaffold_id 承载；环烯取代基位次必须保留（1-methylcyclohexene）。
         kind == "alkane" and scaffold in ("carbocycle", "benzene") and not has_ene
     ) and len(substituents) == 1:
         return True
     if kind == "amide":
-        return {s.get("kind") for s in substituents} <= {
-            "n_alkyl", "n_phenyl", "n_benzyl", "n_block",
-        }
+        return {s.get("kind") for s in substituents} <= N_PREFIX_KINDS
     if kind in _KEEP_LOCANT_KINDS:
         return False
     if any(s.get("paren") or (s.get("en") or "")[:1] == "(" for s in substituents):
@@ -133,9 +131,6 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 
 
-_N_PREFIX_KINDS = frozenset({"n_alkyl", "n_phenyl", "n_benzyl", "n_block"})
-
-
 def _sorted_stems(groups: dict[str, list]) -> list[str]:
     """按烷基字母键排序非空词干列表。"""
     return sorted((k for k in groups if k), key=alkyl_alpha_key)
@@ -160,7 +155,7 @@ def _n_prefix_zh(n: int, stem: str) -> str:
 def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> tuple[str, str]:
     """按词干生成中英文前缀（N- 类取代基加 N- 前缀并强制省略位次）。"""
     zh_stem = subs[0].get("zh") or ""
-    if subs and all((s.get("kind") or "") in _N_PREFIX_KINDS for s in subs):  # 整组全为 N-型取代基才走 N-计数前缀；同词干混入 C-型时落入数字通道，N-型成员由 _locant_str 渲染为 N（如 N,N,2-trimethyl）。
+    if subs and all((s.get("kind") or "") in N_PREFIX_KINDS for s in subs):  # 整组全为 N-型取代基才走 N-计数前缀；同词干混入 C-型时落入数字通道，N-型成员由 _locant_str 渲染为 N（如 N,N,2-trimethyl）。
         need = any(s.get("paren") for s in subs) or bool(stem and stem[0].isdigit())  # 复合取代基（含 locant 位次/显式 paren）须整体加括号：N-(3-bromophenyl)。
         s_en = _wrap_stem(stem, need)
         s_zh = _wrap_stem(zh_stem, need)
@@ -191,7 +186,7 @@ def _groups_simple(groups: dict[str, list]) -> bool:
         for s in subs:
             if s.get("paren") or (s.get("en") or "")[:1].isdigit():
                 return False
-            if (s.get("kind") or "") in _N_PREFIX_KINDS:
+            if (s.get("kind") or "") in N_PREFIX_KINDS:
                 return False
     return True
 

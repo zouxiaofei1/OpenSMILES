@@ -1,10 +1,10 @@
 """L5 立体描述符前缀：E/Z（P-91.2/P-93.4）+ CIP R/S（P-92/P-93）；由 stereo_ez.py、stereo_rs.py 与 _stereo_common.py 合并而来，_split_stereo_lead 为共享立体块拆分器。"""
 from __future__ import annotations
 
-from rdkit import Chem
-from rdkit.Chem import BondStereo, ChiralType, Mol
+from rdkit.Chem import BondStereo, Mol
 
 from namepredict.layer1 import fg_registry as _fg_reg
+from namepredict.layer4.numbering_engine import assign_cip
 
 
 def _split_stereo_lead(name: str) -> tuple[str, str]:
@@ -102,21 +102,6 @@ def ez_for_parent(numbered: dict) -> str:
 # --- CIP R/S 立体描述符 ----------------------------------------------
 
 _RS_KINDS = _fg_reg.srs_fgs() | frozenset({"radical"})
-from rdkit.Chem import rdCIPLabeler
-def _assign_cip(mol: Mol) -> None:
-    """强制重算分子立体化学（CIP 分配）；隐式 H 的 [C@]/[C@@] 手性碳先补显式 H 再赋。"""
-    r = Chem.RWMol(mol)
-    for a in list(r.GetAtoms()):
-        if a.GetChiralTag() != ChiralType.CHI_UNSPECIFIED and a.GetTotalNumHs() == 0 and a.GetDegree() < 4:
-            r.AddBond(a.GetIdx(), r.AddAtom(Chem.Atom(1)), Chem.BondType.SINGLE)
-    m = r.GetMol()
-    Chem.AssignStereochemistry(m, force=True, cleanIt=True)
-    rdCIPLabeler.AssignCIPLabels(m)
-    for a in mol.GetAtoms():
-        if a.HasProp("_CIPCode"): a.ClearProp("_CIPCode")
-        b = m.GetAtomWithIdx(a.GetIdx())
-        if b.HasProp("_CIPCode"):
-            a.SetProp("_CIPCode", b.GetProp("_CIPCode"))
 
 
 def _cip_code(atom) -> str | None:
@@ -129,7 +114,7 @@ def _cip_code(atom) -> str | None:
 
 def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:
     """返回母体链上手性中心的 (位次, R/S)。"""
-    _assign_cip(mol)
+    assign_cip(mol)
     out: list[tuple[int, str]] = []
     for loc, idx in enumerate(chain, 1):
         code = _cip_code(mol.GetAtomWithIdx(int(idx)))

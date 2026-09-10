@@ -1,24 +1,10 @@
 """P-25.3.3 稠环编号: 外周骨架编号 + 稠合碳 a/b/c 字母位次 + 准则(a)-(d)。"""
 from __future__ import annotations
 
-import re
 from collections import Counter, defaultdict
 
-from namepredict.constants import (
-    Al, As, B, Bi, Br, C, Cl, F, Ga, Ge, I, In, N, O, P, Pb, S, Sb, Se, Si, Sn, Te, Tl,
-)
-
-# P-25.3.3.1.2(b): F > Cl > Br > I > O > S > Se > Te > N > P > ... > Tl（低位次给更优先杂原子）。
-_P145_SENIOR = (F, Cl, Br, I, O, S, Se, Te, N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)
-
-# 双 N 对称 1,3-/1,2-二唑: N1 须吡咯型 N(价 3 带取代/带 H), 排除双 N 互换的镜像匹配。
-_DIAZOLE_IDS = ("imidazole", "pyrazole")
-
-
-def _label_key(lbl) -> tuple[int, str]:
-    """locant 串排序键: "4a" → (4, 'a'), "10" → (10, '')。"""
-    m = re.match(r"(\d+)([a-z]*)", str(lbl))
-    return (int(m.group(1)), m.group(2)) if m else (0, "")
+from namepredict.constants import C, P145_SENIOR
+from namepredict.layer4.locant_key import locant_key
 
 
 def fused_atoms(rings) -> set[int]:
@@ -145,7 +131,7 @@ def _candidates(mol, rings, coords, fused: set[int]) -> list[tuple[list[int], li
 
 def _locant_tuples(chain: list[int], labels: list[str], atoms: list[int]) -> tuple:
     """候选编号下某原子集的位次元组(按 locant 键排序)。"""
-    locs = sorted((_label_key(labels[chain.index(a)]) for a in atoms if a in chain),
+    locs = sorted((locant_key(labels[chain.index(a)]) for a in atoms if a in chain),
                   key=lambda k: (k[0], k[1]))
     return tuple(locs)
 
@@ -175,7 +161,7 @@ def number_fused_system(mol, rings, coords, sub_layers=None,
     hetero_by_z = defaultdict(list)  # (b) 按 F>Tl 顺序逐元素收窄该元素原子位次
     for a in all_heteros:
         hetero_by_z[mol.GetAtomWithIdx(a).GetAtomicNum()].append(a)
-    for z in _P145_SENIOR:
+    for z in P145_SENIOR:
         if z in hetero_by_z:
             cands = _keep(cands, sorted(hetero_by_z[z]))
     if fused_carbons:
@@ -190,7 +176,7 @@ def number_fused_system(mol, rings, coords, sub_layers=None,
     if len(cands) > 1 and alpha_subs:  # P-14.5: 位次集合仍相同时，字母序最前的取代基得最低位次
         def _alpha_key(c):
             """字母序键：[(取代基字母序键, 其位次键)] 排序元组。"""
-            return tuple(sorted((k, _label_key(c[1][c[0].index(a)]))
+            return tuple(sorted((k, locant_key(c[1][c[0].index(a)]))
                                 for k, a in alpha_subs if a in c[0]))
         best = min(_alpha_key(c) for c in cands)
         cands = [c for c in cands if _alpha_key(c) == best]

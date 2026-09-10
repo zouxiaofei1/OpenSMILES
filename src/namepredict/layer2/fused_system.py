@@ -4,21 +4,13 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 
-from namepredict.constants import (
-    Al, As, B, Bi, Br, C, Cl, F, Ga, Ge, I, In, N, O, P, Pb, S, Sb, Se, Si, Sn, Te, Tl,
-)
+from namepredict.constants import C, P145_SENIOR, P25_SENIOR
 from namepredict.layer2.ring_scaffold import (
     _Q,
     component_stem,
     match_retained,
     retained_fusion_prefix,
 )
-
-
-# P-25.3.2.4(a): N > F > Cl > Br > I > O > S > Se > Te > P > ... > Tl（母体组分选择，N 最优先）。
-_P25_SENIOR = (N, F, Cl, Br, I, O, S, Se, Te, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)
-# P-25.3.2.4(f): F > Cl > Br > I > O > S > Se > Te > N > P > ... > Tl（同序更高优先杂原子计数，F 最优先）。
-_P145_SENIOR = (F, Cl, Br, I, O, S, Se, Te, N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)
 
 # 保留模板的元素计数（超集剪枝：当前原子集须 ≤ 某模板计数才可能拼出保留母体）。
 _TEMPLATE_COUNTS: dict[str, Counter] = {
@@ -104,9 +96,9 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
                        if mol.GetAtomWithIdx(i).GetAtomicNum() != C)
 
     def _key_a(c) -> int:
-        """(a) 候选最优先杂原子在 _P25_SENIOR 的下标（无杂原子取最大，N 最优先）。"""
+        """(a) 候选最优先杂原子在 P25_SENIOR 的下标（无杂原子取最大，N 最优先）。"""
         h = _hetero(c)
-        return min(_P25_SENIOR.index(z) for z in h) if h else len(_P25_SENIOR)
+        return min(P25_SENIOR.index(z) for z in h) if h else len(P25_SENIOR)
 
     cands = _keep_best(cands, _key_a, reverse=True)  # (a) 含有更优先的杂原子
     cands = _keep_best(cands, lambda c: len(c[2]))   # (b) 环数更多
@@ -115,12 +107,12 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
     cands = _keep_best(cands, lambda c: len(_hetero(c)))           # (e) 杂原子种类更多
 
     def _key_f(c):
-        """(f) 最高优先杂原子(_P145_SENIOR)的 (-rank, count)；rank 更小优先，同 rank 计数更多优先。"""
+        """(f) 最高优先杂原子(P145_SENIOR)的 (-rank, count)；rank 更小优先，同 rank 计数更多优先。"""
         hc = _hetero(c)
         if not hc:
-            return (-len(_P145_SENIOR), 0)
-        top = min(hc, key=lambda z: _P145_SENIOR.index(z))
-        return (-_P145_SENIOR.index(top), hc[top])
+            return (-len(P145_SENIOR), 0)
+        top = min(hc, key=lambda z: P145_SENIOR.index(z))
+        return (-P145_SENIOR.index(top), hc[top])
 
     cands = _keep_best(cands, _key_f)  # (f) 最高优先性杂原子数更多
     numbering = {c: _numbered_locants(info, rings, fusion_edges, c) for c in cands}  # (g)-(j): 依赖 L4 优选取向/编号, 逐准则按水平行环数/位次收窄(候选无法编号则跳过该准则)。
@@ -143,7 +135,7 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
     cands = _gj(lambda c: numbering[c][1])  # (g) 水平行环数最多
     cands = _gj(lambda c: _locant_tup(c, [a for a in c[0]
                                           if mol.GetAtomWithIdx(a).GetAtomicNum() != C]), reverse=True)  # (h) 杂原子位次低
-    for z in _P145_SENIOR:  # (i) 按 F>Tl 逐元素位次低
+    for z in P145_SENIOR:  # (i) 按 F>Tl 逐元素位次低
         cands = _gj(lambda c, z=z: _locant_tup(c, [a for a in c[0]
                                                    if mol.GetAtomWithIdx(a).GetAtomicNum() == z]), reverse=True)
 

@@ -6,6 +6,7 @@ import copy
 import time
 
 from namepredict.cache.common_names import CommonNameCache
+from namepredict.constants import N_PREFIX_KINDS
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer0.salt import dissociate_salt
 from namepredict.layer1.analyzer import analyze
@@ -109,8 +110,6 @@ def _remap_attach(parent: dict, s: dict) -> dict:
     return s
 
 
-_N_SIDE_KINDS = frozenset({"n_alkyl", "n_phenyl", "n_benzyl", "n_block"})
-
 # P-45.2.2 需要为每个并列候选各跑一次 L3–L5，上限防止组合爆炸（benchmark 中并列组多为 2–4 个）。
 _MAX_TIED_CANDIDATES = 4
 
@@ -121,7 +120,7 @@ def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
     out: list[dict] = []
     for s in subst:
         s2 = _remap_attach(parent, s)
-        if s2.get("o_side") or s2.get("attach_idx") in chain or s2.get("kind") in _N_SIDE_KINDS:
+        if s2.get("o_side") or s2.get("attach_idx") in chain or s2.get("kind") in N_PREFIX_KINDS:
             out.append(s2)
     return out
 

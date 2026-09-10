@@ -6,6 +6,7 @@ import re
 from rdkit.Chem import Mol
 
 from namepredict.cache.common_names import CommonNameCache
+from namepredict.constants import HALO_EN, HALO_ZH
 from namepredict.tools.chain import carbon_neighbors
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer3.amino_side import (
@@ -72,8 +73,6 @@ def alkyl_alpha_key(stem: str) -> str:
             return s
         s = s2
 
-HALO_EN = {9: "fluoro", 17: "chloro", 35: "bromo", 53: "iodo"}
-HALO_ZH = {9: "氟", 17: "氯", 35: "溴", 53: "碘"}
 
 def _side_starts(mol: Mol, chain: list[int]) -> list[tuple[int, int]]:
     """返回链碳上伸出的侧链（链碳, 起点原子）对。"""

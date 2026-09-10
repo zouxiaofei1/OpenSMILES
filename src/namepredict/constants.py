@@ -37,6 +37,13 @@ HALO_Z = frozenset({F, Cl, Br, I})
 HALO_EN = {F: "fluoro", Cl: "chloro", Br: "bromo", I: "iodo"}
 HALO_ZH = {F: "氟", Cl: "氯", Br: "溴", I: "碘"}
 HALIDE_EN = {F: "fluoride", Cl: "chloride", Br: "bromide", I: "iodide"}
+# N-取代基 kind（P-62.2.2.1）：走 N- 前缀、位次以 N 标注或隐含省略，不参与数字位次通道。
+N_PREFIX_KINDS = frozenset({"n_alkyl", "n_phenyl", "n_benzyl", "n_block"})
+
+# ── 杂原子优先序（稠环母体组分选择 P-25.3.2.4 / 稠环与杂环编号 P-25.3.3.1.2(b)）──
+# 两条序列同源不同序，勿混用：P25 用于"选哪个组分当母体"，P145 用于"哪个杂原子得低位次"。
+P25_SENIOR = (N, F, Cl, Br, I, O, S, Se, Te, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)
+P145_SENIOR = (F, Cl, Br, I, O, S, Se, Te, N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)
 
 # ── 倍数前缀（P-14.2 Table 1.4；数量词与母链碳数同源，支持到 99）──
 # en 数量词（deca/undeca/…/icosa/henicosa…）同时供 layer5.stems 生成长链母链词干，

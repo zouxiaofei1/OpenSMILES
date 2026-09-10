@@ -13,8 +13,7 @@ from namepredict.layer2.parent_skeleton import ParentSkeleton
 
 @dataclass(frozen=True)
 class NumberingPolicy:
-    """骨架编号策略：模式、固定编号路径、物化开关、锚点与可取代位。"""
-    mode: str
+    """骨架编号策略：固定编号路径、物化开关、锚点与可取代位。"""
     standard_path: tuple = ()
     materialize_plan: bool = True
     anchors: tuple[str, ...] = ()
@@ -63,20 +62,6 @@ def identity_of(spec) -> ScaffoldIdentity:
 
 
 # 保留母体 SMILES 模板注册表（唯一事实来源；原 specs.py + retained_templates.py 合并）
-_NUMBERING_MODE = {
-    "mono_carbo": "fixed_roles",
-    "monohetero": "fixed_hetero",
-    "fused56": "fused56_fixed",
-    "carbazole": "fused56_fixed",
-    "acridine": "fused56_fixed",
-    "phenothiazine": "fused56_fixed",
-    "benzodioxole": "fused56_fixed",
-    "naph_family": "naph_family",
-    "anthra": "anthra",
-    "phenanthrene": "phenanthrene",
-    "pyrene": "pyrene",
-}
-
 _TEMPLATES: dict[str, dict] = {
     # carbocycles
     "benzene":     {"smiles": "c1ccccc1",             "stem_en": "benzene",    "stem_zh": "苯",   "naming_class": "mono_carbo", "fused": True, "fused_prefix": ("benzo", "苯并")},
@@ -334,10 +319,7 @@ def _spec_from_template(sid: str, entry: dict) -> ScaffoldSpec:
     n_rings = len(q.GetRingInfo().AtomRings())
     ring = "carbo" if all(q.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in range(q.GetNumAtoms())) else "hetero"
     std_labels = _STANDARD_LABELS.get(sid, ())
-    numbering = NumberingPolicy(
-        mode=_NUMBERING_MODE.get(entry["naming_class"], "fixed"),
-        standard_path=std_labels,
-    )
+    numbering = NumberingPolicy(standard_path=std_labels)
     return ScaffoldSpec(
         id=sid, naming_class=entry["naming_class"],
         stem_en=entry["stem_en"], stem_zh=entry["stem_zh"],
