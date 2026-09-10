@@ -164,9 +164,9 @@ _TEMPLATES: dict[str, dict] = {
     "carbazole":      {"smiles": "c1ccc2[nH]c3ccccc3c2c1", "stem_en": "carbazole", "stem_zh": "咔唑", "naming_class": "carbazole", "fused": True, "locant_prefix": "9H-", "prefix_nh_conditional": True, "standard": (CARBAZOLE_LABELS, (6, 7, 8, 9, 5, 12, 0, 1, 2, 11, 4, 3, 10))},
     # 三环 6+6+6（14 原子）：中间吡啶/含 S 环两侧苯环融合。
     "acridine":       {"smiles": "c1ccc2nc3ccccc3cc2c1",   "stem_en": "acridine",     "stem_zh": "吖啶",   "naming_class": "acridine", "fused": True, "standard": (ACRIDINE_LABELS, (9, 8, 7, 6, 5, 2, 1, 0, 13, 12, 11, 10, 4, 3))},
-    "phenothiazine":  {"smiles": "c1ccc2Sc3ccccc3Nc2c1",   "stem_en": "phenothiazine", "stem_zh": "吩噻嗪", "naming_class": "phenothiazine", "fused": True, "locant_prefix": "10H-", "prefix_nh_conditional": True, "standard": (PHENOTHIAZINE_LABELS, (0, 1, 2, 3, 12, 4, 5, 6, 7, 8, 10, 11, 13, 9))},
+    "phenothiazine":  {"smiles": "c1ccc2Sc3ccccc3Nc2c1",   "stem_en": "phenothiazine", "stem_zh": "吩噻嗪", "naming_class": "phenothiazine", "fused": True, "locant_prefix": "10H-", "prefix_nh_conditional": True, "standard": (PHENOTHIAZINE_LABELS, (13, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 5))},
     # 双环 5+6（9 原子）：苯环并二氧戊环，O1/C2/O3。
-    "benzodioxole":   {"smiles": "c1ccc2OCOc2c1",          "stem_en": "benzodioxole", "stem_zh": "苯并二氧杂环戊烯", "naming_class": "benzodioxole", "fused": True, "locant_prefix": "1,3-", "standard": (FUSED56_LABELS, (4, 5, 6, 7, 3, 8, 0, 1, 2))},
+    "benzodioxole":   {"smiles": "c1ccc2OCOc2c1",          "stem_en": "benzodioxole", "stem_zh": "苯并二氧杂环戊烯", "naming_class": "benzodioxole", "fused": True, "locant_prefix": "1,3-", "standard": (FUSED56_LABELS, (6, 5, 4, 3, 2, 1, 0, 8, 7))},
     # fused 6+6；naph_family（10 原子）标准编号 1,2,3,4,4a,5,6,7,8,8a。
     "quinoline":    {"smiles": "c1ccc2ncccc2c1", "stem_en": "quinoline",    "stem_zh": "喹啉",   "naming_class": "naph_family", "fused": True, "standard": (NAPH_LABELS, (4, 5, 6, 7, 8, 9, 0, 1, 2, 3))},
     "isoquinoline": {"smiles": "c1nccc2ccccc21", "stem_en": "isoquinoline", "stem_zh": "异喹啉", "naming_class": "naph_family", "fused": True},

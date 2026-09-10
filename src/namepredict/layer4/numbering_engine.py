@@ -254,6 +254,7 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
     if len(chains) == 1:
         return chains[0]
     subs = [s["attach_idx"] for s in (substituents or []) if s.get("attach_idx") in chain]
+    subs += [a for a in _principal_atoms(parent) if a in chain]  # P-14.4(c)：principal 特征基团附着原子得最低位次（醛/酸/酚等无 L3 取代基时唯一的方向判据，如 piperonal 取 1,3-benzodioxole-5- 而非 -6-）
     if parent.get("radical_c_idx") in chain:  # 自由基主基团：自由价连接点（radical_c_idx）按 P-14.4 最低化到 locant 1，避免咔唑类对称 scaffold 取镜像首方向把自由价标成 8（应 1）
         subs.append(parent["radical_c_idx"])
     if not subs:

@@ -141,35 +141,54 @@ def _sorted_stems(groups: dict[str, list]) -> list[str]:
     return sorted((k for k in groups if k), key=alkyl_alpha_key)
 
 
-def _n_prefix_en(n: int, stem: str) -> str:
-    """英文 N- 前缀：N-methyl / N,N-dimethyl / N,N,N-trimethyl。"""
+def _n_prime_tokens(subs: list, primes: dict[int, int] | None) -> list[str]:
+    """N-型取代基的位次记号列表：同一 N 上为 N，不同 N 上依次 N、N'（P-14.5 多氮位次消歧）。"""
+    return sorted(("N" + "'" * ((primes or {}).get(s.get("attach_idx"), 0))) for s in subs)
+
+
+def _n_prefix_en(n: int, stem: str, tokens: list[str], subs: list) -> str:
+    """英文 N- 前缀：N-methyl / N,N-dimethyl / N,N'-bis[...]。"""
     if n == 1:
-        return f"N-{stem}"
-    ns = ",".join("N" for _ in range(n))
-    return f"{ns}-{_mult_en(n)}{stem}"
+        return f"{tokens[0]}-{stem}"
+    ns = ",".join(tokens)
+    return f"{ns}-{_complex_mult_en(stem, subs, n) or _mult_en(n)}{stem}"
 
 
-def _n_prefix_zh(n: int, stem: str) -> str:
-    """中文 N- 前缀：N-甲基 / N,N-二甲基。"""
+def _n_prefix_zh(n: int, zh_stem: str, tokens: list[str], subs: list) -> str:
+    """中文 N- 前缀：N-甲基 / N,N-二甲基 / N,N'-双[...]。"""
     if n == 1:
-        return f"N-{stem}"
-    ns = ",".join("N" for _ in range(n))
-    return f"{ns}-{_mult_zh(n)}{stem}"
+        return f"{tokens[0]}-{zh_stem}"
+    ns = ",".join(tokens)
+    return f"{ns}-{_complex_mult_zh(zh_stem, subs, n) or _mult_zh(n)}{zh_stem}"
 
 
-def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> tuple[str, str]:
+def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False,
+                    primes: dict[int, int] | None = None) -> tuple[str, str]:
     """按词干生成中英文前缀（N- 类取代基加 N- 前缀并强制省略位次）。"""
     zh_stem = subs[0].get("zh") or ""
     if subs and all((s.get("kind") or "") in N_PREFIX_KINDS for s in subs):  # 整组全为 N-型取代基才走 N-计数前缀；同词干混入 C-型时落入数字通道，N-型成员由 _locant_str 渲染为 N（如 N,N,2-trimethyl）。
         need = any(s.get("paren") for s in subs) or bool(stem and stem[0].isdigit())  # 复合取代基（含 locant 位次/显式 paren）须整体加括号：N-(3-bromophenyl)。
         s_en = _wrap_stem(stem, need)
         s_zh = _wrap_stem(zh_stem, need)
-        return _n_prefix_en(len(subs), s_en), _n_prefix_zh(len(subs), s_zh)
+        tokens = _n_prime_tokens(subs, primes)  # 同 N 多取代 → N,N-；跨不同 N → N,N'-（两个甲基挂不同氮时漏撇号会把结构写成另一个分子）
+        return _n_prefix_en(len(subs), s_en, tokens, subs), _n_prefix_zh(len(subs), s_zh, tokens, subs)
     return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit, paren_cf3)
 
 
+def _n_prime_map(substituents: list) -> dict[int, int]:
+    """N-型取代基的 N 原子 → 撇号个数（P-14.5：引用序最前的取代基所在的 N 取未加撇的 N，其余按序加撇）。"""
+    groups = _group_by_stem(substituents)
+    seen: dict[int, str] = {}
+    for stem in _sorted_stems(groups):
+        for s in groups[stem]:
+            if (s.get("kind") or "") in N_PREFIX_KINDS and s.get("attach_idx") is not None:
+                seen.setdefault(s["attach_idx"], stem)
+    return {a: i for i, a in enumerate(
+        sorted(seen, key=lambda a: (alkyl_alpha_key(seen[a]), a)))}
+
+
 def _collect_parts(groups: dict[str, list], omit: bool, paren_cf3: bool = False,
-                   bracket: bool = False) -> tuple[list[str], list[str]]:
+                   bracket: bool = False, primes: dict[int, int] | None = None) -> tuple[list[str], list[str]]:
     """汇总所有词干的中英文前缀部件列表；bracket(单碳多不同取代, P-16.5.1.3.1)时第二词干起整体加圆括号(倍增前缀不括入)，词干间无连字符。"""
     en_parts: list[str] = []
     zh_parts: list[str] = []
@@ -179,7 +198,7 @@ def _collect_parts(groups: dict[str, list], omit: bool, paren_cf3: bool = False,
             en_parts.append(f"{_mult_en(len(subs))}({stem})")
             zh_parts.append(f"{_mult_zh(len(subs))}({subs[0].get('zh') or ''})")
             continue
-        en_p, zh_p = _parts_for_stem(stem, subs, omit, paren_cf3)
+        en_p, zh_p = _parts_for_stem(stem, subs, omit, paren_cf3, primes)
         en_parts.append(en_p)
         zh_parts.append(zh_p)
     return en_parts, zh_parts
@@ -209,7 +228,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     groups = _group_by_stem(substituents)
     bracket = bool(omit) and n_carbons == 1 and kind == "radical" \
         and len(groups) >= 2 and _groups_simple(groups)
-    en_parts, zh_parts = _collect_parts(groups, omit, paren, bracket)  # P-16.5.1.3.1/.3.2：单碳(meth)母链带 ≥2 个不同简单取代基且位次省略 → 首词干平铺、第二及以后各自括号；单碳链取代基必同处唯一碳，括号式即 locant 省略时的消歧写法。
+    en_parts, zh_parts = _collect_parts(groups, omit, paren, bracket, _n_prime_map(substituents))  # P-16.5.1.3.1/.3.2：单碳(meth)母链带 ≥2 个不同简单取代基且位次省略 → 首词干平铺、第二及以后各自括号；单碳链取代基必同处唯一碳，括号式即 locant 省略时的消歧写法。
     sep = "" if bracket else "-"
     return sep.join(en_parts), sep.join(zh_parts)
 
