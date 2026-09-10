@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from namepredict.cache.common_names import CommonNameCache
+from namepredict.constants import N_PREFIX_KINDS
 
 
 def _claim_kind(slot_value: str) -> str:
@@ -32,6 +33,14 @@ def _kind_for_named(named) -> str:
     return _NAME_KIND.get(named.en, _claim_kind(named.claim.slot.value))
 
 
+def _is_ring_attach(mol, idx: int) -> bool:
+    """附着原子是否为环员（环 N 用环上位次定位，不写 N- 前缀）。"""
+    try:
+        return mol.GetAtomWithIdx(int(idx)).IsInRing()
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def sub_from_named(named, mol=None) -> dict:
     """将命名结果封装为取代基字典。"""
     claim = named.claim
@@ -40,8 +49,13 @@ def sub_from_named(named, mol=None) -> dict:
                         if mol.GetAtomWithIdx(i).GetAtomicNum() == 6)
     else:
         n_carbons = len(claim.atoms)
+    kind = _kind_for_named(named)
+    if kind in N_PREFIX_KINDS and mol is not None and _is_ring_attach(mol, claim.attach_parent):
+        # 环氮（内酰胺/环胺母体的环员 N）有环上位次可用，改用位次定位而非 N- 前缀
+        # （P-14.4/P-16；否则与酰基/氨基的 N- 撞名，如 3-phenyl-1,3-oxazolidin-2-one 写成 N-phenyl）。
+        kind = _claim_kind("ring_c")
     return {
-        "kind": _kind_for_named(named), "n_carbons": n_carbons,
+        "kind": kind, "n_carbons": n_carbons,
         "attach_idx": claim.attach_parent, "atoms": sorted(claim.atoms),
         "en": named.en, "zh": named.zh, "paren": named.requires_parentheses,
         "backend": named.backend,
