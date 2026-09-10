@@ -5,9 +5,11 @@ from namepredict.tools import memo
 from namepredict.layer1.ring_systems import sssr_rings
 
 # P-25.3.3：这些保留骨架按传统编号，不走 P-25.3.3.1 的优选取向自动编号。
-# xanthene 及其硫属类似物、cyclopenta[a]phenanthrene 尚未登记模板，登记时须一并列入。
+# xanthene 及其硫属类似物（xanthene/thioxanthene）与 cyclopenta[a]phenanthrene（甾体 1-17）已按
+# _TEMPLATES 的 standard 字段登记传统编号，故一并列入。
 _TRADITIONAL_NUMBERING_IDS = frozenset({
     "anthracene", "phenanthrene", "acridine", "carbazole", "purine",
+    "xanthene", "thioxanthene", "cyclopenta[a]phenanthrene",
 })
 
 
@@ -218,6 +220,20 @@ def _narrow_hetero_ring(cands: list[dict], mol, chain: list[int], float_hetero: 
     return cands
 
 
+def _template_matches(mol, sid: str, atoms: frozenset) -> list:
+    """模板 atom_ids 全覆盖环系的全部匹配：先直接匹配，失败则退到氢化骨架匹配（原子序不变，映射可回原分子）。"""
+    from namepredict.layer2.ring_scaffold import _Q, _Q_H, _hydrogenated
+    q = _Q.get(sid)
+    matches = [m for m in mol.GetSubstructMatches(q, uniquify=False) if set(m) == atoms]
+    if matches:
+        return matches
+    qh = _Q_H.get(sid)
+    mol_h = memo.by_mol("hydrogenated", _hydrogenated, mol)
+    if qh is None or mol_h is None:
+        return []
+    return [m for m in mol_h.GetSubstructMatches(qh, uniquify=False) if set(m) == atoms]
+
+
 def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None = None) -> list[int] | None:
     """P-14.4(a)：fused 环经模板 standard_path 映射固定编号（P-25.4 起点方向不随取代基变，避免如喹啉 10-氯 vs 2-氯 算错）；对称 scaffold 用全自同构等价链按取代基位次最小化。"""
     sid = parent.get("scaffold_id")
@@ -225,16 +241,14 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
     if not sid or mol is None:
         return None
     from namepredict.layer2.ring_scaffold import _Q, standard_chain
-    q = _Q.get(sid)
-    if q is None:
+    if _Q.get(sid) is None:
         return None
     atoms = frozenset(chain)
     chains = []
-    for m in mol.GetSubstructMatches(q, uniquify=False):
-        if set(m) == atoms:
-            std = standard_chain(sid, tuple(m))
-            if std is not None and set(std) == atoms:
-                chains.append(std)
+    for m in _template_matches(mol, sid, atoms):
+        std = standard_chain(sid, tuple(m))
+        if std is not None and set(std) == atoms:
+            chains.append(std)
     if not chains:
         return None
     if len(chains) == 1:
