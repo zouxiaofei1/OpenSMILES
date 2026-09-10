@@ -203,7 +203,7 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
         match = None  # 保留 fused 模板匹配映射：L4 固定编号（standard_path）据此把模板原子映射到分子原子。
         from namepredict.layer2.ring_scaffold import _match_with_map, get_spec, hydrogenated_atoms
         spec = get_spec(scaffold.id)
-        if spec and (spec.numbering.standard_path or spec.n_rings >= 2):  # 多环模板同样取 match：氢化衍生物需据此比对 mancude 参考算加氢位（P-31.2.2）
+        if spec and spec.retained:  # 全部保留模板都取 match：氢化衍生物需据此比对 mancude 参考算加氢位（P-31.2.2），单环杂芳环（嘧啶/异噁唑等）同样要算
             hit = _match_with_map(info, skeleton.atom_ids)
             match = hit[1] if hit and hit[0] == scaffold.id else None
 
@@ -246,6 +246,8 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     fields = {**_ring_fact_fields(_ring_fields(selection, occurrences), facts),
               **_chain_unsat_fields(info, skeleton,
                                     _scaffold_fields(info, skeleton, facts, scaffold))}  # 补环内不饱和字段：kind 正交化后（醇/酮/纯烃环 → FG 类别/alkane），烯/炔由 double_bond(s)/triple_bond 字段承载（否则环烯酮/环烯醇/环烯烃烯丢失）。
+    if kind == "radical" and _radical_ylidene(info, occurrences):  # 环上碳锚点自由价双键（*=C1CCCC1）：链引擎出 -ylidene
+        fields = {**fields, "radical_ylidene": True}
     if facts.group_class is FunctionalGroupClass.ACID:
         fields = {**fields, **_expression_flags(selection, occurrences)}  # 环酸全阴离子补 anion 标志（链酸经 _chain_fields→_expression_flags 已设）；L5 据此转 -ate/-酸根，并让金属盐前缀（sodium …）能命中。
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
@@ -277,9 +279,47 @@ def _unsat_bond_fields(dbs: list[dict], tbs: list[dict]) -> dict:
 
 
 def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> dict:
-    """为骨架内的 C=C/C≡C 附加双键/三键位次字段。"""
-    dbs, tbs = _chain_polys(info, set(skeleton.atom_ids))
+    """为骨架内的 C=C/C≡C 附加双键/三键位次字段；保留 mancude 母体环内的多重键由母体名隐含，不再以 -ene/-yne 重复表达（否则得 'naphthalene-3-ene-1,2-dione' 这类自相矛盾串）。"""
+    atom_set = set(skeleton.atom_ids)
+    dbs, tbs = _chain_polys(info, atom_set)
+    if fields.get("scaffold_id") == "carbocycle":  # 无保留 mancude 名兜底的碳环：环内 C=C 由 Kekulé 补回
+        dbs = dbs + _kekule_ring_dbs(info, atom_set, dbs)
+    implied = _implied_ring_atoms(fields, atom_set)
+    if implied:
+        dbs = [d for d in dbs if not (d["c1"] in implied and d["c2"] in implied)]
+        tbs = [t for t in tbs if not (t["c1"] in implied and t["c2"] in implied)]
     return {**fields, **_unsat_bond_fields(dbs, tbs)}
+
+
+def _kekule_ring_dbs(info: dict, atom_set: set[int], known: list[dict]) -> list[dict]:
+    """碳环（无保留模板）环内缺失的 C=C：RDKit 芳香感知把环内双键从 double_bonds 剔除，又无 mancude
+    保留名兜底，须按 Kekulé 结构补回，否则环烯酮被写成饱和环（tropolone→cycloheptan-1-one）。"""
+    from rdkit import Chem
+
+    mol = info["mol"]
+    kek = Chem.Mol(mol)
+    try:
+        Chem.Kekulize(kek, clearAromaticFlags=True)
+    except Exception:
+        return []
+    have = {frozenset((d["c1"], d["c2"])) for d in known}
+    out = []
+    for b in kek.GetBonds():
+        a, z = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
+        if (b.GetBondType() == Chem.BondType.DOUBLE and b.IsInRing()
+                and a in atom_set and z in atom_set and frozenset((a, z)) not in have):
+            out.append({"c1": a, "c2": z})
+    return out
+
+
+def _implied_ring_atoms(fields: dict, atom_set: set[int]) -> frozenset[int]:
+    """保留 mancude 母体覆盖的分子原子集：已匹配保留模板取模板 mancude 位；未注册稠环由 L5 以 mancude
+    组分名（吡喃并/环戊并…）组装，环内多重键同样由母体名隐含，取整个母体骨架。"""
+    from namepredict.layer2.ring_scaffold import mancude_atoms
+    implied = mancude_atoms(fields.get("scaffold_id"), fields.get("scaffold_match"))
+    if implied:
+        return implied
+    return frozenset(atom_set) if fields.get("fused_tree") is not None else frozenset()
 
 
 def _chain_phosphate_fields(info: dict, occurrences, fields: dict) -> dict | None:
@@ -317,6 +357,48 @@ _MONONUCLEAR_STEM: dict[int, tuple[str, str, str]] = {
     16: ("S", "sulfane", "硫烷"),
 }
 
+# S 锚点的氧化态词干（P-63.2.2 亚磺酰/磺酰）：=O 数必须落进母体名，否则
+# S(=O)/S(=O)(=O) 与硫醚同形，氧被整段丢弃、直接写出另一个分子（净多 2H）。
+# 去氢前缀即 sulfinyl/sulfonyl（与 anchored_table 的 methylsulfinyl/methylsulfonyl 同词形）。
+_SULFUR_STEM_BY_OXO: dict[int, tuple[str, str]] = {
+    0: ("sulfane", "硫烷"),
+    1: ("sulfinyl", "亚磺酰"),
+    2: ("sulfonyl", "磺酰"),
+}
+
+
+# N 锚点的自由价键级词干（P-66.1.1 亚胺）：双键即 imine（*N=C→methylideneamino），
+# 单键即 azane（*NC→methylamino）。漏掉双键会把亚胺写成胺（净多 2H）。
+_NITROGEN_STEM_BY_FREE_DOUBLE: dict[bool, tuple[str, str]] = {
+    False: ("azane", "氮烷"),
+    True: ("imine", "亚胺"),
+}
+
+
+def _anchor_free_double(mol: Mol, idx: int) -> bool:
+    """锚点原子与 `*` 虚拟原子之间的键是否为双键。"""
+    from rdkit.Chem import BondType
+
+    for nb in mol.GetAtomWithIdx(idx).GetNeighbors():
+        if nb.GetAtomicNum() == 0:
+            b = mol.GetBondBetweenAtoms(idx, nb.GetIdx())
+            return b is not None and b.GetBondType() == BondType.DOUBLE
+    return False
+
+
+def _anchor_oxo_count(mol: Mol, idx: int) -> int:
+    """锚点原子上双键氧（=O）的个数，用于判定高价态硫的词干。"""
+    from rdkit.Chem import BondType
+
+    n = 0
+    for nb in mol.GetAtomWithIdx(idx).GetNeighbors():
+        if nb.GetAtomicNum() != 8:
+            continue
+        b = mol.GetBondBetweenAtoms(idx, nb.GetIdx())
+        if b is not None and b.GetBondType() == BondType.DOUBLE:
+            n += 1
+    return n
+
 
 def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
                          occurrences) -> tuple[ParentSkeleton, dict] | None:
@@ -325,13 +407,27 @@ def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
     anchors = sorted({i for o in occurrences for i in o.parent_anchors})
     if len(anchors) != 1:
         return None
-    spec = _MONONUCLEAR_STEM.get(mol.GetAtomWithIdx(anchors[0]).GetAtomicNum())
-    if spec is None:
+    element, stem_en, stem_zh = _MONONUCLEAR_STEM.get(
+        mol.GetAtomWithIdx(anchors[0]).GetAtomicNum()) or (None, None, None)
+    if element is None:
         return None
-    element, stem_en, stem_zh = spec
+    if element == "S":  # 硫的氧化态并入词干（sulfane/sulfinyl/sulfonyl）
+        stem_en, stem_zh = _SULFUR_STEM_BY_OXO.get(
+            _anchor_oxo_count(mol, anchors[0]), (stem_en, stem_zh))
+    elif element == "N":  # 自由价键级并入词干（azane/imine）
+        stem_en, stem_zh = _NITROGEN_STEM_BY_FREE_DOUBLE[_anchor_free_double(mol, anchors[0])]
     new = replace(skeleton, atom_ids=(anchors[0],))
     return new, {"radical_anchor_element": element,
                  "stem_en": stem_en, "stem_zh": stem_zh}
+
+
+def _radical_ylidene(info: dict, occurrences) -> bool:
+    """碳锚点自由基的自由价是否为双键（*=C< 型 ylidene）：为真时链引擎出 -ylidene 而非 -yl（否则净丢 2H、写成另一个分子）。"""
+    mol = info.get("mol")
+    anchors = sorted({i for o in occurrences for i in o.parent_anchors})
+    if mol is None or len(anchors) != 1:
+        return False
+    return _anchor_free_double(mol, anchors[0])
 
 
 def _chain_acyl_halide_fields(info: dict, occurrences, fields: dict) -> dict:
@@ -361,6 +457,8 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         mono = _mononuclear_radical(info, skeleton, occurrences)
         if mono is not None:
             skeleton, extra = mono
+        elif _radical_ylidene(info, occurrences):  # 碳锚点自由价双键（*=C<）：链引擎出 -ylidene
+            extra = {"radical_ylidene": True}
     fields = _chain_unsat_fields(info, skeleton, {**_chain_fields(selection, occurrences), **extra})
     if kind == "ester":
         fields = _chain_ester_fields(info, occurrences, fields)

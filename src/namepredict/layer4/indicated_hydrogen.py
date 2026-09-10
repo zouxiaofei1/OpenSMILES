@@ -31,13 +31,15 @@ def saturated_ring_atoms(mol, ring_atoms: set[int], exclude: frozenset[int] = fr
     return out
 
 
-def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset()) -> list[str]:
-    """返回指示氢标签列表（如 ['1H']、['9H']）：位次取整体编号 labels，缺失时用链序号；exclude 为已用 hydro 表达的加氢位。"""
+def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=frozenset()) -> list[str]:
+    """返回指示氢标签列表（如 ['1H']、['9H']）：位次取整体编号 labels，缺失时用链序号；exclude 为已用 hydro 表达的加氢位，extra 为保留母体名未隐含而须显式标出的位（P-58.2.1）。"""
     chain = list(chain or ())
     if not chain:
         return []
     use_labels = bool(labels) and len(labels) == len(chain)
-    sats = sorted(saturated_ring_atoms(mol, set(chain), exclude), key=chain.index)
+    sats = set(saturated_ring_atoms(mol, set(chain), exclude)) | {
+        i for i in extra if i in chain and i not in exclude}
+    sats = sorted(sats, key=chain.index)
     if len(sats) > 1 and all(mol.GetAtomWithIdx(i).GetAtomicNum() == 7 for i in sats):  # 互变异构冗余护栏：饱和位全为氮且多于一个时只保留最低位次——亚胺-胺式 SMILES 会让咪唑环出现两个 [nH]，而标准形式（如 1H-imidazo[4,5-c]pyridine）只标一个
         sats = sats[:1]
     out = []
@@ -47,7 +49,7 @@ def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset()) -> list[str
     return out
 
 
-def indicated_hydrogen_prefix(mol, chain, labels=None, exclude=frozenset()) -> str:
-    """返回可直接置于母体名前的指示氢前缀（'1H-' / '1H,2H-'），无则空串；exclude 为已用 hydro 表达的加氢位。"""
-    locants = indicated_hydrogen(mol, chain, labels, exclude)
+def indicated_hydrogen_prefix(mol, chain, labels=None, exclude=frozenset(), extra=frozenset()) -> str:
+    """返回可直接置于母体名前的指示氢前缀（'1H-' / '1H,2H-'），无则空串；exclude 为已用 hydro 表达的加氢位，extra 同 indicated_hydrogen。"""
+    locants = indicated_hydrogen(mol, chain, labels, exclude, extra)
     return f"{','.join(locants)}-" if locants else ""

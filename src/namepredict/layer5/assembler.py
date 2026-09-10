@@ -136,6 +136,9 @@ _MONONUCLEAR_ZERO_YL = {
     ("oxidane", "氧化烷"): ("hydroxy", "羟基"),
     ("azane", "氮烷"): ("amino", "氨基"),
     ("sulfane", "硫烷"): ("sulfanyl", "硫基"),
+    ("sulfinyl", "亚磺酰"): ("sulfinyl", "亚磺酰基"),
+    ("sulfonyl", "磺酰"): ("sulfonyl", "磺酰基"),
+    ("imine", "亚胺"): ("imino", "亚氨基"),
 }
 
 
@@ -344,14 +347,16 @@ def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
 def _with_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]:
     """把动态指示氢与 hydro 前缀依次拼到母体名前：顺序为 hydro + 指示氢 + 母体名（P-31.2.2，如 2,3-dihydro-1H-indole）；母体名已带静态 1H-（保留名）时不重复。"""
     parent = numbered.get("parent") or {}
-    pre = parent.get("hydro_prefix")
-    if not pre or not pre[0]:
-        return names  # 仅氢化衍生物注入动态指示氢：全芳香环系的指示氢由保留名词干承载（1H-吡咯/9H-咔唑）或 fused_tree 路径（_ensure_fused_stem），此处注入会误产（[nH] 互变异构型得到 1H-pyridine）
+    pre = parent.get("hydro_prefix") or ("", "")
+    # forced = 指示氢来自「保留母体名未隐含的芳香位 H」（P-58.2.1），无 hydro 前缀也须注入；
+    # 其余动态指示氢仍只在氢化衍生物（有 hydro 前缀）时注入，否则 [nH] 互变异构型会误产 1H-pyridine。
+    if not pre[0] and not parent.get("indicated_h_forced"):
+        return names
     en, zh = names
     ind = parent.get("indicated_h") or ""
     if ind and not en.startswith(ind):
         en, zh = ind + en, ind + zh
-    return (join_parent_name(pre[0], en), join_parent_name(pre[1], zh))
+    return (join_parent_name(pre[0], en), join_parent_name(pre[1], zh)) if pre[0] else (en, zh)
 
 
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:

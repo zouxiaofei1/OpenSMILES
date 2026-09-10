@@ -85,15 +85,32 @@ def _wrap_stem(stem: str, need: bool) -> str:
 
 # O/S 桥后缀（gold 平铺式 -yl]oxy/-yl]sulfanyl：括号闭在 -yl 后、后缀放括号外，见 P-63.2.2）。
 _BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl")
+# 高价态硫桥后缀（同 P-63.2.2 的 -yl 平铺式）：gold 把前端基括起、桥后缀留在括号外
+# （(4-phenylphenyl)sulfonyl、(4-hydroxyphenyl)methylsulfonylmethyl）。
+_HIGH_OXO_SUFFIX_EN = ("sulfinyl", "sulfonyl")
 
 
 def _split_bridge_suffix(stem: str) -> tuple[str, str] | None:
-    """带立体描述符的基 -<N>-yl]oxy/-yl]sulfanyl 拆分：(base-yl, 桥后缀)；仅拆 base 含手性描述符(如 2R/3S)的情形，无手性 acyclic/苄基(…methylsulfanyl/…propan-2-yloxy 等)整括不拆。"""
+    """基 -<N>-yl]oxy/-yl]sulfanyl 拆分：(base-yl, 桥后缀)；仅拆 base 含手性描述符(如 2R/3S)的情形，无手性 acyclic/苄基(…methylsulfanyl/…propan-2-yloxy 等)整括不拆。"""
     for suf in _BRIDGE_SUFFIX_EN:
         if not stem.endswith(suf):
             continue
         base = stem[: -len(suf)]
         if not (base.endswith("yl") and re.search(r"\d[RrSs]", base)):
+            continue
+        return base, suf
+    return _split_high_oxo_suffix(stem)
+
+
+def _split_high_oxo_suffix(stem: str) -> tuple[str, str] | None:
+    """sulfinyl/sulfonyl 桥拆分：base 带位次/手性即括起 base（(4-phenylphenyl)sulfonyl）；base 自带方括号（复合取代基，如 [thiazol-5-yl]methyl）时维持整括不拆。"""
+    for suf in _HIGH_OXO_SUFFIX_EN:
+        if not stem.endswith(suf):
+            continue
+        base = stem[: -len(suf)]
+        if not (base.endswith("yl") and re.search(r"\d", base)):
+            continue
+        if "[" in base:
             continue
         return base, suf
     return None

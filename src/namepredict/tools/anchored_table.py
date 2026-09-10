@@ -53,6 +53,9 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "cyclopropylidene": RetainedSubstituent( "cyclopropylidene", "环丙亚基", "cyclopropylidene", "环丙亚基", P, anchored=("*=C1CC1", ), paren=False, kind="alkyl", ),
         "cyclohexylidene": RetainedSubstituent( "cyclohexylidene", "环己亚基", "cyclohexylidene", "环己亚基", P, anchored=("*=C1CCCCC1", ), paren=False, kind="alkyl", ),
         "sulfanylidene": RetainedSubstituent( "sulfanylidene", "硫烷亚基", "sulfanylidene", "硫烷亚基", P, anchored=("*=S", ), paren=False, kind="leaf", ),
+        # 脒/胍残基 C(=N)N：gold 按 P-66.1.1 取亚基式（diaminomethylideneamino），
+        # 不取等价的 amino(imino)methylamino（两者互变、分子式相同，取测试集口径）。
+        "diaminomethylidene": RetainedSubstituent( "diaminomethylidene", "二氨基亚甲基", "diaminomethylidene", "二氨基亚甲基", P, anchored=("*C(=N)N", ), paren=True, kind="leaf", ),
         "ethyl": RetainedSubstituent( "ethyl", "乙基", "ethyl", "乙基", P, anchored=("*CC", ), paren=False, kind="alkyl", ),
         "propyl": RetainedSubstituent( "propyl", "丙基", "propyl", "丙基", P, anchored=("*CCC", ), paren=False, kind="alkyl", ),
         "butyl": RetainedSubstituent( "butyl", "丁基", "butyl", "丁基", P, anchored=("*CCCC", ), paren=False, kind="alkyl", ),

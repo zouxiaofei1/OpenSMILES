@@ -38,6 +38,17 @@ def number(parent: dict, substituents: list) -> dict:
     pre = hydro_prefix(packed.get("chain"), labels, hydro)
     if not pre[0]:  # hydro 位次表达不出（奇数值/超表/不在链内）则整体退回指示氢，不产半截名
         hydro, pre = frozenset(), ("", "")
-    packed["indicated_h"] = indicated_hydrogen_prefix(packed.get("mol"), packed.get("chain"), labels, hydro)
+    extra = _extra_indicated(packed)
+    packed["indicated_h"] = indicated_hydrogen_prefix(
+        packed.get("mol"), packed.get("chain"), labels, hydro, extra)
+    packed["indicated_h_forced"] = bool(extra)
     packed["hydro_prefix"] = pre
     return result
+
+
+def _extra_indicated(packed: dict) -> frozenset:
+    """保留母体名未隐含、须显式标指示氢的环位（P-58.2.1）：全芳香环系唯一的指示氢来源。"""
+    from namepredict.layer2.ring_scaffold import extra_indicated_atoms
+
+    sid, match, mol = packed.get("scaffold_id"), packed.get("scaffold_match"), packed.get("mol")
+    return extra_indicated_atoms(mol, sid, match) if sid and match and mol is not None else frozenset()

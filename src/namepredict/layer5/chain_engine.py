@@ -386,6 +386,17 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
     return fields
 
 
+def _ylidene_form(pair: tuple[str, str]) -> tuple[str, str]:
+    """自由基自由价为双键（P-31.2.3 =C< 亚基）：-yl/-基 → -ylidene/亚…基（methyl→methylidene、octyl→octylidene、cyclopropyl→cyclopropylidene；后两者须在 -yl 生成之后调用）。"""
+    en, zh = pair
+    if en.endswith("yl"):
+        en = en[:-2] + "ylidene"
+    if zh.endswith("基"):
+        stem = zh[:-1]
+        zh = f"{stem}亚基" if stem.startswith("环") else f"亚{stem}基"
+    return en, zh
+
+
 def _radical_terminal_yl_elide(pair: tuple[str, str], n: int) -> tuple[str, str]:
     """无环自由基自由价在 C-1 时省略 -1-（饱和链 P-29.2 方法 1 的烯/炔拓展）；丙-1-烯-1-基→丙-1-烯基、丁-3-烯-1-炔-1-基→丁-3-烯-1-炔基，C2 烯/炔（乙-1-炔-1-基→乙炔基、eth-1-yn-1-yl→ethynyl）位次 1 也省略，因短链位次无歧义（同 _omit_term_locant C1–C2 1 位）。"""
     en, zh = pair
@@ -418,6 +429,7 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
     alk = _alkane_names(n)
     if not alk:
         return None
+    ylidene = spec.kind == "radical" and bool((numbered.get("parent") or {}).get("radical_ylidene"))
     top = _chain_unsat(spec, n, numbered)
     if top is not None and spec.unsat_polyol:  # 多 FG 词干模式: 词干 + FG 位次 + 多 FG 后缀 (but-2-ene-1,4-diol)
         rec = _fg_record(numbered, spec.fg)
@@ -433,6 +445,8 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
     if top is not None:
         if spec.cyclic or spec.cyclic_unsat:
             top = (f"cyclo{top[0]}", f"环{top[1]}")
+        if ylidene:
+            top = _ylidene_form(top)
         return spec.wrap(top, numbered) if spec.wrap is not None else top
     if spec.stem:
         s, zs = spec.stem
@@ -464,6 +478,8 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         pair = _chain_plain(spec, s, zs, n)
     if spec.cyclic:
         pair = (f"cyclo{pair[0]}", f"环{pair[1]}")
+    if ylidene:
+        pair = _ylidene_form(pair)
     return spec.wrap(pair, numbered) if spec.wrap is not None else pair
 
 

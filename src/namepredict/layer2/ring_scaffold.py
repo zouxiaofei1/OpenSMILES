@@ -113,6 +113,10 @@ _TEMPLATES: dict[str, dict] = {
     "pyridazine":  {"smiles": "c1ccnnc1",   "stem_en": "pyridazine",  "stem_zh": "哒嗪",   "naming_class": "monohetero", "fused": True},
     "pyrimidine":  {"smiles": "c1cncnc1",   "stem_en": "pyrimidine",  "stem_zh": "嘧啶",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("pyrimido", "嘧啶并")},
     "pyrazine":    {"smiles": "c1cnccn1",   "stem_en": "pyrazine",    "stem_zh": "吡嗪",   "naming_class": "monohetero", "fused": True},
+    # 吡喃（P-25.1 表 2.8 保留名，6 元含氧 mancude 母体；原表缺失）：吡喃酮/吡喃并稠环此前落到饱和
+    # oxane/oxano 模板，环内 C=C 被静默丢掉（pyran-2-one → oxan-2-one，oxano[3,2-c]pyridine → 缺双键）。
+    # 必须排在 oxane 之前：氢化骨架兜底按 _Q_H 表序遍历，先命中者定母体词干。
+    "pyran":       {"smiles": "O1C=CC=CC1", "stem_en": "pyran",       "stem_zh": "吡喃",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("pyrano", "吡喃并")},
     "imidazole":   {"smiles": "c1cnc[nH]1", "stem_en": "imidazole",   "stem_zh": "咪唑",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("imidazo", "咪唑并"), "locant_prefix": "1H-", "prefix_nh_conditional": True},
     "pyrazole":    {"smiles": "c1ccn[nH]1", "stem_en": "pyrazole",    "stem_zh": "吡唑",   "naming_class": "monohetero", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
     # 1,3-二唑编号 IUPAC 固定（N 得 1,3 位）；带取代基/H 的 N 走 numbering_engine._narrow_hetero_ring 的 (c) 同元素 N 收窄。
@@ -330,19 +334,68 @@ def _kekule_double_atoms(sid: str) -> frozenset[int]:
     return _KEKULE_ATOMS[sid]
 
 
+def mancude_atoms(scaffold_id: str, match) -> frozenset[int]:
+    """保留模板的 mancude（Kekulé 双键）位映射到分子后的原子集：该集合内部的 C=C 由母体氢化物名隐含（P-31.1.2），不得再写成 -ene/-yne。"""
+    if not match or scaffold_id not in _Q:
+        return frozenset()
+    return frozenset(match[qi] for qi in _kekule_double_atoms(scaffold_id) if qi < len(match))
+
+
+def extra_indicated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
+    """保留母体名未隐含、而分子中该芳香杂环位带 H 的原子（P-58.2.1 须显式标指示氢）：模板同位无 H 而分子有 H，
+    如 1H-喹啉-4-酮的 N1、1H-嘧啶-2,4-二酮的 N1/N3。全芳香环系（无饱和位）的指示氢只可能来自此处。"""
+    q = _Q.get(scaffold_id)
+    # 仅稠合母体（≥2 环）：单环 mancude 杂芳环（吡啶/嘧啶）的 [nH] 输入是内酰胺-内酰亚胺互变异构写法，
+    # 其位次由母体名与后缀共同固定，gold 不标指示氢；稠合母体（喹啉/异喹啉）无 =N-H 位，不标则名不可解。
+    if q is None or not match or len(match) != q.GetNumAtoms() or len(q.GetRingInfo().AtomRings()) < 2:
+        return frozenset()
+    return frozenset(
+        mi for qi, mi in enumerate(match)
+        if mi < mol.GetNumAtoms()
+        and (qa := q.GetAtomWithIdx(qi)).GetAtomicNum() != 6
+        and qa.GetAtomicNum() == mol.GetAtomWithIdx(mi).GetAtomicNum()
+        and qa.GetTotalNumHs() == 0
+        and mol.GetAtomWithIdx(mi).GetTotalNumHs() > 0
+        and mol.GetAtomWithIdx(mi).GetIsAromatic()
+    )
+
+
 def hydrogenated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
     """match（模板原子→分子原子）下被加氢的分子原子集：模板某原子承载不饱和双键（Kekulé）而分子中该位已非芳香者（P-31.2.2：hydro 修饰源于双键的饱和）。用原子芳香性而非键级，桥头/带取代基饱和碳均可正确归属。"""
     if not match or mol is None or scaffold_id not in _Q:
         return frozenset()
+    from namepredict.layer4.hydrogenation import HYDRO_MULT_N
+
+    ring_atoms = set(match)
     out: set[int] = set()
+    suffix: set[int] = set()  # 环内碳带环外多重键（=O/=N 后缀位）：本身不计入加氢，但其配对位要靠指示氢收尾
     for qi in _kekule_double_atoms(scaffold_id):
         if qi >= len(match):
             continue
         mi = match[qi]
-        if mi < mol.GetNumAtoms() and all(
-                b.GetBondType() == Chem.BondType.SINGLE for b in mol.GetAtomWithIdx(mi).GetBonds()):
+        if mi >= mol.GetNumAtoms():
+            continue
+        atom = mol.GetAtomWithIdx(mi)
+        if all(b.GetBondType() == Chem.BondType.SINGLE for b in atom.GetBonds()):
             out.add(mi)  # 分子中该位已无多重键（原带双键、现饱和）才是加氢位；残留芳香/多重键者未加氢（hybridization 对 NH 会误报 SP2，故查键级）
-    return frozenset(out)
+        elif atom.GetAtomicNum() == 6 and any(
+                b.GetBondType() != Chem.BondType.SINGLE and b.GetOtherAtomIdx(mi) not in ring_atoms
+                for b in atom.GetBonds()):
+            suffix.add(mi)
+    # 环杂原子（N/O/S）失去双键后新增的 H 由指示氢承载（P-58.2.1），不计入 hydro 计数：
+    # 计入会得到「2,3-dihydro-1H-喹啉」的杂原子位而被写成「1,2,3-trihydro」，且 3 为奇数使 hydro_prefix
+    # 整体放弃（奇数不在倍增表内），连正确的 2,3-dihydro 一起丢。仅当剔除后计数合法（偶数倍增）才剔除，
+    # 否则保留原集合（如 1,2-二氢吡啶：N1+C2 恰为 2，两者同为 hydro 位）。
+    carbons = frozenset(a for a in out if mol.GetAtomWithIdx(a).GetAtomicNum() == 6)
+    hydro = carbons if len(carbons) != len(out) and len(carbons) in HYDRO_MULT_N else frozenset(out)
+    # 计数仍为奇数：环内带后缀 =O/=N 的位（其 H 被后缀取代）使配对加氢位多出一个，该位改由指示氢承载
+    # （P-58.2.1），naphthalen-1-one 遂得「2H」+「3,4-dihydro」而非整体放弃。
+    if len(hydro) not in HYDRO_MULT_N and suffix:
+        for mi in sorted(hydro):
+            if any(mol.GetBondBetweenAtoms(mi, s) is not None for s in suffix):
+                hydro = frozenset(hydro - {mi})
+                break
+    return hydro
 
 
 def _elem_sig(mol: Mol, atom_ids) -> frozenset:
