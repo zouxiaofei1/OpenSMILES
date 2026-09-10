@@ -164,8 +164,6 @@ function bmFiltered() {
     var r = state.bmRows[i];
     if (f === "ok" && !r.ok) continue;
     if (f === "fail" && r.ok) continue;
-    if (f === "wrong" && !(r.ret && !r.ok)) continue;
-    if (f === "fused" && !r.fused) continue;
     if (q) {
       var hay = [r.s, r.en, r.zh, r.ge, r.gz].join(" ").toLowerCase();
       if (hay.indexOf(q) < 0) continue;

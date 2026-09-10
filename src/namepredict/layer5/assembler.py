@@ -490,6 +490,19 @@ def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
     return f"1H-{zh_parent}"
 
 
+def _with_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]:
+    """把动态指示氢与 hydro 前缀依次拼到母体名前：顺序为 hydro + 指示氢 + 母体名（P-31.2.2，如 2,3-dihydro-1H-indole）；母体名已带静态 1H-（保留名）时不重复。"""
+    parent = numbered.get("parent") or {}
+    pre = parent.get("hydro_prefix")
+    if not pre or not pre[0]:
+        return names  # 仅氢化衍生物注入动态指示氢：全芳香环系的指示氢由保留名词干承载（1H-吡咯/9H-咔唑）或 fused_tree 路径（_ensure_fused_stem），此处注入会误产（[nH] 互变异构型得到 1H-pyridine）
+    en, zh = names
+    ind = parent.get("indicated_h") or ""
+    if ind and not en.startswith(ind):
+        en, zh = ind + en, ind + zh
+    return (join_parent_name(pre[0], en), join_parent_name(pre[1], zh))
+
+
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     """组装入口：取名 → 前缀 → 阴离子/R-S/金属盐后缀。"""
     from namepredict.layer5.stereo import apply_rs_prefix
@@ -499,6 +512,7 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     names = _names_for(kind, n, numbered)
     if not names:
         return _unsupported(n, kind)
+    names = _with_hydro_prefix(names, numbered)
 
     joined = join_kind_name(kind, _prefix_for(numbered, kind, n), names, numbered)
     if joined is None:

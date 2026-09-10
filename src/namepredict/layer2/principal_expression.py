@@ -200,14 +200,19 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
     if scaffold:
         supported = supports_ring_expression(scaffold, facts) if facts else False
         match = None  # 保留 fused 模板匹配映射：L4 固定编号（standard_path）据此把模板原子映射到分子原子。
-        from namepredict.layer2.ring_scaffold import _match_with_map, get_spec
-        if get_spec(scaffold.id) and get_spec(scaffold.id).numbering.standard_path:
+        from namepredict.layer2.ring_scaffold import _match_with_map, get_spec, hydrogenated_atoms
+        spec = get_spec(scaffold.id)
+        if spec and (spec.numbering.standard_path or spec.n_rings >= 2):  # 多环模板同样取 match：氢化衍生物需据此比对 mancude 参考算加氢位（P-31.2.2）
             hit = _match_with_map(info, skeleton.atom_ids)
             match = hit[1] if hit and hit[0] == scaffold.id else None
 
         fields = {"scaffold_id": scaffold.id, "scaffold_identity": scaffold,
                   "scaffold_match": match,
                   "typed_ring_expression_supported": supported}  # print({"scaffold_id": scaffold.id, "scaffold_identity": scaffold, "scaffold_match": match, "typed_ring_expression_supported": supported})
+        if match:  # 加氢原子集：编号完成后由 L4 换算为 hydro 前缀位次
+            hydro = hydrogenated_atoms(info["mol"], scaffold.id, match)
+            if hydro:
+                fields["hydro_atoms"] = hydro
     system = next((s for s in info.get("ring_systems") or []
                    if (s.get("atom_ids") or []) == list(skeleton.atom_ids)), None)  # 多环骨架附加稠环拆解结构（fused_tree 为 FusedNode 对象供 L5 稠合名组装）；拆解独立于 scaffold 身份：未注册系统 scaffold 解析为 None 时仍产出拆解树，供 L5 fused_namer 组装稠合名（P-25.3.2）。
 

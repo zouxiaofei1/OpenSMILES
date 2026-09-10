@@ -242,7 +242,11 @@ def _fused_numbering(parent: dict, chain: list[int],
     if sid in _TRADITIONAL_NUMBERING_IDS:
         return None
     mol = parent.get("mol")
-    if mol is None or not chain or not all(mol.GetAtomWithIdx(a).GetIsAromatic() for a in chain):
+    from namepredict.layer2.ring_scaffold import get_spec
+    spec = get_spec(parent.get("scaffold_id") or "")
+    registered_fused = bool(spec and spec.n_rings >= 2)  # 稠环保留模板（含氢化衍生物）：编号随骨架拓扑，与芳香性无关（fused_numbering 本身不依赖 aromatic）
+    chain_arom = bool(mol is not None and chain) and all(mol.GetAtomWithIdx(a).GetIsAromatic() for a in chain)
+    if mol is None or not chain or not (chain_arom or registered_fused):
         return None
     from namepredict.layer1.ring_systems import build_ring_systems
     from namepredict.layer4.fused_orientation import preferred_orientations
@@ -275,6 +279,9 @@ def _fused_numbering(parent: dict, chain: list[int],
                        if s.get("attach_idx") in chain_set)
     if sub_atoms:
         layers.append(sub_atoms)  # P-14.4(f): 取代基位次集合最小化
+    hydro_atoms = sorted(a for a in (parent.get("hydro_atoms") or ()) if a in chain_set)
+    if hydro_atoms:
+        layers.append(hydro_atoms)  # P-31.2.2: hydro 加氢位次最低（取代基之后、指示氢之前）
     from namepredict.layer3.substituent_extractor import alkyl_alpha_key
     alpha_subs = [(alkyl_alpha_key(s.get("en") or ""), s["attach_idx"])
                   for s in (substituents or []) if s.get("attach_idx") in chain_set]

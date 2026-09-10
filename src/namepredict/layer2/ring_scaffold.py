@@ -243,6 +243,69 @@ _STANDARD_LABELS: dict[str, tuple[str, ...]] = {
 _Q: dict[str, Mol] = {sid: MolFromSmiles(entry["smiles"]) for sid, entry in _TEMPLATES.items()}
 
 
+def _hydrogenated(mol: Mol) -> Mol | None:
+    """返回完全氢化的分子副本（清芳香性 → 全键改单键 → sanitize 补满隐式 H），骨架不可 sanitize 时 None。"""
+    rw = Chem.RWMol(mol)
+    for atom in rw.GetAtoms():
+        atom.SetIsAromatic(False)
+        atom.SetNumExplicitHs(0)
+        atom.SetNoImplicit(False)
+    for bond in rw.GetBonds():
+        bond.SetBondType(Chem.BondType.SINGLE)
+        bond.SetIsAromatic(False)
+    out = rw.GetMol()
+    if Chem.SanitizeMol(out, catchErrors=True) != Chem.SanitizeFlags.SANITIZE_NONE:
+        return None
+    return out
+
+
+# 完全氢化模板（键级/芳香性抹平的骨架），供 _match_with_map 匹配加氢衍生物（P-25.3.4）。
+# 苯例外（P-31.2.3.1）：单环 mancude 碳环的加氢衍生物用 cyclohexene/cyclohexadiene/cyclohexane
+# （P-31.1.3 ene 词尾），不写 hydrobenzene；故 benzene 模板不参与氢化骨架匹配，环己烷/环己烯类
+# 继续走 carbocycle 单环路径。单环杂环不豁免：无饱和保留名时仍以母体+hydro 表达（P-31.2.3.2）。
+_Q_H: dict[str, Mol] = {
+    sid: h for sid, q in _Q.items()
+    if _TEMPLATES[sid]["naming_class"] != "mono_carbo" and (h := _hydrogenated(q)) is not None
+}
+
+
+_KEKULE_ATOMS: dict[str, frozenset[int]] = {}
+
+
+def _kekule_double_atoms(sid: str) -> frozenset[int]:
+    """模板 Kekulé 双键端点原子集（缓存）：芳香键须化为确定双键，否则稠合单键（萘 4a-8a）会被误当不饱和度。"""
+    hit = _KEKULE_ATOMS.get(sid)
+    if hit is not None:
+        return hit
+    q = _Q.get(sid)
+    out: set[int] = set()
+    if q is not None:
+        m = Chem.Mol(q)
+        try:
+            Chem.Kekulize(m, clearAromaticFlags=True)
+            out = {b.GetBeginAtomIdx() for b in m.GetBonds() if b.GetBondType() == Chem.BondType.DOUBLE}
+            out |= {b.GetEndAtomIdx() for b in m.GetBonds() if b.GetBondType() == Chem.BondType.DOUBLE}
+        except Exception:
+            out = set()
+    _KEKULE_ATOMS[sid] = frozenset(out)
+    return _KEKULE_ATOMS[sid]
+
+
+def hydrogenated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
+    """match（模板原子→分子原子）下被加氢的分子原子集：模板某原子承载不饱和双键（Kekulé）而分子中该位已非芳香者（P-31.2.2：hydro 修饰源于双键的饱和）。用原子芳香性而非键级，桥头/带取代基饱和碳均可正确归属。"""
+    if not match or mol is None or scaffold_id not in _Q:
+        return frozenset()
+    out: set[int] = set()
+    for qi in _kekule_double_atoms(scaffold_id):
+        if qi >= len(match):
+            continue
+        mi = match[qi]
+        if mi < mol.GetNumAtoms() and all(
+                b.GetBondType() == Chem.BondType.SINGLE for b in mol.GetAtomWithIdx(mi).GetBonds()):
+            out.add(mi)  # 分子中该位已无多重键（原带双键、现饱和）才是加氢位；残留芳香/多重键者未加氢（hybridization 对 NH 会误报 SP2，故查键级）
+    return frozenset(out)
+
+
 def _elem_sig(mol: Mol, atom_ids) -> frozenset:
     """原子集的元素组成签名（(Z, 计数) 冻结集合）。"""
     return frozenset(Counter(mol.GetAtomWithIdx(i).GetAtomicNum() for i in atom_ids).items())
@@ -385,13 +448,22 @@ def _match_with_map(info: dict, atom_ids) -> tuple[str, tuple[int, ...]] | None:
     mol = info["mol"]
   
     atoms = frozenset(atom_ids)
-    elem = _elem_sig(mol, atom_ids)  # print(Chem.MolToSmiles(mol))
+    elem = _elem_sig(mol, atom_ids)  
+    print(Chem.MolToSmiles(mol))
     for sid, q in _Q.items():
         if _TEMPLATE_ELEM[sid] != elem:
             continue
         for m in mol.GetSubstructMatches(q, uniquify=True):  # print(sid,m)
             if set(m) == atoms:  # print("yes")
                 return sid, m
+    mol_h = _hydrogenated(mol)  # 精确匹配失败后按完全氢化骨架再比对（加氢衍生物，P-25.3.4）
+    if mol_h is not None:
+        for sid, qh in _Q_H.items():
+            if _TEMPLATE_ELEM[sid] != elem:
+                continue
+            for m in mol_h.GetSubstructMatches(qh, uniquify=True):
+                if set(m) == atoms:
+                    return sid, m
     return None
 
 

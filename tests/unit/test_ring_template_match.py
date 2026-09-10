@@ -61,6 +61,21 @@ def test_all_templates_resolve_to_own_scaffold():
     assert _resolve("c1ccc2cc3ccccc3cc2c1") == "anthracene"
 
 
+def test_hydrogenated_fused_rings_hit_unsaturated_parent():
+    # 骨架完全氢化后比较：加氢/部分加氢的稠环仍归属其未饱和保留母体
+    # （P-25.3.4 加氢衍生物：四氢萘/十氢萘/二氢吲哚均由保留母体命名）。
+    assert _resolve("C1CCc2ccccc2C1") == "naphthalene"   # 1,2,3,4-四氢萘
+    assert _resolve("C1=CCc2ccccc2C1") == "naphthalene"  # 1,2-二氢萘
+    assert _resolve("C1CCC2CCCCC2C1") == "naphthalene"   # 十氢萘
+    assert _resolve("C1Cc2ccccc2N1") == "indole"         # 二氢吲哚
+
+
+def test_saturated_skeleton_near_neighbours_stay_unmatched():
+    # 近邻负例：环数/碳数相近但稠合拓扑不同，仍不得误配为保留稠环。
+    assert _resolve("C1Cc2ccccc2C1") == "carbocycle"        # 茚满 C9，非萘 C10
+    assert _resolve("C1=CC2=CC=CC=CC2=CC1") == "carbocycle" # 薁 5+7，非萘 6+6
+
+
 def test_positional_isomers_hit_own_template_only():
     # 元素标注的子图同构区分位置异构体，各自单命中。
     cases = {
