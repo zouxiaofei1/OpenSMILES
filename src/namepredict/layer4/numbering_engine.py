@@ -1,6 +1,8 @@
 """L4 定向编号引擎：按 P-14.4 规则筛出链/环原子顺序候选。"""
 from __future__ import annotations
 
+from namepredict.tools import memo
+
 # P-25.3.3：这些保留骨架按传统编号，不走 P-25.3.3.1 的优选取向自动编号。
 # xanthene 及其硫属类似物、cyclopenta[a]phenanthrene 尚未登记模板，登记时须一并列入。
 _TRADITIONAL_NUMBERING_IDS = frozenset({
@@ -85,7 +87,16 @@ _RS_LO = frozenset({"S", "P", "s"})   # 与之成对、取较低位次的次位�
 
 
 def assign_cip(mol) -> None:
-    """强制重算分子 CIP（隐式 H 手性碳先补显式 H）；编号期与 L5 stereo 打印共用此唯一实现。"""
+    """强制重算分子 CIP（隐式 H 手性碳先补显式 H）；编号期与 L5 stereo 打印共用此唯一实现。
+
+    对同一个 mol 在一次命名内只算一次：结果是 mol 的确定函数，重复调用只是重写同样的
+    `_CIPCode`。调用点分布在不同层，键仍按 mol 对象身份，故记忆放在本函数内而非各调用点。
+    """
+    memo.by_mol("cip", _assign_cip_uncached, mol)
+
+
+def _assign_cip_uncached(mol) -> None:
+    """实际执行 CIP 重算（无记忆版本，见 assign_cip）。"""
     from rdkit import Chem
     from rdkit.Chem import ChiralType, rdCIPLabeler
 

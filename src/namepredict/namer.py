@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import time
 
+from namepredict.tools import memo
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.constants import N_PREFIX_KINDS
 from namepredict.layer0.preprocessor import preprocess
@@ -285,11 +286,11 @@ def _name_mol(
     return result
 
 
-def _pipeline(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> NameResult:
-    """预处理 SMILES 后进入 mol 命名流程，解析失败返回失败结果；整分子命中锚定表（带 * 锚点输入本身即锚定键）直接返回保留名，免经自由基母体管线。"""
+def _pipeline(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> tuple[NameResult, "Mol | None"]:
+    """预处理 SMILES 后进入 mol 命名流程，解析失败返回失败结果；整分子命中锚定表（带 * 锚点输入本身即锚定键）直接返回保留名，免经自由基母体管线。同时回传解析出的 mol，供调用方复用（免去二次解析）。"""
     mol = preprocess(smiles)
     if mol is None:
-        return _fail(_elapsed_ms(t0), "parse")
+        return _fail(_elapsed_ms(t0), "parse"), None
     whole = anchored_whole_mol(mol, name_mode=name_mode)
     if whole is not None:
         en, zh, paren, kind = whole
@@ -297,8 +298,8 @@ def _pipeline(smiles: str, t0: float, *, name_mode: str = "general", cache: Comm
             en=en, zh=zh, success=True, source="anchored",
             time_ms=_elapsed_ms(t0),
             meta={"parent_kind": "radical", "anchored": True},
-        )
-    return _name_mol(mol, depth=0, t0=t0, name_mode=name_mode, cache=cache)
+        ), mol
+    return _name_mol(mol, depth=0, t0=t0, name_mode=name_mode, cache=cache), mol
 
 
 def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
@@ -326,8 +327,8 @@ def _canonical_result(mol, result: NameResult) -> NameResult:
     return r
 
 
-def _name_uncached(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> NameResult:
-    """缓存未命中时直接走完整命名管线。"""
+def _name_uncached(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> tuple[NameResult, "Mol | None"]:
+    """缓存未命中时直接走完整命名管线，回传解析出的 mol 供调用方复用。"""
     return _pipeline(smiles, t0, name_mode=name_mode, cache=cache)
 
 
@@ -345,8 +346,8 @@ class SMILESNNamer:
         hit = self.cache.get(smiles)
         if hit is not None:
             return hit
-        result = _name_uncached(smiles, t0, name_mode=self._name_mode, cache=self.cache)
-        if result.success:
-            mol = preprocess(smiles)
+        memo.begin_run()  # 本次命名的中间结果记忆：不跨分子共享，见 cache/memo
+        result, mol = _name_uncached(smiles, t0, name_mode=self._name_mode, cache=self.cache)
+        if result.success and mol is not None:
             _cache_put(self.cache, smiles, _canonical_result(mol, result))
         return result

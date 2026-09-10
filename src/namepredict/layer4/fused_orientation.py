@@ -339,10 +339,10 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
     for row in rows:
         if len(row) < max_len:
             continue
+        laid = _layout(row, rings, fusion_edges)  # print("coords:",coords)  # 与 flip 无关，两个镜像共用一次布局
+        if laid is None:
+            continue
         for flip in (False, True):
-            laid = _layout(row, rings, fusion_edges)  # print("coords:",coords)
-            if laid is None:
-                continue
             coords, ring_templates = laid
             if flip:
                 coords = {a: (x, -y) for a, (x, y) in coords.items()}

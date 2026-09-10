@@ -31,22 +31,25 @@ def _copy_atoms(em: Chem.RWMol, mol: Mol, order: list[int]) -> dict[int, int]:
     return inv
 
 
-def _copy_bonds(em: Chem.RWMol, mol: Mol, inv: dict[int, int]) -> None:
-    """复制诱导子图内的键。"""
+def _copy_bonds(em: Chem.RWMol, mol: Mol, inv: dict[int, int]) -> list:
+    """复制诱导子图内的键，返回被复制的源键列表（供 _carry_alkene_stereo 只扫子图内的键，不必遍历整分子）。"""
+    copied: list = []
     for old_a, new_a in inv.items():
         for bond in mol.GetAtomWithIdx(old_a).GetBonds():
             old_b = bond.GetOtherAtomIdx(old_a)
             if old_b not in inv or old_b < old_a:
                 continue
             em.AddBond(new_a, inv[old_b], bond.GetBondType())
+            copied.append(bond)
+    return copied
 
 
-def _carry_alkene_stereo(em: Chem.RWMol, mol: Mol, inv: dict[int, int],
+def _carry_alkene_stereo(em: Chem.RWMol, mol: Mol, inv: dict[int, int], bonds,
                          dummy: int | None = None) -> None:
-    """迁移诱导子图内双键的 E/Z 立体到子分子：_copy_bonds 只重建键型会丢奇偶，故把源双键 E/Z 标签照搬（标签取原分子即真实立体，不随配基被切/被 * 顶替而重判）；两端引用被保留则映射到新索引，被切配基由本端 sp2 碳上的 dummy 顶替，无法唯一解析（如 H 封端成非手性 CH2）则跳过留无立体。"""
+    """迁移诱导子图内双键的 E/Z 立体到子分子：_copy_bonds 只重建键型会丢奇偶，故把源双键 E/Z 标签照搬（标签取原分子即真实立体，不随配基被切/被 * 顶替而重判）；两端引用被保留则映射到新索引，被切配基由本端 sp2 碳上的 dummy 顶替，无法唯一解析（如 H 封端成非手性 CH2）则跳过留无立体。`bonds` 为 _copy_bonds 返回的子图内源键。"""
     if em is None or mol is None:
         return
-    for b in mol.GetBonds():
+    for b in bonds:
         if b.GetBondType() is not Chem.BondType.DOUBLE:
             continue
         st = b.GetStereo()
@@ -131,9 +134,9 @@ def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol
         return None
     em = Chem.RWMol()
     inv = _copy_atoms(em, mol, _ordered(atoms))
-    _copy_bonds(em, mol, inv)
+    copied = _copy_bonds(em, mol, inv)
     d = _add_anchor(em, inv[attach_old], _external_bond_type(mol, attach_old, atoms))
-    _carry_alkene_stereo(em, mol, inv, d)
+    _carry_alkene_stereo(em, mol, inv, copied, d)
     return _sanitize(em)  # print(Chem.MolToSmiles(em))
 
 def build_cut_submol(
@@ -144,8 +147,8 @@ def build_cut_submol(
         return None
     em = Chem.RWMol()
     inv = _copy_atoms(em, mol, _ordered(atoms))
-    _copy_bonds(em, mol, inv)
+    copied = _copy_bonds(em, mol, inv)
     _cap_attach_h(em, inv[attach_old])
-    _carry_alkene_stereo(em, mol, inv)
+    _carry_alkene_stereo(em, mol, inv, copied)
     out = _sanitize(em)
     return None if out is None else _pack(out, inv, attach_old, atoms)  # print(Chem.MolToSmiles(out)) / print(out.)

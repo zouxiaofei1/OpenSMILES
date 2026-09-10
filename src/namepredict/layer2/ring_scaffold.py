@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from rdkit.Chem import Mol, MolFromSmarts, MolFromSmiles
 from rdkit import Chem
+from namepredict.tools import memo
 from namepredict.layer2.parent_skeleton import ParentSkeleton
 
 
@@ -505,7 +506,7 @@ def _match_with_map(info: dict, atom_ids, *, mancude_only: bool = False) -> tupl
         for m in mol.GetSubstructMatches(q, uniquify=True):  # print(sid,m)
             if set(m) == atoms:  # print("yes")
                 return sid, m
-    mol_h = _hydrogenated(mol)  # 精确匹配失败后按完全氢化骨架再比对（加氢衍生物，P-25.3.4）
+    mol_h = memo.by_mol("hydrogenated", _hydrogenated, mol)  # 精确匹配失败后按完全氢化骨架再比对（加氢衍生物，P-25.3.4）；整分子重建对同一 mol 只做一次
     if mol_h is not None:
         for sid, qh in _Q_H.items():
             if mancude_only and not _TEMPLATES[sid].get("fused"):

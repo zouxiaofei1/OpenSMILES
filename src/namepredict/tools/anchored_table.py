@@ -7,6 +7,7 @@ from enum import Enum
 
 from rdkit.Chem import Mol
 
+from namepredict.tools import memo
 from namepredict.layer3.submol_build import build_anchor_submol
 
 
@@ -142,11 +143,20 @@ def pick_root(mol: Mol, atoms: frozenset[int]) -> int:
 
 
 def anchored_key(mol: Mol, atoms: frozenset[int], attach_old: int | None = None) -> str | None:
-    """生成原子集的锚定 canonical-SMILES 键，失败时返回 None。"""
+    """生成原子集的锚定 canonical-SMILES 键，失败时返回 None。
+
+    同一个 claim 会在查表与递归拆分之间被反复求键（实测约一半重复），而键只依赖
+    (mol, 原子集, 连接原子)，故按此记忆；仍限定在单次命名内，不跨分子共享。
+    """
+    root = pick_root(mol, atoms) if attach_old is None else attach_old
+    return memo.by_key("anchored_key", (id(mol), atoms, root),
+                       lambda: _anchored_key_uncached(mol, atoms, root), mol)
+
+
+def _anchored_key_uncached(mol: Mol, atoms: frozenset[int], attach_old: int) -> str | None:
+    """实际构建锚定子分子并取 canonical SMILES（无记忆版本，见 anchored_key）。"""
     from rdkit.Chem import MolToSmiles
 
-    if attach_old is None:
-        attach_old = pick_root(mol, atoms)
     anchor = build_anchor_submol(mol, atoms, attach_old)
     return MolToSmiles(anchor) if anchor is not None else None
 

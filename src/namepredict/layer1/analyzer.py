@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 
+from namepredict.tools import memo
 from namepredict.constants import C, H, N, O, S
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1._carbonyl_common import (
@@ -391,8 +392,8 @@ def _ring_entry(atom_ids: tuple) -> dict:
     return {"atom_ids": atom_ids}
 
 def _ring_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有环条目的列表。"""
-    return [_ring_entry(r) for r in mol.GetRingInfo().AtomRings()]
+    """收集分子中所有环条目的列表；环感知对分子恒定，按 mol 记忆（同 ring_systems._sssr）。"""
+    return memo.by_mol("ring_entries", lambda m: [_ring_entry(r) for r in m.GetRingInfo().AtomRings()], mol)
 
 def _ring_meta(mol: Mol) -> dict:
     """汇总环事实：环条目、环系与数量统计。"""

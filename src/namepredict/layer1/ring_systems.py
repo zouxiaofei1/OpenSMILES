@@ -4,11 +4,16 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
+from namepredict.tools import memo
 from namepredict.constants import C
 
 def _sssr(mol: Mol) -> list[tuple[int, ...]]:
-    """返回分子的全部 SSSR 最小环原子序列。"""
-    return list(mol.GetRingInfo().AtomRings())
+    """返回分子的全部 SSSR 最小环原子序列。
+
+    `GetRingInfo().AtomRings()` 每次调用都要重建 Python 嵌套对象（实测 25~45 µs/环），
+    而同一分子在一次命名内会被各层问十几次；环感知对分子恒定，故按 mol 记忆。
+    """
+    return memo.by_mol("sssr", lambda m: list(m.GetRingInfo().AtomRings()), mol)
 
 def _shared(a: tuple[int, ...], b: tuple[int, ...]) -> frozenset[int]:
     """返回两个环共享的原子集合。"""

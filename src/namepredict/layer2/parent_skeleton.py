@@ -6,6 +6,7 @@ from enum import Enum
 
 from rdkit.Chem import Mol
 
+from namepredict.tools import memo
 from namepredict.constants import Al, As, B, Bi, C, Ga, Ge, In, N, O, P, Pb, S, Sb, Se, Si, Sn, Te, Tl
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass, FunctionalGroupOccurrence
 from namepredict.layer2.chain_walk import _all_chains_through, _chain_through_two, _longest_chain
@@ -207,7 +208,20 @@ def _principal_multiple_edges(mol: Mol, occurrences) -> set[frozenset[int]]:
 
 
 def p44_4_unsaturation_key(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -> tuple[int, int]:
-    """P-44.4 不饱和度键：(多重键数, 双键数)。 """
+    """P-44.4 不饱和度键：(多重键数, 双键数)。
+
+    键是 (mol, 骨架原子集, occurrences) 的确定函数，而每个候选在收窄时会被求两次键
+    （取 max + 过滤），故记忆：主官能团排他边也要对全分子逐键扫一遍，代价不低。
+    """
+    return memo.by_key(
+        "p44_4", (id(mol), tuple(skeleton.atom_ids), tuple(id(o) for o in occurrences)),
+        lambda: _p44_4_unsaturation_key_uncached(mol, skeleton, occurrences),
+        mol, *occurrences,  # 键里用了 id()，须保活防复用
+    )
+
+
+def _p44_4_unsaturation_key_uncached(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -> tuple[int, int]:
+    """实际计算 P-44.4 不饱和度键（无记忆版本，见 p44_4_unsaturation_key）。"""
     atoms, excluded = set(skeleton.atom_ids), _principal_multiple_edges(mol, occurrences)
     non_arom: list = []
     n_arom = 0
