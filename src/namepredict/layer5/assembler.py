@@ -136,6 +136,9 @@ _MONONUCLEAR_ZERO_YL = {
     ("oxidane", "氧化烷"): ("hydroxy", "羟基"),
     ("azane", "氮烷"): ("amino", "氨基"),
     ("sulfane", "硫烷"): ("sulfanyl", "硫基"),
+    ("sulfinyl", "亚磺酰"): ("sulfinyl", "亚磺酰基"),
+    ("sulfonyl", "磺酰"): ("sulfonyl", "磺酰基"),
+    ("imine", "亚胺"): ("imino", "亚氨基"),
 }
 
 

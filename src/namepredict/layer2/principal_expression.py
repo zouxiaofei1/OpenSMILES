@@ -246,6 +246,8 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     fields = {**_ring_fact_fields(_ring_fields(selection, occurrences), facts),
               **_chain_unsat_fields(info, skeleton,
                                     _scaffold_fields(info, skeleton, facts, scaffold))}  # 补环内不饱和字段：kind 正交化后（醇/酮/纯烃环 → FG 类别/alkane），烯/炔由 double_bond(s)/triple_bond 字段承载（否则环烯酮/环烯醇/环烯烃烯丢失）。
+    if kind == "radical" and _radical_ylidene(info, occurrences):  # 环上碳锚点自由价双键（*=C1CCCC1）：链引擎出 -ylidene
+        fields = {**fields, "radical_ylidene": True}
     if facts.group_class is FunctionalGroupClass.ACID:
         fields = {**fields, **_expression_flags(selection, occurrences)}  # 环酸全阴离子补 anion 标志（链酸经 _chain_fields→_expression_flags 已设）；L5 据此转 -ate/-酸根，并让金属盐前缀（sodium …）能命中。
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
@@ -317,6 +319,48 @@ _MONONUCLEAR_STEM: dict[int, tuple[str, str, str]] = {
     16: ("S", "sulfane", "硫烷"),
 }
 
+# S 锚点的氧化态词干（P-63.2.2 亚磺酰/磺酰）：=O 数必须落进母体名，否则
+# S(=O)/S(=O)(=O) 与硫醚同形，氧被整段丢弃、直接写出另一个分子（净多 2H）。
+# 去氢前缀即 sulfinyl/sulfonyl（与 anchored_table 的 methylsulfinyl/methylsulfonyl 同词形）。
+_SULFUR_STEM_BY_OXO: dict[int, tuple[str, str]] = {
+    0: ("sulfane", "硫烷"),
+    1: ("sulfinyl", "亚磺酰"),
+    2: ("sulfonyl", "磺酰"),
+}
+
+
+# N 锚点的自由价键级词干（P-66.1.1 亚胺）：双键即 imine（*N=C→methylideneamino），
+# 单键即 azane（*NC→methylamino）。漏掉双键会把亚胺写成胺（净多 2H）。
+_NITROGEN_STEM_BY_FREE_DOUBLE: dict[bool, tuple[str, str]] = {
+    False: ("azane", "氮烷"),
+    True: ("imine", "亚胺"),
+}
+
+
+def _anchor_free_double(mol: Mol, idx: int) -> bool:
+    """锚点原子与 `*` 虚拟原子之间的键是否为双键。"""
+    from rdkit.Chem import BondType
+
+    for nb in mol.GetAtomWithIdx(idx).GetNeighbors():
+        if nb.GetAtomicNum() == 0:
+            b = mol.GetBondBetweenAtoms(idx, nb.GetIdx())
+            return b is not None and b.GetBondType() == BondType.DOUBLE
+    return False
+
+
+def _anchor_oxo_count(mol: Mol, idx: int) -> int:
+    """锚点原子上双键氧（=O）的个数，用于判定高价态硫的词干。"""
+    from rdkit.Chem import BondType
+
+    n = 0
+    for nb in mol.GetAtomWithIdx(idx).GetNeighbors():
+        if nb.GetAtomicNum() != 8:
+            continue
+        b = mol.GetBondBetweenAtoms(idx, nb.GetIdx())
+        if b is not None and b.GetBondType() == BondType.DOUBLE:
+            n += 1
+    return n
+
 
 def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
                          occurrences) -> tuple[ParentSkeleton, dict] | None:
@@ -325,13 +369,27 @@ def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
     anchors = sorted({i for o in occurrences for i in o.parent_anchors})
     if len(anchors) != 1:
         return None
-    spec = _MONONUCLEAR_STEM.get(mol.GetAtomWithIdx(anchors[0]).GetAtomicNum())
-    if spec is None:
+    element, stem_en, stem_zh = _MONONUCLEAR_STEM.get(
+        mol.GetAtomWithIdx(anchors[0]).GetAtomicNum()) or (None, None, None)
+    if element is None:
         return None
-    element, stem_en, stem_zh = spec
+    if element == "S":  # 硫的氧化态并入词干（sulfane/sulfinyl/sulfonyl）
+        stem_en, stem_zh = _SULFUR_STEM_BY_OXO.get(
+            _anchor_oxo_count(mol, anchors[0]), (stem_en, stem_zh))
+    elif element == "N":  # 自由价键级并入词干（azane/imine）
+        stem_en, stem_zh = _NITROGEN_STEM_BY_FREE_DOUBLE[_anchor_free_double(mol, anchors[0])]
     new = replace(skeleton, atom_ids=(anchors[0],))
     return new, {"radical_anchor_element": element,
                  "stem_en": stem_en, "stem_zh": stem_zh}
+
+
+def _radical_ylidene(info: dict, occurrences) -> bool:
+    """碳锚点自由基的自由价是否为双键（*=C< 型 ylidene）：为真时链引擎出 -ylidene 而非 -yl（否则净丢 2H、写成另一个分子）。"""
+    mol = info.get("mol")
+    anchors = sorted({i for o in occurrences for i in o.parent_anchors})
+    if mol is None or len(anchors) != 1:
+        return False
+    return _anchor_free_double(mol, anchors[0])
 
 
 def _chain_acyl_halide_fields(info: dict, occurrences, fields: dict) -> dict:
@@ -361,6 +419,8 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         mono = _mononuclear_radical(info, skeleton, occurrences)
         if mono is not None:
             skeleton, extra = mono
+        elif _radical_ylidene(info, occurrences):  # 碳锚点自由价双键（*=C<）：链引擎出 -ylidene
+            extra = {"radical_ylidene": True}
     fields = _chain_unsat_fields(info, skeleton, {**_chain_fields(selection, occurrences), **extra})
     if kind == "ester":
         fields = _chain_ester_fields(info, occurrences, fields)

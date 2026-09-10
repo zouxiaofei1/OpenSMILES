@@ -116,7 +116,10 @@ def _amino_zh(zh: str) -> str | None:
 # 组装名 "ethyl-oxidane" → "ethyloxy" / "乙基-氧化烷" → "乙氧基"。
 _MONONUCLEAR = (("oxidane", "氧化烷", "oxy", "氧基"),
                 ("azane", "氮烷", "amino", "氨基"),
-                ("sulfane", "硫烷", "sulfanyl", "硫基"))
+                ("sulfane", "硫烷", "sulfanyl", "硫基"),
+                ("sulfinyl", "亚磺酰", "sulfinyl", "基亚磺酰基"),  # S=O 桥：ethyl-sulfinyl → ethylsulfinyl
+                ("sulfonyl", "磺酰", "sulfonyl", "磺酰基"),  # S(=O)(=O) 桥：ethyl-sulfonyl → ethylsulfonyl
+                ("imine", "亚胺", "imino", "亚氨基"))  # N 自由价双键：methyl-imine → methylimino（=N-CH3）
 
 
 def _mononuclear_en(en: str) -> str | None:
