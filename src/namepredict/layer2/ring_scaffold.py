@@ -87,11 +87,11 @@ _TEMPLATES: dict[str, dict] = {
     "tetrazole":   {"smiles": "c1nnn[nH]1", "stem_en": "1H-tetrazole", "stem_zh": "1H-四唑", "naming_class": "monohetero","fused": True,},
     "triazine":    {"smiles": "c1ncncn1",   "stem_en": "1,3,5-triazine", "stem_zh": "1,3,5-三嗪", "naming_class": "monohetero", "fused": True,"locant_prefix": "1,3,5-"},
     # saturated monohetero rings（P-22.2.2；radical/取代基须识别为环而非开链）
-    "pyrrolidine": {"smiles": "C1CCNC1",  "stem_en": "pyrrolidine", "stem_zh": "吡咯烷", "naming_class": "monohetero", "fused": True},
-    "piperidine":  {"smiles": "C1CCNCC1", "stem_en": "piperidine",  "stem_zh": "哌啶",   "naming_class": "monohetero", "fused": True},
-    "morpholine":  {"smiles": "C1COCCN1", "stem_en": "morpholine",  "stem_zh": "吗啉",   "naming_class": "monohetero", "fused": True},
-    "piperazine":  {"smiles": "C1CNCCN1", "stem_en": "piperazine",  "stem_zh": "哌嗪",   "naming_class": "monohetero", "fused": True},
-    "oxolane":     {"smiles": "C1CCOC1",  "stem_en": "oxolane",     "stem_zh": "四氢呋喃", "naming_class": "monohetero", "fused": True},
+    "pyrrolidine": {"smiles": "C1CCNC1",  "stem_en": "pyrrolidine", "stem_zh": "吡咯烷", "naming_class": "monohetero", "fused": False},
+    "piperidine":  {"smiles": "C1CCNCC1", "stem_en": "piperidine",  "stem_zh": "哌啶",   "naming_class": "monohetero", "fused": False},
+    "morpholine":  {"smiles": "C1COCCN1", "stem_en": "morpholine",  "stem_zh": "吗啉",   "naming_class": "monohetero", "fused": False},
+    "piperazine":  {"smiles": "C1CNCCN1", "stem_en": "piperazine",  "stem_zh": "哌嗪",   "naming_class": "monohetero", "fused": False},
+    "oxolane":     {"smiles": "C1CCOC1",  "stem_en": "oxolane",     "stem_zh": "四氢呋喃", "naming_class": "monohetero", "fused": False},
     "oxane":       {"smiles": "C1CCCOC1", "stem_en": "oxane",       "stem_zh": "氧杂环己烷", "naming_class": "monohetero", "fused": True},
     # 小环与含硫饱和杂环（P-22.2.2；3/4 元环与 S 杂环原缺失，致整块取代基丢弃）
     "oxirane":     {"smiles": "C1CO1",    "stem_en": "oxirane",     "stem_zh": "环氧乙烷", "naming_class": "monohetero","fused": True,},
@@ -156,9 +156,41 @@ def component_stem(sid: str) -> tuple[str, str] | None:
 
 
 def retained_fusion_prefix(sid: str) -> tuple[str, str] | None:
-    """附加组分的保留稠合前缀 (en, zh)（P-25.3.2.2.3）；无登记则 None（调用方走通用规则）。"""
+    """附加组分的保留稠合前缀 (en, zh)（P-25.3.2.2.3 保留前缀 / P-25.3.2.2.1 单环烃）；无登记则 None（调用方走通用规则）。"""
     entry = _TEMPLATES.get(sid)
-    return entry.get("fused_prefix") if entry else None
+    if entry is not None:
+        return entry.get("fused_prefix")
+    return fusion_carbocycle_prefix(sid)
+
+
+def fusion_carbocycle_prefix(sid: str) -> tuple[str, str] | None:
+    """单环烃附加组分前缀 (en, zh)（P-25.3.2.2.1）；非该类组分返回 None。"""
+    entry = _FUSION_CARBOCYCLES.get(sid)
+    return (entry["prefix_en"], entry["prefix_zh"]) if entry else None
+
+
+def omits_fusion_numbers(sid: str) -> bool:
+    """稠合描述符是否省略数字位次：一级单环烃附加组分 benzo 及 P-25.3.2.2.1 组分（P-25.3.8.1）。"""
+    return sid == "benzene" or sid in _FUSION_CARBOCYCLES
+
+
+def match_fusion_carbocycle(info: dict, atom_ids) -> str | None:
+    """饱和单环烃精确等于某 P-25.3.2.2.1 附加组分时返回 sid，否则 None（元素签名预过滤 + 子图同构）。"""
+    mol = info["mol"]
+    atoms = frozenset(atom_ids)
+    elem = _elem_sig(mol, atom_ids)
+    for sid, q in _Q_CYCLO.items():
+        if _CYCLO_ELEM[sid] != elem:
+            continue
+        for m in mol.GetSubstructMatches(q, uniquify=True):
+            if set(m) == atoms:
+                return sid
+    return None
+
+
+def match_fusion_component(info: dict, atom_ids) -> str | None:
+    """稠环拆解的组分匹配（P-25.3.2）：保留 mancude 母体优先，其次单环烃附加组分（P-25.3.2.2.1）。"""
+    return match_retained(info, atom_ids, mancude_only=True) or match_fusion_carbocycle(info, atom_ids)
 
 # 保留 fused 母体的固定编号标签（P-25.4）：融合桥头用字母 locant（3a/7a、4a/8a）。
 FUSED56_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
@@ -309,6 +341,20 @@ def _elem_sig(mol: Mol, atom_ids) -> frozenset:
 
 _TEMPLATE_ELEM: dict[str, frozenset] = {sid: _elem_sig(q, range(q.GetNumAtoms())) for sid, q in _Q.items()}
 
+# 单环烃附加组分（P-25.3.2.2.1）：饱和单环烃名删尾 'ne' 得前缀，表示最大数目非累积双键的形式。
+# 只作稠合附加零件，故不入 _TEMPLATES：入表会让单环骨架解析成保留名，破坏 P-31 单环通用路径
+# （carbocycle 按环大小动态命名）；它们也不是母体组分（P-25.3.2.1.1：单环烃母体用 [n]annulene/苯）。
+_FUSION_CARBOCYCLES: dict[str, dict] = {
+    "cyclopropane": {"smiles": "C1CC1",     "prefix_en": "cyclopropa", "prefix_zh": "环丙并"},
+    "cyclobutane":  {"smiles": "C1CCC1",    "prefix_en": "cyclobuta",  "prefix_zh": "环丁并"},
+    "cyclopentane": {"smiles": "C1CCCC1",   "prefix_en": "cyclopenta", "prefix_zh": "环戊并"},
+    "cyclohexane":  {"smiles": "C1CCCCC1",  "prefix_en": "cyclohexa",  "prefix_zh": "环己并"},
+    "cycloheptane": {"smiles": "C1CCCCCC1", "prefix_en": "cyclohepta", "prefix_zh": "环庚并"},
+    "cyclooctane":  {"smiles": "C1CCCCCCC1","prefix_en": "cycloocta",  "prefix_zh": "环辛并"},
+}
+_Q_CYCLO: dict[str, Mol] = {sid: MolFromSmiles(e["smiles"]) for sid, e in _FUSION_CARBOCYCLES.items()}
+_CYCLO_ELEM: dict[str, frozenset] = {sid: _elem_sig(q, range(q.GetNumAtoms())) for sid, q in _Q_CYCLO.items()}
+
 
 def _spec_from_template(sid: str, entry: dict) -> ScaffoldSpec:
     """由模板条目派生 ScaffoldSpec（n_rings/ring 从 smiles 自动算）。"""
@@ -430,20 +476,27 @@ def match_scaffold_ids(info: dict) -> list[str]:
     return [sid for sid, _, _ in match_systems(info)]
 
 
-def match_retained(info: dict, atom_ids) -> str | None:
-    """返回模板精确覆盖 atom_ids 的保留母体 sid，无命中 None；元素签名预过滤后子图同构，同命中取表序第一个（防御性兜底）。"""
-    hit = _match_with_map(info, atom_ids)
+def match_retained(info: dict, atom_ids, *, mancude_only: bool = False) -> str | None:
+    """返回模板精确覆盖 atom_ids 的保留母体 sid，无命中 None；元素签名预过滤后子图同构，同命中取表序第一个（防御性兜底）；mancude_only 只认 fused 保留名（融合组分）。"""
+    hit = _match_with_map(info, atom_ids, mancude_only=mancude_only)
     return hit[0] if hit else None
 
 
-def _match_with_map(info: dict, atom_ids) -> tuple[str, tuple[int, ...]] | None:
-    """模板精确覆盖 atom_ids 时返回 (sid, match)；match[i] 供 standard_path 把模板原子映射到分子原子。"""
+def _match_with_map(info: dict, atom_ids, *, mancude_only: bool = False) -> tuple[str, tuple[int, ...]] | None:
+    """模板精确覆盖 atom_ids 时返回 (sid, match)；match[i] 供 standard_path 把模板原子映射到分子原子。
+
+    ``mancude_only=True`` 跳过 ``fused`` 非真的模板：融合环组分须取 mancude（最大双键数）保留名
+    （P-25.2.1 表 2.8），饱和保留名（oxolane/pyrrolidine 等）不作组分；单环路径保持默认 False，
+    因单环饱和杂环的 PIN 正是这些饱和保留名（P-31.2.3.2）。
+    """
     mol = info["mol"]
   
     atoms = frozenset(atom_ids)
     elem = _elem_sig(mol, atom_ids)  
     print(Chem.MolToSmiles(mol))
     for sid, q in _Q.items():
+        if mancude_only and not _TEMPLATES[sid].get("fused"):
+            continue  # 饱和保留名不作稠合组分（P-25.2.1 表 2.8）
         if _TEMPLATE_ELEM[sid] != elem:
             continue
         for m in mol.GetSubstructMatches(q, uniquify=True):  # print(sid,m)
@@ -452,6 +505,8 @@ def _match_with_map(info: dict, atom_ids) -> tuple[str, tuple[int, ...]] | None:
     mol_h = _hydrogenated(mol)  # 精确匹配失败后按完全氢化骨架再比对（加氢衍生物，P-25.3.4）
     if mol_h is not None:
         for sid, qh in _Q_H.items():
+            if mancude_only and not _TEMPLATES[sid].get("fused"):
+                continue  # 氢化骨架同样只取 mancude 母体（P-25.3.4）
             if _TEMPLATE_ELEM[sid] != elem:
                 continue
             for m in mol_h.GetSubstructMatches(qh, uniquify=True):

@@ -58,9 +58,14 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return False
     if any(s.get("paren") or (s.get("en") or "")[:1] == "(" for s in substituents):
         return False
-    return (  # C2 单取代省略仅对端碳(FG 所在 C1)无可取代 H 的母体成立(腈/酸/酯/醛/酰胺等)；醇/胺/硫醇的 C1 带可取代 H，2- 位取代构成不同异构体(P-14.3.4.4)，2- 必须保留。
+    complex_sub = any(  # 复合取代基（自带位次如 1H-indol-5-yl / propan-2-ylsulfanyl，或显式括号）须保留母体 2- 消歧；
+        s.get("paren") or (s.get("en") or "")[:1] == "("        # 简单 FG 前缀（amino/hydroxy/chloro）位次无信息量，省略。
+        or re.search(r"\d", s.get("en") or "") for s in substituents
+    )
+    return (  # C2 单取代省略仅对端碳(FG 所在 C1)无可取代 H 的母体成立(腈/酯/醛/酰胺等)；醇/胺/硫醇的 C1 带可取代 H，2- 位取代构成不同异构体(P-14.3.4.4)，2- 必须保留。
         n_carbons == 2 and len(substituents) == 1
         and kind not in ("alcohol", "amine", "thiol")
+        and not complex_sub
     )
 
 

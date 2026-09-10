@@ -8,7 +8,8 @@ from namepredict.constants import C, P145_SENIOR, P25_SENIOR
 from namepredict.layer2.ring_scaffold import (
     _Q,
     component_stem,
-    match_retained,
+    match_fusion_component,
+    omits_fusion_numbers,
     retained_fusion_prefix,
 )
 
@@ -31,6 +32,7 @@ class FusedNode:
     # （L5 不得 import L2，故稠合词干须随拆解树下发，不留在 L5 本地表。）
     fused_stem: tuple[str, str] | None = None    # 组分词干 (en, zh)；None = 不可作稠合零件
     fused_prefix: tuple[str, str] | None = None  # 附加组分保留前缀 (en, zh)；None = 走通用规则
+    fused_omit_numbers: bool = False             # 稠合描述符省略数字位次（P-25.3.8.1：一级单环烃附加组分）
 
 
 def _has_template_superset(mol, atom_ids) -> bool:
@@ -40,8 +42,8 @@ def _has_template_superset(mol, atom_ids) -> bool:
 
 
 def _seedable(info, ring_atoms) -> bool:
-    """单环是否精确匹配某保留模板（作为增长种子的必要条件）。"""
-    return match_retained(info, ring_atoms) is not None
+    """单环是否精确匹配某稠合组分（作为增长种子的必要条件：mancude 保留名或单环烃，P-25.2.1/P-25.3.2.2.1）。"""
+    return match_fusion_component(info, ring_atoms) is not None
 
 
 def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[int], tuple[str, frozenset[int]]]:
@@ -64,7 +66,7 @@ def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[i
             if rset in visited:
                 continue
             visited.add(rset)
-            sid = match_retained(info, atoms)
+            sid = match_fusion_component(info, atoms)
             if sid is not None:
                 out.setdefault(atoms, (sid, rset))
             if not _has_template_superset(mol, atoms):
@@ -218,6 +220,7 @@ def _decompose(info, rings, fusion_edges, ring_indices, fusion_shared=()) -> Fus
         attached=tuple(attached),
         fused_stem=component_stem(sid),
         fused_prefix=retained_fusion_prefix(sid),
+        fused_omit_numbers=omits_fusion_numbers(sid),
     )
 
 

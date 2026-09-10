@@ -80,11 +80,19 @@ def _fused_one(mol, parent_node, child_node, rings, fusion_edges) -> tuple[str, 
     parent_chain, _ = _component_numbering(mol, parent_node, rings, fusion_edges, shared)
     parent_chain, _ = _outer_chain_labels(parent_node, rings, parent_chain, [""] * len(parent_chain)) \
         if parent_chain else (None, None)
-    child_chain, child_labels = _component_numbering(mol, child_node, rings, fusion_edges, shared)
-    if not parent_chain or not child_labels:
+    if not parent_chain:
         return None
     prefix = _prefix_of(child_node, *_stem_of(child_node))
     if prefix is None:
+        return None
+    if child_node.fused_omit_numbers:  # 一级单环烃附加组分(benzo 及 P-25.3.2.2.1 的 cyclopenta 等)省略数字位次(P-25.3.8.1), 故无需附加组分自身编号。
+        letter = next((ltr for sh in child_node.fusion_shared
+                       if (ltr := _fusion_letter(parent_chain, sh))), None)
+        if not letter:
+            return None
+        return prefix[0] + f"[{letter}]", prefix[1] + f"[{letter}]"
+    child_chain, child_labels = _component_numbering(mol, child_node, rings, fusion_edges, shared)
+    if not child_labels:
         return None
     letter = numbers = None
     for sh in child_node.fusion_shared:
@@ -94,7 +102,7 @@ def _fused_one(mol, parent_node, child_node, rings, fusion_edges) -> tuple[str, 
             break
     if not letter:
         return None
-    desc = f"[{letter}]" if child_node.scaffold_id == "benzene" else f"[{','.join(map(str, numbers))}-{letter}]"  # 单环烃附加(benzo 等)省略数字位次(P-25.3.8.1)。
+    desc = f"[{','.join(map(str, numbers))}-{letter}]"
     return prefix[0] + desc, prefix[1] + desc
 
 
