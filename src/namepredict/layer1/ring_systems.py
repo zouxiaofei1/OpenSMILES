@@ -15,6 +15,13 @@ def _sssr(mol: Mol) -> list[tuple[int, ...]]:
     """
     return memo.by_mol("sssr", lambda m: list(m.GetRingInfo().AtomRings()), mol)
 
+def sssr_rings(mol: Mol) -> list[tuple[int, ...]]:
+    """供各层统一调用的环访问器：与 `_sssr` 同一次记忆，避免各层各自重建 AtomRings。
+
+    下游只遍历/求和，不得原地修改返回的列表（同一次命名内所有调用者共享同一对象）。
+    """
+    return _sssr(mol)
+
 def _shared(a: tuple[int, ...], b: tuple[int, ...]) -> frozenset[int]:
     """返回两个环共享的原子集合。"""
     return frozenset(a) & frozenset(b)

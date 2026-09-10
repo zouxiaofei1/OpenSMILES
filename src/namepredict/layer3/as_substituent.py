@@ -8,7 +8,7 @@ import copy
 from rdkit.Chem import CanonicalRankAtoms
 from namepredict.constants import AMIDO_RETAINED_EN, C
 from namepredict.cache.common_names import CommonNameCache
-from namepredict.layer3.submol_build import build_anchor_submol, build_cut_submol
+from namepredict.layer3.submol_build import build_anchor_submol
 from namepredict.tools.free_to_yl import free_to_yl as yl_form
 
 # 简单保留烷氧基作前缀不加括号（ethoxybenzene/phenoxybenzene；与 methoxy 一致，

@@ -8,6 +8,7 @@ from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
 from namepredict.layer2.principal import PrincipalGroupSelection, feature_spec
+from namepredict.layer1.ring_systems import sssr_rings
 
 
 
@@ -132,7 +133,7 @@ def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
     mol = info["mol"]
     atoms = set(skeleton.atom_ids)
     if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms):
-        n_rings = sum(1 for ring in mol.GetRingInfo().AtomRings() if set(ring) <= atoms)  # 芳香稠环(未注册)kind 收敛 alkane, 骨架身份由 fused_tree + scaffold_id 承载(L5 fused_namer 组装稠合名)。
+        n_rings = sum(1 for ring in sssr_rings(mol) if set(ring) <= atoms)  # 芳香稠环(未注册)kind 收敛 alkane, 骨架身份由 fused_tree + scaffold_id 承载(L5 fused_namer 组装稠合名)。
         if n_rings >= 2:
             return "alkane"
         return None

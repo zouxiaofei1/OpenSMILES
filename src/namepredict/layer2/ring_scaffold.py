@@ -8,6 +8,7 @@ from rdkit.Chem import Mol, MolFromSmarts, MolFromSmiles
 from rdkit import Chem
 from namepredict.tools import memo
 from namepredict.layer2.parent_skeleton import ParentSkeleton
+from namepredict.layer1.ring_systems import sssr_rings
 
 
 # ScaffoldSpec 定义（命名/编号元数据；仅 L2 数据，不做命名组装）
@@ -487,17 +488,11 @@ def match_retained(info: dict, atom_ids, *, mancude_only: bool = False) -> str |
 
 
 def _match_with_map(info: dict, atom_ids, *, mancude_only: bool = False) -> tuple[str, tuple[int, ...]] | None:
-    """模板精确覆盖 atom_ids 时返回 (sid, match)；match[i] 供 standard_path 把模板原子映射到分子原子。
-
-    ``mancude_only=True`` 跳过 ``fused`` 非真的模板：融合环组分须取 mancude（最大双键数）保留名
-    （P-25.2.1 表 2.8），饱和保留名（oxolane/pyrrolidine 等）不作组分；单环路径保持默认 False，
-    因单环饱和杂环的 PIN 正是这些饱和保留名（P-31.2.3.2）。
-    """
+    """模板精确覆盖 atom_ids 时返回 (sid, match)；match[i] 供 standard_path 把模板原子映射到分子原子。 """
     mol = info["mol"]
   
     atoms = frozenset(atom_ids)
     elem = _elem_sig(mol, atom_ids)  
-    print(Chem.MolToSmiles(mol))
     for sid, q in _Q.items():
         if mancude_only and not _TEMPLATES[sid].get("fused"):
             continue  # 饱和保留名不作稠合组分（P-25.2.1 表 2.8）
@@ -551,7 +546,7 @@ def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentit
     if not all_carbon:
         atoms = set(skeleton.atom_ids)
         # if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms):
-        n_rings = sum(1 for ring in mol.GetRingInfo().AtomRings() if set(ring) <= atoms)
+        n_rings = sum(1 for ring in sssr_rings(mol) if set(ring) <= atoms)
         if n_rings >= 2:
             return ScaffoldIdentity("fused_hetero", "fused_hetero", n_rings, "hetero")
         return None

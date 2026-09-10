@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from namepredict.layer1.ring_systems import sssr_rings
 
 
 def _stem_of(node) -> tuple[str | None, str | None]:
@@ -126,7 +127,7 @@ def fused_parent_names(mol, node) -> tuple[str, str] | None:
     root_en, root_zh = _stem_of(node)
     if not root_en:
         return None
-    rings = list(mol.GetRingInfo().AtomRings())
+    rings = list(sssr_rings(mol))
     from namepredict.layer1.ring_systems import build_ring_systems
     fusion_edges = ()
     root_rings = set(node.ring_indices)

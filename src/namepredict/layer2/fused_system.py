@@ -12,6 +12,7 @@ from namepredict.layer2.ring_scaffold import (
     omits_fusion_numbers,
     retained_fusion_prefix,
 )
+from namepredict.layer1.ring_systems import sssr_rings
 
 # 保留模板的元素计数（超集剪枝：当前原子集须 ≤ 某模板计数才可能拼出保留母体）。
 _TEMPLATE_COUNTS: dict[str, Counter] = {
@@ -226,7 +227,7 @@ def _decompose(info, rings, fusion_edges, ring_indices, fusion_shared=()) -> Fus
 
 def decompose_fused_system(info, system) -> FusedNode | None:
     """公共入口: 对单个环系拆解为 FusedNode 树（无保留候选返回 None）。"""
-    rings = list(info["mol"].GetRingInfo().AtomRings())
+    rings = list(sssr_rings(info["mol"]))
     node = _decompose(info, rings, system.get("fusion_edges") or [],
                       frozenset(system.get("sssr_indices") or ()))
     return node

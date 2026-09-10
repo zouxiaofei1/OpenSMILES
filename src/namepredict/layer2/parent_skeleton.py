@@ -10,6 +10,7 @@ from namepredict.tools import memo
 from namepredict.constants import Al, As, B, Bi, C, Ga, Ge, In, N, O, P, Pb, S, Sb, Se, Si, Sn, Te, Tl
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass, FunctionalGroupOccurrence
 from namepredict.layer2.chain_walk import _all_chains_through, _chain_through_two, _longest_chain
+from namepredict.layer1.ring_systems import sssr_rings
 
 
 class SkeletonTopology(str, Enum):
@@ -172,7 +173,7 @@ def keep_p44_3(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[Parent
 def _ring_count(mol: Mol, skeleton: ParentSkeleton) -> int:
     """计算骨架覆盖的完整环数。"""
     atoms = set(skeleton.atom_ids)
-    return sum(set(ring) <= atoms for ring in mol.GetRingInfo().AtomRings())
+    return sum(set(ring) <= atoms for ring in sssr_rings(mol))
 
 
 def p44_2_key(mol: Mol, skeleton: ParentSkeleton) -> tuple:

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from namepredict.tools import memo
+from namepredict.layer1.ring_systems import sssr_rings
 
 # P-25.3.3：这些保留骨架按传统编号，不走 P-25.3.3.1 的优选取向自动编号。
 # xanthene 及其硫属类似物、cyclopenta[a]phenanthrene 尚未登记模板，登记时须一并列入。
@@ -261,7 +262,7 @@ def _fused_numbering(parent: dict, chain: list[int],
     # 若在此拦下会回落到 P-14.4 单环通用枚举：桥头得数字位而非字母位(4a/8a)、起点方向随输入原子序漂移。
     # 故按「chain 覆盖 ≥2 环」放行走 P-25.3.3 外周编号；单环/开链覆盖 ≤1 环仍返回 None，保持原路径不变。
     chain_fused = bool(mol is not None and chain) and sum(
-        1 for r in mol.GetRingInfo().AtomRings() if set(r) <= set(chain)) >= 2
+        1 for r in sssr_rings(mol) if set(r) <= set(chain)) >= 2
     if mol is None or not chain or not (chain_arom or registered_fused or chain_fused):
         return None
     from namepredict.layer1.ring_systems import build_ring_systems
@@ -274,7 +275,7 @@ def _fused_numbering(parent: dict, chain: list[int],
     sssr = list(system.get("sssr_indices") or [])
     if len(sssr) < 2:
         return None  # 单环走 P-14.4 通用枚举
-    atom_rings = list(mol.GetRingInfo().AtomRings())  # 仅取稠合系统自身环（全分子 AtomRings 会把取代基无关环算进 layout 致 orientation 失败，如 chebi-300）；rings 过滤后索引重排，fusion_edges 的 SSSR 索引须同步重映射，否则 horizontal_rows KeyError 退化成只命名侧链。
+    atom_rings = list(sssr_rings(mol))  # 仅取稠合系统自身环（全分子 AtomRings 会把取代基无关环算进 layout 致 orientation 失败，如 chebi-300）；rings 过滤后索引重排，fusion_edges 的 SSSR 索引须同步重映射，否则 horizontal_rows KeyError 退化成只命名侧链。
     rings = [atom_rings[i] for i in sssr]
     idx_map = {orig: new for new, orig in enumerate(sssr)}
     fusion_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in (system.get("fusion_edges") or [])
