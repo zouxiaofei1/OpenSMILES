@@ -23,6 +23,9 @@ _POLICIES = (
     RingExpressionPolicy(frozenset({"mono_carbo"}), FG.ALCOHOL, frozenset({"in_skeleton"})),
     RingExpressionPolicy(frozenset({"mono_carbo"}), FG.AMINE, frozenset({"in_skeleton"})),
     RingExpressionPolicy(frozenset({"naph_family"}), FG.ALCOHOL, frozenset({"in_skeleton"})),
+    # 保留稠环母体的环内酮（色烯-4-酮/喹啉酮型）：缺此条则环酮被 _unsupported_typed_ring 整体拦截，
+    # 候选数为 0、直接空输出（chromone/coumaranone 等）。
+    RingExpressionPolicy(frozenset({"naph_family"}), FG.KETONE, frozenset({"in_skeleton"})),
     # 未注册稠环(fused_hetero/fused): kind 已正交化, 主 FG 走 L5 fused_tree 组装, 需放开 typed 表达(否则环酮被 _unsupported_typed_ring 拦截)。
     RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.ALCOHOL, frozenset({"in_skeleton"})),
     RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.KETONE, frozenset({"in_skeleton"})),

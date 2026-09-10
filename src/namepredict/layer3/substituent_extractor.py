@@ -212,8 +212,8 @@ def _with_full_atoms(mol, owned, s: dict) -> dict:
     return s if not full else {**s, "atoms": sorted(full)}
 
 
-def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> list:
-    """L3 入口：提取核心取代基、烷基侧链与 claim 侧链并合并。"""
+def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general", cache: CommonNameCache | None = None, depth: int = 0) -> list:
+    """L3 入口：提取核心取代基、烷基侧链与 claim 侧链并合并；depth 透传给 claim 侧链命名。"""
     from namepredict.layer3.claim_extract import extract_claimed_sides
 
     mol, chain = info["mol"], parent.get("chain") or []
@@ -224,4 +224,4 @@ def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general"
     owned = parent.get("owned_atoms")
     if owned:
         base = [_with_full_atoms(mol, owned, s) for s in base]
-    return base + extract_claimed_sides(info, parent, base, name_mode=name_mode, cache=cache)
+    return base + extract_claimed_sides(info, parent, base, name_mode=name_mode, cache=cache, depth=depth)

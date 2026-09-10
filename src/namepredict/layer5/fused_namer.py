@@ -25,8 +25,8 @@ def _component_numbering(mol, node, rings, fusion_edges, shared=None):
     if not rset:
         return None, None
     sub_rings = [rings[i] for i in rset]
-    if shared is None:  # 兜底: 沿用旧逻辑(节点自身的附加组分之一, 无附加时为空)。
-        shared = node.attached[0].fusion_shared[0] if node.attached else None
+    if shared is None:  # 兜底: 沿用旧逻辑(节点自身的附加组分之一, 无附加时为空)。螺环附加组分只共享 1 个原子、fusion_shared 为空，须与 :79 同样守卫，否则 [0] 越界。
+        shared = node.attached[0].fusion_shared[0] if node.attached and node.attached[0].fusion_shared else None
     idx_map = {i: k for k, i in enumerate(rset)}
     sub_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in fusion_edges
                  if i in idx_map and j in idx_map]

@@ -140,15 +140,16 @@ def _assemble_candidate(parent, subst, *, depth: int, t0: float, name_mode: str 
 
 def _prepare_candidate(
     info: dict, parent: dict, *, name_mode: str = "general", cache: CommonNameCache | None = None,
+    depth: int = 0,
 ) -> tuple[dict, list[dict], bool]:
-    """完成母体归属、提取取代基并返回 (parent, subst, complete)。"""
+    """完成母体归属、提取取代基并返回 (parent, subst, complete)；depth 透传给取代基命名。"""
     mol = info["mol"]
     parent = finalize_parent_ownership(parent, mol)
     if not parent.get("owned_atoms"):
         return parent, [], False
     if not parent.get("chain") and not info.get("has_ring"):
         return parent, [], False
-    subst = extract_substituents(info, parent, name_mode=name_mode, cache=cache)
+    subst = extract_substituents(info, parent, name_mode=name_mode, cache=cache, depth=depth)
     complete = _ledger_complete(mol, parent["owned_atoms"], subst)
     return parent, subst, complete
 
@@ -164,7 +165,7 @@ def try_candidate(
 ) -> NameResult | None:
     """完成归属、提取取代基、可选要求完整 coverage ledger，然后组装。"""
     t0 = t0 if t0 is not None else time.perf_counter()
-    parent, subst, complete = _prepare_candidate(info, parent, name_mode=name_mode)
+    parent, subst, complete = _prepare_candidate(info, parent, name_mode=name_mode, depth=depth)
     if require_complete and not complete:
         return None
     hit = _assemble_candidate(parent, subst, depth=depth, t0=t0)
@@ -233,7 +234,7 @@ def _run_candidates(
     """仅尝试 P-44.1.1 高优先级阶段；绝不降级能力。"""
     attempts: list[dict] = []
     phase = _candidate_phases(info, depth)[0]
-    prepared = [_prepare_candidate(info, cand, name_mode=name_mode, cache=cache) for cand in phase]
+    prepared = [_prepare_candidate(info, cand, name_mode=name_mode, cache=cache, depth=depth) for cand in phase]
     hit = _try_phase(prepared, depth=depth, t0=t0, name_mode=name_mode, attempts=attempts)
     return hit or _fail(_elapsed_ms(t0), "no_assemblable_candidate", attempts=attempts)
 

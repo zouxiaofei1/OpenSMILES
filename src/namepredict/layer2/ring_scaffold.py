@@ -61,14 +61,38 @@ def identity_of(spec) -> ScaffoldIdentity:
     return ScaffoldIdentity(spec.id, spec.naming_class, spec.n_rings, spec.ring)
 
 
+# 保留 fused 母体的固定编号标签（P-25.4）：融合桥头用字母 locant（3a/7a、4a/8a）。
+FUSED56_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
+# purine（嘌呤，5+6 九原子）保留传统编号：桥头为 C4/C5 得纯数字 4、5，无 a/b 字母位（P-25.3.3 例外）。
+PURINE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "5", "6", "7", "8", "9")
+# carbazole（13 原子）：N9，苯环 1-4 / 5-8，桥头 4a/8a/9a/9b（P-25.4.1.4）。
+CARBAZOLE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a", "9", "9a", "9b")
+# acridine（14 原子）：N10，对位 C9 连接取代基；苯环 1-4 / 5-8。
+ACRIDINE_LABELS: tuple[str, ...] = ("1","2","3","4","4a","5","6","7","8","8a","9","9a","10","10a")
+# phenothiazine（14 原子）：S5、N10；苯环 1-4 / 6-9。
+PHENOTHIAZINE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "9", "9a", "10", "10a", "10b")
+NAPH_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a")
+# phenanthrene(14 原子): 端环 1-4 / 5-8, 桥头 4a/4b/8a/8b, 中环 9/10(P-25.4.1 传统编号)。
+PHENANTHRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "4b", "5", "6", "7", "8", "8a", "8b", "9", "10")
+# pyrene(16 原子): 外周 1-10, 稠合碳 3a/5a/8a/8b/10a/10b(P-25.3.3.3.1 推荐编号)。
+PYRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "5a", "6", "7", "8", "8a", "8b", "9", "10", "10a", "10b")
+
+
+# 固定编号登记（P-25.4/P-25.3.3）：模板条目 `standard` = (labels, order) 二元组，
+# order 是模板原子按 locant 顺序的下标排列，labels 为对应 locant 标签，两者长度均等于模板原子数。
+# 未登记者走 P-14.4 通用枚举（对称碳环 naphthalene/anthracene、单杂环 pyrrole/pyridine 等）。
+# order 起点为最优先杂原子，沿环编号绕开融合桥头（桥头只得字母位）；1,3-二唑（咪唑/吡唑/噻唑/噁唑）
+# 的编号为 IUPAC 固定（N 须得 1,3 位、带 H/取代基的 N 为 1），通用枚举会被 principal 最小化翻转，故一并登记。
+# order 与 labels 同条目、且与 smiles 同表，避免改 SMILES 后编号静默错位（见 _validate_standard_fields）。
+
 # 保留母体 SMILES 模板注册表（唯一事实来源；原 specs.py + retained_templates.py 合并）
 _TEMPLATES: dict[str, dict] = {
     # carbocycles
     "benzene":     {"smiles": "c1ccccc1",             "stem_en": "benzene",    "stem_zh": "苯",   "naming_class": "mono_carbo", "fused": True, "fused_prefix": ("benzo", "苯并")},
     "naphthalene": {"smiles": "c1ccc2ccccc2c1",       "stem_en": "naphthalene","stem_zh": "萘",    "naming_class": "naph_family", "fused": True, "fused_prefix": ("naphtho", "萘并")},
     "anthracene":  {"smiles": "c1ccc2cc3ccccc3cc2c1", "stem_en": "anthracene", "stem_zh": "蒽",    "naming_class": "anthra", "fused": True, "fused_prefix": ("anthra", "蒽并")},
-    "phenanthrene":{"smiles": "c1ccc2c(c1)ccc1ccccc12", "stem_en": "phenanthrene","stem_zh": "菲", "naming_class": "phenanthrene", "fused": True, "fused_prefix": ("phenanthro", "菲并")},
-    "pyrene":      {"smiles": "c1cc2ccc3cccc4ccc(c1)c2c34", "stem_en": "pyrene",  "stem_zh": "芘", "naming_class": "pyrene", "fused": True},
+    "phenanthrene":{"smiles": "c1ccc2c(c1)ccc1ccccc12", "stem_en": "phenanthrene","stem_zh": "菲", "naming_class": "phenanthrene", "fused": True, "fused_prefix": ("phenanthro", "菲并"), "standard": (PHENANTHRENE_LABELS, (9, 10, 11, 12, 13, 8, 5, 0, 1, 2, 3, 4, 6, 7))},
+    "pyrene":      {"smiles": "c1cc2ccc3cccc4ccc(c1)c2c34", "stem_en": "pyrene",  "stem_zh": "芘", "naming_class": "pyrene", "fused": True, "standard": (PYRENE_LABELS, (6, 7, 8, 9, 10, 11, 12, 13, 0, 1, 2, 14, 3, 4, 5, 15))},
     # monocyclic heteroarenes
     "furan":       {"smiles": "c1ccoc1",    "stem_en": "furan",       "stem_zh": "呋喃",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("furo", "呋喃并")},
     "thiophene":   {"smiles": "c1ccsc1",    "stem_en": "thiophene",   "stem_zh": "噻吩",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("thieno", "噻吩并")},
@@ -79,8 +103,9 @@ _TEMPLATES: dict[str, dict] = {
     "pyrazine":    {"smiles": "c1cnccn1",   "stem_en": "pyrazine",    "stem_zh": "吡嗪",   "naming_class": "monohetero", "fused": True},
     "imidazole":   {"smiles": "c1cnc[nH]1", "stem_en": "imidazole",   "stem_zh": "咪唑",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("imidazo", "咪唑并"), "locant_prefix": "1H-", "prefix_nh_conditional": True},
     "pyrazole":    {"smiles": "c1ccn[nH]1", "stem_en": "pyrazole",    "stem_zh": "吡唑",   "naming_class": "monohetero", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "oxazole":     {"smiles": "c1cocn1",    "stem_en": "oxazole",     "stem_zh": "噁唑",   "naming_class": "monohetero", "fused": True, "locant_prefix": "1,3-"},
-    "thiazole":    {"smiles": "c1cscn1",    "stem_en": "thiazole",    "stem_zh": "噻唑",   "naming_class": "monohetero", "fused": True, "locant_prefix": "1,3-"},
+    # 1,3-二唑编号 IUPAC 固定（N 得 1,3 位）；带取代基/H 的 N 走 numbering_engine._narrow_hetero_ring 的 (c) 同元素 N 收窄。
+    "oxazole":     {"smiles": "c1cocn1",    "stem_en": "oxazole",     "stem_zh": "噁唑",   "naming_class": "monohetero", "fused": True, "locant_prefix": "1,3-", "standard": (("1", "2", "3", "4", "5"), (2, 3, 4, 0, 1))},
+    "thiazole":    {"smiles": "c1cscn1",    "stem_en": "thiazole",    "stem_zh": "噻唑",   "naming_class": "monohetero", "fused": True, "locant_prefix": "1,3-", "standard": (("1", "2", "3", "4", "5"), (2, 3, 4, 0, 1))},
     # 其余保留名杂芳环（P-25.1 表 2.8）：异噁唑/三唑/四唑/三嗪原缺失
     "isoxazole":   {"smiles": "c1ccno1",    "stem_en": "1,2-oxazole",  "stem_zh": "1,2-噁唑", "naming_class": "monohetero", "fused": True,"locant_prefix": "1,2-"},
     "triazole":    {"smiles": "c1nc[nH]n1", "stem_en": "1,2,4-triazole", "stem_zh": "1,2,4-三唑", "naming_class": "monohetero","fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
@@ -115,32 +140,40 @@ _TEMPLATES: dict[str, dict] = {
     "dihydroimidazole":{"smiles": "C1=NCCN1", "stem_en": "4,5-dihydro-1H-imidazole", "stem_zh": "4,5-二氢-1H-咪唑", "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True},
     "dihydrothiazole":{"smiles": "C1=NCCS1",  "stem_en": "4,5-dihydro-1,3-thiazole", "stem_zh": "4,5-二氢-1,3-噻唑", "naming_class": "monohetero", "locant_prefix": "1,3-"},
     # fused 5+6
-    "indole":         {"smiles": "c1ccc2[nH]ccc2c1", "stem_en": "1H-indole",      "stem_zh": "吲哚",     "naming_class": "fused56", "fused": True, "fused_stem": ("indole", "吲哚"), "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "indazole":       {"smiles": "c1ccc2cn[nH]c2c1", "stem_en": "indazole",       "stem_zh": "吲唑",     "naming_class": "fused56", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
+    # fused56（9 原子）标准编号 1,2,3,3a,4,5,6,7,7a：杂原子(1)走远离桥头方向，苯环从 3a 起。
+    "indole":         {"smiles": "c1ccc2[nH]ccc2c1", "stem_en": "1H-indole",      "stem_zh": "吲哚",     "naming_class": "fused56", "fused": True, "fused_stem": ("indole", "吲哚"), "locant_prefix": "1H-", "prefix_nh_conditional": True, "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},
+    "indazole":       {"smiles": "c1ccc2cn[nH]c2c1", "stem_en": "indazole",       "stem_zh": "吲唑",     "naming_class": "fused56", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True, "standard": (FUSED56_LABELS, (6, 5, 4, 3, 2, 1, 0, 8, 7))},
     "benzimidazole":  {"smiles": "c1ccc2[nH]cnc2c1", "stem_en": "benzimidazole",  "stem_zh": "苯并咪唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "benzofuran":     {"smiles": "c1ccc2occc2c1",    "stem_en": "benzofuran",     "stem_zh": "苯并呋喃", "naming_class": "fused56", "fused": True, "locant_prefix": "1-"},
-    "benzothiophene": {"smiles": "c1ccc2sccc2c1",    "stem_en": "benzothiophene", "stem_zh": "苯并噻吩", "naming_class": "fused56", "fused": True, "locant_prefix": "1-"},
-    "benzothiazole":  {"smiles": "c1ccc2scnc2c1",    "stem_en": "benzothiazole",  "stem_zh": "苯并噻唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1,3-"},
-    "benzoxazole":    {"smiles": "c1ccc2ocnc2c1",    "stem_en": "benzoxazole",    "stem_zh": "苯并噁唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1,3-"},
+    "benzofuran":     {"smiles": "c1ccc2occc2c1",    "stem_en": "benzofuran",     "stem_zh": "苯并呋喃", "naming_class": "fused56", "fused": True, "locant_prefix": "1-", "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},
+    "benzothiophene": {"smiles": "c1ccc2sccc2c1",    "stem_en": "benzothiophene", "stem_zh": "苯并噻吩", "naming_class": "fused56", "fused": True, "locant_prefix": "1-", "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},
+    "benzothiazole":  {"smiles": "c1ccc2scnc2c1",    "stem_en": "benzothiazole",  "stem_zh": "苯并噻唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1,3-", "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},
+    "benzoxazole":    {"smiles": "c1ccc2ocnc2c1",    "stem_en": "benzoxazole",    "stem_zh": "苯并噁唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1,3-", "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},
     # 三环 6+5+6（13 原子）：两个苯环融合吡咯，N9 邻位桥头 4a/9a。
-    "carbazole":      {"smiles": "c1ccc2[nH]c3ccccc3c2c1", "stem_en": "carbazole", "stem_zh": "咔唑", "naming_class": "carbazole", "fused": True, "locant_prefix": "9H-", "prefix_nh_conditional": True},
+    "carbazole":      {"smiles": "c1ccc2[nH]c3ccccc3c2c1", "stem_en": "carbazole", "stem_zh": "咔唑", "naming_class": "carbazole", "fused": True, "locant_prefix": "9H-", "prefix_nh_conditional": True, "standard": (CARBAZOLE_LABELS, (6, 7, 8, 9, 5, 12, 0, 1, 2, 11, 4, 3, 10))},
     # 三环 6+6+6（14 原子）：中间吡啶/含 S 环两侧苯环融合。
-    "acridine":       {"smiles": "c1ccc2nc3ccccc3cc2c1",   "stem_en": "acridine",     "stem_zh": "吖啶",   "naming_class": "acridine", "fused": True},
-    "phenothiazine":  {"smiles": "c1ccc2Sc3ccccc3Nc2c1",   "stem_en": "phenothiazine", "stem_zh": "吩噻嗪", "naming_class": "phenothiazine", "fused": True, "locant_prefix": "10H-", "prefix_nh_conditional": True},
+    "acridine":       {"smiles": "c1ccc2nc3ccccc3cc2c1",   "stem_en": "acridine",     "stem_zh": "吖啶",   "naming_class": "acridine", "fused": True, "standard": (ACRIDINE_LABELS, (9, 8, 7, 6, 5, 2, 1, 0, 13, 12, 11, 10, 4, 3))},
+    "phenothiazine":  {"smiles": "c1ccc2Sc3ccccc3Nc2c1",   "stem_en": "phenothiazine", "stem_zh": "吩噻嗪", "naming_class": "phenothiazine", "fused": True, "locant_prefix": "10H-", "prefix_nh_conditional": True, "standard": (PHENOTHIAZINE_LABELS, (0, 1, 2, 3, 12, 4, 5, 6, 7, 8, 10, 11, 13, 9))},
     # 双环 5+6（9 原子）：苯环并二氧戊环，O1/C2/O3。
-    "benzodioxole":   {"smiles": "c1ccc2OCOc2c1",          "stem_en": "benzodioxole", "stem_zh": "苯并二氧杂环戊烯", "naming_class": "benzodioxole", "fused": True, "locant_prefix": "1,3-"},
-    # fused 6+6
-    "quinoline":    {"smiles": "c1ccc2ncccc2c1", "stem_en": "quinoline",    "stem_zh": "喹啉",   "naming_class": "naph_family", "fused": True},
+    "benzodioxole":   {"smiles": "c1ccc2OCOc2c1",          "stem_en": "benzodioxole", "stem_zh": "苯并二氧杂环戊烯", "naming_class": "benzodioxole", "fused": True, "locant_prefix": "1,3-", "standard": (FUSED56_LABELS, (4, 5, 6, 7, 3, 8, 0, 1, 2))},
+    # fused 6+6；naph_family（10 原子）标准编号 1,2,3,4,4a,5,6,7,8,8a。
+    "quinoline":    {"smiles": "c1ccc2ncccc2c1", "stem_en": "quinoline",    "stem_zh": "喹啉",   "naming_class": "naph_family", "fused": True, "standard": (NAPH_LABELS, (4, 5, 6, 7, 8, 9, 0, 1, 2, 3))},
     "isoquinoline": {"smiles": "c1nccc2ccccc21", "stem_en": "isoquinoline", "stem_zh": "异喹啉", "naming_class": "naph_family", "fused": True},
-    "quinazoline":  {"smiles": "c1ccc2ncncc2c1", "stem_en": "quinazoline",  "stem_zh": "喹唑啉", "naming_class": "naph_family", "fused": True},
+    "quinazoline":  {"smiles": "c1ccc2ncncc2c1", "stem_en": "quinazoline",  "stem_zh": "喹唑啉", "naming_class": "naph_family", "fused": True, "standard": (NAPH_LABELS, (4, 5, 6, 7, 8, 9, 0, 1, 2, 3))},
     "quinoxaline":  {"smiles": "c1ccc2nccnc2c1", "stem_en": "quinoxaline",  "stem_zh": "喹喔啉", "naming_class": "naph_family", "fused": True},
+    # 苯并吡喃（10 原子 6+6）：O 直接连桥头（色烯）或隔一位（异色烯）。保留名 chromene/isochromene
+    # 是 P-25.1 表 2.8 的稠合母体，取代「benzo[b]oxane」拼接式（自造体例，两份基准 gold 均 0 见）。
+    # 二者连通性不同（O 是否连桥头），氢化骨架匹配路径可区分，故可同表并存。
+    # chromene（2H-色烯）：O 连桥头，编号从 O1 起；isochromene（1H-异色烯）：编号自 CH2 起，O 得 2 位。
+    "chromene":     {"smiles": "C1=COc2ccccc2C1", "stem_en": "chromene",   "stem_zh": "色烯",  "naming_class": "naph_family", "fused": True, "fused_prefix": ("chromeno", "色烯并"), "standard": (NAPH_LABELS, (2, 1, 0, 9, 8, 7, 6, 5, 4, 3))},
+    "isochromene":  {"smiles": "C1=CC2=CC=CC=C2CO1", "stem_en": "isochromene", "stem_zh": "异色烯", "naming_class": "naph_family", "fused": True, "fused_prefix": ("isochromeno", "异色烯并"), "standard": (NAPH_LABELS, (8, 9, 0, 1, 2, 3, 4, 5, 6, 7))},
     # 保留名（表 2.8）：purine=嘌呤（5+6，特殊编号 1–9，PIN 7H-purine，P-25 表 2.8 第16项）；
     # pteridine=蝶啶（6+6 四 N，naph-family 编号，N 在 1/3/5/8、CH 在 2/4/6/7）。无环外 =O，故可入表。
-    "purine":       {"smiles": "c1ncc2[nH]cnc2n1", "stem_en": "7H-purine",     "stem_zh": "嘌呤",   "naming_class": "purine", "fused": True, "fused_stem": ("purine", "嘌呤"), "locant_prefix": "7H-", "prefix_nh_conditional": True},
-    "pteridine":    {"smiles": "c1cnc2ncncc2n1",    "stem_en": "pteridine",    "stem_zh": "蝶啶",   "naming_class": "naph_family", "fused": True},
+    # purine 9 原子：模板 c1ncc2[nH]cnc2n1 原子按 locant 1–9 序（N1、C2、N3、C4、C5、C6、N7、C8、N9），
+    # 桥头 C4/C5 得数字位，N7 为指示氢所在；pteridine 10 原子沿外周按 1,2,3,4,4a,5…8,8a（N 在 1/3/5/8）。
+    "purine":       {"smiles": "c1ncc2[nH]cnc2n1", "stem_en": "7H-purine",     "stem_zh": "嘌呤",   "naming_class": "purine", "fused": True, "fused_stem": ("purine", "嘌呤"), "locant_prefix": "7H-", "prefix_nh_conditional": True, "standard": (PURINE_LABELS, (1, 0, 8, 7, 3, 2, 4, 5, 6))},
+    "pteridine":    {"smiles": "c1cnc2ncncc2n1",    "stem_en": "pteridine",    "stem_zh": "蝶啶",   "naming_class": "naph_family", "fused": True, "standard": (NAPH_LABELS, (4, 5, 6, 7, 8, 9, 0, 1, 2, 3))},
     # NOTE: carbonyl mothers（benzoquinone / anthraquinone / chromenone /
-    # ortho_benzoquinone）不入表：模板含环外 =O，匹配集会超出环系统原子集。
-}
+   }
 
 
 def component_stem(sid: str) -> tuple[str, str] | None:
@@ -192,83 +225,35 @@ def match_fusion_component(info: dict, atom_ids) -> str | None:
     """稠环拆解的组分匹配（P-25.3.2）：保留 mancude 母体优先，其次单环烃附加组分（P-25.3.2.2.1）。"""
     return match_retained(info, atom_ids, mancude_only=True) or match_fusion_carbocycle(info, atom_ids)
 
-# 保留 fused 母体的固定编号标签（P-25.4）：融合桥头用字母 locant（3a/7a、4a/8a）。
-FUSED56_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
-# purine（嘌呤，5+6 九原子）保留传统编号：桥头为 C4/C5 得纯数字 4、5，无 a/b 字母位（P-25.3.3 例外）。
-PURINE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "5", "6", "7", "8", "9")
-# carbazole（13 原子）：N9，苯环 1-4 / 5-8，桥头 4a/8a/9a/9b（P-25.4.1.4）。
-CARBAZOLE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a", "9", "9a", "9b")
-# acridine（14 原子）：N10，对位 C9 连接取代基；苯环 1-4 / 5-8。
-ACRIDINE_LABELS: tuple[str, ...] = ("1","2","3","4","4a","5","6","7","8","8a","9","9a","10","10a")
-# phenothiazine（14 原子）：S5、N10；苯环 1-4 / 6-9。
-PHENOTHIAZINE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "9", "9a", "10", "10a", "10b")
-NAPH_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a")
-# phenanthrene(14 原子): 端环 1-4 / 5-8, 桥头 4a/4b/8a/8b, 中环 9/10(P-25.4.1 传统编号)。
-PHENANTHRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "4b", "5", "6", "7", "8", "8a", "8b", "9", "10")
-# pyrene(16 原子): 外周 1-10, 稠合碳 3a/5a/8a/8b/10a/10b(P-25.3.3.3.1 推荐编号)。
-PYRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "5a", "6", "7", "8", "8a", "8b", "9", "10", "10a", "10b")
-
-# 不对称 fused 环（含杂原子）与 1,3-二唑的标准编号：模板原子索引按固定 locant 顺序排列。
-# 起点为最优先杂原子，沿环编号绕开融合桥头（桥头只得字母位）。
-# 对称碳环（naphthalene/anthracene）与单杂环（pyrrole/pyridine 等单杂原子）不在此列，
-# 走 P-14.4 通用枚举；1,3-二唑（咪唑/吡唑/噻唑/噁唑）IUPAC 编号固定（N 必须得 1,3 位、
-# 带 H/取代基的 N 为 1），通用枚举会被 principal 最小化翻转，故登记标准编号。
-# _STANDARD_ORDERS[spec] = 模板原子按 locant 顺序；_STANDARD_LABELS[spec] = 对应 locant 标签。
-_STANDARD_ORDERS: dict[str, tuple[int, ...]] = {
-    # naph_family（10 原子）：1,2,3,4,4a,5,6,7,8,8a
-    "quinoline":    (4, 5, 6, 7, 8, 9, 0, 1, 2, 3),
-    "quinazoline":  (4, 5, 6, 7, 8, 9, 0, 1, 2, 3),
-    # purine（嘌呤）9 原子：模板 c1ncc2[nH]cnc2n1 原子按 locant 1–9 顺序（N1、C2、N3、C4、C5、C6、N7、C8、N9；
-    # 桥头 C4/C5 得数字位，N7 为指示氢所在）。locant→模板原子：1→1,2→0,3→8,4→7,5→3,6→2,7→4,8→5,9→6。
-    "purine":       (1, 0, 8, 7, 3, 2, 4, 5, 6),
-    # pteridine（蝶啶）10 原子：模板 c1cnc2ncncc2n1 原子沿外周按 1,2,3,4,4a,5,6,7,8,8a 编号（N 在 1/3/5/8）。
-    "pteridine":    (4, 5, 6, 7, 8, 9, 0, 1, 2, 3),
-    # fused56（9 原子）：1,2,3,3a,4,5,6,7,7a；杂原子(1)走远离桥头方向，苯环从 3a 起
-    "indole":       (4, 5, 6, 7, 8, 0, 1, 2, 3),
-    "benzofuran":   (4, 5, 6, 7, 8, 0, 1, 2, 3),
-    "benzothiophene": (4, 5, 6, 7, 8, 0, 1, 2, 3),
-    "benzothiazole": (4, 5, 6, 7, 8, 0, 1, 2, 3),
-    "benzoxazole":  (4, 5, 6, 7, 8, 0, 1, 2, 3),
-    "indazole":     (6, 5, 4, 3, 2, 1, 0, 8, 7),
-    # phenanthrene(14 原子): 模板原子按标准 locant 序(端环1-4 + 中环9/10)。
-    "phenanthrene": (9, 10, 11, 12, 13, 8, 5, 0, 1, 2, 3, 4, 6, 7),
-    # pyrene(16 原子): 外周1-10 + 稠合碳 3a/5a/8a/8b/10a/10b(fused_numbering 方向)。
-    "pyrene":       (6, 7, 8, 9, 10, 11, 12, 13, 0, 1, 2, 14, 3, 4, 5, 15),
-    # carbazole（13 原子）：1,2,3,4,4a,5,6,7,8,8a,9,9a,9b
-    "carbazole":    (6, 7, 8, 9, 5, 12, 0, 1, 2, 11, 4, 3, 10),
-    # acridine（14 原子）：1,2,3,4,4a,5,6,7,8,8a,9(N 对位),10(N),10a,10b
-    "acridine":     (9,8,7,6,5,2,1,0,13,12,11,10,4,3),
-    # phenothiazine（14 原子）：1,2,3,4,4a,5(S),6,7,8,9,9a,10(N),10a,10b
-    "phenothiazine": (0, 1, 2, 3, 12, 4, 5, 6, 7, 8, 10, 11, 13, 9),
-    # benzodioxole（9 原子）：1(O),2(C),3(O),3a,4,5,6,7,7a
-    "benzodioxole": (4, 5, 6, 7, 3, 8, 0, 1, 2),
-    # 带取代基/H 的 N，走 numbering_engine._narrow_hetero_ring 的 (c) 同元素 N 收窄。
-    "thiazole":     (2, 3, 4, 0, 1),
-    "oxazole":      (2, 3, 4, 0, 1),
-}
-_STANDARD_LABELS: dict[str, tuple[str, ...]] = {
-    "quinoline": NAPH_LABELS,
-    "quinazoline": NAPH_LABELS,
-    "pteridine": NAPH_LABELS,
-    "purine": PURINE_LABELS,
-    "indole": FUSED56_LABELS,
-    "benzofuran": FUSED56_LABELS,
-    "benzothiophene": FUSED56_LABELS,
-    "benzothiazole": FUSED56_LABELS,
-    "benzoxazole": FUSED56_LABELS,
-    "indazole": FUSED56_LABELS,
-    "phenanthrene": PHENANTHRENE_LABELS,
-    "pyrene": PYRENE_LABELS,
-    "carbazole": CARBAZOLE_LABELS,
-    "acridine": ACRIDINE_LABELS,
-    "phenothiazine": PHENOTHIAZINE_LABELS,
-    "benzodioxole": FUSED56_LABELS,
-    "thiazole": ("1", "2", "3", "4", "5"),
-    "oxazole": ("1", "2", "3", "4", "5"),
-}
 
 # 查询子结构与元素签名，import 时构建一次。
 _Q: dict[str, Mol] = {sid: MolFromSmiles(entry["smiles"]) for sid, entry in _TEMPLATES.items()}
+
+
+# 固定编号视图（由 _TEMPLATES 条目的 `standard` 字段派生；L4 按 scaffold_id 查）
+_STANDARD_LABELS: dict[str, tuple[str, ...]] = {
+    sid: e["standard"][0] for sid, e in _TEMPLATES.items() if "standard" in e
+}
+_STANDARD_ORDERS: dict[str, tuple[int, ...]] = {
+    sid: e["standard"][1] for sid, e in _TEMPLATES.items() if "standard" in e
+}
+
+
+def _validate_standard_fields() -> None:
+    """import 期校验 `standard` 字段：order 须为模板原子的排列，labels 长度须等于模板原子数。"""
+    for sid, entry in _TEMPLATES.items():
+        std = entry.get("standard")
+        if not std:
+            continue
+        labels, order = std
+        n = _Q[sid].GetNumAtoms()
+        if sorted(order) != list(range(n)):
+            raise ValueError(f"{sid}: standard order {order} 不是 0..{n - 1} 的排列")
+        if len(labels) != n:
+            raise ValueError(f"{sid}: standard labels 长度 {len(labels)} != 模板原子数 {n}")
+
+
+_validate_standard_fields()
 
 
 def _hydrogenated(mol: Mol) -> Mol | None:
@@ -361,8 +346,8 @@ def _spec_from_template(sid: str, entry: dict) -> ScaffoldSpec:
     q = _Q[sid]
     n_rings = len(q.GetRingInfo().AtomRings())
     ring = "carbo" if all(q.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in range(q.GetNumAtoms())) else "hetero"
-    std_labels = _STANDARD_LABELS.get(sid, ())
-    numbering = NumberingPolicy(standard_path=std_labels)
+    standard = entry.get("standard")
+    numbering = NumberingPolicy(standard_path=standard[0] if standard else ())
     return ScaffoldSpec(
         id=sid, naming_class=entry["naming_class"],
         stem_en=entry["stem_en"], stem_zh=entry["stem_zh"],
