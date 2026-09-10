@@ -210,9 +210,6 @@ _STANDARD_ORDERS: dict[str, tuple[int, ...]] = {
     "phenothiazine": (0, 1, 2, 3, 12, 4, 5, 6, 7, 8, 10, 11, 13, 9),
     # benzodioxole（9 原子）：1(O),2(C),3(O),3a,4,5,6,7,7a
     "benzodioxole": (4, 5, 6, 7, 3, 8, 0, 1, 2),
-    # monohetero 1,3-二唑（5 原子）：N1(带 H/取代)/C2/N3/C4/C5。
-    # 噻唑/噁唑杂原子异元素（S/O vs N）模板匹配无歧义，登记固定编号；
-    # 咪唑/吡唑双 N 对称（模板 [nH] 对两个 N 可互换匹配），N1 须动态取
     # 带取代基/H 的 N，走 numbering_engine._narrow_hetero_ring 的 (c) 同元素 N 收窄。
     "thiazole":     (2, 3, 4, 0, 1),
     "oxazole":      (2, 3, 4, 0, 1),

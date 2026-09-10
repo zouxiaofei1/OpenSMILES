@@ -1,9 +1,12 @@
 """L5 立体描述符前缀：E/Z（P-91.2/P-93.4）+ CIP R/S（P-92/P-93）；由 stereo_ez.py、stereo_rs.py 与 _stereo_common.py 合并而来，_split_stereo_lead 为共享立体块拆分器。"""
 from __future__ import annotations
 
+import re
+
 from rdkit.Chem import BondStereo, Mol
 
 from namepredict.layer1 import fg_registry as _fg_reg
+from namepredict.layer4.locant_key import locant_key
 from namepredict.layer4.numbering_engine import assign_cip
 
 
@@ -113,7 +116,7 @@ def _cip_code(atom) -> str | None:
 
 
 def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:
-    """返回母体链上手性中心的 (位次, R/S)。"""
+    """返回母体链上手性中心的 (链序号, R/S)。"""
     assign_cip(mol)
     out: list[tuple[int, str]] = []
     for loc, idx in enumerate(chain, 1):
@@ -121,6 +124,16 @@ def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:
         if code:
             out.append((loc, code))
     return out
+
+
+def _chain_locant(parent: dict, pos: int) -> int | str:
+    """链上第 pos 位（1 起）→ locant：有整体编号 labels 时取标签（稠环桥头 3a/6a），纯数字标签归一为 int；labels 缺失或长度不符退回链序号（与 L4 _atom_locant 同约定）。"""
+    chain = parent.get("chain") or []
+    labels = (parent.get("numbering_scaffold") or {}).get("labels") or []
+    if len(labels) == len(chain) and 1 <= pos <= len(labels):
+        lbl = labels[pos - 1]
+        return int(lbl) if str(lbl).isdigit() else str(lbl)
+    return pos
 
 
 def _collapsed_parent(parent: dict) -> bool:
@@ -136,8 +149,8 @@ def _collapsed_parent(parent: dict) -> bool:
     return mol.GetNumHeavyAtoms() > n + 2
 
 
-def _rs_parts(numbered: dict) -> list[tuple[int, str]]:
-    """取母体上手性中心的 (位次, R/S) 列表（kind 不支持、折叠环或空链时为空）；链式主官能团母体按 kind ∈ _RS_KINDS 放行，环/稠合骨架母体以 scaffold_id 识别（chain 是 L4 定向编号的整环 walk，环上 sp3 手性中心可被 _cip_on_chain 扫到），折叠环由 _collapsed_parent 跳过。"""
+def _rs_parts(numbered: dict) -> list[tuple[int | str, str]]:
+    """取母体上手性中心的 (位次, R/S) 列表（kind 不支持、折叠环或空链时为空）；链式主官能团母体按 kind ∈ _RS_KINDS 放行，环/稠合骨架母体以 scaffold_id 识别（chain 是 L4 定向编号的整环 walk，环上 sp3 手性中心可被 _cip_on_chain 扫到），折叠环由 _collapsed_parent 跳过。位次经 _chain_locant 换整体编号标签，稠环桥头手性碳由此得 3a/6a 而非链序号。"""
     parent = numbered.get("parent") or {}
     kind = parent.get("kind")
     is_ring_parent = bool(parent.get("scaffold_id"))
@@ -146,23 +159,22 @@ def _rs_parts(numbered: dict) -> list[tuple[int, str]]:
     mol, chain = parent.get("mol"), parent.get("chain") or []
     if mol is None or not chain:
         return []
-    return _cip_on_chain(mol, chain)
+    return [(_chain_locant(parent, pos), code) for pos, code in _cip_on_chain(mol, chain)]
 
 
-def _parse_token(tok: str) -> tuple[int | None, str] | None:
-    """解析单个 token：'E'→(None,'E')；'8R'→(8,'R')；'2E'→(2,'E')。"""
+def _parse_token(tok: str) -> tuple[int | str | None, str] | None:
+    """解析单个 token：'E'→(None,'E')；'8R'→(8,'R')；'2E'→(2,'E')；'3aR'→('3a','R')。"""
     if tok in ("E", "Z", "R", "S"):
         return None, tok
-    i = 0
-    while i < len(tok) and tok[i].isdigit():
-        i += 1
-    if i and tok[i:] in ("E", "Z", "R", "S"):
-        return int(tok[:i]), tok[i:]
-    return None
+    m = re.match(r"^(\d+)([a-z]*)([EZRS])$", tok)
+    if not m:
+        return None
+    num, letter, code = m.groups()
+    return (int(num) if not letter else f"{num}{letter}"), code
 
 
-def _parse_stereo(tag: str) -> list[tuple[int | None, str]]:
-    """将 '(E)-' / '(2E,6Z)-' / '(E,8R)-' 解析为 (loc, letter) 列表。"""
+def _parse_stereo(tag: str) -> list[tuple[int | str | None, str]]:
+    """将 '(E)-' / '(2E,6Z)-' / '(E,8R)-' / '(3aR,6aR)-' 解析为 (loc, letter) 列表。"""
     if not tag.startswith("(") or not tag.endswith(")-"):
         return []
     raw = tag[1:-2]
@@ -174,29 +186,35 @@ def _parse_stereo(tag: str) -> list[tuple[int | None, str]]:
     return out
 
 
-def _fmt_part(loc: int | None, letter: str) -> str:
+def _fmt_part(loc: int | str | None, letter: str) -> str:
     """单部件格式化：有位次拼 loc+字母，无位次只给字母。"""
     return letter if loc is None else f"{loc}{letter}"
 
 
-def _format_stereo(parts: list[tuple[int | None, str]]) -> str:
+def _part_key(part: tuple[int | str | None, str]) -> tuple[bool, tuple[int, str]]:
+    """立体部件排序键：无位次者排前；有位次者按 locant_key（"3a" < "4" 的数值+字母序）。"""
+    loc = part[0]
+    return (loc is not None, locant_key(loc) if loc is not None else (0, ""))
+
+
+def _format_stereo(parts: list[tuple[int | str | None, str]]) -> str:
     """将立体部件列表拼成 '(…)-' 前缀（无部件返回空串）。"""
     if not parts:
         return ""
-    ordered = sorted(parts, key=lambda x: (x[0] is not None, x[0] or 0))
+    ordered = sorted(parts, key=_part_key)
     body = ",".join(_fmt_part(loc, let) for loc, let in ordered)
     return f"({body})-"
 
 
 def _merge_parts(
-    old: list[tuple[int | None, str]], rs: list[tuple[int | None, str]],
-) -> list[tuple[int | None, str]]:
+    old: list[tuple[int | str | None, str]], rs: list[tuple[int | str | None, str]],
+) -> list[tuple[int | str | None, str]]:
     """保留非 R/S 立体；按位次添加 R/S。"""
     keep = [(loc, let) for loc, let in old if let not in ("R", "S")]
     return keep + list(rs)
 
 
-def _with_rs(name: str, rs: list[tuple[int | None, str]]) -> str:
+def _with_rs(name: str, rs: list[tuple[int | str | None, str]]) -> str:
     """将 R/S 部件并入名称已有的立体前缀。"""
     if not rs:
         return name
@@ -205,7 +223,7 @@ def _with_rs(name: str, rs: list[tuple[int | None, str]]) -> str:
     return f"{_format_stereo(parts)}{stem}"
 
 
-def _ester_en_rs(en: str, rs: list[tuple[int | None, str]]) -> str:
+def _ester_en_rs(en: str, rs: list[tuple[int | str | None, str]]) -> str:
     """在烷基词后插入 R/S：'methyl X' → 'methyl (2S)-X'。"""
     if not rs or " " not in en:
         return _with_rs(en, rs)

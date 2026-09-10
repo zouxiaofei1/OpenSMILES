@@ -1,9 +1,22 @@
 """L4 编号入口：定向编号并组装最终 result 包。"""
 from __future__ import annotations
-from namepredict.layer4.indicated_hydrogen import indicated_hydrogen_prefix
+from namepredict.layer4.indicated_hydrogen import indicated_hydrogen_prefix, saturated_ring_atoms
 from namepredict.layer4.hydrogenation import hydro_prefix
 from namepredict.layer4.numbering_engine import orient_numbering
 from namepredict.layer4.locant_calc import _pack, _with_locants
+
+
+def _fallback_hydro_atoms(parent: dict) -> frozenset:
+    """无保留模板可比的稠环（未注册母体）的加氢位回退：取环系内仅以单键连邻环原子、带氢且非芳香位的 sp3 位（P-31.2.2）。
+
+    非芳香位一条把「mancude 母体本身就带 H 的环杂原子」（吡咯型 N-H，其指示氢由 P-58.2.1 承载）与「母体双键被饱和而新带 H 的位」区分开。
+    """
+    mol = parent.get("mol")
+    chain = list(parent.get("chain") or ())
+    if mol is None or not chain or parent.get("fused_tree") is None:
+        return frozenset()
+    return frozenset(i for i in saturated_ring_atoms(mol, set(chain))
+                     if not mol.GetAtomWithIdx(i).GetIsAromatic())
 
 
 def number(parent: dict, substituents: list) -> dict:
@@ -18,13 +31,13 @@ def number(parent: dict, substituents: list) -> dict:
 
     result = _pack(oriented, _with_locants(chain, substituents, kind, oriented.get("numbering_scaffold")))
     packed = result.get("parent") or {}
-    packed["indicated_h"] = indicated_hydrogen_prefix(
-        packed.get("mol"), packed.get("chain"),
-        (packed.get("numbering_scaffold") or {}).get("labels"),
-        packed.get("hydro_atoms") or frozenset(),
-    )
-    packed["hydro_prefix"] = hydro_prefix(
-        packed.get("chain"), (packed.get("numbering_scaffold") or {}).get("labels"),
-        packed.get("hydro_atoms"),
-    )
+    labels = (packed.get("numbering_scaffold") or {}).get("labels")
+    hydro = packed.get("hydro_atoms") or frozenset()
+    if not hydro:  # 未注册稠环无保留模板可比 -> hydro_atoms 缺失，回退由分子自身饱和环位推导
+        hydro = _fallback_hydro_atoms(packed)
+    pre = hydro_prefix(packed.get("chain"), labels, hydro)
+    if not pre[0]:  # hydro 位次表达不出（奇数值/超表/不在链内）则整体退回指示氢，不产半截名
+        hydro, pre = frozenset(), ("", "")
+    packed["indicated_h"] = indicated_hydrogen_prefix(packed.get("mol"), packed.get("chain"), labels, hydro)
+    packed["hydro_prefix"] = pre
     return result

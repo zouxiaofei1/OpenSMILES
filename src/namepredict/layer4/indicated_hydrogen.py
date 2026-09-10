@@ -11,8 +11,8 @@ def saturated_ring_atoms(mol, ring_atoms: set[int], exclude: frozenset[int] = fr
     ring_atoms = {i for i in ring_atoms if i < mol.GetNumAtoms() and mol.GetAtomWithIdx(i).IsInRing()}
     if not ring_atoms:
         return []
-    if not any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring_atoms):  # P-58.2.1: 指示氢只标 mancude（含最大非累积双键）环系；全饱和多环（decalin）由 hydro 前缀承载，否则每个饱和碳都会被标 H（benzoxane 类会产出 8H,7H,6H… 的荒谬串）
-        return []
+    # if not any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring_atoms):  # P-58.2.1: 指示氢只标 mancude（含最大非累积双键）环系；全饱和多环（decalin）由 hydro 前缀承载，否则每个饱和碳都会被标 H（benzoxane 类会产出 8H,7H,6H… 的荒谬串）
+    #     return []
     kek = Chem.Mol(mol)
     try:
         Chem.Kekulize(kek, clearAromaticFlags=True)
