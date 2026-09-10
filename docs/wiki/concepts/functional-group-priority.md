@@ -110,13 +110,13 @@ P-44 评分并列时不再直接取首位：`select_parent_tied`（`parent_selec
 
 ### Layer 5: 后缀分派（Suffix Dispatch）
 
-Layer5 由 `_names_for`（`assembler.py:368`）查 **`chain_engine._KIND_TABLE`**（13 个 `_Chain` spec：12 链式 FG kind 含 `acyl`、逐卤素 `acyl_halide` + `radical`）渲染词干、不饱和段、位次与环前缀（kind 收敛在 L2 `_chain_kind`，无 `typed_kinds` 模块）。`mult_ok` 生成式按 multiplicity 派生数量后缀（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid），`variant` 仅作 scaffold 特例覆盖（苯 → benzoyl/benzoyl halide/phenol 等）。环外（exocyclic）FG 走 worker——`_exocyclic_acid_names`/`_exocyclic_ester_names`/`_exocyclic_amide_names`/`_exocyclic_nitrile_names`/`_exocyclic_aldehyde_names` 按 multiplicity 拼 …-carboxylic acid/…-carbaldehyde（多羧酸 → -dicarboxylic acid，环外二醛 → -dicarbaldehyde，P-66.6.1.1.3），**`_exocyclic_acyl_names` 拼 -carbonyl/-羰基**（furan-2-carbonyl，P-65.1.7.2；苯 → benzoyl 回落 variant）——否则落 `_parent_stem_names` 回退。单环环烷/环烯的环外系统名共用 `_ring_carbocycle_stem`（环烯/另带前缀取代时后缀 locant 显式）。
+Layer5 由 `_names_for`（`assembler.py:227`）查 **`chain_engine._KIND_TABLE`**（13 个 `_Chain` spec：12 链式 FG kind 含 `acyl`、逐卤素 `acyl_halide` + `radical`）渲染词干、不饱和段、位次与环前缀（kind 收敛在 L2 `_chain_kind`，无 `typed_kinds` 模块）。`mult_ok` 生成式按 multiplicity 派生数量后缀（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid），`variant` 仅作 scaffold 特例覆盖（苯 → benzoyl/benzoyl halide/phenol 等）。环外（exocyclic）FG 走 worker——`_exocyclic_ring_names` 按后缀表 `_EXO_SUF` 拼 …-carboxylic acid/…-carboxylate/…-carboxamide/…-carbonitrile/…-carbaldehyde/…-carbonyl（多羧酸 → -dicarboxylic acid，环外二醛 → -dicarbaldehyde，P-66.6.1.1.3；酰基头 -carbonyl，furan-2-carbonyl，P-65.1.7.2；苯单取代 → 保留名回落 variant）——否则落 `_parent_stem_names` 回退。单环环烷/环烯的环外系统名共用 `_ring_carbocycle_stem`（环烯/另带前缀取代时后缀 locant 显式）。
 
-`phosphate` 是例外分支：`_names_for` 首条即 `kind == "phosphate"`（`assembler.py:370`），不经 `_KIND_TABLE`，直接调 `layer5/phosphate.py` 的 `phosphate_names` 组装整名——P 中心无碳词干，用 L2 `_chain_phosphate_fields`（`principal_expression.py:279`）注入的 `n_oh`/`n_om`/`n_arms`/`salt_meta` 与 `o_side` 臂（`claim_extract._ESTER_O_SIDE_KINDS` 含 `"phosphate"`，`claim_extract.py:66`）拼装；`namer._apply_salt_suffix`（`namer.py:242`）对 `parent_kind == "phosphate"` 跳过通用金属盐后缀（盐形态已在整名内处理）。
+`phosphate` 是例外分支：`_names_for` 首条即 `kind == "phosphate"`（`assembler.py:232`），不经 `_KIND_TABLE`，直接调 `layer5/phosphate.py` 的 `phosphate_names` 组装整名——P 中心无碳词干，用 L2 `_chain_phosphate_fields`（`principal_expression.py:279`）注入的 `n_oh`/`n_om`/`n_arms`/`salt_meta` 与 `o_side` 臂（`claim_extract._ESTER_O_SIDE_KINDS` 含 `"phosphate"`，`claim_extract.py:66`）拼装；`namer._apply_salt_suffix`（`namer.py:242`）对 `parent_kind == "phosphate"` 跳过通用金属盐后缀（盐形态已在整名内处理）。
 
 调度是分层的：L2 收敛 kind → L5 查链引擎 → 命中后直接返回。这确保了被选为母体的 principal FG 获得后缀，而劣后 FG 在 Layer 3 中被转为取代基前缀（如 hydroxy-、oxo-、amino-）。
 
-> **源:** `src/namepredict/layer5/chain_engine.py`, `src/namepredict/layer5/assembler.py:368` | 详情见 [[architecture/layer5-name-assembly]]
+> **源:** `src/namepredict/layer5/chain_engine.py`, `src/namepredict/layer5/assembler.py:227` | 详情见 [[architecture/layer5-name-assembly]]
 
 ---
 

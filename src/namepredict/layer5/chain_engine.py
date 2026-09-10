@@ -539,7 +539,7 @@ _KIND_TABLE = {
                    variant={
                        None: {1: dict(plain_maps=None, plain_fn=_retained_plain("acyl"))},
                        # 苯环 exocyclic 酰基头 → 保留名 benzoyl/苯甲酰基（P-65.1.7.2 benzoic acid→benzoyl）；
-                       # 杂环/碳环（furan-2-carbonyl/cyclopropanecarbonyl）由 assembler._exocyclic_acyl_names 出。
+                       # 杂环/碳环（furan-2-carbonyl/cyclopropanecarbonyl）由 assembler._exocyclic_ring_names 出。
                        "benzene": {1: dict(plain_maps=None,
                                            plain_fn=lambda n: ("benzoyl", "苯甲酰基"))},
                    }),

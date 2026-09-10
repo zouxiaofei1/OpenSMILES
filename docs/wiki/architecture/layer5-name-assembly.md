@@ -1,6 +1,6 @@
 # Layer5: 名称组装 (Name Assembly)
 
-> **管线位置:** 第 5 层 / 6 层 (输出层) | **源文件:** 8 个 `.py` (2085 行) | **最后更新:** 2026-09-09
+> **管线位置:** 第 5 层 / 6 层 (输出层) | **源文件:** 8 个 `.py` (1881 行) | **最后更新:** 2026-09-10
 
 ---
 
@@ -60,9 +60,9 @@ assemble(numbered)
        → NameResult(en, zh)
 ```
 
-> **源:** `src/namepredict/layer5/assembler.py:493`
+> **源:** `src/namepredict/layer5/assembler.py:345`
 
-`_ensure_fused_stem`（`assembler.py:348`）在取名前注入母体词干：已注册稠环词干由 L2 `pack_parent_stem` 注入（parent.stem_en 非空），不进入本分支；未注册稠环（全碳 `scaffold_id=carbocycle` 或 `fused_hetero`）靠 `fused_tree` 调 `fused_parent_names` 组装稠合 base 名注入词干。注入时把 L4 已按整体编号算好的 `parent.indicated_h` 指示氢前缀拼到词干最前端（`assembler.py:363`，P-58.2.1）——稠合 base 名本身不含指示氢，统一在此补齐。返回 False 表示稠合组装失败（显式 unsupported，避免回落开链词干错名）。
+`_ensure_fused_stem`（`assembler.py:207`）在取名前注入母体词干：已注册稠环词干由 L2 `pack_parent_stem` 注入（parent.stem_en 非空），不进入本分支；未注册稠环（全碳 `scaffold_id=carbocycle` 或 `fused_hetero`）靠 `fused_tree` 调 `fused_parent_names` 组装稠合 base 名注入词干。注入时把 L4 已按整体编号算好的 `parent.indicated_h` 指示氢前缀拼到词干最前端（`assembler.py:222`，P-58.2.1）——稠合 base 名本身不含指示氢，统一在此补齐。返回 False 表示稠合组装失败（显式 unsupported，避免回落开链词干错名）。
 
 ### 2. kind 收敛（在 L2）
 
@@ -87,7 +87,7 @@ assemble(numbered)
 
 **`_KIND_TABLE`**（`chain_engine.py:491`）现有 **13 个 `_Chain` entry**：12 个链式主官能团 kind `alcohol`/`ketone`/`alkane`/`acid`/`ester`/`thiol`/`amine`/`aldehyde`/`nitrile`/`amide`/`acyl_halide`/`acyl`，外加第 13 个 **`radical`**（取代基 kind，`en_suf="yl"`/`zh_suf="基"`，`plain_fn=_radical_plain`、`variant` 苯环→phenyl、`wrap=_with_ez`）。无 `anhydride` entry（L5 不产生酸酐链式名）及任何组合 kind——纯烃环用 `alkane`（cyclo 前缀由 assembler 按 scaffold_id 动态加），数量统一由 `multiplicity` + `mult_ok` 生成式承载。
 
-- **`acyl`**（`chain_engine.py:535`）— 酰基残基（P-65.1.7.2）：酸碳恒 locant 1，C3+ 系统名词干 coda "an"+"oyl"（propanoyl…），C1/C2 走 `_RETAINED` 保留名（formyl/acetyl，`_RETAINED` 加 `"acyl"` 键，`chain_engine.py:39`）；烯/炔与立体照 acid 融合式（enoyl/ynoyl）。`variant["benzene"]` 提供苯环 exocyclic 酰基头保留名 **benzoyl/苯甲酰基**；杂环/碳环（furan-2-carbonyl/cyclopropanecarbonyl）由 assembler `_exocyclic_acyl_names` 产出。
+- **`acyl`**（`chain_engine.py:535`）— 酰基残基（P-65.1.7.2）：酸碳恒 locant 1，C3+ 系统名词干 coda "an"+"oyl"（propanoyl…），C1/C2 走 `_RETAINED` 保留名（formyl/acetyl，`_RETAINED` 加 `"acyl"` 键，`chain_engine.py:39`）；烯/炔与立体照 acid 融合式（enoyl/ynoyl）。`variant["benzene"]` 提供苯环 exocyclic 酰基头保留名 **benzoyl/苯甲酰基**；杂环/碳环（furan-2-carbonyl/cyclopropanecarbonyl）由 assembler `_exocyclic_ring_names` 产出。
 - **`acyl_halide`**（`:588`，默认 chloride = `_ACYL_HALIDE_BY_HAL[17]`）— 后缀随实际卤素变：`_ACYL_HALIDE_BY_HAL`（`chain_engine.py:489`，`_ac_hal_chain` `:470` 按 `HALIDE_EN` 生成 F/Cl/Br/I 各自的 spec）——en 后缀 `-oyl fluoride/chloride/bromide/iodide`、zh `-酰氟/氯/溴/碘`，保留名（C1/C2、苯甲酰）随卤素同变；assembler 按 `parent.hal_z` 选择对应 spec（F 走 `-oyl fluoride`，苯 → benzoyl chloride 等）。`_RETAINED` 不再存 acyl_halide 保留名（迁入 `_ac_hal_chain`）。
 
 **`mult_unsat_polyol` / `_mult_elide`**：`ketone` entry 加 `mult_unsat_polyol=True`（`chain_engine.py:507`）；`_mult_elide`（`chain_engine.py:361`）实现 **P-14.3.2 数量前缀元音省略**——前缀以 `a` 结尾（tetra/penta/hexa…）且后缀以元音开头时省略 `a`（tetra+ol→tetrol、hexa+ol→hexol；di/tri 不受影响）。`_chain_stem_pair`（`:333`）中文保留完整"烷"的条件改为 `unsat_polyol and (zh_full or cyclic)`——仅醇/胺/硫醇或环状保留，开链酮用去"烷"词干（戊-2,4-二酮）。
@@ -106,16 +106,15 @@ assemble(numbered)
 
 ### 4. 母体名称派发 (`_names_for`)
 
-`_names_for`（`assembler.py:368`）是母体名称的核心派发函数。**`kind == "phosphate"` 最先短路**——直接转 `phosphate_names(numbered)`（`assembler.py:370`），不查 `_KIND_TABLE`（磷酸 P 中心无碳词干，`_Chain` 表结构不适用；计数与盐门控已由 L2 算好，见 §4.2）。其余 kind 按以下顺序派发：
+`_names_for`（`assembler.py:227`）是母体名称的核心派发函数。**`kind == "phosphate"` 最先短路**——直接转 `phosphate_names(numbered)`（`assembler.py:232`），不查 `_KIND_TABLE`（磷酸 P 中心无碳词干，`_Chain` 表结构不适用；计数与盐门控已由 L2 算好，见 §4.2）。其余 kind 按以下顺序派发：
 
-0. `kind == "acyl"` 时先试 `_exocyclic_acyl_names`（`assembler.py:247`）：环外酰基头（羰基头连环/芳骨架的 -CO-X，P-65.1.7.2）→ **苯 → benzoyl/苯甲酰基 保留名（回落 chain_engine acyl variant）**；杂环/稠环/单环碳环 → 母体名/locant + `-carbonyl`/`-羰基`（furan-2-carboxylic acid → **furan-2-carbonyl**、cyclopropanecarboxylic acid → cyclopropanecarbonyl）。**反例 -oyl 直拼（furanoyl）**——丢环酸羧基位次、词干不符金标准。开链 acyl（relation `in_skeleton`）无关此 worker
-1. `kind == "acid"` 时先试 `_exocyclic_acid_names`（`assembler.py:78`）：环外 COOH → `cyclohexanecarboxylic acid` / `naphthalene-1-carboxylic acid` 式系统名。**单酸苯环回落 chain_engine variant（benzoic acid/苯甲酸）**；**multiplicity≥2 多羧酸** → `-di/tricarboxylic acid`（如 benzene-1,3-dicarboxylic acid，P-65.2.2），位次必带（locant 取 `fg_locants` 的 acid 记录），不做链式 Xanedioic 模板——未注册 carbocycle/fused_tree 分支也带 mult/loc；中文后缀统一「羧酸」（不用「甲酸」）
-2. `kind == "ester"` 时先试 `_exocyclic_ester_names`（`assembler.py:121`）：环酯 COOR → `-carboxylate`；苯甲酸酯保留名 benzoate 由 chain_engine variant 处理，显式排除（中文环酯酸侧现亦为「羧酸」）
-3. `kind == "amide"` 时先试 `_exocyclic_amide_names`（`assembler.py:150`）：环外 CONH2 → `-carboxamide`/`-甲酰胺`；苯酰胺保留名由 chain_engine variant 处理，显式排除
-4. `kind == "nitrile"` 时先试 `_exocyclic_nitrile_names`（`assembler.py:179`）：环腈 C#N → `-carbonitrile`/`-甲腈`；苯甲腈保留名由 chain_engine variant 处理，显式排除
-5. `kind == "aldehyde"` 时先试 `_exocyclic_aldehyde_names`（`assembler.py:208`）：环外 -CHO → `-carbaldehyde`/`-甲醛` 系统名（P-66.6.1.1.3）；**苯单醛保留名（benzaldehyde/苯甲醛）回落 chain_engine**，苯双醛（benzene-1,2-dicarbaldehyde）及杂环/稠环走 base-carbaldehyde，mult≥2 → `-di/tricarbaldehyde`/`-二/三甲醛`
-6. `kind == "radical"` 且有 `radical_anchor_element` → `_mononuclear_radical_names`（`assembler.py:315`）（杂原子锚点自由基；O 锚点 `-yloxy` 经 `_retained_alkoxy` 收拢为 IUPAC 保留烷氧基 ethoxy/propoxy/butoxy/phenoxy）
-7. 查 `_KIND_TABLE.get(kind)`（`chain_engine.py:491`）；命中则先做两件运行时替换再 `_chain_names`：
+0. `kind` 属于 `{acid, aldehyde, ester, amide, nitrile, acyl}` 时先试 **`_exocyclic_ring_names`**（`assembler.py:92`）——环外主基系统名由**后缀表 `_EXO_SUF`**（`assembler.py:82`：group_class → 单取代后缀 / 多取代后缀基底 / 多取代是否必须位次）驱动同一条管线：环母体词干 + 后缀（`-carboxylic acid`/`-carboxylate`/`-carboxamide`/`-carbonitrile`/`-carbaldehyde`/`-carbonyl`，P-65.1.7.2 酰基头、P-66.6.1.1.3 环醛）。要点：
+   - **苯单取代回落 chain_engine 保留名 variant**（benzoic acid/苯甲酸、苯甲醛 benzaldehyde、benzonitrile、benzoyl、benzoate、benzamide）——`mult == 1 and sid == "benzene"` 直接返回 `None`
+   - **多取代**仅 acid/aldehyde 支持（酯/酰胺/腈/酰基头 `plural is None` → 放弃）：拼 `-di/tricarboxylic acid`、`-di/tricarbaldehyde`（如 benzene-1,3-dicarboxylic acid，P-65.2.2），**多羧酸位次必带**（`plural_needs_loc`，缺失即返回 `None`），不做链式 Xanedioic 模板；中文后缀统一「羧酸」（不用「甲酸」）
+   - **反例 -oyl 直拼（furanoyl）**——丢环酸羧基位次、词干不符金标准，故杂环/稠环/单环碳环 → 母体名/locant + `-carbonyl`（furan-2-carboxylic acid → **furan-2-carbonyl**、cyclopropanecarboxylic acid → cyclopropanecarbonyl）
+   - 开链同类（relation `in_skeleton`）不触发（`relation != "exocyclic"` 即返回 `None`）
+1. `kind == "radical"` 且有 `radical_anchor_element` → `_mononuclear_radical_names`（`assembler.py:174`）（杂原子锚点自由基；O 锚点 `-yloxy` 经 `_retained_alkoxy` 收拢为 IUPAC 保留烷氧基 ethoxy/propoxy/butoxy/phenoxy）
+2. 查 `_KIND_TABLE.get(kind)`（`chain_engine.py:491`）；命中则先做两件运行时替换再 `_chain_names`：
    - `kind == "acyl_halide"` → 按 `parent.hal_z`（L1 检测/L2 保留的实际卤素）取 `_ACYL_HALIDE_BY_HAL` 对应 spec 覆盖默认 chloride（F→`-oyl fluoride`，苯 → benzoyl fluoride 等）
    - `kind == "alkane" and parent.fused_tree and sid != "benzene"` → 直接返回 `_parent_stem_names`（未注册稠环无 FG：`_ensure_fused_stem` 注入的稠合 base 名，不走 chain_engine 拼 ane）
    - `sid == "benzene" and kind == "alkane"` → 直接返回 `("benzene", "苯")`（无主 FG 纯苯）
@@ -123,15 +122,15 @@ assemble(numbered)
    - `sid == "carbocycle"`（无 fused_tree） → `replace(entry, cyclic=True, ene_loc_omit=True, omit_rule=...)`（恒加 cyclo/环前缀；未注册全碳稠环 fused_tree 存在时不处理）
    - **按 scaffold 注入保留名 variant**：`sc_variant = entry.variant.get(sid)` → `replace(entry, variant=sc_variant)`——苯环单 FG 取 `"benzene"` 键（phenol/benzoic/aniline/benzoyl…），开链取 `None` 键（acid 草酸）
    - 然后 `_chain_names(entry, n, numbered)`
-8. 非表内 kind 落到 `_parent_stem_names`（`assembler.py:426`，取 parent.stem_en/stem_zh；苯基自由基 phenyl 由 radical entry 的 benzene variant 产出，非独立 kind worker）
+3. 非表内 kind 落到 `_parent_stem_names`（`assembler.py:265`，取 parent.stem_en/stem_zh；苯基自由基 phenyl 由 radical entry 的 benzene variant 产出，非独立 kind worker）
 
-**单环环烷/环烯的环外系统名共用一个词干原语**：`_exocyclic_acid/ester/amide/nitrile/aldehyde/acyl_names` 的 `sid=="carbocycle"` 且无 `fused_tree` 分支统一经 `_ring_carbocycle_stem`（`assembler.py:44`）出母体词干——en 单烯位 1 省略（P-31.1.2 环己烯）、多烯/非 1 位次显式（cyclohexa-1,3-diene），中文环烯位次恒显式（环己-1-烯）。返回 `has_unsat` 时或 `_ring_extra_prefix_located`（`assembler.py:66`，环上另带被编号前缀：O 侧酯烷基、N 端胺取代除外）为真时，后缀 locant 不可省略且须显式——环烯使编号不再唯一，另有前缀取代时主基 locant 1 不能隐含（P-66.6.1 例 4-formylcyclohexane-1-carboxylic acid vs 无取代省略 cyclohexanecarbaldehyde）。
+**单环环烷/环烯的环外系统名共用一个词干原语**：`_exocyclic_ring_names` 的 `sid=="carbocycle"` 且无 `fused_tree` 分支统一经 `_ring_carbocycle_stem`（`assembler.py:44`）出母体词干——en 单烯位 1 省略（P-31.1.2 环己烯）、多烯/非 1 位次显式（cyclohexa-1,3-diene），中文环烯位次恒显式（环己-1-烯）。返回 `has_unsat` 时或 `_ring_extra_prefix_located`（`assembler.py:66`，环上另带被编号前缀：O 侧酯烷基、N 端胺取代除外）为真时，后缀 locant 不可省略且须显式——环烯使编号不再唯一，另有前缀取代时主基 locant 1 不能隐含（P-66.6.1 例 4-formylcyclohexane-1-carboxylic acid vs 无取代省略 cyclohexanecarbaldehyde）。
 
-**单核自由基名的 N- 酰基保留与双取代歧义（`_mononuclear_radical_names`，`assembler.py:315`）**：
+**单核自由基名的 N- 酰基保留与双取代歧义（`_mononuclear_radical_names`，`assembler.py:174`）**：
 - **azane（单 N- 酰基残基）**：N- 酰基为乙酰/甲酰/苯甲酰时收成 **amido 保留式**（P-66.1.1.4.3 方法 1：acetamido/formamido/benzamido，取自 `constants.AMIDO_RETAINED`），不走 free_to_yl 的 acylamino 系统式；其余 R（长链/烯酰/被取代苯甲酰/杂环羰酰）保持方法 2 的 acylamino。带立体描述符的复杂酰基残基（肽类 N-酰基氨基酸）方法 2 需把酰基名整体括起再加 amino（`[…propanoyl]amino`，P-29.3.2），否则 `(2S)-2-amino-…propanoylamino` 融合式与 N-端 amino 位次歧义。
 - **双不同 N-取代基**（P-62.2.2.1）：字母序首基平铺、其后各基分别加括号紧贴 amino（2-chloroethylethylamino → `2-chloroethyl(ethyl)amino`）。
 
-> **源:** `src/namepredict/layer5/assembler.py:368`
+> **源:** `src/namepredict/layer5/assembler.py:227`
 
 ### 4.1 稠合名组装 (`fused_namer.py`)
 
@@ -208,7 +207,7 @@ assemble(numbered)
 
 ### 7. 名称拼接 (`join_kind_name`)
 
-`join_kind_name`（`assembler.py:474`）是前缀与母体的拼接函数，处理三种拼接模式：酯类拼接（`join_ester_name`）、常规拼接（`join_parent_name`，前缀-母体用连字符，数字/`1H-` 开头需连字符）。中文额外处理 `1H-` 前缀（`zh_1h_parent`）。酯命名统一走 `join_ester_name`（无独立苯甲酸酯拼接）。
+`join_kind_name`（`assembler.py:313`）是前缀与母体的拼接函数，处理三种拼接模式：酯类拼接（`join_ester_name`）、常规拼接（`join_parent_name`，前缀-母体用连字符，数字/`1H-` 开头需连字符）。中文额外处理 `1H-` 前缀（`zh_1h_parent`）。酯命名统一走 `join_ester_name`（无独立苯甲酸酯拼接）。
 
 > 注：`benzene_names.py` 不存在——苯/芳烃/杂环母体拼接函数全部位于 `assembler.py`。
 
@@ -231,7 +230,7 @@ assemble(numbered)
 | 文件 | 行数 | 说明 |
 |------|------|------|
 | `__init__.py` | 6 | 包入口，导出 `assemble` |
-| `assembler.py` | 510 | **主组装器**：`_names_for` 派发（`kind=phosphate` 短路转 `phosphate.py` + `_KIND_TABLE` 查表 + scaffold_id 运行时替换 + exocyclic acyl/acid/ester/amide/nitrile/aldehyde worker）+ `_ring_carbocycle_stem`/`_ring_extra_prefix_located`（单环环烷/环烯词干与显式 locant 判定）+ `_mononuclear_radical_names`（amido 保留式/N,N 括号式）+ `_ring_stem`（保留完整词干）+ `_ensure_fused_stem`（稠合词干 + indicated_h 前缀）+ 名称变换流水线 + join_kind_name 拼接 |
+| `assembler.py` | 363 | **主组装器**：`_names_for` 派发（`kind=phosphate` 短路转 `phosphate.py` + `_KIND_TABLE` 查表 + scaffold_id 运行时替换 + 环外主基 `_exocyclic_ring_names`/后缀表 `_EXO_SUF`）+ `_ring_carbocycle_stem`/`_ring_extra_prefix_located`（单环环烷/环烯词干与显式 locant 判定）+ `_mononuclear_radical_names`（amido 保留式/N,N 括号式）+ `_ring_stem`（保留完整词干）+ `_ensure_fused_stem`（稠合词干 + indicated_h 前缀）+ 名称变换流水线 + join_kind_name 拼接 |
 | `assembler_prefixes.py` | 223 | 取代基前缀：分组、位次合并、N/C 混合 locant、复合倍增 bis/tris/tetrakis、O/S 桥平铺式、N- 前缀 + 单碳括号式（P-16.5.1.3.1） |
 | `chain_engine.py` | 604 | **链式词干引擎**：`_Chain` spec + `_KIND_TABLE`（13 个 entry：12 链式 FG kind 含 `acyl`、逐卤素 `acyl_halide` + `radical`）+ `_chain_names` 统一渲染（`mult_ok` 生成式数量后缀 + `_mult_elide` 元音省略 + `_elide_parent_e` + 短链烯融合 + `_radical_terminal_yl_elide` + 混合烯炔段 + 多炔 + 多烯 E/Z + `mult_unsat_polyol`） |
 | `fused_namer.py` | 132 | **稠合名组装**：`fused_parent_names`（benzo[a]…/naphtho[…]- 稠合 base 名），组分词干/保留前缀由 L2 打包进 `FusedNode.fused_stem`/`.fused_prefix` 后只读（含 purine/嘌呤、pteridine/蝶啶；shared 共享编号） |
@@ -253,19 +252,15 @@ layer5 **不再直接 import layer2 或 tools**。全部外部 import 仅：`con
 
 ```mermaid
 flowchart TD
-    NUMBERED["numbered dict\n(Layer4 输出)"] --> ASSEMBLE["assemble()\nassembler.py:493"]
+    NUMBERED["numbered dict\n(Layer4 输出)"] --> ASSEMBLE["assemble()\nassembler.py:345"]
 
-    ASSEMBLE --> NAMES_FOR["_names_for(kind, n, numbered)\nassembler.py:368"]
+    ASSEMBLE --> NAMES_FOR["_names_for(kind, n, numbered)\nassembler.py:227"]
 
     NAMES_FOR --> PHOS{"kind == phosphate?"}
     PHOS -->|"是"| PHOSW["phosphate_names\nphosphate.py:121\n磷酸/磷酸酯/磷酸盐/游离阴离子"]
-    PHOS -->|"否"| EXO_ACYL{"kind == acyl\n+ 环外?"}
-    EXO_ACYL -->|"是"| EXOACYL["_exocyclic_acyl_names\nfuran-2-carbonyl / cyclopropanecarbonyl"]
-    EXO_ACYL -->|"否"| EXO_ACID{"kind == acid\n+ 环外?"}
-    EXO_ACID -->|"是"| EXOACID["_exocyclic_acid_names\ncyclohexanecarboxylic acid"]
-    EXO_ACID -->|"否"| EXO_AMIDE{"kind == amide\n+ 环外?"}
-    EXO_AMIDE -->|"是"| EXOAMIDE["_exocyclic_amide_names\ncyclohexanecarboxamide"]
-    EXO_AMIDE -->|"否"| CHAIN{"_KIND_TABLE\n链引擎?"}
+    PHOS -->|"否"| EXO{"kind ∈ _EXO_SUF\n(acid/aldehyde/ester/\namide/nitrile/acyl)\n+ relation == exocyclic?"}
+    EXO -->|"是"| EXOW["_exocyclic_ring_names\nassembler.py:92\n后缀表 _EXO_SUF 驱动\n(苯单取代→None 回落 variant)"]
+    EXO -->|"否"| CHAIN{"_KIND_TABLE\n链引擎?"}
     CHAIN -->|"13 种 _Chain kind"| ENG["_chain_names\nchain_engine.py\n词干 + 烯/炔段 + 位次 + 环前缀\n+ variant 数量后缀 (数据驱动)"]
     CHAIN -->|"非表 kind"| WORKER["_parent_stem_names\n(未注册/非表 kind 回落)"]
 
@@ -278,7 +273,7 @@ flowchart TD
 
     ASSEMBLE --> PREFIX["_prefix_for(numbered, kind, n)\nassembler_prefixes.py\n分组/位次合并/字母序/N/C 混合/N-前缀"]
 
-    PARENT_NAME --> JOIN["join_kind_name(kind, pre, names)\nassembler.py:474\n酯/常规拼接"]
+    PARENT_NAME --> JOIN["join_kind_name(kind, pre, names)\nassembler.py:313\n酯/常规拼接"]
     PREFIX --> JOIN
 
     JOIN --> ANION["maybe_anion_names\nstems.py\n羧酸→羧酸根"]

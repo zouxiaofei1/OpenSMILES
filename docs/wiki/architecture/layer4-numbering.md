@@ -47,7 +47,7 @@ Layer4 由 13 个模块组成，统一由 `numbering_engine.orient_numbering`（
 1. `orient_numbering(parent, substituents)` — 计算定向后的原子顺序（chain）
 2. 校验 `numbering_scaffold_required`（保留 scaffold 必须有 L2 注入的 `numbering_scaffold` 事实，缺失抛错）
 3. `_with_locants(chain, subs, ...)` + `_pack(...)` — 给每个取代基注入 locant，整合 FG/不饱和键位次与立体化学事实
-4. `indicated_hydrogen_prefix(mol, chain, labels)`（`:20`）→ 写入 `parent["indicated_h"]`：以整体编号 labels 为位次基准算指示氢前缀（P-58.2.1），由 L5 `assembler._ensure_fused_stem` 拼到稠合词干最前端（`assembler.py:363`）
+4. `indicated_hydrogen_prefix(mol, chain, labels)`（`:20`）→ 写入 `parent["indicated_h"]`：以整体编号 labels 为位次基准算指示氢前缀（P-58.2.1），由 L5 `assembler._ensure_fused_stem` 拼到稠合词干最前端（`assembler.py:222`）
 
 > **源:** `src/namepredict/layer4/numbering.py`
 
@@ -230,7 +230,7 @@ class Orientation:
 - `indicated_hydrogen(mol, chain, labels=None)`（`:30`）— 输出标签列表（如 `['1H']`、`['9H']`）：位次取整体编号 `labels`（长度须等于 chain），缺失时回退 `chain.index+1`；**互变异构冗余护栏**（`:37`）——饱和位全为氮且多于一个时只保留最低位次（亚胺-胺式 SMILES 会让咪唑环出现两个 `[nH]`，标准形式如 `1H-imidazo[4,5-c]pyridine` 只标一个）
 - `indicated_hydrogen_prefix(mol, chain, labels=None)`（`:46`）— 拼成可直接前置母体名的前缀 `"1H-"` / `"1H,2H-"`，无则空串
 
-`numbering.number` 在 `_pack` 之后调用它写入 `parent["indicated_h"]`（`numbering.py:20`），L5 `assembler._ensure_fused_stem` 在组装稠合词干时拼到最前端（`assembler.py:363`）。
+`numbering.number` 在 `_pack` 之后调用它写入 `parent["indicated_h"]`（`numbering.py:20`），L5 `assembler._ensure_fused_stem` 在组装稠合词干时拼到最前端（`assembler.py:222`）。
 
 > **源:** `src/namepredict/layer4/indicated_hydrogen.py:30`
 

@@ -68,7 +68,7 @@ def _thiol_entries(mol: Mol) -> list[dict]:
 # _CHAIN_FG 含该 FG 类即自动支持；_chain_kind 返回 group_class.value
 ```
 
-> ACID/ALCOHOL/AMINE/KETONE 任意 count≥1 恒返回基团名（`_MULTI_FG`，数量由 `principal_expression_facts.multiplicity` 承载）；ESTER/AMIDE/NITRILE/ACYL_HALIDE 仅单基（count≠1 → None）；ALDEHYDE 开链亦仅单基，但环骨架外环 -CHO 例外（`_ring_kind` 放行多醛，母体 kind 仍 `aldehyde`，供 L5 `_exocyclic_aldehyde_names` 拼 -carbaldehyde/-dicarbaldehyde，P-66.6.1.1.3）。`dione` 不再由 L2 产生，二酮由 L5 chain_engine `mult_ok` 生成式命名。新增 SUFFIX FG 若属同类，把其类别加进 `_CHAIN_FG` 即可。
+> ACID/ALCOHOL/AMINE/KETONE 任意 count≥1 恒返回基团名（`_MULTI_FG`，数量由 `principal_expression_facts.multiplicity` 承载）；ESTER/AMIDE/NITRILE/ACYL_HALIDE 仅单基（count≠1 → None）；ALDEHYDE 开链亦仅单基，但环骨架外环 -CHO 例外（`_ring_kind` 放行多醛，母体 kind 仍 `aldehyde`，供 L5 `_exocyclic_ring_names` 拼 -carbaldehyde/-dicarbaldehyde，P-66.6.1.1.3）。`dione` 不再由 L2 产生，二酮由 L5 chain_engine `mult_ok` 生成式命名。新增 SUFFIX FG 若属同类，把其类别加进 `_CHAIN_FG` 即可。
 
 **LEGACY_COMPAT 档**（sulfide/isocyanate/isothiocyanate 等非 SUFFIX 类）：仅取 `compatibility_rank`（按 FG 枚举经 `legacy_rank` 查询，`principal.py:64`），但**不参与主官能团选择**（`principal_spec()` 只放行 SUFFIX 表达）——纯醚/纯硫醚类分子会落入纯烃兜底。
 
@@ -130,7 +130,7 @@ Layer5 的母体命名以 `chain_engine.py` 的 **`_KIND_TABLE`** 链引擎为�
 
 **方式 A：链状/环状 FG → 在 `_KIND_TABLE` 添加 `_Chain` spec。** 例如 `thiol`（`chain_engine.py`）声明 `en_suf="thiol"`、`zh_suf="硫醇"`、`fg="sh"` 等。`_chain_names` 统一渲染词干、位次与省略规则——新增此类 FG 通常只需一行 spec，无需修改派发逻辑。
 
-**方式 B：特殊拼接 → 在 `_names_for` 添加 worker 分支**（先于 chain_engine 查表尝试）。如 `_exocyclic_acid_names`（`assembler.py:78`）、`_exocyclic_aldehyde_names`（`assembler.py:208`，外环 -CHO）、`_mononuclear_radical_names`（`assembler.py:315`，杂原子锚点自由基）、`kind == "phosphate"` 分支（`assembler.py:370` → `layer5/phosphate.py:phosphate_names`，整名自组装，不经 `_KIND_TABLE`）等。
+**方式 B：特殊拼接 → 在 `_names_for` 添加 worker 分支**（先于 chain_engine 查表尝试）。如 `_exocyclic_ring_names`（`assembler.py:92`，环外酸/醛/酯/酰胺/腈/酰基头，后缀表 `_EXO_SUF` 驱动——加新环外主基只需在表里加一行）、`_mononuclear_radical_names`（`assembler.py:174`，杂原子锚点自由基）、`kind == "phosphate"` 分支（`assembler.py:232` → `layer5/phosphate.py:phosphate_names`，整名自组装，不经 `_KIND_TABLE`）等。
 
 ### 5.2 kind 收敛（无需改动）
 
@@ -138,7 +138,7 @@ kind 收敛在 L2 `_chain_kind`，L5 直接按 FG 类别 kind 查 `_KIND_TABLE`�
 
 ### 5.3 接线到组装流水线
 
-`_names_for` 返回 `(en, zh)` 后，由 `assemble`（`assembler.py:493`）统一完成后续变换——`join_kind_name` 拼接前缀、`maybe_anion_names` 阴离子、`apply_rs_prefix` 立体前缀、`maybe_metal_salt_names` 盐后缀——无需为单个 FG 手动接线。若新 FG 自行组装盐形态（如 phosphate），还需在 `namer._apply_salt_suffix`（`namer.py:242`）加跳过条件，避免通用盐后缀重复追加。
+`_names_for` 返回 `(en, zh)` 后，由 `assemble`（`assembler.py:345`）统一完成后续变换——`join_kind_name` 拼接前缀、`maybe_anion_names` 阴离子、`apply_rs_prefix` 立体前缀、`maybe_metal_salt_names` 盐后缀——无需为单个 FG 手动接线。若新 FG 自行组装盐形态（如 phosphate），还需在 `namer._apply_salt_suffix`（`namer.py:242`）加跳过条件，避免通用盐后缀重复追加。
 
 ---
 

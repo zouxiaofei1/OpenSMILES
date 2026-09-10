@@ -120,7 +120,7 @@ sc_variant = (entry.variant or {}).get(sid)   # 苯环保留名等 scaffold 专�
 
 如果你的环系需要特殊的命名处理，则可能需要：
 
-- 在 `assembler.py` 的 `_names_for` 添加 worker（如 `_exocyclic_acid_names`/`_exocyclic_amide_names`/`_exocyclic_aldehyde_names`）
+- 在 `assembler.py` 的 `_names_for` 添加 worker（环外主基已有通用 worker `_exocyclic_ring_names` + 后缀表 `_EXO_SUF`，新环系无需再加）
 - 在 `assembler_prefixes.py` 中注册前缀构建规则
 - 在 `chain_engine.py` 的 `_KIND_TABLE` entry 添加 `variant`（苯环保留名特例）
 
@@ -132,9 +132,9 @@ FG-环组合的命名由以下路径承担：
 
 - **苯系保留名**（benzoic/phenol/aniline/benzaldehyde/benzonitrile/benzamide/benzoate）：`chain_engine._KIND_TABLE` 各 entry 的 `variant["benzene"]`（要求 `scaffold_id=="benzene"` 且 `multiplicity==1`）
 - **稠环/杂环 FG 收敛**：`express_ring_principal` 收敛为 FG 类别，词干由 `_ring_stem` 注入
-- **环外酸**（`facts.relation == "exocyclic"`）：`assembler._exocyclic_acid_names` → `cyclohexanecarboxylic acid`；多羧酸（multiplicity≥2）拼 …-di/tricarboxylic acid 且位次必带（P-65.2.2），苯单酸回落 benzoic acid 保留名
-- **环外醛**（`facts.relation == "exocyclic"`）：`assembler._exocyclic_aldehyde_names`（`assembler.py:208`）→ `cyclohexanecarbaldehyde`；多醛 → -dicarbaldehyde（P-66.6.1.1.3）；苯单醛仍走 benzaldehyde 保留名
-- **环外酰胺**（`facts.relation == "exocyclic"`）：`assembler._exocyclic_amide_names` → `cyclohexanecarboxamide`
+- **环外酸**（`facts.relation == "exocyclic"`）：`assembler._exocyclic_ring_names` → `cyclohexanecarboxylic acid`；多羧酸（multiplicity≥2）拼 …-di/tricarboxylic acid 且位次必带（P-65.2.2），苯单酸回落 benzoic acid 保留名
+- **环外醛**（`facts.relation == "exocyclic"`）：`assembler._exocyclic_ring_names`（`assembler.py:92`）→ `cyclohexanecarbaldehyde`；多醛 → -dicarbaldehyde（P-66.6.1.1.3）；苯单醛仍走 benzaldehyde 保留名
+- **环外酰胺**（`facts.relation == "exocyclic"`）：`assembler._exocyclic_ring_names` → `cyclohexanecarboxamide`
 - **环二酸立体化学**：`layer4/cyclo_relative_stereo.py`（`acid` + `scaffold_id=="carbocycle"` → cis/trans）
 
 ---
