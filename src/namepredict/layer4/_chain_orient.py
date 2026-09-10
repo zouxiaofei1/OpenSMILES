@@ -4,11 +4,6 @@ from __future__ import annotations
 from namepredict.layer3.substituent_extractor import alkyl_alpha_key
 
 
-def _chain_pos(chain: list[int], c: int | None) -> int | None:
-    """返回原子 c 在链中的 1 基位次；不在链中则 None。"""
-    return None if c is None or c not in chain else chain.index(c) + 1
-
-
 def _edge_locants(chain: list[int], edge) -> tuple[int, int] | None:
     """返回边两端原子在链中的位次对；端点不在链中则 None。"""
     if not edge or edge[0] not in chain or edge[1] not in chain:

@@ -12,11 +12,6 @@ from namepredict.layer1.ring_systems import sssr_rings
 
 
 
-def _parent_dict(chain: list[int], kind: str, **kw) -> dict:
-    """构造含 chain/n_carbons/kind 的母体 dict。"""
-    return {"chain": chain, "n_carbons": len(chain), "kind": kind, **kw}
-
-
 class PrincipalRelation(str, Enum):
     """主基团相对骨架的位置关系（骨架内/环外）。"""
     IN_SKELETON = "in_skeleton"

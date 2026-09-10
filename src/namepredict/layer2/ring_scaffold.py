@@ -361,7 +361,7 @@ def extra_indicated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
 
 
 def hydrogenated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
-    """match（模板原子→分子原子）下被加氢的分子原子集：模板某原子承载不饱和双键（Kekulé）而分子中该位已非芳香者（P-31.2.2：hydro 修饰源于双键的饱和）。用原子芳香性而非键级，桥头/带取代基饱和碳均可正确归属。"""
+    """match（模板原子→分子原子）下被加氢的分子原子集：模板某原子承载不饱和双键（Kekulé）而分子中该位已非芳香者（P-31.2.2：hydro 修饰源于双键的饱和）。用原子芳香性而非键级，桥头位归属不受取代基影响。"""
     if not match or mol is None or scaffold_id not in _Q:
         return frozenset()
     from namepredict.layer4.hydrogenation import HYDRO_MULT_N
@@ -376,8 +376,8 @@ def hydrogenated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
         if mi >= mol.GetNumAtoms():
             continue
         atom = mol.GetAtomWithIdx(mi)
-        if all(b.GetBondType() == Chem.BondType.SINGLE for b in atom.GetBonds()):
-            out.add(mi)  # 分子中该位已无多重键（原带双键、现饱和）才是加氢位；残留芳香/多重键者未加氢（hybridization 对 NH 会误报 SP2，故查键级）
+        if all(b.GetBondType() == Chem.BondType.SINGLE for b in atom.GetBonds()) and atom.GetTotalNumHs() > 0:
+            out.add(mi)  # 分子中该位已无多重键（原带双键、现饱和）才是加氢位；残留芳香/多重键者未加氢（hybridization 对 NH 会误报 SP2，故查键级）；不带 H 的位（季碳、4,4-二甲基型）加不了 H，不占 hydro 位次，交给指示氢
         elif atom.GetAtomicNum() == 6 and any(
                 b.GetBondType() != Chem.BondType.SINGLE and b.GetOtherAtomIdx(mi) not in ring_atoms
                 for b in atom.GetBonds()):

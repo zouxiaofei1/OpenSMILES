@@ -39,7 +39,6 @@ def ring_shape_template(order: list[int], exit_idx: int,
     if n == 7 and e not in (2, 3):
         return None
     positions: list[tuple[float, float]] = []  # 逐顶点分配：索引 0,1 为左共享边(单位水平, y=0)；索引 e,e+1 为右共享边(平行水平, y=row_width)
-    mid_slot = 0.0  # 已用过的中间剩余顶点计数（n=7 时 2..e-1 会有前向连接顶点）
     for i in range(n):
         if i == 0:
             positions.append((0.0, 0.0))

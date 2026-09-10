@@ -5,11 +5,9 @@ from __future__ import annotations
 
 import copy
 
-from rdkit.Chem import CanonicalRankAtoms
-from namepredict.constants import AMIDO_RETAINED_EN, C
+from namepredict.constants import AMIDO_RETAINED_EN
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol
-from namepredict.tools.free_to_yl import free_to_yl as yl_form
 
 # 简单保留烷氧基作前缀不加括号（ethoxybenzene/phenoxybenzene；与 methoxy 一致，
 # 收拢产物 ethoxy/propoxy/butoxy/phenoxy/isopropoxy 由此免括号）。

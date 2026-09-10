@@ -1,7 +1,7 @@
 """L4 位次计算：将官能团/取代基附着原子映射为链上位次。"""
 from __future__ import annotations
 from namepredict.layer1.fg_registry import FG_SPECS
-from namepredict.layer4._chain_orient import _chain_pos, _edge_min_locant, _pair_locants
+from namepredict.layer4._chain_orient import _edge_min_locant, _pair_locants
 from namepredict.layer4.locant_key import locant_str_sort
 from namepredict.layer4.omit_locants import (
     omit_amine as _omit_amine, omit_ketone as _omit_ketone, omit_sh as _omit_sh,

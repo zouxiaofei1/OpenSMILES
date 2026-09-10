@@ -40,11 +40,6 @@ class FunctionalGroupOccurrence:
     parent_anchors: frozenset[int]
     payload: dict
 
-    @property
-    def atoms(self) -> frozenset[int]:
-        """返回特征原子集合。"""
-        return self.characteristic_atoms
-
 
 @dataclass(frozen=True)
 class FunctionalGroupInventory:
@@ -54,14 +49,6 @@ class FunctionalGroupInventory:
     def occurrences(self, group_class: FunctionalGroupClass) -> tuple[FunctionalGroupOccurrence, ...]:
         """返回给定官能团类的全部出现。"""
         return tuple(e for e in self.entries if e.group_class == group_class)
-
-    def has(self, group_class: FunctionalGroupClass) -> bool:
-        """判断是否存在给定官能团类。"""
-        return bool(self.occurrences(group_class))
-
-    def count(self, group_class: FunctionalGroupClass) -> int:
-        """统计给定官能团类的出现次数。"""
-        return len(self.occurrences(group_class))
 
 
 # FG 类别注册唯一事实来源在 fg_registry.FG_SPECS；此处派生，不再逐条手写。

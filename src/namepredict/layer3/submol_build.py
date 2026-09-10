@@ -86,13 +86,6 @@ def _carry_alkene_stereo(em: Chem.RWMol, mol: Mol, inv: dict[int, int], bonds,
         nb.SetStereoAtoms(first, second)
 
 
-def _cap_attach_h(em: Chem.RWMol, attach_new: int) -> None:
-    """让连接原子重新显式计算隐式 H 以允许 H 封端。"""
-    atom = em.GetAtomWithIdx(attach_new)
-    atom.SetNoImplicit(False)
-    atom.UpdatePropertyCache(strict=False)
-
-
 def _sanitize(em: Chem.RWMol) -> Mol | None:
     """对可写分子做 RDKit 消毒，失败返回 None。"""
     try:

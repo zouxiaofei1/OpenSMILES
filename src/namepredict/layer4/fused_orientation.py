@@ -11,7 +11,6 @@ from namepredict.layer4.ring_geometry import (
     apply_rigid,
     overlap_area,
     polygon_area,
-    regular_polygon,
     rigid_fit,
     ring_cyclic,
     ring_shape_template,

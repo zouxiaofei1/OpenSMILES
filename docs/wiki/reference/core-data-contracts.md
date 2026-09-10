@@ -42,14 +42,14 @@ graph TD
 
 **全称**: Functional Group Information Dictionary（官能团信息字典）
 
-**产出**: `analyze(mol)` in `src/namepredict/layer1/analyzer.py:569`
+**产出**: `analyze(mol)` in `src/namepredict/layer1/analyzer.py:584`
 
-**构建**: `_info(mol, carbons, fgs)` at `analyzer.py:564`，由三层合并：
+**构建**: `_info(mol, carbons, fgs)` at `analyzer.py:579`，由三层合并：
 - `base`: `mol`, `carbon_ids`, `n_carbons`
 - `fgs`: 所有 FG 条目列表 + 布尔标志 + `fg_inventory`（`_collect_fgs`）
 - `_ring_meta(mol)`: 环系元信息
 
-`namer._name_mol` 在 `analyze()` 返回后再注入 `root_ctx`（见基础字段表）供 Layer3 取代基 R/S 回根重算，并注入 `salt`（`namer.py:280`，磷酸母体的盐门控与 `salt_meta` 来源）——不属于 `_info` 的三层合并。
+`namer._name_mol` 在 `analyze()` 返回后再注入 `root_ctx`（`namer.py:280`，见基础字段表）供 Layer3 取代基 R/S 回根重算，并注入 `salt`（`namer.py:281`，磷酸母体的盐门控与 `salt_meta` 来源）——不属于 `_info` 的三层合并。
 
 **输入方**: Layer 2 (`select_parent(info)`), Layer 3 (`extract_substituents(info, parent)`), Layer 4 (间接通过 parent), Layer 5 (间接)
 
@@ -61,11 +61,11 @@ graph TD
 | `carbon_ids` | `list[int]` | 分子中所有碳原子的 atom index |
 | `n_carbons` | `int` | 碳原子总数（= `len(carbon_ids)`） |
 | `root_ctx` | `tuple[Mol, list[int]]` | 根分子上下文 `(根Mol, 本分子原子→根索引映射)`，由 `namer._name_mol` 注入；供 Layer3 取代基 R/S 在完整根分子上重算（`_fix_rs_with_real`） |
-| `salt` | `dict` | Layer0 盐元数据（`metal`/`metal_zh`/`n_metal`/`acid_salt`/…），由 `namer._name_mol` 注入（`namer.py:280`）；磷酸母体 producer（`principal_expression._chain_phosphate_fields`）据此做盐门控并写入 `salt_meta` |
+| `salt` | `dict` | Layer0 盐元数据（`metal`/`metal_zh`/`n_metal`/`acid_salt`/…），由 `namer._name_mol` 注入（`namer.py:281`）；磷酸母体 producer（`principal_expression._chain_phosphate_fields`）据此做盐门控并写入 `salt_meta` |
 
 ### 官能团条目列表（FG entry lists）
 
-每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 **24 个列表键**（来自 `_fg_parts` at `analyzer.py:536`，经 `_arbitrate_parts(mol, parts)` P-41 仲裁——被更高优先级主基团压制而退出的组合羰基 FG，其伯酰胺 N 回收进 `amines`，中性 -COOH 整组进 `demoted_carboxyls`（carboxy 叶）、腈进 `demoted_nitriles`（cyano 叶），降级酰胺羰基/阴离子酸碳并入 `ketones`（oxo 前缀候选））：
+每个 FG 列表为 `list[dict]`，每项是一个 dict，其字段因 FG 类型而异。以下列出全部 **24 个列表键**（来自 `_fg_parts` at `analyzer.py:551`，经 `_arbitrate_parts(mol, parts)`（`analyzer.py:520`）P-41 仲裁——被更高优先级主基团压制而退出的组合羰基 FG，其伯酰胺 N 回收进 `amines`，中性 -COOH 整组进 `demoted_carboxyls`（carboxy 叶）、腈进 `demoted_nitriles`（cyano 叶），降级酰胺羰基/阴离子酸碳并入 `ketones`（oxo 前缀候选））：
 
 | 键名 | 条目 dict 典型字段 | 来源 |
 |---|---|---|
@@ -73,9 +73,9 @@ graph TD
 | `hydroxyls` | `o_idx`, `c_idx` | `analyzer.py:_hydroxyl_entries` |
 | `esters` | 酯键原子索引 | `analyzer.py:_ester_entries` |
 | `amides` | 酰胺键原子索引 | `analyzer.py:_amide_entries` |
-| `ketones` | `c_idx` | `analyzer.py:_ketone_entries`（+ `_arbitrate_parts` 降级：降级酰胺羰基/阴离子酸碳并入——伯酰胺 N 经 `_demoted_amide_amine`:493 回收进 amines） |
+| `ketones` | `c_idx` | `analyzer.py:_ketone_entries`（+ `_arbitrate_parts` 降级：降级酰胺羰基/阴离子酸碳并入——伯酰胺 N 经 `_demoted_amide_amine`:508 回收进 amines） |
 | `radicals` | `c_idx`, `rad_idx` | `analyzer.py:_radical_entries`（`*` 锚点自由基，排除已判 acyl 头的碳） |
-| `acyls` | `c_idx`, `rad_idx` | `analyzer.py:_acyl_entries`（锚定酰基头，`_is_acyl_head`:402，P-65.1.7.2） |
+| `acyls` | `c_idx`, `rad_idx` | `analyzer.py:_acyl_entries`（锚定酰基头，`_is_acyl_head`:417，P-65.1.7.2） |
 | `demoted_carboxyls` | `c_idx` | `analyzer.py:_arbitrate_parts`（被压制中性 -COOH → carboxy 叶 P-61.1.3） |
 | `demoted_nitriles` | `c_idx` | `analyzer.py:_arbitrate_parts`（被压制腈 → cyano 叶 P-61.1.3） |
 | `aldehydes` | `c_idx` | `analyzer.py` |
@@ -98,7 +98,7 @@ graph TD
 
 ### 布尔标志（Boolean flags）
 
-对应 `_fg_bools(lists)` at `analyzer.py:460`，每个 `has_*` 标志 = `bool(对应的 FG 列表)`。共 **19 个**（`acyls`/两条 demoted 列表不单独映射 has_*）：
+对应 `_fg_bools(lists)` at `analyzer.py:475`，每个 `has_*` 标志 = `bool(对应的 FG 列表)`。共 **19 个**（`acyls`/两条 demoted 列表不单独映射 has_*）：
 
 | 标志 | 对应列表 | 标志 | 对应列表 |
 |---|---|---|---|
@@ -117,7 +117,7 @@ graph TD
 
 ### 环系元信息
 
-来自 `_ring_meta(mol)`：
+来自 `_ring_meta(mol)`（`analyzer.py:398`）：
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
@@ -168,7 +168,7 @@ graph TD
 | `acyl_c_idx` | `int` / `list[int]` | `acyl` 系 | 酰基残基羰基头碳索引（`parent_anchor_fields=("acyl_c_idx","acyl_c_idxs")`） |
 | `p_idx` / `p_idxs` | `int` / `list[int]` | `phosphate` 系 | 磷酸 P 中心原子索引（`parent_anchor_fields=("p_idx","p_idxs")`） |
 | `n_oh` / `n_om` / `n_arms` | `int` | `phosphate` 系 | 酸式 H 氧数 / 阴离子氧数 / O–R 臂数（L1 `layer1/phosphate.py` 计数，L2 `_chain_phosphate_fields` 透传） |
-| `salt_meta` | `dict` / `None` | `phosphate` 系 | 盐门控通过后的 Layer0 盐元数据（`_chain_phosphate_fields`，`principal_expression.py:279` 写入；门控不通过则候选被丢弃） |
+| `salt_meta` | `dict` / `None` | `phosphate` 系 | 盐门控通过后的 Layer0 盐元数据（`_chain_phosphate_fields`，`principal_expression.py:320` 写入；门控不通过则候选被丢弃） |
 | `hal_z` / `hal_idx` | `int` | `acyl_halide` 系（链/环外） | 酰卤实际卤素原子序（F/Cl/Br/I）与卤原子索引——环外酰卤（苯甲酰卤）亦由 `express_ring_principal` 注入 |
 | `ring_attach_idx` | `int` | 环 + 单附着 exocyclic FG（acid/ester/amide/nitrile/aldehyde/**acyl**） | 环上附着原子索引（环外 -carboxylic acid/-carbonyl 词形 locant） |
 | `double_bond` | `tuple[int,int]` | `alkene` 系 | 双键原子对 |
