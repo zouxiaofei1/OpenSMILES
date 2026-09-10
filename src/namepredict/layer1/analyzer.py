@@ -55,15 +55,20 @@ def _has_ring_n_neighbor(atom) -> bool:
     return any(n.GetAtomicNum() == N and n.IsInRing() for n in atom.GetNeighbors())
 
 def _is_ketone_carbon(atom) -> bool:
-    """判断碳是否为酮羰基碳（非酸、非酰胺）；双碳邻居，或单碳邻居 + 环内 N（N-酰基环胺 → ethanone 型母体）。"""
+    """判断碳是否为酮羰基碳（非酸、非酰胺、非酯）；双碳邻居，或单碳邻居 + 环内 N（N-酰基环胺 → ethanone 型母体），或环内零碳邻居（环脲/环碳酸酯型），或环内酯羰基。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom):
         return False
+    lactone = _is_lactone_carbon(atom)
     n_c = _carbon_neighbor_count(atom)
-    if n_c == 1:  # 环外单碳羰基才作酮；环内假醛（吡啶嗪酮/吡唑酮等）留给 _is_aldehyde_carbon 兜底，避免同一羰基双计 oxo。
-        if not _has_ring_n_neighbor(atom) or _is_aldehyde_carbon(atom):
+    if n_c == 1:  # 环外单碳羰基须连环内 N 才作酮（N-酰基环胺）；环内单碳羰基是内酰胺/环酮/内酯，同样作酮。
+        if (not _has_ring_n_neighbor(atom) and not lactone) or _is_aldehyde_carbon(atom):
             return False
+    elif n_c == 0:  # 环内零碳邻居羰基（环脲/环碳酸酯，如嘧啶-2,4-二酮、乙内酰脲）作环酮；环内非内酯型酯与开链者（脲/CO2）不作。
+        if not atom.IsInRing() or (_ester_alkoxy_of(atom) is not None and not lactone):
+            return False
+        return _amide_n_of(atom) is None and _anhydride_o_of(atom) is None
     elif n_c != 2:
         return False
     return _amide_n_of(atom) is None and _anhydride_o_of(atom) is None
@@ -152,13 +157,22 @@ def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
     """在碳上查找酯烷氧基侧并返回 (o_idx, alkoxy_c_idx)。"""
     return _ester_alkoxy_of_common(carbon, _is_ester_alkoxy_o)
 
+def _is_lactone_carbon(atom) -> bool:
+    """判断碳是否为环内酯（内酯）羰基碳：酯氧在环内时并入环母体作 -one 后缀（2H-chromen-2-one / 2-benzofuran-1-one / 1,3-dioxolan-2-one），不按酯的 -oate 命名。"""
+    if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
+        return False
+    alkoxy = _ester_alkoxy_of(atom)
+    if alkoxy is None:
+        return False
+    return atom.GetOwningMol().GetAtomWithIdx(alkoxy[0]).IsInRing()
+
 def _is_ester_carbon(atom) -> bool:
-    """判断碳是否为酯羰基碳（有酸性氧与烷氧基侧）。"""
+    """判断碳是否为酯羰基碳（有酸性氧与烷氧基侧；环内酯除外，见 _is_lactone_carbon）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is None:
         return False
-    return True
+    return not _is_lactone_carbon(atom)
 
 def _ald_blocked(atom) -> bool:
     """判断醛碳是否被酯、酰卤、酸酐或酰胺占用。"""
@@ -167,14 +181,14 @@ def _ald_blocked(atom) -> bool:
     return _anhydride_o_of(atom) is not None or _amide_n_of(atom) is not None
 
 def _is_aldehyde_carbon(atom) -> bool:
-    """判断碳是否为醛羰基碳（单碳邻居且未被阻断）；环外羰基须带 H（否则是 N-酰基/其他羰基，不作醛），环内羰基沿用原判定作 oxo 前缀来源。"""
+    """判断碳是否为醛羰基碳（单碳邻居、带 H 且未被阻断）；环内羰基不再作醛——内酰胺/环脲等由 _is_ketone_carbon 作酮、以 -one 后缀表达（P-66.6.1），当作醛会把喹唑啉-4-酮错拼成 …醛。"""
     if atom.GetAtomicNum() != C or atom.GetTotalDegree() < 3:
         return False
     if not _has_double_bonded_o(atom) or _has_acid_o_neighbor(atom):
         return False
     if _carbon_neighbor_count(atom) > 1:
         return False
-    if not atom.IsInRing() and atom.GetTotalNumHs() < 1:
+    if atom.GetTotalNumHs() < 1:  # 无 H 的羰基是 N-酰基/环酮/内酰胺等，不作醛（环上外环 -CHO 带 H，照旧作醛）
         return False
     return not _ald_blocked(atom)
 

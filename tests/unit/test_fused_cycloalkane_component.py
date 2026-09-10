@@ -2,9 +2,6 @@
 # Layer: L2,L5
 """环烷烃作稠合附加组分：饱和单环烃名删尾 'ne' 得前缀（cyclopentane → cyclopenta），
 表示最大数目非累积双键的形式（P-25.3.2.2.1）；数字位次按 P-25.3.8.1 省略。
-
-本轮只断言稠合母体骨架（P-25.3.2 组装）与取代基位次（P-25.3.3 编号）；
-hydro 前缀（P-31.2.2）与指示氢（P-58.2.1）仍由既有通用路径给出，不作断言。
 """
 from __future__ import annotations
 
@@ -30,6 +27,26 @@ def test_cycloalkane_as_fused_component(smiles: str, en_tail: str, zh_sub: str) 
     assert zh_sub in r.zh, r.zh
 
 
+# 芳环侧稠合：附加组分与母体共享的稠合键为芳香键，碳环组分仍须被识别
+AROMATIC_FUSED_CASES = [
+    # 环戊烷并吡啶（共享稠合键位于吡啶 2,3 侧）
+    ("c1cnc2c(c1)CCC2", "cyclopenta[b]pyridine", "环戊并[b]吡啶"),
+    # 同上换母体杂环：吡嗪
+    ("c1cnc2c(n1)CCC2", "cyclopenta[b]pyrazine", "环戊并[b]吡嗪"),
+    # 环大小随附加组分变：环丁并/环庚并
+    ("c1cnc2c(c1)CC2", "cyclobuta[b]pyridine", "环丁并[b]吡啶"),
+    ("c1cnc2c(c1)CCCCC2", "cyclohepta[b]pyridine", "环庚并[b]吡啶"),
+]
+
+
+@pytest.mark.parametrize("smiles,en_tail,zh_sub", AROMATIC_FUSED_CASES)
+def test_aromatic_fused_cycloalkane_component(smiles: str, en_tail: str, zh_sub: str) -> None:
+    r = SMILESNNamer().name(smiles)
+    assert r.success, smiles
+    assert r.en.endswith(en_tail), r.en
+    assert zh_sub in r.zh, r.zh
+
+
 # 近邻负例：已注册稠环与单环烃不得被本轮组分路径改写
 NEIGHBORS = [
     ("c1ccc2occc2c1", "1-benzofuran", "1-苯并呋喃"),
@@ -37,6 +54,8 @@ NEIGHBORS = [
     ("C1CCc2ccccc2C1", "1,2,3,4-tetrahydronaphthalene", "1,2,3,4-四氢萘"),
     ("C1CCCC1", "cyclopentane", "环戊烷"),
     ("OC1CCCC1", "cyclopentanol", "环戊醇"),
+    # 六元碳环稠合：整骨架有保留名模板（喹啉），不得改走环烷烃附加组分路径
+    ("c1cnc2c(c1)CCCC2", "5,6,7,8-tetrahydroquinoline", "5,6,7,8-四氢喹啉"),
 ]
 
 

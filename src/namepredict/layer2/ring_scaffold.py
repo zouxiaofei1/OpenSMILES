@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 
-from rdkit.Chem import Mol, MolFromSmiles
+from rdkit.Chem import Mol, MolFromSmarts, MolFromSmiles
 from rdkit import Chem
 from namepredict.layer2.parent_skeleton import ParentSkeleton
 
@@ -93,6 +93,12 @@ _TEMPLATES: dict[str, dict] = {
     "anthracene":  {"smiles": "c1ccc2cc3ccccc3cc2c1", "stem_en": "anthracene", "stem_zh": "蒽",    "naming_class": "anthra", "fused": True, "fused_prefix": ("anthra", "蒽并")},
     "phenanthrene":{"smiles": "c1ccc2c(c1)ccc1ccccc12", "stem_en": "phenanthrene","stem_zh": "菲", "naming_class": "phenanthrene", "fused": True, "fused_prefix": ("phenanthro", "菲并"), "standard": (PHENANTHRENE_LABELS, (9, 10, 11, 12, 13, 8, 5, 0, 1, 2, 3, 4, 6, 7))},
     "pyrene":      {"smiles": "c1cc2ccc3cccc4ccc(c1)c2c34", "stem_en": "pyrene",  "stem_zh": "芘", "naming_class": "pyrene", "fused": True, "standard": (PYRENE_LABELS, (6, 7, 8, 9, 10, 11, 12, 13, 0, 1, 2, 14, 3, 4, 5, 15))},
+    # 表 2.7 第 19 项：茚（PIN 1H-indene，1 位为 CH2 故带指示氢）。5+6 稠合碳环，
+    # 位次形态同吲哚/苯并呋喃（1,2,3,3a,4..7,7a），并入 fused56 编号类。
+    "indene":      {"smiles": "C1=CCc2ccccc21", "stem_en": "1H-indene", "stem_zh": "1H-茚", "naming_class": "fused56", "fused": True, "fused_stem": ("indene", "茚"), "standard": (FUSED56_LABELS, (2, 1, 0, 8, 7, 6, 5, 4, 3))},
+    # 表 2.7 第 8 项：䓛（PIN chrysene；中文按库内约定用「屈」）。6+6+6+6 四环稠烃，
+    # 外周 1-6 / 7-12，六桥头 6a,6b,6c,12a,12b,12c（P-25.3.3），暂走优选取向自动编号。
+    "chrysene":    {"smiles": "c1ccc2c(c1)ccc1c3ccccc3ccc21", "stem_en": "chrysene", "stem_zh": "屈", "naming_class": "chrysene", "fused": True, "fused_prefix": ("chryseno", "䓛并")},
     # monocyclic heteroarenes
     "furan":       {"smiles": "c1ccoc1",    "stem_en": "furan",       "stem_zh": "呋喃",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("furo", "呋喃并")},
     "thiophene":   {"smiles": "c1ccsc1",    "stem_en": "thiophene",   "stem_zh": "噻吩",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("thieno", "噻吩并")},
@@ -160,6 +166,10 @@ _TEMPLATES: dict[str, dict] = {
     "isoquinoline": {"smiles": "c1nccc2ccccc21", "stem_en": "isoquinoline", "stem_zh": "异喹啉", "naming_class": "naph_family", "fused": True},
     "quinazoline":  {"smiles": "c1ccc2ncncc2c1", "stem_en": "quinazoline",  "stem_zh": "喹唑啉", "naming_class": "naph_family", "fused": True, "standard": (NAPH_LABELS, (4, 5, 6, 7, 8, 9, 0, 1, 2, 3))},
     "quinoxaline":  {"smiles": "c1ccc2nccnc2c1", "stem_en": "quinoxaline",  "stem_zh": "喹喔啉", "naming_class": "naph_family", "fused": True},
+    # 表 2.8 第 8 项：噌啉（PIN cinnoline，1,2-二氮杂萘）——N1 邻桥头，N2 次邻；
+    # 母体名已固定 N1/N2 位次，故登记 standard（同喹啉 order：N1 起沿环经 4a 绕外周）。
+    "cinnoline":    {"smiles": "c1ccc2nnccc2c1", "stem_en": "cinnoline",    "stem_zh": "噌啉", "naming_class": "naph_family", "fused": True, "standard": (NAPH_LABELS, (4, 5, 6, 7, 8, 9, 0, 1, 2, 3))},
+
     # 苯并吡喃（10 原子 6+6）：O 直接连桥头（色烯）或隔一位（异色烯）。保留名 chromene/isochromene
     # 是 P-25.1 表 2.8 的稠合母体，取代「benzo[b]oxane」拼接式（自造体例，两份基准 gold 均 0 见）。
     # 二者连通性不同（O 是否连桥头），氢化骨架匹配路径可区分，故可同表并存。
@@ -208,7 +218,7 @@ def omits_fusion_numbers(sid: str) -> bool:
 
 
 def match_fusion_carbocycle(info: dict, atom_ids) -> str | None:
-    """饱和单环烃精确等于某 P-25.3.2.2.1 附加组分时返回 sid，否则 None（元素签名预过滤 + 子图同构）。"""
+    """单环烃骨架精确等于某 P-25.3.2.2.1 附加组分时返回 sid，否则 None（元素签名预过滤 + 骨架子图同构）。"""
     mol = info["mol"]
     atoms = frozenset(atom_ids)
     elem = _elem_sig(mol, atom_ids)
@@ -337,7 +347,15 @@ _FUSION_CARBOCYCLES: dict[str, dict] = {
     "cycloheptane": {"smiles": "C1CCCCCC1", "prefix_en": "cyclohepta", "prefix_zh": "环庚并"},
     "cyclooctane":  {"smiles": "C1CCCCCCC1","prefix_en": "cycloocta",  "prefix_zh": "环辛并"},
 }
-_Q_CYCLO: dict[str, Mol] = {sid: MolFromSmiles(e["smiles"]) for sid, e in _FUSION_CARBOCYCLES.items()}
+
+
+def _cyclo_component_query(smiles: str) -> Mol:
+    """由环状 SMILES 的原子数派生纯碳环骨架查询（SMARTS 缺省键 = 单键或芳香键）。"""
+    n = MolFromSmiles(smiles).GetNumAtoms()
+    return MolFromSmarts("[#6]1" + "[#6]" * (n - 1) + "1")
+
+
+_Q_CYCLO: dict[str, Mol] = {sid: _cyclo_component_query(e["smiles"]) for sid, e in _FUSION_CARBOCYCLES.items()}
 _CYCLO_ELEM: dict[str, frozenset] = {sid: _elem_sig(q, range(q.GetNumAtoms())) for sid, q in _Q_CYCLO.items()}
 
 
