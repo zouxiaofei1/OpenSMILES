@@ -63,10 +63,6 @@ def identity_of(spec) -> ScaffoldIdentity:
 
 
 # 保留母体 SMILES 模板注册表（唯一事实来源；原 specs.py + retained_templates.py 合并）
-
-# 每个保留母体一条：smiles 模板（`match_retained` 子图同构识别）+ 命名元数据
-# （词干 / 命名类）。`_spec_from_template` 派生 ScaffoldSpec，n_rings/ring 由
-# RDKit 从 smiles 自动算，retained=True。新增环系只在此表加一条。
 _NUMBERING_MODE = {
     "mono_carbo": "fixed_roles",
     "monohetero": "fixed_hetero",
@@ -83,42 +79,42 @@ _NUMBERING_MODE = {
 
 _TEMPLATES: dict[str, dict] = {
     # carbocycles
-    "benzene":     {"smiles": "c1ccccc1",             "stem_en": "benzene",    "stem_zh": "苯",   "naming_class": "mono_carbo"},
-    "naphthalene": {"smiles": "c1ccc2ccccc2c1",       "stem_en": "naphthalene","stem_zh": "萘",    "naming_class": "naph_family"},
-    "anthracene":  {"smiles": "c1ccc2cc3ccccc3cc2c1", "stem_en": "anthracene", "stem_zh": "蒽",    "naming_class": "anthra"},
-    "phenanthrene":{"smiles": "c1ccc2c(c1)ccc1ccccc12", "stem_en": "phenanthrene","stem_zh": "菲", "naming_class": "phenanthrene"},
-    "pyrene":      {"smiles": "c1cc2ccc3cccc4ccc(c1)c2c34", "stem_en": "pyrene",  "stem_zh": "芘", "naming_class": "pyrene"},
+    "benzene":     {"smiles": "c1ccccc1",             "stem_en": "benzene",    "stem_zh": "苯",   "naming_class": "mono_carbo", "fused": True, "fused_prefix": ("benzo", "苯并")},
+    "naphthalene": {"smiles": "c1ccc2ccccc2c1",       "stem_en": "naphthalene","stem_zh": "萘",    "naming_class": "naph_family", "fused": True, "fused_prefix": ("naphtho", "萘并")},
+    "anthracene":  {"smiles": "c1ccc2cc3ccccc3cc2c1", "stem_en": "anthracene", "stem_zh": "蒽",    "naming_class": "anthra", "fused": True, "fused_prefix": ("anthra", "蒽并")},
+    "phenanthrene":{"smiles": "c1ccc2c(c1)ccc1ccccc12", "stem_en": "phenanthrene","stem_zh": "菲", "naming_class": "phenanthrene", "fused": True, "fused_prefix": ("phenanthro", "菲并")},
+    "pyrene":      {"smiles": "c1cc2ccc3cccc4ccc(c1)c2c34", "stem_en": "pyrene",  "stem_zh": "芘", "naming_class": "pyrene", "fused": True},
     # monocyclic heteroarenes
-    "furan":       {"smiles": "c1ccoc1",    "stem_en": "furan",       "stem_zh": "呋喃",   "naming_class": "monohetero"},
-    "thiophene":   {"smiles": "c1ccsc1",    "stem_en": "thiophene",   "stem_zh": "噻吩",   "naming_class": "monohetero"},
-    "pyrrole":     {"smiles": "c1cc[nH]c1", "stem_en": "pyrrole",     "stem_zh": "吡咯",   "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "pyridine":    {"smiles": "n1ccccc1",   "stem_en": "pyridine",    "stem_zh": "吡啶",   "naming_class": "monohetero"},
-    "pyridazine":  {"smiles": "c1ccnnc1",   "stem_en": "pyridazine",  "stem_zh": "哒嗪",   "naming_class": "monohetero"},
-    "pyrimidine":  {"smiles": "c1cncnc1",   "stem_en": "pyrimidine",  "stem_zh": "嘧啶",   "naming_class": "monohetero"},
-    "pyrazine":    {"smiles": "c1cnccn1",   "stem_en": "pyrazine",    "stem_zh": "吡嗪",   "naming_class": "monohetero"},
-    "imidazole":   {"smiles": "c1cnc[nH]1", "stem_en": "imidazole",   "stem_zh": "咪唑",   "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "pyrazole":    {"smiles": "c1ccn[nH]1", "stem_en": "pyrazole",    "stem_zh": "吡唑",   "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "oxazole":     {"smiles": "c1cocn1",    "stem_en": "oxazole",     "stem_zh": "噁唑",   "naming_class": "monohetero", "locant_prefix": "1,3-"},
-    "thiazole":    {"smiles": "c1cscn1",    "stem_en": "thiazole",    "stem_zh": "噻唑",   "naming_class": "monohetero", "locant_prefix": "1,3-"},
+    "furan":       {"smiles": "c1ccoc1",    "stem_en": "furan",       "stem_zh": "呋喃",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("furo", "呋喃并")},
+    "thiophene":   {"smiles": "c1ccsc1",    "stem_en": "thiophene",   "stem_zh": "噻吩",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("thieno", "噻吩并")},
+    "pyrrole":     {"smiles": "c1cc[nH]c1", "stem_en": "pyrrole",     "stem_zh": "吡咯",   "naming_class": "monohetero", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
+    "pyridine":    {"smiles": "n1ccccc1",   "stem_en": "pyridine",    "stem_zh": "吡啶",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("pyrido", "吡啶并")},
+    "pyridazine":  {"smiles": "c1ccnnc1",   "stem_en": "pyridazine",  "stem_zh": "哒嗪",   "naming_class": "monohetero", "fused": True},
+    "pyrimidine":  {"smiles": "c1cncnc1",   "stem_en": "pyrimidine",  "stem_zh": "嘧啶",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("pyrimido", "嘧啶并")},
+    "pyrazine":    {"smiles": "c1cnccn1",   "stem_en": "pyrazine",    "stem_zh": "吡嗪",   "naming_class": "monohetero", "fused": True},
+    "imidazole":   {"smiles": "c1cnc[nH]1", "stem_en": "imidazole",   "stem_zh": "咪唑",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("imidazo", "咪唑并"), "locant_prefix": "1H-", "prefix_nh_conditional": True},
+    "pyrazole":    {"smiles": "c1ccn[nH]1", "stem_en": "pyrazole",    "stem_zh": "吡唑",   "naming_class": "monohetero", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
+    "oxazole":     {"smiles": "c1cocn1",    "stem_en": "oxazole",     "stem_zh": "噁唑",   "naming_class": "monohetero", "fused": True, "locant_prefix": "1,3-"},
+    "thiazole":    {"smiles": "c1cscn1",    "stem_en": "thiazole",    "stem_zh": "噻唑",   "naming_class": "monohetero", "fused": True, "locant_prefix": "1,3-"},
     # 其余保留名杂芳环（P-25.1 表 2.8）：异噁唑/三唑/四唑/三嗪原缺失
-    "isoxazole":   {"smiles": "c1ccno1",    "stem_en": "1,2-oxazole",  "stem_zh": "1,2-噁唑", "naming_class": "monohetero", "locant_prefix": "1,2-"},
-    "triazole":    {"smiles": "c1nc[nH]n1", "stem_en": "1,2,4-triazole", "stem_zh": "1,2,4-三唑", "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "tetrazole":   {"smiles": "c1nnn[nH]1", "stem_en": "1H-tetrazole", "stem_zh": "1H-四唑", "naming_class": "monohetero"},
-    "triazine":    {"smiles": "c1ncncn1",   "stem_en": "1,3,5-triazine", "stem_zh": "1,3,5-三嗪", "naming_class": "monohetero", "locant_prefix": "1,3,5-"},
+    "isoxazole":   {"smiles": "c1ccno1",    "stem_en": "1,2-oxazole",  "stem_zh": "1,2-噁唑", "naming_class": "monohetero", "fused": True,"locant_prefix": "1,2-"},
+    "triazole":    {"smiles": "c1nc[nH]n1", "stem_en": "1,2,4-triazole", "stem_zh": "1,2,4-三唑", "naming_class": "monohetero","fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
+    "tetrazole":   {"smiles": "c1nnn[nH]1", "stem_en": "1H-tetrazole", "stem_zh": "1H-四唑", "naming_class": "monohetero","fused": True,},
+    "triazine":    {"smiles": "c1ncncn1",   "stem_en": "1,3,5-triazine", "stem_zh": "1,3,5-三嗪", "naming_class": "monohetero", "fused": True,"locant_prefix": "1,3,5-"},
     # saturated monohetero rings（P-22.2.2；radical/取代基须识别为环而非开链）
-    "pyrrolidine": {"smiles": "C1CCNC1",  "stem_en": "pyrrolidine", "stem_zh": "吡咯烷", "naming_class": "monohetero"},
-    "piperidine":  {"smiles": "C1CCNCC1", "stem_en": "piperidine",  "stem_zh": "哌啶",   "naming_class": "monohetero"},
-    "morpholine":  {"smiles": "C1COCCN1", "stem_en": "morpholine",  "stem_zh": "吗啉",   "naming_class": "monohetero"},
-    "piperazine":  {"smiles": "C1CNCCN1", "stem_en": "piperazine",  "stem_zh": "哌嗪",   "naming_class": "monohetero"},
-    "oxolane":     {"smiles": "C1CCOC1",  "stem_en": "oxolane",     "stem_zh": "四氢呋喃", "naming_class": "monohetero"},
-    "oxane":       {"smiles": "C1CCCOC1", "stem_en": "oxane",       "stem_zh": "氧杂环己烷", "naming_class": "monohetero"},
+    "pyrrolidine": {"smiles": "C1CCNC1",  "stem_en": "pyrrolidine", "stem_zh": "吡咯烷", "naming_class": "monohetero", "fused": True},
+    "piperidine":  {"smiles": "C1CCNCC1", "stem_en": "piperidine",  "stem_zh": "哌啶",   "naming_class": "monohetero", "fused": True},
+    "morpholine":  {"smiles": "C1COCCN1", "stem_en": "morpholine",  "stem_zh": "吗啉",   "naming_class": "monohetero", "fused": True},
+    "piperazine":  {"smiles": "C1CNCCN1", "stem_en": "piperazine",  "stem_zh": "哌嗪",   "naming_class": "monohetero", "fused": True},
+    "oxolane":     {"smiles": "C1CCOC1",  "stem_en": "oxolane",     "stem_zh": "四氢呋喃", "naming_class": "monohetero", "fused": True},
+    "oxane":       {"smiles": "C1CCCOC1", "stem_en": "oxane",       "stem_zh": "氧杂环己烷", "naming_class": "monohetero", "fused": True},
     # 小环与含硫饱和杂环（P-22.2.2；3/4 元环与 S 杂环原缺失，致整块取代基丢弃）
-    "oxirane":     {"smiles": "C1CO1",    "stem_en": "oxirane",     "stem_zh": "环氧乙烷", "naming_class": "monohetero"},
-    "aziridine":   {"smiles": "C1CN1",    "stem_en": "aziridine",   "stem_zh": "氮杂环丙烷", "naming_class": "monohetero"},
-    "oxetane":     {"smiles": "C1COC1",   "stem_en": "oxetane",     "stem_zh": "氧杂环丁烷", "naming_class": "monohetero"},
-    "azetidine":   {"smiles": "C1CNC1",   "stem_en": "azetidine",   "stem_zh": "氮杂环丁烷", "naming_class": "monohetero"},
-    "thiolane":    {"smiles": "C1CCSC1",  "stem_en": "thiolane",    "stem_zh": "四氢噻吩", "naming_class": "monohetero"},
-    "thiane":      {"smiles": "C1CCSCC1", "stem_en": "thiane",      "stem_zh": "四氢噻喃", "naming_class": "monohetero"},
+    "oxirane":     {"smiles": "C1CO1",    "stem_en": "oxirane",     "stem_zh": "环氧乙烷", "naming_class": "monohetero","fused": True,},
+    "aziridine":   {"smiles": "C1CN1",    "stem_en": "aziridine",   "stem_zh": "氮杂环丙烷", "naming_class": "monohetero","fused": True,},
+    "oxetane":     {"smiles": "C1COC1",   "stem_en": "oxetane",     "stem_zh": "氧杂环丁烷", "naming_class": "monohetero","fused": True,},
+    "azetidine":   {"smiles": "C1CNC1",   "stem_en": "azetidine",   "stem_zh": "氮杂环丁烷", "naming_class": "monohetero","fused": True,},
+    "thiolane":    {"smiles": "C1CCSC1",  "stem_en": "thiolane",    "stem_zh": "四氢噻吩", "naming_class": "monohetero","fused": True,},
+    "thiane":      {"smiles": "C1CCSCC1", "stem_en": "thiane",      "stem_zh": "四氢噻喃", "naming_class": "monohetero","fused": True,},
     # 双氧/三氧饱和环（缩醛/缩酮、溶剂类骨架）
     "dioxolane":   {"smiles": "C1COCO1",  "stem_en": "1,3-dioxolane", "stem_zh": "1,3-二氧戊环", "naming_class": "monohetero", "locant_prefix": "1,3-"},
     "dioxane":     {"smiles": "C1COCCO1", "stem_en": "1,4-dioxane",   "stem_zh": "1,4-二氧六环", "naming_class": "monohetero", "locant_prefix": "1,4-"},
@@ -134,32 +130,50 @@ _TEMPLATES: dict[str, dict] = {
     "dihydroimidazole":{"smiles": "C1=NCCN1", "stem_en": "4,5-dihydro-1H-imidazole", "stem_zh": "4,5-二氢-1H-咪唑", "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True},
     "dihydrothiazole":{"smiles": "C1=NCCS1",  "stem_en": "4,5-dihydro-1,3-thiazole", "stem_zh": "4,5-二氢-1,3-噻唑", "naming_class": "monohetero", "locant_prefix": "1,3-"},
     # fused 5+6
-    "indole":         {"smiles": "c1ccc2[nH]ccc2c1", "stem_en": "1H-indole",      "stem_zh": "吲哚",     "naming_class": "fused56", "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "indazole":       {"smiles": "c1ccc2cn[nH]c2c1", "stem_en": "indazole",       "stem_zh": "吲唑",     "naming_class": "fused56", "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "benzimidazole":  {"smiles": "c1ccc2[nH]cnc2c1", "stem_en": "benzimidazole",  "stem_zh": "苯并咪唑", "naming_class": "fused56", "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "benzofuran":     {"smiles": "c1ccc2occc2c1",    "stem_en": "benzofuran",     "stem_zh": "苯并呋喃", "naming_class": "fused56", "locant_prefix": "1-"},
-    "benzothiophene": {"smiles": "c1ccc2sccc2c1",    "stem_en": "benzothiophene", "stem_zh": "苯并噻吩", "naming_class": "fused56", "locant_prefix": "1-"},
-    "benzothiazole":  {"smiles": "c1ccc2scnc2c1",    "stem_en": "benzothiazole",  "stem_zh": "苯并噻唑", "naming_class": "fused56", "locant_prefix": "1,3-"},
-    "benzoxazole":    {"smiles": "c1ccc2ocnc2c1",    "stem_en": "benzoxazole",    "stem_zh": "苯并噁唑", "naming_class": "fused56", "locant_prefix": "1,3-"},
+    "indole":         {"smiles": "c1ccc2[nH]ccc2c1", "stem_en": "1H-indole",      "stem_zh": "吲哚",     "naming_class": "fused56", "fused": True, "fused_stem": ("indole", "吲哚"), "locant_prefix": "1H-", "prefix_nh_conditional": True},
+    "indazole":       {"smiles": "c1ccc2cn[nH]c2c1", "stem_en": "indazole",       "stem_zh": "吲唑",     "naming_class": "fused56", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
+    "benzimidazole":  {"smiles": "c1ccc2[nH]cnc2c1", "stem_en": "benzimidazole",  "stem_zh": "苯并咪唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
+    "benzofuran":     {"smiles": "c1ccc2occc2c1",    "stem_en": "benzofuran",     "stem_zh": "苯并呋喃", "naming_class": "fused56", "fused": True, "locant_prefix": "1-"},
+    "benzothiophene": {"smiles": "c1ccc2sccc2c1",    "stem_en": "benzothiophene", "stem_zh": "苯并噻吩", "naming_class": "fused56", "fused": True, "locant_prefix": "1-"},
+    "benzothiazole":  {"smiles": "c1ccc2scnc2c1",    "stem_en": "benzothiazole",  "stem_zh": "苯并噻唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1,3-"},
+    "benzoxazole":    {"smiles": "c1ccc2ocnc2c1",    "stem_en": "benzoxazole",    "stem_zh": "苯并噁唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1,3-"},
     # 三环 6+5+6（13 原子）：两个苯环融合吡咯，N9 邻位桥头 4a/9a。
-    "carbazole":      {"smiles": "c1ccc2[nH]c3ccccc3c2c1", "stem_en": "carbazole", "stem_zh": "咔唑", "naming_class": "carbazole", "locant_prefix": "9H-", "prefix_nh_conditional": True},
+    "carbazole":      {"smiles": "c1ccc2[nH]c3ccccc3c2c1", "stem_en": "carbazole", "stem_zh": "咔唑", "naming_class": "carbazole", "fused": True, "locant_prefix": "9H-", "prefix_nh_conditional": True},
     # 三环 6+6+6（14 原子）：中间吡啶/含 S 环两侧苯环融合。
-    "acridine":       {"smiles": "c1ccc2nc3ccccc3cc2c1",   "stem_en": "acridine",     "stem_zh": "吖啶",   "naming_class": "acridine"},
-    "phenothiazine":  {"smiles": "c1ccc2Sc3ccccc3Nc2c1",   "stem_en": "phenothiazine", "stem_zh": "吩噻嗪", "naming_class": "phenothiazine", "locant_prefix": "10H-", "prefix_nh_conditional": True},
+    "acridine":       {"smiles": "c1ccc2nc3ccccc3cc2c1",   "stem_en": "acridine",     "stem_zh": "吖啶",   "naming_class": "acridine", "fused": True},
+    "phenothiazine":  {"smiles": "c1ccc2Sc3ccccc3Nc2c1",   "stem_en": "phenothiazine", "stem_zh": "吩噻嗪", "naming_class": "phenothiazine", "fused": True, "locant_prefix": "10H-", "prefix_nh_conditional": True},
     # 双环 5+6（9 原子）：苯环并二氧戊环，O1/C2/O3。
-    "benzodioxole":   {"smiles": "c1ccc2OCOc2c1",          "stem_en": "benzodioxole", "stem_zh": "苯并二氧杂环戊烯", "naming_class": "benzodioxole", "locant_prefix": "1,3-"},
+    "benzodioxole":   {"smiles": "c1ccc2OCOc2c1",          "stem_en": "benzodioxole", "stem_zh": "苯并二氧杂环戊烯", "naming_class": "benzodioxole", "fused": True, "locant_prefix": "1,3-"},
     # fused 6+6
-    "quinoline":    {"smiles": "c1ccc2ncccc2c1", "stem_en": "quinoline",    "stem_zh": "喹啉",   "naming_class": "naph_family"},
-    "isoquinoline": {"smiles": "c1nccc2ccccc21", "stem_en": "isoquinoline", "stem_zh": "异喹啉", "naming_class": "naph_family"},
-    "quinazoline":  {"smiles": "c1ccc2ncncc2c1", "stem_en": "quinazoline",  "stem_zh": "喹唑啉", "naming_class": "naph_family"},
-    "quinoxaline":  {"smiles": "c1ccc2nccnc2c1", "stem_en": "quinoxaline",  "stem_zh": "喹喔啉", "naming_class": "naph_family"},
+    "quinoline":    {"smiles": "c1ccc2ncccc2c1", "stem_en": "quinoline",    "stem_zh": "喹啉",   "naming_class": "naph_family", "fused": True},
+    "isoquinoline": {"smiles": "c1nccc2ccccc21", "stem_en": "isoquinoline", "stem_zh": "异喹啉", "naming_class": "naph_family", "fused": True},
+    "quinazoline":  {"smiles": "c1ccc2ncncc2c1", "stem_en": "quinazoline",  "stem_zh": "喹唑啉", "naming_class": "naph_family", "fused": True},
+    "quinoxaline":  {"smiles": "c1ccc2nccnc2c1", "stem_en": "quinoxaline",  "stem_zh": "喹喔啉", "naming_class": "naph_family", "fused": True},
     # 保留名（表 2.8）：purine=嘌呤（5+6，特殊编号 1–9，PIN 7H-purine，P-25 表 2.8 第16项）；
     # pteridine=蝶啶（6+6 四 N，naph-family 编号，N 在 1/3/5/8、CH 在 2/4/6/7）。无环外 =O，故可入表。
-    "purine":       {"smiles": "c1ncc2[nH]cnc2n1", "stem_en": "7H-purine",     "stem_zh": "嘌呤",   "naming_class": "purine", "locant_prefix": "7H-", "prefix_nh_conditional": True},
-    "pteridine":    {"smiles": "c1cnc2ncncc2n1",    "stem_en": "pteridine",    "stem_zh": "蝶啶",   "naming_class": "naph_family"},
+    "purine":       {"smiles": "c1ncc2[nH]cnc2n1", "stem_en": "7H-purine",     "stem_zh": "嘌呤",   "naming_class": "purine", "fused": True, "fused_stem": ("purine", "嘌呤"), "locant_prefix": "7H-", "prefix_nh_conditional": True},
+    "pteridine":    {"smiles": "c1cnc2ncncc2n1",    "stem_en": "pteridine",    "stem_zh": "蝶啶",   "naming_class": "naph_family", "fused": True},
     # NOTE: carbonyl mothers（benzoquinone / anthraquinone / chromenone /
     # ortho_benzoquinone）不入表：模板含环外 =O，匹配集会超出环系统原子集。
 }
+
+
+def component_stem(sid: str) -> tuple[str, str] | None:
+    """稠合组分词干 (en, zh)：只有 `fused=True` 的模板可作稠合命名零件，否则 None。
+
+    多数等于母体词干；indole/purine 以 `fused_stem` 覆盖去掉指示氢前缀（1H-/7H-），
+    因为稠合前缀取去指示氢的组分名（indolo 而非 1H-indolo）。
+    """
+    entry = _TEMPLATES.get(sid)
+    if not entry or not entry.get("fused"):
+        return None
+    return entry.get("fused_stem") or (entry["stem_en"], entry["stem_zh"])
+
+
+def retained_fusion_prefix(sid: str) -> tuple[str, str] | None:
+    """附加组分的保留稠合前缀 (en, zh)（P-25.3.2.2.3）；无登记则 None（调用方走通用规则）。"""
+    entry = _TEMPLATES.get(sid)
+    return entry.get("fused_prefix") if entry else None
 
 # 保留 fused 母体的固定编号标签（P-25.4）：融合桥头用字母 locant（3a/7a、4a/8a）。
 FUSED56_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")
@@ -498,10 +512,10 @@ def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentit
     all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
     if not all_carbon:
         atoms = set(skeleton.atom_ids)
-        if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms):
-            n_rings = sum(1 for ring in mol.GetRingInfo().AtomRings() if set(ring) <= atoms)
-            if n_rings >= 2:
-                return ScaffoldIdentity("fused_hetero", "fused_hetero", n_rings, "hetero")
+        # if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms):
+        n_rings = sum(1 for ring in mol.GetRingInfo().AtomRings() if set(ring) <= atoms)
+        if n_rings >= 2:
+            return ScaffoldIdentity("fused_hetero", "fused_hetero", n_rings, "hetero")
         return None
     return ScaffoldIdentity("carbocycle", "carbocycle", 1, "carbo")
 

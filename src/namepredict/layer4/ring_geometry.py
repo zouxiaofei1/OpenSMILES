@@ -34,7 +34,13 @@ def ring_shape_template(order: list[int], exit_idx: int,
     if n not in (5, 7):
         return None
     e = exit_idx % n
-    if n == 5 and e != 2:
+    if n == 5:
+        # 顶点落在哪个索引由行方向决定：出口边为 (2,3) 时顶点是末尾索引 4，出口边为 (3,4) 时顶点是索引 2(镜像形)。
+        # 两个方向都要给模板，否则整行因摆不出被丢弃，行内最右环也一并丢失(6-5-6 会退化成只能从另一侧起编)。
+        if e == 2:
+            return [(0.0, 0.0), (1.0, 0.0), (1.0, row_width), (0.0, row_width), (-0.4, 0.0)]
+        if e == 3:
+            return [(0.0, 0.0), (1.0, 0.0), (1.4, 0.0), (1.0, row_width), (0.0, row_width)]
         return None
     if n == 7 and e not in (2, 3):
         return None

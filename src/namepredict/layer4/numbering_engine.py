@@ -237,7 +237,7 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
 
 def _fused_numbering(parent: dict, chain: list[int],
                      substituents: list | None = None) -> list[int] | None:
-    """P-25.3.3 稠环编号（护栏：P-25.3.3 传统编号例外骨架保持固定编号，其余全芳香多环走优选取向+外周编号）。"""
+    """P-25.3.3 稠环编号（护栏：P-25.3.3 传统编号例外骨架保持固定编号，其余芳香或未注册稠环走优选取向+外周编号）。"""
     sid = parent.get("scaffold_id")
     if sid in _TRADITIONAL_NUMBERING_IDS:
         return None
@@ -246,7 +246,12 @@ def _fused_numbering(parent: dict, chain: list[int],
     spec = get_spec(parent.get("scaffold_id") or "")
     registered_fused = bool(spec and spec.n_rings >= 2)  # 稠环保留模板（含氢化衍生物）：编号随骨架拓扑，与芳香性无关（fused_numbering 本身不依赖 aromatic）
     chain_arom = bool(mol is not None and chain) and all(mol.GetAtomWithIdx(a).GetIsAromatic() for a in chain)
-    if mol is None or not chain or not (chain_arom or registered_fused):
+    # 未注册稠环（如 fused_hetero 身份的饱和/部分饱和稠环）：scaffold_id 不在 _TEMPLATES，registered_fused 与 chain_arom 均假。
+    # 若在此拦下会回落到 P-14.4 单环通用枚举：桥头得数字位而非字母位(4a/8a)、起点方向随输入原子序漂移。
+    # 故按「chain 覆盖 ≥2 环」放行走 P-25.3.3 外周编号；单环/开链覆盖 ≤1 环仍返回 None，保持原路径不变。
+    chain_fused = bool(mol is not None and chain) and sum(
+        1 for r in mol.GetRingInfo().AtomRings() if set(r) <= set(chain)) >= 2
+    if mol is None or not chain or not (chain_arom or registered_fused or chain_fused):
         return None
     from namepredict.layer1.ring_systems import build_ring_systems
     from namepredict.layer4.fused_orientation import preferred_orientations

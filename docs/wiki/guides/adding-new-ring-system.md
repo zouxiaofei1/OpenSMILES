@@ -144,7 +144,7 @@ FG-环组合的命名由以下路径承担：
 | Layer | 文件 | 改动内容 |
 |-------|------|---------|
 | L1 | `layer1/ring_systems.py` | 特殊环检测（通常无需改动） |
-| L2 | `layer2/ring_scaffold.py` | 在 `_TEMPLATES` 新增 `{smiles, stem_en, stem_zh, naming_class}`（+ 可选 `locant_prefix`/`prefix_nh_conditional`）；非默认编号时另加 `_STANDARD_ORDERS`/`_STANDARD_LABELS` |
+| L2 | `layer2/ring_scaffold.py` | 在 `_TEMPLATES` 新增 `{smiles, stem_en, stem_zh, naming_class}`（+ 可选 `locant_prefix`/`prefix_nh_conditional`，作稠合命名零件时再补 `fused`/`fused_stem`/`fused_prefix`）；非默认编号时另加 `_STANDARD_ORDERS`/`_STANDARD_LABELS` |
 | L2 | `layer2/kind_registry.py` | 通常无需改动（`_load_from_scaffold_specs` 自动注册） |
 | L4 | `layer4/numbering_engine.py` | 通常无需改动（P-14.4 候选管线自动适用） |
 | L5 | `layer5/assembler.py` | `_ring_stem` 词干注入 / exocyclic worker |

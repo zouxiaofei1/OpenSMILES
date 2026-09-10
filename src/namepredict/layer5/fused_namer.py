@@ -1,76 +1,19 @@
 """P-25.3.2 稠合名称组装: fused_info 拆解树生成 benzo[a]/naphtho[...] 稠合 base 名
-(未注册稠环; 组件词干用本地表与 L2 _TEMPLATES 同步, 编号走 L4 fused_numbering)。"""
+(未注册稠环; 组分词干/保留前缀由 L2 打包进 FusedNode, 编号走 L4 fused_numbering)。"""
 from __future__ import annotations
 
 from collections import Counter
 
-# 附加组分保留前缀(组分 id → 前缀; P-25.3.2.2.3 保留前缀)。
-_FUSED_PREFIX = {
-    "benzene": ("benzo", "苯并"),
-    "naphthalene": ("naphtho", "萘并"),
-    "anthracene": ("anthra", "蒽并"),
-    "phenanthrene": ("phenanthro", "菲并"),
-    "furan": ("furo", "呋喃并"),
-    "thiophene": ("thieno", "噻吩并"),
-    "pyridine": ("pyrido", "吡啶并"),
-    "pyrimidine": ("pyrimido", "嘧啶并"),
-    "imidazole": ("imidazo", "咪唑并"),
-}
 
-# 组分词干表(L5 本地, 与 layer2.ring_scaffold._TEMPLATES 词干需同步)。
-_COMPONENT_STEM = {
-    "benzene": ("benzene", "苯"),
-    "naphthalene": ("naphthalene", "萘"),
-    "anthracene": ("anthracene", "蒽"),
-    "phenanthrene": ("phenanthrene", "菲"),
-    "pyrene": ("pyrene", "芘"),
-    "furan": ("furan", "呋喃"),
-    "thiophene": ("thiophene", "噻吩"),
-    "pyrrole": ("pyrrole", "吡咯"),
-    "pyridine": ("pyridine", "吡啶"),
-    "pyrimidine": ("pyrimidine", "嘧啶"),
-    "pyrazine": ("pyrazine", "吡嗪"),
-    "pyridazine": ("pyridazine", "哒嗪"),
-    "imidazole": ("imidazole", "咪唑"),
-    "pyrazole": ("pyrazole", "吡唑"),
-    "oxazole": ("oxazole", "噁唑"),
-    "thiazole": ("thiazole", "噻唑"),
-    "quinoline": ("quinoline", "喹啉"),
-    "isoquinoline": ("isoquinoline", "异喹啉"),
-    "indole": ("indole", "吲哚"),
-    "indazole": ("indazole", "吲唑"),
-    "benzimidazole": ("benzimidazole", "苯并咪唑"),
-    "benzofuran": ("benzofuran", "苯并呋喃"),
-    "benzothiophene": ("benzothiophene", "苯并噻吩"),
-    "benzothiazole": ("benzothiazole", "苯并噻唑"),
-    "benzoxazole": ("benzoxazole", "苯并噁唑"),
-    "quinazoline": ("quinazoline", "喹唑啉"),
-    "quinoxaline": ("quinoxaline", "喹喔啉"),
-    "purine": ("purine", "嘌呤"),
-    "pteridine": ("pteridine", "蝶啶"),
-    "benzodioxole": ("benzodioxole", "苯并二氧杂环戊烯"),
-    "pyrrolidine": ("pyrrolidine", "吡咯烷"),
-    "piperidine": ("piperidine", "哌啶"),
-    "morpholine": ("morpholine", "吗啉"),
-    "piperazine": ("piperazine", "哌嗪"),
-    "oxolane": ("oxolane", "四氢呋喃"),
-    "oxane": ("oxane", "氧杂环己烷"),
-    "carbazole": ("carbazole", "咔唑"),
-    "acridine": ("acridine", "吖啶"),
-    "phenothiazine": ("phenothiazine", "吩噻嗪"),
-}
+def _stem_of(node) -> tuple[str | None, str | None]:
+    """节点的组分词干(stem_en/stem_zh); L2 未标注的组分(非稠合零件)返回 (None, None)。"""
+    return node.fused_stem or (None, None)
 
 
-def _stem_of(sid: str) -> tuple[str | None, str | None]:
-    """组分的保留词干(stem_en/stem_zh)。"""
-    return _COMPONENT_STEM.get(sid, (None, None))
-
-
-def _prefix_of(sid: str, stem_en: str | None, stem_zh: str | None) -> tuple[str, str] | None:
-    """附加组分前缀: 保留前缀表, 否则通用「去尾 e 加 o / 中文加并」(P-25.3.2.2.2)。"""
-    p = _FUSED_PREFIX.get(sid)
-    if p:
-        return p
+def _prefix_of(node, stem_en: str | None, stem_zh: str | None) -> tuple[str, str] | None:
+    """附加组分前缀: L2 标注的保留前缀, 否则通用「去尾 e 加 o / 中文加并」(P-25.3.2.2.2)。"""
+    if node.fused_prefix:
+        return node.fused_prefix
     en = (stem_en or "").rstrip("e") + "o"
     zh = (stem_zh or "") + "并"
     return (en, zh) if en else None
@@ -140,7 +83,7 @@ def _fused_one(mol, parent_node, child_node, rings, fusion_edges) -> tuple[str, 
     child_chain, child_labels = _component_numbering(mol, child_node, rings, fusion_edges, shared)
     if not parent_chain or not child_labels:
         return None
-    prefix = _prefix_of(child_node.scaffold_id, *_stem_of(child_node.scaffold_id))
+    prefix = _prefix_of(child_node, *_stem_of(child_node))
     if prefix is None:
         return None
     letter = numbers = None
@@ -172,7 +115,7 @@ def fused_parent_names(mol, node) -> tuple[str, str] | None:
     """稠合名组装入口: node 为 FusedNode 根; 返回 (en, zh) 或 None(无法组装)。"""
     if not node.attached:
         return None  # 单节点保留名走 _parent_stem_names
-    root_en, root_zh = _stem_of(node.scaffold_id)
+    root_en, root_zh = _stem_of(node)
     if not root_en:
         return None
     rings = list(mol.GetRingInfo().AtomRings())

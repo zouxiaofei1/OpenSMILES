@@ -103,9 +103,9 @@ kind_registry 是**只读权威**：被 `scoring.py`（模块级派生集合）�
 
 ### Ring 骨架识别机制（`ring_scaffold.py`）
 
-`ring_scaffold.py`（447 行）以 `_TEMPLATES`（SMILES 模板表）为**唯一事实来源**，派生 ScaffoldSpec/ScaffoldIdentity 与保留条目。职责分三块：
+`ring_scaffold.py`（533 行）以 `_TEMPLATES`（SMILES 模板表）为**唯一事实来源**，派生 ScaffoldSpec/ScaffoldIdentity 与保留条目。职责分三块：
 
-1. **模板注册表（唯一来源）** — `_TEMPLATES`（`:84` 起，保留母体，每条 `{smiles, stem_en, stem_zh, naming_class}`）；`_spec_from_template`（`:254`）派生 ScaffoldSpec（n_rings/ring 从 smiles 算，retained=True），`all_specs()`（`:291`）/`get_spec()`（`:286`）/`get_identity()`（`:281`）/`kind_ids_for()`（`:322`）均由此派生；`kind_registry._load_from_scaffold_specs` 据此注册 KindMeta 词干（活接线，防清扫判死）。表覆盖：
+1. **模板注册表（唯一来源）** — `_TEMPLATES`（`:84` 起，保留母体，每条 `{smiles, stem_en, stem_zh, naming_class}`，**外加稠合命名零件字段** `fused`（该环可作稠合组分）/`fused_stem`（去指示氢的组分词干覆盖，如 1H-indole→indole）/`fused_prefix`（附加组分保留前缀，P-25.3.2.2.3），经 `component_stem()`（`:161`）/`retained_fusion_prefix()`（`:173`）读取，由 `fused_system._decompose` 打包进 `FusedNode` 下发 L5）；`_spec_from_template`（`:254`）派生 ScaffoldSpec（n_rings/ring 从 smiles 算，retained=True），`all_specs()`（`:291`）/`get_spec()`（`:286`）/`get_identity()`（`:281`）/`kind_ids_for()`（`:322`）均由此派生；`kind_registry._load_from_scaffold_specs` 据此注册 KindMeta 词干（活接线，防清扫判死）。表覆盖：
    - **碳环/稠环**：benzene / naphthalene / anthracene / phenanthrene / pyrene
    - **芳杂环（单环）**：furan / thiophene / pyrrole / pyridine / pyridazine / pyrimidine / pyrazine / imidazole / pyrazole / oxazole / thiazole / **isoxazole（1,2-噁唑）/ triazole（1,2,4-三唑）/ tetrazole（1H-四唑）/ triazine（1,3,5-三嗪）**
    - **饱和杂环**：pyrrolidine / piperidine / morpholine / piperazine / oxolane / oxane + **小环 oxirane / aziridine / oxetane / azetidine** + **含硫 thiolane / thiane**
@@ -134,9 +134,9 @@ flowchart LR
 
 ### 稠环拆解 (fused_system.py)
 
-`fused_system.py`（227 行）实现 **P-25.3.2.4 稠环拆解**——把含 ≥2 环共享 ≥2 原子的稠合环系拆成**保留母体组分树**（`FusedNode`），供 L5 `fused_namer` 组装 `benzo[a]...`/`naphtho[...]...` 类稠合名。这是**未注册稠环**（无整体保留 scaffold）的命名通道：母体/附加组分均为已注册保留件，但整体系统不在 `_TEMPLATES` 内。
+`fused_system.py`（238 行）实现 **P-25.3.2.4 稠环拆解**——把含 ≥2 环共享 ≥2 原子的稠合环系拆成**保留母体组分树**（`FusedNode`），供 L5 `fused_namer` 组装 `benzo[a]...`/`naphtho[...]...` 类稠合名。这是**未注册稠环**（无整体保留 scaffold）的命名通道：母体/附加组分均为已注册保留件，但整体系统不在 `_TEMPLATES` 内。
 
-核心数据结构 `FusedNode`（`fused_system.py:26`）：
+核心数据结构 `FusedNode`（`fused_system.py:30`）：
 
 ```python
 @dataclass(frozen=True)
@@ -146,15 +146,18 @@ class FusedNode:
     ring_indices: frozenset[int]     # 组分所含环
     fusion_shared: tuple[frozenset, ...] = ()  # 与父组分的共享原子集（根节点为 ()）
     attached: tuple["FusedNode", ...] = ()     # 附加组分树（递归）
+    # 命名组装数据：L2 打包期从 ring_scaffold._TEMPLATES 取好挂上，L5 只读（L5 不得 import L2）
+    fused_stem: tuple[str, str] | None = None    # 组分词干 (en, zh)；None = 不可作稠合零件
+    fused_prefix: tuple[str, str] | None = None  # 附加组分保留前缀 (en, zh)；None = 走通用规则
 ```
 
-拆解管线（`decompose_fused_system`，`:221`）：
+拆解管线（`decompose_fused_system`，`:232`）：
 
-1. **增长式候选枚举**（`_candidates_for`，`:46`）— 从"单环精确匹配某保留模板"（`_seedable`）的种子环 DFS 并入邻接环，`match_retained` 精确命中记录候选，元素超集剪枝（`_has_template_superset`），按原子集去重
-2. **P-25.3.2.4 母体组分选择**（`_select_base`，`:84`）— 依次施加 (a) 最优先杂原子 → (b) 环数 → (c) 环大小降序 → (d) 杂原子总数 → (e) 杂原子种类 → (f) 最高优先杂原子数；(g)-(j) 依赖 L4 优选取代/编号（`_numbered_locants`，`:152`，调到 `fused_orientation`+`fused_numbering`）逐准则收窄（水平行环数 / 杂原子位次低 / 逐元素位次 / 稠合碳位次低）；>1 时环集升序兜底
-3. **递归拆解**（`_decompose`，`:199`）— 选定母体组分后，剩余环按融合图**连通分量**（`_ring_components`，`:173`）递归为附加组分，共享原子经 `fusion_shared` 下传
+1. **增长式候选枚举**（`_candidates_for`，`:55`）— 从"单环精确匹配某保留模板"（`_seedable`）的种子环 DFS 并入邻接环，`match_retained` 精确命中记录候选，元素超集剪枝（`_has_template_superset`），按原子集去重
+2. **P-25.3.2.4 母体组分选择**（`_select_base`，`:93`）— 依次施加 (a) 最优先杂原子 → (b) 环数 → (c) 环大小降序 → (d) 杂原子总数 → (e) 杂原子种类 → (f) 最高优先杂原子数；(g)-(j) 依赖 L4 优选取代/编号（`_numbered_locants`，`:161`，调到 `fused_orientation`+`fused_numbering`）逐准则收窄（水平行环数 / 杂原子位次低 / 逐元素位次 / 稠合碳位次低）；>1 时环集升序兜底
+3. **递归拆解**（`_decompose`，`:208`）— 选定母体组分后，剩余环按融合图**连通分量**（`_ring_components`，`:182`）递归为附加组分，共享原子经 `fusion_shared` 下传；**同时把 `component_stem(sid)`/`retained_fusion_prefix(sid)` 写进节点**（唯一构造点），使 L5 无需持有词干表的第二副本
 
-入口 `decompose_fused_system(info, system)`（`:221`）读 `system["fusion_edges"]`/`sssr_indices`（L1 `build_ring_systems` 产出），输出 `FusedNode | None`（无保留候选返回 None）。**拆解独立于 scaffold 身份**——未注册系统 `resolve_ring_scaffold` 解析为 None 时仍产出拆解树。`_P25_SENIOR`（`:14`）/`_P145_SENIOR`（`:16`）为 P-25.3.2.4(a)/(f) 的杂原子优先序常量。
+入口 `decompose_fused_system(info, system)`（`:232`）读 `system["fusion_edges"]`/`sssr_indices`（L1 `build_ring_systems` 产出），输出 `FusedNode | None`（无保留候选返回 None）。**拆解独立于 scaffold 身份**——未注册系统 `resolve_ring_scaffold` 解析为 None 时仍产出拆解树。`_P25_SENIOR`（`:19`）/`_P145_SENIOR`（`:21`）为 P-25.3.2.4(a)/(f) 的杂原子优先序常量。
 
 > **源:** `src/namepredict/layer2/fused_system.py`
 

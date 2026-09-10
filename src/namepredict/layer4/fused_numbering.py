@@ -31,11 +31,12 @@ def fused_atoms(rings) -> set[int]:
 
 
 def _top_rings(coords: dict, rings) -> list[int]:
-    """环心 (cy 最大, cx 最大) 的最上端环; 平局全保留。"""
+    """最上端"水平行"内最右环(P-25.3.3.1.1): 同一水平行内各环同属最上端, 平局取最右。6-5-6 行的变形五元环环心被顶点抬偏 ±0.18, 单比环心 y 会把中间环误判成最上端环(起点落到中间环唯一非稠合原子上), 故先按环心 y 聚成行(阈值为最大环高的 1/4)再取行内 x 最大者; 平局全保留。"""
     centers = [(r, sum(coords[a][0] for a in ring) / len(ring),
                 sum(coords[a][1] for a in ring) / len(ring)) for r, ring in enumerate(rings)]
+    span = max(max(coords[a][1] for a in ring) - min(coords[a][1] for a in ring) for ring in rings)
     cy_max = max(c[2] for c in centers)
-    tops = [c for c in centers if abs(c[2] - cy_max) < 1e-9]
+    tops = [c for c in centers if cy_max - c[2] <= 0.25 * span]  # 视为同处一个水平行
     cx_max = max(c[1] for c in tops)
     return [r for r, cx, cy in tops if abs(cx - cx_max) < 1e-9]
 

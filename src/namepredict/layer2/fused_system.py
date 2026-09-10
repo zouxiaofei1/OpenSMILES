@@ -7,7 +7,12 @@ from dataclasses import dataclass
 from namepredict.constants import (
     Al, As, B, Bi, Br, C, Cl, F, Ga, Ge, I, In, N, O, P, Pb, S, Sb, Se, Si, Sn, Te, Tl,
 )
-from namepredict.layer2.ring_scaffold import _Q, match_retained
+from namepredict.layer2.ring_scaffold import (
+    _Q,
+    component_stem,
+    match_retained,
+    retained_fusion_prefix,
+)
 
 
 # P-25.3.2.4(a): N > F > Cl > Br > I > O > S > Se > Te > P > ... > Tl（母体组分选择，N 最优先）。
@@ -30,6 +35,10 @@ class FusedNode:
     ring_indices: frozenset[int]
     fusion_shared: tuple[frozenset[int], ...] = ()
     attached: tuple["FusedNode", ...] = ()
+    # 命名组装数据：由 L2 打包时从 ring_scaffold._TEMPLATES 取好挂上，L5 fused_namer 只读。
+    # （L5 不得 import L2，故稠合词干须随拆解树下发，不留在 L5 本地表。）
+    fused_stem: tuple[str, str] | None = None    # 组分词干 (en, zh)；None = 不可作稠合零件
+    fused_prefix: tuple[str, str] | None = None  # 附加组分保留前缀 (en, zh)；None = 走通用规则
 
 
 def _has_template_superset(mol, atom_ids) -> bool:
@@ -215,6 +224,8 @@ def _decompose(info, rings, fusion_edges, ring_indices, fusion_shared=()) -> Fus
         ring_indices=base_rset,
         fusion_shared=tuple(sorted(fusion_shared, key=lambda s: sorted(s))),
         attached=tuple(attached),
+        fused_stem=component_stem(sid),
+        fused_prefix=retained_fusion_prefix(sid),
     )
 
 

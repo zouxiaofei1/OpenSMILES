@@ -135,20 +135,19 @@ assemble(numbered)
 
 ### 4.1 稠合名组装 (`fused_namer.py`)
 
-`fused_namer.py`（189 行）实现 **P-25.3.2 稠合名称组装**——用 L2 的 `fused_tree` 拆解树生成 `benzo[a]...`/`naphtho[...]...` 类稠合名（供**未注册稠环**的 base 名；母体/附加组分均为已注册保留件，但整体系统不在 `_TEMPLATES` 内）。当前支持**单边融合**，多边/跨位待后续。L5 分层纯净：组件词干用本地表（与 L2 `_TEMPLATES` 需同步），编号走 L4 `fused_numbering`。
+`fused_namer.py`（132 行）实现 **P-25.3.2 稠合名称组装**——用 L2 的 `fused_tree` 拆解树生成 `benzo[a]...`/`naphtho[...]...` 类稠合名（供**未注册稠环**的 base 名；母体/附加组分均为已注册保留件，但整体系统不在 `_TEMPLATES` 内）。当前支持**单边融合**，多边/跨位待后续。L5 分层纯净：组件词干与保留前缀**不在 L5 留表**，由 L2 打包期从 `ring_scaffold._TEMPLATES` 取出写进 `FusedNode.fused_stem`/`.fused_prefix`，L5 只读节点字段（L5 不得 import L2）；编号走 L4 `fused_numbering`。
 
-核心入口 `fused_parent_names(mol, node)`（`fused_namer.py:171`）：
+核心入口 `fused_parent_names(mol, node)`（`fused_namer.py:114`）：
 
-- **`_FUSED_PREFIX`**（`fused_namer.py:8`）— 附加组分保留前缀（`benzo`/`naphtho`/`anthra`/`phenanthro`/`furo`/`thieno`/`pyrido`/`pyrimido`/`imidazo`），`_prefix_of`（`fused_namer.py:69`）无保留前缀时走通用「去尾 e 加 o / 中文加并」（P-25.3.2.2.2）
-- **`_COMPONENT_STEM`**（`fused_namer.py:21`）— 组分词干表（en/zh），L5 本地、与 `ring_scaffold._TEMPLATES` 词干需同步（zh 修正：quinoxaline→喹喔啉、oxane→氧杂环己烷）；含 **`purine`/`嘌呤`**（`:49`）与 **`pteridine`/`蝶啶`**（`:50`）两条稠合杂环组分
-- **`_component_numbering`**（`fused_namer.py:79`，带 `shared` 参数）— 组分自身编号，委托 L4 `fused_component_numbering`（P-25.4/P-25.3.3），把稠合掉的 `shared` 原子当取代基做位次最小化
-- **融合描述符** — `_fused_one`（`fused_namer.py:134`）**取 child 的 `fusion_shared[0]` 作为同一稠合原子集，同时传给母体与附加组分各自编号**（P-25.3.1.3 位次尽可能低），使取向与规范稠合描述符一致；`_fusion_letter`（`fused_namer.py:112`）共享边在母体外周位次序中的侧字母 `chr(97+i)`；`_fusion_numbers`（`fused_namer.py:124`）附加组分共享原子位次（沿母体低位次端→高位次端）；`_fused_one` 拼 `prefix + [数字-字母]`（benzo 单环烃省略数字位次，P-25.3.8.1）
-- **`_inner_atoms`**（`fused_namer.py:94`）— 出现在 ≥3 环的原子（perifused 中心）不在外周边界；`_outer_chain_labels`（`fused_namer.py:103`）过滤内原子后取外周 chain/labels
-- **`_collect_attached`**（`fused_namer.py:158`）— 递归收集 parent_node 全部附加组分前缀（嵌套组分在附着的一级前），与根词干拼接为最终 `benzo[a]naphthalene` 式名
+- **`_stem_of`**（`fused_namer.py:8`）/ **`_prefix_of`**（`fused_namer.py:13`）— 只读节点字段：`_stem_of` 取 `node.fused_stem`（L2 未标注的非稠合零件返回 `(None, None)`）；`_prefix_of` 取 `node.fused_prefix`（保留前缀），无则走通用「去尾 e 加 o / 中文加并」（P-25.3.2.2.2）。词干与保留前缀的**事实来源**是 L2 `_TEMPLATES` 的 `fused`/`fused_stem`/`fused_prefix` 字段（zh 修正 quinoxaline→喹喔啉、oxane→氧杂环己烷；含 `purine`/`嘌呤`、`pteridine`/`蝶啶` 稠合杂环组分；indole/purine 用 `fused_stem` 去掉 `1H-`/`7H-` 指示氢前缀）
+- **`_component_numbering`**（`fused_namer.py:22`，带 `shared` 参数）— 组分自身编号，委托 L4 `fused_component_numbering`（P-25.4/P-25.3.3），把稠合掉的 `shared` 原子当取代基做位次最小化
+- **融合描述符** — `_fused_one`（`fused_namer.py:77`）**取 child 的 `fusion_shared[0]` 作为同一稠合原子集，同时传给母体与附加组分各自编号**（P-25.3.1.3 位次尽可能低），使取向与规范稠合描述符一致；`_fusion_letter`（`fused_namer.py:55`）共享边在母体外周位次序中的侧字母 `chr(97+i)`；`_fusion_numbers`（`fused_namer.py:67`）附加组分共享原子位次（沿母体低位次端→高位次端）；`_fused_one` 拼 `prefix + [数字-字母]`（benzo 单环烃省略数字位次，P-25.3.8.1）
+- **`_inner_atoms`**（`fused_namer.py:37`）— 出现在 ≥3 环的原子（perifused 中心）不在外周边界；`_outer_chain_labels`（`fused_namer.py:46`）过滤内原子后取外周 chain/labels
+- **`_collect_attached`**（`fused_namer.py:101`）— 递归收集 parent_node 全部附加组分前缀（嵌套组分在附着的一级前），与根词干拼接为最终 `benzo[a]naphthalene` 式名
 
 单节点（`not node.attached`）直接返回 `None`，由 `_parent_stem_names` 走保留名（L2 已注入词干）。
 
-> **源:** `src/namepredict/layer5/fused_namer.py:171`
+> **源:** `src/namepredict/layer5/fused_namer.py:114`
 
 ### 4.2 磷酸/磷酸酯整分子命名 (`phosphate.py`)
 
@@ -235,7 +234,7 @@ assemble(numbered)
 | `assembler.py` | 510 | **主组装器**：`_names_for` 派发（`kind=phosphate` 短路转 `phosphate.py` + `_KIND_TABLE` 查表 + scaffold_id 运行时替换 + exocyclic acyl/acid/ester/amide/nitrile/aldehyde worker）+ `_ring_carbocycle_stem`/`_ring_extra_prefix_located`（单环环烷/环烯词干与显式 locant 判定）+ `_mononuclear_radical_names`（amido 保留式/N,N 括号式）+ `_ring_stem`（保留完整词干）+ `_ensure_fused_stem`（稠合词干 + indicated_h 前缀）+ 名称变换流水线 + join_kind_name 拼接 |
 | `assembler_prefixes.py` | 223 | 取代基前缀：分组、位次合并、N/C 混合 locant、复合倍增 bis/tris/tetrakis、O/S 桥平铺式、N- 前缀 + 单碳括号式（P-16.5.1.3.1） |
 | `chain_engine.py` | 604 | **链式词干引擎**：`_Chain` spec + `_KIND_TABLE`（13 个 entry：12 链式 FG kind 含 `acyl`、逐卤素 `acyl_halide` + `radical`）+ `_chain_names` 统一渲染（`mult_ok` 生成式数量后缀 + `_mult_elide` 元音省略 + `_elide_parent_e` + 短链烯融合 + `_radical_terminal_yl_elide` + 混合烯炔段 + 多炔 + 多烯 E/Z + `mult_unsat_polyol`） |
-| `fused_namer.py` | 189 | **稠合名组装**：`fused_parent_names`（benzo[a]…/naphtho[…]- 稠合 base 名），`_FUSED_PREFIX` 保留前缀 + `_COMPONENT_STEM` 组分词干（含 purine/嘌呤、pteridine/蝶啶；shared 共享编号） |
+| `fused_namer.py` | 132 | **稠合名组装**：`fused_parent_names`（benzo[a]…/naphtho[…]- 稠合 base 名），组分词干/保留前缀由 L2 打包进 `FusedNode.fused_stem`/`.fused_prefix` 后只读（含 purine/嘌呤、pteridine/蝶啶；shared 共享编号） |
 | `phosphate.py` | 162 | **磷酸整分子 worker**：`phosphate_names` 按 `n_oh`/`n_om`/`salt_meta`/o_side 臂分派磷酸、中性磷酸酯、磷酸盐、磷酸酯盐、游离阴离子（P-67.1.3.1/.2） |
 | `stems.py` | 151 | 烷烃双语词干生成器（C1–C99，复用 constants `en_num_term`）+ 盐/阴离子后缀（FG 名称由 chain_engine 拼接） |
 | `stereo.py` | 240 | **E/Z + R/S 立体前缀**（单模块；R/S 补显式 H + CIP 强制重算 + 环/稠合骨架母体） |
