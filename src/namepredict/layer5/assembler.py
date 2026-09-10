@@ -146,6 +146,16 @@ def _azane_acyl_stereo_lead(en: str) -> bool:
     tag, stem = _stereo_lead(en)
     return bool(tag) and (stem.endswith("oyl") or "carbonyl" in stem)
 
+# azane 单取代基内层组加括号的尾缀白名单
+_AZANE_PAREN_SUF = ("benzoyl", "carbonyl", "acetyl")
+
+
+def _azane_sub_needs_paren(a: dict) -> bool:
+    """azane 单取代基是否需整体括起再缀 amino（P-16.5.1.1）：仅限复合标记 + 芳香酰基/acetyl 系内层组。"""
+    if not a.get("paren"):  # 简单取代基（methyl/chloro…）无歧义，平铺。
+        return False
+    return (a.get("en") or "").endswith(_AZANE_PAREN_SUF)
+
 # O 锚点自由基 -yloxy 非保留名 → IUPAC 保留烷氧基（P-66.5.2.1.2：ethoxy/propoxy/butoxy/phenoxy）。
 # 尾部收拢使带取代基链也命中：2-methoxyethyloxy → 2-methoxyethoxy、3-chlorophenyloxy → 3-chlorophenoxy。
 _ALKOXY_YLOXY_EN = (
@@ -186,8 +196,10 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
             amido = AMIDO_RETAINED.get(a.get("en") or "")  # P-66.1.1.4.3 方法 1：单 N-酰基（乙酰/甲酰/苯甲酰）残基收成 amido 保留式（acetamido…），不走 free_to_yl 的 acylamino 系统式；其余 R 保持方法 2。
             if amido is not None:
                 return amido
-            if _azane_acyl_stereo_lead(a.get("en") or ""):  # 带立体描述符的复杂酰基残基（肽类 N-酰基氨基酸）：方法 2 需把酰基名整体括起再加 amino（[…propanoyl]amino，P-29.3.2 复合前缀括号），否则融合式会与 N-端 amino 位次歧义；无立体简单酰保持融合。
-                return f"[{a['en']}]amino", f"[{a['zh']}]氨基"
+            if _azane_acyl_stereo_lead(a.get("en") or "") or _azane_sub_needs_paren(a):  # 方法 2 需把内层组整体括起再加 amino（P-29.3.2 复合前缀括号，见 _AZANE_PAREN_SUF）：带立体描述符的复杂酰基残基（肽类 N-酰基氨基酸）否则会与 N-端 amino 位次歧义；芳香酰基/acetyl 系见白名单；无立体简单酰与开链酰保持融合平铺。
+                w_en = f"[{a['en']}]" if "(" in a["en"] else f"({a['en']})"  # 内层已含括号（立体描述符）时升级为方括号（P-16.5.2 嵌套）
+                w_zh = f"[{a['zh']}]" if "(" in a["zh"] else f"({a['zh']})"
+                return f"{w_en}amino", f"{w_zh}氨基"
         en, zh = free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
                             paren=bool(a.get("paren")))[:2]
         return _retained_alkoxy(en, zh) if stem_en == "oxidane" else (en, zh)
