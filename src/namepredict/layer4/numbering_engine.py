@@ -403,7 +403,8 @@ def fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edge
     orients = preferred_orientations(mol, sub_rings, sub_edges or [])
     if not orients:
         return None, None
-    result = number_fused_system(mol, sub_rings, [o.coord_dict() for o in orients])
+    result = number_fused_system(mol, sub_rings, [o.coord_dict() for o in orients],
+                                 [sorted(shared)] if shared else None)  # 稠合点作 sub_layers 逐层最小化位次(P-25.3.1.3)：多环无固定编号组分的镜像对(苯并咪唑 N1/N3 互换)只有靠它分辨，否则编号方向随候选枚举顺序漂移，[1,2-c] 被输出成 [3,2-c]
     if result is None:  # print(result)
         return None, None
     return result[0], result[1]

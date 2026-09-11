@@ -298,8 +298,8 @@ def _unsupported(n: int, kind: str | None) -> NameResult:
 
 # 名称拼接：前缀与母体组合（原 benzene_names.py 并入；P-22.1.3）。
 def _needs_join_hyphen(body: str) -> bool:
-    """词干以数字（1,3-thiazole）或 1H-（1H-pyrrole）开头时，与前缀需连字符分隔。"""
-    return bool(body) and (body[0].isdigit() or body.startswith("1H-"))
+    """词干以数字（1,3-thiazole）、方括号位次集（[1,2,4]triazolo[1,5-a]pyridine）或 1H-（1H-pyrrole）开头时，与前缀需连字符分隔。"""
+    return bool(body) and (body[0].isdigit() or body[0] == "[" or body.startswith("1H-"))
 
 
 def join_parent_name(prefix: str, parent: str) -> str:

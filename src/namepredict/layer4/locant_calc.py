@@ -125,10 +125,11 @@ def _omit_oh(oh_pos, n_carbons, kind=None, parent=None, n_subs=0):
     return _core(oh_pos, n_carbons, kind, parent, n_subs,
                  has_ene=_has_parent_ene, has_yne=_has_parent_yne)
 
-def _omit_unsat(n_carbons, kind=None, parent=None):
-    """委托 omit_locants.omit_unsat 判定不饱和位次是否省略。"""
+def _omit_unsat(n_carbons, kind=None, parent=None, triple=False):
+    """委托 omit_locants.omit_unsat 判定不饱和位次是否省略；triple 选择炔规则。"""
     from namepredict.layer4.omit_locants import omit_unsat as _core
-    return _core(n_carbons, kind, parent, has_ene=_has_parent_ene, has_yne=_has_parent_yne)
+    return _core(n_carbons, kind, parent, has_ene=_has_parent_ene, has_yne=_has_parent_yne,
+                 triple=triple)
 
 def _sub_locant(chain: list[int], attach: int, kind: str | None, facts=None) -> int:
     """返回取代基附着原子的位次；无位次时取 0。"""
@@ -167,7 +168,7 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "omit_ene_locant": _omit_unsat(n, kind, oriented),
         "yne_locant": _yne_locant(oriented),
         "yne_locants": yne_locants(oriented),
-        "omit_yne_locant": _omit_unsat(n, kind, oriented),
+        "omit_yne_locant": _omit_unsat(n, kind, oriented, triple=True),
     }
 
 def _sh_locants_list(oriented: dict) -> list[int] | None:

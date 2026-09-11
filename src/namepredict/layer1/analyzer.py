@@ -4,7 +4,7 @@ from __future__ import annotations
 from rdkit.Chem import BondType, Mol
 
 from namepredict.tools import memo
-from namepredict.constants import C, H, N, O, S
+from namepredict.constants import C, H, N, O, S, RING_HETERO
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1._carbonyl_common import (
     _alkoxy_c_of,
@@ -51,23 +51,22 @@ def _is_amide_carbon(atom) -> bool:
         return False
     return _amide_n_info(atom) is not None
 
-def _has_ring_n_neighbor(atom) -> bool:
-    """判断原子是否连有环内氮（环内 N 的酰基按酮命名，见 _is_ketone_carbon）。"""
-    return any(n.GetAtomicNum() == N and n.IsInRing() for n in atom.GetNeighbors())
+def _has_ring_hetero_neighbor(atom) -> bool:
+    """判断原子是否连有环内杂原子（N/O/S）：O/S 与羰基同环即经杂原子闭合成内酯/硫代内酯，环内 N 的酰基则按酮命名（P-66.1.1，N-酰基环胺），三者同由 _is_ketone_carbon 作环酮。"""
+    return any(n.GetAtomicNum() in RING_HETERO and n.IsInRing() for n in atom.GetNeighbors())
 
 def _is_ketone_carbon(atom) -> bool:
-    """判断碳是否为酮羰基碳（非酸、非酰胺、非酯）；双碳邻居，或单碳邻居 + 环内 N（N-酰基环胺 → ethanone 型母体），或环内零碳邻居（环脲/环碳酸酯型），或环内酯羰基。"""
+    """判断碳是否为酮羰基碳（非酸、非酰胺、非酯）；双碳邻居，或单碳邻居 + 环内杂原子（N-酰基环胺 → ethanone 型母体；环内 O/S → 内酯/硫代内酯按杂环 -one 命名），或环内零碳邻居（环脲/环碳酸酯型）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom):
         return False
-    lactone = _is_lactone_carbon(atom)
     n_c = _carbon_neighbor_count(atom)
-    if n_c == 1:  # 环外单碳羰基须连环内 N 才作酮（N-酰基环胺）；环内单碳羰基是内酰胺/环酮/内酯，同样作酮。
-        if (not _has_ring_n_neighbor(atom) and not lactone) or _is_aldehyde_carbon(atom):
+    if n_c == 1:  # 环外单碳羰基须连环内杂原子（N-酰基环胺）才作酮；环内单碳羰基是内酰胺/环酮/内酯/硫代内酯，同样作酮。
+        if not _has_ring_hetero_neighbor(atom) or _is_aldehyde_carbon(atom):
             return False
     elif n_c == 0:  # 环内零碳邻居羰基（环脲/环碳酸酯，如嘧啶-2,4-二酮、乙内酰脲）作环酮；环内非内酯型酯与开链者（脲/CO2）不作。
-        if not atom.IsInRing() or (_ester_alkoxy_of(atom) is not None and not lactone):
+        if not atom.IsInRing() or (_ester_alkoxy_of(atom) is not None and not _is_lactone_carbon(atom)):
             return False
         return _amide_n_of(atom) is None and _anhydride_o_of(atom) is None
     elif n_c != 2:

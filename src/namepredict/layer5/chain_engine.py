@@ -259,7 +259,7 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
         if fused is None:
             return None
         ez = spec.ez_ene(numbered) if spec.ez_ene else ""
-        if spec.ene_loc_omit and numbered.get("omit_ene_locant"):  # 环状单烯 (cyclohexene)：位次 1 隐含省略 (P-31.1.2)。
+        if spec.ene_loc_omit and numbered.get("omit_ene_locant"):  # 二核烯/环单烯 (ethene/cyclohexene)：位次 1 隐含省略 (P-14.3.4.2(d)/P-31.1.2)。
             return f"{ez}{s}{fused[0]}", f"{ez}{zs}{fused[1]}"
         return f"{ez}{s}-{ene}-{fused[0]}", f"{ez}{zs}-{ene}-{fused[1]}"
     if spec.ene_omit_aware:
@@ -308,7 +308,7 @@ class _Chain:
     ene_n_min: int = 4                  # 多烯融合式 n 下限 (polyene 类为 0)
     ene_single_min: int = 2             # 融合式单烯 n 下限 (diacid 为 3)
     ene_omit_aware: bool = False        # 烯段受 omit_ene_locant 影响 (环系 FG)
-    ene_loc_omit: bool = False          # 融合式单烯省略位次 (环单烯: cyclohexene)
+    ene_loc_omit: bool = False          # 融合式单烯省略位次 (乙烯 ethene / 环单烯 cyclohexene)
     yne_loc_omit: bool = False          # 融合式炔省略位次 (开链烃 ethyne/propyne: P-14.3.4.2(d))
     cyclic: bool = False                # 恒加环前缀 (纯烃环/环系 FG)
     cyclic_unsat: bool = False          # 仅烯/炔段时加环 (cyclopolyene: 无烯回落纯烷烃)
@@ -519,7 +519,8 @@ _KIND_TABLE = {
                      mult_unsat_polyol=True),
     "alkane": _Chain(kind="alkane", en_suf="ane", zh_suf="烷", coda="",
                      omit_rule=lambda n, loc, omit: omit or n <= 3,
-                     ene_base=("ene", "烯"), yne_suf=("yne", "炔"), yne_loc_omit=True,
+                     ene_base=("ene", "烯"), yne_suf=("yne", "炔"),
+                     ene_loc_omit=True, yne_loc_omit=True,
                      wrap=_with_ez),
     "acid": _Chain(kind="acid", en_suf="oic acid", zh_suf="酸",
                    ene_base=("enoic acid", "烯酸"),
