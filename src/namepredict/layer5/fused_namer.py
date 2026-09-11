@@ -13,6 +13,7 @@ _RETAINED_FUSION_ALIASES: dict[str, tuple[str, str]] = {  # 稠合组装名 → 
     "benzo[b]quinoxaline": ("phenazine",     "菲嗪"),
     "benzo[a]indene":      ("fluorene",      "芴"),
     "benzo[d]1,2-oxazole": ("1,2-benzoxazole", "1,2-苯并噁唑"),
+    "benzo[b]anthracene":  ("tetracene",     "并四苯"),
 }
 
 

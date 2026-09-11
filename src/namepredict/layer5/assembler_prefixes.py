@@ -100,7 +100,7 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
         return False
     if _BENZYL_TAIL_RE.search(base):  # 苄基型前端（…yl]methylsulfanyl）：桥后缀直接缀在甲基上，不拆。
         return False
-    if re.search(r"\d[RrSs]", base) and not base.endswith("oyl"):  # 自由价碳带手性描述符（(2R)-2-amino-2-carboxyethyl）：前端必须括起；酰基前端按 …oyloxy 融合（P-63.2.2.1.1 的 acetyloxy/benzoyloxy）。
+    if  re.match(r"^\(\d+[RrSs]", base) and not base.endswith("oyl"):  # 自由价碳带手性描述符（(2R)-2-amino-2-carboxyethyl）：前端必须括起；酰基前端按 …oyloxy 融合（P-63.2.2.1.1 的 acetyloxy/benzoyloxy）。
         return True
     if "[" in base:  # 前端已用方括号。amino 桥细分：括号后仍接数字位次前缀（…]sulfanylethylamino]-3-oxopropyl）时拆——前端是被位次取代的支链，须整体括起（gold 取 [[X]amino]）；括号后接桥/链续写（…enoyl]sulfanylethyl）时 gold 平铺为 sulfanylethylamino，不拆。oxy/sulfanyl 桥不细分（…]phenylsulfanyl、…]acetyloxy 的围栏由 L3 定形）。
         return True if suf != "amino" else bool(
@@ -108,13 +108,15 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
             or re.search(r"-\d+-\[", base[: base.find("[") + 1]))  # 括号前已有数字位次前缀：3-oxo-3-[X]propyl
     if "(" in base:  # 前端自带括号（取代基/立体描述符）；自由价在端碳的链基（benzyl/5-(X)pentyl）平铺。
         return not _TERMINAL_CHAIN_YL_RE.search(base)
+    if suf in ("oxy", "sulfanyl") and re.search(r"\d", base) and base.endswith("phenyl"):  #
+        return True
     if suf == "amino":  # P-63.2.2.1.2：amino 桥按 HS- 取代式（naphthalen-2-ylamino）融合，无括号前端不拆。
         return False
     return bool(re.search(r"-\d+-yl$", base)) and not _SUBST_CHAIN_YL_RE.search(base)
 
 
 def _split_bridge_suffix(stem: str) -> tuple[str, str] | None:
-    """拆 -yl]oxy/-yl]sulfanyl/-yl]amino 平铺式：(前端, 桥后缀)；括号闭在前端 -yl 后、桥后缀留在括号外。前端为简单保留基（methyl/benzyl）、直链 -yl（propan-2-yl）或酰基时整括不拆（P-63.2.2.1.1）。"""
+    """拆 -yl]o xy/-yl]sulfanyl/-yl]amino 平铺式：(前端, 桥后缀)；括号闭在前端 -yl 后、桥后缀留在括号外。前端为简单保留基（methyl/benzyl）、直链 -yl（propan-2-yl）或酰基时整括不拆（P-63.2.2.1.1）。"""
     for suf in _BRIDGE_SUFFIX_EN:
         if not stem.endswith(suf):
             continue

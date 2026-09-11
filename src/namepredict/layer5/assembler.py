@@ -238,7 +238,7 @@ def _azane_sub_needs_paren(a: dict) -> bool:
     return (a.get("en") or "").endswith(_AZANE_PAREN_SUF)
 
 _ALKOXY_YLOXY_EN = (  # O 锚点自由基 -yloxy 非保留名 → IUPAC 保留烷氧基（P-66.5.2.1.2：ethoxy/propoxy/butoxy/phenoxy）。尾部收拢使带取代基链也命中：2-methoxyethyloxy → 2-methoxyethoxy、3-chlorophenyloxy → 3-chlorophenoxy。
-    ("ethyloxy", "ethoxy"), ("propyloxy", "propoxy"), ("butyloxy", "butoxy"),
+  ("enyloxy", "enoxy"),  ("ethyloxy", "ethoxy"), ("propyloxy", "propoxy"), ("butyloxy", "butoxy"),
     ("phenyloxy", "phenoxy"),
 )
 _ALKOXY_YLOXY_ZH = (
@@ -471,6 +471,45 @@ def _with_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str
     return (join_parent_name(pre[0], en), join_parent_name(pre[1], zh)) if pre[0] else (en, zh)
 
 
+def _ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str, str]:
+    """净正电荷分子的环内 N+/O+ → 母体名缀 `-{位次}-ium`（P-62.4.1；chromene → chromenylium）。非该情形原样返回。"""
+    parent = numbered.get("parent") or {}
+    mol = parent.get("mol")
+    chain = parent.get("chain") or []
+    if mol is None or not chain:
+        return names
+    if sum(a.GetFormalCharge() for a in mol.GetAtoms()) < 0:
+        return names  # 净正/中（盐、两性离子）都可能含环阳离子；净负分子不处理
+    en, zh = names
+    if "ium" in en:
+        return names
+    charged = [a.GetIdx() for a in mol.GetAtoms()
+               if a.GetFormalCharge() == 1 and a.GetSymbol() in ("N", "O")
+               and a.IsInRing() and a.GetIdx() in chain]
+    if not charged:
+        return names
+    stem_en = parent.get("stem_en") or ""
+    if not stem_en:
+        return names
+    labels = (parent.get("numbering_scaffold") or {}).get("labels")
+    idx = chain.index(charged[0])
+    loc = labels[idx] if labels and len(labels) == len(chain) else str(idx + 1)
+    if stem_en.endswith("ene"):  # 色烯型氧鎓保留名：chromene → chromenylium（位次隐含；取代基中词干已省 e 为 chromen-…）
+        base, ium = stem_en[:-1], f"{stem_en[:-3]}enylium"
+    elif stem_en.endswith("e"):
+        base, ium = stem_en[:-1], f"{stem_en[:-1]}-{loc}-ium"
+    else:
+        base, ium = stem_en, f"{stem_en}-{loc}-ium"
+    if stem_en in en:  # 完整母体名：整词干替换
+        return en.replace(stem_en, ium, 1), zh
+    token = base + "e" if base + "e" in en else base
+    if token in en:
+        if stem_en.endswith("ene"):  # 色烯型氧鎓：chromene/chromen → chromenylium
+            return en.replace(token, ium, 1), zh
+        at = en.index(token) + len(token)  # 其余在词干后插入 -{位次}-ium
+        return en[:at] + f"-{loc}-ium" + en[at:], zh
+    return names
+
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     """组装入口：取名 → 前缀 → 阴离子/R-S/金属盐后缀。"""
     from namepredict.layer5.stereo import apply_rs_prefix
@@ -481,6 +520,7 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     if not names:
         return _unsupported(n, kind)
     names = _with_hydro_prefix(names, numbered)
+    names = _ring_cation_suffix(numbered, names)
 
     joined = join_kind_name(kind, _prefix_for(numbered, kind, n), names, numbered)
     if joined is None:

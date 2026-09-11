@@ -65,6 +65,7 @@ CARBAZOLE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8
 ACRIDINE_LABELS: tuple[str, ...] = ("1","2","3","4","4a","5","6","7","8","8a","9","9a","10","10a")  # acridine（14 原子）：N10，对位 C9 连接取代基；苯环 1-4 / 5-8。
 PHENOTHIAZINE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "9", "9a", "10", "10a", "10b")  # phenothiazine（14 原子）：S5、N10；苯环 1-4 / 6-9。
 NAPH_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a")
+ANTHRACENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "10", "10a", "5", "6", "7", "8", "8a", "9", "9a")  # anthracene(14 原子): 端环 1-4 / 5-8, 中环 9/10(全数字), 桥头 4a/10a/8a/9a(P-25.4.1 传统编号；与萘不同, 中环碳得数字位而非字母位)。
 PHENANTHRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "4b", "5", "6", "7", "8", "8a", "8b", "9", "10")  # phenanthrene(14 原子): 端环 1-4 / 5-8, 桥头 4a/4b/8a/8b, 中环 9/10(P-25.4.1 传统编号)。
 PYRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "5a", "6", "7", "8", "8a", "8b", "9", "10", "10a", "10b")  # pyrene(16 原子): 外周 1-10, 稠合碳 3a/5a/8a/8b/10a/10b(P-25.3.3.3.1 推荐编号)。
 XANTHENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a", "9", "9a", "10", "10a")  # xanthene/thioxanthene(14 原子): 外周 1-8, 中央碳 9、O/S 10, 稠合碳 4a/8a/9a/10a(P-25.3.3 传统编号；位次形态同 acridine)。
@@ -73,7 +74,7 @@ STEROID_LABELS: tuple[str, ...] = tuple(str(i) for i in range(1, 18))  # cyclope
 _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一事实来源；原 specs.py + retained_templates.py 合并）
     "benzene":     {"smiles": "c1ccccc1",             "stem_en": "benzene",    "stem_zh": "苯",   "naming_class": "mono_carbo", "fused": True, "fused_prefix": ("benzo", "苯并")},  # carbocycles
     "naphthalene": {"smiles": "c1ccc2ccccc2c1",       "stem_en": "naphthalene","stem_zh": "萘",    "naming_class": "naph_family", "fused": True, "fused_prefix": ("naphtho", "萘并")},
-    "anthracene":  {"smiles": "c1ccc2cc3ccccc3cc2c1", "stem_en": "anthracene", "stem_zh": "蒽",    "naming_class": "anthra", "fused": True, "fused_prefix": ("anthra", "蒽并")},
+    "anthracene":  {"smiles": "c1ccc2cc3ccccc3cc2c1", "stem_en": "anthracene", "stem_zh": "蒽",    "naming_class": "anthra", "fused": True, "fused_prefix": ("anthra", "蒽并"), "standard": (ANTHRACENE_LABELS, (13, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12))},  # 模板 SMILES 原子序恰为外周环序, 1 位在原子 13(邻 9a=12、2 位=0); 缺此字段时蒽退到 P-25.3.3 通用外周编号, 位号形态错成 1,2,3,4,4a,5,5a…(1/5/6 等位号被误用)。
     "phenanthrene":{"smiles": "c1ccc2c(c1)ccc1ccccc12", "stem_en": "phenanthrene","stem_zh": "菲", "naming_class": "phenanthrene", "fused": True, "fused_prefix": ("phenanthro", "菲并"), "standard": (PHENANTHRENE_LABELS, (9, 10, 11, 12, 13, 8, 5, 0, 1, 2, 3, 4, 6, 7))},
     "pyrene":      {"smiles": "c1cc2ccc3cccc4ccc(c1)c2c34", "stem_en": "pyrene",  "stem_zh": "芘", "naming_class": "pyrene", "fused": True, "standard": (PYRENE_LABELS, (6, 7, 8, 9, 10, 11, 12, 13, 0, 1, 2, 14, 3, 4, 5, 15))},
     "indene":      {"smiles": "C1=CCc2ccccc21", "stem_en": "1H-indene", "stem_zh": "1H-茚", "naming_class": "fused56", "fused": True, "fused_stem": ("indene", "茚"), "standard": (FUSED56_LABELS, (2, 1, 0, 8, 7, 6, 5, 4, 3))},  # 表 2.7 第 19 项：茚（PIN 1H-indene，1 位为 CH2 故带指示氢）。5+6 稠合碳环，位次形态同吲哚/苯并呋喃（1,2,3,3a,4..7,7a），并入 fused56 编号类。
