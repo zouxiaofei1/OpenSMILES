@@ -19,8 +19,7 @@ def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult:
     """构造成功 NameResult（success=True，记录耗时与来源）。"""
     return NameResult(en=en, zh=zh, success=True, source=source, time_ms=time_ms)
 
-# 稠环/杂环词干（en_stem, zh_stem）：由 L2 注入 parent 的 stem_en/stem_zh 派生。
-# IUPAC 词干 = 母体名去尾部 e（benzene 例外，保留完整名）；aromatic 恒 True（保留母体均芳香）。
+# 稠环/杂环词干（en_stem, zh_stem）：由 L2 注入 parent 的 stem_en/stem_zh 派生。IUPAC 词干 = 母体名去尾部 e（benzene 例外，保留完整名）；aromatic 恒 True（保留母体均芳香）。
 def _ring_stem(numbered: dict) -> tuple[str, str] | None:
     """保留 scaffold 的完整 IUPAC 词干（用于 -ol/-diol/-amine 等 FG 后缀拼接）；结尾 'e' 的省略交给 chain_engine._elide_parent_e 按后缀首字母判断（P-60.2(a)），避免 oxolane-3,4-diol 被错拼成 oxolan-3,4-diol。"""
     parent = numbered.get("parent") or {}
@@ -74,12 +73,7 @@ def _ring_extra_prefix_located(numbered: dict) -> bool:
             return True
     return False
 
-
-# 环外主基系统名后缀表（group_class → 后缀规格），六个环外 worker 共用 `_exocyclic_ring_names` 一条管线：
-#   singular          (en, zh)          单取代后缀
-#   plural            (en, zh) | None   多取代后缀基底（前拼 MULT_EN/MULT_ZH 倍数词）；None = 该主基无多取代系统名
-#   plural_needs_loc  bool              多取代时位次缺失即放弃（P-65.2.2：多羧酸位次必带）
-_EXO_SUF: dict[str, tuple] = {
+_EXO_SUF: dict[str, tuple] = {  # 环外主基系统名后缀表（group_class → 后缀规格），六个环外 worker 共用 `_exocyclic_ring_names` 一条管线：singular          (en, zh)          单取代后缀 plural            (en, zh) | None   多取代后缀基底（前拼 MULT_EN/MULT_ZH 倍数词）；None = 该主基无多取代系统名 plural_needs_loc  bool              多取代时位次缺失即放弃（P-65.2.2：多羧酸位次必带）
     "acid":     (("carboxylic acid", "羧酸"), ("carboxylic acid", "羧酸"), True),
     "aldehyde": (("carbaldehyde", "甲醛"),    ("carbaldehyde", "甲醛"),    False),
     "ester":    (("carboxylate", "羧酸"),     None,                        False),
@@ -119,8 +113,7 @@ def _exocyclic_ring_names(n: int, numbered: dict) -> tuple[str, str] | None:
         en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
         if en_ring is None:
             return None
-        # 单取代：环烯使编号不再唯一、或环上另带前缀取代（必带位次）时主基 locant 1 不可省略（P-65.2.2.1/P-66.6.1）；多取代恒带位次。
-        use_loc = bool(loc) and (mult > 1 or has_unsat or _ring_extra_prefix_located(numbered))
+        use_loc = bool(loc) and (mult > 1 or has_unsat or _ring_extra_prefix_located(numbered))  # 单取代：环烯使编号不再唯一、或环上另带前缀取代（必带位次）时主基 locant 1 不可省略（P-65.2.2.1/P-66.6.1）；多取代恒带位次。
         if use_loc:
             return (f"{en_ring}-{loc}-{suf_en}", f"{zh_ring}-{loc}-{suf_zh}")
         return (f"{en_ring}{suf_en}", f"{zh_ring}{suf_zh}")
@@ -149,8 +142,7 @@ def _azane_acyl_stereo_lead(en: str) -> bool:
     tag, stem = _stereo_lead(en)
     return bool(tag) and (stem.endswith("oyl") or "carbonyl" in stem)
 
-# azane 单取代基内层组加括号的尾缀白名单
-_AZANE_PAREN_SUF = ("benzoyl", "carbonyl", "acetyl")
+_AZANE_PAREN_SUF = ("benzoyl", "carbonyl", "acetyl")  # azane 单取代基内层组加括号的尾缀白名单
 
 
 def _azane_sub_needs_paren(a: dict) -> bool:
@@ -159,9 +151,7 @@ def _azane_sub_needs_paren(a: dict) -> bool:
         return False
     return (a.get("en") or "").endswith(_AZANE_PAREN_SUF)
 
-# O 锚点自由基 -yloxy 非保留名 → IUPAC 保留烷氧基（P-66.5.2.1.2：ethoxy/propoxy/butoxy/phenoxy）。
-# 尾部收拢使带取代基链也命中：2-methoxyethyloxy → 2-methoxyethoxy、3-chlorophenyloxy → 3-chlorophenoxy。
-_ALKOXY_YLOXY_EN = (
+_ALKOXY_YLOXY_EN = (  # O 锚点自由基 -yloxy 非保留名 → IUPAC 保留烷氧基（P-66.5.2.1.2：ethoxy/propoxy/butoxy/phenoxy）。尾部收拢使带取代基链也命中：2-methoxyethyloxy → 2-methoxyethoxy、3-chlorophenyloxy → 3-chlorophenoxy。
     ("ethyloxy", "ethoxy"), ("propyloxy", "propoxy"), ("butyloxy", "butoxy"),
     ("phenyloxy", "phenoxy"),
 )
@@ -361,9 +351,7 @@ def _with_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str
     """把动态指示氢与 hydro 前缀依次拼到母体名前：顺序为 hydro + 指示氢 + 母体名（P-31.2.2，如 2,3-dihydro-1H-indole）；母体名已带静态 1H-（保留名）时不重复。"""
     parent = numbered.get("parent") or {}
     pre = parent.get("hydro_prefix") or ("", "")
-    # forced = 指示氢来自「保留母体名未隐含的芳香位 H」（P-58.2.1），无 hydro 前缀也须注入；
-    # 其余动态指示氢仍只在氢化衍生物（有 hydro 前缀）时注入，否则 [nH] 互变异构型会误产 1H-pyridine。
-    if not pre[0] and not parent.get("indicated_h_forced"):
+    if not pre[0] and not parent.get("indicated_h_forced"):  # forced = 指示氢来自「保留母体名未隐含的芳香位 H」（P-58.2.1），无 hydro 前缀也须注入；其余动态指示氢仍只在氢化衍生物（有 hydro 前缀）时注入，否则 [nH] 互变异构型会误产 1H-pyridine。
         return names
     en, zh = names
     ind = parent.get("indicated_h") or ""

@@ -296,10 +296,7 @@ def _acyl_locants(oriented: dict) -> list[int] | None:
                        oriented.get("numbering_scaffold_required", False))
     return [loc] if loc is not None else None
 
-
-# 位次记录 kind → 位次函数（kind 为 fg_registry.locant_kind，跨 L4/L5 一致性由 spec 承载）。
-# 新增带位次的 FG：在 _LOCANT_FNS 补函数 + fg_registry 设 locant_kind，未登记则 KeyError 显式暴露。
-_LOCANT_FNS = {
+_LOCANT_FNS = {  # 位次记录 kind → 位次函数（kind 为 fg_registry.locant_kind，跨 L4/L5 一致性由 spec 承载）。新增带位次的 FG：在 _LOCANT_FNS 补函数 + fg_registry 设 locant_kind，未登记则 KeyError 显式暴露。
     "oh": _oh_locants,
     "amine": _amine_fg_locants,
     "ketone": _ketone_fg_locants,

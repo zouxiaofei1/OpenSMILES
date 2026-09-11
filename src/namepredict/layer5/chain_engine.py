@@ -31,9 +31,7 @@ def _pair_loc_str(locs: list[int]) -> str:
     """位次列表拼接为逗号分隔字符串。"""
     return ",".join(str(x) for x in locs)
 
-
-# C1/C2 开链英文 IUPAC 保留名（formic/acetic…）；C3+ 系统名由词干生成（_chain_plain 回落），中文无保留名。
-_RETAINED = {
+_RETAINED = {  # C1/C2 开链英文 IUPAC 保留名（formic/acetic…）；C3+ 系统名由词干生成（_chain_plain 回落），中文无保留名。
     "acid": {1: ("formic acid", "甲酸"), 2: ("acetic acid", "乙酸")},
     "acyl": {1: ("formyl", "甲酰基"), 2: ("acetyl", "乙酰基")},
     "aldehyde": {1: ("formaldehyde", "甲醛"), 2: ("acetaldehyde", "乙醛")},
@@ -318,8 +316,7 @@ class _Chain:
     wrap: object = None                 # (pair, numbered)->pair  整体包裹 (E/Z)
     unsat_polyol: bool = False          # 多 FG 词干支持烯/炔插入 (diol/triol: but-2-ene-1,4-diol)
     variant: dict | None = None         # {scaffold: {multiplicity: 生成式之上的特例字段覆盖}}; None 键=开链
-    # assembler._names_for 按 scaffold_id 注入后一维化; 苯环保留名 (phenol/benzoic…)、acid 草酸特例。
-    stem: tuple | None = None           # (en_stem, zh_stem) — 稠环/杂环 scaffold 词干覆盖 (naphthalen/萘…)
+    stem: tuple | None = None           # (en_stem, zh_stem) — 稠环/杂环 scaffold 词干覆盖 (naphthalen/萘…)；assembler._names_for 按 scaffold_id 注入后一维化; 苯环保留名 (phenol/benzoic…)、acid 草酸特例。
     mult_ok: bool = False               # 支持数量后缀生成 (acid/alcohol/amine/ketone)
     mult_zh_full: bool = False          # 多 FG 中文词干保留完整 "烷" (醇/胺)
     mult_unsat_polyol: bool = False     # 多 FG 词干支持烯/炔插入 (醇/胺/硫醇: but-2-ene-1,4-diol)
@@ -501,9 +498,7 @@ def _ac_hal_chain(hal_z: int) -> _Chain | None:
                                           plain_fn=lambda n: (f"benzoyl {he}", f"苯甲酰{hz}"))},
                   })
 
-
-# 按卤素原子序数索引的酰卤链 spec（F/Cl/Br/I）。
-_ACYL_HALIDE_BY_HAL = {z: _ac_hal_chain(z) for z in HALIDE_EN}
+_ACYL_HALIDE_BY_HAL = {z: _ac_hal_chain(z) for z in HALIDE_EN}  # 按卤素原子序数索引的酰卤链 spec（F/Cl/Br/I）。
 
 _KIND_TABLE = {
     "alcohol": _Chain(kind="alcohol", en_suf="ol", zh_suf="醇",
@@ -547,17 +542,13 @@ _KIND_TABLE = {
                         "benzene": {1: dict(plain_maps=None,
                                             plain_fn=lambda n: ("benzoate", "苯甲酸"))},
                     }),
-    # 酰基残基（P-65.1.7.2）：酸碳恒 locant 1、C3+ 系统名词干 coda "an" + "oyl"（propanoyl…），
-    # C1/C2 走保留名（formyl/acetyl）；烯/炔与立体照 acid 融合式（enoyl/ynoyl）。
-    "acyl": _Chain(kind="acyl", en_suf="oyl", zh_suf="酰基",
+    "acyl": _Chain(kind="acyl", en_suf="oyl", zh_suf="酰基",  # 酰基残基（P-65.1.7.2）：酸碳恒 locant 1、C3+ 系统名词干 coda "an" + "oyl"（propanoyl…），C1/C2 走保留名（formyl/acetyl）；烯/炔与立体照 acid 融合式（enoyl/ynoyl）。
                    ene_base=("enoyl", "烯酰基"),
                    yne_suf=("ynoyl", "炔酰基"),
                    ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
                    variant={
                        None: {1: dict(plain_maps=None, plain_fn=_retained_plain("acyl"))},
-                       # 苯环 exocyclic 酰基头 → 保留名 benzoyl/苯甲酰基（P-65.1.7.2 benzoic acid→benzoyl）；
-                       # 杂环/碳环（furan-2-carbonyl/cyclopropanecarbonyl）由 assembler._exocyclic_ring_names 出。
-                       "benzene": {1: dict(plain_maps=None,
+                       "benzene": {1: dict(plain_maps=None,  # 苯环 exocyclic 酰基头 → 保留名 benzoyl/苯甲酰基（P-65.1.7.2 benzoic acid→benzoyl）；杂环/碳环（furan-2-carbonyl/cyclopropanecarbonyl）由 assembler._exocyclic_ring_names 出。
                                            plain_fn=lambda n: ("benzoyl", "苯甲酰基"))},
                    }),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
@@ -601,18 +592,13 @@ _KIND_TABLE = {
                         "benzene": {1: dict(plain_maps=None,
                                             plain_fn=lambda n: ("benzamide", "苯甲酰胺"))},
                     }),
-    # 默认 chloride 由 _ac_hal_chain 生成，与按 parent.hal_z 选的 spec 同构（assembler._names_for 覆盖）。
-    "acyl_halide": _ACYL_HALIDE_BY_HAL[17],
+    "acyl_halide": _ACYL_HALIDE_BY_HAL[17],  # 默认 chloride 由 _ac_hal_chain 生成，与按 parent.hal_z 选的 spec 同构（assembler._names_for 覆盖）。
     "radical": _Chain(kind="radical", en_suf="yl", zh_suf="基", coda="an",
                       fg="radical", need=1, no_loc="none",
-                      # 饱和无环链/单环烃自由价在 C-1 时省略位次（P-29.2 方法 1: ethyl/pentyl/2-phenylethyl）；
-                      # 不饱和链（but-3-en-1-yl）与稠环/杂环（naphthalen-1-yl / pyridin-4-yl）走 unsat 段或 loc>1 保留。
-                      omit_rule=lambda n, loc, omit: loc == 1,
+                      omit_rule=lambda n, loc, omit: loc == 1,  # 饱和无环链/单环烃自由价在 C-1 时省略位次（P-29.2 方法 1: ethyl/pentyl/2-phenylethyl）；不饱和链（but-3-en-1-yl）与稠环/杂环（naphthalen-1-yl / pyridin-4-yl）走 unsat 段或 loc>1 保留。
                       plain_fn=_radical_plain,  # 省略位次用烷基型（ethyl/乙基），非 coda 拼接的 ethanyl/乙烷基
                       ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
-                      # 烯基自由基（取代基链含立体双键）需 E/Z 前缀：苯环母体上 prop-1-en-1-yl 等由
-                      # 递归 * 锚定命名产出，切子分子已保立体（submol_build），此处按链位次拼 (1Z)-。
-                      wrap=_with_ez,
+                      wrap=_with_ez,  # 烯基自由基（取代基链含立体双键）需 E/Z 前缀：苯环母体上 prop-1-en-1-yl 等由递归 * 锚定命名产出，切子分子已保立体（submol_build），此处按链位次拼 (1Z)-。
                       variant={
                           "benzene": {1: dict(plain_maps=None,
                                               plain_fn=lambda n: ("phenyl", "苯基"),

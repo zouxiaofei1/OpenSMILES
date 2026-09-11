@@ -145,7 +145,5 @@ def _fill(fn, lo: int = 1, hi: int = 99) -> dict[int, str]:
             out[n] = v
     return out
 
-
-# 公共字典 API（C1–C35 由生成器填充；C20+ 从不手写）
-ALKANE_EN = _fill(alkane_en)
+ALKANE_EN = _fill(alkane_en)  # 公共字典 API（C1–C35 由生成器填充；C20+ 从不手写）
 ALKANE_ZH = _fill(alkane_zh)

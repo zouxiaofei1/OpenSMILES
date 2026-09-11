@@ -1,11 +1,6 @@
-"""把 RDKit 的 Mol.GetAtoms()/GetBonds() 换回索引循环，去掉纯 Python 迭代器的每项包装开销。
-
-本构建里 `rdkit/Chem/__init__.py` 把这两个方法补丁成 `_GetRDKitObjIterator` 生成器：
-每取一个原子要过 `__iter__` 生成器 → `__getitem__` → `__len__` → `_sizeCalc` 五层
-Python 帧，实测是同规模 `range(GetNumAtoms()) + GetAtomWithIdx` 的 2.3–4.3 倍。
-返回列表与迭代器元素、顺序、可变性完全一致（项目内 41 处调用点全部是 `for a in
-mol.GetAtoms()`），配对 A/B 实测端到端省 12.6% 且命名结果零变化。
-由 `namepredict/__init__.py` 在包导入时安装，对全项目（含直接 import 各层的测试）生效。
+"""把 RDKit 的 Mol.GetAtoms()/GetBonds() 换回索引循环，去掉纯 Python 迭代器每项的包装开销。
+本构建把这两个方法补丁成 `_GetRDKitObjIterator` 生成器，每取一个原子要过五层 Python 帧，实测比 `range(GetNumAtoms()) + GetAtomWithIdx` 慢 2.3–4.3 倍；返回列表与迭代器的元素、顺序、可变性完全一致。
+由 `namepredict/__init__.py` 在包导入时安装，全项目（含直接 import 各层的测试）生效；配对 A/B 实测端到端省 12.6% 且命名结果零变化。
 """
 
 from __future__ import annotations

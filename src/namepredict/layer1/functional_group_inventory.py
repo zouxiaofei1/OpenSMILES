@@ -50,12 +50,9 @@ class FunctionalGroupInventory:
         """返回给定官能团类的全部出现。"""
         return tuple(e for e in self.entries if e.group_class == group_class)
 
+_LIST_CLASSES = {sp.list_key: FunctionalGroupClass(sp.fg) for sp in FG_SPECS}  # FG 类别注册唯一事实来源在 fg_registry.FG_SPECS；此处派生，不再逐条手写。
 
-# FG 类别注册唯一事实来源在 fg_registry.FG_SPECS；此处派生，不再逐条手写。
-_LIST_CLASSES = {sp.list_key: FunctionalGroupClass(sp.fg) for sp in FG_SPECS}
-
-# 锚点 key（occurrence payload）：只有声明 anchors 的 FG 才收集；胺含多臂锚点（P-62.2）。
-_ANCHOR_KEYS = {FunctionalGroupClass(sp.fg): sp.anchors for sp in FG_SPECS if sp.anchors}
+_ANCHOR_KEYS = {FunctionalGroupClass(sp.fg): sp.anchors for sp in FG_SPECS if sp.anchors}  # 锚点 key（occurrence payload）：只有声明 anchors 的 FG 才收集；胺含多臂锚点（P-62.2）。
 
 
 def _indices(payload: dict, keys: tuple[str, ...]) -> frozenset[int]:

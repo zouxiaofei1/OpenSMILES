@@ -482,12 +482,7 @@ def _fg_bools(lists: dict) -> dict:
     more = {hk: bool(lists[lk]) for hk, lk in _FG_BOOL_MORE_KEYS}
     return {**core, **more}
 
-
-# P-41 优先级仲裁：组合羰基 FG（酸/酯/酰卤/酰胺/醛/酸酐）被更高优先级
-# FG（如自由基）压制时退出主基团，其羰基碳降级入 ketones（oxo 前缀候选），
-# 组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属——不再丢失羰基氧。
-# ketone/alcohol/thiol/amine 是基础成员 FG，永不退出。
-_FG_PARTS_KEY = {  # fg_registry 名 → parts 键（有 p41 的链 FG）
+_FG_PARTS_KEY = {  # fg_registry 名 → parts 键（有 p41 的链 FG）；P-41 优先级仲裁：组合羰基 FG（酸/酯/酰卤/酰胺/醛/酸酐）被更高优先级 FG（如自由基）压制时退出主基团，其羰基碳降级入 ketones（oxo 前缀候选），组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属——不再丢失羰基氧。ketone/alcohol/thiol/amine 是基础成员 FG，永不退出。
     "radical": "radicals", "acyl": "acyls", "acid": "carboxyls", "anhydride": "anhydrides",
     "ester": "esters", "acyl_halide": "acyl_chlorides", "amide": "amides",
     "nitrile": "nitriles", "aldehyde": "aldehydes", "ketone": "ketones",

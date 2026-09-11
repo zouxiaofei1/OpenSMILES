@@ -36,10 +36,7 @@ class PrincipalExpressionFacts:
     attachment_atoms: frozenset[int]
     charge_state: PrincipalChargeState
 
-
-# 链式主官能团：kind 恒为 FG 类别名；acid/alcohol/amine/ketone 任意数量恒用基团名，其余链 FG 仅单基。
-# 链/数量集合由 fg_registry 的 chain/multi 标志派生（唯一事实来源）。
-_CHAIN_FG = frozenset(FunctionalGroupClass(v) for v in _fg_reg.chain_fgs())
+_CHAIN_FG = frozenset(FunctionalGroupClass(v) for v in _fg_reg.chain_fgs())  # 链式主官能团：kind 恒为 FG 类别名；acid/alcohol/amine/ketone 任意数量恒用基团名，其余链 FG 仅单基。链/数量集合由 fg_registry 的 chain/multi 标志派生（唯一事实来源）。
 _MULTI_FG = frozenset(FunctionalGroupClass(v) for v in _fg_reg.multi_fgs())
 def _anchor_fields(group_class: FunctionalGroupClass) -> tuple[str, str] | None:
     """取基团类的 (单, 复数) anchor 字段名。"""
@@ -343,28 +340,19 @@ def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
         return fields
     return {**fields, "o_idx": match["o_idx"], "alkoxy_n": 0}
 
-
-# 表 2.1 单核母体氢化物（P-15.4.1）：杂原子锚点自由基的母体 free 名与元素。
-# 去氢即标准取代基名（oxidane→hydroxy/oxy、azane→amino、sulfane→sulfanyl）。
-_MONONUCLEAR_STEM: dict[int, tuple[str, str, str]] = {
+_MONONUCLEAR_STEM: dict[int, tuple[str, str, str]] = {  # 表 2.1 单核母体氢化物（P-15.4.1）：杂原子锚点自由基的母体 free 名与元素。去氢即标准取代基名（oxidane→hydroxy/oxy、azane→amino、sulfane→sulfanyl）。
     7: ("N", "azane", "氮烷"),
     8: ("O", "oxidane", "氧化烷"),
     16: ("S", "sulfane", "硫烷"),
 }
 
-# S 锚点的氧化态词干（P-63.2.2 亚磺酰/磺酰）：=O 数必须落进母体名，否则
-# S(=O)/S(=O)(=O) 与硫醚同形，氧被整段丢弃、直接写出另一个分子（净多 2H）。
-# 去氢前缀即 sulfinyl/sulfonyl（与 anchored_table 的 methylsulfinyl/methylsulfonyl 同词形）。
-_SULFUR_STEM_BY_OXO: dict[int, tuple[str, str]] = {
+_SULFUR_STEM_BY_OXO: dict[int, tuple[str, str]] = {  # S 锚点的氧化态词干（P-63.2.2 亚磺酰/磺酰）：=O 数必须落进母体名，否则 S(=O)/S(=O)(=O) 与硫醚同形，氧被整段丢弃、直接写出另一个分子（净多 2H）。去氢前缀即 sulfinyl/sulfonyl（与 anchored_table 的 methylsulfinyl/methylsulfonyl 同词形）。
     0: ("sulfane", "硫烷"),
     1: ("sulfinyl", "亚磺酰"),
     2: ("sulfonyl", "磺酰"),
 }
 
-
-# N 锚点的自由价键级词干（P-66.1.1 亚胺）：双键即 imine（*N=C→methylideneamino），
-# 单键即 azane（*NC→methylamino）。漏掉双键会把亚胺写成胺（净多 2H）。
-_NITROGEN_STEM_BY_FREE_DOUBLE: dict[bool, tuple[str, str]] = {
+_NITROGEN_STEM_BY_FREE_DOUBLE: dict[bool, tuple[str, str]] = {  # N 锚点的自由价键级词干（P-66.1.1 亚胺）：双键即 imine（*N=C→methylideneamino），单键即 azane（*NC→methylamino）。漏掉双键会把亚胺写成胺（净多 2H）。
     False: ("azane", "氮烷"),
     True: ("imine", "亚胺"),
 }

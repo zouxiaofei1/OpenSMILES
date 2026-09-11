@@ -7,8 +7,7 @@ from rdkit.Chem import Mol
 
 from namepredict.constants import Cl, K, Li, Na, O
 
-# 原子序数 → 英文金属名（IUPAC 官能团类盐）
-_ALKALI_EN = {Li: "lithium", Na: "sodium", K: "potassium"}
+_ALKALI_EN = {Li: "lithium", Na: "sodium", K: "potassium"}  # 原子序数 → 英文金属名（IUPAC 官能团类盐）
 _METAL_ZH = {"lithium": "锂", "sodium": "钠", "potassium": "钾"}
 
 

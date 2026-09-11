@@ -31,24 +31,17 @@ class FgSpec:
 _LEGACY = "legacy_compat"
 _PREFIX = "prefix_only"
 
-# 全部 L1 检测列表对应的 FG 类别（含非主官能团：醚/硫醚/季铵/异氰酸酯/硝基…）。
-# 新增一个官能团类别：在本表加一条 + L1 analyzer 检测 + L5 chain_engine._KIND_TABLE 命名规格。
-FG_SPECS: tuple[FgSpec, ...] = (
+FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("radical", "radicals", p41=1, compat=1, anchors=("c_idx",),
            parent_anchor_fields=("radical_c_idx", "radical_c_idxs"),
            locant_kind="radical"),
-    # 酰基残基（自由价锚定羰基碳的 R-C(=O)- 片段）：按酸衍生 -oyl/酰 命名（P-65.1.7.2）。
-    FgSpec("acyl", "acyls", p41=1, compat=1, anchors=("c_idx",),
+    FgSpec("acyl", "acyls", p41=1, compat=1, anchors=("c_idx",),  # 酰基残基
            parent_anchor_fields=("acyl_c_idx", "acyl_c_idxs"),
            chain=True, rs=True, keep_locant=True, locant_kind="acyl"),
     FgSpec("acid", "carboxyls", p41=7, path=(1,), compat=14, anchors=("c_idx",),
            parent_anchor_fields=("cooh_c_idx", "cooh_c_idxs"),
            chain=True, multi=True, rs=True, keep_locant=True, locant_kind="acid"),
-    # 磷酸/磷酸酯。P(=O)(O)₃ 中心：n_arms=0 为游离磷酸（P-41 类别 7d），n_arms≥1 为磷酸酯
-    # （P-67.1.3.2 归入类别 9 酯）。检测器不区分两者，故按占多数的酯形态登记 p41=9、path=(1,)，
-    # 使同类内羧酸酯（path=()）优先——含羧酸酯或羧酸（7a < 9）时磷酸降级为 phosphonooxy 前缀
-    # （P-67.1.5.1）。游离磷酸无竞争 FG，分类差异不影响选择结果。
-    FgSpec("phosphate", "phosphates", p41=9, path=(1,), compat=10, anchors=("p_idx",),
+    FgSpec("phosphate", "phosphates", p41=9, path=(1,), compat=10, anchors=("p_idx",),  # 磷酸/磷酸酯。
            parent_anchor_fields=("p_idx", "p_idxs"), chain=True),
     FgSpec("anhydride", "anhydrides", p41=8, compat=12),
     FgSpec("ester", "esters", p41=9, compat=11, anchors=("c_idx",),

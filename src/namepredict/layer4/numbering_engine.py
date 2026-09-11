@@ -4,10 +4,7 @@ from __future__ import annotations
 from namepredict.tools import memo
 from namepredict.layer1.ring_systems import sssr_rings
 
-# P-25.3.3：这些保留骨架按传统编号，不走 P-25.3.3.1 的优选取向自动编号。
-# xanthene 及其硫属类似物（xanthene/thioxanthene）与 cyclopenta[a]phenanthrene（甾体 1-17）已按
-# _TEMPLATES 的 standard 字段登记传统编号，故一并列入。
-_TRADITIONAL_NUMBERING_IDS = frozenset({
+_TRADITIONAL_NUMBERING_IDS = frozenset({  # P-25.3.3：这些保留骨架按传统编号，不走 P-25.3.3.1 的优选取向自动编号。xanthene 及其硫属类似物（xanthene/thioxanthene）与 cyclopenta[a]phenanthrene（甾体 1-17）已按_TEMPLATES 的 standard 字段登记传统编号，故一并列入。
     "anthracene", "phenanthrene", "acridine", "carbazole", "purine",
     "xanthene", "thioxanthene", "cyclopenta[a]phenanthrene",
 })
@@ -181,10 +178,7 @@ def _is_ring(parent: dict) -> bool:
     """按 scaffold_id 判断 parent 是否为环系。"""
     return bool(parent.get("scaffold_id"))
 
-
-# P-14.4(a)：parent dict 中标定必须为 locant 1 的原子的字段（环外羰基连接、自由基中心）。
-# 杂环起点已改由 _narrow_hetero_ring 按元素序决定，不在此列。
-_FIXED_START_KEYS = (
+_FIXED_START_KEYS = (  # P-14.4(a)：parent dict 中标定必须为 locant 1 的原子的字段（环外羰基连接、自由基中心）。杂环起点已改由 _narrow_hetero_ring 按元素序决定，不在此列。
     "ring_attach_idx", "n_idx", "nh_idx", "hetero_idx", "radical_c_idx", "acyl_c_idx",
 )
 
@@ -273,10 +267,7 @@ def _fused_numbering(parent: dict, chain: list[int],
     spec = get_spec(parent.get("scaffold_id") or "")
     registered_fused = bool(spec and spec.n_rings >= 2)  # 稠环保留模板（含氢化衍生物）：编号随骨架拓扑，与芳香性无关（fused_numbering 本身不依赖 aromatic）
     chain_arom = bool(mol is not None and chain) and all(mol.GetAtomWithIdx(a).GetIsAromatic() for a in chain)
-    # 未注册稠环（如 fused_hetero 身份的饱和/部分饱和稠环）：scaffold_id 不在 _TEMPLATES，registered_fused 与 chain_arom 均假。
-    # 若在此拦下会回落到 P-14.4 单环通用枚举：桥头得数字位而非字母位(4a/8a)、起点方向随输入原子序漂移。
-    # 故按「chain 覆盖 ≥2 环」放行走 P-25.3.3 外周编号；单环/开链覆盖 ≤1 环仍返回 None，保持原路径不变。
-    chain_fused = bool(mol is not None and chain) and sum(
+    chain_fused = bool(mol is not None and chain) and sum(  # 未注册稠环（如 fused_hetero 身份的饱和/部分饱和稠环）：scaffold_id 不在 _TEMPLATES，registered_fused 与 chain_arom 均假。若在此拦下会回落到 P-14.4 单环通用枚举：桥头得数字位而非字母位(4a/8a)、起点方向随输入原子序漂移。故按「chain 覆盖 ≥2 环」放行走 P-25.3.3 外周编号；单环/开链覆盖 ≤1 环仍返回 None，保持原路径不变。
         1 for r in sssr_rings(mol) if set(r) <= set(chain)) >= 2
     if mol is None or not chain or not (chain_arom or registered_fused or chain_fused):
         return None

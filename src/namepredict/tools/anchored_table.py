@@ -53,9 +53,7 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "cyclopropylidene": RetainedSubstituent( "cyclopropylidene", "环丙亚基", "cyclopropylidene", "环丙亚基", P, anchored=("*=C1CC1", ), paren=False, kind="alkyl", ),
         "cyclohexylidene": RetainedSubstituent( "cyclohexylidene", "环己亚基", "cyclohexylidene", "环己亚基", P, anchored=("*=C1CCCCC1", ), paren=False, kind="alkyl", ),
         "sulfanylidene": RetainedSubstituent( "sulfanylidene", "硫烷亚基", "sulfanylidene", "硫烷亚基", P, anchored=("*=S", ), paren=False, kind="leaf", ),
-        # 脒/胍残基 C(=N)N：gold 按 P-66.1.1 取亚基式（diaminomethylideneamino），
-        # 不取等价的 amino(imino)methylamino（两者互变、分子式相同，取测试集口径）。
-        "diaminomethylidene": RetainedSubstituent( "diaminomethylidene", "二氨基亚甲基", "diaminomethylidene", "二氨基亚甲基", P, anchored=("*C(=N)N", ), paren=True, kind="leaf", ),
+        "diaminomethylidene": RetainedSubstituent( "diaminomethylidene", "二氨基亚甲基", "diaminomethylidene", "二氨基亚甲基", P, anchored=("*C(=N)N", ), paren=True, kind="leaf", ),  # 脒/胍残基 C(=N)N：gold 按 P-66.1.1 取亚基式（diaminomethylideneamino），不取等价的 amino(imino)methylamino（两者互变、分子式相同，取测试集口径）。
         "ethyl": RetainedSubstituent( "ethyl", "乙基", "ethyl", "乙基", P, anchored=("*CC", ), paren=False, kind="alkyl", ),
         "propyl": RetainedSubstituent( "propyl", "丙基", "propyl", "丙基", P, anchored=("*CCC", ), paren=False, kind="alkyl", ),
         "butyl": RetainedSubstituent( "butyl", "丁基", "butyl", "丁基", P, anchored=("*CCCC", ), paren=False, kind="alkyl", ),
@@ -168,11 +166,7 @@ def _anchored_key_uncached(mol: Mol, atoms: frozenset[int], attach_old: int) -> 
     anchor = build_anchor_submol(mol, atoms, attach_old)
     return MolToSmiles(anchor) if anchor is not None else None
 
-
-# 仅整分子顶层命中的锚定键：单原子杂原子自由基（表 2.1 去氢）。
-# L3 取代基查表（anchored_entry）跳过它们——游离 O/N 原子会被 _one_alkyl
-# 误作侧链提取（酮羰基氧、酯氧、胺氮），命中 *O/*N 会错名成羟基/氨基。
-_WHOLE_ONLY_KEYS = frozenset({"*O", "*[O]", "*N"})
+_WHOLE_ONLY_KEYS = frozenset({"*O", "*[O]", "*N"})  # 仅整分子顶层命中的锚定键：单原子杂原子自由基（表 2.1 去氢）。L3 取代基查表（anchored_entry）跳过它们——游离 O/N 原子会被 _one_alkyl 误作侧链提取（酮羰基氧、酯氧、胺氮），命中 *O/*N 会错名成羟基/氨基。
 
 
 def _table_hit(mol: Mol, atoms: frozenset[int], attach_old: int | None) -> str | None:

@@ -138,8 +138,7 @@ def _filter_fg_halos(halos: list, parent: dict) -> list:
         return [h for h in halos if not (set(h.get("atoms") or []) & owned)]
     return halos
 
-# 主 FG 母体 kind → 抑制对应取代基提取（fg_registry 的 parent 标记派生）。
-_PARENT_OH_KINDS = frozenset(sp.fg for sp in FG_SPECS if sp.oh_parent)
+_PARENT_OH_KINDS = frozenset(sp.fg for sp in FG_SPECS if sp.oh_parent)  # 主 FG 母体 kind → 抑制对应取代基提取（fg_registry 的 parent 标记派生）。
 _PARENT_NH2_KINDS = frozenset(sp.fg for sp in FG_SPECS if sp.nh2_parent)
 _PARENT_OXO_KINDS = frozenset(sp.fg for sp in FG_SPECS if sp.oxo_parent)
 

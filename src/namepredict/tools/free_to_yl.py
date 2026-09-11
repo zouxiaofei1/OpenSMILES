@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import re
 
-# free_en → (yl_en, yl_zh)（当位次为常规/省略时）
-_RETAINED: dict[str, tuple[str, str]] = {
+_RETAINED: dict[str, tuple[str, str]] = {  # free_en → (yl_en, yl_zh)（当位次为常规/省略时）
     "benzene": ("phenyl", "苯基"),
 }
 
@@ -27,10 +26,7 @@ def _hetero_locant_prefix(en: str) -> str:
                 i += 1
     return en[: i + 1] if i and i < n and en[i] == "-" else ""
 
-
-# ── 官能团后缀 → 前缀转换 ──
-
-_MULT_OL_SUF = re.compile(r"(?:di|tri|tetra|penta|hexa|hepta|octa|nona|deca)ol\b")
+_MULT_OL_SUF = re.compile(r"(?:di|tri|tetra|penta|hexa|hepta|octa|nona|deca)ol\b")  # 官能团后缀 → 前缀转换
 
 
 def _alkoxy_en(en: str) -> str | None:
@@ -111,10 +107,7 @@ def _amino_zh(zh: str) -> str | None:
         return f"{m.group(1)}-{m.group(2)}-基氨基"
     return None
 
-
-# 单核母体氢化物（P-15.4.1 表 2.1）→ 去氢取代基名（表 1.5 'a' 前缀体系）。
-# 组装名 "ethyl-oxidane" → "ethyloxy" / "乙基-氧化烷" → "乙氧基"。
-_MONONUCLEAR = (("oxidane", "氧化烷", "oxy", "氧基"),
+_MONONUCLEAR = (("oxidane", "氧化烷", "oxy", "氧基"),  # 单核母体氢化物（P-15.4.1 表 2.1）→ 去氢取代基名（表 1.5 'a' 前缀体系）。组装名 "ethyl-oxidane" → "ethyloxy" / "乙基-氧化烷" → "乙氧基"。
                 ("azane", "氮烷", "amino", "氨基"),
                 ("sulfane", "硫烷", "sulfanyl", "硫基"),
                 ("sulfinyl", "亚磺酰", "sulfinyl", "基亚磺酰基"),  # S=O 桥：ethyl-sulfinyl → ethylsulfinyl

@@ -37,18 +37,12 @@ HALO_Z = frozenset({F, Cl, Br, I})
 HALO_EN = {F: "fluoro", Cl: "chloro", Br: "bromo", I: "iodo"}
 HALO_ZH = {F: "氟", Cl: "氯", Br: "溴", I: "碘"}
 HALIDE_EN = {F: "fluoride", Cl: "chloride", Br: "bromide", I: "iodide"}
-# N-取代基 kind（P-62.2.2.1）：走 N- 前缀、位次以 N 标注或隐含省略，不参与数字位次通道。
-N_PREFIX_KINDS = frozenset({"n_alkyl", "n_phenyl", "n_benzyl", "n_block"})
+N_PREFIX_KINDS = frozenset({"n_alkyl", "n_phenyl", "n_benzyl", "n_block"})  # N-取代基 kind（P-62.2.2.1）：走 N- 前缀、位次以 N 标注或隐含省略，不参与数字位次通道。
 
-# ── 杂原子优先序（稠环母体组分选择 P-25.3.2.4 / 稠环与杂环编号 P-25.3.3.1.2(b)）──
-# 两条序列同源不同序，勿混用：P25 用于"选哪个组分当母体"，P145 用于"哪个杂原子得低位次"。
-P25_SENIOR = (N, F, Cl, Br, I, O, S, Se, Te, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)
+P25_SENIOR = (N, F, Cl, Br, I, O, S, Se, Te, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)  # 杂原子优先序（稠环母体组分选择 P-25.3.2.4 / 稠环与杂环编号 P-25.3.3.1.2(b)）两条序列同源不同序，勿混用：P25 用于"选哪个组分当母体"，P145 用于"哪个杂原子得低位次"。
 P145_SENIOR = (F, Cl, Br, I, O, S, Se, Te, N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)
 
-# ── 倍数前缀（P-14.2 Table 1.4；数量词与母链碳数同源，支持到 99）──
-# en 数量词（deca/undeca/…/icosa/henicosa…）同时供 layer5.stems 生成长链母链词干，
-# 故下沉到本层：en_num_term 是唯一来源，stems 取词干仅去其尾 'a'。
-_MULT_EN_10 = {1: "", 2: "di", 3: "tri", 4: "tetra", 5: "penta",
+_MULT_EN_10 = {1: "", 2: "di", 3: "tri", 4: "tetra", 5: "penta",  # 倍数前缀（P-14.2 Table 1.4；数量词与母链碳数同源，支持到 99）en 数量词（deca/undeca/…/icosa/henicosa…）同时供 layer5.stems 生成长链母链词干，故下沉到本层：en_num_term 是唯一来源，stems 取词干仅去其尾 'a'。
                6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
 _MULT_ZH_10 = {1: "", 2: "二", 3: "三", 4: "四", 5: "五",
                6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
@@ -94,18 +88,12 @@ def zh_numeral(n: int) -> str | None:
 MULT_EN = {n: (en_num_term(n) or "") for n in range(1, 100)}
 MULT_ZH = {n: (zh_numeral(n) or "") for n in range(1, 100)}
 
-# P-66.1.1.4.3 方法 1 保留式收缩：单 N-酰基残基 R-C(=O)-NH-* 在 R=乙酰/甲酰/苯甲酰时
-# 用 amido 保留名（acetamido/formamido/benzamido；gold/ChEBI 全量仅此三词），其余 R
-# （长链/烯酰/被取代苯甲酰/杂环羰酰）保持 acylamino 方法 2，不入表。键 = N-酰基取代基 en 词干。
-AMIDO_RETAINED = {
+AMIDO_RETAINED = {  # P-66.1.1.4.3 方法 1 保留式收缩：单 N-酰基残基 R-C(=O)-NH-* 在 R=乙酰/甲酰/苯甲酰时用 amido 保留名（acetamido/formamido/benzamido；gold/ChEBI 全量仅此三词），其余 R（长链/烯酰/被取代苯甲酰/杂环羰酰）保持 acylamino 方法 2，不入表。键 = N-酰基取代基 en 词干。
     "acetyl": ("acetamido", "乙酰氨基"),
     "formyl": ("formamido", "甲酰胺基"),
     "benzoyl": ("benzamido", "苯甲酰胺基"),
 }
-# 注：retained amido 的中文按 P-66 CN 译本/gold 取「酰氨基」式（acetyl→乙酰氨基），
-# 与 acylamino 方法 2 的 …酰氨基 词形一致，amido/acylamino 的区分由 en 词干承担。
-# formyl/benzoyl 中文（甲酰胺基/苯甲酰胺基）因对应 gold 尚未统一，暂留（TODO 对齐）。
-AMIDO_RETAINED_EN = frozenset(v[0] for v in AMIDO_RETAINED.values())
+AMIDO_RETAINED_EN = frozenset(v[0] for v in AMIDO_RETAINED.values())  # 注：retained amido 的中文按 P-66 CN 译本/gold 取「酰氨基」式（acetyl→乙酰氨基），与 acylamino 方法 2 的 …酰氨基 词形一致，amido/acylamino 的区分由 en 词干承担。formyl/benzoyl 中文（甲酰胺基/苯甲酰胺基）因对应 gold 尚未统一，暂留（TODO 对齐）。
 
 # ── 文本规范化 ──────────────────────────────────────────────────
 _WS = re.compile(r"\s+")

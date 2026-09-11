@@ -15,9 +15,7 @@ def _claim_kind(slot_value: str) -> str:
         "chain_c": "alkyl",
     }.get(slot_value, "side")
 
-
-# 锚定表/保留叶子的名称暗含非烷基 kind，使 L5 以 `kind` 键（iso 稠合、聚茴香醚、卤代苯）触发。
-_NAME_KIND = {
+_NAME_KIND = {  # 锚定表/保留叶子的名称暗含非烷基 kind，使 L5 以 `kind` 键（iso 稠合、聚茴香醚、卤代苯）触发。
     "fluoro": "halo", "chloro": "halo", "bromo": "halo", "iodo": "halo",
     "nitro": "nitro",
     "isocyanato": "isocyanato", "isothiocyanato": "isothiocyanato",
@@ -51,9 +49,7 @@ def sub_from_named(named, mol=None) -> dict:
         n_carbons = len(claim.atoms)
     kind = _kind_for_named(named)
     if kind in N_PREFIX_KINDS and mol is not None and _is_ring_attach(mol, claim.attach_parent):
-        # 环氮（内酰胺/环胺母体的环员 N）有环上位次可用，改用位次定位而非 N- 前缀
-        # （P-14.4/P-16；否则与酰基/氨基的 N- 撞名，如 3-phenyl-1,3-oxazolidin-2-one 写成 N-phenyl）。
-        kind = _claim_kind("ring_c")
+        kind = _claim_kind("ring_c")  # 环氮（内酰胺/环胺母体的环员 N）有环上位次可用，改用位次定位而非 N- 前缀（P-14.4/P-16；否则与酰基/氨基的 N- 撞名，如 3-phenyl-1,3-oxazolidin-2-one 写成 N-phenyl）。
     return {
         "kind": kind, "n_carbons": n_carbons,
         "attach_idx": claim.attach_parent, "atoms": sorted(claim.atoms),
@@ -74,10 +70,7 @@ def _should_skip(claim, covered: set[int]) -> bool:
     """判断 claim 是否应跳过（仅原子已被覆盖时）。"""
     return bool(set(claim.atoms) & covered)
 
-
-# O-侧酸侧（烷氧基臂）：连在 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 酯/磷酸整名消费。
-# ester：酯酸侧烷氧臂；phosphate：磷酸酯 O–R 臂（kind=phosphate 母体，见 layer1/phosphate.py）。
-_ESTER_O_SIDE_KINDS = frozenset({"ester", "phosphate"})
+_ESTER_O_SIDE_KINDS = frozenset({"ester", "phosphate"})  # O-侧酸侧（烷氧基臂）：连在 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 酯/磷酸整名消费。ester：酯酸侧烷氧臂；phosphate：磷酸酯 O–R 臂（kind=phosphate 母体，见 layer1/phosphate.py）。
 
 
 def _append_named(mol, claim, namer, covered: set[int], out: list[dict], *, o_side: bool = False, depth: int = 0) -> None:

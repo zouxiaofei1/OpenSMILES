@@ -1,23 +1,23 @@
 """L4 编号入口：定向编号并组装最终 result 包。"""
 from __future__ import annotations
+from namepredict.constants import C
 from namepredict.layer4.indicated_hydrogen import indicated_hydrogen_prefix, saturated_ring_atoms
-from namepredict.layer4.hydrogenation import hydro_prefix
+from namepredict.layer4.hydrogenation import HYDRO_MULT_N, hydro_prefix
 from namepredict.layer4.numbering_engine import orient_numbering
 from namepredict.layer4.locant_calc import _pack, _with_locants
 from namepredict.layer4.locant_key import locant_key
 
 
 def _fallback_hydro_atoms(parent: dict) -> frozenset:
-    """无保留模板可比的稠环（未注册母体）的加氢位回退：取环系内仅以单键连邻环原子、带氢且非芳香位的 sp3 位（P-31.2.2）。
-
-    非芳香位一条把「mancude 母体本身就带 H 的环杂原子」（吡咯型 N-H，其指示氢由 P-58.2.1 承载）与「母体双键被饱和而新带 H 的位」区分开。
-    """
+    """无保留模板可比的稠环（未注册母体）的加氢位回退：取环系内仅以单键连邻环原子、带氢且非芳香位的 sp3 位（P-31.2.2）。 """
     mol = parent.get("mol")
     chain = list(parent.get("chain") or ())
     if mol is None or not chain or parent.get("fused_tree") is None:
         return frozenset()
-    return frozenset(i for i in saturated_ring_atoms(mol, set(chain))
-                     if not mol.GetAtomWithIdx(i).GetIsAromatic())
+    out = frozenset(i for i in saturated_ring_atoms(mol, set(chain))
+                    if not mol.GetAtomWithIdx(i).GetIsAromatic())
+    carbons = frozenset(a for a in out if mol.GetAtomWithIdx(a).GetAtomicNum() == C)
+    return carbons if len(carbons) != len(out) and len(carbons) in HYDRO_MULT_N else out
 
 
 def _lowest_extra_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset:

@@ -111,9 +111,7 @@ def _remap_attach(parent: dict, s: dict) -> dict:
             return {**s, "attach_idx": alt}
     return s
 
-
-# P-45.2.2 需要为每个并列候选各跑一次 L3–L5，上限防止组合爆炸（benchmark 中并列组多为 2–4 个）。
-_MAX_TIED_CANDIDATES = 4
+_MAX_TIED_CANDIDATES = 4  # P-45.2.2 需要为每个并列候选各跑一次 L3–L5，上限防止组合爆炸（benchmark 中并列组多为 2–4 个）。
 
 
 def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:

@@ -82,9 +82,7 @@ def _wrap_stem(stem: str, need: bool) -> str:
     """按 need 给词干加括号（词干含括号时改用方括号）。"""
     return stem if not need else (f"[{stem}]" if "(" in stem else f"({stem})")
 
-
-# O/S 桥后缀（gold 平铺式 -yl]oxy/-yl]sulfanyl：括号闭在 -yl 后、后缀放括号外，见 P-63.2.2）。
-_BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl")
+_BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl")  # O/S 桥后缀（gold 平铺式 -yl]oxy/-yl]sulfanyl：括号闭在 -yl 后、后缀放括号外，见 P-63.2.2）。
 
 
 def _split_bridge_suffix(stem: str) -> tuple[str, str] | None:

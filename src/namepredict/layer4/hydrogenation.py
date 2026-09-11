@@ -4,9 +4,7 @@ from __future__ import annotations
 from namepredict.constants import MULT_EN, MULT_ZH
 from namepredict.layer4.locant_key import locant_key
 
-# 本前缀覆盖的加氢原子数（P-31.2.2 以偶数倍增前缀表示双键的饱和，位次数为加氢原子数）；
-# 数量词本身取自 constants（唯一来源），此处只表达 L4 的适用域，域外放弃而非给错名。
-HYDRO_MULT_N = frozenset({2, 4, 6, 8, 10, 12, 14, 16, 18, 20})
+HYDRO_MULT_N = frozenset({2, 4, 6, 8, 10, 12, 14, 16, 18, 20})  # 本前缀覆盖的加氢原子数（P-31.2.2 以偶数倍增前缀表示双键的饱和，位次数为加氢原子数）；数量词本身取自 constants（唯一来源），此处只表达 L4 的适用域，域外放弃而非给错名。
 
 
 def hydro_prefix(chain, labels, hydro_atoms) -> tuple[str, str]:

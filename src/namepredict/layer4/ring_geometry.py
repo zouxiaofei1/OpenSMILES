@@ -3,8 +3,7 @@ from __future__ import annotations
 
 import math
 
-# 变形/重叠阈值：单原子最大偏差/环边长上限、非共享环重叠面积/较小环面积上限。
-DEFORM_MAX = 0.30
+DEFORM_MAX = 0.30  # 变形/重叠阈值：单原子最大偏差/环边长上限、非共享环重叠面积/较小环面积上限。
 OVERLAP_FRAC = 0.05
 
 

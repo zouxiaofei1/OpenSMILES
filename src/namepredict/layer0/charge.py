@@ -9,12 +9,9 @@ from rdkit.Chem import Mol, RWMol
 
 from namepredict.constants import C, N, O, P, S
 
-# 允许作为强酸供体的酸类；默认只开羧酸（磷酸/磺酸 donor 经实测不贡献修复，
-# 只扩大 blast radius），谓词已就绪，需要时放开即可。
-_DONOR_KIND = ("carboxyl",)
+_DONOR_KIND = ("carboxyl",)  # 允许作为强酸供体的酸类；默认只开羧酸（磷酸/磺酸 donor 经实测不贡献修复，只扩大 blast radius），谓词已就绪，需要时放开即可。
 _KIND_PRIO = {"carboxyl": 1, "phospho": 2, "sulfo": 3}
-# 弱受体允许的元素：O（酚氧/烯醇氧/酰胺氧）、N（去质子化氮）；保守可只留 {O}。
-_ACCEPTOR_Z = frozenset({O, N})
+_ACCEPTOR_Z = frozenset({O, N})  # 弱受体允许的元素：O（酚氧/烯醇氧/酰胺氧）、N（去质子化氮）；保守可只留 {O}。
 
 
 def _oxo_neighbor(atom, heavy: int, min_oxo: int = 1):

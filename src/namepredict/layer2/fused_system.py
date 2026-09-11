@@ -14,8 +14,7 @@ from namepredict.layer2.ring_scaffold import (
 )
 from namepredict.layer1.ring_systems import sssr_rings
 
-# 保留模板的元素计数（超集剪枝：当前原子集须 ≤ 某模板计数才可能拼出保留母体）。
-_TEMPLATE_COUNTS: dict[str, Counter] = {
+_TEMPLATE_COUNTS: dict[str, Counter] = {  # 保留模板的元素计数
     sid: Counter(q.GetAtomWithIdx(i).GetAtomicNum() for i in range(q.GetNumAtoms()))
     for sid, q in _Q.items()
 }
@@ -29,9 +28,7 @@ class FusedNode:
     ring_indices: frozenset[int]
     fusion_shared: tuple[frozenset[int], ...] = ()
     attached: tuple["FusedNode", ...] = ()
-    # 命名组装数据：由 L2 打包时从 ring_scaffold._TEMPLATES 取好挂上，L5 fused_namer 只读。
-    # （L5 不得 import L2，故稠合词干须随拆解树下发，不留在 L5 本地表。）
-    fused_stem: tuple[str, str] | None = None    # 组分词干 (en, zh)；None = 不可作稠合零件
+    fused_stem: tuple[str, str] | None = None    # 组分词干 (en, zh)；None = 不可作稠合零件；命名组装数据：由 L2 打包时从 ring_scaffold._TEMPLATES 取好挂上，L5 fused_namer 只读。（L5 不得 import L2，故稠合词干须随拆解树下发，不留在 L5 本地表。）
     fused_prefix: tuple[str, str] | None = None  # 附加组分保留前缀 (en, zh)；None = 走通用规则
     fused_omit_numbers: bool = False             # 稠合描述符省略数字位次（P-25.3.8.1：一级单环烃附加组分）
 
