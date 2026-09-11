@@ -49,7 +49,7 @@ export const state = {
   bmGenerating: false,
   bmGenDone: 0,
   bmGenTotal: 0,
-  bmGenTotal: 0,
+  bmHacRows: null, // 上次初始化重原子滑块域时的 bmRows 引用; 变了就重置区间
   bmPollTimer: null,
   // code analysis
   caData: null,

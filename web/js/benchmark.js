@@ -184,14 +184,97 @@ function bmSortItems(items) {
   });
 }
 
+/* 重原子数筛选: 双滑块取闭区间 [lo, hi]; 无 hac 字段的行(旧缓存)不受限。 */
+function bmHacRange() {
+  var loEl = bm$("hac-lo");
+  var hiEl = bm$("hac-hi");
+  if (!loEl || !hiEl || loEl.disabled) return null;
+  return { lo: parseInt(loEl.value, 10) || 0, hi: parseInt(hiEl.value, 10) || 0 };
+}
+
+/* 行的重原子数域: {lo, hi}; 无任何数值型 hac 时返回 null。 */
+function bmHacBounds() {
+  var lo = Infinity;
+  var hi = -Infinity;
+  var n = 0;
+  for (var i = 0; i < state.bmRows.length; i++) {
+    var v = state.bmRows[i].hac;
+    if (typeof v !== "number") continue;
+    n += 1;
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
+  return n ? { lo: lo, hi: hi } : null;
+}
+
+function bmHacLabel(lo, hi) {
+  var loEl = bm$("hac-lo");
+  var hiEl = bm$("hac-hi");
+  if (lo == null) {
+    lo = loEl ? parseInt(loEl.value, 10) || 0 : 0;
+    hi = hiEl ? parseInt(hiEl.value, 10) || 0 : 0;
+  }
+  if (bm$("hac-lo-v")) bm$("hac-lo-v").textContent = String(lo);
+  if (bm$("hac-hi-v")) bm$("hac-hi-v").textContent = String(hi);
+}
+
+/* 默认取用的重原子数区间; 滑块可拖范围仍是本批数据的 [最小, 最大]。 */
+const BM_HAC_DEFAULT = { lo: 1, hi: 25 };
+
+/* 数据换了(重新加载/切文件)后重置滑块: 域=本批 hac 的 [最小, 最大], 取值=默认区间夹进域内。 */
+function bmHacReset() {
+  var loEl = bm$("hac-lo");
+  var hiEl = bm$("hac-hi");
+  if (!loEl || !hiEl) return;
+  var b = bmHacBounds();
+  if (!b) {
+    loEl.disabled = true;
+    hiEl.disabled = true;
+    loEl.min = hiEl.min = loEl.max = hiEl.max = "0";
+    loEl.value = hiEl.value = "0";
+    bmHacLabel(0, 0);
+    return;
+  }
+  var lo = Math.min(Math.max(BM_HAC_DEFAULT.lo, b.lo), b.hi);
+  var hi = Math.min(Math.max(BM_HAC_DEFAULT.hi, b.lo), b.hi);
+  loEl.disabled = false;
+  hiEl.disabled = false;
+  loEl.min = hiEl.min = String(b.lo);
+  loEl.max = hiEl.max = String(b.hi);
+  loEl.value = String(lo);
+  hiEl.value = String(hi);
+  bmHacLabel(lo, hi);
+}
+
+/* 拖动一端越过另一端时把另一端顶开, 保持 lo <= hi。 */
+function bmHacInput(which) {
+  var loEl = bm$("hac-lo");
+  var hiEl = bm$("hac-hi");
+  if (!loEl || !hiEl) return;
+  var lo = parseInt(loEl.value, 10) || 0;
+  var hi = parseInt(hiEl.value, 10) || 0;
+  if (which === "lo" && lo > hi) {
+    hi = lo;
+    hiEl.value = String(hi);
+  } else if (which === "hi" && hi < lo) {
+    lo = hi;
+    loEl.value = String(lo);
+  }
+  bmHacLabel(lo, hi);
+  state.bmPage = 1;
+  renderBenchmark();
+}
+
 function bmFiltered() {
   var q = (bm$("q") && bm$("q").value || "").trim().toLowerCase();
   var f = bm$("filter") ? bm$("filter").value : "all";
+  var hac = bmHacRange();
   var out = [];
   for (var i = 0; i < state.bmRows.length; i++) {
     var r = state.bmRows[i];
     if (f === "ok" && !r.ok) continue;
     if (f === "fail" && r.ok) continue;
+    if (hac && typeof r.hac === "number" && (r.hac < hac.lo || r.hac > hac.hi)) continue;
     if (q) {
       var hay = [r.s, r.en, r.zh, r.ge, r.gz].join(" ").toLowerCase();
       if (hay.indexOf(q) < 0) continue;
@@ -263,6 +346,11 @@ function bmDrawAll() {
 }
 
 function renderBenchmark() {
+  // 行数组换了(重载/切数据文件/生成完成后重取) → 滑块域跟着换; 单纯重渲染不动用户选择
+  if (state.bmHacRows !== state.bmRows) {
+    state.bmHacRows = state.bmRows;
+    bmHacReset();
+  }
   var items = bmFiltered();
   var ps = Math.max(1, parseInt(bm$("pageSize") ? bm$("pageSize").value : "100", 10) || 100);
   var pages = Math.max(1, Math.ceil(items.length / ps));
@@ -368,6 +456,12 @@ export function bindBenchmark() {
   }
   if (bm$("pageSize")) {
     bm$("pageSize").addEventListener("change", function () { state.bmPage = 1; renderBenchmark(); });
+  }
+  if (bm$("hac-lo")) {
+    bm$("hac-lo").addEventListener("input", function () { bmHacInput("lo"); });
+  }
+  if (bm$("hac-hi")) {
+    bm$("hac-hi").addEventListener("input", function () { bmHacInput("hi"); });
   }
   if (bm$("prev")) {
     bm$("prev").addEventListener("click", function () { state.bmPage -= 1; renderBenchmark(); });

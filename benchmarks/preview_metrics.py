@@ -1,11 +1,11 @@
-"""预览行的派生指标：稠环判定、RDKit 复杂度、预测↔金标相似度。
+"""预览行的派生指标：稠环判定、RDKit 复杂度、重原子数、预测↔金标相似度。
 
 由预览生成器 (benchmark_preview_parallel) 与 server 的旧缓存补算路径
 (routes_benchmark) 共用，保证"新生成的行"与"补算出来的行"字段完全一致。
 相似度取归一化后的字符级 ratio，与 Namer 页 gold 卡 (routes_name) 同口径，
 两个页面对同一对名字给出的百分比不会打架。
 
-字段: fused(稠环) / cx(BertzCT 复杂度) / sim_en / sim_zh(相似度, 无金标为 None)。
+字段: fused(稠环) / cx(BertzCT 复杂度) / hac(重原子数) / sim_en / sim_zh(相似度, 无金标为 None)。
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import difflib
 from typing import Any
 
 # 派生字段全集; 旧缓存缺任一键即触发一次性补算。
-DERIVED_KEYS = ("fused", "cx", "sim_en", "sim_zh")
+DERIVED_KEYS = ("fused", "cx", "hac", "sim_en", "sim_zh")
 
 
 def is_fused(smiles: str) -> bool:
@@ -47,6 +47,16 @@ def complexity(smiles: str) -> float:
         return 0.0
 
 
+def heavy_atoms(smiles: str) -> int:
+    """重原子数(不含氢); SMILES 无法解析时记 0。"""
+    from rdkit import Chem
+
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return 0
+    return int(mol.GetNumHeavyAtoms())
+
+
 def _normalized(name: str, lang: str) -> str:
     """按 benchmark 判分口径归一: EN 小写/统一连字符, ZH 统一括号种类。"""
     from namepredict.constants import normalize_en, normalize_zh
@@ -73,6 +83,7 @@ def row_derived(smiles: str, pred_en: str, pred_zh: str, gold_en: str, gold_zh: 
     return {
         "fused": is_fused(smiles),
         "cx": complexity(smiles),
+        "hac": heavy_atoms(smiles),
         "sim_en": similarity(pred_en, gold_en, "en"),
         "sim_zh": similarity(pred_zh, gold_zh, "zh"),
     }

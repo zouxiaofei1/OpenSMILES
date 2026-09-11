@@ -244,6 +244,11 @@
             <option value="sim_zh-asc">ZH 相似度 低→高</option>
             <option value="sim_zh-desc">ZH 相似度 高→低</option>
           </select>
+          <label class="bm-hac" id="bm-hac" title="按重原子数(不含氢)筛选，只显示区间内的行">
+            <span class="bm-hac-head">重原子 <b id="bm-hac-lo-v">0</b>–<b id="bm-hac-hi-v">0</b></span>
+            <input id="bm-hac-lo" type="range" min="0" max="0" step="1" value="0" />
+            <input id="bm-hac-hi" type="range" min="0" max="0" step="1" value="0" />
+          </label>
           <select id="bm-pageSize" class="input bm-select">
             <option value="50">每页 50</option>
             <option value="100" selected>每页 100</option>
