@@ -65,20 +65,11 @@ def _init_worker() -> None:
     _WORKER_NAMER = SMILESNNamer()
 
 
-def _fused(smi: str) -> bool:
-    """是否含稠合环系: 至少两个环共享 ≥2 原子(P-25.3.3 稠环范畴)。"""
-    from rdkit import Chem
+def _derived(smi: str, pe: str, pz: str, ge: str, gz: str) -> dict[str, Any]:
+    """稠环 / 复杂度 / 中英相似度; 与 server 的旧缓存补算共用同一实现。"""
+    from benchmarks.preview_metrics import row_derived
 
-    mol = Chem.MolFromSmiles(smi)
-    if mol is None:
-        return False
-    rings = mol.GetRingInfo().AtomRings()
-    for i in range(len(rings)):
-        ri = set(rings[i])
-        for j in range(i + 1, len(rings)):
-            if len(ri & set(rings[j])) >= 2:
-                return True
-    return False
+    return row_derived(smi, pe, pz, ge, gz)
 
 
 def _score(pe: str, pz: str, row: dict[str, Any]) -> dict[str, Any]:
@@ -117,6 +108,8 @@ def _process_row(row: dict[str, Any]) -> dict[str, Any]:
     restores the same per-row determinism benchmark_parallel relies on.
     """
     smi = str(row.get("smiles") or "")
+    ge = str(row.get("english_name") or "")
+    gz = str(row.get("chinese_name") or "")
     try:
         _WORKER_NAMER.cache.clear()
         result = _WORKER_NAMER.name(smi)
@@ -127,22 +120,24 @@ def _process_row(row: dict[str, Any]) -> dict[str, Any]:
         "s": smi,
         "en": pe,
         "zh": pz,
-        "ge": str(row.get("english_name") or ""),
-        "gz": str(row.get("chinese_name") or ""),
-        "fused": _fused(smi),
+        "ge": ge,
+        "gz": gz,
+        **_derived(smi, pe, pz, ge, gz),
         **_score(pe, pz, row),
     }
 
 
 def _empty_payload(row: dict[str, Any]) -> dict[str, Any]:
     smi = str(row.get("smiles") or "")
+    ge = str(row.get("english_name") or "")
+    gz = str(row.get("chinese_name") or "")
     return {
         "s": smi,
         "en": "",
         "zh": "",
-        "ge": str(row.get("english_name") or ""),
-        "gz": str(row.get("chinese_name") or ""),
-        "fused": _fused(smi),
+        "ge": ge,
+        "gz": gz,
+        **_derived(smi, "", "", ge, gz),
         **_score("", "", row),
     }
 

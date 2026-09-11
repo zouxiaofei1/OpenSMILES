@@ -20,6 +20,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
+from benchmarks import preview_metrics as metrics
 from server import history_store
 
 router = APIRouter(prefix="/api/v1", tags=["benchmark"])
@@ -87,40 +88,25 @@ def _read_cache(cache: Path) -> list[dict]:
         return []
 
 
-def _is_fused(smiles: str) -> bool:
-    """是否含稠合环系: 至少两个环共享 ≥2 原子(P-25.3.3 稠环范畴)。"""
-    from rdkit import Chem
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False
-    rings = mol.GetRingInfo().AtomRings()
-    for i in range(len(rings)):
-        ri = set(rings[i])
-        for j in range(i + 1, len(rings)):
-            if len(ri & set(rings[j])) >= 2:
-                return True
-    return False
+def _ensure_derived(rows: list[dict], cache: Path) -> list[dict]:
+    """为旧缓存 rows 补算派生字段(稠环/复杂度/相似度)并写回, 避免整体重新生成。
 
-
-def _ensure_fused(rows: list[dict], cache: Path) -> list[dict]:
-    """为旧缓存 rows 补算 fused 字段并写回, 避免整体重新生成。
-
-    仅当 rows 完整(非生成中)且缺 fused 字段时调用; 判定 ~1.2s/4k 行,
+    仅当 rows 完整(非生成中)且缺字段时调用; ~5s/4k 行(多数花在 BertzCT 上),
     写回后后续请求直接命中。"""
-    if not rows or "fused" in rows[0]:
+    if metrics.has_derived(rows):
         return rows
-    fused_rows = []
+    out_rows = []
     for r in rows:
         out = dict(r)
-        out["fused"] = _is_fused(str(out.get("s") or ""))
-        fused_rows.append(out)
+        out.update(metrics.row_derived_of(out))
+        out_rows.append(out)
     try:
         tmp = cache.with_suffix(".tmp")
-        tmp.write_text(json.dumps(fused_rows, ensure_ascii=False), encoding="utf-8")
+        tmp.write_text(json.dumps(out_rows, ensure_ascii=False), encoding="utf-8")
         tmp.replace(cache)
     except OSError:
         pass  # 写回失败不影响本次返回
-    return fused_rows
+    return out_rows
 
 
 def _source_total(source: Path) -> int:
@@ -154,9 +140,9 @@ def _hist_rows(full: str, data_file: str) -> list[dict]:
 
 def _hist_benchmark_preview(full: str, data_file: str) -> dict[str, Any]:
     rows = _hist_rows(full, data_file)
-    # 历史缓存可能缺 fused 字段: 内存补算(不改写历史缓存)以支持稠环过滤。
-    if rows and "fused" not in rows[0]:
-        rows = [dict(r, fused=_is_fused(str(r.get("s") or ""))) for r in rows]
+    # 历史缓存可能缺派生字段: 内存补算(不改写历史缓存), 供稠环过滤与相似度排序。
+    if not metrics.has_derived(rows):
+        rows = [dict(r, **metrics.row_derived_of(r)) for r in rows]
     src_total = _source_total(_resolve_source(data_file))
     job = history_store.get_job(full, _hist_kind(data_file))
     generating = job is not None and job.proc is not None and job.proc.poll() is None
@@ -217,9 +203,9 @@ def get_benchmark_preview(commit: str | None = None, data_file: str | None = Non
         rows = _read_cache(cache)
         gen_done = len(rows)
 
-    # 旧缓存补算 fused 字段(一次性写回, 供稠环分类过滤)
+    # 旧缓存补算派生字段(一次性写回, 供稠环过滤/相似度排序/复杂度排序)
     if not generating and rows:
-        rows = _ensure_fused(rows, cache)
+        rows = _ensure_derived(rows, cache)
 
     return {
         "rows": rows,

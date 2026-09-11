@@ -156,6 +156,34 @@ async function refreshBenchmark() {
   }
 }
 
+/* 排序键取值: 相似度缺失(该语言无金标名)返回 NaN, 由排序器放到最后。 */
+function bmSortValue(r, key) {
+  var v = r[key];
+  return typeof v === "number" ? v : NaN;
+}
+
+/* 按 bm-sort 排序 items({r, abs}); 空值=源序, 同值回落到源序保证稳定。 */
+function bmSortItems(items) {
+  var spec = bm$("sort") ? bm$("sort").value : "";
+  if (!spec) return items;
+  var cut = spec.lastIndexOf("-");
+  var key = spec.slice(0, cut);
+  var dir = spec.slice(cut + 1) === "desc" ? -1 : 1;
+  return items.slice().sort(function (a, b) {
+    var va = bmSortValue(a.r, key);
+    var vb = bmSortValue(b.r, key);
+    var na = isNaN(va);
+    var nb = isNaN(vb);
+    if (na || nb) {
+      // 缺失值恒排最后, 不随升降序翻转(升序看最差样本时不该被"无金标"占满首页)
+      if (na && nb) return a.abs - b.abs;
+      return na ? 1 : -1;
+    }
+    if (va === vb) return a.abs - b.abs;
+    return (va - vb) * dir;
+  });
+}
+
 function bmFiltered() {
   var q = (bm$("q") && bm$("q").value || "").trim().toLowerCase();
   var f = bm$("filter") ? bm$("filter").value : "all";
@@ -170,7 +198,27 @@ function bmFiltered() {
     }
     out.push({ r: r, abs: i });
   }
-  return out;
+  return bmSortItems(out);
+}
+
+/* 相似度/复杂度徽标: 预测名 ↔ 正确名的字符级相似度, 无金标名的语言不显示。
+   分级配色与 Namer 页相似度条同色系(高绿 / 中琥珀 / 低红)。 */
+function bmSimHtml(r) {
+  var parts = [];
+  [["EN", r.sim_en], ["ZH", r.sim_zh]].forEach(function (pair) {
+    var v = pair[1];
+    if (typeof v !== "number") return;
+    var pct = Math.max(0, Math.min(100, Math.round(v * 100)));
+    var cls = pct >= 90 ? "bm-sim-hi" : pct >= 70 ? "bm-sim-mid" : "bm-sim-lo";
+    parts.push(
+      '<span class="bm-sim ' + cls + '" title="' + pair[0] + " 相似度 " + pct + '%">' +
+        pair[0] + " " + pct + "%</span>"
+    );
+  });
+  if (typeof r.cx === "number") {
+    parts.push('<span class="bm-cx" title="BertzCT 复杂度">cx ' + Math.round(r.cx) + "</span>");
+  }
+  return parts.length ? '<div class="bm-sims">' + parts.join("") + "</div>" : "";
 }
 
 function bmBadge(r) {
@@ -279,7 +327,8 @@ function renderBenchmark() {
     var goldZh = bmEsc(r.gz);
     html +=
       '<tr class="' + cls + '">' +
-      '<td><span class="bm-idx">#' + (abs + 1) + '</span><span class="bm-smiles">' + bmEsc(r.s) + "</span></td>" +
+      '<td><span class="bm-idx">#' + (abs + 1) + '</span><span class="bm-smiles">' + bmEsc(r.s) + "</span>" +
+      bmSimHtml(r) + "</td>" +
       '<td><div class="bm-name-en">' + predEn + bmBadge(r) + "</div>" +
       (predZh ? '<div class="bm-name-zh">' + predZh + "</div>" : "") + "</td>" +
       '<td><div class="bm-gold-en">' + goldEn + "</div>" +
@@ -313,6 +362,9 @@ export function bindBenchmark() {
   }
   if (bm$("filter")) {
     bm$("filter").addEventListener("change", function () { state.bmPage = 1; renderBenchmark(); });
+  }
+  if (bm$("sort")) {
+    bm$("sort").addEventListener("change", function () { state.bmPage = 1; renderBenchmark(); });
   }
   if (bm$("pageSize")) {
     bm$("pageSize").addEventListener("change", function () { state.bmPage = 1; renderBenchmark(); });

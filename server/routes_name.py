@@ -16,7 +16,7 @@ import httpx
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from namepredict.constants import normalize_en, normalize_zh
+from benchmarks.preview_metrics import similarity
 from server.atom_ids_svg import build_atom_ids_svg
 from server.deps import get_namer, name_result_dict
 from server.locants_svg import build_locants_svg
@@ -133,20 +133,12 @@ def _id_or_text(text: str) -> str:
 GOLD_DIFF_MIN_SIM = 0.70
 
 
-def _normalized(name: str, lang: str) -> str:
-    """按 benchmark 判分口径归一: EN 小写/统一连字符, ZH 统一括号种类。"""
-    return normalize_zh(name) if lang == "zh" else normalize_en(name)
-
-
 def _name_similarity(pred: str, gold: str, lang: str) -> float:
-    """归一化后的字符级相似度 0..1(difflib ratio), 用于判断差异是否值得高亮。"""
-    a = _normalized(pred, lang)
-    b = _normalized(gold, lang)
-    if not a and not b:
-        return 1.0
-    if not a or not b:
-        return 0.0
-    return difflib.SequenceMatcher(None, a, b, autojunk=False).ratio()
+    """归一化后的字符级相似度 0..1, 用于判断差异是否值得高亮。
+
+    与 benchmark 预览页共用同一实现(preview_metrics), 两边百分比一致;
+    gold 非空(调用处已保证)故不会取到 None。"""
+    return similarity(pred, gold, lang) or 0.0
 
 
 def _diff_sides(pred: str, gold: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:

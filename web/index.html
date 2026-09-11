@@ -235,6 +235,15 @@
             <option value="ok">仅 match</option>
             <option value="fail">仅 miss</option>
           </select>
+          <select id="bm-sort" class="input bm-select" title="排序（相似度缺失的行恒排最后）">
+            <option value="">源序</option>
+            <option value="cx-desc">复杂度 高→低</option>
+            <option value="cx-asc">复杂度 低→高</option>
+            <option value="sim_en-asc">EN 相似度 低→高</option>
+            <option value="sim_en-desc">EN 相似度 高→低</option>
+            <option value="sim_zh-asc">ZH 相似度 低→高</option>
+            <option value="sim_zh-desc">ZH 相似度 高→低</option>
+          </select>
           <select id="bm-pageSize" class="input bm-select">
             <option value="50">每页 50</option>
             <option value="100" selected>每页 100</option>

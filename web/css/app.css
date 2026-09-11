@@ -1437,6 +1437,37 @@ select.input {
   font-family: var(--mono);
 }
 
+/* SMILES 栏内的相似度/BertzCT 徽标: 排序与目视都靠它 */
+.bm-sims {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.bm-sim {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* 与 Namer 页相似度条同色系: 高绿 / 中琥珀 / 低红 */
+.bm-sim-hi  { background: rgba(34, 197, 94, 0.15);  color: #86efac; }
+.bm-sim-mid { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+.bm-sim-lo  { background: rgba(239, 68, 68, 0.15);  color: #fecaca; }
+
+.bm-cx {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--color-muted-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
 .bm-name-en { font-weight: 500; color: var(--color-foreground-dim); }
 .bm-name-zh { color: var(--color-muted-text); font-size: 12px; margin-top: 2px; }
 .bm-gold-en { font-weight: 500; color: #c8d8ef; }
