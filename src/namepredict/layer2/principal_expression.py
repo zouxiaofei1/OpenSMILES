@@ -343,6 +343,7 @@ def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
 _MONONUCLEAR_STEM: dict[int, tuple[str, str, str]] = {  # 表 2.1 单核母体氢化物（P-15.4.1）：杂原子锚点自由基的母体 free 名与元素。去氢即标准取代基名（oxidane→hydroxy/oxy、azane→amino、sulfane→sulfanyl）。
     7: ("N", "azane", "氮烷"),
     8: ("O", "oxidane", "氧化烷"),
+    15: ("P", "phosphoryl", "磷酰"),
     16: ("S", "sulfane", "硫烷"),
 }
 
@@ -350,6 +351,11 @@ _SULFUR_STEM_BY_OXO: dict[int, tuple[str, str]] = {  # S 锚点的氧化态词�
     0: ("sulfane", "硫烷"),
     1: ("sulfinyl", "亚磺酰"),
     2: ("sulfonyl", "磺酰"),
+}
+
+_PHOSPHORUS_STEM_BY_OXO: dict[int, tuple[str, str]] = {  # P 锚点的氧化态词干（P-67.1.4.1.1.2 磷酰基 'phosphoryl' –P(O)<；P-67.1.4.1.1.6 亚磷酸 'phosphanyl'）：=O 数必须落进母体名，否则 P(=O) 与膦同形（氧被整段丢弃）。
+    0: ("phosphanyl", "磷烷基"),
+    1: ("phosphoryl", "磷酰"),
 }
 
 _NITROGEN_STEM_BY_FREE_DOUBLE: dict[bool, tuple[str, str]] = {  # N 锚点的自由价键级词干（P-66.1.1 亚胺）：双键即 imine（*N=C→methylideneamino），单键即 azane（*NC→methylamino）。漏掉双键会把亚胺写成胺（净多 2H）。
@@ -399,6 +405,11 @@ def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
             _anchor_oxo_count(mol, anchors[0]), (stem_en, stem_zh))
     elif element == "N":  # 自由价键级并入词干（azane/imine）
         stem_en, stem_zh = _NITROGEN_STEM_BY_FREE_DOUBLE[_anchor_free_double(mol, anchors[0])]
+    elif element == "P":  # 磷的氧化态并入词干（P-67.1.4.1.1.2 磷酰基 / P-67.1.4.1.1.6 磷烷基）
+        pair = _PHOSPHORUS_STEM_BY_OXO.get(_anchor_oxo_count(mol, anchors[0]))
+        if pair is None:  # 非 0/1 个 =O（如二氧代磷烷）无对应酰基词干，明确失败
+            return None
+        stem_en, stem_zh = pair
     new = replace(skeleton, atom_ids=(anchors[0],))
     return new, {"radical_anchor_element": element,
                  "stem_en": stem_en, "stem_zh": stem_zh}

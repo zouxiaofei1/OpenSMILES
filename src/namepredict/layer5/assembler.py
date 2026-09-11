@@ -132,7 +132,93 @@ _MONONUCLEAR_ZERO_YL = {
     ("sulfinyl", "亚磺酰"): ("sulfinyl", "亚磺酰基"),
     ("sulfonyl", "磺酰"): ("sulfonyl", "磺酰基"),
     ("imine", "亚胺"): ("imino", "亚氨基"),
+    ("phosphoryl", "磷酰"): ("phosphoryl", "磷酰基"),
+    ("phosphanyl", "磷烷基"): ("phosphanyl", "磷烷基"),
 }
+
+_PHOSPHORYL_STEMS = ("phosphoryl", "phosphanyl")  # P-67.1.4.1.1.2/6 的 P 酰基词干（替代碳的 methyl 等词干，避免 P 被当碳中心）
+_PHOSPHORYL_BRIDGE = {  # P-67.1.4.1.3 复合前缀：桥原子词干 → (桥后缀 en, 桥后缀 zh)，P 酰基复合前缀整体加方括号后再接桥后缀（[hydroxy(methoxy)phosphoryl]oxy）。
+    ("oxidane", "氧化烷"): ("oxy", "氧基"),
+    ("azane", "氮烷"): ("amino", "氨基"),
+    ("sulfane", "硫烷"): ("sulfanyl", "硫基"),
+}
+
+
+_BRIDGE_YL_SUFFIX = (("yloxy", "oxy"), ("ylsulfanyl", "sulfanyl"), ("ylamino", "amino"))  # -yl 型桥基：方括号闭在 -yl 后、桥后缀放括号外（[(2R)环己基]氧基）
+_BRIDGE_ZH_YL_SUFFIX = (("基氧基", "氧基"), ("基硫基", "硫基"), ("基氨基", "氨基"))
+
+
+def _bracket_bridge_suffix(en: str, zh: str) -> tuple[str, str]:
+    """复合组分加方括号；-yl 型烷氧/硫基把桥后缀挪到括号外（[(2R,…)环己基]氧基，P-16.5.2 嵌套标记）。"""
+    for yl_suf, bridge in _BRIDGE_YL_SUFFIX:
+        if en.endswith(yl_suf):
+            en = f"[{en[: -len(bridge)]}]{bridge}"
+            break
+    else:
+        en = f"[{en}]"
+    for yl_suf, bridge in _BRIDGE_ZH_YL_SUFFIX:
+        if zh.endswith(yl_suf):
+            zh = f"[{zh[: -len(bridge)]}]{bridge}"
+            break
+    else:
+        zh = f"[{zh}]"
+    return en, zh
+
+
+def _oxido_arm(s: dict, mol) -> tuple[str, str] | None:
+    """P 上氧负离子臂（–O⁻）的取代基名 oxido/氧化（P-72.6.2；表 4-2「羟基(氧负离子基)膦酰基 hydroxyoxidophosphoryl」），非阴离子单氧臂返回 None。"""
+    atoms = s.get("atoms") or []
+    if mol is None or len(atoms) != 1:
+        return None
+    a = mol.GetAtomWithIdx(int(atoms[0]))
+    if a.GetAtomicNum() == 8 and a.GetFormalCharge() == -1:
+        return ("oxido", "氧化")
+    return None
+
+
+def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None) -> tuple[str, str] | None:
+    """P 酰基前缀的取代基拼接（P-67.1.4.1.1.5）：取代基按字母序接到 phosphoryl；全为简单基时首基平铺、其余括起（hydroxy(methyl)phosphoryl），同基倍增用 di-/tri-（dimethoxyphosphoryl）；含复合组分时逐组分以连字符分隔、需围栏者加方括号（P-16.5.2 嵌套标记）。"""
+    from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+
+    groups: dict[str, list] = {}
+    for s in subs:
+        en, zh = (s.get("en") or "").strip(), (s.get("zh") or "").strip()
+        if not en or not zh:
+            return None
+        oxido = _oxido_arm(s, mol)
+        if oxido is not None:  # 酸式 H 已被夺去的 O⁻ 臂：hydroxy → oxido
+            en, zh = oxido
+        row = groups.setdefault(en, [en, zh, 0])
+        row[2] += 1
+    rows = sorted(groups.values(), key=lambda t: alkyl_alpha_key(t[0]))
+    if len(rows) == 1 and rows[0][2] > 1:  # 同基倍增：dimethoxyphosphoryl（P-16.3.2 简单基用 di-，不逐基加括号）
+        en, zh, m = rows[0]
+        m_en, m_zh = MULT_EN.get(m), MULT_ZH.get(m)
+        if not m_en or not m_zh:
+            return None
+        return f"{m_en}{en}{stem_en}", f"{m_zh}{zh}{stem_zh}基"
+    compound = any("(" in en or "[" in en for en, _, _ in rows)  # 存在自身带括号/方括号的复合组分：改逐组分连字符分隔 + 方括号围栏（P-16.5.2 嵌套），否则按简单组分平铺/括号
+    en_parts: list[str] = []
+    zh_parts: list[str] = []
+    for i, (en, zh, m) in enumerate(rows):
+        if m > 1:
+            m_en, m_zh = MULT_EN.get(m), MULT_ZH.get(m)
+            if not m_en or not m_zh:
+                return None
+            en, zh = f"{m_en}{en}", f"{m_zh}{zh}"
+        if not compound:  # 简单组分：首基平铺、其余括起
+            en_parts.append(en if i == 0 else f"({en})")
+            zh_parts.append(zh if i == 0 else f"({zh})")
+            continue
+        en_need = "(" in en and (i > 0 or en.startswith("("))  # 首组分仅在前导括号（立体描述符）时才须围栏；后续组分带括号即围栏
+        zh_need = "(" in zh and (i > 0 or zh.startswith("("))
+        if en_need or zh_need:
+            br_en, br_zh = _bracket_bridge_suffix(en, zh)
+            en, zh = (br_en if en_need else en), (br_zh if zh_need else zh)
+        en_parts.append(en)
+        zh_parts.append(zh if i == 0 else ("-" if zh.startswith("[") else "") + zh)
+    joiner = "-" if compound else ""
+    return joiner.join(en_parts) + stem_en, "".join(zh_parts) + stem_zh + "基"
 
 
 def _azane_acyl_stereo_lead(en: str) -> bool:
@@ -176,6 +262,9 @@ def _retained_alkoxy(en: str, zh: str) -> tuple[str, str]:
 
 def _bridge_enclosed_names(a: dict, stem_en: str, stem_zh: str) -> tuple[str, str] | None:
     """S 桥前端为复合取代基时加围栏：EN (4-methoxyphenyl)sulfonyl、ZH (4-甲氧基苯基)磺酰基；非 S 桥或前端为简单取代基（propan-2-yl）返回 None 走平铺融合。"""
+    bridge = _PHOSPHORYL_BRIDGE.get((stem_en, stem_zh))  # P-67.1.4.1.3 复合前缀：P 酰基经 O/N/S 桥连母体，整体加方括号后接桥后缀
+    if bridge is not None and any((a.get("en") or "").endswith(s) for s in _PHOSPHORYL_STEMS):
+        return f"[{a['en']}]{bridge[0]}", f"[{a['zh']}]{bridge[1]}"
     if stem_en not in ("sulfinyl", "sulfonyl") or not a.get("paren"):
         return None
     if _SIMPLE_CHAIN_YL_RE.match(a.get("en") or ""):  # 直链 -yl 前端与桥融合：propan-2-ylsulfonyl（非 (propan-2-yl)sulfonyl）
@@ -197,15 +286,18 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     if not stem_en or not stem_zh:
         return None
     subs = [s for s in (numbered.get("substituents") or []) if s.get("en") and s.get("zh")]
-    if len(subs) == 0:
+    if not subs:
         return _MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
+    if stem_en in _PHOSPHORYL_STEMS:  # P-67.1.4.1.1.5：P 酰基前缀按取代基拼接，取代基可 1–3 个（hydroxy(methoxy)phosphoryl）
+        return _phosphoryl_sub_names(subs, stem_en, stem_zh, parent.get("mol"))
     if len(subs) == 1:
         a = subs[0]
         if stem_en == "sulfonyl" and a["en"].endswith("amino") and a["zh"].endswith("氨基"):  # P-66.1.1.4.2 + Glossary：(phenylamino)sulfonyl = phenylsulfamoyl*；N-取代基与 sulfamoyl 融合（丁基(甲基)sulfamoyl），不走 amino 围栏
             return a["en"][: -len("amino")] + "sulfamoyl", a["zh"] + "磺酰基"
         bridge = _bridge_enclosed_names(a, stem_en, stem_zh)  # 围栏在 L3 一次定形，中英文同步产出，L5 前缀渲染不再二次拆分
         if bridge is not None:
-            numbered["bridge_self_enclosed"] = True  # 名下已自带围栏，转取代基前缀时不再整体加括号
+            if (stem_en, stem_zh) != ("azane", "氮烷"):  # N 桥复合前缀（…phosphoryl]amino）作取代基时仍须 L5 整体围栏（P-16.5.2 嵌套），O/S 桥名下自带围栏不再加
+                numbered["bridge_self_enclosed"] = True
             return bridge
         if stem_en == "azane":
             amido = AMIDO_RETAINED.get(a.get("en") or "")  # P-66.1.1.4.3 方法 1：单 N-酰基（乙酰/甲酰/苯甲酰）残基收成 amido 保留式（acetamido…），不走 free_to_yl 的 acylamino 系统式；其余 R 保持方法 2。
