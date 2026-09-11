@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import difflib
 import json
 import threading
 from collections import OrderedDict
@@ -15,6 +16,7 @@ import httpx
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
+from namepredict.constants import normalize_en, normalize_zh
 from server.atom_ids_svg import build_atom_ids_svg
 from server.deps import get_namer, name_result_dict
 from server.locants_svg import build_locants_svg
@@ -123,6 +125,79 @@ def _id_or_text(text: str) -> str:
     if rec and rec["smiles"]:
         return rec["smiles"]
     return text
+
+
+# ── 引擎名 ↔ 基准名 差异(Namer 页 gold 卡的并排高亮)──────────────────────────
+# 相似度阈值: 归一化后引擎名与基准名达到该相似度才高亮差异。命得基本对时差异
+# 才是可看的细节(如 (furan-3-yl) 少一层括号); 错得离谱时整名标红没有信息量。
+GOLD_DIFF_MIN_SIM = 0.70
+
+
+def _normalized(name: str, lang: str) -> str:
+    """按 benchmark 判分口径归一: EN 小写/统一连字符, ZH 统一括号种类。"""
+    return normalize_zh(name) if lang == "zh" else normalize_en(name)
+
+
+def _name_similarity(pred: str, gold: str, lang: str) -> float:
+    """归一化后的字符级相似度 0..1(difflib ratio), 用于判断差异是否值得高亮。"""
+    a = _normalized(pred, lang)
+    b = _normalized(gold, lang)
+    if not a and not b:
+        return 1.0
+    if not a or not b:
+        return 0.0
+    return difflib.SequenceMatcher(None, a, b, autojunk=False).ratio()
+
+
+def _diff_sides(pred: str, gold: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """逐字符 diff → (引擎侧片段, gold 侧片段), 片段形如 {"t": 文本, "same": bool}。
+
+    在原始串(未归一)上比对, 前端高亮的就是名称原貌; 相邻同类片段合并以减少 DOM 节点。
+    """
+    left: list[dict[str, Any]] = []
+    right: list[dict[str, Any]] = []
+
+    def push(acc: list[dict[str, Any]], text: str, same: bool) -> None:
+        if not text:
+            return
+        if acc and acc[-1]["same"] == same:
+            acc[-1]["t"] += text
+        else:
+            acc.append({"t": text, "same": same})
+
+    matcher = difflib.SequenceMatcher(None, pred, gold, autojunk=False)
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        same = tag == "equal"
+        push(left, pred[i1:i2], same)
+        push(right, gold[j1:j2], same)
+    return left, right
+
+
+def build_gold_diff(
+    pred_en: str, pred_zh: str, gold: dict[str, Any] | None
+) -> dict[str, Any] | None:
+    """引擎名 ↔ 基准名 的相似度与逐字符差异; 无 gold 返回 None。
+
+    每种语言各给 {similarity, show, pred, gold}: show 由相似度是否 ≥ 阈值决定,
+    前端据此只在"命得基本对"时高亮细节。gold 缺该语言名称则跳过该语言。
+    """
+    if not gold:
+        return None
+    out: dict[str, Any] = {}
+    for lang, pred in (("en", pred_en), ("zh", pred_zh)):
+        ref = (gold.get(lang) or "").strip()
+        if not ref:
+            continue
+        pred = (pred or "").strip()
+        sim = _name_similarity(pred, ref, lang)
+        left, right = _diff_sides(pred, ref)
+        out[lang] = {
+            "similarity": round(sim, 4),
+            "show": sim >= GOLD_DIFF_MIN_SIM,
+            "pred": left,
+            "gold": right,
+        }
+    return out or None
 
 
 # ── PubChem 查询: PUG-REST property/IUPACName（PubChem 页 2.1.1 IUPAC Name）──────
@@ -279,7 +354,14 @@ def name_smiles(body: NameBody) -> dict[str, Any]:
     else:  # v2 / v3 历史规则引擎
         payload = legacy_name_result(smi, body.engine)
     payload["engine"] = body.engine
-    payload["gold"] = lookup_gold(smi)
+    gold = lookup_gold(smi)
+    payload["gold"] = gold
+    # 命名成功才谈得上差异; 失败时前端本就隐藏 gold 卡, 无需白算一遍 diff。
+    payload["gold_diff"] = (
+        build_gold_diff(payload.get("en") or "", payload.get("zh") or "", gold)
+        if gold and payload.get("success")
+        else None
+    )
     return payload
 
 

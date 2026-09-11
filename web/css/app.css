@@ -1073,6 +1073,63 @@ select.input {
   font-size: 12px;
 }
 
+/* ── 基准名差异: 命中 merged_benchmark 且相似度达阈值时, EN/ZH 与 GOLD EN/ZH
+      各自行内标出不一致的字符(引擎名 ↔ 基准名) ── */
+.gold-diff-mark {
+  padding: 0 2px;
+  border-radius: 3px;
+  /* amber(提示)而非 accent(绿=正确), 避免与成功语义混淆 */
+  background: rgba(245, 158, 11, 0.18);
+  color: var(--color-amber-soft);
+}
+
+/* ── 相似度条(0-100): 引擎名 ↔ 基准名, 按语言各一条 ── */
+.namer-gold-head {
+  /* 标题 + tier + source + 条可能超出单行, 允许换行而不是溢出 */
+  flex-wrap: wrap;
+}
+
+.gold-sims {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-left: auto;
+}
+
+.gold-sim {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gold-sim-lang {
+  font-size: 10px;
+  color: var(--color-muted-text-dim);
+  text-transform: uppercase;
+}
+
+.gold-sim-track {
+  width: 56px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+/* 与 .gold-diff-mark 同色系: 条与行内高亮说的是同一件事 */
+.gold-sim-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-amber);
+}
+
+.gold-sim-pct {
+  font-size: 10px;
+  color: var(--color-muted-text);
+  font-variant-numeric: tabular-nums;
+}
+
 .namer-svg-block {
   display: flex;
   flex-direction: column;

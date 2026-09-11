@@ -2997,7 +2997,7 @@
    "en_match": true
   },
   "*N=C(O)CCCCCCCCCCCCCCCCC": {
-   "en": "octadecoxy",
+   "en": "octadecyloxy",
    "zh": "十八氧基",
    "kind": "alkyl",
    "n_carbons": 18,
@@ -3777,13 +3777,13 @@
    "en_match": true
   },
   "*[C@H](COCCCCCCCCCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C": {
-   "en": "3-[1-[[(methylamino)methan-1-yl]methan-1-yl]ethan-2-yl]-1-docosoxypropan-2-yl",
+   "en": "3-[1-[[(methylamino)methan-1-yl]methan-1-yl]ethan-2-yl]-1-docosyloxypropan-2-yl",
    "zh": "3-[1-[[(甲氨基)甲烷-1-基]甲烷-1-基]乙烷-2-基]-1-二十二氧基丙-2-基",
    "kind": "alkoxy",
    "n_carbons": 30,
    "source": "CCCCC/C=C\\C/C=C\\C/C=C\\CCCCCCCCC(=O)O[C@H](COCCCCCCCCCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C",
    "verify_success": true,
-   "verify_en": "1-docosoxypropan-2-yl",
+   "verify_en": "1-docosyloxypropan-2-yl",
    "en_match": false
   },
   "*[C@H]1C[C@H](O)[C@@H](COP(=O)(O)OP(=O)(O)OP(=O)(O)O)O1": {
@@ -3947,7 +3947,7 @@
    "en_match": true
   },
   "*SCCC(S)CCCCC(=N)O": {
-   "en": "6,8-disulfanyloctoxy",
+   "en": "6,8-disulfanyloctyloxy",
    "zh": "6,8-二硫烷基辛氧基",
    "kind": "alkyl",
    "n_carbons": 8,
@@ -4127,7 +4127,7 @@
    "en_match": false
   },
   "*N=C(O)CCCCCCCCCCCCCCCCCCCCCCC": {
-   "en": "tetracosoxy",
+   "en": "tetracosyloxy",
    "zh": "二十四氧基",
    "kind": "alkyl",
    "n_carbons": 24,
@@ -4737,7 +4737,7 @@
    "en_match": false
   },
   "*N[C@@H](CCCCN)C(O)=N[C@H](C)C([O-])=N[C@H](C)C(=O)O": {
-   "en": "(2R)-2-(2S)-1-[(2R)-propan-2-amin-1-yl]-2,6-diaminohexoxypropanoic acid-1-yl",
+   "en": "(2R)-2-(2S)-1-[(2R)-propan-2-amin-1-yl]-2,6-diaminohexyloxypropanoic acid-1-yl",
    "zh": "(2R)-2-(2S)-1-[(2R)-丙-2-胺-1-基]-2,6-二氨基己氧基丙酸-1-基",
    "kind": "alkyl",
    "n_carbons": 12,
@@ -5157,7 +5157,7 @@
    "en_match": true
   },
   "*C[C@@H](O)COP(=O)(O)OCCN=C(O)CCCCCCCCCCCCCCC": {
-   "en": "3-hexadecoxy-2-hydroxypropan-1-yl",
+   "en": "3-hexadecyloxy-2-hydroxypropan-1-yl",
    "zh": "3-十六氧基-2-羟基丙-1-基",
    "kind": "alkoxy",
    "n_carbons": 21,
@@ -5247,13 +5247,13 @@
    "en_match": false
   },
   "*C[C@@H](COCCCCCCCCCCCCCCCC)OC(C)=O": {
-   "en": "2-(acetic acid-2-yl)-3-hexadecoxypropan-1-yl",
+   "en": "2-(acetic acid-2-yl)-3-hexadecyloxypropan-1-yl",
    "zh": "2-(乙酸-2-基)-3-十六氧基丙-1-基",
    "kind": "alkoxy",
    "n_carbons": 21,
    "source": "CCCCCCCCCCCCCCCCOC[C@H](COC(=O)CCCCCCC)OC(C)=O",
    "verify_success": true,
-   "verify_en": "2-(acetic acid-1-yl)-3-hexadecoxypropan-1-yl",
+   "verify_en": "2-(acetic acid-1-yl)-3-hexadecyloxypropan-1-yl",
    "en_match": false
   },
   "*C[C@@H](COC(=O)CCCCCCCCCCCCC)OC(=O)CCCCCCCCCCCCCCC": {
@@ -5467,7 +5467,7 @@
    "en_match": false
   },
   "*N=C(O)CCCCCCCCCCCCCCCCCCCCC": {
-   "en": "docosoxy",
+   "en": "docosyloxy",
    "zh": "二十二氧基",
    "kind": "alkyl",
    "n_carbons": 22,
@@ -5607,7 +5607,7 @@
    "en_match": false
   },
   "*N=C(O)CCCCCCCCCCCCC": {
-   "en": "tetradecoxy",
+   "en": "tetradecyloxy",
    "zh": "十四氧基",
    "kind": "alkyl",
    "n_carbons": 14,
@@ -5747,7 +5747,7 @@
    "en_match": false
   },
   "*N=C(O)[C@H](N)[C@H](C)CCN": {
-   "en": "(2R,3R)-2,5-diamino-3-methylpentoxy",
+   "en": "(2R,3R)-2,5-diamino-3-methylpentyloxy",
    "zh": "(2R,3R)-2,5-二氨基-3-甲基戊氧基",
    "kind": "alkyl",
    "n_carbons": 6,
@@ -5807,7 +5807,7 @@
    "en_match": true
   },
   "*N=C(O)CCCCCCC": {
-   "en": "octoxy",
+   "en": "octyloxy",
    "zh": "辛氧基",
    "kind": "alkyl",
    "n_carbons": 8,
@@ -6007,7 +6007,7 @@
    "en_match": false
   },
   "*N=C(O)CCCCCCCCCCCCCCCCCCC": {
-   "en": "icosoxy",
+   "en": "icosyloxy",
    "zh": "二十氧基",
    "kind": "alkyl",
    "n_carbons": 20,
@@ -6177,13 +6177,13 @@
    "en_match": false
   },
   "*[C@H](COCCCCCCCCCCCCCCCC)COP(=O)(O)OCCN": {
-   "en": "1-hexadecoxypropan-2-yl",
+   "en": "1-hexadecyloxypropan-2-yl",
    "zh": "1-十六氧基丙-2-基",
    "kind": "alkoxy",
    "n_carbons": 21,
    "source": "CCCCCCCCCCCCCCCCOC[C@H](COP(=O)(O)OCCN)OC(C)=O",
    "verify_success": true,
-   "verify_en": "1-hexadecoxypropan-2-yl",
+   "verify_en": "1-hexadecyloxypropan-2-yl",
    "en_match": true
   },
   "*N(C)CCc1cccc(OC)c1": {
@@ -6367,13 +6367,13 @@
    "en_match": true
   },
   "*[C@H](COCCCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C": {
-   "en": "3-[1-[[(methylamino)methan-1-yl]methan-1-yl]ethan-2-yl]-1-hexadecoxypropan-2-yl",
+   "en": "3-[1-[[(methylamino)methan-1-yl]methan-1-yl]ethan-2-yl]-1-hexadecyloxypropan-2-yl",
    "zh": "3-[1-[[(甲氨基)甲烷-1-基]甲烷-1-基]乙烷-2-基]-1-十六氧基丙-2-基",
    "kind": "alkoxy",
    "n_carbons": 24,
    "source": "CCCCC/C=C\\C/C=C\\CCCCCCCCCC(=O)O[C@H](COCCCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C",
    "verify_success": true,
-   "verify_en": "1-hexadecoxypropan-2-yl",
+   "verify_en": "1-hexadecyloxypropan-2-yl",
    "en_match": false
   },
   "*Oc1c(OC)cc(C2OCC3C(c4cc(OC)c(O)c(OC)c4)OCC23)cc1OC": {
@@ -6657,7 +6657,7 @@
    "en_match": false
   },
   "*OCCCCCCCCCCCCCCCC": {
-   "en": "hexadecoxy",
+   "en": "hexadecyloxy",
    "zh": "十六氧基",
    "kind": "alkyl",
    "n_carbons": 16,
@@ -7197,13 +7197,13 @@
    "en_match": false
   },
   "*C(=CSC)c1ccccc1OCCCCC": {
-   "en": "2-methylsulfanyl-1-(2-pentoxyphenyl)eth-1-en-1-yl",
+   "en": "2-methylsulfanyl-1-(2-pentyloxyphenyl)eth-1-en-1-yl",
    "zh": "2-甲硫基-1-(2-戊氧基苯基)乙-1-烯-1-基",
    "kind": "side",
    "n_carbons": 14,
    "source": "CCCCCOc1ccccc1/C(=C\\SC)n1ccnc1.Cl",
    "verify_success": true,
-   "verify_en": "2-methylsulfanyl-1-(2-pentoxyphenyl)eth-1-en-1-yl",
+   "verify_en": "2-methylsulfanyl-1-(2-pentyloxyphenyl)eth-1-en-1-yl",
    "en_match": true
   },
   "*CC=Cc1ccc(O)c(OC)c1": {
@@ -7707,7 +7707,7 @@
    "en_match": false
   },
   "*N=C(O)CCCCCCCCCCCC": {
-   "en": "tridecoxy",
+   "en": "tridecyloxy",
    "zh": "十三氧基",
    "kind": "alkyl",
    "n_carbons": 13,
@@ -8057,7 +8057,7 @@
    "en_match": false
   },
   "*N=C(O)[C@@H](N)[C@@H](C)CC": {
-   "en": "(2S,3S)-2-amino-3-methylpentoxy",
+   "en": "(2S,3S)-2-amino-3-methylpentyloxy",
    "zh": "(2S,3S)-2-氨基-3-甲基戊氧基",
    "kind": "alkyl",
    "n_carbons": 6,
@@ -9057,7 +9057,7 @@
    "en_match": true
   },
   "*N=C(O)[C@H](CC(C)C)N=C(O)[C@@H](N)CO": {
-   "en": "(2S)-1-(2S)-2-amino-4-methylpentoxy-2-aminopropane-1,3-diol-3-yl",
+   "en": "(2S)-1-(2S)-2-amino-4-methylpentyloxy-2-aminopropane-1,3-diol-3-yl",
    "zh": "(2S)-1-(2S)-2-氨基-4-甲基戊氧基-2-氨基丙烷-1,3-二醇-3-基",
    "kind": "alkyl",
    "n_carbons": 9,
@@ -9317,7 +9317,7 @@
    "en_match": true
   },
   "*N=C(O)CCCCCCCCCCCCCCC": {
-   "en": "hexadecoxy",
+   "en": "hexadecyloxy",
    "zh": "十六氧基",
    "kind": "alkyl",
    "n_carbons": 16,
@@ -9467,7 +9467,7 @@
    "en_match": true
   },
   "*OCCCCCCCCCCCCCCCCCC": {
-   "en": "octadecoxy",
+   "en": "octadecyloxy",
    "zh": "十八氧基",
    "kind": "alkyl",
    "n_carbons": 18,
@@ -10007,7 +10007,7 @@
    "en_match": false
   },
   "*N=C(O)CCCCCCCCCCCCCCCCCCCC": {
-   "en": "henicosoxy",
+   "en": "henicosyloxy",
    "zh": "二十一氧基",
    "kind": "alkyl",
    "n_carbons": 21,
@@ -10257,7 +10257,7 @@
    "en_match": false
   },
   "*OP(=O)(O)OC[C@H](N=C(O)CCCCCCCCCCCCCCCCCCCCCCC)[C@H](O)C(O)CCCCCCCCCCCCCCCC": {
-   "en": "(2S,3S)-2-tetracosoxyicosane-3,4-diol-20-yl",
+   "en": "(2S,3S)-2-tetracosyloxyicosane-3,4-diol-20-yl",
    "zh": "(2S,3S)-2-二十四氧基二十烷-3,4-二醇-20-基",
    "kind": "alkyl",
    "n_carbons": 44,
@@ -10277,7 +10277,7 @@
    "en_match": false
   },
   "*N=C(O)[C@@H](N)CC(C)C": {
-   "en": "(2S)-2-amino-4-methylpentoxy",
+   "en": "(2S)-2-amino-4-methylpentyloxy",
    "zh": "(2S)-2-氨基-4-甲基戊氧基",
    "kind": "alkyl",
    "n_carbons": 6,
@@ -10507,13 +10507,13 @@
    "en_match": true
   },
   "*N=C(O)[C@@H](N=C(O)[C@@H](N)CC(C)C)C(C)C": {
-   "en": "(2S)-2-amino-4-methylpentoxy",
+   "en": "(2S)-2-amino-4-methylpentyloxy",
    "zh": "(2S)-2-氨基-4-甲基戊氧基",
    "kind": "alkyl",
    "n_carbons": 11,
    "source": "CC(C)C[C@H](N)C(O)=N[C@H](C(O)=N[C@@H](CC(=O)O)C(=O)O)C(C)C",
    "verify_success": true,
-   "verify_en": "3-(2S)-2-amino-4-methylpentoxy-2-hydroxy-4-methylpentan-1-yl",
+   "verify_en": "3-(2S)-2-amino-4-methylpentyloxy-2-hydroxy-4-methylpentan-1-yl",
    "en_match": false
   },
   "*C[C@H](O)COP(=O)([O-])OC[C@@H](O)COC(=O)CCCCCCCC=CCCCCCCCC": {
@@ -11077,13 +11077,13 @@
    "en_match": true
   },
   "*c1ccccc1OCCCCCC": {
-   "en": "2-hexoxyphenyl",
+   "en": "2-hexyloxyphenyl",
    "zh": "2-己氧基苯基",
    "kind": "alkyl",
    "n_carbons": 12,
    "source": "CCCCCCOc1ccccc1C(=N)O",
    "verify_success": true,
-   "verify_en": "2-hexoxyphenyl",
+   "verify_en": "2-hexyloxyphenyl",
    "en_match": true
   },
   "*SCc1cc2nc(-c3ccc(N=Nc4ccc(-c5nc6cc(CSC(N(C)C)=[N+](C)C)c(C)cc6s5)cc4)cc3)sc2cc1C": {
@@ -11507,13 +11507,13 @@
    "en_match": true
   },
   "*[C@H](COCCCCCCCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C": {
-   "en": "3-[1-[[(methylamino)methan-1-yl]methan-1-yl]ethan-2-yl]-1-icosoxypropan-2-yl",
+   "en": "3-[1-[[(methylamino)methan-1-yl]methan-1-yl]ethan-2-yl]-1-icosyloxypropan-2-yl",
    "zh": "3-[1-[[(甲氨基)甲烷-1-基]甲烷-1-基]乙烷-2-基]-1-二十氧基丙-2-基",
    "kind": "alkoxy",
    "n_carbons": 28,
    "source": "CCCCC/C=C\\C/C=C\\CCCCCCCCCCCC(=O)O[C@H](COCCCCCCCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C",
    "verify_success": true,
-   "verify_en": "1-icosoxypropan-2-yl",
+   "verify_en": "1-icosyloxypropan-2-yl",
    "en_match": false
   },
   "*[C@@H](O)C[NH2+]CCCCCCOCCOCc1c(Cl)cccc1Cl": {
@@ -11767,13 +11767,13 @@
    "en_match": false
   },
   "*[C@H](COCCCCCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C": {
-   "en": "3-[1-[[(methylamino)methan-1-yl]methan-1-yl]ethan-2-yl]-1-octadecoxypropan-2-yl",
+   "en": "3-[1-[[(methylamino)methan-1-yl]methan-1-yl]ethan-2-yl]-1-octadecyloxypropan-2-yl",
    "zh": "3-[1-[[(甲氨基)甲烷-1-基]甲烷-1-基]乙烷-2-基]-1-十八氧基丙-2-基",
    "kind": "alkoxy",
    "n_carbons": 26,
    "source": "CCCCCCCCCCCCCCCCCCOC[C@H](COP(=O)([O-])OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCCCC",
    "verify_success": true,
-   "verify_en": "1-octadecoxypropan-2-yl",
+   "verify_en": "1-octadecyloxypropan-2-yl",
    "en_match": false
   },
   "*[NH+]c1c(C)cccc1C": {
@@ -11833,7 +11833,7 @@
    "n_carbons": 15,
    "source": "N=C(O)CC[C@H](N=C(O)[C@H](CC(=N)O)N=C(O)[C@@H](N)CCCNC(=N)N)C(O)=N[C@@H](CCCNC(=N)N)C(=O)O",
    "verify_success": true,
-   "verify_en": "3-[(2S)-2-(2S)-2-amino-5-guanidinopentoxybutane-1,4-diol-1-yl]-2,6-dihydroxyhexan-1-yl",
+   "verify_en": "3-[(2S)-2-(2S)-2-amino-5-guanidinopentyloxybutane-1,4-diol-1-yl]-2,6-dihydroxyhexan-1-yl",
    "en_match": false
   },
   "*OP(=O)(O)OCCN=C([O-])CCC=CCC=CCC=CCC=CCC=CCC=CCC": {

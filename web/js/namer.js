@@ -333,11 +333,13 @@ function showNamerResult(result) {
     }
   }
   if ($("namer-time")) $("namer-time").textContent = Math.round(result.time_ms || 0) + " ms";
-  if ($("namer-en")) $("namer-en").textContent = result.en || "—";
-  if ($("namer-zh")) $("namer-zh").textContent = result.zh || "—";
+  // 命中 merged_benchmark 且相似度达阈值时, 引擎名就地高亮与基准名的差异
+  const gd = result.success ? result.gold_diff : null;
+  setDiffHtml("namer-en", result.en, diffSide(gd, "en", "pred"));
+  setDiffHtml("namer-zh", result.zh, diffSide(gd, "zh", "pred"));
   if ($("namer-source")) $("namer-source").textContent = result.source || "—";
   // 基准答案(merged_benchmark): 命中才显示,失败/未命中一律隐藏
-  renderNamerGold(result.success ? result.gold : null);
+  renderNamerGold(result.success ? result.gold : null, result);
   // 命名失败时清空并隐藏结构图,避免旧结构残留
   if (!result.success) {
     hideNamerSvg("namer-locants");
@@ -345,16 +347,20 @@ function showNamerResult(result) {
   }
 }
 
-/* 结果卡内显示 merged_benchmark 命中记录(gold): 无命中/传入 null 时隐藏并清空。 */
-function renderNamerGold(gold) {
+/* 结果卡内显示 merged_benchmark 命中记录(gold): 无命中/传入 null 时隐藏并清空。
+   result.gold_diff 里相似度达阈值的语言, gold 名称直接在原有行内逐字符高亮与引擎名
+   的差异; 未达阈值(或无 gold_diff)照旧显示纯文本。 */
+function renderNamerGold(gold, result) {
   const box = $("namer-gold");
   if (!box) return;
   if (!gold) {
     box.hidden = true;
     return;
   }
-  if ($("namer-gold-en")) $("namer-gold-en").textContent = gold.en || "—";
-  if ($("namer-gold-zh")) $("namer-gold-zh").textContent = gold.zh || "—";
+  const gd = (result && result.gold_diff) || null;
+  setDiffHtml("namer-gold-en", gold.en, diffSide(gd, "en", "gold"));
+  setDiffHtml("namer-gold-zh", gold.zh, diffSide(gd, "zh", "gold"));
+  renderGoldSims(gd);
   const tier = $("namer-gold-tier");
   if (tier) {
     if (gold.tier !== undefined && gold.tier !== null) {
@@ -369,6 +375,53 @@ function renderNamerGold(gold) {
     $("namer-gold-source").textContent = src ? "· " + src : "";
   }
   box.hidden = false;
+}
+
+/* 逐字符差异片段 → HTML: 一致片段原样, 差异片段用 <mark> 高亮。 */
+function diffSegmentsHtml(segs) {
+  return (segs || [])
+    .map((s) => {
+      const text = escapeHtml(s.t);
+      return s.same ? text : '<mark class="gold-diff-mark">' + text + "</mark>";
+    })
+    .join("");
+}
+
+/* 取某语言某一侧的差异片段: 仅当后端判定相似度达阈值(gold_diff.show)时返回, 否则返回
+   null, 让调用方回落到纯文本(差异过大时逐字标红没有信息量)。 */
+function diffSide(goldDiff, lang, side) {
+  const d = goldDiff && goldDiff[lang];
+  return d && d.show ? d[side] : null;
+}
+
+/* 把名称写进结果行的 dd: 有差异片段则逐字符渲染(差异高亮), 否则纯文本。 */
+function setDiffHtml(id, text, segs) {
+  const el = $(id);
+  if (!el) return;
+  el.innerHTML = segs && segs.length ? diffSegmentsHtml(segs) : escapeHtml(text || "—");
+}
+
+/* 相似度条: 引擎名 ↔ 基准名的逐字符相似度(0-100), 有基准名的语言各一条。 */
+function renderGoldSims(goldDiff) {
+  const host = $("namer-gold-sims");
+  if (!host) return;
+  const parts = [];
+  ["en", "zh"].forEach((lang) => {
+    const d = goldDiff && goldDiff[lang];
+    if (!d) return;
+    const pct = Math.max(0, Math.min(100, Math.round((d.similarity || 0) * 100)));
+    parts.push(
+      '<span class="gold-sim">' +
+        '<span class="gold-sim-lang">' + lang + "</span>" +
+        '<span class="gold-sim-track">' +
+        '<span class="gold-sim-fill" style="width:' + pct + '%"></span>' +
+        "</span>" +
+        '<span class="gold-sim-pct">' + pct + "%</span>" +
+        "</span>"
+    );
+  });
+  host.innerHTML = parts.join("");
+  host.hidden = parts.length === 0;
 }
 
 /* 隐藏并清空 PubChem IUPAC 结果块(换分子 / 查询失败 / 命名失败时调用)。 */

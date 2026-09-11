@@ -6483,7 +6483,7 @@
  {
   "id": "chebi-1171",
   "smiles": "C[C@@H]1Nc2[nH]c(=N)nc(O)c2N2C=[N+](c3ccc(C[C@H](O)[C@H](O)[C@H](O)CO[C@H]4O[C@H](COP(=O)(O)O[C@@H](CCC(=O)O)C(=O)O)[C@@H](O)[C@H]4O)cc3)[C@H](C)[C@@H]12",
-  "english_name": "(2S)-2-[[(2R,3S,4R,5S)-5-[(2R,3S,4S)-5-[4-[(6S,6aR,7R)-3-amino-6,7-dimethyl-1-oxo-5,6,6a,7-tetrahydro-2H-imidazo[1,5-f]pteridin-10-ium-8-yl]phenyl]-2,3,4-trihydroxypentoxy]-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxypentanedioic acid",
+  "english_name": "(2S)-2-[[(2R,3S,4R,5S)-5-[(2R,3S,4S)-5-[4-[(6S,6aR,7R)-3-amino-6,7-dimethyl-1-oxo-5,6,6a,7-tetrahydro-2H-imidazo[1,5-f]pteridin-10-ium-8-yl]phenyl]-2,3,4-trihydroxypentyloxy]-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxypentanedioic acid",
   "chinese_name": "(2S)-2-[[[(2R,3S,4R,5S)-5-[(2R,3S,4S)-5-[4-[(6S,6aR,7R)-3-氨基-6,7-二甲基-1-氧代-5,6,6a,7-四氢-2H-咪唑并[1,5-f]蝶啶-10-鎓-8-基]苯基]-2,3,4-三羟基戊氧基]-3,4-二羟基四氢呋喃-2-基]甲氧基-羟基磷酰基]氧基戊二酸",
   "source": "chebi",
   "tier": 5,
@@ -6831,7 +6831,7 @@
  {
   "id": "chebi-1249",
   "smiles": "C[C@H](OP(=O)(O)OC[C@@H](O)[C@@H](O)[C@@H](O)Cn1c2nc(=O)nc(O)c-2cc2ccc(OP(=O)(O)OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](O)[C@@H]3O)cc21)C(O)=N[C@@H](CCC(O)=N[C@@H](CCC(=O)O)C(=O)O)C(=O)O",
-  "english_name": "(2S)-2-[[(4S)-4-[[(2S)-2-[[(2R,3S,4S)-5-[8-[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxy-2,4-dioxopyrimido[4,5-b]quinolin-10-yl]-2,3,4-trihydroxypentoxy]-hydroxyphosphoryl]oxypropanoylamino]-4-carboxybutanoyl]amino]pentanedioic acid",
+  "english_name": "(2S)-2-[[(4S)-4-[[(2S)-2-[[(2R,3S,4S)-5-[8-[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxy-2,4-dioxopyrimido[4,5-b]quinolin-10-yl]-2,3,4-trihydroxypentyloxy]-hydroxyphosphoryl]oxypropanoylamino]-4-carboxybutanoyl]amino]pentanedioic acid",
   "chinese_name": "(2S)-2-[[(4S)-4-[[(2S)-2-[[(2R,3S,4S)-5-[8-[[(2R,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-3,4-二羟基四氢呋喃-2-基]甲氧基-羟基磷酰基]氧基-2,4-二氧代嘧啶并[4,5-b]喹啉-10-基]-2,3,4-三羟基戊氧基]-羟基磷酰基]氧基丙酰氨基]-4-羧基丁酰基]氨基]戊二酸",
   "source": "chebi",
   "tier": 5,
@@ -8859,7 +8859,7 @@
  {
   "id": "chebi-1854",
   "smiles": "CCCCCCCCCCCCCCC(CCCCCCCCCCCCCC)CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@H]3O[C@H](COS(=O)(=O)O)[C@@H](O[C@@H]4O[C@H](CO)[C@H](O)[C@H](OC56C[C@H](O)[C@@H](N=C5O)[C@H]([C@H](O)[C@H](O)CO)O6)[C@H]4O)[C@H](O[C@@H]4O[C@@H](C)[C@@H](O)[C@@H](O)[C@@H]4O)[C@H]3N=C(C)[O-])[C@H]2O)[C@H](O)[C@H]1O.[Na+]",
-  "english_name": "sodium [(2R,3S,4R,5R,6S)-5-acetamido-3-[(2S,3R,4S,5S,6R)-3,5-dihydroxy-6-(hydroxymethyl)-4-[[(3R,4R,8S)-8-hydroxy-6-oxo-3-[(1R,2R)-1,2,3-trihydroxypropyl]-2-oxa-5-azabicyclo[2.2.2]octan-1-yl]oxy]oxan-2-yl]oxy-6-[(2S,3R,4S,5S,6R)-2-[(2R,3S,4R,5R,6R)-4,5-dihydroxy-2-(hydroxymethyl)-6-(2-tetradecylhexadecoxy)oxan-3-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-4-yl]oxy-4-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]methyl sulfate",
+  "english_name": "sodium [(2R,3S,4R,5R,6S)-5-acetamido-3-[(2S,3R,4S,5S,6R)-3,5-dihydroxy-6-(hydroxymethyl)-4-[[(3R,4R,8S)-8-hydroxy-6-oxo-3-[(1R,2R)-1,2,3-trihydroxypropyl]-2-oxa-5-azabicyclo[2.2.2]octan-1-yl]oxy]oxan-2-yl]oxy-6-[(2S,3R,4S,5S,6R)-2-[(2R,3S,4R,5R,6R)-4,5-dihydroxy-2-(hydroxymethyl)-6-(2-tetradecylhexadecyloxy)oxan-3-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-4-yl]oxy-4-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]methyl sulfate",
   "chinese_name": "硫酸钠[(2R,3S,4R,5R,6S)-5-乙酰氨基-3-[(2S,3R,4S,5S,6R)-3,5-二羟基-6-(羟甲基)-4-[(3R,4R,8S)-8-羟基-6-氧代-3-[(1R,2R)-1,2,3-三羟基丙基]-2-氧杂-5-氮杂双环[2.2.2]辛-1-基]氧基]氧杂环己烷-2-基]氧基-6-[(2S,3R,4S,5S,6R)-2-[(2R,3S,4R,5R,6R)-4,5-二羟基-2-(羟甲基)-6-(2-十四烷基十六烷氧基)氧杂环己烷-3-基]氧基-3,5-二羟基-6-(羟甲基)氧杂环己烷-4-基]氧基-4-[(2S,3S,4R,5S,6S)-3,4,5-三羟基-6-甲基氧杂环己烷-2-基]氧基氧杂环己烷-2-基]甲基",
   "source": "chebi",
   "tier": 5,
@@ -9231,7 +9231,7 @@
  {
   "id": "chebi-1965",
   "smiles": "C[C@@H]1Nc2[nH]c(=N)nc([O-])c2N2C=[N+](c3ccc(C[C@H](O)[C@H](O)[C@H](O)CO[C@H]4O[C@H](COP(=O)([O-])O[C@@H](CCC(=O)[O-])C(=O)O)[C@@H](O)[C@H]4O)cc3)[C@H](C)[C@@H]12",
-  "english_name": "(2S)-2-[[(2R,3S,4R,5S)-5-[(2R,3S,4S)-5-[4-[(6S,6aR,7R)-3-amino-6,7-dimethyl-1-oxo-5,6,6a,7-tetrahydro-2H-imidazo[1,5-f]pteridin-10-ium-8-yl]phenyl]-2,3,4-trihydroxypentoxy]-3,4-dihydroxyoxolan-2-yl]methoxy-oxidophosphoryl]oxypentanedioate",
+  "english_name": "(2S)-2-[[(2R,3S,4R,5S)-5-[(2R,3S,4S)-5-[4-[(6S,6aR,7R)-3-amino-6,7-dimethyl-1-oxo-5,6,6a,7-tetrahydro-2H-imidazo[1,5-f]pteridin-10-ium-8-yl]phenyl]-2,3,4-trihydroxypentyloxy]-3,4-dihydroxyoxolan-2-yl]methoxy-oxidophosphoryl]oxypentanedioate",
   "chinese_name": "(2S)-2-[[[(2R,3S,4R,5S)-5-[(2R,3S,4S)-5-[4-[(6S,6aR,7R)-3-氨基-6,7-二甲基-1-氧代-5,6,6a,7-四氢-2H-咪唑并[1,5-f]蝶啶-10-鎓-8-基]苯基]-2,3,4-三羟基戊氧基]-3,4-二羟基四氢呋喃-2-基]甲氧基-氧化磷酸基]氧基戊二酸根",
   "source": "chebi",
   "tier": 5,
@@ -10443,7 +10443,7 @@
  {
   "id": "chebi-2321",
   "smiles": "CCCCCCCCOc1ccc(-c2ccc(C(=O)N[C@H]3CC(NCCN)CN=C(O)[C@@H]4[C@@H](O)[C@@H](C)CN4C(=O)[C@H](CO)N=C(O)[C@H]([C@H](O)Cc4ccc(O)cc4)N=C(O)[C@@H]4C[C@@H](O)CN4C(=O)[C@H]([C@@H](C)O)N=C3O)cc2)cc1",
-  "english_name": "N-[(3S,6S,9S,11R,15S,18S,24S,25S,26S)-20-(2-aminoethylamino)-11,25-dihydroxy-15-[(1R)-1-hydroxyethyl]-6-[(1R)-1-hydroxy-2-(4-hydroxyphenyl)ethyl]-3-(hydroxymethyl)-26-methyl-2,5,8,14,17,23-hexaoxo-1,4,7,13,16,22-hexazatricyclo[22.3.0.09,13]heptacosan-18-yl]-4-(4-octoxyphenyl)benzamide",
+  "english_name": "N-[(3S,6S,9S,11R,15S,18S,24S,25S,26S)-20-(2-aminoethylamino)-11,25-dihydroxy-15-[(1R)-1-hydroxyethyl]-6-[(1R)-1-hydroxy-2-(4-hydroxyphenyl)ethyl]-3-(hydroxymethyl)-26-methyl-2,5,8,14,17,23-hexaoxo-1,4,7,13,16,22-hexazatricyclo[22.3.0.09,13]heptacosan-18-yl]-4-(4-octyloxyphenyl)benzamide",
   "chinese_name": "N-[(3S,6S,9S,11R,15S,18S,24S,25S,26S)-20-(2-氨基乙基氨基)-11,25-二羟基-15-[(1R)-1-羟基乙基]-6-[(1R)-1-羟基-2-(4-羟基苯基)乙基]-3-(羟甲基)-26-甲基-2,5,8,14,17,23-六氧代-1,4,7,13,16,22-六氮杂三环[22.3.0.09,13]二十七碳烷-18-基]-4-(4-辛氧基苯基)苯甲酰胺",
   "source": "chebi",
   "tier": 5,
@@ -12171,7 +12171,7 @@
  {
   "id": "chebi-2845",
   "smiles": "C[C@@H](Nc1ccc(C[C@H](O)[C@H](O)[C@H](O)CO[C@H]2O[C@H](COP(=O)(O)O[C@@H](CCC(=O)[O-])C([O-])=N[C@@H](CCC(=O)[O-])C([O-])=N[C@@H](CC(=O)[O-])C(=O)O)[C@@H](O)[C@H]2O)cc1)c1cnc2[nH]c(=N)nc(O)c2n1",
-  "english_name": "(2S)-2-[[(2S)-2-[[(2S)-2-[[(2R,3S,4R,5S)-5-[(2R,3S,4S)-5-[4-[[(1R)-1-(2-amino-4-oxo-3H-pteridin-6-yl)ethyl]amino]phenyl]-2,3,4-trihydroxypentoxy]-3,4-dihydroxyoxolan-2-yl]methoxy-oxidophosphoryl]oxy-4-carboxylatobutanoyl]amino]-4-carboxylatobutanoyl]amino]butanedioate",
+  "english_name": "(2S)-2-[[(2S)-2-[[(2S)-2-[[(2R,3S,4R,5S)-5-[(2R,3S,4S)-5-[4-[[(1R)-1-(2-amino-4-oxo-3H-pteridin-6-yl)ethyl]amino]phenyl]-2,3,4-trihydroxypentyloxy]-3,4-dihydroxyoxolan-2-yl]methoxy-oxidophosphoryl]oxy-4-carboxylatobutanoyl]amino]-4-carboxylatobutanoyl]amino]butanedioate",
   "chinese_name": "(2S)-2-[[[(2S)-2-[[[(2S)-2-[[[(2R,3S,4R,5S)-5-[(2R,3S,4S)-5-[4-[(1R)-1-(2-氨基-4-氧代-3H-蝶啶-6-基)乙基]氨基]苯基]-2,3,4-三羟基戊氧基]-3,4-二羟基四氢呋喃-2-基]甲氧基-氧化磷酸基]氧基-4-羧基丁酰基]氨基]-4-羧基丁酰基]氨基]丁二酸根",
   "source": "chebi",
   "tier": 5,

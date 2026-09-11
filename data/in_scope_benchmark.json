@@ -12137,7 +12137,7 @@
   {
     "id": "chebi-669",
     "smiles": "CCC(CCCC(=O)O)COC(=O)c1ccccc1C(=O)O",
-    "english_name": "2-(5-carboxy-2-ethylpentoxy)carbonylbenzoic acid",
+    "english_name": "2-(5-carboxy-2-ethylpentyloxy)carbonylbenzoic acid",
     "chinese_name": "",
     "source": "chebi",
     "tier": 1,
@@ -12544,7 +12544,7 @@
   {
     "id": "chebi-778",
     "smiles": "CCCCCCCCCCCCCCCCOC[C@H](COC(=O)CCCCCCC)OC(C)=O",
-    "english_name": "[(2R)-2-acetyloxy-3-hexadecoxypropyl] octanoate",
+    "english_name": "[(2R)-2-acetyloxy-3-hexadecyloxypropyl] octanoate",
     "chinese_name": "",
     "source": "chebi",
     "tier": 1,
@@ -14733,7 +14733,7 @@
   {
     "id": "chebi-1330",
     "smiles": "N=C(N)c1ccc(OCCCCCOc2ccc(C(=N)N)cc2)cc1.O=S(=O)(O)CCO.O=S(=O)(O)CCO",
-    "english_name": "4-[5-(4-carbamimidoylphenoxy)pentoxy]benzenecarboximidamide;2-hydroxyethanesulfonic acid",
+    "english_name": "4-[5-(4-carbamimidoylphenoxy)pentyloxy]benzenecarboximidamide;2-hydroxyethanesulfonic acid",
     "chinese_name": "",
     "source": "chebi",
     "tier": 1,
@@ -15349,7 +15349,7 @@
   {
     "id": "chebi-1500",
     "smiles": "CCCCCOc1ccccc1/C(=C\\SC)n1ccnc1.Cl",
-    "english_name": "1-[(E)-2-methylsulfanyl-1-(2-pentoxyphenyl)ethenyl]imidazole;hydrochloride",
+    "english_name": "1-[(E)-2-methylsulfanyl-1-(2-pentyloxyphenyl)ethenyl]imidazole;hydrochloride",
     "chinese_name": "",
     "source": "chebi",
     "tier": 1,
@@ -20200,7 +20200,7 @@
   {
     "id": "chebi-2822",
     "smiles": "CCCCCCOc1ccccc1C(=N)O",
-    "english_name": "2-hexoxybenzamide",
+    "english_name": "2-hexyloxybenzamide",
     "chinese_name": "",
     "source": "chebi",
     "tier": 1,
@@ -20332,7 +20332,7 @@
   {
     "id": "chebi-2870",
     "smiles": "CCCCCCCCCCCCCCCCOC[C@@H]([NH3+])CO",
-    "english_name": "[(2S)-1-hexadecoxy-3-hydroxypropan-2-yl]azanium",
+    "english_name": "[(2S)-1-hexadecyloxy-3-hydroxypropan-2-yl]azanium",
     "chinese_name": "",
     "source": "chebi",
     "tier": 1,
