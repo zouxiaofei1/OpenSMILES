@@ -4,6 +4,7 @@ from namepredict.layer4.indicated_hydrogen import indicated_hydrogen_prefix, sat
 from namepredict.layer4.hydrogenation import hydro_prefix
 from namepredict.layer4.numbering_engine import orient_numbering
 from namepredict.layer4.locant_calc import _pack, _with_locants
+from namepredict.layer4.locant_key import locant_key
 
 
 def _fallback_hydro_atoms(parent: dict) -> frozenset:
@@ -17,6 +18,34 @@ def _fallback_hydro_atoms(parent: dict) -> frozenset:
         return frozenset()
     return frozenset(i for i in saturated_ring_atoms(mol, set(chain))
                      if not mol.GetAtomWithIdx(i).GetIsAromatic())
+
+
+def _lowest_extra_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset:
+    """把加氢位中最低位次改用指示氢表达（P-31.2.2、P-58.2.1.2、P-58.2.2.2：指示氢优先得低位次，其余仍是 hydro 位）。
+
+    与现行指示氢位次最高者互换，只改名次归属、不改变两边计数，故 hydro 倍增前缀的合法性与奇数回退都不受影响（如 1,4-dihydro-2H- → 2,4-dihydro-1H-）。无 hydro 位或无指示氢位时不重排。
+    """
+    if not hydro:
+        return hydro
+    mol = packed.get("mol")
+    chain = list(packed.get("chain") or ())
+    if mol is None or not chain:
+        return hydro
+    chain_set = set(chain)
+    use_labels = bool(labels) and len(labels) == len(chain)
+
+    def _key(a: int):
+        return locant_key(labels[chain.index(a)] if use_labels else str(chain.index(a) + 1))
+
+    hydro = set(hydro)
+    sats = {a for a in set(saturated_ring_atoms(mol, chain_set)) | hydro if a in chain_set}
+    indicated = sats - hydro  # 现行指示氢位（上游按元素切分后的剩余）
+    if not indicated:
+        return frozenset(hydro)
+    lowest = min(sats, key=_key)
+    if lowest in hydro:  # 最低位次落在 hydro 里 -> 与指示氢位中位次最高者互换
+        hydro = (hydro - {lowest}) | {max(indicated, key=_key)}
+    return frozenset(hydro)
 
 
 def number(parent: dict, substituents: list) -> dict:
@@ -35,6 +64,7 @@ def number(parent: dict, substituents: list) -> dict:
     hydro = packed.get("hydro_atoms") or frozenset()
     if not hydro:  # 未注册稠环无保留模板可比 -> hydro_atoms 缺失，回退由分子自身饱和环位推导
         hydro = _fallback_hydro_atoms(packed)
+    hydro = _lowest_extra_to_indicated(packed, labels, hydro)
     pre = hydro_prefix(packed.get("chain"), labels, hydro)
     if not pre[0]:  # hydro 位次表达不出（奇数值/超表/不在链内）则整体退回指示氢，不产半截名
         hydro, pre = frozenset(), ("", "")

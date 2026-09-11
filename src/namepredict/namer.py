@@ -38,9 +38,10 @@ def _elapsed_ms(t0: float) -> float:
 
 
 def _chain_meta(numbered: dict) -> dict:
-    """从编号结果提取母体链与母体 kind 元数据。"""
+    """从编号结果提取母体链、母体 kind 与 S 桥自含围栏标记（供 L3 判断前缀是否还需加括号）。"""
     parent = numbered.get("parent") or {}
-    return {"parent_chain": list(parent.get("chain") or []), "parent_kind": parent.get("kind")}
+    return {"parent_chain": list(parent.get("chain") or []), "parent_kind": parent.get("kind"),
+            "bridge_self_enclosed": bool(numbered.get("bridge_self_enclosed"))}
 
 
 def _claim_from_sub(s: dict, atoms: frozenset[int]) -> ClaimedBlock:

@@ -184,6 +184,15 @@ def _retained_alkoxy(en: str, zh: str) -> tuple[str, str]:
     return (en, zh)
 
 
+def _bridge_enclosed_names(a: dict, stem_en: str, stem_zh: str) -> tuple[str, str] | None:
+    """S 桥前端为复合取代基时加围栏：EN (4-methoxyphenyl)sulfonyl、ZH (4-甲氧基苯基)磺酰基；非 S 桥或前端为简单取代基（propan-2-yl）返回 None 走平铺融合。"""
+    if stem_en not in ("sulfinyl", "sulfonyl") or not a.get("paren"):
+        return None
+    w_en = f"[{a['en']}]" if "(" in a["en"] else f"({a['en']})"  # 前端自带括号时升级方括号（P-16.5.2 嵌套标记）
+    w_zh = f"[{a['zh']}]" if "(" in a["zh"] else f"({a['zh']})"
+    return f"{w_en}{stem_en}", f"{w_zh}{stem_zh}基"  # ZH 前端基不可省（(4-甲氧基苯基)磺酰基，非 …苯磺酰基）
+
+
 def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     """杂原子锚点自由基：单核氢化物母体+烷基取代基经 free_to_yl 转标准名（*OCC→ethoxy；azane 双烷基按 P-62.2 字母序、同烷基 di-）；零/多取代基或名缺失返回 None 明确失败。"""
     parent = numbered.get("parent") or {}
@@ -195,6 +204,10 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
         return _MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
     if len(subs) == 1:
         a = subs[0]
+        bridge = _bridge_enclosed_names(a, stem_en, stem_zh)  # 围栏在 L3 一次定形，中英文同步产出，L5 前缀渲染不再二次拆分
+        if bridge is not None:
+            numbered["bridge_self_enclosed"] = True  # 名下已自带围栏，转取代基前缀时不再整体加括号
+            return bridge
         if stem_en == "azane":
             amido = AMIDO_RETAINED.get(a.get("en") or "")  # P-66.1.1.4.3 方法 1：单 N-酰基（乙酰/甲酰/苯甲酰）残基收成 amido 保留式（acetamido…），不走 free_to_yl 的 acylamino 系统式；其余 R 保持方法 2。
             if amido is not None:

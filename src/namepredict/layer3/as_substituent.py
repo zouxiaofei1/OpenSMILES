@@ -92,6 +92,8 @@ def _radical_yl_from_sub(
     composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0  # PIN（P-16.5.1.1）：复合前缀必括，由 meta.parent_substituent_count 判定；amido 保留式（P-66.1.1.4.3）免括，否则苯环二酰基倍增成 bis(acetylamino)。
     need_paren = composite and hit.en not in (
         "phenyl", *_SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN)
+    if (hit.meta or {}).get("bridge_self_enclosed"):  # S 桥复合前端名已自含围栏（(4-甲氧基苯基)磺酰基），L5 不得再整体加括号
+        need_paren = False
     if need_paren and hit.en.endswith(("oxy", "sulfanyl")):  # 简单取代基+O/S 桥（…oxy/…sulfanyl 等）：P-63.2.1/.2.2 前端 R 为简单取代基时整个 O/S 前缀不加围栏（gold/ChEBI 平铺式），前端是否简单由命名后端 retained→recursive 判定。
         simple = _obridge_front_simple(
             mol, atoms, attach_old, depth=depth, name_mode=name_mode,
