@@ -81,6 +81,8 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "sulfo": RetainedSubstituent( "sulfo", "磺基", "sulfo", "磺基", P, anchored=("*S(=O)(=O)O", ), paren=False, kind="leaf", ),
         "tosyl": RetainedSubstituent( "tosyl", "对甲苯磺酰基", "4-methylbenzenesulfonyl", "4-甲基苯磺酰基", N, anchored=("*S(=O)(=O)c1ccc(C)cc1", ), paren=False, kind="leaf", ),
         "carboxy": RetainedSubstituent( "carboxy", "羧基", "carboxy", "羧基", P, anchored=("*C(=O)O", ), paren=False, kind="leaf", ),
+        "phosphono": RetainedSubstituent( "phosphono", "膦酸", "phosphono", "膦酸", P, anchored=("*P(=O)(O)O", ), paren=False, kind="leaf", ),  # P-102：phosphono 表示 -PO(OH)2，P 直连母体（对比 O 桥的 phosphonooxy）
+        "phosphonato": RetainedSubstituent( "phosphonato", "膦酸根", "phosphonato", "膦酸根", P, anchored=("*P(=O)([O-])O", "*P(=O)([O-])[O-]"), paren=False, kind="leaf", ),  # P-102：phosphonato 表示 -PO(O-)2（单/双阴离子）
         "phosphonooxy": RetainedSubstituent( "phosphonooxy", "膦酸氧基", "phosphonooxy", "膦酸氧基", P, anchored=("*OP(=O)(O)O", ), paren=False, kind="leaf", ),  # 磷酸降级前缀（P-67.1.5.1：羧酸等更高优先级 FG 存在时磷酸以 phosphonooxy 前缀表达）
         "phosphonatooxy": RetainedSubstituent( "phosphonatooxy", "膦酸氧基", "phosphonatooxy", "膦酸氧基", P, anchored=("*OP(=O)([O-])O", "*OP(=O)([O-])[O-]"), paren=False, kind="leaf", ),
         "phosphonooxymethyl": RetainedSubstituent( "phosphonooxymethyl", "膦酸氧甲基", "phosphonooxymethyl", "膦酸氧甲基", P, anchored=("*COP(=O)(O)O", ), paren=True, kind="leaf", ),

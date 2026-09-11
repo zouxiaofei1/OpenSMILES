@@ -70,17 +70,19 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
 
 
 def _stem_needs_paren(stem: str, subs: list, omit: bool) -> bool:
-    """加括号：显式标记、前导位次词干，或多个 CF3（英文）。"""
+    """加括号：显式标记、前导位次词干、前导立体描述符，或多个 CF3（英文）。"""
     if any(s.get("paren") for s in subs):
         return True
     if stem and stem[0].isdigit():
         return True
-    return (not omit) and stem == "trifluoromethyl"
+    return (not omit) and (stem == "trifluoromethyl" or bool(_STEREO_LEAD_RE.match(stem)))
 
 
 def _wrap_stem(stem: str, need: bool) -> str:
     """按 need 给词干加括号（词干含括号时改用方括号）。"""
     return stem if not need else (f"[{stem}]" if "(" in stem else f"({stem})")
+
+_STEREO_LEAD_RE = re.compile(r"\(\d+[RSEZ](?:,\d+[RSEZ])*\)-")  # 取代基名以立体描述符开头：(1Z)-、(2R,4R)-、(9Z,12Z)-。
 
 _BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl")  # O/S 桥后缀（gold 平铺式 -yl]oxy/-yl]sulfanyl：括号闭在 -yl 后、后缀放括号外，见 P-63.2.2）。
 
@@ -130,6 +132,8 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False
     mult = _complex_mult_zh(zh_stem, subs, len(subs)) or _mult_zh(len(subs))
     en = subs[0].get("en") or ""
     need = any(s.get("paren") for s in subs) or (en[:1].isdigit() if en else False)  # 停用：zh_stem == "三氟甲基" 时 need = False（简单氟代甲基不加括号）
+    if not omit and _STEREO_LEAD_RE.match(en):  # 与英文侧同步：前导立体描述符 + 位次须整体围栏（5-[(1Z)-丙-1-烯基]苯）
+        need = True
     s = _wrap_stem(zh_stem, need)
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 

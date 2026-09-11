@@ -1,4 +1,4 @@
-"""P-25.3.3 稠环编号: 外周骨架编号 + 稠合碳 a/b/c 字母位次 + 准则(a)-(d)。"""
+"""P-25.3.3 稠环编号: 外周骨架编号 + 稠合碳 a/b/c 字母位次 + 准则(a)-(d)、(f) 指示氢位次集合 + (j) 镜像方向 CIP 破局。"""
 from __future__ import annotations
 
 from collections import Counter, defaultdict
@@ -179,15 +179,15 @@ def number_fused_system(mol, rings, coords, sub_layers=None,
     ind_h_sats = sorted(saturated_ring_atoms(mol, ring_atoms))  # (f) 指示氢候选位：环内仅以单键连邻环原子且带 H 的饱和位
 
     def _as_indicated(cands):
-        """P-25.3.3.1.2(f)：把最低位次给指示氢原子。饱和带氢位数为偶数时 hydro 前缀恰可覆盖全部饱和位、名中无指示氢，规则不适用；为奇数（环内有偕二甲基季碳等无氢饱和位）时只剩最低的 k 个位次留给指示氢，其余归 hydro。"""
+        """P-25.3.3.1.2(f)：把最低位次给指示氢原子。饱和带氢位数为偶数时 hydro 前缀恰可覆盖全部饱和位、名中无显式指示氢（k=0，规则不适用）；为奇数时其中最低位写作显式 'H'、其余归 hydro。收窄按键是**全部**带氢环位的位次集合（P-14.3.5 逐项比较），只比最低 k 个位次时两个候选低位相同即静默失效（tiers-29113 的甲基因此被后面的取代基层压到 2 位）。"""
         k = len(ind_h_sats) % 2
         if not k or len(cands) <= 1:
             return cands
 
         def _key(c):
-            """候选的指示氢位次键：饱和位中最低的 k 个；位次不全在链内返回 None。"""
+            """候选的指示氢位次键：全部带氢环位的位次集合升序；位次不全在链内返回 None。"""
             locs = _locant_tuples(c[0], c[1], ind_h_sats)
-            return locs[:k] if len(locs) == len(ind_h_sats) else None
+            return locs if len(locs) == len(ind_h_sats) else None
         keys = [_key(c) for c in cands]
         if any(k_ is None for k_ in keys):
             return cands
@@ -208,4 +208,10 @@ def number_fused_system(mol, rings, coords, sub_layers=None,
                                 for k, a in alpha_subs if a in c[0]))
         best = min(_alpha_key(c) for c in cands)
         cands = [c for c in cands if _alpha_key(c) == best]
+    if len(cands) > 1:  # P-14.4(j)：位次准则全平局时按 CIP 描述符定方向（R/M/r 取较低位次）。稠环互为镜像的两个走向位次集合完全相同（取代基、指示氢都不区分），只有 CIP 能破局；否则方向随候选枚举顺序漂移（tiers-29113 的 3aR/6aS 会取成 3aS/6aR）。
+        from namepredict.layer4.numbering_engine import _chain_rs_codes, _rs_locant_key
+        codes = _chain_rs_codes(mol, cands[0][0])
+        if codes:
+            best = min(_rs_locant_key(codes, c[0], c[1]) for c in cands)
+            cands = [c for c in cands if _rs_locant_key(codes, c[0], c[1]) == best]
     return cands[0]

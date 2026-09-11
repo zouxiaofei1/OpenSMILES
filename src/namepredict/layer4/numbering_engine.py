@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from namepredict.tools import memo
 from namepredict.layer1.ring_systems import sssr_rings
+from namepredict.layer4.locant_key import locant_key
 
 _TRADITIONAL_NUMBERING_IDS = frozenset({  # P-25.3.3：这些保留骨架按传统编号，不走 P-25.3.3.1 的优选取向自动编号。xanthene 及其硫属类似物（xanthene/thioxanthene）与 cyclopenta[a]phenanthrene（甾体 1-17）已按_TEMPLATES 的 standard 字段登记传统编号，故一并列入。
     "anthracene", "phenanthrene", "acridine", "carbazole", "purine",
@@ -128,11 +129,13 @@ def _chain_rs_codes(mol, chain: list[int]) -> dict[int, str]:
     return codes
 
 
-def _rs_locant_key(codes: dict[int, str], chain: list[int]) -> tuple:
-    """P-14.4(j) 排序键：R/M/r 描述符位次升序在前、S/P/s 位次在后，字典序小者取低位次。"""
+def _rs_locant_key(codes: dict[int, str], chain: list[int], labels: list[str] | None = None) -> tuple:
+    """P-14.4(j) 排序键：R/M/r 描述符位次升序在前、S/P/s 位次在后，字典序小者取低位次；labels 为稠环字母位次（'4a'），缺省按链序号。"""
+    use = labels if labels and len(labels) == len(chain) else None
     hi, lo = [], []
-    for loc, idx in enumerate(chain, 1):
+    for i, idx in enumerate(chain):
         code = codes.get(int(idx))
+        loc = locant_key(use[i] if use else i + 1)
         if code in _RS_HI:
             hi.append(loc)
         elif code in _RS_LO:
@@ -348,6 +351,7 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
             else:
                 anchor_as_principal = start  # 固定起点在链候选中不可能为 locant 1（如链中部自由基/锚点）：不原样保留链序（否则自由价/双键/取代基位次全不最小化、随上游原子序漂移），回退全候选并并入 P-14.4(c) principal 竞争最低位次
     principal = _principal_atoms(parent)
+    
     if anchor_as_principal is not None:
         principal = sorted(set(principal) | {anchor_as_principal})
     if principal:
