@@ -34,6 +34,10 @@ CASES = [
     ("O=C(Cl)C=C", "prop-2-enoyl chloride", "丙-2-烯酰氯"),
     ("O=C(F)C=C", "prop-2-enoyl fluoride", "丙-2-烯酰氟"),
     ("O=C(Br)C=C", "prop-2-enoyl bromide", "丙-2-烯酰溴"),
+    # ── 炔酰卤（P-14.3.4：三碳炔酰保留炔位次，与烯酰卤同形）──
+    ("O=C(Cl)C#C", "prop-2-ynoyl chloride", "丙-2-炔酰氯"),
+    ("O=C(Br)C#C", "prop-2-ynoyl bromide", "丙-2-炔酰溴"),
+    ("O=C(Cl)CC#C", "but-3-ynoyl chloride", "丁-3-炔酰氯"),
     # ── 负数：必须不判成酰卤 ──
     ("CC(=O)O", "acetic acid", "乙酸"),
     ("CCBr", "bromoethane", "溴乙烷"),

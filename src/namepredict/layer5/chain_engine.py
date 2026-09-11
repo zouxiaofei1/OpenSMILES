@@ -175,7 +175,7 @@ def _chain_yne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
             loc = _pair_loc_str(ynes)
             suf = (f"{m_en}{spec.yne_suf[0]}", f"{m_zh}{spec.yne_suf[1]}")
             return f"{s}a-{loc}-{suf[0]}", f"{zs}-{loc}-{suf[1]}"
-        omit = numbered.get("omit_yne_locant", False)
+        omit = spec.yne_loc_omit and numbered.get("omit_yne_locant", False)  # FG 后缀 (P-14.3.4 例外: prop-2-ynoic acid) 恒保留炔位次
         if omit or yne is None:
             return f"{s}{spec.yne_suf[0]}", f"{zs}{spec.yne_suf[1]}"
         return f"{s}-{yne}-{spec.yne_suf[0]}", f"{zs}-{yne}-{spec.yne_suf[1]}"
@@ -311,6 +311,7 @@ class _Chain:
     ene_single_min: int = 2             # 融合式单烯 n 下限 (diacid 为 3)
     ene_omit_aware: bool = False        # 烯段受 omit_ene_locant 影响 (环系 FG)
     ene_loc_omit: bool = False          # 融合式单烯省略位次 (环单烯: cyclohexene)
+    yne_loc_omit: bool = False          # 融合式炔省略位次 (开链烃 ethyne/propyne: P-14.3.4.2(d))
     cyclic: bool = False                # 恒加环前缀 (纯烃环/环系 FG)
     cyclic_unsat: bool = False          # 仅烯/炔段时加环 (cyclopolyene: 无烯回落纯烷烃)
     zh_full: bool = False               # 中文词干保留完整烷烃后缀 "烷" (环烷/回落)
@@ -523,7 +524,7 @@ _KIND_TABLE = {
                      mult_unsat_polyol=True),
     "alkane": _Chain(kind="alkane", en_suf="ane", zh_suf="烷", coda="",
                      omit_rule=lambda n, loc, omit: omit or n <= 3,
-                     ene_base=("ene", "烯"), yne_suf=("yne", "炔"),
+                     ene_base=("ene", "烯"), yne_suf=("yne", "炔"), yne_loc_omit=True,
                      wrap=_with_ez),
     "acid": _Chain(kind="acid", en_suf="oic acid", zh_suf="酸",
                    ene_base=("enoic acid", "烯酸"),

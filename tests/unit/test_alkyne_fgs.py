@@ -1,9 +1,12 @@
-# IUPAC: P-31.1 / P-63.1.1 / P-66.6.1 / P-66.5.1 / P-66.1.1
-# Layer: L2,L4,L5
+# IUPAC: P-31.1 / P-63.1.1 / P-66.6.1 / P-66.5.1 / P-66.1.1 / P-14.3.4
+# Layer: L4,L5
 """Open-chain mono alkyne FG parents: alkynol / alkynal / alkynenitrile / alkynamide.
 
 Mono principal FG + mono C≡C (no C=C); FG carbon and triple-bond ends acyclic.
 Kinds stay alcohol/aldehyde/nitrile/amide; unsaturation via triple_bond + yne_locant.
+
+P-14.3.4：三碳炔的融合式后缀（-ynal/-ynenitrile/-ynamide/…）保留炔位次，
+与对应的 prop-2-enal/prop-2-enenitrile 一致；开链烃 propyne 仍省略位次。
 """
 from __future__ import annotations
 
@@ -21,13 +24,13 @@ CASES = [
     ("C#CC(O)C", "but-3-yn-2-ol", "丁-3-炔-2-醇"),
     # alkynals
     ("C#CCC=O", "but-3-ynal", "丁-3-炔醛"),
-    ("C#CC=O", "propynal", "丙炔醛"),
+    ("C#CC=O", "prop-2-ynal", "丙-2-炔醛"),
     # alkynenitriles
     ("C#CCC#N", "but-3-ynenitrile", "丁-3-炔腈"),
-    ("C#CC#N", "propynenitrile", "丙炔腈"),
+    ("C#CC#N", "prop-2-ynenitrile", "丙-2-炔腈"),
     # alkynamides
     ("C#CCC(=O)N", "but-3-ynamide", "丁-3-炔酰胺"),
-    ("C#CC(=O)N", "propynamide", "丙炔酰胺"),
+    ("C#CC(=O)N", "prop-2-ynamide", "丙-2-炔酰胺"),
     # negatives: ene alcohol, sat alcohol, alkynoic acid, free alkyne
     ("C/C=C/CO", "(2E)-but-2-en-1-ol", "(2E)-丁-2-烯-1-醇"),
     ("CCCCO", "butan-1-ol", "丁-1-醇"),
