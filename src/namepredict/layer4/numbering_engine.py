@@ -298,6 +298,8 @@ def _fused_numbering(parent: dict, chain: list[int],
                              if a in chain_set)
     if principal_atoms:
         layers.append(principal_atoms)  # P-14.4(c): principal 特征基团优先于取代基
+    from namepredict.layer4.fused_numbering import INDICATED_H
+    layers.append(INDICATED_H)  # P-14.4(b)/P-25.3.3.1.2(f): 指示氢位次沿 P-14.4 序插在后缀 (c) 之后、可分离前缀 (f) 之前（如 3,4-二氢萘-1(2H)-酮 的 =O 先占 1 位，指示氢才落到 2 位）
     sub_atoms = sorted(s["attach_idx"] for s in (substituents or [])
                        if s.get("attach_idx") in chain_set)
     if sub_atoms:

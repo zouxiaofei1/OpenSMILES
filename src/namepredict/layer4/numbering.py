@@ -48,6 +48,25 @@ def _lowest_extra_to_indicated(packed: dict, labels, hydro: frozenset) -> frozen
     return frozenset(hydro)
 
 
+def _odd_hydro_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset:
+    """加氢位数不成倍增（奇数）时把其中最低位次改用指示氢表达（P-51.1.1.4、P-58.2.1.2）。
+
+    饱和环上出现无氢饱和位（偕二甲基季碳等）使其不计入 hydro，环内带 H 的饱和位遂成奇数：hydro 只取偶数个，余下最低位次那个由指示氢承载，故 4,4,7-三甲基-2,3-二氢-1H-萘 取 hydro=2,3 / 指示氢=1，而非整体放弃加氢描述退成「4,4,7-三甲基萘」。已合法（在倍增表内）时不改动。
+    """
+    from namepredict.layer4.hydrogenation import HYDRO_MULT_N
+
+    n = len(hydro or ())
+    if not n or n in HYDRO_MULT_N:
+        return hydro
+    chain = list(packed.get("chain") or ())
+    if not chain or any(a not in chain for a in hydro):  # 位次表达不全，本层补救不了
+        return hydro
+    use_labels = bool(labels) and len(labels) == len(chain)
+    lowest = min(hydro, key=lambda a: locant_key(
+        labels[chain.index(a)] if use_labels else str(chain.index(a) + 1)))
+    return frozenset(hydro - {lowest})
+
+
 def number(parent: dict, substituents: list) -> dict:
     """对 parent 定向编号，校验编号骨架事实后组装位次结果（含指示氢前缀 P-58.2.1）。"""
     chain = orient_numbering(parent, substituents)
@@ -65,6 +84,7 @@ def number(parent: dict, substituents: list) -> dict:
     if not hydro:  # 未注册稠环无保留模板可比 -> hydro_atoms 缺失，回退由分子自身饱和环位推导
         hydro = _fallback_hydro_atoms(packed)
     hydro = _lowest_extra_to_indicated(packed, labels, hydro)
+    hydro = _odd_hydro_to_indicated(packed, labels, hydro)
     pre = hydro_prefix(packed.get("chain"), labels, hydro)
     if not pre[0]:  # hydro 位次表达不出（奇数值/超表/不在链内）则整体退回指示氢，不产半截名
         hydro, pre = frozenset(), ("", "")

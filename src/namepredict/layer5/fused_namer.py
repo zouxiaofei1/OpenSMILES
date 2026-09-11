@@ -6,6 +6,16 @@ from collections import Counter
 from namepredict.layer1.ring_systems import sssr_rings
 
 
+_RETAINED_FUSION_ALIASES: dict[str, tuple[str, str]] = {  # 稠合组装名 → 保留名（P-25.1.1）；只收位次形态与稠合名完全相同的条目，命中即整名替换
+    "benzo[c]furan":       ("2-benzofuran",  "2-苯并呋喃"),    # 异苯并呋喃：O 占 2 位，1/3 位为环碳
+    "benzo[c]pyrrole":     ("isoindole",     "异吲哚"),        # N 占 2 位
+    "benzo[b]benzofuran":  ("dibenzofuran",  "二苯并呋喃"),
+    "benzo[b]quinoxaline": ("phenazine",     "菲嗪"),
+    "benzo[a]indene":      ("fluorene",      "芴"),
+    "benzo[d]1,2-oxazole": ("1,2-benzoxazole", "1,2-苯并噁唑"),
+}
+
+
 def _stem_of(node) -> tuple[str | None, str | None]:
     """节点的组分词干(stem_en/stem_zh); L2 未标注的组分(非稠合零件)返回 (None, None)。"""
     return node.fused_stem or (None, None)
@@ -138,4 +148,6 @@ def fused_parent_names(mol, node) -> tuple[str, str] | None:
     parts = _collect_attached(mol, node, rings, fusion_edges)
     if parts is None:
         return None
-    return parts[0] + root_en, parts[1] + root_zh
+    core_en = parts[0] + root_en
+    alias = _RETAINED_FUSION_ALIASES.get(core_en)
+    return alias if alias else (core_en, parts[1] + root_zh)

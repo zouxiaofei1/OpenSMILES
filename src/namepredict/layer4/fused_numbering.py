@@ -4,7 +4,10 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 
 from namepredict.constants import C, P145_SENIOR
+from namepredict.layer4.indicated_hydrogen import saturated_ring_atoms
 from namepredict.layer4.locant_key import locant_key
+
+INDICATED_H = object()  # sub_layers 里的哨兵层：P-25.3.3.1.2(f) 指示氢位次最小化，由 _fused_numbering 插在后缀层之后、取代基层之前（P-14.4：(c) 主特征基团先于 (f)）。
 
 
 def fused_atoms(rings) -> set[int]:
@@ -28,10 +31,14 @@ def _top_rings(coords: dict, rings) -> list[int]:
 
 
 def _top_atoms(coords: dict, ring, fused: set[int]) -> list[int]:
-    """环内 y 最大(x 平局)的非稠合原子, 平局全保留。"""
+    """环内 y 最大(x 平局)的非稠合原子, 平局全保留。起点须紧邻稠合原子(P-25.3.3.1.1 外周行走自稠合边一端起算), 故只在该类非稠合原子中取; 环内无此类原子(全为稠合原子)时退回全部非稠合原子。"""
     atoms = [a for a in ring if a not in fused]
     if not atoms:
         return []
+    neighbors = _ring_neighbors([ring])
+    adjacent = [a for a in atoms if any(nb in fused for nb in neighbors[a])]
+    if adjacent:  # 起点取偏环顶端的顶点会整体错位一位, 使稠合碳字母与后缀位次全偏(如苯并[c]色烯-6-酮被编成 -5-酮)
+        atoms = adjacent
     top = max(atoms, key=lambda a: (coords[a][1], coords[a][0]))
     return [a for a in atoms
             if abs(coords[a][1] - coords[top][1]) < 1e-9 and abs(coords[a][0] - coords[top][0]) < 1e-9]
@@ -168,10 +175,31 @@ def number_fused_system(mol, rings, coords, sub_layers=None,
         cands = _keep(cands, fused_carbons)  # (c) 低位次给稠合碳
     if fused_heteros:
         cands = _keep(cands, fused_heteros)  # (d) 低位次给稠合杂原子
+    ring_atoms = set().union(*rings)
+    ind_h_sats = sorted(saturated_ring_atoms(mol, ring_atoms))  # (f) 指示氢候选位：环内仅以单键连邻环原子且带 H 的饱和位
+
+    def _as_indicated(cands):
+        """P-25.3.3.1.2(f)：把最低位次给指示氢原子。饱和带氢位数为偶数时 hydro 前缀恰可覆盖全部饱和位、名中无指示氢，规则不适用；为奇数（环内有偕二甲基季碳等无氢饱和位）时只剩最低的 k 个位次留给指示氢，其余归 hydro。"""
+        k = len(ind_h_sats) % 2
+        if not k or len(cands) <= 1:
+            return cands
+
+        def _key(c):
+            """候选的指示氢位次键：饱和位中最低的 k 个；位次不全在链内返回 None。"""
+            locs = _locant_tuples(c[0], c[1], ind_h_sats)
+            return locs[:k] if len(locs) == len(ind_h_sats) else None
+        keys = [_key(c) for c in cands]
+        if any(k_ is None for k_ in keys):
+            return cands
+        best = min(keys)
+        return [c for c, k_ in zip(cands, keys) if k_ == best]
+
     for layer in (sub_layers or ()):
         if len(cands) <= 1:
             break
-        if layer:
+        if layer is INDICATED_H:
+            cands = _as_indicated(cands)  # (f) 指示氢位次
+        elif layer:
             cands = _keep(cands, sorted(layer))  # 镜像平局: 逐层按位次集合最小化收窄
     if len(cands) > 1 and alpha_subs:  # P-14.5: 位次集合仍相同时，字母序最前的取代基得最低位次
         def _alpha_key(c):
