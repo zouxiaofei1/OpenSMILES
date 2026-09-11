@@ -26,6 +26,7 @@ POS_FRAG = [
     ("*C(=O)C", "acetyl", "乙酰基"),
     ("*C(=O)CCC", "butanoyl", None),
     ("*C(=O)Cc1cccs1", "2-thiophen-2-ylacetyl", "2-噻吩-2-基乙酰基"),
+    ("*C(=O)N", "carbamoyl", "氨基甲酰基"),  # 氨基甲酸的酰基保留前缀（P-66.1.1.4.1），锚定表条目，不走 oxo/amino 展开
 ]
 
 
@@ -39,17 +40,20 @@ def test_acyl_fragment_named_oyl(smiles: str, en: str, zh: str | None) -> None:
 
 
 # 整分子正例（gold/pred 仅差 1-oxo→oyl 单点；英文精确，中文跳过/待验）。
-# 注：后两行 O-酰基的 gold 用 `...enoyl]oxy`（括号闭在 -yl 后），namer 采用既有 A3 融合式
-# `...enoyloxy`（P-63.2.2，gold_variant 簇），故期望按 namer 的融合式写。
+# 注：O-酰基的围栏按 P-65.6.3.2.3：retained 单词酰基名（acetyl/benzoyl/hexadecanoyl）
+# 与 oxy 融合成 …oyloxy（3-(benzoyloxy)propanoic acid）；带位次的系统酰基名则闭括号在
+# 前端之后、oxy 留括号外（3-[(pyridine-3-carbonyl)oxy]propanoic acid）。故带双键位次/
+# 立体描述符的 (9Z)-octadec-9-enoyl 取后者，(9Z)-octadec-9-enoyl]oxy；与 benchmark gold
+# （chebi-2873/chebi-776）一致。
 POS_WHOLE = [
     ("CC(C)=CC(O)=NCC(=O)O", "2-(3-methylbut-2-enoylamino)acetic acid"),
     ("CCCCCCCCCCCCCCCCCC(O)=NCC(=O)O", "2-(octadecanoylamino)acetic acid"),
     ("C(C(=C)C)(=O)OC(C)OC(C(=C)C)=O",
      "1-(2-methylprop-2-enoyloxy)ethyl 2-methylprop-2-enoate"),
     ("CCCCCCCC/C=C\\CCCCCCCC(=O)OC(CCCCCCCCCCCCC)CCCC(=O)O",
-     "5-[(9Z)-octadec-9-enoyloxy]octadecanoic acid"),
+     "5-[(9Z)-octadec-9-enoyl]oxyoctadecanoic acid"),
     ("CCCCCC/C=C\\CCCCCCCC(=O)OC(CCCCCCCCC)CCCCCCCC(=O)O",
-     "9-[(9Z)-hexadec-9-enoyloxy]octadecanoic acid"),
+     "9-[(9Z)-hexadec-9-enoyl]oxyoctadecanoic acid"),
 ]
 
 
@@ -62,13 +66,12 @@ def test_acyl_whole_molecule_oyl(smiles: str, en: str) -> None:
 
 # 负例：acyl 规则不得误伤。
 # 1) 酰胺/酮作母体的既有路径不变；2) 内部氧代（锚点不在羰基碳）不变；
-# 3) 锚点羰基碳带 N/O 离去基（氨基甲酰/酯羰基）不判酰基，保持现行为。
+# 3) 锚点羰基碳带 O 离去基（酯羰基）不判酰基，保持现行为（带 N 的氨基甲酰见上方 POS_FRAG）。
 NEG = [
     ("CC(=O)Nc1ccccc1", "N-phenylacetamide", "N-苯基乙酰胺"),
     ("CC(=O)c1ccccc1", "1-phenylethanone", "1-苯基乙酮"),
     ("*CCC(=O)C", "3-oxobutyl", "3-氧代丁基"),
     ("*C(=O)OC", "methoxy(oxo)methyl", "甲氧基(氧代)甲基"),
-    ("*C(=O)N", "amino(oxo)methyl", "氨基(氧代)甲基"),
 ]
 
 

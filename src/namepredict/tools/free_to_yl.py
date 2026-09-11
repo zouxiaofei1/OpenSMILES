@@ -115,19 +115,26 @@ _MONONUCLEAR = (("oxidane", "氧化烷", "oxy", "氧基"),  # 单核母体氢化
                 ("imine", "亚胺", "imino", "亚氨基"))  # N 自由价双键：methyl-imine → methylimino（=N-CH3）
 
 
+def _anilino_en(base: str, yl: str) -> str:
+    """N-苯基（可带环取代基）的 azane 去氢：phenyl→anilino、4-chlorophenyl→4-chloroanilino（P-62.2.1.1：phenylamino = anilino*）。"""
+    return base[: -len("phenyl")] + "anilino" if yl == "amino" and base.endswith("phenyl") else base + yl
+
+
 def _mononuclear_en(en: str) -> str | None:
-    """单核氢化物 free 名 → 去氢取代基名：ethyl-oxidane → ethyloxy。"""
+    """单核氢化物 free 名 → 去氢取代基名：ethyl-oxidane → ethyloxy、phenyl-azane → anilino。"""
     for en_suf, _, yl, _ in _MONONUCLEAR:
         if en.endswith("-" + en_suf):
-            return en[: -len(en_suf) - 1] + yl
+            return _anilino_en(en[: -len(en_suf) - 1], yl)
     return None
 
 
 def _mononuclear_zh(zh: str) -> str | None:
-    """中文组装名去氢：乙基-氧化烷 → 乙氧基、乙基-氮烷 → 乙氨基。"""
+    """中文组装名去氢：乙基-氧化烷 → 乙氧基、苯基-氮烷 → 苯胺基、4-氯苯基-氮烷 → 4-氯苯胺基。"""
     for _, zh_suf, _, zy in _MONONUCLEAR:
         if zh.endswith("-" + zh_suf):
             base = zh[: -len(zh_suf) - 1]
+            if zy == "氨基" and base.endswith("苯基"):
+                return base[: -len("苯基")] + "苯胺基"
             return base[: -1] + zy if base.endswith("基") else base + zy
     return None
 
@@ -180,5 +187,6 @@ def free_to_yl(
     fg = _try_fg_prefix(en, zh)
     if fg is not None:
         need_paren = fg[0].endswith("amino") and fg[0] != "amino"  # P-29.3.6：复合前缀（methylamino=CH3-NH-，非普通 amino）需括号与两个独立取代基区分。
+        need_paren = need_paren or (fg[0].endswith("anilino") and fg[0] != "anilino")  # 带环取代基的 anilino（4-chloroanilino）与 …phenylamino 同理需括号（gold：(4-chloroanilino)benzoic acid）；裸 anilino 免括。
         return fg[0], fg[1], need_paren
     return _yl_en(en, attach_locant), _yl_zh(zh, attach_locant, en), paren

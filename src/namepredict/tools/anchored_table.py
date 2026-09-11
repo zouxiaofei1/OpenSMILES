@@ -81,6 +81,11 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "sulfo": RetainedSubstituent( "sulfo", "磺基", "sulfo", "磺基", P, anchored=("*S(=O)(=O)O", ), paren=False, kind="leaf", ),
         "tosyl": RetainedSubstituent( "tosyl", "对甲苯磺酰基", "4-methylbenzenesulfonyl", "4-甲基苯磺酰基", N, anchored=("*S(=O)(=O)c1ccc(C)cc1", ), paren=False, kind="leaf", ),
         "carboxy": RetainedSubstituent( "carboxy", "羧基", "carboxy", "羧基", P, anchored=("*C(=O)O", ), paren=False, kind="leaf", ),
+        "carbamoyl": RetainedSubstituent( "carbamoyl", "氨基甲酰基", "carbamoyl", "氨基甲酰基", P, anchored=("*C(N)=O", ), paren=False, kind="leaf", ),  # P-66.1.1.4.1 氨基甲酸（carbamic acid）的酰基保留前缀；gold/ChEBI 全量 54 处取 carbamoyl，不取 aminocarbonyl/amino(oxo)methyl
+        "carbamoylamino": RetainedSubstituent( "carbamoylamino", "氨基甲酰氨基", "carbamoylamino", "氨基甲酰氨基", P, anchored=("*NC(N)=O", ), paren=True, kind="leaf", ),  # P-66.1.1.6 ureido 在 IUPAC 已不推荐（P_1 附录：ureido/ureylene 不用），优选 carbamoylamino
+        "carbamoyloxy": RetainedSubstituent( "carbamoyloxy", "氨基甲酰氧基", "carbamoyloxy", "氨基甲酰氧基", P, anchored=("*OC(N)=O", ), paren=False, kind="leaf", ),  # 氨基甲酸 O-酯残基（P-66.1.1.4.1）
+        "carbamothioylamino": RetainedSubstituent( "carbamothioylamino", "氨基硫代羰基氨基", "carbamothioylamino", "氨基硫代羰基氨基", P, anchored=("*NC(N)=S", ), paren=True, kind="leaf", ),  # 硫代氨基甲酸残基（P-66.1.1.4：carbamothioyl）
+        "sulfamoyl": RetainedSubstituent( "sulfamoyl", "氨磺酰基", "sulfamoyl", "氨磺酰基", P, anchored=("*S(N)(=O)=O", ), paren=False, kind="leaf", ),  # P-66.1.1.4.2 磺酰胺（sulfamoyl = H2N-SO2-）；N-取代时基名随取代基前移
         "phosphono": RetainedSubstituent( "phosphono", "膦酸", "phosphono", "膦酸", P, anchored=("*P(=O)(O)O", ), paren=False, kind="leaf", ),  # P-102：phosphono 表示 -PO(OH)2，P 直连母体（对比 O 桥的 phosphonooxy）
         "phosphonato": RetainedSubstituent( "phosphonato", "膦酸根", "phosphonato", "膦酸根", P, anchored=("*P(=O)([O-])O", "*P(=O)([O-])[O-]"), paren=False, kind="leaf", ),  # P-102：phosphonato 表示 -PO(O-)2（单/双阴离子）
         "phosphonooxy": RetainedSubstituent( "phosphonooxy", "膦酸氧基", "phosphonooxy", "膦酸氧基", P, anchored=("*OP(=O)(O)O", ), paren=False, kind="leaf", ),  # 磷酸降级前缀（P-67.1.5.1：羧酸等更高优先级 FG 存在时磷酸以 phosphonooxy 前缀表达）
@@ -88,7 +93,7 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "phosphonooxymethyl": RetainedSubstituent( "phosphonooxymethyl", "膦酸氧甲基", "phosphonooxymethyl", "膦酸氧甲基", P, anchored=("*COP(=O)(O)O", ), paren=True, kind="leaf", ),
         "phosphonatooxymethyl": RetainedSubstituent( "phosphonatooxymethyl", "膦酸氧甲基", "phosphonatooxymethyl", "膦酸氧甲基", P, anchored=("*COP(=O)([O-])O", ), paren=True, kind="leaf", ),
         "formyl": RetainedSubstituent( "formyl", "甲酰", "formyl", "甲酰", P, anchored=("*C=O", ), paren=False, kind="leaf", ),
-        "carboxymethyl": RetainedSubstituent( "carboxymethyl", "羧甲基", "carboxymethyl", "羧甲基", P, anchored=("*CC(=O)O", ), paren=False, kind="leaf", ),
+        "carboxymethyl": RetainedSubstituent( "carboxymethyl", "羧甲基", "carboxymethyl", "羧甲基", P, anchored=("*CC(=O)O", ), paren=True, kind="leaf", ),
         "hydroxymethyl": RetainedSubstituent( "hydroxymethyl", "羟甲基", "hydroxymethyl", "羟甲基", P, anchored=("*CO", ), paren=True, kind="leaf", ),
         "nitroso": RetainedSubstituent( "nitroso", "亚硝基", "nitroso", "亚硝基", P, anchored=("*N=O", ), paren=False, kind="leaf", ),
         "azido": RetainedSubstituent( "azido", "叠氮基", "azido", "叠氮基", P, anchored=("*N=[N+]=[N-]", ), paren=False, kind="leaf", ),
@@ -135,10 +140,13 @@ _ANCHOR_INDEX: dict[str, str] = _build_anchor_index()
 
 
 def resolve_name(key: str, *, name_mode: str = "general") -> tuple[str, str]:
-    """返回 registry 键对应的 (en, zh)；当前恒走系统名（systematic_en/zh），general/pin 分派已被注释停用。"""
+    """返回 registry 键对应的 (en, zh)：仅 PIN 级条目取保留名，其余（含 general 级）取系统名。"""
     entry = _REGISTRY[key]
-    
-    return entry.systematic_en, entry.systematic_zh  # 原 pin 分派（name_mode == "pin" 且 level != IupacLevel.PIN）已停用
+    if name_mode == "pin" and entry.level != IupacLevel.PIN:
+        return entry.systematic_en, entry.systematic_zh  # PIN 模式：非 PIN 级保留名回落系统名
+    if entry.level == IupacLevel.PIN:
+        return entry.en, entry.zh  # 唯一有独立保留名的 PIN 级条目为 anilino（苯胺基）；gold 全量 41:0 取保留名
+    return entry.systematic_en, entry.systematic_zh  # general/not_rec 级：gold 对 vinyl/isobutyl/tosyl 等一律取系统名
 
 
 def pick_root(mol: Mol, atoms: frozenset[int]) -> int:

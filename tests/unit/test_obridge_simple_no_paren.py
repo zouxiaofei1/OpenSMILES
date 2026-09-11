@@ -5,8 +5,8 @@
 - 规则：当取代基是"简单取代基 + -oxy/-sulfanyl 桥"（如 propan-2-yloxy、
   hexadecanoyloxy、acetyloxy、benzyloxy、naphthalen-1-yloxy、propan-2-ylsulfanyl），
   且前端(R)本身是不需括号的简单取代基时，整个前缀不加围栏（ChEBI/gold 平铺式）。
-- 反例：前端被取代（4-nitrophenyl-、2,6-dichlorophenyl-、5-(trifluoromethyl)pyridin-2-yl-）
-  仍整体加括号；氨基(-amino)连接不受此规则影响。
+- 反例：前端被取代（4-nitrophenyl-、2,6-dichlorophenyl-）时前缀须加围栏；括号只括前端、
+  -oxy 留括号外（5-(trifluoromethyl)pyridin-2-yl]oxyphenoxy，P-63.2.2.1.1 的 (pyridin-2-yl)oxy）。
 """
 from __future__ import annotations
 
@@ -68,10 +68,11 @@ NEGATIVES = [
         "Clc1ccc(CCC(Cn2ccnc2)Sc2c(Cl)cccc2Cl)cc1",
         "1-[4-(4-chlorophenyl)-2-(2,6-dichlorophenylsulfanyl)butyl]imidazole",
     ),
-    # 前端 5-(trifluoromethyl)pyridin-2-yl 被取代 → 整体加括号
+    # 前端 5-(trifluoromethyl)pyridin-2-yl 被取代 → 前端括起、oxy 留括号外（P-63.2.2.1.1：
+    # (pyridin-2-yl)oxy；P-65.6.3.2.3：3-[(pyridine-3-carbonyl)oxy]…）
     (
         "CCCCOC(=O)C(C)Oc1ccc(Oc2ccc(C(F)(F)F)cn2)cc1",
-        "butyl 2-[4-[5-(trifluoromethyl)pyridin-2-yloxy]phenoxy]propanoate",
+        "butyl 2-[4-[5-(trifluoromethyl)pyridin-2-yl]oxyphenoxy]propanoate",
     ),
     # -amino 连接不在氧/硫规则内：benzylamino 保留括号
     ("OCCNCc1ccccc1", "2-(benzylamino)ethanol"),

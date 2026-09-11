@@ -84,30 +84,65 @@ def _wrap_stem(stem: str, need: bool) -> str:
 
 _STEREO_LEAD_RE = re.compile(r"\(\d+[RSEZ](?:,\d+[RSEZ])*\)-")  # 取代基名以立体描述符开头：(1Z)-、(2R,4R)-、(9Z,12Z)-。
 
-_BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl")  # O/S 桥后缀（gold 平铺式 -yl]oxy/-yl]sulfanyl：括号闭在 -yl 后、后缀放括号外，见 P-63.2.2）。
+_BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl", "amino")  # O/S/N 桥后缀（gold 平铺式 -yl]oxy/-yl]amino：括号闭在 -yl 后、后缀放括号外，见 P-63.2.2.1）。
+
+_CHAIN_STEM = (r"(?:meth|eth|prop|but|pent|hex|hept|oct|non|dec|undec|dodec|tridec|tetradec|"
+               r"pentadec|hexadec|heptadec|octadec|nonadec|eicos)")
+_SIMPLE_CHAIN_YL_RE = re.compile(r"^(?:\d+-)?" + _CHAIN_STEM + r"a?n-\d+-yl$")  # 无取代直链 -yl（propan-2-yl）：gold 与 O/S 桥融合平铺（propan-2-yloxy），不拆围栏。
+_SUBST_CHAIN_YL_RE = re.compile(_CHAIN_STEM + r"a?n-\d+-yl$")  # 带取代基的直链 -yl（1,3-dihydroxypropan-2-yl）：gold 仍与桥融合平铺。
+_TERMINAL_CHAIN_YL_RE = re.compile(_CHAIN_STEM + r"yl$")  # 自由价在端碳的直链基（…phenyl)methyl、5-(X)pentyl）：前端括号只属于其取代基，与桥融合平铺。
+_BENZYL_TAIL_RE = re.compile(r"\]methyl$")  # 苄基型前端（…oxolan-2-yl]methyl）：桥后缀直接缀在甲基上（methylsulfanyl），不拆。
+
+
+def _front_needs_enclosure(base: str, suf: str) -> bool:
+    """O/S/N 桥前端是否为自带围栏的复合取代基：带立体描述符的自由价碳，或（oxy/sulfanyl 桥时）环型内嵌位次 …oxan-2-yl。"""
+    if base.endswith(("sulfonyl", "sulfinyl")):  # 磺酰基/亚磺酰基前端的围栏由 L3 定形（复合前端括起、简单前端平铺），此处不再拆。
+        return False
+    if _BENZYL_TAIL_RE.search(base):  # 苄基型前端（…yl]methylsulfanyl）：桥后缀直接缀在甲基上，不拆。
+        return False
+    if re.search(r"\d[RrSs]", base) and not base.endswith("oyl"):  # 自由价碳带手性描述符（(2R)-2-amino-2-carboxyethyl）：前端必须括起；酰基前端按 …oyloxy 融合（P-63.2.2.1.1 的 acetyloxy/benzoyloxy）。
+        return True
+    if "(" in base:  # 前端自带括号（取代基/立体描述符）；自由价在端碳的链基（benzyl/5-(X)pentyl）平铺。
+        return not _TERMINAL_CHAIN_YL_RE.search(base)
+    if suf == "amino":  # P-63.2.2.1.2：amino 桥按 HS- 取代式（naphthalen-2-ylamino）融合，无括号前端不拆。
+        return False
+    return bool(re.search(r"-\d+-yl$", base)) and not _SUBST_CHAIN_YL_RE.search(base)
 
 
 def _split_bridge_suffix(stem: str) -> tuple[str, str] | None:
-    """基 -<N>-yl]oxy/-yl]sulfanyl 拆分：(base-yl, 桥后缀)；仅拆 base 含手性描述符(如 2R/3S)的情形，无手性 acyclic/苄基(…methylsulfanyl/…propan-2-yloxy 等)整括不拆。sulfinyl/sulfonyl 桥的围栏已由 L3 定形（复合前端括起、简单前端平铺），此处不再拆分。"""
+    """拆 -yl]oxy/-yl]sulfanyl/-yl]amino 平铺式：(前端, 桥后缀)；括号闭在前端 -yl 后、桥后缀留在括号外。前端为简单保留基（methyl/benzyl）、直链 -yl（propan-2-yl）或酰基时整括不拆（P-63.2.2.1.1）。"""
     for suf in _BRIDGE_SUFFIX_EN:
         if not stem.endswith(suf):
             continue
         base = stem[: -len(suf)]
-        if not (base.endswith("yl") and re.search(r"\d[RrSs]", base)):
+        if not base.endswith("yl") or not _front_needs_enclosure(base, suf):
             continue
         return base, suf
     return None
 
 
+def _sbridge_flat_stem(stem: str) -> bool:
+    """磺酰基/亚磺酰基桥 + 直链 -yl 前端：英文侧平铺不加围栏（propan-2-ylsulfonyl，P-63.2.1；中文侧仍括注）。"""
+    return any(stem.endswith(suf) and _SIMPLE_CHAIN_YL_RE.match(stem[: -len(suf)])
+               for suf in ("sulfonyl", "sulfinyl"))
+
+
+def _bridge_body(base: str, suf: str) -> str:
+    """O/S/N 桥平铺式主体：前端自带围栏 + 桥后缀留括号外；前端围栏已是方括号且桥为氨基时整体再括一层（P-63.2.2.1.2：[[X]amino]propanoyl）。"""
+    body = f"{_wrap_stem(base, True)}{suf}"
+    return f"[{body}]" if body.startswith("[") and suf in ("amino", "氨基") else body
+
+
 def _prefix_one_en(stem: str, subs: list, omit: bool) -> str:
     """拼单个英文前缀：数量 + 词干（可省略位次时省略 locant）。"""
     mult = _complex_mult_en(stem, subs, len(subs)) or _mult_en(len(subs))
-    need = _stem_needs_paren(stem, subs, omit)
-    if not omit and not mult and need:
+    need = _stem_needs_paren(stem, subs, omit) and not _sbridge_flat_stem(stem)
+    if need:
         sp = _split_bridge_suffix(stem)
-        if sp is not None:  # O/S 桥平铺式：括号闭在 -yl 后，-oxy/-sulfanyl 追加在括号外（gold 449:0 形式）。
+        if sp is not None:  # O/S/N 桥平铺式：括号闭在前端 -yl 后，-oxy/-sulfanyl/-amino 追加在括号外（P-63.2.2.1.1）。
             base, suf = sp
-            return f"{_locant_str(subs)}-{_wrap_stem(base, True)}{suf}"
+            body = _bridge_body(base, suf)
+            return f"{mult}{body}" if omit else f"{_locant_str(subs)}-{mult}{body}"
     s = _wrap_stem(stem, need)
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 
@@ -127,13 +162,34 @@ def _complex_mult_zh(stem: str, subs: list, n: int) -> str:
     return {2: "双", 3: "三", 4: "四"}.get(n, "") if (("羧" in stem) or any(s.get("paren") for s in subs)) else ""
 
 
-def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False) -> str:
+def _split_bridge_suffix_zh(zh_stem: str, en_stem: str) -> tuple[str, str] | None:
+    """中文侧 O/S/N 桥平铺式拆分（…基]氧基/硫基/氨基）：判据与英文侧同步，仅当英文 stem 拆时才拆，保证中英围栏同形。"""
+    if _split_bridge_suffix(en_stem) is None:
+        return None
+    for suf in ("氧基", "硫基", "氨基"):
+        if zh_stem.endswith(suf):
+            base = zh_stem[: -len(suf)]
+            if base.endswith("基"):
+                return base, suf
+            if base.endswith("-"):  # 环/链自由价位次在桥融合时被氧基顶掉「基」（喹啉-8-氧基 → 喹啉-8-基），拆时补回。
+                return f"{base}基", suf
+    return None
+
+
+def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False,
+                   en_stem: str = "") -> str:
     """拼单个中文前缀：数量 + 词干（CF3 特例：简单氟代甲基不加括号）。"""
     mult = _complex_mult_zh(zh_stem, subs, len(subs)) or _mult_zh(len(subs))
     en = subs[0].get("en") or ""
     need = any(s.get("paren") for s in subs) or (en[:1].isdigit() if en else False)  # 停用：zh_stem == "三氟甲基" 时 need = False（简单氟代甲基不加括号）
     if not omit and _STEREO_LEAD_RE.match(en):  # 与英文侧同步：前导立体描述符 + 位次须整体围栏（5-[(1Z)-丙-1-烯基]苯）
         need = True
+    if need:
+        sp = _split_bridge_suffix_zh(zh_stem, en_stem)
+        if sp is not None:  # 与英文侧同形：括号闭在前端「基」后，氧基/硫基/氨基留括号外（P-63.2.2.1.1）
+            base, suf = sp
+            body = _bridge_body(base, suf)
+            return f"{mult}{body}" if omit else f"{_locant_str(subs)}-{mult}{body}"
     s = _wrap_stem(zh_stem, need)
     return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
 
@@ -174,7 +230,7 @@ def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False,
         s_zh = _wrap_stem(zh_stem, need)
         tokens = _n_prime_tokens(subs, primes)  # 同 N 多取代 → N,N-；跨不同 N → N,N'-（两个甲基挂不同氮时漏撇号会把结构写成另一个分子）
         return _n_prefix_en(len(subs), s_en, tokens, subs), _n_prefix_zh(len(subs), s_zh, tokens, subs)
-    return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit, paren_cf3)
+    return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit, paren_cf3, stem)
 
 
 def _n_prime_map(substituents: list) -> dict[int, int]:

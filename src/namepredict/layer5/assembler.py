@@ -5,7 +5,7 @@ from dataclasses import replace
 from namepredict.constants import AMIDO_RETAINED, MULT_EN, MULT_ZH
 from namepredict.layer5.chain_engine import _ACYL_HALIDE_BY_HAL, _KIND_TABLE, _alkane_names, _chain_names
 from namepredict.layer5.stems import maybe_anion_names, maybe_metal_salt_names
-from namepredict.layer5.assembler_prefixes import _prefix_for
+from namepredict.layer5.assembler_prefixes import _SIMPLE_CHAIN_YL_RE, _prefix_for
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
 from namepredict.tools.free_to_yl import free_to_yl
 from namepredict.types import NameResult
@@ -178,9 +178,16 @@ def _bridge_enclosed_names(a: dict, stem_en: str, stem_zh: str) -> tuple[str, st
     """S 桥前端为复合取代基时加围栏：EN (4-methoxyphenyl)sulfonyl、ZH (4-甲氧基苯基)磺酰基；非 S 桥或前端为简单取代基（propan-2-yl）返回 None 走平铺融合。"""
     if stem_en not in ("sulfinyl", "sulfonyl") or not a.get("paren"):
         return None
+    if _SIMPLE_CHAIN_YL_RE.match(a.get("en") or ""):  # 直链 -yl 前端与桥融合：propan-2-ylsulfonyl（非 (propan-2-yl)sulfonyl）
+        return None
     w_en = f"[{a['en']}]" if "(" in a["en"] else f"({a['en']})"  # 前端自带括号时升级方括号（P-16.5.2 嵌套标记）
     w_zh = f"[{a['zh']}]" if "(" in a["zh"] else f"({a['zh']})"
     return f"{w_en}{stem_en}", f"{w_zh}{stem_zh}基"  # ZH 前端基不可省（(4-甲氧基苯基)磺酰基，非 …苯磺酰基）
+
+
+def _alpha_key(name: str) -> str:
+    """P-14.5 字母序比较键：以小写字母为准，忽略位次/括号/连字符等非字母字符。"""
+    return "".join(c for c in name.lower() if c.isalpha())
 
 
 def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
@@ -194,6 +201,8 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
         return _MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
     if len(subs) == 1:
         a = subs[0]
+        if stem_en == "sulfonyl" and a["en"].endswith("amino") and a["zh"].endswith("氨基"):  # P-66.1.1.4.2 + Glossary：(phenylamino)sulfonyl = phenylsulfamoyl*；N-取代基与 sulfamoyl 融合（丁基(甲基)sulfamoyl），不走 amino 围栏
+            return a["en"][: -len("amino")] + "sulfamoyl", a["zh"] + "磺酰基"
         bridge = _bridge_enclosed_names(a, stem_en, stem_zh)  # 围栏在 L3 一次定形，中英文同步产出，L5 前缀渲染不再二次拆分
         if bridge is not None:
             numbered["bridge_self_enclosed"] = True  # 名下已自带围栏，转取代基前缀时不再整体加括号
@@ -217,6 +226,16 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
         base = ordered[0]
         return (f"{MULT_EN[len(ordered)]}{base['en']}{zero[0]}",
                 f"{MULT_ZH[len(ordered)]}{base['zh']}{zero[1]}")
+    aryl = [s for s in ordered if s["en"].endswith("phenyl") and s["zh"].endswith("苯基")]
+    if len(aryl) == 1:  # P-62.2.1.1：N-芳基-N-某基胺取 anilino，非芳基 N-取代基以 N- 前缀（4-fluoro-N-propan-2-ylanilino）；两前缀按 P-14.5 字母序
+        ring = aryl[0]
+        other = next(s for s in ordered if s is not ring)
+        ring_en, ring_zh = ring["en"][: -len("phenyl")], ring["zh"][: -len("苯基")]
+        if _alpha_key(ring_en) <= _alpha_key(other["en"]):
+            return (f"{ring_en}-N-{other['en']}anilino" if ring_en else f"N-{other['en']}anilino",
+                    f"{ring_zh}-N-{other['zh']}苯胺基" if ring_zh else f"N-{other['zh']}苯胺基")
+        return (f"N-{other['en']}-{ring_en}anilino" if ring_en else f"N-{other['en']}anilino",
+                f"N-{other['zh']}-{ring_zh}苯胺基" if ring_zh else f"N-{other['zh']}苯胺基")
     first, rest = ordered[0], ordered[1:]  # 双不同 N-取代基：字母序首基平铺，其后各基分别加括号紧贴 amino（P-62.2.2.1：多取代氨基须逐基消歧，2-chloroethylethylamino → 2-chloroethyl(ethyl)amino）。
     return (first["en"] + "".join(f"({s['en']})" for s in rest) + zero[0],
             first["zh"] + "".join(f"({s['zh']})" for s in rest) + zero[1])
