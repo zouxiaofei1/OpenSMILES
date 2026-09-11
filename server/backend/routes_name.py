@@ -9,22 +9,22 @@ from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Literal
 
-from server.legacy_engines import name_result as legacy_name_result
-from server.ml_engine import name_result as ml_name_result
+from server.backend.legacy_engines import name_result as legacy_name_result
+from server.backend.ml_engine import name_result as ml_name_result
 
 import httpx
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from benchmarks.preview_metrics import similarity
-from server.atom_ids_svg import build_atom_ids_svg
-from server.deps import get_namer, name_result_dict
-from server.locants_svg import build_locants_svg
+from server.backend.atom_ids_svg import build_atom_ids_svg
+from server.backend.deps import get_namer, name_result_dict
+from server.backend.locants_svg import build_locants_svg
 
 router = APIRouter(prefix="/api/v1", tags=["name"])
 
-ROOT = Path(__file__).resolve().parents[1]
-GOLD_SOURCE = ROOT / "data" / "merged_benchmark.json"
+ROOT = Path(__file__).resolve().parents[2]
+GOLD_SOURCE = ROOT / "benchmarks" / "merged_benchmark.json"
 
 # 懒加载的基准索引(同一份 merged_benchmark.json 一次解析产出两张表):
 #   canonical SMILES → gold 记录 — Namer 页命名时附带标准答案

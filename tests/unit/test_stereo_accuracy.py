@@ -14,7 +14,7 @@ import pytest
 from benchmarks.stereo_benchmark import run_rows, stereo_tokens
 
 ROOT = Path(__file__).resolve().parents[2]
-_DATA = ROOT / "data" / "merged_benchmark.json"
+_DATA = ROOT / "benchmarks" / "merged_benchmark.json"
 _N_SAMPLE = 20  # 样本量：太长 pytest 慢；约 8s
 
 

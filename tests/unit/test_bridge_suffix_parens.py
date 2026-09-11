@@ -13,7 +13,7 @@
   `[[(1S)-1-carboxy-3-phenylpropyl]amino]propanoyl`。
 - 中文侧与英文侧同形（括号闭在前端「基」后，氧基/硫基/氨基留括号外）。
 
-每个期望值均取自 data/merged_benchmark.json 的同分子 gold（见行末 id）。
+每个期望值均取自 benchmarks/merged_benchmark.json 的同分子 gold（见行末 id）。
 """
 from __future__ import annotations
 

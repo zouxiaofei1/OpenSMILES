@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-_ML_ROOT = Path(__file__).resolve().parents[1] / "tools" / "ml_models"
+_ML_ROOT = Path(__file__).resolve().parents[2] / "tools" / "ml_models"
 _ALOAD_LOCK = threading.Lock()
 _INFER_LOCK = threading.Lock()
 _engine: Any = None

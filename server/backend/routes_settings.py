@@ -10,7 +10,7 @@ from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from server.settings_store import get_store
+from server.backend.settings_store import get_store
 
 router = APIRouter(prefix="/api/v1", tags=["settings"])
 

@@ -1,26 +1,28 @@
 """FastAPI app entry: Namer only.
 
 Run:
-  uvicorn server.app:app --host 127.0.0.1 --port 8765
+  uvicorn server.backend.app:app --host 127.0.0.1 --port 8765
 """
 
 from __future__ import annotations
+
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import Response
 from starlette.types import Scope
 
-from server.routes_name import router as name_router
-from server.routes_benchmark import router as benchmark_router
-from server.routes_debug import router as debug_router
-from server.routes_layer_benchmark import router as layer_benchmark_router
-from server.routes_code_analysis import router as code_analysis_router
-from server.routes_call_graph import router as call_graph_router
-from server.routes_settings import router as settings_router
-from server.routes_wiki import router as wiki_router
-from server.routes_iupac import IUPAC_DIR, router as iupac_router
-from server.routes_history import router as history_router
+from server.backend.routes_name import router as name_router
+from server.backend.routes_benchmark import router as benchmark_router
+from server.backend.routes_debug import router as debug_router
+from server.backend.routes_layer_benchmark import router as layer_benchmark_router
+from server.backend.routes_code_analysis import router as code_analysis_router
+from server.backend.routes_call_graph import router as call_graph_router
+from server.backend.routes_settings import router as settings_router
+from server.backend.routes_wiki import router as wiki_router
+from server.backend.routes_iupac import IUPAC_DIR, router as iupac_router
+from server.backend.routes_history import router as history_router
 
 app = FastAPI(title="ChemAgent Namer", version="0.1.0")
 app.include_router(name_router)
@@ -70,4 +72,5 @@ class NoCacheHTMLJSStaticFiles(StaticFiles):
 app.mount("/iupac-cn", StaticFiles(directory=str(IUPAC_DIR)), name="iupac_cn")
 
 # Static UI last so /api/* and /health win over StaticFiles.
-app.mount("/", NoCacheHTMLJSStaticFiles(directory="web", html=True), name="web")
+WEB_DIR = Path(__file__).resolve().parents[2] / "server" / "web"
+app.mount("/", NoCacheHTMLJSStaticFiles(directory=str(WEB_DIR), html=True), name="web")

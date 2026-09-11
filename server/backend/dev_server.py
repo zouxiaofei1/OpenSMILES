@@ -12,7 +12,7 @@ mtime snapshots instead and restart uvicorn on change, killing the whole process
 tree so no stale child keeps holding the port.
 
 Run from the project root:
-    .venv\\Scripts\\python.exe scripts\\dev_server.py
+    .venv\\Scripts\\python.exe server\\backend\\dev_server.py
 """
 
 from __future__ import annotations
@@ -22,11 +22,11 @@ import subprocess
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 PORT = 8766
 UVICORN = [
     str(ROOT / ".venv" / "Scripts" / "uvicorn.exe"),
-    "server.app:app",
+    "server.backend.app:app",
     "--host", "127.0.0.1",
     "--port", str(PORT),
 ]

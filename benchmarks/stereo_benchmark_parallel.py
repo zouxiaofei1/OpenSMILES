@@ -5,8 +5,8 @@
 快照 diff（默认 benchmarks/.last_stereo.json）。
 
 Usage:
-  python -m benchmarks.stereo_benchmark_parallel --data data/merged_benchmark.json
-  python -m benchmarks.stereo_benchmark_parallel --data data/merged_benchmark.json --workers 8
+  python -m benchmarks.stereo_benchmark_parallel --data benchmarks/merged_benchmark.json
+  python -m benchmarks.stereo_benchmark_parallel --data benchmarks/merged_benchmark.json --workers 8
 """
 from __future__ import annotations
 
@@ -171,7 +171,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Parallel stereo benchmark (立体 token 正确比例；较串行更快)",
     )
-    p.add_argument("--data", type=Path, required=True, help="Path to merged_benchmark.json")
+    p.add_argument("--data", type=Path, required=True, help="Path to benchmarks/merged_benchmark.json")
     p.add_argument("--limit", type=int, default=None, help="Optional row limit")
     p.add_argument("--min-len", type=int, default=0, help="参考英文名最小长度")
     p.add_argument("--sample", type=int, default=0, help="取名长最长 N 条（0=全部立体行）")

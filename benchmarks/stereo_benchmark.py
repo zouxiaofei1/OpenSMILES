@@ -1,7 +1,7 @@
 """立体命名 benchmark：只比名称里的立体描述符 token（R/S/E/Z，含 fused 位次如 3aR），
 忽略整名其它差异（前缀排序、氧桥括号写法），在 benchmark 长立体名上量"立体正确比例"。
 可反复运行：存快照（默认 benchmarks/.last_stereo.json），下次自动 diff 报每行 REGRESS/IMPROVE。
-用法：python -m benchmarks.stereo_benchmark --data data/merged_benchmark.json
+用法：python -m benchmarks.stereo_benchmark --data benchmarks/merged_benchmark.json
 """
 from __future__ import annotations
 
@@ -255,7 +255,7 @@ def _select_rows(data: list[dict], *, min_len: int, sample: int) -> list[dict]:
 def main(argv: list[str] | None = None) -> None:
     """CLI：全量/样本立体行测量，可写/比快照。"""
     p = argparse.ArgumentParser(description="立体命名 benchmark（比立体 token 正确比例）")
-    p.add_argument("--data", type=str, default="data/merged_benchmark.json")
+    p.add_argument("--data", type=str, default="benchmarks/merged_benchmark.json")
     p.add_argument("--min-len", type=int, default=0, help="参考英文名最小长度")
     p.add_argument("--sample", type=int, default=0, help="取名长最长 N 条（0=全部立体行）")
     p.add_argument("--workers", type=int, default=0, help="并行 worker 数（0=串行）")

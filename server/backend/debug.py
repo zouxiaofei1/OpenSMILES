@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 import sys
 
-_HERE = os.path.dirname(os.path.abspath(__file__))  # E:\chem\src\namepredict
-_ROOT = os.path.dirname(os.path.dirname(_HERE))     # E:\chem
+_HERE = os.path.dirname(os.path.abspath(__file__))  # E:\dev\chem\server\backend
+_ROOT = os.path.dirname(os.path.dirname(_HERE))     # E:\dev\chem
 sys.path = [p for p in sys.path if p != _HERE]
 for _p in (_ROOT, os.path.join(_ROOT, "src")):
     if _p not in sys.path:

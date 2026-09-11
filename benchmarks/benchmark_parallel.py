@@ -1,9 +1,9 @@
 """Parallel bilingual benchmark scorer (faster; does not replace sequential script).
 
 Usage:
-  python -m benchmarks.benchmark_parallel --data data/merged_benchmark.json
-  python -m benchmarks.benchmark_parallel --data data/merged_benchmark.json --workers 8
-  python -m benchmarks.benchmark_parallel --data data/merged_benchmark.json --max-hac 50 --time
+  python -m benchmarks.benchmark_parallel --data benchmarks/merged_benchmark.json
+  python -m benchmarks.benchmark_parallel --data benchmarks/merged_benchmark.json --workers 8
+  python -m benchmarks.benchmark_parallel --data benchmarks/merged_benchmark.json --max-hac 50 --time
 """
 
 from __future__ import annotations
@@ -270,7 +270,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Parallel bilingual SMILES namer benchmark (faster alternative)",
     )
-    p.add_argument("--data", type=Path, required=True, help="Path to merged_benchmark.json")
+    p.add_argument("--data", type=Path, required=True, help="Path to benchmarks/merged_benchmark.json")
     p.add_argument("--limit", type=int, default=None, help="Optional row limit")
     p.add_argument("--json", action="store_true", help="Print full report as JSON")
     p.add_argument(

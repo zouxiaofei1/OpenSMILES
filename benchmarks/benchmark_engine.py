@@ -7,7 +7,7 @@ result) can be scored head-to-head with the active src namer without touching th
 stable harnesses (benchmark.py / benchmark_parallel.py / their snapshots).
 
 Usage:
-  python -m benchmarks.benchmark_engine --engine v3 --metric loose  # default data/merged_benchmark.json
+  python -m benchmarks.benchmark_engine --engine v3 --metric loose  # default benchmarks/merged_benchmark.json
   python -m benchmarks.benchmark_engine --engine src --metric loose # reference: active src namer
   python -m benchmarks.benchmark_engine --engine v3 --limit 200 --workers 8 --metric strict
 """
@@ -354,7 +354,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Score an arbitrary naming engine on the gold benchmark")
     p.add_argument("--engine", choices=["v2", "v3", "src"], default="v3",
                    help="v2/v3 = tools/namepredict-v{2,3}; src = active src namer (default: v3)")
-    p.add_argument("--data", type=Path, default=Path("data/merged_benchmark.json"))
+    p.add_argument("--data", type=Path, default=Path("benchmarks/merged_benchmark.json"))
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--workers", type=int, default=None)
     p.add_argument("--timeout", type=float, default=3.0, help="Per-row hard timeout (s)")

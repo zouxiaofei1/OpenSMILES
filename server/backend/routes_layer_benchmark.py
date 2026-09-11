@@ -39,8 +39,8 @@ from namepredict.layer1.analyzer import analyze
 
 router = APIRouter(prefix="/api/v1", tags=["layer-benchmark"])
 
-ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "data" / "merged_benchmark.json"
+ROOT = Path(__file__).resolve().parents[2]
+SOURCE = ROOT / "benchmarks" / "merged_benchmark.json"
 SUPPORTED_LAYERS = (0, 1)
 
 

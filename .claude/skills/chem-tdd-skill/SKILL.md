@@ -52,7 +52,7 @@ pytest tests/unit -q
 python tools/structure_lint.py
 
 # 全量（或编排器指定的）benchmark
-python -m benchmarks.benchmark --data data/merged_benchmark.json
+python -m benchmarks.benchmark --data benchmarks/merged_benchmark.json
 # 调试可加 --limit N；门禁轮次以编排器 {{bench_cmd}} 为准
 ```
 
@@ -62,7 +62,7 @@ python -m benchmarks.benchmark --data data/merged_benchmark.json
 
 | 可写 | 只读 |
 |------|------|
-| `src/namepredict/`（namer 入口、layer0–5、cache） | `data/*` 金标与合并集 |
+| `src/namepredict/`（namer 入口、layer0–5、cache） | `benchmarks/*.json` 金标与合并集 |
 | `tests/unit/` | `benchmarks/benchmark.py` |
 
 

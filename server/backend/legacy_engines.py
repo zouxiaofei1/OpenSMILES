@@ -17,7 +17,7 @@ import types
 from pathlib import Path
 from typing import Any
 
-_ROOT = Path(__file__).resolve().parents[1]
+_ROOT = Path(__file__).resolve().parents[2]
 
 # 引擎 → (工具目录名, sys.modules 别名, 是否需要 capitalization shim)
 ENGINES: dict[str, dict[str, Any]] = {

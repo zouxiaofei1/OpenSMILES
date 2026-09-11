@@ -33,12 +33,12 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
-from server import history_store
+from server.backend import history_store
 
 router = APIRouter(prefix="/api/v1", tags=["call-graph"])
 
-ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / "data" / "merged_benchmark.json"
+ROOT = Path(__file__).resolve().parents[2]
+DATA = ROOT / "benchmarks" / "merged_benchmark.json"
 
 _CACHE: dict[str, dict[str, Any]] = {}
 _CACHE_LOCK = threading.Lock()

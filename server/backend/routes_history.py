@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import APIRouter, Query
 
-from server import history_store
+from server.backend import history_store
 
 router = APIRouter(prefix="/api/v1", tags=["history"])
 

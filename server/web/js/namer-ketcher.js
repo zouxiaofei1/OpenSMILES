@@ -225,7 +225,7 @@
         .then(function (html) {
           if (html.indexOf("window.global") < 0) {
             throw new Error(
-              "Ketcher shell 缺少 global shim；请运行 bash tools/build_ketcher_vendor.sh 或检查 web/vendor/ketcher/index.html"
+              "Ketcher shell 缺少 global shim；请运行 bash tools/build_ketcher_vendor.sh 或检查 server/web/vendor/ketcher/index.html"
             );
           }
           iframe.src = busted;

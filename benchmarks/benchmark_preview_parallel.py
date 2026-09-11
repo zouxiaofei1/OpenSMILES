@@ -1,7 +1,7 @@
 """Parallel generator for the benchmark *preview* cache (per-row predictions).
 
 Spawned as `python -m benchmarks.benchmark_preview_parallel` by
-server/routes_benchmark.py (live + historical-commit branches), replacing the
+server/backend/routes_benchmark.py (live + historical-commit branches), replacing the
 old single-process `for`-loop inline scripts. Naming each gold row is
 CPU-heavy, so rows run on a process pool (one SMILESNNamer per worker, cache
 cleared per row for determinism, mirroring benchmark_parallel.py).

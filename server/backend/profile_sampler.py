@@ -26,7 +26,7 @@ from pathlib import Path
 
 import pstats
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 # NAMEPREDICT_SRC_ROOT lets the history feature sample a past commit's code from
 # its worktree without running that commit's own (possibly missing) sampler.
 _SRC_ROOT = Path(os.environ.get("NAMEPREDICT_SRC_ROOT") or (ROOT / "src"))
@@ -247,7 +247,7 @@ def main() -> None:
     ap.add_argument("--n", type=int, required=True)
     ap.add_argument("--module", default="namepredict")
     ap.add_argument("--agg", action="store_true")
-    ap.add_argument("--data", default=str(ROOT / "data" / "merged_benchmark.json"))
+    ap.add_argument("--data", default=str(ROOT / "benchmarks" / "merged_benchmark.json"))
     ap.add_argument("--workers", type=int, default=0)
     args = ap.parse_args()
 

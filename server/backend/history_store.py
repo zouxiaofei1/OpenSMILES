@@ -20,10 +20,10 @@ import time
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CACHE_ROOT = ROOT / "tools" / "history_cache"
 WT_BASE = ROOT / ".claude" / "worktrees" / "history"
-DATA = ROOT / "data" / "merged_benchmark.json"
+DATA = ROOT / "benchmarks" / "merged_benchmark.json"
 
 # ---------------------------------------------------------------------------
 # git commit listing (module-level cache, 5 min TTL)

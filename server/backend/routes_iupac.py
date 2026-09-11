@@ -16,7 +16,7 @@ from fastapi import APIRouter, Query
 
 router = APIRouter(prefix="/api/v1", tags=["iupac"])
 
-IUPAC_DIR = Path(__file__).resolve().parents[1] / "docs" / "iupac" / "cn_translated"
+IUPAC_DIR = Path(__file__).resolve().parents[2] / "docs" / "iupac" / "cn_translated"
 
 # ![](fig_p101/cholestane.png) -> ![](/iupac-cn/fig_p101/cholestane.png)
 _IMG_RE = re.compile(r"(!\[[^\]]*\]\()([^)\s'\"#)]+)")

@@ -14,7 +14,7 @@ from fastapi import APIRouter, Query
 
 router = APIRouter(prefix="/api/v1", tags=["wiki"])
 
-WIKI_DIR = Path(__file__).resolve().parents[1] / "docs" / "wiki"
+WIKI_DIR = Path(__file__).resolve().parents[2] / "docs" / "wiki"
 
 
 def _walk(d: Path) -> dict[str, Any]:

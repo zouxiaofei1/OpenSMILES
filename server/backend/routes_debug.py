@@ -28,7 +28,7 @@ from namepredict.layer5.assembler import assemble
 
 router = APIRouter(prefix="/api/v1", tags=["debug"])
 
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parents[2]
 
 
 class DebugBody(BaseModel):
@@ -293,13 +293,13 @@ def debug_smiles(body: DebugBody) -> dict[str, Any]:
 
 @router.post("/debug-print")
 def debug_print(body: DebugBody) -> dict[str, Any]:
-    """Run scripts/debug.py on the SMILES and return its captured stdout.
+    """Run server/backend/debug.py on the SMILES and return its captured stdout.
 
     Executes in a fresh subprocess so every call reflects the latest src/
     code, and any print() executed anywhere in the naming path ends up in
     `stdout` — exactly what the "打印调试" panel in debug.html shows.
     """
-    script = _ROOT / "scripts" / "debug.py"
+    script = _ROOT / "server" / "backend" / "debug.py"
     env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     try:
         proc = subprocess.run(
@@ -331,7 +331,7 @@ _ERR_KEEP_LINES = 400
 
 def _debug_print_stream(smiles: str):
     """Yield debug.py stdout lines live, then stderr tail / exit code at the end."""
-    script = _ROOT / "scripts" / "debug.py"
+    script = _ROOT / "server" / "backend" / "debug.py"
     # PYTHONUNBUFFERED + -u: 子进程写管道默认块缓冲，会把 src 命名管线的 print
     # 攒到缓冲满才出现；去掉缓冲才能逐行实时到达。
     env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1"}
@@ -408,7 +408,7 @@ def _debug_print_stream(smiles: str):
 
 @router.post("/debug-print-stream")
 def debug_print_stream(body: DebugBody) -> StreamingResponse:
-    """Stream scripts/debug.py output live (text/plain), line by line."""
+    """Stream server/backend/debug.py output live (text/plain), line by line."""
     return StreamingResponse(
         _debug_print_stream(body.smiles),
         media_type="text/plain; charset=utf-8",

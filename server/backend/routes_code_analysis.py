@@ -17,11 +17,11 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from server import history_store
+from server.backend import history_store
 
 router = APIRouter(prefix="/api/v1", tags=["code-analysis"])
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 LAYER_DIR = ROOT / "src" / "namepredict"
 # (gid, dirname, label) — tools is the shared layer-agnostic package.
 GROUPS = [

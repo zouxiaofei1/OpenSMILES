@@ -1,9 +1,9 @@
 """Benchmark preview API: run predictions against a selectable data file.
 
-Data source: data/<data_file>.json (default merged_benchmark.json, 4070 gold rows).
+Data source: benchmarks/<data_file>.json (default merged_benchmark.json, 4070 gold rows).
 Cache:       tools/benchmark_pred_preview_<stem>.json (legacy name kept for default).
 
-GET  /api/v1/benchmark-preview/datasets   — list benchmark-shaped data files under data/
+GET  /api/v1/benchmark-preview/datasets   — list benchmark-shaped data files under benchmarks/
 GET  /api/v1/benchmark-preview        — serve cached rows + generation status
 POST /api/v1/benchmark-preview/refresh — start subprocess generation
 GET  /api/v1/benchmark-preview/status  — poll generation progress
@@ -21,12 +21,12 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 
 from benchmarks import preview_metrics as metrics
-from server import history_store
+from server.backend import history_store
 
 router = APIRouter(prefix="/api/v1", tags=["benchmark"])
 
-ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = ROOT / "data"
+ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = ROOT / "benchmarks"
 DEFAULT_DATA_FILE = "merged_benchmark.json"
 CACHE = ROOT / "tools" / "benchmark_pred_preview_data.json"
 
@@ -40,7 +40,7 @@ _captured: list[str] = []  # last stdout lines for diagnostics
 
 
 def _resolve_source(data_file: str | None) -> Path:
-    """Resolve a benchmark data file under data/, with traversal guard.
+    """Resolve a benchmark data file under benchmarks/, with traversal guard.
 
     Accepts a bare filename (resolved against DATA_DIR). Slashes are rejected
     so callers cannot reach arbitrary files elsewhere on disk.

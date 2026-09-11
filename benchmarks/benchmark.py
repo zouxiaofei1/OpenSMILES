@@ -20,8 +20,8 @@ from namepredict.namer import SMILESNNamer
 
 _MISSING_DATA_HINT = (
     "Generate with: python tools/merge_datasets.py "
-    "--tiers smiles_tiers.json --chebi chebi20_test_1k.json "
-    "--out data/merged_benchmark.json"
+    "--tiers benchmarks/smiles_tiers.json --chebi benchmarks/chebi20_test_1k.json "
+    "--out benchmarks/merged_benchmark.json"
 )
 
 # Last-run snapshot for diff vs previous correct/status results.

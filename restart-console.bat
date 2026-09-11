@@ -6,7 +6,7 @@ REM ChemAgent Console — restart http://127.0.0.1:8766/  (auto-restarts on src/
 cd /d "%~dp0"
 
 echo [restart-console] Stopping any process listening on port 8766...
-powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\stop-port.ps1" -Port 8766
+powershell -NoProfile -ExecutionPolicy Bypass -File "server\backend\stop-port.ps1" -Port 8766
 
 timeout /t 1 /nobreak >nul
 
@@ -22,7 +22,7 @@ echo   Changes under src\ and server\ restart uvicorn automatically.
 echo   Close this window or press Ctrl+C to stop the server.
 echo.
 
-".venv\Scripts\python.exe" scripts\dev_server.py
+".venv\Scripts\python.exe" server\backend\dev_server.py
 
 echo.
 echo [restart-console] Server exited.
