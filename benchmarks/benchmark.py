@@ -14,6 +14,7 @@ _src_str = str(_SRC)
 if _src_str not in sys.path:
     sys.path.insert(0, _src_str)
 
+from benchmarks.preview_metrics import similarity
 from namepredict.constants import nospace, normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
@@ -275,6 +276,56 @@ def _print_one_diff(d: dict[str, Any]) -> None:
     print(f"    prev_pred_zh={prev.get('pred_zh') or ''!r}  cur_pred_zh={cur.get('pred_zh') or ''!r}")
 
 
+def _change_similarity(diffs: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """CHANGE 条目的预测↔金标相似度均值（改前->改后），量化字符串层面的净移动。
+
+    CHANGE 是 dual 没翻转的那批，准确率指标对它们完全无感；这行数字才看得出
+    改动整体是靠近还是远离金标。只算被考核的字段（ok 非 None），与判分口径
+    一致——未考核的中文行不按口径外的标准评判。
+    """
+    changes = [d for d in diffs if d.get("kind") == "CHANGE"]
+    if not changes:
+        return None
+    out: dict[str, Any] = {"n": len(changes)}
+    for lang, ok_key, pred_key, gold_key in (
+        ("en", "en_ok", "pred_en", "english_name"),
+        ("zh", "zh_ok", "pred_zh", "chinese_name"),
+    ):
+        pairs: list[tuple[float, float]] = []
+        for d in changes:
+            prev, cur = d["prev"], d["cur"]
+            if prev.get(ok_key) is None and cur.get(ok_key) is None:
+                continue
+            gold = str(cur.get(gold_key) or prev.get(gold_key) or "")
+            before = similarity(str(prev.get(pred_key) or ""), gold, lang)
+            after = similarity(str(cur.get(pred_key) or ""), gold, lang)
+            if before is not None and after is not None:
+                pairs.append((before, after))
+        if pairs:
+            out[lang] = {
+                "n": len(pairs),
+                "prev": sum(p[0] for p in pairs) / len(pairs),
+                "cur": sum(p[1] for p in pairs) / len(pairs),
+            }
+    return out
+
+
+def _fmt_change_sim(sim: dict[str, Any]) -> str:
+    """单行汇总: 改前%->改后% (净变动 pt, 参与均值的行数)。"""
+    parts = []
+    for lang in ("en", "zh"):
+        s = sim.get(lang)
+        if not s:
+            continue
+        delta_pt = 100.0 * (s["cur"] - s["prev"])
+        parts.append(
+            f"{lang} {100.0 * s['prev']:.1f}%->{100.0 * s['cur']:.1f}% "
+            f"({delta_pt:+.2f}pt, n={s['n']})"
+        )
+    head = f"change_sim: {sim['n']} CHANGE"
+    return f"{head}  {'  '.join(parts)}" if parts else head
+
+
 _MAX_PRINT_DIFFS = 200
 
 # diff 显示优先级：三类并存时按 IMPROVE -> REGRESS -> CHANGE 分组展示。
@@ -289,6 +340,9 @@ def _print_diffs(diffs: list[dict[str, Any]]) -> None:
     n_imp = sum(1 for d in diffs if d["kind"] == "IMPROVE")
     n_chg = sum(1 for d in diffs if d["kind"] == "CHANGE")
     print(f"diff_vs_last: total={len(diffs)} IMPROVE={n_imp} REGRESS={n_reg} CHANGE={n_chg}")
+    sim = _change_similarity(diffs)
+    if sim:
+        print(_fmt_change_sim(sim))
     # 稳定排序：三类各自成组且保持组内原顺序（Python sort 稳定）。
     shown = sorted(diffs, key=lambda d: _KIND_ORDER.get(d["kind"], 3))[:_MAX_PRINT_DIFFS]
     for d in shown:
@@ -301,6 +355,9 @@ def _print_diffs(diffs: list[dict[str, Any]]) -> None:
 def _report_for_json(report: dict[str, Any], diffs: list[dict[str, Any]]) -> dict[str, Any]:
     """Drop bulky per-row results; keep compact diff summary for --json consumers."""
     out = {k: v for k, v in report.items() if k != "results"}
+    sim = _change_similarity(diffs)
+    if sim:
+        out["change_sim"] = sim
     out["diff_vs_last"] = [
         {
             "kind": d["kind"],

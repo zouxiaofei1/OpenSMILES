@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dataclasses import replace
 
-from namepredict.constants import AMIDO_RETAINED, MULT_EN, MULT_ZH
+from namepredict.constants import AMIDO_RETAINED, MULT_EN, MULT_ZH, zh_bridge_root
 from namepredict.layer5.chain_engine import _ACYL_HALIDE_BY_HAL, _KIND_TABLE, _alkane_names, _chain_names
 from namepredict.layer5.stems import maybe_anion_names, maybe_metal_salt_names
 from namepredict.layer5.assembler_prefixes import _SIMPLE_CHAIN_YL_RE, _prefix_for
@@ -317,7 +317,7 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     if len({s["en"] for s in ordered}) == 1:
         base = ordered[0]
         return (f"{MULT_EN[len(ordered)]}{base['en']}{zero[0]}",
-                f"{MULT_ZH[len(ordered)]}{base['zh']}{zero[1]}")
+                f"{MULT_ZH[len(ordered)]}{zh_bridge_root(base['zh'])}{zero[1]}")
     aryl = [s for s in ordered if s["en"].endswith("phenyl") and s["zh"].endswith("苯基")]
     if len(aryl) == 1:  # P-62.2.1.1：N-芳基-N-某基胺取 anilino，非芳基 N-取代基以 N- 前缀（4-fluoro-N-propan-2-ylanilino）；两前缀按 P-14.5 字母序
         ring = aryl[0]

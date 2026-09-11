@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import re
 
+from namepredict.constants import zh_bridge_root
+
 _RETAINED: dict[str, tuple[str, str]] = {  # free_en → (yl_en, yl_zh)（当位次为常规/省略时）
     "benzene": ("phenyl", "苯基"),
 }
@@ -135,7 +137,7 @@ def _mononuclear_zh(zh: str) -> str | None:
             base = zh[: -len(zh_suf) - 1]
             if zy == "氨基" and base.endswith("苯基"):
                 return base[: -len("苯基")] + "苯胺基"
-            return base[: -1] + zy if base.endswith("基") else base + zy
+            return zh_bridge_root(base) + zy
     return None
 
 

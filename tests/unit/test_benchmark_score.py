@@ -1,7 +1,9 @@
 from benchmarks.benchmark import (
     score_record,
     _bucket_report,
+    _change_similarity,
     _empty_bucket,
+    _fmt_change_sim,
     _tally,
     _print_summary,
     _build_snapshot,
@@ -247,6 +249,76 @@ def test_handle_report_saves_and_diffs(tmp_path, capsys):
     out2 = capsys.readouterr().out
     assert "REGRESS=1" in out2
     assert "[REGRESS] id:1" in out2
+
+
+def _change(key, gold_en, gold_zh, prev_en, prev_zh, cur_en, cur_zh,
+            en_ok=False, zh_ok=False):
+    """一条 CHANGE diff: dual 未翻转, 只是预测串变了。"""
+    def side(pe, pz):
+        return {
+            "dual_ok": False, "en_ok": en_ok, "zh_ok": zh_ok,
+            "pred_en": pe, "pred_zh": pz,
+            "smiles": "C", "english_name": gold_en, "chinese_name": gold_zh,
+        }
+
+    return {"kind": "CHANGE", "key": key, "prev": side(prev_en, prev_zh), "cur": side(cur_en, cur_zh)}
+
+
+def test_change_similarity_none_without_change():
+    assert _change_similarity([]) is None
+    assert _change_similarity([{"kind": "IMPROVE"}, {"kind": "REGRESS"}]) is None
+
+
+def test_change_similarity_closer_to_gold():
+    # 丙-2-基氧基 -> 丙-2-氧基 那类改动: 准确率不动, 但字符串更贴金标。
+    d = _change("id:1", "ethanol", "乙醇", "ethanoll", "乙纯", "ethanol", "乙醇")
+    sim = _change_similarity([d])
+    assert sim["n"] == 1
+    assert sim["en"]["prev"] < sim["en"]["cur"] == 1.0
+    assert sim["zh"]["prev"] < sim["zh"]["cur"] == 1.0
+    assert "+" in _fmt_change_sim(sim)
+
+
+def test_change_similarity_signed_delta_when_worse():
+    d = _change("id:1", "ethanol", "乙醇", "ethanol", "乙醇", "ethanoll", "乙纯")
+    sim = _change_similarity([d])
+    assert sim["en"]["cur"] < sim["en"]["prev"]
+    assert "-" in _fmt_change_sim(sim)
+
+
+def test_change_similarity_skips_unevaluated_language():
+    # 中文未考核的行不按打分口径外的标准评判: 均值和 n 都不含它们。
+    d = _change("id:1", "ethanol", "乙醇", "ethanoll", "乙纯", "ethanol", "乙醇")
+    d["prev"]["zh_ok"] = None
+    d["cur"]["zh_ok"] = None
+    sim = _change_similarity([d])
+    assert "zh" not in sim
+    assert sim["en"]["n"] == 1
+
+
+def test_print_diffs_prints_change_sim_after_summary(capsys):
+    _print_diffs([_change("id:1", "ethanol", "乙醇", "zzz", "甲", "ethanol", "乙醇")])
+    lines = capsys.readouterr().out.splitlines()
+    assert lines[0].startswith("diff_vs_last:")
+    assert lines[1] == (
+        "change_sim: 1 CHANGE  "
+        "en 0.0%->100.0% (+100.00pt, n=1)  zh 0.0%->100.0% (+100.00pt, n=1)"
+    )
+
+
+def test_print_diffs_no_change_sim_line_without_change(capsys):
+    diffs = [{
+        "kind": "REGRESS", "key": "id:1",
+        "prev": {"dual_ok": True, "en_ok": True, "zh_ok": True,
+                 "pred_en": "ethanol", "pred_zh": "乙醇",
+                 "smiles": "CCO", "english_name": "ethanol", "chinese_name": "乙醇"},
+        "cur": _entry("id:1", dual_ok=False, pred_en="x", pred_zh="y",
+                      en_ok=False, zh_ok=False, smiles="CCO"),
+    }]
+    _print_diffs(diffs)
+    out = capsys.readouterr().out
+    assert "diff_vs_last:" in out
+    assert "change_sim" not in out
 
 
 def test_build_snapshot_keys():

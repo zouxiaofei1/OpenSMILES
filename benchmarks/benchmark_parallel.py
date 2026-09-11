@@ -3,6 +3,7 @@
 Usage:
   python -m benchmarks.benchmark_parallel --data data/merged_benchmark.json
   python -m benchmarks.benchmark_parallel --data data/merged_benchmark.json --workers 8
+  python -m benchmarks.benchmark_parallel --data data/merged_benchmark.json --max-hac 50 --time
 """
 
 from __future__ import annotations
@@ -34,11 +35,14 @@ from benchmarks.benchmark import (  # noqa: E402
     _handle_report,
     _is_fail,
     _load_rows,
+    _load_snapshot,
     _print_summary,
     _result_entry,
+    _row_key,
     _tally,
     score_record,
 )
+from benchmarks.preview_metrics import heavy_atoms  # noqa: E402
 
 # Per-process namer (set by worker initializer; not shared across processes).
 _WORKER_NAMER: Any = None
@@ -197,23 +201,69 @@ def _aggregate(
     return _finalize(total, by_source, by_tier, fails, entries)
 
 
+def _split_reusable(
+    rows: list[dict[str, Any]],
+    max_hac: int,
+    prev: dict[str, Any] | None,
+) -> tuple[list[dict[str, Any]], list[tuple[dict[str, Any], str, str, dict[str, Any]]]]:
+    """按重原子数把行分成「进池命名」与「沿用上次 snapshot 预测」两组。
+
+    重原子数 > max_hac 且上次 snapshot 里存有该行预测时才可沿用；没有旧结果
+    的行仍照常命名（宁可算也不静默丢分），所以 snapshot 缺失/首次运行时
+    --max-hac 不省时间。沿用行的分数按当前 gold 重判，避免旧 snapshot 对应的
+    旧数据或旧 eval 开关把分数带偏。
+    """
+    prev_items = (prev or {}).get("items") or {}
+    todo: list[dict[str, Any]] = []
+    reused: list[tuple[dict[str, Any], str, str, dict[str, Any]]] = []
+    for row in rows:
+        if heavy_atoms(str(row.get("smiles") or "")) <= max_hac:
+            todo.append(row)
+            continue
+        old = prev_items.get(_row_key(row))
+        if not isinstance(old, dict):
+            todo.append(row)
+            continue
+        pred_en = str(old.get("pred_en") or "")
+        pred_zh = str(old.get("pred_zh") or "")
+        reused.append((score_record(pred_en, pred_zh, row), pred_en, pred_zh, row))
+    return todo, reused
+
+
 def run_benchmark_parallel(
     data_path: str | Path,
     limit: int | None = None,
     workers: int | None = None,
     timeout: float = 1.0,
+    max_hac: int | None = None,
+    snapshot_path: Path = _SNAPSHOT_PATH,
 ) -> dict[str, Any]:
-    """Run namer on gold JSON with a process pool; same report shape as sequential."""
+    """Run namer on gold JSON with a process pool; same report shape as sequential.
+
+    max_hac 给定时，重原子数 > max_hac 的行不进池，沿用 snapshot_path 里上次
+    运行的预测（见 _split_reusable）。只影响耗时口径：总分仍覆盖全部行。
+    """
     rows = _load_rows(Path(data_path), limit)
     n_rows = len(rows)
     n_workers = max(1, workers if workers is not None else _default_workers())
     t0 = time.perf_counter()
-    print(f"benchmark start: n={n_rows} workers={n_workers}", flush=True)
+    todo, reused = rows, []
+    if max_hac is not None:
+        todo, reused = _split_reusable(rows, max_hac, _load_snapshot(snapshot_path))
+    scope = "" if max_hac is None else (
+        f" max_hac={max_hac} compute={len(todo)} reuse={len(reused)}"
+    )
+    print(f"benchmark start: n={n_rows} workers={n_workers}{scope}", flush=True)
     if n_rows == 0:
         return _aggregate([])
 
-    results = _pool_results_with_progress(rows, n_workers, timeout, t0)
-    return _aggregate(results)
+    scored = _pool_results_with_progress(todo, n_workers, timeout, t0) if todo else []
+    report = _aggregate(reused + scored)
+    if max_hac is not None:
+        report["max_hac"] = max_hac
+        report["computed_rows"] = len(todo)
+        report["reused_rows"] = len(reused)
+    return report
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -234,6 +284,16 @@ def _build_parser() -> argparse.ArgumentParser:
         type=float,
         default=1.0,
         help="Per-row hard timeout in seconds (default: 1.0)",
+    )
+    p.add_argument(
+        "--max-hac",
+        type=int,
+        default=None,
+        help=(
+            "Skip naming for rows with heavy atom count > N, reusing their "
+            "predictions from the last-run snapshot (default: no cap, name every row). "
+            "Reads the snapshot file even under --no-snapshot; only affects timing."
+        ),
     )
     p.add_argument(
         "--time",
@@ -263,6 +323,8 @@ def main(argv: list[str] | None = None) -> None:
             limit=args.limit,
             workers=args.workers,
             timeout=args.timeout,
+            max_hac=args.max_hac,
+            snapshot_path=args.snapshot,
         )
     except FileNotFoundError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -271,6 +333,11 @@ def main(argv: list[str] | None = None) -> None:
     n_workers = args.workers if args.workers is not None else _default_workers()
     n_rows = int(report.get("n_dual") or report.get("n_en") or 0)
     avg_ms = (elapsed * 1000.0 / n_rows) if n_rows else 0.0
+    # 耗时口径：n_rows 含沿用行，故同时给出实际进池的行数便于横向比速。
+    scope = "" if args.max_hac is None else (
+        f" max_hac={args.max_hac} compute={report.get('computed_rows')} "
+        f"reuse={report.get('reused_rows')}"
+    )
     if args.no_snapshot:
         if args.json:
             out = {k: v for k, v in report.items() if k != "results"}
@@ -283,7 +350,7 @@ def main(argv: list[str] | None = None) -> None:
         if args.time:
             print(
                 f"workers={n_workers} elapsed={elapsed:.2f}s "
-                f"avg={avg_ms:.2f}ms/row (n={n_rows})",
+                f"avg={avg_ms:.2f}ms/row (n={n_rows}){scope}",
                 file=sys.stderr,
             )
         return
@@ -297,7 +364,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.time and not args.json:
         print(
             f"workers={n_workers} elapsed={elapsed:.2f}s "
-            f"avg={avg_ms:.2f}ms/row (n={n_rows})",
+            f"avg={avg_ms:.2f}ms/row (n={n_rows}){scope}",
             file=sys.stderr,
         )
 
