@@ -83,6 +83,11 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "carboxy": RetainedSubstituent( "carboxy", "羧基", "carboxy", "羧基", P, anchored=("*C(=O)O", ), paren=False, kind="leaf", ),
         "carbamoyl": RetainedSubstituent( "carbamoyl", "氨基甲酰基", "carbamoyl", "氨基甲酰基", P, anchored=("*C(N)=O", ), paren=False, kind="leaf", ),  # P-66.1.1.4.1 氨基甲酸（carbamic acid）的酰基保留前缀；gold/ChEBI 全量 54 处取 carbamoyl，不取 aminocarbonyl/amino(oxo)methyl
         "carbamoylamino": RetainedSubstituent( "carbamoylamino", "氨基甲酰氨基", "carbamoylamino", "氨基甲酰氨基", P, anchored=("*NC(N)=O", ), paren=True, kind="leaf", ),  # P-66.1.1.6 ureido 在 IUPAC 已不推荐（P_1 附录：ureido/ureylene 不用），优选 carbamoylamino
+        # 铵/𬭩型阳离子取代基（P-62.4.1：铵 azanium 去氢得 azaniumyl 型前缀）。gold 全量 174 例含 azanium*，        # 现行管线把这些带电 N 片段整体丢弃（no_coverage_gate / coverage_complete 误判），故按锚定叶子入表。
+        "azaniumyl": RetainedSubstituent( "azaniumyl", "铵基", "azaniumyl", "铵基", P, anchored=("*[NH3+]", ), paren=False, kind="leaf", ),
+        "methylazaniumyl": RetainedSubstituent( "methylazaniumyl", "甲基铵基", "methylazaniumyl", "甲基铵基", P, anchored=("*[NH2+]C", ), paren=False, kind="leaf", ),
+        "dimethylazaniumyl": RetainedSubstituent( "dimethylazaniumyl", "二甲基铵基", "dimethylazaniumyl", "二甲基铵基", P, anchored=("*[NH+](C)C", ), paren=True, kind="leaf", ),
+        "trimethylazaniumyl": RetainedSubstituent( "trimethylazaniumyl", "三甲基铵基", "trimethylazaniumyl", "三甲基铵基", P, anchored=("*[N+](C)(C)C", ), paren=True, kind="leaf", ),
         "carbamoyloxy": RetainedSubstituent( "carbamoyloxy", "氨基甲酰氧基", "carbamoyloxy", "氨基甲酰氧基", P, anchored=("*OC(N)=O", ), paren=False, kind="leaf", ),  # 氨基甲酸 O-酯残基（P-66.1.1.4.1）
         "carbamothioylamino": RetainedSubstituent( "carbamothioylamino", "氨基硫代羰基氨基", "carbamothioylamino", "氨基硫代羰基氨基", P, anchored=("*NC(N)=S", ), paren=True, kind="leaf", ),  # 硫代氨基甲酸残基（P-66.1.1.4：carbamothioyl）
         "sulfamoyl": RetainedSubstituent( "sulfamoyl", "氨磺酰基", "sulfamoyl", "氨磺酰基", P, anchored=("*S(N)(=O)=O", ), paren=False, kind="leaf", ),  # P-66.1.1.4.2 磺酰胺（sulfamoyl = H2N-SO2-）；N-取代时基名随取代基前移

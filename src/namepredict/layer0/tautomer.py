@@ -11,13 +11,15 @@ from namepredict.constants import C, N, O
 
 
 def _is_amide_enol_o(atom, carbon) -> bool:
-    """判断 O 是否为可与碳上 =N 互变的烯醇羟基氧（单键、中性、仅隐氢）。"""
+    """判断 O 是否为可与碳上 =N 互变的烯醇羟基氧（单键、中性、带 ≥1 H）。"""
     if atom.GetAtomicNum() != O or atom.GetFormalCharge() != 0:
         return False
     bond = carbon.GetOwningMol().GetBondBetweenAtoms(carbon.GetIdx(), atom.GetIdx())
     if bond is None or bond.GetBondType() != Chem.BondType.SINGLE:
         return False
-    return atom.GetNumImplicitHs() >= 1 and atom.GetNumExplicitHs() == 0  # 只处理隐氢羟基（数据中即此形态）；显式 [OH]/H 原子跳过以免 H 记账复杂化。
+    if atom.GetDegree() != 1:  # 只与碳相连：排除以独立 H 原子（或其它重原子）形式成键的羟基，避免 H 记账复杂化。
+        return False
+    return atom.GetTotalNumHs() >= 1  # 隐氢与 [OH] 显式氢记账都接受：normalize_acid_charge 搬质子时写的是 explicit-H，只认隐氢会漏掉紧随其后新生成的酰胺烯醇位。
 
 
 def _is_amide_enol_n(atom, carbon) -> bool:
@@ -52,6 +54,11 @@ def normalize_amide_tautomer(mol: Mol) -> Mol:
         return mol
     rw = RWMol(mol)
     for c_idx, n_idx, o_idx in sites:
+        o = rw.GetAtomWithIdx(o_idx)
+        if o.GetTotalNumHs() != 1:  # 羟基上多余/缺失的 H 无法靠重算隐氢弥补，本点位放弃
+            continue
+        o.SetNumExplicitHs(0)  # 羟基 O 的一个 H 搬到 N 上：先把 O 的 H 记账清零，否则 C=O 双键会让 O 价态超限、消毒失败整体回退
+        o.SetNoImplicit(False)
         rw.RemoveBond(c_idx, n_idx)
         rw.AddBond(c_idx, n_idx, Chem.BondType.SINGLE)
         rw.RemoveBond(c_idx, o_idx)

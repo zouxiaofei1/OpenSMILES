@@ -102,6 +102,10 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
         return False
     if re.search(r"\d[RrSs]", base) and not base.endswith("oyl"):  # 自由价碳带手性描述符（(2R)-2-amino-2-carboxyethyl）：前端必须括起；酰基前端按 …oyloxy 融合（P-63.2.2.1.1 的 acetyloxy/benzoyloxy）。
         return True
+    if "[" in base:  # 前端已用方括号。amino 桥细分：括号后仍接数字位次前缀（…]sulfanylethylamino]-3-oxopropyl）时拆——前端是被位次取代的支链，须整体括起（gold 取 [[X]amino]）；括号后接桥/链续写（…enoyl]sulfanylethyl）时 gold 平铺为 sulfanylethylamino，不拆。oxy/sulfanyl 桥不细分（…]phenylsulfanyl、…]acetyloxy 的围栏由 L3 定形）。
+        return True if suf != "amino" else bool(
+            re.search(r"\]-?\d", base)                            # 括号后接数字位次前缀：…]sulfanylethylamino]-3-oxopropyl
+            or re.search(r"-\d+-\[", base[: base.find("[") + 1]))  # 括号前已有数字位次前缀：3-oxo-3-[X]propyl
     if "(" in base:  # 前端自带括号（取代基/立体描述符）；自由价在端碳的链基（benzyl/5-(X)pentyl）平铺。
         return not _TERMINAL_CHAIN_YL_RE.search(base)
     if suf == "amino":  # P-63.2.2.1.2：amino 桥按 HS- 取代式（naphthalen-2-ylamino）融合，无括号前端不拆。

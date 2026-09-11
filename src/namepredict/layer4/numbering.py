@@ -83,6 +83,10 @@ def number(parent: dict, substituents: list) -> dict:
     hydro = packed.get("hydro_atoms") or frozenset()
     if not hydro:  # 未注册稠环无保留模板可比 -> hydro_atoms 缺失，回退由分子自身饱和环位推导
         hydro = _fallback_hydro_atoms(packed)
+    else:  # 保留模板只写了一个 Kekulé 式，稠合/角位可能漏计（cyclopenta[a]phenanthrene 型甾体的 tetradecahydro 被写成 dodecahydro-1H,2H）；分子自身推得的饱和环位为合法倍增数且是模板集的真超集时改用它，否则保留模板集。
+        fb = _fallback_hydro_atoms(packed)
+        if len(fb) in HYDRO_MULT_N and set(hydro) < fb:
+            hydro = fb
     hydro = _lowest_extra_to_indicated(packed, labels, hydro)
     hydro = _odd_hydro_to_indicated(packed, labels, hydro)
     pre = hydro_prefix(packed.get("chain"), labels, hydro)

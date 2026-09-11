@@ -278,6 +278,11 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
             f"{ez}{s}{spec.ene_seg[0]}{spec.en_suf}",
             f"{ez}{zs}{spec.ene_seg[1]}{spec.zh_suf}",
         )
+    if spec.cyclic and spec.ene_loc_omit and ene == 1 and fg == 1:  # 环单烯（carbocycle）：双键起点与 FG/自由价同为 1，双键位次 '1' 冗余故省略并融合（P-31.1.2/P-14.3.4.2(d)：cyclohexen-1-yl 而非 cyclohex-1-en-1-yl；gold 全量无 X-1-en-1-* 形态），FG 位次仍显式保留。
+        return (
+            f"{ez}{s}{spec.ene_seg[0]}-{fg}-{spec.en_suf}",
+            f"{ez}{zs}{spec.ene_seg[1]}-{fg}-{spec.zh_suf}",
+        )
     return (
         f"{ez}{s}-{ene}-{spec.ene_seg[0]}-{fg}-{spec.en_suf}",
         f"{ez}{zs}-{ene}-{spec.ene_seg[1]}-{fg}-{spec.zh_suf}",

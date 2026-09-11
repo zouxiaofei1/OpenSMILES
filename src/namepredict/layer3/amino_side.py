@@ -18,6 +18,10 @@ def _one_amino(info: dict, a: dict, chain_set: set[int], owned) -> dict | None:
         return None
     if any(c not in chain_set for c in (a.get("c_idxs") or [])):
         return None
+    mol, n_idx = info.get("mol"), a.get("n_idx")
+    if (mol is not None and n_idx is not None and n_idx < mol.GetNumAtoms()
+            and mol.GetAtomWithIdx(n_idx).GetFormalCharge() > 0):  # 质子化伯胺 NH3+ 按铵基命名（P-62.4.1：azanium → azaniumyl；gold/ChEBI 对氨基酸类一律取 azaniumyl 而非 amino）。
+        return _make_amino(a["c_idx"], n_idx, en="azaniumyl", zh="铵基")
     return _make_amino(a["c_idx"], a["n_idx"])
 
 
