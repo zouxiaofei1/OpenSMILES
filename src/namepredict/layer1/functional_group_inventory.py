@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from namepredict.layer1.fg_atoms import FG_ATOM_FNS
 from namepredict.layer1.fg_registry import FG_SPECS
 
 
@@ -63,21 +64,28 @@ def _indices(payload: dict, keys: tuple[str, ...]) -> frozenset[int]:
 
 
 def _atom_ids(payload: dict) -> frozenset[int]:
-    """收集 payload 中所有 idx/idxs 键的原子索引集合。"""
+    """回退路径：收集 payload 中所有 idx/idxs 键的原子索引集合。"""
     keys = tuple(k for k in payload if k.endswith("idx") or k.endswith("idxs"))
     return _indices(payload, keys)
 
 
-def _one(key: str, index: int, payload: dict) -> FunctionalGroupOccurrence:
+def _characteristic_atoms(group_class: FunctionalGroupClass, mol, payload: dict) -> frozenset[int]:
+    """按 FG 类别取特征原子集（类别未登记或 mol 缺失时退回 payload 索引键猜测）。"""
+    fn = FG_ATOM_FNS.get(group_class.value)
+    return frozenset(fn(mol, payload)) if fn is not None and mol is not None else _atom_ids(payload)
+
+
+def _one(key: str, index: int, payload: dict, mol) -> FunctionalGroupOccurrence:
     """将单条官能团 dict 组装为带类型的出现。"""
     group_class = _LIST_CLASSES[key]
     anchors = _indices(payload, _ANCHOR_KEYS.get(group_class, ()))
-    return FunctionalGroupOccurrence(f"{key}:{index}", group_class, _atom_ids(payload), anchors, payload)
+    return FunctionalGroupOccurrence(f"{key}:{index}", group_class,
+                                     _characteristic_atoms(group_class, mol, payload), anchors, payload)
 
 
-def build_inventory(lists: dict) -> FunctionalGroupInventory:
-    """由官能团列表构建带类型的 FunctionalGroupInventory。"""
-    entries = tuple(_one(key, i, item) for key in _LIST_CLASSES for i, item in enumerate(lists.get(key) or ()))
+def build_inventory(lists: dict, mol=None) -> FunctionalGroupInventory:
+    """由官能团列表构建带类型的 FunctionalGroupInventory（mol 供特征原子函数查键型）。"""
+    entries = tuple(_one(key, i, item, mol) for key in _LIST_CLASSES for i, item in enumerate(lists.get(key) or ()))
     return FunctionalGroupInventory(entries)
 
 

@@ -114,10 +114,13 @@ def _facts(selection, skeleton, occurrences, mol=None) -> PrincipalExpressionFac
 
 
 def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
-                 facts: PrincipalExpressionFacts) -> dict:
-    """按骨架构造带表达式 facts 的母体 dict。"""
+                 facts: PrincipalExpressionFacts, all_occurrences=()) -> dict:
+    """按骨架构造带表达式 facts 的母体 dict。covered_principal_ids 是该骨架表达的主基团子集；
+    principal_occurrences 取全部主基团 occurrence（不限本骨架覆盖），供 L2 所有权判定——未被本骨架
+    覆盖的同级基团（多酯的第二个酯等）仍属母体，若漏掉其羰基氧会被 L3 切成假羟基前缀。"""
     return {"kind": kind, "chain": list(skeleton.atom_ids), "n_carbons": len(skeleton.atom_ids),
             "covered_principal_ids": tuple(o.id for o in occurrences),
+            "principal_occurrences": all_occurrences or occurrences,
             "principal_group_count": len(occurrences), "principal_expression_facts": facts, **fields}
 
 
@@ -258,7 +261,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
         fields = ester_fields(info, fields)
     if facts.group_class is FunctionalGroupClass.ACYL_HALIDE and facts.multiplicity == 1:
         fields = _chain_acyl_halide_fields(info, occurrences, fields)  # 环外酰卤（苯甲酰卤等）同样要卤素字段：hal_z 供 L5 选氟氯溴碘后缀，hal_idx 纳入母体原子。
-    return _parent_dict(kind, skeleton, occurrences, fields, facts)
+    return _parent_dict(kind, skeleton, occurrences, fields, facts, selection.occurrences)
 
 
 def _chain_fields(selection, occurrences) -> dict:
@@ -452,7 +455,7 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         if fields is None:
             return None
     return _parent_dict(kind, skeleton, occurrences, fields,
-                        _facts(selection, skeleton, occurrences))
+                        _facts(selection, skeleton, occurrences), selection.occurrences)
 
 
 # ── 无主官能团（纯烃）表达：P-44.1 缺位时按拓扑分配 hydrocarbon kind ──

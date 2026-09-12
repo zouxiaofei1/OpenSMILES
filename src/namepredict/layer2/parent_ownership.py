@@ -3,285 +3,40 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.layer2.ring_parent import _dbl_o_idx, _o_idx
-
 
 def _chain_atoms(parent: dict) -> set[int]:
     """取母体链原子集合。"""
-    return set(parent.get("chain") or [])
-
-
-def _add_opt(out: set[int], idx: int | None) -> set[int]:
-    """非空索引加入集合并返回。"""
-    if idx is not None:
-        out.add(idx)
-    return out
-
-
-def _amide_n_from_c(mol: Mol, c_idx: int) -> int | None:
-    """找连接碳的酰胺氮索引。"""
-    carbon = mol.GetAtomWithIdx(c_idx)
-    for n in carbon.GetNeighbors():
-        if n.GetAtomicNum() == 7:
-            return n.GetIdx()
-    return None
-
-
-def _amide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """酰胺：羰基 C + =O + N（多酰胺逐碳并入，否则第二个酰胺的 N 留在所有权外被写成氨基前缀）。"""
-    out: set[int] = set()
-    for c_idx in (([int(parent["amide_c_idx"])] if parent.get("amide_c_idx") is not None else [])
-                  + [int(c) for c in parent.get("amide_c_idxs") or ()]):
-        out.add(c_idx)
-        _add_opt(out, _dbl_o_idx(mol, c_idx))
-        _add_opt(out, _amide_n_from_c(mol, c_idx))
-    return out
-
-
-def _single_o_idx(mol: Mol, c_idx: int) -> int | None:
-    """跨单键找碳的 O 邻居索引。"""
-    return _o_idx(mol, c_idx, "SINGLE")
-
-
-def _acid_o_atoms(mol: Mol, c_idx: int) -> set[int]:
-    """羧酸碳的 =O 与 -O- 氧原子。"""
-    out: set[int] = set()
-    _add_opt(out, _dbl_o_idx(mol, c_idx))
-    return _add_opt(out, _single_o_idx(mol, c_idx))
-
-
-def _cooh_c_idxs(parent: dict) -> list[int]:
-    """归一化取母体的 cooh 碳索引列表。"""
-    multi = parent.get("cooh_c_idxs")
-    if multi:
-        return [int(x) for x in multi]
-    one = parent.get("cooh_c_idx")
-    return [int(one)] if one is not None else []
-
-
-def _acid_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """羧酸各 cooh 碳的 FG 原子并集。"""
-    out: set[int] = set()
-    for c in _cooh_c_idxs(parent):
-        out.add(c)
-        out |= _acid_o_atoms(mol, c)
-    return out
-
-
-def _aldehyde_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """醛：羰基 C + =O（多醛取全部，如环上外环 -CHO 的 -dicarbaldehyde）。"""
-    c_idxs = parent.get("aldehyde_c_idxs") or ([parent.get("aldehyde_c_idx")]
-                                               if parent.get("aldehyde_c_idx") is not None else [])
-    if not c_idxs:
-        return set()
-    out: set[int] = set()
-    for c in c_idxs:
-        c = int(c)
-        out.add(c)
-        _add_opt(out, _dbl_o_idx(mol, c))
-    return out
-
-
-def _ether_arm_atoms(mol: Mol, o_idx: int, c_idx: int) -> set[int]:
-    """醚氧一侧的碳臂原子集（禁走 O）。"""
-    from namepredict.layer2.chain_walk import _longest_from
-    return {c_idx, *_longest_from(mol, c_idx, {o_idx})}
-
-
-def _chalcogen_arm_fg(mol: Mol, parent: dict, kind: str, idx_field: str) -> set[int]:
-    """硫族中心 + 碳臂（短臂不一定在链中）。"""
-    if parent.get("kind") != kind or parent.get(idx_field) is None:
-        return set()
-    center = int(parent[idx_field])
-    out = {center}
-    for n in mol.GetAtomWithIdx(center).GetNeighbors():
-        if n.GetAtomicNum() == 6:
-            out |= _ether_arm_atoms(mol, center, n.GetIdx())
-    return out
-
-
-def _ether_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """醚 O + 两条碳臂（短臂不一定在链中）。"""
-    return _chalcogen_arm_fg(mol, parent, "ether", "o_idx")
-
-
-def _sulfide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """硫醚 S + 两条碳臂（短臂不一定在链中）。"""
-    return _chalcogen_arm_fg(mol, parent, "sulfide", "s_idx")
-
-
-def _hydroxy_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """醇/二醇/三醇：连接碳 + 全部末端羟基氧(degree-1 单键 O 邻居)。
-    """
-    c_idxs = parent.get("oh_c_idxs") or ([parent.get("oh_c_idx")] if parent.get("oh_c_idx") is not None else [])
-    if not c_idxs:
-        return set()
-    out: set[int] = set()
-    for c in c_idxs:
-        c = int(c)
-        out.add(c)
-        carbon = mol.GetAtomWithIdx(c)
-        for nb in carbon.GetNeighbors():
-            bond = mol.GetBondBetweenAtoms(c, nb.GetIdx())
-            if nb.GetAtomicNum() == 8 and nb.GetDegree() == 1 and bond.GetBondType().name == "SINGLE":
-                out.add(nb.GetIdx())
-    return out
-
-
-def _ketone_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """酮羰基 C + 双键 O（多酮取全部羰基；存在时含乙酰甲基）。"""
-    c_idxs = parent.get("ketone_c_idxs") or ([parent.get("ketone_c_idx")] if parent.get("ketone_c_idx") is not None else [])
-    if not c_idxs:
-        return set()
-    out: set[int] = set()
-    for c in c_idxs:
-        out.add(int(c))
-        _add_opt(out, _dbl_o_idx(mol, int(c)))
-    return _add_opt(out, parent.get("acetyl_methyl_idx"))
-
-
-def _amine_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """苯胺/胺：母体链连接碳 + 胺氮（N 上非母体臂留在所有权外作 N- 取代基）。"""
-    c_idxs = parent.get("amine_c_idxs") or ([parent.get("amine_c_idx")] if parent.get("amine_c_idx") is not None else [])
-    if not c_idxs:
-        return set()
-    chain = set(parent.get("chain") or [])
-    out: set[int] = set()
-    for c in c_idxs:
-        if c not in chain:
-            continue  # 非母体链的 N 臂：所有权外，作为 N- 取代基
-        out.add(int(c))
-        for n in mol.GetAtomWithIdx(int(c)).GetNeighbors():
-            if n.GetAtomicNum() == 7:
-                out.add(n.GetIdx())
-    return out
-
-
-def _nitrile_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """腈/苯甲腈：CN 碳 + 三键氮。"""
-    c_idx = parent.get("nitrile_c_idx")
-    if c_idx is None:
-        return set()
-    out = {int(c_idx)}
-    for n in mol.GetAtomWithIdx(int(c_idx)).GetNeighbors():
-        if n.GetAtomicNum() == 7:
-            out.add(n.GetIdx())
-    return out
-
-
-def _thiol_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """硫醇/二硫醇：连接碳 + SH 硫。"""
-    c_idxs = parent.get("sh_c_idxs") or ([parent.get("sh_c_idx")] if parent.get("sh_c_idx") is not None else [])
-    if not c_idxs:
-        return set()
-    out: set[int] = set()
-    for c in c_idxs:
-        out.add(int(c))
-        for n in mol.GetAtomWithIdx(int(c)).GetNeighbors():
-            if n.GetAtomicNum() == 16:
-                out.add(n.GetIdx())
-    return out
-
-
-def _one_ester_fg(mol: Mol, c_idx: int, out: set[int]) -> None:
-    """添加一个酯羰基 C + =O + -O-（仅酸侧，无烷氧基臂）。"""
-    out.add(int(c_idx))
-    dbl_o = _dbl_o_idx(mol, int(c_idx))
-    _add_opt(out, dbl_o)
-    for n in mol.GetAtomWithIdx(int(c_idx)).GetNeighbors():
-        if n.GetAtomicNum() == 8 and n.GetIdx() != dbl_o:
-            out.add(n.GetIdx())
-
-
-def _single_ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """单酯/苯甲酸酯：羰基 C + =O + -O- + 烷氧基臂。"""
-    c_idx = parent.get("ester_c_idx")
-    if c_idx is None:
-        return set()
-    out: set[int] = set()
-    _one_ester_fg(mol, c_idx, out)
-    return out
-
-
-def _ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """酯 FG 原子（单酯复用单酯逻辑；多酯逐碳并入，否则第二个酯的桥 O 留在所有权外、烷氧臂被当成平铺取代基而写成 1-ethoxy 前缀）。"""
-    out = _single_ester_fg_atoms(mol, parent)
-    for c in parent.get("ester_c_idxs") or ():
-        _one_ester_fg(mol, int(c), out)
-    return out
-
-def _anhydride_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """酸酐：两个酰基碳 + 桥接 O + 两个羰基氧。"""
-    out: set[int] = set()
-    for key in ("acyl_c_idx", "other_acyl_c_idx"):
-        c = parent.get(key)
-        if c is None:
-            continue
-        out.add(int(c))
-        _add_opt(out, _dbl_o_idx(mol, int(c)))
-    return _add_opt(out, parent.get("o_idx"))
-
-
-def _acyl_chloride_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """酰氯：酰基碳 + 羰基 O + Cl。"""
-    c_idx = parent.get("acyl_c_idx")
-    if c_idx is None:
-        return set()
-    out = {int(c_idx)}
-    _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
-    return _add_opt(out, parent.get("cl_idx") if parent.get("cl_idx") is not None else parent.get("hal_idx"))
-
-
-def _acyl_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """酰基残基：羰基头碳 + 羰基 O（=O 归母体，不落入 oxo 前缀）。"""
-    c_idx = parent.get("acyl_c_idx")
-    if c_idx is None:
-        return set()
-    out = {int(c_idx)}
-    _add_opt(out, _dbl_o_idx(mol, int(c_idx)))
-    return out
-
-
-def _phosphate_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """磷酸母体：P 中心 + 其全部 4 个 O（=O 与 3 个单键 O，含 O–R 桥 O）。 """
-    p_idx = parent.get("p_idx")
-    if parent.get("kind") != "phosphate" or p_idx is None:
-        return set()
-    out = {int(p_idx)}
-    for n in mol.GetAtomWithIdx(int(p_idx)).GetNeighbors():
-        if n.GetAtomicNum() == 8:
-            out.add(n.GetIdx())
-    return out
+    return set(parent.get("chain") or ())
 
 
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
-    """FG 所有权由字段驱动：拥有主官能团的每个重原子。"""
-    parts = (
-        _amide_fg_atoms(mol, parent) if (parent.get("amide_c_idx") is not None
-                                         or parent.get("amide_c_idxs")) else set(),
-        _aldehyde_fg_atoms(mol, parent) if parent.get("aldehyde_c_idx") is not None or parent.get("aldehyde_c_idxs") else set(),
-        _acid_fg_atoms(mol, parent),
-        _ether_fg_atoms(mol, parent),
-        _sulfide_fg_atoms(mol, parent),
-        _hydroxy_fg_atoms(mol, parent),
-        _ketone_fg_atoms(mol, parent),
-        _amine_fg_atoms(mol, parent),
-        _nitrile_fg_atoms(mol, parent),
-        _thiol_fg_atoms(mol, parent),
-        _ester_fg_atoms(mol, parent),
-        _anhydride_fg_atoms(mol, parent),
-        _acyl_chloride_fg_atoms(mol, parent),
-        _acyl_fg_atoms(mol, parent),
-        _phosphate_fg_atoms(mol, parent),
-    )
-    out: set[int] = set()
-    for part in parts:
-        out |= part
+    """主官能团所有权原子：落在母体骨架内（或直接连骨架）的锚点，及其直接相连的特征原子。
+
+    特征原子集由 L1 occurrence 承载（FG 的内在定义，见 layer1.fg_atoms），此处只补骨架关系。
+    扩展时跳过同样是锚点的原子——胺的另一条碳臂、多羧酸的另一羧基正是锚点，据此留在所有权外，
+    由 L3 切成 N-/O- 前缀；而 exocyclic 基团（苯甲酸的羧基整体在环外）的羰基氧、
+    羟基氧不是锚点，仍归母体。
+    """
+    facts = parent.get("principal_expression_facts")
+    occurrences = parent.get("principal_occurrences") or ()
+    if facts is None:
+        return set()
+    chain = _chain_atoms(parent)
+    anchors = {a for o in occurrences for a in o.parent_anchors}
+    atoms = {a for o in occurrences for a in o.characteristic_atoms} or set(facts.characteristic_atoms)
+    seeds = anchors & chain
+    if not seeds:  # 锚点全在骨架外：exocyclic 基团（苯甲酸的羧基），改取与骨架相邻的锚点
+        linked = {n.GetIdx() for i in chain for n in mol.GetAtomWithIdx(i).GetNeighbors()}
+        seeds = anchors & linked
+    out = set(seeds)
+    for i in tuple(out):
+        out |= {n.GetIdx() for n in mol.GetAtomWithIdx(i).GetNeighbors()
+                if n.GetIdx() in atoms and n.GetIdx() not in anchors}
     return out
 
 
 def compute_owned_atoms(parent: dict, mol: Mol) -> frozenset[int]:
-    """链与 kind 特异的 FG 原子的并集（末端所有权集合）。"""
+    """链与主官能团特征原子的并集（末端所有权集合）。"""
     return frozenset(_chain_atoms(parent) | _kind_fg_atoms(parent, mol))
 
 

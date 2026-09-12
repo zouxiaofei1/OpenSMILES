@@ -548,7 +548,7 @@ def _collect_fgs(mol: Mol) -> dict:
     from namepredict.layer1.functional_group_inventory import build_inventory
 
     lists = _fg_lists(_fg_parts(mol))
-    return {**lists, **_fg_bools(lists), "fg_inventory": build_inventory(lists)}
+    return {**lists, **_fg_bools(lists), "fg_inventory": build_inventory(lists, mol)}
 
 def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
     """组装分子分析结果 dict（碳信息 + 官能团 + 环事实）。"""
