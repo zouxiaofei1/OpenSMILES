@@ -8,7 +8,6 @@ from rdkit.Chem import BondType, Mol
 
 from namepredict.tools.block_cut import cut_block, side_roots
 
-
 class SideSlot(str, Enum):
     """侧链连接原子的角色槽位（链碳/环碳/酰胺 N/胺 N/醚 O/其他）。"""
     CHAIN_C = "chain_c"
@@ -112,7 +111,6 @@ def _is_outside_root(mol: Mol, root: int, owned: frozenset[int], attach: int) ->
     return any(n.GetIdx() == root for n in mol.GetAtomWithIdx(attach).GetNeighbors()
                if n.GetAtomicNum() != 1)
 
-
 def claim_block(
     mol: Mol,
     *,
@@ -143,7 +141,6 @@ def _canonical_edge(
         if n.GetAtomicNum() != 1 and n.GetIdx() in owned
     ]
     return min(edges) if edges else None
-
 
 def _has_dbl_o_edge(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> bool:
     """外部组分是否有经双键连 owned 重原子的氧（羰基/砜等主 FG 成分已由主提取器命名，不作侧链 claim，避免 cut 出 *O 污染成羟基）。"""
@@ -184,7 +181,6 @@ def _unique_components(mol: Mol, owned: frozenset[int]) -> list[frozenset[int]]:
             seen.add(atoms)
             out.append(atoms)
     return out
-
 
 def iter_claims(mol: Mol, owned_atoms: frozenset[int]) -> list[ClaimedBlock]:
     """按 canonical 顺序返回所有外部重原子组分的 claim。"""

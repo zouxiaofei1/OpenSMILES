@@ -7,8 +7,6 @@ import { loadBenchmark, stopBmPolling, bindBenchmark } from "./benchmark.js";
 import { bindDebug } from "./debug.js";
 import { loadCodeAnalysis, bindCodeAnalysis } from "./code-analysis.js";
 import { loadCallGraph, loadCallGraphSvg, bindCallGraph } from "./callgraph.js";
-import { initTheme, loadSettings, bindSettings } from "./settings.js";
-import { loadDocs, bindDocs } from "./docs.js";
 import { initHistoryPicker } from "./history.js";
 
 /* ---------- Page switching ---------- */
@@ -30,16 +28,12 @@ function switchPage(name) {
   var caPage = document.getElementById("code-analysis-page");
   var cgPage = document.getElementById("call-graph-page");
   var debugPage = document.getElementById("debug-page");
-  var settingsPage = document.getElementById("settings-page");
-  var docsPage = document.getElementById("docs-page");
   // Hide all first
   if (namerLayout) namerLayout.classList.add("hidden");
   if (bmPage) bmPage.classList.add("hidden");
   if (caPage) caPage.classList.add("hidden");
   if (cgPage) cgPage.classList.add("hidden");
   if (debugPage) debugPage.classList.add("hidden");
-  if (settingsPage) settingsPage.classList.add("hidden");
-  if (docsPage) docsPage.classList.add("hidden");
   // Stop polling
   stopBmPolling();
   // Show active page
@@ -59,12 +53,6 @@ function switchPage(name) {
     });
   } else if (name === "debug") {
     if (debugPage) debugPage.classList.remove("hidden");
-  } else if (name === "settings") {
-    if (settingsPage) settingsPage.classList.remove("hidden");
-    loadSettings();
-  } else if (name === "docs") {
-    if (docsPage) docsPage.classList.remove("hidden");
-    loadDocs(state.docsSource);
   } else {
     if (namerLayout) namerLayout.classList.remove("hidden");
   }
@@ -194,13 +182,10 @@ function bind() {
   bindDebug();
   bindCodeAnalysis();
   bindCallGraph();
-  bindSettings();
-  bindDocs();
 }
 
 async function init() {
   bind();
-  initTheme();
   ensureKetcher();
   initHistoryPicker();
 }

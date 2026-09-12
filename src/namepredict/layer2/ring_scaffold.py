@@ -10,10 +10,7 @@ from namepredict.tools import memo
 from namepredict.layer2.parent_skeleton import ParentSkeleton
 from namepredict.layer1.ring_systems import sssr_rings
 
-
-# ScaffoldSpec 定义（命名/编号元数据；仅 L2 数据，不做命名组装）
-
-@dataclass(frozen=True)
+@dataclass(frozen=True)# ScaffoldSpec 定义
 class NumberingPolicy:
     """骨架编号策略：固定编号路径、物化开关、锚点与可取代位。"""
     standard_path: tuple = ()
@@ -539,13 +536,9 @@ def standard_chain(spec_id: str | None, match: tuple[int, ...] | None) -> list[i
         return None
     return [match[t] for t in order]
 
-
-# 环解析
-
-def _matched_id(info: dict, skeleton: ParentSkeleton) -> str | None:
+def _matched_id(info: dict, skeleton: ParentSkeleton) -> str | None:# 环解析
     """按模板子图同构匹配骨架的 scaffold id。"""
     return match_retained(info, skeleton.atom_ids)
-
 
 def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
     """无模板命中时的通用环身份兜底：全碳单/多环→carbocycle；非全碳芳香多环→fused_hetero；其余→None（显式失败，避免当开链烷基错名）。"""

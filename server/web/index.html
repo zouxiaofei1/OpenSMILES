@@ -35,7 +35,6 @@
           <button class="tab" data-page="code-analysis">代码量分析</button>
           <button class="tab" data-page="call-graph">调用链</button>
           <button class="tab" data-page="debug">Debug</button>
-          <button class="tab" data-page="docs">文档</button>
         </nav>
       </div>
       <div class="topbar-right">
@@ -46,13 +45,6 @@
           <datalist id="history-commit-list"></datalist>
         </div>
         <span id="history-badge" class="chip">HEAD</span>
-        <button type="button" class="tab gear-tab" data-page="settings"
-                title="设置" aria-label="设置">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-          </svg>
-        </button>
         <button type="button" id="nav-toggle" class="nav-toggle" aria-expanded="false"
                 aria-controls="nav-drawer" aria-label="打开菜单" title="打开菜单">
           <span class="nav-toggle-bars" aria-hidden="true">
@@ -455,73 +447,9 @@
         </div>
       </div>
 
-      <!-- Docs Page: docs/wiki 目录树 + IUPAC 中文翻译共用查看器，侧边栏做来源切换 -->
-      <div id="docs-page" class="docs-page hidden" role="tabpanel" data-src="wiki">
-        <div class="wiki-layout">
-          <aside class="wiki-sidebar" role="navigation" aria-label="文档来源与目录">
-            <div class="wiki-source-seg" role="group" aria-label="文档来源">
-              <button type="button" class="src-btn active" data-src="wiki">Wiki</button>
-              <button type="button" class="src-btn" data-src="iupac">IUPAC</button>
-            </div>
-            <div id="docs-tree" class="wiki-tree"></div>
-          </aside>
-          <section class="wiki-content">
-            <div id="docs-doc" class="wiki-doc">
-              <p class="muted-text">选择左侧文档查看</p>
-            </div>
-          </section>
-        </div>
-      </div>
-
-      <!-- Settings Page -->
-      <div id="settings-page" class="settings-page hidden" role="tabpanel" aria-labelledby="tab-settings">
-        <div class="card settings-card">
-          <div class="card-head row-between">
-            <h3 class="card-title">设置</h3>
-            <span id="settings-status" class="chip">未保存</span>
-          </div>
-          <div class="settings-grid">
-            <div class="settings-field">
-              <label class="field-label" for="settings-model">模型名 / Model</label>
-              <input id="settings-model" class="input" type="text" placeholder="deepseek-v4-pro"
-                     autocomplete="off" spellcheck="false" />
-            </div>
-            <div class="settings-field">
-              <label class="field-label" for="settings-base-url">网站 / Base URL</label>
-              <input id="settings-base-url" class="input mono" type="text" placeholder="https://api.deepseek.com"
-                     autocomplete="off" spellcheck="false" />
-            </div>
-            <div class="settings-field">
-              <label class="field-label" for="settings-api-key">API Key</label>
-              <input id="settings-api-key" class="input mono" type="password" placeholder="未配置"
-                     autocomplete="new-password" spellcheck="false" />
-              <p id="settings-api-key-hint" class="muted-text small"></p>
-            </div>
-            <div class="settings-field">
-              <label class="field-label" for="settings-concurrency">LLM 并发</label>
-              <input id="settings-concurrency" class="input" type="number" value="1" min="1" max="64" style="width:120px" />
-              <span class="muted-text small">layer LLM 请求并发（1 = 串行）</span>
-            </div>
-            <div class="settings-field">
-              <label class="field-label" for="settings-theme">主题 / Theme</label>
-              <select id="settings-theme" class="input" style="width:140px">
-                <option value="dark">暗色 Dark</option>
-                <option value="light">亮色 Light</option>
-              </select>
-            </div>
-          </div>
-          <div class="settings-actions">
-            <button id="settings-save" class="btn btn-primary" type="button">保存设置</button>
-          </div>
-          <p class="muted-text small" style="margin-top:var(--space-xl)">
-            LLM 配置在下次 layer LLM 生成 / 单物质分析时生效；主题即时切换。
-          </p>
-        </div>
-      </div>
     </main>
   </div>
   <script src="/vendor/smiles-drawer.min.js"></script>
-  <script src="/vendor/marked.min.js"></script>
   <script src="/js/namer-ketcher.js"></script>
   <script type="module" src="/js/app.js"></script>
 </body>

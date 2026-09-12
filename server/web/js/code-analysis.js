@@ -72,6 +72,7 @@ function renderCaSummary(el, total) {
     '<div class="ca-stat"><span class="ca-stat-label">总文件</span><b class="mono">' + (total.file_count != null ? total.file_count : total.files) + "</b></div>" +
     '<div class="ca-stat"><span class="ca-stat-label">代码行</span><b class="mono">' + total.code.toLocaleString() + "</b></div>" +
     '<div class="ca-stat"><span class="ca-stat-label">注释行</span><b class="mono">' + total.comment.toLocaleString() + "</b></div>" +
+    '<div class="ca-stat"><span class="ca-stat-label">空行</span><b class="mono">' + ((total.blank || 0).toLocaleString()) + "</b></div>" +
     '<div class="ca-stat"><span class="ca-stat-label">总行数</span><b class="mono">' + total.lines.toLocaleString() + "</b></div>";
 }
 

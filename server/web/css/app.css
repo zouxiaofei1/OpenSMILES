@@ -81,52 +81,6 @@
   --transition-slow: 350ms var(--ease-out);
 }
 
-/* Light theme (set via document.documentElement[data-theme="light"]) */
-[data-theme="light"] {
-  --color-background: #f6f8fb;
-  --color-background-alt: #eef2f7;
-  --color-background-deep: #e9eef5;
-  --color-surface-1: #ffffff;
-  --color-surface-2: #f1f5f9;
-  --color-surface-3: #e2e8f0;
-
-  --color-foreground: #0f172a;
-  --color-foreground-dim: #1e293b;
-  --color-muted-text: #475569;
-  --color-muted-text-dim: #94a3b8;
-
-  --color-accent: #16a34a;
-  --color-accent-soft: #22c55e;
-  --color-accent-glow: rgba(22, 163, 74, 0.18);
-  --color-accent-subtle: rgba(22, 163, 74, 0.08);
-
-  --color-info: #0284c7;
-  --color-info-soft: #38bdf8;
-  --color-info-glow: rgba(2, 132, 199, 0.15);
-
-  --color-primary: #f1f5f9;
-  --color-on-primary: #0f172a;
-  --color-secondary: #e2e8f0;
-  --color-muted: #eef2f7;
-  --color-border: #cbd5e1;
-  --color-border-light: #94a3b8;
-  --color-ring: #16a34a;
-  --color-destructive: #dc2626;
-  --color-destructive-soft: #ef4444;
-  --color-amber: #d97706;
-  --color-amber-soft: #f59e0b;
-
-  --shadow-sm: 0 0 0 1px rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 0 0 1px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.06);
-  --shadow-lg: 0 0 0 1px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(15, 23, 42, 0.08);
-}
-
-[data-theme="light"] .topbar {
-  background: rgba(255, 255, 255, 0.85);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 16px rgba(15, 23, 42, 0.06);
-}
-
 /* ══════════════════════════════════════════════════════════════════
    Reset & Base
    ════════════════════════════════════════════════════════════════ */
@@ -313,11 +267,6 @@ button {
   background: rgba(17, 24, 39, 0.88);
 }
 
-[data-theme="light"] .topbar.scrolled {
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 32px rgba(15, 23, 42, 0.12);
-}
-
 /* ── Logo ── */
 .logo {
   display: flex;
@@ -489,12 +438,6 @@ button {
     opacity var(--transition),
     transform var(--transition),
     visibility 0s;
-}
-
-[data-theme="light"] .nav-drawer {
-  background: rgba(255, 255, 255, 0.94);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
 }
 
 .nav-drawer-tabs {
@@ -2867,145 +2810,6 @@ details.mol-details pre {
     transition-duration: 0.01ms !important;
   }
 }
-
-/* ---- Settings ---- */
-
-.settings-page {
-  display: flex;
-  flex-direction: column;
-  max-width: 720px;
-}
-
-.settings-page.hidden { display: none !important; }
-
-.settings-card { max-width: 720px; }
-
-.settings-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--space-xl) var(--space-lg);
-  margin-top: var(--space-lg);
-}
-
-.settings-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.settings-actions {
-  display: flex;
-  gap: var(--space-md);
-  margin-top: var(--space-xl);
-}
-
-/* ---- Wiki ---- */
-
-.docs-page {
-  display: flex;
-  flex-direction: column;
-}
-
-.wiki-layout {
-  display: flex;
-  gap: var(--space-2xl);
-  align-items: stretch;
-}
-
-.wiki-sidebar {
-  width: 240px;
-  flex-shrink: 0;
-  background: var(--color-surface-1);
-  border: 1px solid rgba(71, 85, 105, 0.3);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
-  max-height: calc(100vh - var(--topbar-h) - 40px);
-  overflow-y: auto;
-}
-
-.wiki-tree { font-size: 13px; }
-
-.wiki-dir summary {
-  cursor: pointer;
-  padding: 4px 0;
-  color: var(--color-foreground-dim);
-  font-weight: 600;
-}
-
-.wiki-file {
-  cursor: pointer;
-  padding: 4px 0;
-  color: var(--color-muted-text);
-}
-
-.wiki-file:hover { color: var(--color-accent); }
-
-.wiki-file.active { color: var(--color-accent); font-weight: 600; }
-
-.wiki-content {
-  flex: 1;
-  min-width: 0;
-  background: var(--color-surface-1);
-  border: 1px solid rgba(71, 85, 105, 0.3);
-  border-radius: var(--radius-lg);
-  padding: var(--space-2xl);
-  max-height: calc(100vh - var(--topbar-h) - 40px);
-  overflow-y: auto;
-}
-
-.wiki-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: var(--space-lg);
-  padding-bottom: var(--space-md);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.wiki-doc { line-height: 1.7; }
-
-.wiki-doc h1, .wiki-doc h2, .wiki-doc h3, .wiki-doc h4 {
-  color: var(--color-foreground);
-  margin-top: var(--space-xl);
-  margin-bottom: var(--space-sm);
-}
-
-.wiki-doc p, .wiki-doc ul, .wiki-doc ol { margin: var(--space-sm) 0; }
-
-.wiki-doc code {
-  background: var(--color-surface-3);
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 0.9em;
-}
-
-.wiki-doc pre {
-  background: var(--color-surface-3);
-  padding: var(--space-md);
-  border-radius: 8px;
-  overflow-x: auto;
-}
-
-.wiki-doc pre code { background: none; padding: 0; }
-
-.wiki-doc table { border-collapse: collapse; margin: var(--space-md) 0; }
-
-.wiki-doc th, .wiki-doc td { border: 1px solid var(--color-border); padding: 6px 10px; }
-
-.wiki-doc a { color: var(--color-accent); }
-
-/* 文档页来源切换：IUPAC 中文条目名更长，用更宽侧栏并允许换行 */
-.docs-page[data-src="iupac"] .wiki-sidebar { width: 300px; }
-.docs-page[data-src="iupac"] .wiki-file { white-space: normal; }
-
-/* Wiki / IUPAC 来源切换分段按钮 */
-.wiki-source-seg { display: flex; gap: 4px; padding: 2px; margin-bottom: var(--space-md); background: var(--color-surface-2); border: 1px solid rgba(71, 85, 105, 0.25); border-radius: var(--radius); }
-.wiki-source-seg .src-btn { flex: 1; padding: 4px 6px; font-size: 12px; font-weight: 600; color: var(--color-muted-text); background: transparent; border: none; border-radius: 6px; cursor: pointer; }
-.wiki-source-seg .src-btn:hover { color: var(--color-foreground); }
-.wiki-source-seg .src-btn.active { color: var(--color-accent); background: var(--color-accent-subtle); }
-
-/* 设置齿轮入口（topbar-right） */
-.topbar-right .gear-tab { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; padding: 0; flex: 0 0 auto; }
-.topbar-right .gear-tab svg { width: 18px; height: 18px; }
 
 /* History version picker (topbar right) */
 .history-picker { display: flex; align-items: center; gap: var(--space-sm); }

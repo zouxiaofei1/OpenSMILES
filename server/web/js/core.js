@@ -17,11 +17,6 @@ export const API = {
   debug: "/api/v1/debug",
   debugPrint: "/api/v1/debug-print",
   debugPrintStream: "/api/v1/debug-print-stream",
-  settings: "/api/v1/settings",
-  wiki: "/api/v1/wiki",
-  wikiDoc: "/api/v1/wiki/doc",
-  iupac: "/api/v1/iupac",
-  iupacDoc: "/api/v1/iupac/doc",
   gitCommits: "/api/v1/git/commits",
 };
 
@@ -67,9 +62,6 @@ export const state = {
   cgSvg: null,
   cgSvgLoading: false,
   cgSourceTotal: 0,
-  docsSource: "wiki", // 文档页当前来源: "wiki" | "iupac"
-  wikiCurrent: "", // 文档页 · 各来源记住上次打开的文档
-  iupacCurrent: "",
   cgRank: {
     calls: { asc: false, all: false },
     time: { asc: false, all: false },
