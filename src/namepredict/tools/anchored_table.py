@@ -44,6 +44,8 @@ def _build_registry() -> dict[str, RetainedSubstituent]:
         "bromo": RetainedSubstituent( "bromo", "溴", "bromo", "溴", P, anchored=("*Br", ), paren=False, kind="halo", ),
         "iodo": RetainedSubstituent( "iodo", "碘", "iodo", "碘", P, anchored=("*I", ), paren=False, kind="halo", ),
         "nitro": RetainedSubstituent( "nitro", "硝基", "nitro", "硝基", P, anchored=("*[N+](=O)[O-]", ), paren=False, kind="leaf", ),
+        "oxo": RetainedSubstituent( "oxo", "氧代", "oxo", "氧代", P, anchored=("*=O", ), paren=False, kind="leaf", ),
+        "nitro": RetainedSubstituent( "nitro", "硝基", "nitro", "硝基", P, anchored=("*[N+](=O)[O-]", ), paren=False, kind="leaf", ),
         "isocyanato": RetainedSubstituent( "isocyanato", "异氰酸基", "isocyanato", "异氰酸基", P, anchored=("*N=C=O", ), paren=False, kind="leaf", ),
         "isothiocyanato": RetainedSubstituent( "isothiocyanato", "异硫氰酸基", "isothiocyanato", "异硫氰酸基", P, anchored=("*N=C=S", ), paren=False, kind="leaf", ),
         "methyl": RetainedSubstituent( "methyl", "甲基", "methyl", "甲基", P, anchored=("*C", ), paren=False, kind="alkyl", ),

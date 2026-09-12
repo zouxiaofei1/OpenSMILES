@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 
 from namepredict.layer1 import fg_registry as _fg_reg
-from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+from namepredict.tools.re import alkyl_alpha_key
 from namepredict.constants import MULT_EN, MULT_ZH, N_PREFIX_KINDS
 
 def _group_by_stem(substituents: list) -> dict[str, list]:

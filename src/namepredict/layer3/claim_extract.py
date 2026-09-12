@@ -49,7 +49,7 @@ def sub_from_named(named, mol=None) -> dict:
         n_carbons = len(claim.atoms)
     kind = _kind_for_named(named)
     if kind in N_PREFIX_KINDS and mol is not None and _is_ring_attach(mol, claim.attach_parent):
-        kind = _claim_kind("ring_c")  # 环氮（内酰胺/环胺母体的环员 N）有环上位次可用，改用位次定位而非 N- 前缀（P-14.4/P-16；否则与酰基/氨基的 N- 撞名，如 3-phenyl-1,3-oxazolidin-2-one 写成 N-phenyl）。
+        kind = _claim_kind("ring_c")  # 环氮（内酰胺/环胺母体的环员 N）有环上位次可用，改用位次定位而非 N- 前缀
     return {
         "kind": kind, "n_carbons": n_carbons,
         "attach_idx": claim.attach_parent, "atoms": sorted(claim.atoms),

@@ -259,7 +259,7 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
     if not suffixes and not prefixes:
         return chains[0]
     labels = _STANDARD_LABELS.get(sid) or ()
-    from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+    from namepredict.tools.re import alkyl_alpha_key
     alpha_subs = [(alkyl_alpha_key(s.get("en") or ""), s["attach_idx"])
                   for s in (substituents or []) if s.get("attach_idx") in chain]
 
@@ -329,7 +329,7 @@ def _fused_numbering(parent: dict, chain: list[int],
     hydro_atoms = sorted(a for a in (parent.get("hydro_atoms") or ()) if a in chain_set)
     if hydro_atoms:
         layers.append(hydro_atoms)  # P-31.2.2: hydro 加氢位次最低（取代基之后、指示氢之前）
-    from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+    from namepredict.tools.re import alkyl_alpha_key
     alpha_subs = [(alkyl_alpha_key(s.get("en") or ""), s["attach_idx"])
                   for s in (substituents or []) if s.get("attach_idx") in chain_set]
     result = number_fused_system(mol, rings, [o.coord_dict() for o in orients], layers, alpha_subs)

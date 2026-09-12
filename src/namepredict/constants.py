@@ -93,12 +93,12 @@ def zh_bridge_root(name: str) -> str:
     """桥后缀（氨基/氧基/硫基）前的中文烃基名去尾「基」：甲基→甲、叔丁基→叔丁、环己基→环己、丙-2-基→丙-2-（tiers gold 口径）。"""
     return name[:-1] if name.endswith("基") else name
 
-AMIDO_RETAINED = {  # P-66.1.1.4.3 方法 1 保留式收缩：单 N-酰基残基 R-C(=O)-NH-* 在 R=乙酰/甲酰/苯甲酰时用 amido 保留名（acetamido/formamido/benzamido；gold/ChEBI 全量仅此三词），其余 R（长链/烯酰/被取代苯甲酰/杂环羰酰）保持 acylamino 方法 2，不入表。键 = N-酰基取代基 en 词干。
+AMIDO_RETAINED = {  # P-66.1.1.4.3
     "acetyl": ("acetamido", "乙酰氨基"),
     "formyl": ("formamido", "甲酰胺基"),
     "benzoyl": ("benzamido", "苯甲酰胺基"),
 }
-AMIDO_RETAINED_EN = frozenset(v[0] for v in AMIDO_RETAINED.values())  # 注：retained amido 的中文按 P-66 CN 译本/gold 取「酰氨基」式（acetyl→乙酰氨基），与 acylamino 方法 2 的 …酰氨基 词形一致，amido/acylamino 的区分由 en 词干承担。formyl/benzoyl 中文（甲酰胺基/苯甲酰胺基）因对应 gold 尚未统一，暂留（TODO 对齐）。
+AMIDO_RETAINED_EN = frozenset(v[0] for v in AMIDO_RETAINED.values())  
 
 # ── 文本规范化 ──────────────────────────────────────────────────
 _WS = re.compile(r"\s+")

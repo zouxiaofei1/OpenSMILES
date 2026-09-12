@@ -66,7 +66,7 @@ def _arm_ester_zh(zh: str) -> str:
 
 
 def _ester_salt_names(n_oh: int, salt: dict, arms: list[dict]) -> tuple[str, str] | None:
-    """碱金属 + 烷基酯臂（n_om>0, k>0）：metal + 臂 + [dihydrogen|hydrogen] phosphate / 磷酸[二氢|氢]{臂}酯 {金属}盐，如 disodium tridecyl phosphate / 磷酸十三烷基酯 二钠盐。"""
+    """碱金属 + 烷基酯臂（n_om>0, k>0）：metal + 臂 + [dihydrogen|hydrogen] phosphate / 磷酸[二氢|氢]{臂}酯 {金属}盐"""
     metal_en = _metal_en_prefix(salt)
     metal_zh = _metal_zh_suffix(salt)
     if not metal_en or not metal_zh:

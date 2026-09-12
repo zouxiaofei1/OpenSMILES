@@ -65,7 +65,7 @@ def _is_ketone_carbon(atom) -> bool:
     if n_c == 1:  # 环外单碳羰基须连环内杂原子（N-酰基环胺）才作酮；环内单碳羰基是内酰胺/环酮/内酯/硫代内酯，同样作酮。
         if not _has_ring_hetero_neighbor(atom) or _is_aldehyde_carbon(atom):
             return False
-    elif n_c == 0:  # 环内零碳邻居羰基（环脲/环碳酸酯，如嘧啶-2,4-二酮、乙内酰脲）作环酮；环内非内酯型酯与开链者（脲/CO2）不作。
+    elif n_c == 0:  # 环内零碳邻居羰基作环酮；环内非内酯型酯与开链者（脲/CO2）不作。
         if not atom.IsInRing() or (_ester_alkoxy_of(atom) is not None and not _is_lactone_carbon(atom)):
             return False
         return _amide_n_of(atom) is None and _anhydride_o_of(atom) is None

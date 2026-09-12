@@ -1,7 +1,7 @@
 """L4 链位次与键端点位次的辅助工具函数。"""
 from __future__ import annotations
 
-from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+from namepredict.tools.re import alkyl_alpha_key
 
 
 def _edge_locants(chain: list[int], edge) -> tuple[int, int] | None:

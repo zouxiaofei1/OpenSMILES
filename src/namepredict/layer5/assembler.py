@@ -29,7 +29,7 @@ def _ring_stem(numbered: dict) -> tuple[str, str] | None:
 
 # 稠环/杂环完整 base 名（-carboxylic acid 用完整词干，如 naphthalene-1-carboxylic acid）。
 def _ring_base(numbered: dict) -> tuple[str, str] | None:
-    """保留 scaffold 的完整母体名（用于 -carboxylic acid）。"""
+    """保留 scaffold 的完整母体名。"""
     parent = numbered.get("parent") or {}
     en, zh = parent.get("stem_en"), parent.get("stem_zh")
     return (en, zh) if en and zh else None
@@ -179,7 +179,7 @@ def _oxido_arm(s: dict, mol) -> tuple[str, str] | None:
 
 def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None) -> tuple[str, str] | None:
     """P 酰基前缀的取代基拼接（P-67.1.4.1.1.5）：取代基按字母序接到 phosphoryl；全为简单基时首基平铺、其余括起（hydroxy(methyl)phosphoryl），同基倍增用 di-/tri-（dimethoxyphosphoryl）；含复合组分时逐组分以连字符分隔、需围栏者加方括号（P-16.5.2 嵌套标记）。"""
-    from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+    from namepredict.tools.re import alkyl_alpha_key
 
     groups: dict[str, list] = {}
     for s in subs:
@@ -501,7 +501,7 @@ def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
 
 
 def _with_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]:
-    """把动态指示氢与 hydro 前缀依次拼到母体名前：顺序为 hydro + 指示氢 + 母体名（P-31.2.2，如 2,3-dihydro-1H-indole）；母体名已带静态 1H-（保留名）时不重复。"""
+    """把动态指示氢与 hydro 前缀依次拼到母体名前：顺序为 hydro + 指示氢 + 母体名；母体名已带静态 1H-（保留名）时不重复。"""
     parent = numbered.get("parent") or {}
     pre = parent.get("hydro_prefix") or ("", "")
     if not pre[0] and not parent.get("indicated_h_forced"):  # forced = 指示氢来自「保留母体名未隐含的芳香位 H」（P-58.2.1），无 hydro 前缀也须注入；其余动态指示氢仍只在氢化衍生物（有 hydro 前缀）时注入，否则 [nH] 互变异构型会误产 1H-pyridine。

@@ -82,7 +82,7 @@ def _strip_locant_prefix(name: str, prefix: str) -> str:
 
 
 def _embeds_locant_prefix(name: str, prefix: str) -> bool:
-    """词干是否把 locant 前缀嵌在词中而非词首（如 4,5-dihydro-1,3-thiazole 的 1,3-）：前缀须留在组分名前，不再前移或剥离。"""
+    """词干是否把 locant 前缀嵌在词中而非词首：前缀须留在组分名前，不再前移或剥离。"""
     return f"-{prefix}" in name
 
 

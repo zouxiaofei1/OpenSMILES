@@ -9,7 +9,7 @@ from namepredict.constants import AMIDO_RETAINED_EN
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol
 
-_SIMPLE_ALKOXY_NO_PAREN = frozenset({  # 简单保留烷氧基作前缀不加括号（ethoxybenzene/phenoxybenzene；与 methoxy 一致，收拢产物 ethoxy/propoxy/butoxy/phenoxy/isopropoxy 由此免括号）。
+_SIMPLE_ALKOXY_NO_PAREN = frozenset({  # 简单保留烷氧基作前缀不加括号
     "methoxy", "ethoxy", "propoxy", "butoxy", "phenoxy", "isopropoxy",
 })
 
