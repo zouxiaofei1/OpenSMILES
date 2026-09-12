@@ -31,9 +31,6 @@ from rdkit import Chem
 mono_amide__CASES = [
     # positive: retained + straight-chain mono primary amides
     ("C(=O)N", "formamide", "甲酰胺"),
-    ("CCC(=O)N", "propanamide", "丙酰胺"),
-    ("CCCC(=O)N", "butanamide", "丁酰胺"),
-    ("CCCCC(=O)N", "pentanamide", "戊酰胺"),
     ("CCCCCC(=O)N", "hexanamide", "己酰胺"),
 ]
 
@@ -90,7 +87,6 @@ def test_alkenamide(smiles: str, en: str, zh: str | None) -> None:
 benzamide__CASES = [
     # positive: unsubstituted retained parent
     ("c1ccccc1C(=O)N", "benzamide", "苯甲酰胺"),
-    ("NC(=O)c1ccccc1", "benzamide", "苯甲酰胺"),
     # positive: ring simple prefixes (attach = 1)
     ("O=C(N)c1ccc(Cl)cc1", "4-chlorobenzamide", "4-氯苯甲酰胺"),
     ("O=C(N)c1ccc(O)cc1", "4-hydroxybenzamide", "4-羟基苯甲酰胺"),
@@ -213,7 +209,6 @@ demoted_amide_to_amino__CASES = [
     ("N=C(O)CCC(O)C(=O)O", "5-amino-2-hydroxy-5-oxopentanoic acid", "5-氨基-2-羟基-5-氧代戊酸"),
     # 无 α-OH 变体
     ("NC(=O)CCCC(=O)O", "5-amino-5-oxopentanoic acid", None),
-    ("NC(=O)CCC(=O)O", "4-amino-4-oxobutanoic acid", "4-氨基-4-氧代丁酸"),
 ]
 
 

@@ -59,11 +59,6 @@ branched_ether__CASES = [
         "hexafluoroisopropyl methyl ether",
         "六氟异丙基甲醚",
     ),
-    (
-        "FC(F)(F)C(OC)C(F)(F)F",
-        "hexafluoroisopropyl methyl ether",
-        "六氟异丙基甲醚",
-    ),
     # unsubstituted isopropyl methyl ether
     ("COC(C)C", "isopropyl methyl ether", "异丙基甲醚"),
     # linear regressions

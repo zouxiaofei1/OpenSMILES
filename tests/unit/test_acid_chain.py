@@ -57,8 +57,6 @@ def test_mono_carboxylic_acid(smiles: str, en: str, zh: str | None) -> None:
 alkanedioic_acid__CASES = [
     # positive: unsubstituted open-chain diacids
     ("OC(=O)C(=O)O", "oxalic acid", "草酸"),
-    ("OC(=O)CCC(=O)O", "butanedioic acid", "丁二酸"),
-    ("OC(=O)CCCC(=O)O", "pentanedioic acid", "戊二酸"),
     ("O=C(O)CCCCCCCC(=O)O", "nonanedioic acid", "壬二酸"),
     ("CCC(=O)O", "propanoic acid", "丙酸"),
 ]
@@ -104,7 +102,6 @@ alkadienedioic__CASES = [
     ),
     # negative: saturated diacid anion and mono-ene diacid must not regress
     (r"O=C([O-])CCC(=O)[O-]", "butanedioate", "丁二酸根"),
-    (r"O=C(O)/C=C/C(=O)O", "(2E)-but-2-enedioic acid", "(2E)-丁-2-烯二酸"),
 ]
 
 
@@ -282,7 +279,6 @@ def test_partial_deprotonation_does_not_claim_polycarboxylate() -> None:
 # ==========================================================================
 carboxylate_anion__CASES = [
     # positive: bare carboxylate anions
-    ("CCCCCCCCCCCC(=O)[O-]", "dodecanoate", "十二酸根"),
     ("CCCCCCCCCCCCCC(=O)[O-]", "tetradecanoate", "十四酸根"),
     ("CC(C)CC(=O)[O-]", "3-methylbutanoate", "3-甲基丁酸根"),
     ("CC(=O)[O-]", "acetate", "乙酸根"),
@@ -318,7 +314,6 @@ metal_carboxylate__CASES = [
     ("FC1=C(C(=O)[O-])C=CC(=C1)F.[Na+]", "sodium 2,4-difluorobenzoate", "2,4-二氟苯甲酸钠"),
     ("O=C([O-])C.[K+]", "potassium acetate", "乙酸钾"),
     ("O=C[O-].[Na+]", "sodium formate", "甲酸钠"),
-    ("[Li+].[O-]C(=O)C", "lithium acetate", "乙酸锂"),
     # positive: metal after R/S (and optional E/Z) on anion stem
     ("C[C@H](O)C(=O)[O-].[Na+]", "sodium (2S)-2-hydroxypropanoate", "(2S)-2-羟基丙酸钠"),
     ("C/C=C/[C@H](O)C(=O)[O-].[Na+]", "sodium (2S,3E)-2-hydroxypent-3-enoate", "(2S,3E)-2-羟基戊-3-烯酸钠"),

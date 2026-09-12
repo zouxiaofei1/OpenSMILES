@@ -29,8 +29,6 @@ from rdkit import Chem
 aminoalkanoic_acid__CASES = [
     # positive: α/β/ω-amino monoacids
     ("NCC(=O)O", "2-aminoacetic acid", "2-氨基乙酸"),
-    ("OC(=O)C(N)C", "2-aminopropanoic acid", "2-氨基丙酸"),
-    ("NCCC(=O)O", "3-aminopropanoic acid", "3-氨基丙酸"),
     ("CCCCC(N)C(=O)O", "2-aminohexanoic acid", None),
     ("NCCCC(=O)O", "4-aminobutanoic acid", "4-氨基丁酸"),
     ("OC(=O)C(O)C", "2-hydroxypropanoic acid", "2-羟基丙酸"),

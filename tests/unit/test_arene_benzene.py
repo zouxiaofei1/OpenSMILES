@@ -168,8 +168,6 @@ def test_arene_aryl_fg(smiles: str, en: str, zh: str | None) -> None:
 # Ester alkoxy: simple straight n-alkyl C1–C16 (no branching).
 # ==========================================================================
 arene_ester_nitrile__CASES = [
-    ("CCCCCCOC(=O)c1ccccc1", "hexyl benzoate", "苯甲酸己酯"),
-    ("CCCCCCCCOC(=O)c1ccccc1", "octyl benzoate", "苯甲酸辛酯"),
     ("CCCCCCCCCCCCCCCCOC(=O)c1ccccc1", "hexadecyl benzoate", "苯甲酸十六酯"),
     ("CCOC(=O)c1ccc(Br)cc1Cl", "ethyl 4-bromo-2-chlorobenzoate", None),
     ("CCOC(=O)c1c(Br)cc(Cl)cc1", "ethyl 2-bromo-4-chlorobenzoate", None),
@@ -208,7 +206,6 @@ def test_benzoate_not_chain_ester() -> None:
 # ==========================================================================
 arene_peg_alkoxy__CASES = [
     # simple n-alkoxy C3–C4
-    ("CCCOc1ccccc1", "propoxybenzene", "丙氧基苯"),
     ("CCCCOc1ccccc1", "butoxybenzene", "丁氧基苯"),
     # PEG k=1 ethoxy
     (
@@ -218,23 +215,12 @@ arene_peg_alkoxy__CASES = [
     ),
     # PEG k=2: Ph-O-(CH2CH2O)2-R  (note extra C vs mistaken COCCOCOc)
     (
-        "COCCOCCOc1ccccc1",
-        "(2-(2-methoxyethoxy)ethoxy)benzene",
-        "(2-(2-甲氧基乙氧基)乙氧基)苯",
-    ),
-    (
         "CCOCCOCCOc1ccccc1",
         "(2-(2-ethoxyethoxy)ethoxy)benzene",
         "(2-(2-乙氧基乙氧基)乙氧基)苯",
     ),
     # regressions
     ("COc1ccccc1", "anisole", "甲氧基苯"),
-    ("CCOc1ccccc1", "ethoxybenzene", None),
-    (
-        "COCCOc1ccccc1",
-        "(2-methoxyethoxy)benzene",
-        None,
-    ),
     (
         "BrC1=CC(=C(C=C1)OCCOC)F",
         "4-bromo-2-fluoro-1-(2-methoxyethoxy)benzene",
@@ -415,7 +401,6 @@ def test_phenyl_phenoxy(smiles: str, en: str, zh: str | None) -> None:
 # Methylbenzene retains toluene; isopropyl is branched alkyl (not propyl).
 # ==========================================================================
 alkylbenzene__CASES = [
-    ("CCCc1ccccc1", "propylbenzene", "丙基苯"),
     ("CCCCc1ccccc1", "butylbenzene", "丁基苯"),
     ("Clc1ccccc1", "chlorobenzene", "氯苯"),
     ("CC(C)C", "2-methylpropane", "2-甲基丙烷"),

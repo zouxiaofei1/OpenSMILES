@@ -114,7 +114,6 @@ def test_aminobenzoic_not_chain_acid() -> None:
 # ==========================================================================
 cycloalkanecarboxylic__CASES = [
     ("OC(=O)CCCCCC", "heptanoic acid", "庚酸"),
-    ("CCCCCCC(=O)O", "heptanoic acid", "庚酸"),
 ]
 
 

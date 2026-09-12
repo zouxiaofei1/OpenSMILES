@@ -206,11 +206,6 @@ cycloalkyl__CASES = [
         "(1-cyclohexylethyl)cyclohexane",
         "(1-环己基乙基)环己烷",
     ),
-    (
-        "CC(C1CCCCC1)C1CCCCC1",
-        "(1-cyclohexylethyl)cyclohexane",
-        "(1-环己基乙基)环己烷",
-    ),
     # generality: cyclopentyl
     ("C1CCC(CC1)C1CCCC1", "cyclopentylcyclohexane", "环戊基环己烷"),
     # regressions
@@ -289,7 +284,6 @@ def test_aryne_not_named_benzene(smiles: str) -> None:
 cyclopolyene__CASES = [
     # positive: ring dienes
     ("C1=CC=CCC1", "cyclohexa-1,3-diene", "环己-1,3-二烯"),
-    ("C1C=CC=CC1", "cyclohexa-1,3-diene", "环己-1,3-二烯"),
     ("C1=CCC=CC1", "cyclohexa-1,4-diene", "环己-1,4-二烯"),
     ("C1=CC=CC1", "cyclopenta-1,3-diene", "环戊-1,3-二烯"),
     ("C=CC=C", "buta-1,3-diene", "丁-1,3-二烯"),

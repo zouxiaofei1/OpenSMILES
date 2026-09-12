@@ -13,7 +13,7 @@ from namepredict.layer0.salt import dissociate_salt
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
 from namepredict.layer2.parent_ownership import finalize_parent_ownership
-from namepredict.layer2.parent_selector import select_parent_tied
+from namepredict.layer2.parent_selector import select_parent
 from namepredict.layer3.coverage import build_coverage_ledger
 from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer3.substituent_namer import SubstituentName
@@ -160,28 +160,6 @@ def _prepare_candidate(
     complete = _ledger_complete(mol, parent["owned_atoms"], subst)
     return parent, subst, complete
 
-
-def try_candidate(
-    info: dict,
-    parent: dict,
-    *,
-    depth: int = 0,
-    t0: float | None = None,
-    require_complete: bool = True,
-    name_mode: str = "general",
-) -> NameResult | None:
-    """完成归属、提取取代基、可选要求完整 coverage ledger，然后组装。"""
-    t0 = t0 if t0 is not None else time.perf_counter()
-    parent, subst, complete = _prepare_candidate(info, parent, name_mode=name_mode, depth=depth)
-    if require_complete and not complete:
-        return None
-    hit = _assemble_candidate(parent, subst, depth=depth, t0=t0)
-    if hit is None:
-        return None
-    hit.meta = {**(hit.meta or {}), "coverage_complete": complete}
-    return hit
-
-
 def _candidate_key(hit: NameResult) -> tuple:
     """候选裁决键：(P-44.1.1 后缀位次集合, P-45.2.2 前缀位次集合)。"""
     meta = hit.meta or {}
@@ -197,21 +175,9 @@ def _best_hit(hits: list[tuple]) -> NameResult | None:
     return min(hits, key=lambda t: (t[1], t[2]))[3]
 
 
-def _complete_hit(prepared, *, depth, t0, name_mode):
-    """在候选集中寻找 coverage 完整且可组装的命中（并列候选取裁决键最小者）。"""
-    hits = []
-    for order, (parent, subst, complete) in enumerate(prepared):
-        if not complete:
-            continue
-        hit = _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)
-        if hit is not None:
-            hit.meta = {**(hit.meta or {}), "coverage_complete": True}
-            hits.append((*_candidate_key(hit), order, hit))
-    return _best_hit(hits)
 
-
-def _partial_hit(prepared, *, depth, t0, name_mode, attempts):
-    """放宽 coverage 门控，在候选集中找可组装的命中（并列候选取裁决键最小者）。"""
+def _try_phase(prepared, *, depth, t0, name_mode, attempts):
+    """L4+L5入口"""
     hits = []
     for order, (parent, subst, complete) in enumerate(prepared):
         hit = _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)
@@ -221,17 +187,9 @@ def _partial_hit(prepared, *, depth, t0, name_mode, attempts):
     return _best_hit(hits)
 
 
-def _try_phase(prepared, *, depth, t0, name_mode, attempts):
-    """依次尝试完整命中与部分命中两阶段。"""
-    hit = _complete_hit(prepared, depth=depth, t0=t0, name_mode=name_mode)
-    return hit or _partial_hit(
-        prepared, depth=depth, t0=t0, name_mode=name_mode, attempts=attempts,
-    )
-
-
-def _candidate_phases(info: dict, depth: int) -> list[list[dict]]:
+def _candidate_phases(info: dict) -> list[list[dict]]:
     """选取候选母体阶段列表（P-45.2.1 并列组，上限 _MAX_TIED_CANDIDATES 个）。"""
-    group = select_parent_tied(info)
+    group = select_parent(info)
     return [group[:_MAX_TIED_CANDIDATES]] if group else [[]]
 
 
@@ -240,9 +198,9 @@ def _run_candidates(
 ) -> NameResult:
     """仅尝试 P-44.1.1 高优先级阶段；绝不降级能力。"""
     attempts: list[dict] = []
-    phase = _candidate_phases(info, depth)[0]
-    prepared = [_prepare_candidate(info, cand, name_mode=name_mode, cache=cache, depth=depth) for cand in phase]
-    hit = _try_phase(prepared, depth=depth, t0=t0, name_mode=name_mode, attempts=attempts)
+    phase = _candidate_phases(info)[0]#Layer2入口
+    prepared = [_prepare_candidate(info, cand, name_mode=name_mode, cache=cache, depth=depth) for cand in phase]#L3
+    hit = _try_phase(prepared, depth=depth, t0=t0, name_mode=name_mode, attempts=attempts)#L4入口
     return hit or _fail(_elapsed_ms(t0), "no_assemblable_candidate", attempts=attempts)
 
 
@@ -282,7 +240,7 @@ def _name_mol(
     else:
         root_mol, to_root = root_ctx  # 无盐时 organic 即 mol、索引不变；锚定碎片必为单片段不含盐，映射直接沿用。
         run_cache = cache
-    info = analyze(organic)
+    info = analyze(organic) # 进入Layer1
     info["root_ctx"] = (root_mol, to_root)
     info["salt"] = salt  # 磷酸母体 producer 的盐门控与 salt_meta 来源
     result = _run_candidates(info, depth=depth, t0=t0, name_mode=name_mode, cache=run_cache)

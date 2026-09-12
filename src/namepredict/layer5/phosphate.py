@@ -6,7 +6,7 @@ from namepredict.layer5.stems import _metal_en_prefix, _metal_zh_suffix
 
 
 def _tail_en(h: int) -> str:
-    """英文磷酸词尾（含酸式 H 词）：dihydrogen/hydrogen phosphate 或 phosphate。"""
+    """英文磷酸词尾"""
     if h == 2:
         return "dihydrogen phosphate"
     if h == 1:

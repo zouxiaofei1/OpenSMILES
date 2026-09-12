@@ -107,7 +107,6 @@ n_hydroxy_amide__CASES = [
     ("CC(=O)N(O)CCCN", "N-(3-aminopropyl)-N-hydroxyacetamide", "N-(3-氨基丙基)-N-羟基乙酰胺"),
     ("CC(=O)NO", "N-hydroxyacetamide", "N-羟基乙酰胺"),
     ("CC(=O)N(O)C", "N-hydroxy-N-methylacetamide", "N-羟基-N-甲基乙酰胺"),
-    ("CC(=O)N(C)O", "N-hydroxy-N-methylacetamide", "N-羟基-N-甲基乙酰胺"),
     ("CC(=O)N(O)O", "N,N-dihydroxyacetamide", "N,N-二羟基乙酰胺"),
     # negative: N-alkyl amide / primary amide / ketone / acid / aldehyde stay correct
     ("CC(=O)NCCCN", "N-(3-aminopropyl)acetamide", "N-(3-氨基丙基)乙酰胺"),

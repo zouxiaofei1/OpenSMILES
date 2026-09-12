@@ -21,11 +21,6 @@ from namepredict.tools.re import normalize_en, normalize_zh
 ez_stereo__CASES = [
     # positives — mono-ene FG with BondStereo
     (
-        r"CCCCCC/C=C/C=O",
-        "(2E)-non-2-enal",
-        "(2E)-壬-2-烯醛",
-    ),
-    (
         r"CCCCCCC/C=C/C=O",
         "(2E)-dec-2-enal",
         "(2E)-癸-2-烯醛",

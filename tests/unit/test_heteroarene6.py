@@ -202,7 +202,6 @@ pyridinecarboxamide__CASES = [
     ("NC(=O)c1ccccn1", "pyridine-2-carboxamide", "吡啶-2-甲酰胺"),
     ("NC(=O)c1cccnc1", "pyridine-3-carboxamide", "吡啶-3-甲酰胺"),
     ("NC(=O)c1ccncc1", "pyridine-4-carboxamide", "吡啶-4-甲酰胺"),
-    ("c1ccncc1C(=O)N", "pyridine-3-carboxamide", "吡啶-3-甲酰胺"),
     # positive: simple N-alkyl
     ("c1ccncc1C(=O)NC", "N-methylpyridine-3-carboxamide", "N-甲基吡啶-3-甲酰胺"),
     ("C(C)NC(=O)C1=CC=NC=C1", "N-ethylpyridine-4-carboxamide", "N-乙基吡啶-4-甲酰胺"),

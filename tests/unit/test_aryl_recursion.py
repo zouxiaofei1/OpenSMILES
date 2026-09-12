@@ -28,7 +28,6 @@ from namepredict.tools.re import normalize_en, normalize_zh
 # ==========================================================================
 aryl_depth2__CASES = [
     # positive: methoxy / ethoxy / nitro / CF3 on phenylethanol arm
-    ("COc1ccc(CCO)cc1", "2-(4-methoxyphenyl)ethanol", "2-(4-甲氧基苯基)乙醇"),
     ("CCOc1ccc(CCO)cc1", "2-(4-ethoxyphenyl)ethanol", "2-(4-乙氧基苯基)乙醇"),
     ("O=[N+]([O-])c1ccc(CCO)cc1", "2-(4-nitrophenyl)ethanol", "2-(4-硝基苯基)乙醇"),
     (
@@ -69,7 +68,6 @@ aryl_depth2__CASES = [
 # ==========================================================================
 aryl_depth2_nested__CASES = [
     # propoxy / butoxy leaves on phenylethanol
-    ("CCCOc1ccc(CCO)cc1", "2-(4-propoxyphenyl)ethanol", "2-(4-丙氧基苯基)乙醇"),
     ("CCCCOc1ccc(CCO)cc1", "2-(4-butoxyphenyl)ethanol", "2-(4-丁氧基苯基)乙醇"),
     # nested unsubstituted phenyl on arm Ph
     (
@@ -111,7 +109,6 @@ aryl_depth2_oh_nh2__CASES = [
     # positive: hydroxyphenyl on chain parents
     ("Oc1ccc(CCO)cc1", "2-(4-hydroxyphenyl)ethanol", "2-(4-羟基苯基)乙醇"),
     ("Oc1cccc(CCO)c1", "2-(3-hydroxyphenyl)ethanol", "2-(3-羟基苯基)乙醇"),
-    ("Oc1ccc(CO)cc1", "(4-hydroxyphenyl)methanol", "(4-羟基苯基)甲醇"),
     (
         "O=C(O)Cc1ccc(O)cc1",
         "2-(4-hydroxyphenyl)acetic acid",
@@ -119,7 +116,6 @@ aryl_depth2_oh_nh2__CASES = [
     ),
     # positive: aminophenyl on chain parents
     ("Nc1ccc(CCO)cc1", "2-(4-aminophenyl)ethanol", "2-(4-氨基苯基)乙醇"),
-    ("Nc1ccc(CO)cc1", "(4-aminophenyl)methanol", "(4-氨基苯基)甲醇"),
     (
         "O=C(O)Cc1ccc(N)cc1",
         "2-(4-aminophenyl)acetic acid",

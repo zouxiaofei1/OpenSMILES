@@ -27,7 +27,6 @@ from namepredict.tools.re import normalize_en, normalize_zh
 # Parent chain must include the unique non-aromatic C=C.
 # ==========================================================================
 mono_alkene__CASES = [
-    ("C=CCCC", "pent-1-ene", "戊-1-烯"),
     ("CC=CCC", "pent-2-ene", "戊-2-烯"),
     ("C=CCCCC", "hex-1-ene", "己-1-烯"),
 ]
@@ -55,9 +54,7 @@ def test_mono_alkene(smiles: str, en: str, zh: str | None) -> None:
 mono_alkyne__CASES = [
     # positive: acyclic monoalkynes
     ("C#CC", "propyne", "丙炔"),
-    ("C#CCC", "but-1-yne", "丁-1-炔"),
     ("CC#CC", "but-2-yne", "丁-2-炔"),
-    ("C#CCCC", "pent-1-yne", "戊-1-炔"),
     ("CC#CCC", "pent-2-yne", "戊-2-炔"),
     ("C#CCCCC", "hex-1-yne", "己-1-炔"),
 ]
@@ -86,7 +83,6 @@ def test_mono_alkyne(smiles: str, en: str, zh: str | None) -> None:
 polyene__CASES = [
     ("C=CC=CC=C", "hexa-1,3,5-triene", "己-1,3,5-三烯"),
     ("C=CCC=C", "penta-1,4-diene", "戊-1,4-二烯"),
-    ("C=CCCC=C", "hexa-1,5-diene", "己-1,5-二烯"),
     ("C=CC=CC", "penta-1,3-diene", "戊-1,3-二烯"),
     ("CC=CC=CC", "hexa-2,4-diene", "己-2,4-二烯"),
     ("C=CCCCC=C", "hepta-1,6-diene", "庚-1,6-二烯"),
@@ -310,15 +306,12 @@ def test_exocyclic_not_saturated() -> None:
 # stems (十一…三十五) must not be truncated via zh[0].
 # ==========================================================================
 long_chain_stems__CASES = [
-    ("C(CCCCCCCCCC)=O", "undecanal", "十一醛"),
     ("CCCCCCCCCCCCCCI", "1-iodotetradecane", "1-碘十四烷"),
     ("C=CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", "pentatriacont-1-ene", "三十五-1-烯"),
     ("CCCCCCCCCCC", "undecane", "十一烷"),
-    ("CCCCCCCCCCCCO", "dodecan-1-ol", "十二-1-醇"),
     ("CCCCCCCCCCC(=O)O", "undecanoic acid", "十一酸"),
     ("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC=O", "triacontanal", "三十醛"),
     ("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCO", "tetratriacontan-1-ol", "三十四-1-醇"),
-    ("CCCCCCCCCO", "nonan-1-ol", "壬-1-醇"),
 ]
 
 

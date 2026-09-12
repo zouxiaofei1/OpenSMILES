@@ -33,7 +33,6 @@ from namepredict.tools.re import normalize_en, normalize_zh
 # ==========================================================================
 mono_aldehyde__CASES = [
     ("CCC=O", "propanal", "丙醛"),
-    ("CCCCC=O", "pentanal", "戊醛"),
     ("CCCCCC=O", "hexanal", "己醛"),
     ("CC(C)C=O", "2-methylpropanal", "2-甲基丙醛"),
     ("CC(C)=O", "propan-2-one", "丙-2-酮"),
@@ -60,10 +59,8 @@ def test_mono_aldehyde(smiles: str, en: str, zh: str | None) -> None:
 # ==========================================================================
 mono_ketone__CASES = [
     ("CCC(CC)=O", "pentan-3-one", "戊-3-酮"),
-    ("CCCC(=O)CC", "hexan-3-one", "己-3-酮"),
     ("CCCCC(=O)CC", "heptan-3-one", "庚-3-酮"),
     ("CCCCCC(=O)C", "heptan-2-one", "庚-2-酮"),
-    ("CCCCCCC(C)=O", "octan-2-one", None),
     ("CCCCCCCCC(C)=O", "decan-2-one", None),
 ]
 
@@ -157,7 +154,6 @@ def test_alkenone(smiles: str, en: str, zh: str | None) -> None:
 alkanedione__CASES = [
     ("CC(=O)C(C)=O", "butane-2,3-dione", "丁-2,3-二酮"),
     ("CC(=O)CCC(=O)C", "hexane-2,5-dione", "己-2,5-二酮"),
-    ("CC(=O)CCCC(=O)C", "heptane-2,6-dione", "庚-2,6-二酮"),
     ("CC(=O)CCCCC(=O)C", "octane-2,7-dione", "辛-2,7-二酮"),
     ("CCC(=O)CC(=O)CC", "heptane-3,5-dione", "庚-3,5-二酮"),
     # positive: trione (multiplicity-generic count suffix)

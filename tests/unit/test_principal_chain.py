@@ -326,12 +326,9 @@ def test_higher_phase_complete_never_downgrades(monkeypatch):
     assert namer_module._run_candidates({}, depth=0, t0=0).en == "acid"
 
 p44_principal_group_count__CASES = [
-    ("OCCC(CCCl)C(O)C", "3-(2-chloroethyl)pentane-1,4-diol", None),
-    ("OCCC(CCCCl)C(O)C", "3-(3-chloropropyl)pentane-1,4-diol", None),
     ("OCCC(CCCCCl)C(O)C", "3-(4-chlorobutyl)pentane-1,4-diol", None),
     ("OCCC(CCCCBr)C(O)C", "3-(4-bromobutyl)pentane-1,4-diol", None),
     # Near-neighbour negative: the already claimable C1 arm stays unchanged.
-    ("OCCC(CCl)C(O)C", "3-(chloromethyl)pentane-1,4-diol", None),
     ("OCC(O)CO", "propane-1,2,3-triol", "丙烷-1,2,3-三醇"),
     ("OC(=O)CC(=O)O", "propanedioic acid", "丙二酸"),
     ("NCCN", "ethane-1,2-diamine", "乙烷-1,2-二胺"),

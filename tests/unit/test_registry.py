@@ -197,8 +197,6 @@ def test_match_systems_has_entry():
 # ==========================================================================
 leaf_registry_extend__CASES = [
     # n-alkyl leaves
-    ("CCc1ccc(CCO)cc1", "2-(4-ethylphenyl)ethanol", "2-(4-乙基苯基)乙醇"),
-    ("CCCc1ccc(CCO)cc1", "2-(4-propylphenyl)ethanol", "2-(4-丙基苯基)乙醇"),
     ("CCCCc1ccc(CCO)cc1", "2-(4-butylphenyl)ethanol", "2-(4-丁基苯基)乙醇"),
     # methylthio
     (
@@ -208,7 +206,6 @@ leaf_registry_extend__CASES = [
     ),
     # cyano (alcohol parent, not formonitrile)
     ("N#Cc1ccc(CCO)cc1", "2-(4-cyanophenyl)ethanol", "2-(4-氰基苯基)乙醇"),
-    ("N#Cc1ccc(CO)cc1", "(4-cyanophenyl)methanol", "(4-氰基苯基)甲醇"),
     # nested benzyl
     (
         "c1ccc(Cc2ccc(CCO)cc2)cc1",

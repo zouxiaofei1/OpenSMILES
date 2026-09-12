@@ -516,7 +516,7 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     kind, n = _parent_n(numbered)
     if not _ensure_fused_stem(numbered):
         return _unsupported(n, kind)
-    names = _names_for(kind, n, numbered)
+    names = _names_for(kind, n, numbered)#n 碳数
     if not names:
         return _unsupported(n, kind)
     names = _with_hydro_prefix(names, numbered)

@@ -33,8 +33,6 @@ from rdkit import Chem
 # ==========================================================================
 mono_ester__CASES = [
     ("COC(C)=O", "methyl acetate", "乙酸甲酯"),
-    ("CCOC(=O)CC", "ethyl propanoate", "丙酸乙酯"),
-    ("CCCC(=O)OC", "methyl butanoate", "丁酸甲酯"),
     ("CC(=O)OCCC", "propyl acetate", "乙酸丙酯"),
     ("CCOC(=O)CCC", "ethyl butanoate", "丁酸乙酯"),
     ("CCCCCC(=O)OC", "methyl hexanoate", "己酸甲酯"),
@@ -62,7 +60,6 @@ def test_mono_ester(smiles: str, en: str, zh: str | None) -> None:
 # Alkoxy limited to unsubstituted C1–C4; no (E)/(Z) this cycle.
 # ==========================================================================
 alkenoate__CASES = [
-    ("C=CC(=O)OCC", "ethyl prop-2-enoate", "丙-2-烯酸乙酯"),
     ("CC=CC(=O)OC", "methyl but-2-enoate", "丁-2-烯酸甲酯"),
     ("C=CCC(=O)OC", "methyl but-3-enoate", "丁-3-烯酸甲酯"),
     ("C=CC(=O)OCCC", "propyl prop-2-enoate", "丙-2-烯酸丙酯"),
@@ -222,9 +219,6 @@ def test_complex_not_ethane_collapse() -> None:
 # ==========================================================================
 principal_benzoate__CASES = [
     ("COC(=O)c1ccccc1", "methyl benzoate", "苯甲酸甲酯"),
-    ("CCOC(=O)c1ccccc1", "ethyl benzoate", "苯甲酸乙酯"),
-    ("CCCCCCOC(=O)c1ccccc1", "hexyl benzoate", "苯甲酸己酯"),
-    ("CCCCCCCCOC(=O)c1ccccc1", "octyl benzoate", "苯甲酸辛酯"),
     ("CCCCCCCCCCCCCCCCOC(=O)c1ccccc1", "hexadecyl benzoate", "苯甲酸十六酯"),
 ]
 

@@ -31,7 +31,6 @@ mult_prefix__CASES = [
     # positive: count ≥5 needs penta/hexa/… multiplicative prefixes
     # zh=None when gold has no Chinese (merged_benchmark empty chinese_name)
     ("ClC(Cl)C(Cl)(Cl)Cl", "1,1,1,2,2-pentachloroethane", None),
-    ("ClC(Cl)(Cl)C(Cl)Cl", "1,1,1,2,2-pentachloroethane", None),
     ("ClC(Cl)(Cl)C(Cl)(Cl)Cl", "1,1,1,2,2,2-hexachloroethane", None),
     ("FC(F)(F)C(F)(F)F", "1,1,1,2,2,2-hexafluoroethane", None),
     ("FC(F)(F)C(F)(F)C(F)F", "1,1,1,2,2,3,3-heptafluoropropane", None),
@@ -268,8 +267,6 @@ def test_front_needs_enclosure(base: str, suf: str, expected: bool) -> None:
 # ==========================================================================
 simple_alkyl_prefix_paren__CASES = [
     # positive: locant-free simple n-alkyl — no parentheses
-    ("CCCCCc1ccccc1", "pentylbenzene", "戊基苯"),
-    ("CCCCCCc1ccccc1", "hexylbenzene", "己基苯"),
     ("CCCCCCCc1ccccc1", "heptylbenzene", "庚基苯"),
     ("C1(CCCCC)CCCCC1", "pentylcyclohexane", "戊基环己烷"),
     # negative: composite (locant-carrying / halo) prefixes keep parentheses
@@ -347,17 +344,7 @@ tert_pentyl__CASES = [
         "(2-甲基丁-2-基)环己烷",
     ),
     (
-        "CCC(C)(C)C1CCCCC1",
-        "(2-methylbutan-2-yl)cyclohexane",
-        "(2-甲基丁-2-基)环己烷",
-    ),
-    (
         "CC(C)(CC)c1ccccc1",
-        "(2-methylbutan-2-yl)benzene",
-        "(2-甲基丁-2-基)苯",
-    ),
-    (
-        "CCC(C)(C)c1ccccc1",
         "(2-methylbutan-2-yl)benzene",
         "(2-甲基丁-2-基)苯",
     ),

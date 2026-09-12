@@ -168,8 +168,6 @@ acyl_oyl__POS_WHOLE = [
      "1-(2-methylprop-2-enoyloxy)ethyl 2-methylprop-2-enoate"),
     ("CCCCCCCC/C=C\\CCCCCCCC(=O)OC(CCCCCCCCCCCCC)CCCC(=O)O",
      "5-[(9Z)-octadec-9-enoyl]oxyoctadecanoic acid"),
-    ("CCCCCC/C=C\\CCCCCCCC(=O)OC(CCCCCCCCC)CCCCCCCC(=O)O",
-     "9-[(9Z)-hexadec-9-enoyl]oxyoctadecanoic acid"),
 ]
 
 

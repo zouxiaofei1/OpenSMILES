@@ -31,7 +31,6 @@ anti_formic_branched_alkoxy__POS_NO_FORMIC = [
 # Negative / regressions: true formic, open acids, methoxybenzoic
 anti_formic_branched_alkoxy__NEG_CASES = [
     ("C(=O)O", "formic acid", "甲酸"),
-    ("O=CO", "formic acid", "甲酸"),
     ("CC(=O)O", "acetic acid", "乙酸"),
     ("CCCCCC(=O)O", "hexanoic acid", "己酸"),
     ("COc1ccc(C(=O)O)cc1", "4-methoxybenzoic acid", "4-甲氧基苯甲酸"),

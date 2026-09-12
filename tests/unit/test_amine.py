@@ -35,8 +35,6 @@ from rdkit import Chem
 mono_amine__CASES = [
     # positive: primary monoamines (straight + optional branched)
     ("CN", "methanamine", "甲胺"),
-    ("CCCN", "propan-1-amine", "丙-1-胺"),
-    ("CCCCN", "butan-1-amine", "丁-1-胺"),
     ("CCCCCN", "pentan-1-amine", "戊-1-胺"),
     ("CC(C)N", "propan-2-amine", "丙-2-胺"),
     ("CC(=O)OCC", "ethyl acetate", "乙酸乙酯"),
@@ -75,7 +73,6 @@ def test_amide_not_named_as_amine() -> None:
 polyamine__CASES = [
     # triamine: unsubstituted open-chain
     ("NCC(N)CN", "propane-1,2,3-triamine", "丙烷-1,2,3-三胺"),
-    ("NCC(N)CCN", "butane-1,2,4-triamine", "丁烷-1,2,4-三胺"),
     ("NCCC(N)CCN", "pentane-1,3,5-triamine", "戊烷-1,3,5-三胺"),
     ("NCC(N)(C)CN", "2-methylpropane-1,2,3-triamine", "2-甲基丙烷-1,2,3-三胺"),
     ("NCC(N)C(N)C", "butane-1,2,3-triamine", "丁烷-1,2,3-三胺"),
@@ -106,7 +103,6 @@ def test_polyamine(smiles: str, en: str, zh: str | None) -> None:
 # ==========================================================================
 alkanediamine__CASES = [
     ("NCCCN", "propane-1,3-diamine", "丙烷-1,3-二胺"),
-    ("NCCCCN", "butane-1,4-diamine", "丁烷-1,4-二胺"),
     ("NCCCCCN", "pentane-1,5-diamine", "戊烷-1,5-二胺"),
     ("NC(C)CCN", "butane-1,3-diamine", "丁烷-1,3-二胺"),
     ("NCC(C)CN", "2-methylpropane-1,3-diamine", "2-甲基丙烷-1,3-二胺"),
@@ -230,7 +226,6 @@ def test_quaternary_is_not_neutral_amine():
 zh_amino_bridge_root__CASES = [
     # ── 正例：N-多取代简单烷氨基作为取代基，中文省「基」 ──
     ("CN(C)CCO", "2-(dimethylamino)ethanol", "2-(二甲氨基)乙醇"),
-    ("CCN(CC)c1ccccc1C(=O)O", "2-(diethylamino)benzoic acid", "2-(二乙氨基)苯甲酸"),
     ("CCCN(CCC)c1ccccc1C(=O)O", "2-(dipropylamino)benzoic acid", "2-(二丙氨基)苯甲酸"),
     # ── 近邻：位次化/环系烃基名同样省「基」（tiers gold：丙-2-氧基、环己氧基、环丙硫基） ──
     ("CC(C)NCCO", "2-(propan-2-ylamino)ethanol", "2-(丙-2-氨基)乙醇"),

@@ -41,19 +41,8 @@ def _finalize_ranked(info: dict, cands: list[dict]) -> list[dict]:
         for c in _rank_candidates(info, cands)
     ]
 
-def select_parent(info: dict, *, all_candidates: bool = False) -> dict | list[dict] | None:
-    """排序并终态化母体候选（P-44 评分降序 → P-45.2 重排打平 → owned_atoms 固化）：取首位为选定母体，all_candidates 时全返回。"""
-    from namepredict.layer2.candidates import _collect_candidates
-
-    cands = _finalize_ranked(info, _collect_candidates(info))
-    cands = _reorder_p45_2(info, cands)
-    if all_candidates:
-        return cands
-    return next(iter(cands), None)
-
-
-def select_parent_tied(info: dict) -> list[dict]:
-    """返回 P-45.2.1 并列最优的候选组（供 L4 编号后按 P-45.2.2 位次集合裁决）。"""
+def select_parent(info: dict) -> list[dict]:
+    """P-44 评分降序->P-45.2-> P-45.2.1 并列最优"""
     from namepredict.layer2.candidates import _collect_candidates
 
     cands = _finalize_ranked(info, _collect_candidates(info))

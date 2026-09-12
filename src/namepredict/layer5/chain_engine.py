@@ -85,6 +85,19 @@ def _has_yne(numbered: dict) -> bool:
     return bool(numbered.get("yne_locant") or p.get("triple_bond"))
 
 
+def _yl_loc_omitted(spec: "_Chain", fg: int) -> bool:
+    """自由价位次是否省略：无环链式母体（非环、无稠环/杂环词干）的 C-1 自由价（P-29.2 方法 1 的烯/炔拓展；饱和链走 omit_rule/_radical_plain，此处供烯/炔段引擎源头不拼位次）。"""
+    return (spec.yl_loc_omit and fg == 1
+            and spec.stem is None and not spec.cyclic and not spec.cyclic_unsat)
+
+
+def _fg_yl_tail(spec: "_Chain", fg: int) -> tuple[str, str]:
+    """FG/自由价位次 + 后缀尾段（含前导 '-'）：省略时直接给后缀，位次从不进入串（避免事后切串）。"""
+    if _yl_loc_omitted(spec, fg):
+        return spec.en_suf, spec.zh_suf
+    return f"-{fg}-{spec.en_suf}", f"-{fg}-{spec.zh_suf}"
+
+
 # ===== 链式词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环 (替代 if-kind 枚举) =====
 def _chain_unsat(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
     """通用不饱和段引擎: 混合烯炔先组合段, 否则炔段优先、烯段其次 — 段式/融合式由 spec 数据驱动."""
@@ -142,8 +155,9 @@ def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
             return None
         e_seg = (f"{me}{spec.ene_seg[0]}", f"{mz}{spec.ene_seg[1]}")
         y_seg = (f"{my_e}{spec.yne_seg[0]}", f"{my_z}{spec.yne_seg[1]}")
-        return (f"{s}{a_en}-{e_loc}-{e_seg[0]}-{y_loc}-{y_seg[0]}-{fg}-{spec.en_suf}",
-                f"{zs}-{e_loc}-{e_seg[1]}-{y_loc}-{y_seg[1]}-{fg}-{spec.zh_suf}")
+        t_en, t_zh = _fg_yl_tail(spec, fg)
+        return (f"{s}{a_en}-{e_loc}-{e_seg[0]}-{y_loc}-{y_seg[0]}{t_en}",
+                f"{zs}-{e_loc}-{e_seg[1]}-{y_loc}-{y_seg[1]}{t_zh}")
     return None
 
 def _chain_yne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
@@ -189,11 +203,15 @@ def _chain_yne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
             return None
         loc = _pair_loc_str(ynes)
         seg = (f"{m_en}{spec.yne_seg[0]}", f"{m_zh}{spec.yne_seg[1]}")
-        return (f"{s}a-{loc}-{seg[0]}-{fg}-{spec.en_suf}",
-                f"{zs}-{loc}-{seg[1]}-{fg}-{spec.zh_suf}")
+        t_en, t_zh = _fg_yl_tail(spec, fg)
+        return (f"{s}a-{loc}-{seg[0]}{t_en}",
+                f"{zs}-{loc}-{seg[1]}{t_zh}")
+    if n <= 2 and yne == 1 and fg == 1 and _yl_loc_omitted(spec, fg):  # C≤2 炔: 炔位次与自由价位次均无歧义省略并融合 (eth-1-yn-1-yl → ethynyl，同 _chain_ene 的 C≤2 单烯融合)。
+        return f"{s}{spec.yne_seg[0]}{spec.en_suf}", f"{zs}{spec.yne_seg[1]}{spec.zh_suf}"
+    t_en, t_zh = _fg_yl_tail(spec, fg)
     return (
-        f"{s}-{yne}-{spec.yne_seg[0]}-{fg}-{spec.en_suf}",
-        f"{zs}-{yne}-{spec.yne_seg[1]}-{fg}-{spec.zh_suf}",
+        f"{s}-{yne}-{spec.yne_seg[0]}{t_en}",
+        f"{zs}-{yne}-{spec.yne_seg[1]}{t_zh}",
     )
 
 def _fused_ene_suf(spec: "_Chain", m: int) -> tuple[str, str] | None:
@@ -236,7 +254,8 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
             me, mz = f"{m_en}{spec.ene_seg[0]}", f"{m_zh}{spec.ene_seg[1]}"
             ez = spec.ez_ene_multi(numbered) if spec.ez_ene_multi else ""
             loc = ",".join(str(x) for x in enes)
-            return f"{ez}{s}a-{loc}-{me}-{fg}-{spec.en_suf}", f"{ez}{zs}-{loc}-{mz}-{fg}-{spec.zh_suf}"
+            t_en, t_zh = _fg_yl_tail(spec, fg)
+            return f"{ez}{s}a-{loc}-{me}{t_en}", f"{ez}{zs}-{loc}-{mz}{t_zh}"
         return None
     ene = numbered.get("ene_locant")
     if spec.ene_base is not None:            # 融合式单烯 (酸/醛/腈/二酸/酰胺/多烯)
@@ -274,9 +293,10 @@ def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None
             f"{ez}{s}{spec.ene_seg[0]}-{fg}-{spec.en_suf}",
             f"{ez}{zs}{spec.ene_seg[1]}-{fg}-{spec.zh_suf}",
         )
+    t_en, t_zh = _fg_yl_tail(spec, fg)
     return (
-        f"{ez}{s}-{ene}-{spec.ene_seg[0]}-{fg}-{spec.en_suf}",
-        f"{ez}{zs}-{ene}-{spec.ene_seg[1]}-{fg}-{spec.zh_suf}",
+        f"{ez}{s}-{ene}-{spec.ene_seg[0]}{t_en}",
+        f"{ez}{zs}-{ene}-{spec.ene_seg[1]}{t_zh}",
     )
 
 @dataclass(frozen=True)
@@ -306,6 +326,7 @@ class _Chain:
     ene_omit_aware: bool = False        # 烯段受 omit_ene_locant 影响 (环系 FG)
     ene_loc_omit: bool = False          # 融合式单烯省略位次 (乙烯 ethene / 环单烯 cyclohexene)
     yne_loc_omit: bool = False          # 融合式炔省略位次 (开链烃 ethyne/propyne: P-14.3.4.2(d))
+    yl_loc_omit: bool = False           # 自由价在 C-1 时省略位次 (无环自由基: P-29.2 方法 1 的烯/炔拓展)
     cyclic: bool = False                # 恒加环前缀 (纯烃环/环系 FG)
     cyclic_unsat: bool = False          # 仅烯/炔段时加环 (cyclopolyene: 无烯回落纯烷烃)
     zh_full: bool = False               # 中文词干保留完整烷烃后缀 "烷" (环烷/回落)
@@ -395,19 +416,6 @@ def _ylidene_form(pair: tuple[str, str]) -> tuple[str, str]:
     return en, zh
 
 
-def _radical_terminal_yl_elide(pair: tuple[str, str], n: int) -> tuple[str, str]:
-    """无环自由基自由价在 C-1 时省略 -1-（饱和链 P-29.2 方法 1 的烯/炔拓展）；丙-1-烯-1-基→丙-1-烯基、丁-3-烯-1-炔-1-基→丁-3-烯-1-炔基，C2 烯/炔（乙-1-炔-1-基→乙炔基、eth-1-yn-1-yl→ethynyl）位次 1 也省略，因短链位次无歧义（同 _omit_term_locant C1–C2 1 位）。"""
-    en, zh = pair
-    if en.endswith("-1-yl"):
-        en = en[:-5] + "yl"
-    if zh.endswith("-1-基"):
-        zh = zh[:-4] + "基"
-    if n <= 2:
-        en = en.replace("-1-", "", 1)
-        zh = zh.replace("-1-", "", 1)
-    return en, zh
-
-
 def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None:
     """单链词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环; 烯/炔段插入由 spec 数据驱动."""
     if spec.aromatic and spec.kind == "alcohol":  # 芳香环醇统一"酚"（苯酚系；萘/吡啶/吲哚/喹啉同），主路径自动，非 variant 特例。
@@ -437,10 +445,7 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         else:
             loc_s = ",".join(str(x) for x in locs)
             top = (f"{top[0]}-{loc_s}-{spec.en_suf}", f"{top[1]}-{loc_s}-{spec.zh_suf}")
-    if top is not None and spec.kind == "radical" and spec.stem is None \
-            and not spec.cyclic and not spec.cyclic_unsat:
-        top = _radical_terminal_yl_elide(top, n)  # 开链自由基母体：自由价在 C-1 时省略 -1-（环自由基/稠环词干不受影响，见 _radical_terminal_yl_elide）。
-    if top is not None:
+    if top is not None:  # 无环自由基自由价位次省略已下沉到段式引擎（_fg_yl_tail/_yl_loc_omitted），环自由基/稠环词干不受影响。
         if spec.cyclic or spec.cyclic_unsat:
             top = (f"cyclo{top[0]}", f"环{top[1]}")
         if ylidene:
@@ -603,8 +608,8 @@ _KIND_TABLE = {
                     }),
     "acyl_halide": _ACYL_HALIDE_BY_HAL[17],  # 默认 chloride 由 _ac_hal_chain 生成，与按 parent.hal_z 选的 spec 同构（assembler._names_for 覆盖）。
     "radical": _Chain(kind="radical", en_suf="yl", zh_suf="基", coda="an",
-                      fg="radical", need=1, no_loc="none",
-                      omit_rule=lambda n, loc, omit: loc == 1,  # 饱和无环链/单环烃自由价在 C-1 时省略位次（P-29.2 方法 1: ethyl/pentyl/2-phenylethyl）；不饱和链（but-3-en-1-yl）与稠环/杂环（naphthalen-1-yl / pyridin-4-yl）走 unsat 段或 loc>1 保留。
+                      fg="radical", need=1, no_loc="none", yl_loc_omit=True,
+                      omit_rule=lambda n, loc, omit: loc == 1,  # 饱和无环链/单环烃自由价在 C-1 时省略位次（P-29.2 方法 1: ethyl/pentyl/2-phenylethyl）；不饱和链走 unsat 段（yl_loc_omit 在 _fg_yl_tail 源头省位次），稠环/杂环（naphthalen-1-yl / pyridin-4-yl）由 stem/cyclic 排除。
                       plain_fn=_radical_plain,  # 省略位次用烷基型（ethyl/乙基），非 coda 拼接的 ethanyl/乙烷基
                       ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
                       wrap=_with_ez,  # 烯基自由基（取代基链含立体双键）需 E/Z 前缀：苯环母体上 prop-1-en-1-yl 等由递归 * 锚定命名产出，切子分子已保立体（submol_build），此处按链位次拼 (1Z)-。

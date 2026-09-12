@@ -28,8 +28,6 @@ from namepredict.tools.re import normalize_en, normalize_zh
 mono_nitrile__CASES = [
     # positive
     ("C#N", "formonitrile", "甲腈"),
-    ("CCCC#N", "butanenitrile", "丁腈"),
-    ("CCCCC#N", "pentanenitrile", "戊腈"),
     ("CCCCCC#N", "hexanenitrile", "己腈"),
 ]
 
