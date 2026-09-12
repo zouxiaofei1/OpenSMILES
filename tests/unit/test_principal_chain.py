@@ -12,6 +12,8 @@ test_fg_priority.py: 组合官能团主基团优先级仲裁：更高优先级 F
 from __future__ import annotations
 
 import hashlib
+import time
+
 import namepredict.namer as namer_module
 import pytest
 
@@ -21,13 +23,13 @@ from namepredict.layer2 import kind_registry
 from namepredict.layer2.candidates import _collect_candidates
 from namepredict.layer2.kind_registry import pack_parent_stem
 from namepredict.layer2.parent_candidate import from_parent_dict, principal_contract_kind
-from namepredict.layer2.parent_selector import select_parent, select_parent_tied
+from namepredict.layer2.parent_selector import select_parent
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, keep_p44_2, keep_p44_4_unsaturation
 from namepredict.layer2.principal_expression import express_chain_principal
 from namepredict.layer2.principal_parent import rule_driven_parent_candidates, select_principal_parent_skeletons
 from namepredict.layer2.scoring import _score_parent
 from namepredict.layer4.candidate_keys import prefix_locant_set, suffix_locant_set
-from namepredict.namer import SMILESNNamer, try_candidate
+from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.types import NameResult
 from rdkit import Chem
@@ -64,16 +66,18 @@ principal_hydrocarbon__NEGATIVE = [
 
 def principal_hydrocarbon___principal_name(smiles: str):
     """Only the rule-driven principal pipeline + L3-L5, no legacy producers."""
-    from namepredict.layer2.kind_registry import pack_parent_stem
-
     mol = preprocess(smiles)
     if mol is None:
         return None
     info = analyze(mol)
+    t0 = time.perf_counter()
     for parent in rule_driven_parent_candidates(info):
         # 模拟完整管线的词干填充（iter_parent_candidates 内部会 pack）。
         packed = pack_parent_stem(parent, info["mol"])
-        hit = try_candidate(info, packed, depth=0)
+        parent, subst, complete = namer_module._prepare_candidate(info, packed, depth=0)
+        if not complete:
+            continue
+        hit = namer_module._assemble_candidate(parent, subst, depth=0, t0=t0)
         if hit is not None and hit.success:
             return hit
     return None
@@ -129,19 +133,6 @@ principal_chain_fg__NEGATIVE = [
     ("N#Cc1ccccc1", "benzonitrile", "苯甲腈"),                 # 环腈
     ("C1CCCCC1", "cyclohexane", "环己烷"),                     # 纯烃环
 ]
-
-
-def principal_chain_fg___principal_name(smiles: str):
-    mol = preprocess(smiles)
-    if mol is None:
-        return None
-    info = analyze(mol)
-    for parent in rule_driven_parent_candidates(info):
-        packed = pack_parent_stem(parent, info["mol"])
-        hit = try_candidate(info, packed, depth=0)
-        if hit is not None and hit.success:
-            return hit
-    return None
 
 
 # ── 表达层字段完整性：express_chain_principal 直接产出完整 parent dict ──
@@ -306,7 +297,7 @@ def p44_principal_group_count___prepared(kind, complete):
 
 def test_higher_phase_partial_preserves_seniority(monkeypatch):
     phases = [[{"kind": "acid"}], [{"kind": "alcohol"}]]
-    monkeypatch.setattr(namer_module, "_candidate_phases", lambda info, depth: phases)
+    monkeypatch.setattr(namer_module, "_candidate_phases", lambda info: phases)
     monkeypatch.setattr(
         namer_module, "_prepare_candidate",
         lambda info, parent, **kwargs: p44_principal_group_count___prepared(parent["kind"], parent["kind"] == "alcohol"),
@@ -317,7 +308,7 @@ def test_higher_phase_partial_preserves_seniority(monkeypatch):
 
 def test_higher_phase_complete_never_downgrades(monkeypatch):
     phases = [[{"kind": "acid"}], [{"kind": "alcohol"}]]
-    monkeypatch.setattr(namer_module, "_candidate_phases", lambda info, depth: phases)
+    monkeypatch.setattr(namer_module, "_candidate_phases", lambda info: phases)
     monkeypatch.setattr(
         namer_module, "_prepare_candidate",
         lambda info, parent, **kwargs: p44_principal_group_count___prepared(parent["kind"], True),
@@ -388,18 +379,27 @@ def test_suffix_locant_set_uses_principal_attachment_atoms():
     assert suffix_locant_set({"parent": {"chain": [1, 2]}}) == ()
 
 
-def test_select_parent_tied_head_matches_select_parent():
-    """并列组首位与 select_parent 一致（裁决无法决出时行为不变）。"""
-    info = analyze(preprocess("Oc1c(CCc2cc(O)c(Cl)cc2)cc(Cl)cc1"))
-    head = select_parent_tied(info)[0]
-    selected = select_parent(info)
-    assert head["owned_atoms"] == selected["owned_atoms"]
+p45_candidate_ladder__TIED_SMILES = "Oc1c(CCc2cc(O)c(Cl)cc2)cc(Cl)cc1"
 
 
-def test_select_parent_tied_keeps_multiple_candidates():
-    """存在并列候选时返回整组而非单个。"""
-    info = analyze(preprocess("Oc1c(CCc2cc(O)c(Cl)cc2)cc(Cl)cc1"))
-    assert len(select_parent_tied(info)) > 1
+def test_select_parent_keeps_tied_group_finalized():
+    """存在并列候选时返回整组而非单个，组内候选均已终态化（owned_atoms 固化为 frozenset）。"""
+    info = analyze(preprocess(p45_candidate_ladder__TIED_SMILES))
+    group = select_parent(info)
+    assert len(group) > 1
+    assert all(isinstance(c.get("owned_atoms"), frozenset) for c in group)
+    # 并列候选是分子上不同的两个酚环，不是同一母体的重复项
+    assert len({tuple(sorted(c["owned_atoms"])) for c in group}) == len(group)
+
+
+def test_select_parent_tied_group_order_is_stable():
+    """并列组内顺序即候选裁决顺序，重复调用结果一致（后续 P-45.2.2 依赖该顺序）。"""
+    info = analyze(preprocess(p45_candidate_ladder__TIED_SMILES))
+    order = [tuple(c["chain"]) for c in select_parent(info)]
+    assert [tuple(c["chain"]) for c in select_parent(info)] == order
+    # 组内首位同时是全体候选的排序首位（P-44/P-45.2 已定序，并列只做截取）
+    ranked = sorted(_collect_candidates(info), key=lambda c: _score_parent(info, c), reverse=True)
+    assert order[0] in {tuple(c["chain"]) for c in ranked[:len(order)]}
 
 
 @pytest.mark.parametrize("smiles,en", p45_candidate_ladder__PIN_CASES)

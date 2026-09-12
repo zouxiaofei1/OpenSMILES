@@ -83,11 +83,7 @@ def _narrow(cands: list[dict], key_fn) -> list[dict]:
 
 
 def assign_cip(mol) -> None:
-    """强制重算分子 CIP（隐式 H 手性碳先补显式 H）；编号期与 L5 stereo 打印共用此唯一实现。
-
-    对同一个 mol 在一次命名内只算一次：结果是 mol 的确定函数，重复调用只是重写同样的
-    `_CIPCode`。调用点分布在不同层，键仍按 mol 对象身份，故记忆放在本函数内而非各调用点。
-    """
+    """强制重算分子 CIP（隐式 H 手性碳先补显式 H）；编号期与 L5 stereo 打印共用此唯一实现。 """
     memo.by_mol("cip", _assign_cip_uncached, mol)
 
 

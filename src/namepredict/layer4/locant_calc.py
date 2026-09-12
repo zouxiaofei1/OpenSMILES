@@ -339,8 +339,10 @@ def _pack(oriented: dict, substituents: list) -> dict:
     facts = relative_stereo_facts(oriented)
     merged = {**oriented, **facts}
     n_subs = len(substituents or [])
-    return {
+    result =  {
         "parent": merged, "substituents": substituents,
         "fg_locants": _fg_locants(merged, n_subs),
         **_unsat_locants(merged, merged.get("n_carbons", 0)), **facts,
     }
+    # print(result)
+    return result

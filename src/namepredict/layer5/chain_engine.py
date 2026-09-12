@@ -98,6 +98,43 @@ def _fg_yl_tail(spec: "_Chain", fg: int) -> tuple[str, str]:
     return f"-{fg}-{spec.en_suf}", f"-{fg}-{spec.zh_suf}"
 
 
+def _bond_locs(numbered: dict, b: str) -> tuple[int | None, list[int] | None, int, bool]:
+    """取某类不饱和键的位次: 单键位次、多位次列表、键数 (单键记 1、无位次记 0) 与是否多键。"""
+    loc = numbered.get(f"{b}_locant")
+    locs = numbered.get(f"{b}_locants")
+    cnt = len(locs) if locs else (1 if loc is not None else 0)
+    return loc, locs, cnt, bool(locs and len(locs) >= 2)
+
+
+def _bond_form(spec: "_Chain", b: str) -> str | None:
+    """不饱和段的形态: fused (融合式后缀) / polyol (多 FG 词干内嵌) / seg (FG 段式); 均不可用返回 None。"""
+    if (spec.ene_base if b == "ene" else spec.yne_suf) is not None:
+        return "fused"
+    if spec.unsat_polyol:
+        return "polyol"
+    if spec.fg is not None:
+        return "seg"
+    return None
+
+
+def _bond_seg_str(spec: "_Chain", b: str, form: str, cnt: int, *, terminal: bool) -> tuple[str, str] | None:
+    """不饱和键段的词段 (不含词干与位次): terminal=False 出连接段 (混合烯炔的 ene 段), True 出后缀或段式形态。"""
+    m_en, m_zh = MULT_EN.get(cnt), MULT_ZH.get(cnt)
+    if m_en is None or m_zh is None:
+        return None
+    if form == "polyol":  # 词干内嵌: 烯/炔段保留 e (but-2-ene), FG 后缀由 _chain_names 拼接
+        if not terminal:
+            return f"{m_en}en", f"{m_zh}烯"  # 连接段同融合式, 尾 e 在炔段前省略
+        return (f"{m_en}ene", f"{m_zh}烯") if b == "ene" else (f"{m_en}yne", f"{m_zh}炔")
+    if form == "fused":  # 融合式: 末段产出真正的后缀基座 (enoic acid / ynoic acid)
+        if not terminal:
+            return f"{m_en}en", f"{m_zh}烯"
+        suf = spec.ene_base if b == "ene" else spec.yne_suf
+        return (f"{m_en}{suf[0]}", f"{m_zh}{suf[1]}") if suf is not None else None
+    seg = spec.ene_seg if b == "ene" else spec.yne_seg
+    return (f"{m_en}{seg[0]}", f"{m_zh}{seg[1]}") if seg is not None else None
+
+
 # ===== 链式词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环 (替代 if-kind 枚举) =====
 def _chain_unsat(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
     """通用不饱和段引擎: 混合烯炔先组合段, 否则炔段优先、烯段其次 — 段式/融合式由 spec 数据驱动."""
@@ -108,196 +145,134 @@ def _chain_unsat(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
         if top is not None:
             return top
     if has_y:
-        top = _chain_yne(spec, n, numbered)
+        top = _bond_seg(spec, n, numbered, "yne")
         if top is not None:
             return top
     if has_e:
-        top = _chain_ene(spec, n, numbered)
+        top = _bond_seg(spec, n, numbered, "ene")
         if top is not None:
             return top
     return None
 
 def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
-    """混合烯炔段引擎：烯(en)前、炔(yne)后，合并两组位次；任一段为多键时词干加 "a"（P-31.1.1.2 euphonic a），烯段尾 e 在 yne 前省略。"""
+    """混合烯炔段引擎：烯(en)前、炔(yne)后，合并两组位次；任一段为多键时词干加 "a"（P-31.1.1.2 euphonic a），烯段尾 e 在 yne 前省略。
+
+    两段共用 _bond_seg_str 的三形态（融合式/词干内嵌/FG 段式），烯段取连接段形态、炔段取末段形态；混合时位次均须显式。
+    """
     s, zs = _chain_stem_pair(spec, n)
     if s is None or zs is None:
         return None
-    ene = numbered.get("ene_locant")
-    enes = numbered.get("ene_locants")
-    yne = numbered.get("yne_locant")
-    ynes = numbered.get("yne_locants")
-    ne = len(enes) if enes else (1 if ene is not None else 0)
-    ny = len(ynes) if ynes else (1 if yne is not None else 0)
+    if spec.ene_base is not None and spec.yne_suf is not None:
+        form = "fused"
+    elif spec.unsat_polyol:
+        form = "polyol"
+    elif spec.fg is not None:
+        form = "seg"
+    else:
+        return None
+    e_loc, e_locs, ne, _ = _bond_locs(numbered, "ene")
+    y_loc, y_locs, ny, _ = _bond_locs(numbered, "yne")
     if ne == 0 or ny == 0:
         return None
-    multi = ne >= 2 or ny >= 2
-    a_en = "a" if multi else ""
-    e_loc = _pair_loc_str(enes) if ne >= 2 else str(ene)
-    y_loc = _pair_loc_str(ynes) if ny >= 2 else str(yne)
-    me, mz = MULT_EN.get(ne), MULT_ZH.get(ne)
-    my_e, my_z = MULT_EN.get(ny), MULT_ZH.get(ny)
-    if me is None or mz is None or my_e is None or my_z is None:
+    e_seg = _bond_seg_str(spec, "ene", form, ne, terminal=False)
+    y_seg = _bond_seg_str(spec, "yne", form, ny, terminal=True)
+    if e_seg is None or y_seg is None:
         return None
-    
-    if spec.ene_base is not None and spec.yne_suf is not None:   # 融合式: 烯段 MULT+en, 炔段 MULT+yne_suf
-        e_seg = (f"{me}en", f"{mz}烯")
-        y_suf = (f"{my_e}{spec.yne_suf[0]}", f"{my_z}{spec.yne_suf[1]}")
-        return (f"{s}{a_en}-{e_loc}-{e_seg[0]}-{y_loc}-{y_suf[0]}",
-                f"{zs}-{e_loc}-{e_seg[1]}-{y_loc}-{y_suf[1]}")
-    if spec.unsat_polyol:  # 多 FG 词干模式: 混合烯段 elide e (pent-1-en-4-yne), FG 后缀由 _chain_names 拼接
-        e_seg = (f"{me}en", f"{mz}烯")
-        y_seg = (f"{my_e}yne", f"{my_z}炔")
-        return (f"{s}{a_en}-{e_loc}-{e_seg[0]}-{y_loc}-{y_seg[0]}",
-                f"{zs}-{e_loc}-{e_seg[1]}-{y_loc}-{y_seg[1]}")
-    if spec.fg is not None:                                      # 段式: 烯段/炔段 + FG 位次
+    tail_en = tail_zh = ""
+    if form == "seg":  # 段式: FG 位次与后缀尾段由调用方 _chain_names 之外在此补齐 (同 _bond_seg)
         fg = _fg_locant(numbered, spec.fg)
         if fg is None:
             return None
-        e_seg = (f"{me}{spec.ene_seg[0]}", f"{mz}{spec.ene_seg[1]}")
-        y_seg = (f"{my_e}{spec.yne_seg[0]}", f"{my_z}{spec.yne_seg[1]}")
-        t_en, t_zh = _fg_yl_tail(spec, fg)
-        return (f"{s}{a_en}-{e_loc}-{e_seg[0]}-{y_loc}-{y_seg[0]}{t_en}",
-                f"{zs}-{e_loc}-{e_seg[1]}-{y_loc}-{y_seg[1]}{t_zh}")
-    return None
+        tail_en, tail_zh = _fg_yl_tail(spec, fg)
+    a_en = "a" if ne >= 2 or ny >= 2 else ""
+    e_loc_s = _pair_loc_str(e_locs) if ne >= 2 else str(e_loc)
+    y_loc_s = _pair_loc_str(y_locs) if ny >= 2 else str(y_loc)
+    return (f"{s}{a_en}-{e_loc_s}-{e_seg[0]}-{y_loc_s}-{y_seg[0]}{tail_en}",
+            f"{zs}-{e_loc_s}-{e_seg[1]}-{y_loc_s}-{y_seg[1]}{tail_zh}")
 
-def _chain_yne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
-    """炔段引擎：融合式加炔后缀，段式（醇/酮）需 FG 位次；多炔用 MULT 后缀（hexa-1,5-diyne）。"""
+def _bond_seg(spec: "_Chain", n: int, numbered: dict, b: str) -> tuple[str, str] | None:
+    """单不饱和键段引擎: b 取 "ene"/"yne", 按融合式 / 词干内嵌 / FG 段式三形态出链名。
+
+    ene 独有俗名钩子 (ene_special)、E/Z 前缀与短链(C≤2)·环单烯位次融合; yne 融合式下限 n≥2, 且 FG 后缀例外保留炔位次。
+    """
     s, zs = _chain_stem_pair(spec, n)
     if s is None or zs is None:
         return None
-    yne = numbered.get("yne_locant")
-    ynes = numbered.get("yne_locants")
-    multi = bool(ynes and len(ynes) >= 2)
-    if spec.yne_suf is not None:      # 融合式: 炔后缀 (酸), omit 时无位次
+    loc, locs, cnt, multi = _bond_locs(numbered, b)
+    form = _bond_form(spec, b)
+    if form is None:
+        return None
+    is_ene = b == "ene"
+    ez_hook = (spec.ez_ene_multi if multi else spec.ez_ene) if is_ene else None
+    ez = ez_hook(numbered) if ez_hook else ""
+    loc_s = _pair_loc_str(locs) if multi else str(loc)
+
+    if form == "fused":   # 融合式: 后缀挂在词干上 (enoic acid / ynoic acid)
+        if is_ene:
+            if not multi:
+                if spec.ene_special is not None:
+                    sp = spec.ene_special(n, numbered)
+                    if sp is not None:
+                        return sp
+                if loc is None or n < spec.ene_single_min:
+                    return None
+            elif n < spec.ene_n_min or cnt < spec.ene_m_min:
+                return None
+            seg = _bond_seg_str(spec, b, form, cnt, terminal=True)
+            if seg is None:
+                return None
+            if multi:
+                return f"{ez}{s}a-{loc_s}-{seg[0]}", f"{ez}{zs}-{loc_s}-{seg[1]}"
+            if spec.ene_loc_omit and numbered.get("omit_ene_locant"):  # 二核烯/环单烯 (ethene/cyclohexene): 位次 1 隐含省略 (P-14.3.4.2(d))
+                return f"{ez}{s}{seg[0]}", f"{ez}{zs}{seg[1]}"
+            return f"{ez}{s}-{loc}-{seg[0]}", f"{ez}{zs}-{loc}-{seg[1]}"
         if n < 2:
             return None
         if multi:
-            m_en, m_zh = MULT_EN.get(len(ynes)), MULT_ZH.get(len(ynes))
-            if not m_en or not m_zh:
+            seg = _bond_seg_str(spec, b, form, cnt, terminal=True)
+            if seg is None:
                 return None
-            loc = _pair_loc_str(ynes)
-            suf = (f"{m_en}{spec.yne_suf[0]}", f"{m_zh}{spec.yne_suf[1]}")
-            return f"{s}a-{loc}-{suf[0]}", f"{zs}-{loc}-{suf[1]}"
-        omit = spec.yne_loc_omit and numbered.get("omit_yne_locant", False)  # FG 后缀 (P-14.3.4 例外: prop-2-ynoic acid) 恒保留炔位次
-        if omit or yne is None:
+            return f"{s}a-{loc_s}-{seg[0]}", f"{zs}-{loc_s}-{seg[1]}"
+        # FG 后缀 (P-14.3.4 例外: prop-2-ynoic acid) 恒保留炔位次; 开链烃 ethyne/propyne 由 yne_loc_omit 省略
+        if (spec.yne_loc_omit and numbered.get("omit_yne_locant", False)) or loc is None:
             return f"{s}{spec.yne_suf[0]}", f"{zs}{spec.yne_suf[1]}"
-        return f"{s}-{yne}-{spec.yne_suf[0]}", f"{zs}-{yne}-{spec.yne_suf[1]}"
-    if spec.unsat_polyol:  # 多 FG 词干模式: 炔段保留 e (but-2-yne), FG 后缀由 _chain_names 拼接
-        if yne is None and not ynes:
-            return None
+        return f"{s}-{loc}-{spec.yne_suf[0]}", f"{zs}-{loc}-{spec.yne_suf[1]}"
+
+    if is_ene and not multi and spec.ene_omit_aware:  # 环系 FG 烯段受 omit_ene_locant 影响
+        loc = _ene_loc_kept(numbered)
+
+    if form == "polyol":  # 多 FG 词干模式: 段保留 e (but-2-ene), FG 后缀由 _chain_names 拼接
         if multi:
-            m_en, m_zh = MULT_EN.get(len(ynes)), MULT_ZH.get(len(ynes))
-            if not m_en or not m_zh:
+            seg = _bond_seg_str(spec, b, form, cnt, terminal=True)
+            if seg is None:
                 return None
-            loc = _pair_loc_str(ynes)
-            return (f"{s}a-{loc}-{m_en}yne", f"{zs}-{loc}-{m_zh}炔")
+            return f"{ez}{s}a-{loc_s}-{seg[0]}", f"{ez}{zs}-{loc_s}-{seg[1]}"
+        if is_ene:
+            if loc is None:
+                return None
+            return f"{ez}{s}-{loc}-ene", f"{ez}{zs}-{loc}-烯"
+        if loc is None and not locs:
+            return None
         if numbered.get("omit_yne_locant", False):
             return f"{s}yne", f"{zs}炔"
-        return f"{s}-{yne}-yne", f"{zs}-{yne}-炔"
-    fg = _fg_locant(numbered, spec.fg) if spec.fg else None   # 段式: 需 FG 位次 (醇/酮)
-    if yne is None or fg is None:
+        return f"{s}-{loc}-yne", f"{zs}-{loc}-炔"
+
+    # 段式: 烯/炔段 + FG 位次后缀 (醇/酮/胺/硫醇/自由基)
+    fg = _fg_locant(numbered, spec.fg) if spec.fg else None
+    if fg is None or (loc is None and not (is_ene and multi)):
+        return None
+    seg = _bond_seg_str(spec, b, form, cnt, terminal=True)
+    if seg is None:
         return None
     if multi:
-        m_en, m_zh = MULT_EN.get(len(ynes)), MULT_ZH.get(len(ynes))
-        if not m_en or not m_zh:
-            return None
-        loc = _pair_loc_str(ynes)
-        seg = (f"{m_en}{spec.yne_seg[0]}", f"{m_zh}{spec.yne_seg[1]}")
         t_en, t_zh = _fg_yl_tail(spec, fg)
-        return (f"{s}a-{loc}-{seg[0]}{t_en}",
-                f"{zs}-{loc}-{seg[1]}{t_zh}")
-    if n <= 2 and yne == 1 and fg == 1 and _yl_loc_omitted(spec, fg):  # C≤2 炔: 炔位次与自由价位次均无歧义省略并融合 (eth-1-yn-1-yl → ethynyl，同 _chain_ene 的 C≤2 单烯融合)。
-        return f"{s}{spec.yne_seg[0]}{spec.en_suf}", f"{zs}{spec.yne_seg[1]}{spec.zh_suf}"
+        return f"{ez}{s}a-{loc_s}-{seg[0]}{t_en}", f"{ez}{zs}-{loc_s}-{seg[1]}{t_zh}"
+    if n <= 2 and loc == 1 and fg == 1 and (is_ene or _yl_loc_omitted(spec, fg)):  # 短链融合: eth-1-en-1-amine → ethenamine / eth-1-yn-1-yl → ethynyl
+        return f"{ez}{s}{seg[0]}{spec.en_suf}", f"{ez}{zs}{seg[1]}{spec.zh_suf}"
+    if is_ene and spec.cyclic and spec.ene_loc_omit and loc == 1 and fg == 1:  # 环单烯 (P-31.1.2): cyclohexen-1-yl 而非 cyclohex-1-en-1-yl
+        return f"{ez}{s}{seg[0]}-{fg}-{spec.en_suf}", f"{ez}{zs}{seg[1]}-{fg}-{spec.zh_suf}"
     t_en, t_zh = _fg_yl_tail(spec, fg)
-    return (
-        f"{s}-{yne}-{spec.yne_seg[0]}{t_en}",
-        f"{zs}-{yne}-{spec.yne_seg[1]}{t_zh}",
-    )
-
-def _fused_ene_suf(spec: "_Chain", m: int) -> tuple[str, str] | None:
-    """融合式烯后缀: MULT[m] + 单烯基座 (acid→enoic/dienoic…); m 超界返回 None."""
-    if m < spec.ene_m_min:
-        return None
-    me, mz = MULT_EN.get(m), MULT_ZH.get(m)
-    if me is None or mz is None:
-        return None
-    return f"{me}{spec.ene_base[0]}", f"{mz}{spec.ene_base[1]}"
-
-def _chain_ene(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
-    """烯段引擎：多烯/单烯、融合式/段式按 spec 字段分支。"""
-    s, zs = _chain_stem_pair(spec, n)
-    if s is None or zs is None:
-        return None
-    enes = numbered.get("ene_locants")
-    if enes and len(enes) >= 2:       # 多烯: 词干加 "a", 后缀生成式
-        if spec.ene_base is not None:        # 融合式 (酸/醛/腈/二酸/酰胺/多烯)
-            fused = _fused_ene_suf(spec, len(enes))
-            if fused is None or n < spec.ene_n_min:
-                return None
-            ez = spec.ez_ene_multi(numbered) if spec.ez_ene_multi else ""
-            loc = ",".join(str(x) for x in enes)
-            return f"{ez}{s}a-{loc}-{fused[0]}", f"{ez}{zs}-{loc}-{fused[1]}"
-        if spec.unsat_polyol:  # 多 FG 词干模式: 多烯 MULT+ene (buta-1,3-diene), FG 后缀由 _chain_names 拼接
-            m_en, m_zh = MULT_EN.get(len(enes)), MULT_ZH.get(len(enes))
-            if not m_en or not m_zh:
-                return None
-            ez = spec.ez_ene_multi(numbered) if spec.ez_ene_multi else ""
-            loc = ",".join(str(x) for x in enes)
-            return f"{ez}{s}a-{loc}-{m_en}ene", f"{ez}{zs}-{loc}-{m_zh}烯"
-        if spec.fg is not None:              # 段式多烯 (醇/酮/胺/硫醇): MULT[m]+烯段
-            fg = _fg_locant(numbered, spec.fg) if spec.fg else None
-            if fg is None:
-                return None
-            m_en, m_zh = MULT_EN.get(len(enes)), MULT_ZH.get(len(enes))
-            if not m_en or not m_zh:
-                return None
-            me, mz = f"{m_en}{spec.ene_seg[0]}", f"{m_zh}{spec.ene_seg[1]}"
-            ez = spec.ez_ene_multi(numbered) if spec.ez_ene_multi else ""
-            loc = ",".join(str(x) for x in enes)
-            t_en, t_zh = _fg_yl_tail(spec, fg)
-            return f"{ez}{s}a-{loc}-{me}{t_en}", f"{ez}{zs}-{loc}-{mz}{t_zh}"
-        return None
-    ene = numbered.get("ene_locant")
-    if spec.ene_base is not None:            # 融合式单烯 (酸/醛/腈/二酸/酰胺/多烯)
-        if spec.ene_special is not None:
-            sp = spec.ene_special(n, numbered)
-            if sp is not None:
-                return sp
-        if ene is None or n < spec.ene_single_min:
-            return None
-        fused = _fused_ene_suf(spec, 1)
-        if fused is None:
-            return None
-        ez = spec.ez_ene(numbered) if spec.ez_ene else ""
-        if spec.ene_loc_omit and numbered.get("omit_ene_locant"):  # 二核烯/环单烯 (ethene/cyclohexene)：位次 1 隐含省略 (P-14.3.4.2(d)/P-31.1.2)。
-            return f"{ez}{s}{fused[0]}", f"{ez}{zs}{fused[1]}"
-        return f"{ez}{s}-{ene}-{fused[0]}", f"{ez}{zs}-{ene}-{fused[1]}"
-    if spec.ene_omit_aware:
-        ene = _ene_loc_kept(numbered)
-    if spec.unsat_polyol:  # 多 FG 词干模式: 烯段保留 e (but-2-ene), FG 后缀由 _chain_names 拼接
-        if ene is None:
-            return None
-        ez = (spec.ez_ene(numbered) if spec.ez_ene else "") or ""
-        return (f"{ez}{s}-{ene}-ene", f"{ez}{zs}-{ene}-烯")
-    fg = _fg_locant(numbered, spec.fg) if spec.fg else None   # 段式单烯 (醇/酮)
-    if ene is None or fg is None:
-        return None
-    ez = (spec.ez_ene(numbered) if spec.ez_ene else "") or ""
-    if n <= 2 and ene == 1 and fg == 1:  # 短链 (C≤2) 单烯单 FG：烯只能 1(-2)、后缀锚定 1，位次无歧义省略并融合 (P-14.3.4.2/4.4；eth-1-en-1-amine → ethenamine，乙-1-烯-1-胺 → 乙烯胺)；另一端取代基（如 2-nitro）位次照常由前缀保留。
-        return (
-            f"{ez}{s}{spec.ene_seg[0]}{spec.en_suf}",
-            f"{ez}{zs}{spec.ene_seg[1]}{spec.zh_suf}",
-        )
-    if spec.cyclic and spec.ene_loc_omit and ene == 1 and fg == 1:  # 环单烯（carbocycle）：双键起点与 FG/自由价同为 1，双键位次 '1' 冗余故省略并融合（P-31.1.2/P-14.3.4.2(d)：cyclohexen-1-yl 而非 cyclohex-1-en-1-yl；gold 全量无 X-1-en-1-* 形态），FG 位次仍显式保留。
-        return (
-            f"{ez}{s}{spec.ene_seg[0]}-{fg}-{spec.en_suf}",
-            f"{ez}{zs}{spec.ene_seg[1]}-{fg}-{spec.zh_suf}",
-        )
-    t_en, t_zh = _fg_yl_tail(spec, fg)
-    return (
-        f"{ez}{s}-{ene}-{spec.ene_seg[0]}{t_en}",
-        f"{ez}{zs}-{ene}-{spec.ene_seg[1]}{t_zh}",
-    )
+    return f"{ez}{s}-{loc}-{seg[0]}{t_en}", f"{ez}{zs}-{loc}-{seg[1]}{t_zh}"
 
 @dataclass(frozen=True)
 class _Chain:

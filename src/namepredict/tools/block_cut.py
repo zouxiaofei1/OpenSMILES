@@ -61,22 +61,6 @@ def cut_block(mol: Mol, root: int, parent_atoms: frozenset[int]) -> frozenset[in
     return frozenset(seen) if seen else None
 
 
-def side_atoms(
-    mol: Mol, owned_atoms: frozenset[int], attach_idx: int,
-    seed_atoms: frozenset[int],
-) -> frozenset[int]:
-    """收集连接点在母体外、且落在种子原子内的侧链连通块原子集。"""
-    roots = {
-        n.GetIdx()
-        for n in mol.GetAtomWithIdx(attach_idx).GetNeighbors()
-        if n.GetIdx() not in owned_atoms and n.GetIdx() in seed_atoms
-    }
-    comp: set[int] = set()
-    for r in roots:
-        block = cut_block(mol, r, owned_atoms)
-        if block:
-            comp |= block
-    return frozenset(comp)
 
 
 

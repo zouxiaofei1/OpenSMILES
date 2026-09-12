@@ -77,7 +77,7 @@ kind_registry___ORTHO_CASES = [
 def test_select_parent_orthogonalized_kind(smiles: str, kind: str, scaffold: str) -> None:
     mol = preprocess(smiles)
     assert mol is not None
-    parent = select_parent(analyze(mol))
+    parent = select_parent(analyze(mol))[0]
     assert parent["kind"] == kind
     assert parent.get("scaffold_id") == scaffold
 
@@ -87,7 +87,7 @@ def test_select_parent_preloads_registry_stem() -> None:
     for smiles, kind in (("n1ccccc1", "pyridine"), ("c1ccc2ccccc2c1", "naphthalene")):
         mol = preprocess(smiles)
         assert mol is not None
-        parent = select_parent(analyze(mol))
+        parent = select_parent(analyze(mol))[0]
         assert parent["kind"] == kind
         assert (parent.get("stem_en"), parent.get("stem_zh")) == kr.parent_names(kind)
 
@@ -97,7 +97,7 @@ def test_select_parent_preserves_existing_stem(monkeypatch: pytest.MonkeyPatch) 
 
     parent = {"kind": "phenol", "stem_en": "custom", "stem_zh": "自定义", "mol": object()}
     monkeypatch.setattr(candidates, "_collect_candidates", lambda _: [parent])
-    selected = select_parent({"mol": parent["mol"]})
+    selected = select_parent({"mol": parent["mol"]})[0]
     assert selected["stem_en"] == "custom"
     assert selected["stem_zh"] == "自定义"
 
@@ -321,18 +321,21 @@ def test_spec_meta(sid: str) -> None:
 
 
 def test_kind_ids_helpers_derive_from_specs() -> None:
-    assert kind_ids_for("mono_carbo") == {"benzene"}
-    assert kind_ids_for("monohetero") == {"furan", "thiophene", "pyrrole", "pyridine",
+    """spec 派生集合，返回 frozenset；各组只钉锚点 id，registry 新增 spec 时断言自动跟随。"""
+    mono_carbo = kind_ids_for("mono_carbo")
+    assert isinstance(mono_carbo, frozenset)
+    assert mono_carbo == {"benzene"}
+    assert kind_ids_for("monohetero") >= {"furan", "thiophene", "pyrrole", "pyridine",
                                           "pyridazine", "pyrimidine", "pyrazine",
                                           "imidazole", "pyrazole", "oxazole", "thiazole",
                                           "pyrrolidine", "piperidine", "morpholine",
                                           "piperazine", "oxolane", "oxane"}
-    assert kind_ids_for("naph_family") == {"naphthalene", "quinoline", "isoquinoline",
+    assert kind_ids_for("naph_family") >= {"naphthalene", "quinoline", "isoquinoline",
                                            "quinazoline", "quinoxaline"}
-    assert kind_ids_for("fused56") == {"indole", "indazole", "benzimidazole",
+    assert kind_ids_for("fused56") >= {"indole", "indazole", "benzimidazole",
                                        "benzofuran", "benzothiophene",
                                        "benzothiazole", "benzoxazole"}
-    assert kind_ids_for("anthra") == {"anthracene"}
+    assert kind_ids_for("anthra") >= {"anthracene"}
     assert fused56_kind_ids() == kind_ids_for("fused56")
     assert naph_kind_ids() == kind_ids_for("naph_family")
     assert monohetero_kind_ids() == kind_ids_for("monohetero")

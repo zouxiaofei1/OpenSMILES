@@ -335,7 +335,7 @@ def test_p144j_orient_numbering_direction_invariant():
     smi = "CC(C)C1CC[C@H](C)CCC[C@H](C)CC1"
     mol = preprocess(smi)
     info = analyze(mol)
-    parent = select_parent(info)
+    parent = select_parent(info)[0]
     parent = finalize_parent_ownership(parent, mol)
     subs = extract_substituents(info, parent)
     base = parent["chain"]

@@ -29,16 +29,6 @@ def _extract_oxos(info: dict, parent: dict) -> list[dict]:
         _make_oxo(k["c_idx"]) for k in info.get("ketones") or [] if k["c_idx"] in chain
     ]
 
-def _with_full_atoms(mol, owned, s: dict) -> dict:
-    """用取代基完整非母体连通组分（side_atoms）替换其原子集，使叶子（halo/alkoxy/嵌套环）只计数一次。"""
-    from namepredict.tools.block_cut import side_atoms
-
-    seed = frozenset(s.get("atoms") or [])
-    attach = s.get("attach_idx")
-    if not seed or attach is None or attach not in owned:
-        return s
-    full = side_atoms(mol, owned, attach, seed)
-    return s if not full else {**s, "atoms": sorted(full)}
 
 
 def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general", cache: CommonNameCache | None = None, depth: int = 0) -> list:
@@ -49,9 +39,6 @@ def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general"
     base = (
         _extract_oxos(info, parent)
     )
-    owned = parent.get("owned_atoms")
-    if owned:
-        base = [_with_full_atoms(mol, owned, s) for s in base]
     result = base + extract_claimed_sides(info, parent, base, name_mode=name_mode, cache=cache, depth=depth)
     # print(result)
     return result

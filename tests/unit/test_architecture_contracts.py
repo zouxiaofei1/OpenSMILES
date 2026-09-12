@@ -447,7 +447,7 @@ def claimable_block_api___info(smiles: str):
 
 def claimable_block_api___benzene_owned(smiles: str):
     mol, info = claimable_block_api___info(smiles)
-    for cand in select_parent(info, all_candidates=True):
+    for cand in select_parent(info):
         if cand.get("scaffold_id") == "benzene":
             return mol, cand["owned_atoms"]
     raise AssertionError("no benzene parent candidate")
@@ -456,7 +456,7 @@ def claimable_block_api___benzene_owned(smiles: str):
 def test_n_phenyl_benzamide_amide_n_claim():
     """N-phenyl benzamide: one AMIDE_N claim with six phenyl atoms."""
     mol, info = claimable_block_api___info("c1ccccc1C(=O)Nc2ccccc2")
-    parent = select_parent(info)
+    parent = select_parent(info)[0]
     assert parent["kind"] == "amide"
     assert parent.get("scaffold_id") == "benzene"
     claims = iter_claims(mol, parent["owned_atoms"])
@@ -539,7 +539,7 @@ def test_claim_block_valid_returns_atoms():
 def test_ketone_carbonyl_o_not_claimed():
     """外部羰基氧（双键连所属碳）被跳过，不作侧链 claim（主 FG 已处理）。"""
     mol, info = claimable_block_api___info("OC(=O)C(=O)C")
-    parent = select_parent(info)
+    parent = select_parent(info)[0]
     assert parent["kind"] == "acid"
     claims = iter_claims(mol, parent["owned_atoms"])
     assert all(
@@ -550,7 +550,7 @@ def test_ketone_carbonyl_o_not_claimed():
 def test_sulfonyl_o_not_claimed():
     """砜双键氧同样被跳过，避免 cut 出 *O 污染成羟基。"""
     mol, info = claimable_block_api___info("CS(=O)(=O)C")
-    parent = select_parent(info)
+    parent = select_parent(info)[0]
     claims = iter_claims(mol, parent["owned_atoms"])
     assert all(
         mol.GetAtomWithIdx(c.root).GetAtomicNum() != 8 for c in claims
@@ -591,28 +591,20 @@ claimable_parent_batches__BATCHES = [
 
 
 def claimable_parent_batches___assert_coverage_complete(smiles: str) -> None:
+    """并列母体组内至少有一个候选能让 coverage ledger 完整——即 namer 实际采用的那个。"""
     mol = Chem.MolFromSmiles(smiles)
     info = analyze(mol)
-    parent = select_parent(info)
-    # Prefer the parent that the namer actually used when possible
-    r = SMILESNNamer().name(smiles)
-    if not r.success:
-        return
-    # Rebuild ledger from successful path: re-extract on selected parent
-    # After retry, select_parent may still be first rank; use owned from successful name meta
-    # Coverage via extract on each candidate until one completes matching name success.
-    from namepredict.namer import try_candidate
-
-    for cand in select_parent(info, all_candidates=True):
-        hit = try_candidate(info, cand)
-        if hit is not None and hit.success:
-            parent = cand
-            break
-    parent = parent if "owned_atoms" in parent else select_parent(info)
-    subst = extract_substituents(info, parent)
-    names = _names_from_subs(subst)
-    led = build_coverage_ledger(mol, owned_atoms=parent["owned_atoms"], names=names)
-    assert led.complete, f"gap={sorted(led.gap)} overlap={sorted(led.overlap)} kind={parent.get('kind')}"
+    group = select_parent(info)
+    assert group, f"no parent candidate: {smiles}"
+    gaps = []
+    for parent in group:
+        subst = extract_substituents(info, parent)
+        names = _names_from_subs(subst)
+        led = build_coverage_ledger(mol, owned_atoms=parent["owned_atoms"], names=names)
+        if led.complete:
+            return
+        gaps.append(f"kind={parent.get('kind')} gap={sorted(led.gap)} overlap={sorted(led.overlap)}")
+    raise AssertionError(f"{smiles}: no candidate covers all atoms; {'; '.join(gaps)}")
 
 
 @pytest.mark.parametrize("smiles,en,zh", claimable_parent_batches__BATCHES)
@@ -668,7 +660,7 @@ def parent_ownership___info(smiles: str):
 def test_benzamide_owns_core_not_n_phenyl():
     """Benzamide owns aryl + amide C/N/O; N-phenyl carbons stay outside."""
     mol, info = parent_ownership___info("c1ccccc1C(=O)Nc2ccccc2")
-    parent = select_parent(info)
+    parent = select_parent(info)[0]
     assert parent["kind"] == "amide"
     assert parent.get("scaffold_id") == "benzene"
     owned = parent["owned_atoms"]
@@ -695,7 +687,7 @@ def test_benzamide_owns_core_not_n_phenyl():
 def test_acid_owns_carboxyl_c_and_both_oxygens():
     """Acid owns carboxyl carbon + both oxygens (carbonyl O and OH O)."""
     mol, info = parent_ownership___info("CC(=O)O")
-    parent = select_parent(info)
+    parent = select_parent(info)[0]
     assert parent["kind"] == "acid"
     owned = parent["owned_atoms"]
     assert isinstance(owned, frozenset)
@@ -715,7 +707,7 @@ def test_acid_owns_carboxyl_c_and_both_oxygens():
 def test_owned_atoms_is_frozenset_and_immutable_after_ops():
     """owned_atoms is frozenset and unchanged after extraction / side ops."""
     mol, info = parent_ownership___info("c1ccccc1C(=O)O")
-    parent = select_parent(info)
+    parent = select_parent(info)[0]
     owned = parent["owned_atoms"]
     assert isinstance(owned, frozenset)
     snapshot = frozenset(owned)
@@ -735,19 +727,22 @@ def test_owned_atoms_is_frozenset_and_immutable_after_ops():
 def test_parent_atom_set_adapter_prefers_owned_atoms():
     """Compatibility adapter returns owned_atoms when present."""
     mol, info = parent_ownership___info("CC(=O)O")
-    parent = select_parent(info)
+    parent = select_parent(info)[0]
     assert parent_atom_set(parent, mol) == parent["owned_atoms"]
 
 
-def test_select_parent_all_candidates_finalizes_ordered():
-    """select_parent(all_candidates=True) returns ranked finalized parents; first matches select."""
+def test_select_parent_returns_finalized_tied_group():
+    """select_parent returns the P-45.2.1 tied group, already finalized and in candidate order."""
     mol, info = parent_ownership___info("c1ccccc1C(=O)Nc2ccccc2")
-    cands = select_parent(info, all_candidates=True)
-    assert cands
-    assert all(isinstance(c.get("owned_atoms"), frozenset) for c in cands)
-    best = select_parent(info)
-    assert best["kind"] == cands[0]["kind"]
-    assert best["owned_atoms"] == cands[0]["owned_atoms"]
+    group = select_parent(info)
+    assert group
+    assert all(isinstance(c.get("owned_atoms"), frozenset) for c in group)
+    # 组内候选同分，但 owned_atoms 互不相同（记录的是各自母体范围）
+    assert len({tuple(sorted(c["owned_atoms"])) for c in group}) == len(group)
+    # 首位是 P-44/P-45.2 排序领先者：苯甲酰胺母体
+    head = group[0]
+    assert head["kind"] == "amide"
+    assert head.get("scaffold_id") == "benzene"
 
 
 def test_finalize_copies_once_with_owned_atoms():
@@ -844,7 +839,7 @@ def test_methoxybutane_has_ether_or_alkoxy_claim_path():
     """Alkane parent with methoxy claim, or ether parent — O must be covered."""
     mol = Chem.MolFromSmiles(open_chain_alkoxy_claims__METHOXYBUTANE)
     info = analyze(mol)
-    parent = select_parent(info)
+    parent = select_parent(info)[0]
     owned = parent["owned_atoms"]
     claims = iter_claims(mol, owned)
     o_idxs = {a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 8}
@@ -910,9 +905,10 @@ scaffold_numbering_producer_flow___CASES = [
 
 
 def scaffold_numbering_producer_flow___selected(smiles: str) -> dict:
+    """取并列母体组首位——namer 实际编号用的候选。"""
     mol = preprocess(smiles)
     assert mol is not None
-    return select_parent(analyze(mol))
+    return select_parent(analyze(mol))[0]
 
 
 def test_scaffold_parent_without_materialized_facts_is_rejected() -> None:
@@ -957,9 +953,10 @@ merge_alken_kinds__NAME_CASES = merge_alken_kinds__UNSAT_CASES + merge_alken_kin
 
 
 def merge_alken_kinds___parent(smiles: str) -> dict:
+    """取并列母体组首位——namer 实际使用的候选。"""
     mol = preprocess(smiles)
     assert mol is not None
-    return select_parent(analyze(mol))
+    return select_parent(analyze(mol))[0]
 
 
 @pytest.mark.parametrize("smiles,kind,en,zh", merge_alken_kinds__UNSAT_CASES)

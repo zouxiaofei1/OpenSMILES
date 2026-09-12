@@ -10,14 +10,17 @@ test_principal_benzoate.py:
 """
 from __future__ import annotations
 
+import time
+
 import pytest
 
+import namepredict.namer as namer_module
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.kind_registry import pack_parent_stem
 from namepredict.layer2.parent_selector import select_parent
 from namepredict.layer2.principal_parent import rule_driven_parent_candidates
-from namepredict.namer import SMILESNNamer, try_candidate
+from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh
 from rdkit import Chem
 
@@ -235,9 +238,13 @@ def principal_benzoate___principal_name(smiles: str):
     if mol is None:
         return None
     info = analyze(mol)
+    t0 = time.perf_counter()
     for parent in rule_driven_parent_candidates(info):
         packed = pack_parent_stem(parent, info["mol"])
-        hit = try_candidate(info, packed, depth=0)
+        prepared, subst, complete = namer_module._prepare_candidate(info, packed, depth=0)
+        if not complete:
+            continue
+        hit = namer_module._assemble_candidate(prepared, subst, depth=0, t0=t0)
         if hit is not None and hit.success:
             return hit
     return None
