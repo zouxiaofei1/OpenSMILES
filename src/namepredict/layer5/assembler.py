@@ -1,7 +1,7 @@
 """L5 名称组装主入口：由链引擎取名后按 kind 拼接前缀、立体（E/Z、R/S）与盐类后缀。"""
 from __future__ import annotations
 from dataclasses import replace
-
+import re
 from namepredict.constants import AMIDO_RETAINED, MULT_EN, MULT_ZH, zh_bridge_root
 from namepredict.layer5.chain_engine import _ACYL_HALIDE_BY_HAL, _KIND_TABLE, _alkane_names, _chain_names
 from namepredict.layer5.stems import maybe_anion_names, maybe_metal_salt_names
@@ -72,6 +72,7 @@ def _ring_extra_prefix_located(numbered: dict) -> bool:
         if a is not None and a in chain:
             return True
     return False
+MULT_ESTER_BIS_EN = {2: "bis", 3: "tris", 4: "tetrakis"}  # P-16.3.2 复合前缀倍增（bis/tris，非 di/tri）
 
 _EXO_SUF: dict[str, tuple] = {  # 环外主基系统名后缀表（group_class → 后缀规格），六个环外 worker 共用 `_exocyclic_ring_names` 一条管线：singular          (en, zh)          单取代后缀 plural            (en, zh) | None   多取代后缀基底（前拼 MULT_EN/MULT_ZH 倍数词）；None = 该主基无多取代系统名 plural_needs_loc  bool              多取代时位次缺失即放弃（P-65.2.2：多羧酸位次必带）
     "acid":     (("carboxylic acid", "羧酸"), ("carboxylic acid", "羧酸"), True),
@@ -421,14 +422,51 @@ def join_parent_name(prefix: str, parent: str) -> str:
     body = f"{prefix}-{stem}" if _needs_join_hyphen(stem) else f"{prefix}{stem}"
     return f"{stereo}{body}"
 
+_ZH_PLAIN_YL_RE = re.compile(r"^[^()\[\]\d]*-\d+-基$")  # 仅带位次的基（噻吩-3-基、丙-2-基）：中文酯名保留「基」但不加围栏（乙酸噻吩-3-基酯）。
+_ZH_SIMPLE_YL_RE = re.compile(r"^[^\-()\[\]\d]+基$")  # 无位次无取代的简单烃基（乙基/苄基/叔丁基）：中文酯名习用省「基」（乙酸乙酯、十八酸苄酯）。
+
+
+def _zh_alkoxy_part(name: str) -> str:
+    """中文酯 O 侧基名渲染（P-65.6.3）：简单烃基省「基」，其余保留「基」；带取代基者整体围栏（内含括号时升方括号）。
+
+    gold 口径：乙酸乙酯/十八酸苄酯省「基」；乙酸噻吩-3-基酯/乙酸丙-2-基酯只带位次者保留不括；乙酸(7-乙酰氧基庚基)酯、
+    苯甲酸[2-乙酰氨基-3-苯甲酰氧基-2-(苯甲酰氧基甲基)丙基]酯 等带取代基者保留「基」并围栏。
+    """
+    if not name:
+        return name
+    if _ZH_SIMPLE_YL_RE.match(name):
+        return name[:-1]  # 简单烃基省「基」：乙酸乙酯、十八酸苄酯
+    if _ZH_PLAIN_YL_RE.match(name):
+        return name  # 只带位次：乙酸噻吩-3-基酯、乙酸丙-2-基酯
+    stereo, body = _stereo_lead(name)
+    if not body or body.endswith("基") is False:
+        return name
+    if "(" in body or "[" in body or "（" in body:
+        return f"{stereo}[{body}]"
+    return f"{stereo}({body})"
+
+
 def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=None) -> tuple[str, str] | None:
-    """拼接酯名：O 侧烷基作前缀、酸侧作主体（XX 酸 YY 酯）；无 O 侧取代基时输出 bare 酸酯名（benzoate/苯甲酸酯）。"""
+    """拼接酯名：O 侧烷基作前缀、酸侧作主体（XX 酸 YY 酯）；多酯按 P-16.3.2 用二/双(bis) 倍增（草酸二乙酯 / 己二酸双(2-乙基己基)酯）；无 O 侧取代基时输出 bare 酸酯名（benzoate/苯甲酸酯）。"""
     en, zh = names
     o = [s for s in (numbered.get("substituents") or []) if s.get("o_side")]
-    if o:
-        alk_en, alk_zh = o[0].get("en") or "", (o[0].get("zh") or "").rstrip("基")
-    else:
-        alk_en, alk_zh = "", ""
+    alk_en, alk_zh = "", ""
+    if len(o) == 1:
+        alk_en, alk_zh = o[0].get("en") or "", _zh_alkoxy_part(o[0].get("zh") or "")
+    elif len(o) > 1:
+        names_en = [s.get("en") or "" for s in o]
+        names_zh = [_zh_alkoxy_part(s.get("zh") or "") for s in o]
+        if len(set(names_en)) == 1 and names_en[0]:  # 同名臂：di/tri 或 bis（复合前缀，P-16.3.2 须用 bis）
+            if any(s.get("paren") for s in o):
+                alk_en = f"{MULT_ESTER_BIS_EN.get(len(o), '')}({names_en[0]})"
+                alk_zh = f"{MULT_ZH.get(len(o), '')}{names_zh[0]}"
+            else:
+                m_en, m_zh = MULT_EN.get(len(o)), MULT_ZH.get(len(o))
+                if not m_en or not m_zh:
+                    return None
+                alk_en, alk_zh = f"{m_en}{names_en[0]}", f"{m_zh}{names_zh[0]}"
+        else:  # 异名臂：依次平铺（methyl ethyl oxalate）
+            alk_en, alk_zh = " ".join(names_en), "".join(names_zh)
     st, body = _stereo_lead(en)
     mid = f"{pre_en}-{body}" if pre_en and _needs_join_hyphen(body) else f"{pre_en}{body}" if pre_en else body
     en = f"{alk_en} {st}{mid}" if alk_en else f"{st}{mid}"
@@ -437,6 +475,10 @@ def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=N
             else f"{stz}{pre_zh}{bodyz}" if pre_zh else f"{stz}{bodyz}")
     zh = f"{midz}{alk_zh}酯"
     return en, zh
+
+
+_EXO_EZ_DONE = ("alkane", "radical")  # 这两个 kind 的 _Chain.wrap=_with_ez 已把母体链 E/Z 与环外 E/Z 一并写入，勿重复。
+
 
 
 def join_kind_name(

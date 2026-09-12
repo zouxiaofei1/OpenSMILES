@@ -142,6 +142,20 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "xanthene":     {"smiles": "C1c2ccccc2Oc2ccccc21", "stem_en": "xanthene",     "stem_zh": "氧杂蒽", "naming_class": "xanthene", "fused": True, "standard": (XANTHENE_LABELS, (12, 11, 10, 9, 8, 5, 4, 3, 2, 1, 0, 13, 7, 6))},  # 呫吨/噻吨（表 2.8 第 22 项；P-25.3.3 传统编号）：外周两苯环 1-8，中央碳 9（CH2/C=O）、O(或 S) 10，四个稠合碳 4a/8a/9a/10a（走行方向同 acridine）。未登记时 xanthone 被拆成 benzo[b]chromen-13-one 之类 chromene 体系（该体系无 13 位），并出现 benzo[b]benzo[b]thian 前缀重复。
     "thioxanthene": {"smiles": "C1c2ccccc2Sc2ccccc21", "stem_en": "thioxanthene", "stem_zh": "噻吨",   "naming_class": "xanthene", "fused": True, "standard": (XANTHENE_LABELS, (12, 11, 10, 9, 8, 5, 4, 3, 2, 1, 0, 13, 7, 6))},
     "cyclopenta[a]phenanthrene": {"smiles": "C1=CCC2C(=C1)C=CC1=C2C=CC2C=CC=C12", "stem_en": "cyclopenta[a]phenanthrene", "stem_zh": "环戊[a]菲", "naming_class": "steroid", "fused": True, "standard": (STEROID_LABELS, (2, 1, 0, 5, 4, 6, 7, 8, 9, 3, 10, 11, 12, 16, 15, 14, 13))},  # cyclopenta[a]phenanthrene（P-25.3.3 传统甾体编号 1-17，无字母位；10/13 为角甲基碳）。母体模板为 7 对非累积双键的 mancude 型（2=3/4=5/6=7/8=9/11=12/14=15/16=17），1 位为 CH2。甾体及其加氢衍生物经氢化骨架匹配（_fixed_numbering 的 _Q_H 回退）走此模板，否则外周编号会产生 4a,6a-dimethyl、-2-en-2-yl 等非甾体定位。
+     "oxadiazole124": {"smiles": "o1ncnc1", "stem_en": "1,2,4-oxadiazole", "stem_zh": "1,2,4-噁二唑", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2,4]oxadiazolo", "[1,2,4]噁二唑并"), "locant_prefix": "1,2,4-", "standard": (("1", "2", "3", "4", "5"), (0, 1, 2, 3, 4))},
+    "oxadiazole134": {"smiles": "o1cnnc1", "stem_en": "1,3,4-oxadiazole", "stem_zh": "1,3,4-噁二唑", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,3,4]oxadiazolo", "[1,3,4]噁二唑并"), "locant_prefix": "1,3,4-", "standard": (("1", "2", "3", "4", "5"), (0, 1, 2, 3, 4))},
+    "oxadiazole125": {"smiles": "o1nccn1", "stem_en": "1,2,5-oxadiazole", "stem_zh": "1,2,5-噁二唑", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2,5]oxadiazolo", "[1,2,5]噁二唑并"), "locant_prefix": "1,2,5-", "standard": (("1", "2", "3", "4", "5"), (0, 1, 2, 3, 4))},
+    "thiadiazole134": {"smiles": "s1cnnc1", "stem_en": "1,3,4-thiadiazole", "stem_zh": "1,3,4-噻二唑", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,3,4]thiadiazolo", "[1,3,4]噻二唑并"), "locant_prefix": "1,3,4-", "standard": (("1", "2", "3", "4", "5"), (0, 1, 2, 3, 4))},
+    "thiadiazole124": {"smiles": "s1ncnc1", "stem_en": "1,2,4-thiadiazole", "stem_zh": "1,2,4-噻二唑", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2,4]thiadiazolo", "[1,2,4]噻二唑并"), "locant_prefix": "1,2,4-", "standard": (("1", "2", "3", "4", "5"), (0, 1, 2, 3, 4))},
+    "triazine124": {"smiles": "n1ncncc1", "stem_en": "1,2,4-triazine", "stem_zh": "1,2,4-三嗪", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2,4]triazino", "[1,2,4]三嗪并"), "locant_prefix": "1,2,4-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
+    "tetrazine1245": {"smiles": "n1ncnnc1", "stem_en": "1,2,4,5-tetrazine", "stem_zh": "1,2,4,5-四嗪", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,2,4,5-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
+    "thiazole12": {"smiles": "c1cncs1", "stem_en": "1,2-thiazole", "stem_zh": "1,2-噻唑", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2]thiazolo", "[1,2]噻唑并"), "locant_prefix": "1,2-", "standard": (("1", "2", "3", "4", "5"), (4, 3, 2, 1, 0))},
+    "oxepane": {"smiles": "O1CCCCCC1", "stem_en": "oxepane", "stem_zh": "氧杂环庚烷", "naming_class": "monohetero", "fused": True},  # 七元含氧/含氮饱和环（P-22.2.2）：此前缺失致 oxepan-2-one（ε-内酯）、azepan-1-yl 整块丢弃。
+    "azepane": {"smiles": "N1CCCCCC1", "stem_en": "azepane", "stem_zh": "氮杂环庚烷", "naming_class": "monohetero", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
+    "oxazepane": {"smiles": "O1CCNCCC1", "stem_en": "1,4-oxazepane", "stem_zh": "1,4-氧杂氮杂环庚烷", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,4-"},
+    "thiazepane": {"smiles": "S1CCNCCC1", "stem_en": "1,4-thiazepane", "stem_zh": "1,4-硫杂氮杂环庚烷", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,4-"},
+    "thiazine13": {"smiles": "S1C=NC=CC1", "stem_en": "1,3-thiazine", "stem_zh": "1,3-噻嗪", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,3]thiazino", "[1,3]噻嗪并"), "locant_prefix": "1,3-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
+
    }  # NOTE: carbonyl mothers（benzoquinone / anthraquinone / chromenone /
 
 
@@ -270,6 +284,14 @@ def mancude_atoms(scaffold_id: str, match) -> frozenset[int]:
         return frozenset()
     return frozenset(match[qi] for qi in _kekule_double_atoms(scaffold_id) if qi < len(match))
 
+def mancude_ring_atoms(scaffold_id: str, match) -> frozenset[int]:
+    """保留 mancude 母体名的**整个不饱和环**映射到分子后的原子集。 """
+    q = _Q.get(scaffold_id)
+    if not match or q is None:
+        return frozenset()
+    dbl = _kekule_double_atoms(scaffold_id)
+    keep = {i for ring in q.GetRingInfo().AtomRings() if set(ring) & dbl for i in ring}
+    return frozenset(match[qi] for qi in keep if qi < len(match))
 
 def extra_indicated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
     """保留母体名未隐含、而分子中该芳香杂环位带 H 的原子（P-58.2.1 须显式标指示氢）：模板同位无 H 而分子有 H，

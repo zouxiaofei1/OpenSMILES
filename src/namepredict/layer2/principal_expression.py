@@ -120,11 +120,19 @@ def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
 # 苯系保留名已迁往 L5 chain_engine 苯 variant（按 scaffold_id 注入）；L2 只表达结构 kind。
 
 
+def _ring_endocyclic_triple(mol: Mol, atoms: set[int]) -> bool:
+    """骨架内是否存在成环的三键：环内三键使该环无法构成 mancude 芳香体系（RDKit 把苯炔 c1ccccc#1 的 sp 碳按 6π 一并标为芳香），须按环烯炔表达而非保留芳名。"""
+    from rdkit import Chem
+    return any(b.GetBondType() == Chem.BondType.TRIPLE and b.IsInRing()
+               and b.GetBeginAtomIdx() in atoms and b.GetEndAtomIdx() in atoms
+               for b in mol.GetBonds())
+
+
 def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
     """无保留 scaffold 时的通用环 kind(统一收敛为 alkane, 环系身份由 scaffold_id/fused_tree 承载)。"""
     mol = info["mol"]
     atoms = set(skeleton.atom_ids)
-    if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms):
+    if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms) and not _ring_endocyclic_triple(mol, atoms):
         n_rings = sum(1 for ring in sssr_rings(mol) if set(ring) <= atoms)  # 芳香稠环(未注册)kind 收敛 alkane, 骨架身份由 fused_tree + scaffold_id 承载(L5 fused_namer 组装稠合名)。
         if n_rings >= 2:
             return "alkane"
@@ -307,8 +315,8 @@ def _kekule_ring_dbs(info: dict, atom_set: set[int], known: list[dict]) -> list[
 def _implied_ring_atoms(fields: dict, atom_set: set[int]) -> frozenset[int]:
     """保留 mancude 母体覆盖的分子原子集：已匹配保留模板取模板 mancude 位；未注册稠环由 L5 以 mancude
     组分名（吡喃并/环戊并…）组装，环内多重键同样由母体名隐含，取整个母体骨架。"""
-    from namepredict.layer2.ring_scaffold import mancude_atoms
-    implied = mancude_atoms(fields.get("scaffold_id"), fields.get("scaffold_match"))
+    from namepredict.layer2.ring_scaffold import mancude_ring_atoms
+    implied = mancude_ring_atoms(fields.get("scaffold_id"), fields.get("scaffold_match"))
     if implied:
         return implied
     return frozenset(atom_set) if fields.get("fused_tree") is not None else frozenset()
@@ -331,14 +339,16 @@ def _chain_phosphate_fields(info: dict, occurrences, fields: dict) -> dict | Non
 
 
 def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
-    """L5 酯命名的酯烷氧基侧字段：o_idx 供 o_side 识别；仅严格线性给 alkoxy_n 保留名。"""
-    if len(occurrences) != 1:
+    """L5 酯命名的酯烷氧基侧字段：o_idx 供 o_side 识别（多酯取任一酯的桥 O，仅作标记，醚所有权按 kind 门控不消费）；仅严格线性给 alkoxy_n 保留名。"""
+    if not occurrences:
         return fields
     match = next((e for e in (info.get("esters") or [])
                   if e["c_idx"] in occurrences[0].characteristic_atoms), None)
     if match is None:
         return fields
-    return {**fields, "o_idx": match["o_idx"], "alkoxy_n": 0}
+    if len(occurrences) == 1:
+        return {**fields, "o_idx": match["o_idx"], "alkoxy_n": 0}
+    return {**fields, "o_idx": match["o_idx"]}
 
 _MONONUCLEAR_STEM: dict[int, tuple[str, str, str]] = {  # 表 2.1 单核母体氢化物（P-15.4.1）：杂原子锚点自由基的母体 free 名与元素。去氢即标准取代基名（oxidane→hydroxy/oxy、azane→amino、sulfane→sulfanyl）。
     7: ("N", "azane", "氮烷"),

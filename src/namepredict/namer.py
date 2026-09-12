@@ -41,7 +41,14 @@ def _chain_meta(numbered: dict) -> dict:
     """从编号结果提取母体链、母体 kind 与 S 桥自含围栏标记（供 L3 判断前缀是否还需加括号）。"""
     parent = numbered.get("parent") or {}
     return {"parent_chain": list(parent.get("chain") or []), "parent_kind": parent.get("kind"),
+            "parent_labels": _label_list(parent),
             "bridge_self_enclosed": bool(numbered.get("bridge_self_enclosed"))}
+
+def _label_list(parent: dict) -> list:
+    """母体整体编号标签（稠环桥头 3a/6a）；长度与 chain 不符时返回空表（调用方退回链序号）。"""
+    labels = (parent.get("numbering_scaffold") or {}).get("labels") or []
+    chain = parent.get("chain") or []
+    return [int(x) if str(x).isdigit() else str(x) for x in labels] if len(labels) == len(chain) else []
 
 
 def _claim_from_sub(s: dict, atoms: frozenset[int]) -> ClaimedBlock:

@@ -93,11 +93,6 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
 
 def dissociate_salt(mol: Mol) -> tuple[Mol, dict]:
     """返回 (organic_mol, salt_meta)；非简单盐时 meta 为空。
-
-    先用只数片段的 `GetMolFrags(mol)` 早退：它只返回索引元组，而
-    `asMols=True, sanitizeFrags=True` 会为每个片段重建分子并重新 sanitize
-    （实测 0.003ms vs 0.103ms）。绝大多数分子只有 1 个片段（`_name_mol` 每次
-    递归都会调本函数），此处的早退把那部分开销全部省掉。
     """
     if len(Chem.GetMolFrags(mol)) < 2:
         return mol, {}

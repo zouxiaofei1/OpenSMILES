@@ -135,6 +135,7 @@ def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
     my_e, my_z = MULT_EN.get(ny), MULT_ZH.get(ny)
     if me is None or mz is None or my_e is None or my_z is None:
         return None
+    
     if spec.ene_base is not None and spec.yne_suf is not None:   # 融合式: 烯段 MULT+en, 炔段 MULT+yne_suf
         e_seg = (f"{me}en", f"{mz}烯")
         y_suf = (f"{my_e}{spec.yne_suf[0]}", f"{my_z}{spec.yne_suf[1]}")
@@ -382,6 +383,10 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
         fields["ene_base"] = (f"ene{en_m}oic acid", f"烯{zh_m}酸")
         fields["yne_suf"] = None
         fields["ene_single_min"] = 3
+    if spec.kind == "ester":  # 多酯烯基/炔基基座: enedioate/ynedioate（but-2-enedioate）
+        fields["ene_base"] = (f"ene{en_m}oate", f"烯{zh_m}酸")
+        fields["yne_suf"] = (f"yne{en_m}oate", f"炔{zh_m}酸")
+        fields["ene_single_min"] = 3
     if spec.mult_zh_full:
         fields["zh_full"] = True
     if spec.mult_unsat_polyol:
@@ -539,12 +544,20 @@ _KIND_TABLE = {
                        "benzene": {1: dict(plain_maps=None,
                                            plain_fn=lambda n: ("benzoic acid", "苯甲酸"))},
                    }),
+    "sulfonic": _Chain(kind="sulfonic", en_suf="sulfonic acid", zh_suf="磺酸", coda="ane",  # P-65.3.1 磺酸后缀：C 母体 + sulfonic acid（ethanesulfonic acid / 乙磺酸）；苯单取代走 variant 保留式。
+                      mult_ok=True,
+                      variant={
+                          "benzene": {1: dict(plain_maps=None,
+                                              plain_fn=lambda n: ("benzenesulfonic acid", "苯磺酸"))},
+                      }),
     "ester": _Chain(kind="ester", en_suf="oate", zh_suf="酸",
                     ene_base=("enoate", "烯酸"),
                     yne_suf=("ynoate", "炔酸"),
                     ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
+                    mult_ok=True,
                     variant={
-                        None: {1: dict(plain_maps=None, plain_fn=_retained_plain("ester"))},
+                        None: {1: dict(plain_maps=None, plain_fn=_retained_plain("ester")),
+                               2: dict(plain_maps=({2: "oxalate"}, {2: "草酸"}))},  # P-65.1.1 保留名：乙二酸二酯 = oxalate（其余二酯走 -dioate 系统名）
                         "benzene": {1: dict(plain_maps=None,
                                             plain_fn=lambda n: ("benzoate", "苯甲酸"))},
                     }),
@@ -588,13 +601,13 @@ _KIND_TABLE = {
                           "benzene": {1: dict(plain_maps=None,
                                               plain_fn=lambda n: ("benzonitrile", "苯甲腈"))},
                       }),
-    "amide": _Chain(kind="amide", en_suf="amide", zh_suf="酰胺",
+    "amide": _Chain(kind="amide", en_suf="amide", zh_suf="酰胺", mult_ok=True,
                     ene_base=("enamide", "烯酰胺"),
-
                     yne_suf=("ynamide", "炔酰胺"),
                     ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
                     variant={
-                        None: {1: dict(plain_maps=None, plain_fn=_retained_plain("amide"))},
+                        None: {1: dict(plain_maps=None, plain_fn=_retained_plain("amide")),
+                               2: dict(plain_maps=({2: "oxamide"}, {2: "草酰胺"}))},  # P-66.1.1 保留名：乙二酰胺 = oxamide
                         "benzene": {1: dict(plain_maps=None,
                                             plain_fn=lambda n: ("benzamide", "苯甲酰胺"))},
                     }),

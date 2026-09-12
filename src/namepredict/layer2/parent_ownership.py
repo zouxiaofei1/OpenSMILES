@@ -28,13 +28,14 @@ def _amide_n_from_c(mol: Mol, c_idx: int) -> int | None:
 
 
 def _amide_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """酰胺：羰基 C + =O + N。"""
-    c_idx = parent.get("amide_c_idx")
-    if c_idx is None:
-        return set()
-    out = {c_idx}
-    _add_opt(out, _dbl_o_idx(mol, c_idx))
-    return _add_opt(out, _amide_n_from_c(mol, c_idx))
+    """酰胺：羰基 C + =O + N（多酰胺逐碳并入，否则第二个酰胺的 N 留在所有权外被写成氨基前缀）。"""
+    out: set[int] = set()
+    for c_idx in (([int(parent["amide_c_idx"])] if parent.get("amide_c_idx") is not None else [])
+                  + [int(c) for c in parent.get("amide_c_idxs") or ()]):
+        out.add(c_idx)
+        _add_opt(out, _dbl_o_idx(mol, c_idx))
+        _add_opt(out, _amide_n_from_c(mol, c_idx))
+    return out
 
 
 def _single_o_idx(mol: Mol, c_idx: int) -> int | None:
@@ -203,9 +204,11 @@ def _single_ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 
 
 def _ester_fg_atoms(mol: Mol, parent: dict) -> set[int]:
-    """单酯 FG 原子（复用单酯逻辑）。"""
-    return _single_ester_fg_atoms(mol, parent) 
-
+    """酯 FG 原子（单酯复用单酯逻辑；多酯逐碳并入，否则第二个酯的桥 O 留在所有权外、烷氧臂被当成平铺取代基而写成 1-ethoxy 前缀）。"""
+    out = _single_ester_fg_atoms(mol, parent)
+    for c in parent.get("ester_c_idxs") or ():
+        _one_ester_fg(mol, int(c), out)
+    return out
 
 def _anhydride_fg_atoms(mol: Mol, parent: dict) -> set[int]:
     """酸酐：两个酰基碳 + 桥接 O + 两个羰基氧。"""
@@ -254,7 +257,8 @@ def _phosphate_fg_atoms(mol: Mol, parent: dict) -> set[int]:
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
     """FG 所有权由字段驱动：拥有主官能团的每个重原子。"""
     parts = (
-        _amide_fg_atoms(mol, parent) if parent.get("amide_c_idx") is not None else set(),
+        _amide_fg_atoms(mol, parent) if (parent.get("amide_c_idx") is not None
+                                         or parent.get("amide_c_idxs")) else set(),
         _aldehyde_fg_atoms(mol, parent) if parent.get("aldehyde_c_idx") is not None or parent.get("aldehyde_c_idxs") else set(),
         _acid_fg_atoms(mol, parent),
         _ether_fg_atoms(mol, parent),

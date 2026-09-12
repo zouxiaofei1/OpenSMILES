@@ -35,10 +35,17 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
         return hit
     if rs_real == rs_anch:
         return hit
+    labels = parent.get("parent_labels") or []
+    rs_lab = [(_label_at(labels, pos), code) for pos, code in rs_real]  # 位次改用整体编号标签（稠环桥头 4aS/8aS），与 _chain_locant 同约定
+
     out = copy.copy(hit)
-    out.en = _with_rs(hit.en, rs_real)
-    out.zh = _with_rs(hit.zh, rs_real)
+    out.en = _with_rs(hit.en, rs_lab)
+    out.zh = _with_rs(hit.zh, rs_lab)
     return out
+def _label_at(labels: list, pos: int):
+    """链序号 pos（1 起）→ 整体编号标签；无标签表或越界时退回 pos。"""
+    return labels[pos - 1] if 0 < pos <= len(labels) else pos
+
 
 
 def _obridge_front_simple(mol, atoms, attach_old, *, depth, name_mode, cache, root_ctx):

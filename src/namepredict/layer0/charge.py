@@ -1,7 +1,4 @@
-"""L0 酸性质子重定位/电荷归一化：去质子化弱酸位(酚氧/烯醇/酰胺 O⁻、N⁻) 与质子化强酸位
-(默认羧酸 C(=O)OH) 同片段共存时，把质子从强酸搬到弱酸位——等价负电荷收敛到最强酸。
-只改 FormalCharge 与 H 记账，走 RWMol 原子级编辑；含 * dummy 或消毒失败时保守跳过。
-"""
+"""L0 酸性质子重定位/电荷归一化"""
 from __future__ import annotations
 
 from rdkit import Chem
@@ -12,7 +9,11 @@ from namepredict.constants import C, N, O, P, S
 _DONOR_KIND = ("carboxyl", "phospho")  # 允许作为强酸供体的酸类：羧酸 + 磷酸。磷酸供体在「酰胺 O⁻ 受体」场景下才有产出（见 preprocessor 的二次互变归一，gold 把 N=C([O-]) 写成酰胺、把 P-OH 写成 oxidophosphoryl）；sulfo 实测 0 收益，关闭以免扩大 blast radius。
 _KIND_PRIO = {"carboxyl": 1, "phospho": 2, "sulfo": 3}
 _ACCEPTOR_Z = frozenset({O, N})  # 弱受体允许的元素：O（酚氧/烯醇氧/酰胺氧）、N（去质子化氮）；保守可只留 {O}。
-
+_ACID_CENTERS = {          # 中心元素 → (最少双键氧数, 酸类名)；键序即 _KIND_PRIO 的酸强度序
+    C: (1, "carboxyl"),    # C(=O)OH
+    P: (1, "phospho"),     # P(=O)OH
+    S: (1, "sulfo"),       # S(=O)nOH
+}
 
 def _oxo_neighbor(atom, heavy: int, min_oxo: int = 1):
     """返回 atom 邻接的成酸中心原子（非芳香）若其带 ≥min_oxo 个双键氧（C(=O)/P(=O)/S(=O)n）；否则 None。"""
@@ -29,32 +30,18 @@ def _oxo_neighbor(atom, heavy: int, min_oxo: int = 1):
             return n
     return None
 
+def _acid_kind(atom) -> str | None:
+    """按 _ACID_CENTERS 表返回 O 所连成酸中心对应的酸类名，不检查 O 自身 H/电荷。"""
+    for z, (min_oxo, kind) in _ACID_CENTERS.items():
+        if _oxo_neighbor(atom, z, min_oxo):
+            return kind
+    return None
 
 def _acid_kind_of_oh(atom) -> str | None:
     """判定中性含 H 的 O 是否为质子化强酸 OH：carboxyl 连 C(=O)、phospho 连 P(=O)、sulfo 连 S(=O)n；否则 None。"""
     if atom.GetAtomicNum() != O or atom.GetFormalCharge() != 0 or atom.GetTotalNumHs() < 1:
         return None
-    if _oxo_neighbor(atom, C, 1):
-        return "carboxyl"
-    if _oxo_neighbor(atom, P, 1):
-        return "phospho"
-    if _oxo_neighbor(atom, S, 1):
-        return "sulfo"
-    return None
-
-
-def _is_strong_conj_base(atom) -> bool:
-    """判定位点是否为已去质子化的强酸共轭碱（羧酸/磷酸/磺酸根），此类电荷位置合理、不搬运。"""
-    if atom.GetAtomicNum() != O:
-        return False
-    if _oxo_neighbor(atom, C, 1) is not None:
-        return True
-    if _oxo_neighbor(atom, P, 1) is not None:
-        return True
-    if _oxo_neighbor(atom, S, 1) is not None:
-        return True
-    return False
-
+    return _acid_kind(atom)
 
 def _is_weak_anion(atom) -> bool:
     """判定位点是否为去质子化的弱酸位（可接受质子）。"""
@@ -62,7 +49,7 @@ def _is_weak_anion(atom) -> bool:
         return False
     if any(n.GetFormalCharge() == 1 for n in atom.GetNeighbors()):  # 邻接 +1 电荷 → 硝基/N-氧化物等内平衡写法，不当作弱酸位
         return False
-    if _is_strong_conj_base(atom):  # 已是强酸共轭碱（羧酸/磷酸/磺酸根），电荷位置合理
+    if atom.GetAtomicNum() == O and _acid_kind(atom) is not None:  # 已是强酸共轭碱（羧酸/磷酸/磺酸根），电荷位置合理
         return False
     return True
 
@@ -93,6 +80,7 @@ def _frag_of(mol: Mol) -> dict[int, int]:
 
 
 def normalize_acid_charge(mol: Mol) -> Mol:
+    # return mol
     """同一片段内【质子化羧酸】与【去质子化弱酸位】共存时逐次搬质子使负电荷收敛到最强酸；供体只取强酸 OH、受体只取弱酸阴离子故单调收敛，无改动返回原 mol。"""
     if any(a.GetAtomicNum() == 0 for a in mol.GetAtoms()):
         return mol
