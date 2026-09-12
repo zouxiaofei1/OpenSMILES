@@ -553,7 +553,6 @@ def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentit
     all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
     if not all_carbon:
         atoms = set(skeleton.atom_ids)
-        # if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms):
         n_rings = sum(1 for ring in sssr_rings(mol) if set(ring) <= atoms)
         if n_rings >= 2:
             return ScaffoldIdentity("fused_hetero", "fused_hetero", n_rings, "hetero")

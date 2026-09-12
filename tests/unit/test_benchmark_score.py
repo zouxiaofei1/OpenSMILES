@@ -1,19 +1,14 @@
-from benchmarks.benchmark import (
-    score_record,
-    _bucket_report,
-    _change_similarity,
-    _empty_bucket,
-    _fmt_change_sim,
-    _tally,
-    _print_summary,
-    _build_snapshot,
-    _compare_to_previous,
-    _diff_kind,
-    _print_diffs,
-    _handle_report,
-)
+# 合并自 1 个原测试文件（按主题分组，内容与断言未改动）。
+"""
+test_benchmark_score.py: 
+"""
+from __future__ import annotations
 
+from benchmarks.benchmark import _bucket_report, _build_snapshot, _change_similarity, _compare_to_previous, _diff_kind, _empty_bucket, _fmt_change_sim, _handle_report, _print_diffs, _print_summary, _tally, score_record
 
+# ==========================================================================
+# 合并自 test_benchmark_score.py
+# ==========================================================================
 def test_dual_only_en_when_no_zh():
     row = {"english_name": "ethanol", "chinese_name": "", "eval_en": True, "eval_zh": False}
     r = score_record("ethanol", "", row)
@@ -101,7 +96,7 @@ def test_print_summary_format(capsys):
     assert out == "en=65.0% (13/20) zh=60.0% (12/20) dual=60.0% (12/20) fails=8"
 
 
-def _entry(key, dual_ok, pred_en="a", pred_zh="甲", en_ok=True, zh_ok=True, smiles="C"):
+def benchmark_score___entry(key, dual_ok, pred_en="a", pred_zh="甲", en_ok=True, zh_ok=True, smiles="C"):
     return {
         "key": key,
         "id": key.replace("id:", ""),
@@ -148,9 +143,9 @@ def test_compare_to_previous_detects_diffs():
     }
     report = {
         "results": [
-            _entry("id:1", dual_ok=False, pred_en="wrong", pred_zh="错", en_ok=False, zh_ok=False, smiles="CCO"),
-            _entry("id:2", dual_ok=True, pred_en="ethane", pred_zh="乙烷", en_ok=True, zh_ok=True, smiles="CC"),
-            _entry("id:3", dual_ok=False, pred_en="methane", pred_zh="还错", en_ok=True, zh_ok=False, smiles="C"),
+            benchmark_score___entry("id:1", dual_ok=False, pred_en="wrong", pred_zh="错", en_ok=False, zh_ok=False, smiles="CCO"),
+            benchmark_score___entry("id:2", dual_ok=True, pred_en="ethane", pred_zh="乙烷", en_ok=True, zh_ok=True, smiles="CC"),
+            benchmark_score___entry("id:3", dual_ok=False, pred_en="methane", pred_zh="还错", en_ok=True, zh_ok=False, smiles="C"),
         ]
     }
     diffs = _compare_to_previous(report, prev)
@@ -162,7 +157,7 @@ def test_compare_to_previous_detects_diffs():
 
 
 def test_compare_no_prev_empty():
-    report = {"results": [_entry("id:1", True)]}
+    report = {"results": [benchmark_score___entry("id:1", True)]}
     assert _compare_to_previous(report, None) == []
 
 
@@ -175,7 +170,7 @@ def test_print_diffs_format(capsys):
             "pred_en": "ethanol", "pred_zh": "乙醇",
             "smiles": "CCO", "english_name": "ethanol", "chinese_name": "乙醇",
         },
-        "cur": _entry(
+        "cur": benchmark_score___entry(
             "id:1", dual_ok=False, pred_en="x", pred_zh="y",
             en_ok=False, zh_ok=False, smiles="CCO",
         ),
@@ -192,8 +187,8 @@ def test_print_diffs_groups_improve_regress_change(capsys):
     def d(kind, key):
         return {
             "kind": kind, "key": key,
-            "prev": _entry(key, False),
-            "cur": _entry(key, True),
+            "prev": benchmark_score___entry(key, False),
+            "cur": benchmark_score___entry(key, True),
         }
 
     diffs = [
@@ -225,7 +220,7 @@ def test_handle_report_saves_and_diffs(tmp_path, capsys):
         "ok_en": 1, "ok_zh": 1, "ok_dual": 1,
         "fails": [],
         "results": [
-            _entry("id:1", dual_ok=True, pred_en="ethanol", pred_zh="乙醇", smiles="CCO"),
+            benchmark_score___entry("id:1", dual_ok=True, pred_en="ethanol", pred_zh="乙醇", smiles="CCO"),
         ],
     }
     _handle_report(report1, as_json=False, snapshot_path=snap)
@@ -238,10 +233,10 @@ def test_handle_report_saves_and_diffs(tmp_path, capsys):
         "acc_en": 0.0, "acc_zh": 0.0, "acc_dual": 0.0,
         "n_en": 1, "n_zh": 1, "n_dual": 1,
         "ok_en": 0, "ok_zh": 0, "ok_dual": 0,
-        "fails": [_entry("id:1", dual_ok=False, pred_en="x", pred_zh="y",
+        "fails": [benchmark_score___entry("id:1", dual_ok=False, pred_en="x", pred_zh="y",
                          en_ok=False, zh_ok=False, smiles="CCO")],
         "results": [
-            _entry("id:1", dual_ok=False, pred_en="x", pred_zh="y",
+            benchmark_score___entry("id:1", dual_ok=False, pred_en="x", pred_zh="y",
                    en_ok=False, zh_ok=False, smiles="CCO"),
         ],
     }
@@ -251,7 +246,7 @@ def test_handle_report_saves_and_diffs(tmp_path, capsys):
     assert "[REGRESS] id:1" in out2
 
 
-def _change(key, gold_en, gold_zh, prev_en, prev_zh, cur_en, cur_zh,
+def benchmark_score___change(key, gold_en, gold_zh, prev_en, prev_zh, cur_en, cur_zh,
             en_ok=False, zh_ok=False):
     """一条 CHANGE diff: dual 未翻转, 只是预测串变了。"""
     def side(pe, pz):
@@ -271,7 +266,7 @@ def test_change_similarity_none_without_change():
 
 def test_change_similarity_closer_to_gold():
     # 丙-2-基氧基 -> 丙-2-氧基 那类改动: 准确率不动, 但字符串更贴金标。
-    d = _change("id:1", "ethanol", "乙醇", "ethanoll", "乙纯", "ethanol", "乙醇")
+    d = benchmark_score___change("id:1", "ethanol", "乙醇", "ethanoll", "乙纯", "ethanol", "乙醇")
     sim = _change_similarity([d])
     assert sim["n"] == 1
     assert sim["en"]["prev"] < sim["en"]["cur"] == 1.0
@@ -280,7 +275,7 @@ def test_change_similarity_closer_to_gold():
 
 
 def test_change_similarity_signed_delta_when_worse():
-    d = _change("id:1", "ethanol", "乙醇", "ethanol", "乙醇", "ethanoll", "乙纯")
+    d = benchmark_score___change("id:1", "ethanol", "乙醇", "ethanol", "乙醇", "ethanoll", "乙纯")
     sim = _change_similarity([d])
     assert sim["en"]["cur"] < sim["en"]["prev"]
     assert "-" in _fmt_change_sim(sim)
@@ -288,7 +283,7 @@ def test_change_similarity_signed_delta_when_worse():
 
 def test_change_similarity_skips_unevaluated_language():
     # 中文未考核的行不按打分口径外的标准评判: 均值和 n 都不含它们。
-    d = _change("id:1", "ethanol", "乙醇", "ethanoll", "乙纯", "ethanol", "乙醇")
+    d = benchmark_score___change("id:1", "ethanol", "乙醇", "ethanoll", "乙纯", "ethanol", "乙醇")
     d["prev"]["zh_ok"] = None
     d["cur"]["zh_ok"] = None
     sim = _change_similarity([d])
@@ -297,7 +292,7 @@ def test_change_similarity_skips_unevaluated_language():
 
 
 def test_print_diffs_prints_change_sim_after_summary(capsys):
-    _print_diffs([_change("id:1", "ethanol", "乙醇", "zzz", "甲", "ethanol", "乙醇")])
+    _print_diffs([benchmark_score___change("id:1", "ethanol", "乙醇", "zzz", "甲", "ethanol", "乙醇")])
     lines = capsys.readouterr().out.splitlines()
     assert lines[0].startswith("diff_vs_last:")
     assert lines[1] == (
@@ -312,7 +307,7 @@ def test_print_diffs_no_change_sim_line_without_change(capsys):
         "prev": {"dual_ok": True, "en_ok": True, "zh_ok": True,
                  "pred_en": "ethanol", "pred_zh": "乙醇",
                  "smiles": "CCO", "english_name": "ethanol", "chinese_name": "乙醇"},
-        "cur": _entry("id:1", dual_ok=False, pred_en="x", pred_zh="y",
+        "cur": benchmark_score___entry("id:1", dual_ok=False, pred_en="x", pred_zh="y",
                       en_ok=False, zh_ok=False, smiles="CCO"),
     }]
     _print_diffs(diffs)
@@ -324,7 +319,7 @@ def test_print_diffs_no_change_sim_line_without_change(capsys):
 def test_build_snapshot_keys():
     report = {
         "ok_dual": 1, "n_dual": 1,
-        "results": [_entry("id:9", dual_ok=True, smiles="C")],
+        "results": [benchmark_score___entry("id:9", dual_ok=True, smiles="C")],
     }
     snap = _build_snapshot(report)
     assert "id:9" in snap["items"]

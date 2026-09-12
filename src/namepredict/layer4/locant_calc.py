@@ -2,12 +2,18 @@
 from __future__ import annotations
 from namepredict.constants import AMINE_KINDS, OH_KINDS
 from namepredict.layer1.fg_registry import FG_SPECS
-from namepredict.layer4._chain_orient import _edge_min_locant, _pair_locants
+from namepredict.layer4._chain_orient import _edge_min_locant
 from namepredict.layer4.locant_key import locant_str_sort
 from namepredict.layer4.omit_locants import (
     omit_amine as _omit_amine, omit_ketone as _omit_ketone, omit_sh as _omit_sh,
 )
 
+def _pair_locants(chain: list[int], cs) -> tuple[int, ...] | None:
+    """返回一组原子的排序位次元组；存在缺失原子则 None。"""
+    if not cs:
+        return None
+    locs = sorted(chain.index(c) + 1 for c in cs if c in chain)
+    return tuple(locs) if len(locs) == len(cs) else None
 
 def _typed_group_atoms(parent: dict, group: str) -> list[int]:
     """返回 principal_expression_facts 中属于指定基团类型的附着原子。"""

@@ -27,12 +27,6 @@ def _bond_min_locs(chain: list[int], bonds) -> tuple[int, ...] | None:
     return tuple(sorted(int(x) for x in locs))
 
 
-def _pair_locants(chain: list[int], cs) -> tuple[int, ...] | None:
-    """返回一组原子的排序位次元组；存在缺失原子则 None。"""
-    if not cs:
-        return None
-    locs = sorted(chain.index(c) + 1 for c in cs if c in chain)
-    return tuple(locs) if len(locs) == len(cs) else None
 
 
 def _stem_loc_pairs(chain: list[int], substituents: list) -> list[tuple]:
