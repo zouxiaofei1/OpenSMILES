@@ -11,7 +11,7 @@ from __future__ import annotations
 import pytest
 from rdkit import Chem
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.parent_selector import select_parent
 from namepredict.namer import SMILESNNamer

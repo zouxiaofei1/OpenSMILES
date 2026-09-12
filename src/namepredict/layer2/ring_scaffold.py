@@ -314,7 +314,7 @@ def hydrogenated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
     """match（模板原子→分子原子）下被加氢的分子原子集：模板某原子承载不饱和双键（Kekulé）而分子中该位已非芳香者（P-31.2.2：hydro 修饰源于双键的饱和）。用原子芳香性而非键级，桥头位归属不受取代基影响。"""
     if not match or mol is None or scaffold_id not in _Q:
         return frozenset()
-    from namepredict.layer4.hydrogenation import HYDRO_MULT_N
+    from namepredict.constants import HYDRO_MULT_N
 
     ring_atoms = set(match)
     out: set[int] = set()

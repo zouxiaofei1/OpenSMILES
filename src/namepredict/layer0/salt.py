@@ -5,10 +5,7 @@ from __future__ import annotations
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from namepredict.constants import Cl, K, Li, Na, O
-
-_ALKALI_EN = {Li: "lithium", Na: "sodium", K: "potassium"}  # 原子序数 → 英文金属名（IUPAC 官能团类盐）
-_METAL_ZH = {"lithium": "锂", "sodium": "钠", "potassium": "钾"}
+from namepredict.constants import ALKALI_EN, Cl, METAL_ZH, O
 
 
 def _alkali_en(mol: Mol) -> str | None:
@@ -18,7 +15,7 @@ def _alkali_en(mol: Mol) -> str | None:
     atom = mol.GetAtomWithIdx(0)
     if atom.GetFormalCharge() != 1:
         return None
-    return _ALKALI_EN.get(atom.GetAtomicNum())
+    return ALKALI_EN.get(atom.GetAtomicNum())
 
 
 def _is_water(mol: Mol) -> bool:
@@ -67,7 +64,7 @@ def _meta_metal(metals: list[str]) -> dict | None:
     if not metals or len(set(metals)) != 1:
         return None
     en = metals[0]
-    return {"metal": en, "metal_zh": _METAL_ZH[en], "n_metal": len(metals)}
+    return {"metal": en, "metal_zh": METAL_ZH[en], "n_metal": len(metals)}
 
 
 def _meta_hcl(n_hcl: int) -> dict | None:

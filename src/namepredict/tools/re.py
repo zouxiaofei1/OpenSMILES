@@ -1,4 +1,4 @@
-"""命名文本剥除工具：P-14.5 字母数字序键 `alkyl_alpha_key` 及其前缀剥除辅助函数。"""
+"""命名文本辅助函数。"""
 from __future__ import annotations
 
 import re
@@ -66,3 +66,29 @@ def alkyl_alpha_key(stem: str) -> str:
         if s2 == s:
             return s
         s = s2
+
+
+# ── 名称文本规范化（判分/比对口径） ──────────────────────────────
+_WS = re.compile(r"\s+")
+
+
+def normalize_en(name: str) -> str:
+    """规范化英文名：小写、去重空白并统一连字符/逗号/括号。"""
+    s = (name or "").strip().lower()
+    s = s.replace("–", "-").replace("—", "-")
+    s = s.replace("[", "(").replace("]", ")")
+    s = _WS.sub(" ", s)
+    s = s.replace(" ,", ",")
+    return s
+
+
+def normalize_zh(name: str) -> str:
+    """规范化中文名：去首尾空白并统一括号种类（方/圆等价，仅括注外观不同不判分）。"""
+    s = (name or "").strip()
+    s = s.replace("[", "(").replace("]", ")")
+    return s
+
+
+def nospace(name: str) -> str:
+    """删去全部空白字符。"""
+    return "".join((name or "").split())

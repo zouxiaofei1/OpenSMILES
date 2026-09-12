@@ -2,7 +2,8 @@
 from __future__ import annotations
 from namepredict.constants import C
 from namepredict.layer4.indicated_hydrogen import indicated_hydrogen_prefix, saturated_ring_atoms
-from namepredict.layer4.hydrogenation import HYDRO_MULT_N, hydro_prefix
+from namepredict.constants import HYDRO_MULT_N
+from namepredict.layer4.hydrogenation import hydro_prefix
 from namepredict.layer4.numbering_engine import orient_numbering
 from namepredict.layer4.locant_calc import _pack, _with_locants
 from namepredict.layer4.locant_key import locant_key
@@ -53,7 +54,7 @@ def _odd_hydro_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset
 
     饱和环上出现无氢饱和位（偕二甲基季碳等）使其不计入 hydro，环内带 H 的饱和位遂成奇数：hydro 只取偶数个，余下最低位次那个由指示氢承载，故 4,4,7-三甲基-2,3-二氢-1H-萘 取 hydro=2,3 / 指示氢=1，而非整体放弃加氢描述退成「4,4,7-三甲基萘」。已合法（在倍增表内）时不改动。
     """
-    from namepredict.layer4.hydrogenation import HYDRO_MULT_N
+    from namepredict.constants import HYDRO_MULT_N
 
     n = len(hydro or ())
     if not n or n in HYDRO_MULT_N:

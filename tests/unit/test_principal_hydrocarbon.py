@@ -6,7 +6,7 @@
 # 通过 _principal_name 直接走 principal 管线 + L3-L5 装配，避免经典通道假绿。
 from rdkit import Chem
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.principal_parent import rule_driven_parent_candidates

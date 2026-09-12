@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 # anilino：裸苯基、带环取代基、N-取代三种形态均取保留名 anilino/苯胺基

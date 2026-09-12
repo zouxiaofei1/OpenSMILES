@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en
+from namepredict.tools.re import normalize_en
 from namepredict.namer import SMILESNNamer
 
 # 片段级正例：* 锚在 N 的 -NH-C(=O)-R 残基，单 N-酰基且 N 有 H。

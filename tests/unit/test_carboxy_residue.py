@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en
+from namepredict.tools.re import normalize_en
 from namepredict.namer import SMILESNNamer
 
 # 片段级正例：* 锚自由基残基，尾端游离 COOH 不并入主链。

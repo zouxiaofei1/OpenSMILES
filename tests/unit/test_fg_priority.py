@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 # 正例：radical 主基团抢占后，组合羰基 FG 降级为 oxo（+ 组成基团）前缀。

@@ -1,6 +1,6 @@
 # IUPAC: P-66.6.1 / P-31.1 / P-93.4
 # Layer: L5
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 import pytest
 

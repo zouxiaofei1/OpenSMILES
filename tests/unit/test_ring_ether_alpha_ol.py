@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 # ("smiles", "expected_en", "expected_zh") — 醇碳邻另一单键 O 的饱和杂环/醚醇

@@ -4,16 +4,8 @@ from __future__ import annotations
 from rdkit import Chem
 from rdkit.Chem import Mol, RWMol
 
-from namepredict.constants import C, N, O, P, S
+from namepredict.constants import ACCEPTOR_Z, ACID_CENTERS, ACID_KIND_PRIO, DONOR_KIND, O
 
-_DONOR_KIND = ("carboxyl", "phospho")  # 允许作为强酸供体的酸类：羧酸 + 磷酸。磷酸供体在「酰胺 O⁻ 受体」场景下才有产出（见 preprocessor 的二次互变归一，gold 把 N=C([O-]) 写成酰胺、把 P-OH 写成 oxidophosphoryl）；sulfo 实测 0 收益，关闭以免扩大 blast radius。
-_KIND_PRIO = {"carboxyl": 1, "phospho": 2, "sulfo": 3}
-_ACCEPTOR_Z = frozenset({O, N})  # 弱受体允许的元素：O（酚氧/烯醇氧/酰胺氧）、N（去质子化氮）；保守可只留 {O}。
-_ACID_CENTERS = {          # 中心元素 → (最少双键氧数, 酸类名)；键序即 _KIND_PRIO 的酸强度序
-    C: (1, "carboxyl"),    # C(=O)OH
-    P: (1, "phospho"),     # P(=O)OH
-    S: (1, "sulfo"),       # S(=O)nOH
-}
 
 def _oxo_neighbor(atom, heavy: int, min_oxo: int = 1):
     """返回 atom 邻接的成酸中心原子（非芳香）若其带 ≥min_oxo 个双键氧（C(=O)/P(=O)/S(=O)n）；否则 None。"""
@@ -31,8 +23,8 @@ def _oxo_neighbor(atom, heavy: int, min_oxo: int = 1):
     return None
 
 def _acid_kind(atom) -> str | None:
-    """按 _ACID_CENTERS 表返回 O 所连成酸中心对应的酸类名，不检查 O 自身 H/电荷。"""
-    for z, (min_oxo, kind) in _ACID_CENTERS.items():
+    """按 ACID_CENTERS 表返回 O 所连成酸中心对应的酸类名，不检查 O 自身 H/电荷。"""
+    for z, (min_oxo, kind) in ACID_CENTERS.items():
         if _oxo_neighbor(atom, z, min_oxo):
             return kind
     return None
@@ -45,7 +37,7 @@ def _acid_kind_of_oh(atom) -> str | None:
 
 def _is_weak_anion(atom) -> bool:
     """判定位点是否为去质子化的弱酸位（可接受质子）。"""
-    if atom.GetFormalCharge() != -1 or atom.GetAtomicNum() not in _ACCEPTOR_Z:
+    if atom.GetFormalCharge() != -1 or atom.GetAtomicNum() not in ACCEPTOR_Z:
         return False
     if any(n.GetFormalCharge() == 1 for n in atom.GetNeighbors()):  # 邻接 +1 电荷 → 硝基/N-氧化物等内平衡写法，不当作弱酸位
         return False
@@ -91,14 +83,14 @@ def normalize_acid_charge(mol: Mol) -> Mol:
         acceptors: list[int] = []
         for i, a in enumerate(out.GetAtoms()):
             kind = _acid_kind_of_oh(a)
-            if kind in _DONOR_KIND:
+            if kind in DONOR_KIND:
                 donors.append(i)
             elif _is_weak_anion(a):  # 弱受体不会同时是强酸供体
                 acceptors.append(i)
         if not donors or not acceptors:
             break
         ranks = list(Chem.CanonicalRankAtoms(out))
-        donors.sort(key=lambda i: (-_KIND_PRIO.get(_acid_kind_of_oh(out.GetAtomWithIdx(i)), 0), ranks[i]))  # 供体：酸更强(更负 prio 取负序)优先，再取 canonical rank 最小保证确定性
+        donors.sort(key=lambda i: (-ACID_KIND_PRIO.get(_acid_kind_of_oh(out.GetAtomWithIdx(i)), 0), ranks[i]))  # 供体：酸更强(更负 prio 取负序)优先，再取 canonical rank 最小保证确定性
         d_idx = donors[0]
         dfrag = frag_of[d_idx]
         same_frag = [i for i in acceptors if frag_of[i] == dfrag]

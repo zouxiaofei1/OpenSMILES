@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from namepredict.constants import zh_bridge_root
+from namepredict.constants import MONONUCLEAR_YL, zh_bridge_root
 
 _RETAINED: dict[str, tuple[str, str]] = {  # free_en → (yl_en, yl_zh)（当位次为常规/省略时）
     "benzene": ("phenyl", "苯基"),
@@ -109,12 +109,7 @@ def _amino_zh(zh: str) -> str | None:
         return f"{m.group(1)}-{m.group(2)}-基氨基"
     return None
 
-_MONONUCLEAR = (("oxidane", "氧化烷", "oxy", "氧基"),  # 单核母体氢化物（P-15.4.1 表 2.1）→ 去氢取代基名（表 1.5 'a' 前缀体系）。组装名 "ethyl-oxidane" → "ethyloxy" / "乙基-氧化烷" → "乙氧基"。
-                ("azane", "氮烷", "amino", "氨基"),
-                ("sulfane", "硫烷", "sulfanyl", "硫基"),
-                ("sulfinyl", "亚磺酰", "sulfinyl", "基亚磺酰基"),  # S=O 桥：ethyl-sulfinyl → ethylsulfinyl
-                ("sulfonyl", "磺酰", "sulfonyl", "磺酰基"),  # S(=O)(=O) 桥：ethyl-sulfonyl → ethylsulfonyl
-                ("imine", "亚胺", "imino", "亚氨基"))  # N 自由价双键：methyl-imine → methylimino（=N-CH3）
+_MONONUCLEAR_NAMES = ("oxidane", "azane", "sulfane", "sulfinyl", "sulfonyl", "imine")  # 本模块转换的单核母体氢化物（P-15.4.1 表 2.1 → 表 1.5 'a' 前缀体系，数据见 constants.MONONUCLEAR_HYDRIDES）；P 酰基（phosphoryl/phosphanyl）走 L5 的 P 专用管线，不经此表。
 
 
 def _anilino_en(base: str, yl: str) -> str:
@@ -124,15 +119,16 @@ def _anilino_en(base: str, yl: str) -> str:
 
 def _mononuclear_en(en: str) -> str | None:
     """单核氢化物 free 名 → 去氢取代基名：ethyl-oxidane → ethyloxy、phenyl-azane → anilino。"""
-    for en_suf, _, yl, _ in _MONONUCLEAR:
+    for en_suf in _MONONUCLEAR_NAMES:
         if en.endswith("-" + en_suf):
-            return _anilino_en(en[: -len(en_suf) - 1], yl)
+            return _anilino_en(en[: -len(en_suf) - 1], MONONUCLEAR_YL[en_suf][1])
     return None
 
 
 def _mononuclear_zh(zh: str) -> str | None:
     """中文组装名去氢：乙基-氧化烷 → 乙氧基、苯基-氮烷 → 苯胺基、4-氯苯基-氮烷 → 4-氯苯胺基。"""
-    for _, zh_suf, _, zy in _MONONUCLEAR:
+    for en_suf in _MONONUCLEAR_NAMES:
+        zh_suf, _, zy = MONONUCLEAR_YL[en_suf]
         if zh.endswith("-" + zh_suf):
             base = zh[: -len(zh_suf) - 1]
             if zy == "氨基" and base.endswith("苯基"):

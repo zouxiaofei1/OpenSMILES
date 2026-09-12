@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en
+from namepredict.tools.re import normalize_en
 from namepredict.namer import SMILESNNamer
 
 # 自由基/前缀残基正例：端基 C≡N 不并入 -yl 词干。

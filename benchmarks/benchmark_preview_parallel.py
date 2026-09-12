@@ -78,7 +78,7 @@ def _score(pe: str, pz: str, row: dict[str, Any]) -> dict[str, Any]:
     显式 eval_en/eval_zh 标记优先; eval_zh=False 的行不考核中文(ok 只取决于
     英文)。无 eval 字段的源 (chebi20_test_1k.json 等) 回退旧行为: gold 非空即考核。
     """
-    from namepredict.constants import nospace, normalize_en, normalize_zh
+    from namepredict.tools.re import nospace, normalize_en, normalize_zh
 
     ge = str(row.get("english_name") or "")
     gz = str(row.get("chinese_name") or "")

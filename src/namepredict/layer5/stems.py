@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from namepredict.constants import MULT_EN, MULT_ZH, en_num_term
+from namepredict.constants import HS_NUMBER, MULT_EN, MULT_ZH, ZH_DIGITS, en_num_term
 
 # --- C1–C10 保留 / 系统基干（字节兼容） ---
 _ALKANE_EN_BASE = {
@@ -13,8 +13,7 @@ _ALKANE_ZH_BASE = {
     1: "甲烷", 2: "乙烷", 3: "丙烷", 4: "丁烷", 5: "戊烷",
     6: "己烷", 7: "庚烷", 8: "辛烷", 9: "壬烷", 10: "癸烷",
 }
-_HS_NUMBER = "甲乙丙丁戊己庚辛壬癸"
-_DIGIT_ZH = "零一二三四五六七八九"
+_DIGIT_ZH = "零" + ZH_DIGITS  # 带零的索引式数字串（_DIGIT_ZH[n] = n 的汉字），与 constants.ZH_DIGITS 同源
 _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈", "胺", "酮", "烯", "炔")
 
 
@@ -23,7 +22,7 @@ def zh_num(n: int) -> str | None:
     if n < 1:
         return None
     if n <= 10:
-        return _HS_NUMBER[n-1]
+        return HS_NUMBER[n-1]
     tens, ones = divmod(n, 10)
     head = "十" if tens == 1 else f"{_DIGIT_ZH[tens]}十"
     return head if ones == 0 else f"{head}{_DIGIT_ZH[ones]}"

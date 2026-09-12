@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en
+from namepredict.tools.re import normalize_en
 from namepredict.namer import SMILESNNamer
 
 # 干净全串（双语由修后输出核对，en 以 IUPAC/gold 为准）

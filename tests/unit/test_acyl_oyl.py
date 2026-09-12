@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 # 片段级正例：锚定酰基残基的自由名（碳锚点，α 为非环碳）。

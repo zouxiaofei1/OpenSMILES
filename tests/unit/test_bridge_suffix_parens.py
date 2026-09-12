@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.layer5.assembler_prefixes import (
     _front_needs_enclosure,
     _split_bridge_suffix,

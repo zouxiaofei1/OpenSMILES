@@ -4,6 +4,10 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from enum import Enum
 
+from namepredict.constants import (
+    MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES, NITROGEN_STEM_BY_FREE_DOUBLE,
+    PHOSPHORUS_STEM_BY_OXO, SULFUR_STEM_BY_OXO,
+)
 from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
@@ -350,30 +354,6 @@ def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
         return {**fields, "o_idx": match["o_idx"], "alkoxy_n": 0}
     return {**fields, "o_idx": match["o_idx"]}
 
-_MONONUCLEAR_STEM: dict[int, tuple[str, str, str]] = {  # 表 2.1 单核母体氢化物（P-15.4.1）：杂原子锚点自由基的母体 free 名与元素。去氢即标准取代基名（oxidane→hydroxy/oxy、azane→amino、sulfane→sulfanyl）。
-    7: ("N", "azane", "氮烷"),
-    8: ("O", "oxidane", "氧化烷"),
-    15: ("P", "phosphoryl", "磷酰"),
-    16: ("S", "sulfane", "硫烷"),
-}
-
-_SULFUR_STEM_BY_OXO: dict[int, tuple[str, str]] = {  # S 锚点的氧化态词干（P-63.2.2 亚磺酰/磺酰）：=O 数必须落进母体名，否则 S(=O)/S(=O)(=O) 与硫醚同形，氧被整段丢弃、直接写出另一个分子（净多 2H）。去氢前缀即 sulfinyl/sulfonyl（与 anchored_table 的 methylsulfinyl/methylsulfonyl 同词形）。
-    0: ("sulfane", "硫烷"),
-    1: ("sulfinyl", "亚磺酰"),
-    2: ("sulfonyl", "磺酰"),
-}
-
-_PHOSPHORUS_STEM_BY_OXO: dict[int, tuple[str, str]] = {  # P 锚点的氧化态词干（P-67.1.4.1.1.2 磷酰基 'phosphoryl' –P(O)<；P-67.1.4.1.1.6 亚磷酸 'phosphanyl'）：=O 数必须落进母体名，否则 P(=O) 与膦同形（氧被整段丢弃）。
-    0: ("phosphanyl", "磷烷基"),
-    1: ("phosphoryl", "磷酰"),
-}
-
-_NITROGEN_STEM_BY_FREE_DOUBLE: dict[bool, tuple[str, str]] = {  # N 锚点的自由价键级词干（P-66.1.1 亚胺）：双键即 imine（*N=C→methylideneamino），单键即 azane（*NC→methylamino）。漏掉双键会把亚胺写成胺（净多 2H）。
-    False: ("azane", "氮烷"),
-    True: ("imine", "亚胺"),
-}
-
-
 def _anchor_free_double(mol: Mol, idx: int) -> bool:
     """锚点原子与 `*` 虚拟原子之间的键是否为双键。"""
     from rdkit.Chem import BondType
@@ -406,20 +386,19 @@ def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
     anchors = sorted({i for o in occurrences for i in o.parent_anchors})
     if len(anchors) != 1:
         return None
-    element, stem_en, stem_zh = _MONONUCLEAR_STEM.get(
-        mol.GetAtomWithIdx(anchors[0]).GetAtomicNum()) or (None, None, None)
-    if element is None:
+    stem_en = MONONUCLEAR_BY_ELEMENT.get(mol.GetAtomWithIdx(anchors[0]).GetAtomicNum())
+    if stem_en is None:
         return None
+    element = MONONUCLEAR_HYDRIDES[stem_en][0]
     if element == "S":  # 硫的氧化态并入词干（sulfane/sulfinyl/sulfonyl）
-        stem_en, stem_zh = _SULFUR_STEM_BY_OXO.get(
-            _anchor_oxo_count(mol, anchors[0]), (stem_en, stem_zh))
+        stem_en = SULFUR_STEM_BY_OXO.get(_anchor_oxo_count(mol, anchors[0]), stem_en)
     elif element == "N":  # 自由价键级并入词干（azane/imine）
-        stem_en, stem_zh = _NITROGEN_STEM_BY_FREE_DOUBLE[_anchor_free_double(mol, anchors[0])]
+        stem_en = NITROGEN_STEM_BY_FREE_DOUBLE[_anchor_free_double(mol, anchors[0])]
     elif element == "P":  # 磷的氧化态并入词干（P-67.1.4.1.1.2 磷酰基 / P-67.1.4.1.1.6 磷烷基）
-        pair = _PHOSPHORUS_STEM_BY_OXO.get(_anchor_oxo_count(mol, anchors[0]))
-        if pair is None:  # 非 0/1 个 =O（如二氧代磷烷）无对应酰基词干，明确失败
+        stem_en = PHOSPHORUS_STEM_BY_OXO.get(_anchor_oxo_count(mol, anchors[0]))
+        if stem_en is None:  # 非 0/1 个 =O（如二氧代磷烷）无对应酰基词干，明确失败
             return None
-        stem_en, stem_zh = pair
+    stem_zh = MONONUCLEAR_HYDRIDES[stem_en][1]
     new = replace(skeleton, atom_ids=(anchors[0],))
     return new, {"radical_anchor_element": element,
                  "stem_en": stem_en, "stem_zh": stem_zh}

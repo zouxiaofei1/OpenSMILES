@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en
+from namepredict.tools.re import normalize_en
 from namepredict.namer import SMILESNNamer
 
 # 片段级正例：* 锚在酰基头羰基碳的环/芳酰基，应出环酸衍生酰基名。

@@ -6,7 +6,7 @@
 # 经典 builder 路径 _open_chain_expression 已删除，骨架表达为唯一来源。
 from __future__ import annotations
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.kind_registry import pack_parent_stem

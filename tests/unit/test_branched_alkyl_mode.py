@@ -4,7 +4,7 @@ from __future__ import annotations
 import pytest
 
 from namepredict.namer import SMILESNNamer
-from namepredict.constants import normalize_en
+from namepredict.tools.re import normalize_en
 
 
 CASES = [

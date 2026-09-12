@@ -12,7 +12,7 @@ import pytest
 
 from rdkit import Chem
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.layer1.analyzer import analyze
 from namepredict.namer import SMILESNNamer
 

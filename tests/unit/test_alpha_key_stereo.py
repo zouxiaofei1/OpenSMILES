@@ -6,7 +6,7 @@ Affiliated: P-14.5 字母数字序、L5 取代基前缀排序、L4 链方向排�
 """
 from __future__ import annotations
 
-from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+from namepredict.tools.re import alkyl_alpha_key
 
 # 回归：带立体前缀的糖基词干须剥除立体组后按真实词干字母排序，
 # 落在 hydroxy / hydroxymethyl 之后（曾因 '2S,…' 数字泄漏被排到最前）。

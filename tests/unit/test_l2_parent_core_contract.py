@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 _ROOT = Path(__file__).resolve().parents[2]

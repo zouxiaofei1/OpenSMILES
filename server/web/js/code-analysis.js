@@ -1,7 +1,7 @@
 /* Code Analysis page: per-layer code-line stats (donut + expandable file list). */
 import { $, state, escapeHtml, api, API } from "./core.js";
 
-var CA_COLORS = ["#22c55e", "#38bdf8", "#f59e0b", "#a78bfa", "#f472b6", "#2dd4bf", "#f97316"];  // [6]=tools
+var CA_COLORS = ["#22c55e", "#38bdf8", "#f59e0b", "#a78bfa", "#f472b6", "#2dd4bf", "#f97316", "#94a3b8"];  // [6]=tools, [7]=核心包
 
 // 深浅变体：amt>0 向白混合（变浅），amt<0 向黑混合（变深）
 function caShade(hex, amt) {

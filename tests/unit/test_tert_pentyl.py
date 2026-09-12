@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en, normalize_zh
-from namepredict.layer3.substituent_extractor import alkyl_alpha_key
+from namepredict.tools.re import normalize_en, normalize_zh
+from namepredict.tools.re import alkyl_alpha_key
 from namepredict.namer import SMILESNNamer
 
 CASES = [

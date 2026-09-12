@@ -2,33 +2,23 @@
 from __future__ import annotations
 
 from namepredict.cache.common_names import CommonNameCache
-from namepredict.constants import N_PREFIX_KINDS
+from namepredict.constants import (
+    CLAIM_KIND, ESTER_O_SIDE_KINDS, NAME_KIND, N_PREFIX_KINDS, SIMPLE_ALKOXY_ALKYL,
+)
 
 
 def _claim_kind(slot_value: str) -> str:
     """将槽位值映射为取代基 kind。"""
-    return {
-        "ether_o": "alkoxy",
-        "amide_n": "n_block",
-        "amine_n": "n_block",
-        "ring_c": "alkyl",
-        "chain_c": "alkyl",
-    }.get(slot_value, "side")
-
-_NAME_KIND = {  # 锚定表/保留叶子的名称暗含非烷基 kind，使 L5 以 `kind` 键（iso 稠合、聚茴香醚、卤代苯）触发。
-    "fluoro": "halo", "chloro": "halo", "bromo": "halo", "iodo": "halo",
-    "nitro": "nitro",
-    "isocyanato": "isocyanato", "isothiocyanato": "isothiocyanato",
-}
+    return CLAIM_KIND.get(slot_value, "side")
 
 
 def _kind_for_named(named) -> str:
     """由命名结果确定取代基 kind（优先特殊保留名）。"""
-    if named.en in ("methoxy", "ethoxy", "propoxy", "butoxy"):
+    if named.en in SIMPLE_ALKOXY_ALKYL:
         return "alkoxy"
     if named.claim.slot.value == "amine_n":
         return {"phenyl": "n_phenyl", "benzyl": "n_benzyl"}.get(named.en, "n_alkyl")  # 胺 N 端取代基：苯基/苄基用对应 kind，其余烷基 → n_alkyl（N- 前缀）。
-    return _NAME_KIND.get(named.en, _claim_kind(named.claim.slot.value))
+    return NAME_KIND.get(named.en, _claim_kind(named.claim.slot.value))
 
 
 def _is_ring_attach(mol, idx: int) -> bool:
@@ -70,9 +60,6 @@ def _should_skip(claim, covered: set[int]) -> bool:
     """判断 claim 是否应跳过（仅原子已被覆盖时）。"""
     return bool(set(claim.atoms) & covered)
 
-_ESTER_O_SIDE_KINDS = frozenset({"ester", "phosphate"})  # O-侧酸侧（烷氧基臂）：连在 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 酯/磷酸整名消费。ester：酯酸侧烷氧臂；phosphate：磷酸酯 O–R 臂（kind=phosphate 母体，见 layer1/phosphate.py）。
-
-
 def _append_named(mol, claim, namer, covered: set[int], out: list[dict], *, o_side: bool = False, depth: int = 0) -> None:
     """为单个 claim 命名并追加到输出（可标记 O 侧）；depth 自根分子逐层透传，供递归取代基命名设定上限。"""
     if _should_skip(claim, covered):
@@ -103,5 +90,5 @@ def extract_claimed_sides(info: dict, parent: dict, existing: list[dict], *, nam
     owned = parent.get("owned_atoms")
     if owned is None:
         return []
-    o_side = parent.get("kind") in _ESTER_O_SIDE_KINDS or parent.get("o_idx") is not None  # benzoate（苯 base + ester FG）靠 o_idx 字段识别 O-side；链状 ester 走 kind 表。
+    o_side = parent.get("kind") in ESTER_O_SIDE_KINDS or parent.get("o_idx") is not None  # benzoate（苯 base + ester FG）靠 o_idx 字段识别 O-side；链状 ester 走 kind 表。
     return _named_new_sides(info["mol"], owned, _covered_atoms(existing), name_mode=name_mode, cache=cache, o_side=o_side, root_ctx=info.get("root_ctx"), depth=depth)

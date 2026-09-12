@@ -1,14 +1,12 @@
 """L4 定向编号引擎：按 P-14.4 规则筛出链/环原子顺序候选。"""
 from __future__ import annotations
 
+from namepredict.constants import (
+    FIXED_START_KEYS, RS_HI, RS_LO, TRADITIONAL_NUMBERING_IDS,
+)
 from namepredict.tools import memo
 from namepredict.layer1.ring_systems import sssr_rings
 from namepredict.layer4.locant_key import locant_key
-
-_TRADITIONAL_NUMBERING_IDS = frozenset({  # P-25.3.3：这些保留骨架按传统编号，不走 P-25.3.3.1 的优选取向自动编号。xanthene 及其硫属类似物（xanthene/thioxanthene）与 cyclopenta[a]phenanthrene（甾体 1-17）已按_TEMPLATES 的 standard 字段登记传统编号，故一并列入。
-    "anthracene", "phenanthrene", "acridine", "carbazole", "purine",
-    "xanthene", "thioxanthene", "cyclopenta[a]phenanthrene",
-})
 
 
 # ── 候选生成 ──────────────────────────────────────────────────
@@ -83,9 +81,6 @@ def _narrow(cands: list[dict], key_fn) -> list[dict]:
 
 # ── P-14.4(j)：CIP 立体描述符平局破（低位次给 R/M/r，优先于 S/P/s）─────
 
-_RS_HI = frozenset({"R", "M", "r"})   # 编号优先级高的 CIP 描述符（P-91.2）
-_RS_LO = frozenset({"S", "P", "s"})   # 与之成对、取较低位次的次位描述符
-
 
 def assign_cip(mol) -> None:
     """强制重算分子 CIP（隐式 H 手性碳先补显式 H）；编号期与 L5 stereo 打印共用此唯一实现。
@@ -124,7 +119,7 @@ def _chain_rs_codes(mol, chain: list[int]) -> dict[int, str]:
     codes: dict[int, str] = {}
     for idx in chain:
         a = mol.GetAtomWithIdx(int(idx))
-        if a.HasProp("_CIPCode") and a.GetProp("_CIPCode") in _RS_HI | _RS_LO:
+        if a.HasProp("_CIPCode") and a.GetProp("_CIPCode") in RS_HI | RS_LO:
             codes[int(idx)] = a.GetProp("_CIPCode")
     return codes
 
@@ -136,9 +131,9 @@ def _rs_locant_key(codes: dict[int, str], chain: list[int], labels: list[str] | 
     for i, idx in enumerate(chain):
         code = codes.get(int(idx))
         loc = locant_key(use[i] if use else i + 1)
-        if code in _RS_HI:
+        if code in RS_HI:
             hi.append(loc)
-        elif code in _RS_LO:
+        elif code in RS_LO:
             lo.append(loc)
     return tuple(hi), tuple(lo)
 
@@ -181,14 +176,9 @@ def _is_ring(parent: dict) -> bool:
     """按 scaffold_id 判断 parent 是否为环系。"""
     return bool(parent.get("scaffold_id"))
 
-_FIXED_START_KEYS = (  # P-14.4(a)：parent dict 中标定必须为 locant 1 的原子的字段（环外羰基连接、自由基中心）。杂环起点已改由 _narrow_hetero_ring 按元素序决定，不在此列。
-    "ring_attach_idx", "n_idx", "nh_idx", "hetero_idx", "radical_c_idx", "acyl_c_idx",
-)
-
-
 def _fixed_start(parent: dict) -> int | None:
     """取碳环/链固定 locant 1 起点原子（P-14.4(a) FG 锚/自由基字段）；杂环不落入此函数。"""
-    for key in _FIXED_START_KEYS:
+    for key in FIXED_START_KEYS:
         v = parent.get(key)
         if v is not None:
             return v
@@ -282,7 +272,7 @@ def _fused_numbering(parent: dict, chain: list[int],
                      substituents: list | None = None) -> list[int] | None:
     """P-25.3.3 稠环编号（护栏：P-25.3.3 传统编号例外骨架保持固定编号，其余芳香或未注册稠环走优选取向+外周编号）。"""
     sid = parent.get("scaffold_id")
-    if sid in _TRADITIONAL_NUMBERING_IDS:
+    if sid in TRADITIONAL_NUMBERING_IDS:
         return None
     mol = parent.get("mol")
     from namepredict.layer2.ring_scaffold import get_spec

@@ -44,7 +44,7 @@ from benchmarks.benchmark import (  # noqa: E402
     _tally,
     score_record,
 )
-from namepredict.constants import normalize_en, normalize_zh  # noqa: E402
+from namepredict.tools.re import normalize_en, normalize_zh  # noqa: E402
 
 # ── loose（约定不敏感）归一 ─────────────────────────────────────
 # 目的：gold 是按现役 src 引擎的书写约定 curated 的（位次必带、取代基与母体是否加连字符、

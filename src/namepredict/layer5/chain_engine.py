@@ -5,7 +5,7 @@ from namepredict.layer5.stems import (
     ALKANE_EN, ALKANE_ZH, _en_stem, alkane_zh, zh_stem,
 )
 from namepredict.layer5.stereo import _ez_prefix, ez_for_parent
-from namepredict.constants import MULT_EN, MULT_ZH, HALIDE_EN, HALO_ZH
+from namepredict.constants import CHAIN_RETAINED, MULT_EN, MULT_ZH, HALIDE_EN, HALO_ZH
 
 def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:
     """从双语映射表取 n 的 (en, zh) 对，缺失返回 None。"""
@@ -31,19 +31,9 @@ def _pair_loc_str(locs: list[int]) -> str:
     """位次列表拼接为逗号分隔字符串。"""
     return ",".join(str(x) for x in locs)
 
-_RETAINED = {  # C1/C2 开链英文 IUPAC 保留名（formic/acetic…）；C3+ 系统名由词干生成（_chain_plain 回落），中文无保留名。
-    "acid": {1: ("formic acid", "甲酸"), 2: ("acetic acid", "乙酸")},
-    "acyl": {1: ("formyl", "甲酰基"), 2: ("acetyl", "乙酰基")},
-    "aldehyde": {1: ("formaldehyde", "甲醛"), 2: ("acetaldehyde", "乙醛")},
-    "amide": {1: ("formamide", "甲酰胺"), 2: ("acetamide", "乙酰胺")},
-    "nitrile": {1: ("formonitrile", "甲腈"), 2: ("acetonitrile", "乙腈")},
-    "ester": {1: ("formate", "甲酸"), 2: ("acetate", "乙酸")},
-}
-
-
 def _retained_plain(kind: str):
     """C1/C2 保留名 plain_fn：命中返回 (en,zh)，否则 None 回落词干生成。"""
-    table = _RETAINED[kind]
+    table = CHAIN_RETAINED[kind]
     return lambda n: table.get(n)
 
 

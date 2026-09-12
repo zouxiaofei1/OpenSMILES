@@ -23,11 +23,14 @@ router = APIRouter(prefix="/api/v1", tags=["code-analysis"])
 
 ROOT = Path(__file__).resolve().parents[2]
 LAYER_DIR = ROOT / "src" / "namepredict"
-# (gid, dirname, label) — tools is the shared layer-agnostic package.
+# (gid, dirname, label, recursive) — tools is the shared layer-agnostic package;
+# the empty dirname is the package root itself (__init__/constants/namer/types),
+# counted non-recursively so it does not swallow the layer dirs below it.
 GROUPS = [
-    (0, "layer0", "Layer 0"), (1, "layer1", "Layer 1"), (2, "layer2", "Layer 2"),
-    (3, "layer3", "Layer 3"), (4, "layer4", "Layer 4"), (5, "layer5", "Layer 5"),
-    (6, "tools", "Tools"),
+    (0, "layer0", "Layer 0", True), (1, "layer1", "Layer 1", True),
+    (2, "layer2", "Layer 2", True), (3, "layer3", "Layer 3", True),
+    (4, "layer4", "Layer 4", True), (5, "layer5", "Layer 5", True),
+    (6, "tools", "Tools", True), (7, "", "Core", False),
 ]
 
 
@@ -65,12 +68,14 @@ def _count_lines(text: str) -> tuple[int, int, int]:
     return code, comment, blank
 
 
-def _stat_group(gid: int, dirname: str, label: str) -> dict[str, Any]:
+def _stat_group(gid: int, dirname: str, label: str, recursive: bool) -> dict[str, Any]:
+    """统计单个分组（层/工具/包根）的 code/comment/blank 行数与文件明细。"""
     d = LAYER_DIR / dirname
+    glob = d.rglob if recursive else d.glob  # 非递归用于包根，避免吞掉下层目录
     files: list[dict[str, Any]] = []
     counts = {"file_count": 0, "code": 0, "comment": 0, "blank": 0}
     if d.is_dir():
-        for py in sorted(d.rglob("*.py")):  # 递归统计子目录（layer2、tools/leaves 等）
+        for py in sorted(glob("*.py")):  # 递归统计子目录（layer2、tools/leaves 等）
             if "__pycache__" in py.parts:
                 continue
             try:
@@ -87,7 +92,7 @@ def _stat_group(gid: int, dirname: str, label: str) -> dict[str, Any]:
     # 文件按代码行数降序（供前端展开明细）
     files.sort(key=lambda f: f["code"], reverse=True)
     return {
-        "layer": gid, "label": label, "path": f"src/namepredict/{dirname}",
+        "layer": gid, "label": label, "path": f"src/namepredict/{dirname}".rstrip("/"),
         "files": files, **counts,
     }
 
@@ -114,18 +119,20 @@ def _code_analysis_history(commit: str) -> dict[str, Any]:
 
     names = history_store.list_tree(commit, "src/namepredict")
     layers: list[dict[str, Any]] = []
-    for gid, dirname, label in GROUPS:
-        prefix = f"src/namepredict/{dirname}/"
+    for gid, dirname, label, recursive in GROUPS:
+        prefix = f"src/namepredict/{dirname}/" if dirname else "src/namepredict/"
         counts = {"file_count": 0, "code": 0, "comment": 0, "blank": 0}
         files: list[dict[str, Any]] = []
         for p in names:
             if not p.startswith(prefix):
                 continue
+            rel = p[len(prefix):]
+            if not recursive and "/" in rel:
+                continue  # 包根组只收直属文件
             text = history_store.show_file(commit, p)
             if text is None:
                 continue
             code, comment, blank = _count_lines(text)
-            rel = p[len(prefix):]
             files.append({"name": rel, "code": code, "comment": comment, "blank": blank})
             counts["file_count"] += 1
             counts["code"] += code
@@ -134,7 +141,7 @@ def _code_analysis_history(commit: str) -> dict[str, Any]:
         counts["lines"] = counts["code"] + counts["comment"] + counts["blank"]
         files.sort(key=lambda f: f["code"], reverse=True)
         layers.append({
-            "layer": gid, "label": label, "path": f"src/namepredict/{dirname}",
+            "layer": gid, "label": label, "path": f"src/namepredict/{dirname}".rstrip("/"),
             "files": files, **counts,
         })
 

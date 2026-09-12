@@ -1,5 +1,5 @@
 from namepredict.namer import SMILESNNamer
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 
 
 def test_methane():

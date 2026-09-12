@@ -3,7 +3,7 @@
 #
 # 验证 principal 规则管线对「苯环上直接连酯基」产出 benzoate 保留母体，
 # 不依赖经典生产者通道（_try_arene_other_fg / _benzoate_parent）。
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.kind_registry import pack_parent_stem

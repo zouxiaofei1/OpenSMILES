@@ -5,7 +5,9 @@ import re
 
 from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.tools.re import alkyl_alpha_key
-from namepredict.constants import MULT_EN, MULT_ZH, N_PREFIX_KINDS
+from namepredict.constants import (
+    BIS_EN, BIS_ZH, BRIDGE_SUFFIX_EN, BRIDGE_SUFFIX_ZH, MULT_EN, MULT_ZH, N_PREFIX_KINDS,
+)
 
 def _group_by_stem(substituents: list) -> dict[str, list]:
     """按 en 词干对取代基分组，返回词干到列表的映射。"""
@@ -84,7 +86,7 @@ def _wrap_stem(stem: str, need: bool) -> str:
 
 _STEREO_LEAD_RE = re.compile(r"\(\d+[RSEZ](?:,\d+[RSEZ])*\)-")  # 取代基名以立体描述符开头：(1Z)-、(2R,4R)-、(9Z,12Z)-。
 
-_BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl", "amino")  # O/S/N 桥后缀（gold 平铺式 -yl]oxy/-yl]amino：括号闭在 -yl 后、后缀放括号外，见 P-63.2.2.1）。
+
 
 _CHAIN_STEM = (r"(?:meth|eth|prop|but|pent|hex|hept|oct|non|dec|undec|dodec|tridec|tetradec|"
                r"pentadec|hexadec|heptadec|octadec|nonadec|eicos)")
@@ -117,7 +119,7 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
 
 def _split_bridge_suffix(stem: str) -> tuple[str, str] | None:
     """拆 -yl]o xy/-yl]sulfanyl/-yl]amino 平铺式：(前端, 桥后缀)；括号闭在前端 -yl 后、桥后缀留在括号外。前端为简单保留基（methyl/benzyl）、直链 -yl（propan-2-yl）或酰基时整括不拆（P-63.2.2.1.1）。"""
-    for suf in _BRIDGE_SUFFIX_EN:
+    for suf in BRIDGE_SUFFIX_EN:
         if not stem.endswith(suf):
             continue
         base = stem[: -len(suf)]
@@ -160,19 +162,19 @@ def _is_compound_mult(stem: str, subs: list) -> bool:
 
 def _complex_mult_en(stem: str, subs: list, n: int) -> str:
     """英文复杂数量前缀：复合组分用 bis/tris/tetrakis。"""
-    return {2: "bis", 3: "tris", 4: "tetrakis"}.get(n, "") if _is_compound_mult(stem, subs) else ""
+    return BIS_EN.get(n, "") if _is_compound_mult(stem, subs) else ""
 
 
 def _complex_mult_zh(stem: str, subs: list, n: int) -> str:
     """中文复杂数量前缀：复合组分用 双/三/四。"""
-    return {2: "双", 3: "三", 4: "四"}.get(n, "") if (("羧" in stem) or any(s.get("paren") for s in subs)) else ""
+    return BIS_ZH.get(n, "") if (("羧" in stem) or any(s.get("paren") for s in subs)) else ""
 
 
 def _split_bridge_suffix_zh(zh_stem: str, en_stem: str) -> tuple[str, str] | None:
     """中文侧 O/S/N 桥平铺式拆分（…基]氧基/硫基/氨基）：判据与英文侧同步，仅当英文 stem 拆时才拆，保证中英围栏同形。"""
     if _split_bridge_suffix(en_stem) is None:
         return None
-    for suf in ("氧基", "硫基", "氨基"):
+    for suf in BRIDGE_SUFFIX_ZH:
         if zh_stem.endswith(suf):
             base = zh_stem[: -len(suf)]
             if base.endswith("基"):

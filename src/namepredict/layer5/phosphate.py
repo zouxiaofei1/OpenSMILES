@@ -1,7 +1,7 @@
 """L5 整分子磷酸（kind=phosphate）命名 worker：由 numbered 母体计数 + o_side 臂组装双语名。"""
 from __future__ import annotations
 
-from namepredict.constants import MULT_EN, MULT_ZH
+from namepredict.constants import MULT_EN, MULT_ZH, ZH_DIGITS
 from namepredict.layer5.stems import _metal_en_prefix, _metal_zh_suffix
 
 
@@ -60,7 +60,7 @@ def _arm_ester_zh(zh: str) -> str:
     """磷酸酯/酯盐臂中文词：多位纯中文数字根的直链烷基补'烷'（十三基→十三烷基）对齐金标，单字根（甲/乙…己）、复合/带位次/立体（含连字符、括号）原样保留。"""
     if (zh.endswith("基") and "-" not in zh and not zh.startswith("(")):
         stem = zh[:-1]
-        if len(stem) >= 2 and all(c in "一二三四五六七八九十" for c in stem):
+        if len(stem) >= 2 and all(c in ZH_DIGITS + "十" for c in stem):
             return f"{stem}烷基"
     return zh
 

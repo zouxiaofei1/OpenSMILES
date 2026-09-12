@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 # 片段级：* 锚定残基（L3 as_substituent 递归命名同一路径）。

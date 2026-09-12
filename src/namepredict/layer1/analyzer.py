@@ -4,7 +4,9 @@ from __future__ import annotations
 from rdkit.Chem import BondType, Mol
 
 from namepredict.tools import memo
-from namepredict.constants import C, H, N, O, S, RING_HETERO
+from namepredict.constants import (
+    C, CARBONYL_COMPOSITES, FG_BOOL_MORE_KEYS, FG_PARTS_KEY, H, N, O, RING_HETERO, S,
+)
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1._carbonyl_common import (
     _alkoxy_c_of,
@@ -16,16 +18,6 @@ from namepredict.layer1._carbonyl_common import (
     _has_double_bonded_o,
     _is_anhydride_bridge_o,
     _is_single_c_oh,
-)
-
-_FG_BOOL_MORE_KEYS = (
-    ("has_aldehyde", "aldehydes"), ("has_amine", "amines"),
-    ("has_nitrile", "nitriles"), ("has_alkene", "double_bonds"),
-    ("has_alkyne", "triple_bonds"), ("has_acyl_chloride", "acyl_chlorides"),
-    ("has_anhydride", "anhydrides"), ("has_thiol", "thiols"),
-    ("has_ether", "ethers"), ("has_sulfide", "sulfides"), ("has_nitro", "nitros"),
-    ("has_isocyanate", "isocyanates"), ("has_isothiocyanate", "isothiocyanates"),
-    ("has_phosphate", "phosphates"),
 )
 
 def _acyl_hal_of(carbon) -> tuple[int, int] | None:
@@ -478,20 +470,8 @@ def _fg_bools(lists: dict) -> dict:
         "has_ester": bool(lists["esters"]), "has_amide": bool(lists["amides"]),
         "has_ketone": bool(lists["ketones"]),
     }
-    more = {hk: bool(lists[lk]) for hk, lk in _FG_BOOL_MORE_KEYS}
+    more = {hk: bool(lists[lk]) for hk, lk in FG_BOOL_MORE_KEYS}
     return {**core, **more}
-
-_FG_PARTS_KEY = {  # fg_registry 名 → parts 键（有 p41 的链 FG）；P-41 优先级仲裁：组合羰基 FG（酸/酯/酰卤/酰胺/醛/酸酐）被更高优先级 FG（如自由基）压制时退出主基团，其羰基碳降级入 ketones（oxo 前缀候选），组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属——不再丢失羰基氧。ketone/alcohol/thiol/amine 是基础成员 FG，永不退出。
-    "radical": "radicals", "acyl": "acyls", "acid": "carboxyls", "anhydride": "anhydrides",
-    "ester": "esters", "acyl_halide": "acyl_chlorides", "amide": "amides",
-    "nitrile": "nitriles", "aldehyde": "aldehydes", "ketone": "ketones",
-    "alcohol": "hydroxyls", "thiol": "thiols", "amine": "amines",
-}
-_CARBONYL_COMPOSITES = {  # 组合羰基 FG 的 parts 键 → fg 名
-    "carboxyls": "acid", "amides": "amide", "esters": "ester",
-    "aldehydes": "aldehyde", "acyl_chlorides": "acyl_halide", "anhydrides": "anhydride",
-}
-
 
 def _fg_carbons(e: dict) -> list[int]:
     """组合 FG 条目的羰基碳索引（酸酐双羰基）。"""
@@ -514,9 +494,9 @@ def _demoted_amide_amine(mol: Mol, e: dict) -> dict | None:
 def _arbitrate_parts(mol: Mol, parts: dict) -> dict:
     """P-41 主基团仲裁：更高优先级 FG 存在时组合羰基 FG 退出，羰基碳降级 oxo、伯酰胺 N 回收为 amino；腈退出为 cyano 叶。"""
     p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
-    present = {fg for fg, key in _FG_PARTS_KEY.items() if parts.get(key)}
+    present = {fg for fg, key in FG_PARTS_KEY.items() if parts.get(key)}
     out = dict(parts)
-    for key, fg in _CARBONYL_COMPOSITES.items():
+    for key, fg in CARBONYL_COMPOSITES.items():
         entries = out.get(key)
         if not entries or not any(p41[h] < p41[fg] for h in present if h != fg):
             continue

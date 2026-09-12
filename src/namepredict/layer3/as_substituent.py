@@ -5,13 +5,9 @@ from __future__ import annotations
 
 import copy
 
-from namepredict.constants import AMIDO_RETAINED_EN
+from namepredict.constants import AMIDO_RETAINED_EN, SIMPLE_ALKOXY_NO_PAREN
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol
-
-_SIMPLE_ALKOXY_NO_PAREN = frozenset({  # 简单保留烷氧基作前缀不加括号
-    "methoxy", "ethoxy", "propoxy", "butoxy", "phenoxy", "isopropoxy",
-})
 
 
 def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
@@ -96,7 +92,7 @@ def _radical_yl_from_sub(
         return None  # 锚定分子必被 L1 radical/acyl 条目检出、principal 必选（p41=1），理论不可达，防御。
     composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0  # PIN（P-16.5.1.1）：复合前缀必括，由 meta.parent_substituent_count 判定；amido 保留式（P-66.1.1.4.3）免括，否则苯环二酰基倍增成 bis(acetylamino)。
     need_paren = composite and hit.en not in (
-        "phenyl", *_SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN)
+        "phenyl", *SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN)
     if (hit.meta or {}).get("bridge_self_enclosed"):  # S 桥复合前端名已自含围栏（(4-甲氧基苯基)磺酰基），L5 不得再整体加括号
         need_paren = False
     if need_paren and hit.en.endswith(("oxy", "sulfanyl")):  # 简单取代基+O/S 桥（…oxy/…sulfanyl 等）：P-63.2.1/.2.2 前端 R 为简单取代基时整个 O/S 前缀不加围栏（gold/ChEBI 平铺式），前端是否简单由命名后端 retained→recursive 判定。

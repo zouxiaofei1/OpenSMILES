@@ -1,7 +1,7 @@
 # tests/unit/test_recursive_benzamide_north_star.py
 # IUPAC: P-66.1 / P-29 / P-25 / P-65
 # Layer: L2–L5
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.namer import SMILESNNamer
 
 NORTH = (

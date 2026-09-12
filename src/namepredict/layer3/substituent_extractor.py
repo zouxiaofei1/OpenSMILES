@@ -53,5 +53,5 @@ def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general"
     if owned:
         base = [_with_full_atoms(mol, owned, s) for s in base]
     result = base + extract_claimed_sides(info, parent, base, name_mode=name_mode, cache=cache, depth=depth)
-    print(result)
+    # print(result)
     return result

@@ -1,11 +1,13 @@
 """L4 位次计算：将官能团/取代基附着原子映射为链上位次。"""
 from __future__ import annotations
+from namepredict.constants import AMINE_KINDS, OH_KINDS
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer4._chain_orient import _edge_min_locant, _pair_locants
 from namepredict.layer4.locant_key import locant_str_sort
 from namepredict.layer4.omit_locants import (
     omit_amine as _omit_amine, omit_ketone as _omit_ketone, omit_sh as _omit_sh,
 )
+
 
 def _typed_group_atoms(parent: dict, group: str) -> list[int]:
     """返回 principal_expression_facts 中属于指定基团类型的附着原子。"""
@@ -28,9 +30,6 @@ def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
         return None
     return _atom_locant(oriented.get("chain") or [], oriented.get(key), oriented.get("kind"), oriented.get("numbering_scaffold"), oriented.get("numbering_scaffold_required", False))
 
-_OH_KINDS = ("alcohol",)
-_AMINE_KINDS = ("amine",)
-
 def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
     """返回指定基团全部附着原子在链上的位次列表。"""
     chain = oriented.get("chain") or []
@@ -44,7 +43,7 @@ def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
 def _oh_locant(oriented: dict) -> int | None:
     """计算醇羟基的唯一 locant；多羟基或缺失时回退到单点字段。"""
     locs = _typed_atom_locants(oriented, "alcohol")
-    return locs[0] if len(locs) == 1 else _fg_locant(oriented, _OH_KINDS, "oh_c_idx")
+    return locs[0] if len(locs) == 1 else _fg_locant(oriented, OH_KINDS, "oh_c_idx")
 
 def _sh_locant(oriented: dict) -> int | None:
     """计算硫醇巯基的 locant。"""
@@ -75,7 +74,7 @@ def _amine_pair_locants(oriented: dict) -> list[int] | None:
 def _amine_locant(oriented: dict) -> int | None:
     """计算氨基的唯一 locant；多氨基或缺失时回退到单点字段。"""
     locs = _typed_atom_locants(oriented, "amine")
-    return locs[0] if len(locs) == 1 else _fg_locant(oriented, _AMINE_KINDS, "amine_c_idx")
+    return locs[0] if len(locs) == 1 else _fg_locant(oriented, AMINE_KINDS, "amine_c_idx")
 
 def _ketone_locant(oriented: dict) -> int | None:
     """计算酮羰基的唯一 locant（保留稠环母体按 standard 标签取，如呫吨 9、甾体 3；未登记标签回退链位）。"""

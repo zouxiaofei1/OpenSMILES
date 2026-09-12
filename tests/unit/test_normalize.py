@@ -1,4 +1,4 @@
-from namepredict.constants import normalize_en, normalize_zh
+from namepredict.tools.re import normalize_en, normalize_zh
 
 def test_normalize_en_lower_and_space():
     assert normalize_en("  Ethanol  ") == "ethanol"
