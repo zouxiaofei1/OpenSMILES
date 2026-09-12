@@ -233,42 +233,6 @@
     "human_reviewed": false
   },
   {
-    "id": "tiers-112188",
-    "smiles": "FC=1C=C(C=CC1F)N1C2(SCC1=O)C(N(C1=CC=CC=C12)CC(=O)NC1=CC=C(C=C1)CC)=O",
-    "english_name": "2-[3-(3,4-difluorophenyl)-2',4-dioxospiro[1,3-thiazolidine-2,3'-indole]-1'-yl]-N-(4-ethylphenyl)acetamide",
-    "chinese_name": "2-[3-(3,4-二氟苯基)-2',4-二氧代螺[1,3-噻唑烷-2,3'-吲哚]-1'-基]-N-(4-乙基苯基)乙酰胺",
-    "source": "smiles_tiers",
-    "tier": 5,
-    "features": [
-      "amide",
-      "spiro",
-      "thiazolidine",
-      "indole",
-      "halogen",
-      "ketone"
-    ],
-    "eval_en": true,
-    "eval_zh": true,
-    "human_reviewed": false
-  },
-  {
-    "id": "tiers-66561",
-    "smiles": "Cl.C12CNCC(CC1)CC2",
-    "english_name": "3-azabicyclo[3.2.2]nonane hydrochloride",
-    "chinese_name": "3-氮杂双环[3.2.2]壬烷 盐酸盐",
-    "source": "smiles_tiers",
-    "tier": 4,
-    "features": [
-      "bicyclic",
-      "aza",
-      "hydrochloride_salt",
-      "bridged_ring"
-    ],
-    "eval_en": true,
-    "eval_zh": true,
-    "human_reviewed": false
-  },
-  {
     "id": "tiers-42697",
     "smiles": "FC(C1=NC2=CC=CC=C2C(=C1)C(=O)OCC)(F)F",
     "english_name": "ethyl 2-(trifluoromethyl)quinoline-4-carboxylate",
@@ -512,24 +476,6 @@
       "benzimidazole",
       "sulfonyl",
       "halide",
-      "heterocycle"
-    ],
-    "eval_en": true,
-    "eval_zh": true,
-    "human_reviewed": false
-  },
-  {
-    "id": "tiers-121931",
-    "smiles": "CC1=C(C=CC(=C1)C)NC(CN1C(C2(SCC(N2C2=CC(=C(C=C2)C)C)=O)C2=CC=CC=C12)=O)=O",
-    "english_name": "N-(2,4-dimethylphenyl)-2-[3-(3,4-dimethylphenyl)-2',4-dioxospiro[1,3-thiazolidine-2,3'-indole]-1'-yl]acetamide",
-    "chinese_name": "N-(2,4-二甲基苯基)-2-[3-(3,4-二甲基苯基)-2',4-二氧代螺[1,3-噻唑烷-2,3'-吲哚]-1'-基]乙酰胺",
-    "source": "smiles_tiers",
-    "tier": 5,
-    "features": [
-      "spiro",
-      "indoline",
-      "thiazolidine",
-      "amide",
       "heterocycle"
     ],
     "eval_en": true,
@@ -2880,22 +2826,6 @@
     "human_reviewed": false
   },
   {
-    "id": "tiers-132357",
-    "smiles": "C12CNCC(CCC1)C2CC(=O)O",
-    "english_name": "2-(3-azabicyclo[3.3.1]nonan-9-yl)acetic acid",
-    "chinese_name": "2-(3-氮杂双环[3.3.1]壬烷-9-基)乙酸",
-    "source": "smiles_tiers",
-    "tier": 3,
-    "features": [
-      "bicyclic",
-      "carboxylic_acid",
-      "secondary_amine"
-    ],
-    "eval_en": true,
-    "eval_zh": true,
-    "human_reviewed": false
-  },
-  {
     "id": "tiers-96177",
     "smiles": "Cl.C(#N)C1=CC=C(C(=O)N(C=2SC3=C(N2)C=C2C(=C3)OCCO2)CCN(CC)CC)C=C1",
     "english_name": "4-cyano-N-[2-(diethylamino)ethyl]-N-(6,7-dihydro-[1,4]dioxino[2,3-f][1,3]benzothiazol-2-yl)benzamide hydrochloride",
@@ -3125,18 +3055,6 @@
     "smiles": "C[C@@H]1O[C@@H](OCCCCCC(=O)SCCN=C(O)CCN=C(O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]2O[C@@H](n3cnc4c(N)ncnc43)[C@H](O)[C@@H]2OP(=O)(O)O)[C@H](O)C[C@H]1O",
     "english_name": "S-[2-[3-[[(2R)-4-[[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-3-phosphonooxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxy-hydroxyphosphoryl]oxy-2-hydroxy-3,3-dimethylbutanoyl]amino]propanoylamino]ethyl] 6-[(2R,3R,5R,6S)-3,5-dihydroxy-6-methyloxan-2-yl]oxyhexanethioate",
     "chinese_name": "S-[2-[3-[[(2R)-4-[[[(2R,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-4-羟基-3-膦酸氧基四氢呋喃-2-基]甲氧基-羟基磷酰氧基-羟基磷酰氧基]-2-羟基-3,3-二甲基丁酰氨基]丙酰氨基]乙基] 6-[(2R,3R,5R,6S)-3,5-二羟基-6-甲基氧杂环己烷-2-基]氧基己硫酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-31",
-    "smiles": "C[C@@H]1[C@H](O)[C@@H](C)/C=C/C=C/CC/C=C/C=C/C=C/C=C/C(O[C@H]2O[C@H](C)[C@@H](O)[C@H](N)[C@@H]2O)CC2O[C@](O)(CC(O)C(O)CCC(O)CC(O)CC(O)CC(=O)O[C@H]1C)CC(O)C2C(=O)O",
-    "english_name": "(1S,15S,16R,17R,18S,19E,21E,25E,27E,29E,31E)-33-[(2S,3S,4S,5S,6R)-4-amino-3,5-dihydroxy-6-methyloxan-2-yl]oxy-1,3,4,7,9,11,17,37-octahydroxy-15,16,18-trimethyl-13-oxo-14,39-dioxabicyclo[33.3.1]nonatriaconta-19,21,25,27,29,31-hexaene-36-carboxylic acid",
-    "chinese_name": "(1S,15S,16R,17R,18S,19E,21E,25E,27E,29E,31E)-33-[(2S,3S,4S,5S,6R)-4-氨基-3,5-二羟基-6-甲基氧杂己环-2-基]氧基-1,3,4,7,9,11,17,37-八羟基-15,16,18-三甲基-13-氧代-14,39-二氧杂双环[33.3.1]三十九碳-19,21,25,27,29,31-六烯-36-羧酸",
     "source": "chebi",
     "tier": 5,
     "features": [],
@@ -3421,18 +3339,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-125",
-    "smiles": "O=C1OC2(c3ccc(N=C=S)cc31)c1cc(Br)c(O)c(Br)c1Oc1c2cc(Br)c(O)c1Br",
-    "english_name": "2',4',5',7'-tetrabromo-3',6'-dihydroxy-6-isothiocyanatospiro[2-benzofuran-3,9'-xanthene]-1-one",
-    "chinese_name": "2',4',5',7'-四溴-3',6'-二羟基-6-异硫氰酸酯螺[2-苯并呋喃-3,9'-蒽]-1-酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-127",
     "smiles": "CC(C)(O)CCc1cccc(C(=O)N2Cc3ccccc3C(O)C2)c1",
     "english_name": "(4-hydroxy-3,4-dihydro-1H-isoquinolin-2-yl)-[3-(3-hydroxy-3-methylbutyl)phenyl]methanone",
@@ -3451,18 +3357,6 @@
     "chinese_name": "S-[2-[3-[[(2R)-4-[[[(2R,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-4-羟基-3-膦酸氧基四氢呋喃-2-基]甲氧基-羟基磷酰基]氧基-羟基磷酰基]氧基-2-羟基-3,3-二甲基丁酰基]氨基]丙酰氨基]乙基 (11Z,14Z)-3-氧代二十碳-11,14-二烯硫酯",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-129",
-    "smiles": "COc1cc(O)c2c(=O)oc3c(c2c1)[C@@](C)(O)C[C@@H](OC)[C@@]31C[C@@H](O)C(=O)O1",
-    "english_name": "(1S,3R,3'R,4S)-1,3',7-trihydroxy-3,9-dimethoxy-1-methylspiro[2,3-dihydrobenzo[c]chromene-4,5'-oxolane]-2',6-dione",
-    "chinese_name": "(1S,3R,3'R,4S)-1,3',7-三羟基-3,9-二甲氧基-1-甲基螺[2,3-二氢苯并[c]色烯-4,5'-氧杂环丁烷]-2',6-二酮",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -3523,18 +3417,6 @@
     "chinese_name": "(1S,6S,7R,8R,8aR)-1,2,3,5,6,7,8,8a-八氢吲哚嗪-1,6,7,8-四醇",
     "source": "chebi",
     "tier": 2,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-156",
-    "smiles": "COC(=O)C1=CO[C@@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2OC)[C@H]2[C@@H]1[C@@H]1O[C@@H]1[C@@]21C=C(C(=O)c2ccc(OC)c(O)c2)C(=O)O1",
-    "english_name": "methyl (1S,2S,4S,5R,6S,7S)-7-[(2S,3R,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-methoxyoxan-2-yl]oxy-4'-(3-hydroxy-4-methoxybenzoyl)-5'-oxospiro[3,8-dioxatricyclo[4.4.0.02,4]dec-9-ene-5,2'-furan]-10-carboxylate",
-    "chinese_name": "(1S,2S,4S,5R,6S,7S)-7-[(2S,3R,4S,5S,6R)-4,5-二羟基-6-(羟甲基)-3-甲氧基氧杂环己烷-2-基]氧基-4'-(3-羟基-4-甲氧基苯甲酰基)-5'-氧代螺[3,8-二氧杂三环[4.4.0.02,4]癸-9-烯-5,2'-呋喃]-10-羧酸甲酯",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -3649,18 +3531,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-197",
-    "smiles": "CN1CC[C@]23C(=O)C[C@H]4C(=CCO[C@H]5CC(=O)N(c6ccc(O)cc62)[C@H]3[C@H]54)C1",
-    "english_name": "(1S,10S,22R,23R,24S)-17-hydroxy-4-methyl-9-oxa-4,13-diazahexacyclo[11.6.5.01,24.06,22.010,23.014,19]tetracosa-6,14(19),15,17-tetraene-12,20-dione",
-    "chinese_name": "(1S,10S,22R,23R,24S)-17-羟基-4-甲基-9-氧杂-4,13-二氮杂六环[11.6.5.01,24.06,22.010,23.014,19]二十四碳-6,14(19),15,17-四烯-12,20-二酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-201",
     "smiles": "O=C(Oc1cc(O)c2c(c1)OC(c1cc(O)c(OC(=O)c3cc(O)c(O)c(O)c3)c(O)c1)CC2)c1cc(O)c(O)c(O)c1",
     "english_name": "2-[3,5-dihydroxy-4-(3,4,5-trihydroxybenzoyl)oxyphenyl]-5-hydroxy-3,4-dihydro-2H-chromen-7-yl 3,4,5-trihydroxybenzoate",
@@ -3709,18 +3579,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-210",
-    "smiles": "Oc1cc(O)c2c(c1)O[C@@]1(c3ccc(O)c(O)c3)Oc3cc(O)c4c(c3[C@@H]2[C@H]1O)O[C@H](c1ccc(O)c(O)c1)[C@H](O)[C@H]4c1c(O)cc(O)c2c1O[C@H](c1ccc(O)c(O)c1)[C@@H](O)C2",
-    "english_name": "(1R,5R,6R,7S,13S,21R)-5,13-bis(3,4-dihydroxyphenyl)-7-[(2R,3S)-2-(3,4-dihydroxyphenyl)-3,5,7-trihydroxy-3,4-dihydro-2H-chromen-8-yl]-4,12,14-trioxapentacyclo[11.7.1.02,11.03,8.015,20]henicosa-2(11),3(8),9,15,17,19-hexaene-6,9,17,19,21-pentol",
-    "chinese_name": "(1R,5R,6R,7S,13S,21R)-5,13-双(3,4-二羟基苯基)-7-[(2R,3S)-2-(3,4-二羟基苯基)-3,5,7-三羟基-3,4-二氢-2H-色烯-8-基]-4,12,14-三氧杂五环[11.7.1.02,11.03,8.015,20]二十三亚-2(11),3(8),9,15,17,19-六烯-6,9,17,19,21-五醇",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-219",
     "smiles": "O=c1nc(-c2ccc(C(F)(F)F)cc2)[nH]c2c1CSCC2",
     "english_name": "2-[4-(trifluoromethyl)phenyl]-3,5,7,8-tetrahydrothiopyrano[4,3-d]pyrimidin-4-one",
@@ -3739,18 +3597,6 @@
     "chinese_name": "S-[2-[3-[[(2R)-4-[[[(2R,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-4-羟基-3-膦酸氧基四氢呋喃-2-基]甲氧基-羟基磷酰基]氧基-羟基磷酰基]氧基-2-羟基-3,3-二甲基丁酰基]氨基]丙酰氨基]乙基] (8Z,11Z,14Z,17Z,20Z,23Z)-二十六碳-8,11,14,17,20,23-六烯硫酯",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-226",
-    "smiles": "CN1CC2CC3=CC(C(=O)CC3)C3C=C(CCC3=O)CC1CN2",
-    "english_name": "15-methyl-15,17-diazatetracyclo[12.2.2.13,7.18,12]icosa-3(20),12(19)-diene-6,9-dione",
-    "chinese_name": "15-甲基-15,17-二氮杂四环[12.2.2.13,7.18,12]二十-3(20),12(19)-二烯-6,9-二酮",
-    "source": "chebi",
-    "tier": 3,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -3865,30 +3711,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-248",
-    "smiles": "CC(C)=CCc1c2c(c(O)c3c1O[C@]14C(=C[C@@H]5C[C@@]1(C/C=C(/C)C(=O)O)C(C)(C)O[C@H]4C5=O)C3=O)C=CC(C)(C)O2",
-    "english_name": "(2Z)-4-[(1S,2S,17S,19R)-12-hydroxy-8,8,21,21-tetramethyl-5-(3-methylbut-2-enyl)-14,18-dioxo-3,7,20-trioxahexacyclo[15.4.1.02,15.02,19.04,13.06,11]docosa-4(13),5,9,11,15-pentaen-1-yl]-2-methylbut-2-enoic acid",
-    "chinese_name": "(2Z)-4-[(1S,2S,17S,19R)-12-羟基-8,8,21,21-四甲基-5-(3-甲基丁-2-烯基)-14,18-二氧代-3,7,20-三氧杂六环[15.4.1.02,15.02,19.04,13.06,11]二十二碳-4(13),5,9,11,15-五烯-1-基]-2-甲基丁-2-烯酸",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-249",
-    "smiles": "CCCCCCCCCCCCCCCC(=O)O[C@H]1CC[C@@](C)(OC(C)=O)[C@@H]2O[C@H](C[C@]1(C)O)[C@@H]1[C@H]2[C@@H](C(C)C)[C@H](OC(C)=O)[C@H](OC(C)=O)[C@@]12CO2",
-    "english_name": "(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-triacetyloxy-10-hydroxy-10,14-dimethyl-3-propan-2-ylspiro[15-oxatricyclo[6.6.1.02,7]pentadecane-6,2'-oxirane]-11-yl hexadecanoate",
-    "chinese_name": "[(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-三乙酰氧基-10-羟基-10,14-二甲基-3-丙-2-基螺[15-氧杂三环[6.6.1.02,7]十五烷-6,2'-环氧乙烷]-11-基] 十六酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-250",
     "smiles": "COc1ccc(C2CC(=O)c3c(cc(OC)c(OC)c3OC)O2)cc1",
     "english_name": "5,6,7-trimethoxy-2-(4-methoxyphenyl)-2,3-dihydrochromen-4-one",
@@ -3973,18 +3795,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-258",
-    "smiles": "COC[C@]12CN(C)C3[C@@H]4[C@H](OC)[C@H]1[C@@]3([C@@H](OC)C[C@H]2O)[C@@H]1C[C@@]2(O)[C@H](OC(=O)c3ccccc3)[C@@H]1[C@]4(O)[C@@H](O)[C@@H]2OC",
-    "english_name": "(1S,2R,3R,4R,5R,6S,7S,8R,9R,13R,14R,16S,17S,18R)-5,7,8,14-tetrahydroxy-6,16,18-trimethoxy-13-(methoxymethyl)-11-methyl-11-azahexacyclo[7.7.2.12,5.01,10.03,8.013,17]nonadecan-4-yl benzoate",
-    "chinese_name": "[(1S,2R,3R,4R,5R,6S,7S,8R,9R,13R,14R,16S,17S,18R)-5,7,8,14-四羟基-6,16,18-三甲氧基-13-(甲氧基甲基)-11-甲基-11-氮杂六环[7.7.2.12,5.01,10.03,8.013,17]十九碳-4-基]苯甲酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-263",
     "smiles": "Cc1cc(=NC(=O)C2=C(O)c3ccccc3S(=O)(=O)N2C)[nH]o1",
     "english_name": "4-hydroxy-2-methyl-N-(5-methyl-1,2-oxazol-3-yl)-1,1-dioxo-1lambda6,2-benzothiazine-3-carboxamide",
@@ -4027,18 +3837,6 @@
     "chinese_name": "N-(3-溴苯基)-6,7-二甲氧基喹唑啉-4-胺盐酸盐",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-271",
-    "smiles": "C[C@@H]1C(=O)O[C@H]2[C@H](O)C34[C@H]5C[C@@H](C(C)(C)C)C36[C@@H](OC(=O)[C@@H]6O)O[C@@]4(C(=O)O5)[C@@]12O",
-    "english_name": "(1R,3R,6R,8S,10R,12R,13S,16S,17R)-8-tert-butyl-6,12,17-trihydroxy-16-methyl-2,4,14,19-tetraoxahexacyclo[8.7.2.01,11.03,7.07,11.013,17]nonadecane-5,15,18-trione",
-    "chinese_name": "(1R,3R,6R,8S,10R,12R,13S,16S,17R)-8-叔丁基-6,12,17-三羟基-16-甲基-2,4,14,19-四氧六环[8.7.2.01,11.03,7.07,11.013,17]十九碳-5,15,18-三酮",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -4213,18 +4011,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-332",
-    "smiles": "Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)(O)OP(=O)(O)OP(=O)(O)O)[C@H]2OC3(O[C@H]21)C([N+](=O)[O-])=CC([N+](=O)[O-])=CC3[N+](=O)[O-]",
-    "english_name": "[(3aR,4R,6R,6aR)-4-(6-aminopurin-9-yl)-1',3',5'-trinitrospiro[3a,4,6,6a-tetrahydrofuro[3,4-d][1,3]dioxole-2,6'-cyclohexa-1,3-diene]-6-yl]methoxy-hydroxyphosphoryl phosphono hydrogen phosphate",
-    "chinese_name": "[(3aR,4R,6R,6aR)-4-(6-氨基嘌呤-9-基)-1',3',5'-三硝基螺[3a,4,6,6a-四氢呋喃[3,4-d][1,3]二氧戊环-2,6'-环己-1,3-二烯]-6-基]甲氧基-羟基磷酰基]磷酸氢酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-342",
     "smiles": "Nc1ncnc2c1nc(Br)n2[C@@H]1O[C@@H]2COP(=O)(O)O[C@H]2[C@H]1O",
     "english_name": "(4aR,6R,7R,7aS)-6-(6-amino-8-bromopurin-9-yl)-2-hydroxy-2-oxo-4a,6,7,7a-tetrahydro-4H-furo[3,2-d][1,3,2]dioxaphosphinin-7-ol",
@@ -4265,18 +4051,6 @@
     "smiles": "O=C(CCCN1CC=C(n2c(O)nc3ccccc32)CC1)c1ccc(F)cc1",
     "english_name": "3-[1-[4-(4-fluorophenyl)-4-oxobutyl]-3,6-dihydro-2H-pyridin-4-yl]-1H-benzimidazol-2-one",
     "chinese_name": "3-[1-[4-(4-氟苯基)-4-氧代丁基]-3,6-二氢-2H-吡啶-4-基]-1H-苯并咪唑-2-酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-360",
-    "smiles": "CCCC[N+]1(C)[C@@H]2CC(OC(=O)[C@H](CO)c3ccccc3)C[C@H]1[C@@H]1O[C@@H]12",
-    "english_name": "(1S,2S,4R,5R)-9-butyl-9-methyl-3-oxa-9-azoniatricyclo[3.3.1.02,4]nonan-7-yl (2S)-3-hydroxy-2-phenylpropanoate",
-    "chinese_name": "[(1S,2S,4R,5R)-9-丁基-9-甲基-3-氧杂-9-氮杂三环[3.3.1.02,4]壬-7-基] (2S)-3-羟基-2-苯基丙酸酯",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -4357,18 +4131,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-390",
-    "smiles": "C=C(C)[C@@]12OC3(/C=C/CCCCCCC)O[C@@H]1C1C4OC4(CO)C(O)C4(O)CC(C)=CC4C1(O3)C(C)C2OC(=O)/C=C/c1ccccc1",
-    "english_name": "(12R,16S)-6,7-dihydroxy-8-(hydroxymethyl)-4,18-dimethyl-14-[(1E)-non-1-enyl]-16-prop-1-en-2-yl-9,13,15,19-tetraoxahexacyclo[12.4.1.01,11.02,6.08,10.012,16]nonadec-3-en-17-yl (2E)-3-phenylprop-2-enoate",
-    "chinese_name": "[(12R,16S)-6,7-二羟基-8-(羟甲基)-4,18-二甲基-14-[(1E)-壬-1-烯基]-16-丙-1-烯-2-基-9,13,15,19-四氧杂六环[12.4.1.01,11.02,6.08,10.012,16]十九-3-烯-17-基] (2E)-3-苯基丙-2-烯酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-391",
     "smiles": "C/C=C/c1cc(OC)c2c(c1)[C@@H](C)[C@H](c1ccc(OC)c(OC)c1)O2",
     "english_name": "(2R,3R)-2-(3,4-dimethoxyphenyl)-7-methoxy-3-methyl-5-[(1E)-prop-1-enyl]-2,3-dihydro-1-benzofuran",
@@ -4387,30 +4149,6 @@
     "chinese_name": "[(2R,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-3,4-二羟基四氢呋喃-2-基]甲氧基-羟基磷酰氨基甲酸酯",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-395",
-    "smiles": "O=S1(=O)N2CN3CCN(C2)CN1C3",
-    "english_name": "9lambda6-thia-1,3,6,8-tetrazatricyclo[4.3.1.13,8]undecane 9,9-dioxide",
-    "chinese_name": "9λ6-硫杂-1,3,6,8-四氮杂三环[4.3.1.13,8]十一烷-9,9-二氧化物",
-    "source": "chebi",
-    "tier": 2,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-403",
-    "smiles": "COC(=O)[C@H]1[C@@H](c2ccc([123I])cc2)C[C@@H]2CC[C@H]1N2CCCF",
-    "english_name": "methyl (1R,2S,3S,5S)-8-(3-fluoropropyl)-3-(4-iodophenyl)-8-azabicyclo[3.2.1]octane-2-carboxylate",
-    "chinese_name": "(1R,2S,3S,5S)-8-(3-氟丙基)-3-(4-碘苯基)-8-氮杂双环[3.2.1]辛烷-2-羧酸甲酯",
-    "source": "chebi",
-    "tier": 3,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -4457,18 +4195,6 @@
     "smiles": "CCCCCC(=O)/C=C/[C@@H]1[C@H]2C/C(=C/CCCC(=O)O)O[C@H]2C[C@H]1O",
     "english_name": "(5Z)-5-[(3aR,4R,5R,6aS)-5-hydroxy-4-[(1E)-3-oxooct-1-enyl]-3,3a,4,5,6,6a-hexahydrocyclopenta[b]furan-2-ylidene]pentanoic acid",
     "chinese_name": "(5Z)-5-[(3aR,4R,5R,6aS)-5-羟基-4-[(1E)-3-氧代辛-1-烯基]-3,3a,4,5,6,6a-六氢环戊并[b]呋喃-2-亚基]戊酸",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-424",
-    "smiles": "CC(O)CCC[C@H](O)/C=C/[C@H]1OC2CC(C2)[C@@H]1C/C=C\\CCCC(=O)[O-]",
-    "english_name": "(5Z)-7-[(3R,4S)-3-[(1E,3S)-3,7-dihydroxyoct-1-enyl]-2-oxabicyclo[3.1.1]heptan-4-yl]hept-5-enoate",
-    "chinese_name": "(5Z)-7-[(3R,4S)-3-[(1E,3S)-3,7-二羟基辛-1-烯基]-2-氧杂双环[3.1.1]庚-4-基]庚-5-烯酸根",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -4681,18 +4407,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-488",
-    "smiles": "CC1(C)O[C@]23[C@H](OC(=O)c4cccnc4)[C@H]1C[C@@H](OC(=O)c1ccccc1)[C@]2(C)[C@@H](OC(=O)c1ccccc1)CC[C@]3(C)O",
-    "english_name": "(1S,2S,5S,6S,7R,9R,12R)-5,7-dibenzoyloxy-2-hydroxy-2,6,10,10-tetramethyl-11-oxatricyclo[7.2.1.01,6]dodecan-12-yl pyridine-3-carboxylate",
-    "chinese_name": "[(1S,2S,5S,6S,7R,9R,12R)-5,7-二苯甲酰氧基-2-羟基-2,6,10,10-四甲基-11-氧杂三环[7.2.1.01,6]十二烷-12-基]吡啶-3-羧酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-491",
     "smiles": "O=c1ccc2ccc(OS(=O)(=O)O)cc2o1",
     "english_name": "(2-oxochromen-7-yl) hydrogen sulfate",
@@ -4873,18 +4587,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-557",
-    "smiles": "C=C1C[C@]23C[C@@]1(O)CC[C@H]2[C@@]12C=C[C@H](O)[C@@](C)(C(=O)O1)[C@H]2[C@@H]3C(=O)O",
-    "english_name": "(1R,2R,5S,8S,9S,10R,11S,12S)-5,12-dihydroxy-11-methyl-6-methylidene-16-oxo-15-oxapentacyclo[9.3.2.15,8.01,10.02,8]heptadec-13-ene-9-carboxylic acid",
-    "chinese_name": "(1R,2R,5S,8S,9S,10R,11S,12S)-5,12-二羟基-11-甲基-6-亚甲基-16-氧代-15-氧杂五环[9.3.2.15,8.01,10.02,8]十七碳-13-烯-9-羧酸",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-563",
     "smiles": "C[C@H](c1c[nH]c2ccccc12)[C@H](O)C(=O)O",
     "english_name": "(2S,3R)-2-hydroxy-3-(1H-indol-3-yl)butanoic acid",
@@ -4903,18 +4605,6 @@
     "chinese_name": "S-[2-[3-[[(2R)-4-[[[(2R,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-4-羟基-3-膦酸氧基四氢呋喃-2-基]甲氧基-羟基磷酰基]氧基-羟基磷酰基]氧基-2-羟基-3,3-二甲基丁酰基]氨基]丙酰氨基]乙基] 4-羟基苯基硫代甲酸酯",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-568",
-    "smiles": "O=C1OC2(c3ccccc31)c1cc([N+](=O)[O-])c([O-])c(Br)c1Oc1c2cc([N+](=O)[O-])c([O-])c1Br",
-    "english_name": "4',5'-dibromo-2',7'-dinitro-3-oxospiro[2-benzofuran-1,9'-xanthene]-3',6'-diolate",
-    "chinese_name": "4',5'-二溴-2',7'-二硝基-3-氧代螺[2-苯并呋喃-1,9'-氧杂蒽]-3',6'-二酚",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -4999,18 +4689,6 @@
     "chinese_name": "7-[(2S,3R,4S,5S,6R)-4,5-二羟基-6-(羟甲基)-3-[(2S,3R,4S,5S,6R)-3,4,5-三羟基-6-(羟甲基)氧杂环己烷-2-基]氧基氧杂环己烷-2-基]氧基-5-羟基-3-(羟甲基)-2-[3-羟基-4-[(2S,3R,4S,5S,6R)-3,4,5-三羟基-6-(羟甲基)氧杂环己烷-2-基]氧基苯基]色烯-4-酮",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-600",
-    "smiles": "COC(=O)[C@@]12OC[C@]34[C@H]([C@@H](O)[C@@H]1O)[C@@]1(C)[C@H](O)C(=O)C=C(C)[C@@H]1C[C@H]3OC(=O)[C@H](OC(=O)/C=C(\\C)C(C)C)[C@@H]24",
-    "english_name": "methyl (1R,2S,3R,6R,8S,12S,13S,14R,15R,16S,17S)-3-[(2E)-3,4-dimethylpent-2-enoyloxy]-12,15,16-trihydroxy-9,13-dimethyl-4,11-dioxo-5,18-dioxapentacyclo[12.5.0.01,6.02,17.08,13]nonadec-9-ene-17-carboxylate",
-    "chinese_name": "(1R,2S,3R,6R,8S,12S,13S,14R,15R,16S,17S)-3-[(2E)-3,4-二甲基戊-2-烯酰氧基]-12,15,16-三羟基-9,13-二甲基-4,11-二氧代-5,18-二氧杂五环[12.5.0.01,6.02,17.08,13]十九-9-烯-17-羧酸甲酯",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -5131,18 +4809,6 @@
     "chinese_name": "(2E)-3-(1H-吲哚-3-基)丙烯酸",
     "source": "chebi",
     "tier": 2,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-665",
-    "smiles": "Cc1oc2nc1C(O)=N[C@H]([C@@H](C)O)c1nc(cs1)C(O)=N[C@H](C(C)C)c1nc(cs1)C(O)=N[C@@H]2C",
-    "english_name": "(4R,11R,18R)-11-[(1R)-1-hydroxyethyl]-4,7-dimethyl-18-propan-2-yl-6-oxa-13,20-dithia-3,10,17,22,23,24-hexazatetracyclo[17.2.1.15,8.112,15]tetracosa-1(21),5(24),7,12(23),14,19(22)-hexaene-2,9,16-trione",
-    "chinese_name": "(4R,11R,18R)-11-[(1R)-1-羟乙基]-4,7-二甲基-18-丙-2-基-6-氧杂-13,20-二硫杂-3,10,17,22,23,24-六氮四环[17.2.1.15,8.112,15]二十四碳-1(21),5(24),7,12(23),14,19(22)-六烯-2,9,16-三酮",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -5305,18 +4971,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-755",
-    "smiles": "CCCOc1ccc2c(c1)c1c3c(c4c5ccccc5n5c4c1n2[C@H]1C[C@](O)(C(=O)OC)[C@]5(C)O1)CN=C3O",
-    "english_name": "methyl (15S,16R,18R)-16-hydroxy-15-methyl-3-oxo-23-propoxy-28-oxa-4,14,19-triazaoctacyclo[12.11.2.115,18.02,6.07,27.08,13.019,26.020,25]octacosa-1,6,8,10,12,20(25),21,23,26-nonaene-16-carboxylate",
-    "chinese_name": "(15S,16R,18R)-16-羟基-15-甲基-3-氧代-23-丙氧基-28-氧杂-4,14,19-三氮杂八环[12.11.2.115,18.02,6.07,27.08,13.019,26.020,25]二十八碳-1,6,8,10,12,20(25),21,23,26-非烯-16-羧酸甲酯",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-760",
     "smiles": "C[C@H](O)[C@@H]1O[C@H](Oc2c(-c3ccc(O)c(O)c3)oc3cc(O)cc(O)c3c2=O)[C@H](O)[C@@H]1O",
     "english_name": "3-[(2R,3R,4S,5S)-3,4-dihydroxy-5-[(1S)-1-hydroxyethyl]oxolan-2-yl]oxy-2-(3,4-dihydroxyphenyl)-5,7-dihydroxychromen-4-one",
@@ -5425,36 +5079,12 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-791",
-    "smiles": "O=C1[C@@H]2[C@H]3CC[C@H](C3)[C@@H]2C(=O)N1C[C@@H]1CCCC[C@H]1CN1CCN(c2nsc3ccccc23)CC1",
-    "english_name": "(1R,2S,6R,7S)-4-[[(1R,2R)-2-[[4-(1,2-benzothiazol-3-yl)piperazin-1-yl]methyl]cyclohexyl]methyl]-4-azatricyclo[5.2.1.02,6]decane-3,5-dione",
-    "chinese_name": "(1R,2S,6R,7S)-4-[[[(1R,2R)-2-[[4-(1,2-苯并噻唑-3-基)哌嗪-1-基]甲基]环己基]甲基]-4-氮杂三环[5.2.1.02,6]癸烷-3,5-二酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-794",
     "smiles": "CCCN(CCC)C(=O)C(CCC(=O)OCCCN1CCN(CCOC(=O)Cc2c(C)n(C(=O)c3ccc(Cl)cc3)c3ccc(OC)cc23)CC1)N=C(O)c1ccccc1",
     "english_name": "3-[4-[2-[2-[1-(4-chlorobenzoyl)-5-methoxy-2-methylindol-3-yl]acetyl]oxyethyl]piperazin-1-yl]propyl 4-benzamido-5-(dipropylamino)-5-oxopentanoate",
     "chinese_name": "3-[4-[2-[2-[1-(4-氯代苯甲酰基)-5-甲氧基-2-甲基-1H-吲哚-3-基]乙酰氧基乙基]哌嗪-1-基]丙基 4-苯甲酰胺基-5-(二丙基氨基)-5-氧代戊酸酯",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-795",
-    "smiles": "CC1=C(C)C(=O)O[C@@H]([C@@H](C)[C@@]23O[C@@H]2C[C@H]2[C@@H]4C[C@H]5O[C@]56[C@@H](O)C=CC(=O)[C@]6(C)[C@H]4CC[C@@]23C)C1",
-    "english_name": "(1S,2R,6S,7R,9R,11S,12S,14R,16S,17S)-16-[(1R)-1-[(2R)-4,5-dimethyl-6-oxo-2,3-dihydropyran-2-yl]ethyl]-6-hydroxy-2,17-dimethyl-8,15-dioxahexacyclo[9.8.0.02,7.07,9.012,17.014,16]nonadec-4-en-3-one",
-    "chinese_name": "(1S,2R,6S,7R,9R,11S,12S,14R,16S,17S)-16-[(1R)-1-[(2R)-4,5-二甲基-6-氧代-2,3-二氢吡喃-2-基]乙基]-6-羟基-2,17-二甲基-8,15-二氧杂六环[9.8.0.02,7.07,9.012,17.014,16]十九碳-4-烯-3-酮",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -5581,18 +5211,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-822",
-    "smiles": "CN1CC[C@]23C(=O)C[C@H]4C(=CCO[C@H]5CC(=O)N(c6ccccc62)[C@H]3[C@H]54)C1",
-    "english_name": "(1S,10S,22R,23R,24S)-4-methyl-9-oxa-4,13-diazahexacyclo[11.6.5.01,24.06,22.010,23.014,19]tetracosa-6,14,16,18-tetraene-12,20-dione",
-    "chinese_name": "(1S,10S,22R,23R,24S)-4-甲基-9-氧杂-4,13-二氮杂六环[11.6.5.01,24.06,22.010,23.014,19]二十四碳-6,14,16,18-四烯-12,20-二酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-830",
     "smiles": "CCN(CC)C(C)CN1c2ccccc2Sc2ccccc21",
     "english_name": "N,N-diethyl-1-phenothiazin-10-ylpropan-2-amine",
@@ -5689,18 +5307,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-885",
-    "smiles": "C[NH+]1[C@@H]2CC[C@H]1CC(O)C2",
-    "english_name": "(1R,5S)-8-methyl-8-azoniabicyclo[3.2.1]octan-3-ol",
-    "chinese_name": "(1R,5S)-8-甲基-8-氮杂双环[3.2.1]辛-3-醇",
-    "source": "chebi",
-    "tier": 2,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-887",
     "smiles": "CCCCCCCCCCC/C=C\\CCCCC(=O)SCCN=C(O)CCN=C(O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)(O)O",
     "english_name": "S-[2-[3-[[(2R)-4-[[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-3-phosphonooxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxy-hydroxyphosphoryl]oxy-2-hydroxy-3,3-dimethylbutanoyl]amino]propanoylamino]ethyl] (6Z)-octadec-6-enethioate",
@@ -5785,18 +5391,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-924",
-    "smiles": "C[NH2+][C@H]1C[C@@H]([NH3+])[C@H](O)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@@H]3O[C@]4(O[C@H]23)O[C@H](C([NH3+])CO)[C@H](O)[C@H](O)[C@H]4O)[C@@H]1O",
-    "english_name": "[(1S,2R,3R,4S,5R)-5-azaniumyl-3-[[(2R,3'R,3aS,4S,4'S,5'R,6R,6'R,7S,7aS)-6'-(1-azaniumyl-2-hydroxyethyl)-3',4',5',7-tetrahydroxy-6-(hydroxymethyl)spiro[4,6,7,7a-tetrahydro-3aH-[1,3]dioxolo[4,5-c]pyran-2,2'-oxane]-4-yl]oxy-2,4-dihydroxycyclohexyl]-methylazanium",
-    "chinese_name": "[(1S,2R,3R,4S,5R)-5-铵基-3-[[(2R,3'R,3aS,4S,4'S,5'R,6R,6'R,7S,7aS)-6'-(1-铵基-2-羟乙基)-3',4',5',7-四羟基-6-(羟甲基)螺[4,6,7,7a-四氢-3aH-[1,3]二氧戊环并[4,5-c]吡喃-2,2'-氧杂环己烷]-4-基]氧基-2,4-二羟基环己基]-甲基铵",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-927",
     "smiles": "O=c1oc2cc(O)ccc2c(O)c1-c1ccc(O)cc1O",
     "english_name": "3-(2,4-dihydroxyphenyl)-4,7-dihydroxychromen-2-one",
@@ -5815,18 +5409,6 @@
     "chinese_name": "[(2R,3S,4S,5R,6S)-6-[(2S,3R,4R,5R,6S)-2-[5,7-二羟基-4-氧代-2-(3,4,5-三羟基苯基)色烯-3-基]氧基-4,5-二羟基-6-甲基氧杂环己烷-3-基]氧基-3,4,5-三羟基氧杂环己烷-2-基]甲基乙酸酯",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-929",
-    "smiles": "O=C1OC2(c3ccccc31)c1cc([N+](=O)[O-])c(O)c(Br)c1Oc1c2cc([N+](=O)[O-])c(O)c1Br",
-    "english_name": "4',5'-dibromo-3',6'-dihydroxy-2',7'-dinitrospiro[2-benzofuran-3,9'-xanthene]-1-one",
-    "chinese_name": "4',5'-二溴-3',6'-二羟基-2',7'-二硝基螺[2-苯并呋喃-3,9'-氧杂蒽]-1-酮",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -5861,18 +5443,6 @@
     "smiles": "C=C[C@H]1[C@H](O)OC=C(C(=O)OC)[C@H]1C[C@@H]1NCCc2c1[nH]c1ccccc21",
     "english_name": "methyl (2R,3R,4S)-3-ethenyl-2-hydroxy-4-[[(1S)-2,3,4,9-tetrahydro-1H-pyrido[3,4-b]indol-1-yl]methyl]-3,4-dihydro-2H-pyran-5-carboxylate",
     "chinese_name": "(2R,3R,4S)-3-乙烯基-2-羟基-4-[[(1S)-2,3,4,9-四氢-1H-吡啶并[3,4-b]吲哚-1-基]甲基]-3,4-二氢-2H-吡喃-5-羧酸甲酯",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-938",
-    "smiles": "CC[C@]12C=CCN3CC[C@]4(C(=[NH+]c5ccccc54)[C@@](O)(C(=O)OC)C1)[C@@H]32",
-    "english_name": "methyl (1R,10R,12R,19S)-12-ethyl-10-hydroxy-8-aza-16-azoniapentacyclo[10.6.1.01,9.02,7.016,19]nonadeca-2,4,6,8,13-pentaene-10-carboxylate",
-    "chinese_name": "(1R,10R,12R,19S)-12-乙基-10-羟基-8-氮杂-16-氮杂五环[10.6.1.01,9.02,7.016,19]十九碳-2,4,6,8,13-五烯-10-羧酸甲酯",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -5959,54 +5529,6 @@
     "chinese_name": "(4S)-2-(1H-吲哚-3-基)-4,5-二氢-1,3-噻唑-4-羧酸",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-966",
-    "smiles": "C[C@H]1[C@@H]2CC[C@@H]1[C@H](OC(=O)c1ccccc1)/C=C\\C=C\\C(=O)O[C@H]1[C@@H](C)C[C@@H]3[C@]1(O)[C@H](O)[C@@]1(CO)O[C@H]1[C@H]1[C@H]4O[C@]5(c6ccccc6)O[C@@H]([C@@H](C)[C@@]13O5)[C@@]4(O)[C@](C)(O)C2",
-    "english_name": "(1R,2S,3S,5R,6S,7S,8R,10S,11S,14E,16Z,18R,19S,22R,24R,25S,26R,28S,30S,31R,33S)-6,7,24,25-tetrahydroxy-5-(hydroxymethyl)-10,24,31,33-tetramethyl-13-oxo-28-phenyl-4,12,27,29,32-pentaoxaoctacyclo[26.3.1.119,22.01,8.02,26.03,5.07,11.025,30]tritriaconta-14,16-dien-18-yl benzoate",
-    "chinese_name": "[(1R,2S,3S,5R,6S,7S,8R,10S,11S,14E,16Z,18R,19S,22R,24R,25S,26R,28S,30S,31R,33S)-6,7,24,25-四羟基-5-(羟甲基)-10,24,31,33-四甲基-13-氧代-28-苯基-4,12,27,29,32-五氧杂八环[26.3.1.119,22.01,8.02,26.03,5.07,11.025,30]三十二碳-14,16-二烯-18-基]苯甲酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-967",
-    "smiles": "CC(C)c1cc2c(cc1O)[C@]13CCC[C@](C)(CO[C@H]1O)[C@@H]3CC2",
-    "english_name": "(1R,10S,11S,14R)-11-methyl-5-propan-2-yl-13-oxatetracyclo[9.3.3.01,10.02,7]heptadeca-2,4,6-triene-4,14-diol",
-    "chinese_name": "(1R,10S,11S,14R)-11-甲基-5-丙-2-基-13-氧杂四环[9.3.3.01,10.02,7]十七碳-2,4,6-三烯-4,14-二醇",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-968",
-    "smiles": "CC(C)[C@@]12C[C@@H](OC(=O)CO)[C@@](C)(O1)[C@@H]1CC[C@@H](C)[C@H]1[C@@H]2OC(=O)/C=C/c1ccccc1",
-    "english_name": "(1S,2R,5R,6R,7S,8R,10R)-10-(2-hydroxyacetyl)oxy-1,5-dimethyl-8-propan-2-yl-11-oxatricyclo[6.2.1.02,6]undecan-7-yl (2E)-3-phenylprop-2-enoate",
-    "chinese_name": "[(1S,2R,5R,6R,7S,8R,10R)-10-(2-羟基乙酰氧基)-1,5-二甲基-8-丙-2-基-11-氧杂三环[6.2.1.02,6]十一烷-7-基] (2E)-3-苯基丙烯酸酯",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-971",
-    "smiles": "OC1CN2CCC1CC2",
-    "english_name": "1-azabicyclo[2.2.2]octan-3-ol",
-    "chinese_name": "1-氮杂双环[2.2.2]辛-3-醇",
-    "source": "chebi",
-    "tier": 2,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -6121,36 +5643,12 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1034",
-    "smiles": "C[C@H]1CC[C@]2(NC1)O[C@H]1C[C@H]3[C@@H]4CC=C5C[C@@H](O[C@@H]6O[C@H](CO)[C@H](O[C@@H]7O[C@H](CO)[C@@H](O)[C@H](O[C@@H]8OC[C@@H](O)[C@H](O)[C@H]8O)[C@H]7O[C@@H]7O[C@H](CO)[C@@H](O)[C@H](O)[C@H]7O)[C@H](O)[C@H]6O)CC[C@]5(C)[C@H]4CC[C@]3(C)[C@H]1[C@@H]2C",
-    "english_name": "(2S,3R,4S,5S,6R)-2-[(2S,3R,4S,5R,6R)-2-[(2R,3R,4R,5R,6R)-4,5-dihydroxy-2-(hydroxymethyl)-6-[(1S,2S,4S,5'S,6S,7S,8R,9S,12S,13R,16S)-5',7,9,13-tetramethylspiro[5-oxapentacyclo[10.8.0.02,9.04,8.013,18]icos-18-ene-6,2'-piperidine]-16-yl]oxyoxan-3-yl]oxy-5-hydroxy-6-(hydroxymethyl)-4-[(2S,3R,4S,5R)-3,4,5-trihydroxyoxan-2-yl]oxyoxan-3-yl]oxy-6-(hydroxymethyl)oxane-3,4,5-triol",
-    "chinese_name": "(2S,3R,4S,5S,6R)-2-[(2S,3R,4S,5R,6R)-2-[(2R,3R,4R,5R,6R)-4,5-二羟基-2-(羟甲基)-6-[(1S,2S,4S,5'S,6S,7S,8R,9S,12S,13R,16S)-5',7,9,13-四甲基螺[5-氧杂五环[10.8.0.02,9.04,8.013,18]二十碳-18-烯-6,2'-哌啶]-16-基]氧基氧杂环己烷-3-基]氧基-5-羟基-6-(羟甲基)-4-[(2S,3R,4S,5R)-3,4,5-三羟基氧杂环己烷-2-基]氧基氧杂环己烷-3-基]氧基-6-(羟甲基)氧杂环己烷-3,4,5-三醇",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1050",
     "smiles": "COc1cc2c(CCN=C(C)O)c[nH]c2cc1O",
     "english_name": "N-[2-(6-hydroxy-5-methoxy-1H-indol-3-yl)ethyl]acetamide",
     "chinese_name": "N-[2-(6-羟基-5-甲氧基-1H-吲哚-3-基)乙基]乙酰胺",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1066",
-    "smiles": "C/C1=C2/N=C(/C=C3\\N/C(=C(/C)C4=N[C@@](C)([C@@H]5N=C1[C@](C)(CCC(=O)O)[C@H]5CC(=O)O)[C@@](C)(CC(=N)[O-])[C@@H]4CCC(=O)O)[C@@](C)(CC(=N)[O-])[C@@H]3CCC(=O)O)C(C)(C)[C@@H]2CCC(=O)O",
-    "english_name": "3-[(1R,2S,3S,5Z,7S,8S,9Z,13S,14Z,17R,18R,19R)-2,7-bis(2-amino-2-oxoethyl)-3,13,17-tris(2-carboxylatoethyl)-18-(carboxylatomethyl)-1,2,5,7,12,12,15,17-octamethyl-3,8,13,18,19,22-hexahydrocorrin-21,23,24-triium-8-yl]propanoate",
-    "chinese_name": "3-[(1R,2S,3S,5Z,7S,8S,9Z,13S,14Z,17R,18R,19R)-2,7-双(2-氨基-2-氧代乙基)-3,13,17-三(2-羧酸根乙基)-18-(羧酸根甲基)-1,2,5,7,12,12,15,17-八甲基-3,8,13,18,19,22-六氢卟吩-21,23,24-三正离子-8-基]丙酸根",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -6241,18 +5739,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1099",
-    "smiles": "C/C=C1/CN2CCC3=C([NH2+]c4ccccc43)[C@H](C(=O)OC)[C@H]1CC2",
-    "english_name": "methyl (1R,2R,16E)-16-ethylidene-4-aza-14-azoniatetracyclo[12.2.2.03,11.05,10]octadeca-3(11),5,7,9-tetraene-2-carboxylate",
-    "chinese_name": "(1R,2R,16E)-16-亚乙基-4-氮杂-14-氮杂双环[12.2.2.03,11.05,10]十八碳-3(11),5,7,9-四烯-2-羧酸甲酯",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1100",
     "smiles": "CCN1c2cc3c(cc2C(C)=CC1(C)C)C(=CC=CC=CC1=[N+](CCCS(=O)(=O)O)c2ccc(S(=O)(=O)[O-])cc2C1(C)CCCC(=O)[O-])C=C(C(C)(C)C)O3",
     "english_name": "2-[(1E,3E,5E)-5-(2-tert-butyl-9-ethyl-6,8,8-trimethylpyrano[3,2-g]quinolin-4-ylidene)penta-1,3-dienyl]-3-(3-carboxypropyl)-3-methyl-1-(3-sulfonatopropyl)indol-1-ium-5-sulfonate",
@@ -6271,18 +5757,6 @@
     "chinese_name": "(6R,7S)-7-[(2R)-2-氨基-2-苯基乙酰氨基]-3-氯-8-氧代-1-氮杂双环[4.2.0]辛-2-烯-2-羧酸",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1107",
-    "smiles": "CN[C@H](CC(C)C)C(O)=N[C@H]1C(O)=N[C@@H](CC(=[NH2+])O)C(O)=N[C@H]2C(O)=N[C@H]3C(O)=N[C@H](C(O)=N[C@H](C(=O)O)c4cc(O)cc(O)c4-c4cc3ccc4O)[C@H](O)c3ccc(c(Cl)c3)Oc3cc2cc(c3O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@H]2C[C@](C)(N)[C@H](O)[C@H](C)O2)Oc2ccc(cc2Cl)[C@H]1O",
-    "english_name": "(1S,2R,18R,19R,22S,25R,28R,40S)-22-(2-amino-2-oxoethyl)-48-[(2S,3R,4S,5S,6R)-3-[(2S,4S,5S,6S)-4-azaniumyl-5-hydroxy-4,6-dimethyloxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-5,15-dichloro-2,18,32,35,37-pentahydroxy-19-[[(2R)-4-methyl-2-(methylazaniumyl)pentanoyl]amino]-20,23,26,42,44-pentaoxo-7,13-dioxa-21,24,27,41,43-pentazaoctacyclo[26.14.2.23,6.214,17.18,12.129,33.010,25.034,39]pentaconta-3,5,8(48),9,11,14,16,29(45),30,32,34(39),35,37,46,49-pentadecaene-40-carboxylate",
-    "chinese_name": "(1S,2R,18R,19R,22S,25R,28R,40S)-22-(2-氨基-2-氧代乙基)-48-[(2S,3R,4S,5S,6R)-3-[(2S,4S,5S,6S)-4-铵基-5-羟基-4,6-二甲基氧杂环己烷-2-基]氧基-4,5-二羟基-6-(羟甲基)氧杂环己烷-2-基]氧基-5,15-二氯-2,18,32,35,37-五羟基-19-[(2R)-4-甲基-2-(甲基铵基)戊酰氨基]-20,23,26,42,44-五氧代-7,13-二氧杂-21,24,27,41,43-五氮杂八环[26.14.2.23,6.214,17.18,12.129,33.010,25.034,39]五十-3,5,8(48),9,11,14,16,29(45),30,32,34(39),35,37,46,49-十五烯-40-羧酸盐",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -6319,18 +5793,6 @@
     "chinese_name": "(8S)-8-丙-1-烯-2-基-8,9-二氢呋喃并[2,3-h]色满-2-酮",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1115",
-    "smiles": "C=C1[C@]23C(=O)O[C@@H](C)[C@@]24O[C@]2(C(=C)[C@@]5(C=CC(=O)OC5(C)C)CC[C@@]32C)[C@@H](O)[C@]1(C)OC4=O",
-    "english_name": "(1R,2S,5S,7S,8S,9R,12S,13S)-8-hydroxy-2,6',6',9,13-pentamethyl-6,16-dimethylidenespiro[10,14,17-trioxapentacyclo[7.6.1.17,12.01,12.02,7]heptadecane-5,5'-pyran]-2',11,15-trione",
-    "chinese_name": "(1R,2S,5S,7S,8S,9R,12S,13S)-8-羟基-2,6',6',9,13-五甲基-6,16-二亚甲基螺[10,14,17-三氧杂五环[7.6.1.17,12.01,12.02,7]十七烷-5,5'-吡喃]-2',11,15-三酮",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -6445,18 +5907,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1149",
-    "smiles": "CC1(C)CC[C@@]23CC[C@]4(C)[C@@](C=C[C@@H]5[C@@]6(C)CC[C@@H](O)[C@@](C)(CO)[C@@H]6CC[C@]54C)(OC2=O)[C@@H]3C1",
-    "english_name": "(1S,4S,5R,8R,9R,10R,13S,14R,17S,18R)-10-hydroxy-9-(hydroxymethyl)-4,5,9,13,20,20-hexamethyl-24-oxahexacyclo[15.5.2.01,18.04,17.05,14.08,13]tetracos-15-en-23-one",
-    "chinese_name": "(1S,4S,5R,8R,9R,10R,13S,14R,17S,18R)-10-羟基-9-(羟甲基)-4,5,9,13,20,20-六甲基-24-氧杂六环[15.5.2.01,18.04,17.05,14.08,13]二十四碳-15-烯-23-酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1157",
     "smiles": "Cn1ccc2c3cc(O)ccc3[nH+]c-2c1",
     "english_name": "2-methyl-9H-pyrido[3,4-b]indol-2-ium-6-ol",
@@ -6541,42 +5991,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1186",
-    "smiles": "CC1=CC[C@H]([C@](C)(O)[C@H]2CC[C@@]3(C)[C@@H]4CC[C@H]5C(C)(C)OC(=O)C=C[C@@]56C[C@@]46CC[C@]23C)OC1=O",
-    "english_name": "(1S,3S,9R,12S,13S,16S,17R)-16-[(1R)-1-hydroxy-1-[(2R)-5-methyl-6-oxo-2,3-dihydropyran-2-yl]ethyl]-8,8,13,17-tetramethyl-7-oxapentacyclo[10.7.0.01,3.03,9.013,17]nonadec-4-en-6-one",
-    "chinese_name": "(1S,3S,9R,12S,13S,16S,17R)-16-[(1R)-1-羟基-1-[(2R)-5-甲基-6-氧代-2,3-二氢吡喃-2-基]乙基]-8,8,13,17-四甲基-7-氧杂五环[10.7.0.01,3.03,9.013,17]十九碳-4-烯-6-酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1187",
-    "smiles": "C=C(C)[C@]12C[C@@H](C)[C@@]34O[C@](Cc5ccccc5)(O[C@@H]1[C@@H]3C=C(COC(=O)Cc1ccc(O)cc1)C[C@]1(O)C(=O)C(C)=C[C@@H]41)O2",
-    "english_name": "[(1R,2R,6R,10S,11R,13S,15R,17R)-13-benzyl-6-hydroxy-4,17-dimethyl-5-oxo-15-prop-1-en-2-yl-12,14,18-trioxapentacyclo[11.4.1.01,10.02,6.011,15]octadeca-3,8-dien-8-yl]methyl 2-(4-hydroxyphenyl)acetate",
-    "chinese_name": "[(1R,2R,6R,10S,11R,13S,15R,17R)-13-苄基-6-羟基-4,17-二甲基-5-氧代-15-丙-1-烯-2-基-12,14,18-三氧杂五环[11.4.1.01,10.02,6.011,15]十八碳-3,8-二烯-8-基]甲基 2-(4-羟基苯基)乙酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1188",
-    "smiles": "CO[C@@H]1[C@@H](O)[C@H](O[C@@H]2[C@@H](O)[C@H](O[C@H]3[C@H](O)[C@@H](O)[C@H](O[C@H]4[C@H](O[C@H]5CC[C@]6(C)C7=C[C@H](O)C89C(=O)O[C@@](C)(CCC(O)C(C)C)[C@@]8(O)CC[C@@]9(C)[C@@H]7CC[C@H]6C5(C)C)OC[C@@H](OS(=O)(=O)O)[C@@H]4O)O[C@@H]3C)O[C@H](CO)[C@H]2O)O[C@H](CO)[C@H]1O",
-    "english_name": "[(3R,4R,5R,6S)-5-[(2S,3R,4R,5S,6R)-5-[(2S,3R,4S,5R,6R)-4-[(2S,3R,4S,5R,6R)-3,5-dihydroxy-6-(hydroxymethyl)-4-methoxyoxan-2-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-3,4-dihydroxy-6-methyloxan-2-yl]oxy-6-[[(1S,2S,5R,6S,10S,13S,16S,18R)-5,10-dihydroxy-6-(3-hydroxy-4-methylpentyl)-2,6,13,17,17-pentamethyl-8-oxo-7-oxapentacyclo[10.8.0.02,9.05,9.013,18]icos-11-en-16-yl]oxy]-4-hydroxyoxan-3-yl] hydrogen sulfate",
-    "chinese_name": "[(3R,4R,5R,6S)-5-[(2S,3R,4R,5S,6R)-5-[(2S,3R,4S,5R,6R)-4-[(2S,3R,4S,5R,6R)-3,5-二羟基-6-(羟甲基)-4-甲氧基氧杂环己烷-2-基]氧基-3,5-二羟基-6-(羟甲基)氧杂环己烷-2-基]氧基-3,4-二羟基-6-甲基氧杂环己烷-2-基]氧基-6-[(1S,2S,5R,6S,10S,13S,16S,18R)-5,10-二羟基-6-(3-羟基-4-甲基戊基)-2,6,13,17,17-五甲基-8-氧代-7-氧杂五环[10.8.0.02,9.05,9.013,18]二十-11-烯-16-基]氧基-4-羟基氧杂环己烷-3-基]硫酸氢酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1192",
     "smiles": "CC(C)=CCc1cc([C@@H]2CC(=O)c3c(O)cc(O)cc3O2)cc(CC=C(C)C)c1O",
     "english_name": "(2S)-5,7-dihydroxy-2-[4-hydroxy-3,5-bis(3-methylbut-2-enyl)phenyl]-2,3-dihydrochromen-4-one",
@@ -6595,18 +6009,6 @@
     "chinese_name": "[(3aR,4S,6Z,10Z,11aR)-6,10-双(羟甲基)-3-亚甲基-2-氧代-3a,4,5,8,9,11a-六氢环癸[b]呋喃-4-基] 2-甲基丙酸酯",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1197",
-    "smiles": "CC1=C(CCC(=O)O)c2cc3nc(cc4[nH]c(cc5[nH]c(cc1n2)c(C)c5C(C)O)c(C)c4C(C)O)C(C)=C3CCC(=O)O",
-    "english_name": "3-[18-(2-carboxyethyl)-8,13-bis(1-hydroxyethyl)-3,7,12,17-tetramethyl-22,23-dihydroporphyrin-2-yl]propanoic acid",
-    "chinese_name": "3-[18-(2-羧基乙基)-8,13-双(1-羟乙基)-3,7,12,17-四甲基-22,23-二氢卟吩-2-基]丙酸",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -6641,18 +6043,6 @@
     "smiles": "O=P([O-])([O-])OP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c([O-])ncnc32)[C@H](O)[C@@H]1O",
     "english_name": "[[(2R,3S,4R,5R)-3,4-dihydroxy-5-(6-oxo-1H-purin-9-yl)oxolan-2-yl]methoxy-oxidophosphoryl]oxy-oxidophosphoryl hydrogen phosphate",
     "chinese_name": "[(2R,3S,4R,5R)-3,4-二羟基-5-(6-氧代-1H-嘌呤-9-基)四氢呋喃-2-基]甲氧基氧化磷酸基氧基氧化磷酸基磷酸",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1209",
-    "smiles": "O=C(O[C@H]1C[N+]2(CCCOc3ccccc3)CCC1CC2)C(O)(c1cccs1)c1cccs1",
-    "english_name": "(3R)-1-(3-phenoxypropyl)-1-azoniabicyclo[2.2.2]octan-3-yl 2-hydroxy-2,2-dithiophen-2-ylacetate",
-    "chinese_name": "[(3R)-1-(3-苯氧基丙基)-1-氮杂双环[2.2.2]辛-3-基] 2-羟基-2,2-二(2-硫代吩)乙酸酯",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -6721,36 +6111,12 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1228",
-    "smiles": "CC(C)c1cc2c(cc1O)[C@]13CCC[C@]4(C)CO[C@@H]1O[C@H]2C[C@@H]43",
-    "english_name": "(1R,5S,8R,10S,17S)-5-methyl-13-propan-2-yl-7,9-dioxapentacyclo[8.6.2.01,8.05,17.011,16]octadeca-11,13,15-trien-14-ol",
-    "chinese_name": "(1R,5S,8R,10S,17S)-5-甲基-13-丙-2-基-7,9-二氧杂五环[8.6.2.01,8.05,17.011,16]十八碳-11,13,15-三烯-14-醇",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1234",
     "smiles": "COc1cc2c(=O)c(-c3cc(OC)c(OC)cc3OC)coc2cc1O",
     "english_name": "7-hydroxy-6-methoxy-3-(2,4,5-trimethoxyphenyl)chromen-4-one",
     "chinese_name": "7-羟基-6-甲氧基-3-(2,4,5-三甲氧基苯基)色酮-4-酮",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1236",
-    "smiles": "C1=C2[C@H]3C[C@@H](CN2CCC1)[C@@H]1CCCCN1C3",
-    "english_name": "(1S,9S,10S)-7,15-diazatetracyclo[7.7.1.02,7.010,15]heptadec-2-ene",
-    "chinese_name": "(1S,9S,10S)-7,15-二氮杂四环[7.7.1.02,7.010,15]十七-2-烯",
-    "source": "chebi",
-    "tier": 3,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -6769,48 +6135,12 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1238",
-    "smiles": "CC[C@]1(O)C[C@H]2CN(CCc3c([nH]c4ccccc34)[C@@](C(=O)OC)(c3cc4c(cc3OC)N(C)[C@H]3[C@@](O)(C(=N)O)[C@H](O)[C@]5(CC)C=CCN6CC[C@]43[C@@H]65)C2)C1",
-    "english_name": "methyl (13S,15S,17S)-13-[(1R,9R,10S,11R,12R,19R)-10-carbamoyl-12-ethyl-10,11-dihydroxy-5-methoxy-8-methyl-8,16-diazapentacyclo[10.6.1.01,9.02,7.016,19]nonadeca-2,4,6,13-tetraen-4-yl]-17-ethyl-17-hydroxy-1,11-diazatetracyclo[13.3.1.04,12.05,10]nonadeca-4(12),5,7,9-tetraene-13-carboxylate",
-    "chinese_name": "(13S,15S,17S)-13-[(1R,9R,10S,11R,12R,19R)-10-甲酰胺基-12-乙基-10,11-二羟基-5-甲氧基-8-甲基-8,16-二氮杂五环[10.6.1.0¹,⁹.0²,⁷.0¹⁶,¹⁹]十九碳-2,4,6,13-四烯-4-基]-17-乙基-17-羟基-1,11-二氮杂四环[13.3.1.0⁴,¹².0⁵,¹⁰]十九碳-4(12),5,7,9-四烯-13-羧酸甲酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1240",
-    "smiles": "COc1ccc2c(c1)N=C(O)[C@@]21C=C2C(=O)N3CCC[C@H]3C(=O)N2[C@H]1C=C(C)C",
-    "english_name": "(5S,6S,9S)-6'-methoxy-6-(2-methylprop-1-enyl)spiro[1,7-diazatricyclo[7.3.0.03,7]dodec-3-ene-5,3'-1H-indole]-2,2',8-trione",
-    "chinese_name": "(5S,6S,9S)-6'-甲氧基-6-(2-甲基丙-1-烯基)螺[1,7-二氮杂三环[7.3.0.03,7]十二-3-烯-5,3'-1H-吲哚]-2,2',8-三酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1242",
     "smiles": "CC1C(=O)c2ccccc2NC1C=O",
     "english_name": "3-methyl-4-oxo-2,3-dihydro-1H-quinoline-2-carbaldehyde",
     "chinese_name": "3-甲基-4-氧代-2,3-二氢-1H-喹啉-2-甲醛",
     "source": "chebi",
     "tier": 2,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1243",
-    "smiles": "C[C@@H]1N[C@@H]2CCCCCCCC(=O)O[C@H]3CC[C@@H](CCCCCCCC(=O)O[C@H]1CC2)N[C@H]3C",
-    "english_name": "(1S,11R,13S,14S,24R,26S)-13,26-dimethyl-2,15-dioxa-12,25-diazatricyclo[22.2.2.211,14]triacontane-3,16-dione",
-    "chinese_name": "(1S,11R,13S,14S,24R,26S)-13,26-二甲基-2,15-二氧杂-12,25-二氮杂三环[22.2.2.211,14]三十烷-3,16-二酮",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -6979,18 +6309,6 @@
     "chinese_name": "(6R,7R)-7-[[2-(2-氨基-1,3-噻唑-4-基)乙酰基]氨基]-3-[[1-[2-(二甲基氨基)乙基]四唑-5-基]硫甲基]-8-氧代-5-硫杂-1-氮杂双环[4.2.0]辛-2-烯-2-羧酸",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1296",
-    "smiles": "CC(C)=CCC[C@H](C)[C@H]1C[C@H]2OO[C@@H]1C=C2C",
-    "english_name": "(1S,4R,7R)-5-methyl-7-[(2S)-6-methylhept-5-en-2-yl]-2,3-dioxabicyclo[2.2.2]oct-5-ene",
-    "chinese_name": "(1S,4R,7R)-5-甲基-7-[(2S)-6-甲基庚-5-烯-2-基]-2,3-二氧杂双环[2.2.2]辛-5-烯",
-    "source": "chebi",
-    "tier": 3,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -7213,18 +6531,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1362",
-    "smiles": "CC[C@@]12CCCN3CC[C@]4(c5cccc(OC)c5N(C(C)=O)[C@@H]4CC1)[C@H]32",
-    "english_name": "1-[(1R,9R,12R,19R)-12-ethyl-6-methoxy-8,16-diazapentacyclo[10.6.1.01,9.02,7.016,19]nonadeca-2(7),3,5-trien-8-yl]ethanone",
-    "chinese_name": "1-[(1R,9R,12R,19R)-12-乙基-6-甲氧基-8,16-二氮杂五环[10.6.1.01,9.02,7.016,19]十九碳-2(7),3,5-三烯-8-基]乙酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1364",
     "smiles": "N=c1[nH]c2ccccc2[nH]1",
     "english_name": "1H-benzimidazol-2-amine",
@@ -7277,18 +6583,6 @@
     "smiles": "COc1ccc([C@@H]2C[C@@H]3O[C@H]4[C@H](Oc5c(C)c(O)c(C)c(c53)O2)O[C@H](CO)[C@@H](O)[C@@H]4OC(C)=O)cc1",
     "english_name": "(3S,5R,6R,7S,8R,10S,12S)-6,16-dihydroxy-5-(hydroxymethyl)-12-(4-methoxyphenyl)-15,17-dimethyl-2,4,9,13-tetraoxatetracyclo[8.7.1.03,8.014,18]octadeca-1(17),14(18),15-trien-7-yl acetate",
     "chinese_name": "[(3S,5R,6R,7S,8R,10S,12S)-6,16-二羟基-5-(羟甲基)-12-(4-甲氧基苯基)-15,17-二甲基-2,4,9,13-四氧杂四环[8.7.1.03,8.014,18]十八碳-1(17),14(18),15-三烯-7-基]乙酸酯",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1381",
-    "smiles": "CC(C)CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3C[C@H]4O[C@]45C[C@@H](O)CC[C@]5(C)[C@H]3CC[C@]12C",
-    "english_name": "(1S,2R,5S,7S,9R,11S,12S,15R,16R)-2,16-dimethyl-15-[(2R)-6-methylheptan-2-yl]-8-oxapentacyclo[9.7.0.02,7.07,9.012,16]octadecan-5-ol",
-    "chinese_name": "(1S,2R,5S,7S,9R,11S,12S,15R,16R)-2,16-二甲基-15-[(2R)-6-甲基庚-2-基]-8-氧杂五环[9.7.0.02,7.07,9.012,16]十八烷-5-醇",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -7361,18 +6655,6 @@
     "smiles": "CO[C@H]1CCO[C@H]2O[C@@H]3C=C4CC[C@@H]5[C@H](CC[C@]6(C)[C@@H](C7=CC(=O)OC7)CC[C@]56O)[C@@]4(C)C[C@H]3O[C@]21O",
     "english_name": "3-[(3R,5S,9S,10S,12R,14R,15S,18R,19R,22S,23R)-10,22-dihydroxy-9-methoxy-14,18-dimethyl-4,6,11-trioxahexacyclo[12.11.0.03,12.05,10.015,23.018,22]pentacos-1-en-19-yl]-2H-furan-5-one",
     "chinese_name": "3-[(3R,5S,9S,10S,12R,14R,15S,18R,19R,22S,23R)-10,22-二羟基-9-甲氧基-14,18-二甲基-4,6,11-三氧杂六环[12.11.0.03,12.05,10.015,23.018,22]二十五-1-烯-19-基]-2H-呋喃-5-酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1409",
-    "smiles": "C=C1C[C@]23C[C@H]1CC[C@H]2[C@@]12C[C@H](C)[C@H](O)[C@@](C)(C(=O)O1)[C@H]2[C@@H]3C(=O)O",
-    "english_name": "(1R,2R,5R,8R,9S,10R,11S,12S,13S)-12-hydroxy-11,13-dimethyl-6-methylidene-16-oxo-15-oxapentacyclo[9.3.2.15,8.01,10.02,8]heptadecane-9-carboxylic acid",
-    "chinese_name": "(1R,2R,5R,8R,9S,10R,11S,12S,13S)-12-羟基-11,13-二甲基-6-亚甲基-16-氧代-15-氧杂五环[9.3.2.15,8.01,10.02,8]十七烷-9-羧酸",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -7465,18 +6747,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1438",
-    "smiles": "CO[C@H]1O[C@@H]2O[C@@]3(C)CC[C@H]4[C@H](C)CC[C@@H]([C@H]1C)[C@@]24OO3",
-    "english_name": "(1R,4S,5R,8S,9R,10S,12R,13R)-10-methoxy-1,5,9-trimethyl-11,14,15,16-tetraoxatetracyclo[10.3.1.04,13.08,13]hexadecane",
-    "chinese_name": "(1R,4S,5R,8S,9R,10S,12R,13R)-10-甲氧基-1,5,9-三甲基-11,14,15,16-四氧杂四环[10.3.1.04,13.08,13]十六烷",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1439",
     "smiles": "COc1cc(/C=C/C(=O)OC[C@H]2OC(Oc3cc4oc(-c5ccc(O)c(O)c5)cc(=O)c4c(O)c3[C@@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O)[C@H](O)[C@@H](O)[C@@H]2O)ccc1O",
     "english_name": "[(2R,3S,4S,5R)-6-[2-(3,4-dihydroxyphenyl)-5-hydroxy-4-oxo-6-[(2S,3R,4R,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]chromen-7-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methyl (2E)-3-(4-hydroxy-3-methoxyphenyl)prop-2-enoate",
@@ -7561,18 +6831,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1466",
-    "smiles": "COc1cc2c3cc1Oc1c(OC)c(OC)cc4c1[C@H](Cc1ccc(cc1)Oc1cc(ccc1O)C[C@H]3N(C)CC2)N(C)CC4",
-    "english_name": "(1R,14S)-20,21,25-trimethoxy-15,30-dimethyl-8,23-dioxa-15,30-diazaheptacyclo[22.6.2.29,12.13,7.114,18.027,31.022,33]hexatriaconta-3(36),4,6,9(35),10,12(34),18,20,22(33),24,26,31-dodecaen-6-ol",
-    "chinese_name": "(1R,14S)-20,21,25-三甲氧基-15,30-二甲基-8,23-二氧杂-15,30-二氮杂-1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36-环[22.6.2.2(9,12).1(3,7).1(14,18).0(27,31).0(22,33)]六环三十二碳-3(36),4,6,9(35),10,12(34),18,20,22(33),24,26,31-十二烯-6-醇",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1468",
     "smiles": "N=c1nc(O)c2ncn(COCCO)c2[nH]1",
     "english_name": "2-amino-9-(2-hydroxyethoxymethyl)-1H-purin-6-one",
@@ -7615,18 +6873,6 @@
     "chinese_name": "(1S,10S,12R,13R,14R,17R)-8-氯-12-羟基-5-[(1E,3R,4R)-4-羟基-3-甲基戊-1-烯基]-10,13,14-三甲基-4,11,15-三氧杂四环[8.7.0.02,7.012,17]十七碳-2,5,7-三烯-9,16-二酮",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1484",
-    "smiles": "COC1=C[C@]23CC[NH+](C)[C@H](Cc4ccc(OC)c(O)c42)C3=CC1=O",
-    "english_name": "(1S,9R)-3-hydroxy-4,13-dimethoxy-17-methyl-17-azoniatetracyclo[7.5.3.01,10.02,7]heptadeca-2(7),3,5,10,13-pentaen-12-one",
-    "chinese_name": "(1S,9R)-3-羟基-4,13-二甲氧基-17-甲基-17-氮杂四环[7.5.3.01,10.02,7]十七碳-2(7),3,5,10,13-五烯-12-酮",
-    "source": "chebi",
-    "tier": 3,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -7705,18 +6951,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1520",
-    "smiles": "C[C@@H]1[C@@H]2O[C@H]3CC[C@@]4(C=CC[C@H](C)[C@@]4(C)[C@H]13)O2",
-    "english_name": "(1S,5S,6S,7S,8S,9R,11S)-5,6,8-trimethyl-10,14-dioxatetracyclo[7.4.1.01,6.07,11]tetradec-2-ene",
-    "chinese_name": "(1S,5S,6S,7S,8S,9R,11S)-5,6,8-三甲基-10,14-二氧杂四环[7.4.1.01,6.07,11]十四-2-烯",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1530",
     "smiles": "Cn1c(=N)[nH]c2c(ncn2[C@@H]2O[C@H](COP(=O)(O)O)[C@@H](O)[C@H]2O)c1=O",
     "english_name": "[(2R,3S,4R,5R)-5-(2-amino-1-methyl-6-oxopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methyl dihydrogen phosphate",
@@ -7759,30 +6993,6 @@
     "chinese_name": "2-氨基-7,9-二氢-1H-嘌呤-6,8-二醇",
     "source": "chebi",
     "tier": 2,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1543",
-    "smiles": "CO[C@@H]1[C@H](N=C(O)CCOCCOCCOCCOCN)C[C@H]2O[C@]1(C)n1c3ccccc3c3c4c(c5c6ccccc6n2c5c31)C(O)=NC4",
-    "english_name": "3-[2-[2-[2-(aminomethoxy)ethoxy]ethoxy]ethoxy]-N-[(2S,3R,4R,6R)-3-methoxy-2-methyl-16-oxo-29-oxa-1,7,17-triazaoctacyclo[12.12.2.12,6.07,28.08,13.015,19.020,27.021,26]nonacosa-8,10,12,14,19,21,23,25,27-nonaen-4-yl]propanamide",
-    "chinese_name": "3-[2-[2-[2-(氨基甲氧基)乙氧基]乙氧基]乙氧基]-N-[(2S,3R,4R,6R)-3-甲氧基-2-甲基-16-氧代-29-氧杂-1,7,17-三氮杂环十二[12.12.2.12,6.07,28.08,13.015,19.020,27.021,26]非九碳-8,10,12,14,19,21,23,25,27-非烯-4-基]丙酰胺",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1548",
-    "smiles": "C=C(N=C(O)C(=C)N=C(O)c1csc(-c2ccc3c(n2)-c2csc(n2)[C@H](CSC(=O)c2[nH]c4cccc(C)c4c2C)N=C(O)c2csc(n2)[C@H](CCC(=O)O)N=C(O)c2cnc(s2)/C(=C/C)N=C(O)[C@H]([C@@H](C)O)N=C(O)c2csc-3n2)n1)C(=O)O",
-    "english_name": "2-[2-[[2-[(12S,19S,26Z,29S)-19-(2-carboxyethyl)-12-[(3,4-dimethyl-1H-indole-2-carbonyl)sulfanylmethyl]-26-ethylidene-29-[(1R)-1-hydroxyethyl]-14,21,28,31-tetraoxo-10,17,34,36-tetrathia-6,13,20,24,27,30,35,37,38-nonazahexacyclo[30.2.1.18,11.115,18.122,25.02,7]octatriaconta-1(35),2(7),3,5,8,11(38),15,18(37),22,24,32-undecaen-5-yl]-1,3-thiazole-4-carbonyl]amino]prop-2-enoylamino]prop-2-enoic acid",
-    "chinese_name": "2-[2-[[2-[(12S,19S,26Z,29S)-19-(2-羧基乙基)-12-[(3,4-二甲基-1H-吲哚-2-甲酰基)硫甲基]-26-亚乙基-29-[(1R)-1-羟乙基]-14,21,28,31-四氧-10,17,34,36-四硫-6,13,20,24,27,30,35,37,38-九氮六环[30.2.1.18,11.115,18.122,25.02,7]三十八碳-1(35),2(7),3,5,8,11(38),15,18(37),22,24,32-十一烯-5-基]-1,3-噻唑-4-甲酰基]氨基]丙-2-烯酰氨基]丙-2-烯酸",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -7873,18 +7083,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1593",
-    "smiles": "CC(C)C/C=C/[C@@H](C)[C@H]1CC[C@@H]2[C@]1(C)CC[C@H]1[C@@]23C[C@@H](O)[C@@]2(O)C[C@@H](OS(=O)(=O)[O-])CC[C@]12CO3.[Na+]",
-    "english_name": "sodium [(1R,2R,5R,6R,9R,10R,12R,13R,15S)-12,13-dihydroxy-5-methyl-6-[(2R,3E)-6-methylhept-3-en-2-yl]-19-oxapentacyclo[8.7.2.01,13.02,10.05,9]nonadecan-15-yl] sulfate",
-    "chinese_name": "[(1R,2R,5R,6R,9R,10R,12R,13R,15S)-12,13-二羟基-5-甲基-6-[(2R,3E)-6-甲基庚-3-烯-2-基]-19-氧杂五环[8.7.2.01,13.02,10.05,9]十九碳-15-基]硫酸钠",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1596",
     "smiles": "COc1cc(O)c2c(=O)c(O)c(-c3ccc(O)cc3)oc2c1",
     "english_name": "3,5-dihydroxy-2-(4-hydroxyphenyl)-7-methoxychromen-4-one",
@@ -7915,18 +7113,6 @@
     "chinese_name": "[(2R,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-3,4-二羟基四氢呋喃-2-基]甲基十二酰基磷酸",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1599",
-    "smiles": "CO[C@H]1/C=C/O[C@@]2(C)Oc3c(C)c(O)c4c(O)c(c5c(nc6cc(C)ccn65)c4c3C2=O)N=C(O)/C(C)=C\\C=C\\[C@H](C)[C@H](O)[C@@H](C)[C@@H](O)[C@@H](C)[C@H](OC(C)=O)[C@@H]1C",
-    "english_name": "(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,36-tetrahydroxy-11-methoxy-3,7,12,14,16,18,22,30-octamethyl-6,23-dioxo-8,37-dioxa-24,27,33-triazahexacyclo[23.10.1.14,7.05,35.026,34.027,32]heptatriaconta-1(35),2,4,9,19,21,25(36),26(34),28,30,32-undecaen-13-yl acetate",
-    "chinese_name": "[(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,36-四羟基-11-甲氧基-3,7,12,14,16,18,22,30-八甲基-6,23-二氧代-8,37-二氧杂-24,27,33-三氮杂六环[23.10.1.14,7.05,35.026,34.027,32]三十七碳-1(35),2,4,9,19,21,25(36),26(34),28,30,32-十一烯-13-基]乙酸酯",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -7999,18 +7185,6 @@
     "chinese_name": "5-[(2-环丙基-7,8-二甲氧基-2H-色烯-5-基)甲基]嘧啶-2,4-二胺",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1623",
-    "smiles": "Oc1cccc2c1[nH]c1c(C3=C[C@@]4(O)CC/C=C\\CCCCN5CC[C@@H]3[C@]3(C[C@@H]6/C=C\\CCCCN6[C@H]34)C5)nccc12",
-    "english_name": "(1R,2R,4R,5Z,12R,13S,16Z)-25-(8-hydroxy-9H-pyrido[3,4-b]indol-1-yl)-11,22-diazapentacyclo[11.11.2.12,22.02,12.04,11]heptacosa-5,16,25-trien-13-ol",
-    "chinese_name": "(1R,2R,4R,5Z,12R,13S,16Z)-25-(8-羟基-9H-吡啶并[3,4-b]吲哚-1-基)-11,22-二氮杂五环[11.11.2.12,22.02,12.04,11]二十七碳-5,16,25-三烯-13-醇",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -8137,46 +7311,10 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1661",
-    "smiles": "C=C(C)[C@]12C[C@@H](C)[C@@]34O[C@](Cc5ccccc5)(O[C@@H]1[C@@H]3C=C(COC(=O)Cc1ccc(O)c(OC)c1)C[C@]1(O)C(=O)C(C)=C[C@@H]41)O2",
-    "english_name": "[(1R,2R,6R,10S,11R,13S,15R,17R)-13-benzyl-6-hydroxy-4,17-dimethyl-5-oxo-15-prop-1-en-2-yl-12,14,18-trioxapentacyclo[11.4.1.01,10.02,6.011,15]octadeca-3,8-dien-8-yl]methyl 2-(4-hydroxy-3-methoxyphenyl)acetate",
-    "chinese_name": "[(1R,2R,6R,10S,11R,13S,15R,17R)-13-苄基-6-羟基-4,17-二甲基-5-氧代-15-丙-1-烯-2-基-12,14,18-三氧杂五环[11.4.1.01,10.02,6.011,15]十八碳-3,8-二烯-8-基]甲基 2-(4-羟基-3-甲氧基苯基)乙酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1665",
-    "smiles": "N[C@H]1C(O)=N[C@H]2Cc3ccc(c(Cl)c3)Oc3cc4cc(c3O)Oc3ccc(cc3Cl)[C@@H](O)[C@@H]3N=C(O)[C@H](N=C(O)[C@@H]4N=C(O)[C@@H](N=C2O)c2cc(O)cc(c2)Oc2cc1ccc2OS(=O)(=O)O)c1cc(Cl)c(O)c(c1)-c1c(O)cc(O)cc1[C@H](C(=O)O)N=C3O",
-    "english_name": "(1S,2R,19S,22R,34S,37R,40R,52R)-22-amino-5,15,43-trichloro-2,21,31,35,38,44,47,49,54,56,59,64-dodecahydroxy-26-sulfooxy-7,13,28-trioxa-20,36,39,53,55,58-hexazaundecacyclo[38.14.2.23,6.214,17.219,34.18,12.123,27.129,33.141,45.010,37.046,51]hexahexaconta-3,5,8,10,12(64),14,16,20,23(61),24,26,29(60),30,32,35,38,41(57),42,44,46(51),47,49,53,55,58,62,65-heptacosaene-52-carboxylic acid",
-    "chinese_name": "(1S,2R,19S,22R,34S,37R,40R,52R)-22-氨基-5,15,43-三氯-2,21,31,35,38,44,47,49,54,56,59,64-十二羟基-26-磺基氧基-7,13,28-三氧杂-20,36,39,53,55,58-六氮杂十一环[38.14.2.23,6.214,17.219,34.18,12.123,27.129,33.141,45.010,37.046,51]六十六碳-3,5,8,10,12(64),14,16,20,23(61),24,26,29(60),30,32,35,38,41(57),42,44,46(51),47,49,53,55,58,62,65-二十七烯-52-羧酸",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1669",
     "smiles": "CCCC[n+]1ccc2c3ccccc3n(Cc3ccccc3)c2c1-c1ccccc1Cl.[Br-]",
     "english_name": "9-benzyl-2-butyl-1-(2-chlorophenyl)pyrido[3,4-b]indol-2-ium bromide",
     "chinese_name": "9-苄基-2-丁基-1-(2-氯苯基)吡啶并[3,4-b]吲哚-2-鎓溴化物",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1673",
-    "smiles": "CC[C@]12C=CCN3CC[C@@]4(c5ccccc5[NH2+][C@H]4[C@@](O)(C(=O)OC)C1)[C@@H]32",
-    "english_name": "methyl (1S,9R,10R,12R,19S)-12-ethyl-10-hydroxy-8-aza-16-azoniapentacyclo[10.6.1.01,9.02,7.016,19]nonadeca-2,4,6,13-tetraene-10-carboxylate",
-    "chinese_name": "(1S,9R,10R,12R,19S)-12-乙基-10-羟基-8-氮杂-16-氮杂五环[10.6.1.01,9.02,7.016,19]十九碳-2,4,6,13-四烯-10-羧酸甲酯",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -8329,18 +7467,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1715",
-    "smiles": "CCCCCCOC(=O)[C@]1(O)C[C@@H]2O[C@@]1(C)n1c3ccccc3c3c4c(c5c6ccccc6n2c5c31)C(O)=NC4",
-    "english_name": "hexyl (15R,16S,18S)-16-hydroxy-15-methyl-3-oxo-28-oxa-4,14,19-triazaoctacyclo[12.11.2.115,18.02,6.07,27.08,13.019,26.020,25]octacosa-1,6,8,10,12,20,22,24,26-nonaene-16-carboxylate",
-    "chinese_name": "己基(15R,16S,18S)-16-羟基-15-甲基-3-氧代-28-氧杂-4,14,19-三氮杂环辛[12.11.2.115,18.02,6.07,27.08,13.019,26.020,25]二十八碳-1,6,8,10,12,20,22,24,26-非烯-16-羧酸酯",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1719",
     "smiles": "COC(=O)CC(=O)SCCN=C(O)CCN=C(O)C(O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)(O)O",
     "english_name": "methyl 3-[2-[3-[[4-[[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-3-phosphonooxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxy-hydroxyphosphoryl]oxy-2-hydroxy-3,3-dimethylbutanoyl]amino]propanoylamino]ethylsulfanyl]-3-oxopropanoate",
@@ -8437,42 +7563,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1738",
-    "smiles": "C/C=C(\\N=C(O)[C@H](CCCCN)N=C(O)[C@H](C)N=C(O)[C@@H]1CS[C@@H](C)[C@@H](N=C(O)[C@@H]2CSC[C@@H](N=C(O)[C@H](C)N=C(O)[C@@H](N)[C@@H](C)CC)C(O)=N[C@@H](CCCCN)C(O)=N[C@@H](Cc3ccccc3)C(O)=N[C@@H]([C@@H](C)CC)C(O)=N2)C(=O)N2CCC[C@H]2C(O)=NCC(O)=N1)C(O)=NCC(O)=N[C@@H]1CSC[C@@H]2N=C(O)[C@H](Cc3ccc(O)cc3)N=C(O)[C@@H](CS/C=C\\N=C2O)N=C(O)[C@H](CC(=N)O)N=C(O)[C@H](Cc2ccccc2)N=C1O",
-    "english_name": "(3S,4S,7R,13S)-N-[(2S)-1-[(2S)-6-amino-1-[(2Z)-1-[2-[[(1S,4S,7S,10S,14R,17Z,23S)-7-benzyl-3,6,9,15,21,24-hexahydroxy-4-(2-hydroxy-2-iminoethyl)-23-[(4-hydroxyphenyl)methyl]-12,19-dithia-2,5,8,16,22,25-hexazabicyclo[12.6.5]pentacosa-2,5,8,15,17,21,24-heptaen-10-yl]imino]-2-hydroxyethyl]imino-1-hydroxybut-2-en-2-yl]imino-1-hydroxyhexan-2-yl]imino-1-hydroxypropan-2-yl]-3-[[[(3R,6S,9S,12S,15S)-12-(4-aminobutyl)-15-[[(2S)-2-[[(2S,3S)-2-amino-1-hydroxy-3-methylpentylidene]amino]-1-hydroxypropylidene]amino]-9-benzyl-6-[(2S)-butan-2-yl]-5,8,11,14-tetrahydroxy-1-thia-4,7,10,13-tetrazacyclohexadeca-4,7,10,13-tetraen-3-yl]-hydroxymethylidene]amino]-9,12-dihydroxy-4-methyl-2-oxo-5-thia-1,8,11-triazabicyclo[11.3.0]hexadeca-8,11-diene-7-carboximidic acid",
-    "chinese_name": "(3S,4S,7R,13S)-N-[(2S)-1-[(2S)-6-氨基-1-[(2Z)-1-[2-[[(1S,4S,7S,10S,14R,17Z,23S)-7-苄基-3,6,9,15,21,24-六羟基-4-(2-羟基-2-亚氨基乙基)-23-[(4-羟基苯基)甲基]-12,19-二硫杂-2,5,8,16,22,25-六氮杂双环[12.6.5]二十五碳-2,5,8,15,17,21,24-七烯-10-基]亚氨基]-2-羟基乙基]亚氨基-1-羟基丁-2-烯-2-基]亚氨基-1-羟基己-2-基]亚氨基-1-羟基丙-2-基]-3-[[[(3R,6S,9S,12S,15S)-12-(4-氨基丁基)-15-[[(2S)-2-[[(2S,3S)-2-氨基-1-羟基-3-甲基戊亚基]氨基]-1-羟基丙亚基]氨基]-9-苄基-6-[(2S)-丁-2-基]-5,8,11,14-四羟基-1-硫杂-4,7,10,13-四氮杂环十六碳-4,7,10,13-四烯-3-基]-羟基亚甲基]氨基]-9,12-二羟基-4-甲基-2-氧代-5-硫杂-1,8,11-三氮杂双环[11.3.0]十六碳-8,11-二烯-7-羧亚胺酸",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1745",
-    "smiles": "CN1[C@@H]2CCC[C@H]1CC(NC(=O)c1nn(C)c3ccccc13)C2",
-    "english_name": "1-methyl-N-[(1R,5S)-9-methyl-9-azabicyclo[3.3.1]nonan-3-yl]indazole-3-carboxamide",
-    "chinese_name": "1-甲基-N-[(1R,5S)-9-甲基-9-氮杂双环[3.3.1]壬-3-基]吲唑-3-甲酰胺",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1747",
-    "smiles": "CCN1C[C@]2(COC(=O)c3ccccc3N3C(=O)CC(C)C3=O)CC[C@H](OC)[C@@]34C1[C@]1(OCO[C@@]15C[C@H](OC)[C@H]1C[C@@H]3[C@@H]5[C@H]1OC)[C@@H](OC)[C@H]24",
-    "english_name": "[(1S,2R,3R,4S,5R,6S,8R,12S,16S,19S,20R,21S)-14-ethyl-4,6,19,21-tetramethoxy-9,11-dioxa-14-azaheptacyclo[10.7.2.12,5.01,13.03,8.08,12.016,20]docosan-16-yl]methyl 2-(3-methyl-2,5-dioxopyrrolidin-1-yl)benzoate",
-    "chinese_name": "[(1S,2R,3R,4S,5R,6S,8R,12S,16S,19S,20R,21S)-14-乙基-4,6,19,21-四甲氧基-9,11-二氧杂-14-氮杂七环[10.7.2.12,5.01,13.03,8.08,12.016,20]二十三烷-16-基]甲基 2-(3-甲基-2,5-二氧代吡咯烷-1-基)苯甲酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1751",
     "smiles": "N[C@@H](Cc1c[nH]c2cc(Br)ccc12)C(=O)O",
     "english_name": "(2S)-2-amino-3-(6-bromo-1H-indol-3-yl)propanoic acid",
@@ -8491,18 +7581,6 @@
     "chinese_name": "[6-羟基-2-(4-羟基苯基)-1-苯并噻吩-3-基]-[4-(2-哌啶-1-基乙氧基)苯基]甲酮盐酸盐",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1763",
-    "smiles": "CCCCC/C=C\\CCC(=O)O[C@@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@H]1Nc1c2cc3cc1Oc1ccc(cc1Cl)[C@@H](O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1N=C(C)O)[C@@H]1N=C(O)[C@H](N=C(O)[C@@H]3N=C(O)[C@H]3N=C(O)[C@@H](Cc4ccc(c(Cl)c4)O2)N=C(O)[C@H](N)c2ccc(O)c(c2)Oc2cc(O)cc3c2)c2ccc(O)c(c2)-c2c(O[C@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]3O)cc(O)cc2[C@@H](C(=O)O)N=C1O",
-    "english_name": "(1S,2R,19R,22R,34S,37R,40R,52S)-2-[(2R,3R,4R,5S,6R)-3-acetamido-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-22-amino-5,15-dichloro-64-[[(2R,3R,4S,5S,6R)-3-[(4Z)-dec-4-enoyl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]amino]-26,31,44,49-tetrahydroxy-21,35,38,54,56,59-hexaoxo-47-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-7,13,28-trioxa-20,36,39,53,55,58-hexazaundecacyclo[38.14.2.23,6.214,17.219,34.18,12.123,27.129,33.141,45.010,37.046,51]hexahexaconta-3,5,8,10,12(64),14,16,23(61),24,26,29(60),30,32,41(57),42,44,46(51),47,49,62,65-henicosaene-52-carboxylic acid",
-    "chinese_name": "(1S,2R,19R,22R,34S,37R,40R,52S)-2-[(2R,3R,4R,5S,6R)-3-乙酰氨基-4,5-二羟基-6-(羟甲基)氧杂环己烷-2-基]氧基-22-氨基-5,15-二氯-64-[(2R,3R,4S,5S,6R)-3-[(4Z)-癸-4-烯酰基]氧基-4,5-二羟基-6-(羟甲基)氧杂环己烷-2-基]氨基-26,31,44,49-四羟基-21,35,38,54,56,59-六氧代-47-[(2R,3S,4S,5S,6R)-3,4,5-三羟基-6-(羟甲基)氧杂环己烷-2-基]氧基-7,13,28-三氧杂-20,36,39,53,55,58-六氮杂十一环[38.14.2.23,6.214,17.219,34.18,12.123,27.129,33.141,45.010,37.046,51]六十六碳-3,5,8,10,12(64),14,16,23(61),24,26,29(60),30,32,41(57),42,44,46(51),47,49,62,65-二十一烯-52-羧酸",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -8581,18 +7659,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1787",
-    "smiles": "CC(=O)OC[C@]12[C@@H](OC(C)=O)C[C@@H](C)[C@]3(C)C[C@H](C4=CC(=O)OC4)O[C@H](CC[C@]14CO4)[C@H]32",
-    "english_name": "[(1R,3R,5S,6R,8S,9R,10R,13R)-8-acetyloxy-5,6-dimethyl-3-(5-oxo-2H-furan-3-yl)spiro[2-oxatricyclo[7.3.1.05,13]tridecane-10,2'-oxirane]-9-yl]methyl acetate",
-    "chinese_name": "[(1R,3R,5S,6R,8S,9R,10R,13R)-8-乙酰氧基-5,6-二甲基-3-(5-氧代-2H-呋喃-3-基)螺[2-氧杂三环[7.3.1.05,13]十三烷-10,2'-环氧乙烷]-9-基]甲基乙酸酯",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1788",
     "smiles": "COc1ccc2c(c1)N(C[C@H](C)CN(C)C)c1ccccc1S2",
     "english_name": "(2R)-3-(2-methoxyphenothiazin-10-yl)-N,N,2-trimethylpropan-1-amine",
@@ -8659,18 +7725,6 @@
     "chinese_name": "4-(3,6-二甲基-1,3-苯并噻唑-3-鎓-2-基)-N,N-二甲基苯胺",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1796",
-    "smiles": "CC12CC(=O)C(CC(=O)O1)C2(C)C",
-    "english_name": "1,8,8-trimethyl-2-oxabicyclo[3.2.1]octane-3,6-dione",
-    "chinese_name": "1,8,8-三甲基-2-氧杂双环[3.2.1]辛烷-3,6-二酮",
-    "source": "chebi",
-    "tier": 2,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -8833,48 +7887,12 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1850",
-    "smiles": "CC1=CC(=O)[C@@H](O)[C@@]2(C)[C@H]1CC(=O)[C@@]13CO[C@]4(C)[C@@H](OC(=O)[C@@H]41)[C@H](O)[C@@H]32",
-    "english_name": "(1R,4S,5R,8S,9R,10R,11S,12S,16S)-9,12-dihydroxy-4,11,15-trimethyl-3,7-dioxapentacyclo[8.8.0.01,5.04,8.011,16]octadec-14-ene-6,13,18-trione",
-    "chinese_name": "(1R,4S,5R,8S,9R,10R,11S,12S,16S)-9,12-二羟基-4,11,15-三甲基-3,7-二氧杂五环[8.8.0.01,5.04,8.011,16]十八碳-14-烯-6,13,18-三酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1853",
     "smiles": "CCC(C)C(=O)c1c(O)c(Cc2c(O)c(C)c(O)c(C(=O)C(C)C)c2O)c(O)c2c1OC(C)(C)C=C2",
     "english_name": "1-[5,7-dihydroxy-2,2-dimethyl-6-[[2,4,6-trihydroxy-3-methyl-5-(2-methylpropanoyl)phenyl]methyl]chromen-8-yl]-2-methylbutan-1-one",
     "chinese_name": "1-[5,7-二羟基-2,2-二甲基-6-[[2,4,6-三羟基-3-甲基-5-(2-甲基丙酰基)苯基]甲基]色烯-8-基]-2-甲基丁烷-1-酮",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1854",
-    "smiles": "CCCCCCCCCCCCCCC(CCCCCCCCCCCCCC)CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@H]3O[C@H](COS(=O)(=O)O)[C@@H](O[C@@H]4O[C@H](CO)[C@H](O)[C@H](OC56C[C@H](O)[C@@H](N=C5O)[C@H]([C@H](O)[C@H](O)CO)O6)[C@H]4O)[C@H](O[C@@H]4O[C@@H](C)[C@@H](O)[C@@H](O)[C@@H]4O)[C@H]3N=C(C)[O-])[C@H]2O)[C@H](O)[C@H]1O.[Na+]",
-    "english_name": "sodium [(2R,3S,4R,5R,6S)-5-acetamido-3-[(2S,3R,4S,5S,6R)-3,5-dihydroxy-6-(hydroxymethyl)-4-[[(3R,4R,8S)-8-hydroxy-6-oxo-3-[(1R,2R)-1,2,3-trihydroxypropyl]-2-oxa-5-azabicyclo[2.2.2]octan-1-yl]oxy]oxan-2-yl]oxy-6-[(2S,3R,4S,5S,6R)-2-[(2R,3S,4R,5R,6R)-4,5-dihydroxy-2-(hydroxymethyl)-6-(2-tetradecylhexadecyloxy)oxan-3-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-4-yl]oxy-4-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]methyl sulfate",
-    "chinese_name": "硫酸钠[(2R,3S,4R,5R,6S)-5-乙酰氨基-3-[(2S,3R,4S,5S,6R)-3,5-二羟基-6-(羟甲基)-4-[(3R,4R,8S)-8-羟基-6-氧代-3-[(1R,2R)-1,2,3-三羟基丙基]-2-氧杂-5-氮杂双环[2.2.2]辛-1-基]氧基]氧杂环己烷-2-基]氧基-6-[(2S,3R,4S,5S,6R)-2-[(2R,3S,4R,5R,6R)-4,5-二羟基-2-(羟甲基)-6-(2-十四烷基十六烷氧基)氧杂环己烷-3-基]氧基-3,5-二羟基-6-(羟甲基)氧杂环己烷-4-基]氧基-4-[(2S,3S,4R,5S,6S)-3,4,5-三羟基-6-甲基氧杂环己烷-2-基]氧基氧杂环己烷-2-基]甲基",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-1857",
-    "smiles": "O=C(O)CCc1c2[nH]c(c1CC(=O)O)Cc1[nH]c(c(CC(=O)O)c1CCC(=O)O)Cc1[nH]c(c(CC(=O)O)c1CCC(=O)O)Cc1[nH]c(c(CCC(=O)O)c1CC(=O)O)C2",
-    "english_name": "3-[7,12,18-tris(2-carboxyethyl)-3,8,13,17-tetrakis(carboxymethyl)-5,10,15,20,21,22,23,24-octahydroporphyrin-2-yl]propanoic acid",
-    "chinese_name": "3-[7,12,18-三(2-羧基乙基)-3,8,13,17-四(羧基甲基)-5,10,15,20,21,22,23,24-八氢卟啉-2-基]丙酸",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -9301,18 +8319,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-1989",
-    "smiles": "CC(=O)OC[C@]12[C@H](OC(C)=O)[C@H](OC(C)=O)[C@@H]3[C@@H](O)[C@@]14O[C@@]3(C)COC(=O)c1cccnc1[C@@H](C)[C@H](C)C(=O)O[C@@H]([C@H](OC(C)=O)[C@@H]2OC(C)=O)[C@]4(C)O",
-    "english_name": "[(1S,3R,13S,14S,17S,18R,19R,20R,21S,22R,23S,24R,25S)-18,19,21,22-tetraacetyloxy-24,25-dihydroxy-3,13,14,25-tetramethyl-6,15-dioxo-2,5,16-trioxa-11-azapentacyclo[15.7.1.01,20.03,23.07,12]pentacosa-7(12),8,10-trien-20-yl]methyl acetate",
-    "chinese_name": "[(1S,3R,13S,14S,17S,18R,19R,20R,21S,22R,23S,24R,25S)-18,19,21,22-四乙酰氧基-24,25-二羟基-3,13,14,25-四甲基-6,15-二氧代-2,5,16-三氧杂-11-氮杂五环[15.7.1.01,20.03,23.07,12]二十五碳-7(12),8,10-三烯-20-基]甲基乙酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-1991",
     "smiles": "C[C@H](N=C(O)[C@@H](N)Cc1c[nH]c2ccccc12)C(=O)O",
     "english_name": "(2S)-2-[[(2S)-2-amino-3-(1H-indol-3-yl)propanoyl]amino]propanoic acid",
@@ -9445,18 +8451,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2036",
-    "smiles": "Cl.O=C1C[C@@H]2OCC=C3CN4CC[C@]56c7ccccc7N1[C@H]5[C@H]2[C@H]3C[C@H]46",
-    "english_name": "(4aR,5aS,8aR,13aS,15aS,15bR)-4a,5,5a,7,8,13a,15,15a,15b,16-decahydro-2H-4,6-methanoindolo[3,2,1-ij]oxepino[2,3,4-de]pyrrolo[2,3-h]quinolin-14-one hydrochloride",
-    "chinese_name": "(4aR,5aS,8aR,13aS,15aS,15bR)-4a,5,5a,7,8,13a,15,15a,15b,16-十氢-2H-4,6-亚甲基吲哚并[3,2,1-ij]氧杂环庚烯并[2,3,4-de]吡咯并[2,3-h]喹啉-14-酮盐酸盐",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2039",
     "smiles": "COc1ccc([C@@H]2CC(=O)c3cc(CC=C(C)C)c4c(c3O2)C=CC(C)(C)O4)cc1OC",
     "english_name": "(2S)-2-(3,4-dimethoxyphenyl)-8,8-dimethyl-6-(3-methylbut-2-enyl)-2,3-dihydropyrano[2,3-h]chromen-4-one",
@@ -9475,18 +8469,6 @@
     "chinese_name": "[(2R,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-4-羟基-2-[[[[(3R)-3-羟基-2,2-二甲基-4-氧代-4-[[3-氧代-3-[2-[(2E,16Z,19Z,22Z,25Z,28Z,31Z)-四十四碳-2,16,19,22,25,28,31-七烯酰]硫基乙基氨基]丙基]氨基]丁氧基]-氧化磷酸基]氧基-氧化磷酸基]氧甲基]四氢呋喃-3-基]磷酸",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2041",
-    "smiles": "O=C1CC=C2[C@H]3C[C@H]4[C@@]5(CC[N+]4([O-])C/C3=C/CO)c3ccccc3N1[C@@H]25",
-    "english_name": "(1S,13S,14E,19S,21S)-14-(2-hydroxyethylidene)-16-oxido-8-aza-16-azoniahexacyclo[11.5.2.11,8.02,7.016,19.012,21]henicosa-2,4,6,11-tetraen-9-one",
-    "chinese_name": "(1S,13S,14E,19S,21S)-14-(2-羟亚乙基)-16-氧代-8-氮杂-16-氮杂六环[11.5.2.11,8.02,7.016,19.012,21]二十三-2,4,6,11-四烯-9-酮",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -9589,18 +8571,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2076",
-    "smiles": "CC[C@]12C=CCN3CC[C@]4(C(=C(C(=O)OC)C1)Nc1cc(O)ccc14)[C@@H]32",
-    "english_name": "methyl (1R,12R,19S)-12-ethyl-5-hydroxy-8,16-diazapentacyclo[10.6.1.01,9.02,7.016,19]nonadeca-2(7),3,5,9,13-pentaene-10-carboxylate",
-    "chinese_name": "(1R,12R,19S)-12-乙基-5-羟基-8,16-二氮杂五环[10.6.1.01,9.02,7.016,19]十九碳-2(7),3,5,9,13-五烯-10-羧酸甲酯",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2082",
     "smiles": "CCCCCCCCCCCCCCCCCCCCCCC(C(=O)O)C(=O)SCCN=C(O)CCN=C(O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)(O)O",
     "english_name": "2-[2-[3-[[(2R)-4-[[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-3-phosphonooxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxy-hydroxyphosphoryl]oxy-2-hydroxy-3,3-dimethylbutanoyl]amino]propanoylamino]ethylsulfanylcarbonyl]tetracosanoic acid",
@@ -9641,30 +8611,6 @@
     "smiles": "CC(C)=CCc1c(O)cc(O)c2c1O[C@H](c1ccc(O)cc1O)CC2=O",
     "english_name": "(2S)-2-(2,4-dihydroxyphenyl)-5,7-dihydroxy-8-(3-methylbut-2-enyl)-2,3-dihydrochromen-4-one",
     "chinese_name": "(2S)-2-(2,4-二羟基苯基)-5,7-二羟基-8-(3-甲基丁-2-烯基)-2,3-二氢色烯-4-酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2106",
-    "smiles": "CN1C(=O)[C@]23CC4=CC=C[C@H](O)[C@H]4N2C(=O)[C@@]1(CO)SS3",
-    "english_name": "(1R,7S,8S,11R)-7-hydroxy-11-(hydroxymethyl)-15-methyl-12,13-dithia-9,15-diazatetracyclo[9.2.2.01,9.03,8]pentadeca-3,5-diene-10,14-dione",
-    "chinese_name": "(1R,7S,8S,11R)-7-羟基-11-(羟甲基)-15-甲基-12,13-二硫-9,15-二氮杂四环[9.2.2.01,9.03,8]十五碳-3,5-二烯-10,14-二酮",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2110",
-    "smiles": "C[N+]1(C)[C@@H]2CC(OC(=O)C(O)(c3cccs3)c3cccs3)C[C@H]1[C@@H]1O[C@@H]12.[Br-]",
-    "english_name": "(1R,2R,4S,5S)-9,9-dimethyl-3-oxa-9-azoniatricyclo[3.3.1.02,4]nonan-7-yl 2-hydroxy-2,2-dithiophen-2-ylacetate bromide",
-    "chinese_name": "[(1R,2R,4S,5S)-9,9-二甲基-3-氧杂-9-氮杂三环[3.3.1.02,4]壬-7-基] 2-羟基-2,2-二(2-硫代苯基)乙酸酯 溴化物",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -9811,18 +8757,6 @@
     "chinese_name": "2-[3-氟-4-(甲氨基)苯基]-1,3-苯并噻唑-6-醇",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2149",
-    "smiles": "CN[C@H](CC(C)C)C(O)=N[C@H]1C(O)=N[C@@H](CC(=[NH2+])O)C(O)=N[C@H]2C(O)=N[C@H]3C(O)=N[C@H](C(O)=N[C@H](C(=O)O)c4cc(O)cc(O)c4-c4cc3ccc4O)[C@H](O[C@H]3C[C@](C)([NH3+])[C@@H](O)[C@H](C)O3)c3ccc(c(Cl)c3)Oc3cc2cc(c3O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O[C@H]2C[C@](C)(N)[C@@H](O)[C@H](C)O2)Oc2ccc(cc2Cl)[C@H]1O",
-    "english_name": "(1S,2R,18R,19R,22S,25R,28R,40S)-22-(2-amino-2-oxoethyl)-2-[(2R,4S,5R,6S)-4-azaniumyl-5-hydroxy-4,6-dimethyloxan-2-yl]oxy-48-[(2S,3R,4S,5S,6R)-3-[(2R,4S,5R,6S)-4-azaniumyl-5-hydroxy-4,6-dimethyloxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-5,15-dichloro-18,32,35,37-tetrahydroxy-19-[[(2R)-4-methyl-2-(methylazaniumyl)pentanoyl]amino]-20,23,26,42,44-pentaoxo-7,13-dioxa-21,24,27,41,43-pentazaoctacyclo[26.14.2.23,6.214,17.18,12.129,33.010,25.034,39]pentaconta-3,5,8,10,12(48),14,16,29(45),30,32,34(39),35,37,46,49-pentadecaene-40-carboxylate",
-    "chinese_name": "(1S,2R,18R,19R,22S,25R,28R,40S)-22-(2-氨基-2-氧代乙基)-2-[(2R,4S,5R,6S)-4-铵基-5-羟基-4,6-二甲基氧杂环己烷-2-基]氧基-48-[(2S,3R,4S,5S,6R)-3-[(2R,4S,5R,6S)-4-铵基-5-羟基-4,6-二甲基氧杂环己烷-2-基]氧基-4,5-二羟基-6-(羟甲基)氧杂环己烷-2-基]氧基-5,15-二氯-18,32,35,37-四羟基-19-[(2R)-4-甲基-2-(甲基铵基)戊酰氨基]-20,23,26,42,44-五氧代-7,13-二氧杂-21,24,27,41,43-五氮杂环辛[26.14.2.23,6.214,17.18,12.129,33.010,25.034,39]五十-3,5,8,10,12(48),14,16,29(45),30,32,34(39),35,37,46,49-十五烯-40-羧酸盐",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -9991,18 +8925,6 @@
     "chinese_name": "5,6,7-三羟基-2-苯基-4H-1-苯并吡喃-4-酮",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2203",
-    "smiles": "C=C(C)[C@@]12OC3(c4ccccc4)O[C@@H]1[C@@H]1[C@H]4O[C@@]4(C)[C@@H](O)[C@]4(O)C(=O)[C@@H](C)C[C@H]4[C@@]1(O3)[C@H](C)[C@@H]2OC(=O)c1ccccc1",
-    "english_name": "(1R,2R,4S,6S,7S,8S,10R,11S,12R,16S,17S,18R)-6,7-dihydroxy-4,8,18-trimethyl-5-oxo-14-phenyl-16-prop-1-en-2-yl-9,13,15,19-tetraoxahexacyclo[12.4.1.01,11.02,6.08,10.012,16]nonadecan-17-yl benzoate",
-    "chinese_name": "[(1R,2R,4S,6S,7S,8S,10R,11S,12R,16S,17S,18R)-6,7-二羟基-4,8,18-三甲基-5-氧代-14-苯基-16-丙-1-烯-2-基-9,13,15,19-四氧杂六环[12.4.1.01,11.02,6.08,10.012,16]十九碳-17-基]苯甲酸酯",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -10381,18 +9303,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2307",
-    "smiles": "C[C@]12C[C@@]34C=CC(=O)[C@@](C)(CCC(O)=Nc5c(O)cccc5O)[C@@H]3[C@H](C[C@@H]1C4)O2",
-    "english_name": "N-(2,6-dihydroxyphenyl)-3-[(1S,5S,6R,7S,9S,10S)-5,9-dimethyl-4-oxo-8-oxatetracyclo[7.2.1.17,10.01,6]tridec-2-en-5-yl]propanamide",
-    "chinese_name": "N-(2,6-二羟基苯基)-3-[(1S,5S,6R,7S,9S,10S)-5,9-二甲基-4-氧代-8-氧杂四环[7.2.1.17,10.01,6]十三碳-2-烯-5-基]丙酰胺",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2308",
     "smiles": "Oc1nc2ccccc2n1CCN1CCN(c2cccc(C(F)(F)F)c2)CC1",
     "english_name": "3-[2-[4-[3-(trifluoromethyl)phenyl]piperazin-1-yl]ethyl]-1H-benzimidazol-2-one",
@@ -10477,36 +9387,12 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2327",
-    "smiles": "Nc1ncnc2c1ncn2[C@@H]1O[C@@]2(COP(=O)(O)O)CO[C@@H]1[C@@H]2O",
-    "english_name": "[(1R,3R,4R,7S)-3-(6-aminopurin-9-yl)-7-hydroxy-2,5-dioxabicyclo[2.2.1]heptan-1-yl]methyl dihydrogen phosphate",
-    "chinese_name": "[(1R,3R,4R,7S)-3-(6-氨基嘌呤-9-基)-7-羟基-2,5-二氧杂双环[2.2.1]庚-1-基]甲基磷酸",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2331",
     "smiles": "COc1cc(C(=O)O[C@@H]2Cc3c(O)cc(O)cc3O[C@@H]2c2ccc(O)c(O)c2)cc(O)c1O",
     "english_name": "(2R,3R)-2-(3,4-dihydroxyphenyl)-5,7-dihydroxy-3,4-dihydro-2H-chromen-3-yl 3,4-dihydroxy-5-methoxybenzoate",
     "chinese_name": "[(2R,3R)-2-(3,4-二羟基苯基)-5,7-二羟基-3,4-二氢-2H-色烯-3-基] 3,4-二羟基-5-甲氧基苯甲酸酯",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2333",
-    "smiles": "Cc1c2[nH]c(c1CCC(=O)O)Cc1[nH]c(c(CCC(=O)O)c1C)Cc1[nH]c(c(CCC(=O)O)c1C)Cc1[nH]c(c(C)c1CCC(=O)O)C2",
-    "english_name": "3-[8,12,17-tris(2-carboxyethyl)-3,7,13,18-tetramethyl-5,10,15,20,21,22,23,24-octahydroporphyrin-2-yl]propanoic acid",
-    "chinese_name": "3-[8,12,17-三(2-羧基乙基)-3,7,13,18-四甲基-5,10,15,20,21,22,23,24-八氢卟啉-2-基]丙酸",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -10585,18 +9471,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2386",
-    "smiles": "CC1=C(O)C(=O)[C@H]2CC(=O)[C@@]34C(O)=N[C@@H](Cc5c[nH]c6ccccc56)[C@@H]3C(C)=C(C)[C@@H](O)[C@@H]4/C=C/C[C@H](C)[C@H]12",
-    "english_name": "(1R,4S,8S,9S,11E,13R,14S,17R,18S)-6,14-dihydroxy-18-(1H-indol-3-ylmethyl)-7,9,15,16-tetramethyl-19-azatetracyclo[11.7.0.01,17.04,8]icosa-6,11,15-triene-2,5,20-trione",
-    "chinese_name": "(1R,4S,8S,9S,11E,13R,14S,17R,18S)-6,14-二羟基-18-(1H-吲哚-3-基甲基)-7,9,15,16-四甲基-19-氮杂四环[11.7.0.01,17.04,8]二十碳-6,11,15-三烯-2,5,20-三酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2392",
     "smiles": "CC(C)=CC(=O)C/C(C)=C/C/C=C(\\C)C(C)c1c(O)c2ccc(O)cc2oc1=O",
     "english_name": "4,7-dihydroxy-3-[(3E,6E)-3,7,11-trimethyl-9-oxododeca-3,6,10-trien-2-yl]chromen-2-one",
@@ -10657,18 +9531,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2406",
-    "smiles": "C=CC[NH+]1CC[C@]23c4c5ccc(O)c4O[C@H]2C(=O)CC[C@@]3(O)[C@H]1C5",
-    "english_name": "(4R,4aS,7aR,12bS)-4a,9-dihydroxy-3-prop-2-enyl-1,2,3,4,5,6,7a,13-octahydro-4,12-methanobenzofuro[3,2-e]isoquinolin-3-ium-7-one",
-    "chinese_name": "(4R,4aS,7aR,12bS)-4a,9-二羟基-3-丙-2-烯基-1,2,3,4,5,6,7a,13-八氢-4,12-亚甲基苯并呋喃并[3,2-e]异喹啉-3-鎓-7-酮",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2408",
     "smiles": "COc1ccc(-c2coc3cc(O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4O)ccc3c2=O)cc1",
     "english_name": "3-(4-methoxyphenyl)-7-[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxychromen-4-one",
@@ -10687,18 +9549,6 @@
     "chinese_name": "二钾 7-氯-2-氧代-5-苯基-1,3-二氢-1,4-苯并二氮杂䓬-3-羧酸盐",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2426",
-    "smiles": "CC(=O)O[C@H]1C(=O)[C@@]2(C)[C@H]([C@H](OC(=O)c3ccccc3)[C@]3(O)C[C@H](O)C(C)=C1C3(C)C)[C@]1(OC(C)=O)CO[C@@H]1C[C@@H]2O",
-    "english_name": "(1S,2S,3R,4S,7R,9S,10S,12R,15S)-4,12-diacetyloxy-1,9,15-trihydroxy-10,14,17,17-tetramethyl-11-oxo-6-oxatetracyclo[11.3.1.03,10.04,7]heptadec-13-en-2-yl benzoate",
-    "chinese_name": "[(1S,2S,3R,4S,7R,9S,10S,12R,15S)-4,12-二乙酰氧基-1,9,15-三羟基-10,14,17,17-四甲基-11-氧代-6-氧杂四环[11.3.1.03,10.04,7]十七碳-13-烯-2-基]苯甲酸酯",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -10789,18 +9639,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2453",
-    "smiles": "C=C(C)[C@H]1C=C[C@@H](OC(C)=O)[C@]23CO[C@](O)([C@@](C)(O)[C@H]12)[C@@]1(OC(C)=O)C[C@H](C)[C@H](OC(C)=O)[C@@H]1[C@H]3OC(=O)c1cccnc1",
-    "english_name": "(1R,2R,3R,4S,5S,7R,8R,9S,10R,11S,14R)-4,7,14-triacetyloxy-8,9-dihydroxy-5,9-dimethyl-11-prop-1-en-2-yl-16-oxatetracyclo[6.6.2.01,10.03,7]hexadec-12-en-2-yl pyridine-3-carboxylate",
-    "chinese_name": "[(1R,2R,3R,4S,5S,7R,8R,9S,10R,11S,14R)-4,7,14-三乙酰氧基-8,9-二羟基-5,9-二甲基-11-丙-1-烯-2-基-16-氧杂四环[6.6.2.01,10.03,7]十六碳-12-烯-2-基]吡啶-3-羧酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2455",
     "smiles": "CN(C)c1ncnc2c1ncn2[C@@H]1O[C@H](CO)[C@@H](N)[C@H]1O",
     "english_name": "(2R,3R,4S,5S)-4-amino-2-[6-(dimethylamino)purin-9-yl]-5-(hydroxymethyl)oxolan-3-ol",
@@ -10849,30 +9687,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2475",
-    "smiles": "C=C[C@H]1CN2CC[C@H]1C[C@H]2[C@H](O)c1ccnc2ccc(OC)cc12",
-    "english_name": "(R)-[(2S,4S,5R)-5-ethenyl-1-azabicyclo[2.2.2]octan-2-yl]-(6-methoxyquinolin-4-yl)methanol",
-    "chinese_name": "(R)-[(2S,4S,5R)-5-乙烯基-1-氮杂双环[2.2.2]辛-2-基]-(6-甲氧基喹啉-4-基)甲醇",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2477",
-    "smiles": "C[C@@H]1CC[C@H]2[C@@H](C)C(=O)O[C@@H]3O[C@@]4(C)CC[C@@H]1[C@]32OO4",
-    "english_name": "(1R,4S,5R,8S,9R,12S,13R)-1,5,9-trimethyl-11,14,15,16-tetraoxatetracyclo[10.3.1.04,13.08,13]hexadecan-10-one",
-    "chinese_name": "(1R,4S,5R,8S,9R,12S,13R)-1,5,9-三甲基-11,14,15,16-四氧杂四环[10.3.1.04,13.08,13]十六碳-10-酮",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2478",
     "smiles": "CNC.O=C(O)c1c(Cl)ccc2cc(Cl)cnc12",
     "english_name": "3,7-dichloroquinoline-8-carboxylic acid N-methylmethanamine",
@@ -10891,18 +9705,6 @@
     "chinese_name": "6-溴-N-丙-2-烯基喹唑啉-4-胺",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2485",
-    "smiles": "C=C1C[C@]23C[C@H]1CC[C@H]2[C@@]12C[C@H](O)[C@H](O)[C@@](C)(C(=O)O1)[C@H]2[C@@H]3C(=O)O",
-    "english_name": "(1R,2R,5R,8R,9S,10R,11S,12R,13S)-12,13-dihydroxy-11-methyl-6-methylidene-16-oxo-15-oxapentacyclo[9.3.2.15,8.01,10.02,8]heptadecane-9-carboxylic acid",
-    "chinese_name": "(1R,2R,5R,8R,9S,10R,11S,12R,13S)-12,13-二羟基-11-甲基-6-亚甲基-16-氧代-15-氧杂五环[9.3.2.15,8.01,10.02,8]十七烷-9-羧酸",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -11053,18 +9855,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2537",
-    "smiles": "O=C1OC2(c3ccc(O)cc3Oc3cc(O)ccc32)c2ccccc21",
-    "english_name": "3',6'-dihydroxyspiro[2-benzofuran-3,9'-xanthene]-1-one",
-    "chinese_name": "3',6'-二羟基螺[2-苯并呋喃-3,9'-氧杂蒽]-1-酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2546",
     "smiles": "C=C(C)[C@H](CC=C(C)C)Cc1c(O)cc(O)c2c1O[C@H](c1c(O)cccc1O)CC2=O",
     "english_name": "(2S)-2-(2,6-dihydroxyphenyl)-5,7-dihydroxy-8-[(2R)-5-methyl-2-prop-1-en-2-ylhex-4-enyl]-2,3-dihydrochromen-4-one",
@@ -11185,18 +9975,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2580",
-    "smiles": "C[C@H]1CC[C@]2(NC1)O[C@H]1C[C@H]3[C@@H]4CC[C@H]5C[C@@H](O[C@@H]6O[C@H](CO)[C@H](O[C@@H]7O[C@H](CO)[C@@H](O)[C@H](O[C@@H]8OC[C@@H](O)[C@H](O)[C@H]8O)[C@H]7O[C@@H]7O[C@H](CO)[C@@H](O)[C@H](O)[C@H]7O)[C@H](O)[C@H]6O)CC[C@]5(C)[C@H]4CC[C@]3(C)[C@H]1[C@@H]2C",
-    "english_name": "(2S,3R,4S,5S,6R)-2-[(2S,3R,4S,5R,6R)-2-[(2R,3R,4R,5R,6R)-4,5-dihydroxy-2-(hydroxymethyl)-6-[(1R,2S,4S,5'S,6S,7S,8R,9S,12S,13S,16S,18S)-5',7,9,13-tetramethylspiro[5-oxapentacyclo[10.8.0.02,9.04,8.013,18]icosane-6,2'-piperidine]-16-yl]oxyoxan-3-yl]oxy-5-hydroxy-6-(hydroxymethyl)-4-[(2S,3R,4S,5R)-3,4,5-trihydroxyoxan-2-yl]oxyoxan-3-yl]oxy-6-(hydroxymethyl)oxane-3,4,5-triol",
-    "chinese_name": "(2S,3R,4S,5S,6R)-2-[(2S,3R,4S,5R,6R)-2-[(2R,3R,4R,5R,6R)-4,5-二羟基-2-(羟甲基)-6-[(1R,2S,4S,5'S,6S,7S,8R,9S,12S,13S,16S,18S)-5',7,9,13-四甲基螺[5-氧杂五环[10.8.0.02,9.04,8.013,18]二十烷-6,2'-哌啶]-16-基]氧基氧杂环己烷-3-基]氧基-5-羟基-6-(羟甲基)-4-[(2S,3R,4S,5R)-3,4,5-三羟基氧杂环己烷-2-基]氧基氧杂环己烷-3-基]氧基-6-(羟甲基)氧杂环己烷-3,4,5-三醇",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2584",
     "smiles": "CC(C)(COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)(O)O)[C@@H](O)C(O)=NCCC(O)=NCCSC(=O)[C@H](O)Cc1ccccc1",
     "english_name": "S-[2-[3-[[(2R)-4-[[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-3-phosphonooxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxy-hydroxyphosphoryl]oxy-2-hydroxy-3,3-dimethylbutanoyl]amino]propanoylamino]ethyl] (2R)-2-hydroxy-3-phenylpropanethioate",
@@ -11269,18 +10047,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2594",
-    "smiles": "CC[C@H]1C[C@@H]2C[C@H]3C4=C(CCN(C2)[C@@H]13)c1ccccc1[NH2+]4",
-    "english_name": "(1R,15R,17S,18S)-17-ethyl-3-aza-13-azoniapentacyclo[13.3.1.02,10.04,9.013,18]nonadeca-2(10),4,6,8-tetraene",
-    "chinese_name": "(1R,15R,17S,18S)-17-乙基-3-氮杂-13-氮杂双环[13.3.1.02,10.04,9.013,18]十九碳-2(10),4,6,8-四烯",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2596",
     "smiles": "COC(C(O)=N[C@@H]1C(=O)N2[C@@H]1SC(C)(C)[C@@H]2C(=O)O)c1ccc(Cl)c(Cl)c1",
     "english_name": "(2S,5R,6R)-6-[[2-(3,4-dichlorophenyl)-2-methoxyacetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid",
@@ -11317,18 +10083,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2603",
-    "smiles": "CC[C@]12C=CCN3CC[C@]4(C(=C(C(=O)OC)C1)Nc1cc(OC)ccc14)[C@@H]32",
-    "english_name": "methyl (1R,12R,19S)-12-ethyl-5-methoxy-8,16-diazapentacyclo[10.6.1.01,9.02,7.016,19]nonadeca-2(7),3,5,9,13-pentaene-10-carboxylate",
-    "chinese_name": "(1R,12R,19S)-12-乙基-5-甲氧基-8,16-二氮杂五环[10.6.1.01,9.02,7.016,19]十九碳-2(7),3,5,9,13-五烯-10-羧酸甲酯",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2605",
     "smiles": "C[C@H](CCC(=O)SCCN=C([O-])CCN=C([O-])[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)([O-])[O-])[C@H]1CC[C@H]2[C@@H]3[C@H](O)C[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O)[C@]12C",
     "english_name": "(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-2-[[[[(3R)-4-[[3-[2-[(4R)-4-[(5R,7R,8R,9S,10S,12S,13R,14S,17R)-7,12-dihydroxy-10,13-dimethyl-3-oxo-1,2,4,5,6,7,8,9,11,12,14,15,16,17-tetradecahydrocyclopenta[a]phenanthren-17-yl]pentanoyl]sulfanylethylamino]-3-oxopropyl]amino]-3-hydroxy-2,2-dimethyl-4-oxobutoxy]-oxidophosphoryl]oxy-oxidophosphoryl]oxymethyl]-4-hydroxyoxolan-3-yl phosphate",
@@ -11359,18 +10113,6 @@
     "chinese_name": "[(2R,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-2-[[[[(3R)-4-[[3-[2-[(2E)-11-[(2R,3R,5R,6S)-3,5-二羟基-6-甲基氧杂环己烷-2-基]氧基十一碳-2-烯酰]硫代乙基氨基]-3-氧代丙基]氨基]-3-羟基-2,2-二甲基-4-氧代丁氧基]-氧化磷酰]氧基-氧化磷酰]氧甲基]-4-羟基氧杂环戊烷-3-基] 磷酸酯",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2612",
-    "smiles": "COC(=O)C1=C2Nc3cc(OC)c(O)cc3[C@@]23CCN2CC[C@@H]4OCC[C@]4(C1)[C@H]23",
-    "english_name": "methyl (1R,12R,16S,22R)-4-hydroxy-5-methoxy-15-oxa-8,19-diazahexacyclo[10.9.1.01,9.02,7.012,16.019,22]docosa-2,4,6,9-tetraene-10-carboxylate",
-    "chinese_name": "(1R,12R,16S,22R)-4-羟基-5-甲氧基-15-氧杂-8,19-二氮杂六环[10.9.1.01,9.02,7.012,16.019,22]二十二碳-2,4,6,9-四烯-10-羧酸甲酯",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -11461,18 +10203,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2644",
-    "smiles": "CC[C@H](C)CC/C=C/C=C(\\C)[C@@H](O)C/C=C/C=C/C(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@]2(OCc3cc(O)cc(O)c32)[C@@H]1O",
-    "english_name": "(3S,3'R,4'S,5'R,6'R)-3',4,5',6-tetrahydroxy-6'-(hydroxymethyl)spiro[1H-2-benzofuran-3,2'-oxane]-4'-yl (2E,4E,7S,8E,10E,14S)-7-hydroxy-8,14-dimethylhexadeca-2,4,8,10-tetraenoate",
-    "chinese_name": "[(3S,3'R,4'S,5'R,6'R)-3',4,5',6-四羟基-6'-(羟甲基)螺[1H-2-苯并呋喃-3,2'-氧杂环己烷]-4'-基] (2E,4E,7S,8E,10E,14S)-7-羟基-8,14-二甲基十六碳-2,4,8,10-四烯酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2647",
     "smiles": "C[C@H](CCC(=O)SCCN=C([O-])CCN=C([O-])[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)([O-])[O-])[C@H]1CC[C@H]2[C@@H]3[C@H](O)CC4=CC(=O)CC[C@]4(C)[C@H]3C[C@H](O)[C@]12C",
     "english_name": "(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-2-[[[[(3R)-4-[[3-[2-[(4R)-4-[(7R,8R,9S,10R,12S,13R,14S,17R)-7,12-dihydroxy-10,13-dimethyl-3-oxo-1,2,6,7,8,9,11,12,14,15,16,17-dodecahydrocyclopenta[a]phenanthren-17-yl]pentanoyl]sulfanylethylamino]-3-oxopropyl]amino]-3-hydroxy-2,2-dimethyl-4-oxobutoxy]-oxidophosphoryl]oxy-oxidophosphoryl]oxymethyl]-4-hydroxyoxolan-3-yl phosphate",
@@ -11509,48 +10239,12 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2651",
-    "smiles": "CC1CN(C)CCC1CC[C@@H](C)[C@H]1CC[C@@H]2[C@]1(C)CCC1=CC3=CC[C@@H](N(C)C)C[C@]34CC[C@@]12O4",
-    "english_name": "(1S,2R,5R,6R,14R,16R)-5-[(2R)-4-(1,3-dimethylpiperidin-4-yl)butan-2-yl]-N,N,6-trimethyl-19-oxapentacyclo[14.2.1.01,9.02,6.011,16]nonadeca-9,11-dien-14-amine",
-    "chinese_name": "(1S,2R,5R,6R,14R,16R)-5-[(2R)-4-(1,3-二甲基哌啶-4-基)丁-2-基]-N,N,6-三甲基-19-氧杂五环[14.2.1.01,9.02,6.011,16]十九碳-9,11-二烯-14-胺",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2652",
     "smiles": "CCC(C)C(=O)c1c(O)c(Cc2c(O)c(C)c(O)c(C(C)=O)c2O)c(O)c2c1OC(C)(C)C=C2",
     "english_name": "1-[6-[(3-acetyl-2,4,6-trihydroxy-5-methylphenyl)methyl]-5,7-dihydroxy-2,2-dimethylchromen-8-yl]-2-methylbutan-1-one",
     "chinese_name": "1-[6-[(3-乙酰基-2,4,6-三羟基-5-甲基苯基)甲基]-5,7-二羟基-2,2-二甲基色烯-8-基]-2-甲基丁烷-1-酮",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2664",
-    "smiles": "CCCCCCCCCCCCCC(=O)O[C@H]1C=C[C@H]2[C@H]3Cc4ccc(OCc5ccccc5)c5c4[C@@]2(CCN3C)[C@H]1O5",
-    "english_name": "(4R,4aR,7S,7aR,12bS)-3-methyl-9-benzyloxy-2,4,4a,7,7a,13-hexahydro-1H-4,12-methanobenzofuro[3,2-e]isoquinolin-7-yl tetradecanoate",
-    "chinese_name": "[(4R,4aR,7S,7aR,12bS)-3-甲基-9-苄氧基-2,4,4a,7,7a,13-六氢-1H-4,12-亚甲基苯并呋喃并[3,2-e]异喹啉-7-基] 十四酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2665",
-    "smiles": "CO[C@H]1/C=C/O[C@@]2(C)Oc3c(C)c(O)c4c(O)c(c(/C=N/N5CCN(C)CC5)c(O)c4c3C2=O)N=C(O)/C(C)=C\\C=C\\[C@H](C)[C@H](O)[C@@H](C)[C@@H](O)[C@@H](C)[C@H](OC(C)=O)[C@@H]1C",
-    "english_name": "(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,27,29-pentahydroxy-11-methoxy-3,7,12,14,16,18,22-heptamethyl-26-[(26E)-(4-methylpiperazin-1-yl)iminomethyl]-6,23-dioxo-8,30-dioxa-24-azatetracyclo[23.3.1.14,7.05,28]triaconta-1(29),2,4,9,19,21,25,27-octaen-13-yl acetate",
-    "chinese_name": "[(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,27,29-五羟基-11-甲氧基-3,7,12,14,16,18,22-七甲基-26-[(26E)-(4-甲基哌嗪-1-基)亚氨基甲基]-6,23-二氧代-8,30-二氧杂-24-氮杂四环[23.3.1.14,7.05,28]三十-1(29),2,4,9,19,21,25,27-八烯-13-基]乙酸酯",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -11569,36 +10263,12 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2674",
-    "smiles": "C[C@H]1[C@H](OC(=O)CCC(=O)O)O[C@@H]2O[C@@]3(C)CC[C@H]4[C@H](C)CC[C@@H]1[C@@]24OO3",
-    "english_name": "4-oxo-4-[[(1R,4S,5R,8S,9R,10S,12R,13R)-1,5,9-trimethyl-11,14,15,16-tetraoxatetracyclo[10.3.1.04,13.08,13]hexadecan-10-yl]oxy]butanoic acid",
-    "chinese_name": "4-氧代-4-[(1R,4S,5R,8S,9R,10S,12R,13R)-1,5,9-三甲基-11,14,15,16-四氧杂四环[10.3.1.04,13.08,13]十六碳-10-基]氧基丁酸",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2675",
     "smiles": "Clc1c[nH]c2ncnc(N3CCc4nc[nH]c4C3)c12",
     "english_name": "5-chloro-4-(3,4,6,7-tetrahydroimidazo[4,5-c]pyridin-5-yl)-7H-pyrrolo[2,3-d]pyrimidine",
     "chinese_name": "5-氯-4-(3,4,6,7-四氢咪唑并[4,5-c]吡啶-5-基)-7H-吡咯并[2,3-d]嘧啶",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2678",
-    "smiles": "CC[C@H]1C[C@H]2CN3CCc4c([nH]c5ccccc45)[C@](C(=O)OC)(C2)[C@H]13",
-    "english_name": "methyl (1S,15R,17S,18S)-17-ethyl-3,13-diazapentacyclo[13.3.1.02,10.04,9.013,18]nonadeca-2(10),4,6,8-tetraene-1-carboxylate",
-    "chinese_name": "(1S,15R,17S,18S)-17-乙基-3,13-二氮杂五环[13.3.1.02,10.04,9.013,18]十九碳-2(10),4,6,8-四烯-1-羧酸甲酯",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -11623,18 +10293,6 @@
     "chinese_name": "5-羟基-2,2-二甲基-3,10-双(2-甲基丁-3-烯-2-基)吡喃并[3,2-g]色烯-8-酮",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2687",
-    "smiles": "CC1(C)[C@@H]2CC[C@@]1(CS(=O)(=O)[O-])C(=O)C2.O=C1N(Cc2ccccc2)C2C[S+]3CCCC3C2N1Cc1ccccc1",
-    "english_name": "3,5-dibenzyl-8-thionia-3,5-diazatricyclo[6.3.0.02,6]undecan-4-one [(1S,4R)-7,7-dimethyl-2-oxo-1-bicyclo[2.2.1]heptanyl]methanesulfonate",
-    "chinese_name": "[(1S,4R)-7,7-二甲基-2-氧代-1-双环[2.2.1]庚基]甲烷磺酸酯 3,5-二苄基-8-硫亚基-3,5-二氮杂三环[6.3.0.02,6]十一烷-4-酮",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -11677,18 +10335,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2696",
-    "smiles": "COC(=O)[C@H]1[C@@H](OC(=O)c2ccccc2)C[C@@H]2CC[C@H]1[NH+]2C",
-    "english_name": "methyl (1R,2R,3S,5S)-3-benzoyloxy-8-methyl-8-azoniabicyclo[3.2.1]octane-2-carboxylate",
-    "chinese_name": "(1R,2R,3S,5S)-3-苯甲酰氧基-8-甲基-8-氮杂双环[3.2.1]辛烷-2-羧酸甲酯",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2704",
     "smiles": "CCCCCCCC(O)CC(=O)SCCN=C([O-])CCN=C([O-])[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)([O-])[O-]",
     "english_name": "(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-2-[[[[(3R)-3-hydroxy-4-[[3-[2-(3-hydroxydecanoylsulfanyl)ethylamino]-3-oxopropyl]amino]-2,2-dimethyl-4-oxobutoxy]-oxidophosphoryl]oxy-oxidophosphoryl]oxymethyl]oxolan-3-yl phosphate",
@@ -11705,18 +10351,6 @@
     "smiles": "COc1ccc2c(c1OC)C[N+]1(C)CCc3cc4c(c(O)c3[C@@H]1[C@H]2O)OCO4",
     "english_name": "(1R,21S)-16,17-dimethoxy-13-methyl-5,7-dioxa-13-azoniapentacyclo[11.8.0.02,10.04,8.015,20]henicosa-2,4(8),9,15(20),16,18-hexaene-3,21-diol",
     "chinese_name": "(1R,21S)-16,17-二甲氧基-13-甲基-5,7-二氧杂-13-氮杂五环[11.8.0.02,10.04,8.015,20]二十三碳-2,4(8),9,15(20),16,18-六烯-3,21-二醇",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2709",
-    "smiles": "Cc1nc(-c2ccc(-c3ccc(C(=O)N4CCc5cc6c(cc54)C4(CCN(C)CC4)CO6)cc3)c(C)c2)no1",
-    "english_name": "[4-[2-methyl-4-(5-methyl-1,2,4-oxadiazol-3-yl)phenyl]phenyl]-(1'-methylspiro[6,7-dihydro-2H-furo[2,3-f]indole-3,4'-piperidine]-5-yl)methanone",
-    "chinese_name": "[4-[2-甲基-4-(5-甲基-1,2,4-噁二唑-3-基)苯基]苯基]-(1'-甲基螺[6,7-二氢-2H-呋喃并[2,3-f]吲哚-3,4'-哌啶]-5-基)甲酮",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -11893,18 +10527,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2774",
-    "smiles": "CCCCC[C@H]1C[C@@H]2CCC[C@@H](C[C@@H](OC)C[C@@H]3C[C@@H](OC(=O)/C=C\\CCc4coc(/C=C\\CN=C(O)OC)n4)C[C@H](CC(=O)O1)O3)O2",
-    "english_name": "(1S,3R,5R,7R,9R,13S,15S)-3-methoxy-11-oxo-13-pentyl-12,19,20-trioxatricyclo[13.3.1.15,9]icosan-7-yl (2Z)-5-[2-[(1Z)-3-(methoxycarbonylamino)prop-1-enyl]-1,3-oxazol-4-yl]pent-2-enoate",
-    "chinese_name": "[(1S,3R,5R,7R,9R,13S,15S)-3-甲氧基-11-氧代-13-戊基-12,19,20-三氧杂三环[13.3.1.15,9]二十烷-7-基](2Z)-5-[2-[(1Z)-3-(甲氧羰基氨基)丙-1-烯基]-1,3-噁唑-4-基]戊-2-烯酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2780",
     "smiles": "Cc1nc2n(C)c3c(ncn3[C@@H]3O[C@H](COP(=O)(O)O)[C@@H](O)[C@H]3O)c(=O)n2c1CC[C@H](N)C(=O)O",
     "english_name": "(2S)-2-amino-4-[3-[(2R,3R,4S,5R)-3,4-dihydroxy-5-(phosphonooxymethyl)oxolan-2-yl]-4,6-dimethyl-9-oxoimidazo[1,2-a]purin-7-yl]butanoic acid",
@@ -11921,18 +10543,6 @@
     "smiles": "CC(C)=CCc1c(O)cc(O)c2c1OCC(c1ccc([O-])cc1O)C2=O",
     "english_name": "3-(2,4-dihydroxyphenyl)-5-hydroxy-8-(3-methylbut-2-enyl)-4-oxo-3,4-dihydro-2H-chromen-7-olate",
     "chinese_name": "3-(2,4-二羟基苯基)-5-羟基-8-(3-甲基丁-2-烯基)-4-氧代-3,4-二氢-2H-色烯-7-醇",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2789",
-    "smiles": "CC(/C=C/C(C)=C/[C@@H]1Cc2nc(cs2)[C@@H](C)C[C@@H](N)CC(=O)O[C@@H](C)C/C(C)=C/C=C\\C(=O)O1)=C\\CN(C)C",
-    "english_name": "(3S,6Z,8E,11S,15R,17S)-15-amino-3-[(1E,3E,5E)-7-(dimethylamino)-2,5-dimethylhepta-1,3,5-trienyl]-9,11,17-trimethyl-4,12-dioxa-20-thia-21-azabicyclo[16.2.1]henicosa-1(21),6,8,18-tetraene-5,13-dione",
-    "chinese_name": "(3S,6Z,8E,11S,15R,17S)-15-氨基-3-[(1E,3E,5E)-7-(二甲氨基)-2,5-二甲基庚-1,3,5-三烯基]-9,11,17-三甲基-4,12-二氧杂-20-硫杂-21-氮杂双环[16.2.1]二十三亚-1(21),6,8,18-四烯-5,13-二酮",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -12005,30 +10615,6 @@
     "smiles": "COc1ccc(C(=O)N=c2c(Cl)cn(O)cc2Cl)c2ccc(C(F)(F)F)nc12",
     "english_name": "N-(3,5-dichloro-1-hydroxy-4-pyridinylidene)-8-methoxy-2-(trifluoromethyl)quinoline-5-carboxamide",
     "chinese_name": "N-(3,5-二氯-1-羟基-4-吡啶亚基)-8-甲氧基-2-(三氟甲基)喹啉-5-甲酰胺",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2811",
-    "smiles": "CC1(C)C[C@H]2C=C(C(=O)O)[C@@H]3COC(=O)[C@]4(CO4)[C@]23C1",
-    "english_name": "(1R,4aR,6aS,9aR)-8,8-dimethyl-2-oxospiro[4a,6a,7,9-tetrahydro-4H-pentaleno[1,6a-c]pyran-1,2'-oxirane]-5-carboxylic acid",
-    "chinese_name": "(1R,4aR,6aS,9aR)-8,8-二甲基-2-氧代螺[4a,6a,7,9-四氢-4H-戊烯并[1,6a-c]吡喃-1,2'-环氧乙烷]-5-羧酸",
-    "source": "chebi",
-    "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2819",
-    "smiles": "CC1=CC(=O)[C@@H](O)[C@]2(C)[C@H]3[C@@H](O)[C@H](O)[C@@]4(C)OC[C@@]35[C@@H](C[C@@H]12)OC(=O)[C@H](O)[C@@H]45",
-    "english_name": "(1R,2S,3R,6R,8S,12S,13S,14R,15R,16S,17S)-3,12,15,16-tetrahydroxy-9,13,17-trimethyl-5,18-dioxapentacyclo[12.5.0.01,6.02,17.08,13]nonadec-9-ene-4,11-dione",
-    "chinese_name": "(1R,2S,3R,6R,8S,12S,13S,14R,15R,16S,17S)-3,12,15,16-四羟基-9,13,17-三甲基-5,18-二氧杂五环[12.5.0.01,6.02,17.08,13]十九碳-9-烯-4,11-二酮",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -12115,18 +10701,6 @@
     "chinese_name": "1,10-二甲氧基苯并[c]喹啉",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2839",
-    "smiles": "CC[C@H]1/C=C/C=C/C[C@@H](C)[C@H](O)[C@@](C)(O)C(=O)[C@@H](C)[C@H](O)[C@@H](C)C(=O)[C@@H](C)[C@H](O)[C@@H](C)/C=C/C(=O)O[C@@H]2[C@H](C)[C@H](CC1)O[C@]1(CC[C@H](C)[C@H](C[C@@H](C)O)O1)[C@H]2C",
-    "english_name": "(1R,4E,5'S,6S,6'S,7R,8S,10R,11R,12S,14R,15S,16R,18E,20E,22R,25S,27R,28S,29R)-22-ethyl-7,11,14,15-tetrahydroxy-6'-[(2R)-2-hydroxypropyl]-5',6,8,10,12,14,16,28,29-nonamethylspiro[2,26-dioxabicyclo[23.3.1]nonacosa-4,18,20-triene-27,2'-oxane]-3,9,13-trione",
-    "chinese_name": "(1R,4E,5'S,6S,6'S,7R,8S,10R,11R,12S,14R,15S,16R,18E,20E,22R,25S,27R,28S,29R)-22-乙基-7,11,14,15-四羟基-6'-[(2R)-2-羟基丙基]-5',6,8,10,12,14,16,28,29-九甲基螺[2,26-二氧杂双环[23.3.1]二十九碳-4,18,20-三烯-27,2'-氧杂环己烷]-3,9,13-三酮",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -12349,30 +10923,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2923",
-    "smiles": "CC[C@H]1/C=C/C=C/C[C@@H](C)[C@H](O)[C@@](C)(O)C(=O)[C@@H](C)[C@H](O)[C@@H](C)C(=O)[C@@H](C)[C@H](O)[C@@H](C)/C=C/C(=O)O[C@@H]2[C@H](C)[C@H](CC1)O[C@@]1(O[C@@H](C[C@@H](C)O)[C@@H](C)CC1=O)[C@H]2C",
-    "english_name": "(1R,4E,5'S,6S,6'S,7R,8S,10R,11R,12S,14R,15S,16R,18E,20E,22R,25S,27S,28S,29R)-22-ethyl-7,11,14,15-tetrahydroxy-6'-[(2R)-2-hydroxypropyl]-5',6,8,10,12,14,16,28,29-nonamethylspiro[2,26-dioxabicyclo[23.3.1]nonacosa-4,18,20-triene-27,2'-oxane]-3,3',9,13-tetrone",
-    "chinese_name": "(1R,4E,5'S,6S,6'S,7R,8S,10R,11R,12S,14R,15S,16R,18E,20E,22R,25S,27S,28S,29R)-22-乙基-7,11,14,15-四羟基-6'-[(2R)-2-羟基丙基]-5',6,8,10,12,14,16,28,29-九甲基螺[2,26-二氧杂双环[23.3.1]二十九碳-4,18,20-三烯-27,2'-氧杂环己烷]-3,3',9,13-四酮",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2925",
-    "smiles": "CCCCC[C@H](O)/C=C/[C@@H]1[C@@H](C/C=C\\CCCC(=O)O[C@H](CO)COP(=O)([O-])OCC[N+](C)(C)C)[C@@H]2C[C@H]1OO2",
-    "english_name": "(2R)-3-hydroxy-2-[(5Z)-7-[(1R,4S,5R,6R)-6-[(1E,3S)-3-hydroxyoct-1-enyl]-2,3-dioxabicyclo[2.2.1]heptan-5-yl]hept-5-enoyl]oxypropyl 2-(trimethylazaniumyl)ethyl phosphate",
-    "chinese_name": "[(2R)-3-羟基-2-[(5Z)-7-[(1R,4S,5R,6R)-6-[(1E,3S)-3-羟基辛-1-烯基]-2,3-二氧杂双环[2.2.1]庚-5-基]庚-5-烯酰氧基丙基] 2-(三甲基铵基)乙基磷酸",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2928",
     "smiles": "N=C(O)[C@@H]([NH3+])Cc1c[nH]c2ccccc12",
     "english_name": "[(2S)-1-amino-3-(1H-indol-3-yl)-1-oxopropan-2-yl]azanium",
@@ -12445,18 +10995,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-2943",
-    "smiles": "CC(/C=C/C(O)=C1/C(=O)CN=C1O)=C\\[C@@H](C)[C@H]1O[C@@]23O[C@H](C(=O)C[C@]2(C)O[C@H](C)[C@@H]3C(=O)O)[C@@H]1C",
-    "english_name": "(1S,2S,3R,5S,8S,9R,10R)-10-[(2R,3E,5E,7E)-7-(2,4-dioxopyrrolidin-3-ylidene)-7-hydroxy-4-methylhepta-3,5-dien-2-yl]-3,5,9-trimethyl-7-oxo-4,11,12-trioxatricyclo[6.3.1.01,5]dodecane-2-carboxylic acid",
-    "chinese_name": "(1S,2S,3R,5S,8S,9R,10R)-10-[(2R,3E,5E,7E)-7-(2,4-二氧代吡咯啉-3-亚基)-7-羟基-4-甲基庚-3,5-二烯-2-基]-3,5,9-三甲基-7-氧代-4,11,12-三氧杂三环[6.3.1.01,5]十二烷-2-羧酸",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-2951",
     "smiles": "CCCCCCCCC/C=C/C(=O)SCCN=C(O)CCN=C(O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)(O)O",
     "english_name": "S-[2-[3-[[(2R)-4-[[[(2R,3S,4R,5R)-5-(6-aminopurin-9-yl)-4-hydroxy-3-phosphonooxyoxolan-2-yl]methoxy-hydroxyphosphoryl]oxy-hydroxyphosphoryl]oxy-2-hydroxy-3,3-dimethylbutanoyl]amino]propanoylamino]ethyl] (2E)-dodec-2-enethioate",
@@ -12473,18 +11011,6 @@
     "smiles": "Cc1cc(=O)c(C(O)=N[C@@H](C(O)=N[C@@H]2C(=O)N3C(C(=O)O)=C(CSc4nnnn4C)CS[C@H]23)c2ccc([O-])cc2)c[nH]1",
     "english_name": "(6R,7R)-7-[[(2R)-2-(4-hydroxyphenyl)-2-[(6-methyl-4-oxo-1H-pyridine-3-carbonyl)amino]acetyl]amino]-3-[(1-methyltetrazol-5-yl)sulfanylmethyl]-8-oxo-5-thia-1-azabicyclo[4.2.0]oct-2-ene-2-carboxylate",
     "chinese_name": "(6R,7R)-7-[(2R)-2-(4-羟基苯基)-2-[(6-甲基-4-氧代-1H-吡啶-3-甲酰)氨基]乙酰氨基]-3-[(1-甲基四唑-5-基)硫甲基]-8-氧代-5-硫杂-1-氮杂双环[4.2.0]辛-2-烯-2-羧酸",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2954",
-    "smiles": "N[C@H]1C(O)=N[C@H]2Cc3ccc(c(Cl)c3)Oc3cc4cc(c3O)Oc3ccc(cc3Cl)[C@@H](O)[C@@H]3N=C(O)[C@H](N=C(O)[C@@H]4N=C(O)[C@@H](N=C2O)c2cc([O-])cc(c2)Oc2cc1ccc2OS(=O)(=O)O)c1cc(Cl)c(O)c(c1)-c1c(O)cc([O-])cc1[C@H](C(=O)O)N=C3O",
-    "english_name": "(1S,2R,19S,22R,34S,37R,40R,52R)-22-azaniumyl-5,15,43-trichloro-2,31,44,47,49-pentahydroxy-64-oxido-21,35,38,54,56,59-hexaoxo-26-sulfonatooxy-7,13,28-trioxa-20,36,39,53,55,58-hexazaundecacyclo[38.14.2.23,6.214,17.219,34.18,12.123,27.129,33.141,45.010,37.046,51]hexahexaconta-3,5,8,10,12(64),14,16,23(61),24,26,29(60),30,32,41(57),42,44,46(51),47,49,62,65-henicosaene-52-carboxylate",
-    "chinese_name": "(1S,2R,19S,22R,34S,37R,40R,52R)-22-铵基-5,15,43-三氯-2,31,44,47,49-五羟基-64-氧基-21,35,38,54,56,59-六氧代-26-硫酸氧基-7,13,28-三氧-20,36,39,53,55,58-六氮十一环[38.14.2.23,6.214,17.219,34.18,12.123,27.129,33.141,45.010,37.046,51]六十六碳-3,5,8,10,12(64),14,16,23(61),24,26,29(60),30,32,41(57),42,44,46(51),47,49,62,65-二十一烯-52-羧酸盐",
     "source": "chebi",
     "tier": 5,
     "features": [],
@@ -12511,18 +11037,6 @@
     "chinese_name": "[(2R,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-4-羟基-2-(膦酸氧甲基)四氢呋喃-3-基] (2S)-2-氨基-5-(二氨基亚甲基氨基)戊酸酯",
     "source": "chebi",
     "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2963",
-    "smiles": "CO[C@H]1/C=C/O[C@@]2(C)Oc3c(C)c(O)c4c(O)c(cc(O)c4c3C2=O)N=C(O)/C(C)=C\\C=C\\[C@H](C)[C@H](O)[C@@H](C)[C@@H](O)[C@@H](C)[C@H](OC(C)=O)[C@@H]1C",
-    "english_name": "(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,27,29-pentahydroxy-11-methoxy-3,7,12,14,16,18,22-heptamethyl-6,23-dioxo-8,30-dioxa-24-azatetracyclo[23.3.1.14,7.05,28]triaconta-1(29),2,4,9,19,21,25,27-octaen-13-yl acetate",
-    "chinese_name": "[(7S,9E,11S,12R,13S,14R,15R,16R,17S,18S,19E,21Z)-2,15,17,27,29-五羟基-11-甲氧基-3,7,12,14,16,18,22-七甲基-6,23-二氧代-8,30-二氧杂-24-氮杂四环[23.3.1.14,7.05,28]三十二碳-1(29),2,4,9,19,21,25,27-八烯-13-基]乙酸酯",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -12631,18 +11145,6 @@
     "chinese_name": "(2S)-2-(1,3-二氧代异吲哚-2-基)戊二酸",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-2999",
-    "smiles": "CCO[C@@H]1OC[C@@]2(C)CCC[C@@]13c1cc(O)c(C(C)C)cc1C(=O)C[C@@H]23",
-    "english_name": "(1R,10S,11S,14R)-14-ethoxy-4-hydroxy-11-methyl-5-propan-2-yl-13-oxatetracyclo[9.3.3.01,10.02,7]heptadeca-2,4,6-trien-8-one",
-    "chinese_name": "(1R,10S,11S,14R)-14-乙氧基-4-羟基-11-甲基-5-丙-2-基-13-氧杂四环[9.3.3.01,10.02,7]十七碳-2,4,6-三烯-8-酮",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -12781,18 +11283,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-3053",
-    "smiles": "CC1=C[C@@H]2/C=C(\\C)C[C@H](CO)C[C@H](O)/C=C/C(=O)[C@]23C(O)=N[C@@H](CC(C)C)[C@@H]3[C@@H]1C",
-    "english_name": "(1S,3E,5S,7S,9E,11S,14S,15R,16S)-5-hydroxy-7-(hydroxymethyl)-9,13,14-trimethyl-16-(2-methylpropyl)-17-azatricyclo[9.7.0.01,15]octadeca-3,9,12-triene-2,18-dione",
-    "chinese_name": "(1S,3E,5S,7S,9E,11S,14S,15R,16S)-5-羟基-7-(羟甲基)-9,13,14-三甲基-16-(2-甲基丙基)-17-氮杂三环[9.7.0.01,15]十八碳-3,9,12-三烯-2,18-二酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-3055",
     "smiles": "Cc1cc2nc3ccc(N(C)C)cc3nc2cc1N",
     "english_name": "8-N,8-N,3-trimethylphenazine-2,8-diamine",
@@ -12829,18 +11319,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-3064",
-    "smiles": "CC1=C[C@@H]2/C=C/C[C@H](C)/C=C(\\C)CC/C=C\\C(=O)[C@]23C(O)=N[C@@H](Cc2c[nH]c4ccccc24)[C@@H]3[C@@H]1C",
-    "english_name": "(1S,3Z,7E,9S,11E,13S,16S,17R,18S)-18-(1H-indol-3-ylmethyl)-7,9,15,16-tetramethyl-19-azatricyclo[11.7.0.01,17]icosa-3,7,11,14-tetraene-2,20-dione",
-    "chinese_name": "(1S,3Z,7E,9S,11E,13S,16S,17R,18S)-18-(1H-吲哚-3-基甲基)-7,9,15,16-四甲基-19-氮杂三环[11.7.0.01,17]二十-3,7,11,14-四烯-2,20-二酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-3069",
     "smiles": "O=C1c2ccc(O)cc2O[C@@H](O)[C@@H]1c1ccc(O)cc1",
     "english_name": "(2R,3S)-2,7-dihydroxy-3-(4-hydroxyphenyl)-2,3-dihydrochromen-4-one",
@@ -12871,18 +11349,6 @@
     "chinese_name": "7-[(2S,3R,4S,5R,6R)-3,5-二羟基-6-(羟甲基)-4-[(2S,3R,4S,5S,6R)-3,4,5-三羟基-6-(羟甲基)氧杂环己烷-2-基]氧基氧杂环己烷-2-基]氧基-2-(3,4-二羟基苯基)-5,6-二羟基-4-氧代-2H-色烯",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-3078",
-    "smiles": "CCO[C@@H]1OC[C@@]2(C)CCC[C@@]13c1cc(O)c(C(C)C)cc1CC[C@@H]23",
-    "english_name": "(1R,10S,11S,14R)-14-ethoxy-11-methyl-5-propan-2-yl-13-oxatetracyclo[9.3.3.01,10.02,7]heptadeca-2,4,6-trien-4-ol",
-    "chinese_name": "(1R,10S,11S,14R)-14-乙氧基-11-甲基-5-丙-2-基-13-氧杂四环[9.3.3.01,10.02,7]十七碳-2,4,6-三烯-4-醇",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -12929,18 +11395,6 @@
     "smiles": "C[S+](CCC(=O)C(=O)[O-])C[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1O",
     "english_name": "4-[[(2S,3S,4R,5R)-5-(6-aminopurin-9-yl)-3,4-dihydroxyoxolan-2-yl]methyl-methylsulfonio]-2-oxobutanoate",
     "chinese_name": "4-[(2S,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-3,4-二羟基四氢呋喃-2-基]甲基-甲基硫鎓-2-氧代丁酸",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-3087",
-    "smiles": "COC1=CC(=O)C=C(C[C@H]2[C@]3(C)CC[C@@H]4[C@]5(CCC[C@]4(C)C(=O)OC5)[C@H]3CC[C@]2(C)O)C1=O",
-    "english_name": "2-[[(1S,2S,5S,6S,7R,10R,11S)-5-hydroxy-5,7,11-trimethyl-12-oxo-13-oxatetracyclo[9.3.3.01,10.02,7]heptadecan-6-yl]methyl]-6-methoxycyclohexa-2,5-diene-1,4-dione",
-    "chinese_name": "2-[(1S,2S,5S,6S,7R,10R,11S)-5-羟基-5,7,11-三甲基-12-氧代-13-氧杂四环[9.3.3.01,10.02,7]十七碳-6-基]甲基-6-甲氧基环己-2,5-二烯-1,4-二酮",
     "source": "chebi",
     "tier": 4,
     "features": [],
@@ -13129,18 +11583,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-3130",
-    "smiles": "CCCCCCCCCCCCCC(=O)O[C@H]1CC[C@@](C)(OC(C)=O)[C@@H]2O[C@H](C[C@]1(C)O)[C@@H]1[C@H]2[C@@H](C(C)C)[C@H](OC(C)=O)[C@H](OC(C)=O)[C@@]12CO2",
-    "english_name": "(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-triacetyloxy-10-hydroxy-10,14-dimethyl-3-propan-2-ylspiro[15-oxatricyclo[6.6.1.02,7]pentadecane-6,2'-oxirane]-11-yl tetradecanoate",
-    "chinese_name": "[(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-三乙酰氧基-10-羟基-10,14-二甲基-3-丙-2-基螺[15-氧杂三环[6.6.1.02,7]十五烷-6,2'-环氧乙烷]-11-基] 十四酸酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-3134",
     "smiles": "CC[C@H](C)[C@H]1C(=O)OC2c3cc(C)cc(O)c3C3=C(C(=O)c4c(O)cccc4C3=O)N21",
     "english_name": "(3S)-3-[(2S)-butan-2-yl]-11,19-dihydroxy-9-methyl-5-oxa-2-azapentacyclo[11.8.0.02,6.07,12.015,20]henicosa-1(13),7(12),8,10,15(20),16,18-heptaene-4,14,21-trione",
@@ -13189,18 +11631,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-3147",
-    "smiles": "CC[C@]1(O)C[C@H]2CN(CCc3c([nH]c4ccccc34)[C@@](C(=O)OC)(c3cc4c(cc3OC)N(C=O)[C@H]3[C@@](O)(C(=O)OC)[C@H](OC(C)=O)[C@]5(CC)C=CCN6CC[C@]43[C@@H]65)C2)C1",
-    "english_name": "methyl (1R,9R,10S,11R,12R,19R)-11-acetyloxy-12-ethyl-4-[(13S,15S,17S)-17-ethyl-17-hydroxy-13-methoxycarbonyl-1,11-diazatetracyclo[13.3.1.04,12.05,10]nonadeca-4(12),5,7,9-tetraen-13-yl]-8-formyl-10-hydroxy-5-methoxy-8,16-diazapentacyclo[10.6.1.01,9.02,7.016,19]nonadeca-2,4,6,13-tetraene-10-carboxylate",
-    "chinese_name": "(1R,9R,10S,11R,12R,19R)-11-乙酰氧基-12-乙基-4-[(13S,15S,17S)-17-乙基-17-羟基-13-甲氧羰基-1,11-二氮杂四环[13.3.1.04,12.05,10]十九碳-4(12),5,7,9-四烯-13-基]-8-甲酰基-10-羟基-5-甲氧基-8,16-二氮杂五环[10.6.1.01,9.02,7.016,19]十九碳-2,4,6,13-四烯-10-羧酸甲酯",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-3149",
     "smiles": "C[C@H](CC[C@@]1(O)O[C@H]2C[C@H]3[C@@H]4CC=C5C[C@@H](O[C@@H]6O[C@H](CO)[C@@H](O[C@@H]7O[C@@H](C)[C@H](O)[C@@H](O)[C@H]7O)[C@H](O)[C@H]6O[C@@H]6O[C@@H](C)[C@H](O)[C@@H](O)[C@H]6O)CC[C@]5(C)[C@H]4CC[C@]3(C)[C@H]2[C@@H]1C)CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O",
     "english_name": "(2S,3R,4R,5R,6S)-2-[(2R,3S,4S,5R,6R)-4-hydroxy-2-(hydroxymethyl)-6-[[(1S,2S,4S,6R,7S,8R,9S,12S,13R,16S)-6-hydroxy-7,9,13-trimethyl-6-[(3R)-3-methyl-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxybutyl]-5-oxapentacyclo[10.8.0.02,9.04,8.013,18]icos-18-en-16-yl]oxy]-5-[(2S,3R,4R,5R,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-3-yl]oxy-6-methyloxane-3,4,5-triol",
@@ -13231,18 +11661,6 @@
     "chinese_name": "11-(1-甲基哌啶-4-亚基)-5,6-二氢咪唑并[2,1-b][1,3]苯并氮杂䓬-3-甲醛",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-3155",
-    "smiles": "COC(=O)[C@@]12OC[C@]34[C@H]([C@@H](O)[C@@H]1O)[C@@]1(C)[C@H](O)C(=O)C[C@@H](C)[C@@H]1C[C@H]3OC(=O)[C@H](OC(=O)/C=C(\\C)C(C)C)[C@@H]24",
-    "english_name": "methyl (1R,2S,3R,6R,8S,9R,12S,13S,14R,15R,16S,17S)-3-[(2E)-3,4-dimethylpent-2-enoyloxy]-12,15,16-trihydroxy-9,13-dimethyl-4,11-dioxo-5,18-dioxapentacyclo[12.5.0.01,6.02,17.08,13]nonadecane-17-carboxylate",
-    "chinese_name": "(1R,2S,3R,6R,8S,9R,12S,13S,14R,15R,16S,17S)-3-[(2E)-3,4-二甲基戊-2-烯酰氧基]-12,15,16-三羟基-9,13-二甲基-4,11-二氧代-5,18-二氧杂五环[12.5.0.01,6.02,17.08,13]十九烷-17-羧酸甲酯",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -13303,18 +11721,6 @@
     "chinese_name": "2,3,4,9-四氢-1H-吡啶并[3,4-b]吲哚-3-羧酸",
     "source": "chebi",
     "tier": 3,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-3174",
-    "smiles": "CO[C@@H]1[C@@H](O)[C@H](O[C@@H]2[C@@H](O)[C@H](O[C@H]3[C@H](O)[C@@H](O)[C@H](O[C@H]4[C@H](O[C@H]5CC[C@]6(C)C7=C[C@H](O)C89C(=O)O[C@@](C)(CCC(O)C(C)C)[C@@]8(O)CC[C@@]9(C)[C@@H]7CC[C@H]6C5(C)C)OC[C@@H](OS(=O)(=O)[O-])[C@@H]4O)O[C@@H]3C)O[C@H](CO)[C@H]2O)O[C@H](CO)[C@H]1O.[Na+]",
-    "english_name": "sodium [(3R,4R,5R,6S)-5-[(2S,3R,4R,5S,6R)-5-[(2S,3R,4S,5R,6R)-4-[(2S,3R,4S,5R,6R)-3,5-dihydroxy-6-(hydroxymethyl)-4-methoxyoxan-2-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-3,4-dihydroxy-6-methyloxan-2-yl]oxy-6-[[(1S,2S,5R,6S,10S,13S,16S,18R)-5,10-dihydroxy-6-(3-hydroxy-4-methylpentyl)-2,6,13,17,17-pentamethyl-8-oxo-7-oxapentacyclo[10.8.0.02,9.05,9.013,18]icos-11-en-16-yl]oxy]-4-hydroxyoxan-3-yl] sulfate",
-    "chinese_name": "硫酸钠[(3R,4R,5R,6S)-5-[(2S,3R,4R,5S,6R)-5-[(2S,3R,4S,5R,6R)-4-[(2S,3R,4S,5R,6R)-3,5-二羟基-6-(羟甲基)-4-甲氧基氧杂环己烷-2-基]氧基-3,5-二羟基-6-(羟甲基)氧杂环己烷-2-基]氧基-3,4-二羟基-6-甲基氧杂环己烷-2-基]氧基-6-[(1S,2S,5R,6S,10S,13S,16S,18R)-5,10-二羟基-6-(3-羟基-4-甲基戊基)-2,6,13,17,17-五甲基-8-氧代-7-氧杂五环[10.8.0.02,9.05,9.013,18]二十-11-烯-16-基]氧基]-4-羟基氧杂环己烷-3-基]",
-    "source": "chebi",
-    "tier": 5,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -13441,18 +11847,6 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-3208",
-    "smiles": "CC1=C[C@@H]2/C=C/C[C@H](C)C(=O)[C@@H](C)/C=C/C(=O)[C@]23C(O)=N[C@@H](Cc2ccccc2)[C@@H]3[C@@H]1C",
-    "english_name": "(1S,3E,5S,7S,9E,11S,14S,15R,16S)-16-benzyl-5,7,13,14-tetramethyl-17-azatricyclo[9.7.0.01,15]octadeca-3,9,12-triene-2,6,18-trione",
-    "chinese_name": "(1S,3E,5S,7S,9E,11S,14S,15R,16S)-16-苄基-5,7,13,14-四甲基-17-氮杂三环[9.7.0.01,15]十八碳-3,9,12-三烯-2,6,18-三酮",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-3216",
     "smiles": "c1ccc2c(c1)[nH]c1cnccc12",
     "english_name": "9H-pyrido[3,4-b]indole",
@@ -13507,18 +11901,6 @@
     "chinese_name": "(3R)-3-[(3S,6R,9S,11R,15S,18S,21R,24R,28R,31S,34R,40S,43S,44S)-31-(3-氨基丙基)-11,44-二羟基-3,6,24,34-四[(1R)-1-羟基乙基]-18-[(4-羟基苯基)甲基]-21-甲基-2,5,8,14,17,20,23,26,30,33,36,39,42-十三氧代-15-丙-2-基-28-正十三烷基-29-氧杂-1,4,7,13,16,19,22,25,32,35,38,41-十二氮三环[41.3.0.09,13]六十四烷-40-基]-3-羟基丙酰胺",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-3237",
-    "smiles": "C[C@H]1[C@H]2CC[C@H]3[C@@H]4CC=C5C[C@@H](N(C)C)CC[C@]5(C)[C@H]4CC[C@]23CN1C",
-    "english_name": "(1R,2S,5S,6S,9R,12S,13R,16S)-N,N,6,7,13-pentamethyl-7-azapentacyclo[10.8.0.02,9.05,9.013,18]icos-18-en-16-amine",
-    "chinese_name": "(1R,2S,5S,6S,9R,12S,13R,16S)-N,N,6,7,13-五甲基-7-氮杂五环[10.8.0.02,9.05,9.013,18]二十-18-烯-16-胺",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -13585,48 +11967,12 @@
     "human_reviewed": false
   },
   {
-    "id": "chebi-3266",
-    "smiles": "COc1cc2c(cc1OC)C1Cc3cc(OC)c(OC)cc3C(C2)N1",
-    "english_name": "4,5,12,13-tetramethoxy-17-azatetracyclo[7.7.1.02,7.010,15]heptadeca-2,4,6,10,12,14-hexaene",
-    "chinese_name": "4,5,12,13-四甲氧基-17-氮杂四环[7.7.1.02,7.010,15]十七碳-2,4,6,10,12,14-六烯",
-    "source": "chebi",
-    "tier": 4,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
     "id": "chebi-3272",
     "smiles": "Nc1ncnc2c1ncn2[C@@H]1O[C@@H]2COP(=O)([O-])O[C@H]3[C@@H](O)[C@H](n4cnc5c(N)ncnc54)O[C@@H]3COP(=O)([O-])O[C@H]3[C@@H](O)[C@H](n4cnc5c(N)ncnc54)O[C@@H]3COP(=O)([O-])O[C@H]3[C@@H](O)[C@H](n4cnc5c(N)ncnc54)O[C@@H]3COP(=O)([O-])O[C@H]3[C@@H](O)[C@H](n4cnc5c(N)ncnc54)O[C@@H]3COP(=O)([O-])O[C@H]3[C@@H](O)[C@H](n4cnc5c(N)ncnc54)O[C@@H]3COP(=O)([O-])O[C@H]2[C@H]1O",
     "english_name": "(1S,6R,8R,9R,10S,15R,17R,18R,19S,24R,26R,27R,28S,33R,35R,36R,37S,42R,44R,45R,46S,51R,53R,54R)-8,17,26,35,44,53-hexakis(6-aminopurin-9-yl)-3,12,21,30,39,48-hexaoxido-3,12,21,30,39,48-hexaoxo-2,4,7,11,13,16,20,22,25,29,31,34,38,40,43,47,49,52-octadecaoxa-3lambda5,12lambda5,21lambda5,30lambda5,39lambda5,48lambda5-hexaphosphaheptacyclo[49.3.0.06,10.015,19.024,28.033,37.042,46]tetrapentacontane-9,18,27,36,45,54-hexol",
     "chinese_name": "(1S,6R,8R,9R,10S,15R,17R,18R,19S,24R,26R,27R,28S,33R,35R,36R,37S,42R,44R,45R,46S,51R,53R,54R)-8,17,26,35,44,53-六(6-氨基嘌呤-9-基)-3,12,21,30,39,48-六氧代-3,12,21,30,39,48-六氧代-2,4,7,11,13,16,20,22,25,29,31,34,38,40,43,47,49,52-十八氧-3λ5,12λ5,21λ5,30λ5,39λ5,48λ5-六磷杂七环[49.3.0.06,10.015,19.024,28.033,37.042,46]四十五烷-9,18,27,36,45,54-六醇",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-3275",
-    "smiles": "CC1=C(CCC(=O)[O-])C2=N[C@@]1(C)CC1=C(CCC(=O)[O-])[C@](C)(CC(=O)[O-])C(=N1)/C=C1\\N[C@@](C)([C@@H]3N=C(C2C)[C@](C)(CCC(=O)[O-])[C@H]3CC(=O)[O-])[C@@](C)(CC(=O)O)[C@@H]1CCC(=O)[O-]",
-    "english_name": "3-[(1R,2S,3S,4Z,7S,11S,17R,18R,19R)-8,13,17-tris(2-carboxylatoethyl)-2,7,18-tris(carboxylatomethyl)-1,2,7,11,12,15,17-heptamethyl-3,10,15,18,19,21-hexahydrocorrin-22-ium-3-yl]propanoate",
-    "chinese_name": "3-[(1R,2S,3S,4Z,7S,11S,17R,18R,19R)-8,13,17-三(2-羧酸根乙基)-2,7,18-三(羧酸根甲基)-1,2,7,11,12,15,17-七甲基-3,10,15,18,19,21-六氢卟吩-22-鎓-3-基]丙酸根",
-    "source": "chebi",
-    "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-3278",
-    "smiles": "O=[N+]([O-])N1C2C3N([N+](=O)[O-])C1C1N([N+](=O)[O-])C(C(N1[N+](=O)[O-])N3[N+](=O)[O-])N2[N+](=O)[O-]",
-    "english_name": "2,4,6,8,10,12-hexanitro-2,4,6,8,10,12-hexazatetracyclo[5.5.0.03,11.05,9]dodecane",
-    "chinese_name": "2,4,6,8,10,12-六硝基-2,4,6,8,10,12-六氮杂四环[5.5.0.03,11.05,9]十二烷",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,
@@ -13651,18 +11997,6 @@
     "chinese_name": "S-[2-[3-[[(2R)-4-[[[(2R,3S,4R,5R)-5-(6-氨基嘌呤-9-基)-4-羟基-3-膦酸氧基四氢呋喃-2-基]甲氧基-羟基磷酰氧基-羟基磷酰氧基]-2-羟基-3,3-二甲基丁酰氨基]丙酰氨基]乙基] (4Z,7Z,10Z,13Z,16Z,19Z)-二十二碳-4,7,10,13,16,19-六烯硫酯",
     "source": "chebi",
     "tier": 5,
-    "features": [],
-    "eval_en": true,
-    "eval_zh": false,
-    "human_reviewed": false
-  },
-  {
-    "id": "chebi-3288",
-    "smiles": "C=C1C(=O)[C@]23[C@H](O)[C@H]1CC[C@H]2[C@@]12CO[C@]3(O)[C@@H](O)[C@@H]1C(C)(C)CC[C@@H]2O",
-    "english_name": "(1S,2S,5S,8R,9S,10S,11R,15S,18R)-9,10,15,18-tetrahydroxy-12,12-dimethyl-6-methylidene-17-oxapentacyclo[7.6.2.15,8.01,11.02,8]octadecan-7-one",
-    "chinese_name": "(1S,2S,5S,8R,9S,10S,11R,15S,18R)-9,10,15,18-四羟基-12,12-二甲基-6-亚甲基-17-氧杂五环[7.6.2.15,8.01,11.02,8]十八碳-7-酮",
-    "source": "chebi",
-    "tier": 4,
     "features": [],
     "eval_en": true,
     "eval_zh": false,

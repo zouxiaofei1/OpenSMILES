@@ -51,6 +51,13 @@ export const state = {
   bmGenTotal: 0,
   bmHacRows: null, // 上次初始化重原子滑块域时的 bmRows 引用; 变了就重置区间
   bmPollTimer: null,
+  bmFiles: [], // 与 bmRows 同一次响应里的数据集文件名数组; 行内 f 是它的下标
+  bmExFiles: new Set(), // 左栏「按文件排除」勾选的文件名
+  bmExFeats: new Set(), // 左栏「按特征排除」勾选的特征名
+  bmFeatExpanded: false, // 特征列表是否已「展开全部」
+  bmFeatQuery: "", // 特征搜索词(只影响左栏列表, 不影响表格)
+  bmSideOpen: true, // 左栏是否展开
+  bmExCount: 0, // 上次过滤被排除掉的行数, 供「已排除」chip 显示
   // code analysis
   caData: null,
   // call graph

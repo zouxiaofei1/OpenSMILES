@@ -38,6 +38,16 @@ _proc_lock = threading.Lock()
 _gen_total = 0
 _captured: list[str] = []  # last stdout lines for diagnostics
 
+# 数据集文件索引缓存: (stat 签名, 文件名数组, SMILES → 文件下标数组)。
+# 命中的代价只是一次 stat, 所以可以放在每次 GET /benchmark-preview 上。
+_idx_lock = threading.Lock()
+_idx_state: tuple[tuple, list[str], dict[str, list[int]]] | None = None
+
+# 源文件行缓存: path → (size, mtime_ns, rows)。/status 每 2s 就调一次 _source_total,
+# 没有这层缓存时每次都要全量 json.loads 一遍源文件。
+_src_lock = threading.Lock()
+_src_cache: dict[str, tuple[int, int, list[dict]]] = {}
+
 
 def _resolve_source(data_file: str | None) -> Path:
     """Resolve a benchmark data file under benchmarks/, with traversal guard.
@@ -99,6 +109,9 @@ def _ensure_derived(rows: list[dict], cache: Path) -> list[dict]:
     for r in rows:
         out = dict(r)
         out.update(metrics.row_derived_of(out))
+        # 排除用的 facet 字段只在响应里存在, 不能跟着派生字段落盘。
+        out.pop("feat", None)
+        out.pop("f", None)
         out_rows.append(out)
     try:
         tmp = cache.with_suffix(".tmp")
@@ -109,15 +122,127 @@ def _ensure_derived(rows: list[dict], cache: Path) -> list[dict]:
     return out_rows
 
 
-def _source_total(source: Path) -> int:
-    """Return the number of rows in the data file, or 0."""
-    if not source.is_file():
-        return 0
+def _stat_key() -> tuple:
+    """benchmarks/*.json 的 (name, size, mtime_ns) 快照, 用作索引/源缓存失效判据。
+
+    只 stat 不解析: 新增/删除/改动任一文件都会改变本 key, 因此可以放在请求路径上。
+    """
+    out = []
+    for p in sorted(DATA_DIR.glob("*.json")):
+        try:
+            st = p.stat()
+        except OSError:
+            continue
+        out.append((p.name, st.st_size, st.st_mtime_ns))
+    return tuple(out)
+
+
+def _is_benchmark_file(p: Path) -> bool:
+    """该 json 是否为 benchmark 形状: 非空 list, 且首行是含 smiles/english_name 的 dict。"""
+    try:
+        obj = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+    if not isinstance(obj, list) or not obj:
+        return False
+    first = obj[0]
+    return isinstance(first, dict) and "smiles" in first and "english_name" in first
+
+
+def _dataset_files() -> list[Path]:
+    """benchmarks/ 下所有 benchmark 形状的数据文件, 按文件名排序。"""
+    return [p for p in sorted(DATA_DIR.glob("*.json")) if p.is_file() and _is_benchmark_file(p)]
+
+
+def _file_index() -> tuple[list[str], dict[str, list[int]]]:
+    """(数据集文件名数组, SMILES → 所属文件下标数组), 按 stat 签名缓存。
+
+    前端"按文件排除"靠它把行归属回数据集。多文件归属是常态(merged 的行同时属于若干子集),
+    所以值恒为下标数组。返回的两半必须来自同一次调用 —— 混用别处算出的文件名数组会让
+    下标指向错误的文件。
+    """
+    global _idx_state
+    key = _stat_key()
+    with _idx_lock:
+        if _idx_state is not None and _idx_state[0] == key:
+            return _idx_state[1], _idx_state[2]
+        files: list[str] = []
+        idx: dict[str, list[int]] = {}
+        for p in _dataset_files():
+            try:
+                obj = json.loads(p.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            if not isinstance(obj, list):
+                continue
+            i = len(files)
+            files.append(p.name)
+            for r in obj:
+                if not isinstance(r, dict):
+                    continue
+                smi = r.get("smiles")
+                if not isinstance(smi, str) or not smi:
+                    continue
+                bucket = idx.get(smi)
+                if bucket is None:
+                    idx[smi] = [i]
+                elif bucket[-1] != i:
+                    # 同一文件内的重复 SMILES 会连续出现, 所以比末项即可去重。
+                    bucket.append(i)
+        _idx_state = (key, files, idx)
+        return files, idx
+
+
+def _source_rows(source: Path) -> list[dict]:
+    """源 benchmark 文件的行列表; 按 (size, mtime_ns) 缓存, 缺失/损坏时返回空表。"""
+    try:
+        st = source.stat()
+    except OSError:
+        return []
+    key = str(source)
+    with _src_lock:
+        hit = _src_cache.get(key)
+        if hit is not None and hit[0] == st.st_size and hit[1] == st.st_mtime_ns:
+            return hit[2]
     try:
         rows = json.loads(source.read_text(encoding="utf-8"))
-        return len(rows) if isinstance(rows, list) else 0
     except Exception:
-        return 0
+        return []
+    if not isinstance(rows, list):
+        return []
+    with _src_lock:
+        _src_cache[key] = (st.st_size, st.st_mtime_ns, rows)
+    return rows
+
+
+def _source_total(source: Path) -> int:
+    """Return the number of rows in the data file, or 0."""
+    return len(_source_rows(source))
+
+
+def _enrich_rows(rows: list[dict], source: Path, idx: dict[str, list[int]]) -> list[dict]:
+    """给预览行补 feat(源行 features) 与 f(所属数据集文件下标), 供前端左栏排除。
+
+    行与源文件行按下标一一对应(见 benchmark_preview_parallel 的 ordering contract), 但
+    live 缓存没有 _data_sig 保护: 源文件被插入/重排/等长替换时会整体错位。这时宁可不给
+    feat(该维度少过滤), 也不能把别的分子的特征挂到这一行上(会给出错误结果)。首尾行足以
+    识别插入/重排/截断这几类错位。
+
+    f 由行自身 SMILES 查表, 与对齐与否无关, 恒可用。rows 来自本次请求刚解析的缓存, 就地
+    改字段是安全的(history_store.read_cache / _read_cache 都不共享对象)。
+    """
+    src = _source_rows(source)
+    n = len(src)
+    aligned = n >= len(rows) and (
+        not rows
+        or (rows[0].get("s") == src[0].get("smiles")
+            and rows[-1].get("s") == src[len(rows) - 1].get("smiles"))
+    )
+    for i, r in enumerate(rows):
+        feat = src[i].get("features") if aligned and i < n else None
+        r["feat"] = [str(x) for x in feat] if isinstance(feat, list) else []
+        r["f"] = idx.get(str(r.get("s") or ""), [])
+    return rows
 
 
 def _hist_commit(commit: str | None) -> str | None:
@@ -143,11 +268,15 @@ def _hist_benchmark_preview(full: str, data_file: str) -> dict[str, Any]:
     # 历史缓存可能缺派生字段: 内存补算(不改写历史缓存), 供稠环过滤与相似度排序。
     if not metrics.has_derived(rows):
         rows = [dict(r, **metrics.row_derived_of(r)) for r in rows]
-    src_total = _source_total(_resolve_source(data_file))
+    source = _resolve_source(data_file)
+    src_total = _source_total(source)
+    files, idx = _file_index()
+    rows = _enrich_rows(rows, source, idx)
     job = history_store.get_job(full, _hist_kind(data_file))
     generating = job is not None and job.proc is not None and job.proc.poll() is None
     return {
         "rows": rows,
+        "files": files,
         "cached": len(rows),
         "source_total": src_total,
         "stale": len(rows) < src_total,
@@ -163,19 +292,7 @@ def _hist_benchmark_preview(full: str, data_file: str) -> dict[str, Any]:
 @router.get("/benchmark-preview/datasets")
 def benchmark_preview_datasets() -> dict[str, Any]:
     """List data files that look like benchmark rows (list of {smiles, english_name})."""
-    out: list[str] = []
-    for p in sorted(DATA_DIR.glob("*.json")):
-        if not p.is_file():
-            continue
-        try:
-            obj = json.loads(p.read_text(encoding="utf-8"))
-        except Exception:
-            continue
-        if not isinstance(obj, list) or not obj:
-            continue
-        first = obj[0]
-        if isinstance(first, dict) and "smiles" in first and "english_name" in first:
-            out.append(p.name)
+    out = [p.name for p in _dataset_files()]
     return {"ok": True, "datasets": out}
 
 
@@ -207,8 +324,13 @@ def get_benchmark_preview(commit: str | None = None, data_file: str | None = Non
     if not generating and rows:
         rows = _ensure_derived(rows, cache)
 
+    # facet 必须在 _ensure_derived 写回之后补, 否则会跟着落盘。
+    files, idx = _file_index()
+    rows = _enrich_rows(rows, source, idx)
+
     return {
         "rows": rows,
+        "files": files,
         "cached": len(rows),
         "source_total": src_total,
         "stale": len(rows) < src_total,

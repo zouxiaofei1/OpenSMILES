@@ -1,6 +1,6 @@
 # 中英双语命名约定 (Bilingual Naming Convention)
 
-> **概念页面** | **最后更新:** 2026-09-05
+> **概念页面** | **最后更新:** 2026-09-12
 
 ---
 
@@ -24,17 +24,19 @@ Layer5: (en, zh) tuples → NameResult(en="ethanol", zh="乙醇")   ← 双语�
 
 整个 Layer5 组装管线中，所有名称生成函数遵循一个统一的返回值约定：**返回 `tuple[str, str] | None`，其中第一个元素为英文名、第二个元素为中文名**。这一定约定确保了函数的可组合性——上游的输出可以直接作为下游的输入，无需额外转换。
 
-### 管线的 5 步双语流水线
+### 管线的双语流水线
 
-以 `assemble()` 函数（`src/namepredict/layer5/assembler.py:345`）为例，每一步都操作 `(en, zh)` 对：
+以 `assemble()` 函数（`src/namepredict/layer5/assembler.py:513`）为例，每一步都操作 `(en, zh)` 对：
 
 ```
-1. _names_for(kind, n, numbered)     → (en, zh) | None   母体名称
-2. _prefix_for(numbered, kind, n)    → (pre_en, pre_zh)   取代基前缀
-3. join_kind_name(kind, pre, names)  → (en, zh)           前缀+母体拼接
-4. maybe_anion_names(numbered, en, zh) → (en, zh)         羧酸根转换
-5. apply_rs_prefix(numbered, en, zh) → (en, zh)           R/S 立体化学
-6. maybe_metal_salt_names(numbered, en, zh) → (en, zh)    盐后缀
+1. _names_for(kind, n, numbered)              → (en, zh) | None  母体名称
+2. _with_hydro_prefix(names, numbered)        → (en, zh)          hydro + 指示氢前缀
+3. _ring_cation_suffix(numbered, names)       → (en, zh)          环内 N+/O+ 母体名缀 -{位次}-ium
+4. _prefix_for(numbered, kind, n)             → (pre_en, pre_zh)  取代基前缀
+5. join_kind_name(kind, pre, names, numbered) → (en, zh)          前缀+母体拼接
+6. maybe_anion_names(numbered, en, zh)        → (en, zh)          羧酸根转换
+7. apply_rs_prefix(numbered, en, zh)          → (en, zh)          R/S 立体化学
+8. maybe_metal_salt_names(numbered, en, zh)   → (en, zh)          盐后缀
 ```
 
 每一步都是纯文本转换：输入 `(en, zh)`，输出 `(en, zh)`。这种设计具有三个优点：
@@ -45,7 +47,7 @@ Layer5: (en, zh) tuples → NameResult(en="ethanol", zh="乙醇")   ← 双语�
 
 ### 母体名称派发中的双语约定
 
-`_names_for` 函数（`src/namepredict/layer5/assembler.py:227`）先查 `chain_engine._KIND_TABLE`（13 个 `_Chain` spec，按 `scaffold_id` 运行时注入环前缀/稠环词干），命中即返回；`kind == "phosphate"` 例外——直接调 `layer5/phosphate.py` 的 `phosphate_names`（`assembler.py:232`）组装磷酸整名；其余落到特殊 worker（环外主基统一由 `_exocyclic_ring_names` 按后缀表 `_EXO_SUF` 出名，覆盖 acid/aldehyde/ester/amide/nitrile/acyl；`phenyl`）或 `_parent_stem_names` 回退。每个 worker 都是返回 `(en, zh)` 或 `None` 的双语函数——返回 `None` 时派发器降级到下一策略。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
+`_names_for` 函数（`src/namepredict/layer5/assembler.py:356`）先查 `chain_engine._KIND_TABLE`（13 个 `_Chain` spec，按 `scaffold_id` 运行时注入环前缀/稠环词干），命中即返回；`kind == "phosphate"` 例外——直接调 `layer5/phosphate.py` 的 `phosphate_names`（`assembler.py:358`）组装磷酸整名；其余落到特殊 worker（环外主基统一由 `_exocyclic_ring_names` 按后缀表 `_EXO_SUF` 出名，覆盖 acid/aldehyde/ester/amide/nitrile/acyl；杂原子锚点自由基走 `_mononuclear_radical_names` 的单核氢化物去氢管线，`free_to_yl`；苯单取代的 `phenyl` 保留名由 chain_engine 的 `variant` 提供）或 `_parent_stem_names` 回退。每个 worker 都是返回 `(en, zh)` 或 `None` 的双语函数——返回 `None` 时派发器降级到下一策略。这种"尝试-失败-降级"模式在双语的上下文中尤其重要——如果一个命名策略返回了英文名但无法生成中文名（或反之），则整个结果不被接受。
 
 ## 词干表：双语单词的单一权威来源
 
@@ -82,7 +84,7 @@ _ALKANE_ZH_BASE = {1: "甲烷",  2: "乙烷",   ..., 10: "癸烷"}
 
 ### amido 保留式的双语词形
 
-N-酰基取代基有两条表达路径，双语词形由 `constants.AMIDO_RETAINED`（`constants.py:93`）区分：
+N-酰基取代基有两条表达路径，双语词形由 `constants.AMIDO_RETAINED`（`constants.py:96`）区分：
 
 | 路径 | 英文 | 中文 | 说明 |
 |---|---|---|---|
@@ -90,6 +92,16 @@ N-酰基取代基有两条表达路径，双语词形由 `constants.AMIDO_RETAIN
 | acylamino（方法 2） | `acetylamino` 等 | `…酰氨基` | 长链/烯酰/被取代苯甲酰/杂环羰酰，不入表 |
 
 amido 与 acylamino 的区分由**英文词干**承担（`AMIDO_RETAINED_EN` 供 L3 判定免括号），中文两者词形一致（`乙酰氨基`）。formyl/benzoyl 的中文（`甲酰胺基`/`苯甲酰胺基`）待与 gold 统一。
+
+### 其他保留式取代基的双语词形
+
+| 结构 | 英文 | 中文 | 依据（实现位置） |
+|---|---|---|---|
+| 质子化伯胺 NH&#8323;&#8314; | `azaniumyl` | `铵基` | P-62.4.1（L3 `amino_side.py:24`，取代 `amino`） |
+| 苯胺去氢（N-苯基氨基） | `anilino`；带环取代基 `4-chloroanilino` | `苯胺基`；`4-氯苯胺基` | P-62.2.1.1（`free_to_yl._anilino_en`） |
+| N-取代磺酰胺基 | 与 `sulfamoyl` 融合：`butyl(methyl)sulfamoyl` | `…磺酰基` | P-66.1.1.4.2（`assembler._mononuclear_radical_names`，`assembler.py:295`） |
+
+三者都是"英文取保留式、中文取对应基名"的成对词形：`azaniumyl`/`铵基` 由 L3 直接产出，`anilino`/`苯胺基` 与 `sulfamoyl` 融合在 L5 单核自由基母体管线中定形。
 
 ## 中英文命名差异
 
@@ -114,6 +126,9 @@ amido 与 acylamino 的区分由**英文词干**承担（`AMIDO_RETAINED_EN` 供
 | **立体化学** | `(E,2S)-` | `(E,2S)-` (与英文一致，不翻译) |
 | **环前缀** | `cyclohexane` | `环己烷` |
 | **编号前缀** | `1H-pyrrole-` | `1H-吡咯`（`1H-` 保留，母体翻译） |
+| **环阳离子** | `-{位次}-ium`（`pyridin-1-ium`） | 沿用母体名（`吡啶`） |
+
+编号前缀（`1H-`、`1,2-`、`1,3,5-` 等）由 `ring_scaffold._TEMPLATES` 的 `locant_prefix` 提供：无条件注入者（`1,2-` 异噁唑、`1,3,5-` 三嗪）恒带前缀；`prefix_nh_conditional` 为真者（吡咯型 `1H-` 四唑）仅当环含未取代 NH 时注入，N 被取代时省略。
 
 ### 酯命名的语序反转
 
@@ -138,6 +153,15 @@ amido 与 acylamino 的区分由**英文词干**承担（`AMIDO_RETAINED_EN` 供
 
 中文臂词形分两档：`_arm_zh_root`（`phosphate.py:26`）对单字根（甲基→甲、苯基→苯）去「基」用于中性酯；`_arm_ester_zh`（`phosphate.py:59`）对多位纯中文数字根（十三基→十三烷基）补「烷」以对齐 gold。相同英文的臂由 `_group_arms`（`phosphate.py:34`）合并计数后按英文序排列。
 
+### P 酰基前缀的双语词干
+
+P 锚点自由基母体的词干按氧化态选定（`principal_expression._PHOSPHORUS_STEM_BY_OXO`，`principal_expression.py:356`）：0 个 =O 取 `phosphanyl`/`磷烷基`，1 个 =O 取 `phosphoryl`/`磷酰`（P-67.1.4.1.1.2/6）。取代基拼接中英同步（`_phosphoryl_sub_names`，`assembler.py:179`）：
+
+- 全为简单基：首基平铺、其余括起，中英同形（`hydroxy(methyl)phosphoryl` / `羟基(甲基)磷酰基`）
+- 同基倍增：用 `di-`/`二` 而非逐基括号（`dimethoxyphosphoryl` / `二甲氧基磷酰基`）
+- 含复合组分：逐组分以连字符分隔、需围栏者加方括号（P-16.5.2 嵌套标记；-yl 型桥基把桥后缀挪到方括号外）
+- P 酰基经 O/N/S 桥连母体（P-67.1.4.1.3 复合前缀）：整体加方括号后接桥后缀（`[hydroxy(methoxy)phosphoryl]oxy` / `[羟基(甲氧基)磷酰]氧基`）
+
 ### 盐命名的后缀位置反转
 
 盐的命名也体现出语序差异。英文将金属阳离子放在羧酸根名称之前作为前缀（`sodium dodecanoate`），而中文将金属名放在名称末尾（`十二酸钠`）。这一转换由 `stems.py` 中的 `maybe_metal_salt_names` 函数（`src/namepredict/layer5/stems.py:130`）完成：
@@ -153,11 +177,37 @@ amido 与 acylamino 的区分由**英文词干**承担（`AMIDO_RETAINED_EN` 供
 
 虽然英文前缀按取代基英文名的字母序排列（符合 IUPAC P-14.5），但中文前缀的排列仍使用 `alkyl_alpha_key`——一个基于英文名的排序键，定义在 `assembler_prefixes.py` 中并由 Layer3 的取代基提取器共享。这确保了在双语输出中，取代基的排列顺序始终保持一致：中英文的前缀中的基团顺序总是相同的，避免了因语种不同导致取代基排列顺序不一致的混淆。
 
+### 桥平铺式围栏的中英同形
+
+O/S/N 桥后缀（`-oxy`/`-sulfanyl`/`-amino` ↔ `氧基`/`硫基`/`氨基`）采取"平铺式"：括号闭在前端基的 `-yl`/`基` 之后，桥后缀留在括号外——`(4-methoxyphenyl)sulfonyl` ↔ `(4-甲氧基苯基)磺酰基`。中文侧的拆分由 `_split_bridge_suffix_zh`（`assembler_prefixes.py:171`）完成，其**唯一判据是英文 stem 是否拆**（先调 `_split_bridge_suffix`，`assembler_prefixes.py:118`），故中英围栏必然同形。
+
+前端是否拆分由 `_front_needs_enclosure`（`assembler_prefixes.py:97`）判定：
+
+- 整括不拆：简单保留基（`methyl`/`benzyl`）、无取代直链 -yl（`propan-2-yloxy` 平铺）、酰基前端（`acetyloxy`/`benzoyloxy`）、自由价在端碳的链基（`…phenyl)methyl`、`5-(X)pentyl`）、以及磺酰/亚磺酰基前端（其围栏由 L3 定形）
+- 须围栏：自由价碳带手性描述符（`(2R)-2-amino-2-carboxyethyl`）、环型内嵌位次（`…oxan-2-yl`）以及已自带方括号/括号的复合前端；`amino` 桥在括号后仍接位次前缀时再叠一层方括号（P-63.2.2.1.2：`[[X]amino]propanoyl`）
+- 磺酰/亚磺酰桥 + 无取代直链 -yl 前端：英文侧平铺不加围栏（`propan-2-ylsulfonyl`，`_sbridge_flat_stem`），中文侧仍括注
+
+前导立体描述符须整体围栏：取代基名以 `(1Z)-`/`(2R,4R)-` 开头时中英两侧同时置位（`_STEREO_LEAD_RE`，`assembler_prefixes.py:85`），如 `5-[(1Z)-prop-1-enyl]…` ↔ `5-[(1Z)-丙-1-烯基]…`。
+
+同基倍增（N 桥）的中文词根由 `zh_bridge_root`（`constants.py:92`）去尾「基」后再接桥后缀：甲基→甲、叔丁基→叔丁、环己基→环己、丙-2-基→丙-2-，故英文 `dimethylamino` 对应 `二甲氨基`（而非 `二甲基氨基`）。英文侧以 `di-`/`tri-` 表达同一倍增。
+
+### 环阳离子：英文 `-{位次}-ium` 与中文母体名
+
+净正电荷分子的环内 N&#8314;/O&#8314; 由 `_ring_cation_suffix`（`assembler.py:474`）缀在母体名上（P-62.4.1）：英文取 `-{位次}-ium`（`pyridin-1-ium`），色烯型氧鎓保留名整词干替换（`chromene` → `chromenylium`）；中文侧沿用母体名（`吡啶`、`色烯`），不译出 `-ium` 的对应词形。
+
+### 位次省略的双语同步
+
+不饱和位次的省略由 L4 的 `omit_ene_locant`/`omit_yne_locant` 与 L5 `_Chain` 的 `ene_loc_omit`/`yne_loc_omit` 共同决定，中英两侧共用同一判定、同一字段：
+
+- 开链烃二核烯与二/三核炔（`ethene`/`乙烯`、`ethyne`/`乙炔`、`propyne`/`丙炔`）位次 1 隐含省略（P-14.3.4.2(d)）；C3 烯仍保留（`prop-1-ene`/`丙-1-烯`）
+- 带 FG 后缀的炔恒保留炔位次（`spec.yne_loc_omit` 为假时不给省略，P-14.3.4 例外：`prop-2-ynoic acid`）
+- 环单烯在双键起点与 FG/自由价同为 1 时省去冗余的 `1` 并融合（P-31.1.2：`cyclohexen-1-yl`），FG 位次仍显式保留
+
 ## `zh_stem` 转换
 
 `zh_stem` 函数（`src/namepredict/layer5/stems.py:32-38`）是一个关键的中文词干提取工具。它从中文全名中剥离末端的官能团/母体后缀，返回"裸词干"供后续拼接。
 
-**后缀剥离表**（`src/namepredict/layer5/stems.py:27`）：
+**后缀剥离表**（`src/namepredict/layer5/stems.py:18`）：
 
 ```python
 _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈", "胺", "酮", "烯", "炔")
@@ -178,7 +228,7 @@ _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈",
 
 ## `zh_num`：中文数字生成
 
-`zh_num(n)`（`src/namepredict/layer5/stems.py:33-41`）将整数 n（1-99）转换为中文基数词：
+`zh_num(n)`（`src/namepredict/layer5/stems.py:21-30`）将整数 n（1-99）转换为中文基数词：
 
 - 1-9：直接使用 `_DIGIT_ZH` 字符串索引（`一` `二` `三`...`九`）
 - 10-19：`十` + 个位（`十一` `十二`...而非 `一十` `二十`...）
@@ -193,14 +243,14 @@ _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈",
 **传播路径：**
 
 ```
-SMILESNNamer(name_mode="general")         # namer.py:336
+SMILESNNamer(name_mode="general")         # namer.py:334
   → _pipeline(smiles, t0, name_mode)       # namer.py:288
     → _name_mol(mol, ..., name_mode)       # namer.py:258
       → _run_candidates(info, ..., name_mode)  # namer.py:231
-        → _prepare_candidate(info, parent, name_mode)  # namer.py:142
+        → _prepare_candidate(info, parent, name_mode)  # namer.py:141
           → extract_substituents(info, parent, name_mode)  # Layer3
-        → _assemble_candidate(parent, subst, ..., name_mode)  # namer.py:129
-          → _ok_result(numbered, ..., name_mode)  # namer.py:80
+        → _assemble_candidate(parent, subst, ..., name_mode)  # namer.py:128
+          → _ok_result(numbered, ..., name_mode)  # namer.py:83
             → numbered["name_mode"] = name_mode
 ```
 
@@ -208,7 +258,7 @@ SMILESNNamer(name_mode="general")         # namer.py:336
 
 ## 盐元数据的双语结构
 
-Layer0 的 `dissociate_salt` 函数（`src/namepredict/layer0/salt.py:95`）在检测到盐结构时，返回的元数据字典包含完整的中英双语字段：
+Layer0 的 `dissociate_salt` 函数（`src/namepredict/layer0/salt.py:94`）在检测到盐结构时，返回的元数据字典包含完整的中英双语字段：
 
 | 字段 | 示例值 | 说明 |
 |------|--------|------|
@@ -218,7 +268,7 @@ Layer0 的 `dissociate_salt` 函数（`src/namepredict/layer0/salt.py:95`）在�
 | `acid_salt` | `"hydrochloride"` | 英文酸盐后缀 |
 | `acid_salt_zh` | `"盐酸盐"` | 中文酸盐后缀 |
 
-这些元数据在 `_name_mol` 中先注入 `info["salt"]`（`src/namepredict/namer.py:280`，磷酸母体的盐门控与 `salt_meta` 来源），命名成功后再注入 `NameResult.meta["salt"]`（`src/namepredict/namer.py:281-282`），供 Layer5 组装器在生成中英双语名称时追加盐后缀。由于盐解离在 Layer1 之前完成，Layer1-5 处理的始终是解离后的纯有机片段；除磷酸需按 `n_om` 与金属数配平外，各层代码无需关心盐的存在。
+这些元数据在 `_name_mol` 中先注入 `info["salt"]`（`src/namepredict/namer.py:280`，磷酸母体的盐门控与 `salt_meta` 来源），命名成功后再注入 `NameResult.meta["salt"]`（`src/namepredict/namer.py:283-284`），供 Layer5 组装器在生成中英双语名称时追加盐后缀。由于盐解离在 Layer1 之前完成，Layer1-5 处理的始终是解离后的纯有机片段；除磷酸需按 `n_om` 与金属数配平外，各层代码无需关心盐的存在。
 
 ## 设计原则总结
 
@@ -226,9 +276,9 @@ NamePredict 的双语命名设计遵循以下原则：
 
 1. **同步而非翻译**：英文和中文名称从同一结构化数据源（`numbered` 字典）同时生成，而非先生成一种语言再翻译为另一种。这避免了翻译过程中引入的二次歧义。
 
-2. **词干表为单一权威来源**：`stems.py` 是双语单词的唯一生成点。任何碳数的烷烃和官能团名称都从此处派生，杜绝了不同模块使用不同翻译的可能性。
+2. **词干表为单一权威来源**：`stems.py` 提供烷烃词干与碳数词形的权威派生（`alkane_en(n)` / `alkane_zh(n)`、`_en_stem(n)` / `zh_stem()`、`zh_num()`），C11+ 数量词又统一取自 `constants.en_num_term`。官能团名称由 chain_engine 用这些词干 + 后缀拼出，杜绝了不同模块各造一套翻译的可能性。
 
-3. **成对函数约定**：英中双语始终以成对形式出现——表（`_ALKANE_EN_BASE` / `_ALKANE_ZH_BASE`）、函数（`alcohol_en(n)` / `alcohol_zh(n)`）、元组（`(en, zh)`）。不存在"只有英文"或"只有中文"的命名代码路径。
+3. **成对函数约定**：英中双语始终以成对形式出现——表（`_ALKANE_EN_BASE` / `_ALKANE_ZH_BASE`）、函数（`alkane_en(n)` / `alkane_zh(n)`、`acid_to_anion_en` / `acid_to_anion_zh`）、元组（`(en, zh)`）。不存在"只有英文"或"只有中文"的命名代码路径。
 
 4. **差异显式化**：中英文命名规则的差异（如酯的语序、盐的后缀位置）在对应模块中显式处理，而非隐藏在通用逻辑中。这使得特定语种的规则变更不会意外影响另一种语言。
 

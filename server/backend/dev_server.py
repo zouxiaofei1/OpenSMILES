@@ -23,7 +23,11 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PORT = 8766
+# 8666 rather than the old 8766: 8766 falls inside a Windows excluded port range
+# (8726-8825) reserved by Hyper-V/WSL/Docker, so bind() fails with WinError 10013
+# no matter what is or is not listening.  Check the current reservations with
+# `netsh interface ipv4 show excludedportrange protocol=tcp` before moving this.
+PORT = 8666
 UVICORN = [
     str(ROOT / ".venv" / "Scripts" / "uvicorn.exe"),
     "server.backend.app:app",

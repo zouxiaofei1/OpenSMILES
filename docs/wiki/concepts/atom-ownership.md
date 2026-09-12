@@ -90,6 +90,8 @@ owned_atoms = chain_atoms ∪ fg_atoms
 
 归属: `{C_carbonyl} ∪ {=O} ∪ {acetyl_methyl}`（如存在）。
 
+环内单碳羰基与环内杂原子 N/O/S 相邻时（N-酰基环胺、内酯/硫代内酯）同取本归属——L1 `_is_ketone_carbon`（`analyzer.py:58`）经 `_has_ring_hetero_neighbor`（`analyzer.py:54`）取 `constants.RING_HETERO` 判定，故 `thiolan-2-one` 这类硫代内酯也走酮母体。此情形下环内 O/S 随骨架链 `chain` 一并进入 `owned_atoms`，环外部分（如 N-酰基环胺的吡咯烷环）仍在母体边界之外、由 Layer3 作为取代基提取。
+
 #### 醇/酚 (Alcohol/Phenol)
 
 醇类母体拥有 **每个连接碳 + 对应的羟基氧**。支持单醇（`oh_c_idx`）和多元醇（`oh_c_idxs`）。
@@ -224,7 +226,7 @@ class ClaimedBlock:
 | `CHAIN_C` | 母体链碳上的连接 | 连接原子是碳、不在环中、非酰胺/胺/醚角色 |
 | `RING_C` | 母体环碳上的连接 | 连接原子是碳、在环中 |
 | `AMIDE_N` | 酰胺氮上的连接 | 连接原子是 N，单键连接到母体中含有双键氧的羰基碳 |
-| `AMINE_N` | 胺氮上的连接（8584795 新增） | 连接原子是非芳香 N，至少一个邻居是母体内的非羰基碳 |
+| `AMINE_N` | 胺氮上的连接 | 连接原子是非芳香 N，至少一个邻居是母体内的非羰基碳 |
 | `ETHER_O` | 醚氧上的连接 (已被取代基臂占据) | 连接原子是 O，恰好两个碳邻居（无氢邻居） |
 | `OTHER` | 其他杂原子的连接 | 不满足以上任何条件 |
 

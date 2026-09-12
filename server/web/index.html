@@ -226,6 +226,7 @@
           <span class="chip">en✓ <b id="bm-enn">0</b></span>
           <span class="chip">zh✓ <b id="bm-zhn">0</b></span>
           <span class="chip">稠环 <b id="bm-fusedn">0</b></span>
+          <span class="chip" title="被左栏排除项剔掉的行数">已排除 <b id="bm-exn">0</b></span>
           <input id="bm-q" class="input bm-search" type="search" placeholder="筛选 SMILES / 预测 / 正确命名…" />
           <select id="bm-data" class="input bm-select" title="选择 benchmark 数据文件">
             <option value="">加载中…</option>
@@ -259,29 +260,50 @@
           <span class="chip">页 <b id="bm-page">1</b> / <b id="bm-pages">1</b></span>
           <button id="bm-next" class="btn btn-secondary btn-sm" type="button">下一页</button>
           <button id="bm-refresh" class="btn btn-secondary btn-sm" type="button" title="重新生成预览数据">刷新</button>
+          <button id="bm-side-toggle" class="btn btn-secondary btn-sm" type="button"
+                  aria-expanded="true" title="展开 / 收回左栏排除面板">排除</button>
         </div>
-        <div class="benchmark-table-wrap">
-          <table class="benchmark-table">
-            <colgroup>
-              <col class="bm-col-smiles" />
-              <col class="bm-col-pred" />
-              <col class="bm-col-gold" />
-              <col class="bm-col-struct" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>SMILES</th>
-                <th>本程序预测 IUPAC</th>
-                <th>正确命名</th>
-                <th>结构</th>
-              </tr>
-            </thead>
-            <tbody id="bm-tbody"></tbody>
-          </table>
-          <div id="bm-empty" class="empty-state" hidden>无匹配行</div>
-          <div id="bm-loading" class="empty-state" style="display:none">
-            <div class="skeleton" style="width:100%;height:200px;border-radius:var(--radius)"></div>
-            <p style="margin-top:12px">加载中…</p>
+        <div class="bm-body">
+          <!-- 左栏排除面板: 按文件 / 按特征勾选, 勾中的不出现在表格里。
+               展开开关在工具栏(#bm-side-toggle)而不是面板内部: 面板收窄后内部按钮会被裁掉。 -->
+          <aside id="bm-side" class="bm-side" aria-label="排除过滤">
+            <div class="bm-side-head">
+              <span class="bm-side-title">排除</span>
+              <button id="bm-ex-clear" class="btn btn-ghost btn-sm" type="button" title="清空全部排除项">清空</button>
+            </div>
+            <div class="bm-side-body">
+              <div class="bm-side-label">按文件 <span id="bm-file-n" class="bm-side-sub">0</span></div>
+              <ul id="bm-file-list" class="bm-side-list"></ul>
+              <div class="bm-side-label">按特征 <span id="bm-feat-n" class="bm-side-sub">0</span></div>
+              <!-- 搜索框是静态节点: JS 只重绘下面两个列表, 不碰这里, 否则每敲一个字就丢焦点 -->
+              <input id="bm-feat-q" class="input bm-side-search" type="search" placeholder="搜索特征…" />
+              <ul id="bm-feat-list" class="bm-side-list"></ul>
+              <button id="bm-feat-more" class="bm-side-more" type="button" hidden>展开全部</button>
+            </div>
+          </aside>
+          <div class="benchmark-table-wrap">
+            <table class="benchmark-table">
+              <colgroup>
+                <col class="bm-col-smiles" />
+                <col class="bm-col-pred" />
+                <col class="bm-col-gold" />
+                <col class="bm-col-struct" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>SMILES</th>
+                  <th>本程序预测 IUPAC</th>
+                  <th>正确命名</th>
+                  <th>结构</th>
+                </tr>
+              </thead>
+              <tbody id="bm-tbody"></tbody>
+            </table>
+            <div id="bm-empty" class="empty-state" hidden>无匹配行</div>
+            <div id="bm-loading" class="empty-state" style="display:none">
+              <div class="skeleton" style="width:100%;height:200px;border-radius:var(--radius)"></div>
+              <p style="margin-top:12px">加载中…</p>
+            </div>
           </div>
         </div>
         <footer class="bm-footer">

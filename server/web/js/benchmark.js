@@ -56,6 +56,20 @@ function showBmSkeleton() {
   tbody.innerHTML = html;
 }
 
+/* 预览响应的唯一落地点。有三条路径会拿到新的 rows(首载 / 生成完成 / 刷新后取回),
+   必须都走这里: 少更新一次 bmFiles, 行内 f 就会解析成 undefined, 文件排除会静默失效
+   (Set.has(undefined) 恒为 false, 不报错)。 */
+function bmApplyData(data, resetPage) {
+  state.bmRows = (data && data.rows) || [];
+  state.bmFiles = (data && data.files) || [];
+  state.bmLoaded = true;
+  if (resetPage) state.bmPage = 1;
+  state.bmGenerating = !!(data && data.generating);
+  state.bmGenDone = (data && data.gen_done) || 0;
+  state.bmGenTotal = (data && data.gen_total) || 0;
+  bmRenderSide();
+}
+
 export async function loadBenchmark() {
   var loading = bm$("loading");
   var empty = bm$("empty");
@@ -64,13 +78,7 @@ export async function loadBenchmark() {
   showBmSkeleton();
   try {
     var data = await api(bmPreviewUrl(API.benchmarkPreview));
-    state.bmRows = (data && data.rows) || [];
-    state.bmLoaded = true;
-    state.bmPage = 1;
-    // Track generation state from response
-    state.bmGenerating = !!(data && data.generating);
-    state.bmGenDone = (data && data.gen_done) || 0;
-    state.bmGenTotal = (data && data.gen_total) || 0;
+    bmApplyData(data, true);
     if (loading) { loading.hidden = true; loading.style.display = "none"; }
     renderBenchmark();
     // Auto-poll if generation is running or data is stale
@@ -103,7 +111,7 @@ function startBmPolling() {
         // Generation finished — reload data
         stopBmPolling();
         var data = await api(bmPreviewUrl(API.benchmarkPreview));
-        state.bmRows = (data && data.rows) || [];
+        bmApplyData(data, false);
         state.bmGenDone = state.bmGenTotal;
         renderBenchmark();
         return;
@@ -137,7 +145,7 @@ async function refreshBenchmark() {
       state.bmGenTotal = data.total || 0;
       // Reload to pick up any partial cache
       var preview = await api(API.benchmarkPreview + "?data_file=" + encodeURIComponent(name));
-      state.bmRows = (preview && preview.rows) || [];
+      bmApplyData(preview, false);
       renderBenchmark();
       startBmPolling();
     } else {
@@ -265,13 +273,141 @@ function bmHacInput(which) {
   renderBenchmark();
 }
 
+/* ── 左栏排除面板 ────────────────────────────────────────────────
+   勾中的文件/特征不出现在表里。排除只活在 bmFiltered() 里, 绝不改写 state.bmRows ——
+   一旦过滤掉源数组, 重原子滑块区间会重置、「共 N 条」失真、排除也无法撤销。 */
+
+const BM_FEAT_TOP = 30; // 默认列出的特征条数, 其余靠「展开全部」
+
+/* 特征 → 在 bmRows 里的出现次数。 */
+function bmFeatCounts() {
+  var counts = {};
+  for (var i = 0; i < state.bmRows.length; i++) {
+    var feats = state.bmRows[i].feat || [];
+    for (var k = 0; k < feats.length; k++) {
+      counts[feats[k]] = (counts[feats[k]] || 0) + 1;
+    }
+  }
+  return counts;
+}
+
+/* 一条勾选项的 HTML; kind 决定写进哪个排除集合。 */
+function bmSideItem(kind, name, count, extraHtml) {
+  var checked = (kind === "file" ? state.bmExFiles : state.bmExFeats).has(name);
+  return '<li><label class="bm-side-item" title="' + bmEsc(name) + '">' +
+    '<input type="checkbox" data-kind="' + kind + '" data-name="' + bmEsc(name) + '"' +
+    (checked ? " checked" : "") + " />" +
+    '<span class="bm-side-name">' + bmEsc(name) + (extraHtml || "") + "</span>" +
+    '<span class="bm-side-cnt">' + count + "</span></label></li>";
+}
+
+/* 文件列表: 计数在 bmRows 上数, 不能用过滤后的行 —— 否则计数被它自己控制的排除集合影响。
+   多文件归属是常态(merged 的行同时属于若干子集), 所以各项计数之和会大于总行数。 */
+function bmRenderFiles() {
+  var ul = bm$("file-list");
+  if (!ul) return;
+  var counts = {};
+  var i, k;
+  for (i = 0; i < state.bmRows.length; i++) {
+    var f = state.bmRows[i].f || [];
+    for (k = 0; k < f.length; k++) counts[f[k]] = (counts[f[k]] || 0) + 1;
+  }
+  var cur = bmDataFile();
+  var html = "";
+  for (i = 0; i < state.bmFiles.length; i++) {
+    var name = state.bmFiles[i];
+    // 勾选当前数据文件必然清空列表(每行的 f 都含它), 标出来免得用户以为坏了
+    html += bmSideItem("file", name, counts[i] || 0, name === cur ? "<em>当前</em>" : "");
+  }
+  ul.innerHTML = html || '<li class="bm-side-none">无数据集文件</li>';
+  if (bm$("file-n")) bm$("file-n").textContent = String(state.bmFiles.length);
+}
+
+/* 特征列表: 按出现次数降序(同次数再按名, 否则每次重绘顺序都会跳), 默认只列前 BM_FEAT_TOP 个,
+   展开或搜索时列全部。已勾选项去重后置顶恒可见 —— 否则勾了长尾再收起会「看不见但仍在生效」。 */
+function bmRenderFeats() {
+  var ul = bm$("feat-list");
+  if (!ul) return;
+  var counts = bmFeatCounts();
+  // 勾了但当前数据里没有的特征也列出来(计数 0), 否则用户没地方取消它
+  state.bmExFeats.forEach(function (n) {
+    if (!(n in counts)) counts[n] = 0;
+  });
+  var names = Object.keys(counts);
+  var q = (state.bmFeatQuery || "").trim().toLowerCase();
+  if (q) {
+    names = names.filter(function (n) { return n.toLowerCase().indexOf(q) >= 0; });
+  }
+  names.sort(function (a, b) {
+    return counts[b] - counts[a] || (a < b ? -1 : a > b ? 1 : 0);
+  });
+
+  var pinned = [];
+  var rest = [];
+  for (var i = 0; i < names.length; i++) {
+    (state.bmExFeats.has(names[i]) ? pinned : rest).push(names[i]);
+  }
+  var expanded = state.bmFeatExpanded || !!q;
+  var html = "";
+  pinned.concat(expanded ? rest : rest.slice(0, BM_FEAT_TOP)).forEach(function (n) {
+    html += bmSideItem("feat", n, counts[n]);
+  });
+  ul.innerHTML = html || '<li class="bm-side-none">' +
+    (state.bmRows.length ? "无匹配特征" : "暂无数据") + "</li>";
+  if (bm$("feat-n")) bm$("feat-n").textContent = String(Object.keys(counts).length);
+  var more = bm$("feat-more");
+  if (more) {
+    more.hidden = !!q || rest.length <= BM_FEAT_TOP;
+    more.textContent = state.bmFeatExpanded ? "收起" : "展开全部";
+  }
+}
+
+/* 只重绘两个列表的 innerHTML: 搜索框 #bm-feat-q 是 index.html 里的静态节点, 不能被这里碰到
+   (否则每敲一个字就丢焦点)。也不要把它挂到 renderBenchmark() 上 —— 那个函数在输入、拖滑块、
+   生成轮询(每 2s)时都会跑, 重绘会把侧栏滚动位置打回顶部。 */
+function bmRenderSide() {
+  var side = bm$("side");
+  if (side) side.classList.toggle("collapsed", !state.bmSideOpen);
+  var toggle = bm$("side-toggle");
+  if (toggle) {
+    toggle.classList.toggle("is-on", !!state.bmSideOpen);
+    toggle.setAttribute("aria-expanded", state.bmSideOpen ? "true" : "false");
+  }
+  bmRenderFiles();
+  bmRenderFeats();
+}
+
 function bmFiltered() {
   var q = (bm$("q") && bm$("q").value || "").trim().toLowerCase();
   var f = bm$("filter") ? bm$("filter").value : "all";
   var hac = bmHacRange();
+  // 预取引用: 这个函数被输入/拖滑块/2s 轮询高频调用, 循环里别再取属性、也别造闭包。
+  var exF = state.bmExFiles;
+  var exT = state.bmExFeats;
+  var files = state.bmFiles;
+  var useF = exF.size > 0;
+  var useT = exT.size > 0;
+  var exN = 0;
   var out = [];
   for (var i = 0; i < state.bmRows.length; i++) {
     var r = state.bmRows[i];
+    // 排除: 按文件归属(行内 f 是 state.bmFiles 的下标) / 按特征
+    if (useF) {
+      var rf = r.f || [];
+      var hitF = false;
+      for (var k = 0; k < rf.length; k++) {
+        if (exF.has(files[rf[k]])) { hitF = true; break; }
+      }
+      if (hitF) { exN += 1; continue; }
+    }
+    if (useT) {
+      var rt = r.feat || [];
+      var hitT = false;
+      for (var m = 0; m < rt.length; m++) {
+        if (exT.has(rt[m])) { hitT = true; break; }
+      }
+      if (hitT) { exN += 1; continue; }
+    }
     if (f === "ok" && !r.ok) continue;
     if (f === "fail" && r.ok) continue;
     if (hac && typeof r.hac === "number" && (r.hac < hac.lo || r.hac > hac.hi)) continue;
@@ -281,6 +417,7 @@ function bmFiltered() {
     }
     out.push({ r: r, abs: i });
   }
+  state.bmExCount = exN;
   return bmSortItems(out);
 }
 
@@ -366,6 +503,8 @@ function renderBenchmark() {
   if (bm$("enn")) bm$("enn").textContent = String(state.bmRows.filter(function (r) { return r.en_ok; }).length);
   if (bm$("zhn")) bm$("zhn").textContent = String(state.bmRows.filter(function (r) { return r.zh_ok; }).length);
   if (bm$("fusedn")) bm$("fusedn").textContent = String(state.bmRows.filter(function (r) { return r.fused; }).length);
+  // 其余 chips 都是全量口径, 只有「显示」看排除 —— 用这一项说明差额从哪来
+  if (bm$("exn")) bm$("exn").textContent = String(state.bmExCount || 0);
   if (bm$("page")) bm$("page").textContent = String(state.bmPage);
   if (bm$("pages")) bm$("pages").textContent = String(pages);
   if (bm$("prev")) bm$("prev").disabled = state.bmPage <= 1;
@@ -472,4 +611,54 @@ export function bindBenchmark() {
   if (bm$("refresh")) {
     bm$("refresh").addEventListener("click", refreshBenchmark);
   }
+
+  // ── 左栏排除面板 ──
+  if (bm$("side-toggle")) {
+    bm$("side-toggle").addEventListener("click", function () {
+      state.bmSideOpen = !state.bmSideOpen;
+      bmRenderSide();
+    });
+  }
+  if (bm$("ex-clear")) {
+    bm$("ex-clear").addEventListener("click", function () {
+      state.bmExFiles.clear();
+      state.bmExFeats.clear();
+      state.bmPage = 1;
+      bmRenderSide();
+      renderBenchmark();
+    });
+  }
+  if (bm$("feat-more")) {
+    bm$("feat-more").addEventListener("click", function () {
+      state.bmFeatExpanded = !state.bmFeatExpanded;
+      bmRenderSide();
+    });
+  }
+  if (bm$("feat-q")) {
+    var featTimer = null;
+    bm$("feat-q").addEventListener("input", function () {
+      clearTimeout(featTimer);
+      featTimer = setTimeout(function () {
+        state.bmFeatQuery = bm$("feat-q").value || "";
+        // 只重绘左栏: 特征搜索不改变哪些行会被显示, 表格不用重算
+        bmRenderSide();
+      }, 150);
+    });
+  }
+  // 勾选/取消: 浏览器已经改好了复选框本身, 这里只更新数据与表格 —— 不重绘列表,
+  // 否则用户勾第二项时侧栏会跳回顶部。
+  bm$("file-list") && bm$("file-list").addEventListener("change", onExcludeChange);
+  bm$("feat-list") && bm$("feat-list").addEventListener("change", onExcludeChange);
+}
+
+/* 左栏复选框变更(事件委托): 增删对应排除集合后重渲染表格。 */
+function onExcludeChange(ev) {
+  var el = ev.target;
+  if (!el || el.tagName !== "INPUT") return;
+  var name = el.getAttribute("data-name") || "";
+  var set = el.getAttribute("data-kind") === "file" ? state.bmExFiles : state.bmExFeats;
+  if (el.checked) set.add(name);
+  else set.delete(name);
+  state.bmPage = 1;
+  renderBenchmark();
 }
