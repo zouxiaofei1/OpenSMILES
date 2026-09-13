@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from namepredict.cache.common_names import CommonNameCache
 from namepredict.constants import (
-    CLAIM_KIND, ESTER_O_SIDE_KINDS, NAME_KIND, N_PREFIX_KINDS, SIMPLE_ALKOXY_ALKYL,
+    CLAIM_KIND, ESTER_O_SIDE_KINDS, NAME_KIND, N_PREFIX_KINDS,
 )
 
 

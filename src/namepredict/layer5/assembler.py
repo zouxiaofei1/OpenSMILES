@@ -5,7 +5,7 @@ import re
 from namepredict.constants import (
     ALKOXY_YLOXY_EN, ALKOXY_YLOXY_ZH, AMIDO_RETAINED, AZANE_PAREN_SUF, BIS_EN, BRIDGE_YL_SUFFIX,
     BRIDGE_ZH_YL_SUFFIX,
-    EXO_EZ_DONE, EXO_RING_SUF, MONONUCLEAR_BRIDGE, MONONUCLEAR_ZERO_YL, MULT_EN, MULT_ZH,
+    EXO_RING_SUF, MONONUCLEAR_BRIDGE, MONONUCLEAR_ZERO_YL, MULT_EN, MULT_ZH,
     PHOSPHORYL_STEMS, zh_bridge_root,
 )
 from namepredict.layer5.chain_engine import _ACYL_HALIDE_BY_HAL, _KIND_TABLE, _alkane_names, _chain_names
@@ -433,10 +433,6 @@ def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=N
             else f"{stz}{pre_zh}{bodyz}" if pre_zh else f"{stz}{bodyz}")
     zh = f"{midz}{alk_zh}酯"
     return en, zh
-
-
-EXO_EZ_DONE = ("alkane", "radical")  # 这两个 kind 的 _Chain.wrap=_with_ez 已把母体链 E/Z 与环外 E/Z 一并写入，勿重复。
-
 
 
 def join_kind_name(

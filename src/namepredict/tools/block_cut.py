@@ -59,8 +59,3 @@ def cut_block(mol: Mol, root: int, parent_atoms: frozenset[int]) -> frozenset[in
         return None
     seen = _bfs_block(mol, root, parent_atoms)
     return frozenset(seen) if seen else None
-
-
-
-
-

@@ -28,9 +28,6 @@ class FgSpec:
     oxo_parent: bool = False  # 酮类母体
 
 
-_LEGACY = "legacy_compat"
-_PREFIX = "prefix_only"
-
 FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("radical", "radicals", p41=1, compat=1, anchors=("center_idx",),
            parent_anchor_fields=("radical_c_idx", "radical_c_idxs"),

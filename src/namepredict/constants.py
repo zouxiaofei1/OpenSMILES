@@ -34,7 +34,6 @@ Bi = 83
 # ── 常用集合 ───────────────────────────────────────────────────
 HALO_Z = frozenset({F, Cl, Br, I})
 RING_HETERO = frozenset({N, O, S})  # 环内杂原子：其单碳酰基按环酮命名（内酰胺/内酯/硫代内酯、N-酰基环胺），见 layer1.analyzer._is_ketone_carbon。
-HALO_EN = {F: "fluoro", Cl: "chloro", Br: "bromo", I: "iodo"}
 HALO_ZH = {F: "氟", Cl: "氯", Br: "溴", I: "碘"}
 HALIDE_EN = {F: "fluoride", Cl: "chloride", Br: "bromide", I: "iodide"}
 N_PREFIX_KINDS = frozenset({"n_alkyl", "n_block"})  # N-取代基 kind（P-62.2.2.1）：走 N- 前缀、位次以 N 标注或隐含省略，不参与数字位次通道。
@@ -147,7 +146,6 @@ PHOSPHORYL_STEMS = tuple(en for en, v in MONONUCLEAR_HYDRIDES.items() if v[0] ==
 SIMPLE_ALKOXY_NO_PAREN = frozenset({  # 简单保留烷氧基作前缀不加括号
     "methoxy", "ethoxy", "propoxy", "butoxy", "phenoxy", "isopropoxy",
 })
-SIMPLE_ALKOXY_ALKYL = ("methoxy", "ethoxy", "propoxy", "butoxy")  # 严格直链烷氧基（SIMPLE_ALKOXY_NO_PAREN 的子集，不含 phenoxy/isopropoxy）：claim 命名结果落在这四个上才在 L3 判为 alkoxy kind。
 NAME_KIND = {  # 锚定表/保留叶子的名称暗含非烷基 kind，使 L5 以 `kind` 键（iso 稠合、聚茴香醚、卤代苯）触发。
     "fluoro": "halo", "chloro": "halo", "bromo": "halo", "iodo": "halo",
    
@@ -195,7 +193,6 @@ ALKOXY_YLOXY_ZH = (
     ("乙基氧基", "乙氧基"), ("丙基氧基", "丙氧基"), ("丁基氧基", "丁氧基"),
     ("苯基氧基", "苯氧基"),
 )
-EXO_EZ_DONE = ("alkane", "radical")  # 这两个 kind 的 _Chain.wrap=_with_ez 已把母体链 E/Z 与环外 E/Z 一并写入，勿重复。
 CHAIN_RETAINED = {  # C1/C2 开链英文 IUPAC 保留名（formic/acetic…）；C3+ 系统名由词干生成（_chain_plain 回落），中文无保留名。
     "acid": {1: ("formic acid", "甲酸"), 2: ("acetic acid", "乙酸")},
     "acyl": {1: ("formyl", "甲酰基"), 2: ("acetyl", "乙酰基")},

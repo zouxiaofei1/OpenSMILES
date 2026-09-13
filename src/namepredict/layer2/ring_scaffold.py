@@ -275,12 +275,6 @@ def _kekule_double_atoms(sid: str) -> frozenset[int]:
     return _KEKULE_ATOMS[sid]
 
 
-def mancude_atoms(scaffold_id: str, match) -> frozenset[int]:
-    """保留模板的 mancude（Kekulé 双键）位映射到分子后的原子集：该集合内部的 C=C 由母体氢化物名隐含（P-31.1.2），不得再写成 -ene/-yne。"""
-    if not match or scaffold_id not in _Q:
-        return frozenset()
-    return frozenset(match[qi] for qi in _kekule_double_atoms(scaffold_id) if qi < len(match))
-
 def mancude_ring_atoms(scaffold_id: str, match) -> frozenset[int]:
     """保留 mancude 母体名的**整个不饱和环**映射到分子后的原子集。 """
     q = _Q.get(scaffold_id)

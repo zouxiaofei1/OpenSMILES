@@ -4,14 +4,6 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.constants import C
-
-
-def carbon_neighbors(mol: Mol, atom: int) -> list[int]:
-    """侧链拓扑事实：原子所有碳邻居（含芳香/环；供 L3 取代基提取）。"""
-    atom = mol.GetAtomWithIdx(atom)
-    return [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == C]
-
 
 def _carbon_neighbors(mol: Mol, idx: int, banned: set[int] = frozenset()) -> list[int]:
     """链官能团游走用的开链（非芳香、非环）碳邻居，排除 banned 禁走碳（如被降级的羧酸碳）。"""

@@ -1,21 +1,8 @@
 """构建诱导切割子分子，连接点用 H 封端以用于 free-name。"""
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from rdkit import Chem
 from rdkit.Chem import Mol
-
-
-@dataclass(frozen=True)
-class CutSubmol:
-    """切割子分子及其新旧索引映射（连接点用 H 封端以用于 free-name）。"""
-    mol: object  # RDKit Mol，连接点用 H 封端以用于 free-name
-    atom_map: dict[int, int]  # new_idx -> old_idx（新索引→旧索引）
-    inv_map: dict[int, int]  # old_idx -> new_idx（旧索引→新索引）
-    attach_new: int  # 子分子中的连接原子索引
-    attach_old: int
-    atoms_old: frozenset[int]
 
 
 def _ordered(atoms: frozenset[int]) -> list[int]:
@@ -94,11 +81,6 @@ def _sanitize(em: Chem.RWMol) -> Mol | None:
         return None
     return em.GetMol()
 
-
-def _pack(out: Mol, inv: dict[int, int], attach_old: int, atoms: frozenset[int]) -> CutSubmol:
-    """把结果封装为 CutSubmol 并补全新旧索引映射。"""
-    atom_map = {n: o for o, n in inv.items()}
-    return CutSubmol(out, atom_map, inv, inv[attach_old], attach_old, frozenset(atoms))
 
 def _external_bond_type(mol: Mol, attach_old: int, atoms: frozenset[int]):
     """返回连接原子与母体(外)原子间的真实键型，无外部邻居(孤立自由基)回退单键；取代基叶若以双键连母体（外环 =CH2 等 *ylidene）须保留真实键级，否则 canonical 收成 *C 会命成饱和 alkyl（methyl 而非 methylidene，式量丢 H2）。"""

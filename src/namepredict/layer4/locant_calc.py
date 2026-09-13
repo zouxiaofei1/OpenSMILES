@@ -77,15 +77,6 @@ def _amine_locant(oriented: dict) -> int | None:
     locs = _typed_atom_locants(oriented, "amine")
     return locs[0] if len(locs) == 1 else _fg_locant(oriented, AMINE_KINDS, "amine_c_idx")
 
-def _ketone_locant(oriented: dict) -> int | None:
-    """计算酮羰基的唯一 locant（保留稠环母体按 standard 标签取，如呫吨 9、甾体 3；未登记标签回退链位）。"""
-    atoms = _typed_group_atoms(oriented, "ketone")
-    if len(atoms) == 1:
-        return _atom_locant(oriented.get("chain") or [], atoms[0], oriented.get("kind"),
-                            oriented.get("numbering_scaffold"),
-                            oriented.get("numbering_scaffold_required", False))
-    return _fg_locant(oriented, ("ketone",), "ketone_c_idx")
-
 def _has_parent_ene(oriented: dict) -> bool:
     """判断 parent 是否携带双键（单个或列表）。"""
     return bool(oriented.get("double_bond") or oriented.get("double_bonds"))

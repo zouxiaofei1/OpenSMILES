@@ -46,11 +46,6 @@ def _is_carboxylate_o(atom) -> bool:
     return atom.GetTotalDegree() == 1 and atom.GetTotalNumHs() == 0
 
 
-def _has_carboxylate_o_neighbor(carbon) -> bool:
-    """判断碳是否连有羧酸盐氧邻居。"""
-    return any(_is_carboxylate_o(n) for n in carbon.GetNeighbors())
-
-
 def _has_acid_o_neighbor(carbon) -> bool:
     """判断碳是否连有酸性羟基或羧酸盐氧邻居。"""
     return any(
