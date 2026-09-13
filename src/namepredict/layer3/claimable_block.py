@@ -137,7 +137,7 @@ def _has_dbl_o_edge(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> b
         for n in mol.GetAtomWithIdx(a).GetNeighbors():
             if n.GetAtomicNum() != 1 and n.GetIdx() in owned:
                 bond = mol.GetBondBetweenAtoms(a, n.GetIdx())
-                if bond is not None and bond.GetBondType() == BondType.DOUBLE:
+                if bond is not None and bond.GetBondType() == BondType.DOUBLE and  n.GetAtomicNum() != 6:
                     return True
     return False
 

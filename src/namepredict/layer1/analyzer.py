@@ -461,18 +461,14 @@ def _radical_entries(mol: Mol, exclude: frozenset[int] = frozenset()) -> list[di
 def _fg_more_lists(parts: dict) -> dict:
     """从 parts 中取出扩展官能团列表（醛/胺/腈等）。"""
     keys = (
-        "radicals", "acyls", "aldehydes", "amines",  "nitriles", "double_bonds", "triple_bonds",
-        "acyl_chlorides", "anhydrides", "thiols", 
-        "phosphates",
-    )
+      "hydroxyls", "carboxyls","esters", "amides","ketones","radicals", "acyls", "aldehydes", "amines",  "nitriles", "double_bonds", "triple_bonds",
+        "acyl_chlorides", "anhydrides", "thiols", "phosphates",)
     return {k: parts[k] for k in keys}
 
 def _fg_lists(parts: dict) -> dict:
     """从 parts 中汇总全部官能团条目列表。"""
     return {
-        "hydroxyls": parts["hydroxyls"], "carboxyls": parts["carboxyls"],
-        "esters": parts["esters"], "amides": parts["amides"],
-        "ketones": parts["ketones"], **_fg_more_lists(parts),
+        **_fg_more_lists(parts),
         "demoted_carboxyls": parts.get("demoted_carboxyls") or [],
         "demoted_nitriles": parts.get("demoted_nitriles") or []}
 
@@ -547,7 +543,8 @@ def _fg_parts(mol: Mol) -> dict:
    
     acyls = _acyl_entries(mol)
     heads = frozenset(e["center_idx"] for e in acyls)
-    result =  _arbitrate_parts(mol, {"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
+    result =  _arbitrate_parts(
+        mol, {"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
         "esters": _ester_entries(mol), "amides": _amide_entries(mol),
         "ketones": _ketone_entries(mol), "radicals": _radical_entries(mol, heads),
         "acyls": acyls,
@@ -567,14 +564,14 @@ def _collect_fgs(mol: Mol) -> dict:
     lists = _fg_lists(_fg_parts(mol))
     return {**lists, "fg_inventory": build_inventory(lists, mol)}
 
-def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
+def _info(mol: Mol, carbons: list[int]) -> dict:
     """组装分子分析结果 dict（碳信息 + 官能团 + 环事实）。"""
     base = {"mol": mol, "carbon_ids": carbons, "n_carbons": len(carbons)}
-    return {**base, **fgs, **_ring_meta(mol)}
+    return {**base, **_collect_fgs(mol), **_ring_meta(mol)}
 
 def analyze(mol: Mol) -> dict:
     """分析分子并返回完整的官能团与结构信息 dict。"""
-    result = _info(mol, _carbon_ids(mol), _collect_fgs(mol))
+    result = _info(mol, _carbon_ids(mol))
     print(result)
     print("\n\n\n")
     return result

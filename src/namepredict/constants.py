@@ -124,10 +124,6 @@ CARBONYL_COMPOSITES = {  # 组合羰基 FG 的 parts 键 → fg 名
 }
 
 # ── L2/L5 单核母体氢化物（P-15.4.1 表 2.1）唯一事实来源 ──────────
-# free_en → (元素, free_zh, 零价去氢 (en, zh), 桥后缀 (en, zh) | None, 组装名中文尾)
-# 零价去氢 = 母体氢化物减一个 H 作取代基（oxidane→hydroxy、azane→amino，P-66.1.1）；
-# 桥后缀 = 带有机基的桥/复合前缀尾（ethyl-oxidane→ethyloxy），oxidane 两者不同（hydroxy vs oxy）；
-# 组装名中文尾 = free_to_yl 拼在「去尾『基』的中文基名」之后的中文串（sulfinyl 的「基」并入此列，与 zero_yl_zh 仅此一处不同）。
 MONONUCLEAR_HYDRIDES: dict[str, tuple] = {
     "oxidane":    ("O", "氧化烷", ("hydroxy",   "羟基"),     ("oxy",      "氧基"), "氧基"),
     "azane":      ("N", "氮烷",   ("amino",     "氨基"),     ("amino",    "氨基"), "氨基"),

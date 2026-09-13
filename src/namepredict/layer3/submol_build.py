@@ -100,9 +100,6 @@ def _pack(out: Mol, inv: dict[int, int], attach_old: int, atoms: frozenset[int])
     atom_map = {n: o for o, n in inv.items()}
     return CutSubmol(out, atom_map, inv, inv[attach_old], attach_old, frozenset(atoms))
 
-
-
-
 def _external_bond_type(mol: Mol, attach_old: int, atoms: frozenset[int]):
     """返回连接原子与母体(外)原子间的真实键型，无外部邻居(孤立自由基)回退单键；取代基叶若以双键连母体（外环 =CH2 等 *ylidene）须保留真实键级，否则 canonical 收成 *C 会命成饱和 alkyl（methyl 而非 methylidene，式量丢 H2）。"""
     for nb in mol.GetAtomWithIdx(attach_old).GetNeighbors():
@@ -131,4 +128,3 @@ def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol
     d = _add_anchor(em, inv[attach_old], _external_bond_type(mol, attach_old, atoms))
     _carry_alkene_stereo(em, mol, inv, copied, d)
     return _sanitize(em)  # print(Chem.MolToSmiles(em))
-
