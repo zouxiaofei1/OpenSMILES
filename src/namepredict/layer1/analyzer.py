@@ -5,7 +5,7 @@ from rdkit.Chem import BondType, Mol
 from collections import deque
 from namepredict.tools import memo
 from namepredict.constants import (
-    C,P, CARBONYL_COMPOSITES, FG_BOOL_MORE_KEYS, FG_PARTS_KEY, H, N, O, RING_HETERO, S,
+    C,P, CARBONYL_COMPOSITES, FG_PARTS_KEY, H, N, O, RING_HETERO, S,
 )
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1._carbonyl_common import (
@@ -153,47 +153,6 @@ def _anhydride_o_of(carbon) -> int | None:
             return n.GetIdx()
     return None
 
-def _ether_cs(oxygen) -> list:
-    """返回氧原子连有的碳邻居列表。"""
-    return [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() == C]
-
-def _is_ether_oxygen(atom) -> bool:
-    """判断 O 是否为醚氧（非酸酐桥、两个非羰基碳）。"""
-    if atom.GetAtomicNum() != O or atom.GetTotalNumHs() != 0:
-        return False
-    if _is_anhydride_bridge_o(atom):
-        return False
-    cs = _ether_cs(atom)
-    return len(cs) == 2 and not any(_has_double_bonded_o(c) for c in cs)
-
-def _ether_entry(atom) -> dict:
-    """组装单个醚条目 dict（氧为中心，两条碳臂为周边）。"""
-    return {"center_idx": atom.GetIdx(), "surr_idx": [n.GetIdx() for n in _ether_cs(atom)]}
-
-def _ether_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有醚条目的列表。"""
-    return [_ether_entry(a) for a in mol.GetAtoms() if _is_ether_oxygen(a)]
-
-def _sulfide_cs(sulfur) -> list:
-    """返回硫原子连有的碳邻居列表。"""
-    return [n for n in sulfur.GetNeighbors() if n.GetAtomicNum() == C]
-
-def _is_sulfide_sulfur(atom) -> bool:
-    """判断 S 是否为硫醚硫（二配位、两个碳邻居）。"""
-    if atom.GetAtomicNum() != S or atom.GetTotalNumHs() != 0:
-        return False
-    if atom.GetTotalDegree() != 2:
-        return False
-    cs = _sulfide_cs(atom)
-    return len(cs) == 2 and not any(_has_double_bonded_o(c) for c in cs)
-
-def _sulfide_entry(atom) -> dict:
-    """组装单个硫醚条目 dict（硫为中心，两条碳臂为周边）。"""
-    return {"center_idx": atom.GetIdx(), "surr_idx": [n.GetIdx() for n in _sulfide_cs(atom)]}
-
-def _sulfide_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有硫醚条目的列表。"""
-    return [_sulfide_entry(a) for a in mol.GetAtoms() if _is_sulfide_sulfur(a)]
 
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     """判断 O 是否为酯烷氧基氧（排除酸酐桥）。"""
@@ -503,7 +462,7 @@ def _fg_more_lists(parts: dict) -> dict:
     """从 parts 中取出扩展官能团列表（醛/胺/腈等）。"""
     keys = (
         "radicals", "acyls", "aldehydes", "amines",  "nitriles", "double_bonds", "triple_bonds",
-        "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
+        "acyl_chlorides", "anhydrides", "thiols", 
         "phosphates",
     )
     return {k: parts[k] for k in keys}
@@ -516,16 +475,6 @@ def _fg_lists(parts: dict) -> dict:
         "ketones": parts["ketones"], **_fg_more_lists(parts),
         "demoted_carboxyls": parts.get("demoted_carboxyls") or [],
         "demoted_nitriles": parts.get("demoted_nitriles") or []}
-
-def _fg_bools(lists: dict) -> dict:
-    """由官能团列表生成 has_* 布尔标志。"""
-    core = {
-        "has_alcohol": bool(lists["hydroxyls"]), "has_acid": bool(lists["carboxyls"]),
-        "has_ester": bool(lists["esters"]), "has_amide": bool(lists["amides"]),
-        "has_ketone": bool(lists["ketones"]),
-    }
-    more = {hk: bool(lists[lk]) for hk, lk in FG_BOOL_MORE_KEYS}
-    return {**core, **more}
 
 def _oxo_entry(mol: Mol, c_idx: int) -> dict:
     """由羰基碳索引组装降级 oxo 条目（羰基碳为中心，羰基氧为周边）。"""
@@ -607,17 +556,16 @@ def _fg_parts(mol: Mol) -> dict:
         "nitriles": _nitrile_entries(mol), "double_bonds": _double_bond_entries(mol),
         "triple_bonds": _triple_bond_entries(mol), "acyl_chlorides": _acyl_chloride_entries(mol),
         "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
-        "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
         "phosphates": phosphate_entries(mol)})
-    print(result)
+
     return result
 
 def _collect_fgs(mol: Mol) -> dict:
-    """聚合官能团列表、布尔标志并构建带类型清单。"""
+    """聚合官能团列表并构建带类型清单（存在性由列表是否为空判定）。"""
     from namepredict.layer1.functional_group_inventory import build_inventory
 
     lists = _fg_lists(_fg_parts(mol))
-    return {**lists, **_fg_bools(lists), "fg_inventory": build_inventory(lists, mol)}
+    return {**lists, "fg_inventory": build_inventory(lists, mol)}
 
 def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
     """组装分子分析结果 dict（碳信息 + 官能团 + 环事实）。"""
@@ -626,4 +574,7 @@ def _info(mol: Mol, carbons: list[int], fgs: dict) -> dict:
 
 def analyze(mol: Mol) -> dict:
     """分析分子并返回完整的官能团与结构信息 dict。"""
-    return _info(mol, _carbon_ids(mol), _collect_fgs(mol))
+    result = _info(mol, _carbon_ids(mol), _collect_fgs(mol))
+    print(result)
+    print("\n\n\n")
+    return result

@@ -242,7 +242,7 @@ def test_preprocess_normalizes_enol_to_amide() -> None:
     mol = preprocess("CC(O)=NC")
     assert amide_tautomer_normalize___canon("CC(=O)NC") == Chem.MolToSmiles(mol)
     info = analyze(mol)
-    assert info["has_amide"]
+    assert info["amides"]
     assert not (info.get("hydroxyls") or [])
 
 

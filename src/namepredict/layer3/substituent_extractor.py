@@ -40,5 +40,4 @@ def extract_substituents(info: dict, parent: dict, *, name_mode: str = "general"
         _extract_oxos(info, parent)
     )
     result = base + extract_claimed_sides(info, parent, base, name_mode=name_mode, cache=cache, depth=depth)
-    # print(result)
     return result

@@ -112,15 +112,6 @@ ALKALI_EN = {Li: "lithium", Na: "sodium", K: "potassium"}  # 原子序数 → �
 METAL_ZH = {"lithium": "锂", "sodium": "钠", "potassium": "钾"}
 
 # ── L1 官能团 parts 键 ──────────────────────────────────────────
-FG_BOOL_MORE_KEYS = (
-    ("has_aldehyde", "aldehydes"), ("has_amine", "amines"),
-    ("has_nitrile", "nitriles"), ("has_alkene", "double_bonds"),
-    ("has_alkyne", "triple_bonds"), ("has_acyl_chloride", "acyl_chlorides"),
-    ("has_anhydride", "anhydrides"), ("has_thiol", "thiols"),
-    ("has_ether", "ethers"), ("has_sulfide", "sulfides"),
-   
-    ("has_phosphate", "phosphates"),
-)
 FG_PARTS_KEY = {  # fg_registry 名 → parts 键（有 p41 的链 FG）；P-41 优先级仲裁：组合羰基 FG（酸/酯/酰卤/酰胺/醛/酸酐）被更高优先级 FG（如自由基）压制时退出主基团，其羰基碳降级入 ketones（oxo 前缀候选），组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属——不再丢失羰基氧。ketone/alcohol/thiol/amine 是基础成员 FG，永不退出。
     "radical": "radicals", "acyl": "acyls", "acid": "carboxyls", "anhydride": "anhydrides",
     "ester": "esters", "acyl_halide": "acyl_chlorides", "amide": "amides",
@@ -166,7 +157,7 @@ NAME_KIND = {  # 锚定表/保留叶子的名称暗含非烷基 kind，使 L5 �
    
    
 }
-CLAIM_KIND = {"ether_o": "alkoxy", "amide_n": "n_block", "amine_n": "n_block",
+CLAIM_KIND = {"amide_n": "n_block", "amine_n": "n_block",
               "ring_c": "alkyl", "chain_c": "alkyl"}  # claim 槽位 → 取代基 kind
 ESTER_O_SIDE_KINDS = frozenset({"ester", "phosphate"})  # O-侧酸侧（烷氧基臂）：连在 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 酯/磷酸整名消费。ester：酯酸侧烷氧臂；phosphate：磷酸酯 O–R 臂（kind=phosphate 母体，见 layer1/phosphate.py）。
 

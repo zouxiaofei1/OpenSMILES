@@ -72,8 +72,6 @@ FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("amine", "amines", p41=19, compat=3, anchors=("surr_idx",),  # 中心是氮，锚点须取全部碳臂（P-62.2）
            parent_anchor_fields=("amine_c_idx", "amine_c_idxs"),
            chain=True, multi=True, rs=True, locant_kind="amine", nh2_parent=True),
-    FgSpec("sulfide", "sulfides", p41=41, path=(2,), expr=_LEGACY, compat=2),
-    FgSpec("ether", "ethers", p41=41, path=(1,), expr=_PREFIX),
 )
 
 def chain_fgs() -> frozenset[str]:

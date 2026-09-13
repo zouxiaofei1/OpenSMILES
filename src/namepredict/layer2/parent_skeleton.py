@@ -209,11 +209,7 @@ def _principal_multiple_edges(mol: Mol, occurrences) -> set[frozenset[int]]:
 
 
 def p44_4_unsaturation_key(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -> tuple[int, int]:
-    """P-44.4 不饱和度键：(多重键数, 双键数)。
-
-    键是 (mol, 骨架原子集, occurrences) 的确定函数，而每个候选在收窄时会被求两次键
-    （取 max + 过滤），故记忆：主官能团排他边也要对全分子逐键扫一遍，代价不低。
-    """
+    """P-44.4 不饱和度键：(多重键数, 双键数)。 """
     return memo.by_key(
         "p44_4", (id(mol), tuple(skeleton.atom_ids), tuple(id(o) for o in occurrences)),
         lambda: _p44_4_unsaturation_key_uncached(mol, skeleton, occurrences),

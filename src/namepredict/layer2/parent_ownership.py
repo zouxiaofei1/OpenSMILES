@@ -10,13 +10,7 @@ def _chain_atoms(parent: dict) -> set[int]:
 
 
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
-    """主官能团所有权原子：落在母体骨架内（或直接连骨架）的锚点，及其直接相连的特征原子。
-
-    特征原子集由 L1 occurrence 承载（FG 的内在定义，见 layer1.fg_atoms），此处只补骨架关系。
-    扩展时跳过同样是锚点的原子——胺的另一条碳臂、多羧酸的另一羧基正是锚点，据此留在所有权外，
-    由 L3 切成 N-/O- 前缀；而 exocyclic 基团（苯甲酸的羧基整体在环外）的羰基氧、
-    羟基氧不是锚点，仍归母体。
-    """
+    """主官能团所有权原子：落在母体骨架内（或直接连骨架）的锚点，及其直接相连的特征原子。"""
     facts = parent.get("principal_expression_facts")
     occurrences = parent.get("principal_occurrences") or ()
     if facts is None:

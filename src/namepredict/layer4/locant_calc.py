@@ -269,5 +269,4 @@ def _pack(oriented: dict, substituents: list) -> dict:
         "fg_locants": _fg_locants(merged, n_subs),
         **_unsat_locants(merged, merged.get("n_carbons", 0)), **facts,
     }
-    # print(result)
     return result

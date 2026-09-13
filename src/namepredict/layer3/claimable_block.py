@@ -14,7 +14,6 @@ class SideSlot(str, Enum):
     RING_C = "ring_c"
     AMIDE_N = "amide_n"
     AMINE_N = "amine_n"
-    ETHER_O = "ether_o"
     OTHER = "other"
 
 
@@ -56,16 +55,6 @@ def _is_amide_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
         return False
     return _owned_carbonyl_c(mol, n_idx, owned) is not None
 
-
-def _is_ether_o(mol: Mol, o_idx: int) -> bool:
-    """判断是否为醚氧（两个重原子邻居均为碳）。"""
-    atom = mol.GetAtomWithIdx(o_idx)
-    if atom.GetAtomicNum() != 8:
-        return False
-    heavies = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != 1]
-    return len(heavies) == 2 and all(n.GetAtomicNum() == 6 for n in heavies)
-
-
 def _is_amine_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
     """胺 N：非芳香、非环员 N（环 N 用环上位次定位，不走 N- 前缀），且至少连一个 owned 内非羰基碳。"""
     atom = mol.GetAtomWithIdx(n_idx)
@@ -86,8 +75,6 @@ def derive_slot(mol: Mol, attach_parent: int, owned_atoms: frozenset[int]) -> Si
         return SideSlot.AMIDE_N
     if _is_amine_n(mol, attach_parent, owned_atoms):
         return SideSlot.AMINE_N
-    if _is_ether_o(mol, attach_parent):
-        return SideSlot.ETHER_O
     atom = mol.GetAtomWithIdx(attach_parent)
     if atom.GetAtomicNum() == 6:
         return _carbon_slot(atom)

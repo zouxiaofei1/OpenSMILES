@@ -503,8 +503,8 @@ def _match_with_map(info: dict, atom_ids, *, mancude_only: bool = False) -> tupl
             continue  # 饱和保留名不作稠合组分（P-25.2.1 表 2.8）
         if _TEMPLATE_ELEM[sid] != elem:
             continue
-        for m in mol.GetSubstructMatches(q, uniquify=True):  # print(sid,m)
-            if set(m) == atoms:  # print("yes")
+        for m in mol.GetSubstructMatches(q, uniquify=True): 
+            if set(m) == atoms: 
                 return sid, m
     mol_h = memo.by_mol("hydrogenated", _hydrogenated, mol)  # 精确匹配失败后按完全氢化骨架再比对（加氢衍生物，P-25.3.4）；整分子重建对同一 mol 只做一次
     if mol_h is not None:

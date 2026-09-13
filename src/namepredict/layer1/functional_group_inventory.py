@@ -23,9 +23,6 @@ class FunctionalGroupClass(str, Enum):
     ALCOHOL = "alcohol"
     THIOL = "thiol"
     AMINE = "amine"
-    QUATERNARY_AMMONIUM = "quaternary_ammonium"
-    ETHER = "ether"
-    SULFIDE = "sulfide"
     NONE = 'alkane'
 
 

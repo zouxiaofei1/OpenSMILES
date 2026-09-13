@@ -251,39 +251,35 @@ function renderDebugL1(l) {
     html += '</tbody></table></div>';
   }
 
-  // Functional Groups: every has_* flag + every FG entry list with its content
+  // Functional Groups: presence derived from every FG entry list (non-empty = present) + each list with its content
   html += '<div class="debug-sub"><div class="debug-sub-title">Functional Groups</div>';
   var fgMap = {
-    has_acid:'COOH', has_alcohol:'OH', has_aldehyde:'CHO', has_alkene:'C=C', has_alkyne:'C≡C',
-    has_acyl_chloride:'COCl', has_amide:'CON', has_amine:'NH2/NH', has_anhydride:'(CO)2O', has_boronic:'B(OH)2',
-    has_carbamate:'OCON', has_carbonate:'OCOO', has_ester:'COOR', has_ether:'C-O-C',
-    has_guanidine:'N-C(=N)N', has_hydrazine:'N-N', has_isocyanate:'NCO',
-    has_isothiocyanate:'NCS', has_ketone:'C=O', has_nitrile:'C≡N', has_nitro:'NO2',
-    has_phosphate:'OPO3', has_phosphonic:'P(OH)2O', has_sulfide:'C-S-C', has_sulfonamide:'SO2N',
-    has_sulfonate:'SO3R', has_sulfone:'SO2', has_sulfonic_acid:'SO3H',
-    has_sulfonyl_chloride:'SO2Cl', has_sulfoxide:'SO', has_thiol:'SH', has_urea:'NCON',
+    carboxyls:'COOH', hydroxyls:'OH', aldehydes:'CHO', double_bonds:'C=C', triple_bonds:'C≡C',
+    acyl_chlorides:'COCl', amides:'CON', amines:'NH2/NH', anhydrides:'(CO)2O', esters:'COOR',
+    ketones:'C=O', nitriles:'C≡N', phosphates:'OPO3', thiols:'SH', acyls:'C(=O)-*',
+    radicals:'*', demoted_carboxyls:'COOH↓', demoted_nitriles:'C≡N↓',
   };
-  var flagKeys = Object.keys(l).filter(function (k) { return k.indexOf("has_") === 0; });
+  // FG entry lists (dynamic: any list key in the info dict that is not structural)
+  var STRUCT_KEYS = { ring_systems: 1, rings: 1, carbon_ids: 1, mol: 1 };
+  var fgListKeys = Object.keys(l).filter(function (k) {
+    return Array.isArray(l[k]) && !STRUCT_KEYS[k];
+  });
   html += '<div class="summary-row">';
-  for (var i = 0; i < flagKeys.length; i++) {
-    var k = flagKeys[i];
-    if (l[k] === true) {
+  for (var i = 0; i < fgListKeys.length; i++) {
+    var k = fgListKeys[i];
+    if (l[k].length) {
       html += '<span class="chip accent" title="' + escapeHtml(k) + '">' + escapeHtml(fgMap[k] || k) + '</span>';
     }
   }
   html += '</div>';
-  var off = flagKeys.filter(function (k) { return l[k] !== true; });
+  var off = fgListKeys.filter(function (k) { return !l[k].length; });
   if (off.length) {
     html += '<div class="fg-flags-off">' + off.map(function (k) {
       return '<span class="fg-flag-off" title="' + escapeHtml(k) + '">' + escapeHtml(fgMap[k] || k) + '</span>';
     }).join('') + '</div>';
   }
 
-  // FG entry lists (dynamic: any list key in the info dict that is not structural)
-  var STRUCT_KEYS = { ring_systems: 1, rings: 1, carbon_ids: 1, mol: 1 };
-  var entryKeys = Object.keys(l).filter(function (k) {
-    return Array.isArray(l[k]) && l[k].length && !STRUCT_KEYS[k];
-  });
+  var entryKeys = fgListKeys.filter(function (k) { return l[k].length; });
   if (entryKeys.length) {
     html += '<div class="fg-entries"><table class="subst-table"><thead><tr><th>FG</th><th>Count</th><th>Entries</th></tr></thead><tbody>';
     for (var j = 0; j < entryKeys.length; j++) {
