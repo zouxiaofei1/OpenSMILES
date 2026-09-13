@@ -101,7 +101,7 @@ def _exocyclic_ring_names(n: int, numbered: dict) -> tuple[str, str] | None:
     loc = ",".join(str(x) for x in locs) if locs else None
     if mult > 1 and plural_needs_loc and not loc:  # 多取代位次必带（P-65.2.2），缺失即放弃。
         return None
-    if sid == "carbocycle" and not parent.get("fused_tree"):  # 未注册全碳稠环(carbocycle 兜底 + fused_tree)走下方 base 分支, 不作单环环烷烃命名。
+    if sid == "carbocycle" and not parent.get("fused_tree"): 
         en_ring, zh_ring, has_unsat = _ring_carbocycle_stem(n, numbered)
         if en_ring is None:
             return None

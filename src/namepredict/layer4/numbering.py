@@ -95,11 +95,11 @@ def number(parent: dict, substituents: list) -> dict:
         fb = _fallback_hydro_atoms(packed)
         if len(fb) in HYDRO_MULT_N and set(hydro) < fb:
             hydro = fb
-    print(hydro)
+    # print(hydro)
     hydro = _lowest_extra_to_indicated(packed, labels, hydro)
-    print(hydro)
+    # print(hydro)
     hydro = _odd_hydro_to_indicated(packed, labels, hydro)
-    print(hydro)
+    # print(hydro)
     pre = hydro_prefix(packed.get("chain"), labels, hydro)
     if not pre[0]:  # hydro 位次表达不出（奇数值/超表/不在链内）则整体退回指示氢，不产半截名
         hydro, pre = frozenset(), ("", "")

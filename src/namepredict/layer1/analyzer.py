@@ -489,5 +489,5 @@ def _info(mol: Mol, carbons: list[int]) -> dict:
 def analyze(mol: Mol) -> dict:
     """分析分子并返回完整的官能团与结构信息 dict。"""
     result = _info(mol, _carbon_ids(mol))
-    print(result,"\n\n\n")
+    # print(result,"\n\n\n")
     return result
