@@ -165,15 +165,6 @@ def _is_ring(parent: dict) -> bool:
     """按 scaffold_id 判断 parent 是否为环系。"""
     return bool(parent.get("scaffold_id"))
 
-def _fixed_start(parent: dict) -> int | None:
-    """取碳环/链固定 locant 1 起点原子（P-14.4(a) FG 锚/自由基字段）；杂环不落入此函数。"""
-    for key in FIXED_START_KEYS:
-        v = parent.get(key)
-        if v is not None:
-            return v
-    return None
-
-
 def _narrow_hetero_ring(cands: list[dict], mol, chain: list[int], float_hetero: bool) -> list[dict]:
     """杂环编号 P-22.2.2.1.3/P-25.3.3.1.2(b)：(a) 全杂原子集最低位次→(b) 按 F>…>O>S>…>N>… 元素序逐元素收窄→(c) 同元素 N 中带 H/3 价取代者得低位（唑 NH=1）；float_hetero（稠合组分）跳过 (c)。"""
     from namepredict.constants import P145_SENIOR
@@ -340,13 +331,6 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
         cands = _narrow_hetero_ring(_ring_cands(chain), mol, chain, float_hetero)  # 杂环：P-22.2.2.1.3 元素序窄化先于 principal（唑类 N 必须 1,3/1,2、吡啶甲酸 N=1 后由 principal 定方向），不走 FG 锚点/自由基字段，避免醛基环碳抢占 locant 1
     else:
         cands = _ring_cands(chain) if _is_ring(parent) else _chain_cands(chain)  # 碳环/链：P-14.4(a) 固定 locant 1（FG 锚/自由基字段）锚定后退化
-        start = _fixed_start(parent)
-        if start is not None:
-            forced = [c for c in cands if c.get(start) == 1]
-            if forced:
-                cands = forced
-            else:
-                anchor_as_principal = start  # 固定起点在链候选中不可能为 locant 1（如链中部自由基/锚点）：不原样保留链序（否则自由价/双键/取代基位次全不最小化、随上游原子序漂移），回退全候选并并入 P-14.4(c) principal 竞争最低位次
     principal = _principal_atoms(parent)
     
     if anchor_as_principal is not None:

@@ -49,18 +49,11 @@ def _single_locant(oriented: dict, group: str) -> int | None:
     return locs[0] if len(locs) == 1 else None
 
 
-def _has_parent_ene(oriented: dict) -> bool:
-    """判断 parent 是否携带双键（单个或列表）。"""
-    return bool(oriented.get("double_bond") or oriented.get("double_bonds"))
-
-def _has_parent_yne(oriented: dict) -> bool:
-    """判断 parent 是否携带三键（单个或列表）。"""
-    return bool(oriented.get("triple_bond") or oriented.get("triple_bonds"))
 
 def _omit_unsat(n_carbons, kind=None, parent=None, triple=False):
     """委托 omit_locants.omit_unsat 判定不饱和位次是否省略；triple 选择炔规则。"""
     from namepredict.layer4.omit_locants import omit_unsat as _core
-    return _core(n_carbons, kind, parent, has_ene=_has_parent_ene, has_yne=_has_parent_yne,
+    return _core(n_carbons, kind, parent, has_ene=None, has_yne=None,
                  triple=triple)
 
 def _sub_locant(chain: list[int], attach: int, facts=None) -> int:
@@ -119,7 +112,7 @@ def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
         return False
     single = kind != "ketone" or len(_typed_group_atoms(oriented, "ketone")) == 1
     return _omit_fg(_single_locant(oriented, group), n, oriented, n_subs, single=single,
-                    has_ene=_has_parent_ene, has_yne=_has_parent_yne)
+                    has_ene=None, has_yne=None)
 
 
 def _anchor_field_locants(oriented: dict, key: str) -> list[int] | None:

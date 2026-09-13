@@ -46,16 +46,6 @@ def _group_arms(arms: list[dict]) -> list[tuple[str, str, int]]:
             row[2] += 1
     return [tuple(table[k]) for k in sorted(table)]
 
-
-def _salt_name(n_oh: int, salt: dict) -> tuple[str, str] | None:
-    """纯磷酸碱金属盐（k=0, d>0）：metal [dihydrogen|hydrogen] phosphate / 磷酸[二氢|氢]{金属}。"""
-    metal_en = _metal_en_prefix(salt)
-    metal_zh = _metal_zh_suffix(salt)
-    if not metal_en or not metal_zh:
-        return None
-    return (f"{metal_en} {_tail_en(n_oh)}", f"磷酸{_hyd_zh(n_oh)}{metal_zh}")
-
-
 def _arm_ester_zh(zh: str) -> str:
     """磷酸酯/酯盐臂中文词：多位纯中文数字根的直链烷基补'烷'（十三基→十三烷基）对齐金标，单字根（甲/乙…己）、复合/带位次/立体（含连字符、括号）原样保留。"""
     if (zh.endswith("基") and "-" not in zh and not zh.startswith("(")):
@@ -131,8 +121,6 @@ def phosphate_names(numbered: dict) -> tuple[str, str] | None:
     if n_om > 0:
         if not salt.get("metal"):
             return _free_anion_names(n_oh, arms)
-        if not arms:
-            return _salt_name(n_oh, salt)
         return _ester_salt_names(n_oh, salt, arms)
     if not arms:
         if n_oh == 3 and not salt:

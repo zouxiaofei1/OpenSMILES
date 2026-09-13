@@ -230,14 +230,9 @@ def _thiol_entries(mol: Mol) -> list[dict]:
         out.append({"center_idx": atom.GetIdx(), "surr_idx": [_carbon_neighbor(atom).GetIdx()]})
     return out
 
-def _is_amide_n(atom) -> bool:
-    """酰胺/脲/胍的 N 返回 True（而非胺母体）。"""
-    return any(n.GetAtomicNum() == C and _has_double_bonded_o(n)
-               for n in atom.GetNeighbors())
-
 def _amine_degree(atom) -> int | None:
     """返回胺 N 取代度（1/2/3），非胺返回 None；排除芳香/酰胺/环内 N（吡咯烷等的环 N 是环杂原子，非胺官能团）。"""
-    if atom.GetAtomicNum() != N or _is_amide_n(atom) or atom.GetIsAromatic():
+    if atom.GetAtomicNum() != N  or atom.GetIsAromatic():
         return None
     if atom.IsInRing():
         return None
@@ -323,10 +318,6 @@ def _is_anhydride_carbon(atom) -> bool:
         return False
     return _anhydride_o_of(atom) is not None
 
-def _anhydride_key(e: dict) -> int:
-    """返回酸酐条目的去重键（桥氧索引即可唯一标识一个酸酐）。"""
-    return e["center_idx"]
-
 def _anhydride_entries(mol: Mol) -> list[dict]:
     """收集分子中所有去重后的酸酐条目列表。"""
     seen: set[int] = set()
@@ -335,9 +326,6 @@ def _anhydride_entries(mol: Mol) -> list[dict]:
         if not _is_anhydride_carbon(atom):
             continue
         e = _anhydride_entry(atom)
-        if _anhydride_key(e) not in seen:
-            seen.add(_anhydride_key(e))
-            out.append(e)
     return out
 
 def _is_cc_double(bond) -> bool:

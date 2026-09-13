@@ -5,16 +5,6 @@ from collections import deque
 
 from rdkit.Chem import Mol
 
-
-def parent_atom_set(parent: dict, mol: Mol) -> frozenset[int]:
-    """取出母体已归属原子集，未定稿则抛 ValueError。"""
-    del mol  # 母体定稿后不再需要
-    owned = parent.get("owned_atoms")
-    if not isinstance(owned, frozenset):
-        raise ValueError(f"unfinalized parent (missing owned_atoms): kind={parent.get('kind')!r}")
-    return owned
-
-
 def _is_heavy_out(atom, parent_atoms: frozenset[int]) -> bool:
     """判断原子是否为非氢且在母体集合之外的重原子。"""
     return atom.GetAtomicNum() != 1 and atom.GetIdx() not in parent_atoms

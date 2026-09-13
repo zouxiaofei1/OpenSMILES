@@ -20,7 +20,6 @@ from namepredict.layer3.substituent_namer import SubstituentName
 from namepredict.layer4.candidate_keys import prefix_locant_set, suffix_locant_set
 from namepredict.layer4.numbering import number
 from namepredict.layer5.assembler import assemble
-from namepredict.tools.anchored_table import anchored_whole_mol
 from namepredict.types import NameResult
 
 
@@ -259,14 +258,6 @@ def _pipeline(smiles: str, t0: float, *, cache: CommonNameCache | None = None) -
     mol = preprocess(smiles)
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse"), None
-    whole = anchored_whole_mol(mol)
-    if whole is not None:
-        en, zh, _ = whole
-        return NameResult(
-            en=en, zh=zh, success=True, source="anchored",
-            time_ms=_elapsed_ms(t0),
-            meta={"parent_kind": "radical", "anchored": True},
-        ), mol
     return _name_mol(mol, t0=t0, cache=cache), mol
 
 

@@ -22,30 +22,6 @@ def get(kind: str) -> KindMeta | None:
     return _REG.get(kind)
 
 
-def is_hetero_ring(kind: str) -> int:
-    """kind 是否为杂环（1/0）。"""
-    m = get(kind)
-    return 1 if m and m.ring == "hetero" else 0
-
-
-def is_carbo_ring(kind: str) -> int:
-    """kind 是否为碳环（1/0）。"""
-    m = get(kind)
-    return 1 if m and m.ring == "carbo" else 0
-
-
-def n_rings_of(kind: str) -> int:
-    """返回 kind 的环数。"""
-    m = get(kind)
-    return m.n_rings if m else 0
-
-
-def retained_bonus(kind: str) -> int:
-    """kind 是否为保留名（加分 1/0）。"""
-    m = get(kind)
-    return 1 if m and m.retained else 0
-
-
 def parent_names(kind: str) -> tuple[str, str] | None:
     """返回 kind 的 (en, zh) 母体名，缺失返回 None。"""
     m = get(kind)

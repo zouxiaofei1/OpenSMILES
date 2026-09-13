@@ -50,15 +50,8 @@ def _covered_atoms(subs: list[dict]) -> set[int]:
         out.update(s.get("atoms") or [])
     return out
 
-
-def _should_skip(claim, covered: set[int]) -> bool:
-    """判断 claim 是否应跳过（仅原子已被覆盖时）。"""
-    return bool(set(claim.atoms) & covered)
-
 def _append_named(mol, claim, namer, covered: set[int], out: list[dict], *, o_side: bool = False) -> None:
     """为单个 claim 命名并追加到输出（可标记 O 侧）。"""
-    if _should_skip(claim, covered):
-        return
     named = namer.name(mol, claim)
     if named is None:
         return

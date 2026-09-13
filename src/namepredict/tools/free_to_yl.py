@@ -6,108 +6,7 @@ import re
 
 from namepredict.constants import MONONUCLEAR_YL, zh_bridge_root
 
-_RETAINED: dict[str, tuple[str, str]] = {  # free_en → (yl_en, yl_zh)（当位次为常规/省略时）
-    "benzene": ("phenyl", "苯基"),
-}
-
-
-def _drop_terminal_e(en: str) -> str:
-    """去掉英文名末尾的 e（用于拼接 -yl 词干）。"""
-    return en[:-1] if en.endswith("e") else en
-
-
-def _hetero_locant_prefix(en: str) -> str:
-    """取 free EN 的前导杂原子位次：'1,3-thiazole' → '1,3-'。"""
-    i = 0
-    n = len(en)
-    while i < n and en[i].isdigit():
-        i += 1
-        while i < n and en[i] == ",":
-            i += 1
-            while i < n and en[i].isdigit():
-                i += 1
-    return en[: i + 1] if i and i < n and en[i] == "-" else ""
-
 _MULT_OL_SUF = re.compile(r"(?:di|tri|tetra|penta|hexa|hepta|octa|nona|deca)ol\b")  # 官能团后缀 → 前缀转换
-
-
-def _alkoxy_en(en: str) -> str | None:
-    """醇 → 烷氧基：methanol→methoxy, propan-1-ol→propoxy, propan-2-ol→propan-2-yloxy。"""
-    if not en.endswith("ol") or _MULT_OL_SUF.search(en):
-        return None  # 多醇（diol…decaol）不能去氢成烷氧基
-    if en in ("methanol", "ethanol"):
-        return en[:-4] + "oxy"
-    m = re.match(r"^(.+)an-1-ol$", en)
-    if m:
-        return m.group(1) + "oxy"
-    m = re.match(r"^(.+)an-(\d+)-ol$", en)
-    if m:
-        return f"{m.group(1)}an-{m.group(2)}-yloxy"
-    m = re.match(r"^(.+)ane-1-ol$", en)  # heptan-1-ol 等（C7+，带完整 "ane" 词干）
-    if m:
-        return m.group(1) + "oxy"
-    return None
-
-
-def _alkoxy_zh(zh: str) -> str | None:
-    """alcohol → alkoxy ZH: 甲醇→甲氧基, 丙-1-醇→丙氧基, 丙-2-醇→丙-2-基氧基."""
-    if not zh.endswith("醇") or "二酚" in zh:
-        return None
-    if zh in ("甲醇", "乙醇"):
-        return zh[:-1] + "氧基"
-    m = re.match(r"^(.+)-1-醇$", zh)
-    if m:
-        return m.group(1) + "氧基"
-    m = re.match(r"^(.+)-(\d+)-醇$", zh)
-    if m:
-        return f"{m.group(1)}-{m.group(2)}-基氧基"
-    return None
-
-
-def _sulfanyl_en(en: str) -> str | None:
-    """硫醇 → 硫基：methanethiol→methylsulfanyl, ethanethiol→ethylsulfanyl, propane-2-thiol→propane-2-ylsulfanyl。"""
-    if not en.endswith("thiol"):
-        return None
-    m = re.match(r"^(.+)ane-(\d+)-thiol$", en)  # 例：propane-2-thiol → propane-2-ylsulfanyl
-    if m:
-        return f"{m.group(1)}ane-{m.group(2)}-ylsulfanyl"
-    m = re.match(r"^(.+)anethiol$", en)  # 例：methanethiol → methylsulfanyl
-    if m:
-        return m.group(1) + "ylsulfanyl"
-    return None
-
-
-def _sulfanyl_zh(zh: str) -> str | None:
-    """thiol → sulfanyl ZH: 甲硫醇→甲硫基, 乙硫醇→乙硫基, 丙-2-硫醇→丙-2-基硫基."""
-    if zh in ("甲硫醇", "乙硫醇"):
-        return zh[:-1] + "基"
-    m = re.match(r"^(.+)-(\d+)-硫醇$", zh)
-    if m:
-        return f"{m.group(1)}-{m.group(2)}-基硫基"
-    return None
-
-
-def _amino_en(en: str) -> str | None:
-    """1° 胺 → 氨基：methanamine→methylamino, ethanamine→ethylamino, propan-2-amine→propan-2-ylamino。"""
-    if not en.endswith("amine") or "N-" in en:
-        return None
-    m = re.match(r"^(.+)ane-(\d+)-amine$", en)  # 例：propan-2-amine → propan-2-ylamino
-    if m:
-        return f"{m.group(1)}ane-{m.group(2)}-ylamino"
-    m = re.match(r"^(.+)anamine$", en)  # 例：methanamine → methylamino
-    if m:
-        return m.group(1) + "ylamino"
-    return None
-
-
-def _amino_zh(zh: str) -> str | None:
-    """1° amine → amino ZH: 甲胺→甲氨基, 乙胺→乙氨基, 丙-2-胺→丙-2-基氨基."""
-    if zh in ("甲胺", "乙胺"):
-        return zh[:-1] + "氨基"
-    m = re.match(r"^(.+)-(\d+)-胺$", zh)
-    if m:
-        return f"{m.group(1)}-{m.group(2)}-基氨基"
-    return None
 
 _MONONUCLEAR_NAMES = ("oxidane", "azane", "sulfane", "sulfinyl", "sulfonyl", "imine")  # 本模块转换的单核母体氢化物（P-15.4.1 表 2.1 → 表 1.5 'a' 前缀体系，数据见 constants.MONONUCLEAR_HYDRIDES）；P 酰基（phosphoryl/phosphanyl）走 L5 的 P 专用管线，不经此表。
 
@@ -136,15 +35,9 @@ def _mononuclear_zh(zh: str) -> str | None:
             return zh_bridge_root(base) + zy
     return None
 
-
-# ── yl 形式构建器 ──
-
 def _try_fg_prefix(en: str, zh: str) -> tuple[str, str] | None:
     """尝试将官能团后缀名转换为取代基前缀形式。"""
     for en_fn, zh_fn in [
-        (_alkoxy_en, _alkoxy_zh),
-        (_sulfanyl_en, _sulfanyl_zh),
-        (_amino_en, _amino_zh),
         (_mononuclear_en, _mononuclear_zh),
     ]:
         en_out = en_fn(en)
@@ -152,31 +45,6 @@ def _try_fg_prefix(en: str, zh: str) -> tuple[str, str] | None:
         if en_out and zh_out:
             return en_out, zh_out
     return None
-
-
-def _yl_en(en: str, k: int) -> str:
-    """生成英文 -yl 形式；保留名用映射，否则按位次拼接。"""
-    hit = _RETAINED.get(en)
-    return hit[0] if hit is not None else f"{_drop_terminal_e(en)}-{k}-yl"
-
-
-def _mirror_azole_locants_zh(zh: str, en: str) -> str:
-    """当 EN 含 1,3- 而 free ZH 省略时，向 ZH 唑类词干插入 1,3-。"""
-    pre = _hetero_locant_prefix(en)
-    if pre and not zh.startswith(pre):
-        return pre + zh
-    if "1,3-thiazole" in en and "1,3-噻唑" not in zh and zh.endswith("噻唑"):
-        return zh[: -len("噻唑")] + "-1,3-噻唑" if zh != "噻唑" else "1,3-噻唑"
-    return zh
-
-
-def _yl_zh(zh: str, k: int, en: str) -> str:
-    """生成中文 -基形式；保留名用映射，否则按位次拼接。"""
-    hit = _RETAINED.get(en)
-    if hit is not None:
-        return hit[1]
-    return f"{_mirror_azole_locants_zh(zh, en)}-{k}-基"
-
 
 def free_to_yl(
     en: str, zh: str, attach_locant: int, *, paren: bool = True,
@@ -187,4 +55,5 @@ def free_to_yl(
         need_paren = fg[0].endswith("amino") and fg[0] != "amino"  # P-29.3.6：复合前缀（methylamino=CH3-NH-，非普通 amino）需括号与两个独立取代基区分。
         need_paren = need_paren or (fg[0].endswith("anilino") and fg[0] != "anilino")  # 带环取代基的 anilino（4-chloroanilino）与 …phenylamino 同理需括号（gold：(4-chloroanilino)benzoic acid）；裸 anilino 免括。
         return fg[0], fg[1], need_paren
-    return _yl_en(en, attach_locant), _yl_zh(zh, attach_locant, en), paren
+    return None
+

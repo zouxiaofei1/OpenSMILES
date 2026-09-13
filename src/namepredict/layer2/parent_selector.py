@@ -4,8 +4,8 @@ from __future__ import annotations
 
 def _rank_candidates(info: dict, cands: list[dict]) -> list[dict]:
     """按评分降序排列候选母体。"""
-    from namepredict.layer2.scoring import _score_parent
-    return sorted(cands, key=lambda c: _score_parent(info, c), reverse=True)
+    from namepredict.layer2.scoring import _p44_1_1
+    return sorted(cands, key=lambda c: _p44_1_1(c), reverse=True)
 
 
 def _p45_2_prefix_count(info: dict, parent: dict) -> int:

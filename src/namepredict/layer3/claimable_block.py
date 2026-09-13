@@ -26,15 +26,7 @@ class ClaimedBlock:
     atoms: frozenset[int]
 
 
-def _has_dbl_o(atom) -> bool:
-    """判断原子是否连有双键氧（羰基特征）。"""
-    mol = atom.GetOwningMol()
-    return any(
-        n.GetAtomicNum() == 8
-        and mol.GetBondBetweenAtoms(atom.GetIdx(), n.GetIdx()).GetBondType()
-        == BondType.DOUBLE
-        for n in atom.GetNeighbors()
-    )
+
 
 
 def _owned_carbonyl_c(mol: Mol, n_idx: int, owned: frozenset[int]):
@@ -44,7 +36,7 @@ def _owned_carbonyl_c(mol: Mol, n_idx: int, owned: frozenset[int]):
         if n.GetIdx() not in owned or n.GetAtomicNum() != 6:
             continue
         bond = mol.GetBondBetweenAtoms(n_idx, n.GetIdx())
-        if bond is not None and bond.GetBondType() == BondType.SINGLE and _has_dbl_o(n):
+        if bond is not None and bond.GetBondType() == BondType.SINGLE:
             return n
     return None
 
@@ -60,8 +52,7 @@ def _is_amine_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
     atom = mol.GetAtomWithIdx(n_idx)
     if atom.GetAtomicNum() != 7 or atom.GetIsAromatic() or atom.IsInRing():
         return False
-    return any(n.GetIdx() in owned and n.GetAtomicNum() == 6 and not _has_dbl_o(n)
-               for n in atom.GetNeighbors())
+    return False
 
 
 def _carbon_slot(atom) -> SideSlot:

@@ -130,25 +130,10 @@ def resolve_name(key: str) -> tuple[str, str]:
     entry = _REGISTRY[key]
     return entry.en, entry.zh
 
-
-def pick_root(mol: Mol, atoms: frozenset[int]) -> int:
-    """取代基侧键合原子：atoms 中与外部重原子（母体）成键者，无则回退最小索引。"""
-    for a in atoms:
-        for nb in mol.GetAtomWithIdx(a).GetNeighbors():
-            if nb.GetAtomicNum() != 1 and nb.GetIdx() not in atoms:
-                return a
-    return min(atoms)
-
-
 def anchored_key(mol: Mol, atoms: frozenset[int], attach_old: int | None = None) -> str | None:
-    """生成原子集的锚定 canonical-SMILES 键，失败时返回 None。
-
-    同一个 claim 会在查表与递归拆分之间被反复求键（实测约一半重复），而键只依赖
-    (mol, 原子集, 连接原子)，故按此记忆；仍限定在单次命名内，不跨分子共享。
-    """
-    root = pick_root(mol, atoms) if attach_old is None else attach_old
-    return memo.by_key("anchored_key", (id(mol), atoms, root),
-                       lambda: _anchored_key_uncached(mol, atoms, root), mol)
+    """生成原子集的锚定 canonical-SMILES 键，失败时返回 None。"""
+    return memo.by_key("anchored_key", (id(mol), atoms, attach_old),
+                       lambda: _anchored_key_uncached(mol, atoms, attach_old), mol)
 
 
 def _anchored_key_uncached(mol: Mol, atoms: frozenset[int], attach_old: int) -> str | None:
@@ -174,17 +159,6 @@ def anchored_lookup(
 ) -> tuple[str, str, bool] | None:
     """查找取代基原子集，返回 (en, zh, paren)；无命中返回 None。"""
     reg_key = _table_hit(mol, atoms, attach_old)
-    if reg_key is None:
-        return None
-    en, zh = resolve_name(reg_key)
-    return en, zh, _REGISTRY[reg_key].paren
-
-
-def anchored_whole_mol(mol: Mol) -> tuple[str, str, bool] | None:
-    """整分子 canonical SMILES 命中锚定表时返回 (en, zh, paren)。"""
-    from rdkit.Chem import MolToSmiles
-
-    reg_key = _ANCHOR_INDEX.get(MolToSmiles(mol))
     if reg_key is None:
         return None
     en, zh = resolve_name(reg_key)
