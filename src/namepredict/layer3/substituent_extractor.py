@@ -26,7 +26,7 @@ def _extract_oxos(info: dict, parent: dict) -> list[dict]:
         return []
     chain = set(parent.get("chain") or [])
     return [
-        _make_oxo(k["c_idx"]) for k in info.get("ketones") or [] if k["c_idx"] in chain
+        _make_oxo(k["center_idx"]) for k in info.get("ketones") or [] if k["center_idx"] in chain
     ]
 
 

@@ -7,6 +7,7 @@ from namepredict.constants import C, HALO_Z, O
 from namepredict.layer1._carbonyl_common import (
     _alkoxy_c_of,
     _amide_n_of,
+    _double_bonded_o_idxs,
     _ester_alkoxy_of as _ester_alkoxy_of_common,
     _has_acid_o_neighbor,
     _has_double_bonded_o,
@@ -43,16 +44,11 @@ def _is_acyl_halide_carbon(atom) -> bool:
     return _acyl_hal_of(atom) is not None
 
 def _entry(atom) -> dict:
-    """为酰卤羰基碳组装条目 dict（含卤索引与原子序数）。"""
+    """为酰卤羰基碳组装条目 dict（羰基碳为中心，羰基氧与卤素为周边）。"""
     h = _acyl_hal_of(atom)
     assert h is not None
-    hal_idx, hal_z = h
-    return {
-        "c_idx": atom.GetIdx(),
-        "hal_idx": hal_idx,
-        "hal_z": hal_z,
-        "cl_idx": hal_idx,  # 兼容：L2/L3 过滤器仍使用 cl_idx
-    }
+    hal_idx, _ = h
+    return {"center_idx": atom.GetIdx(), "surr_idx": [*_double_bonded_o_idxs(atom), hal_idx]}
 
 def acyl_halide_entries(mol: Mol) -> list[dict]:
     """收集分子中所有酰卤条目的列表。"""

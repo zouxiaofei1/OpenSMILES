@@ -26,6 +26,19 @@ def _has_double_bonded_o(carbon) -> bool:
     return any(_dbl_o_on(b, carbon) for b in carbon.GetBonds())
 
 
+def _double_bonded_o_idxs(carbon) -> list[int]:
+    """返回碳上羰基双键氧的索引列表。"""
+    mol = carbon.GetOwningMol()
+    out: list[int] = []
+    for n in carbon.GetNeighbors():
+        if n.GetAtomicNum() != O:
+            continue
+        b = mol.GetBondBetweenAtoms(carbon.GetIdx(), n.GetIdx())
+        if b is not None and b.GetBondType() == BondType.DOUBLE:
+            out.append(n.GetIdx())
+    return out
+
+
 def _is_carboxylate_o(atom) -> bool:
     """判断 O 是否为羧酸盐阴离子氧。"""
     if atom.GetAtomicNum() != O or atom.GetFormalCharge() != -1:

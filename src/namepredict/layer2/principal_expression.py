@@ -5,10 +5,11 @@ from dataclasses import dataclass, replace
 from enum import Enum
 
 from namepredict.constants import (
-    MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES, NITROGEN_STEM_BY_FREE_DOUBLE,
-    PHOSPHORUS_STEM_BY_OXO, SULFUR_STEM_BY_OXO,
+    HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES, NITROGEN_STEM_BY_FREE_DOUBLE,
+    O, PHOSPHORUS_STEM_BY_OXO, SULFUR_STEM_BY_OXO,
 )
 from namepredict.layer1 import fg_registry as _fg_reg
+from namepredict.layer1._carbonyl_common import _alkoxy_c_of
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
 from namepredict.layer2.principal import PrincipalGroupSelection, feature_spec
@@ -77,16 +78,23 @@ def _principal_fields(group_class: FunctionalGroupClass, anchors: list[int]) -> 
     return {single: anchors[0], plural: anchors} if len(anchors) == 1 else {plural: anchors}
 
 
-def _expression_flags(selection: PrincipalGroupSelection, occurrences) -> dict:
+def _is_anion_occurrence(occurrence, mol) -> bool:
+    """occurrence 是否为阴离子：周边原子带负形式电荷（羧酸根氧；与 L1 _has_carboxylate_o_neighbor 同义）。"""
+    if mol is None:
+        return False
+    return any(mol.GetAtomWithIdx(i).GetFormalCharge() < 0 for i in occurrence.payload.get("surr_idx") or ())
+
+
+def _expression_flags(selection: PrincipalGroupSelection, occurrences, mol) -> dict:
     """主基团表达标志（酸全阴离子时加 anion）。"""
     if selection.group_class is not FunctionalGroupClass.ACID:
         return {}
-    return {"anion": True} if occurrences and all(o.payload.get("anion") for o in occurrences) else {}
+    return {"anion": True} if occurrences and all(_is_anion_occurrence(o, mol) for o in occurrences) else {}
 
 
-def _charge_state(occurrences) -> PrincipalChargeState:
+def _charge_state(occurrences, mol) -> PrincipalChargeState:
     """按 occurrence 阴离子情况推断电荷状态。"""
-    charges = [bool(o.payload.get("anion")) for o in occurrences]
+    charges = [_is_anion_occurrence(o, mol) for o in occurrences]
     if charges and all(charges):
         return PrincipalChargeState.ANION
     return PrincipalChargeState.MIXED if any(charges) else PrincipalChargeState.NEUTRAL
@@ -110,7 +118,7 @@ def _facts(selection, skeleton, occurrences, mol=None) -> PrincipalExpressionFac
     attachment = _skeletal_attachments(mol, skeleton, occurrences)
     return PrincipalExpressionFacts(selection.group_class, len(occurrences), relation,
                                     tuple(o.id for o in occurrences), characteristic, attachment,
-                                    _charge_state(occurrences))
+                                    _charge_state(occurrences, mol))
 
 
 def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
@@ -232,10 +240,18 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
     return fields
 
 
+def _ester_o_idx(mol, e: dict) -> int | None:
+    """由酯条目现算酯氧索引：羰基碳上另连烷氧基碳的单键氧。"""
+    center = mol.GetAtomWithIdx(int(e["center_idx"]))
+    return next((n.GetIdx() for n in center.GetNeighbors()
+                 if n.GetAtomicNum() == O and _alkoxy_c_of(n, center) is not None), None)
+
+
 def ester_fields(info: dict, fields: dict) -> dict:
     """取首个酯的 o_idx 并写入酯字段（alkoxy_n 恒 0）。"""
     e = info["esters"][0]
-    return {**fields, "o_idx": e["o_idx"], "alkoxy_n": 0}
+    o_idx = _ester_o_idx(info["mol"], e)
+    return {**fields, "o_idx": o_idx, "alkoxy_n": 0} if o_idx is not None else fields
 
 
 def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
@@ -256,7 +272,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     if kind == "radical" and _radical_ylidene(info, occurrences):  # 环上碳锚点自由价双键（*=C1CCCC1）：链引擎出 -ylidene
         fields = {**fields, "radical_ylidene": True}
     if facts.group_class is FunctionalGroupClass.ACID:
-        fields = {**fields, **_expression_flags(selection, occurrences)}  # 环酸全阴离子补 anion 标志（链酸经 _chain_fields→_expression_flags 已设）；L5 据此转 -ate/-酸根，并让金属盐前缀（sodium …）能命中。
+        fields = {**fields, **_expression_flags(selection, occurrences, info.get("mol"))}  # 环酸全阴离子补 anion 标志（链酸经 _chain_fields→_expression_flags 已设）；L5 据此转 -ate/-酸根，并让金属盐前缀（sodium …）能命中。
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
         fields = ester_fields(info, fields)
     if facts.group_class is FunctionalGroupClass.ACYL_HALIDE and facts.multiplicity == 1:
@@ -264,11 +280,11 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     return _parent_dict(kind, skeleton, occurrences, fields, facts, selection.occurrences)
 
 
-def _chain_fields(selection, occurrences) -> dict:
+def _chain_fields(selection, occurrences, mol) -> dict:
     """构造链主基团的 anchor 与表达标志字段。"""
     anchors = _anchors(occurrences)
     return {**_principal_fields(selection.group_class, anchors),
-            **_expression_flags(selection, occurrences)}
+            **_expression_flags(selection, occurrences, mol)}
 
 
 def _unsat_bond_fields(dbs: list[dict], tbs: list[dict]) -> dict:
@@ -350,12 +366,15 @@ def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
     if not occurrences:
         return fields
     match = next((e for e in (info.get("esters") or [])
-                  if e["c_idx"] in occurrences[0].characteristic_atoms), None)
+                  if e["center_idx"] in occurrences[0].characteristic_atoms), None)
     if match is None:
         return fields
+    o_idx = _ester_o_idx(info["mol"], match)
+    if o_idx is None:
+        return fields
     if len(occurrences) == 1:
-        return {**fields, "o_idx": match["o_idx"], "alkoxy_n": 0}
-    return {**fields, "o_idx": match["o_idx"]}
+        return {**fields, "o_idx": o_idx, "alkoxy_n": 0}
+    return {**fields, "o_idx": o_idx}
 
 def _anchor_free_double(mol: Mol, idx: int) -> bool:
     """锚点原子与 `*` 虚拟原子之间的键是否为双键。"""
@@ -420,11 +439,15 @@ def _chain_acyl_halide_fields(info: dict, occurrences, fields: dict) -> dict:
     """酰卤的卤素字段：hal_idx 供 parent_ownership 把卤素纳入母体原子（Cl 不作取代基）。"""
     if len(occurrences) != 1:
         return fields
+    mol = info.get("mol")
     match = next((e for e in (info.get("acyl_chlorides") or [])
-                  if e["c_idx"] in occurrences[0].characteristic_atoms), None)
-    if match is None:
+                  if e["center_idx"] in occurrences[0].characteristic_atoms), None)
+    if match is None or mol is None:
         return fields
-    return {**fields, "hal_idx": match["hal_idx"], "hal_z": match["hal_z"]}
+    hal = next((i for i in match["surr_idx"] if mol.GetAtomWithIdx(i).GetAtomicNum() in HALO_Z), None)
+    if hal is None:
+        return fields
+    return {**fields, "hal_idx": hal, "hal_z": mol.GetAtomWithIdx(hal).GetAtomicNum()}
 
 
 def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
@@ -445,7 +468,7 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
             skeleton, extra = mono
         elif _radical_ylidene(info, occurrences):  # 碳锚点自由价双键（*=C<）：链引擎出 -ylidene
             extra = {"radical_ylidene": True}
-    fields = _chain_unsat_fields(info, skeleton, {**_chain_fields(selection, occurrences), **extra})
+    fields = _chain_unsat_fields(info, skeleton, {**_chain_fields(selection, occurrences, info.get("mol")), **extra})
     if kind == "ester":
         fields = _chain_ester_fields(info, occurrences, fields)
     elif kind == "acyl_halide":
@@ -455,7 +478,7 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         if fields is None:
             return None
     return _parent_dict(kind, skeleton, occurrences, fields,
-                        _facts(selection, skeleton, occurrences), selection.occurrences)
+                        _facts(selection, skeleton, occurrences, info.get("mol")), selection.occurrences)
 
 
 # ── 无主官能团（纯烃）表达：P-44.1 缺位时按拓扑分配 hydrocarbon kind ──

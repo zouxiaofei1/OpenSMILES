@@ -50,8 +50,8 @@ def _anchors(occurrences: tuple[FunctionalGroupOccurrence, ...]) -> list[int]:
 
 def _demoted_acid_carbons(info: dict) -> set[int]:
     """被压制（降级）为前缀叶的主基团碳集合：中性羧酸碳（carboxy 叶，P-61.1.3）与腈碳（cyano 叶）不得进入开链主链——否则词干链会把酸/腈碳当饱和碳吞掉、其杂原子悬空误命名成 hydroxy/amino。"""
-    acids = {int(e["c_idx"]) for e in (info.get("demoted_carboxyls") or []) if e.get("c_idx") is not None}
-    nitriles = {int(e["c_idx"]) for e in (info.get("demoted_nitriles") or []) if e.get("c_idx") is not None}
+    acids = {int(e["center_idx"]) for e in (info.get("demoted_carboxyls") or []) if e.get("center_idx") is not None}
+    nitriles = {int(e["center_idx"]) for e in (info.get("demoted_nitriles") or []) if e.get("center_idx") is not None}
     return acids | nitriles
 
 

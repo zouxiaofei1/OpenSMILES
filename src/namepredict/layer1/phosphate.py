@@ -87,5 +87,6 @@ def _one_phosphate(mol: Mol, p_idx: int) -> dict | None:
 
 def phosphate_entries(mol: Mol) -> list[dict]:
     """分子中全部磷酸中心（P(=O)(O)₃）的条目列表。"""
-    return [e for a in mol.GetAtoms() if a.GetAtomicNum() == P
-            and (e := _one_phosphate(mol, a.GetIdx())) is not None]
+    result = [e for a in mol.GetAtoms() if a.GetAtomicNum() == P  and (e := _one_phosphate(mol, a.GetIdx())) is not None]
+    # print(result)
+    return result

@@ -113,7 +113,7 @@ def test_primary_polyamine_typed_facts_and_names(smiles, kind, count, en, zh):
     assert facts.relation is PrincipalRelation.IN_SKELETON
     assert len(facts.occurrence_ids) == count
     assert len(facts.attachment_atoms) == count
-    expected = {a["c_idx"] for a in analyze(Chem.MolFromSmiles(smiles))["amines"]}
+    expected = {c for a in analyze(Chem.MolFromSmiles(smiles))["amines"] for c in a["surr_idx"]}
     assert set(facts.attachment_atoms) == expected
     assert facts.charge_state is PrincipalChargeState.NEUTRAL
     result = SMILESNNamer().name(smiles)

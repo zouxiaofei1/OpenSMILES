@@ -62,12 +62,9 @@ def _iso_n_ok(n_atom, carbon) -> bool:
     return _r_of_iso_n(n_atom, carbon) is not None
 
 
-def _pack_entry(carbon, n_atom, x, r: int) -> dict:
-    """组装异氰酸酯条目 dict。"""
-    return {
-        "c_idx": carbon.GetIdx(), "n_idx": n_atom.GetIdx(),
-        "x_idx": x.GetIdx(), "r_c_idx": r,
-    }
+def _pack_entry(carbon, n_atom, x) -> dict:
+    """组装异氰酸酯条目 dict（累积碳为中心，氮与 X 为周边）。"""
+    return {"center_idx": carbon.GetIdx(), "surr_idx": [n_atom.GetIdx(), x.GetIdx()]}
 
 
 def _entry_for(carbon, x_z: int) -> dict | None:
@@ -79,7 +76,7 @@ def _entry_for(carbon, x_z: int) -> dict | None:
     if not _iso_n_ok(n_atom, carbon):
         return None
     r = _r_of_iso_n(n_atom, carbon)
-    return None if r is None else _pack_entry(carbon, n_atom, x, r)
+    return None if r is None else _pack_entry(carbon, n_atom, x)
 
 
 def _entries(mol: Mol, x_z: int) -> list[dict]:

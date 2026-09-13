@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
-from namepredict.layer1.fg_atoms import FG_ATOM_FNS
+from namepredict.layer1.fg_atoms import FG_ATOM_FNS, center_surr_atoms
 from namepredict.layer1.fg_registry import FG_SPECS
 
 
@@ -63,16 +63,12 @@ def _indices(payload: dict, keys: tuple[str, ...]) -> frozenset[int]:
     return frozenset(x for x in flat if isinstance(x, int))
 
 
-def _atom_ids(payload: dict) -> frozenset[int]:
-    """回退路径：收集 payload 中所有 idx/idxs 键的原子索引集合。"""
-    keys = tuple(k for k in payload if k.endswith("idx") or k.endswith("idxs"))
-    return _indices(payload, keys)
-
-
 def _characteristic_atoms(group_class: FunctionalGroupClass, mol, payload: dict) -> frozenset[int]:
-    """按 FG 类别取特征原子集（类别未登记或 mol 缺失时退回 payload 索引键猜测）。"""
+    """按 FG 类别取特征原子集（类别未登记或 mol 缺失时退回通用 center/surr 并集）。"""
     fn = FG_ATOM_FNS.get(group_class.value)
-    return frozenset(fn(mol, payload)) if fn is not None and mol is not None else _atom_ids(payload)
+    if fn is not None and mol is not None:
+        return frozenset(fn(mol, payload))
+    return center_surr_atoms(payload)
 
 
 def _one(key: str, index: int, payload: dict, mol) -> FunctionalGroupOccurrence:

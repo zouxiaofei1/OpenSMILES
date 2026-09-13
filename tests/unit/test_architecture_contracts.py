@@ -667,17 +667,19 @@ def test_benzamide_owns_core_not_n_phenyl():
     assert isinstance(owned, frozenset)
 
     am = info["amides"][0]
-    assert am["c_idx"] in owned
-    assert am["n_idx"] in owned
+    n_idx = next(i for i in am["surr_idx"] if mol.GetAtomWithIdx(i).GetAtomicNum() == 7)
+    assert am["center_idx"] in owned
+    assert n_idx in owned
     # carbonyl O is owned
-    for n in mol.GetAtomWithIdx(am["c_idx"]).GetNeighbors():
+    for n in mol.GetAtomWithIdx(am["center_idx"]).GetNeighbors():
         if n.GetAtomicNum() == 8:
             assert n.GetIdx() in owned
     # aryl core (chain) owned
     for idx in parent["chain"]:
         assert idx in owned
-    # N-phenyl carbons not owned
-    for c in am.get("n_c_idxs") or []:
+    # N-phenyl carbons not owned（N 上除酰胺羰基碳外的碳取代基）
+    for c in [n.GetIdx() for n in mol.GetAtomWithIdx(n_idx).GetNeighbors()
+              if n.GetAtomicNum() == 6 and n.GetIdx() != am["center_idx"]]:
         assert c not in owned
         for n in mol.GetAtomWithIdx(c).GetNeighbors():
             if n.GetAtomicNum() == 6 and n.GetIsAromatic() and n.GetIdx() != c:
