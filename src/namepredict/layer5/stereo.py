@@ -6,7 +6,7 @@ import re
 from rdkit.Chem import BondStereo, Mol
 
 from namepredict.layer1 import fg_registry as _fg_reg
-from namepredict.layer4.locant_key import locant_key
+from namepredict.layer4.locant_calc import locant_key
 from namepredict.layer4.numbering_engine import assign_cip
 
 

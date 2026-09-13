@@ -15,17 +15,6 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from rdkit import Chem
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.parent_selector import select_parent
-from namepredict.layer2.parent_ownership import finalize_parent_ownership
-from namepredict.layer3.substituent_extractor import extract_substituents
-from namepredict.layer3.coverage import build_coverage_ledger
-from namepredict.layer3.substituent_namer import SubstituentName
-from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
-from namepredict.layer4.numbering import number
-from namepredict.layer5.assembler import assemble
-
 router = APIRouter(prefix="/api/v1", tags=["debug"])
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -139,6 +128,18 @@ def _subst_serializable(subst: list[dict]) -> list[dict]:
 
 @router.post("/debug")
 def debug_smiles(body: DebugBody) -> dict[str, Any]:
+    # namepredict 在请求内导入: src/ 编译失败时 app 仍能启动并返回 500 详情
+    from namepredict.layer0.preprocessor import preprocess
+    from namepredict.layer1.analyzer import analyze
+    from namepredict.layer2.parent_ownership import finalize_parent_ownership
+    from namepredict.layer2.parent_selector import select_parent
+    from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
+    from namepredict.layer3.coverage import build_coverage_ledger
+    from namepredict.layer3.substituent_extractor import extract_substituents
+    from namepredict.layer3.substituent_namer import SubstituentName
+    from namepredict.layer4.numbering import number
+    from namepredict.layer5.assembler import assemble
+
     t0 = time.perf_counter()
 
     # ── L0: preprocess ──

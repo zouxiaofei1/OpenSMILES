@@ -1,19 +1,29 @@
 """L4 位次计算：将官能团/取代基附着原子映射为链上位次。"""
 from __future__ import annotations
-from namepredict.constants import AMINE_KINDS, OH_KINDS
 from namepredict.layer1.fg_registry import FG_SPECS
+import re
 from namepredict.layer4._chain_orient import _edge_min_locant
-from namepredict.layer4.locant_key import locant_str_sort
 from namepredict.layer4.omit_locants import (
     omit_amine as _omit_amine, omit_ketone as _omit_ketone, omit_sh as _omit_sh,
 )
+
+def locant_key(x) -> tuple[int, str]:
+    """locant → 排序键: 数字按数值、字母尾作次级键，保证 "4" < "4a" < "5" < "10"。"""
+    m = re.match(r"(\d+)([a-z]*)", str(x))
+    return (int(m.group(1)), m.group(2)) if m else (0, "")
+
+
+def locant_str_sort(locs) -> list:
+    """按 locant_key 排序 locant 集合(兼容 int 与 "4a" 混合)。"""
+    return sorted(locs, key=locant_key)
+
 
 def _typed_group_atoms(parent: dict, group: str) -> list[int]:
     """返回 principal_expression_facts 中属于指定基团类型的附着原子。"""
     facts = parent.get("principal_expression_facts")
     return sorted(facts.attachment_atoms) if facts and facts.group_class.value == group else []
 
-def _atom_locant(chain: list[int], atom: int | None, kind: str | None, facts=None, required=False) -> int | str | None:
+def _atom_locant(chain: list[int], atom: int | None, facts=None) -> int | str | None:
     """按固定标签定位次(数字 int / 字母位 "4a" 原样 str)，否则保留普通链编号——fused 桥头 4a/8a 字母位由此保留。"""
     if atom is None or atom not in chain:
         return None
@@ -23,19 +33,11 @@ def _atom_locant(chain: list[int], atom: int | None, kind: str | None, facts=Non
         return int(lbl) if str(lbl).isdigit() else str(lbl)
     return chain.index(atom) + 1
 
-def _fg_locant(oriented: dict, kinds: tuple, key: str) -> int | None:
-    """按 key 取单个官能团附着原子并计算其链上位次。"""
-    if oriented.get("kind") not in kinds:
-        return None
-    return _atom_locant(oriented.get("chain") or [], oriented.get(key), oriented.get("kind"), oriented.get("numbering_scaffold"), oriented.get("numbering_scaffold_required", False))
-
 def _atom_locants(oriented: dict, atoms) -> list[int]:
     """把一组骨架原子映射为位次列表（保留 fused 字母位，跳过不在链表中的原子）。"""
-    chain = oriented.get("chain") or []
-    kind, facts = oriented.get("kind"), oriented.get("numbering_scaffold")
-    required = oriented.get("numbering_scaffold_required", False)
+    chain, facts = oriented.get("chain") or [], oriented.get("numbering_scaffold")
     return [loc for atom in atoms
-            if (loc := _atom_locant(chain, atom, kind, facts, required)) is not None]
+            if (loc := _atom_locant(chain, atom, facts)) is not None]
 
 
 def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
@@ -43,39 +45,11 @@ def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
     return locant_str_sort(_atom_locants(oriented, _typed_group_atoms(oriented, group)))
 
 
-def _oh_locant(oriented: dict) -> int | None:
-    """计算醇羟基的唯一 locant；多羟基或缺失时回退到单点字段。"""
-    locs = _typed_atom_locants(oriented, "alcohol")
-    return locs[0] if len(locs) == 1 else _fg_locant(oriented, OH_KINDS, "oh_c_idx")
+def _single_locant(oriented: dict, group: str) -> int | None:
+    """主官能团唯一位次；多原子或缺失返回 None。"""
+    locs = _typed_atom_locants(oriented, group)
+    return locs[0] if len(locs) == 1 else None
 
-def _sh_locant(oriented: dict) -> int | None:
-    """计算硫醇巯基的 locant。"""
-    return _fg_locant(oriented, ("thiol",), "sh_c_idx")
-
-def _anchor_field_locants(oriented: dict, key: str, gate: str | None = None) -> list[int] | None:
-    """由扁平锚点字段算位次列表（保留 fused 字母位）；gate 给定时要求母体 kind 匹配该 FG 类别。"""
-    if gate is not None and oriented.get("kind") != gate:
-        return None
-    values = oriented.get(key)
-    if values is None:
-        return None
-    atoms = values if isinstance(values, (list, tuple, set, frozenset)) else [values]
-    return locant_str_sort(_atom_locants(oriented, atoms)) or None
-
-
-def _attachment_locants(oriented: dict, group: str) -> list[int] | None:
-    """facts 给出的骨架附着原子位次列表；该 FG 非主官能团时为空。"""
-    return _typed_atom_locants(oriented, group) or None
-
-
-def _oh_locants(oriented: dict) -> list[int] | None:
-    """返回全部醇羟基位次；无 typed 原子时回退到 oh_c_idxs。"""
-    return _attachment_locants(oriented, "alcohol") or _anchor_field_locants(oriented, "oh_c_idxs", gate="alcohol")
-
-def _amine_locant(oriented: dict) -> int | None:
-    """计算氨基的唯一 locant；多氨基或缺失时回退到单点字段。"""
-    locs = _typed_atom_locants(oriented, "amine")
-    return locs[0] if len(locs) == 1 else _fg_locant(oriented, AMINE_KINDS, "amine_c_idx")
 
 def _has_parent_ene(oriented: dict) -> bool:
     """判断 parent 是否携带双键（单个或列表）。"""
@@ -115,14 +89,14 @@ def _omit_unsat(n_carbons, kind=None, parent=None, triple=False):
     return _core(n_carbons, kind, parent, has_ene=_has_parent_ene, has_yne=_has_parent_yne,
                  triple=triple)
 
-def _sub_locant(chain: list[int], attach: int, kind: str | None, facts=None) -> int:
+def _sub_locant(chain: list[int], attach: int, facts=None) -> int:
     """返回取代基附着原子的位次；无位次时取 0。"""
-    loc = _atom_locant(chain, attach, kind, facts)
+    loc = _atom_locant(chain, attach, facts)
     return 0 if loc is None else loc
 
-def _with_locants(chain: list[int], substituents: list, kind: str | None = None, facts=None) -> list:
+def _with_locants(chain: list[int], substituents: list, facts=None) -> list:
     """为每个取代基附加其 locant 后返回新列表。"""
-    return [{**s, "locant": _sub_locant(chain, s["attach_idx"], kind, facts)} for s in substituents]
+    return [{**s, "locant": _sub_locant(chain, s["attach_idx"], facts)} for s in substituents]
 
 from namepredict.layer4._chain_orient import _bond_min_locs
 
@@ -155,93 +129,56 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "omit_yne_locant": _omit_unsat(n, kind, oriented, triple=True),
     }
 
-def _sh_locants_list(oriented: dict) -> list[int] | None:
-    """巯基位次列表；无 typed 原子时回退到 sh_c_idx。"""
-    return _attachment_locants(oriented, "thiol") or _anchor_field_locants(oriented, "sh_c_idx", gate="thiol")
-
 def _omit_ket_loc(oriented: dict, n_subs: int) -> bool:
     """判定酮位次是否省略：单酮按 scaffold 判断。"""
     single = len(_typed_group_atoms(oriented, "ketone")) == 1
     return _omit_ketone(oriented.get("kind"), n_subs, oriented,
                         has_ene=_has_parent_ene, single=single)
 
+
 def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
     """FG 记录 omit 标志:环状判断由 omit_locants 基于 scaffold_id 完成（不虚构 cyclo* kind）。"""
     if kind == "oh":
-        return _omit_oh(_oh_locant(oriented), n, oriented.get("kind"), oriented, n_subs)
+        return _omit_oh(_single_locant(oriented, "alcohol"), n, oriented.get("kind"), oriented, n_subs)
     if kind == "amine":
-        return _omit_amine(_amine_locant(oriented), n, oriented.get("kind"), n_subs, oriented)
+        return _omit_amine(_single_locant(oriented, "amine"), n, oriented.get("kind"), n_subs, oriented)
     if kind == "ketone":
         return _omit_ket_loc(oriented, n_subs)
     if kind == "sh":
-        return _omit_sh(_sh_locant(oriented), n)
+        return _omit_sh(_single_locant(oriented, "thiol"), n)
     return False
 
-def _amine_fg_locants(oriented: dict) -> list[int] | None:
-    """返回氨基位次列表；依次回退到 amine_c_idxs、amine_c_idx。"""
-    return (_attachment_locants(oriented, "amine")
-            or _anchor_field_locants(oriented, "amine_c_idxs", gate="amine")
-            or _anchor_field_locants(oriented, "amine_c_idx", gate="amine"))
 
-
-def _ketone_fg_locants(oriented: dict) -> list[int] | None:
-    """返回酮羰基位次列表；依次回退到 ketone_c_idxs、ketone_c_idx。"""
-    return (_attachment_locants(oriented, "ketone")
-            or _anchor_field_locants(oriented, "ketone_c_idxs", gate="ketone")
-            or _anchor_field_locants(oriented, "ketone_c_idx", gate="ketone"))
-
-
-def _acid_fg_locants(oriented: dict) -> list[int] | None:
-    """返回酸类骨架附着原子位次（羧基碳在环外时取环附着原子，多羧酸取全部）。"""
-    return _attachment_locants(oriented, "acid") or _anchor_field_locants(oriented, "ring_attach_idx")
-
-
-def _ring_attach_locants(oriented: dict) -> list[int] | None:
-    """环上附着原子位次：exocyclic 酰胺/酯/腈的羰基碳在环外，位次落在环附着原子上。"""
-    return _anchor_field_locants(oriented, "ring_attach_idx")
-
-
-def _aldehyde_fg_locants(oriented: dict) -> list[int] | None:
-    """返回外环醛(-CHO)在环上的附着原子位次（单/多 -carbaldehyde 通用）；开链醛的醛碳在骨架内（in_skeleton），本路径不计数。"""
-    facts = oriented.get("principal_expression_facts")
-    if not facts or facts.group_class.value != "aldehyde" or facts.relation.value != "exocyclic":
+def _anchor_field_locants(oriented: dict, key: str) -> list[int] | None:
+    """由固定 locant 1 锚点语义字段（radical_c_idx）算位次列表（保留 fused 字母位）。"""
+    value = oriented.get(key)
+    if value is None:
         return None
-    return _attachment_locants(oriented, "aldehyde")
+    return locant_str_sort(_atom_locants(oriented, [value])) or None
 
 
-def _radical_locants(oriented: dict) -> list[int] | None:
-    """返回自由基连接点位次（连接点隐含 1 或按杂环编号）。"""
-    return _anchor_field_locants(oriented, "radical_c_idx")
+def _exocyclic_only(oriented: dict) -> bool:
+    """principal 基团是否以环外（骨架外）方式表达：环上 -CHO/-CONH2/-COOR/-CN 的位次落在环附着原子。"""
+    facts = oriented.get("principal_expression_facts")
+    return bool(facts) and facts.relation.value == "exocyclic"
 
 
-def _acyl_locants(oriented: dict) -> list[int] | None:
-    """返回酰基头位次：开链酰基头碳 acyl_c_idx（P-65.1.7.2 酸碳恒 locant 1），exocyclic 环酰基（羰基头在环外）回退环附着原子（furan-2-carbonyl 的 2）。"""
-    return _anchor_field_locants(oriented, "acyl_c_idx") or _anchor_field_locants(oriented, "ring_attach_idx")
+def _locants_for(oriented: dict, spec) -> list[int]:
+    """取 spec 对应主官能团的位次列表（该 FG 非主官能团时为空）；位次原子一律来自 principal_expression_facts（唯一事实来源）。"""
+    if spec.locant_source == "anchor_field":
+        return _anchor_field_locants(oriented, spec.parent_anchor_fields[0]) or []
+    if spec.locant_source == "attachment_exocyclic" and not _exocyclic_only(oriented):
+        return []
+    return _typed_atom_locants(oriented, spec.fg)
 
-_LOCANT_FNS = {  # 位次记录 kind → 位次函数（kind 为 fg_registry.locant_kind，跨 L4/L5 一致性由 spec 承载）。新增带位次的 FG：在 _LOCANT_FNS 补函数 + fg_registry 设 locant_kind，未登记则 KeyError 显式暴露。exocyclic 羰基类（酰胺/酯/腈）共用同一环附着规则。
-    "oh": _oh_locants,
-    "amine": _amine_fg_locants,
-    "ketone": _ketone_fg_locants,
-    "sh": _sh_locants_list,
-    "aldehyde": _aldehyde_fg_locants,
-    "acid": _acid_fg_locants,
-    "amide": _ring_attach_locants,
-    "ester": _ring_attach_locants,
-    "nitrile": _ring_attach_locants,
-    "radical": _radical_locants,
-    "acyl": _acyl_locants,
-}
-_FG_LOCANTS = tuple(
-    (sp.locant_kind, _LOCANT_FNS[sp.locant_kind])
-    for sp in FG_SPECS if sp.locant_kind is not None
-)
+_FG_LOCANTS = tuple((sp.locant_kind, sp) for sp in FG_SPECS if sp.locant_kind is not None)  # (记录 kind, spec)：跨层一致性由 fg_registry 承载，新增带位次的 FG 只需在 FG_SPECS 设 locant_kind/locant_source。
 
 def _fg_locants(oriented: dict, n_subs: int = 0) -> list[dict]:
     """FG 位次记录: [{kind, locants, omit}] — 稀疏,只产实际存在的 principal FG."""
     n = oriented.get("n_carbons", 0)
     records = []
-    for kind, locs_fn in _FG_LOCANTS:
-        locs = locs_fn(oriented)
+    for kind, spec in _FG_LOCANTS:
+        locs = _locants_for(oriented, spec)
         if not locs:
             continue
         records.append({

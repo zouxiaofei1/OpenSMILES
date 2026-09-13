@@ -1,7 +1,7 @@
 """L4 并列候选母体比较键：P-44.1.1 principal 特征基团位次集合、P-45.2.2 前缀取代基位次集合。"""
 from __future__ import annotations
 
-from namepredict.layer4.locant_key import locant_key
+from namepredict.layer4.locant_calc import locant_key
 
 
 def suffix_locant_set(numbered: dict) -> tuple:

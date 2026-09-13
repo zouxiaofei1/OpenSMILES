@@ -8,7 +8,9 @@ from rdkit.Chem import Mol
 
 from namepredict.tools import memo
 from namepredict.constants import Al, As, B, Bi, C, Ga, Ge, In, N, O, P, Pb, S, Sb, Se, Si, Sn, Te, Tl
-from namepredict.layer1.functional_group_inventory import FunctionalGroupClass, FunctionalGroupOccurrence
+from namepredict.layer1.functional_group_inventory import (
+    FunctionalGroupClass, FunctionalGroupOccurrence, inventory_from_info,
+)
 from namepredict.layer2.chain_walk import _all_chains_through, _chain_through_two, _longest_chain
 from namepredict.layer1.ring_systems import sssr_rings
 
@@ -49,16 +51,11 @@ def _anchors(occurrences: tuple[FunctionalGroupOccurrence, ...]) -> list[int]:
 
 
 def _demoted_leaf_carbons(info: dict) -> set[int]:
-    """被压制（降级）为前缀叶的碳集合：`demoted_*` 叶列表的中心碳（羧酸 carboxy 叶 P-61.1.3、腈 cyano 叶等）不得进入开链主链——否则词干链会把叶碳当饱和碳吞掉、其杂原子悬空误命名成 hydroxy/amino。"""
+    """被压制（降级）为前缀叶的碳集合：清单中标记 demoted 的条目中心碳（羧酸 carboxy 叶 P-61.1.3、腈 cyano 叶等）不得进入开链主链——否则词干链会把叶碳当饱和碳吞掉、其杂原子悬空误命名成 hydroxy/amino。"""
     mol: Mol = info["mol"]
-    out: set[int] = set()
-    for key, entries in info.items():
-        if not key.startswith("demoted_"):
-            continue
-        for e in entries or []:
-            if e.get("center_idx") is not None and mol.GetAtomWithIdx(int(e["center_idx"])).GetAtomicNum() == C:
-                out.add(int(e["center_idx"]))
-    return out
+    return {int(o.payload["center_idx"]) for o in inventory_from_info(info).demoted_entries()
+            if o.payload.get("center_idx") is not None
+            and mol.GetAtomWithIdx(int(o.payload["center_idx"])).GetAtomicNum() == C}
 
 
 def _pair_chains(mol: Mol, anchors: list[int], banned: set[int] = frozenset()) -> list[list[int]]:

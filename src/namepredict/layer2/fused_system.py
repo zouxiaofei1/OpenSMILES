@@ -117,7 +117,7 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
     cands = _keep_best(cands, _key_f)  # (f) 最高优先性杂原子数更多
     numbering = {c: _numbered_locants(info, rings, fusion_edges, c) for c in cands}  # (g)-(j): 依赖 L4 优选取向/编号, 逐准则按水平行环数/位次收窄(候选无法编号则跳过该准则)。
     from namepredict.layer4.fused_numbering import fused_atoms
-    from namepredict.layer4.locant_key import locant_key
+    from namepredict.layer4.locant_calc import locant_key
 
     def _locant_tup(c, atoms):
         """取候选下指定原子集的 locant 排序元组。"""

@@ -9,5 +9,5 @@ def extract_substituents(info: dict, parent: dict, *, cache: CommonNameCache | N
 
     mol, chain = info["mol"], parent.get("chain") or []
     result =   extract_claimed_sides(info, parent, (), cache=cache)
-    print(result,"\n\n\n")
+    
     return result

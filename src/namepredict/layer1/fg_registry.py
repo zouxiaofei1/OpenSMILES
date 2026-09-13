@@ -22,7 +22,8 @@ class FgSpec:
     multi: bool = False  # 支持数量后缀（_MULTI_FG / L5 mult_ok）
     rs: bool = False  # 支持 R/S（stereo._RS_KINDS）
     keep_locant: bool = False  # 取代基位次保留（assembler_prefixes._KEEP_LOCANT_KINDS）
-    locant_kind: str | None = None  # fg_locants 记录 kind（"oh"/"amine"/…）
+    locant_kind: str | None = None  # fg_locants 记录 kind（"oh"/"amine"/…）；None = 不产位次记录
+    locant_source: str = "attachment"  # 位次原子来源：attachment 取 principal_expression_facts 骨架内附着原子；attachment_exocyclic 仅环外表达时取；anchor_field 取 parent_anchor_fields 首位语义字段（固定 locant 1 锚点）
     oh_parent: bool = False  # 醇类母体（抑制羟基取代基提取）
     nh2_parent: bool = False  # 胺类母体
     oxo_parent: bool = False  # 酮类母体
@@ -31,7 +32,7 @@ class FgSpec:
 FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("radical", "radicals", p41=1, compat=1, anchors=("center_idx",),
            parent_anchor_fields=("radical_c_idx", "radical_c_idxs"),
-           locant_kind="radical"),
+           locant_kind="radical", locant_source="anchor_field"),
     FgSpec("acyl", "acyls", p41=1, compat=1, anchors=("center_idx",),  # 酰基残基
            parent_anchor_fields=("acyl_c_idx", "acyl_c_idxs"),
            chain=True, rs=True, keep_locant=True, locant_kind="acyl"),
@@ -43,19 +44,19 @@ FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("anhydride", "anhydrides", p41=8, compat=12),
     FgSpec("ester", "esters", p41=9, compat=11, anchors=("center_idx",),
            parent_anchor_fields=("ester_c_idx", "ester_c_idxs"),
-           chain=True, multi=True,rs=True, locant_kind="ester"),
+           chain=True, multi=True,rs=True, locant_kind="ester", locant_source="attachment_exocyclic"),
     FgSpec("acyl_halide", "acyl_chlorides", p41=10, compat=10, anchors=("center_idx",),
            parent_anchor_fields=("acyl_c_idx", "acyl_c_idxs"),
            chain=True),
     FgSpec("amide", "amides", p41=11, compat=9, anchors=("center_idx",),
            parent_anchor_fields=("amide_c_idx", "amide_c_idxs"),
-           chain=True, multi=True,rs=True, locant_kind="amide"),
+           chain=True, multi=True,rs=True, locant_kind="amide", locant_source="attachment_exocyclic"),
     FgSpec("nitrile", "nitriles", p41=14, compat=8, anchors=("center_idx",),
            parent_anchor_fields=("nitrile_c_idx", "nitrile_c_idxs"),
-           chain=True, rs=True, locant_kind="nitrile"),
+           chain=True, rs=True, locant_kind="nitrile", locant_source="attachment_exocyclic"),
     FgSpec("aldehyde", "aldehydes", p41=15, compat=7, anchors=("center_idx",),
            parent_anchor_fields=("aldehyde_c_idx", "aldehyde_c_idxs"),
-           chain=True, rs=True, locant_kind="aldehyde"),
+           chain=True, rs=True, locant_kind="aldehyde", locant_source="attachment_exocyclic"),
     FgSpec("ketone", "ketones", p41=16, compat=6, anchors=("center_idx",),
            parent_anchor_fields=("ketone_c_idx", "ketone_c_idxs"),
            chain=True, multi=True, rs=True, keep_locant=True, locant_kind="ketone",

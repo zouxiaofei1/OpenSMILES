@@ -1,7 +1,7 @@
 /* ChemAgent Namer — entry point: page switching + control wiring.
    Feature modules live in sibling files (namer/benchmark/...); this file only
    imports them and ties the global layout together. */
-import { state } from "./core.js";
+import { state, checkBackendHealth } from "./core.js";
 import { bindNamer, ensureKetcher } from "./namer.js";
 import { loadBenchmark, stopBmPolling, bindBenchmark } from "./benchmark.js";
 import { bindDebug } from "./debug.js";
@@ -186,6 +186,9 @@ function bind() {
 
 async function init() {
   bind();
+  const retry = document.getElementById("backend-banner-retry");
+  if (retry) retry.addEventListener("click", checkBackendHealth);
+  checkBackendHealth();
   ensureKetcher();
   initHistoryPicker();
 }

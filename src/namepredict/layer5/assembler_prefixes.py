@@ -19,7 +19,7 @@ def _group_by_stem(substituents: list) -> dict[str, list]:
 
 def _locant_str(subs: list) -> str:
     """按位次排序拼接成逗号串；N-型取代基渲染为字母位次 N（与 C 数字位次并排，N 自然排最前）。"""
-    from namepredict.layer4.locant_key import locant_str_sort
+    from namepredict.layer4.locant_calc import locant_str_sort
     tokens = []
     for s in subs:
         if "locant" not in s:

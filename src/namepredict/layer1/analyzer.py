@@ -457,61 +457,55 @@ def _radical_entries(mol: Mol, exclude: frozenset[int] = frozenset()) -> list[di
     return out
 
 
-def _fg_more_lists(parts: dict) -> dict:
-    """从 parts 中取出扩展官能团列表（醛/胺/腈等）。"""
-    keys = (
-      "hydroxyls", "carboxyls","esters", "amides","ketones","radicals", "acyls", "aldehydes", "amines",  "nitriles", "double_bonds", "triple_bonds",
-        "acyl_chlorides", "anhydrides", "thiols", "phosphates",)
-    return {k: parts[k] for k in keys}
-
-def _fg_lists(parts: dict) -> dict:
-    """从 parts 中汇总全部官能团条目列表（含 P-41 仲裁产出的 demoted_* 叶列表）。"""
-    return {
-        **_fg_more_lists(parts),
-        **{k: v for k, v in parts.items() if k.startswith("demoted_")}}
+def _bond_lists(mol: Mol) -> dict:
+    """不饱和度键列表：C=C / C≡C 是结构事实而非官能团，不入 FG 通道（_fg_parts 只承载 P-41 官能团条目）。"""
+    return {"double_bonds": _double_bond_entries(mol), "triple_bonds": _triple_bond_entries(mol)}
 
 _SUPPRESSIBLE = {**CARBONYL_COMPOSITES, "nitriles": "nitrile"}  # 可被更高优先级 FG 整体压制的组合 FG：组合羰基 + 腈
 _LEAF_DEMOTED = ("carboxyls", "nitriles")  # 降级为"前缀叶"的组合 FG：整组碳排除出主链（P-61.1.3 carboxy/cyano）。其余组合 FG（酯/酰胺/醛/酰卤/酸酐）降级为"氧代"——羰基碳留在链内，仅 O 作 oxo/formyl 前缀，由 L3 锚定叶识别。
 
 
-def _arbitrate_parts(mol: Mol, parts: dict) -> dict:
-    """P-41 主基团仲裁：已有更高优先级 FG 时，组合 FG 整组退出主基团；叶型降级（羧酸/腈）的条目转入 `demoted_<key>` 供 L2 排除出主链。"""
+def _arbitrate_parts(parts: dict) -> tuple[dict, frozenset[str]]:
+    """P-41 主基团仲裁：已有更高优先级 FG 时，组合 FG 整组退出主基团。叶型降级（羧酸/腈）的条目保留在清单中并标记 demoted（供 L2 排除出主链），其余组合 FG 整组清空。返回 (仲裁后 parts, 降级的 occurrence id 集)。"""
     p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
     present = {fg for fg, key in FG_PARTS_KEY.items() if parts.get(key)}
-    out = {**parts, **{f"demoted_{k}": [] for k in _LEAF_DEMOTED}}
+    out = dict(parts)
+    demoted: set[str] = set()
     for key, fg in _SUPPRESSIBLE.items():
         if out[key] and any(p41[h] < p41[fg] for h in present if h != fg):
             if key in _LEAF_DEMOTED:
-                out[f"demoted_{key}"] = out[key]
-            out[key] = []
-    return out
+                demoted |= {f"{key}:{i}" for i in range(len(out[key]))}
+            else:
+                out[key] = []
+    return out, frozenset(demoted)
 
 
-def _fg_parts(mol: Mol) -> dict:
-    """官能团条目->dict。仅有P41中官能团条目可在里面"""
-   
+def _detect_parts(mol: Mol) -> dict:
+    """检测（未仲裁）分子中各类官能团条目；键集由 fg_registry.FG_SPECS 的 list_key 派生，唯一事实来源。"""
     acyls = _acyl_entries(mol)
     heads = frozenset(e["center_idx"] for e in acyls)
-    result =  _arbitrate_parts(
-        mol, {"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
+    return {"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
         "esters": _ester_entries(mol), "amides": _amide_entries(mol),
         "ketones": _ketone_entries(mol), "radicals": _radical_entries(mol, heads),
         "acyls": acyls,
         "aldehydes": [e for e in _aldehyde_entries(mol) if e["center_idx"] not in heads],
         "amines": _amine_entries(mol),
-        "nitriles": _nitrile_entries(mol), "double_bonds": _double_bond_entries(mol),
-        "triple_bonds": _triple_bond_entries(mol), "acyl_chlorides": _acyl_chloride_entries(mol),
+        "nitriles": _nitrile_entries(mol),
+        "acyl_chlorides": _acyl_chloride_entries(mol),
         "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
-        "phosphates": phosphate_entries(mol)})
+        "phosphates": phosphate_entries(mol)}
 
-    return result
+
+def _fg_parts(mol: Mol) -> dict:
+    """官能团条目->dict。仅有P41中官能团条目可在里面"""
+    return _arbitrate_parts(_detect_parts(mol))[0]
 
 def _collect_fgs(mol: Mol) -> dict:
-    """聚合官能团列表并构建带类型清单（存在性由列表是否为空判定）。"""
+    """聚合官能团条目并构建带类型清单（单一 FG 出口：清单承载全部 FG 事实，存在性由清单内容判定；不饱和度独立于 FG 通道）。"""
     from namepredict.layer1.functional_group_inventory import build_inventory
 
-    lists = _fg_lists(_fg_parts(mol))
-    return {**lists, "fg_inventory": build_inventory(lists, mol)}
+    parts, demoted = _arbitrate_parts(_detect_parts(mol))
+    return {**_bond_lists(mol), "fg_inventory": build_inventory(parts, mol, demoted)}
 
 def _info(mol: Mol, carbons: list[int]) -> dict:
     """组装分子分析结果 dict（碳信息 + 官能团 + 环事实）。"""
@@ -521,6 +515,5 @@ def _info(mol: Mol, carbons: list[int]) -> dict:
 def analyze(mol: Mol) -> dict:
     """分析分子并返回完整的官能团与结构信息 dict。"""
     result = _info(mol, _carbon_ids(mol))
-    # print(result)
-    # print("\n\n\n")
+    print(result,"\n\n\n")
     return result

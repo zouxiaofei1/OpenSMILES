@@ -16,6 +16,7 @@ from __future__ import annotations
 import pytest
 
 from namepredict.layer1.analyzer import analyze
+from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG, occurrences_of
 from namepredict.layer2.candidates import _collect_candidates
 from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh
@@ -209,7 +210,7 @@ def test_tert_amine(smiles: str, en: str, zh: str | None) -> None:
 # ==========================================================================
 def test_quaternary_is_not_neutral_amine():
     info = analyze(Chem.MolFromSmiles("C[N+](C)(C)C"))
-    assert not info["amines"]
+    assert not occurrences_of(info, FG.AMINE)
 
 
 # ==========================================================================

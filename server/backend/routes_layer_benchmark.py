@@ -33,10 +33,6 @@ from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
 from rdkit import Chem
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer0.salt import dissociate_salt
-from namepredict.layer1.analyzer import analyze
-
 router = APIRouter(prefix="/api/v1", tags=["layer-benchmark"])
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -193,6 +189,9 @@ def _llm_truth_state(layer: int) -> dict[str, Any]:
 # ── real Layer0 ──────────────────────────────────────────────────
 
 def _real_l0(smiles: str) -> dict[str, Any]:
+    from namepredict.layer0.preprocessor import preprocess
+    from namepredict.layer0.salt import dissociate_salt
+
     mol = preprocess(smiles)
     if mol is None:
         return {"parseable": False}
@@ -268,6 +267,9 @@ _FG_KEY = {
 
 
 def _real_l1(smiles: str) -> dict[str, Any]:
+    from namepredict.layer0.preprocessor import preprocess
+    from namepredict.layer1.analyzer import analyze
+
     mol = preprocess(smiles)
     if mol is None:
         return {"parseable": False}

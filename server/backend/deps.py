@@ -3,14 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from namepredict.namer import SMILESNNamer
-from namepredict.types import NameResult
+if TYPE_CHECKING:
+    from namepredict.namer import SMILESNNamer
+    from namepredict.types import NameResult
 
 
-def get_namer() -> SMILESNNamer:
-    """Return a fresh SMILESNNamer (no stale process-wide singleton)."""
+def get_namer() -> "SMILESNNamer":
+    """Return a fresh SMILESNNamer (no stale process-wide singleton).
+
+    namepredict 延迟到调用时导入: src/ 编译失败只让本请求 500, 不会连 app 一起崩。
+    """
+    from namepredict.namer import SMILESNNamer
+
     return SMILESNNamer()
 
 

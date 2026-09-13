@@ -5,7 +5,7 @@ from collections import Counter, defaultdict
 
 from namepredict.constants import C, P145_SENIOR
 from namepredict.layer4.indicated_hydrogen import saturated_ring_atoms
-from namepredict.layer4.locant_key import locant_key
+from namepredict.layer4.locant_calc import locant_key
 
 INDICATED_H = object()  # sub_layers 里的哨兵层：P-25.3.3.1.2(f) 指示氢位次最小化，由 _fused_numbering 插在后缀层之后、取代基层之前（P-14.4：(c) 主特征基团先于 (f)）。
 

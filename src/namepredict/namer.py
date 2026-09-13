@@ -103,18 +103,27 @@ def _chain_set(parent: dict) -> set[int]:
 
 
 def _remap_attach(parent: dict, s: dict) -> dict:
-    """确保 attach_idx 位于母体链上，供 L4 orient 使用（环官能团连接）。"""
+    """确保 attach_idx 位于母体链上，供 L4 orient 使用（环官能团连接）：回落到环附着原子或单锚点 principal 官能团锚点。"""
     if s.get("o_side"):
         return s  # ester O 侧烷基：连接点保留在酯 O 上，不做链重映射
     chain = _chain_set(parent)
     attach = s.get("attach_idx")
     if attach in chain:
         return s
-    for key in ("ring_attach_idx", "amide_c_idx", "amine_c_idx", "ketone_c_idx", "oh_c_idx"):
-        alt = parent.get(key)
+    for alt in _remap_candidates(parent):
         if alt in chain:
             return {**s, "attach_idx": alt}
     return s
+
+
+def _remap_candidates(parent: dict) -> list[int]:
+    """可重挂的母体锚点：环附着原子优先，其次单锚点 principal 官能团的原锚点（与原单数字段契约一致）。"""
+    ring = parent.get("ring_attach_idx")
+    facts = parent.get("principal_expression_facts")
+    out = [ring] if ring is not None else []
+    if facts is not None and len(facts.anchor_atoms) == 1:
+        out.extend(sorted(facts.anchor_atoms))
+    return out
 
 _MAX_TIED_CANDIDATES = 4  # P-45.2.2 需要为每个并列候选各跑一次 L3–L5，上限防止组合爆炸（benchmark 中并列组多为 2–4 个）。
 

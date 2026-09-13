@@ -28,12 +28,13 @@ class FunctionalGroupClass(str, Enum):
 
 @dataclass(frozen=True)
 class FunctionalGroupOccurrence:
-    """单个官能团出现：id、类别、特征原子、母体锚点与附加负载。"""
+    """单个官能团出现：id、类别、特征原子、母体锚点、附加负载与 P-41 仲裁状态。"""
     id: str
     group_class: FunctionalGroupClass
     characteristic_atoms: frozenset[int]
     parent_anchors: frozenset[int]
     payload: dict
+    demoted: bool = False  # 被 P-41 仲裁降级为前缀叶（羧酸 carboxy / 腈 cyano，P-61.1.3）：不再作主基团候选，其碳排除出主链
 
 
 @dataclass(frozen=True)
@@ -42,8 +43,12 @@ class FunctionalGroupInventory:
     entries: tuple[FunctionalGroupOccurrence, ...]
 
     def occurrences(self, group_class: FunctionalGroupClass) -> tuple[FunctionalGroupOccurrence, ...]:
-        """返回给定官能团类的全部出现。"""
-        return tuple(e for e in self.entries if e.group_class == group_class)
+        """返回给定官能团类的全部出现（不含被 P-41 仲裁降级的叶条目）。"""
+        return tuple(e for e in self.entries if e.group_class == group_class and not e.demoted)
+
+    def demoted_entries(self) -> tuple[FunctionalGroupOccurrence, ...]:
+        """返回被 P-41 仲裁降级为前缀叶的全部条目。"""
+        return tuple(e for e in self.entries if e.demoted)
 
 _LIST_CLASSES = {sp.list_key: FunctionalGroupClass(sp.fg) for sp in FG_SPECS}  # FG 类别注册唯一事实来源在 fg_registry.FG_SPECS；此处派生，不再逐条手写。
 
@@ -99,21 +104,29 @@ def _characteristic_atoms(group_class: FunctionalGroupClass, mol, payload: dict)
     return center_surr_atoms(payload)
 
 
-def _one(key: str, index: int, payload: dict, mol) -> FunctionalGroupOccurrence:
+def _one(key: str, index: int, payload: dict, mol, demoted: bool = False) -> FunctionalGroupOccurrence:
     """将单条官能团 dict 组装为带类型的出现。"""
     group_class = _LIST_CLASSES[key]
     anchors = _indices(payload, _ANCHOR_KEYS.get(group_class, ()))
     return FunctionalGroupOccurrence(f"{key}:{index}", group_class,
-                                     _characteristic_atoms(group_class, mol, payload), anchors, payload)
+                                     _characteristic_atoms(group_class, mol, payload), anchors, payload, demoted)
 
 
-def build_inventory(lists: dict, mol=None) -> FunctionalGroupInventory:
-    """由官能团列表构建带类型的 FunctionalGroupInventory（mol 供特征原子函数查键型）。"""
-    entries = tuple(_one(key, i, item, mol) for key in _LIST_CLASSES for i, item in enumerate(lists.get(key) or ()))
+def build_inventory(lists: dict, mol=None, demoted: frozenset[str] = frozenset()) -> FunctionalGroupInventory:
+    """由官能团列表构建带类型的 FunctionalGroupInventory（mol 供特征原子函数查键型，demoted 给出被 P-41 仲裁降级的 occurrence id）。"""
+    entries = tuple(_one(key, i, item, mol, f"{key}:{i}" in demoted)
+                    for key in _LIST_CLASSES for i, item in enumerate(lists.get(key) or ()))
     return FunctionalGroupInventory(entries)
 
 
+def occurrences_of(info: dict, group_class: FunctionalGroupClass) -> tuple[FunctionalGroupOccurrence, ...]:
+    """取分析信息中某类官能团的全部出现（等价 inventory_from_info(info).occurrences(cls)）。"""
+    return inventory_from_info(info).occurrences(group_class)
+
+
 def inventory_from_info(info: dict) -> FunctionalGroupInventory:
-    """从分析信息中取出清单，缺失时回退构建。"""
+    """从分析信息中取出清单；缺失即上游违反 L1 出口契约，显式失败而非静默退化成空清单。"""
     inventory = info.get("fg_inventory")
-    return inventory if isinstance(inventory, FunctionalGroupInventory) else build_inventory(info)
+    if not isinstance(inventory, FunctionalGroupInventory):
+        raise KeyError("info 缺少 fg_inventory：L1 出口只以 FunctionalGroupInventory 承载官能团事实")
+    return inventory

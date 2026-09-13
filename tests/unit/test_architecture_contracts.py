@@ -25,8 +25,19 @@ import pytest
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
+from namepredict.layer1.fg_registry import FG_SPECS
+from namepredict.layer1.functional_group_inventory import (
+    FunctionalGroupClass as FG,
+    FunctionalGroupInventory,
+    occurrences_of,
+)
 from namepredict.layer2.candidates import _collect_candidates
 from namepredict.layer2.parent_ownership import finalize_parent_ownership
+from namepredict.layer2.principal_expression import (
+    PrincipalChargeState,
+    PrincipalExpressionFacts,
+    PrincipalRelation,
+)
 from namepredict.layer2.parent_selector import select_parent
 from namepredict.layer2.ring_scaffold import all_specs
 from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot, claim_block, iter_claims
@@ -126,6 +137,52 @@ def test_alkyl_acid_negative_not_benzene() -> None:
     assert normalize_en(r.en) == "propanoic acid"
     assert "benzoic" not in normalize_en(r.en)
     assert "苯" not in normalize_zh(r.zh)
+
+
+# ==========================================================================
+# IUPAC: P-41 / L1 官能团单一格式契约
+# Layer: L1,L2
+#
+# analyze() 只以 FunctionalGroupInventory 承载官能团事实：不再并行回写扁平 FG list
+# （旧格式缺类别/特征原子，且与清单不等价——demoted_* 只在旧格式里）。
+# _fg_parts 只承载 P-41 官能团条目；双键/三键是不饱和度事实，走独立通道。
+# ==========================================================================
+l1_fg_single_format__FG_KEYS = frozenset(sp.list_key for sp in FG_SPECS)
+
+
+def test_info_carries_inventory_and_no_flat_fg_lists() -> None:
+    """info 只有 fg_inventory，没有扁平 FG list 键（含 demoted_*）。"""
+    info = analyze(Chem.MolFromSmiles("OC(=O)CC#N"))
+    assert isinstance(info["fg_inventory"], FunctionalGroupInventory)
+    assert not l1_fg_single_format__FG_KEYS & set(info), l1_fg_single_format__FG_KEYS & set(info)
+    assert not [key for key in info if key.startswith("demoted_")]
+
+
+def test_unsaturation_stays_out_of_fg_channel() -> None:
+    """双键/三键在 info 顶层，但不进 _fg_parts。"""
+    from namepredict.layer1.analyzer import _fg_parts
+
+    smiles = "C=CC#C"
+    info = analyze(Chem.MolFromSmiles(smiles))
+    assert info["double_bonds"] and info["triple_bonds"]
+    assert set(_fg_parts(Chem.MolFromSmiles(smiles))) <= l1_fg_single_format__FG_KEYS
+
+
+def test_demoted_leaf_survives_in_inventory_not_in_flat_lists() -> None:
+    """腈被羧酸压制时：条目以 demoted 状态留在清单中，且不再是主基团候选。"""
+    info = analyze(Chem.MolFromSmiles("N#CCC(=O)O"))
+    nitriles = occurrences_of(info, FG.NITRILE)
+    assert nitriles == ()  # occurrences() 只返回未降级条目
+    assert [o.group_class for o in info["fg_inventory"].demoted_entries()] == [FG.NITRILE]
+    assert info["fg_inventory"].demoted_entries()[0].payload["center_idx"] is not None
+
+
+def test_inventory_missing_is_explicit_failure() -> None:
+    """缺 fg_inventory 即上游违约：显式报错，不静默退化成空清单。"""
+    from namepredict.layer1.functional_group_inventory import inventory_from_info
+
+    with pytest.raises(KeyError, match="fg_inventory"):
+        inventory_from_info({"mol": Chem.MolFromSmiles("CC")})
 
 
 # ==========================================================================
@@ -665,7 +722,7 @@ def test_benzamide_owns_core_not_n_phenyl():
     owned = parent["owned_atoms"]
     assert isinstance(owned, frozenset)
 
-    am = info["amides"][0]
+    am = occurrences_of(info, FG.AMIDE)[0].payload
     n_idx = next(i for i in am["surr_idx"] if mol.GetAtomWithIdx(i).GetAtomicNum() == 7)
     assert am["center_idx"] in owned
     assert n_idx in owned
@@ -693,7 +750,9 @@ def test_acid_owns_carboxyl_c_and_both_oxygens():
     owned = parent["owned_atoms"]
     assert isinstance(owned, frozenset)
 
-    c_idx = parent["cooh_c_idx"]
+    anchors = parent["principal_expression_facts"].anchor_atoms
+    assert len(anchors) == 1
+    c_idx = next(iter(anchors))
     assert c_idx in owned
     oxygens = [
         n.GetIdx()
@@ -749,12 +808,7 @@ def test_select_parent_returns_finalized_tied_group():
 def test_finalize_copies_once_with_owned_atoms():
     """finalize_parent_ownership copies candidate once with owned_atoms frozenset."""
     mol, info = parent_ownership___info("CC(=O)O")
-    raw = {
-        "chain": [0, 1],
-        "n_carbons": 2,
-        "kind": "acid",
-        "cooh_c_idx": 1,
-    }
+    raw = {k: v for k, v in select_parent(info)[0].items() if k != "owned_atoms"}
     fin = finalize_parent_ownership(raw, mol)
     assert fin is not raw
     assert "owned_atoms" not in raw
@@ -983,48 +1037,99 @@ def test_merge_alken_parent_kind_sat(
 # Layer: L4
 #
 # fg_locants 稀疏产出契约: principal FG 位次为结构化列表 [{kind, locants, omit}],
-# 只产实际存在的 FG; 烯/炔不进列表(扁平字段独立); cooh 不产(死字段).
+# 位次一律取自 principal_expression_facts 的锚点(单一格式, 不再读扁平 *_c_idx 字段);
+# 烯/炔不进列表(不饱和度独立); 非 principal 类不产记录.
 # ==========================================================================
+def fg_locants_records___oriented(kind: str, chain: list, anchors: list, group) -> dict:
+    """构造只填锚点的 oriented dict（principal 位次记录的唯一输入）。"""
+    facts = PrincipalExpressionFacts(
+        group_class=group, multiplicity=len(anchors), relation=PrincipalRelation.IN_SKELETON,
+        occurrence_ids=(), characteristic_atoms=frozenset(), anchor_atoms=frozenset(anchors),
+        attachment_atoms=frozenset(anchors), charge_state=PrincipalChargeState.NEUTRAL)
+    return {"kind": kind, "n_carbons": len(chain), "chain": list(chain),
+            "principal_expression_facts": facts}
+
+
 def test_single_alcohol_record():
-    fg = _fg_locants({"kind": "alcohol", "n_carbons": 4, "chain": [0, 1, 2, 3],
-                      "oh_c_idx": 1, "oh_c_idxs": [1]})
+    fg = _fg_locants(fg_locants_records___oriented("alcohol", [0, 1, 2, 3], [1], FG.ALCOHOL))
     assert fg == [{"kind": "oh", "locants": [2], "omit": False}]
 
 
 def test_methanol_omit_flag():
-    fg = _fg_locants({"kind": "alcohol", "n_carbons": 1, "chain": [0],
-                      "oh_c_idx": 0, "oh_c_idxs": [0]})
+    fg = _fg_locants(fg_locants_records___oriented("alcohol", [0], [0], FG.ALCOHOL))
     assert fg == [{"kind": "oh", "locants": [1], "omit": True}]
 
 
 def test_diol_single_oh_record_multi_locants():
-    fg = _fg_locants({"kind": "alcohol", "n_carbons": 7, "chain": [9, 8, 6, 5, 3, 1, 0],
-                      "oh_c_idxs": [1, 9]})
+    fg = _fg_locants(fg_locants_records___oriented("alcohol", [9, 8, 6, 5, 3, 1, 0], [1, 9], FG.ALCOHOL))
     assert fg == [{"kind": "oh", "locants": [1, 6], "omit": False}]
 
 
 def test_ketone_record():
-    fg = _fg_locants({"kind": "ketone", "n_carbons": 4, "chain": [0, 1, 2, 3],
-                      "ketone_c_idx": 1, "ketone_c_idxs": [1]})
+    fg = _fg_locants(fg_locants_records___oriented("ketone", [0, 1, 2, 3], [1], FG.KETONE))
     assert fg == [{"kind": "ketone", "locants": [2], "omit": False}]
 
 
 def test_dione_single_record():
-    fg = _fg_locants({"kind": "ketone", "n_carbons": 4, "chain": [0, 1, 2, 3],
-                      "ketone_c_idxs": [1, 3]})
+    fg = _fg_locants(fg_locants_records___oriented("ketone", [0, 1, 2, 3], [1, 3], FG.KETONE))
     assert fg == [{"kind": "ketone", "locants": [2, 4], "omit": False}]
 
 
 def test_amine_record():
-    fg = _fg_locants({"kind": "amine", "n_carbons": 4, "chain": [0, 1, 2, 3],
-                      "amine_c_idx": 1, "amine_c_idxs": [1]})
+    fg = _fg_locants(fg_locants_records___oriented("amine", [0, 1, 2, 3], [1], FG.AMINE))
     assert fg == [{"kind": "amine", "locants": [2], "omit": False}]
 
 
-def test_acid_produces_no_record():
-    """cooh 是死字段: 单/多酸位次隐含, 不产记录."""
-    assert _fg_locants({"kind": "acid", "n_carbons": 5, "chain": [0, 1, 2, 3, 4],
-                        "cooh_c_idx": 4, "cooh_c_idxs": [4]}) == []
+def test_thiol_record():
+    fg = _fg_locants(fg_locants_records___oriented("thiol", [0, 1, 2, 3], [1], FG.THIOL))
+    assert fg == [{"kind": "sh", "locants": [2], "omit": False}]
+
+
+def test_records_are_sparse_only_principal_kind():
+    """稀疏产出：只产实际存在的 principal 类记录，不夹带同锚点的其它 kind。"""
+    records = _fg_locants(fg_locants_records___oriented("alcohol", [0, 1, 2, 3], [1], FG.ALCOHOL))
+    assert [r["kind"] for r in records] == ["oh"]
+
+
+def test_ring_exocyclic_single_fg_produces_one_record():
+    """环上单个环外主官能团只产所属类别一条记录：曾因无 gate 的 ring_attach_idx 兜底，给酸/酯/酰胺/腈/醛/酰基六类各产一条同锚点记录。"""
+    for smiles, kind in [("O=Cc1ccccc1", "aldehyde"), ("c1ccccc1C(=O)O", "acid")]:
+        mol = preprocess(smiles)
+        info = analyze(mol)
+        parent = select_parent(info)[0]
+        numbered = number(parent, extract_substituents(info, parent))
+        kinds = [r["kind"] for r in numbered.get("fg_locants") or []]
+        assert kinds == [kind], f"{smiles}: {kinds}"
+
+
+l4_locant_calc___BANNED_FIELDS = frozenset({
+    "oh_c_idx", "oh_c_idxs", "amine_c_idx", "amine_c_idxs", "ketone_c_idx", "ketone_c_idxs",
+    "sh_c_idx", "sh_c_idxs", "cooh_c_idx", "cooh_c_idxs", "ester_c_idx", "ester_c_idxs",
+    "amide_c_idx", "amide_c_idxs", "nitrile_c_idx", "nitrile_c_idxs", "aldehyde_c_idx",
+    "aldehyde_c_idxs", "acyl_c_idx", "acyl_c_idxs", "radical_c_idx", "radical_c_idxs",
+    "ring_attach_idx", "principal_attachment_atoms",
+})
+
+
+def l4_locant_calc___dict_keys(tree: ast.AST) -> set:
+    """源码中按字符串键取值的位置（下标与 .get 参数），不看注释/docstring。"""
+    keys = {node.slice.value for node in ast.walk(tree)
+            if isinstance(node, ast.Subscript) and isinstance(node.slice, ast.Constant)}
+    keys |= {arg.value for node in ast.walk(tree)
+             if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+             and node.func.attr == "get"
+             for arg in node.args if isinstance(arg, ast.Constant)}
+    return keys
+
+
+def test_locant_calc_reads_no_flat_anchor_fields():
+    """位次原子唯一来源是 principal_expression_facts：locant_calc 不得按键读扁平锚点字段，也不得持有 per-class 函数表。"""
+    path = Path(__file__).parents[2] / "src" / "namepredict" / "layer4" / "locant_calc.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    assert not (l4_locant_calc___dict_keys(tree) & l4_locant_calc___BANNED_FIELDS)
+    assigned = {target.id for node in tree.body if isinstance(node, ast.Assign)
+                for target in node.targets if isinstance(target, ast.Name)}
+    assert "_LOCANT_FNS" not in assigned
 
 
 def test_unsaturation_stays_out_of_records():

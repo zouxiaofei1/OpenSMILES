@@ -6,7 +6,7 @@ from namepredict.constants import (
 )
 from namepredict.tools import memo
 from namepredict.layer1.ring_systems import sssr_rings
-from namepredict.layer4.locant_key import locant_key
+from namepredict.layer4.locant_calc import locant_key
 
 
 # ── 候选生成 ──────────────────────────────────────────────────
@@ -138,15 +138,8 @@ def _rs_locant_key(codes: dict[int, str], chain: list[int], labels: list[str] | 
 
 def _principal_atoms(parent: dict) -> list[int]:
     """P-14.4(c)：principal characteristic group 的附着原子。"""
-    atoms = parent.get("principal_attachment_atoms")
-    if atoms:
-        return list(atoms)
     facts = parent.get("principal_expression_facts")
-    if facts is not None:
-        attach = getattr(facts, "attachment_atoms", None)
-        if attach:
-            return sorted(attach)
-    return []
+    return sorted(facts.attachment_atoms) if facts is not None and facts.attachment_atoms else []
 
 
 def _unsat_bonds(parent: dict) -> tuple[list, list]:
@@ -237,7 +230,7 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
     if len(chains) == 1:
         return chains[0]
     from namepredict.layer2.ring_scaffold import _STANDARD_LABELS
-    from namepredict.layer4.locant_key import locant_key
+    from namepredict.layer4.locant_calc import locant_key
     suffixes = [a for a in _principal_atoms(parent) if a in chain]  # P-14.4(c)：principal 特征基团与自由价的附着原子得最低位次（醛/酸/酚等无 L3 取代基时唯一的方向判据，如 piperonal 取 1,3-benzodioxole-5- 而非 -6-）
     if parent.get("radical_c_idx") in chain:  # 自由基主基团：自由价连接点（radical_c_idx）与 principal 同属 (c) 后缀类，最低化到 locant 1，避免咔唑类对称 scaffold 取镜像首方向把自由价标成 8（应 1）
         suffixes.append(parent["radical_c_idx"])
@@ -302,8 +295,7 @@ def _fused_numbering(parent: dict, chain: list[int],
     radical = parent.get("radical_c_idx")
     if radical in chain_set:
         layers.append([radical])  # P-29: 取代基游离价连接点优先得最低位次
-    principal_atoms = sorted(a for a in (parent.get("principal_attachment_atoms") or [])
-                             if a in chain_set)
+    principal_atoms = [a for a in _principal_atoms(parent) if a in chain_set]
     if principal_atoms:
         layers.append(principal_atoms)  # P-14.4(c): principal 特征基团优先于取代基
     from namepredict.layer4.fused_numbering import INDICATED_H

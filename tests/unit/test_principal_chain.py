@@ -25,7 +25,13 @@ from namepredict.layer2.kind_registry import pack_parent_stem
 from namepredict.layer2.parent_candidate import from_parent_dict, principal_contract_kind
 from namepredict.layer2.parent_selector import select_parent
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, keep_p44_2, keep_p44_4_unsaturation
-from namepredict.layer2.principal_expression import express_chain_principal
+from namepredict.layer2.principal_expression import (
+    PrincipalChargeState,
+    PrincipalExpressionFacts,
+    PrincipalRelation,
+    express_chain_principal,
+)
+from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.principal_parent import rule_driven_parent_candidates, select_principal_parent_skeletons
 from namepredict.layer2.scoring import _score_parent
 from namepredict.layer4.candidate_keys import prefix_locant_set, suffix_locant_set
@@ -154,15 +160,18 @@ def principal_chain_fg___chain_parent(smiles: str, kind: str):
     return None
 
 
-def test_chain_amide_aldehyde_nitrile_fields():
-    for smiles, kind, key in [
-        ("CC=CC(=O)N", "amide", "amide_c_idx"),
-        ("CC=CC=O", "aldehyde", "aldehyde_c_idx"),
-        ("CC=CC#N", "nitrile", "nitrile_c_idx"),
+def test_chain_amide_aldehyde_nitrile_typed_anchors():
+    """链式酰胺/醛/腈的 principal 锚点由 typed facts 承载（单一格式，不再平行写扁平 *_c_idx）。"""
+    for smiles, kind in [
+        ("CC=CC(=O)N", "amide"),
+        ("CC=CC=O", "aldehyde"),
+        ("CC=CC#N", "nitrile"),
     ]:
         p = principal_chain_fg___chain_parent(smiles, kind)
         assert p is not None, f"{smiles} 无 {kind} 表达候选"
-        assert p[key] is not None, f"{smiles} 缺单数 {key}"
+        facts = p["principal_expression_facts"]
+        assert facts.group_class.value == kind
+        assert facts.anchor_atoms, f"{smiles} 缺 principal 锚点"
         assert p["n_carbons"] == 4
         assert isinstance(p["double_bond"], tuple), f"{smiles} 缺 double_bond"
 
@@ -372,9 +381,18 @@ def test_prefix_locant_set_ignores_locantless_prefixes():
     assert prefix_locant_set({}) == ()
 
 
+def p45_candidate_ladder___facts(attachment: set) -> PrincipalExpressionFacts:
+    """构造只填附着原子的 principal facts，供 suffix_locant_set 纯函数测试。"""
+    return PrincipalExpressionFacts(
+        group_class=FunctionalGroupClass.ALCOHOL, multiplicity=len(attachment),
+        relation=PrincipalRelation.IN_SKELETON, occurrence_ids=(),
+        characteristic_atoms=frozenset(), anchor_atoms=frozenset(attachment),
+        attachment_atoms=frozenset(attachment), charge_state=PrincipalChargeState.NEUTRAL)
+
+
 def test_suffix_locant_set_uses_principal_attachment_atoms():
     """P-44.1.1 键取 principal 特征基团附着原子的链上位次，升序去重前保留重复。"""
-    numbered = {"parent": {"chain": [10, 11, 12], "principal_attachment_atoms": [12, 10]}}
+    numbered = {"parent": {"chain": [10, 11, 12], "principal_expression_facts": p45_candidate_ladder___facts({12, 10})}}
     assert suffix_locant_set(numbered) == ((1, ""), (3, ""))
     assert suffix_locant_set({"parent": {"chain": [1, 2]}}) == ()
 
@@ -483,7 +501,7 @@ def test_ring_principal_uses_base_scaffold_kind(smiles, kind, group_class):
     parents = _collect_candidates(analyze(Chem.MolFromSmiles(smiles)))
     matched = [parent for parent in parents if parent.get("kind") == kind]
     assert matched
-    assert matched[0]["principal_group_class"] == group_class
+    assert matched[0]["principal_expression_facts"].group_class.value == group_class
     assert "carboxylic" not in matched[0]["kind"]
     assert "carbonitrile" not in matched[0]["kind"]
 

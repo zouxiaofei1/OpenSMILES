@@ -11,6 +11,7 @@ from __future__ import annotations
 import pytest
 
 from namepredict.layer1.analyzer import analyze
+from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG, occurrences_of
 from namepredict.layer2.candidates import _collect_candidates
 from namepredict.layer2.principal_expression import PrincipalChargeState, PrincipalRelation, express_chain_principal
 from namepredict.layer2.principal_parent import select_principal_parent_skeletons
@@ -107,13 +108,14 @@ def p62_primary_polyamine_principal_expression_facts___typed_parent(smiles, kind
 
 @pytest.mark.parametrize("smiles,kind,count,en,zh", p62_primary_polyamine_principal_expression_facts__CASES)
 def test_primary_polyamine_typed_facts_and_names(smiles, kind, count, en, zh):
+    info = analyze(Chem.MolFromSmiles(smiles))
     facts = p62_primary_polyamine_principal_expression_facts___typed_parent(smiles, kind, count)["principal_expression_facts"]
     assert facts.group_class.value == "amine"
     assert facts.multiplicity == count
     assert facts.relation is PrincipalRelation.IN_SKELETON
     assert len(facts.occurrence_ids) == count
     assert len(facts.attachment_atoms) == count
-    expected = {c for a in analyze(Chem.MolFromSmiles(smiles))["amines"] for c in a["surr_idx"]}
+    expected = {a for o in occurrences_of(info, FG.AMINE) for a in o.parent_anchors}
     assert set(facts.attachment_atoms) == expected
     assert facts.charge_state is PrincipalChargeState.NEUTRAL
     result = SMILESNNamer().name(smiles)

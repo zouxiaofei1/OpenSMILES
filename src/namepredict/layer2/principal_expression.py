@@ -32,13 +32,14 @@ class PrincipalChargeState(str, Enum):
 
 @dataclass(frozen=True)
 class PrincipalExpressionFacts:
-    """主基团表达事实：类别、个数、与骨架关系、特征/附着原子集与电荷态。"""
+    """主基团表达事实：类别、个数、与骨架关系、特征/锚点/附着原子集与电荷态。"""
     group_class: FunctionalGroupClass
     multiplicity: int
     relation: PrincipalRelation
     occurrence_ids: tuple[str, ...]
     characteristic_atoms: frozenset[int]
-    attachment_atoms: frozenset[int]
+    anchor_atoms: frozenset[int]  # 官能团原锚点（occurrence.parent_anchors）：L4 位次以它为基准
+    attachment_atoms: frozenset[int]  # 骨架内附着原子：骨架外的锚点取其骨架内邻居（exocyclic）
     charge_state: PrincipalChargeState
 
 _CHAIN_FG = frozenset(FunctionalGroupClass(v) for v in _fg_reg.chain_fgs())  # 链式主官能团：kind 恒为 FG 类别名；acid/alcohol/amine/ketone 任意数量恒用基团名，其余链 FG 仅单基。链/数量集合由 fg_registry 的 chain/multi 标志派生（唯一事实来源）。
@@ -49,6 +50,16 @@ def _anchor_fields(group_class: FunctionalGroupClass) -> tuple[str, str] | None:
         return "none_c_idx", "none_c_idxs"
     spec = feature_spec(group_class)
     return spec.anchor_fields if spec else None
+
+
+_SEMANTIC_ANCHOR_FGS = frozenset({FunctionalGroupClass.RADICAL, FunctionalGroupClass.ACYL})  # 位次不由 L4 位次记录承载、而由 P-14.4(a) 固定 locant 1 规则（constants.FIXED_START_KEYS）直接读 parent 字段的基团类。其余 FG 类别的锚点只经 principal_expression_facts 流转，不再平行写扁平字段。
+
+
+def _semantic_anchor_fields(group_class: FunctionalGroupClass, anchors: list[int]) -> dict:
+    """P-14.4(a) 固定 locant 1 锚点的显式字段（radical_c_idx / acyl_c_idx）：仅单锚点写单数字段，与下游 FIXED_START_KEYS 契约一致。"""
+    if group_class not in _SEMANTIC_ANCHOR_FGS or len(anchors) != 1:
+        return {}
+    return {_anchor_fields(group_class)[0]: anchors[0]}
 
 
 def _covered(selection: PrincipalGroupSelection, skeleton: ParentSkeleton):
@@ -70,12 +81,6 @@ def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
     if group_class not in _MULTI_FG and count != 1:
         return None
     return group_class.value if count >= 1 else None
-
-
-def _principal_fields(group_class: FunctionalGroupClass, anchors: list[int]) -> dict:
-    """按锚点数填单/复数 anchor 字段。"""
-    single, plural = _anchor_fields(group_class)
-    return {single: anchors[0], plural: anchors} if len(anchors) == 1 else {plural: anchors}
 
 
 def _is_anion_occurrence(occurrence, mol) -> bool:
@@ -112,12 +117,13 @@ def _skeletal_attachments(mol, skeleton, occurrences) -> frozenset[int]:
 
 
 def _facts(selection, skeleton, occurrences, mol=None) -> PrincipalExpressionFacts:
-    """汇总主基团表达式 facts（关系/附着/电荷）。"""
+    """汇总主基团表达式 facts（关系/锚点/附着/电荷）。"""
     characteristic = frozenset(i for o in occurrences for i in o.characteristic_atoms)
     relation = PrincipalRelation.IN_SKELETON if characteristic & set(skeleton.atom_ids) else PrincipalRelation.EXOCYCLIC
+    anchors = frozenset(i for o in occurrences for i in o.parent_anchors)
     attachment = _skeletal_attachments(mol, skeleton, occurrences)
     return PrincipalExpressionFacts(selection.group_class, len(occurrences), relation,
-                                    tuple(o.id for o in occurrences), characteristic, attachment,
+                                    tuple(o.id for o in occurrences), characteristic, anchors, attachment,
                                     _charge_state(occurrences, mol))
 
 
@@ -183,26 +189,20 @@ def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentS
 
 
 def _ring_fields(selection: PrincipalGroupSelection, occurrences) -> dict:
-    """构造环主基团的 anchor/特征原子字段。"""
-    anchors = _anchors(occurrences)
-    fields = _principal_fields(selection.group_class, anchors) if _anchor_fields(selection.group_class) else {}
-    characteristic = sorted({i for o in occurrences for i in o.characteristic_atoms})
-    return {**fields, "principal_characteristic_atoms": characteristic,
-            "principal_attachment_atoms": anchors,
-            "principal_group_class": selection.group_class.value}
+    """构造环主基团的固定 locant 1 锚点字段（其余锚点/特征原子经 principal_expression_facts 流转）。"""
+    return _semantic_anchor_fields(selection.group_class, _anchors(occurrences))
 
 
 def _ring_fact_fields(fields: dict, facts: PrincipalExpressionFacts) -> dict:
-    """合并附着原子字段，单附着酸/酯/酰胺/腈加 ring_attach_idx。"""
+    """单附着酸/酯/酰胺/腈/醛/酰基加 ring_attach_idx：环外羰基的位次落在环附着原子上。"""
     attachments = sorted(facts.attachment_atoms)
-    extra = {"principal_attachment_atoms": attachments}
     if len(attachments) == 1 and facts.group_class in (
         FunctionalGroupClass.ACID, FunctionalGroupClass.ESTER,
         FunctionalGroupClass.AMIDE, FunctionalGroupClass.NITRILE,
         FunctionalGroupClass.ALDEHYDE, FunctionalGroupClass.ACYL,
     ):
-        extra["ring_attach_idx"] = attachments[0]  # ACYL：exocyclic 酰基头（苯甲酰/furan-2-carbonyl）的环附着原子位次，供 L4 在 locant_calc 计算 -carbonyl/benzoyl 词形所需 locant。
-    return {**fields, **extra}
+        return {**fields, "ring_attach_idx": attachments[0]}  # ACYL：exocyclic 酰基头（苯甲酰/furan-2-carbonyl）的环附着原子位次，供 L4 在 locant_calc 计算 -carbonyl/benzoyl 词形所需 locant。
+    return fields
 
 
 def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=None) -> dict:
@@ -247,10 +247,9 @@ def _ester_o_idx(mol, e: dict) -> int | None:
                  if n.GetAtomicNum() == O and _alkoxy_c_of(n, center) is not None), None)
 
 
-def ester_fields(info: dict, fields: dict) -> dict:
-    """取首个酯的 o_idx 并写入酯字段（alkoxy_n 恒 0）。"""
-    e = info["esters"][0]
-    o_idx = _ester_o_idx(info["mol"], e)
+def ester_fields(info: dict, occurrences, fields: dict) -> dict:
+    """取首个酯 occurrence 的 o_idx 并写入酯字段（alkoxy_n 恒 0）。"""
+    o_idx = _ester_o_idx(info["mol"], occurrences[0].payload)
     return {**fields, "o_idx": o_idx, "alkoxy_n": 0} if o_idx is not None else fields
 
 
@@ -274,7 +273,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     if facts.group_class is FunctionalGroupClass.ACID:
         fields = {**fields, **_expression_flags(selection, occurrences, info.get("mol"))}  # 环酸全阴离子补 anion 标志（链酸经 _chain_fields→_expression_flags 已设）；L5 据此转 -ate/-酸根，并让金属盐前缀（sodium …）能命中。
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
-        fields = ester_fields(info, fields)
+        fields = ester_fields(info, occurrences, fields)
     if facts.group_class is FunctionalGroupClass.ACYL_HALIDE and facts.multiplicity == 1:
         fields = _chain_acyl_halide_fields(info, occurrences, fields)  # 环外酰卤（苯甲酰卤等）同样要卤素字段：hal_z 供 L5 选氟氯溴碘后缀，hal_idx 纳入母体原子。
     return _parent_dict(kind, skeleton, occurrences, fields, facts, selection.occurrences)
@@ -282,8 +281,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
 
 def _chain_fields(selection, occurrences, mol) -> dict:
     """构造链主基团的 anchor 与表达标志字段。"""
-    anchors = _anchors(occurrences)
-    return {**_principal_fields(selection.group_class, anchors),
+    return {**_semantic_anchor_fields(selection.group_class, _anchors(occurrences)),
             **_expression_flags(selection, occurrences, mol)}
 
 
@@ -365,11 +363,7 @@ def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
     """L5 酯命名的酯烷氧基侧字段：o_idx 供 o_side 识别（多酯取任一酯的桥 O，仅作标记，醚所有权按 kind 门控不消费）；仅严格线性给 alkoxy_n 保留名。"""
     if not occurrences:
         return fields
-    match = next((e for e in (info.get("esters") or [])
-                  if e["center_idx"] in occurrences[0].characteristic_atoms), None)
-    if match is None:
-        return fields
-    o_idx = _ester_o_idx(info["mol"], match)
+    o_idx = _ester_o_idx(info["mol"], occurrences[0].payload)
     if o_idx is None:
         return fields
     if len(occurrences) == 1:
@@ -440,11 +434,10 @@ def _chain_acyl_halide_fields(info: dict, occurrences, fields: dict) -> dict:
     if len(occurrences) != 1:
         return fields
     mol = info.get("mol")
-    match = next((e for e in (info.get("acyl_chlorides") or [])
-                  if e["center_idx"] in occurrences[0].characteristic_atoms), None)
-    if match is None or mol is None:
+    if mol is None:
         return fields
-    hal = next((i for i in match["surr_idx"] if mol.GetAtomWithIdx(i).GetAtomicNum() in HALO_Z), None)
+    hal = next((i for i in occurrences[0].payload["surr_idx"]
+                if mol.GetAtomWithIdx(i).GetAtomicNum() in HALO_Z), None)
     if hal is None:
         return fields
     return {**fields, "hal_idx": hal, "hal_z": mol.GetAtomWithIdx(hal).GetAtomicNum()}

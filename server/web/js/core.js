@@ -1,6 +1,7 @@
 /* ChemAgent Namer — shared core: API endpoints, global state, DOM/HTTP helpers.
    All feature modules import from here; nothing in core imports back. */
 export const API = {
+  health: "/health",
   name: "/api/v1/name",
   resolveName: "/api/v1/name/resolve",
   pubchemIupac: "/api/v1/name/pubchem-iupac",
@@ -100,4 +101,39 @@ export async function api(url, opts) {
   }
   if (res.status === 204) return null;
   return res.json();
+}
+
+/* ---------- 后端健康横幅 ---------- */
+
+const HEALTH_RECHECK_MS = 3000; // 异常期间的重试间隔；正常时不再轮询
+let healthTimer = null;
+
+/* 探测 /health 并反映到顶部横幅：连不上的服务、编译不过的 src 都直接说出来，
+   而不是让用户对着一个没反应的页面猜。异常期间每 3s 重试，恢复后自动收起。 */
+export async function checkBackendHealth() {
+  const el = $("backend-banner");
+  const text = $("backend-banner-text");
+  if (!el || !text) return;
+  let msg = "";
+  let kind = "";
+  try {
+    const res = await fetch(API.health, { cache: "no-store" });
+    const j = await res.json();
+    if (j.src === "broken") {
+      kind = "is-degraded";
+      msg = "src/ 编译失败，命名接口不可用：" + (j.src_error || "导入 namepredict 出错");
+    }
+  } catch (_) {
+    kind = "is-down";
+    msg = "后端未启动或已断开（" + API.health + "）：页面数据无法加载";
+  }
+  if (healthTimer) {
+    clearTimeout(healthTimer);
+    healthTimer = null;
+  }
+  el.hidden = !msg;
+  el.classList.toggle("is-degraded", kind === "is-degraded");
+  el.classList.toggle("is-down", kind === "is-down");
+  text.textContent = msg;
+  if (msg) healthTimer = setTimeout(checkBackendHealth, HEALTH_RECHECK_MS);
 }

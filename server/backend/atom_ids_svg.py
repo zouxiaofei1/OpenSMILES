@@ -6,8 +6,6 @@ from typing import Any
 from rdkit.Chem import AllChem
 from rdkit.Chem.Draw import rdMolDraw2D
 
-from namepredict.layer0.preprocessor import preprocess
-
 # 原子索引红色、SSSR 环徽章蓝色,白底 SVG 上可读。
 _ATOM_FILL = "#ef4444"
 _RING_FILL = "#0284c7"
@@ -61,7 +59,12 @@ def _draw_with_ids(mol) -> str:
 
 
 def build_atom_ids_svg(smiles: str) -> dict[str, Any] | None:
-    """SMILES → 标注原子/环索引的结构图 SVG;任何失败返回 None。"""
+    """SMILES → 标注原子/环索引的结构图 SVG;任何失败返回 None。
+
+    namepredict 在函数内导入(且置于 try 外): src/ 坏掉时报 500 而非静默返回 None。
+    """
+    from namepredict.layer0.preprocessor import preprocess
+
     try:
         mol = preprocess(smiles)
         if mol is None or mol.GetNumAtoms() == 0:

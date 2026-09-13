@@ -79,7 +79,7 @@ def select_principal_group(
     registry: Mapping[FG, PrincipalFeatureSpec] = PRINCIPAL_REGISTRY,
 ) -> PrincipalGroupSelection | None:
     """按优先级选主官能团类并取全部 occurrence。"""
-    classes = (entry.group_class for entry in inventory.entries)
+    classes = (entry.group_class for entry in inventory.entries if not entry.demoted)  # 降级叶（carboxy/cyano）不再作主基团候选
     eligible = (group_class for group_class in set(classes) if principal_spec(group_class, registry))
     selected = min(eligible, key=lambda group_class: principal_spec(group_class, registry).priority, default=None)
     occurrences = inventory.occurrences(selected) if selected else ()

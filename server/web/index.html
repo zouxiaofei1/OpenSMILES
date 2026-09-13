@@ -18,6 +18,12 @@
 </head>
 <body>
   <div id="app" class="app">
+    <!-- 后端健康横幅：后端没起 / src 编译不过时显示(逻辑见 js/core.js checkBackendHealth) -->
+    <div id="backend-banner" class="backend-banner" role="alert" hidden>
+      <span id="backend-banner-text" class="backend-banner-text"></span>
+      <button type="button" id="backend-banner-retry" class="backend-banner-retry">重试</button>
+    </div>
+
     <!-- Top Bar -->
     <header class="topbar" role="banner">
       <div class="topbar-left">
