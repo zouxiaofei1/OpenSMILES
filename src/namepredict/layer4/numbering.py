@@ -93,9 +93,6 @@ def number(parent: dict, substituents: list) -> dict:
     if parent.get("numbering_scaffold_required") and not parent.get("numbering_scaffold"):
         raise ValueError("numbering_scaffold facts required for selected scaffold")
     oriented = {**parent, "chain": chain}
-    plan = None
-    if plan is not None: oriented["numbering"] = plan
-
     result = _pack(oriented, _with_locants(chain, substituents, oriented.get("numbering_scaffold")))
     packed = result.get("parent") or {}
     labels = (packed.get("numbering_scaffold") or {}).get("labels")

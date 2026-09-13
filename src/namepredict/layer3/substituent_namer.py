@@ -23,9 +23,7 @@ class SubstituentBackend(Protocol):
     """取代基命名后端协议：各后端实现 try_name 尝试为 claim 命名。"""
     name: str
 
-    def try_name(self, mol, claim: ClaimedBlock) -> SubstituentName | None:
-        """各后端尝试为 claim 命名，失败返回 None。"""
-        ...
+
 
 
 def _retained_hit(claim: ClaimedBlock, en: str, zh: str, paren: bool) -> SubstituentName:

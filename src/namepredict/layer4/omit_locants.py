@@ -7,48 +7,16 @@ def _is_cyclo(parent: dict | None) -> bool:
     return (parent or {}).get("scaffold_id") == "carbocycle" and not (parent or {}).get("fused_tree")
 
 
-def omit_oh(
-    oh_pos: int | None, n_carbons: int, kind: str | None = None,
-    parent: dict | None = None, n_subs: int = 0, *,
-    has_ene=None, has_yne=None,
+def omit_fg_locant(
+    pos: int | None, n_carbons: int, parent: dict | None = None, n_subs: int = 0, *,
+    single: bool = True, has_ene=None, has_yne=None,
 ) -> bool:
-    """判定醇羟基位次是否省略（P-14.3.4）。"""
-    if _is_cyclo(parent) and oh_pos is not None:  # 环单醇：有烯保留位次；无取代省略位次（P-14.3.4）
-        if has_ene and has_ene(parent):
-            return False
-        return n_subs == 0
-    if kind == "alcohol" and parent and (
-        (has_ene and has_ene(parent)) or (has_yne and has_yne(parent))
-    ):
+    """判定主官能团位次是否省略（P-14.3.4 / 环单 FG）：母体另有烯/炔必留位次；环状无取代省位次；开链仅 C1–C2 首位省。"""
+    if parent and ((has_ene and has_ene(parent)) or (has_yne and has_yne(parent))):
         return False
-    return oh_pos == 1 and n_carbons <= 2
-
-
-def omit_sh(sh_pos: int | None, n_carbons: int) -> bool:
-    """判定巯基位次是否省略（短链首位）。"""
-    return sh_pos == 1 and n_carbons <= 2
-
-
-def omit_amine(
-    am_pos: int | None, n_carbons: int, kind: str | None = None, n_subs: int = 0,
-    parent: dict | None = None,
-) -> bool:
-    """判定氨基位次是否省略（环单胺或短链）。"""
-    if _is_cyclo(parent) and am_pos is not None:  # 环单胺：无取代省略位次；有取代保留（cycloamine 规则，按 scaffold 判断）
+    if _is_cyclo(parent) and pos is not None and single:  # 环单 FG：无取代省位次，有取代保留；多官能团（single=False）一律保留
         return n_subs == 0
-    return am_pos == 1 and n_carbons <= 2
-
-
-def omit_ketone(
-    kind: str | None, n_subs: int, parent: dict | None = None, *,
-    has_ene=None, single: bool = True,
-) -> bool:
-    """判定酮位次是否省略（环单酮，按 scaffold 判断）。"""
-    if _is_cyclo(parent) and single:  # 环单酮：有烯保留位次；无取代省略（cycloketone 规则，按 scaffold 判断）
-        if has_ene and has_ene(parent):
-            return False
-        return n_subs == 0
-    return False
+    return pos == 1 and n_carbons <= 2
 
 
 def omit_unsat(

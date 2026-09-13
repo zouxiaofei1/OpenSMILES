@@ -3,9 +3,7 @@ from __future__ import annotations
 from namepredict.layer1.fg_registry import FG_SPECS
 import re
 from namepredict.layer4._chain_orient import _edge_min_locant
-from namepredict.layer4.omit_locants import (
-    omit_amine as _omit_amine, omit_ketone as _omit_ketone, omit_sh as _omit_sh,
-)
+from namepredict.layer4.omit_locants import omit_fg_locant as _omit_fg
 
 def locant_key(x) -> tuple[int, str]:
     """locant → 排序键: 数字按数值、字母尾作次级键，保证 "4" < "4a" < "5" < "10"。"""
@@ -77,12 +75,6 @@ def _has_parent_yne(oriented: dict) -> bool:
     """判断 parent 是否携带三键（单个或列表）。"""
     return bool(oriented.get("triple_bond") or oriented.get("triple_bonds"))
 
-def _omit_oh(oh_pos, n_carbons, kind=None, parent=None, n_subs=0):
-    """委托 omit_locants.omit_oh 判定羟基位次是否省略。"""
-    from namepredict.layer4.omit_locants import omit_oh as _core
-    return _core(oh_pos, n_carbons, kind, parent, n_subs,
-                 has_ene=_has_parent_ene, has_yne=_has_parent_yne)
-
 def _omit_unsat(n_carbons, kind=None, parent=None, triple=False):
     """委托 omit_locants.omit_unsat 判定不饱和位次是否省略；triple 选择炔规则。"""
     from namepredict.layer4.omit_locants import omit_unsat as _core
@@ -129,24 +121,17 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "omit_yne_locant": _omit_unsat(n, kind, oriented, triple=True),
     }
 
-def _omit_ket_loc(oriented: dict, n_subs: int) -> bool:
-    """判定酮位次是否省略：单酮按 scaffold 判断。"""
-    single = len(_typed_group_atoms(oriented, "ketone")) == 1
-    return _omit_ketone(oriented.get("kind"), n_subs, oriented,
-                        has_ene=_has_parent_ene, single=single)
+_FG_GROUP = {"oh": "alcohol", "amine": "amine", "ketone": "ketone", "sh": "thiol"}  # 记录 kind → principal_expression_facts 基团类别
 
 
 def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
-    """FG 记录 omit 标志:环状判断由 omit_locants 基于 scaffold_id 完成（不虚构 cyclo* kind）。"""
-    if kind == "oh":
-        return _omit_oh(_single_locant(oriented, "alcohol"), n, oriented.get("kind"), oriented, n_subs)
-    if kind == "amine":
-        return _omit_amine(_single_locant(oriented, "amine"), n, oriented.get("kind"), n_subs, oriented)
-    if kind == "ketone":
-        return _omit_ket_loc(oriented, n_subs)
-    if kind == "sh":
-        return _omit_sh(_single_locant(oriented, "thiol"), n)
-    return False
+    """FG 记录 omit 标志：环状判断由 omit_locants 基于 scaffold_id 完成（不虚构 cyclo* kind）；酮仅单酮适用环单酮规则。"""
+    group = _FG_GROUP.get(kind)
+    if group is None:
+        return False
+    single = kind != "ketone" or len(_typed_group_atoms(oriented, "ketone")) == 1
+    return _omit_fg(_single_locant(oriented, group), n, oriented, n_subs, single=single,
+                    has_ene=_has_parent_ene, has_yne=_has_parent_yne)
 
 
 def _anchor_field_locants(oriented: dict, key: str) -> list[int] | None:
@@ -187,14 +172,11 @@ def _fg_locants(oriented: dict, n_subs: int = 0) -> list[dict]:
     return records
 
 def _pack(oriented: dict, substituents: list) -> dict:
-    """组装 parent/取代基/FG 位次/不饱和位次与相对立体化学。"""
-    from namepredict.layer4.cyclo_relative_stereo import relative_stereo_facts
-    facts = relative_stereo_facts(oriented)
-    merged = {**oriented, **facts}
+    """组装 parent/取代基/FG 位次/不饱和位次。"""
     n_subs = len(substituents or [])
     result =  {
-        "parent": merged, "substituents": substituents,
-        "fg_locants": _fg_locants(merged, n_subs),
-        **_unsat_locants(merged, merged.get("n_carbons", 0)), **facts,
+        "parent": oriented, "substituents": substituents,
+        "fg_locants": _fg_locants(oriented, n_subs),
+        **_unsat_locants(oriented, oriented.get("n_carbons", 0)),
     }
     return result
