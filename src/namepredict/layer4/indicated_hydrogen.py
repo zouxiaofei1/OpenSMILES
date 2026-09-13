@@ -30,7 +30,7 @@ def saturated_ring_atoms(mol, ring_atoms: set[int], exclude: frozenset[int] = fr
 
 
 def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=frozenset()) -> list[str]:
-    """返回指示氢标签列表（如 ['1H']、['9H']）：位次取整体编号 labels，缺失时用链序号；exclude 为已用 hydro 表达的加氢位，extra 为保留母体名未隐含而须显式标出的位（P-58.2.1）。"""
+    """返回指示氢位次列表（如 ['1']、['1', '2']）：位次取整体编号 labels，缺失时用链序号；exclude 为已用 hydro 表达的加氢位，extra 为保留母体名未隐含而须显式标出的位（P-58.2.1）。"""
     chain = list(chain or ())
     if not chain:
         return []
@@ -43,11 +43,5 @@ def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=froze
     out = []
     for atom in sats:
         locant = labels[chain.index(atom)] if use_labels else chain.index(atom) + 1
-        out.append(f"{locant}H")
+        out.append(str(locant))
     return out
-
-
-def indicated_hydrogen_prefix(mol, chain, labels=None, exclude=frozenset(), extra=frozenset()) -> str:
-    """返回可直接置于母体名前的指示氢前缀（'1H-' / '1H,2H-'），无则空串；exclude 为已用 hydro 表达的加氢位，extra 同 indicated_hydrogen。"""
-    locants = indicated_hydrogen(mol, chain, labels, exclude, extra)
-    return f"{','.join(locants)}-" if locants else ""

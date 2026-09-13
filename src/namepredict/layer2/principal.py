@@ -45,7 +45,7 @@ def _spec_from_fg(sp: FgSpec) -> PrincipalFeatureSpec:
         sp.parent_anchor_fields,
     )
 
-PRINCIPAL_REGISTRY: dict[FG, PrincipalFeatureSpec] = {  # 主官能团规格唯一事实来源在 fg_registry.FG_SPECS；此处派生。Legacy_compat：仅取 compatibility_rank（legacy_rank），永不作主基团（principal_spec() 以 SUFFIX 为门槛）。
+PRINCIPAL_REGISTRY: dict[FG, PrincipalFeatureSpec] = { 
     FG(sp.fg): _spec_from_fg(sp) for sp in FG_SPECS if sp.p41
 }
 
@@ -59,13 +59,6 @@ def principal_spec(group_class: FG, registry: Mapping[FG, PrincipalFeatureSpec] 
     """仅返回 SUFFIX 型规格（Legacy 不作主基团）。"""
     spec = feature_spec(group_class, registry)
     return spec if spec and spec.expression is PrincipalExpression.SUFFIX else None
-
-
-def legacy_rank(group_class: FG | None) -> int:
-    """取基团类的兼容等级（无规格为 0）。"""
-    spec = feature_spec(group_class) if group_class else None
-    return spec.compatibility_rank if spec else 0
-
 
 @dataclass(frozen=True)
 class PrincipalGroupSelection:

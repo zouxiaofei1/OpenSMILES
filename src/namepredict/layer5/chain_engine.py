@@ -38,8 +38,11 @@ def _retained_plain(kind: str):
 
 
 def _ene_loc_kept(numbered: dict) -> int | None:
-    """取应保留的烯位次：omit_ene_locant 开启时为 None。"""
-    return None if numbered.get("omit_ene_locant") else numbered.get("ene_locant")
+    """取应保留的烯位次（单烯）：omit_ene_locant 开启时为 None。"""
+    if numbered.get("omit_ene_locant"):
+        return None
+    locs = numbered.get("ene_locants")
+    return locs[0] if locs else None
 
 
 def _with_ez(pair: tuple[str, str] | None, numbered: dict) -> tuple[str, str] | None:
@@ -71,18 +74,21 @@ def _fg_locant(numbered: dict, kind: str) -> int | None:
     return locs[0] if locs and len(locs) == 1 else None
 
 def _has_ene(numbered: dict) -> bool:
-    """判断母体是否存在烯键（含父字典 double_bond(s)）。"""
+    """判断母体是否存在烯键（含父字典 double_bond(s) 回落：环外双键无链上位次）。"""
     p = numbered.get("parent") or {}
     return bool(
-        numbered.get("ene_locant") or numbered.get("ene_locants")
+        numbered.get("ene_locants")
         or p.get("double_bond") or p.get("double_bonds")
     )
 
 
 def _has_yne(numbered: dict) -> bool:
-    """判断母体是否存在炔键（yne_locant 或父字典 triple_bond）。"""
+    """判断母体是否存在炔键（含父字典 triple_bond(s) 回落）。"""
     p = numbered.get("parent") or {}
-    return bool(numbered.get("yne_locant") or p.get("triple_bond"))
+    return bool(
+        numbered.get("yne_locants")
+        or p.get("triple_bond") or p.get("triple_bonds")
+    )
 
 
 def _yl_loc_omitted(spec: "_Chain", fg: int) -> bool:
@@ -99,11 +105,10 @@ def _fg_yl_tail(spec: "_Chain", fg: int) -> tuple[str, str]:
 
 
 def _bond_locs(numbered: dict, b: str) -> tuple[int | None, list[int] | None, int, bool]:
-    """取某类不饱和键的位次: 单键位次、多位次列表、键数 (单键记 1、无位次记 0) 与是否多键。"""
-    loc = numbered.get(f"{b}_locant")
-    locs = numbered.get(f"{b}_locants")
-    cnt = len(locs) if locs else (1 if loc is not None else 0)
-    return loc, locs, cnt, bool(locs and len(locs) >= 2)
+    """取某类不饱和键的位次: 首位次、全部位次列表、键数 (无位次记 0) 与是否多键 — 标量由列表首位派生。"""
+    locs = numbered.get(f"{b}_locants") or None
+    cnt = len(locs) if locs else 0
+    return (locs[0] if locs else None), locs, cnt, bool(locs and len(locs) >= 2)
 
 
 def _bond_form(spec: "_Chain", b: str) -> str | None:

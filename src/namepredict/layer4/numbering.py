@@ -1,7 +1,7 @@
 """L4 编号入口：定向编号并组装最终 result 包。"""
 from __future__ import annotations
 from namepredict.constants import C, HYDRO_MULT_N, MULT_EN, MULT_ZH
-from namepredict.layer4.indicated_hydrogen import indicated_hydrogen_prefix, saturated_ring_atoms
+from namepredict.layer4.indicated_hydrogen import indicated_hydrogen, saturated_ring_atoms
 from namepredict.layer4.numbering_engine import orient_numbering
 from namepredict.layer4.locant_calc import _pack, _with_locants
 from namepredict.layer4.locant_calc import locant_key
@@ -109,7 +109,7 @@ def number(parent: dict, substituents: list) -> dict:
     if not pre[0]:  # hydro 位次表达不出（奇数值/超表/不在链内）则整体退回指示氢，不产半截名
         hydro, pre = frozenset(), ("", "")
     extra = _extra_indicated(packed)
-    packed["indicated_h"] = indicated_hydrogen_prefix(
+    packed["indicated_h_locants"] = indicated_hydrogen(
         packed.get("mol"), packed.get("chain"), labels, hydro, extra)
     packed["indicated_h_forced"] = bool(extra)
     packed["hydro_prefix"] = pre

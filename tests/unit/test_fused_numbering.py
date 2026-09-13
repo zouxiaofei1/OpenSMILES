@@ -18,7 +18,7 @@ from namepredict.layer1.ring_systems import build_ring_systems
 from namepredict.layer2.ring_scaffold import FUSED56_LABELS, NAPH_LABELS
 from namepredict.layer4.fused_numbering import fused_atoms, number_fused_system
 from namepredict.layer4.fused_orientation import Orientation, preferred_orientation, preferred_orientations
-from namepredict.layer4.locant_key import locant_key, locant_str_sort
+from namepredict.layer4.locant_calc import locant_key, locant_str_sort
 from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh
 

@@ -2,7 +2,7 @@
 from __future__ import annotations
 from namepredict.layer1.fg_registry import FG_SPECS
 import re
-from namepredict.layer4._chain_orient import _edge_min_locant
+from namepredict.layer4._chain_orient import _bond_min_locs
 from namepredict.layer4.omit_locants import omit_fg_locant as _omit_fg
 
 def locant_key(x) -> tuple[int, str]:
@@ -53,24 +53,6 @@ def _has_parent_ene(oriented: dict) -> bool:
     """判断 parent 是否携带双键（单个或列表）。"""
     return bool(oriented.get("double_bond") or oriented.get("double_bonds"))
 
-def _ene_locant(oriented: dict) -> int | None:
-    """计算单个双键的 locant；多烯时返回 None。"""
-    if not _has_parent_ene(oriented):
-        return None
-    db = oriented.get("double_bond")
-    if db is None:
-        return None  # 多烯：位次由 ene_locants 列表承载
-    return _edge_min_locant(oriented.get("chain") or [], db)
-
-def _yne_locant(oriented: dict) -> int | None:
-    """计算三键的 locant；优先用 yne_locants 列表首位。"""
-    locs = yne_locants(oriented)
-    if locs:
-        return locs[0]
-    if oriented.get("kind") == "alkyne" or oriented.get("triple_bond"):
-        return _edge_min_locant(oriented.get("chain") or [], oriented.get("triple_bond"))
-    return None
-
 def _has_parent_yne(oriented: dict) -> bool:
     """判断 parent 是否携带三键（单个或列表）。"""
     return bool(oriented.get("triple_bond") or oriented.get("triple_bonds"))
@@ -90,33 +72,39 @@ def _with_locants(chain: list[int], substituents: list, facts=None) -> list:
     """为每个取代基附加其 locant 后返回新列表。"""
     return [{**s, "locant": _sub_locant(chain, s["attach_idx"], facts)} for s in substituents]
 
-from namepredict.layer4._chain_orient import _bond_min_locs
+_UNSAT_BOND_KEY = {"ene": "double", "yne": "triple"}  # 不饱和键类别 → 父字典字段前缀 (double_bond(s)/triple_bond(s))
 
-def ene_locants(oriented: dict) -> list[int] | None:
-    """返回全部双键端点较小位次的排序列表。"""
-    bonds = oriented.get("double_bonds")
+def _unsat_bonds(oriented: dict, b: str) -> list | None:
+    """取某类不饱和键的边列表：单键标量（double_bond/triple_bond）与多键列表统一为列表。"""
+    key = _UNSAT_BOND_KEY[b]
+    scalar = oriented.get(f"{key}_bond")
+    return [scalar] if scalar else oriented.get(f"{key}_bonds") or None
+
+
+def _bond_locants(oriented: dict, b: str) -> list[int] | None:
+    """返回某类不饱和键全部较小端点位次的排序列表；单键亦为单元素列表，位次缺失返回 None。"""
+    bonds = _unsat_bonds(oriented, b)
     if not bonds:
         return None
     locs = _bond_min_locs(oriented.get("chain") or [], bonds)
     return list(locs) if locs else None
+
+
+def ene_locants(oriented: dict) -> list[int] | None:
+    """返回全部双键端点较小位次的排序列表（单烯亦为单元素列表）。"""
+    return _bond_locants(oriented, "ene")
 
 
 def yne_locants(oriented: dict) -> list[int] | None:
-    """返回全部三键端点较小位次的排序列表（多炔）。"""
-    bonds = oriented.get("triple_bonds")
-    if not bonds:
-        return None
-    locs = _bond_min_locs(oriented.get("chain") or [], bonds)
-    return list(locs) if locs else None
+    """返回全部三键端点较小位次的排序列表（单炔亦为单元素列表）。"""
+    return _bond_locants(oriented, "yne")
 
 def _unsat_locants(oriented: dict, n: int) -> dict:
     """打包烯/炔位次及其省略标志。"""
     kind = oriented.get("kind")
     return {
-        "ene_locant": _ene_locant(oriented),
         "ene_locants": ene_locants(oriented),
         "omit_ene_locant": _omit_unsat(n, kind, oriented),
-        "yne_locant": _yne_locant(oriented),
         "yne_locants": yne_locants(oriented),
         "omit_yne_locant": _omit_unsat(n, kind, oriented, triple=True),
     }

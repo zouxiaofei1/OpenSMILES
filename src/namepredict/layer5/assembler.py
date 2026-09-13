@@ -50,21 +50,20 @@ def _ring_carbocycle_stem(n: int, numbered: dict) -> tuple[str | None, str | Non
     base = _alkane_names(n)
     if not base:
         return None, None, False
-    ene = numbered.get("ene_locant")
     enes = numbered.get("ene_locants")
-    if not (ene or enes):
+    if not enes:
         return f"cyclo{base[0]}", f"环{base[1]}", False
     en_core = base[0][:-3] if base[0].endswith("ane") else base[0]   # hexane → hex
     zh_core = base[1][:-1] if base[1].endswith("烷") else base[1]    # 己烷 → 己
-    if enes and len(enes) >= 2:
+    if len(enes) >= 2:
         loc = ",".join(str(x) for x in enes)
         m_en, m_zh = MULT_EN.get(len(enes)), MULT_ZH.get(len(enes))
         if not m_en or not m_zh:
             return None, None, True
         return (f"cyclo{en_core}a-{loc}-{m_en}ene", f"环{zh_core}-{loc}-{m_zh}烯", True)
-    if ene == 1:
+    if enes[0] == 1:
         return f"cyclo{en_core}ene", f"环{zh_core}-1-烯", True
-    return f"cyclo{en_core}-{ene}-ene", f"环{zh_core}-{ene}-烯", True
+    return f"cyclo{en_core}-{enes[0]}-ene", f"环{zh_core}-{enes[0]}-烯", True
 
 
 def _ring_extra_prefix_located(numbered: dict) -> bool:
@@ -292,6 +291,12 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
             first["zh"] + "".join(f"({s['zh']})" for s in rest) + zero[1])
 
 
+def _indicated_h_prefix(parent: dict) -> str:
+    """把 L4 定好的指示氢位次拼成前缀（'1H-' / '1H,2H-'），无位次则为空串（P-58.2.1）。"""
+    locants = parent.get("indicated_h_locants") or ()
+    return f"{','.join(f'{l}H' for l in locants)}-" if locants else ""
+
+
 def _ensure_fused_stem(numbered: dict) -> bool:
     """未注册稠环词干注入：parent 无词干但有 fused_tree 时用 fused_parent_names 组装稠合 base 名（已注册词干由 L2 注入不进入）；返回 False 表示组装失败（显式 unsupported）。"""
     parent = numbered.get("parent") or {}
@@ -307,7 +312,7 @@ def _ensure_fused_stem(numbered: dict) -> bool:
     name = fused_parent_names(mol, node)
     if name is None or not name[0] or not name[1]:
         return False
-    pre = parent.get("indicated_h") or ""  # L4 已按整体编号算好指示氢前缀（P-58.2.1），稠合名此前不带，统一在此补到最前端。
+    pre = _indicated_h_prefix(parent)  # 稠合 base 名此前不带指示氢，L4 已按整体编号定好位次（P-58.2.1），统一在此补到最前端。
     parent["stem_en"], parent["stem_zh"] = pre + name[0], pre + name[1]
     return True
 
@@ -461,7 +466,7 @@ def _with_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str
     if not pre[0] and not parent.get("indicated_h_forced"):  # forced = 指示氢来自「保留母体名未隐含的芳香位 H」（P-58.2.1），无 hydro 前缀也须注入；其余动态指示氢仍只在氢化衍生物（有 hydro 前缀）时注入，否则 [nH] 互变异构型会误产 1H-pyridine。
         return names
     en, zh = names
-    ind = parent.get("indicated_h") or ""
+    ind = _indicated_h_prefix(parent)
     if ind and not en.startswith(ind):
         en, zh = ind + en, ind + zh
     return (join_parent_name(pre[0], en), join_parent_name(pre[1], zh)) if pre[0] else (en, zh)
