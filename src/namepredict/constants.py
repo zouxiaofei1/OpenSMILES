@@ -117,8 +117,8 @@ FG_BOOL_MORE_KEYS = (
     ("has_nitrile", "nitriles"), ("has_alkene", "double_bonds"),
     ("has_alkyne", "triple_bonds"), ("has_acyl_chloride", "acyl_chlorides"),
     ("has_anhydride", "anhydrides"), ("has_thiol", "thiols"),
-    ("has_ether", "ethers"), ("has_sulfide", "sulfides"), ("has_nitro", "nitros"),
-    ("has_isocyanate", "isocyanates"), ("has_isothiocyanate", "isothiocyanates"),
+    ("has_ether", "ethers"), ("has_sulfide", "sulfides"),
+   
     ("has_phosphate", "phosphates"),
 )
 FG_PARTS_KEY = {  # fg_registry 名 → parts 键（有 p41 的链 FG）；P-41 优先级仲裁：组合羰基 FG（酸/酯/酰卤/酰胺/醛/酸酐）被更高优先级 FG（如自由基）压制时退出主基团，其羰基碳降级入 ketones（oxo 前缀候选），组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属——不再丢失羰基氧。ketone/alcohol/thiol/amine 是基础成员 FG，永不退出。
@@ -163,8 +163,8 @@ SIMPLE_ALKOXY_NO_PAREN = frozenset({  # 简单保留烷氧基作前缀不加括�
 SIMPLE_ALKOXY_ALKYL = ("methoxy", "ethoxy", "propoxy", "butoxy")  # 严格直链烷氧基（SIMPLE_ALKOXY_NO_PAREN 的子集，不含 phenoxy/isopropoxy）：claim 命名结果落在这四个上才在 L3 判为 alkoxy kind。
 NAME_KIND = {  # 锚定表/保留叶子的名称暗含非烷基 kind，使 L5 以 `kind` 键（iso 稠合、聚茴香醚、卤代苯）触发。
     "fluoro": "halo", "chloro": "halo", "bromo": "halo", "iodo": "halo",
-    "nitro": "nitro",
-    "isocyanato": "isocyanato", "isothiocyanato": "isothiocyanato",
+   
+   
 }
 CLAIM_KIND = {"ether_o": "alkoxy", "amide_n": "n_block", "amine_n": "n_block",
               "ring_c": "alkyl", "chain_c": "alkyl"}  # claim 槽位 → 取代基 kind

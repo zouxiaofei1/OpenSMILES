@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
-
+from collections import deque
 from namepredict.tools import memo
 from namepredict.constants import (
-    C, CARBONYL_COMPOSITES, FG_BOOL_MORE_KEYS, FG_PARTS_KEY, H, N, O, RING_HETERO, S,
+    C,P, CARBONYL_COMPOSITES, FG_BOOL_MORE_KEYS, FG_PARTS_KEY, H, N, O, RING_HETERO, S,
 )
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1._carbonyl_common import (
@@ -21,6 +21,86 @@ from namepredict.layer1._carbonyl_common import (
     _is_single_c_oh,
 )
 
+def _heavy(mol: Mol, a) -> list:
+    """非氢邻居索引。"""
+    return [n.GetIdx() for n in a.GetNeighbors() if n.GetAtomicNum() != 1]
+
+
+def _arm_component(mol: Mol, start: int, core: set[int]) -> set[int]:
+    """从臂根 start 取不穿过 core 的连通重原子组分。"""
+    comp: set[int] = {start}
+    dq: deque[int] = deque([start])
+    while dq:
+        i = dq.popleft()
+        for nb in mol.GetAtomWithIdx(i).GetNeighbors():
+            if nb.GetAtomicNum() == 1:
+                continue
+            j = nb.GetIdx()
+            if j in core or j in comp:
+                continue
+            comp.add(j)
+            dq.append(j)
+    return comp
+
+
+def _one_phosphate(mol: Mol, p_idx: int) -> dict | None:
+    """判定单个 P 是否为磷酸中心，是则返回 {p_idx,n_oh,n_om,n_arms}，否则 None。"""
+    p = mol.GetAtomWithIdx(p_idx)
+    if p.GetTotalNumHs() != 0 or p.GetFormalCharge() != 0:
+        return None
+    nei = _heavy(mol, p)
+    if len(nei) != 4 or any(mol.GetAtomWithIdx(i).GetAtomicNum() != O for i in nei):
+        return None
+    single_o: list[int] = []
+    dbl_o: list[int] = []
+    for i in nei:
+        bt = mol.GetBondBetweenAtoms(p_idx, i).GetBondType()
+        if bt == BondType.DOUBLE:
+            dbl_o.append(i)
+        elif bt == BondType.SINGLE:
+            single_o.append(i)
+        else:
+            return None
+    if len(dbl_o) != 1 or len(single_o) != 3:
+        return None
+    da = mol.GetAtomWithIdx(dbl_o[0])
+    if da.GetFormalCharge() != 0 or da.GetTotalNumHs() != 0 or _heavy(mol, da) != [p_idx]:
+        return None
+    core = {p_idx, *nei}
+    n_oh = n_om = n_arms = 0
+    arm_all: set[int] = set()
+    for o_idx in single_o:
+        a = mol.GetAtomWithIdx(o_idx)
+        heavy = _heavy(mol, a)
+        if a.GetFormalCharge() == 0 and a.GetTotalNumHs() >= 1 and heavy == [p_idx]:
+            n_oh += 1
+            continue
+        if a.GetFormalCharge() == -1 and a.GetTotalNumHs() == 0 and heavy == [p_idx]:
+            n_om += 1
+            continue
+        if a.GetFormalCharge() != 0 or a.GetTotalNumHs() != 0 or p_idx not in heavy:  # O–R：中性无 H、除 P 外另连 1 个重原子
+            return None
+        others = [j for j in heavy if j != p_idx]
+        if len(others) != 1 or mol.GetAtomWithIdx(others[0]).GetAtomicNum() != C:
+            return None
+        comp = _arm_component(mol, others[0], core)
+        attaches = [j for i in comp for j in _heavy(mol, mol.GetAtomWithIdx(i)) if j in core]  # 组分只贴 1 个 core 原子（桥 O）；不能连到 P 或其它 O
+        if not attaches or len(set(attaches)) != 1 or attaches[0] != o_idx:
+            return None
+        arm_all |= comp
+        n_arms += 1
+    if n_oh + n_om + n_arms != 3:
+        return None
+    all_heavy = {a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() != 1}  # 整分子纯度：重原子 = core ∪ 臂（排除臂间成环、P–O–P 焦磷酸等）
+    if all_heavy != (core | arm_all):
+        return None
+    return {"p_idx": p_idx, "n_oh": n_oh, "n_om": n_om, "n_arms": n_arms}
+
+
+def phosphate_entries(mol: Mol) -> list[dict]:
+    """分子中全部磷酸中心（P(=O)(O)₃）的条目列表。"""
+    result = [e for a in mol.GetAtoms() if a.GetAtomicNum() == P  and (e := _one_phosphate(mol, a.GetIdx())) is not None]
+    return result
 def _acyl_hal_of(carbon) -> tuple[int, int] | None:
     """惰性导入酰卤检测并返回碳上的卤素邻居信息。"""
     from namepredict.layer1.acyl_halide import acyl_hal_of
@@ -114,26 +194,6 @@ def _sulfide_entry(atom) -> dict:
 def _sulfide_entries(mol: Mol) -> list[dict]:
     """收集分子中所有硫醚条目的列表。"""
     return [_sulfide_entry(a) for a in mol.GetAtoms() if _is_sulfide_sulfur(a)]
-
-def _is_nitro_nitrogen(atom) -> bool:
-    """判断 N 是否为硝基氮（+1 电荷、两个 O、一个 C）。"""
-    if atom.GetAtomicNum() != N or atom.GetFormalCharge() != 1:
-        return False
-    nbs = [n for n in atom.GetNeighbors() if n.GetAtomicNum() != H]
-    os_ = [n for n in nbs if n.GetAtomicNum() == O]
-    cs = [n for n in nbs if n.GetAtomicNum() == C]
-    return len(nbs) == 3 and len(os_) == 2 and len(cs) == 1
-
-def _nitro_entry(atom) -> dict:
-    """组装单个硝基条目 dict（氮为中心，碳与两个氧为周边）。"""
-    nbs = list(atom.GetNeighbors())
-    c_idx = next(n.GetIdx() for n in nbs if n.GetAtomicNum() == C)
-    o_idxs = [n.GetIdx() for n in nbs if n.GetAtomicNum() == O]
-    return {"center_idx": atom.GetIdx(), "surr_idx": [c_idx, *o_idxs]}
-
-def _nitro_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有硝基条目的列表。"""
-    return [_nitro_entry(a) for a in mol.GetAtoms() if _is_nitro_nitrogen(a)]
 
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     """判断 O 是否为酯烷氧基氧（排除酸酐桥）。"""
@@ -444,7 +504,7 @@ def _fg_more_lists(parts: dict) -> dict:
     keys = (
         "radicals", "acyls", "aldehydes", "amines",  "nitriles", "double_bonds", "triple_bonds",
         "acyl_chlorides", "anhydrides", "thiols", "ethers", "sulfides",
-        "nitros", "isocyanates", "isothiocyanates", "phosphates",
+        "phosphates",
     )
     return {k: parts[k] for k in keys}
 
@@ -534,9 +594,8 @@ def _arbitrate_parts(mol: Mol, parts: dict) -> dict:
 
 
 def _fg_parts(mol: Mol) -> dict:
-    """收集分子中所有官能团条目并按其类型组织成 dict。"""
-    from namepredict.layer1.isocyanate import isocyanate_entries, isothiocyanate_entries
-    from namepredict.layer1.phosphate import phosphate_entries
+    """官能团条目->dict。仅有P41中官能团条目可在里面"""
+   
     acyls = _acyl_entries(mol)
     heads = frozenset(e["center_idx"] for e in acyls)
     result =  _arbitrate_parts(mol, {"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
@@ -549,10 +608,8 @@ def _fg_parts(mol: Mol) -> dict:
         "triple_bonds": _triple_bond_entries(mol), "acyl_chlorides": _acyl_chloride_entries(mol),
         "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
         "ethers": _ether_entries(mol), "sulfides": _sulfide_entries(mol),
-        "nitros": _nitro_entries(mol), "isocyanates": isocyanate_entries(mol),
-        "isothiocyanates": isothiocyanate_entries(mol),
         "phosphates": phosphate_entries(mol)})
-    # print(result)
+    print(result)
     return result
 
 def _collect_fgs(mol: Mol) -> dict:
