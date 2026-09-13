@@ -37,14 +37,6 @@ def _retained_plain(kind: str):
     return lambda n: table.get(n)
 
 
-def _ene_loc_kept(numbered: dict) -> int | None:
-    """取应保留的烯位次（单烯）：omit_ene_locant 开启时为 None。"""
-    if numbered.get("omit_ene_locant"):
-        return None
-    locs = numbered.get("ene_locants")
-    return locs[0] if locs else None
-
-
 def _with_ez(pair: tuple[str, str] | None, numbered: dict) -> tuple[str, str] | None:
     """若母体含 E/Z 则给名称对加前缀。"""
     if pair is None: return None
@@ -242,10 +234,7 @@ def _bond_seg(spec: "_Chain", n: int, numbered: dict, b: str) -> tuple[str, str]
         if (spec.yne_loc_omit and numbered.get("omit_yne_locant", False)) or loc is None:
             return f"{s}{spec.yne_suf[0]}", f"{zs}{spec.yne_suf[1]}"
         return f"{s}-{loc}-{spec.yne_suf[0]}", f"{zs}-{loc}-{spec.yne_suf[1]}"
-
-    if is_ene and not multi and spec.ene_omit_aware:  # 环系 FG 烯段受 omit_ene_locant 影响
-        loc = _ene_loc_kept(numbered)
-
+    
     if form == "polyol":  # 多 FG 词干模式: 段保留 e (but-2-ene), FG 后缀由 _chain_names 拼接
         if multi:
             seg = _bond_seg_str(spec, b, form, cnt, terminal=True)

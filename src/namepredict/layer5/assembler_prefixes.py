@@ -284,8 +284,6 @@ def _groups_simple(groups: dict[str, list]) -> bool:
 def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
                   scaffold: str | None = None, has_ene: bool = False) -> tuple[str, str]:
     """组合完整取代基前缀：滤 O 侧、判 omit、按词干分组拼接。"""
-    if not substituents:
-        return "", ""
     substituents = [s for s in substituents if not s.get("o_side")]  # ester 的 O 侧烷基由 join_kind_name 作为烷氧基臂消费，永不作前缀
     if not substituents:
         return "", ""

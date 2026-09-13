@@ -6,7 +6,6 @@ from rdkit.Chem import Mol
 from namepredict.constants import C, HALO_Z, O
 from namepredict.layer1._carbonyl_common import (
     _alkoxy_c_of,
-    _amide_n_of,
     _double_bonded_o_idxs,
     _ester_alkoxy_of as _ester_alkoxy_of_common,
     _has_acid_o_neighbor,
@@ -38,8 +37,6 @@ def _is_acyl_halide_carbon(atom) -> bool:
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
-        return False
-    if _amide_n_of(atom) is not None:
         return False
     return _acyl_hal_of(atom) is not None
 

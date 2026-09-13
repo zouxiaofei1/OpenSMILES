@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, Sequence
 
-from namepredict.cache.common_names import CommonNameCache
+from namepredict.tools.common_names import CommonNameCache
 from namepredict.layer3.claimable_block import ClaimedBlock
 from namepredict.layer3.as_substituent import name_as_substituent
 from namepredict.tools.anchored_table import anchored_lookup

@@ -110,9 +110,3 @@ def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
         if len(o) <= 2 and all(_amide_n_substituent_ok(x) for x in o):
             return n.GetIdx(), [x.GetIdx() for x in o if x.GetAtomicNum() == C]
     return None
-
-
-def _amide_n_of(carbon) -> int | None:
-    """返回羰基碳上的酰胺 N 索引；无则返回 None。"""
-    info = _amide_n_info(carbon)
-    return info[0] if info else None

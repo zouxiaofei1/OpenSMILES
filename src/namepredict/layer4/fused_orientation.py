@@ -360,6 +360,6 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
 
 
 def preferred_orientation(mol, rings, fusion_edges) -> Orientation | None:
-    """优选取向(取首个平局候选); 无候选返回 None。"""
+    """似乎和前端有关"""
     bests = preferred_orientations(mol, rings, fusion_edges)
     return bests[0] if bests else None

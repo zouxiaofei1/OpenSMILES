@@ -1,7 +1,7 @@
 """基于 claim 的侧链提取，经由 SubstituentNamer（覆盖填充）。"""
 from __future__ import annotations
 
-from namepredict.cache.common_names import CommonNameCache
+from namepredict.tools.common_names import CommonNameCache
 from namepredict.constants import (
     CLAIM_KIND, ESTER_O_SIDE_KINDS, NAME_KIND, N_PREFIX_KINDS,
 )

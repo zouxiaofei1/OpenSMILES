@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.cache.common_names import CommonNameCache
+from namepredict.tools.common_names import CommonNameCache
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh

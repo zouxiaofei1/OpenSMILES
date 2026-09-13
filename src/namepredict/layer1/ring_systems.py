@@ -80,25 +80,6 @@ def _hetero_atoms(mol: Mol, atom_ids: set[int]) -> list[dict]:
             out.append({"idx": i, "Z": z})
     return out
 
-def _is_arom_mancude(mol: Mol, atom_ids: set[int]) -> bool:
-    """判断整个原子集合是否全为芳香原子。"""
-    if not atom_ids:
-        return False
-    return all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atom_ids)
-
-def _topology(n_rings: int, n_fusion: int, has_spiro: bool,
-              is_bridged: bool = False) -> str:
-    """按环数、稠合、螺与桥标志判定拓扑类型。"""
-    if n_rings == 1:
-        return "mono"
-    if is_bridged:
-        return "bridged"
-    if n_fusion > 0:
-        return "fused"
-    if has_spiro:
-        return "spiro"
-    return "other"
-
 def _non_adjacent_pairs(mrings, shared):
     """返回桥头原子：在至少一个环中不相邻的共享原子。"""
     sh_list, bh_set = sorted(shared), set()
@@ -182,9 +163,8 @@ def _system_dict(
         "n_rings": len(members),
         "n_atoms": len(atom_ids),
         "hetero_atoms": _hetero_atoms(mol, atom_ids),
-        "is_aromatic_mancude": _is_arom_mancude(mol, atom_ids),
-        "topology": _topology(len(members), len(edges),
-                              spiro_in and len(members) == 1, is_bridged),
+        "is_aromatic_mancude": None,
+        "topology": None,
     }
     if bridge_info:
         result["bridgeheads"] = bridge_info["bridgeheads"]
@@ -257,7 +237,7 @@ def _merged_spiro_system(
         "n_rings": len(sssr),
         "n_atoms": len(atoms),
         "hetero_atoms": hetero,
-        "is_aromatic_mancude": _is_arom_mancude(mol, atoms),
+        "is_aromatic_mancude": None,
         "topology": "spiro",
         "ring_sizes": sorted(len(rings[ri]) - 1 for ri in sssr),
     }

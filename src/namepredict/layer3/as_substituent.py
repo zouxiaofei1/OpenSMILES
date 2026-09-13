@@ -6,7 +6,7 @@ from __future__ import annotations
 import copy
 
 from namepredict.constants import AMIDO_RETAINED_EN, SIMPLE_ALKOXY_NO_PAREN
-from namepredict.cache.common_names import CommonNameCache
+from namepredict.tools.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol
 
 

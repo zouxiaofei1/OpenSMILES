@@ -6,7 +6,7 @@ import copy
 import time
 
 from namepredict.tools import memo
-from namepredict.cache.common_names import CommonNameCache
+from namepredict.tools.common_names import CommonNameCache
 from namepredict.constants import N_PREFIX_KINDS
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer0.salt import dissociate_salt

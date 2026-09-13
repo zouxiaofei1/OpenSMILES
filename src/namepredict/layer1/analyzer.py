@@ -11,7 +11,6 @@ from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1._carbonyl_common import (
     _alkoxy_c_of,
     _amide_n_info,
-    _amide_n_of,
     _double_bonded_o_idxs,
     _ester_alkoxy_of as _ester_alkoxy_of_common,
     _has_acid_o_neighbor,
@@ -140,10 +139,10 @@ def _is_ketone_carbon(atom) -> bool:
     elif n_c == 0:  # 环内零碳邻居羰基作环酮；环内非内酯型酯与开链者（脲/CO2）不作。
         if not atom.IsInRing() or (_ester_alkoxy_of(atom) is not None and not _is_lactone_carbon(atom)):
             return False
-        return _amide_n_of(atom) is None and _anhydride_o_of(atom) is None
+        return True
     elif n_c != 2:
         return False
-    return _amide_n_of(atom) is None and _anhydride_o_of(atom) is None
+    return True
 
 def _anhydride_o_of(carbon) -> int | None:
     """返回羰基碳上的酸酐桥氧索引。"""
@@ -186,7 +185,7 @@ def _ald_blocked(atom) -> bool:
     """判断醛碳是否被酯、酰卤、酸酐或酰胺占用。"""
     if _ester_alkoxy_of(atom) is not None or _acyl_hal_of(atom) is not None:
         return True
-    return _anhydride_o_of(atom) is not None or _amide_n_of(atom) is not None
+    return _anhydride_o_of(atom) is not None
 
 def _is_aldehyde_carbon(atom) -> bool:
     """判断碳是否为醛羰基碳（单碳邻居、带 H 且未被阻断）；环内羰基不再作醛——内酰胺/环脲等由 _is_ketone_carbon 作酮、以 -one 后缀表达（P-66.6.1），当作醛会把喹唑啉-4-酮错拼成 …醛。"""
@@ -446,7 +445,7 @@ def _acyl_entries(mol: Mol) -> list[dict]:
 
 
 def _radical_entries(mol: Mol, exclude: frozenset[int] = frozenset()) -> list[dict]:
-    """虚拟原子（原子序 0）邻居碳的 P-41 自由基位点；仅带 `*` 锚点（build_anchor_submol）的分子产生条目，普通 SMILES 不受影响。"""
+    """虚拟原子（原子序 0）邻居碳的 P-41 自由基位点；"""
     out: list[dict] = []
     for a in mol.GetAtoms():
         if a.GetAtomicNum() != 0:
@@ -494,11 +493,6 @@ def _detect_parts(mol: Mol) -> dict:
         "acyl_chlorides": _acyl_chloride_entries(mol),
         "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
         "phosphates": phosphate_entries(mol)}
-
-
-def _fg_parts(mol: Mol) -> dict:
-    """官能团条目->dict。仅有P41中官能团条目可在里面"""
-    return _arbitrate_parts(_detect_parts(mol))[0]
 
 def _collect_fgs(mol: Mol) -> dict:
     """聚合官能团条目并构建带类型清单（单一 FG 出口：清单承载全部 FG 事实，存在性由清单内容判定；不饱和度独立于 FG 通道）。"""

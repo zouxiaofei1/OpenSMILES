@@ -17,15 +17,6 @@ def _alkali_en(mol: Mol) -> str | None:
         return None
     return ALKALI_EN.get(atom.GetAtomicNum())
 
-
-def _is_water(mol: Mol) -> bool:
-    """判断是否为中性水分子（单个 O 带 2 个 H）。"""
-    if mol.GetNumAtoms() != 1:
-        return False
-    a = mol.GetAtomWithIdx(0)
-    return a.GetAtomicNum() == O and a.GetFormalCharge() == 0 and a.GetTotalNumHs() == 2
-
-
 def _is_hcl_frag(mol: Mol) -> bool:
     """中性 HCl（带 1 个 H 的 Cl）或游离氯阴离子 [Cl-]。"""
     if mol.GetNumAtoms() != 1:
@@ -46,8 +37,7 @@ def _bucket_frag(f: Mol, metals: list[str], organics: list[Mol]) -> int:
         return 0
     if _is_hcl_frag(f):
         return 1
-    if not _is_water(f):
-        organics.append(f)
+    organics.append(f)
     return 0
 
 

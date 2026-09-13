@@ -409,76 +409,7 @@ def numbering_scaffold_facts(spec_id: str | None, atom_count: int) -> dict | Non
         "scaffold_id": spec.id, "labels": labels, "relative_stereo": None,
     }
 
-
-def fused56_kind_ids() -> frozenset[str]:
-    """使用 fused56 位次标签的 kind / scaffold id。"""
-    return kind_ids_for("fused56")
-
-
-def naph_kind_ids() -> frozenset[str]:
-    """使用 naph 位次标签的 kind / scaffold id。"""
-    return kind_ids_for("naph_family")
-
-
-def monohetero_kind_ids() -> frozenset[str]:
-    """单杂环保留骨架的 kind / scaffold id。"""
-    return kind_ids_for("monohetero")
-
-
-def kind_ids_for(naming_class: str) -> frozenset[str]:
-    """给定 naming_class（fused56 / naph_family / monohetero / …）的 id 集合。"""
-    return frozenset(s.id for s in _ALL_SPECS if s.naming_class == naming_class)
-
 RetainedEntry = dict
-
-
-def _entry_for(sid: str) -> RetainedEntry | None:
-    """由模板条目派生保留条目（拓扑字段 + 词干）。"""
-    entry = _TEMPLATES.get(sid)
-    if entry is None:
-        return None
-    q = _Q[sid]
-    hetero_Z = tuple(sorted(
-        q.GetAtomWithIdx(i).GetAtomicNum() for i in range(q.GetNumAtoms())
-        if q.GetAtomWithIdx(i).GetAtomicNum() != 6
-    ))
-    n_rings = len(q.GetRingInfo().AtomRings())
-    return {
-        "kind": sid,
-        "n_rings": n_rings,
-        "n_atoms": q.GetNumAtoms(),
-        "hetero_Z": hetero_Z,
-        "topology": "fused" if n_rings > 1 else "mono",
-        "aromatic": all(q.GetAtomWithIdx(i).GetIsAromatic() for i in range(q.GetNumAtoms())),
-        "en": entry["stem_en"],
-        "zh": entry["stem_zh"],
-    }
-
-
-def registry() -> dict[str, RetainedEntry]:
-    """返回带词干的保留拓扑注册表（由 _TEMPLATES 派生）。"""
-    return {sid: _entry_for(sid) for sid in _TEMPLATES}
-
-
-def get_entry(scaffold_id: str) -> RetainedEntry | None:
-    """按 scaffold_id 查带词干的保留条目。"""
-    return _entry_for(scaffold_id)
-
-
-def match_systems(info: dict) -> list[tuple[str, dict, RetainedEntry]]:
-    """返回匹配系统的 (scaffold_id, ring_system, entry)（模板子图同构语义）。"""
-    out: list[tuple[str, dict, RetainedEntry]] = []
-    for system in info.get("ring_systems") or []:
-        sid = match_retained(info, system.get("atom_ids") or ())
-        if sid:
-            out.append((sid, system, _entry_for(sid)))
-    return out
-
-
-def match_scaffold_ids(info: dict) -> list[str]:
-    """返回匹配的 scaffold id 列表。"""
-    return [sid for sid, _, _ in match_systems(info)]
-
 
 def match_retained(info: dict, atom_ids, *, mancude_only: bool = False) -> str | None:
     """返回模板精确覆盖 atom_ids 的保留母体 sid，无命中 None；元素签名预过滤后子图同构，同命中取表序第一个（防御性兜底）；mancude_only 只认 fused 保留名（融合组分）。"""

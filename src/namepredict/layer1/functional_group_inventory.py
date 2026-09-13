@@ -118,12 +118,6 @@ def build_inventory(lists: dict, mol=None, demoted: frozenset[str] = frozenset()
                     for key in _LIST_CLASSES for i, item in enumerate(lists.get(key) or ()))
     return FunctionalGroupInventory(entries)
 
-
-def occurrences_of(info: dict, group_class: FunctionalGroupClass) -> tuple[FunctionalGroupOccurrence, ...]:
-    """取分析信息中某类官能团的全部出现（等价 inventory_from_info(info).occurrences(cls)）。"""
-    return inventory_from_info(info).occurrences(group_class)
-
-
 def inventory_from_info(info: dict) -> FunctionalGroupInventory:
     """从分析信息中取出清单；缺失即上游违反 L1 出口契约，显式失败而非静默退化成空清单。"""
     inventory = info.get("fg_inventory")
