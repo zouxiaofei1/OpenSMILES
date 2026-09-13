@@ -22,8 +22,7 @@ from namepredict.layer1.analyzer import analyze
 from namepredict.layer2 import kind_registry
 from namepredict.layer2.candidates import _collect_candidates
 from namepredict.layer2.kind_registry import pack_parent_stem
-from namepredict.layer2.parent_candidate import from_parent_dict, principal_contract_kind
-from namepredict.layer2.parent_selector import select_parent
+from namepredict.layer2.parent_selector import _p44_1_1, select_parent
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, keep_p44_2, keep_p44_4_unsaturation
 from namepredict.layer2.principal_expression import (
     PrincipalChargeState,
@@ -33,7 +32,6 @@ from namepredict.layer2.principal_expression import (
 )
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.principal_parent import rule_driven_parent_candidates, select_principal_parent_skeletons
-from namepredict.layer2.scoring import _score_parent
 from namepredict.layer4.candidate_keys import prefix_locant_set, suffix_locant_set
 from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh
@@ -266,34 +264,9 @@ def test_p44_4_pyrimidine_beats_saturated_ring():
 #
 # Principal-group count precedes later parent-selection criteria.
 # ==========================================================================
-p44_principal_group_count__COUNT_CASES = [
-    ({"kind": "alcohol", "principal_group_count": 2}, (5, 2)),
-    ({"kind": "amine", "principal_group_count": 3}, (3, 3)),
-    ({"kind": "ketone", "principal_group_count": 2}, (6, 2)),
-]
-
-
-@pytest.mark.parametrize("parent,expected", p44_principal_group_count__COUNT_CASES)
-def test_typed_principal_group_contract(parent, expected):
-    facts = from_parent_dict(parent).facts
-    assert (facts.principal_group_class, facts.principal_group_count) == expected
-
-
-def test_scoring_starts_with_typed_p44_facts():
-    parent = {"kind": "alcohol", "principal_group_count": 2}
-    assert _score_parent({}, parent)[:2] == (5, 2)
-
-
-def test_higher_class_precedes_larger_lower_class_count():
-    acid = {"kind": "acid", "principal_group_count": 1}
-    triol = {"kind": "alcohol", "principal_group_count": 3}
-    amine = {"kind": "amine", "principal_group_count": 1}
-    assert _score_parent({}, acid) > _score_parent({}, triol) > _score_parent({}, amine)
-
-
 def test_missing_principal_count_is_not_silently_one():
-    with pytest.raises(ValueError, match="principal_group_count"):
-        from_parent_dict({"kind": "acid"})
+    with pytest.raises(KeyError, match="principal_group_count"):
+        _p44_1_1({"kind": "acid"})
 
 
 def p44_principal_group_count___result(en):
@@ -416,7 +389,7 @@ def test_select_parent_tied_group_order_is_stable():
     order = [tuple(c["chain"]) for c in select_parent(info)]
     assert [tuple(c["chain"]) for c in select_parent(info)] == order
     # 组内首位同时是全体候选的排序首位（P-44/P-45.2 已定序，并列只做截取）
-    ranked = sorted(_collect_candidates(info), key=lambda c: _score_parent(info, c), reverse=True)
+    ranked = sorted(_collect_candidates(info), key=lambda c: _p44_1_1(c), reverse=True)
     assert order[0] in {tuple(c["chain"]) for c in ranked[:len(order)]}
 
 

@@ -5,14 +5,13 @@ import re
 from namepredict.constants import (
     ALKOXY_YLOXY_EN, ALKOXY_YLOXY_ZH, AMIDO_RETAINED, AZANE_PAREN_SUF, BIS_EN, BRIDGE_YL_SUFFIX,
     BRIDGE_ZH_YL_SUFFIX,
-    EXO_RING_SUF, MONONUCLEAR_BRIDGE, MONONUCLEAR_ZERO_YL, MULT_EN, MULT_ZH,
-    PHOSPHORYL_STEMS, zh_bridge_root,
+    EXO_RING_SUF, MONONUCLEAR_BRIDGE, MONONUCLEAR_YL, MONONUCLEAR_ZERO_YL, MULT_EN,
+    MULT_ZH, PHOSPHORYL_STEMS, zh_bridge_root,
 )
 from namepredict.layer5.chain_engine import _ACYL_HALIDE_BY_HAL, _KIND_TABLE, _alkane_names, _chain_names
-from namepredict.layer5.stems import maybe_anion_names, maybe_metal_salt_names
+from namepredict.layer5.stems import join_anion_names, join_metal_salt_names
 from namepredict.layer5.assembler_prefixes import _SIMPLE_CHAIN_YL_RE, _prefix_for
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
-from namepredict.tools.free_to_yl import free_to_yl
 from namepredict.types import NameResult
 
 def _fail(meta: dict | None = None) -> NameResult:
@@ -237,6 +236,59 @@ def _alpha_key(name: str) -> str:
     return "".join(c for c in name.lower() if c.isalpha())
 
 
+# free 母体名 → P-29 -yl 取代基形式的双语转换（原 tools/free_to_yl.py 并入）。
+_MULT_OL_SUF = re.compile(r"(?:di|tri|tetra|penta|hexa|hepta|octa|nona|deca)ol\b")  # 官能团后缀 → 前缀转换
+
+_MONONUCLEAR_NAMES = ("oxidane", "azane", "sulfane", "sulfinyl", "sulfonyl", "imine")  # 本模块转换的单核母体氢化物（P-15.4.1 表 2.1 → 表 1.5 'a' 前缀体系，数据见 constants.MONONUCLEAR_HYDRIDES）；P 酰基（phosphoryl/phosphanyl）走 L5 的 P 专用管线，不经此表。
+
+
+def _anilino_en(base: str, yl: str) -> str:
+    """N-苯基（可带环取代基）的 azane 去氢：phenyl→anilino、4-chlorophenyl→4-chloroanilino（P-62.2.1.1：phenylamino = anilino*）。"""
+    return base[: -len("phenyl")] + "anilino" if yl == "amino" and base.endswith("phenyl") else base + yl
+
+
+def _mononuclear_en(en: str) -> str | None:
+    """单核氢化物 free 名 → 去氢取代基名：ethyl-oxidane → ethyloxy、phenyl-azane → anilino。"""
+    for en_suf in _MONONUCLEAR_NAMES:
+        if en.endswith("-" + en_suf):
+            return _anilino_en(en[: -len(en_suf) - 1], MONONUCLEAR_YL[en_suf][1])
+    return None
+
+
+def _mononuclear_zh(zh: str) -> str | None:
+    """中文组装名去氢：乙基-氧化烷 → 乙氧基、苯基-氮烷 → 苯胺基、4-氯苯基-氮烷 → 4-氯苯胺基。"""
+    for en_suf in _MONONUCLEAR_NAMES:
+        zh_suf, _, zy = MONONUCLEAR_YL[en_suf]
+        if zh.endswith("-" + zh_suf):
+            base = zh[: -len(zh_suf) - 1]
+            if zy == "氨基" and base.endswith("苯基"):
+                return base[: -len("苯基")] + "苯胺基"
+            return zh_bridge_root(base) + zy
+    return None
+
+def _try_fg_prefix(en: str, zh: str) -> tuple[str, str] | None:
+    """尝试将官能团后缀名转换为取代基前缀形式。"""
+    for en_fn, zh_fn in [
+        (_mononuclear_en, _mononuclear_zh),
+    ]:
+        en_out = en_fn(en)
+        zh_out = zh_fn(zh) if en_out else None
+        if en_out and zh_out:
+            return en_out, zh_out
+    return None
+
+def free_to_yl(
+    en: str, zh: str, attach_locant: int, *, paren: bool = True,
+) -> tuple[str, str, bool]:
+    """在键合位次处把 free 母体名转 P-29 -yl 双语形式（P-63.2.2 醇→烷氧基、P-63.2.1 硫醇→烷基硫基、P-62.2 1° 胺→烷基氨基）。"""
+    fg = _try_fg_prefix(en, zh)
+    if fg is not None:
+        need_paren = fg[0].endswith("amino") and fg[0] != "amino"  # P-29.3.6：复合前缀（methylamino=CH3-NH-，非普通 amino）需括号与两个独立取代基区分。
+        need_paren = need_paren or (fg[0].endswith("anilino") and fg[0] != "anilino")  # 带环取代基的 anilino（4-chloroanilino）与 …phenylamino 同理需括号（gold：(4-chloroanilino)benzoic acid）；裸 anilino 免括。
+        return fg[0], fg[1], need_paren
+    return None
+
+
 def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     """杂原子锚点自由基：单核氢化物母体+烷基取代基经 free_to_yl 转标准名（*OCC→ethoxy；azane 双烷基按 P-62.2 字母序、同烷基 di-）；零/多取代基或名缺失返回 None 明确失败。"""
     parent = numbered.get("parent") or {}
@@ -390,11 +442,7 @@ _ZH_SIMPLE_YL_RE = re.compile(r"^[^\-()\[\]\d]+基$")  # 无位次无取代的�
 
 
 def _zh_alkoxy_part(name: str) -> str:
-    """中文酯 O 侧基名渲染（P-65.6.3）：简单烃基省「基」，其余保留「基」；带取代基者整体围栏（内含括号时升方括号）。
-
-    gold 口径：乙酸乙酯/十八酸苄酯省「基」；乙酸噻吩-3-基酯/乙酸丙-2-基酯只带位次者保留不括；乙酸(7-乙酰氧基庚基)酯、
-    苯甲酸[2-乙酰氨基-3-苯甲酰氧基-2-(苯甲酰氧基甲基)丙基]酯 等带取代基者保留「基」并围栏。
-    """
+    """中文酯 O 侧基名渲染（P-65.6.3） """
     if not name:
         return name
     if _ZH_SIMPLE_YL_RE.match(name):
@@ -459,7 +507,7 @@ def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
     return f"1H-{zh_parent}"
 
 
-def _with_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]:
+def join_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]:
     """把动态指示氢与 hydro 前缀依次拼到母体名前：顺序为 hydro + 指示氢 + 母体名；母体名已带静态 1H-（保留名）时不重复。"""
     parent = numbered.get("parent") or {}
     pre = parent.get("hydro_prefix") or ("", "")
@@ -472,7 +520,7 @@ def _with_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str
     return (join_parent_name(pre[0], en), join_parent_name(pre[1], zh)) if pre[0] else (en, zh)
 
 
-def _ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str, str]:
+def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str, str]:
     """净正电荷分子的环内 N+/O+ → 母体名缀 `-{位次}-ium`（P-62.4.1；chromene → chromenylium）。非该情形原样返回。"""
     parent = numbered.get("parent") or {}
     mol = parent.get("mol")
@@ -513,21 +561,21 @@ def _ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str, st
 
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     """组装入口：取名 → 前缀 → 阴离子/R-S/金属盐后缀。"""
-    from namepredict.layer5.stereo import apply_rs_prefix
+    from namepredict.layer5.stereo import join_rs_prefix
     kind, n = _parent_n(numbered)
     if not _ensure_fused_stem(numbered):
         return _unsupported(n, kind)
     names = _names_for(kind, n, numbered)#n 碳数
     if not names:
         return _unsupported(n, kind)
-    names = _with_hydro_prefix(names, numbered)
-    names = _ring_cation_suffix(numbered, names)
+    names = join_hydro_prefix(names, numbered)
+    names = join_ring_cation_suffix(numbered, names)
 
     joined = join_kind_name(kind, _prefix_for(numbered, kind, n), names, numbered)
     if joined is None:
         return _unsupported(n, kind)
     en, zh = joined
-    en, zh = maybe_anion_names(numbered, en, zh)
-    en, zh = apply_rs_prefix(numbered, en, zh)
-    en, zh = maybe_metal_salt_names(numbered, en, zh)
+    en, zh = join_anion_names(numbered, en, zh)
+    en, zh = join_rs_prefix(numbered, en, zh)
+    en, zh = join_metal_salt_names(numbered, en, zh)
     return _ok(en, zh, time_ms, source)

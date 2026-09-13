@@ -98,7 +98,7 @@ phosphate__EXCLUDED = [
 def test_phosphate_detector_excludes(smiles: str) -> None:
     from namepredict.layer0.preprocessor import preprocess
     from namepredict.layer0.salt import dissociate_salt
-    from namepredict.layer1.phosphate import phosphate_entries
+    from namepredict.layer1.analyzer import phosphate_entries
 
     mol = preprocess(smiles)
     organic, _salt = dissociate_salt(mol)

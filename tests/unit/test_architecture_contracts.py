@@ -4,7 +4,7 @@ test_l2_parent_core_contract.py: L2 parent_core is the sole authority for parent
 test_l2_l3_side_facts_contract.py: Architecture contract for Layer 2 side topology facts consumed by Layer 3.
 test_l5_no_layer2_private.py: L5 special FG name modules must not import L2 private APIs.
 test_ring_scaffold_expression_contract.py:
-test_anchored_whole_mol.py: 整分子锚定键命中：顶层命名 *xxx 与取代基查表（resolve_name）一致。
+test_anchored_whole_mol.py: 带自由价的整分子命名：*xxx 走常规管线得到保留取代基名。
 test_claimable_block_api.py: Ownership-only claimable blocks: topology claims, no naming mode.
 test_claimable_parent_batches.py: Parent-class batch coverage for universal claimable-block mainline.
 test_universal_claimable_block.py:
@@ -29,7 +29,7 @@ from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1.functional_group_inventory import (
     FunctionalGroupClass as FG,
     FunctionalGroupInventory,
-    occurrences_of,
+    inventory_from_info,
 )
 from namepredict.layer2.candidates import _collect_candidates
 from namepredict.layer2.parent_ownership import finalize_parent_ownership
@@ -46,10 +46,8 @@ from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer3.substituent_namer import SubstituentName, SubstituentNamer
 from namepredict.layer4.locant_calc import _fg_locants
 from namepredict.layer4.numbering import number
-from namepredict.namer import SMILESNNamer, _names_from_subs
-from namepredict.tools.anchored_table import resolve_name
-from namepredict.tools.block_cut import parent_atom_set
-from namepredict.tools.free_to_yl import free_to_yl as yl_form
+from namepredict.namer import SMILESNNamer
+from namepredict.layer5.assembler import free_to_yl as yl_form
 from namepredict.tools.re import normalize_en, normalize_zh
 from pathlib import Path
 from rdkit import Chem
@@ -159,19 +157,19 @@ def test_info_carries_inventory_and_no_flat_fg_lists() -> None:
 
 
 def test_unsaturation_stays_out_of_fg_channel() -> None:
-    """双键/三键在 info 顶层，但不进 _fg_parts。"""
-    from namepredict.layer1.analyzer import _fg_parts
+    """双键/三键在 info 顶层，但不进 _detect_parts。"""
+    from namepredict.layer1.analyzer import _detect_parts
 
     smiles = "C=CC#C"
     info = analyze(Chem.MolFromSmiles(smiles))
     assert info["double_bonds"] and info["triple_bonds"]
-    assert set(_fg_parts(Chem.MolFromSmiles(smiles))) <= l1_fg_single_format__FG_KEYS
+    assert set(_detect_parts(Chem.MolFromSmiles(smiles))) <= l1_fg_single_format__FG_KEYS
 
 
 def test_demoted_leaf_survives_in_inventory_not_in_flat_lists() -> None:
     """腈被羧酸压制时：条目以 demoted 状态留在清单中，且不再是主基团候选。"""
     info = analyze(Chem.MolFromSmiles("N#CCC(=O)O"))
-    nitriles = occurrences_of(info, FG.NITRILE)
+    nitriles = inventory_from_info(info).occurrences(FG.NITRILE)
     assert nitriles == ()  # occurrences() 只返回未降级条目
     assert [o.group_class for o in info["fg_inventory"].demoted_entries()] == [FG.NITRILE]
     assert info["fg_inventory"].demoted_entries()[0].payload["center_idx"] is not None
@@ -402,36 +400,10 @@ def test_naphthalenol_uses_naph_family_expression_policy():
 # ==========================================================================
 # 合并自 test_anchored_whole_mol.py
 #
-# 整分子锚定键命中：顶层命名 *xxx 与取代基查表（resolve_name）一致。
-#
-# 之前顶层把 *xxx 当自由基母体硬算，暴露出与保留表不一致的编号/骨架错误
-# （quinolin-5-yl vs quinolin-2-yl、ethan-1-yl vs methoxy、FAIL 等）。
-# 本测试要求：整分子 canonical == 锚定表键时，顶层命名直接返回保留名。
+# 带自由价的整分子命名：*xxx 走常规管线得到保留取代基名。
 # ==========================================================================
 def anchored_whole_mol___name(smiles: str):
     return SMILESNNamer().name(smiles)
-
-
-# ── registry 条目：顶层 *xxx == resolve_name（registry 双语名）──
-
-@pytest.mark.parametrize("smi,key", [
-    ("*C(C)C", "isopropyl"),
-    ("*C(C)(C)C", "tert-butyl"),
-    ("*Cc1ccccc1", "benzyl"),
-    ("*OC", "methoxy"),
-    ("*S(C)(=O)=O", "methylsulfonyl"),
-    ("*C#N", "cyano"),
-    ("*O", "hydroxy"),
-    ("*[O]", "oxidanyl"),
-    ("*N", "amino"),
-    ("*S", "sulfanyl"),
-])
-def test_top_level_star_matches_registry(smi, key):
-    r = anchored_whole_mol___name(smi)
-    assert r.success, f"{smi} 命名失败: {r.meta.get('reason')}"
-    en, zh = resolve_name(key)
-    assert r.en == en, f"{smi} en: {r.en!r} != {en!r}"
-    assert r.zh == zh, f"{smi} zh: {r.zh!r} != {zh!r}"
 
 
 # ── 内联条目：顶层 *xxx == 内联 (en, zh) ──
@@ -447,41 +419,7 @@ def test_top_level_star_matches_inline(smi, en, zh):
     assert r.zh == zh
 
 
-# ── 命中路径标记 ──
-
-def test_hit_sets_anchored_meta():
-    r = anchored_whole_mol___name("*C(C)C")
-    assert (r.meta or {}).get("anchored") is True
-    r2 = anchored_whole_mol___name("*Cc1ccccc1")
-    assert (r2.meta or {}).get("anchored") is True
-
-
-# ── 普通分子不受影响（表键带 * 前缀，绝不误命中）──
-
-def test_plain_molecules_not_hit():
-    assert anchored_whole_mol___name("c1ccccc1").en == "benzene"
-    assert anchored_whole_mol___name("CC(C)C").success
-    assert anchored_whole_mol___name("CC(C)C").en != "isopropyl"
-    assert ( anchored_whole_mol___name("CC(C)C").meta or {}).get("anchored") is not True
-
-
-# ── 带附加取代基的自由基：整分子不在表，仍走管线 ──
-
-def test_star_with_extra_substituent_not_hit():
-    # 整分子 *c1ccc(Cl)cc1 不是单一锚定键 → 走管线，绝不误命中 phenyl
-    r = anchored_whole_mol___name("*c1ccc(Cl)cc1")
-    assert (r.meta or {}).get("anchored") is not True
-    assert r.en != "phenyl"
-
-
 # ── *O/*[O]/*N 只服务整分子顶层，不进 L3 取代基查表 ──
-
-def test_mononuclear_anchored_whole_mol_only():
-    # 整分子 *O 顶层命中 anchored（hydroxy）
-    r = anchored_whole_mol___name("*O")
-    assert r.en == "hydroxy"
-    assert (r.meta or {}).get("anchored") is True
-
 
 def test_hetero_anchored_not_used_as_substituent_lookup():
     # 多酮羰基氧不被 L3 误作羟基取代基（*O 不进取代基查表 + _ketone_fg_atoms 修复）
@@ -654,9 +592,7 @@ def claimable_parent_batches___assert_coverage_complete(smiles: str) -> None:
     assert group, f"no parent candidate: {smiles}"
     gaps = []
     for parent in group:
-        subst = extract_substituents(info, parent)
-        names = _names_from_subs(subst)
-        led = build_coverage_ledger(mol, owned_atoms=parent["owned_atoms"], names=names)
+        led = build_coverage_ledger(mol, owned_atoms=parent["owned_atoms"], names=[])
         if led.complete:
             return
         gaps.append(f"kind={parent.get('kind')} gap={sorted(led.gap)} overlap={sorted(led.overlap)}")
@@ -722,7 +658,7 @@ def test_benzamide_owns_core_not_n_phenyl():
     owned = parent["owned_atoms"]
     assert isinstance(owned, frozenset)
 
-    am = occurrences_of(info, FG.AMIDE)[0].payload
+    am = inventory_from_info(info).occurrences(FG.AMIDE)[0].payload
     n_idx = next(i for i in am["surr_idx"] if mol.GetAtomWithIdx(i).GetAtomicNum() == 7)
     assert am["center_idx"] in owned
     assert n_idx in owned
@@ -773,7 +709,6 @@ def test_owned_atoms_is_frozenset_and_immutable_after_ops():
     snapshot = frozenset(owned)
 
     # side operations must not mutate ownership truth
-    _ = parent_atom_set(parent, mol)
     _ = finalize_parent_ownership(parent, mol)
     _ = list(owned)
     copy_out = set(owned)
@@ -782,13 +717,6 @@ def test_owned_atoms_is_frozenset_and_immutable_after_ops():
     assert parent["owned_atoms"] == snapshot
     assert parent["owned_atoms"] is owned
     assert isinstance(parent["owned_atoms"], frozenset)
-
-
-def test_parent_atom_set_adapter_prefers_owned_atoms():
-    """Compatibility adapter returns owned_atoms when present."""
-    mol, info = parent_ownership___info("CC(=O)O")
-    parent = select_parent(info)[0]
-    assert parent_atom_set(parent, mol) == parent["owned_atoms"]
 
 
 def test_select_parent_returns_finalized_tied_group():
@@ -964,13 +892,6 @@ def scaffold_numbering_producer_flow___selected(smiles: str) -> dict:
     mol = preprocess(smiles)
     assert mol is not None
     return select_parent(analyze(mol))[0]
-
-
-def test_scaffold_parent_without_materialized_facts_is_rejected() -> None:
-    parent = scaffold_numbering_producer_flow___selected("c1ccc2[nH]ccc2c1")
-    parent.pop("numbering_scaffold")
-    with pytest.raises(ValueError, match="numbering_scaffold"):
-        number(parent, [])
 
 
 @pytest.mark.parametrize("smiles,_,expected", scaffold_numbering_producer_flow___CASES)

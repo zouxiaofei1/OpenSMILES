@@ -294,19 +294,11 @@ def _ester_entries(mol: Mol) -> list[dict]:
     """收集分子中所有酯条目的列表。"""
     return [_ester_entry(a) for a in mol.GetAtoms() if _is_ester_carbon(a)]
 
-def _anhydride_other_c(oxygen, carbon) -> int:
-    """返回酸酐桥氧另一侧的碳索引。"""
-    for n in oxygen.GetNeighbors():
-        if n.GetAtomicNum() == C and n.GetIdx() != carbon.GetIdx():
-            return n.GetIdx()
-    return carbon.GetIdx()
-
 def _anhydride_entry(atom) -> dict:
     """组装单个酸酐条目 dict（桥氧为中心，两个羰基碳与两个羰基氧为周边），并归一化两碳顺序。"""
     mol = atom.GetOwningMol()
     o_idx = _anhydride_o_of(atom)
-    other = _anhydride_other_c(mol.GetAtomWithIdx(o_idx), atom)
-    c1, c2 = sorted((atom.GetIdx(), other))
+    c1, c2 = sorted((atom.GetIdx(), True))
     return {"center_idx": o_idx, "surr_idx": [c1, c2, *_double_bonded_o_idxs(atom),
                                               *_double_bonded_o_idxs(mol.GetAtomWithIdx(other))]}
 

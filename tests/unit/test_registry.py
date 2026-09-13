@@ -15,11 +15,9 @@ from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG, FunctionalGroupInventory, FunctionalGroupOccurrence
 from namepredict.layer2 import kind_registry as kr
-from namepredict.layer2.parent_candidate import _kind_rank
 from namepredict.layer2.parent_selector import select_parent
 from namepredict.layer2.principal import PRINCIPAL_REGISTRY, PrincipalExpression, PrincipalFeatureSpec, PrincipalPriority, select_principal_group
-from namepredict.layer2.ring_scaffold import all_specs, fused56_kind_ids, get_entry, get_spec, kind_ids_for, match_scaffold_ids, match_systems, monohetero_kind_ids, naph_kind_ids, registry
-from namepredict.layer2.scoring import _score_parent
+from namepredict.layer2.ring_scaffold import all_specs, get_spec, match_retained
 from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh
 
@@ -56,10 +54,6 @@ def test_ether_not_registered() -> None:
 def test_unknown_kind_negative() -> None:
     assert kr.get("no_such") is None
     assert kr.parent_names("no_such") is None
-    assert kr.is_hetero_ring("no_such") == 0
-    assert kr.is_carbo_ring("no_such") == 0
-    assert kr.n_rings_of("no_such") == 0
-    assert kr.retained_bonus("no_such") == 0
 
 
 # 正交化契约：环 + 主 FG → FG 类别 kind + scaffold_id；无主 FG 保留 scaffold 结构 kind。
@@ -95,7 +89,8 @@ def test_select_parent_preloads_registry_stem() -> None:
 def test_select_parent_preserves_existing_stem(monkeypatch: pytest.MonkeyPatch) -> None:
     from namepredict.layer2 import candidates
 
-    parent = {"kind": "phenol", "stem_en": "custom", "stem_zh": "自定义", "mol": object()}
+    parent = {"kind": "phenol", "stem_en": "custom", "stem_zh": "自定义",
+              "principal_group_count": 1, "mol": object()}
     monkeypatch.setattr(candidates, "_collect_candidates", lambda _: [parent])
     selected = select_parent({"mol": parent["mol"]})[0]
     assert selected["stem_en"] == "custom"
@@ -104,21 +99,6 @@ def test_select_parent_preserves_existing_stem(monkeypatch: pytest.MonkeyPatch) 
 
 def kind_registry___p(kind: str, **kw) -> dict:
     return {"kind": kind, **kw}
-
-
-def test_score_parent_tuple_order() -> None:
-    """Legacy score consumes the kind-rank fallback for old-style parents."""
-    ox = _score_parent({}, kind_registry___p("oxolane", chain=[0, 1, 2, 3, 4], n_carbons=4))
-    eth = _score_parent({}, kind_registry___p("ether", chain=[0, 1], n_carbons=2))
-    assert eth[:2] == (0, 0) and ox[:2] == (0, 0)
-    pyr = _score_parent({}, kind_registry___p("pyridine", chain=list(range(6)), n_carbons=5))
-    alk = _score_parent({}, kind_registry___p("alkane", chain=[0, 1, 2], n_carbons=3))
-    assert pyr[3] == 1 and alk[3] == 0  # hetero bit
-    assert pyr > alk
-    bz = _score_parent({}, kind_registry___p("acid", chain=list(range(7)), n_carbons=7))
-    al = _score_parent({}, kind_registry___p("alcohol", chain=[0, 1], n_carbons=2))
-    assert bz[0] == 14 and al[0] == 5
-    assert bz > al
 
 
 kind_registry__REGRESSION = [
@@ -146,7 +126,8 @@ def test_behavior_regression(smiles: str, en: str, zh: str) -> None:
 def retained_registry___ids(smiles: str) -> list[str]:
     mol = preprocess(smiles)
     assert mol is not None
-    return match_scaffold_ids(analyze(mol))
+    info = analyze(mol)
+    return [sid for s in info["ring_systems"] if (sid := match_retained(info, s["atom_ids"]))]
 
 
 def test_benzene_registry():
@@ -177,11 +158,10 @@ def test_open_chain_no_match():
 def test_match_systems_has_entry():
     mol = preprocess("c1ccc2ccccc2c1")
     info = analyze(mol)
-    hits = match_systems(info)
-    assert len(hits) == 1
-    sid, system, entry = hits[0]
+    system = info["ring_systems"][0]
+    sid = match_retained(info, system["atom_ids"])
     assert sid == "naphthalene"
-    assert entry["en"] == "naphthalene"
+    assert get_spec(sid).stem_en == "naphthalene"
     assert system["n_rings"] == 2
 
 
@@ -255,33 +235,22 @@ def test_principal_boundaries(smiles: str, expected: FG | None, other: FG) -> No
 
 
 def test_registry_supports_new_p41_class_and_p43_subpath() -> None:
+    """默认注册表未收录的类别可由外部注册表注入，并按优先级参与选择。"""
+    classes = principal_registry___inventory(FG.NONE, FG.AMIDE)
+    assert select_principal_group(classes).group_class == FG.AMIDE  # 未注册时不参与
     custom = dict(PRINCIPAL_REGISTRY)
-    custom[FG.ISOCYANATE] = PrincipalFeatureSpec(
+    custom[FG.NONE] = PrincipalFeatureSpec(
         PrincipalPriority(7, (3, 2)), PrincipalExpression.SUFFIX,
     )
-    selected = select_principal_group(principal_registry___inventory(FG.ISOCYANATE, FG.AMIDE), custom)
-    assert selected is not None and selected.group_class == FG.ISOCYANATE
+    selected = select_principal_group(classes, custom)
+    assert selected is not None and selected.group_class == FG.NONE
 
 
-@pytest.mark.parametrize("kind,rank", [
-    ("sulfide", 2), ("isocyanate", 8),
-    # Migrated from _CHAIN_FG fallback to PRINCIPAL_REGISTRY projection:
-    # ranks must be preserved exactly.
-    ("tetraalkylammonium", 0),
-])
-def test_kind_rank_projection_preserved(kind: str, rank: int) -> None:
-    assert _kind_rank(kind) == rank
-
-
-@pytest.mark.parametrize("kind", ["carboxylate", "formamide_like", "amine_oxide", "unknown_one"])
-def test_kind_rank_never_uses_substring_guessing(kind: str) -> None:
-    assert _kind_rank(kind) == 0
-
-
-def test_chain_fg_anchor_fields_present() -> None:
-    """链式表达能产生 kind 的 FG 都必须有 payload 锚点字段（_FIELDS 并入主表后的守卫）。"""
-    from namepredict.layer2.principal_expression import _CHAIN_FG, _anchor_fields
-    assert all(_anchor_fields(gc) is not None for gc in _CHAIN_FG)
+def test_unregistered_kind_is_absent_not_guessed() -> None:
+    """未注册 kind 一律返回 None：kind 只按注册表精确查表，不靠子串猜条目。"""
+    for kind in ("carboxylate", "formamide_like", "amine_oxide", "unknown_one"):
+        assert kr.get(kind) is None
+    assert kr.parent_names("unknown_one") is None
 
 
 # ==========================================================================
@@ -320,29 +289,35 @@ def test_spec_meta(sid: str) -> None:
     assert sp.n_rings in (1, 2)
 
 
-def test_kind_ids_helpers_derive_from_specs() -> None:
-    """spec 派生集合，返回 frozenset；各组只钉锚点 id，registry 新增 spec 时断言自动跟随。"""
-    mono_carbo = kind_ids_for("mono_carbo")
-    assert isinstance(mono_carbo, frozenset)
-    assert mono_carbo == {"benzene"}
-    assert kind_ids_for("monohetero") >= {"furan", "thiophene", "pyrrole", "pyridine",
-                                          "pyridazine", "pyrimidine", "pyrazine",
-                                          "imidazole", "pyrazole", "oxazole", "thiazole",
-                                          "pyrrolidine", "piperidine", "morpholine",
-                                          "piperazine", "oxolane", "oxane"}
-    assert kind_ids_for("naph_family") >= {"naphthalene", "quinoline", "isoquinoline",
-                                           "quinazoline", "quinoxaline"}
-    assert kind_ids_for("fused56") >= {"indole", "indazole", "benzimidazole",
-                                       "benzofuran", "benzothiophene",
-                                       "benzothiazole", "benzoxazole"}
-    assert kind_ids_for("anthra") >= {"anthracene"}
-    assert fused56_kind_ids() == kind_ids_for("fused56")
-    assert naph_kind_ids() == kind_ids_for("naph_family")
-    assert monohetero_kind_ids() == kind_ids_for("monohetero")
+def scaffold_registry_single_source___ids_by_class() -> dict[str, frozenset[str]]:
+    """按 naming_class 分组的 scaffold id 集合。"""
+    groups: dict[str, set[str]] = {}
+    for sp in all_specs():
+        groups.setdefault(sp.naming_class, set()).add(sp.id)
+    return {nc: frozenset(ids) for nc, ids in groups.items()}
+
+
+def test_kind_ids_derive_from_specs() -> None:
+    """spec 按 naming_class 分组；各组只钉锚点 id，registry 新增 spec 时断言自动跟随。"""
+    by_class = scaffold_registry_single_source___ids_by_class()
+    assert by_class["mono_carbo"] == {"benzene"}
+    assert by_class["monohetero"] >= {"furan", "thiophene", "pyrrole", "pyridine",
+                                      "pyridazine", "pyrimidine", "pyrazine",
+                                      "imidazole", "pyrazole", "oxazole", "thiazole",
+                                      "pyrrolidine", "piperidine", "morpholine",
+                                      "piperazine", "oxolane", "oxane"}
+    assert by_class["naph_family"] >= {"naphthalene", "quinoline", "isoquinoline",
+                                       "quinazoline", "quinoxaline"}
+    assert by_class["fused56"] >= {"indole", "indazole", "benzimidazole",
+                                   "benzofuran", "benzothiophene",
+                                   "benzothiazole", "benzoxazole"}
+    assert by_class["anthra"] >= {"anthracene"}
 
 
 def test_fused56_ids_retained_in_kind_registry() -> None:
-    for sid in fused56_kind_ids():
+    ids = scaffold_registry_single_source___ids_by_class()["fused56"]
+    assert ids
+    for sid in ids:
         m = kr.get(sid)
         assert m is not None, sid
         assert m.retained is True
@@ -350,7 +325,9 @@ def test_fused56_ids_retained_in_kind_registry() -> None:
 
 
 def test_monohetero_ids_retained_in_kind_registry() -> None:
-    for sid in monohetero_kind_ids():
+    ids = scaffold_registry_single_source___ids_by_class()["monohetero"]
+    assert ids
+    for sid in ids:
         m = kr.get(sid)
         assert m is not None, sid
         assert m.retained is True
@@ -364,16 +341,6 @@ def test_no_bidirectional_drift_stem_specs() -> None:
         if sp.stem_en is None or sp.stem_zh is None:
             continue
         assert kr.parent_names(sp.id) == (sp.stem_en, sp.stem_zh)
-
-
-def test_retained_registry_ids_subset_of_spec() -> None:
-    for sid in registry():
-        assert get_spec(sid) is not None, sid
-        entry = get_entry(sid)
-        assert entry is not None
-        sp = get_spec(sid)
-        assert entry["en"] == sp.stem_en
-        assert entry["zh"] == sp.stem_zh
 
 
 def test_indole_parent_names_stable() -> None:

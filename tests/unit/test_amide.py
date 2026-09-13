@@ -14,7 +14,7 @@ import pytest
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG, occurrences_of
+from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG, inventory_from_info
 from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh
 from rdkit import Chem
@@ -243,8 +243,8 @@ def test_preprocess_normalizes_enol_to_amide() -> None:
     mol = preprocess("CC(O)=NC")
     assert amide_tautomer_normalize___canon("CC(=O)NC") == Chem.MolToSmiles(mol)
     info = analyze(mol)
-    assert occurrences_of(info, FG.AMIDE)
-    assert not occurrences_of(info, FG.ALCOHOL)
+    assert inventory_from_info(info).occurrences(FG.AMIDE)
+    assert not inventory_from_info(info).occurrences(FG.ALCOHOL)
 
 
 @pytest.mark.parametrize(

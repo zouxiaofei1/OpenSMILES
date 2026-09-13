@@ -20,10 +20,7 @@ def _fallback_hydro_atoms(parent: dict) -> frozenset:
 
 
 def _lowest_extra_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset:
-    """把加氢位中最低位次改用指示氢表达（P-31.2.2、P-58.2.1.2、P-58.2.2.2：指示氢优先得低位次，其余仍是 hydro 位）。
-
-    与现行指示氢位次最高者互换，只改名次归属、不改变两边计数，故 hydro 倍增前缀的合法性与奇数回退都不受影响（如 1,4-dihydro-2H- → 2,4-dihydro-1H-）。无 hydro 位或无指示氢位时不重排。
-    """
+    """把加氢位中最低位次改用指示氢表达 """
     if not hydro:
         return hydro
     mol = packed.get("mol")
@@ -48,10 +45,7 @@ def _lowest_extra_to_indicated(packed: dict, labels, hydro: frozenset) -> frozen
 
 
 def _odd_hydro_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset:
-    """加氢位数不成倍增（奇数）时把其中最低位次改用指示氢表达（P-51.1.1.4、P-58.2.1.2）。
-
-    饱和环上出现无氢饱和位（偕二甲基季碳等）使其不计入 hydro，环内带 H 的饱和位遂成奇数：hydro 只取偶数个，余下最低位次那个由指示氢承载，故 4,4,7-三甲基-2,3-二氢-1H-萘 取 hydro=2,3 / 指示氢=1，而非整体放弃加氢描述退成「4,4,7-三甲基萘」。已合法（在倍增表内）时不改动。
-    """
+    """加氢位数不成倍增（奇数）时把其中最低位次改用指示氢表达（P-51.1.1.4、P-58.2.1.2）。"""
     from namepredict.constants import HYDRO_MULT_N
 
     n = len(hydro or ())
@@ -90,21 +84,22 @@ def hydro_prefix(chain, labels, hydro_atoms) -> tuple[str, str]:
 def number(parent: dict, substituents: list) -> dict:
     """对 parent 定向编号，校验编号骨架事实后组装位次结果（含指示氢前缀 P-58.2.1）。"""
     chain = orient_numbering(parent, substituents)
-    if parent.get("numbering_scaffold_required") and not parent.get("numbering_scaffold"):
-        raise ValueError("numbering_scaffold facts required for selected scaffold")
     oriented = {**parent, "chain": chain}
     result = _pack(oriented, _with_locants(chain, substituents, oriented.get("numbering_scaffold")))
     packed = result.get("parent") or {}
     labels = (packed.get("numbering_scaffold") or {}).get("labels")
     hydro = packed.get("hydro_atoms") or frozenset()
-    if not hydro:  # 未注册稠环无保留模板可比 -> hydro_atoms 缺失，回退由分子自身饱和环位推导
+    if not hydro:  # 未注册稠环推导
         hydro = _fallback_hydro_atoms(packed)
-    else:  # 保留模板只写了一个 Kekulé 式，稠合/角位可能漏计（cyclopenta[a]phenanthrene 型甾体的 tetradecahydro 被写成 dodecahydro-1H,2H）；分子自身推得的饱和环位为合法倍增数且是模板集的真超集时改用它，否则保留模板集。
+    else:  
         fb = _fallback_hydro_atoms(packed)
         if len(fb) in HYDRO_MULT_N and set(hydro) < fb:
             hydro = fb
+    print(hydro)
     hydro = _lowest_extra_to_indicated(packed, labels, hydro)
+    print(hydro)
     hydro = _odd_hydro_to_indicated(packed, labels, hydro)
+    print(hydro)
     pre = hydro_prefix(packed.get("chain"), labels, hydro)
     if not pre[0]:  # hydro 位次表达不出（奇数值/超表/不在链内）则整体退回指示氢，不产半截名
         hydro, pre = frozenset(), ("", "")
@@ -113,6 +108,7 @@ def number(parent: dict, substituents: list) -> dict:
         packed.get("mol"), packed.get("chain"), labels, hydro, extra)
     packed["indicated_h_forced"] = bool(extra)
     packed["hydro_prefix"] = pre
+    # print("layer4result",result,"\n\n\n\n\n")
     return result
 
 

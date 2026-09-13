@@ -60,29 +60,9 @@ def _claim_from_sub(s: dict, atoms: frozenset[int]) -> ClaimedBlock:
         atoms=atoms,
     )
 
-
-def _one_name_from_sub(s: dict) -> SubstituentName | None:
-    """将单个取代基 dict 转为 SubstituentName，无原子则返回 None。"""
-    atoms = frozenset(s.get("atoms") or [])
-    if not atoms:
-        return None
-    return SubstituentName(
-        claim=_claim_from_sub(s, atoms),
-        en=s.get("en") or "x",
-        zh=s.get("zh") or "x",
-        requires_parentheses=bool(s.get("paren")),
-    )
-
-
-def _names_from_subs(subs: list[dict]) -> list[SubstituentName]:
-    """批量将取代基 dict 列表转换为 SubstituentName 列表（跳过无效项）。"""
-    return [n for s in subs if (n := _one_name_from_sub(s)) is not None]
-
-
 def _ledger_complete(mol, owned, subst: list[dict]) -> bool:
     """基于 coverage ledger 判断取代基是否覆盖全部母体原子。"""
-    names = _names_from_subs(subst)
-    return build_coverage_ledger(mol, owned_atoms=owned, names=names).complete
+    return build_coverage_ledger(mol, owned_atoms=owned, names=[]).complete
 
 
 def _ok_result(numbered: dict, *, t0: float) -> NameResult | None:
@@ -215,9 +195,9 @@ def _apply_salt_suffix(result: NameResult, salt: dict) -> NameResult:
         return result
     if (result.meta or {}).get("parent_kind") == "phosphate":
         return result
-    from namepredict.layer5.stems import maybe_metal_salt_names
+    from namepredict.layer5.stems import join_metal_salt_names
 
-    en, zh = maybe_metal_salt_names({"salt": salt}, result.en or "", result.zh or "")
+    en, zh = join_metal_salt_names({"salt": salt}, result.en or "", result.zh or "")
     if en == (result.en or "") and zh == (result.zh or ""):
         return result
     out = copy.copy(result)

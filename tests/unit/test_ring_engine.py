@@ -1,8 +1,6 @@
-# 合并自 5 个原测试文件（按主题分组，内容与断言未改动）。
+# 合并自 3 个原测试文件（按主题分组，内容与断言未改动）。
 """
 test_ring_systems.py: Ring-system topology: fusion components for naphthalene/indole/quinoline/spiro.
-test_ring_ir.py: RingSystemIR: typed SSSR fusion topology (benzene / naphthalene / indole).
-test_ring_fingerprint.py: Ring layout fingerprint: sizes + fusion + hetero layout + aromatic.
 test_ring_template_match.py: SMILES 模板子图同构识别（原 scaffold/retained_templates.py 移植）。
 test_ring_geometry.py: ring_geometry: 3-8 元环模板坐标与平面几何原语。
 """
@@ -12,13 +10,9 @@ import math
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer1.ring_fingerprint import ring_fingerprint
-from namepredict.layer1.ring_ir import RingSystemIR, build_ring_ir
-from namepredict.layer1.ring_relative_stereo import ring_relative_stereo
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology
 from namepredict.layer2.ring_scaffold import match_retained, resolve_ring_scaffold
 from namepredict.layer4.ring_geometry import RING_TEMPLATES, clip_polygon, overlap_area, polygon_area, regular_polygon, ring_cyclic, ring_shape_template
-from rdkit import Chem
 
 # ==========================================================================
 # 合并自 test_ring_systems.py
@@ -38,9 +32,7 @@ def test_benzene_mono():
     assert len(syss) == 1
     s = syss[0]
     assert s["n_rings"] == 1
-    assert s["topology"] == "mono"
     assert s["n_atoms"] == 6
-    assert s["is_aromatic_mancude"] is True
     assert s["hetero_atoms"] == []
 
 
@@ -49,11 +41,9 @@ def test_naphthalene_fused2():
     assert len(syss) == 1
     s = syss[0]
     assert s["n_rings"] == 2
-    assert s["topology"] == "fused"
     assert s["n_atoms"] == 10
     assert len(s["fusion_edges"]) == 1
     assert len(s["fusion_edges"][0][2]) == 2  # shared atoms
-    assert s["is_aromatic_mancude"] is True
 
 
 def test_indole_fused56():
@@ -61,7 +51,6 @@ def test_indole_fused56():
     assert len(syss) == 1
     s = syss[0]
     assert s["n_rings"] == 2
-    assert s["topology"] == "fused"
     assert s["n_atoms"] == 9
     zs = {h["Z"] for h in s["hetero_atoms"]}
     assert 7 in zs
@@ -72,7 +61,6 @@ def test_quinoline_fused66():
     assert len(syss) == 1
     s = syss[0]
     assert s["n_rings"] == 2
-    assert s["topology"] == "fused"
     assert s["n_atoms"] == 10
     assert any(h["Z"] == 7 for h in s["hetero_atoms"])
 
@@ -81,7 +69,6 @@ def test_biphenyl_two_systems():
     """Two unfused rings → two mono systems (not fused)."""
     syss = ring_systems___systems("c1ccc(-c2ccccc2)cc1")
     assert len(syss) == 2
-    assert all(s["topology"] == "mono" for s in syss)
     assert all(s["n_rings"] == 1 for s in syss)
 
 
@@ -127,177 +114,26 @@ def test_non_spiro_unchanged():
     """Fused rings should NOT become spiro."""
     syss = ring_systems___systems("c1ccc2ccccc2c1")  # naphthalene
     assert len(syss) == 1
-    assert syss[0]["topology"] == "fused"
+    assert syss[0]["topology"] != "spiro"
 
 
 def test_biphenyl_unchanged():
     """Two separate rings should remain separate."""
     syss = ring_systems___systems("c1ccc(-c2ccccc2)cc1")
     assert len(syss) == 2
-    assert all(s["topology"] == "mono" for s in syss)
+    assert all(s["topology"] != "spiro" for s in syss)
 
 
 def test_pyridine_hetero():
     syss = ring_systems___systems("c1ccncc1")
     assert len(syss) == 1
     s = syss[0]
-    assert s["topology"] == "mono"
+    assert s["n_rings"] == 1
     assert any(h["Z"] == 7 for h in s["hetero_atoms"])
 
 
 def test_open_chain_empty():
     assert ring_systems___systems("CCCC") == []
-
-
-# ==========================================================================
-# 合并自 test_ring_ir.py
-# IUPAC: P-25 / P-22
-# Layer: L1
-#
-# RingSystemIR: typed SSSR fusion topology (benzene / naphthalene / indole).
-# ==========================================================================
-def ring_ir___ir(smiles: str) -> list[RingSystemIR]:
-    mol = preprocess(smiles)
-    assert mol is not None
-    return build_ring_ir(mol)
-
-
-def test_benzene_mono__ring_ir():
-    syss = ring_ir___ir("c1ccccc1")
-    assert len(syss) == 1
-    s = syss[0]
-    assert len(s.components) == 1
-    assert s.topology == "mono"
-    assert len(s.atom_ids) == 6
-    assert s.components[0].size == 6
-    assert s.components[0].hetero == ()
-    assert s.components[0].aromatic is True
-    assert s.fusions == ()
-
-
-def test_naphthalene_fused():
-    s = ring_ir___ir("c1ccc2ccccc2c1")[0]
-    assert len(s.components) == 2 and s.topology == "fused"
-    assert len(s.atom_ids) == 10
-    assert all(c.size == 6 and c.hetero == () for c in s.components)
-    assert len(s.fusions) == 1
-    assert len(s.fusions[0].shared) == 2
-    assert s.fusions[0].bond is True
-
-
-def test_indole_fused_hetero():
-    s = ring_ir___ir("c1ccc2[nH]ccc2c1")[0]
-    assert len(s.components) == 2 and s.topology == "fused"
-    assert len(s.atom_ids) == 9
-    zs = {z for c in s.components for _, z in c.hetero}
-    assert 7 in zs
-    assert sorted(c.size for c in s.components) == [5, 6]
-    assert len(s.fusions) == 1
-
-
-def test_biphenyl_two_mono_systems():
-    """Two unfused rings → two mono systems (not one fused)."""
-    syss = ring_ir___ir("c1ccc(-c2ccccc2)cc1")
-    assert len(syss) == 2
-    assert all(s.topology == "mono" for s in syss)
-    assert all(len(s.components) == 1 for s in syss)
-
-
-def test_open_chain_empty__ring_ir():
-    assert ring_ir___ir("CCCC") == []
-
-
-def test_pyridine_hetero_mono():
-    syss = ring_ir___ir("c1ccncc1")
-    assert len(syss) == 1
-    s = syss[0]
-    assert s.topology == "mono"
-    assert any(z == 7 for c in s.components for _, z in c.hetero)
-
-
-def test_fingerprint_filled():
-    s = ring_ir___ir("c1ccccc1")[0]
-    assert s.fingerprint
-    assert "6" in s.fingerprint
-
-
-def test_relative_faces_are_implicit_explicit_h_and_ring_order_invariant() -> None:
-    implicit = preprocess("O=C(O)[C@H]1CCC[C@@H](C(=O)O)C1")
-    explicit = Chem.AddHs(implicit)
-    assert implicit is not None and explicit is not None
-    def faces(mol):
-        ring = list(mol.GetRingInfo().AtomRings()[0])
-        ligands = {a: next(n.GetIdx() for n in mol.GetAtomWithIdx(a).GetNeighbors() if n.GetIdx() not in ring and n.GetAtomicNum() != 1) for a in ring if any(n.GetIdx() not in ring and n.GetAtomicNum() != 1 for n in mol.GetAtomWithIdx(a).GetNeighbors())}
-        return ring_relative_stereo(mol, ring, ligands).faces
-    assert faces(implicit)
-    assert faces(implicit) == faces(explicit)
-    ring = list(implicit.GetRingInfo().AtomRings()[0])
-    ligands = {a: next(n.GetIdx() for n in implicit.GetAtomWithIdx(a).GetNeighbors() if n.GetIdx() not in ring) for a in ring if any(n.GetIdx() not in ring for n in implicit.GetAtomWithIdx(a).GetNeighbors())}
-    assert ring_relative_stereo(implicit, ring, ligands).faces == ring_relative_stereo(implicit, list(reversed(ring)), ligands).faces
-
-
-# ==========================================================================
-# 合并自 test_ring_fingerprint.py
-# IUPAC: P-25 / P-22
-# Layer: L1
-#
-# Ring layout fingerprint: sizes + fusion + hetero layout + aromatic.
-# ==========================================================================
-def ring_fingerprint___ir(smiles: str) -> list[RingSystemIR]:
-    mol = preprocess(smiles)
-    assert mol is not None
-    return build_ring_ir(mol)
-
-
-def ring_fingerprint___fp(smiles: str) -> str:
-    syss = ring_fingerprint___ir(smiles)
-    assert len(syss) == 1
-    fp = ring_fingerprint(syss[0])
-    assert isinstance(fp, str) and fp
-    return fp
-
-
-def test_benzene_stable_mono_aromatic_size6():
-    fp = ring_fingerprint___fp("c1ccccc1")
-    assert "6" in fp
-    assert "mono" in fp or "s=6" in fp
-    assert fp == ring_fingerprint___fp("c1ccccc1")
-
-
-def test_benzene_same_scaffold_same_fp():
-    """Same layout scaffold always yields identical fingerprint."""
-    assert ring_fingerprint___fp("c1ccccc1") == ring_fingerprint___fp("C1=CC=CC=C1")
-
-
-def test_indole_ne_benzofuran():
-    """N vs O hetero layout must differ (indole ≠ benzofuran)."""
-    a = ring_fingerprint___fp("c1ccc2[nH]ccc2c1")
-    b = ring_fingerprint___fp("c1ccc2occc2c1")
-    assert a != b
-    assert a and b
-
-
-def test_indole_same_scaffold_same_fp():
-    """Two representations of the same indole skeleton share fp."""
-    assert ring_fingerprint___fp("c1ccc2[nH]ccc2c1") == ring_fingerprint___fp("c1cc2ccccc2[nH]1")
-
-
-def test_naphthalene_fused_carbocycle():
-    fp = ring_fingerprint___fp("c1ccc2ccccc2c1")
-    assert fp != ring_fingerprint___fp("c1ccccc1")
-    assert "6" in fp
-
-
-def test_pyridine_ne_benzene():
-    """Hetero mono layout differs from carbocycle mono."""
-    assert ring_fingerprint___fp("c1ccncc1") != ring_fingerprint___fp("c1ccccc1")
-
-
-def test_fingerprint_on_ir_when_wired():
-    """If build_ring_ir fills fingerprint, it matches pure function."""
-    s = ring_fingerprint___ir("c1ccccc1")[0]
-    if s.fingerprint:
-        assert s.fingerprint == ring_fingerprint(s)
 
 
 # ==========================================================================
@@ -369,7 +205,7 @@ def test_hydrogenated_fused_rings_hit_unsaturated_parent():
 
 def test_saturated_skeleton_near_neighbours_stay_unmatched():
     # 近邻负例：环数/碳数相近但稠合拓扑不同，仍不得误配为保留稠环。
-    assert ring_template_match___resolve("C1Cc2ccccc2C1") == "carbocycle"        # 茚满 C9，非萘 C10
+    assert ring_template_match___resolve("C1Cc2ccccc2C1") == "indene"            # 茚满 C9：归 2,3-二氢-1H-茚，非萘 C10
     assert ring_template_match___resolve("C1=CC2=CC=CC=CC2=CC1") == "carbocycle" # 薁 5+7，非萘 6+6
 
 

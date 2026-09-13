@@ -231,7 +231,7 @@ def _ester_en_rs(en: str, rs: list[tuple[int | str | None, str]]) -> str:
     return f"{alkyl} {_with_rs(acyl, rs)}"
 
 
-def apply_rs_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
+def join_rs_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     """对外 R/S 入口：算手性部件并应用到中英文名称（酯特殊插入）。"""
     rs_raw = _rs_parts(numbered)
     if not rs_raw:

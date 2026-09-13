@@ -71,7 +71,7 @@ def acid_to_anion_zh(zh: str) -> str:
     return zh if zh.endswith("根") else f"{zh}根"
 
 
-def maybe_anion_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
+def join_anion_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     """若母体为羧酸阴离子，将酸后缀转为 -ate / 酸根。"""
     if not (numbered.get("parent") or {}).get("anion"):
         return en, zh
@@ -126,7 +126,7 @@ def _with_acid_salt(en: str, zh: str, salt: dict) -> tuple[str, str]:
     return f"{en} {suf[0]}", f"{zh}{suf[1]}"
 
 
-def maybe_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
+def join_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     """应用碱金属盐或酸式盐（HCl）后缀。"""
     salt = numbered.get("salt") or {}
     if salt.get("metal"):

@@ -157,11 +157,7 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
 
 
 def component_stem(sid: str) -> tuple[str, str] | None:
-    """稠合组分词干 (en, zh)：只有 `fused=True` 的模板可作稠合命名零件，否则 None。
-
-    多数等于母体词干；indole/purine 以 `fused_stem` 覆盖去掉指示氢前缀（1H-/7H-），
-    因为稠合前缀取去指示氢的组分名（indolo 而非 1H-indolo）。
-    """
+    """稠合组分词干 """
     entry = _TEMPLATES.get(sid)
     if not entry or not entry.get("fused"):
         return None

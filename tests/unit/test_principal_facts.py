@@ -11,7 +11,7 @@ from __future__ import annotations
 import pytest
 
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG, occurrences_of
+from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG, inventory_from_info
 from namepredict.layer2.candidates import _collect_candidates
 from namepredict.layer2.principal_expression import PrincipalChargeState, PrincipalRelation, express_chain_principal
 from namepredict.layer2.principal_parent import select_principal_parent_skeletons
@@ -115,7 +115,7 @@ def test_primary_polyamine_typed_facts_and_names(smiles, kind, count, en, zh):
     assert facts.relation is PrincipalRelation.IN_SKELETON
     assert len(facts.occurrence_ids) == count
     assert len(facts.attachment_atoms) == count
-    expected = {a for o in occurrences_of(info, FG.AMINE) for a in o.parent_anchors}
+    expected = {a for o in inventory_from_info(info).occurrences(FG.AMINE) for a in o.parent_anchors}
     assert set(facts.attachment_atoms) == expected
     assert facts.charge_state is PrincipalChargeState.NEUTRAL
     result = SMILESNNamer().name(smiles)

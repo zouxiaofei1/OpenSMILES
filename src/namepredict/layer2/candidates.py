@@ -1,4 +1,4 @@
-"""Layer2 母体候选收集（由 layer2.scoring 评分，P-44）；环母体来自 `rule_driven_parent_candidates`；kind_registry 中原 `ring_producers`/`unsat_producers` 引导链已作为死代码移除。"""
+"""Layer2 母体候选收集（由 layer2.parent_selector 评分，P-44）；环母体来自 `rule_driven_parent_candidates`；kind_registry 中原 `ring_producers`/`unsat_producers` 引导链已作为死代码移除。"""
 from __future__ import annotations
 from namepredict.layer2.principal_parent import rule_driven_parent_candidates
 
