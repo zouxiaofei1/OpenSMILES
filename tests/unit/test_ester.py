@@ -241,10 +241,10 @@ def principal_benzoate___principal_name(smiles: str):
     t0 = time.perf_counter()
     for parent in rule_driven_parent_candidates(info):
         packed = pack_parent_stem(parent, info["mol"])
-        prepared, subst, complete = namer_module._prepare_candidate(info, packed, depth=0)
+        prepared, subst, complete = namer_module._prepare_candidate(info, packed)
         if not complete:
             continue
-        hit = namer_module._assemble_candidate(prepared, subst, depth=0, t0=t0)
+        hit = namer_module._assemble_candidate(prepared, subst, t0=t0)
         if hit is not None and hit.success:
             return hit
     return None

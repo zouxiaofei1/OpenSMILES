@@ -203,7 +203,6 @@ def debug_smiles(body: DebugBody) -> dict[str, Any]:
                     en=s.get("en") or "x",
                     zh=s.get("zh") or "x",
                     requires_parentheses=bool(s.get("paren")),
-                    backend=s.get("backend") or "extract",
                 )
             )
     ledger = build_coverage_ledger(mol, owned_atoms=owned, names=names_for_ledger)

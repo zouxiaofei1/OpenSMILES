@@ -74,10 +74,10 @@ def principal_hydrocarbon___principal_name(smiles: str):
     for parent in rule_driven_parent_candidates(info):
         # 模拟完整管线的词干填充（iter_parent_candidates 内部会 pack）。
         packed = pack_parent_stem(parent, info["mol"])
-        parent, subst, complete = namer_module._prepare_candidate(info, packed, depth=0)
+        parent, subst, complete = namer_module._prepare_candidate(info, packed)
         if not complete:
             continue
-        hit = namer_module._assemble_candidate(parent, subst, depth=0, t0=t0)
+        hit = namer_module._assemble_candidate(parent, subst, t0=t0)
         if hit is not None and hit.success:
             return hit
     return None
@@ -303,7 +303,7 @@ def test_higher_phase_partial_preserves_seniority(monkeypatch):
         lambda info, parent, **kwargs: p44_principal_group_count___prepared(parent["kind"], parent["kind"] == "alcohol"),
     )
     monkeypatch.setattr(namer_module, "_assemble_candidate", lambda p, *a, **k: p44_principal_group_count___result(p["kind"]))
-    assert namer_module._run_candidates({}, depth=0, t0=0).en == "acid"
+    assert namer_module._run_candidates({}, t0=0).en == "acid"
 
 
 def test_higher_phase_complete_never_downgrades(monkeypatch):
@@ -314,7 +314,7 @@ def test_higher_phase_complete_never_downgrades(monkeypatch):
         lambda info, parent, **kwargs: p44_principal_group_count___prepared(parent["kind"], True),
     )
     monkeypatch.setattr(namer_module, "_assemble_candidate", lambda p, *a, **k: p44_principal_group_count___result(p["kind"]))
-    assert namer_module._run_candidates({}, depth=0, t0=0).en == "acid"
+    assert namer_module._run_candidates({}, t0=0).en == "acid"
 
 p44_principal_group_count__CASES = [
     ("OCCC(CCCCCl)C(O)C", "3-(4-chlorobutyl)pentane-1,4-diol", None),

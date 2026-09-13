@@ -72,7 +72,6 @@ def _one_name_from_sub(s: dict) -> SubstituentName | None:
         en=s.get("en") or "x",
         zh=s.get("zh") or "x",
         requires_parentheses=bool(s.get("paren")),
-        backend=s.get("backend") or "extract",
     )
 
 
@@ -87,14 +86,13 @@ def _ledger_complete(mol, owned, subst: list[dict]) -> bool:
     return build_coverage_ledger(mol, owned_atoms=owned, names=names).complete
 
 
-def _ok_result(numbered: dict, *, depth: int, t0: float, name_mode: str = "general") -> NameResult | None:
+def _ok_result(numbered: dict, *, t0: float) -> NameResult | None:
     """组装编号结果为 NameResult，成功且非空才返回；meta 附链元数据与母体取代基数（供 L3 判定词干是否复合）。"""
-    numbered["name_mode"] = name_mode
     result = assemble(numbered, time_ms=_elapsed_ms(t0))
     if not result.success or not result.en:
         return None
     result.meta = {**(result.meta or {}), **_chain_meta(numbered),
-                   "depth": depth, "coverage_complete": True,
+                   "coverage_complete": True,
                    "parent_substituent_count": len(numbered.get("substituents") or [])}
     return result
 
@@ -132,13 +130,13 @@ def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
     return out
 
 
-def _assemble_candidate(parent, subst, *, depth: int, t0: float, name_mode: str = "general") -> NameResult | None:
+def _assemble_candidate(parent, subst, *, t0: float) -> NameResult | None:
     """对单个候选执行编号+组装，编号异常或失败时返回 None（meta 附 P-44.1.1 / P-45.2.2 位次键）。"""
     try:
         numbered = number(parent, _subs_for_numbering(parent, subst))
     except (ValueError, KeyError, TypeError):
         return None
-    hit = _ok_result(numbered, depth=depth, t0=t0, name_mode=name_mode)
+    hit = _ok_result(numbered, t0=t0)
     if hit is not None:
         hit.meta = {**(hit.meta or {}), "p44_1_1_key": suffix_locant_set(numbered),
                     "p45_2_2_key": prefix_locant_set(numbered)}
@@ -146,17 +144,16 @@ def _assemble_candidate(parent, subst, *, depth: int, t0: float, name_mode: str 
 
 
 def _prepare_candidate(
-    info: dict, parent: dict, *, name_mode: str = "general", cache: CommonNameCache | None = None,
-    depth: int = 0,
+    info: dict, parent: dict, *, cache: CommonNameCache | None = None,
 ) -> tuple[dict, list[dict], bool]:
-    """完成母体归属、提取取代基并返回 (parent, subst, complete)；depth 透传给取代基命名。"""
+    """完成母体归属、提取取代基并返回 (parent, subst, complete)。"""
     mol = info["mol"]
     parent = finalize_parent_ownership(parent, mol)
     if not parent.get("owned_atoms"):
         return parent, [], False
     if not parent.get("chain") and not info.get("has_ring"):
         return parent, [], False
-    subst = extract_substituents(info, parent, name_mode=name_mode, cache=cache, depth=depth)
+    subst = extract_substituents(info, parent, cache=cache)
     complete = _ledger_complete(mol, parent["owned_atoms"], subst)
     return parent, subst, complete
 
@@ -176,11 +173,11 @@ def _best_hit(hits: list[tuple]) -> NameResult | None:
 
 
 
-def _try_phase(prepared, *, depth, t0, name_mode, attempts):
+def _try_phase(prepared, *, t0, attempts):
     """L4+L5入口"""
     hits = []
     for order, (parent, subst, complete) in enumerate(prepared):
-        hit = _assemble_candidate(parent, subst, depth=depth, t0=t0, name_mode=name_mode)
+        hit = _assemble_candidate(parent, subst, t0=t0)
         if hit is not None:
             hit.meta = {**(hit.meta or {}), "coverage_complete": complete, "fallback": "no_coverage_gate", "attempts": attempts}
             hits.append((*_candidate_key(hit), order, hit))
@@ -194,13 +191,13 @@ def _candidate_phases(info: dict) -> list[list[dict]]:
 
 
 def _run_candidates(
-    info: dict, *, depth: int, t0: float, name_mode: str = "general", cache: CommonNameCache | None = None,
+    info: dict, *, t0: float, cache: CommonNameCache | None = None,
 ) -> NameResult:
     """仅尝试 P-44.1.1 高优先级阶段；绝不降级能力。"""
     attempts: list[dict] = []
     phase = _candidate_phases(info)[0]#Layer2入口
-    prepared = [_prepare_candidate(info, cand, name_mode=name_mode, cache=cache, depth=depth) for cand in phase]#L3
-    hit = _try_phase(prepared, depth=depth, t0=t0, name_mode=name_mode, attempts=attempts)#L4入口
+    prepared = [_prepare_candidate(info, cand, cache=cache) for cand in phase]#L3
+    hit = _try_phase(prepared, t0=t0, attempts=attempts)#L4入口
     return hit or _fail(_elapsed_ms(t0), "no_assemblable_candidate", attempts=attempts)
 
 
@@ -223,10 +220,8 @@ def _apply_salt_suffix(result: NameResult, salt: dict) -> NameResult:
 def _name_mol(
     mol,
     *,
-    depth: int = 0,
     cache: CommonNameCache | None = None,
     t0: float | None = None,
-    name_mode: str = "general",
     root_ctx: tuple | None = None,
 ) -> NameResult:
     """从 mol 运行 L1–L5，带 coverage 门控的候选重试；root_ctx=(根分子, 原子→根索引映射) 供取代基 R/S 回根分子重算。"""
@@ -243,27 +238,27 @@ def _name_mol(
     info = analyze(organic) # 进入Layer1
     info["root_ctx"] = (root_mol, to_root)
     info["salt"] = salt  # 磷酸母体 producer 的盐门控与 salt_meta 来源
-    result = _run_candidates(info, depth=depth, t0=t0, name_mode=name_mode, cache=run_cache)
+    result = _run_candidates(info, t0=t0, cache=run_cache)
     result = _apply_salt_suffix(result, salt)
     if salt and result.success:
         result.meta = {**(result.meta or {}), "salt": salt}
     return result
 
 
-def _pipeline(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> tuple[NameResult, "Mol | None"]:
+def _pipeline(smiles: str, t0: float, *, cache: CommonNameCache | None = None) -> tuple[NameResult, "Mol | None"]:
     """预处理 SMILES 后进入 mol 命名流程，解析失败返回失败结果；整分子命中锚定表（带 * 锚点输入本身即锚定键）直接返回保留名，免经自由基母体管线。同时回传解析出的 mol，供调用方复用（免去二次解析）。"""
     mol = preprocess(smiles)
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse"), None
-    whole = anchored_whole_mol(mol, name_mode=name_mode)
+    whole = anchored_whole_mol(mol)
     if whole is not None:
-        en, zh, paren, kind = whole
+        en, zh, _ = whole
         return NameResult(
             en=en, zh=zh, success=True, source="anchored",
             time_ms=_elapsed_ms(t0),
             meta={"parent_kind": "radical", "anchored": True},
         ), mol
-    return _name_mol(mol, depth=0, t0=t0, name_mode=name_mode, cache=cache), mol
+    return _name_mol(mol, t0=t0, cache=cache), mol
 
 
 def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
@@ -291,18 +286,17 @@ def _canonical_result(mol, result: NameResult) -> NameResult:
     return r
 
 
-def _name_uncached(smiles: str, t0: float, *, name_mode: str = "general", cache: CommonNameCache | None = None) -> tuple[NameResult, "Mol | None"]:
+def _name_uncached(smiles: str, t0: float, *, cache: CommonNameCache | None = None) -> tuple[NameResult, "Mol | None"]:
     """缓存未命中时直接走完整命名管线，回传解析出的 mol 供调用方复用。"""
-    return _pipeline(smiles, t0, name_mode=name_mode, cache=cache)
+    return _pipeline(smiles, t0, cache=cache)
 
 
 class SMILESNNamer:
-    """SMILES → IUPAC 命名的顶层命名器（含缓存与命名模式）。"""
+    """SMILES → IUPAC 命名的顶层命名器（含缓存）。"""
 
-    def __init__(self, cache: CommonNameCache | None = None, *, name_mode: str = "general") -> None:
+    def __init__(self, cache: CommonNameCache | None = None) -> None:
         """初始化命名器，未提供缓存则构造默认 20000 条容量的缓存。"""
         self.cache = cache if cache is not None else CommonNameCache(max_entries=20000)  # 容量留足给主分子 + 递归子结构命名（全量去重后约 8.7k 条）
-        self._name_mode = name_mode
 
     def name(self, smiles: str) -> NameResult:
         """命名单个 SMILES；先查缓存，未命中则计算并写回成功结果。"""
@@ -311,7 +305,7 @@ class SMILESNNamer:
         if hit is not None:
             return hit
         memo.begin_run()  # 本次命名的中间结果记忆：不跨分子共享，见 cache/memo
-        result, mol = _name_uncached(smiles, t0, name_mode=self._name_mode, cache=self.cache)
+        result, mol = _name_uncached(smiles, t0, cache=self.cache)
         if result.success and mol is not None:
             _cache_put(self.cache, smiles, _canonical_result(mol, result))
         return result

@@ -351,11 +351,11 @@ def test_naphthalenol_uses_naph_family_expression_policy():
 # （quinolin-5-yl vs quinolin-2-yl、ethan-1-yl vs methoxy、FAIL 等）。
 # 本测试要求：整分子 canonical == 锚定表键时，顶层命名直接返回保留名。
 # ==========================================================================
-def anchored_whole_mol___name(smiles: str, mode: str = "general"):
-    return SMILESNNamer(name_mode=mode).name(smiles)
+def anchored_whole_mol___name(smiles: str):
+    return SMILESNNamer().name(smiles)
 
 
-# ── registry 条目：顶层 *xxx == resolve_name（general/pin 双语）──
+# ── registry 条目：顶层 *xxx == resolve_name（registry 双语名）──
 
 @pytest.mark.parametrize("smi,key", [
     ("*C(C)C", "isopropyl"),
@@ -370,12 +370,11 @@ def anchored_whole_mol___name(smiles: str, mode: str = "general"):
     ("*S", "sulfanyl"),
 ])
 def test_top_level_star_matches_registry(smi, key):
-    for mode in ("general", "pin"):
-        r = anchored_whole_mol___name(smi, mode)
-        assert r.success, f"{smi} [{mode}] 命名失败: {r.meta.get('reason')}"
-        en, zh = resolve_name(key, name_mode=mode)
-        assert r.en == en, f"{smi} [{mode}] en: {r.en!r} != {en!r}"
-        assert r.zh == zh, f"{smi} [{mode}] zh: {r.zh!r} != {zh!r}"
+    r = anchored_whole_mol___name(smi)
+    assert r.success, f"{smi} 命名失败: {r.meta.get('reason')}"
+    en, zh = resolve_name(key)
+    assert r.en == en, f"{smi} en: {r.en!r} != {en!r}"
+    assert r.zh == zh, f"{smi} zh: {r.zh!r} != {zh!r}"
 
 
 # ── 内联条目：顶层 *xxx == 内联 (en, zh) ──
@@ -396,7 +395,7 @@ def test_top_level_star_matches_inline(smi, en, zh):
 def test_hit_sets_anchored_meta():
     r = anchored_whole_mol___name("*C(C)C")
     assert (r.meta or {}).get("anchored") is True
-    r2 = anchored_whole_mol___name("*Cc1ccccc1", mode="pin")
+    r2 = anchored_whole_mol___name("*Cc1ccccc1")
     assert (r2.meta or {}).get("anchored") is True
 
 
@@ -1055,18 +1054,17 @@ class substituent_namer___FakeBackend:
         self._result = result
         self._log = log
 
-    def try_name(self, mol, claim: ClaimedBlock, *, depth: int) -> SubstituentName | None:
+    def try_name(self, mol, claim: ClaimedBlock) -> SubstituentName | None:
         self._log.append(self.name)
         return self._result
 
 
-def substituent_namer___ok(claim: ClaimedBlock, backend: str) -> SubstituentName:
+def substituent_namer___ok(claim: ClaimedBlock, label: str) -> SubstituentName:
     return SubstituentName(
         claim=claim,
-        en=f"{backend}-en",
-        zh=f"{backend}-zh",
+        en=f"{label}-en",
+        zh=f"{label}-zh",
         requires_parentheses=False,
-        backend=backend,
     )
 
 
@@ -1080,9 +1078,9 @@ def test_retained_success_skips_later_backends():
             substituent_namer___FakeBackend("recursive", substituent_namer___ok(claim, "recursive"), log),
         ]
     )
-    result = namer.name(None, claim, depth=0)
+    result = namer.name(None, claim)
     assert result is not None
-    assert result.backend == "retained"
+    assert result.en == "retained-en"
     assert result.claim is claim
     assert log == ["retained"]
 
@@ -1097,9 +1095,9 @@ def test_rooted_tree_runs_after_retained_failure():
             substituent_namer___FakeBackend("recursive", substituent_namer___ok(claim, "recursive"), log),
         ]
     )
-    result = namer.name(None, claim, depth=0)
+    result = namer.name(None, claim)
     assert result is not None
-    assert result.backend == "rooted_tree"
+    assert result.en == "rooted_tree-en"
     assert log == ["retained", "rooted_tree"]
 
 
@@ -1113,7 +1111,7 @@ def test_all_backends_fail_returns_none():
             substituent_namer___FakeBackend("recursive", None, log),
         ]
     )
-    assert namer.name(None, claim, depth=0) is None
+    assert namer.name(None, claim) is None
     assert log == ["retained", "rooted_tree", "recursive"]
 
 
@@ -1123,7 +1121,7 @@ def test_backend_none_never_yields_empty_name_or_mutates_claim():
     namer = SubstituentNamer(
         backends=[substituent_namer___FakeBackend("retained", None, []), substituent_namer___FakeBackend("rooted_tree", None, [])]
     )
-    result = namer.name(None, claim, depth=0)
+    result = namer.name(None, claim)
     assert result is None
     assert (claim.slot, claim.attach_parent, claim.root, claim.atoms) == before
 

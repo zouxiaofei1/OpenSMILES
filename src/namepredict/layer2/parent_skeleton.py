@@ -48,11 +48,17 @@ def _anchors(occurrences: tuple[FunctionalGroupOccurrence, ...]) -> list[int]:
     return sorted({a for occurrence in occurrences for a in occurrence.parent_anchors})
 
 
-def _demoted_acid_carbons(info: dict) -> set[int]:
-    """被压制（降级）为前缀叶的主基团碳集合：中性羧酸碳（carboxy 叶，P-61.1.3）与腈碳（cyano 叶）不得进入开链主链——否则词干链会把酸/腈碳当饱和碳吞掉、其杂原子悬空误命名成 hydroxy/amino。"""
-    acids = {int(e["center_idx"]) for e in (info.get("demoted_carboxyls") or []) if e.get("center_idx") is not None}
-    nitriles = {int(e["center_idx"]) for e in (info.get("demoted_nitriles") or []) if e.get("center_idx") is not None}
-    return acids | nitriles
+def _demoted_leaf_carbons(info: dict) -> set[int]:
+    """被压制（降级）为前缀叶的碳集合：`demoted_*` 叶列表的中心碳（羧酸 carboxy 叶 P-61.1.3、腈 cyano 叶等）不得进入开链主链——否则词干链会把叶碳当饱和碳吞掉、其杂原子悬空误命名成 hydroxy/amino。"""
+    mol: Mol = info["mol"]
+    out: set[int] = set()
+    for key, entries in info.items():
+        if not key.startswith("demoted_"):
+            continue
+        for e in entries or []:
+            if e.get("center_idx") is not None and mol.GetAtomWithIdx(int(e["center_idx"])).GetAtomicNum() == C:
+                out.add(int(e["center_idx"]))
+    return out
 
 
 def _pair_chains(mol: Mol, anchors: list[int], banned: set[int] = frozenset()) -> list[list[int]]:
@@ -114,7 +120,7 @@ def _ring_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
 
 def _chain_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     """枚举去重后的开链骨架候选。"""
-    paths = _open_chains(info["mol"], _anchors(occurrences), _demoted_acid_carbons(info))
+    paths = _open_chains(info["mol"], _anchors(occurrences), _demoted_leaf_carbons(info))
     unique = {frozenset(path): path for path in paths if path}
     return [ParentSkeleton(SkeletonTopology.ACYCLIC, tuple(path), _chain_coverage(path, occurrences)) for path in unique.values()]
 

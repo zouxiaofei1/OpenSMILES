@@ -15,7 +15,6 @@ from namepredict.layer1._carbonyl_common import (
     _double_bonded_o_idxs,
     _ester_alkoxy_of as _ester_alkoxy_of_common,
     _has_acid_o_neighbor,
-    _has_carboxylate_o_neighbor,
     _has_double_bonded_o,
     _is_anhydride_bridge_o,
     _is_single_c_oh,
@@ -466,75 +465,25 @@ def _fg_more_lists(parts: dict) -> dict:
     return {k: parts[k] for k in keys}
 
 def _fg_lists(parts: dict) -> dict:
-    """从 parts 中汇总全部官能团条目列表。"""
+    """从 parts 中汇总全部官能团条目列表（含 P-41 仲裁产出的 demoted_* 叶列表）。"""
     return {
         **_fg_more_lists(parts),
-        "demoted_carboxyls": parts.get("demoted_carboxyls") or [],
-        "demoted_nitriles": parts.get("demoted_nitriles") or []}
+        **{k: v for k, v in parts.items() if k.startswith("demoted_")}}
 
-def _oxo_entry(mol: Mol, c_idx: int) -> dict:
-    """由羰基碳索引组装降级 oxo 条目（羰基碳为中心，羰基氧为周边）。"""
-    return {"center_idx": c_idx, "surr_idx": _double_bonded_o_idxs(mol.GetAtomWithIdx(c_idx))}
-
-
-def _is_anion_acid(mol: Mol, e: dict) -> bool:
-    """羧基条目是否为阴离子（羧基碳连有羧酸根氧）。"""
-    return _has_carboxylate_o_neighbor(mol.GetAtomWithIdx(int(e["center_idx"])))
-
-
-def _fg_carbons(mol: Mol, e: dict) -> list[int]:
-    """FG 条目降级为 oxo 时的羰基碳：中心自身带 =O 即取中心，否则取周边带 =O 的碳（酸酐中心是桥氧）。"""
-    if _has_double_bonded_o(mol.GetAtomWithIdx(int(e["center_idx"]))):
-        return [int(e["center_idx"])]
-    return [i for i in e["surr_idx"] if _has_double_bonded_o(mol.GetAtomWithIdx(i))]
-
-
-def _amide_n_idx(mol: Mol, e: dict) -> int:
-    """取酰胺条目的酰胺氮索引（周边原子里的氮）。"""
-    return next(i for i in e["surr_idx"] if mol.GetAtomWithIdx(i).GetAtomicNum() == N)
-
-
-def _demoted_amide_amine(mol: Mol, e: dict) -> dict | None:
-    """酰胺被更高优先级主基团降级后，其伯酰胺 N（-CONH2）回收为胺条目，走正规 amino 前缀。"""
-    n_idx = _amide_n_idx(mol, e)
-    atom = mol.GetAtomWithIdx(n_idx)
-    if atom.GetAtomicNum() != N or atom.GetFormalCharge() != 0:
-        return None
-    if any(n.GetAtomicNum() == C and n.GetIdx() != e["center_idx"] for n in atom.GetNeighbors()):
-        return None  # N-取代酰胺仍由 L3 归属，不回收为 amino
-    if atom.GetIsAromatic() or atom.IsInRing() or atom.GetTotalNumHs() != 2:
-        return None
-    return {"center_idx": n_idx, "surr_idx": [int(e["center_idx"])]}
+_SUPPRESSIBLE = {**CARBONYL_COMPOSITES, "nitriles": "nitrile"}  # 可被更高优先级 FG 整体压制的组合 FG：组合羰基 + 腈
+_LEAF_DEMOTED = ("carboxyls", "nitriles")  # 降级为"前缀叶"的组合 FG：整组碳排除出主链（P-61.1.3 carboxy/cyano）。其余组合 FG（酯/酰胺/醛/酰卤/酸酐）降级为"氧代"——羰基碳留在链内，仅 O 作 oxo/formyl 前缀，由 L3 锚定叶识别。
 
 
 def _arbitrate_parts(mol: Mol, parts: dict) -> dict:
-    """P-41 主基团仲裁：更高优先级 FG 存在时组合羰基 FG 退出，羰基碳降级 oxo、伯酰胺 N 回收为 amino；腈退出为 cyano 叶。"""
+    """P-41 主基团仲裁：已有更高优先级 FG 时，组合 FG 整组退出主基团；叶型降级（羧酸/腈）的条目转入 `demoted_<key>` 供 L2 排除出主链。"""
     p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
     present = {fg for fg, key in FG_PARTS_KEY.items() if parts.get(key)}
-    out = dict(parts)
-    for key, fg in CARBONYL_COMPOSITES.items():
-        entries = out.get(key)
-        if not entries or not any(p41[h] < p41[fg] for h in present if h != fg):
-            continue
-        if key == "amides":
-            rec = [a for e in entries if (a := _demoted_amide_amine(mol, e)) is not None]
-            if rec:
-                out["amines"] = list(out["amines"]) + rec
-            out["ketones"] = list(out["ketones"]) + [_oxo_entry(mol, c) for e in entries for c in _fg_carbons(mol, e)]  # 降级酰胺羰基保持链化 oxo（伯酰胺 N → amino、羰基 C 仍进 ketones）。
-        elif key == "carboxyls":
-            neutrals = [e for e in entries if not _is_anion_acid(mol, e)]  # 中性 -COOH 被压制后保留"羧酸叶"身份（P-61.1.3 carboxy 前缀）：整组由 L3 claim 成 carboxy，L2 链游走排除其酸碳（P-44.3）。
-            if neutrals:
-                out["demoted_carboxyls"] = list(out.get("demoted_carboxyls") or []) + neutrals
-            anions = [e for e in entries if _is_anion_acid(mol, e)]  # 阴离子羧酸（-COO-）无 OH 可回收，仍按旧路径进 ketones(oxo)，不含中性 COOH。
-            if anions:
-                out["ketones"] = list(out["ketones"]) + [_oxo_entry(mol, c) for e in anions for c in _fg_carbons(mol, e)]
-        else:
-            out["ketones"] = list(out["ketones"]) + [_oxo_entry(mol, c) for e in entries for c in _fg_carbons(mol, e)]
-        out[key] = []
-    nitriles = out.get("nitriles")  # 腈被更高优先级主基团压制（自由基/羧酸/酰胺/酯…）→ 保留 cyano 叶身份（P-61.1.3）：腈碳排除在开链外、整组由 L3 claim 成 cyano，否则 N 悬空误命名成 amino。
-    if nitriles and any(p41[h] < p41["nitrile"] for h in present if h != "nitrile"):
-        out["demoted_nitriles"] = list(out.get("demoted_nitriles") or []) + nitriles
-        out["nitriles"] = []
+    out = {**parts, **{f"demoted_{k}": [] for k in _LEAF_DEMOTED}}
+    for key, fg in _SUPPRESSIBLE.items():
+        if out[key] and any(p41[h] < p41[fg] for h in present if h != fg):
+            if key in _LEAF_DEMOTED:
+                out[f"demoted_{key}"] = out[key]
+            out[key] = []
     return out
 
 
@@ -572,6 +521,6 @@ def _info(mol: Mol, carbons: list[int]) -> dict:
 def analyze(mol: Mol) -> dict:
     """分析分子并返回完整的官能团与结构信息 dict。"""
     result = _info(mol, _carbon_ids(mol))
-    print(result)
-    print("\n\n\n")
+    # print(result)
+    # print("\n\n\n")
     return result

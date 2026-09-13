@@ -26,7 +26,6 @@ def coverage_ledger___name(claim: ClaimedBlock, en: str = "x") -> SubstituentNam
         en=en,
         zh=en,
         requires_parentheses=False,
-        backend="retained",
     )
 
 

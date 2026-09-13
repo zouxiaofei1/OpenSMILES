@@ -44,7 +44,7 @@ def _label_at(labels: list, pos: int):
 
 
 
-def _obridge_front_simple(mol, atoms, attach_old, *, depth, name_mode, cache, root_ctx):
+def _obridge_front_simple(mol, atoms, attach_old, *, cache, root_ctx):
     """O/S 桥前端是否简单取代基：attach 为二价 O/S 桥原子、去桥后余单一片段，该片段按 retained→recursive 后端取名，paren False 即简单；无法判定（非桥/多前端/命名失败）返回 None。"""
     a = mol.GetAtomWithIdx(attach_old)
     if a.GetAtomicNum() not in (8, 16) or a.GetDegree() != 2:
@@ -56,16 +56,15 @@ def _obridge_front_simple(mol, atoms, attach_old, *, depth, name_mode, cache, ro
     front = frozenset(atoms) - {attach_old}
     f = ins[0]
     from namepredict.tools.anchored_table import anchored_lookup
-    ret = anchored_lookup(mol, front, f, name_mode=name_mode)
+    ret = anchored_lookup(mol, front, f)
     if ret is not None:
         return not ret[2]
-    fr = name_as_substituent(mol, f, front, depth=depth + 1, name_mode=name_mode,
-                             cache=cache, root_ctx=root_ctx)
+    fr = name_as_substituent(mol, f, front, cache=cache, root_ctx=root_ctx)
     return None if fr is None else (not fr[2])
 
 
 def _radical_yl_from_sub(
-    mol, atoms: frozenset, attach_old: int, *, depth: int, name_mode: str,
+    mol, atoms: frozenset, attach_old: int, *,
     cache: CommonNameCache | None, root_ctx: tuple | None = None,
 ) -> tuple[str, str, bool] | None:
     """碳连接点：锚定 * 走 radical 主基团管线，L4 权威位次 + P-22.2.4 保留名。"""
@@ -81,7 +80,7 @@ def _radical_yl_from_sub(
     smiles = Chem.MolToSmiles(anchored)
     hit = cache.get(smiles) if cache is not None else None
     if hit is None:
-        hit = _name_mol(anchored, depth=depth, name_mode=name_mode, cache=cache,
+        hit = _name_mol(anchored, cache=cache,
                         root_ctx=(root_mol, anchored_to_root))
         if cache is not None and hit.success and hit.en:
             _cache_put(cache, smiles, copy.copy(hit))  # 只缓存片段自身自由基名（保留锚定链、不做宿主校正）；立体随宿主根变化，须按当前根重算，不能跨根共享。
@@ -90,39 +89,37 @@ def _radical_yl_from_sub(
         return None
     if not (hit.meta or {}).get("parent_kind") in ("radical", "acyl"):
         return None  # 锚定分子必被 L1 radical/acyl 条目检出、principal 必选（p41=1），理论不可达，防御。
-    composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0  # PIN（P-16.5.1.1）：复合前缀必括，由 meta.parent_substituent_count 判定；amido 保留式（P-66.1.1.4.3）免括，否则苯环二酰基倍增成 bis(acetylamino)。
+    composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0 
+    # PIN（P-16.5.1.1）：复合前缀必括，由 meta.parent_substituent_count 判定；amido 保留式（P-66.1.1.4.3）免括，否则苯环二酰基倍增成 bis(acetylamino)。
     need_paren = composite and hit.en not in (
         "phenyl", *SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN)
     if (hit.meta or {}).get("bridge_self_enclosed"):  # S 桥复合前端名已自含围栏（(4-甲氧基苯基)磺酰基），L5 不得再整体加括号
         need_paren = False
-    if need_paren and hit.en.endswith(("oxy", "sulfanyl")):  # 简单取代基+O/S 桥（…oxy/…sulfanyl 等）：P-63.2.1/.2.2 前端 R 为简单取代基时整个 O/S 前缀不加围栏（gold/ChEBI 平铺式），前端是否简单由命名后端 retained→recursive 判定。
-        simple = _obridge_front_simple(
-            mol, atoms, attach_old, depth=depth, name_mode=name_mode,
-            cache=cache, root_ctx=root_ctx)
-        if simple is True:
+    if need_paren and hit.en.endswith(("oxy", "sulfanyl")):  # 简单取代基+O/S 桥（…oxy/…sulfanyl 等）：P-63.2.1/.2.2 前端 R 为简单取代基时整个 O/S 前缀不加围栏
+        if  _obridge_front_simple(mol, atoms, attach_old, cache=cache, root_ctx=root_ctx):
             need_paren = False
     return hit.en, hit.zh, need_paren
 
 
 def _yl_from_sub(
-     *, mol, atoms, attach_old, depth: int, name_mode: str = "general",
+     *, mol, atoms, attach_old,
     cache: CommonNameCache | None = None, root_ctx: tuple | None = None,
 ) -> tuple[str, str, bool] | None:
     """连接点类型分派：碳→锚定 radical 优先；非碳/锚定失败→H 封端 free-name + free_to_yl。"""
     from rdkit import Chem
-    
+
     if mol.GetAtomWithIdx(attach_old).GetAtomicNum() >1 :
-        hit = _radical_yl_from_sub(mol, atoms, attach_old, depth=depth,
-                                    name_mode=name_mode, cache=cache, root_ctx=root_ctx)
+        hit = _radical_yl_from_sub(mol, atoms, attach_old,
+                                    cache=cache, root_ctx=root_ctx)
         if hit is not None:  # print(Chem.MolToSmiles(mol),hit)
             return hit
     return None
 
 def name_as_substituent(
-    mol, attach_old: int, atoms, *, depth: int = 0, name_mode: str = "general",
+    mol, attach_old: int, atoms, *,
     cache: CommonNameCache | None = None, root_ctx: tuple | None = None,
 ) -> tuple[str, str, bool] | None:
     """在 attach_old 处切割原子，free-name 子分子，输出 -yl 双语名称。"""
     atoms = frozenset(atoms)
     return _yl_from_sub( mol=mol, atoms=atoms, attach_old=attach_old,  # print(_yl_from_sub(...)) 调试用
-                        depth=depth + 1, name_mode=name_mode, cache=cache, root_ctx=root_ctx)
+                        cache=cache, root_ctx=root_ctx)
