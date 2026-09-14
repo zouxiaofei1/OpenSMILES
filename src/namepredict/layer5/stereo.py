@@ -5,7 +5,7 @@ import re
 
 from rdkit.Chem import BondStereo, BondType, Mol
 
-from namepredict.layer1 import fg_registry as _fg_reg
+from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer4.locant_calc import locant_key
 from namepredict.layer4.numbering_engine import assign_cip
 
@@ -138,7 +138,7 @@ def join_ez_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
 
 # --- CIP R/S 立体描述符 --------------------
 
-_RS_KINDS = _fg_reg.srs_fgs() | frozenset({"radical", "alkane"})  # alkane: 烃母体链上手性中心同样标 R/S（P-92）
+_RS_KINDS = frozenset(c.value for c in FunctionalGroupClass)  # 全部 FG 类别 + 烃母体（NONE = alkane）；烃链手性中心同样标 R/S（P-92）
 
 
 def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:

@@ -145,7 +145,7 @@ def test_alkyl_acid_negative_not_benzene() -> None:
 # （旧格式缺类别/特征原子，且与清单不等价——demoted_* 只在旧格式里）。
 # _fg_parts 只承载 P-41 官能团条目；双键/三键是不饱和度事实，走独立通道。
 # ==========================================================================
-l1_fg_single_format__FG_KEYS = frozenset(sp.list_key for sp in FG_SPECS)
+l1_fg_single_format__FG_KEYS = frozenset(sp.fg for sp in FG_SPECS)
 
 
 def test_info_carries_inventory_and_no_flat_fg_lists() -> None:

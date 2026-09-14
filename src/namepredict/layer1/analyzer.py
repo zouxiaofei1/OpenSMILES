@@ -6,7 +6,7 @@ from __future__ import annotations
 from rdkit.Chem import BondType, Mol
 from collections import deque
 from namepredict.constants import (
-    C,P, CARBONYL_COMPOSITES, FG_PARTS_KEY, H, HALO_Z, N, O, RING_HETERO, S,
+    C,P, H, HALO_Z, N, O, RING_HETERO, S,
 )
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1._carbonyl_common import (
@@ -387,33 +387,34 @@ def _bond_lists(mol: Mol) -> dict:
     """不饱和度键列表（结构事实，入独立通道）。"""
     return {"double_bonds": _double_bond_entries(mol), "triple_bonds": _triple_bond_entries(mol)}
 
-_SUPPRESSIBLE = {**CARBONYL_COMPOSITES, "nitriles": "nitrile"}  # 可被更高优先级 FG 整体压制的组合 FG：组合羰基 + 腈
-_LEAF_DEMOTED = ("carboxyls", "nitriles")  # 降级为"前缀叶"的组合 FG：整组碳排除出主链（P-61.1.3 carboxy/cyano）。其余组合 FG（酯/酰胺/醛/酰卤）降级为"氧代"——羰基碳留在链内，仅 O 作 oxo/formyl 前缀，由 L3 锚定叶识别。
+_SUPPRESSIBLE = frozenset({"acid", "ester", "acyl_halide", "amide", "nitrile", "aldehyde"})  # 可被更高优先级 FG 整体压制的组合 FG：组合羰基 + 腈
+_PRESENCE_SKIP = frozenset({"phosphate"})  # 磷酸不参与存在性判定（p41 与酯同为 9，纳入会改写压制结果）
+_LEAF_DEMOTED = ("acid", "nitrile")  # 降级为"前缀叶"的组合 FG：整组碳排除出主链（P-61.1.3 carboxy/cyano）。其余组合 FG（酯/酰胺/醛/酰卤）降级为"氧代"——羰基碳留在链内，仅 O 作 oxo/formyl 前缀，由 L3 锚定叶识别。
 
 
 def _arbitrate_parts(parts: dict) -> tuple[dict, frozenset[str]]:
     """P-41 仲裁：更高优先级 FG 使组合 FG 退出，叶型标 demoted。"""
     p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
-    present = {fg for fg, key in FG_PARTS_KEY.items() if parts.get(key)}
+    present = {fg for fg in p41 if parts.get(fg) and fg not in _PRESENCE_SKIP}
     out = dict(parts)
     demoted: set[str] = set()
-    for key, fg in _SUPPRESSIBLE.items():
-        if out[key] and any(p41[h] < p41[fg] for h in present if h != fg):
-            if key in _LEAF_DEMOTED:
-                demoted |= {f"{key}:{i}" for i in range(len(out[key]))}
+    for fg in _SUPPRESSIBLE:
+        if out[fg] and any(p41[h] < p41[fg] for h in present if h != fg):
+            if fg in _LEAF_DEMOTED:
+                demoted |= {f"{fg}:{i}" for i in range(len(out[fg]))}
             else:
-                out[key] = []
+                out[fg] = []
     return out, frozenset(demoted)
 
 
 _ATOM_ENTRY_SPECS = (  # 同构的「谓词筛原子 → 组装条目」类：(parts 键, 原子谓词, 条目组装)
-    ("carboxyls", _is_carboxyl_carbon, _carboxyl_entry),
-    ("hydroxyls", _is_hydroxyl_oxygen, _hydroxyl_entry),
-    ("esters", _is_ester_carbon, _ester_entry),
-    ("amides", _is_amide_carbon, _amide_entry),
-    ("ketones", _is_ketone_carbon, _carbonyl_entry),
-    ("amines", lambda a: _amine_degree(a) is not None, _amine_entry),
-    ("thiols", _is_thiol_s, _thiol_entry),
+    ("acid", _is_carboxyl_carbon, _carboxyl_entry),
+    ("alcohol", _is_hydroxyl_oxygen, _hydroxyl_entry),
+    ("ester", _is_ester_carbon, _ester_entry),
+    ("amide", _is_amide_carbon, _amide_entry),
+    ("ketone", _is_ketone_carbon, _carbonyl_entry),
+    ("amine", lambda a: _amine_degree(a) is not None, _amine_entry),
+    ("thiol", _is_thiol_s, _thiol_entry),
 )
 
 
@@ -424,15 +425,15 @@ def _atom_entries(mol: Mol, pred, entry_fn) -> list[dict]:
 
 def _detect_parts(mol: Mol) -> dict:
     """检测（未仲裁）分子中各类官能团条目。"""
-    acyls = _acyl_entries(mol)
-    heads = frozenset(e["center_idx"] for e in acyls)
+    acyl = _acyl_entries(mol)
+    heads = frozenset(e["center_idx"] for e in acyl)
     out = {key: _atom_entries(mol, pred, entry) for key, pred, entry in _ATOM_ENTRY_SPECS}
-    return {**out, "radicals": _radical_entries(mol, heads), "acyls": acyls,
-        "aldehydes": [e for e in _atom_entries(mol, _is_aldehyde_carbon, _carbonyl_entry)
-                      if e["center_idx"] not in heads],
-        "nitriles": _nitrile_entries(mol),
-        "acyl_chlorides": _acyl_halide_entries(mol),
-        "phosphates": phosphate_entries(mol)}
+    return {**out, "radical": _radical_entries(mol, heads), "acyl": acyl,
+        "aldehyde": [e for e in _atom_entries(mol, _is_aldehyde_carbon, _carbonyl_entry)
+                     if e["center_idx"] not in heads],
+        "nitrile": _nitrile_entries(mol),
+        "acyl_halide": _acyl_halide_entries(mol),
+        "phosphate": phosphate_entries(mol)}
 
 def _collect_fgs(mol: Mol) -> dict:
     """聚合官能团条目并构建带类型清单（FG 唯一出口）。"""

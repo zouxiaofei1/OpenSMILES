@@ -49,7 +49,7 @@ class FunctionalGroupInventory:
         """返回被 P-41 仲裁降级为前缀叶的全部条目。"""
         return tuple(e for e in self.entries if e.demoted)
 
-_LIST_CLASSES = {sp.list_key: FunctionalGroupClass(sp.fg) for sp in FG_SPECS}  # FG 类别注册唯一事实来源在 fg_registry.FG_SPECS；此处派生，不再逐条手写。
+_FG_KEYS = tuple(sp.fg for sp in FG_SPECS)  # FG 类别注册唯一事实来源在 fg_registry.FG_SPECS；L1 列表 key 即类别值，产出顺序随注册顺序。
 
 _ANCHOR_KEYS = {FunctionalGroupClass(sp.fg): sp.anchors for sp in FG_SPECS if sp.anchors}  # 锚点 key（occurrence payload）：只有声明 anchors 的 FG 才收集；胺含多臂锚点（P-62.2）。
 
@@ -105,7 +105,7 @@ def _characteristic_atoms(group_class: FunctionalGroupClass, mol, payload: dict)
 
 def _one(key: str, index: int, payload: dict, mol, demoted: bool = False) -> FunctionalGroupOccurrence:
     """将单条官能团 dict 组装为带类型的出现。"""
-    group_class = _LIST_CLASSES[key]
+    group_class = FunctionalGroupClass(key)
     anchors = _indices(payload, _ANCHOR_KEYS.get(group_class, ()))
     return FunctionalGroupOccurrence(f"{key}:{index}", group_class,
                                      _characteristic_atoms(group_class, mol, payload), anchors, payload, demoted)
@@ -114,7 +114,7 @@ def _one(key: str, index: int, payload: dict, mol, demoted: bool = False) -> Fun
 def build_inventory(lists: dict, mol=None, demoted: frozenset[str] = frozenset()) -> FunctionalGroupInventory:
     """由官能团列表构建带类型的清单；demoted 为降级 id 集。"""
     entries = tuple(_one(key, i, item, mol, f"{key}:{i}" in demoted)
-                    for key in _LIST_CLASSES for i, item in enumerate(lists.get(key) or ()))
+                    for key in _FG_KEYS for i, item in enumerate(lists.get(key) or ()))
     return FunctionalGroupInventory(entries)
 
 def inventory_from_info(info: dict) -> FunctionalGroupInventory:

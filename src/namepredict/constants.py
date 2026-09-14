@@ -109,18 +109,6 @@ ACID_CENTERS = {          # 中心元素 → 酸类名；键序即供体搬运�
 ALKALI_EN = {Li: "lithium", Na: "sodium", K: "potassium"}  # 原子序数 → 英文金属名（IUPAC 官能团类盐）
 METAL_ZH = {"lithium": "锂", "sodium": "钠", "potassium": "钾"}
 
-# ── L1 官能团 parts 键 ──────────────────
-FG_PARTS_KEY = {  # fg_registry 名 → parts 键（有 p41 的链 FG）；P-41 优先级仲裁：组合羰基 FG（酸/酯/酰卤/酰胺/醛）被更高优先级 FG（如自由基）压制时退出主基团，其羰基碳降级入 ketones（oxo 前缀候选），组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属——不再丢失羰基氧。ketone/alcohol/thiol/amine 是基础成员 FG，永不退出。
-    "radical": "radicals", "acyl": "acyls", "acid": "carboxyls",
-    "ester": "esters", "acyl_halide": "acyl_chlorides", "amide": "amides",
-    "nitrile": "nitriles", "aldehyde": "aldehydes", "ketone": "ketones",
-    "alcohol": "hydroxyls", "thiol": "thiols", "amine": "amines",
-}
-CARBONYL_COMPOSITES = {  # 组合羰基 FG 的 parts 键 → fg 名
-    "carboxyls": "acid", "amides": "amide", "esters": "ester",
-    "aldehydes": "aldehyde", "acyl_chlorides": "acyl_halide",
-}
-
 # ── L2/L5 单核母体氢化物（P-15.4.1）────────────
 MONONUCLEAR_HYDRIDES: dict[str, tuple] = {
     "oxidane":    ("O", "氧化烷", ("hydroxy",   "羟基"),     ("oxy",      "氧基"), "氧基"),

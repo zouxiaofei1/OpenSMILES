@@ -8,7 +8,6 @@ from namepredict.constants import (
     HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES, NITROGEN_STEM_BY_FREE_DOUBLE,
     O, PHOSPHORUS_STEM_BY_OXO, SULFUR_STEM_BY_OXO,
 )
-from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.layer1._carbonyl_common import _alkoxy_c_of, _double_bonded_o_idxs
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
@@ -42,8 +41,9 @@ class PrincipalExpressionFacts:
     attachment_atoms: frozenset[int]  # 骨架内附着原子：骨架外的锚点取其骨架内邻居（exocyclic）
     charge_state: PrincipalChargeState
 
-_CHAIN_FG = frozenset(FunctionalGroupClass(v) for v in _fg_reg.chain_fgs())  # 链式主官能团（由 fg_registry 派生）
-_MULTI_FG = frozenset(FunctionalGroupClass(v) for v in _fg_reg.multi_fgs())
+_FG_CLASSES = frozenset(FunctionalGroupClass) - {FunctionalGroupClass.NONE}  # 全部注册 FG 类别（NONE = 纯烃）
+_CHAIN_FG = _FG_CLASSES  # 链式主官能团：注册 FG 类别全部可作链式母体
+_MULTI_FG = _FG_CLASSES  # 支持数量后缀：全部注册 FG 类别（数量由 facts.multiplicity 承载）
 def _anchor_fields(group_class: FunctionalGroupClass) -> tuple[str, str] | None:
     """取基团类的 (单, 复数) anchor 字段名。"""
     if group_class is FunctionalGroupClass.NONE:

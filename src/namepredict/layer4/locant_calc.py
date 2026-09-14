@@ -141,7 +141,7 @@ def _locants_for(oriented: dict, spec) -> list[int]:
         return []
     return _typed_atom_locants(oriented, spec.fg)
 
-_FG_LOCANTS = tuple((sp.locant_kind, sp) for sp in FG_SPECS if sp.locant_kind is not None)  # (记录 kind, spec)：由 fg_registry 承载跨层一致性。
+_FG_LOCANTS = tuple((sp.fg, sp) for sp in FG_SPECS if sp.fg is not None)  # (记录 kind, spec)：由 fg_registry 承载跨层一致性。
 
 def _fg_locants(oriented: dict, n_subs: int = 0) -> list[dict]:
     """FG 位次记录 [{kind, locants, omit}]，仅产存在的项。"""

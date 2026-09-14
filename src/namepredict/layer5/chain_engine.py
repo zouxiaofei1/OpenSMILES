@@ -469,7 +469,7 @@ _BENZENE_RETAINED = {  # 苯环单取代 scaffold 专属保留名（消费点 as
 
 _KIND_TABLE = {
     "alcohol": _Chain(kind="alcohol", en_suf="ol", zh_suf="醇",
-                      fg="oh", need=1, omit_rule=_omit_term_locant,
+                      fg="alcohol", need=1, omit_rule=_omit_term_locant,
                       ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
                       mult_ok=True, zh_full=True, unsat_polyol=True),
     "ketone": _Chain(kind="ketone", en_suf="one", zh_suf="酮",
@@ -503,7 +503,7 @@ _KIND_TABLE = {
                         None: {1: dict(plain_maps=None, plain_fn=_retained_plain("ester")),
                                2: dict(plain_maps=({2: "oxalate"}, {2: "草酸"}))},  # P-65.1.1 保留名：乙二酸二酯 = oxalate
                     }),
-    "phosphate": _Chain(kind="phosphate", en_suf="phosphate", zh_suf="磷酸", coda="",  # P-67.1.3 无机功能母体：词尾由 plain_hook 切换
+    "phosphate": _Chain(kind="phosphate", en_suf="phosphate", fg="phosphate", zh_suf="磷酸", coda="",  # P-67.1.3 无机功能母体：词尾由 plain_hook 切换
                         plain_hook=_phosphate_tail),
     "acyl": _Chain(kind="acyl", en_suf="oyl", zh_suf="酰基",  # 酰基残基（P-65.1.7.2）：酸碳恒 locant 1，C1/C2 走保留名
                    ene_base=("enoyl", "烯酰基"),
@@ -512,7 +512,7 @@ _KIND_TABLE = {
                    # 苯环外酰基头 → 保留名 benzoyl（P-65.1.7.2）。
                    variant={None: {1: dict(plain_maps=None, plain_fn=_retained_plain("acyl"))}}),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
-                    fg="sh", need=1, omit_rule=_omit_term_locant,
+                    fg="thiol", need=1, omit_rule=_omit_term_locant,
                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
                     mult_ok=True, zh_full=True, unsat_polyol=True,
                     ene_seg=("ene", "烯"), yne_seg=("yne", "炔")),
