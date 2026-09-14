@@ -28,8 +28,8 @@ def _is_hcl_frag(mol: Mol) -> bool:
     return a.GetFormalCharge() == 0 and a.GetTotalNumHs() == 1
 
 
-def _partition(frags: tuple[Mol, ...]) -> tuple[list[str], list[Mol], int]:
-    """将片段分为碱金属、有机片段并统计 HCl 个数。"""
+def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
+    """从片段中提取单一有机分子与盐元数据；不满足则返回 None。"""
     metals: list[str] = []
     organics: list[Mol] = []
     n_hcl = 0
@@ -41,36 +41,17 @@ def _partition(frags: tuple[Mol, ...]) -> tuple[list[str], list[Mol], int]:
             n_hcl += 1
         else:
             organics.append(f)
-    return metals, organics, n_hcl
-
-
-def _meta_metal(metals: list[str]) -> dict | None:
-    """生成碱金属盐元数据；金属种类不唯一时返回 None。"""
-    if not metals or len(set(metals)) != 1:
-        return None
-    en = metals[0]
-    return {"metal": en, "metal_zh": METAL_ZH[en], "n_metal": len(metals)}
-
-
-def _meta_hcl(n_hcl: int) -> dict | None:
-    """生成 HCl 盐（盐酸盐）元数据；个数不为 1 时返回 None。"""
-    if n_hcl != 1:
-        return None
-    return {"acid_salt": "hydrochloride", "acid_salt_zh": "盐酸盐"}
-
-
-def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
-    """从片段中提取单一有机分子与盐元数据；不满足则返回 None。"""
-    metals, organics, n_hcl = _partition(frags)
     if len(organics) != 1:
         return None
-    if metals:  # 优先碱金属盐；第一版排除 HCl 共抗衡离子。
-        if n_hcl:
+    if metals:  # 优先碱金属盐；第一版排除 HCl 共抗衡离子，且金属种类须唯一。
+        if n_hcl or len(set(metals)) != 1:
             return None
-        meta = _meta_metal(metals)
+        meta = {"metal": metals[0], "metal_zh": METAL_ZH[metals[0]], "n_metal": len(metals)}
     else:
-        meta = _meta_hcl(n_hcl)
-    return (organics[0], meta) if meta else None
+        if n_hcl != 1:
+            return None
+        meta = {"acid_salt": "hydrochloride", "acid_salt_zh": "盐酸盐"}
+    return organics[0], meta
 
 
 def dissociate_salt(mol: Mol) -> tuple[Mol, dict]:

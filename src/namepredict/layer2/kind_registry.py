@@ -89,9 +89,4 @@ def _load_from_scaffold_specs() -> None:
         _REG[meta.kind] = meta
 
 
-def _bootstrap() -> None:
-    """启动时加载 scaffold 词干注册表（唯一事实来源）。"""
-    _load_from_scaffold_specs()  # Spec 是词干权威
-
-
-_bootstrap()
+_load_from_scaffold_specs()  # 启动时加载 scaffold 词干注册表（唯一事实来源）

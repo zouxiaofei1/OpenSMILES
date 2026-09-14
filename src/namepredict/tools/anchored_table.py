@@ -28,7 +28,6 @@ _REGISTRY: dict[str, RetainedSubstituent] = {  # 基础取代基（原 ANCHOR_TA
     "iodo": RetainedSubstituent("iodo", "碘", anchored=("*I",), paren=False),
     "nitro": RetainedSubstituent("nitro", "硝基", anchored=("*[N+](=O)[O-]",), paren=False),
     "oxo": RetainedSubstituent("oxo", "氧代", anchored=("*=O",), paren=False),
-    "nitro": RetainedSubstituent("nitro", "硝基", anchored=("*[N+](=O)[O-]",), paren=False),
     "isocyanato": RetainedSubstituent("isocyanato", "异氰酸基", anchored=("*N=C=O",), paren=False),
     "isothiocyanato": RetainedSubstituent("isothiocyanato", "异硫氰酸基", anchored=("*N=C=S",), paren=False),
     "methyl": RetainedSubstituent("methyl", "甲基", anchored=("*C",), paren=False),

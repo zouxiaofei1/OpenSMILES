@@ -23,7 +23,6 @@ class Orientation:
     row: tuple[int, ...]                       # 水平行环索引(左→右)
     coords: tuple[tuple[int, float, float], ...]  # (原子, x, y) 元组(可哈希)
     quad: tuple[float, float, float, float]    # (Q1右上, Q2左上, Q3左下, Q4右下) 面积分数
-    above: float                               # 水平轴上方环面积分数
 
     def coord_dict(self) -> dict[int, tuple[float, float]]:
         """转 {原子: (x,y)} dict。"""
@@ -350,7 +349,7 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
             (q1, q2, q3, q4), above = _quadrant_fractions(coords, rings, row)
             key = (len(row), q1, -q3, above)  # 象限/环数为离散值 0/0.25/0.5/1，无浮点累计尾差
             orient = Orientation(row, tuple((a, x, y) for a, (x, y) in sorted(coords.items())),
-                                 (q1, q2, q3, q4), above)
+                                 (q1, q2, q3, q4))
             if best_key is None or key > best_key:
                 best_key = key
                 bests = [orient]

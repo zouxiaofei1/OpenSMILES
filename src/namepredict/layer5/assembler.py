@@ -4,7 +4,7 @@ from dataclasses import replace
 import re
 from namepredict.constants import (
     ALKOXY_YLOXY_EN, ALKOXY_YLOXY_ZH, AMIDO_RETAINED, AZANE_PAREN_SUF, BIS_EN, BRIDGE_YL_SUFFIX,
-    BRIDGE_ZH_YL_SUFFIX,
+    BRIDGE_ZH_YL_SUFFIX, ESTER_O_SIDE_KINDS,
     MONONUCLEAR_BRIDGE, MONONUCLEAR_YL, MONONUCLEAR_ZERO_YL, MULT_EN,
     MULT_ZH, PHOSPHORYL_STEMS, ZH_DIGITS, zh_bridge_root,
 )
@@ -12,7 +12,7 @@ from namepredict.layer5.chain_engine import (
     _ACYL_HALIDE_BY_HAL, _BENZENE_RETAINED, _KIND_TABLE, _chain_names,
 )
 from namepredict.layer5.stems import (
-    _metal_en_prefix, _metal_zh_suffix, join_anion_names, join_metal_salt_names,
+    _metal_en_prefix, _metal_zh_suffix, join_anion_names,
 )
 from namepredict.layer5.assembler_prefixes import _SIMPLE_CHAIN_YL_RE, _enclose, _prefix_for
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
@@ -26,11 +26,6 @@ def _fail(meta: dict | None = None) -> NameResult:
 def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult:
     """构造成功 NameResult（success=True，记录耗时与来源）。"""
     return NameResult(en=en, zh=zh, success=True, source=source, time_ms=time_ms)
-
-def _scaffold_id(numbered: dict) -> str | None:
-    """取母体的 scaffold_id（carbocycle/benzene 等）。"""
-    return (numbered.get("parent") or {}).get("scaffold_id")
-
 
 def _bracket_bridge_suffix(en: str, zh: str) -> tuple[str, str]:
     """复合组分加方括号；-yl 型烷氧/硫基把桥后缀挪到括号外（P-16.5.2）。"""
@@ -314,7 +309,7 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "acyl_halide":
         entry = _ACYL_HALIDE_BY_HAL.get(parent.get("hal_z")) or entry
     if entry is not None:
-        sid = _scaffold_id(numbered)
+        sid = parent.get("scaffold_id")
         if kind == "alkane" and parent.get("fused_tree") and sid != "benzene":  # 未注册稠环无 FG：词干注入已完成，返回稠合 base 名
             return _parent_stem_names(numbered)
         if sid == "benzene" and kind == "alkane":  # 苯 base：母体名由 sid 驱动
@@ -342,12 +337,6 @@ def _parent_stem_names(numbered: dict) -> tuple[str, str] | None:
     parent = numbered.get("parent") or {}
     en, zh = parent.get("stem_en"), parent.get("stem_zh")
     return (en, zh) if en and zh else None
-
-def _parent_n(numbered: dict) -> tuple[str | None, int]:
-    """取母体 kind 与碳数 n（无则 0）。"""
-    parent = numbered.get("parent") or {}
-    return parent.get("kind"), int(parent.get("n_carbons") or 0)
-
 
 def _unsupported(n: int, kind: str | None) -> NameResult:
     """构造 unsupported 失败结果并携带碳数与 kind。"""
@@ -447,15 +436,12 @@ def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=N
     return en, zh
 
 
-_O_SIDE_KINDS = frozenset({"ester", "phosphate"})  # O-侧臂母体：臂作前缀挂酸侧主体（XX 酸 YY 酯 / 磷酸三甲酯）
-
-
 def join_kind_name(
     kind: str | None, pre: tuple[str, str], names: tuple[str, str],
     numbered=None,
 ) -> tuple[str, str] | None:
     """按 kind 分派：O-侧臂母体（酯/磷酸）走 O-侧拼接，其余走普通母体拼接。"""
-    if kind in _O_SIDE_KINDS:
+    if kind in ESTER_O_SIDE_KINDS:
         if kind == "phosphate":
             return join_phosphate_name(names, numbered)
         return join_ester_name(pre[0], pre[1], names, numbered)
@@ -526,7 +512,8 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     """组装入口：取名 → 前缀 → 阴离子/R-S/金属盐后缀。"""
     from namepredict.layer5.stereo import join_rs_prefix
-    kind, n = _parent_n(numbered)
+    parent = numbered.get("parent") or {}  # 母体 kind 与碳数 n（无则 0）
+    kind, n = parent.get("kind"), int(parent.get("n_carbons") or 0)
     if not _ensure_fused_stem(numbered):
         return _unsupported(n, kind)
     names = _names_for(kind, n, numbered)#n 碳数
@@ -542,5 +529,4 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     en, zh = joined
     en, zh = join_anion_names(numbered, en, zh)
     en, zh = join_rs_prefix(numbered, en, zh)
-    en, zh = join_metal_salt_names(numbered, en, zh)
     return _ok(en, zh, time_ms, source)

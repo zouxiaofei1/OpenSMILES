@@ -179,7 +179,7 @@ def _split_bridge_suffix_zh(zh_stem: str, en_stem: str) -> tuple[str, str] | Non
     return None
 
 
-def _prefix_one_zh(zh_stem: str, subs: list, omit: bool, paren_cf3: bool = False,
+def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
                    en_stem: str = "") -> str:
     """拼单个中文前缀：数量 + 词干（CF3 特例：简单氟代甲基不加括号）。"""
     mult = _mult_of("zh", zh_stem, subs, len(subs))
@@ -211,7 +211,7 @@ def _n_prefix(lang: str, n: int, stem: str, tokens: list[str], subs: list) -> st
     return f"{','.join(tokens)}-{_mult_of(lang, stem, subs, n)}{stem}"
 
 
-def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False,
+def _parts_for_stem(stem: str, subs: list, omit: bool,
                     primes: dict[int, int] | None = None) -> tuple[str, str]:
     """按词干生成中英文前缀（N- 类取代基加 N- 前缀并强制省略位次）。"""
     zh_stem = subs[0].get("zh") or ""
@@ -222,7 +222,7 @@ def _parts_for_stem(stem: str, subs: list, omit: bool, paren_cf3: bool = False,
         tokens = _n_prime_tokens(subs, primes)  # 同 N 用 N,N-；跨不同 N 用 N,N'-
         return (_n_prefix("en", len(subs), s_en, tokens, subs),
                 _n_prefix("zh", len(subs), s_zh, tokens, subs))
-    return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit, paren_cf3, stem)
+    return _prefix_one_en(stem, subs, omit), _prefix_one_zh(zh_stem, subs, omit, stem)
 
 
 def _n_prime_map(groups: dict[str, list], stems: list[str]) -> dict[int, int]:
@@ -236,7 +236,7 @@ def _n_prime_map(groups: dict[str, list], stems: list[str]) -> dict[int, int]:
         sorted(seen, key=lambda a: (alkyl_alpha_key(seen[a]), a)))}
 
 
-def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool, paren_cf3: bool = False,
+def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
                    bracket: bool = False, primes: dict[int, int] | None = None) -> tuple[list[str], list[str]]:
     """汇总所有词干的中英文前缀部件列表（P-16.5.1.3.1 括号式）。"""
     en_parts: list[str] = []
@@ -247,7 +247,7 @@ def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool, paren_
             en_parts.append(f"{MULT_EN.get(len(subs), '')}({stem})")
             zh_parts.append(f"{MULT_ZH.get(len(subs), '')}({subs[0].get('zh') or ''})")
             continue
-        en_p, zh_p = _parts_for_stem(stem, subs, omit, paren_cf3, primes)
+        en_p, zh_p = _parts_for_stem(stem, subs, omit, primes)
         en_parts.append(en_p)
         zh_parts.append(zh_p)
     return en_parts, zh_parts
@@ -271,12 +271,11 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     if not substituents:
         return "", ""
     omit = _omit_sub_locants(n_carbons, substituents, kind, scaffold, has_ene)
-    paren = scaffold == "benzene" and kind == "alkane" and len(substituents) >= 4
     groups = _group_by_stem(substituents)
     stems = _sorted_stems(groups)
     bracket = bool(omit) and n_carbons == 1 and kind == "radical" \
         and len(groups) >= 2 and _groups_simple(groups)
-    en_parts, zh_parts = _collect_parts(groups, stems, omit, paren, bracket, _n_prime_map(groups, stems))  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
+    en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, _n_prime_map(groups, stems))  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
     sep = "" if bracket else "-"
     return sep.join(en_parts), sep.join(zh_parts)
 

@@ -162,9 +162,6 @@ TRADITIONAL_NUMBERING_IDS = frozenset({  # P-25.3.3：这些保留骨架按传�
 })
 RS_HI = frozenset({"R", "M", "r"})   # 编号优先级高的 CIP 描述符（P-91.2）
 RS_LO = frozenset({"S", "P", "s"})   # 与之成对、取较低位次的次位描述符
-FIXED_START_KEYS = (  # P-14.4(a)：parent dict 中标定必须为 locant 1 的原子的字段（环外羰基连接、自由基中心）。杂环起点已改由 _narrow_hetero_ring 按元素序决定，不在此列。
-    "ring_attach_idx", "n_idx", "nh_idx", "hetero_idx", "radical_c_idx", "acyl_c_idx",
-)
 
 # ── L5 组装词表 ──────────────────────
 BIS_EN = {2: "bis", 3: "tris", 4: "tetrakis"}  # P-16.3.2 复合前缀倍增（bis/tris，非 di/tri）

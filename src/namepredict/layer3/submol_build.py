@@ -26,11 +26,9 @@ def _copy_bonds(em: Chem.RWMol, mol: Mol, inv: dict[int, int]) -> list:
     return copied
 
 
-def _carry_alkene_stereo(em: Chem.RWMol, mol: Mol, inv: dict[int, int], bonds,
+def _carry_alkene_stereo(em: Chem.RWMol, inv: dict[int, int], bonds,
                          dummy: int | None = None) -> None:
     """把子图内双键的 E/Z 标签照搬到子分子；无法解析则跳过。"""
-    if em is None or mol is None:
-        return
     for b in bonds:
         if b.GetBondType() is not Chem.BondType.DOUBLE:
             continue
@@ -103,5 +101,5 @@ def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol
     inv = _copy_atoms(em, mol, sorted(atoms))
     copied = _copy_bonds(em, mol, inv)
     d = _add_anchor(em, inv[attach_old], _external_bond_type(mol, attach_old, atoms))
-    _carry_alkene_stereo(em, mol, inv, copied, d)
+    _carry_alkene_stereo(em, inv, copied, d)
     return _sanitize(em)  # print(Chem.MolToSmiles(em))

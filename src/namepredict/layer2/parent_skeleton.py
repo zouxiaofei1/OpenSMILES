@@ -31,14 +31,8 @@ class ParentSkeleton:
 
 
 @dataclass(frozen=True)
-class PrincipalSkeletons:
-    """骨架枚举结果：全部候选。"""
-    candidates: tuple[ParentSkeleton, ...]
-
-
-@dataclass(frozen=True)
 class SkeletonSelection:
-    """骨架筛选结果：胜出候选。"""
+    """骨架候选集合：枚举结果或筛选后的胜出候选。"""
     candidates: tuple[ParentSkeleton, ...]
 
 
@@ -109,7 +103,7 @@ def _ring_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     """枚举全部环系统的骨架候选。"""
     mol = info["mol"]  # scaffold 身份延迟到表达阶段识别，此处不跑 producer
     basic = [c for system in info.get("ring_systems") or () if (c := _ring_candidate(mol, system, occurrences))]
-    return [ParentSkeleton(c.topology, c.atom_ids, c.covered_principal_ids) for c in basic]
+    return basic
 
 
 def _chain_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
@@ -223,11 +217,6 @@ def keep_p44_4_unsaturation(mol: Mol, candidates: tuple[ParentSkeleton, ...], oc
     return tuple(c for c in candidates if p44_4_unsaturation_key(mol, c, occurrences) == best)
 
 
-def _finish_skeleton_selection(info: dict, candidates, occurrences) -> SkeletonSelection:
-    """末位应用不饱和度规则并封装选择结果。"""
-    return SkeletonSelection(keep_p44_4_unsaturation(info["mol"], candidates, occurrences))
-
-
 def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> SkeletonSelection:
     """按 P-44 顺序筛选骨架（覆盖度→环/链→P-44.3/2）。"""
     enumerated = enumerate_principal_skeletons(info, occurrences)
@@ -238,9 +227,9 @@ def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOcc
         candidates = keep_p44_3(info["mol"], candidates)
     else:
         candidates = keep_p44_2(info["mol"], candidates)
-    return _finish_skeleton_selection(info, candidates, occurrences)
+    return SkeletonSelection(keep_p44_4_unsaturation(info["mol"], candidates, occurrences))  # 末位应用不饱和度规则
 
 
-def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> PrincipalSkeletons:
+def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> SkeletonSelection:
     """枚举全部骨架候选。"""
-    return PrincipalSkeletons(tuple(_chain_candidates(info, occurrences) + _ring_candidates(info, occurrences)))
+    return SkeletonSelection(tuple(_chain_candidates(info, occurrences) + _ring_candidates(info, occurrences)))

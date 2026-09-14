@@ -9,7 +9,7 @@ from namepredict.constants import (
     O, PHOSPHORUS_STEM_BY_OXO, SULFUR_STEM_BY_OXO,
 )
 from namepredict.layer1 import fg_registry as _fg_reg
-from namepredict.layer1._carbonyl_common import _alkoxy_c_of
+from namepredict.layer1._carbonyl_common import _alkoxy_c_of, _double_bonded_o_idxs
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
 from namepredict.layer2.principal import PrincipalGroupSelection, feature_spec
@@ -366,16 +366,7 @@ def _anchor_free_double(mol: Mol, idx: int) -> bool:
 
 def _anchor_oxo_count(mol: Mol, idx: int) -> int:
     """锚点原子上双键氧（=O）的个数，用于判定高价态硫的词干。"""
-    from rdkit.Chem import BondType
-
-    n = 0
-    for nb in mol.GetAtomWithIdx(idx).GetNeighbors():
-        if nb.GetAtomicNum() != 8:
-            continue
-        b = mol.GetBondBetweenAtoms(idx, nb.GetIdx())
-        if b is not None and b.GetBondType() == BondType.DOUBLE:
-            n += 1
-    return n
+    return len(_double_bonded_o_idxs(mol.GetAtomWithIdx(idx)))
 
 
 def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,

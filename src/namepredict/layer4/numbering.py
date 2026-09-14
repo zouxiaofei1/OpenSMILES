@@ -89,12 +89,9 @@ def number(parent: dict, substituents: list) -> dict:
     packed = result.get("parent") or {}
     labels = (packed.get("numbering_scaffold") or {}).get("labels")
     hydro = packed.get("hydro_atoms") or frozenset()
-    if not hydro:  # 未注册稠环推导
-        hydro = _fallback_hydro_atoms(packed)
-    else:  
-        fb = _fallback_hydro_atoms(packed)
-        if len(fb) in HYDRO_MULT_N and set(hydro) < fb:
-            hydro = fb
+    fb = _fallback_hydro_atoms(packed)  # 未注册稠环推导
+    if not hydro or (len(fb) in HYDRO_MULT_N and set(hydro) < fb):
+        hydro = fb
     # print(hydro)
     hydro = _lowest_extra_to_indicated(packed, labels, hydro)
     # print(hydro)

@@ -201,20 +201,14 @@ def _hydroxyl_entry(atom) -> dict:
     """组装单个羟基条目 dict（氧为中心，所连碳为周边）。"""
     return {"center_idx": atom.GetIdx(), "surr_idx": [_carbon_neighbor(atom).GetIdx()]}
 
-def _hydroxyl_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有羟基条目的列表。"""
-    return [_hydroxyl_entry(a) for a in mol.GetAtoms() if _is_hydroxyl_oxygen(a)]
+def _is_thiol_s(atom) -> bool:
+    """判断原子是否为硫醇硫（S、带 H 且仅一个碳邻居）。"""
+    return (atom.GetAtomicNum() == S and atom.GetTotalNumHs() >= 1
+            and _carbon_neighbor_count(atom) == 1)
 
-def _thiol_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有硫醇条目的列表。"""
-    out: list[dict] = []
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != S or atom.GetTotalNumHs() < 1:
-            continue
-        if _carbon_neighbor_count(atom) != 1:
-            continue
-        out.append({"center_idx": atom.GetIdx(), "surr_idx": [_carbon_neighbor(atom).GetIdx()]})
-    return out
+def _thiol_entry(atom) -> dict:
+    """组装硫醇条目 dict（硫为中心，碳为周边）。"""
+    return {"center_idx": atom.GetIdx(), "surr_idx": [_carbon_neighbor(atom).GetIdx()]}
 
 def _amine_degree(atom) -> int | None:
     """返回胺 N 取代度（1/2/3）；非胺返回 None。"""
@@ -232,39 +226,19 @@ def _amine_entry(atom) -> dict:
     return {"center_idx": atom.GetIdx(),
             "surr_idx": [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == C]}
 
-def _amine_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有胺条目的列表。"""
-    return [_amine_entry(a) for a in mol.GetAtoms() if _amine_degree(a) is not None]
-
 def _carboxyl_entry(atom) -> dict:
     """组装羧基条目 dict（碳为中心，两个氧为周边）。"""
     return {"center_idx": atom.GetIdx(),
             "surr_idx": [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == O]}
 
-def _carboxyl_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有羧基条目的列表。"""
-    return [_carboxyl_entry(a) for a in mol.GetAtoms() if _is_carboxyl_carbon(a)]
-
 def _carbonyl_entry(atom) -> dict:
     """组装单羰基条目 dict（羰基碳为中心，羰基氧为周边）。"""
     return {"center_idx": atom.GetIdx(), "surr_idx": _double_bonded_o_idxs(atom)}
-
-def _ketone_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有酮条目的列表。"""
-    return [_carbonyl_entry(a) for a in mol.GetAtoms() if _is_ketone_carbon(a)]
 
 def _amide_entry(atom) -> dict:
     """组装单个酰胺条目 dict（羰基碳为中心，羰基氧与酰胺氮为周边）。"""
     n_idx, _ = _amide_n_info(atom)
     return {"center_idx": atom.GetIdx(), "surr_idx": [*_double_bonded_o_idxs(atom), n_idx]}
-
-def _amide_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有酰胺条目的列表。"""
-    return [_amide_entry(a) for a in mol.GetAtoms() if _is_amide_carbon(a)]
-
-def _aldehyde_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有醛条目的列表。"""
-    return [_carbonyl_entry(a) for a in mol.GetAtoms() if _is_aldehyde_carbon(a)]
 
 def _acyl_chloride_entries(mol: Mol) -> list[dict]:
     """酰卤条目（F/Cl/Br/I）；键保留以兼容 L2/L3。"""
@@ -275,10 +249,6 @@ def _ester_entry(atom) -> dict:
     """组装酯条目 dict（碳为中心，羰基氧与酯氧为周边）。"""
     o_idx, _ = _ester_alkoxy_of(atom)
     return {"center_idx": atom.GetIdx(), "surr_idx": [*_double_bonded_o_idxs(atom), o_idx]}
-
-def _ester_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有酯条目的列表。"""
-    return [_ester_entry(a) for a in mol.GetAtoms() if _is_ester_carbon(a)]
 
 def _is_cc_double(bond) -> bool:
     """判断键是否为 C=C 双键（排除芳香键）。"""
@@ -406,19 +376,32 @@ def _arbitrate_parts(parts: dict) -> tuple[dict, frozenset[str]]:
     return out, frozenset(demoted)
 
 
+_ATOM_ENTRY_SPECS = (  # 同构的「谓词筛原子 → 组装条目」类：(parts 键, 原子谓词, 条目组装)
+    ("carboxyls", _is_carboxyl_carbon, _carboxyl_entry),
+    ("hydroxyls", _is_hydroxyl_oxygen, _hydroxyl_entry),
+    ("esters", _is_ester_carbon, _ester_entry),
+    ("amides", _is_amide_carbon, _amide_entry),
+    ("ketones", _is_ketone_carbon, _carbonyl_entry),
+    ("amines", lambda a: _amine_degree(a) is not None, _amine_entry),
+    ("thiols", _is_thiol_s, _thiol_entry),
+)
+
+
+def _atom_entries(mol: Mol, pred, entry_fn) -> list[dict]:
+    """全原子扫描：满足谓词者按 entry_fn 组装条目。"""
+    return [entry_fn(a) for a in mol.GetAtoms() if pred(a)]
+
+
 def _detect_parts(mol: Mol) -> dict:
     """检测（未仲裁）分子中各类官能团条目。"""
     acyls = _acyl_entries(mol)
     heads = frozenset(e["center_idx"] for e in acyls)
-    return {"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
-        "esters": _ester_entries(mol), "amides": _amide_entries(mol),
-        "ketones": _ketone_entries(mol), "radicals": _radical_entries(mol, heads),
-        "acyls": acyls,
-        "aldehydes": [e for e in _aldehyde_entries(mol) if e["center_idx"] not in heads],
-        "amines": _amine_entries(mol),
+    out = {key: _atom_entries(mol, pred, entry) for key, pred, entry in _ATOM_ENTRY_SPECS}
+    return {**out, "radicals": _radical_entries(mol, heads), "acyls": acyls,
+        "aldehydes": [e for e in _atom_entries(mol, _is_aldehyde_carbon, _carbonyl_entry)
+                      if e["center_idx"] not in heads],
         "nitriles": _nitrile_entries(mol),
         "acyl_chlorides": _acyl_chloride_entries(mol),
-        "thiols": _thiol_entries(mol),
         "phosphates": phosphate_entries(mol)}
 
 def _collect_fgs(mol: Mol) -> dict:

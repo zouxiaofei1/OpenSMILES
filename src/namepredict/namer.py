@@ -149,13 +149,13 @@ def _best_hit(hits: list[tuple]) -> NameResult | None:
 
 
 
-def _try_phase(prepared, *, t0, attempts):
+def _try_phase(prepared, *, t0):
     """L4+L5入口"""
     hits = []
     for order, (parent, subst, complete) in enumerate(prepared):
         hit = _assemble_candidate(parent, subst, t0=t0)
         if hit is not None:
-            hit.meta = {**(hit.meta or {}), "coverage_complete": complete, "fallback": "no_coverage_gate", "attempts": attempts}
+            hit.meta = {**(hit.meta or {}), "coverage_complete": complete, "fallback": "no_coverage_gate"}
             hits.append((*_candidate_key(hit), order, hit))
     return _best_hit(hits)
 
@@ -170,11 +170,10 @@ def _run_candidates(
     info: dict, *, t0: float, cache: CommonNameCache | None = None,
 ) -> NameResult:
     """仅尝试 P-44.1.1 高优先级阶段；绝不降级能力。"""
-    attempts: list[dict] = []
     phase = _candidate_phases(info)[0]#Layer2入口
     prepared = [_prepare_candidate(info, cand, cache=cache) for cand in phase]#L3
-    hit = _try_phase(prepared, t0=t0, attempts=attempts)#L4入口
-    return hit or _fail(_elapsed_ms(t0), "no_assemblable_candidate", attempts=attempts)
+    hit = _try_phase(prepared, t0=t0)#L4入口
+    return hit or _fail(_elapsed_ms(t0), "no_assemblable_candidate")
 
 
 def _apply_salt_suffix(result: NameResult, salt: dict) -> NameResult:
@@ -254,11 +253,6 @@ def _canonical_result(mol, result: NameResult) -> NameResult:
     return r
 
 
-def _name_uncached(smiles: str, t0: float, *, cache: CommonNameCache | None = None) -> tuple[NameResult, "Mol | None"]:
-    """缓存未命中时直接走完整命名管线，回传解析出的 mol 供调用方复用。"""
-    return _pipeline(smiles, t0, cache=cache)
-
-
 class SMILESNNamer:
     """SMILES → IUPAC 命名的顶层命名器（含缓存）。"""
 
@@ -273,7 +267,7 @@ class SMILESNNamer:
         if hit is not None:
             return hit
         memo.begin_run()  # 本次命名的中间结果记忆：不跨分子共享，见 cache/memo
-        result, mol = _name_uncached(smiles, t0, cache=self.cache)
+        result, mol = _pipeline(smiles, t0, cache=self.cache)  # 缓存未命中：走完整管线并回传 mol 供写缓存
         if result.success and mol is not None:
             _cache_put(self.cache, smiles, _canonical_result(mol, result))
         return result

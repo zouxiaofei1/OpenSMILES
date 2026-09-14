@@ -5,6 +5,7 @@ from namepredict.constants import (
     RS_HI, RS_LO, TRADITIONAL_NUMBERING_IDS,
 )
 from namepredict.tools import memo
+from namepredict.tools.re import alkyl_alpha_key
 from namepredict.layer1.ring_systems import sssr_rings
 from namepredict.layer4.locant_calc import locant_key
 
@@ -19,6 +20,14 @@ def _numbered(chain: list[int]) -> dict[int, int]:
 def _to_chain(cand: dict[int, int]) -> list[int]:
     """按位次升序还原原子顺序列表。"""
     return sorted(cand, key=cand.get)
+
+
+def _stem_loc_pairs(chain: list[int], substituents: list) -> list[tuple]:
+    """返回 (基团字母序键, 位次) 排序对，用于字母序平局。"""
+    return sorted(
+        (alkyl_alpha_key(s.get("en") or ""), chain.index(s["attach_idx"]) + 1)
+        for s in substituents if s["attach_idx"] in chain
+    )
 
 
 def _chain_cands(chain: list[int]) -> list[dict[int, int]]:
@@ -339,8 +348,7 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
 
     if subs:
         cands = _narrow(cands, lambda c: _locant_set(c, subs))
-    if len(cands) > 1 and substituents:
-        from namepredict.layer4._chain_orient import _stem_loc_pairs  # P-14.4(f) 平局：最低位次给字母序最前的取代基。
+    if len(cands) > 1 and substituents:  # P-14.4(f) 平局：最低位次给字母序最前的取代基。
         cands = _narrow(cands, lambda c: _stem_loc_pairs(_to_chain(c), substituents))
     if len(cands) > 1:
         codes = _chain_rs_codes(mol, chain)  # P-14.4(j) 立体平局：按 CIP 描述符定方向，低位次给 R/M/r。

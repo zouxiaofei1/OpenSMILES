@@ -50,19 +50,14 @@ def _seed_carbons(mol: Mol, banned: set[int] = frozenset()) -> list[int]:
     return carbons if (has_ring_root or not leaves) else leaves
 
 
-def _best_among(mol: Mol, seeds: list[int], banned: set[int] = frozenset()) -> list[int]:
-    """在若干种子碳中选出最长链。"""
+def _longest_chain(mol: Mol, banned: set[int] = frozenset()) -> list[int]:
+    """返回分子中最长碳链（降集种子等价加速）。"""
     best: list[int] = []
-    for c in seeds:
+    for c in _seed_carbons(mol, banned):
         path = _longest_from(mol, c, banned=banned)
         if _better(mol, path, best):
             best = path
     return best
-
-
-def _longest_chain(mol: Mol, seeds: list[int] | None = None, banned: set[int] = frozenset()) -> list[int]:
-    """返回分子中最长碳链（可选种子约束；缺省用降集种子等价加速）。"""
-    return _best_among(mol, _seed_carbons(mol, banned) if seeds is None else seeds, banned)
 
 
 def _component_leaves(mol: Mol, neighbor: int, forbid: int, banned: set[int] = frozenset()) -> tuple[dict, list[int], int]:
@@ -132,14 +127,6 @@ def _all_chains_through(mol: Mol, c_idx: int, banned: set[int] = frozenset()) ->
     return [list(c) for c in chains]
 
 
-def _bfs_expand(mol: Mol, cur: int, prev: dict, q: list, banned: set[int] = frozenset()) -> None:
-    """BFS 扩展当前节点的碳邻居并记录前驱。"""
-    for nb in _carbon_neighbors(mol, cur, banned):
-        if nb not in prev:
-            prev[nb] = cur
-            q.append(nb)
-
-
 def _bfs_prev(mol: Mol, start: int, goal: int, banned: set[int] = frozenset()) -> dict | None:
     """BFS 求 start 到 goal 的最短路径前驱表。"""
     prev: dict = {start: None}
@@ -148,7 +135,10 @@ def _bfs_prev(mol: Mol, start: int, goal: int, banned: set[int] = frozenset()) -
         cur = q.pop(0)
         if cur == goal:
             return prev
-        _bfs_expand(mol, cur, prev, q, banned)
+        for nb in _carbon_neighbors(mol, cur, banned):
+            if nb not in prev:
+                prev[nb] = cur
+                q.append(nb)
     return None
 
 

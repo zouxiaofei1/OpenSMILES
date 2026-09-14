@@ -23,20 +23,12 @@ class SubstituentBackend(Protocol):
     """取代基命名后端协议：各后端实现 try_name 尝试为 claim 命名。"""
     name: str
 
-def _retained_hit(claim: ClaimedBlock, en: str, zh: str, paren: bool) -> SubstituentName:
-    """封装 retained 叶子命中结果为 SubstituentName。"""
-    return SubstituentName(
-        claim=claim, en=en, zh=zh, requires_parentheses=paren,
-    )
-
-
-def _try_anchored_lookup(mol, claim: ClaimedBlock) -> SubstituentName | None:
-    """尝试通过锚定 canonical-SMILES 表解析 retained 叶子。"""
-    hit = anchored_lookup(mol, claim.atoms, claim.root)
+def _named(claim: ClaimedBlock, hit: tuple[str, str, bool] | None) -> SubstituentName | None:
+    """把后端命中的 (en, zh, paren) 封装为 SubstituentName；未命中或空名返回 None。"""
     if hit is None:
         return None
     en, zh, paren = hit
-    return _retained_hit(claim, en, zh, paren)
+    return SubstituentName(claim=claim, en=en, zh=zh, requires_parentheses=paren) if en and zh else None
 
 
 class RetainedBackend:
@@ -46,7 +38,7 @@ class RetainedBackend:
 
     def try_name(self, mol, claim: ClaimedBlock) -> SubstituentName | None:
         """通过锚定表 retained 叶子尝试命名。"""
-        return _try_anchored_lookup(mol, claim)
+        return _named(claim, anchored_lookup(mol, claim.atoms, claim.root))
 
 class RecursiveBackend:
     """有界递归 cut → free-name → yl_form。"""
@@ -60,18 +52,8 @@ class RecursiveBackend:
 
     def try_name(self, mol, claim: ClaimedBlock) -> SubstituentName | None:
         """通过递归 cut → free-name → yl_form 尝试命名。"""
-        hit = name_as_substituent(mol, claim.root, claim.atoms, cache=self._cache, root_ctx=self._root_ctx)
-        return None if hit is None else _from_yl(claim, hit)
-
-
-def _from_yl(claim: ClaimedBlock, hit: tuple[str, str, bool]) -> SubstituentName | None:
-    """将 -yl 双语结果封装为递归后端的 SubstituentName。"""
-    en, zh, paren = hit
-    if not en or not zh:
-        return None
-    return SubstituentName(
-        claim=claim, en=en, zh=zh, requires_parentheses=paren,
-    )
+        return _named(claim, name_as_substituent(mol, claim.root, claim.atoms,
+                                                 cache=self._cache, root_ctx=self._root_ctx))
 
 
 def _default_backends(cache: CommonNameCache | None = None, root_ctx: tuple | None = None) -> list[SubstituentBackend]:

@@ -2,7 +2,6 @@
 from __future__ import annotations
 from namepredict.layer1.fg_registry import FG_SPECS
 import re
-from namepredict.layer4._chain_orient import _bond_min_locs
 from namepredict.layer4.omit_locants import omit_fg_locant as _omit_fg, omit_unsat
 
 def locant_key(x) -> tuple[int, str]:
@@ -66,6 +65,18 @@ def _unsat_bonds(oriented: dict, b: str) -> list | None:
     key = _UNSAT_BOND_KEY[b]
     scalar = oriented.get(f"{key}_bond")
     return [scalar] if scalar else oriented.get(f"{key}_bonds") or None
+
+
+def _bond_min_locs(chain: list[int], bonds) -> tuple[int, ...] | None:
+    """返回全部键较小端点位次的排序元组；有键无位次则 None。"""
+    if not bonds:
+        return None
+    locs = []
+    for b in bonds:
+        if not b or b[0] not in chain or b[1] not in chain:
+            return None
+        locs.append(min(chain.index(b[0]), chain.index(b[1])) + 1)
+    return tuple(sorted(locs))
 
 
 def _bond_locants(oriented: dict, b: str) -> list[int] | None:

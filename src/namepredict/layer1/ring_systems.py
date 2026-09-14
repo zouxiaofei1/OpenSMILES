@@ -14,29 +14,19 @@ def sssr_rings(mol: Mol) -> list[tuple[int, ...]]:
     """供各层统一调用的环访问器（与 _sssr 同一次记忆）。"""
     return _sssr(mol)
 
-def _shared(a: tuple[int, ...], b: tuple[int, ...]) -> frozenset[int]:
-    """返回两个环共享的原子集合。"""
-    return frozenset(a) & frozenset(b)
-
-def _fusion_edges(rings: list[tuple[int, ...]]) -> list[tuple[int, int, frozenset[int]]]:
-    """共享 >=2 个原子的配对边 (i, j, shared_atoms)。"""
-    out: list[tuple[int, int, frozenset[int]]] = []
-    for i, ri in enumerate(rings):
-        for j in range(i + 1, len(rings)):
-            sh = _shared(ri, rings[j])
+def _ring_pairs(rings: list[tuple[int, ...]]) -> tuple[list, list]:
+    """单遍扫全部环对：共享 >=2 原子为稠合边、恰好 1 个为螺环对。"""
+    sets = [frozenset(r) for r in rings]  # 各环原子集只构造一次，供全部 O(R²) 对交集复用
+    fused: list[tuple[int, int, frozenset[int]]] = []
+    spiro: list[tuple[int, int, int]] = []
+    for i, si in enumerate(sets):
+        for j in range(i + 1, len(sets)):
+            sh = si & sets[j]
             if len(sh) >= 2:
-                out.append((i, j, sh))
-    return out
-
-def _spiro_pairs(rings: list[tuple[int, ...]]) -> list[tuple[int, int, int]]:
-    """恰好共享 1 个原子的配对：(i, j, atom)。"""
-    out: list[tuple[int, int, int]] = []
-    for i, ri in enumerate(rings):
-        for j in range(i + 1, len(rings)):
-            sh = _shared(ri, rings[j])
-            if len(sh) == 1:
-                out.append((i, j, next(iter(sh))))
-    return out
+                fused.append((i, j, sh))
+            elif len(sh) == 1:
+                spiro.append((i, j, next(iter(sh))))
+    return fused, spiro
 
 def _uf_find(parent: list[int], x: int) -> int:
     """并查集查找根（含路径压缩）。"""
@@ -193,9 +183,8 @@ def build_ring_systems(mol: Mol) -> list[dict]:
     rings = _sssr(mol)
     if not rings:
         return []
-    fused = _fusion_edges(rings)
+    fused, spiro = _ring_pairs(rings)
     comps = _components(len(rings), fused)
-    spiro = _spiro_pairs(rings)
     systems = [
         _system_entry(mol, rings, m, fused) for m in comps
     ]
