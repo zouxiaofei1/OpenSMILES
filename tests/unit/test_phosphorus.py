@@ -18,9 +18,10 @@ from namepredict.tools.re import normalize_en, normalize_zh
 # 磷酸整名（kind=phosphate 正规 FgSpec 集成，P 中心无机功能母体 + O-侧递归命名）。
 #
 # 磷酸注册为 FG_SPECS 的 phosphate 类（p41=9/path=(1)，P-67.1.3.2 归入酯类），
-# 走 L1 检测 → L2 P-44 选择 → L5 phosphate_names 组装：链=[P 单原子]、
+# 走 L1 检测 → L2 P-44 选择 → L5 join_phosphate_name 组装：母体 kind=phosphate 在 _KIND_TABLE
+# 只有一行词尾钩子（plain_hook，按 n_oh 出 磷酸/磷酸二氢/磷酸氢），O-侧臂与酯共用 _join_o_side_arms；
 # owned={P+4O}，O–R 臂由 L3 iter_claims 作 o_side 取代基整体递归命名（任意复杂：
-# 支链/芳环/含 OH/胺/手性/糖环），L5 按 n_oh 插 hydrogen/dihydrogen 组装。
+# 支链/芳环/含 OH/胺/手性/糖环）。
 #
 # 臂内更高优先级 FG 存在时磷酸落选、降级为 phosphonooxy/膦酸氧基前缀
 # （P-67.1.5.1）；C–P 膦酸 / P–O–P 焦磷酸 / P(III) 不产出磷酸条目。

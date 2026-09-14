@@ -331,7 +331,7 @@ def _implied_ring_atoms(fields: dict, atom_set: set[int]) -> frozenset[int]:
 
 
 def _chain_phosphate_fields(info: dict, occurrences, fields: dict) -> dict | None:
-    """L5 phosphate_names 消费的计数与盐元数据，盐门控不通过返回 None（同旧 build_phosphate_parent）：n_om>0 时若有碱金属须同数配对；中性酸/酯不允许带金属；完全无抗衡金属的游离磷酸根/磷酸酯阴离子放行。"""
+    """L5 join_phosphate_name 消费的计数与盐元数据，盐门控不通过返回 None：n_om>0 时若有碱金属须同数配对；中性酸/酯不允许带金属；完全无抗衡金属的游离磷酸根/磷酸酯阴离子放行。"""
     if len(occurrences) != 1:
         return None
     payload = occurrences[0].payload

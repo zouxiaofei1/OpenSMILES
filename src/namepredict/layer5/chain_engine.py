@@ -125,11 +125,7 @@ def _unsat_loc_omit(spec: "_Chain", b: str, form: str, single: bool, numbered: d
 
 # ===== 链式词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环 (替代 if-kind 枚举) =====
 def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
-    """通用不饱和段引擎：仅有烯 / 仅有炔 / 烯炔混合（烯 en 前、炔 yne 后）共用同一拼接骨架，三形态与单段特例由 spec 数据驱动。
-
-    非末段出连接段（尾 e 在 yne 前省略）、末段出后缀或段式形态；任一段为多键时词干加 "a"（P-31.1.1.2 euphonic a）。
-    混合时位次均须显式；E/Z 前缀挂在整体最前。
-    """
+    """通用不饱和段引擎"""
     s, zs = _chain_stem_pair(spec, n)
     if s is None or zs is None:
         return None
@@ -145,22 +141,7 @@ def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
     if form is None:
         return None
     single = len(segs) == 1
-    if single:  # 单段下限与俗名钩子（融合式）: 融合式单烯/多烯的 n 下限、炔 n≥2、非 ene 的 polyol 需位次
-        b, loc, _, cnt, multi = segs[0]
-        if form == "fused":
-            if b == "ene":
-                if not multi:
-                    sp = spec.ene_special(n, numbered) if spec.ene_special is not None else None
-                    if sp is not None:
-                        return sp
-                    if loc is None or n < spec.ene_single_min:
-                        return None
-                elif n < spec.ene_n_min or cnt < spec.ene_m_min:
-                    return None
-            elif n < 2:
-                return None
-        elif form == "polyol" and b == "ene" and loc is None:
-            return None
+
     ez_hook = (spec.ez_ene_multi if next((g[4] for g in segs if g[0] == "ene"), False)
                else spec.ez_ene) if any(g[0] == "ene" for g in segs) else None
     ez = ez_hook(numbered) if ez_hook else ""
@@ -175,8 +156,10 @@ def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
                 return None
             if n <= 2 and loc == 1 and fg == 1 and (b == "ene" or _yl_loc_omitted(spec, fg)):
                 return f"{ez}{s}{seg[0]}{spec.en_suf}", f"{ez}{zs}{seg[1]}{spec.zh_suf}"
-            if b == "ene" and spec.cyclic and spec.ene_loc_omit and loc == 1 and fg == 1:
-                return f"{ez}{s}{seg[0]}-{fg}-{spec.en_suf}", f"{ez}{zs}{seg[1]}-{fg}-{spec.zh_suf}"
+            if b == "ene" and cnt == 1 and spec.cyclic and spec.ene_loc_omit and loc == 1 and fg == 1:  # 仅单烯（多烯位次/倍增词不可省）
+                loc_zh = "" if spec.zh_loc_omit else f"-{loc}-"
+                return (f"{ez}{s}{seg[0]}-{fg}-{spec.en_suf}",
+                        f"{ez}{zs}{loc_zh}{seg[1]}-{fg}-{spec.zh_suf}")
         tail_en, tail_zh = _fg_yl_tail(spec, fg)  # 段式: FG/自由价位次与后缀尾段（C-1 省略下沉在 _fg_yl_tail）
     else:
         tail_en = tail_zh = ""
@@ -220,19 +203,19 @@ class _Chain:
     ene_single_min: int = 2             # 融合式单烯 n 下限 (diacid 为 3)
     ene_omit_aware: bool = False        # 烯段受 omit_ene_locant 影响 (环系 FG)
     ene_loc_omit: bool = False          # 融合式单烯省略位次 (乙烯 ethene / 环单烯 cyclohexene)
+    zh_loc_omit: bool = True            # 中文省略不饱和位次 1 (环丁烯-1-醇)；环外主基后缀的中文须保留 (环己-1-烯-1-羧酸)
     yne_loc_omit: bool = False          # 融合式炔省略位次 (开链烃 ethyne/propyne: P-14.3.4.2(d))
     yl_loc_omit: bool = False           # 自由价在 C-1 时省略位次 (无环自由基: P-29.2 方法 1 的烯/炔拓展)
     cyclic: bool = False                # 恒加环前缀 (纯烃环/环系 FG)
     cyclic_unsat: bool = False          # 仅烯/炔段时加环 (cyclopolyene: 无烯回落纯烷烃)
-    zh_full: bool = False               # 中文词干保留完整烷烃后缀 "烷" (环烷/回落)
+    zh_full: bool = False               # 中文词干保留完整烷烃后缀 "烷" (多 FG: 丁烷-2,3-二醇; 回落)
     wrap: object = None                 # (pair, numbered)->pair  整体包裹 (E/Z)
     unsat_polyol: bool = False          # 多 FG 词干支持烯/炔插入 (diol/triol: but-2-ene-1,4-diol)
     variant: dict | None = None         # {scaffold: {multiplicity: 生成式之上的特例字段覆盖}}; None 键=开链
     stem: tuple | None = None           # (en_stem, zh_stem) — 稠环/杂环 scaffold 词干覆盖 (naphthalen/萘…)；assembler._names_for 按 scaffold_id 注入后一维化; 苯环保留名 (phenol/benzoic…)、acid 草酸特例。
-    mult_ok: bool = False               # 支持数量后缀生成 (acid/alcohol/amine/ketone)
-    mult_zh_full: bool = False          # 多 FG 中文词干保留完整 "烷" (醇/胺)
-    mult_unsat_polyol: bool = False     # 多 FG 词干支持烯/炔插入 (醇/胺/硫醇: but-2-ene-1,4-diol)
+    mult_ok: bool = False               # 支持数量后缀生成 (acid/alcohol/amine/ketone)；同时放行下方 zh_full/unsat_polyol 的多 FG 语义
     aromatic: bool = False              # 芳香环 scaffold 标记 (由 assembler 注入); 醇→酚 语义在此消费
+    plain_hook: object = None           # (numbered)->pair|None  词尾不依赖碳链、由分子计数直接决定时用（磷酸 P-67.1.3：词尾随 P 上酸式氢数在 phosphoric acid/磷酸 间切换），命中即短路碳链引擎
 
 def _chain_zh_base(n: int) -> str | None:
     """中文烷烃全名去后缀得词干（丁烷→丁）。"""
@@ -274,7 +257,7 @@ def _mult_elide(en_m: str, suf: str) -> str:
 
 
 def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
-    """数量后缀生成: MULT[m] + 基础后缀; acid 特判烯基/炔基/俗名; 数量超 MULT 表返回 None."""
+    """数量后缀生成"""
     en_m, zh_m = MULT_EN.get(mult), MULT_ZH.get(mult)
     if not en_m or not zh_m:
         return None
@@ -293,10 +276,6 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
         fields["ene_base"] = (f"ene{en_m}oate", f"烯{zh_m}酸")
         fields["yne_suf"] = (f"yne{en_m}oate", f"炔{zh_m}酸")
         fields["ene_single_min"] = 3
-    if spec.mult_zh_full:
-        fields["zh_full"] = True
-    if spec.mult_unsat_polyol:
-        fields["unsat_polyol"] = True
     return fields
 
 
@@ -313,23 +292,25 @@ def _ylidene_form(pair: tuple[str, str]) -> tuple[str, str]:
 
 def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None:
     """单链词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环; 烯/炔段插入由 spec 数据驱动."""
+    if spec.plain_hook is not None:  # 无碳链母体（磷酸等 P 中心）：词尾由计数直接产出，不查碳数词表。
+        hook = spec.plain_hook(numbered)
+        if hook is not None:
+            return hook
     if spec.aromatic and spec.kind == "alcohol":  # 芳香环醇统一"酚"（苯酚系；萘/吡啶/吲哚/喹啉同），主路径自动，非 variant 特例。
         spec = replace(spec, zh_suf="酚")
     mult = _parent_multiplicity(numbered)
-    if mult is not None:
-        if mult > 1 and spec.mult_ok:
-            var = _generated_mult_fields(spec, mult)
-            if var is None:
-                return None
-            var.update((spec.variant or {}).get(mult) or {})   # 特例覆盖 (acid 草酸/烯二酸)
+    if mult is not None and mult > 1 and spec.mult_ok:
+        var = _generated_mult_fields(spec, mult)
+        if var is None:
+            return None
+        var.update((spec.variant or {}).get(mult) or {})   # 特例覆盖 (acid 草酸/烯二酸)
+        spec = replace(spec, **var)
+    else:  # 非多 FG: 关闭多 FG 声明字段 (zh_full/unsat_polyol), 再套用单 FG 保留名覆盖 (苯环 → phenol/benzoic 等)
+        spec = replace(spec, unsat_polyol=False, zh_full=False)
+        var = (spec.variant or {}).get(1) if mult == 1 else None
+        if var:
             spec = replace(spec, **var)
-        elif mult == 1:  # 单 FG 保留名覆盖 (苯环 → phenol/benzoic 等); 开链/无该 scaffold variant 时空。
-            var = (spec.variant or {}).get(1)
-            if var:
-                spec = replace(spec, **var)
-    alk = _alkane_names(n)
-    if not alk:
-        return None
+
     ylidene = spec.kind == "radical" and bool((numbered.get("parent") or {}).get("radical_ylidene"))
     top = _chain_enyne(spec, n, numbered)
     if top is not None and spec.unsat_polyol:  # 多 FG 词干模式: 词干 + FG 位次 + 多 FG 后缀 (but-2-ene-1,4-diol)
@@ -400,11 +381,25 @@ def _ac_hal_chain(hal_z: int) -> _Chain | None:
 
 _ACYL_HALIDE_BY_HAL = {z: _ac_hal_chain(z) for z in HALIDE_EN}  # 按卤素原子序数索引的酰卤链 spec（F/Cl/Br/I）。
 
+_PHOSPHATE_TAIL = {  # P-67.1.3：P 上酸式氢数 → 双语母体词尾（n_oh + n_om + n_arms = 3）
+    3: ("phosphoric acid", "磷酸"),
+    2: ("dihydrogen phosphate", "磷酸二氢"),
+    1: ("hydrogen phosphate", "磷酸氢"),
+    0: ("phosphate", "磷酸"),
+}
+
+
+def _phosphate_tail(numbered: dict) -> tuple[str, str] | None:
+    """磷酸母体词尾：按 P 上酸式氢数取双语词尾，0–3 之外返回 None。"""
+    parent = numbered.get("parent") or {}
+    return _PHOSPHATE_TAIL.get(int(parent.get("n_oh") or 0))
+
+
 _KIND_TABLE = {
     "alcohol": _Chain(kind="alcohol", en_suf="ol", zh_suf="醇",
                       fg="oh", need=1, omit_rule=_omit_term_locant,
                       ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                      mult_ok=True, mult_zh_full=True, mult_unsat_polyol=True,
+                      mult_ok=True, zh_full=True, unsat_polyol=True,
                       variant={
                           "benzene": {
                               1: dict(plain_maps=None, fg=None,
@@ -415,8 +410,7 @@ _KIND_TABLE = {
                      fg="ketone", need=1, no_loc="none",
                      omit_rule=lambda n, loc, omit: n <= 2 and loc == 1,
                      ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                     mult_ok=True,
-                     mult_unsat_polyol=True),
+                     mult_ok=True, unsat_polyol=True),
     "alkane": _Chain(kind="alkane", en_suf="ane", zh_suf="烷", coda="",
                      omit_rule=lambda n, loc, omit: omit or n <= 3,
                      ene_base=("ene", "烯"), yne_suf=("yne", "炔"),
@@ -451,6 +445,8 @@ _KIND_TABLE = {
                         "benzene": {1: dict(plain_maps=None,
                                             plain_fn=lambda n: ("benzoate", "苯甲酸"))},
                     }),
+    "phosphate": _Chain(kind="phosphate", en_suf="phosphate", zh_suf="磷酸", coda="",  # P-67.1.3 无机功能母体：P 中心无碳链，词尾由 plain_hook 按 P 上酸式氢数切换（磷酸/磷酸二氢/磷酸氢），O-侧臂与盐由 assembler 的 O-侧拼接统一消费。
+                        plain_hook=_phosphate_tail),
     "acyl": _Chain(kind="acyl", en_suf="oyl", zh_suf="酰基",  # 酰基残基（P-65.1.7.2）：酸碳恒 locant 1、C3+ 系统名词干 coda "an" + "oyl"（propanoyl…），C1/C2 走保留名（formyl/acetyl）；烯/炔与立体照 acid 融合式（enoyl/ynoyl）。
                    ene_base=("enoyl", "烯酰基"),
                    yne_suf=("ynoyl", "炔酰基"),
@@ -463,12 +459,12 @@ _KIND_TABLE = {
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
                     fg="sh", need=1, omit_rule=_omit_term_locant,
                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                    mult_ok=True, mult_zh_full=True, mult_unsat_polyol=True,
+                    mult_ok=True, zh_full=True, unsat_polyol=True,
                     ene_seg=("ene", "烯"), yne_seg=("yne", "炔")),
     "amine": _Chain(kind="amine", en_suf="amine", zh_suf="胺",
                     fg="amine", need=1, omit_rule=_omit_term_locant,
                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                    mult_ok=True, mult_zh_full=True, mult_unsat_polyol=True,
+                    mult_ok=True, zh_full=True, unsat_polyol=True,
                     variant={
                         "benzene": {1: dict(plain_maps=None, fg=None,
                                             plain_fn=lambda n: ("aniline", "苯胺"))},
