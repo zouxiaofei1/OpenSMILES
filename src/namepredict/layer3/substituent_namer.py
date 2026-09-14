@@ -23,9 +23,6 @@ class SubstituentBackend(Protocol):
     """取代基命名后端协议：各后端实现 try_name 尝试为 claim 命名。"""
     name: str
 
-
-
-
 def _retained_hit(claim: ClaimedBlock, en: str, zh: str, paren: bool) -> SubstituentName:
     """封装 retained 叶子命中结果为 SubstituentName。"""
     return SubstituentName(
