@@ -51,7 +51,7 @@ def _anchors(occurrences: tuple[FunctionalGroupOccurrence, ...]) -> list[int]:
 
 
 def _demoted_leaf_carbons(info: dict) -> set[int]:
-    """被压制（降级）为前缀叶的碳集合：清单中标记 demoted 的条目中心碳（羧酸 carboxy 叶 P-61.1.3、腈 cyano 叶等）不得进入开链主链——否则词干链会把叶碳当饱和碳吞掉、其杂原子悬空误命名成 hydroxy/amino。"""
+    """被压制为前缀叶的碳：demoted 条目中心碳不进主链（P-61.1.3）。"""
     mol: Mol = info["mol"]
     return {int(o.payload["center_idx"]) for o in inventory_from_info(info).demoted_entries()
             if o.payload.get("center_idx") is not None
@@ -68,7 +68,7 @@ def _pair_chains(mol: Mol, anchors: list[int], banned: set[int] = frozenset()) -
 def _open_chains(mol: Mol, anchors: list[int], banned: set[int] = frozenset()) -> list[list[int]]:
     """开环锚点的单链与两两链候选（无锚点时退化为最长链）。"""
     open_anchors = [a for a in anchors if not mol.GetAtomWithIdx(a).IsInRing()]
-    singles = [chain for anchor in open_anchors for chain in _all_chains_through(mol, anchor, banned)]  # 穿过锚点的等长最长链全部枚举（平局候选让 P-44.4/P-45.2 裁决，如醛端连甲基 vs 羟甲基）。
+    singles = [chain for anchor in open_anchors for chain in _all_chains_through(mol, anchor, banned)]  # 穿过锚点的等长最长链全枚举（平局交 P-44.4/45.2 裁决）
     out = singles + _pair_chains(mol, open_anchors, banned)
     if out:
         return out
@@ -77,7 +77,7 @@ def _open_chains(mol: Mol, anchors: list[int], banned: set[int] = frozenset()) -
 
 
 def _chain_coverage(chain: list[int], occurrences) -> frozenset[str]:
-    """计算链覆盖的 occurrence id 集合：锚点全在链上（二级/三级胺 N 任一臂在链即覆盖，P-62.2 多臂选优，余臂作 N- 取代基留在所有权外）。"""
+    """链覆盖的 occurrence id 集合（胺任一臂在链即覆盖，P-62.2）。"""
     atoms = set(chain)
     out: set[str] = set()
     for o in occurrences:
@@ -92,7 +92,7 @@ def _chain_coverage(chain: list[int], occurrences) -> frozenset[str]:
 
 
 def _ring_attaches(mol: Mol, ring: set[int], occurrence: FunctionalGroupOccurrence) -> bool:
-    """判断 occurrence 是否附着于环（锚点本身/邻居在环内；胺/醇/酮/自由基仅认锚点直接附着），避免苄基胺、苄醇等隔碳连芳环错选环母体。"""
+    """判断 occurrence 是否附着于环（胺/醇/酮/自由基只认直接附着）。"""
     if occurrence.parent_anchors & ring:
         return True
     if occurrence.group_class in (FunctionalGroupClass.AMINE, FunctionalGroupClass.ALCOHOL,FunctionalGroupClass.RADICAL,FunctionalGroupClass.KETONE):
@@ -110,7 +110,7 @@ def _ring_candidate(mol: Mol, system: dict, occurrences) -> ParentSkeleton | Non
 
 def _ring_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     """枚举全部环系统的骨架候选。"""
-    mol = info["mol"]  # scaffold 身份 (scaffold_id) 不参与骨架选择，只对最终胜出的少数骨架有意义，延迟到表达阶段 resolve_ring_scaffold 再识别；此处不跑 producer，避免为每个环系统支付完整 parent 生成器成本。
+    mol = info["mol"]  # scaffold 身份延迟到表达阶段识别，此处不跑 producer
     basic = [c for system in info.get("ring_systems") or () if (c := _ring_candidate(mol, system, occurrences))]
     return [ParentSkeleton(c.topology, c.atom_ids, c.covered_principal_ids) for c in basic]
 
@@ -210,7 +210,7 @@ def p44_4_unsaturation_key(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -
 
 
 def _p44_4_unsaturation_key_uncached(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -> tuple[int, int]:
-    """实际计算 P-44.4 不饱和度键（无记忆版本，见 p44_4_unsaturation_key）。"""
+    """实际计算 P-44.4 不饱和度键（无记忆版本）。"""
     atoms = set(skeleton.atom_ids)
     non_arom: list = []
     n_arom = 0

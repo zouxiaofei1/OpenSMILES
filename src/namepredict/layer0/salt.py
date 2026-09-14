@@ -1,5 +1,4 @@
-"""L0 盐解离：碱金属阳离子或 HCl + 单一有机片段；不命名，返回有机 mol 与盐元数据供 L5 使用。
-"""
+"""L0 盐解离：碱金属或 HCl 盐；返回有机 mol 与盐元数据供 L5。"""
 from __future__ import annotations
 
 from rdkit import Chem
@@ -79,8 +78,7 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
 
 
 def dissociate_salt(mol: Mol) -> tuple[Mol, dict]:
-    """返回 (organic_mol, salt_meta)；非简单盐时 meta 为空。
-    """
+    """返回有机 mol 与盐元数据；非简单盐时 meta 为空。"""
     if len(Chem.GetMolFrags(mol)) < 2:
         return mol, {}
     frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)

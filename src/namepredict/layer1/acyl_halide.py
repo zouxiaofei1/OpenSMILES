@@ -1,4 +1,4 @@
-"""L1 检测酰卤 R–C(=O)–X（X = F/Cl/Br/I），依据 IUPAC P-65.5。"""
+"""L1 检测酰卤 R–C(=O)–X（X=F/Cl/Br/I），P-65.5。"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
@@ -25,7 +25,7 @@ def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
     return _ester_alkoxy_of_common(carbon, _is_ester_alkoxy_o)
 
 def _acyl_hal_of(carbon) -> tuple[int, int] | None:
-    """返回 F/Cl/Br/I 邻居的 (hal_idx, hal_z)；否则返回 None。"""
+    """返回卤素邻居的 (hal_idx, hal_z)；无则 None。"""
     for n in carbon.GetNeighbors():
         z = n.GetAtomicNum()
         if z in HALO_Z:  # 酰卤检测覆盖 F/Cl/Br/I（P-65.5）

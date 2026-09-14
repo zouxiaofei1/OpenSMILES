@@ -10,7 +10,7 @@ def _chain_atoms(parent: dict) -> set[int]:
 
 
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
-    """主官能团所有权原子：落在母体骨架内（或直接连骨架）的锚点，及其直接相连的特征原子。"""
+    """主官能团所有权原子：骨架内（或邻骨架）锚点及其特征原子。"""
     facts = parent.get("principal_expression_facts")
     occurrences = parent.get("principal_occurrences") or ()
     if facts is None:

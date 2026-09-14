@@ -1,4 +1,4 @@
-"""L5 名称组装主入口：由链引擎取名后按 kind 拼接前缀、立体（E/Z、R/S）与盐类后缀。"""
+"""L5 名称组装主入口：取名后拼前缀、立体与盐后缀。"""
 from __future__ import annotations
 from dataclasses import replace
 import re
@@ -8,11 +8,13 @@ from namepredict.constants import (
     MONONUCLEAR_BRIDGE, MONONUCLEAR_YL, MONONUCLEAR_ZERO_YL, MULT_EN,
     MULT_ZH, PHOSPHORYL_STEMS, ZH_DIGITS, zh_bridge_root,
 )
-from namepredict.layer5.chain_engine import _ACYL_HALIDE_BY_HAL, _KIND_TABLE, _chain_names
+from namepredict.layer5.chain_engine import (
+    _ACYL_HALIDE_BY_HAL, _BENZENE_RETAINED, _KIND_TABLE, _chain_names,
+)
 from namepredict.layer5.stems import (
     _metal_en_prefix, _metal_zh_suffix, join_anion_names, join_metal_salt_names,
 )
-from namepredict.layer5.assembler_prefixes import _SIMPLE_CHAIN_YL_RE, _prefix_for
+from namepredict.layer5.assembler_prefixes import _SIMPLE_CHAIN_YL_RE, _enclose, _prefix_for
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
 from namepredict.types import NameResult
 
@@ -25,38 +27,27 @@ def _ok(en: str, zh: str, time_ms: float, source: str) -> NameResult:
     """构造成功 NameResult（success=True，记录耗时与来源）。"""
     return NameResult(en=en, zh=zh, success=True, source=source, time_ms=time_ms)
 
-# 稠环/杂环词干（en_stem, zh_stem）：由 L2 注入 parent 的 stem_en/stem_zh 派生。IUPAC 词干 = 母体名去尾部 e（benzene 例外，保留完整名）；aromatic 恒 True（保留母体均芳香）。
-def _ring_stem(numbered: dict) -> tuple[str, str] | None:
-    """保留 scaffold 的完整 IUPAC 词干（用于 -ol/-diol/-amine 等 FG 后缀拼接）；结尾 'e' 的省略交给 chain_engine._elide_parent_e 按后缀首字母判断（P-60.2(a)），避免 oxolane-3,4-diol 被错拼成 oxolan-3,4-diol。"""
-    parent = numbered.get("parent") or {}
-    en, zh = parent.get("stem_en"), parent.get("stem_zh")
-    return (en, zh) if en and zh else None
-
-
 def _scaffold_id(numbered: dict) -> str | None:
-    """取母体的 scaffold_id（carbocycle/benzene/稠环…）。"""
+    """取母体的 scaffold_id（carbocycle/benzene 等）。"""
     return (numbered.get("parent") or {}).get("scaffold_id")
 
 
 def _bracket_bridge_suffix(en: str, zh: str) -> tuple[str, str]:
-    """复合组分加方括号；-yl 型烷氧/硫基把桥后缀挪到括号外（[(2R,…)环己基]氧基，P-16.5.2 嵌套标记）。"""
-    for yl_suf, bridge in BRIDGE_YL_SUFFIX:
-        if en.endswith(yl_suf):
-            en = f"[{en[: -len(bridge)]}]{bridge}"
-            break
-    else:
-        en = f"[{en}]"
-    for yl_suf, bridge in BRIDGE_ZH_YL_SUFFIX:
-        if zh.endswith(yl_suf):
-            zh = f"[{zh[: -len(bridge)]}]{bridge}"
-            break
-    else:
-        zh = f"[{zh}]"
-    return en, zh
+    """复合组分加方括号；-yl 型烷氧/硫基把桥后缀挪到括号外（P-16.5.2）。"""
+    out: list[str] = []
+    for text, table in ((en, BRIDGE_YL_SUFFIX), (zh, BRIDGE_ZH_YL_SUFFIX)):
+        for yl_suf, bridge in table:
+            if text.endswith(yl_suf):
+                text = f"[{text[: -len(bridge)]}]{bridge}"
+                break
+        else:
+            text = f"[{text}]"
+        out.append(text)
+    return out[0], out[1]
 
 
 def _oxido_arm(s: dict, mol) -> tuple[str, str] | None:
-    """P 上氧负离子臂（–O⁻）的取代基名 oxido/氧化（P-72.6.2；表 4-2「羟基(氧负离子基)膦酰基 hydroxyoxidophosphoryl」），非阴离子单氧臂返回 None。"""
+    """P 上氧负离子臂的取代基名 oxido/氧化（P-72.6.2）。"""
     atoms = s.get("atoms") or []
     if mol is None or len(atoms) != 1:
         return None
@@ -67,7 +58,7 @@ def _oxido_arm(s: dict, mol) -> tuple[str, str] | None:
 
 
 def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None) -> tuple[str, str] | None:
-    """P 酰基前缀的取代基拼接（P-67.1.4.1.1.5）：取代基按字母序接到 phosphoryl；全为简单基时首基平铺、其余括起（hydroxy(methyl)phosphoryl），同基倍增用 di-/tri-（dimethoxyphosphoryl）；含复合组分时逐组分以连字符分隔、需围栏者加方括号（P-16.5.2 嵌套标记）。"""
+    """P 酰基前缀的取代基拼接（P-67.1.4.1.1.5，简单基平铺/括起）。"""
     from namepredict.tools.re import alkyl_alpha_key
 
     groups: dict[str, list] = {}
@@ -81,13 +72,13 @@ def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None
         row = groups.setdefault(en, [en, zh, 0])
         row[2] += 1
     rows = sorted(groups.values(), key=lambda t: alkyl_alpha_key(t[0]))
-    if len(rows) == 1 and rows[0][2] > 1:  # 同基倍增：dimethoxyphosphoryl（P-16.3.2 简单基用 di-，不逐基加括号）
+    if len(rows) == 1 and rows[0][2] > 1:  # 同基倍增（P-16.3.2 简单基用 di-）
         en, zh, m = rows[0]
         m_en, m_zh = MULT_EN.get(m), MULT_ZH.get(m)
         if not m_en or not m_zh:
             return None
         return f"{m_en}{en}{stem_en}", f"{m_zh}{zh}{stem_zh}基"
-    compound = any("(" in en or "[" in en for en, _, _ in rows)  # 存在自身带括号/方括号的复合组分：改逐组分连字符分隔 + 方括号围栏（P-16.5.2 嵌套），否则按简单组分平铺/括号
+    compound = any("(" in en or "[" in en for en, _, _ in rows)  # 含自身带括号的复合组分：逐组分连字符 + 方括号围栏（P-16.5.2）
     en_parts: list[str] = []
     zh_parts: list[str] = []
     for i, (en, zh, m) in enumerate(rows):
@@ -112,14 +103,14 @@ def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None
 
 
 def _azane_acyl_stereo_lead(en: str) -> bool:
-    """单 N-酰基残基名是否带前导立体描述符且为酰基词干（azane 方法 2 需括起 acyl 再缀 amino）。"""
+    """单 N-酰基残基名是否带立体前导且为酰基词干。"""
     if not en.startswith("("):
         return False
     tag, stem = _stereo_lead(en)
     return bool(tag) and (stem.endswith("oyl") or "carbonyl" in stem)
 
 def _azane_sub_needs_paren(a: dict) -> bool:
-    """azane 单取代基是否需整体括起再缀 amino（P-16.5.1.1）：仅限复合标记 + 芳香酰基/acetyl 系内层组。"""
+    """azane 单取代基是否需括起再缀 amino（P-16.5.1.1）。"""
     if not a.get("paren"):  # 简单取代基（methyl/chloro…）无歧义，平铺。
         return False
     return (a.get("en") or "").endswith(AZANE_PAREN_SUF)
@@ -139,16 +130,16 @@ def _retained_alkoxy(en: str, zh: str) -> tuple[str, str]:
 
 
 def _bridge_enclosed_names(a: dict, stem_en: str, stem_zh: str) -> tuple[str, str] | None:
-    """S 桥前端为复合取代基时加围栏：EN (4-methoxyphenyl)sulfonyl、ZH (4-甲氧基苯基)磺酰基；非 S 桥或前端为简单取代基（propan-2-yl）返回 None 走平铺融合。"""
-    bridge = MONONUCLEAR_BRIDGE.get((stem_en, stem_zh))  # P-67.1.4.1.3 复合前缀：P 酰基经 O/N/S 桥连母体，整体加方括号后接桥后缀
+    """S 桥前端为复合取代基时加围栏，否则返回 None。"""
+    bridge = MONONUCLEAR_BRIDGE.get((stem_en, stem_zh))  # P-67.1.4.1.3 P 酰基经 O/N/S 桥连母体加方括号
     if bridge is not None and any((a.get("en") or "").endswith(s) for s in PHOSPHORYL_STEMS):
         return f"[{a['en']}]{bridge[0]}", f"[{a['zh']}]{bridge[1]}"
     if stem_en not in ("sulfinyl", "sulfonyl") or not a.get("paren"):
         return None
-    if _SIMPLE_CHAIN_YL_RE.match(a.get("en") or ""):  # 直链 -yl 前端与桥融合：propan-2-ylsulfonyl（非 (propan-2-yl)sulfonyl）
+    if _SIMPLE_CHAIN_YL_RE.match(a.get("en") or ""):  # 直链 -yl 前端与桥融合（propan-2-ylsulfonyl）
         return None
-    w_en = f"[{a['en']}]" if "(" in a["en"] else f"({a['en']})"  # 前端自带括号时升级方括号（P-16.5.2 嵌套标记）
-    w_zh = f"[{a['zh']}]" if "(" in a["zh"] else f"({a['zh']})"
+    w_en = _enclose(a["en"])  # 前端自带括号时升级方括号（P-16.5.2 嵌套标记）
+    w_zh = _enclose(a["zh"])
     return f"{w_en}{stem_en}", f"{w_zh}{stem_zh}基"  # ZH 前端基不可省（(4-甲氧基苯基)磺酰基，非 …苯磺酰基）
 
 
@@ -157,19 +148,17 @@ def _alpha_key(name: str) -> str:
     return "".join(c for c in name.lower() if c.isalpha())
 
 
-# free 母体名 → P-29 -yl 取代基形式的双语转换（原 tools/free_to_yl.py 并入）。
-_MULT_OL_SUF = re.compile(r"(?:di|tri|tetra|penta|hexa|hepta|octa|nona|deca)ol\b")  # 官能团后缀 → 前缀转换
-
-_MONONUCLEAR_NAMES = ("oxidane", "azane", "sulfane", "sulfinyl", "sulfonyl", "imine")  # 本模块转换的单核母体氢化物（P-15.4.1 表 2.1 → 表 1.5 'a' 前缀体系，数据见 constants.MONONUCLEAR_HYDRIDES）；P 酰基（phosphoryl/phosphanyl）走 L5 的 P 专用管线，不经此表。
+# free 母体名 → P-29 -yl 取代基形式的双语转换。
+_MONONUCLEAR_NAMES = ("oxidane", "azane", "sulfane", "sulfinyl", "sulfonyl", "imine")  # 本模块转换的单核母体氢化物（P-15.4.1 表 2.1）。
 
 
 def _anilino_en(base: str, yl: str) -> str:
-    """N-苯基（可带环取代基）的 azane 去氢：phenyl→anilino、4-chlorophenyl→4-chloroanilino（P-62.2.1.1：phenylamino = anilino*）。"""
+    """N-苯基（可带环取代基）的 azane 去氢为 anilino。"""
     return base[: -len("phenyl")] + "anilino" if yl == "amino" and base.endswith("phenyl") else base + yl
 
 
 def _mononuclear_en(en: str) -> str | None:
-    """单核氢化物 free 名 → 去氢取代基名：ethyl-oxidane → ethyloxy、phenyl-azane → anilino。"""
+    """单核氢化物 free 名 → 去氢取代基名。"""
     for en_suf in _MONONUCLEAR_NAMES:
         if en.endswith("-" + en_suf):
             return _anilino_en(en[: -len(en_suf) - 1], MONONUCLEAR_YL[en_suf][1])
@@ -177,7 +166,7 @@ def _mononuclear_en(en: str) -> str | None:
 
 
 def _mononuclear_zh(zh: str) -> str | None:
-    """中文组装名去氢：乙基-氧化烷 → 乙氧基、苯基-氮烷 → 苯胺基、4-氯苯基-氮烷 → 4-氯苯胺基。"""
+    """中文组装名去氢：乙基-氧化烷 → 乙氧基等。"""
     for en_suf in _MONONUCLEAR_NAMES:
         zh_suf, _, zy = MONONUCLEAR_YL[en_suf]
         if zh.endswith("-" + zh_suf):
@@ -187,31 +176,26 @@ def _mononuclear_zh(zh: str) -> str | None:
             return zh_bridge_root(base) + zy
     return None
 
-def _try_fg_prefix(en: str, zh: str) -> tuple[str, str] | None:
-    """尝试将官能团后缀名转换为取代基前缀形式。"""
-    for en_fn, zh_fn in [
-        (_mononuclear_en, _mononuclear_zh),
-    ]:
-        en_out = en_fn(en)
-        zh_out = zh_fn(zh) if en_out else None
-        if en_out and zh_out:
-            return en_out, zh_out
-    return None
+def _fg_prefix(en: str, zh: str) -> tuple[str, str] | None:
+    """尝试将单核氢化物母体名转换为取代基前缀形式（双语须同时命中）。"""
+    en_out = _mononuclear_en(en)
+    zh_out = _mononuclear_zh(zh) if en_out else None
+    return (en_out, zh_out) if en_out and zh_out else None
 
 def free_to_yl(
     en: str, zh: str, attach_locant: int, *, paren: bool = True,
-) -> tuple[str, str, bool]:
-    """在键合位次处把 free 母体名转 P-29 -yl 双语形式（P-63.2.2 醇→烷氧基、P-63.2.1 硫醇→烷基硫基、P-62.2 1° 胺→烷基氨基）。"""
-    fg = _try_fg_prefix(en, zh)
+) -> tuple[str, str, bool] | None:
+    """把 free 母体名转 P-29 -yl 双语形式（P-63.2.2 醇/胺）。"""
+    fg = _fg_prefix(en, zh)
     if fg is not None:
-        need_paren = fg[0].endswith("amino") and fg[0] != "amino"  # P-29.3.6：复合前缀（methylamino=CH3-NH-，非普通 amino）需括号与两个独立取代基区分。
-        need_paren = need_paren or (fg[0].endswith("anilino") and fg[0] != "anilino")  # 带环取代基的 anilino（4-chloroanilino）与 …phenylamino 同理需括号（gold：(4-chloroanilino)benzoic acid）；裸 anilino 免括。
+        need_paren = fg[0].endswith("amino") and fg[0] != "amino"  # P-29.3.6：复合前缀（methylamino）需括号区分取代基
+        need_paren = need_paren or (fg[0].endswith("anilino") and fg[0] != "anilino")  # 带环取代基的 anilino 同理需括号，裸 anilino 免括。
         return fg[0], fg[1], need_paren
     return None
 
 
 def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
-    """杂原子锚点自由基：单核氢化物母体+烷基取代基经 free_to_yl 转标准名（*OCC→ethoxy；azane 双烷基按 P-62.2 字母序、同烷基 di-）；零/多取代基或名缺失返回 None 明确失败。"""
+    """杂原子锚点自由基：经 free_to_yl 转标准名（P-62.2）。"""
     parent = numbered.get("parent") or {}
     stem_en, stem_zh = parent.get("stem_en"), parent.get("stem_zh")
     if not stem_en or not stem_zh:
@@ -219,24 +203,24 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     subs = [s for s in (numbered.get("substituents") or []) if s.get("en") and s.get("zh")]
     if not subs:
         return MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
-    if stem_en in PHOSPHORYL_STEMS:  # P-67.1.4.1.1.5：P 酰基前缀按取代基拼接，取代基可 1–3 个（hydroxy(methoxy)phosphoryl）
+    if stem_en in PHOSPHORYL_STEMS:  # P-67.1.4.1.1.5：P 酰基前缀按取代基拼接
         return _phosphoryl_sub_names(subs, stem_en, stem_zh, parent.get("mol"))
     if len(subs) == 1:
         a = subs[0]
-        if stem_en == "sulfonyl" and a["en"].endswith("amino") and a["zh"].endswith("氨基"):  # P-66.1.1.4.2 + Glossary：(phenylamino)sulfonyl = phenylsulfamoyl*；N-取代基与 sulfamoyl 融合（丁基(甲基)sulfamoyl），不走 amino 围栏
+        if stem_en == "sulfonyl" and a["en"].endswith("amino") and a["zh"].endswith("氨基"):  # P-66.1.1.4.2：N-取代基与 sulfamoyl 融合
             return a["en"][: -len("amino")] + "sulfamoyl", a["zh"] + "磺酰基"
         bridge = _bridge_enclosed_names(a, stem_en, stem_zh)  # 围栏在 L3 一次定形，中英文同步产出，L5 前缀渲染不再二次拆分
         if bridge is not None:
-            if (stem_en, stem_zh) != ("azane", "氮烷"):  # N 桥复合前缀（…phosphoryl]amino）作取代基时仍须 L5 整体围栏（P-16.5.2 嵌套），O/S 桥名下自带围栏不再加
+            if (stem_en, stem_zh) != ("azane", "氮烷"):  # N 桥复合前缀仍须 L5 整体围栏（P-16.5.2）
                 numbered["bridge_self_enclosed"] = True
             return bridge
         if stem_en == "azane":
-            amido = AMIDO_RETAINED.get(a.get("en") or "")  # P-66.1.1.4.3 方法 1：单 N-酰基（乙酰/甲酰/苯甲酰）残基收成 amido 保留式（acetamido…），不走 free_to_yl 的 acylamino 系统式；其余 R 保持方法 2。
+            amido = AMIDO_RETAINED.get(a.get("en") or "")  # P-66.1.1.4.3 方法 1：单 N-酰基残基收成 amido 保留式
             if amido is not None:
                 return amido
-            if _azane_acyl_stereo_lead(a.get("en") or "") or _azane_sub_needs_paren(a):  # 方法 2 需把内层组整体括起再加 amino（P-29.3.2 复合前缀括号，见 AZANE_PAREN_SUF）：带立体描述符的复杂酰基残基（肽类 N-酰基氨基酸）否则会与 N-端 amino 位次歧义；芳香酰基/acetyl 系见白名单；无立体简单酰与开链酰保持融合平铺。
-                w_en = f"[{a['en']}]" if "(" in a["en"] else f"({a['en']})"  # 内层已含括号（立体描述符）时升级为方括号（P-16.5.2 嵌套）
-                w_zh = f"[{a['zh']}]" if "(" in a["zh"] else f"({a['zh']})"
+            if _azane_acyl_stereo_lead(a.get("en") or "") or _azane_sub_needs_paren(a):  # 方法 2 需把内层组整体括起再加 amino（P-29.3.2）
+                w_en = _enclose(a["en"])  # 内层已含括号（立体描述符）时升级为方括号（P-16.5.2 嵌套）
+                w_zh = _enclose(a["zh"])
                 return f"{w_en}amino", f"{w_zh}氨基"
         en, zh = free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
                             paren=bool(a.get("paren")))[:2]
@@ -250,7 +234,7 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
         return (f"{MULT_EN[len(ordered)]}{base['en']}{zero[0]}",
                 f"{MULT_ZH[len(ordered)]}{zh_bridge_root(base['zh'])}{zero[1]}")
     aryl = [s for s in ordered if s["en"].endswith("phenyl") and s["zh"].endswith("苯基")]
-    if len(aryl) == 1:  # P-62.2.1.1：N-芳基-N-某基胺取 anilino，非芳基 N-取代基以 N- 前缀（4-fluoro-N-propan-2-ylanilino）；两前缀按 P-14.5 字母序
+    if len(aryl) == 1:  # P-62.2.1.1：N-芳基-N-某基胺取 anilino
         ring = aryl[0]
         other = next(s for s in ordered if s is not ring)
         ring_en, ring_zh = ring["en"][: -len("phenyl")], ring["zh"][: -len("苯基")]
@@ -259,19 +243,19 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
                     f"{ring_zh}-N-{other['zh']}苯胺基" if ring_zh else f"N-{other['zh']}苯胺基")
         return (f"N-{other['en']}-{ring_en}anilino" if ring_en else f"N-{other['en']}anilino",
                 f"N-{other['zh']}-{ring_zh}苯胺基" if ring_zh else f"N-{other['zh']}苯胺基")
-    first, rest = ordered[0], ordered[1:]  # 双不同 N-取代基：字母序首基平铺，其后各基分别加括号紧贴 amino（P-62.2.2.1：多取代氨基须逐基消歧，2-chloroethylethylamino → 2-chloroethyl(ethyl)amino）。
+    first, rest = ordered[0], ordered[1:]  # 双不同 N-取代基：首基平铺，其余各基加括号（P-62.2.2.1）
     return (first["en"] + "".join(f"({s['en']})" for s in rest) + zero[0],
             first["zh"] + "".join(f"({s['zh']})" for s in rest) + zero[1])
 
 
 def _indicated_h_prefix(parent: dict) -> str:
-    """把 L4 定好的指示氢位次拼成前缀（'1H-' / '1H,2H-'），无位次则为空串（P-58.2.1）。"""
+    """把 L4 定好的指示氢位次拼成前缀（P-58.2.1）。"""
     locants = parent.get("indicated_h_locants") or ()
     return f"{','.join(f'{l}H' for l in locants)}-" if locants else ""
 
 
 def _ensure_fused_stem(numbered: dict) -> bool:
-    """未注册稠环词干注入：parent 无词干但有 fused_tree 时用 fused_parent_names 组装稠合 base 名（已注册词干由 L2 注入不进入）；返回 False 表示组装失败（显式 unsupported）。"""
+    """未注册稠环词干注入：由 fused_tree 组装稠合 base 名。"""
     parent = numbered.get("parent") or {}
     if parent.get("stem_en") and parent.get("stem_zh"):
         return True
@@ -285,12 +269,12 @@ def _ensure_fused_stem(numbered: dict) -> bool:
     name = fused_parent_names(mol, node)
     if name is None or not name[0] or not name[1]:
         return False
-    pre = _indicated_h_prefix(parent)  # 稠合 base 名此前不带指示氢，L4 已按整体编号定好位次（P-58.2.1），统一在此补到最前端。
+    pre = _indicated_h_prefix(parent)  # L4 已按整体编号定好指示氢位次（P-58.2.1），此处补到最前
     parent["stem_en"], parent["stem_zh"] = pre + name[0], pre + name[1]
     return True
 
 def _phosphate_arm_zh(zh: str) -> str:
-    """磷酸臂中文词：简单基去「基」（甲基→甲、苯基→苯）；多位纯数字根的直链烷基补「烷」对齐金标（十三基→十三烷基）；复合/带位次/立体（含连字符、括号）原样保留。"""
+    """磷酸臂中文词：简单基去「基」，复合名原样保留。"""
     if not zh.endswith("基") or "-" in zh or zh.startswith("("):
         return zh
     stem = zh[:-1]
@@ -300,7 +284,7 @@ def _phosphate_arm_zh(zh: str) -> str:
 
 
 def join_phosphate_name(names: tuple[str, str], numbered: dict) -> tuple[str, str] | None:
-    """磷酸整名（P-67.1.3）：O-侧臂 + 词尾 + 金属盐；无臂时出酸式盐（磷酸二氢钾）/游离酸（磷酸）/游离根（磷酸二氢根），有臂时出酯（盐）。"""
+    """磷酸整名（P-67.1.3）：O-侧臂 + 词尾 + 金属盐。"""
     tail_en, tail_zh = names
     arms = _join_o_side_arms(_o_side_arms(numbered), group=True, arm_zh_fn=_phosphate_arm_zh)
     if arms is None:
@@ -323,39 +307,38 @@ def join_phosphate_name(names: tuple[str, str], numbered: dict) -> tuple[str, st
 
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     """链引擎按表 kind 派发，再转具体 worker。"""
-    if kind == "radical" and (numbered.get("parent") or {}).get("radical_anchor_element"):
+    parent = numbered.get("parent") or {}
+    if kind == "radical" and parent.get("radical_anchor_element"):
         return _mononuclear_radical_names(numbered)
     entry = _KIND_TABLE.get(kind)
-    if kind == "acyl_halide": 
-        entry = _ACYL_HALIDE_BY_HAL.get((numbered.get("parent") or {}).get("hal_z")) or entry
+    if kind == "acyl_halide":
+        entry = _ACYL_HALIDE_BY_HAL.get(parent.get("hal_z")) or entry
     if entry is not None:
         sid = _scaffold_id(numbered)
-        if kind == "alkane" and (numbered.get("parent") or {}).get("fused_tree") and sid != "benzene":  # 未注册稠环无 FG: 词干注入(_ensure_fused_stem)已完成, 返回稠合 base 名(不走 chain_engine 拼 ane)。
+        if kind == "alkane" and parent.get("fused_tree") and sid != "benzene":  # 未注册稠环无 FG：词干注入已完成，返回稠合 base 名
             return _parent_stem_names(numbered)
-        if sid == "benzene" and kind == "alkane":  # 苯 base：无主 FG 的苯，母体名由 sid 驱动（L2 已把纯苯 kind 收敛为 alkane）。
+        if sid == "benzene" and kind == "alkane":  # 苯 base：母体名由 sid 驱动
             return ("benzene", "苯")
-        ring_stem = _ring_stem(numbered)
-        # print(ring_stem)
-        if ring_stem:  # 环式 FG 的 locant omit 由 L4 的 omit 标志决定，aromatic 仅对苯环置真（苯醇→酚，杂环醇→醇）；coda 重置为空（杂环词干 pyridin/furan 已完整，不再接饱和链 "an"）。
-            stem_en, stem_zh = ring_stem
-            entry = replace(entry, stem=(stem_en, stem_zh), coda="",
+        if parent.get("stem_en") and parent.get("stem_zh"):  # 环式 FG 的 locant omit 由 L4 决定，coda 置空
+            entry = replace(entry, stem=(parent["stem_en"], parent["stem_zh"]), coda="",
                             omit_rule=lambda n, loc, omit: bool(omit), aromatic=(sid == "benzene"))
-        elif sid == "carbocycle":  # 单环饱和烃自由基按 P-29.2 方法 1 省略自由价 1 位（cyclopentyl/cyclohexyl）；其余 FG 沿用 L4 omit 标志（cyclohexanol 等）。环烯走 unsat 段不受影响。
+        elif sid == "carbocycle":  # 单环饱和烃自由基按 P-29.2 省略 1 位自由价，余沿用 L4 omit
             rule = (lambda n, loc, omit: loc == 1) if kind == "radical" \
                 else (lambda n, loc, omit: bool(omit))
             entry = replace(entry, cyclic=True, ene_loc_omit=True, omit_rule=rule)
-        sc_variant = (entry.variant or {}).get(sid)  # 苯环单 FG → scaffold 专属保留名 variant (phenol/benzoic…); 开链取 None 键 (acid 草酸)。
+        # 苯环单 FG 取 scaffold 专属保留名（P-61.2 表）。
+        sc_variant = _BENZENE_RETAINED[kind] if sid == "benzene" and kind in _BENZENE_RETAINED \
+            else (entry.variant or {}).get(sid)
         if sc_variant is not None:
             entry = replace(entry, variant=sc_variant)
         result = _chain_names(entry, n, numbered)
         print("\n\nresult:   ",result)
         return result
 
-    stem = _parent_stem_names(numbered)
-    return stem
+    return _parent_stem_names(numbered)
 
 def _parent_stem_names(numbered: dict) -> tuple[str, str] | None:
-    """取母体已算出的双语词干（stem_en/stem_zh）。"""
+    """取母体双语词干；结尾 'e' 省略按 P-60.2(a) 判定。"""
     parent = numbered.get("parent") or {}
     en, zh = parent.get("stem_en"), parent.get("stem_zh")
     return (en, zh) if en and zh else None
@@ -370,9 +353,9 @@ def _unsupported(n: int, kind: str | None) -> NameResult:
     """构造 unsupported 失败结果并携带碳数与 kind。"""
     return _fail({"reason": "unsupported", "n_carbons": n, "kind": kind})
 
-# 名称拼接：前缀与母体组合（原 benzene_names.py 并入；P-22.1.3）。
+# 名称拼接：前缀与母体组合（P-22.1.3）。
 def _needs_join_hyphen(body: str) -> bool:
-    """词干以数字（1,3-thiazole）、方括号位次集（[1,2,4]triazolo[1,5-a]pyridine）或 1H-（1H-pyrrole）开头时，与前缀需连字符分隔。"""
+    """词干以数字、方括号位次集或 1H- 开头时需与前缀连字符分隔。"""
     return bool(body) and (body[0].isdigit() or body[0] == "[" or body.startswith("1H-"))
 
 
@@ -384,8 +367,8 @@ def join_parent_name(prefix: str, parent: str) -> str:
     body = f"{prefix}-{stem}" if _needs_join_hyphen(stem) else f"{prefix}{stem}"
     return f"{stereo}{body}"
 
-_ZH_PLAIN_YL_RE = re.compile(r"^[^()\[\]\d]*-\d+-基$")  # 仅带位次的基（噻吩-3-基、丙-2-基）：中文酯名保留「基」但不加围栏（乙酸噻吩-3-基酯）。
-_ZH_SIMPLE_YL_RE = re.compile(r"^[^\-()\[\]\d]+基$")  # 无位次无取代的简单烃基（乙基/苄基/叔丁基）：中文酯名习用省「基」（乙酸乙酯、十八酸苄酯）。
+_ZH_PLAIN_YL_RE = re.compile(r"^[^()\[\]\d]*-\d+-基$")  # 仅带位次的基：中文酯名保留「基」不加围栏
+_ZH_SIMPLE_YL_RE = re.compile(r"^[^\-()\[\]\d]+基$")  # 简单烃基：中文酯名习用省「基」
 
 
 def _zh_alkoxy_part(name: str) -> str:
@@ -397,11 +380,11 @@ def _zh_alkoxy_part(name: str) -> str:
     if _ZH_PLAIN_YL_RE.match(name):
         return name  # 只带位次：乙酸噻吩-3-基酯、乙酸丙-2-基酯
     stereo, body = _stereo_lead(name)
-    if not body or body.endswith("基") is False:
+    if not body or not body.endswith("基"):
         return name
-    if "(" in body or "[" in body or "（" in body:
-        return f"{stereo}[{body}]"
-    return f"{stereo}({body})"
+    # 前端已含围栏（圆/方/全角）时升级方括号，否则加圆括号。
+    enclose = "(" in body or "[" in body or "（" in body
+    return f"{stereo}[{body}]" if enclose else f"{stereo}({body})"
 
 
 def _o_side_arms(numbered: dict) -> list[dict]:
@@ -451,19 +434,16 @@ def _join_o_side_arms(arms: list[dict], *, group: bool, arm_zh_fn) -> tuple[str,
 
 
 def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=None) -> tuple[str, str] | None:
-    """拼接酯名：O 侧烷基作前缀、酸侧作主体（XX 酸 YY 酯）；多酯按 P-16.3.2 用二/双(bis) 倍增（草酸二乙酯 / 己二酸双(2-乙基己基)酯）；无 O 侧取代基时输出 bare 酸酯名（benzoate/苯甲酸酯）。"""
+    """拼接酯名：O 侧作前缀、酸侧作主体（P-16.3.2 倍增）。"""
     en, zh = names
     arms = _join_o_side_arms(_o_side_arms(numbered), group=False, arm_zh_fn=_zh_alkoxy_part)
+    # print("_join_o_side_arms",arms,numbered)
     if arms is None:
         return None
     alk_en, alk_zh = arms
-    st, body = _stereo_lead(en)
-    mid = f"{pre_en}-{body}" if pre_en and _needs_join_hyphen(body) else f"{pre_en}{body}" if pre_en else body
-    en = f"{alk_en} {st}{mid}" if alk_en else f"{st}{mid}"
-    stz, bodyz = _stereo_lead(zh)
-    midz = (f"{stz}{pre_zh}-{bodyz}" if pre_zh and _needs_join_hyphen(bodyz)
-            else f"{stz}{pre_zh}{bodyz}" if pre_zh else f"{stz}{bodyz}")
-    zh = f"{midz}{alk_zh}酯"
+    mid = join_parent_name(pre_en, en)
+    en = f"{alk_en} {mid}" if alk_en else mid
+    zh = f"{join_parent_name(pre_zh, zh)}{alk_zh}酯"
     return en, zh
 
 
@@ -492,10 +472,10 @@ def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
 
 
 def join_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]:
-    """把动态指示氢与 hydro 前缀依次拼到母体名前：顺序为 hydro + 指示氢 + 母体名；母体名已带静态 1H-（保留名）时不重复。"""
+    """把 hydro 与指示氢前缀依次拼到母体名前。"""
     parent = numbered.get("parent") or {}
     pre = parent.get("hydro_prefix") or ("", "")
-    if not pre[0] and not parent.get("indicated_h_forced"):  # forced = 指示氢来自「保留母体名未隐含的芳香位 H」（P-58.2.1），无 hydro 前缀也须注入；其余动态指示氢仍只在氢化衍生物（有 hydro 前缀）时注入，否则 [nH] 互变异构型会误产 1H-pyridine。
+    if not pre[0] and not parent.get("indicated_h_forced"):  # forced = 指示氢来自保留母体名未隐含的芳香位 H（P-58.2.1）
         return names
     en, zh = names
     ind = _indicated_h_prefix(parent)
@@ -505,7 +485,7 @@ def join_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]
 
 
 def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str, str]:
-    """净正电荷分子的环内 N+/O+ → 母体名缀 `-{位次}-ium`（P-62.4.1；chromene → chromenylium）。非该情形原样返回。"""
+    """环内 N+/O+ → 母体名缀 -{位次}-ium（P-62.4.1）。"""
     parent = numbered.get("parent") or {}
     mol = parent.get("mol")
     chain = parent.get("chain") or []
@@ -527,7 +507,7 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
     labels = (parent.get("numbering_scaffold") or {}).get("labels")
     idx = chain.index(charged[0])
     loc = labels[idx] if labels and len(labels) == len(chain) else str(idx + 1)
-    if stem_en.endswith("ene"):  # 色烯型氧鎓保留名：chromene → chromenylium（位次隐含；取代基中词干已省 e 为 chromen-…）
+    if stem_en.endswith("ene"):  # 色烯型氧鎓保留名：chromene → chromenylium
         base, ium = stem_en[:-1], f"{stem_en[:-3]}enylium"
     elif stem_en.endswith("e"):
         base, ium = stem_en[:-1], f"{stem_en[:-1]}-{loc}-ium"

@@ -44,7 +44,7 @@ def _bfs_block(mol: Mol, root: int, parent_atoms: frozenset[int]) -> set[int]:
 
 
 def cut_block(mol: Mol, root: int, parent_atoms: frozenset[int]) -> frozenset[int] | None:
-    """从 root 出发不进入 parent_atoms 的连通分量；为空/无效时返回 None。"""
+    """从 root 不进入 parent_atoms 的连通块，无效返回 None。"""
     if root in parent_atoms or mol.GetAtomWithIdx(root).GetAtomicNum() == 1:
         return None
     seen = _bfs_block(mol, root, parent_atoms)

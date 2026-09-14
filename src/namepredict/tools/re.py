@@ -19,7 +19,7 @@ def _strip_n_prefix(stem: str) -> str:
 
 
 def _strip_lead_locant(stem: str) -> str:
-    """去掉一个前导位次集：'4-'、'1,3-'、'1,1,1-'、'1H-'（P-14.5）。"""
+    """去掉一个前导位次集，含 1H- 指示氢（P-14.5）。"""
     i = 0
     n = len(stem)
     while i < n and stem[i].isdigit():
@@ -34,7 +34,7 @@ def _strip_lead_locant(stem: str) -> str:
 
 
 def _strip_outer_parens(stem: str) -> str:
-    """去掉外层括号；词干以开括号开头即剥（含剥 locant 后残留的前缀括号，如 '(phenyloxy)methyl'）。"""
+    """去掉词干开头的外层括号，含剥位次后残留的括号。"""
     while stem.startswith("("):
         stem = stem[1:]
         if stem.endswith(")"):
@@ -48,18 +48,18 @@ _STEREO_LEAD_RE = re.compile(
 
 
 def _strip_lead_stereo(stem: str) -> str:
-    """剥除词干最前的立体描述符组 '(2S,3R)-' / '(E)-' 及其后的连字符（P-14.5：字母数字序不含立体描述符）。"""
+    """剥除词干最前的立体描述符组及其连字符（P-14.5）。"""
     m = _STEREO_LEAD_RE.match(stem)
     return stem[m.end():] if m else stem
 
 
 def _strip_lead_bracket(stem: str) -> str:
-    """剥一个前导 '['：复合前缀整体被方括号包时，开括号本身不参与字母序，须剥到其后的实质词干（P-14.5）。"""
+    """剥一个前导 '['：复合前缀方括号不参与字母序（P-14.5）。"""
     return stem[1:] if stem.startswith("[") else stem
 
 
 def alkyl_alpha_key(stem: str) -> str:
-    """字母数字序键：忽略 sec-/tert-/N-/括号/前导位次/前导立体组（P-14.5）；交替剥括号、立体组与前导位次直到稳定，避免残留开括号/位次数字按 ASCII 错误排最前。"""
+    """字母数字序键：忽略斜体前缀/括号/位次/立体组（P-14.5），循环剥到稳定。"""
     s = _strip_n_prefix(_strip_ital_prefix(stem))
     while True:
         s2 = _strip_lead_locant(_strip_outer_parens(_strip_lead_stereo(_strip_lead_bracket(s))))
@@ -68,7 +68,7 @@ def alkyl_alpha_key(stem: str) -> str:
         s = s2
 
 
-# ── 名称文本规范化（判分/比对口径） ──────────────────────────────
+# ── 名称文本规范化（判分口径） ──────────────────────
 _WS = re.compile(r"\s+")
 
 

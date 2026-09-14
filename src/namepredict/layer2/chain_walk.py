@@ -33,7 +33,7 @@ def _better(mol: Mol, cand: list[int], best: list[int]) -> bool:
 
 
 def _seed_carbons(mol: Mol, banned: set[int] = frozenset()) -> list[int]:
-    """最长链种子降集：开链子图为无「带臂环/芳碳」的多碳树时仅用开链叶（等价且远少于全碳），否则回退全碳种子。"""
+    """最长链种子降集：开链子图为多碳树时仅用开链叶，否则回退全碳。"""
     carbons = [c for c in _all_carbons(mol) if c not in banned]
     if not carbons:
         return []
@@ -66,7 +66,7 @@ def _longest_chain(mol: Mol, seeds: list[int] | None = None, banned: set[int] = 
 
 
 def _component_leaves(mol: Mol, neighbor: int, forbid: int, banned: set[int] = frozenset()) -> tuple[dict, list[int], int]:
-    """从 neighbor 出发（禁走 forbid）DFS 其开链碳组件，返回 (parent, 最深叶子列表, 最深深度)；组件内 parent/距离以 forbid 为根，叶子 = 无更远碳子节点的原子。"""
+    """DFS neighbor 开链碳组件（禁走 forbid），返回父表与最深叶。"""
     parent: dict = {neighbor: forbid}
     order = [neighbor]
     dist = {neighbor: 1}
@@ -100,7 +100,7 @@ def _component_path(parent: dict, leaf: int, root: int) -> list[int]:
 
 
 def _all_chains_through(mol: Mol, c_idx: int, banned: set[int] = frozenset()) -> list[list[int]]:
-    """返回穿过给定碳原子的全部等长最长开链（供 P-44.4/P-45.2 平局裁决）；开链碳子图为森林，从 c_idx 各碳邻居分出的组件里取最深叶子作臂，臂长平局时逐一枚举组件与叶子，避免单条 DFS 任选一路导致等长候选链丢失（如醛端 C3 连甲基端与羟甲基端同为最长，须两条都作候选让 P-45.2.1 决定主链）。"""
+    """返回 c_idx 的等长最长开链，平局臂全枚举（P-44.4/P-45.2）。"""
     neighbors = _carbon_neighbors(mol, c_idx, banned)
     comps = {n: _component_leaves(mol, n, c_idx, banned) for n in neighbors}
     if not comps:
@@ -112,7 +112,7 @@ def _all_chains_through(mol: Mol, c_idx: int, banned: set[int] = frozenset()) ->
         for leaf in leaves:
             chains.add(tuple(reversed(_component_path(parent, leaf, c_idx))))
     else:
-        pairs: list[tuple[int, int]] = []  # 锚点在链内：两臂取自两个组件，取深度和最大的组合（平局组合全枚举）；结果按 左叶子…锚点…右叶子 排成真实键连路径（两端是叶子、相邻原子有键）。
+        pairs: list[tuple[int, int]] = []  # 锚点在链内：两臂取深度和最大的组件组合（平局全枚举）
         best = 0
         for i in range(len(ns)):
             for j in range(i + 1, len(ns)):

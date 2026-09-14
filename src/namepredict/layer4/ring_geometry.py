@@ -1,4 +1,4 @@
-"""3-8 元环标准形状坐标模板与平面几何原语(P-25.3.2.3.1 自建模板坐标)。"""
+"""3-8 元环标准形状模板与平面几何原语(P-25.3.2.3.1)。"""
 from __future__ import annotations
 
 import math
@@ -24,7 +24,7 @@ _ROW_WIDTH = 3 ** 0.5
 
 def ring_shape_template(order: list[int], exit_idx: int,
                         row_width: float = _ROW_WIDTH) -> list[tuple[float, float]] | None:
-    """P-25.3.2.3.2 变形环模板：让奇数环在水平行中间也能"两侧竖直边"稠合。 """
+    """P-25.3.2.3.2 变形环模板：奇数环可在水平行中间两侧竖直边稠合。"""
     n = len(order)
     if n not in (5, 7):
         return None
@@ -37,7 +37,7 @@ def ring_shape_template(order: list[int], exit_idx: int,
         return None
     if n == 7 and e not in (2, 3):
         return None
-    positions: list[tuple[float, float]] = []  # 逐顶点分配：索引 0,1 为左共享边(单位水平, y=0)；索引 e,e+1 为右共享边(平行水平, y=row_width)
+    positions: list[tuple[float, float]] = []  # 逐顶点分配：索引 0,1 为左共享边，e,e+1 为右共享边。
     for i in range(n):
         if i == 0:
             positions.append((0.0, 0.0))
@@ -55,7 +55,7 @@ def ring_shape_template(order: list[int], exit_idx: int,
 
 
 def ring_cyclic(ring_tuple: tuple[int, ...], a: int, b: int) -> list[int]:
-    """由 RDKit AtomRings 环元组求以 (a,b) 为首边（a→b 正序/反序）的环序，返回 a 开头、b 第二。"""
+    """由环元组求以 (a,b) 为首边的环序，返回 a 开头、b 第二。"""
     n = len(ring_tuple)
     i = ring_tuple.index(a)
     if ring_tuple[(i + 1) % n] == b:
@@ -70,21 +70,21 @@ def centroid(pts: list[tuple[float, float]]) -> tuple[float, float]:
 
 
 def apply_rigid(p: tuple[float, float], params) -> tuple[float, float]:
-    """应用 rigid_fit 返回的 (scale, cos, sin, tx, ty) 变换。"""
+    """应用 rigid_fit 返回的刚体变换。"""
     scale, cos_t, sin_t, tx, ty = params
     return (scale * (cos_t * p[0] - sin_t * p[1]) + tx,
             scale * (sin_t * p[0] + cos_t * p[1]) + ty)
 
 
 def rigid_fit(src: list[tuple[float, float]], dst: list[tuple[float, float]]):
-    """Procrustes 最优刚体+缩放 src→dst (Kabsch 2D)，返回 (scale, cos, sin, tx, ty) 供贴合模板与偏差打分。"""
+    """Procrustes 最优刚体+缩放 src→dst (Kabsch 2D)。"""
     n = len(src)
     cx_s, cy_s = centroid(src)
     cx_d, cy_d = centroid(dst)
     sx = [(x - cx_s, y - cy_s) for x, y in src]
     dx = [(x - cx_d, y - cy_d) for x, y in dst]
     h11 = sum(dx[i][0] * sx[i][0] + dx[i][1] * sx[i][1] for i in range(n))
-    h12 = sum(dx[i][1] * sx[i][0] - dx[i][0] * sx[i][1] for i in range(n))  # Kabsch 最优旋转角 θ = atan2(Σ d_y s_x - d_x s_y, Σ d·s)，让 Rθ·s ≈ d
+    h12 = sum(dx[i][1] * sx[i][0] - dx[i][0] * sx[i][1] for i in range(n))  # Kabsch 最优旋转角 θ = atan2(Σ d×s, Σ d·s)。
     theta = math.atan2(h12, h11)
     s_sq = sum(x * x + y * y for x, y in sx)
     d_sq = sum(x * x + y * y for x, y in dx)
@@ -114,7 +114,7 @@ def _line_inter(p: tuple[float, float], q: tuple[float, float],
 
 def clip_polygon(subject: list[tuple[float, float]],
                  clip: list[tuple[float, float]]) -> list[tuple[float, float]]:
-    """Sutherland–Hodgman 多边形裁剪，返回 subject∩clip 顶点（可能空）。"""
+    """Sutherland–Hodgman 多边形裁剪，返回交叠顶点。"""
     out = list(subject)
     for i in range(len(clip)):
         a, b = clip[i], clip[(i + 1) % len(clip)]

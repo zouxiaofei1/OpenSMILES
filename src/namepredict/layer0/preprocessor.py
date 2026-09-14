@@ -9,7 +9,7 @@ from namepredict.layer0.tautomer import normalize_amide_tautomer
 
 
 def preprocess(smiles: str) -> Mol | None:
-    """清洗并解析 SMILES 为 RDKit 分子，空输入返回 None；解析后归一化酰胺烯醇互变异构并收敛酸性质子到最强酸位。"""
+    """清洗解析 SMILES 为 RDKit 分子；空输入/失败返回 None。"""
     if not smiles or not str(smiles).strip():
         return None
     mol = Chem.MolFromSmiles(str(smiles).strip(), sanitize=False)

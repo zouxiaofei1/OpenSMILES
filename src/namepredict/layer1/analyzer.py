@@ -15,7 +15,6 @@ from namepredict.layer1._carbonyl_common import (
     _ester_alkoxy_of as _ester_alkoxy_of_common,
     _has_acid_o_neighbor,
     _has_double_bonded_o,
-    _is_anhydride_bridge_o,
     _is_single_c_oh,
 )
 
@@ -42,7 +41,7 @@ def _arm_component(mol: Mol, start: int, core: set[int]) -> set[int]:
 
 
 def _one_phosphate(mol: Mol, p_idx: int) -> dict | None:
-    """判定单个 P 是否为磷酸中心，是则返回 {p_idx,n_oh,n_om,n_arms}，否则 None。"""
+    """判定单个 P 是否为磷酸中心；是则返回计数 dict，否则 None。"""
     p = mol.GetAtomWithIdx(p_idx)
     if p.GetTotalNumHs() != 0 or p.GetFormalCharge() != 0:
         return None
@@ -123,11 +122,11 @@ def _is_amide_carbon(atom) -> bool:
     return _amide_n_info(atom) is not None
 
 def _has_ring_hetero_neighbor(atom) -> bool:
-    """判断原子是否连有环内杂原子（N/O/S）：O/S 与羰基同环即经杂原子闭合成内酯/硫代内酯，环内 N 的酰基则按酮命名（P-66.1.1，N-酰基环胺），三者同由 _is_ketone_carbon 作环酮。"""
+    """判断原子是否连有环内杂原子（N/O/S），P-66.1.1。"""
     return any(n.GetAtomicNum() in RING_HETERO and n.IsInRing() for n in atom.GetNeighbors())
 
 def _is_ketone_carbon(atom) -> bool:
-    """判断碳是否为酮羰基碳（非酸、非酰胺、非酯）；双碳邻居，或单碳邻居 + 环内杂原子（N-酰基环胺 → ethanone 型母体；环内 O/S → 内酯/硫代内酯按杂环 -one 命名），或环内零碳邻居（环脲/环碳酸酯型）。"""
+    """判断碳是否为酮羰基碳（非酸、非酰胺、非酯）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom):
@@ -144,19 +143,9 @@ def _is_ketone_carbon(atom) -> bool:
         return False
     return True
 
-def _anhydride_o_of(carbon) -> int | None:
-    """返回羰基碳上的酸酐桥氧索引。"""
-    for n in carbon.GetNeighbors():
-        if _is_anhydride_bridge_o(n):
-            return n.GetIdx()
-    return None
-
-
 def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
-    """判断 O 是否为酯烷氧基氧（排除酸酐桥）。"""
+    """判断 O 是否为酯烷氧基氧。"""
     if oxygen.GetAtomicNum() != O or oxygen.GetTotalNumHs() != 0:
-        return False
-    if _is_anhydride_bridge_o(oxygen):
         return False
     return _alkoxy_c_of(oxygen, carbonyl) is not None
 
@@ -165,7 +154,7 @@ def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
     return _ester_alkoxy_of_common(carbon, _is_ester_alkoxy_o)
 
 def _is_lactone_carbon(atom) -> bool:
-    """判断碳是否为环内酯（内酯）羰基碳：酯氧在环内时并入环母体作 -one 后缀（2H-chromen-2-one / 2-benzofuran-1-one / 1,3-dioxolan-2-one），不按酯的 -oate 命名。"""
+    """判断碳是否为内酯羰基碳（酯氧在环内，按环母体命名）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     alkoxy = _ester_alkoxy_of(atom)
@@ -174,7 +163,7 @@ def _is_lactone_carbon(atom) -> bool:
     return atom.GetOwningMol().GetAtomWithIdx(alkoxy[0]).IsInRing()
 
 def _is_ester_carbon(atom) -> bool:
-    """判断碳是否为酯羰基碳（有酸性氧与烷氧基侧；环内酯除外，见 _is_lactone_carbon）。"""
+    """判断碳是否为酯羰基碳（内酯除外）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is None:
@@ -182,13 +171,11 @@ def _is_ester_carbon(atom) -> bool:
     return not _is_lactone_carbon(atom)
 
 def _ald_blocked(atom) -> bool:
-    """判断醛碳是否被酯、酰卤、酸酐或酰胺占用。"""
-    if _ester_alkoxy_of(atom) is not None or _acyl_hal_of(atom) is not None:
-        return True
-    return _anhydride_o_of(atom) is not None
+    """判断醛碳是否被酯或酰卤占用。"""
+    return _ester_alkoxy_of(atom) is not None or _acyl_hal_of(atom) is not None
 
 def _is_aldehyde_carbon(atom) -> bool:
-    """判断碳是否为醛羰基碳（单碳邻居、带 H 且未被阻断）；环内羰基不再作醛——内酰胺/环脲等由 _is_ketone_carbon 作酮、以 -one 后缀表达（P-66.6.1），当作醛会把喹唑啉-4-酮错拼成 …醛。"""
+    """判断碳是否为醛羰基碳（单碳邻居、带 H 且未被阻断）。"""
     if atom.GetAtomicNum() != C or atom.GetTotalDegree() < 3:
         return False
     if not _has_double_bonded_o(atom) or _has_acid_o_neighbor(atom):
@@ -231,7 +218,7 @@ def _thiol_entries(mol: Mol) -> list[dict]:
     return out
 
 def _amine_degree(atom) -> int | None:
-    """返回胺 N 取代度（1/2/3），非胺返回 None；排除芳香/酰胺/环内 N（吡咯烷等的环 N 是环杂原子，非胺官能团）。"""
+    """返回胺 N 取代度（1/2/3）；非胺返回 None。"""
     if atom.GetAtomicNum() != N  or atom.GetIsAromatic():
         return None
     if atom.IsInRing():
@@ -242,7 +229,7 @@ def _amine_degree(atom) -> int | None:
     return 2 if n_c == 2 and n_h == 1 else (3 if n_c == 3 and n_h == 0 else None)
 
 def _amine_entry(atom) -> dict:
-    """组装胺条目 dict（氮为中心，全部碳臂为周边）；取代度即碳臂数，由下游取 len(surr_idx)。"""
+    """组装胺条目 dict（氮为中心，碳臂为周边）。"""
     return {"center_idx": atom.GetIdx(),
             "surr_idx": [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == C]}
 
@@ -251,7 +238,7 @@ def _amine_entries(mol: Mol) -> list[dict]:
     return [_amine_entry(a) for a in mol.GetAtoms() if _amine_degree(a) is not None]
 
 def _carboxyl_entry(atom) -> dict:
-    """组装单个羧基条目 dict（羧基碳为中心，两个氧为周边）；是否阴离子由下游按氧的形式电荷现判。"""
+    """组装羧基条目 dict（碳为中心，两个氧为周边）。"""
     return {"center_idx": atom.GetIdx(),
             "surr_idx": [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == O]}
 
@@ -286,39 +273,13 @@ def _acyl_chloride_entries(mol: Mol) -> list[dict]:
     return acyl_halide_entries(mol)
 
 def _ester_entry(atom) -> dict:
-    """组装单个酯条目 dict（羰基碳为中心，羰基氧与酯氧为周边）；烷氧基臂属取代基侧，不入 FG 本体。"""
+    """组装酯条目 dict（碳为中心，羰基氧与酯氧为周边）。"""
     o_idx, _ = _ester_alkoxy_of(atom)
     return {"center_idx": atom.GetIdx(), "surr_idx": [*_double_bonded_o_idxs(atom), o_idx]}
 
 def _ester_entries(mol: Mol) -> list[dict]:
     """收集分子中所有酯条目的列表。"""
     return [_ester_entry(a) for a in mol.GetAtoms() if _is_ester_carbon(a)]
-
-def _anhydride_entry(atom) -> dict:
-    """组装单个酸酐条目 dict（桥氧为中心，两个羰基碳与两个羰基氧为周边），并归一化两碳顺序。"""
-    mol = atom.GetOwningMol()
-    o_idx = _anhydride_o_of(atom)
-    c1, c2 = sorted((atom.GetIdx(), True))
-    return {"center_idx": o_idx, "surr_idx": [c1, c2, *_double_bonded_o_idxs(atom),
-                                              *_double_bonded_o_idxs(mol.GetAtomWithIdx(other))]}
-
-def _is_anhydride_carbon(atom) -> bool:
-    """判断碳是否为酸酐羰基碳（排除羧酸）。"""
-    if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
-        return False
-    if _has_acid_o_neighbor(atom):
-        return False
-    return _anhydride_o_of(atom) is not None
-
-def _anhydride_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有去重后的酸酐条目列表。"""
-    seen: set[int] = set()
-    out: list[dict] = []
-    for atom in mol.GetAtoms():
-        if not _is_anhydride_carbon(atom):
-            continue
-        e = _anhydride_entry(atom)
-    return out
 
 def _is_cc_double(bond) -> bool:
     """判断键是否为 C=C 双键（排除芳香键）。"""
@@ -374,7 +335,7 @@ def _ring_entry(atom_ids: tuple) -> dict:
     return {"atom_ids": atom_ids}
 
 def _ring_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有环条目的列表；环感知对分子恒定，按 mol 记忆（同 ring_systems._sssr）。"""
+    """收集分子中所有环条目的列表（按 mol 记忆）。"""
     return memo.by_mol("ring_entries", lambda m: [_ring_entry(r) for r in m.GetRingInfo().AtomRings()], mol)
 
 def _ring_meta(mol: Mol) -> dict:
@@ -392,7 +353,7 @@ def _carbon_ids(mol: Mol) -> list[int]:
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
 
 def _is_acyl_head(mol: Mol, atom) -> bool:
-    """锚定羰基碳是否为酰基头：带 =O、恰好 1 个单键碳邻居、无其它重邻居（P-65.1.7.2 酸衍生）；环酮/内酯/酰胺因双碳或杂原子邻居被排除。"""
+    """判断锚定羰基碳是否为酰基头（P-65.1.7.2）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     carbs: list = []
@@ -413,7 +374,7 @@ def _is_acyl_head(mol: Mol, atom) -> bool:
 
 
 def _acyl_entries(mol: Mol) -> list[dict]:
-    """虚拟原子邻居中判为酰基头的羰基碳条目（取代 radical 成为主基团，避免醛→酮误降级）。"""
+    """虚拟原子邻居中判为酰基头的羰基碳条目。"""
     return [_carbonyl_entry(n)
             for a in mol.GetAtoms() if a.GetAtomicNum() == 0
             for n in a.GetNeighbors() if n.GetAtomicNum() != H and _is_acyl_head(mol, n)]
@@ -432,15 +393,15 @@ def _radical_entries(mol: Mol, exclude: frozenset[int] = frozenset()) -> list[di
 
 
 def _bond_lists(mol: Mol) -> dict:
-    """不饱和度键列表：C=C / C≡C 是结构事实而非官能团，不入 FG 通道（_fg_parts 只承载 P-41 官能团条目）。"""
+    """不饱和度键列表（结构事实，入独立通道）。"""
     return {"double_bonds": _double_bond_entries(mol), "triple_bonds": _triple_bond_entries(mol)}
 
 _SUPPRESSIBLE = {**CARBONYL_COMPOSITES, "nitriles": "nitrile"}  # 可被更高优先级 FG 整体压制的组合 FG：组合羰基 + 腈
-_LEAF_DEMOTED = ("carboxyls", "nitriles")  # 降级为"前缀叶"的组合 FG：整组碳排除出主链（P-61.1.3 carboxy/cyano）。其余组合 FG（酯/酰胺/醛/酰卤/酸酐）降级为"氧代"——羰基碳留在链内，仅 O 作 oxo/formyl 前缀，由 L3 锚定叶识别。
+_LEAF_DEMOTED = ("carboxyls", "nitriles")  # 降级为"前缀叶"的组合 FG：整组碳排除出主链（P-61.1.3 carboxy/cyano）。其余组合 FG（酯/酰胺/醛/酰卤）降级为"氧代"——羰基碳留在链内，仅 O 作 oxo/formyl 前缀，由 L3 锚定叶识别。
 
 
 def _arbitrate_parts(parts: dict) -> tuple[dict, frozenset[str]]:
-    """P-41 主基团仲裁：已有更高优先级 FG 时，组合 FG 整组退出主基团。叶型降级（羧酸/腈）的条目保留在清单中并标记 demoted（供 L2 排除出主链），其余组合 FG 整组清空。返回 (仲裁后 parts, 降级的 occurrence id 集)。"""
+    """P-41 仲裁：更高优先级 FG 使组合 FG 退出，叶型标 demoted。"""
     p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
     present = {fg for fg, key in FG_PARTS_KEY.items() if parts.get(key)}
     out = dict(parts)
@@ -455,7 +416,7 @@ def _arbitrate_parts(parts: dict) -> tuple[dict, frozenset[str]]:
 
 
 def _detect_parts(mol: Mol) -> dict:
-    """检测（未仲裁）分子中各类官能团条目；键集由 fg_registry.FG_SPECS 的 list_key 派生，唯一事实来源。"""
+    """检测（未仲裁）分子中各类官能团条目。"""
     acyls = _acyl_entries(mol)
     heads = frozenset(e["center_idx"] for e in acyls)
     return {"carboxyls": _carboxyl_entries(mol), "hydroxyls": _hydroxyl_entries(mol),
@@ -466,11 +427,11 @@ def _detect_parts(mol: Mol) -> dict:
         "amines": _amine_entries(mol),
         "nitriles": _nitrile_entries(mol),
         "acyl_chlorides": _acyl_chloride_entries(mol),
-        "anhydrides": _anhydride_entries(mol), "thiols": _thiol_entries(mol),
+        "thiols": _thiol_entries(mol),
         "phosphates": phosphate_entries(mol)}
 
 def _collect_fgs(mol: Mol) -> dict:
-    """聚合官能团条目并构建带类型清单（单一 FG 出口：清单承载全部 FG 事实，存在性由清单内容判定；不饱和度独立于 FG 通道）。"""
+    """聚合官能团条目并构建带类型清单（FG 唯一出口）。"""
     from namepredict.layer1.functional_group_inventory import build_inventory
 
     parts, demoted = _arbitrate_parts(_detect_parts(mol))

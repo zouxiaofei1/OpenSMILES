@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-# ── 原子序数 ───────────────────────────────────────────────────
+# ── 原子序数 ──────────────────────────
 H  = 1
 Li = 3
 B  = 5
@@ -31,7 +31,7 @@ Tl = 81
 Pb = 82
 Bi = 83
 
-# ── 常用集合 ───────────────────────────────────────────────────
+# ── 常用集合 ──────────────────────────
 HALO_Z = frozenset({F, Cl, Br, I})
 RING_HETERO = frozenset({N, O, S})  # 环内杂原子：其单碳酰基按环酮命名（内酰胺/内酯/硫代内酯、N-酰基环胺），见 layer1.analyzer._is_ketone_carbon。
 HALO_ZH = {F: "氟", Cl: "氯", Br: "溴", I: "碘"}
@@ -54,7 +54,7 @@ ZH_DIGITS = "一二三四五六七八九"
 
 
 def en_num_term(n: int) -> str | None:
-    """英文数值词干（数量词/链词共用，末带 'a'）：≤10 查表，11=undeca，12–99 按个位(hen/do)+十位组合。"""
+    """英文数值词干（末带 'a'）：1–99 按个位+十位组合生成。"""
     if n < 1 or n > 99:
         return None
     if n <= 10:
@@ -88,7 +88,7 @@ MULT_EN = {n: (en_num_term(n) or "") for n in range(1, 100)}
 MULT_ZH = {n: (zh_numeral(n) or "") for n in range(1, 100)}
 
 def zh_bridge_root(name: str) -> str:
-    """桥后缀（氨基/氧基/硫基）前的中文烃基名去尾「基」：甲基→甲、叔丁基→叔丁、环己基→环己、丙-2-基→丙-2-（tiers gold 口径）。"""
+    """桥后缀（氨基/氧基/硫基）前的中文烃基名去尾「基」。"""
     return name[:-1] if name.endswith("基") else name
 
 AMIDO_RETAINED = {  # P-66.1.1.4.3
@@ -98,7 +98,7 @@ AMIDO_RETAINED = {  # P-66.1.1.4.3
 }
 AMIDO_RETAINED_EN = frozenset(v[0] for v in AMIDO_RETAINED.values())
 
-# ── L0 电荷归一 / 盐解离 ────────────────────────────────────────
+# ── L0 电荷归一 / 盐解离 ────────────────────
 DONOR_KIND = ("carboxyl", "phospho")  # 允许作为强酸供体的酸类：羧酸 + 磷酸。磷酸供体在「酰胺 O⁻ 受体」场景下才有产出（见 preprocessor 的二次互变归一，gold 把 N=C([O-]) 写成酰胺、把 P-OH 写成 oxidophosphoryl）；sulfo 实测 0 收益，关闭以免扩大 blast radius。
 ACID_KIND_PRIO = {"carboxyl": 1, "phospho": 2, "sulfo": 3}
 ACCEPTOR_Z = frozenset({O, N})  # 弱受体允许的元素：O（酚氧/烯醇氧/酰胺氧）、N（去质子化氮）；保守可只留 {O}。
@@ -110,19 +110,19 @@ ACID_CENTERS = {          # 中心元素 → (最少双键氧数, 酸类名)；�
 ALKALI_EN = {Li: "lithium", Na: "sodium", K: "potassium"}  # 原子序数 → 英文金属名（IUPAC 官能团类盐）
 METAL_ZH = {"lithium": "锂", "sodium": "钠", "potassium": "钾"}
 
-# ── L1 官能团 parts 键 ──────────────────────────────────────────
+# ── L1 官能团 parts 键 ──────────────────
 FG_PARTS_KEY = {  # fg_registry 名 → parts 键（有 p41 的链 FG）；P-41 优先级仲裁：组合羰基 FG（酸/酯/酰卤/酰胺/醛/酸酐）被更高优先级 FG（如自由基）压制时退出主基团，其羰基碳降级入 ketones（oxo 前缀候选），组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属——不再丢失羰基氧。ketone/alcohol/thiol/amine 是基础成员 FG，永不退出。
-    "radical": "radicals", "acyl": "acyls", "acid": "carboxyls", "anhydride": "anhydrides",
+    "radical": "radicals", "acyl": "acyls", "acid": "carboxyls",
     "ester": "esters", "acyl_halide": "acyl_chlorides", "amide": "amides",
     "nitrile": "nitriles", "aldehyde": "aldehydes", "ketone": "ketones",
     "alcohol": "hydroxyls", "thiol": "thiols", "amine": "amines",
 }
 CARBONYL_COMPOSITES = {  # 组合羰基 FG 的 parts 键 → fg 名
     "carboxyls": "acid", "amides": "amide", "esters": "ester",
-    "aldehydes": "aldehyde", "acyl_chlorides": "acyl_halide", "anhydrides": "anhydride",
+    "aldehydes": "aldehyde", "acyl_chlorides": "acyl_halide",
 }
 
-# ── L2/L5 单核母体氢化物（P-15.4.1 表 2.1）唯一事实来源 ──────────
+# ── L2/L5 单核母体氢化物（P-15.4.1）────────────
 MONONUCLEAR_HYDRIDES: dict[str, tuple] = {
     "oxidane":    ("O", "氧化烷", ("hydroxy",   "羟基"),     ("oxy",      "氧基"), "氧基"),
     "azane":      ("N", "氮烷",   ("amino",     "氨基"),     ("amino",    "氨基"), "氨基"),
@@ -142,7 +142,7 @@ MONONUCLEAR_BRIDGE = {(en, v[1]): v[3] for en, v in MONONUCLEAR_HYDRIDES.items()
 MONONUCLEAR_YL = {en: (v[1], (v[3] or v[2])[0], v[4]) for en, v in MONONUCLEAR_HYDRIDES.items()}  # free_en → (free_zh, 去氢 yl_en, 组装名中文尾)
 PHOSPHORYL_STEMS = tuple(en for en, v in MONONUCLEAR_HYDRIDES.items() if v[0] == "P")  # 替代碳词干的 P 酰基词干（避免 P 被当碳中心）
 
-# ── L3 取代基词表 ──────────────────────────────────────────────
+# ── L3 取代基词表 ──────────────────────
 SIMPLE_ALKOXY_NO_PAREN = frozenset({  # 简单保留烷氧基作前缀不加括号
     "methoxy", "ethoxy", "propoxy", "butoxy", "phenoxy", "isopropoxy",
 })
@@ -155,7 +155,7 @@ CLAIM_KIND = {"amide_n": "n_block", "amine_n": "n_block",
               "ring_c": "alkyl", "chain_c": "alkyl"}  # claim 槽位 → 取代基 kind
 ESTER_O_SIDE_KINDS = frozenset({"ester", "phosphate"})  # O-侧酸侧（烷氧基臂）：连在 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 酯/磷酸整名消费。ester：酯酸侧烷氧臂；phosphate：磷酸酯 O–R 臂（kind=phosphate 母体，见 layer1/phosphate.py）。
 
-# ── L4 位次 / 编号 ────────────────────────────────────────────
+# ── L4 位次 / 编号 ──────────────────────
 HYDRO_MULT_N = frozenset({2, 4, 6, 8, 10, 12, 14, 16, 18, 20})  # 加氢前缀覆盖的氢原子数（P-31.2.2 以偶数倍增前缀表示双键的饱和，位次数为加氢原子数）；数量词本身取自本层（唯一来源），此处只表达 L4 的适用域，域外放弃而非给错名。
 OH_KINDS = ("alcohol",)
 AMINE_KINDS = ("amine",)
@@ -169,7 +169,7 @@ FIXED_START_KEYS = (  # P-14.4(a)：parent dict 中标定必须为 locant 1 的�
     "ring_attach_idx", "n_idx", "nh_idx", "hetero_idx", "radical_c_idx", "acyl_c_idx",
 )
 
-# ── L5 组装词表 ───────────────────────────────────────────────
+# ── L5 组装词表 ──────────────────────
 BIS_EN = {2: "bis", 3: "tris", 4: "tetrakis"}  # P-16.3.2 复合前缀倍增（bis/tris，非 di/tri）
 BIS_ZH = {2: "双", 3: "三", 4: "四"}
 BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl", "amino")   # O/S/N 桥后缀（gold 平铺式 -yl]oxy/-yl]amino：括号闭在 -yl 后、后缀放括号外，见 P-63.2.2.1）

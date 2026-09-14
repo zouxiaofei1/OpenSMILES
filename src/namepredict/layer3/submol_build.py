@@ -19,7 +19,7 @@ def _copy_atoms(em: Chem.RWMol, mol: Mol, order: list[int]) -> dict[int, int]:
 
 
 def _copy_bonds(em: Chem.RWMol, mol: Mol, inv: dict[int, int]) -> list:
-    """复制诱导子图内的键，返回被复制的源键列表（供 _carry_alkene_stereo 只扫子图内的键，不必遍历整分子）。"""
+    """复制诱导子图内的键，返回源键列表供立体迁移扫描。"""
     copied: list = []
     for old_a, new_a in inv.items():
         for bond in mol.GetAtomWithIdx(old_a).GetBonds():
@@ -33,7 +33,7 @@ def _copy_bonds(em: Chem.RWMol, mol: Mol, inv: dict[int, int]) -> list:
 
 def _carry_alkene_stereo(em: Chem.RWMol, mol: Mol, inv: dict[int, int], bonds,
                          dummy: int | None = None) -> None:
-    """迁移诱导子图内双键的 E/Z 立体到子分子：_copy_bonds 只重建键型会丢奇偶，故把源双键 E/Z 标签照搬（标签取原分子即真实立体，不随配基被切/被 * 顶替而重判）；两端引用被保留则映射到新索引，被切配基由本端 sp2 碳上的 dummy 顶替，无法唯一解析（如 H 封端成非手性 CH2）则跳过留无立体。`bonds` 为 _copy_bonds 返回的子图内源键。"""
+    """把子图内双键的 E/Z 标签照搬到子分子；无法解析则跳过。"""
     if em is None or mol is None:
         return
     for b in bonds:
@@ -83,7 +83,7 @@ def _sanitize(em: Chem.RWMol) -> Mol | None:
 
 
 def _external_bond_type(mol: Mol, attach_old: int, atoms: frozenset[int]):
-    """返回连接原子与母体(外)原子间的真实键型，无外部邻居(孤立自由基)回退单键；取代基叶若以双键连母体（外环 =CH2 等 *ylidene）须保留真实键级，否则 canonical 收成 *C 会命成饱和 alkyl（methyl 而非 methylidene，式量丢 H2）。"""
+    """返回连接原子与母体间真实键型，无外邻居时回退单键。"""
     for nb in mol.GetAtomWithIdx(attach_old).GetNeighbors():
         if nb.GetAtomicNum() != 1 and nb.GetIdx() not in atoms:
             b = mol.GetBondBetweenAtoms(attach_old, nb.GetIdx())
@@ -94,7 +94,7 @@ def _external_bond_type(mol: Mol, attach_old: int, atoms: frozenset[int]):
 
 def _add_anchor(em: Chem.RWMol, attach_new: int,
                 bond_type: Chem.BondType = Chem.BondType.SINGLE) -> int:
-    """在连接原子处添加 dummy 原子作锚点（键型随母体-取代基真实键级），返回其索引。"""
+    """在连接原子处添加 dummy 锚点，返回其索引。"""
     d = em.AddAtom(Chem.Atom(0))  # 用 dummy 原子（`*`）标记连接原子；双键叶(=CH2)需用双键，键型由调用方给出。
     em.AddBond(attach_new, d, bond_type)
     return d

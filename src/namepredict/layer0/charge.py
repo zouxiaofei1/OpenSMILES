@@ -8,7 +8,7 @@ from namepredict.constants import ACCEPTOR_Z, ACID_CENTERS, ACID_KIND_PRIO, DONO
 
 
 def _oxo_neighbor(atom, heavy: int, min_oxo: int = 1):
-    """返回 atom 邻接的成酸中心原子（非芳香）若其带 ≥min_oxo 个双键氧（C(=O)/P(=O)/S(=O)n）；否则 None。"""
+    """返回邻接的非芳香成酸中心原子（双键氧 ≥min_oxo）；无则 None。"""
     for n in atom.GetNeighbors():
         if n.GetAtomicNum() != heavy or n.GetIsAromatic():
             continue
@@ -23,14 +23,14 @@ def _oxo_neighbor(atom, heavy: int, min_oxo: int = 1):
     return None
 
 def _acid_kind(atom) -> str | None:
-    """按 ACID_CENTERS 表返回 O 所连成酸中心对应的酸类名，不检查 O 自身 H/电荷。"""
+    """按 ACID_CENTERS 表返回 O 所连成酸中心对应的酸类名。"""
     for z, (min_oxo, kind) in ACID_CENTERS.items():
         if _oxo_neighbor(atom, z, min_oxo):
             return kind
     return None
 
 def _acid_kind_of_oh(atom) -> str | None:
-    """判定中性含 H 的 O 是否为质子化强酸 OH：carboxyl 连 C(=O)、phospho 连 P(=O)、sulfo 连 S(=O)n；否则 None。"""
+    """判中性含 H 的 O 是否为质子化强酸 OH；否则 None。"""
     if atom.GetAtomicNum() != O or atom.GetFormalCharge() != 0 or atom.GetTotalNumHs() < 1:
         return None
     return _acid_kind(atom)
@@ -47,7 +47,7 @@ def _is_weak_anion(atom) -> bool:
 
 
 def _relocate_proton(mol: Mol, a_idx: int, d_idx: int) -> Mol | None:
-    """把质子从强酸供体 d_idx 搬到弱酸受体 a_idx：受体中性 +1H、供体 -1 -1H；只做 FormalCharge/H 记账，SanitizeMol 失败返回 None。"""
+    """把质子从强酸供体搬到弱酸受体，只做电荷/H 记账；消毒失败返回 None。"""
     m = RWMol(mol)
     acc = m.GetAtomWithIdx(a_idx)
     don = m.GetAtomWithIdx(d_idx)
@@ -73,7 +73,7 @@ def _frag_of(mol: Mol) -> dict[int, int]:
 
 def normalize_acid_charge(mol: Mol) -> Mol:
     # return mol
-    """同一片段内【质子化羧酸】与【去质子化弱酸位】共存时逐次搬质子使负电荷收敛到最强酸；供体只取强酸 OH、受体只取弱酸阴离子故单调收敛，无改动返回原 mol。"""
+    """同片段内质子化强酸与去质子化弱酸位共存时逐次搬质子；无改动返回原 mol。"""
     if any(a.GetAtomicNum() == 0 for a in mol.GetAtoms()):
         return mol
     out = mol

@@ -1,4 +1,4 @@
-"""基于 claim 的侧链提取，经由 SubstituentNamer（覆盖填充）。"""
+"""基于 claim 的侧链提取，经 SubstituentNamer 填充。"""
 from __future__ import annotations
 
 from namepredict.tools.common_names import CommonNameCache

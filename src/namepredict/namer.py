@@ -1,4 +1,4 @@
-"""顶层命名管线：SMILES → L1–L5 双语 IUPAC，带缓存、候选重试与盐拆分。"""
+"""顶层命名管线：SMILES → L1–L5 双语 IUPAC（含缓存）。"""
 
 from __future__ import annotations
 
@@ -37,14 +37,14 @@ def _elapsed_ms(t0: float) -> float:
 
 
 def _chain_meta(numbered: dict) -> dict:
-    """从编号结果提取母体链、母体 kind 与 S 桥自含围栏标记（供 L3 判断前缀是否还需加括号）。"""
+    """从编号结果提取母体链、kind 与 S 桥自含围栏标记。"""
     parent = numbered.get("parent") or {}
     return {"parent_chain": list(parent.get("chain") or []), "parent_kind": parent.get("kind"),
             "parent_labels": _label_list(parent),
             "bridge_self_enclosed": bool(numbered.get("bridge_self_enclosed"))}
 
 def _label_list(parent: dict) -> list:
-    """母体整体编号标签（稠环桥头 3a/6a）；长度与 chain 不符时返回空表（调用方退回链序号）。"""
+    """母体整体编号标签（稠环桥头 3a/6a）；长度不符时返回空表。"""
     labels = (parent.get("numbering_scaffold") or {}).get("labels") or []
     chain = parent.get("chain") or []
     return [int(x) if str(x).isdigit() else str(x) for x in labels] if len(labels) == len(chain) else []
@@ -66,7 +66,7 @@ def _ledger_complete(mol, owned, subst: list[dict]) -> bool:
 
 
 def _ok_result(numbered: dict, *, t0: float) -> NameResult | None:
-    """组装编号结果为 NameResult，成功且非空才返回；meta 附链元数据与母体取代基数（供 L3 判定词干是否复合）。"""
+    """组装编号结果，成功且非空才返回（meta 附链元数据）。"""
     result = assemble(numbered, time_ms=_elapsed_ms(t0))
     if not result.success or not result.en:
         return None
@@ -82,7 +82,7 @@ def _chain_set(parent: dict) -> set[int]:
 
 
 def _remap_attach(parent: dict, s: dict) -> dict:
-    """确保 attach_idx 位于母体链上，供 L4 orient 使用（环官能团连接）：回落到环附着原子或单锚点 principal 官能团锚点。"""
+    """确保 attach_idx 位于母体链上，供 L4 orient 使用。"""
     if s.get("o_side"):
         return s  # ester O 侧烷基：连接点保留在酯 O 上，不做链重映射
     chain = _chain_set(parent)
@@ -96,7 +96,7 @@ def _remap_attach(parent: dict, s: dict) -> dict:
 
 
 def _remap_candidates(parent: dict) -> list[int]:
-    """可重挂的母体锚点：环附着原子优先，其次单锚点 principal 官能团的原锚点（与原单数字段契约一致）。"""
+    """可重挂的母体锚点：环附着原子，其次单锚点官能团锚点。"""
     ring = parent.get("ring_attach_idx")
     facts = parent.get("principal_expression_facts")
     out = [ring] if ring is not None else []
@@ -108,7 +108,7 @@ _MAX_TIED_CANDIDATES = 4  # P-45.2.2 需要为每个并列候选各跑一次 L3�
 
 
 def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
-    """筛选并重映射参与编号的取代基（O 侧、链上连接点与 N 端）；N- 取代基（n_* kind）位次隐含省略但仍保留进 L5 前缀组装。"""
+    """筛选并重映射参与编号的取代基（O 侧/链上/N 端）。"""
     chain = _chain_set(parent)
     out: list[dict] = []
     for s in subst:
@@ -119,7 +119,7 @@ def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
 
 
 def _assemble_candidate(parent, subst, *, t0: float) -> NameResult | None:
-    """对单个候选执行编号+组装，编号异常或失败时返回 None（meta 附 P-44.1.1 / P-45.2.2 位次键）。"""
+    """对单个候选执行编号+组装，失败返回 None（meta 附位次键）。"""
     try:
         numbered = number(parent, _subs_for_numbering(parent, subst))
     except (ValueError, KeyError, TypeError):
@@ -134,7 +134,7 @@ def _assemble_candidate(parent, subst, *, t0: float) -> NameResult | None:
 def _prepare_candidate(
     info: dict, parent: dict, *, cache: CommonNameCache | None = None,
 ) -> tuple[dict, list[dict], bool]:
-    """完成母体归属、提取取代基并返回 (parent, subst, complete)。"""
+    """完成母体归属与取代基提取，返回三元组。"""
     mol = info["mol"]
     parent = finalize_parent_ownership(parent, mol)
     if not parent.get("owned_atoms"):
@@ -146,13 +146,13 @@ def _prepare_candidate(
     return parent, subst, complete
 
 def _candidate_key(hit: NameResult) -> tuple:
-    """候选裁决键：(P-44.1.1 后缀位次集合, P-45.2.2 前缀位次集合)。"""
+    """候选裁决键：(P-44.1.1 后缀位次, P-45.2.2 前缀位次)。"""
     meta = hit.meta or {}
     return meta.get("p44_1_1_key") or (), meta.get("p45_2_2_key") or ()
 
 
 def _best_hit(hits: list[tuple]) -> NameResult | None:
-    """候选裁决：P-44.1.1 后缀位次集合未决（并列）时才按 P-45.2.2 前缀位次集合取最小，否则保持候选顺序。"""
+    """候选裁决：P-44.1.1 未决时按 P-45.2.2 前缀位次取最小。"""
     if not hits:
         return None
     if len({suffix for suffix, _, _, _ in hits}) > 1:
@@ -173,7 +173,7 @@ def _try_phase(prepared, *, t0, attempts):
 
 
 def _candidate_phases(info: dict) -> list[list[dict]]:
-    """选取候选母体阶段列表（P-45.2.1 并列组，上限 _MAX_TIED_CANDIDATES 个）。"""
+    """选取候选母体阶段列表（P-45.2.1 并列组，有上限）。"""
     group = select_parent(info)
     return [group[:_MAX_TIED_CANDIDATES]] if group else [[]]
 
@@ -190,7 +190,7 @@ def _run_candidates(
 
 
 def _apply_salt_suffix(result: NameResult, salt: dict) -> NameResult:
-    """将盐元数据组装为名称后缀（碱金属盐/HCl 加成盐），仅成功结果生效；kind=phosphate 由 L5 phosphate worker 自行组装，此处跳过。"""
+    """把盐元数据组装为名称后缀（碱金属盐/HCl 盐），仅成功结果生效。"""
     if not result.success or not salt:
         return result
     if (result.meta or {}).get("parent_kind") == "phosphate":
@@ -212,7 +212,7 @@ def _name_mol(
     t0: float | None = None,
     root_ctx: tuple | None = None,
 ) -> NameResult:
-    """从 mol 运行 L1–L5，带 coverage 门控的候选重试；root_ctx=(根分子, 原子→根索引映射) 供取代基 R/S 回根分子重算。"""
+    """从 mol 运行 L1–L5，带 coverage 门控的候选重试。"""
     t0 = t0 if t0 is not None else time.perf_counter()
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
@@ -234,7 +234,7 @@ def _name_mol(
 
 
 def _pipeline(smiles: str, t0: float, *, cache: CommonNameCache | None = None) -> tuple[NameResult, "Mol | None"]:
-    """预处理 SMILES 后进入 mol 命名流程，解析失败返回失败结果；整分子命中锚定表（带 * 锚点输入本身即锚定键）直接返回保留名，免经自由基母体管线。同时回传解析出的 mol，供调用方复用（免去二次解析）。"""
+    """预处理 SMILES 后进入 mol 命名流程，并回传解析出的 mol。"""
     mol = preprocess(smiles)
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse"), None
@@ -250,7 +250,7 @@ def _cache_put(cache: CommonNameCache, smiles: str, result: NameResult) -> None:
 
 
 def _canonical_result(mol, result: NameResult) -> NameResult:
-    """复制结果并把 meta.parent_chain 重写为规范原子排序——缓存以子结构 SMILES 为键，parent_chain 不能依赖随母体变化的切分点原子顺序。"""
+    """复制结果并把 meta.parent_chain 重写为规范原子排序。"""
     chain = (result.meta or {}).get("parent_chain") or []
     if not chain:
         return result

@@ -13,7 +13,6 @@ class FunctionalGroupClass(str, Enum):
     ACYL = "acyl"
     ACID = "acid"
     PHOSPHATE = "phosphate"
-    ANHYDRIDE = "anhydride"
     ESTER = "ester"
     ACYL_HALIDE = "acyl_halide"
     AMIDE = "amide"
@@ -39,7 +38,7 @@ class FunctionalGroupOccurrence:
 
 @dataclass(frozen=True)
 class FunctionalGroupInventory:
-    """官能团清单：承载全部 FunctionalGroupOccurrence 并提供按类查询/统计。"""
+    """官能团清单：承载全部出现并提供按类查询/统计。"""
     entries: tuple[FunctionalGroupOccurrence, ...]
 
     def occurrences(self, group_class: FunctionalGroupClass) -> tuple[FunctionalGroupOccurrence, ...]:
@@ -97,7 +96,7 @@ def _indices(payload: dict, keys: tuple[str, ...]) -> frozenset[int]:
 
 
 def _characteristic_atoms(group_class: FunctionalGroupClass, mol, payload: dict) -> frozenset[int]:
-    """按 FG 类别取特征原子集（类别未登记或 mol 缺失时退回通用 center/surr 并集）。"""
+    """按 FG 类别取特征原子集（未登记时退回通用并集）。"""
     fn = FG_ATOM_FNS.get(group_class.value)
     if fn is not None and mol is not None:
         return frozenset(fn(mol, payload))
@@ -113,13 +112,13 @@ def _one(key: str, index: int, payload: dict, mol, demoted: bool = False) -> Fun
 
 
 def build_inventory(lists: dict, mol=None, demoted: frozenset[str] = frozenset()) -> FunctionalGroupInventory:
-    """由官能团列表构建带类型的 FunctionalGroupInventory（mol 供特征原子函数查键型，demoted 给出被 P-41 仲裁降级的 occurrence id）。"""
+    """由官能团列表构建带类型的清单；demoted 为降级 id 集。"""
     entries = tuple(_one(key, i, item, mol, f"{key}:{i}" in demoted)
                     for key in _LIST_CLASSES for i, item in enumerate(lists.get(key) or ()))
     return FunctionalGroupInventory(entries)
 
 def inventory_from_info(info: dict) -> FunctionalGroupInventory:
-    """从分析信息中取出清单；缺失即上游违反 L1 出口契约，显式失败而非静默退化成空清单。"""
+    """从分析信息中取出清单；缺失即显式失败。"""
     inventory = info.get("fg_inventory")
     if not isinstance(inventory, FunctionalGroupInventory):
         raise KeyError("info 缺少 fg_inventory：L1 出口只以 FunctionalGroupInventory 承载官能团事实")

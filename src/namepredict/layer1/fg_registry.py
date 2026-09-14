@@ -1,5 +1,5 @@
-"""FG 主官能团元数据单一事实来源：各 FG 类别的跨层注册元数据（L1 检测 key、L2 优先级与锚点、
-L4 位次 kind、L5 命名/立体/位次集合）集中于此，下游表由 ``FG_SPECS`` 派生，避免重复登记。
+"""FG 跨层注册元数据（L1 key、L2 优先级、L4/L5）唯一事实来源。
+下游表由 ``FG_SPECS`` 派生，避免重复登记。
 """
 from __future__ import annotations
 
@@ -39,7 +39,6 @@ FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("acid", "carboxyls", p41=7, path=(1,),  anchors=("center_idx",),
            chain=True, multi=True, rs=True, keep_locant=True, locant_kind="acid"),
     FgSpec("phosphate", "phosphates", p41=9, path=(1,),  anchors=("p_idx",),  chain=True),
-    FgSpec("anhydride", "anhydrides", p41=8, ),
     FgSpec("ester", "esters", p41=9,  anchors=("center_idx",),
            chain=True, multi=True,rs=True, locant_kind="ester", locant_source="attachment_exocyclic"),
     FgSpec("acyl_halide", "acyl_chlorides", p41=10,  anchors=("center_idx",), chain=True),

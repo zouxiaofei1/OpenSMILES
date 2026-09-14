@@ -1,5 +1,4 @@
-"""L0 酰胺烯醇互变异构归一化
-"""
+"""L0 酰胺烯醇互变异构归一化。"""
 from __future__ import annotations
 
 from rdkit import Chem
@@ -21,7 +20,7 @@ def _is_amide_enol_o(atom, carbon) -> bool:
 
 
 def _is_amide_enol_n(atom, carbon) -> bool:
-    """判断 N 是否为可与碳上 -OH 互变的亚胺氮（双键、非芳香、中性、无显式 H）。"""
+    """判断 N 是否为可与碳上 -OH 互变的亚胺氮（双键/中性）。"""
     if atom.GetAtomicNum() != N or atom.GetIsAromatic() or atom.GetFormalCharge() != 0:
         return False
     if atom.GetNumExplicitHs() != 0:
@@ -31,7 +30,7 @@ def _is_amide_enol_n(atom, carbon) -> bool:
 
 
 def _amide_enol_sites(mol: Mol) -> tuple[tuple[int, int, int], ...]:
-    """收集所有 (c_idx, n_idx, o_idx) 酰胺烯醇位点（非芳香中性 C-OH + C=N）。"""
+    """收集所有 (c_idx, n_idx, o_idx) 酰胺烯醇位点。"""
     sites: list[tuple[int, int, int]] = []
     for c in mol.GetAtoms():
         if c.GetAtomicNum() != C or c.GetIsAromatic():
@@ -46,7 +45,7 @@ def _amide_enol_sites(mol: Mol) -> tuple[tuple[int, int, int], ...]:
 
 
 def normalize_amide_tautomer(mol: Mol) -> Mol:
-    """将分子内酰胺烯醇 C(OH)=N 位点归一化为酮式 C(=O)-NH；无位点或消毒失败返回原 mol。"""
+    """把酰胺烯醇 C(OH)=N 位点归一化为酮式 C(=O)-NH。"""
     sites = _amide_enol_sites(mol)
     if not sites:
         return mol

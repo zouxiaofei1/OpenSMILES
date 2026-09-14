@@ -1,12 +1,12 @@
 """碳拓扑原语（tools 层；供 L2 链母体与 L3 侧链共用）。
-从 layer2/chain_walk.py 抽出，使 L3 烷氧基/侧链检测可复用最长开链游走与侧链碳邻居，无需导入流水线层。"""
+自 layer2 抽出，供 L3 复用最长开链游走，避免跨层导入。"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
 
 
 def _carbon_neighbors(mol: Mol, idx: int, banned: set[int] = frozenset()) -> list[int]:
-    """链官能团游走用的开链（非芳香、非环）碳邻居，排除 banned 禁走碳（如被降级的羧酸碳）。"""
+    """链游走用的开链碳邻居，排除 banned 禁走碳。"""
     atom = mol.GetAtomWithIdx(idx)
     return [
         n.GetIdx() for n in atom.GetNeighbors()
@@ -35,5 +35,5 @@ def _dfs_path(mol: Mol, node: int, path: list[int], forbid: set[int],
 
 def _longest_from(mol: Mol, start: int, forbidden: set[int] | None = None,
                   banned: set[int] = frozenset()) -> list[int]:
-    """从 start 出发找出避开 forbidden（并跳过 banned）的最长开链路径。"""
+    """从 start 出发避开 forbidden 与 banned 的最长开链路径。"""
     return _dfs_path(mol, start, [start], forbidden or set(), banned)

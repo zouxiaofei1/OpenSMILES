@@ -6,23 +6,23 @@ from namepredict.layer4._chain_orient import _bond_min_locs
 from namepredict.layer4.omit_locants import omit_fg_locant as _omit_fg
 
 def locant_key(x) -> tuple[int, str]:
-    """locant → 排序键: 数字按数值、字母尾作次级键，保证 "4" < "4a" < "5" < "10"。"""
+    """locant → 排序键：数字按数值，字母尾作次级键。"""
     m = re.match(r"(\d+)([a-z]*)", str(x))
     return (int(m.group(1)), m.group(2)) if m else (0, "")
 
 
 def locant_str_sort(locs) -> list:
-    """按 locant_key 排序 locant 集合(兼容 int 与 "4a" 混合)。"""
+    """按 locant_key 排序 locant 集合(兼容 int 与字母位)。"""
     return sorted(locs, key=locant_key)
 
 
 def _typed_group_atoms(parent: dict, group: str) -> list[int]:
-    """返回 principal_expression_facts 中属于指定基团类型的附着原子。"""
+    """返回 parent 中指定基团类型的附着原子。"""
     facts = parent.get("principal_expression_facts")
     return sorted(facts.attachment_atoms) if facts and facts.group_class.value == group else []
 
 def _atom_locant(chain: list[int], atom: int | None, facts=None) -> int | str | None:
-    """按固定标签定位次(数字 int / 字母位 "4a" 原样 str)，否则保留普通链编号——fused 桥头 4a/8a 字母位由此保留。"""
+    """按固定标签定位次(数字 int / 字母位 "4a" 原样)，否则用链编号。"""
     if atom is None or atom not in chain:
         return None
     labels = (facts or {}).get("labels")
@@ -51,7 +51,7 @@ def _single_locant(oriented: dict, group: str) -> int | None:
 
 
 def _omit_unsat(n_carbons, kind=None, parent=None, triple=False):
-    """委托 omit_locants.omit_unsat 判定不饱和位次是否省略；triple 选择炔规则。"""
+    """委托 omit_locants.omit_unsat 判定不饱和位次省略。"""
     from namepredict.layer4.omit_locants import omit_unsat as _core
     return _core(n_carbons, kind, parent, has_ene=None, has_yne=None,
                  triple=triple)
@@ -65,17 +65,17 @@ def _with_locants(chain: list[int], substituents: list, facts=None) -> list:
     """为每个取代基附加其 locant 后返回新列表。"""
     return [{**s, "locant": _sub_locant(chain, s["attach_idx"], facts)} for s in substituents]
 
-_UNSAT_BOND_KEY = {"ene": "double", "yne": "triple"}  # 不饱和键类别 → 父字典字段前缀 (double_bond(s)/triple_bond(s))
+_UNSAT_BOND_KEY = {"ene": "double", "yne": "triple"}  # 不饱和键类别 → 父字典字段前缀。
 
 def _unsat_bonds(oriented: dict, b: str) -> list | None:
-    """取某类不饱和键的边列表：单键标量（double_bond/triple_bond）与多键列表统一为列表。"""
+    """取某类不饱和键的边列表，单键标量与多键列表统一成列表。"""
     key = _UNSAT_BOND_KEY[b]
     scalar = oriented.get(f"{key}_bond")
     return [scalar] if scalar else oriented.get(f"{key}_bonds") or None
 
 
 def _bond_locants(oriented: dict, b: str) -> list[int] | None:
-    """返回某类不饱和键全部较小端点位次的排序列表；单键亦为单元素列表，位次缺失返回 None。"""
+    """返回某类不饱和键较小端点位次的排序列表；缺失返回 None。"""
     bonds = _unsat_bonds(oriented, b)
     if not bonds:
         return None
@@ -102,11 +102,11 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "omit_yne_locant": _omit_unsat(n, kind, oriented, triple=True),
     }
 
-_FG_GROUP = {"oh": "alcohol", "amine": "amine", "ketone": "ketone", "sh": "thiol"}  # 记录 kind → principal_expression_facts 基团类别
+_FG_GROUP = {"oh": "alcohol", "amine": "amine", "ketone": "ketone", "sh": "thiol"}  # 记录 kind → principal_expression_facts 类别
 
 
 def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
-    """FG 记录 omit 标志：环状判断由 omit_locants 基于 scaffold_id 完成（不虚构 cyclo* kind）；酮仅单酮适用环单酮规则。"""
+    """FG 记录 omit 标志：环状判断交由 omit_locants 完成。"""
     group = _FG_GROUP.get(kind)
     if group is None:
         return False
@@ -116,7 +116,7 @@ def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
 
 
 def _anchor_field_locants(oriented: dict, key: str) -> list[int] | None:
-    """由固定 locant 1 锚点语义字段（radical_c_idx）算位次列表（保留 fused 字母位）。"""
+    """由固定 locant 1 锚点字段（radical_c_idx）算位次列表。"""
     value = oriented.get(key)
     if value is None:
         return None
@@ -124,23 +124,23 @@ def _anchor_field_locants(oriented: dict, key: str) -> list[int] | None:
 
 
 def _exocyclic_only(oriented: dict) -> bool:
-    """principal 基团是否以环外（骨架外）方式表达：环上 -CHO/-CONH2/-COOR/-CN 的位次落在环附着原子。"""
+    """principal 基团是否以环外方式表达（位次落在环附着原子）。"""
     facts = oriented.get("principal_expression_facts")
     return bool(facts) and facts.relation.value == "exocyclic"
 
 
 def _locants_for(oriented: dict, spec) -> list[int]:
-    """取 spec 对应主官能团的位次列表（该 FG 非主官能团时为空）；位次原子一律来自 principal_expression_facts（唯一事实来源）。"""
+    """取 spec 对应主官能团的位次列表；该 FG 非主官能团时为空。"""
     if spec.locant_source == "anchor_field":
         return _anchor_field_locants(oriented, spec.parent_anchor_fields[0]) or []
     if spec.locant_source == "attachment_exocyclic" and not _exocyclic_only(oriented):
         return []
     return _typed_atom_locants(oriented, spec.fg)
 
-_FG_LOCANTS = tuple((sp.locant_kind, sp) for sp in FG_SPECS if sp.locant_kind is not None)  # (记录 kind, spec)：跨层一致性由 fg_registry 承载，新增带位次的 FG 只需在 FG_SPECS 设 locant_kind/locant_source。
+_FG_LOCANTS = tuple((sp.locant_kind, sp) for sp in FG_SPECS if sp.locant_kind is not None)  # (记录 kind, spec)：由 fg_registry 承载跨层一致性。
 
 def _fg_locants(oriented: dict, n_subs: int = 0) -> list[dict]:
-    """FG 位次记录: [{kind, locants, omit}] — 稀疏,只产实际存在的 principal FG."""
+    """FG 位次记录 [{kind, locants, omit}]，仅产存在的项。"""
     n = oriented.get("n_carbons", 0)
     records = []
     for kind, spec in _FG_LOCANTS:

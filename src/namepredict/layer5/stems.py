@@ -1,8 +1,8 @@
-"""烷烃与官能团母体的碳数词干表/生成器（C1–C99）；C1–C10 保留字、C11+ 复用 constants.en_num_term 去尾 'a'（undec/icos/docos…）；IUPAC P-14.2.1 / P-21（icos- 优先于 eicos-）。"""
+"""烷烃/官能团母体碳数词干表与生成器（C1–C99，P-14.2.1）。"""
 
 from __future__ import annotations
 
-from namepredict.constants import HS_NUMBER, MULT_EN, MULT_ZH, ZH_DIGITS, en_num_term
+from namepredict.constants import HS_NUMBER, MULT_EN, MULT_ZH, en_num_term, zh_numeral
 
 # --- C1–C10 保留 / 系统基干（字节兼容） ---
 _ALKANE_EN_BASE = {
@@ -13,19 +13,14 @@ _ALKANE_ZH_BASE = {
     1: "甲烷", 2: "乙烷", 3: "丙烷", 4: "丁烷", 5: "戊烷",
     6: "己烷", 7: "庚烷", 8: "辛烷", 9: "壬烷", 10: "癸烷",
 }
-_DIGIT_ZH = "零" + ZH_DIGITS  # 带零的索引式数字串（_DIGIT_ZH[n] = n 的汉字），与 constants.ZH_DIGITS 同源
 _ZH_SUFFIXES = ("酰胺", "酰氯", "硫醇", "烷", "醇", "酸", "醛", "腈", "胺", "酮", "烯", "炔")
 
 
 def zh_num(n: int) -> str | None:
-    """中文数字词干：1–10 用天干（甲…癸），11–99 用数字组合（十一…九十九）。"""
+    """中文数字词干：1–10 用天干（甲…癸），11+ 复用 zh_numeral。"""
     if n < 1:
         return None
-    if n <= 10:
-        return HS_NUMBER[n-1]
-    tens, ones = divmod(n, 10)
-    head = "十" if tens == 1 else f"{_DIGIT_ZH[tens]}十"
-    return head if ones == 0 else f"{head}{_DIGIT_ZH[ones]}"
+    return HS_NUMBER[n-1] if n <= 10 else zh_numeral(n)
 
 
 def zh_stem(zh_full: str) -> str:
@@ -37,7 +32,7 @@ def zh_stem(zh_full: str) -> str:
 
 
 def _en_stem(n: int) -> str | None:
-    """不含 'ane' 的烷烃词干（meth…dec 保留；≥11 由 en_num_term 去尾 'a'：undec/icos…）。"""
+    """不含 'ane' 的烷烃词干（≥11 去尾 'a'：undec/icos）。"""
     if n in _ALKANE_EN_BASE:
         return _ALKANE_EN_BASE[n][:-3]
     t = en_num_term(n)
@@ -58,7 +53,7 @@ def alkane_zh(n: int) -> str | None:
     return f"{z}烷" if z else None
 
 def acid_to_anion_en(en: str) -> str:
-    """酸转阴离子英文名：dodecanoic acid → dodecanoate；acetic acid → acetate。"""
+    """酸转阴离子英文名（-oic/-ic acid → -oate/-ate）。"""
     if en.endswith("oic acid"):
         return en[:-8] + "oate"
     if en.endswith("ic acid"):
@@ -98,51 +93,17 @@ def _metal_zh_suffix(salt: dict) -> str | None:
     return _metal_prefix(salt.get("metal_zh"), salt.get("n_metal") or 0, MULT_ZH)
 
 
-def _salt_en(en: str, salt: dict) -> str:
-    """英文盐名：-ate 结尾时加金属前缀。"""
-    pref = _metal_en_prefix(salt)
-    return f"{pref} {en}" if pref and en.endswith("ate") else en
-
-
-def _salt_zh(zh: str, salt: dict) -> str:
-    """中文盐名：酸根末尾缀加金属名。"""
-    suf = _metal_zh_suffix(salt)
-    if not suf or not zh.endswith("酸根"):
-        return zh
-    return zh[:-1] + suf
-
-
-def _acid_salt_suffix(salt: dict) -> tuple[str, str] | None:
-    """取酸式盐（如 HCl 加成）的 (en, zh) 后缀。"""
-    en_s, zh_s = salt.get("acid_salt"), salt.get("acid_salt_zh")
-    return (en_s, zh_s or en_s) if en_s else None
-
-
-def _with_acid_salt(en: str, zh: str, salt: dict) -> tuple[str, str]:
-    """给名称追加酸式盐后缀（空格连接，对齐 gold 格式）。"""
-    suf = _acid_salt_suffix(salt)
-    if suf is None:
-        return en, zh
-    return f"{en} {suf[0]}", f"{zh}{suf[1]}"
-
-
 def join_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
-    """应用碱金属盐或酸式盐（HCl）后缀。"""
+    """应用碱金属盐或酸式盐后缀（对齐 gold 格式）。"""
     salt = numbered.get("salt") or {}
     if salt.get("metal"):
-        return _salt_en(en, salt), _salt_zh(zh, salt)
-    return _with_acid_salt(en, zh, salt)
-
-
-
-def _fill(fn, lo: int = 1, hi: int = 99) -> dict[int, str]:
-    """用生成函数 fn 填充 C(lo–hi) 的表（值为真才收录）。"""
-    out: dict[int, str] = {}
-    for n in range(lo, hi + 1):
-        v = fn(n)
-        if v:
-            out[n] = v
-    return out
-
-ALKANE_EN = _fill(alkane_en)  # 公共字典 API（C1–C35 由生成器填充；C20+ 从不手写）
-ALKANE_ZH = _fill(alkane_zh)
+        pref = _metal_en_prefix(salt)
+        suf = _metal_zh_suffix(salt)
+        return (
+            f"{pref} {en}" if pref and en.endswith("ate") else en,
+            zh[:-1] + suf if suf and zh.endswith("酸根") else zh,
+        )
+    acid_en = salt.get("acid_salt")
+    if acid_en:
+        return f"{en} {acid_en}", f"{zh}{salt.get('acid_salt_zh') or acid_en}"
+    return en, zh

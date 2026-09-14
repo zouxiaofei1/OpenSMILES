@@ -1,4 +1,4 @@
-"""L5 立体描述符前缀：E/Z（P-91.2/P-93.4）+ CIP R/S（P-92/P-93）；由 stereo_ez.py、stereo_rs.py 与 _stereo_common.py 合并而来，_split_stereo_lead 为共享立体块拆分器。"""
+"""L5 立体前缀：E/Z（P-91.2）与 CIP R/S（P-92）。"""
 from __future__ import annotations
 
 import re
@@ -20,15 +20,9 @@ def _split_stereo_lead(name: str) -> tuple[str, str]:
     return name[: close + 2], name[close + 2 :]
 
 
-# --- E/Z 立体描述符 -------------------------------------------------
+# --- E/Z 立体描述符 ------------------------
 
-def _stereo_tag(st) -> str:
-    """将 RDKit 立体键枚举转成 E/Z 前缀标记。"""
-    if st == BondStereo.STEREOE:
-        return "(E)-"
-    if st == BondStereo.STEREOZ:
-        return "(Z)-"
-    return ""
+_STEREO_TAG = {BondStereo.STEREOE: "(E)-", BondStereo.STEREOZ: "(Z)-"}  # RDKit 立体键枚举 → E/Z 前缀标记
 
 
 def _bond_stereo(mol: Mol | None, double_bond) -> str:
@@ -37,11 +31,11 @@ def _bond_stereo(mol: Mol | None, double_bond) -> str:
         return ""
     c1, c2 = double_bond
     bond = mol.GetBondBetweenAtoms(int(c1), int(c2))
-    return _stereo_tag(bond.GetStereo()) if bond is not None else ""
+    return _STEREO_TAG.get(bond.GetStereo(), "") if bond is not None else ""
 
 
 def _ez_prefix(numbered: dict) -> str:
-    """单双键母体的 E/Z 前缀（带位次，如 '(2E)-'；双键不在母体链上时退化为裸 '(E)-'）。"""
+    """单双键母体的 E/Z 前缀（带位次，如 '(2E)-'）。"""
     parent = numbered.get("parent") or {}
     mol = parent.get("mol")
     bond = parent.get("double_bond")
@@ -63,16 +57,10 @@ def _bond_min_loc(chain: list[int], pair) -> int | None:
     return min(chain.index(pair[0]) + 1, chain.index(pair[1]) + 1)
 
 
-def _ez_letter(tag: str) -> str:
-    """'(E)-' → 'E'；空 → ''。"""
-    return tag[1] if len(tag) >= 3 and tag[0] == "(" else ""
-
-
 def _ez_bond_part(mol, chain: list[int], bond) -> tuple[int, str] | None:
-    """计算单条立体双键的 (位次, 字母) 部件。"""
-    loc = _bond_min_loc(chain, bond)
-    letter = _ez_letter(_bond_stereo(mol, bond))
-    return (loc, letter) if loc is not None and letter else None
+    """单条立体双键的 (位次, 字母) 部件。"""
+    loc, tag = _bond_min_loc(chain, bond), _bond_stereo(mol, bond)
+    return (loc, tag[1]) if loc is not None and tag else None
 
 
 def _ez_parts(mol, chain: list[int], bonds) -> list[tuple[int, str]]:
@@ -102,32 +90,25 @@ def ez_for_parent(numbered: dict) -> str:
     return _ez_prefix(numbered)
 
 
-# --- CIP R/S 立体描述符 ----------------------------------------------
+# --- CIP R/S 立体描述符 --------------------
 
 _RS_KINDS = _fg_reg.srs_fgs() | frozenset({"radical"})
 
 
-def _cip_code(atom) -> str | None:
-    """取原子的 CIP 代码，仅 R/S 有效时返回。"""
-    if not atom.HasProp("_CIPCode"):
-        return None
-    code = atom.GetProp("_CIPCode")
-    return code if code in ("R", "S") else None
-
-
 def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:
-    """返回母体链上手性中心的 (链序号, R/S)。"""
+    """返回母体链上手性中心的 (链序号, R/S) 列表。"""
     assign_cip(mol)
     out: list[tuple[int, str]] = []
     for loc, idx in enumerate(chain, 1):
-        code = _cip_code(mol.GetAtomWithIdx(int(idx)))
-        if code:
+        atom = mol.GetAtomWithIdx(int(idx))
+        code = atom.GetProp("_CIPCode") if atom.HasProp("_CIPCode") else ""
+        if code in ("R", "S"):
             out.append((loc, code))
     return out
 
 
 def _chain_locant(parent: dict, pos: int) -> int | str:
-    """链上第 pos 位（1 起）→ locant：有整体编号 labels 时取标签（稠环桥头 3a/6a），纯数字标签归一为 int；labels 缺失或长度不符退回链序号（与 L4 _atom_locant 同约定）。"""
+    """链上第 pos 位（1 起）→ locant，退回链序号。"""
     chain = parent.get("chain") or []
     labels = (parent.get("numbering_scaffold") or {}).get("labels") or []
     if len(labels) == len(chain) and 1 <= pos <= len(labels):
@@ -150,7 +131,7 @@ def _collapsed_parent(parent: dict) -> bool:
 
 
 def _rs_parts(numbered: dict) -> list[tuple[int | str, str]]:
-    """取母体上手性中心的 (位次, R/S) 列表（kind 不支持、折叠环或空链时为空）；链式主官能团母体按 kind ∈ _RS_KINDS 放行，环/稠合骨架母体以 scaffold_id 识别（chain 是 L4 定向编号的整环 walk，环上 sp3 手性中心可被 _cip_on_chain 扫到），折叠环由 _collapsed_parent 跳过。位次经 _chain_locant 换整体编号标签，稠环桥头手性碳由此得 3a/6a 而非链序号。"""
+    """取母体手性中心的 (位次, R/S) 列表（P-92）。"""
     parent = numbered.get("parent") or {}
     kind = parent.get("kind")
     is_ring_parent = bool(parent.get("scaffold_id"))
@@ -163,7 +144,7 @@ def _rs_parts(numbered: dict) -> list[tuple[int | str, str]]:
 
 
 def _parse_token(tok: str) -> tuple[int | str | None, str] | None:
-    """解析单个 token：'E'→(None,'E')；'8R'→(8,'R')；'2E'→(2,'E')；'3aR'→('3a','R')。"""
+    """解析单个 token：'E'→(None,'E')；'8R'→(8,'R')。"""
     if tok in ("E", "Z", "R", "S"):
         return None, tok
     m = re.match(r"^(\d+)([a-z]*)([EZRS])$", tok)
@@ -174,7 +155,7 @@ def _parse_token(tok: str) -> tuple[int | str | None, str] | None:
 
 
 def _parse_stereo(tag: str) -> list[tuple[int | str | None, str]]:
-    """将 '(E)-' / '(2E,6Z)-' / '(E,8R)-' / '(3aR,6aR)-' 解析为 (loc, letter) 列表。"""
+    """将 '(E)-' / '(2E,6Z)-' 解析为部件列表。"""
     if not tag.startswith("(") or not tag.endswith(")-"):
         return []
     raw = tag[1:-2]
@@ -192,7 +173,7 @@ def _fmt_part(loc: int | str | None, letter: str) -> str:
 
 
 def _part_key(part: tuple[int | str | None, str]) -> tuple[bool, tuple[int, str]]:
-    """立体部件排序键：无位次者排前；有位次者按 locant_key（"3a" < "4" 的数值+字母序）。"""
+    """立体部件排序键：无位次者排前，余按 locant_key。"""
     loc = part[0]
     return (loc is not None, locant_key(loc) if loc is not None else (0, ""))
 
@@ -206,26 +187,18 @@ def _format_stereo(parts: list[tuple[int | str | None, str]]) -> str:
     return f"({body})-"
 
 
-def _merge_parts(
-    old: list[tuple[int | str | None, str]], rs: list[tuple[int | str | None, str]],
-) -> list[tuple[int | str | None, str]]:
-    """保留非 R/S 立体；按位次添加 R/S。"""
-    keep = [(loc, let) for loc, let in old if let not in ("R", "S")]
-    return keep + list(rs)
-
-
 def _with_rs(name: str, rs: list[tuple[int | str | None, str]]) -> str:
-    """将 R/S 部件并入名称已有的立体前缀。"""
+    """将 R/S 部件并入名称已有的立体前缀（保留非 R/S 立体，按位次重排）。"""
     if not rs:
         return name
     tag, stem = _split_stereo_lead(name)
-    parts = _merge_parts(_parse_stereo(tag), rs)
+    parts = [(loc, let) for loc, let in _parse_stereo(tag) if let not in ("R", "S")] + list(rs)
     return f"{_format_stereo(parts)}{stem}"
 
 
 def _ester_en_rs(en: str, rs: list[tuple[int | str | None, str]]) -> str:
-    """在烷基词后插入 R/S：'methyl X' → 'methyl (2S)-X'。"""
-    if not rs or " " not in en:
+    """在酯名烷基词后插入 R/S 部件。"""
+    if " " not in en:
         return _with_rs(en, rs)
     alkyl, acyl = en.split(" ", 1)
     return f"{alkyl} {_with_rs(acyl, rs)}"
@@ -233,11 +206,9 @@ def _ester_en_rs(en: str, rs: list[tuple[int | str | None, str]]) -> str:
 
 def join_rs_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     """对外 R/S 入口：算手性部件并应用到中英文名称（酯特殊插入）。"""
-    rs_raw = _rs_parts(numbered)
-    if not rs_raw:
+    rs = _rs_parts(numbered)
+    if not rs:
         return en, zh
-    kind = (numbered.get("parent") or {}).get("kind")
-    rs = rs_raw
-    if kind == "ester":
+    if (numbered.get("parent") or {}).get("kind") == "ester":
         return _ester_en_rs(en, rs), _with_rs(zh, rs)
     return _with_rs(en, rs), _with_rs(zh, rs)

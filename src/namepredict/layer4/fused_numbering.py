@@ -1,4 +1,4 @@
-"""P-25.3.3 稠环编号: 外周骨架编号 + 稠合碳 a/b/c 字母位次 + 准则(a)-(d)、(f) 指示氢位次集合 + (j) 镜像方向 CIP 破局。"""
+"""P-25.3.3 稠环编号：外周序、稠合位次、(a)-(f)、CIP 破局。"""
 from __future__ import annotations
 
 from collections import Counter, defaultdict
@@ -7,7 +7,7 @@ from namepredict.constants import C, P145_SENIOR
 from namepredict.layer4.indicated_hydrogen import saturated_ring_atoms
 from namepredict.layer4.locant_calc import locant_key
 
-INDICATED_H = object()  # sub_layers 里的哨兵层：P-25.3.3.1.2(f) 指示氢位次最小化，由 _fused_numbering 插在后缀层之后、取代基层之前（P-14.4：(c) 主特征基团先于 (f)）。
+INDICATED_H = object()  # sub_layers 哨兵层：P-25.3.3.1.2(f) 指示氢最小化。
 
 
 def fused_atoms(rings) -> set[int]:
@@ -20,7 +20,7 @@ def fused_atoms(rings) -> set[int]:
 
 
 def _top_rings(coords: dict, rings) -> list[int]:
-    """最上端"水平行"内最右环(P-25.3.3.1.1): 同一水平行内各环同属最上端, 平局取最右。6-5-6 行的变形五元环环心被顶点抬偏 ±0.18, 单比环心 y 会把中间环误判成最上端环(起点落到中间环唯一非稠合原子上), 故先按环心 y 聚成行(阈值为最大环高的 1/4)再取行内 x 最大者; 平局全保留。"""
+    """最上端水平行最右环(P-25.3.3.1.1): y 聚行后取 x 最大。"""
     centers = [(r, sum(coords[a][0] for a in ring) / len(ring),
                 sum(coords[a][1] for a in ring) / len(ring)) for r, ring in enumerate(rings)]
     span = max(max(coords[a][1] for a in ring) - min(coords[a][1] for a in ring) for ring in rings)
@@ -31,13 +31,13 @@ def _top_rings(coords: dict, rings) -> list[int]:
 
 
 def _top_atoms(coords: dict, ring, fused: set[int]) -> list[int]:
-    """环内 y 最大(x 平局)的非稠合原子, 平局全保留。起点须紧邻稠合原子(P-25.3.3.1.1 外周行走自稠合边一端起算), 故只在该类非稠合原子中取; 环内无此类原子(全为稠合原子)时退回全部非稠合原子。"""
+    """环内 y 最大的非稠合起点原子(P-25.3.3.1.1), 平局全保留。"""
     atoms = [a for a in ring if a not in fused]
     if not atoms:
         return []
     neighbors = _ring_neighbors([ring])
     adjacent = [a for a in atoms if any(nb in fused for nb in neighbors[a])]
-    if adjacent:  # 起点取偏环顶端的顶点会整体错位一位, 使稠合碳字母与后缀位次全偏(如苯并[c]色烯-6-酮被编成 -5-酮)
+    if adjacent:  # 起点取偏环顶端的顶点会整体错位一位。
         atoms = adjacent
     top = max(atoms, key=lambda a: (coords[a][1], coords[a][0]))
     return [a for a in atoms
@@ -67,7 +67,7 @@ def _exterior_edges(rings) -> frozenset[frozenset[int]]:
 
 def _boundary_walk(coords: dict, neighbors: dict, exterior: frozenset[frozenset[int]],
                    start: int) -> list[int]:
-    """沿外部边单闭环行走外边界（每原子恰 2 个外部边邻居，从 start 沿唯一未访问方向走回起点），鞋带面积强制顺时针；逆时针整体反转、start 保持首位。"""
+    """沿外部边单闭环行走外边界，鞋带面积强制顺时针；逆时针则整体反转。"""
     walk = [start]
     prev, cur = None, start
     while True:
@@ -115,7 +115,7 @@ def _hetero_set(mol, atoms: set[int]) -> set[int]:
 
 
 def _candidates(mol, rings, coords, fused: set[int]) -> list[tuple[list[int], list[str]]]:
-    """P-25.3.3.1.1 全部编号候选 (chain, labels): 起点环/起点原子平局组合。"""
+    """P-25.3.3.1.1 全部编号候选: 起点环与起点原子平局组合。"""
     fused_carbons = {a for a in fused if mol.GetAtomWithIdx(a).GetAtomicNum() == C}
     neighbors = _ring_neighbors(rings)
     exterior = _exterior_edges(rings)
@@ -123,7 +123,7 @@ def _candidates(mol, rings, coords, fused: set[int]) -> list[tuple[list[int], li
     for sr in _top_rings(coords, rings):
         starts = _top_atoms(coords, rings[sr], fused)
         if not starts:
-            for nb_ring in rings:  # 最上端环无非稠合原子: 沿顺时针取相邻环中最上端者(P-25.3.3.1.1 兜底)
+            for nb_ring in rings:  # 最上端环无起点时取相邻环者(P-25.3.3.1.1 兜底)
                 if set(nb_ring) & set(rings[sr]):
                     starts = _top_atoms(coords, nb_ring, fused)
                     if starts:
@@ -145,7 +145,7 @@ def _locant_tuples(chain: list[int], labels: list[str], atoms: list[int]) -> tup
 
 def number_fused_system(mol, rings, coords, sub_layers=None,
                         alpha_subs=None) -> tuple[list[int], list[str]] | None:
-    """P-25.3.3 稠环编号: 依准则(a)-(d) 收窄; 返回 (chain, labels) 或 None。coords 可为单 dict 或平局候选列表，一并枚举跨镜像收窄。sub_layers 为按优先级排列的环外附着原子组（纯碳环上 (a)-(d) 全平局，须逐层做位次集合最小化收窄，否则编号方向随候选枚举顺序漂移）；alpha_subs 为 [(字母序键, 附着原子)]，位次集合仍相同时按 P-14.5 把最低位次给字母序最前者。"""
+    """P-25.3.3 稠环编号: 依(a)-(d) 收窄，返回候选或 None。"""
     fused = fused_atoms(rings)
     heteros = _hetero_set(mol, fused) | _hetero_set(mol, set().union(*rings))
     coords_list = [coords] if isinstance(coords, dict) else list(coords)
@@ -179,7 +179,7 @@ def number_fused_system(mol, rings, coords, sub_layers=None,
     ind_h_sats = sorted(saturated_ring_atoms(mol, ring_atoms))  # (f) 指示氢候选位：环内仅以单键连邻环原子且带 H 的饱和位
 
     def _as_indicated(cands):
-        """P-25.3.3.1.2(f)：把最低位次给指示氢原子。饱和带氢位数为偶数时 hydro 前缀恰可覆盖全部饱和位、名中无显式指示氢（k=0，规则不适用）；为奇数时其中最低位写作显式 'H'、其余归 hydro。收窄按键是**全部**带氢环位的位次集合（P-14.3.5 逐项比较），只比最低 k 个位次时两个候选低位相同即静默失效（tiers-29113 的甲基因此被后面的取代基层压到 2 位）。"""
+        """P-25.3.3.1.2(f)：指示氢位次最小化；偶数个饱和带氢位时不适用。"""
         k = len(ind_h_sats) % 2
         if not k or len(cands) <= 1:
             return cands
@@ -208,7 +208,7 @@ def number_fused_system(mol, rings, coords, sub_layers=None,
                                 for k, a in alpha_subs if a in c[0]))
         best = min(_alpha_key(c) for c in cands)
         cands = [c for c in cands if _alpha_key(c) == best]
-    if len(cands) > 1:  # P-14.4(j)：位次准则全平局时按 CIP 描述符定方向（R/M/r 取较低位次）。稠环互为镜像的两个走向位次集合完全相同（取代基、指示氢都不区分），只有 CIP 能破局；否则方向随候选枚举顺序漂移（tiers-29113 的 3aR/6aS 会取成 3aS/6aR）。
+    if len(cands) > 1:  # P-14.4(j)：位次准则全平局时按 CIP 描述符定方向。
         from namepredict.layer4.numbering_engine import _chain_rs_codes, _rs_locant_key
         codes = _chain_rs_codes(mol, cands[0][0])
         if codes:

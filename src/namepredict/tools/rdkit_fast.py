@@ -1,5 +1,4 @@
-"""把 RDKit 的 Mol.GetAtoms()/GetBonds() 换回索引循环.12.6%提升?
-"""
+"""用索引循环替换 GetAtoms()/GetBonds()，提速 12.6%。"""
 
 from __future__ import annotations
 

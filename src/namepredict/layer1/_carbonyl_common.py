@@ -1,4 +1,5 @@
-"""layer1 检测器共享的羰基检测原语；检测器各自保留 `_is_ester_alkoxy_o` 谓词并传入共享的 `_ester_alkoxy_of`。
+"""layer1 检测器共享的羰基检测原语。
+各检测器保留自己的 `_is_ester_alkoxy_o` 谓词。
 """
 from __future__ import annotations
 
@@ -53,16 +54,6 @@ def _has_acid_o_neighbor(carbon) -> bool:
     )
 
 
-def _is_anhydride_bridge_o(oxygen) -> bool:
-    """判断 O 是否为连接两个羰基的酸酐桥氧。"""
-    if oxygen.GetAtomicNum() != O or oxygen.GetTotalNumHs() != 0:
-        return False
-    cs = [n for n in oxygen.GetNeighbors() if n.GetAtomicNum() == C]
-    if len(cs) != 2:
-        return False
-    return all(_has_double_bonded_o(c) and not _has_acid_o_neighbor(c) for c in cs)
-
-
 def _alkoxy_c_of(oxygen, carbonyl) -> int | None:
     """返回氧上除羰基碳外的烷氧基碳索引。"""
     for n in oxygen.GetNeighbors():
@@ -72,7 +63,7 @@ def _alkoxy_c_of(oxygen, carbonyl) -> int | None:
 
 
 def _ester_alkoxy_of(carbon, is_alkoxy_o) -> tuple[int, int] | None:
-    """在 `carbon` 上找酯样 O 及其有效烷氧基侧 C；is_alkoxy_o 为模块特定谓词（analyzer 排除酸酐桥 O，acyl_halide 查形式电荷）。"""
+    """在 carbon 上找酯样 O 及其有效烷氧基侧 C。"""
     for n in carbon.GetNeighbors():
         if not is_alkoxy_o(n, carbon):
             continue
@@ -102,7 +93,7 @@ def _amide_n_substituent_ok(x) -> bool:
 
 
 def _amide_n_info(carbon) -> tuple[int, list[int]] | None:
-    """返回 `carbon` 上酰胺 N 的 (n_idx, 邻居 C 索引列表)；环内 N 不作酰胺"""
+    """返回 carbon 上酰胺 N 的 (n_idx, 邻居 C 索引列表)。"""
     for n in carbon.GetNeighbors():
         if n.GetAtomicNum() != N or n.IsInRing() or not _amide_n_single(carbon, n):
             continue

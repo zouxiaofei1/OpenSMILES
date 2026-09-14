@@ -33,7 +33,7 @@ def _is_amide_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
     return False
 
 def _is_amine_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
-    """胺 N：非芳香、非环员 N（环 N 用环上位次定位，不走 N- 前缀），且至少连一个 owned 内非羰基碳。"""
+    """胺 N：非芳香、非环员 N（环 N 用环上位次定位），连 owned 碳。"""
     atom = mol.GetAtomWithIdx(n_idx)
     if atom.GetAtomicNum() != 7 or atom.GetIsAromatic() or atom.IsInRing():
         return False
@@ -97,7 +97,7 @@ def _canonical_edge(
     return min(edges) if edges else None
 
 def _has_dbl_o_edge(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> bool:
-    """外部组分是否有经双键连 owned 重原子的氧（羰基/砜等主 FG 成分已由主提取器命名，不作侧链 claim，避免 cut 出 *O 污染成羟基）。"""
+    """外部组分是否有双键连 owned 重原子的氧（主 FG 成分不 claim）。"""
     for a in atoms:
         if mol.GetAtomWithIdx(a).GetAtomicNum() != 8:
             continue

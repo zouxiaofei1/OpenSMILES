@@ -1,7 +1,6 @@
-"""命名过程中的一次性记忆：同一次命名内同一个分子对象只算一次确定性中间结果。
-氢化骨架、CIP 标签、环感知、锚定子分子会被不同层反复问到（实测同一分子 `AtomRings()` 被取十几次、`_hydrogenated` 被重建几十次），但它们只依赖分子自身，按对象身份记忆纯粹消除重复计算，不改变任何返回值。
-不跨分子共享：会带入宿主相关的立体上下文（同 `namer.run_cache`）；每次顶层命名由 `begin_run` 清空，存储按线程隔离，避免并发请求互相清空对方的记忆。
-"""
+"""命名过程内的一次性记忆：同一分子对象的确定性中间结果只算一次。
+按对象身份或自定义键缓存消除重复计算；不跨分子共享，begin_run 清空。
+存储按线程隔离，避免并发请求互相清空记忆。"""
 
 from __future__ import annotations
 
@@ -24,11 +23,7 @@ def _bucket(name: str) -> dict:
 
 
 def by_mol(name: str, fn, mol):
-    """按 (记忆表名, 分子对象) 记忆 `fn(mol)` 的结果；结果可为 None。
-
-    键用 `id(mol)`，同时把 mol 存进记忆值里保活：本次命名内对象不会被回收，
-    id 也就不会复用，因此不会串到别的分子上。
-    """
+    """按 (记忆表名, 分子对象) 记忆 fn(mol) 的结果。"""
     bucket = _bucket(name)
     entry = bucket.get(id(mol))
     if entry is not None:
@@ -39,7 +34,7 @@ def by_mol(name: str, fn, mol):
 
 
 def by_key(name: str, key: tuple, fn, *keepalive):
-    """按自定义键记忆 `fn()` 的结果；结果可为 None，`keepalive` 里的对象随条目保活。"""
+    """按自定义键记忆 fn() 的结果，keepalive 对象随条目保活。"""
     bucket = _bucket(name)
     entry = bucket.get(key)
     if entry is not None:

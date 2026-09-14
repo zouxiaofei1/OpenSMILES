@@ -1,5 +1,5 @@
-"""取代基锚定 canonical-SMILES 查表（registry 经 anchored 反查索引），未命中回退完整命名路径；
-简单/保留取代基统一存 registry；构建期校验 canonical 对拍与锚定键唯一性。"""
+"""取代基锚定 canonical-SMILES 查表，未命中回退完整命名路径；
+简单/保留取代基统一存 registry，构建期校验锚定键唯一。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -38,7 +38,7 @@ _REGISTRY: dict[str, RetainedSubstituent] = {  # 基础取代基（原 ANCHOR_TA
     "cyclopropylidene": RetainedSubstituent("cyclopropylidene", "环丙亚基", anchored=("*=C1CC1",), paren=False),
     "cyclohexylidene": RetainedSubstituent("cyclohexylidene", "环己亚基", anchored=("*=C1CCCCC1",), paren=False),
     "sulfanylidene": RetainedSubstituent("sulfanylidene", "硫烷亚基", anchored=("*=S",), paren=False),
-    "diaminomethylidene": RetainedSubstituent("diaminomethylidene", "二氨基亚甲基", anchored=("*C(=N)N",), paren=True),  # 脒/胍残基 C(=N)N：gold 按 P-66.1.1 取亚基式（diaminomethylideneamino），不取等价的 amino(imino)methylamino（两者互变、分子式相同，取测试集口径）。
+    "diaminomethylidene": RetainedSubstituent("diaminomethylidene", "二氨基亚甲基", anchored=("*C(=N)N",), paren=True),  # 脒/胍残基 C(=N)N 按 P-66.1.1 取亚基式
     "ethyl": RetainedSubstituent("ethyl", "乙基", anchored=("*CC",), paren=False),
     "propyl": RetainedSubstituent("propyl", "丙基", anchored=("*CCC",), paren=False),
     "butyl": RetainedSubstituent("butyl", "丁基", anchored=("*CCCC",), paren=False),
@@ -66,19 +66,19 @@ _REGISTRY: dict[str, RetainedSubstituent] = {  # 基础取代基（原 ANCHOR_TA
     "sulfo": RetainedSubstituent("sulfo", "磺基", anchored=("*S(=O)(=O)O",), paren=False),
     "tosyl": RetainedSubstituent("4-methylbenzenesulfonyl", "4-甲基苯磺酰基", anchored=("*S(=O)(=O)c1ccc(C)cc1",), paren=False),
     "carboxy": RetainedSubstituent("carboxy", "羧基", anchored=("*C(=O)O",), paren=False),
-    "carbamoyl": RetainedSubstituent("carbamoyl", "氨基甲酰基", anchored=("*C(N)=O",), paren=False),  # P-66.1.1.4.1 氨基甲酸（carbamic acid）的酰基保留前缀；gold/ChEBI 全量 54 处取 carbamoyl，不取 aminocarbonyl/amino(oxo)methyl
-    "carbamoylamino": RetainedSubstituent("carbamoylamino", "氨基甲酰氨基", anchored=("*NC(N)=O",), paren=True),  # P-66.1.1.6 ureido 在 IUPAC 已不推荐（P_1 附录：ureido/ureylene 不用），优选 carbamoylamino
-    # 铵/𬭩型阳离子取代基（P-62.4.1：铵 azanium 去氢得 azaniumyl 型前缀）。gold 全量 174 例含 azanium*，        # 现行管线把这些带电 N 片段整体丢弃（no_coverage_gate / coverage_complete 误判），故按锚定叶子入表。
+    "carbamoyl": RetainedSubstituent("carbamoyl", "氨基甲酰基", anchored=("*C(N)=O",), paren=False),  # P-66.1.1.4.1 氨基甲酸酰基的保留前缀 carbamoyl
+    "carbamoylamino": RetainedSubstituent("carbamoylamino", "氨基甲酰氨基", anchored=("*NC(N)=O",), paren=True),  # P-66.1.1.6 ureido 已不推荐，优选 carbamoylamino
+    # 铵/𬭩型阳离子取代基（P-62.4.1）：带电 N 片段被丢弃故入表
     "azaniumyl": RetainedSubstituent("azaniumyl", "铵基", anchored=("*[NH3+]",), paren=False),
     "methylazaniumyl": RetainedSubstituent("methylazaniumyl", "甲基铵基", anchored=("*[NH2+]C",), paren=False),
     "dimethylazaniumyl": RetainedSubstituent("dimethylazaniumyl", "二甲基铵基", anchored=("*[NH+](C)C",), paren=True),
     "trimethylazaniumyl": RetainedSubstituent("trimethylazaniumyl", "三甲基铵基", anchored=("*[N+](C)(C)C",), paren=True),
     "carbamoyloxy": RetainedSubstituent("carbamoyloxy", "氨基甲酰氧基", anchored=("*OC(N)=O",), paren=False),  # 氨基甲酸 O-酯残基（P-66.1.1.4.1）
     "carbamothioylamino": RetainedSubstituent("carbamothioylamino", "氨基硫代羰基氨基", anchored=("*NC(N)=S",), paren=True),  # 硫代氨基甲酸残基（P-66.1.1.4：carbamothioyl）
-    "sulfamoyl": RetainedSubstituent("sulfamoyl", "氨磺酰基", anchored=("*S(N)(=O)=O",), paren=False),  # P-66.1.1.4.2 磺酰胺（sulfamoyl = H2N-SO2-）；N-取代时基名随取代基前移
-    "phosphono": RetainedSubstituent("phosphono", "膦酸", anchored=("*P(=O)(O)O",), paren=False),  # P-102：phosphono 表示 -PO(OH)2，P 直连母体（对比 O 桥的 phosphonooxy）
+    "sulfamoyl": RetainedSubstituent("sulfamoyl", "氨磺酰基", anchored=("*S(N)(=O)=O",), paren=False),  # P-66.1.1.4.2 磺酰胺基，N-取代时基名前移
+    "phosphono": RetainedSubstituent("phosphono", "膦酸", anchored=("*P(=O)(O)O",), paren=False),  # P-102 phosphono 为 -PO(OH)2，P 直连母体
     "phosphonato": RetainedSubstituent("phosphonato", "膦酸根", anchored=("*P(=O)([O-])O", "*P(=O)([O-])[O-]"), paren=False),  # P-102：phosphonato 表示 -PO(O-)2（单/双阴离子）
-    "phosphonooxy": RetainedSubstituent("phosphonooxy", "膦酸氧基", anchored=("*OP(=O)(O)O",), paren=False),  # 磷酸降级前缀（P-67.1.5.1：羧酸等更高优先级 FG 存在时磷酸以 phosphonooxy 前缀表达）
+    "phosphonooxy": RetainedSubstituent("phosphonooxy", "膦酸氧基", anchored=("*OP(=O)(O)O",), paren=False),  # P-67.1.5.1 磷酸降级前缀 phosphonooxy
     "phosphonatooxy": RetainedSubstituent("phosphonatooxy", "膦酸氧基", anchored=("*OP(=O)([O-])O", "*OP(=O)([O-])[O-]"), paren=False),
     "phosphonooxymethyl": RetainedSubstituent("phosphonooxymethyl", "膦酸氧甲基", anchored=("*COP(=O)(O)O",), paren=True),
     "phosphonatooxymethyl": RetainedSubstituent("phosphonatooxymethyl", "膦酸氧甲基", anchored=("*COP(=O)([O-])O",), paren=True),
@@ -108,7 +108,7 @@ def _canon(smi: str) -> str:
 
 
 def _build_anchor_index() -> dict[str, str]:
-    """从 registry 反查锚定 canonical-SMILES → registry key，并校验 anchored 键已是 canonical 形式且跨 key 唯一。"""
+    """反查锚定键→registry key，校验 canonical 且唯一。"""
     index: dict[str, str] = {}
     for key, entry in _REGISTRY.items():
         for smi in entry.anchored:
@@ -137,17 +137,17 @@ def anchored_key(mol: Mol, atoms: frozenset[int], attach_old: int | None = None)
 
 
 def _anchored_key_uncached(mol: Mol, atoms: frozenset[int], attach_old: int) -> str | None:
-    """实际构建锚定子分子并取 canonical SMILES（无记忆版本，见 anchored_key）。"""
+    """构建锚定子分子并取 canonical SMILES（无记忆版）。"""
     from rdkit.Chem import MolToSmiles
 
     anchor = build_anchor_submol(mol, atoms, attach_old)
     return MolToSmiles(anchor) if anchor is not None else None
 
-_WHOLE_ONLY_KEYS = frozenset({"*O", "*[O]", "*N"})  # 仅整分子顶层命中的锚定键：单原子杂原子自由基（表 2.1 去氢）。L3 取代基查表（anchored_lookup）跳过它们——游离 O/N 原子会被 _one_alkyl 误作侧链提取（酮羰基氧、酯氧、胺氮），命中 *O/*N 会错名成羟基/氨基。
+_WHOLE_ONLY_KEYS = frozenset({"*O", "*[O]", "*N"})  # 整分子顶层才命中的锚定键：游离 O/N 自由基（表 2.1 去氢），L3 跳过
 
 
 def _table_hit(mol: Mol, atoms: frozenset[int], attach_old: int | None) -> str | None:
-    """查 registry 锚定索引，返回 registry key；无命中返回 None。"""
+    """查 registry 锚定索引返回 key；无命中返回 None。"""
     key = anchored_key(mol, atoms, attach_old)
     if key is None or key in _WHOLE_ONLY_KEYS:
         return None

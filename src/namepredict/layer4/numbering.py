@@ -8,7 +8,7 @@ from namepredict.layer4.locant_calc import locant_key
 
 
 def _fallback_hydro_atoms(parent: dict) -> frozenset:
-    """无保留模板可比的稠环（未注册母体）的加氢位回退：取环系内仅以单键连邻环原子、带氢且非芳香位的 sp3 位（P-31.2.2）。 """
+    """稠环加氢位回退：取环内单键连邻环的饱和 sp3 位（P-31.2.2）。"""
     mol = parent.get("mol")
     chain = list(parent.get("chain") or ())
     if mol is None or not chain or parent.get("fused_tree") is None:
@@ -45,7 +45,7 @@ def _lowest_extra_to_indicated(packed: dict, labels, hydro: frozenset) -> frozen
 
 
 def _odd_hydro_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset:
-    """加氢位数不成倍增（奇数）时把其中最低位次改用指示氢表达（P-51.1.1.4、P-58.2.1.2）。"""
+    """加氢位为奇数时最低者改用指示氢（P-51.1.1.4、P-58.2.1.2）。"""
     from namepredict.constants import HYDRO_MULT_N
 
     n = len(hydro or ())
@@ -61,7 +61,7 @@ def _odd_hydro_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset
 
 
 def hydro_prefix(chain, labels, hydro_atoms) -> tuple[str, str]:
-    """返回加氢前缀 (en, zh)：位次取加氢原子 locant（按位次升序），倍增数为加氢原子数；环原子全加氢时省略位次（P-14.3.4.5，如 decahydronaphthalene）。无加氢或数量超表返回空串对。"""
+    """返回加氢前缀 (en, zh)：全加氢时省略位次（P-14.3.4.5）。"""
     chain = list(chain or ())
     hydro = set(hydro_atoms or ())
     if not chain or not hydro:
@@ -82,7 +82,7 @@ def hydro_prefix(chain, labels, hydro_atoms) -> tuple[str, str]:
 
 
 def number(parent: dict, substituents: list) -> dict:
-    """对 parent 定向编号，校验编号骨架事实后组装位次结果（含指示氢前缀 P-58.2.1）。"""
+    """对 parent 定向编号并组装位次结果（含指示氢前缀 P-58.2.1）。"""
     chain = orient_numbering(parent, substituents)
     oriented = {**parent, "chain": chain}
     result = _pack(oriented, _with_locants(chain, substituents, oriented.get("numbering_scaffold")))
@@ -113,7 +113,7 @@ def number(parent: dict, substituents: list) -> dict:
 
 
 def _extra_indicated(packed: dict) -> frozenset:
-    """保留母体名未隐含、须显式标指示氢的环位（P-58.2.1）：全芳香环系唯一的指示氢来源。"""
+    """保留母体名未隐含、须显式标指示氢的环位（P-58.2.1）。"""
     from namepredict.layer2.ring_scaffold import extra_indicated_atoms
 
     sid, match, mol = packed.get("scaffold_id"), packed.get("scaffold_match"), packed.get("mol")

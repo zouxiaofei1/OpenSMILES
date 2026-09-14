@@ -40,7 +40,7 @@ def _edge_map(fusion_edges) -> dict[frozenset[int], tuple[int, int]]:
 
 
 def opposite_bonds(ring: tuple[int, ...], bond: tuple[int, int]) -> list[tuple[int, int]]:
-    """偶环对面 1 条边、奇环对面两条(P-25.3.2.3.1)；按端点 index 定边位 k 再取对面边。"""
+    """偶环对面 1 条边、奇环对面两条(P-25.3.2.3.1)。"""
     n = len(ring)
     i, j = ring.index(bond[0]), ring.index(bond[1])
     k = i if (i + 1) % n == j else j
@@ -89,7 +89,7 @@ def horizontal_rows(rings, fusion_edges) -> list[tuple[int, ...]]:
 def _place_ring(order: list[int], coords: dict, a: int, b: int, side: int,
                 template: list[tuple[float, float]] | None = None,
                 used_tmpl: list | None = None) -> dict[int, tuple[float, float]]:
-    """以共享边(a,b)摆放环：顶点0→a、1→b、心在边侧(side=+1 左法向/-1 右法向)；template 为 P-25 变形环模板/None 用正 n 边形，used_tmpl 回传实际采用模板供 _ring_deform 作基准。"""
+    """以共享边(a,b)摆放环(顶点0→a、1→b)；template 为环模板。"""
     n = len(order)
     ax, ay = coords[a]
     bx, by = coords[b]
@@ -108,7 +108,7 @@ def _place_ring(order: list[int], coords: dict, a: int, b: int, side: int,
                 nn = -nn
             out[atom] = (ax + t * ux + nn * vx, ay + t * uy + nn * vy)
         return out
-    base = [(tx, -ty) for tx, ty in template] if side < 0 else template  # 心侧：side<0 用模板镜像(关于 x 轴反射, 心朝 -y=右法向), 否则朝 +y=左法向；用镜像模板而非旋转修正, 共享边端点镜像后不动、不破坏与邻环共享边重合, 并回传 _ring_deform 作 Kabsch 基准
+    base = [(tx, -ty) for tx, ty in template] if side < 0 else template  # side<0 用模板镜像使心朝右法向；共享边端点不动。
     p0, p1 = base[0], base[1]
     t0len = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
     scale = length / t0len
@@ -124,7 +124,7 @@ def _place_ring(order: list[int], coords: dict, a: int, b: int, side: int,
 
 
 def _opposite_side(coords: dict, prev_ring: tuple, a: int, b: int) -> int:
-    """新环相对共享边(a,b)的 side：按 prev 环质心相对共享边左法向(-uy,ux)的符号定侧，使新环质心落在 prev 对面。"""
+    """按 prev 环质心在左法向的符号定 side，使新环落在 prev 对面。"""
     ax, ay = coords[a]
     bx, by = coords[b]
     mx, my = (ax + bx) / 2, (ay + by) / 2
@@ -135,7 +135,7 @@ def _opposite_side(coords: dict, prev_ring: tuple, a: int, b: int) -> int:
 
 
 def _layout(row: tuple[int, ...], rings, fusion_edges) -> tuple[dict | None, dict] | None:
-    """摆放水平行及其邻接环, 返回 (坐标, 每环实际模板); 失败返回 None。中间奇数环用变形模板(P-25.3.2.3.2)支撑 6-5-6 线性行。"""
+    """摆放水平行及邻接环，返回 (坐标, 每环模板)；失败返回 None。"""
     edge = _edge_map(fusion_edges)
     coords: dict[int, tuple[float, float]] = {}
     ring_templates: dict[int, list] = {}
@@ -176,7 +176,7 @@ def _layout(row: tuple[int, ...], rings, fusion_edges) -> tuple[dict | None, dic
 
 
 def _overlaps_any(cand: dict, rings, r: int, coords: dict) -> bool:
-    """新环与任意环(含共享环)重叠面积是否超阈值——不能跳过共享环，否则同侧完全重合无法被检测。"""
+    """新环与任意环(含共享环)重叠面积是否超阈值。"""
     cand_pts = [cand[a] for a in rings[r]]
     cand_area = polygon_area(cand_pts)
     for other, o_pts in _ring_polys(rings, coords):
@@ -196,7 +196,7 @@ def _ring_polys(rings, coords):
 
 def _place_neighbor(r: int, rings, coords: dict, placed: set[int], edge: dict) -> bool:
     """递归摆放环 r(至少一个共享边已定坐标); 返回是否成功。"""
-    cands = []  # edge 的 key 是 frozenset, 解包 (i, j) 顺序不可靠, 故用集合成员关系确定邻环索引(解包顺序若翻转为 (j=r, i=邻环) 时 j 即 r 自身)
+    cands = []  # edge key 是 frozenset, 解包顺序不可靠, 用成员关系定。
     for key, pair in edge.items():
         if r in key:
             nb = next(x for x in key if x != r)
@@ -206,7 +206,7 @@ def _place_neighbor(r: int, rings, coords: dict, placed: set[int], edge: dict) -
         return False
     nb, (a, b) = cands[0]
     order = ring_cyclic(rings[r], a, b)
-    side = _opposite_side(coords, rings[nb], a, b)  # 首选共享环对侧(与水平行摆放一致的几何判定), 避免默认左法向把新环摆到与共享环同侧完全重合; 失败再试对侧(_overlaps_any 现含共享环检查)
+    side = _opposite_side(coords, rings[nb], a, b)  # 首选共享环对侧(与水平行一致), 失败再试对侧。
     best = None
     for cand_side in (side, -side):
         cand = _place_ring(order, coords, a, b, cand_side)
@@ -221,7 +221,7 @@ def _place_neighbor(r: int, rings, coords: dict, placed: set[int], edge: dict) -
 
 
 def _ring_deform(pts: list, n: int, tmpl: list | None = None) -> float:
-    """环坐标相对模板(默认正 n 边形)的最大偏差(循环移位+镜像最优对齐；变形环以其模板为基准)。"""
+    """环坐标相对模板(默认正 n 边形)的最大偏差，循环移位+镜像最优对齐。"""
     tmpl = tmpl if tmpl is not None else RING_TEMPLATES[n]
     is_distorted = tmpl is not None and tmpl is not RING_TEMPLATES[n]
     best = float("inf")
@@ -230,7 +230,7 @@ def _ring_deform(pts: list, n: int, tmpl: list | None = None) -> float:
         for rev in (False, True):
             order = list(reversed(fwd)) if rev else fwd
             variants = [order]
-            if is_distorted:  # 变形环(非对称)对 Kabsch 旋转方向敏感；rigid_fit 的方向约定对不对称环有二义, 补试镜像 x 后的对齐以覆盖两个手性
+            if is_distorted:  # 变形环对 Kabsch 旋转方向敏感，补试镜像 x 的对齐。
                 variants.append([(-x, y) for x, y in order])
             for cand in variants:
                 params = rigid_fit(cand, tmpl)
@@ -262,7 +262,7 @@ def _valid_deform_overlap(coords: dict, rings, fusion_edges, ring_templates: dic
 
 
 def _row_center(coords: dict, rings, row: tuple[int, ...]) -> tuple[float, float]:
-    """水平行的中心 (P-25.3.2.3.3(b))：行中环数为偶数时取中心共同键，为奇数时取中心环的中心。"""
+    """水平行中心(P-25.3.2.3.3(b))：偶数环取共同键，奇数环取中心环。"""
     n = len(row)
     if n % 2 == 0:
         a, b = row[n // 2 - 1], row[n // 2]      # 中间一对相邻环
@@ -275,7 +275,7 @@ def _row_center(coords: dict, rings, row: tuple[int, ...]) -> tuple[float, float
 
 
 def _ring_quadrant_contrib(pts, cx: float, cy: float) -> tuple[float, float, float, float]:
-    """IUPAC 环计数法下单个环的四象限贡献：被两条轴平分各 1/4，被一条轴平分两侧各 1/2，否则整环在一个象限。"""
+    """单环四象限贡献：两轴平分各 1/4，一轴平分两侧各 1/2，否则整环归一象限。"""
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
     cross_v = min(xs) < cx and max(xs) > cx      # 顶点严格跨竖直轴(仅触轴不算)
@@ -313,7 +313,7 @@ def _above_contrib(pts, cy: float) -> float:
 
 
 def _quadrant_fractions(coords: dict, rings, row) -> tuple[tuple[float, float, float, float], float]:
-    """四象限(Q1右上,Q2左上,Q3左下,Q4右下)与水平轴上方环数 (P-25.3.2.3.3(b)(c)(d) 环计数法)；原点取水平行中心(中心共同键/中心环中心)，逐环按"被轴平分计半环/四分之一环"离散计数而非环面积占比。"""
+    """四象限与上方环数：环计数法，原点取水平行中心 (P-25.3.2.3.3)。"""
     cx, cy = _row_center(coords, rings, row)
     q = [0.0, 0.0, 0.0, 0.0]
     above = 0.0
@@ -327,7 +327,7 @@ def _quadrant_fractions(coords: dict, rings, row) -> tuple[tuple[float, float, f
 
 
 def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
-    """全部优选取向平局候选(水平行环数→右上→左下→上方最多)；对称环系镜像全部返回，交由编号准则(a)-(d) 跨候选收窄。"""
+    """全部优选取向平局候选(水平行环数→右上→左下→上方)，镜像一并返回。"""
     rows = horizontal_rows(rings, fusion_edges)  # print(rows,rings,fusion_edges,"\n")
 
     if not rows:
@@ -338,7 +338,7 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
     for row in rows:
         if len(row) < max_len:
             continue
-        laid = _layout(row, rings, fusion_edges)  # print("coords:",coords)  # 与 flip 无关，两个镜像共用一次布局
+        laid = _layout(row, rings, fusion_edges)  # print("coords:",coords)  # 与 flip 无关
         if laid is None:
             continue
         for flip in (False, True):

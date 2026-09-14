@@ -42,7 +42,7 @@ def _attach_numbering_scaffold(packed: dict) -> dict:
 
 
 def _ring_keeps_nh_prefix(mol, chain) -> bool:
-    """环内是否有未取代的芳香 NH（决定是否保留 1H- 前缀，P-61.2.4）；mol/chain 缺失时保守返回 True。"""
+    """环内是否有未取代芳香 NH（1H- 前缀判据，P-61.2.4）。"""
     if mol is None or not chain:
         return True
     for i in chain:
@@ -53,17 +53,17 @@ def _ring_keeps_nh_prefix(mol, chain) -> bool:
 
 
 def _strip_locant_prefix(name: str, prefix: str) -> str:
-    """去掉词干已带的前导 locant 前缀（'1H-indole' → 'indole'）。"""
+    """去掉词干已带的前导 locant 前缀。"""
     return name[len(prefix):] if prefix and name.startswith(prefix) else name
 
 
 def _embeds_locant_prefix(name: str, prefix: str) -> bool:
-    """词干是否把 locant 前缀嵌在词中而非词首：前缀须留在组分名前，不再前移或剥离。"""
+    """词干是否把 locant 前缀嵌在词中（不再前移或剥离）。"""
     return f"-{prefix}" in name
 
 
 def pack_parent_stem(parent: dict, mol=None) -> dict:
-    """补齐母体词干与编号 scaffold 字段（词干属 scaffold 而非 FG 类别）；五元杂环 locant 前缀在此统一成终态：1,3- 二唑无条件注入、1H- 吡咯型仅含未取代 NH 时注入。"""
+    """补齐母体词干与编号 scaffold 字段，并定五元杂环 locant 前缀。"""
     from namepredict.layer2.ring_scaffold import locant_prefix
 
     packed = parent if parent.get("mol") is not None else {**parent, "mol": mol}
@@ -72,7 +72,7 @@ def pack_parent_stem(parent: dict, mol=None) -> dict:
     if names is not None and not (packed.get("stem_en") or packed.get("stem_zh")):
         stem_en, stem_zh = names
         pref_en, pref_zh, nh_cond = locant_prefix(packed.get("scaffold_id") or "")
-        if pref_en and not _embeds_locant_prefix(stem_en, pref_en):  # 局部不饱和保留名的词干自带加氢前缀（2,5-dihydro-1H-pyrrole），locant 前缀已在其末段，前移会重复位次
+        if pref_en and not _embeds_locant_prefix(stem_en, pref_en):  # 词干自带加氢前缀，locant 前缀前移会重复位次
             keep = not nh_cond or _ring_keeps_nh_prefix(packed.get("mol"), packed.get("chain"))
             bare_en, bare_zh = _strip_locant_prefix(stem_en, pref_en), _strip_locant_prefix(stem_zh, pref_zh)
             stem_en = pref_en + bare_en if keep else bare_en

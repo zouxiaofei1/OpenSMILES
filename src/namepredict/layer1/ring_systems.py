@@ -1,5 +1,4 @@
-"""由 SSSR 构建环系拓扑（稠合图 + 杂原子汇总）：共享 >=2 个原子（邻位稠合）的环连成分量，共享 1 个原子（螺）的单环系合并为螺环系，共享 3+ 原子检测桥环（von Baeyer）系。
-"""
+"""由 SSSR 构建环系拓扑：稠合连通、螺环合并。"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
@@ -12,21 +11,12 @@ def _sssr(mol: Mol) -> list[tuple[int, ...]]:
     return memo.by_mol("sssr", lambda m: list(m.GetRingInfo().AtomRings()), mol)
 
 def sssr_rings(mol: Mol) -> list[tuple[int, ...]]:
-    """供各层统一调用的环访问器：与 `_sssr` 同一次记忆，避免各层各自重建 AtomRings。 """
+    """供各层统一调用的环访问器（与 _sssr 同一次记忆）。"""
     return _sssr(mol)
 
 def _shared(a: tuple[int, ...], b: tuple[int, ...]) -> frozenset[int]:
     """返回两个环共享的原子集合。"""
     return frozenset(a) & frozenset(b)
-
-def _ring_adjacent(ring: tuple[int, ...], a: int, b: int) -> bool:
-    """若 a 与 b 在环中相邻（连续）则返回 True。"""
-    n = len(ring)
-    for i in range(n):
-        if (ring[i] == a and ring[(i + 1) % n] == b) or \
-           (ring[i] == b and ring[(i + 1) % n] == a):
-            return True
-    return False
 
 def _fusion_edges(rings: list[tuple[int, ...]]) -> list[tuple[int, int, frozenset[int]]]:
     """共享 >=2 个原子的配对边 (i, j, shared_atoms)。"""
@@ -80,67 +70,12 @@ def _hetero_atoms(mol: Mol, atom_ids: set[int]) -> list[dict]:
             out.append({"idx": i, "Z": z})
     return out
 
-def _non_adjacent_pairs(mrings, shared):
-    """返回桥头原子：在至少一个环中不相邻的共享原子。"""
-    sh_list, bh_set = sorted(shared), set()
-    for i, a in enumerate(sh_list):
-        for b in sh_list[i + 1:]:
-            if not all(_ring_adjacent(r, a, b) for r in mrings):
-                bh_set.add(a); bh_set.add(b)
-    return bh_set
-
-def _bridgeheads(rings: list[tuple[int, ...]], members: list[int],
-                 shared: frozenset[int]) -> list[int]:
-    """在桥环分量中寻找桥头原子。"""
-    mrings = [rings[i] for i in members]
-    return sorted(_non_adjacent_pairs(mrings, shared))
-
-def _walk_path(ring, start, end, exclude, direction):
-    """在环上从 start 沿 direction 走到 end，避开 exclude 收集路径原子。"""
-    n, path, cur = len(ring), [], (start + direction) % len(ring)
-    while cur != end and ring[cur] not in exclude:
-        path.append(ring[cur]); cur = (cur + direction) % n
-    return [] if cur != end else path
-
-def _paths_between(ring: tuple[int, ...], a: int, b: int,
-                   exclude: set[int]) -> list[list[int]]:
-    """环中从 a 到 b 避开 exclude 集合的所有路径（不含 a、b）。"""
-    try:
-        ia, ib = ring.index(a), ring.index(b)
-    except ValueError:
-        return []
-    return [p for d in (1, -1) if (p := _walk_path(ring, ia, ib, exclude, d))]
-
 def _member_atoms(rings: list[tuple[int, ...]], members: list[int]) -> set[int]:
     """汇总分量内全部环成员的原子集合。"""
     atom_ids: set[int] = set()
     for i in members:
         atom_ids |= set(rings[i])
     return atom_ids
-
-def _dedup_paths(paths):
-    """按 frozenset 对路径去重，保持插入顺序。"""
-    return list({frozenset(p): p for p in paths}.values())
-
-def _bridge_paths(rings: list[tuple[int, ...]], members: list[int],
-                  bridgeheads: list[int]) -> list[list[int]]:
-    """计算桥路径（不含桥头原子的原子列表），按长度降序排列。"""
-    if len(bridgeheads) < 2:
-        return []
-    bh_set, a, b = set(bridgeheads), bridgeheads[0], bridgeheads[1]
-    mrings = [rings[i] for i in members]
-    all_paths = [p for r in mrings for p in _paths_between(r, a, b, bh_set)]
-    return sorted(_dedup_paths(all_paths), key=len, reverse=True)
-
-def _bridge_info(rings: list[tuple[int, ...]], members: list[int],
-                 bridgeheads: list[int]) -> dict | None:
-    """计算桥环分量的桥信息。"""
-    if len(bridgeheads) < 2:
-        return None
-    paths = _bridge_paths(rings, members, bridgeheads)
-    return {"bridgeheads": bridgeheads,
-            "bridge_lengths": [len(p) for p in paths],
-            "bridge_paths": paths}
 
 def _member_edges(
     members: list[int], fusion_edges: list[tuple[int, int, frozenset[int]]],
@@ -153,10 +88,9 @@ def _member_edges(
 
 def _system_dict(
     atom_ids: set[int], members: list[int], edges: list, mol: Mol, spiro_in: bool,
-    is_bridged: bool = False, bridge_info: dict | None = None,
 ) -> dict:
     """组装单个环系的事实 dict。"""
-    result = {
+    return {
         "atom_ids": sorted(atom_ids),
         "sssr_indices": sorted(members),
         "fusion_edges": edges,
@@ -166,31 +100,6 @@ def _system_dict(
         "is_aromatic_mancude": None,
         "topology": None,
     }
-    if bridge_info:
-        result["bridgeheads"] = bridge_info["bridgeheads"]
-        result["bridge_lengths"] = bridge_info["bridge_lengths"]
-        result["bridge_paths"] = bridge_info["bridge_paths"]
-    return result
-
-def _try_bridge_component(rings, members, fusion_edges):
-    """尝试寻找桥信息：在双环分量中遍历 3+ 共享原子的稠合边。"""
-    mset = set(members)
-    for i, j, sh in fusion_edges:
-        if i in mset and j in mset and len(sh) >= 3:
-            bh = _bridgeheads(rings, members, sh)
-            if len(bh) >= 2:
-                return _bridge_info(rings, members, bh)
-    return None
-
-def _compute_bridged_info(
-    rings: list[tuple[int, ...]], members: list[int],
-    fusion_edges: list[tuple[int, int, frozenset[int]]],
-) -> tuple[bool, dict | None]:
-    """检查分量是否桥环并计算桥信息。"""
-    if len(members) != 2:
-        return False, None
-    bi = _try_bridge_component(rings, members, fusion_edges)
-    return (True, bi) if bi else (False, None)
 
 def _system_entry(
     mol: Mol,
@@ -199,11 +108,10 @@ def _system_entry(
     fusion_edges: list[tuple[int, int, frozenset[int]]],
     spiro_in: bool,
 ) -> dict:
-    """为连通分量构建环系条目（含桥检测）。"""
+    """为连通分量构建环系条目。"""
     atoms = _member_atoms(rings, members)
     edges = _member_edges(members, fusion_edges)
-    is_bridged, bridge_info = _compute_bridged_info(rings, members, fusion_edges)
-    return _system_dict(atoms, members, edges, mol, spiro_in, is_bridged, bridge_info)
+    return _system_dict(atoms, members, edges, mol, spiro_in)
 
 def _spiro_touching(members: list[int], spiro: list[tuple[int, int, int]]) -> bool:
     """判断分量是否与某条螺共享配对相连。"""
@@ -213,7 +121,7 @@ def _spiro_touching(members: list[int], spiro: list[tuple[int, int, int]]) -> bo
 def _collect_merged_fields(
     systems: list[dict], indices: list[int],
 ) -> tuple[set[int], set[int], list[dict]]:
-    """收集待合并系统的 sssr_indices、atom_ids、hetero_atoms。"""
+    """收集待合并系统的 sssr、原子与杂原子字段。"""
     sssr: set[int] = set()
     atoms: set[int] = set()
     hetero: list[dict] = []

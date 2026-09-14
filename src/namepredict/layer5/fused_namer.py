@@ -1,40 +1,34 @@
-"""P-25.3.2 稠合名称组装: fused_info 拆解树生成 benzo[a]/naphtho[...] 稠合 base 名
-(未注册稠环; 组分词干/保留前缀由 L2 打包进 FusedNode, 编号走 L4 fused_numbering)。"""
+"""P-25.3.2 稠合名组装: 由 fused_info 树生成 base 名。
+(未注册稠环; 组分词干由 L2 打包, 编号走 L4)。"""
 from __future__ import annotations
 
 from collections import Counter
 from namepredict.constants import RETAINED_FUSION_ALIASES
-from namepredict.layer1.ring_systems import sssr_rings
+from namepredict.layer1.ring_systems import build_ring_systems, sssr_rings
+from namepredict.layer4.numbering_engine import fused_component_numbering
 
 
-
-
-def _stem_of(node) -> tuple[str | None, str | None]:
-    """节点的组分词干(stem_en/stem_zh); L2 未标注的组分(非稠合零件)返回 (None, None)。"""
-    return node.fused_stem or (None, None)
-
-
-def _prefix_of(node, stem_en: str | None, stem_zh: str | None) -> tuple[str, str] | None:
-    """附加组分前缀: L2 标注的保留前缀, 否则通用「去尾 e 加 o / 中文加并」(P-25.3.2.2.2)。"""
+def _component_prefix(node) -> tuple[str, str] | None:
+    """附加组分前缀: 保留前缀, 或「去尾 e 加 o」（P-25.3.2.2.2）。"""
     if node.fused_prefix:
         return node.fused_prefix
+    stem_en, stem_zh = node.fused_stem or (None, None)
     en = (stem_en or "").rstrip("e") + "o"
     zh = (stem_zh or "") + "并"
     return (en, zh) if en else None
 
 
 def _component_numbering(mol, node, rings, fusion_edges, shared=None):
-    """组分自身编号：委托 L4 fused_component_numbering(P-25.4/P-25.3.3)，把稠合掉的 shared 原子当取代基最小化位次，使取向与规范稠合描述符一致。"""
+    """组分自身编号：委托 L4 按 shared 原子取向（P-25.4）。"""
     rset = sorted(node.ring_indices)
     if not rset:
         return None, None
     sub_rings = [rings[i] for i in rset]
-    if shared is None:  # 兜底: 沿用旧逻辑(节点自身的附加组分之一, 无附加时为空)。螺环附加组分只共享 1 个原子、fusion_shared 为空，须与 :79 同样守卫，否则 [0] 越界。
+    if shared is None:  # 兜底: 取附加组分的 fusion_shared（可能为空）
         shared = node.attached[0].fusion_shared[0] if node.attached and node.attached[0].fusion_shared else None
     idx_map = {i: k for k, i in enumerate(rset)}
     sub_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in fusion_edges
                  if i in idx_map and j in idx_map]
-    from namepredict.layer4.numbering_engine import fused_component_numbering
     return fused_component_numbering(mol, node.scaffold_id, sub_rings, shared, sub_edges)
 
 
@@ -47,17 +41,8 @@ def _inner_atoms(node, rings) -> set[int]:
     return {a for a, c in counts.items() if c >= 3}
 
 
-def _outer_chain_labels(node, rings, chain, labels):
-    """过滤内原子(≥3 环)后的外周边界 chain/labels。"""
-    inner = _inner_atoms(node, rings)
-    kept = [(a, lbl) for a, lbl in zip(chain, labels) if a not in inner]
-    if not kept:
-        return None, None
-    return [a for a, _ in kept], [lbl for _, lbl in kept]
-
-
 def _fusion_letter(parent_chain, shared) -> str | None:
-    """共享边在母体外周位次序中的侧字母: 侧(chain[i], chain[i+1]) → chr(97+i)。"""
+    """共享边在母体外周位次序中的侧字母。"""
     shared = [a for a in shared if a in parent_chain]
     if len(shared) != 2:
         return None
@@ -80,16 +65,17 @@ def _fusion_numbers(child_chain, child_labels, parent_chain, shared) -> tuple:
 
 def _fused_one(mol, parent_node, child_node, rings, fusion_edges) -> tuple[str, str] | None:
     """单级: 附加组分前缀 + 融合描述符(数字-字母)。"""
-    shared = child_node.fusion_shared[0] if child_node.fusion_shared else None  # 母体与附加组分各自编号都以同一稠合原子集作取代基(P-25.3.1.3: 位次尽可能低)。
+    shared = child_node.fusion_shared[0] if child_node.fusion_shared else None  # 双方编号同以稠合原子集作取代基（P-25.3.1.3）
     parent_chain, _ = _component_numbering(mol, parent_node, rings, fusion_edges, shared)
-    parent_chain, _ = _outer_chain_labels(parent_node, rings, parent_chain, [""] * len(parent_chain)) \
-        if parent_chain else (None, None)
+    if parent_chain:  # 母体外周边界只需保留外侧原子：剔除出现在 ≥3 环的 perifused 中心
+        inner = _inner_atoms(parent_node, rings)
+        parent_chain = [a for a in parent_chain if a not in inner]
     if not parent_chain:
         return None
-    prefix = _prefix_of(child_node, *_stem_of(child_node))
+    prefix = _component_prefix(child_node)
     if prefix is None:
         return None
-    if child_node.fused_omit_numbers:  # 一级单环烃附加组分(benzo 及 P-25.3.2.2.1 的 cyclopenta 等)省略数字位次(P-25.3.8.1), 故无需附加组分自身编号。
+    if child_node.fused_omit_numbers:  # 一级单环烃附加组分省略数字位次（P-25.3.8.1）
         letter = next((ltr for sh in child_node.fusion_shared
                        if (ltr := _fusion_letter(parent_chain, sh))), None)
         if not letter:
@@ -124,14 +110,13 @@ def _collect_attached(mol, parent_node, rings, fusion_edges) -> tuple[str, str] 
 
 
 def fused_parent_names(mol, node) -> tuple[str, str] | None:
-    """稠合名组装入口: node 为 FusedNode 根; 返回 (en, zh) 或 None(无法组装)。"""
+    """稠合名组装入口: node 为 FusedNode 根。"""
     if not node.attached:
         return None  # 单节点保留名走 _parent_stem_names
-    root_en, root_zh = _stem_of(node)
+    root_en, root_zh = node.fused_stem or (None, None)
     if not root_en:
         return None
     rings = list(sssr_rings(mol))
-    from namepredict.layer1.ring_systems import build_ring_systems
     fusion_edges = ()
     root_rings = set(node.ring_indices)
     for s in build_ring_systems(mol):

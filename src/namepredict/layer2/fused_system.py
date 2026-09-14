@@ -1,4 +1,4 @@
-"""P-25.3.2.4 稠环拆解: 稠环系统 → 保留母体组分树(fused_info 结构事实)。"""
+"""P-25.3.2.4 稠环拆解为保留母体组分树（fused_info）。"""
 from __future__ import annotations
 
 from collections import Counter
@@ -28,7 +28,7 @@ class FusedNode:
     ring_indices: frozenset[int]
     fusion_shared: tuple[frozenset[int], ...] = ()
     attached: tuple["FusedNode", ...] = ()
-    fused_stem: tuple[str, str] | None = None    # 组分词干 (en, zh)；None = 不可作稠合零件；命名组装数据：由 L2 打包时从 ring_scaffold._TEMPLATES 取好挂上，L5 fused_namer 只读。（L5 不得 import L2，故稠合词干须随拆解树下发，不留在 L5 本地表。）
+    fused_stem: tuple[str, str] | None = None    # 组分词干 (en, zh)；None = 不可作稠合零件
     fused_prefix: tuple[str, str] | None = None  # 附加组分保留前缀 (en, zh)；None = 走通用规则
     fused_omit_numbers: bool = False             # 稠合描述符省略数字位次（P-25.3.8.1：一级单环烃附加组分）
 
@@ -40,12 +40,12 @@ def _has_template_superset(mol, atom_ids) -> bool:
 
 
 def _seedable(info, ring_atoms) -> bool:
-    """单环是否精确匹配某稠合组分（作为增长种子的必要条件：mancude 保留名或单环烃，P-25.2.1/P-25.3.2.2.1）。"""
+    """单环能否做稠合增长种子（精确匹配，P-25.2.1/25.3.2.2.1）。"""
     return match_fusion_component(info, ring_atoms) is not None
 
 
 def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[int], tuple[str, frozenset[int]]]:
-    """增长式枚举环集内全部保留母体候选 {原子集: (scaffold_id, 环集)}：从可种子环 DFS 并入邻接环，match_retained 精确命中记录、超集剪枝、原子集去重。"""
+    """增长式枚举环集内的保留母体候选（原子集去重、超集剪枝）。"""
     mol = info["mol"]
     adj: dict[int, set[int]] = {r: set() for r in ring_indices}
     for i, j, _ in fusion_edges:
@@ -77,13 +77,13 @@ def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[i
 
 
 def _keep_best(cands, key, *, reverse: bool = False):
-    """按 key 保留最优候选（max；reverse=True 取 min），每步过滤后候选缩小。"""
+    """按 key 保留最优候选（reverse=True 取 min）。"""
     best = (min if reverse else max)((key(c) for c in cands), default=None)
     return [c for c in cands if key(c) == best] if best is not None else cands
 
 
 def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozenset[int], frozenset[int]] | None:
-    """P-25.3.2.4 按准则(a)-(j) 选母体组分，返回 (scaffold_id, 原子 frozenset, 环 frozenset) 或 None；仍 >1 时取环集升序最小的确定性兜底。"""
+    """P-25.3.2.4 按准则(a)-(j) 选母体组分，仍并列取环集升序最小。"""
     cands = [(atoms, sid, rset) for atoms, (sid, rset) in
              _candidates_for(info, rings, fusion_edges, ring_indices).items()]
     if not cands:
@@ -96,7 +96,7 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
                        if mol.GetAtomWithIdx(i).GetAtomicNum() != C)
 
     def _key_a(c) -> int:
-        """(a) 候选最优先杂原子在 P25_SENIOR 的下标（无杂原子取最大，N 最优先）。"""
+        """(a) 候选最优先杂原子在 P25_SENIOR 的下标。"""
         h = _hetero(c)
         return min(P25_SENIOR.index(z) for z in h) if h else len(P25_SENIOR)
 
@@ -107,7 +107,7 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
     cands = _keep_best(cands, lambda c: len(_hetero(c)))           # (e) 杂原子种类更多
 
     def _key_f(c):
-        """(f) 最高优先杂原子(P145_SENIOR)的 (-rank, count)；rank 更小优先，同 rank 计数更多优先。"""
+        """(f) 最高优先杂原子(P145_SENIOR)的 (-rank,计数)。"""
         hc = _hetero(c)
         if not hc:
             return (-len(P145_SENIOR), 0)
@@ -115,7 +115,7 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
         return (-P145_SENIOR.index(top), hc[top])
 
     cands = _keep_best(cands, _key_f)  # (f) 最高优先性杂原子数更多
-    numbering = {c: _numbered_locants(info, rings, fusion_edges, c) for c in cands}  # (g)-(j): 依赖 L4 优选取向/编号, 逐准则按水平行环数/位次收窄(候选无法编号则跳过该准则)。
+    numbering = {c: _numbered_locants(info, rings, fusion_edges, c) for c in cands}  # (g)-(j): 依赖 L4 编号，逐准则收窄
     from namepredict.layer4.fused_numbering import fused_atoms
     from namepredict.layer4.locant_calc import locant_key
 
@@ -151,7 +151,7 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
 
 
 def _numbered_locants(info, rings, fusion_edges, cand):
-    """候选母体(子环集)经 L4 优选取向+P-25.3.3 编号，返回 ({原子: locant 串}, 水平行环数) 或 None(该准则跳过)。"""
+    """候选母体子环集经 L4 优选取向+P-25.3.3 编号，返回位次表与行数。"""
     _, _, rset = cand
     if len(rset) < 1:
         return None
@@ -198,7 +198,7 @@ def _ring_components(remaining, fusion_edges) -> list[frozenset[int]]:
 
 
 def _decompose(info, rings, fusion_edges, ring_indices, fusion_shared=()) -> FusedNode | None:
-    """递归拆解为 FusedNode 树：选母体组分后，剩余环按连通分量递归为附加组分（fusion_shared 为本组分与父组分的共享原子集）。"""
+    """递归拆解为 FusedNode 树：选母体后，剩余环按连通分量递归为附加组分。"""
     base = _select_base(info, rings, fusion_edges, ring_indices)
     if base is None:
         return None
@@ -223,7 +223,7 @@ def _decompose(info, rings, fusion_edges, ring_indices, fusion_shared=()) -> Fus
 
 
 def decompose_fused_system(info, system) -> FusedNode | None:
-    """公共入口: 对单个环系拆解为 FusedNode 树（无保留候选返回 None）。"""
+    """公共入口: 环系拆解为 FusedNode 树，无候选返回 None。"""
     rings = list(sssr_rings(info["mol"]))
     node = _decompose(info, rings, system.get("fusion_edges") or [],
                       frozenset(system.get("sssr_indices") or ()))

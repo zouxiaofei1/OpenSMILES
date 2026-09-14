@@ -1,5 +1,5 @@
-"""name_as_substituent：切割 submol → free-name 管道 → P-29 -yl 形式。
-无宿主（苯甲酰胺 gate / n_block 提取）接线——纯 cut→pipeline→yl。
+"""submol 切割 → free-name → -yl（P-29）。
+无宿主接线，纯 cut→pipeline→yl。
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from namepredict.layer3.submol_build import build_anchor_submol
 
 
 def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
-    """用原始根分子 CIP 校正取代基 R/S：糖苷异头位被 `*` 顶替后 CIP 随配基翻转，须回完整根分子重算；锚定子结构按 block_root_order 复制原子，链索引 i → 根索引 block_root_order[i]。"""
+    """用原始根分子 CIP 校正取代基 R/S（异头位被 * 顶替后会翻转）。"""
     if not (hit.success and hit.en):
         return hit
     from namepredict.layer5.stereo import _cip_on_chain, _with_rs
@@ -45,7 +45,7 @@ def _label_at(labels: list, pos: int):
 
 
 def _obridge_front_simple(mol, atoms, attach_old, *, cache, root_ctx):
-    """O/S 桥前端是否简单取代基：attach 为二价 O/S 桥原子、去桥后余单一片段，该片段按 retained→recursive 后端取名，paren False 即简单；无法判定（非桥/多前端/命名失败）返回 None。"""
+    """O/S 桥前端是否为简单取代基；无法判定时返回 None。"""
     a = mol.GetAtomWithIdx(attach_old)
     if a.GetAtomicNum() not in (8, 16) or a.GetDegree() != 2:
         return None
@@ -67,7 +67,7 @@ def _radical_yl_from_sub(
     mol, atoms: frozenset, attach_old: int, *,
     cache: CommonNameCache | None, root_ctx: tuple | None = None,
 ) -> tuple[str, str, bool] | None:
-    """碳连接点：锚定 * 走 radical 主基团管线，L4 权威位次 + P-22.2.4 保留名。"""
+    """碳连接点：锚定 * 走 radical 管线，L4 位次 + P-22.2.4。"""
     from namepredict.namer import _cache_put, _name_mol
     from rdkit import Chem
     anchored = build_anchor_submol(mol, atoms, attach_old)
@@ -90,7 +90,7 @@ def _radical_yl_from_sub(
     if not (hit.meta or {}).get("parent_kind") in ("radical", "acyl"):
         return None  # 锚定分子必被 L1 radical/acyl 条目检出、principal 必选（p41=1），理论不可达，防御。
     composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0 
-    # PIN（P-16.5.1.1）：复合前缀必括，由 meta.parent_substituent_count 判定；amido 保留式（P-66.1.1.4.3）免括，否则苯环二酰基倍增成 bis(acetylamino)。
+    # P-16.5.1.1 复合前缀必括；amido(P-66.1.1.4.3)免括
     need_paren = composite and hit.en not in (
         "phenyl", *SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN)
     if (hit.meta or {}).get("bridge_self_enclosed"):  # S 桥复合前端名已自含围栏（(4-甲氧基苯基)磺酰基），L5 不得再整体加括号
@@ -105,7 +105,7 @@ def _yl_from_sub(
      *, mol, atoms, attach_old,
     cache: CommonNameCache | None = None, root_ctx: tuple | None = None,
 ) -> tuple[str, str, bool] | None:
-    """连接点类型分派：碳→锚定 radical 优先；非碳/锚定失败→H 封端 free-name + free_to_yl。"""
+    """连接点分派：碳→锚定 radical 优先；否则 H 封端 free-name。"""
     from rdkit import Chem
 
     if mol.GetAtomWithIdx(attach_old).GetAtomicNum() >1 :
@@ -119,7 +119,7 @@ def name_as_substituent(
     mol, attach_old: int, atoms, *,
     cache: CommonNameCache | None = None, root_ctx: tuple | None = None,
 ) -> tuple[str, str, bool] | None:
-    """在 attach_old 处切割原子，free-name 子分子，输出 -yl 双语名称。"""
+    """在 attach_old 处切割，free-name 后输出 -yl 双语名。"""
     atoms = frozenset(atoms)
     return _yl_from_sub( mol=mol, atoms=atoms, attach_old=attach_old,  # print(_yl_from_sub(...)) 调试用
                         cache=cache, root_ctx=root_ctx)

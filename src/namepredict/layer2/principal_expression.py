@@ -38,11 +38,11 @@ class PrincipalExpressionFacts:
     relation: PrincipalRelation
     occurrence_ids: tuple[str, ...]
     characteristic_atoms: frozenset[int]
-    anchor_atoms: frozenset[int]  # 官能团原锚点（occurrence.parent_anchors）：L4 位次以它为基准
+    anchor_atoms: frozenset[int]  # 官能团原锚点（occurrence.parent_anchors）
     attachment_atoms: frozenset[int]  # 骨架内附着原子：骨架外的锚点取其骨架内邻居（exocyclic）
     charge_state: PrincipalChargeState
 
-_CHAIN_FG = frozenset(FunctionalGroupClass(v) for v in _fg_reg.chain_fgs())  # 链式主官能团：kind 恒为 FG 类别名；acid/alcohol/amine/ketone 任意数量恒用基团名，其余链 FG 仅单基。链/数量集合由 fg_registry 的 chain/multi 标志派生（唯一事实来源）。
+_CHAIN_FG = frozenset(FunctionalGroupClass(v) for v in _fg_reg.chain_fgs())  # 链式主官能团（由 fg_registry 派生）
 _MULTI_FG = frozenset(FunctionalGroupClass(v) for v in _fg_reg.multi_fgs())
 def _anchor_fields(group_class: FunctionalGroupClass) -> tuple[str, str] | None:
     """取基团类的 (单, 复数) anchor 字段名。"""
@@ -52,11 +52,11 @@ def _anchor_fields(group_class: FunctionalGroupClass) -> tuple[str, str] | None:
     return spec.anchor_fields if spec else None
 
 
-_SEMANTIC_ANCHOR_FGS = frozenset({FunctionalGroupClass.RADICAL, FunctionalGroupClass.ACYL})  # 位次不由 L4 位次记录承载、而由 P-14.4(a) 固定 locant 1 规则（constants.FIXED_START_KEYS）直接读 parent 字段的基团类。其余 FG 类别的锚点只经 principal_expression_facts 流转，不再平行写扁平字段。
+_SEMANTIC_ANCHOR_FGS = frozenset({FunctionalGroupClass.RADICAL, FunctionalGroupClass.ACYL})  # 位次由 P-14.4(a) 固定 locant 1 直读 parent 字段
 
 
 def _semantic_anchor_fields(group_class: FunctionalGroupClass, anchors: list[int]) -> dict:
-    """P-14.4(a) 固定 locant 1 锚点的显式字段（radical_c_idx / acyl_c_idx）：仅单锚点写单数字段，与下游 FIXED_START_KEYS 契约一致。"""
+    """P-14.4(a) 固定 locant 1 锚点的显式字段（仅单锚点写）。"""
     if group_class not in _SEMANTIC_ANCHOR_FGS or len(anchors) != 1:
         return {}
     return {_anchor_fields(group_class)[0]: anchors[0]}
@@ -73,9 +73,9 @@ def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
     if group_class is FunctionalGroupClass.NONE:
         return group_class.value if count == 0 else None
     if group_class is FunctionalGroupClass.ACYL:
-        return "acyl"  # 酰基残基：羰基头为 locant 1，L5 拼 -oyl/酰（P-65.1.7.2）
+        return "acyl"  # 酰基残基：羰基头为 locant 1（P-65.1.7.2）
     if group_class is FunctionalGroupClass.RADICAL:
-        return "radical"  # 自由基连接点位次由 L4 radical_c_idx 承载，kind 恒 "radical"（L5 worker 拼 -yl）
+        return "radical"  # 自由基连接点位次由 L4 radical_c_idx 承载
     if group_class not in _CHAIN_FG:
         return None
     if group_class not in _MULTI_FG and count != 1:
@@ -84,7 +84,7 @@ def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
 
 
 def _is_anion_occurrence(occurrence, mol) -> bool:
-    """occurrence 是否为阴离子：周边原子带负形式电荷（羧酸根氧；与 L1 _has_carboxylate_o_neighbor 同义）。"""
+    """occurrence 是否为阴离子：周边原子带负形式电荷。"""
     if mol is None:
         return False
     return any(mol.GetAtomWithIdx(i).GetFormalCharge() < 0 for i in occurrence.payload.get("surr_idx") or ())
@@ -129,20 +129,18 @@ def _facts(selection, skeleton, occurrences, mol=None) -> PrincipalExpressionFac
 
 def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
                  facts: PrincipalExpressionFacts, all_occurrences=()) -> dict:
-    """按骨架构造带表达式 facts 的母体 dict。covered_principal_ids 是该骨架表达的主基团子集；
-    principal_occurrences 取全部主基团 occurrence（不限本骨架覆盖），供 L2 所有权判定——未被本骨架
-    覆盖的同级基团（多酯的第二个酯等）仍属母体，若漏掉其羰基氧会被 L3 切成假羟基前缀。"""
+    """按骨架构造母体 dict（含全部主基团 occurrence 供所有权判定）。"""
     return {"kind": kind, "chain": list(skeleton.atom_ids), "n_carbons": len(skeleton.atom_ids),
             "covered_principal_ids": tuple(o.id for o in occurrences),
             "principal_occurrences": all_occurrences or occurrences,
             "principal_group_count": len(occurrences), "principal_expression_facts": facts, **fields}
 
 
-# 苯系保留名已迁往 L5 chain_engine 苯 variant（按 scaffold_id 注入）；L2 只表达结构 kind。
+# 苯系保留名由 L5 苯 variant 注入；L2 只表达结构 kind。
 
 
 def _ring_endocyclic_triple(mol: Mol, atoms: set[int]) -> bool:
-    """骨架内是否存在成环的三键：环内三键使该环无法构成 mancude 芳香体系（RDKit 把苯炔 c1ccccc#1 的 sp 碳按 6π 一并标为芳香），须按环烯炔表达而非保留芳名。"""
+    """骨架内是否有成环三键（有则不能按 mancude 芳香保留名表达）。"""
     from rdkit import Chem
     return any(b.GetBondType() == Chem.BondType.TRIPLE and b.IsInRing()
                and b.GetBeginAtomIdx() in atoms and b.GetEndAtomIdx() in atoms
@@ -150,25 +148,25 @@ def _ring_endocyclic_triple(mol: Mol, atoms: set[int]) -> bool:
 
 
 def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
-    """无保留 scaffold 时的通用环 kind(统一收敛为 alkane, 环系身份由 scaffold_id/fused_tree 承载)。"""
+    """无保留 scaffold 时的通用环 kind（统一收敛为 alkane）。"""
     mol = info["mol"]
     atoms = set(skeleton.atom_ids)
     if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms) and not _ring_endocyclic_triple(mol, atoms):
-        n_rings = sum(1 for ring in sssr_rings(mol) if set(ring) <= atoms)  # 芳香稠环(未注册)kind 收敛 alkane, 骨架身份由 fused_tree + scaffold_id 承载(L5 fused_namer 组装稠合名)。
+        n_rings = sum(1 for ring in sssr_rings(mol) if set(ring) <= atoms)  # 未注册芳香稠环 kind 收敛 alkane
         if n_rings >= 2:
             return "alkane"
         return None
     all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atoms)
-    return "alkane" if all_carbon else None  # 纯烃环统一 kind='alkane'（正交化：环系由 scaffold_id 承载，不饱和度由 double_bond/double_bonds 字段承载，命名由 chain_engine 动态加 cyclo 前缀）。
+    return "alkane" if all_carbon else None  # 纯烃环统一 kind='alkane'（环系/不饱和度另由字段承载）
 
 
 def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str | None:
-    """按保留 scaffold 解析环 kind（苯/未注册稠环均收敛为 alkane）。"""
+    """按保留 scaffold 解析环 kind（稠环收敛为 alkane）。"""
     if scaffold and scaffold.id != "carbocycle":
         if scaffold.id == "benzene":
-            return "alkane"  # 苯环（纯烃芳香单环）kind 收敛为 alkane，环系由 scaffold_id="benzene" 承载（对齐环烷烃正交化）。
+            return "alkane"  # 苯环 kind 收敛 alkane，环系由 scaffold_id 承载
         if scaffold.id in ("fused", "fused_hetero"):
-            return "alkane"  # 未注册稠环：kind 正交化收敛 alkane，骨架身份由 fused_tree + scaffold_id 承载（L5 fused_namer 组装稠合名）。
+            return "alkane"  # 未注册稠环：kind 收敛 alkane，身份由 fused_tree 承载
         return scaffold.id
     return _generic_ring_kind(info, skeleton)
 
@@ -176,24 +174,24 @@ def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str |
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold) -> str | None:
     """决定环骨架母体的 kind（radical/正交化 FG 类/结构 kind）。"""
     if selection.group_class is FunctionalGroupClass.RADICAL:
-        if scaffold is None:  # 苯基取代基保留名（P-22.2.4）由 L5 radical worker 的 benzene variant 表达，L2 只给统一 kind。
-            return None  # 未知杂环 scaffold：L5 无 -yl 词干可拼，显式失败而非当开链烷基错名。
+        if scaffold is None:  # 苯基取代基保留名由 L5 benzene variant 表达
+            return None  # 未知杂环：L5 无 -yl 词干，显式失败
         return "radical"
-    if scaffold is not None and selection.group_class in _CHAIN_FG:  # 环 + 主 FG → FG 类别 kind（正交化）：苯/饱和环/稠环/杂环一律收敛，命名由 L5 chain_engine 通用词干引擎拼接（苯等保留名经 variant 特殊，无 variant 走通用名）。
+    if scaffold is not None and selection.group_class in _CHAIN_FG:  # 环 + 主 FG → FG 类别 kind（命名由 L5 通用词干引擎拼接）
         kind = _chain_kind(selection.group_class, count)
         if kind is not None:
             return kind
     if scaffold is not None and selection.group_class is FunctionalGroupClass.ALDEHYDE:
-        return "aldehyde"  # 环上外环 -CHO 可多个同作主官能团（-carbaldehyde / -dicarbaldehyde，P-66.6.1.1.3）；aldehyde 不在 _MULTI_FG（开链二醛仍不支撑），此处仅环骨架放行，避免改变开链表达。
+        return "aldehyde"  # 环上外环 -CHO 可多个（P-66.6.1.1.3），仅环骨架放行
     return _resolved_ring_kind(scaffold, info, skeleton)
 
 
 def _ring_fields(selection: PrincipalGroupSelection, occurrences) -> dict:
-    """构造环主基团的固定 locant 1 锚点字段（其余锚点/特征原子经 principal_expression_facts 流转）。"""
+    """构造环主基团的固定 locant 1 锚点字段。"""
     return _semantic_anchor_fields(selection.group_class, _anchors(occurrences))
 
 def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=None) -> dict:
-    """解析并写入 scaffold 身份与表达能力字段；稠环拆解独立于 scaffold 身份。"""
+    """解析并写入 scaffold 身份与表达能力字段。"""
 
     from namepredict.layer2.ring_expression_policy import supports_ring_expression
     if scaffold is None:
@@ -202,10 +200,10 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
     fields: dict = {}
     if scaffold:
         supported = supports_ring_expression(scaffold, facts) if facts else False
-        match = None  # 保留 fused 模板匹配映射：L4 固定编号（standard_path）据此把模板原子映射到分子原子。
+        match = None  # 保留 fused 模板匹配映射，供 L4 固定编号用
         from namepredict.layer2.ring_scaffold import _match_with_map, get_spec, hydrogenated_atoms
         spec = get_spec(scaffold.id)
-        if spec and spec.retained:  # 全部保留模板都取 match：氢化衍生物需据此比对 mancude 参考算加氢位（P-31.2.2），单环杂芳环（嘧啶/异噁唑等）同样要算
+        if spec and spec.retained:  # 保留模板都取 match，供算加氢位（P-31.2.2）
             hit = _match_with_map(info, skeleton.atom_ids)
             match = hit[1] if hit and hit[0] == scaffold.id else None
 
@@ -217,7 +215,7 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
             if hydro:
                 fields["hydro_atoms"] = hydro
     system = next((s for s in info.get("ring_systems") or []
-                   if (s.get("atom_ids") or []) == list(skeleton.atom_ids)), None)  # 多环骨架附加稠环拆解结构（fused_tree 为 FusedNode 对象供 L5 稠合名组装）；拆解独立于 scaffold 身份：未注册系统 scaffold 解析为 None 时仍产出拆解树，供 L5 fused_namer 组装稠合名（P-25.3.2）。
+                   if (s.get("atom_ids") or []) == list(skeleton.atom_ids)), None)  # 多环骨架的稠环拆解结构，独立于 scaffold 身份（P-25.3.2）
 
     if system is not None and len(system.get("sssr_indices") or ()) >= 2:
         from namepredict.layer2.fused_system import decompose_fused_system
@@ -235,7 +233,7 @@ def _ester_o_idx(mol, e: dict) -> int | None:
 
 
 def ester_fields(info: dict, occurrences, fields: dict) -> dict:
-    """取首个酯 occurrence 的 o_idx 并写入酯字段（alkoxy_n 恒 0）。"""
+    """取首个酯 occurrence 并写入酯字段（alkoxy_n 恒 0）。"""
     o_idx = _ester_o_idx(info["mol"], occurrences[0].payload)
     return {**fields, "o_idx": o_idx, "alkoxy_n": 0} if o_idx is not None else fields
 
@@ -245,7 +243,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     """环骨架：表达主基团并生成母体 dict（不支持返回 None）。"""
     if skeleton.topology is not SkeletonTopology.RING_SYSTEM:
         return None
-    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold  # 骨架原子集已确定：一次识别 scaffold，下游复用（不再重复调 _producer_id）。
+    from namepredict.layer2.ring_scaffold import resolve_ring_scaffold  # 骨架原子集已定：一次识别 scaffold 供下游复用
     scaffold = resolve_ring_scaffold(info, skeleton)
     occurrences = _covered(selection, skeleton)
     kind = _ring_kind(info, selection, skeleton, len(occurrences), scaffold)
@@ -254,15 +252,15 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     facts = _facts(selection, skeleton, occurrences, info["mol"])
     fields = {**_ring_fields(selection, occurrences),
               **_chain_unsat_fields(info, skeleton,
-                                    _scaffold_fields(info, skeleton, facts, scaffold))}  # 补环内不饱和字段：kind 正交化后（醇/酮/纯烃环 → FG 类别/alkane），烯/炔由 double_bond(s)/triple_bond 字段承载（否则环烯酮/环烯醇/环烯烃烯丢失）。
+                                    _scaffold_fields(info, skeleton, facts, scaffold))}  # 补环内不饱和字段（烯/炔由 double_bond 等承载）
     if kind == "radical" and _radical_ylidene(info, occurrences):  # 环上碳锚点自由价双键（*=C1CCCC1）：链引擎出 -ylidene
         fields = {**fields, "radical_ylidene": True}
     if facts.group_class is FunctionalGroupClass.ACID:
-        fields = {**fields, **_expression_flags(selection, occurrences, info.get("mol"))}  # 环酸全阴离子补 anion 标志（链酸经 _chain_fields→_expression_flags 已设）；L5 据此转 -ate/-酸根，并让金属盐前缀（sodium …）能命中。
+        fields = {**fields, **_expression_flags(selection, occurrences, info.get("mol"))}  # 环酸全阴离子补 anion 标志，L5 据此转 -ate
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
         fields = ester_fields(info, occurrences, fields)
     if facts.group_class is FunctionalGroupClass.ACYL_HALIDE and facts.multiplicity == 1:
-        fields = _chain_acyl_halide_fields(info, occurrences, fields)  # 环外酰卤（苯甲酰卤等）同样要卤素字段：hal_z 供 L5 选氟氯溴碘后缀，hal_idx 纳入母体原子。
+        fields = _chain_acyl_halide_fields(info, occurrences, fields)  # 环外酰卤同样要卤素字段（hal_z/hal_idx）
     return _parent_dict(kind, skeleton, occurrences, fields, facts, selection.occurrences)
 
 
@@ -287,7 +285,7 @@ def _unsat_bond_fields(dbs: list[dict], tbs: list[dict]) -> dict:
 
 
 def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> dict:
-    """为骨架内的 C=C/C≡C 附加双键/三键位次字段；保留 mancude 母体环内的多重键由母体名隐含，不再以 -ene/-yne 重复表达（否则得 'naphthalene-3-ene-1,2-dione' 这类自相矛盾串）。"""
+    """为骨架内 C=C/C≡C 附加双/三键位次字段（mancude 环内略过）。"""
     atom_set = set(skeleton.atom_ids)
     dbs, tbs = _chain_polys(info, atom_set)
     if fields.get("scaffold_id") == "carbocycle":  # 无保留 mancude 名兜底的碳环：环内 C=C 由 Kekulé 补回
@@ -300,8 +298,7 @@ def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> d
 
 
 def _kekule_ring_dbs(info: dict, atom_set: set[int], known: list[dict]) -> list[dict]:
-    """碳环（无保留模板）环内缺失的 C=C：RDKit 芳香感知把环内双键从 double_bonds 剔除，又无 mancude
-    保留名兜底，须按 Kekulé 结构补回，否则环烯酮被写成饱和环（tropolone→cycloheptan-1-one）。"""
+    """补回碳环环内被芳香感知剔除的 C=C（无保留名兜底）。"""
     from rdkit import Chem
 
     mol = info["mol"]
@@ -321,8 +318,7 @@ def _kekule_ring_dbs(info: dict, atom_set: set[int], known: list[dict]) -> list[
 
 
 def _implied_ring_atoms(fields: dict, atom_set: set[int]) -> frozenset[int]:
-    """保留 mancude 母体覆盖的分子原子集：已匹配保留模板取模板 mancude 位；未注册稠环由 L5 以 mancude
-    组分名（吡喃并/环戊并…）组装，环内多重键同样由母体名隐含，取整个母体骨架。"""
+    """保留 mancude 母体覆盖的分子原子集（多重键由母体名隐含）。"""
     from namepredict.layer2.ring_scaffold import mancude_ring_atoms
     implied = mancude_ring_atoms(fields.get("scaffold_id"), fields.get("scaffold_match"))
     if implied:
@@ -331,7 +327,7 @@ def _implied_ring_atoms(fields: dict, atom_set: set[int]) -> frozenset[int]:
 
 
 def _chain_phosphate_fields(info: dict, occurrences, fields: dict) -> dict | None:
-    """L5 join_phosphate_name 消费的计数与盐元数据，盐门控不通过返回 None：n_om>0 时若有碱金属须同数配对；中性酸/酯不允许带金属；完全无抗衡金属的游离磷酸根/磷酸酯阴离子放行。"""
+    """L5 磷酸命名的计数与盐元数据，门控不过返回 None。"""
     if len(occurrences) != 1:
         return None
     payload = occurrences[0].payload
@@ -347,7 +343,7 @@ def _chain_phosphate_fields(info: dict, occurrences, fields: dict) -> dict | Non
 
 
 def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
-    """L5 酯命名的酯烷氧基侧字段：o_idx 供 o_side 识别（多酯取任一酯的桥 O，仅作标记，醚所有权按 kind 门控不消费）；仅严格线性给 alkoxy_n 保留名。"""
+    """L5 酯命名的酯氧侧字段：o_idx 供 o_side 识别。"""
     if not occurrences:
         return fields
     o_idx = _ester_o_idx(info["mol"], occurrences[0].payload)
@@ -384,7 +380,7 @@ def _anchor_oxo_count(mol: Mol, idx: int) -> int:
 
 def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
                          occurrences) -> tuple[ParentSkeleton, dict] | None:
-    """杂原子锚点自由基收敛为单核氢化物母体骨架（表 2.1）：chain 限定单原子、注入 oxidane/azane 等 free 名，碳侧链留 L3 供 L5 经 free_to_yl 转标准取代基名；仅支持单一锚点。"""
+    """杂原子锚点自由基收敛为单核氢化物骨架（表 2.1），仅支持单锚点。"""
     mol = info["mol"]
     anchors = sorted({i for o in occurrences for i in o.parent_anchors})
     if len(anchors) != 1:
@@ -397,7 +393,7 @@ def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
         stem_en = SULFUR_STEM_BY_OXO.get(_anchor_oxo_count(mol, anchors[0]), stem_en)
     elif element == "N":  # 自由价键级并入词干（azane/imine）
         stem_en = NITROGEN_STEM_BY_FREE_DOUBLE[_anchor_free_double(mol, anchors[0])]
-    elif element == "P":  # 磷的氧化态并入词干（P-67.1.4.1.1.2 磷酰基 / P-67.1.4.1.1.6 磷烷基）
+    elif element == "P":  # 磷的氧化态并入词干（P-67.1.4.1.1.2）
         stem_en = PHOSPHORUS_STEM_BY_OXO.get(_anchor_oxo_count(mol, anchors[0]))
         if stem_en is None:  # 非 0/1 个 =O（如二氧代磷烷）无对应酰基词干，明确失败
             return None
@@ -408,7 +404,7 @@ def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
 
 
 def _radical_ylidene(info: dict, occurrences) -> bool:
-    """碳锚点自由基的自由价是否为双键（*=C< 型 ylidene）：为真时链引擎出 -ylidene 而非 -yl（否则净丢 2H、写成另一个分子）。"""
+    """碳锚点自由价是否为双键（*=C< ylidene，出 -ylidene）。"""
     mol = info.get("mol")
     anchors = sorted({i for o in occurrences for i in o.parent_anchors})
     if mol is None or len(anchors) != 1:
@@ -417,7 +413,7 @@ def _radical_ylidene(info: dict, occurrences) -> bool:
 
 
 def _chain_acyl_halide_fields(info: dict, occurrences, fields: dict) -> dict:
-    """酰卤的卤素字段：hal_idx 供 parent_ownership 把卤素纳入母体原子（Cl 不作取代基）。"""
+    """酰卤的卤素字段：hal_idx 供母体纳入卤素原子。"""
     if len(occurrences) != 1:
         return fields
     mol = info.get("mol")
@@ -461,7 +457,7 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
                         _facts(selection, skeleton, occurrences, info.get("mol")), selection.occurrences)
 
 
-# ── 无主官能团（纯烃）表达：P-44.1 缺位时按拓扑分配 hydrocarbon kind ──
+# ── 无主官能团（纯烃）表达：P-44.1 缺位按拓扑分配 kind ──
 
 def _chain_polys(info: dict, atom_set: set[int]) -> tuple[list[dict], list[dict]]:
     """骨架内的 C=C / C≡C 条目（端点都在 atom_set 中）。"""

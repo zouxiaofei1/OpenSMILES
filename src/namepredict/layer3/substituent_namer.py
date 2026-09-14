@@ -1,4 +1,4 @@
-"""带类型的 L3 取代基命名器：ordered retained → recursive。"""
+"""L3 取代基命名器：ordered retained → recursive。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -43,12 +43,12 @@ def _try_anchored_lookup(mol, claim: ClaimedBlock) -> SubstituentName | None:
 
 
 def _retained_name(mol, claim: ClaimedBlock) -> SubstituentName | None:
-    """简单 retained 叶子（alkyl/cycloalkyl/phenyl/halo/alkoxy/sulfinyl/sulfonyl/N-leaves），经锚定 canonical-SMILES 表解析。"""
+    """retained 叶子（alkyl/aryl/halo 等）经锚定表解析。"""
     return _try_anchored_lookup(mol, claim)
 
 
 class RetainedBackend:
-    """锚定表 retained 叶子：alkyl/aryl/halo/alkoxy/sulfinyl/..."""
+    """锚定表 retained 叶子：alkyl/aryl/halo 等。"""
 
     name = "retained"
 
@@ -91,7 +91,7 @@ class SubstituentNamer:
     """按序尝试各后端为 claim 命名，返回首个命中的命名器。"""
 
     def __init__(self, backends: Sequence[SubstituentBackend] | None = None, *, cache: CommonNameCache | None = None, root_ctx: tuple | None = None) -> None:
-        """初始化后端列表，缺省时用默认后端；root_ctx 供递归取代基命名回根分子校正 R/S。"""
+        """初始化后端列表，缺省用默认后端；root_ctx 供 R/S 校正。"""
         self._backends = list(backends) if backends is not None else _default_backends(cache=cache, root_ctx=root_ctx)
 
     def name(self, mol, claim: ClaimedBlock) -> SubstituentName | None:
