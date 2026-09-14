@@ -511,7 +511,7 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
 
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     """组装入口：取名 → 前缀 → 阴离子/R-S/金属盐后缀。"""
-    from namepredict.layer5.stereo import join_rs_prefix
+    from namepredict.layer5.stereo import join_ez_prefix, join_rs_prefix
     parent = numbered.get("parent") or {}  # 母体 kind 与碳数 n（无则 0）
     kind, n = parent.get("kind"), int(parent.get("n_carbons") or 0)
     if not _ensure_fused_stem(numbered):
@@ -528,5 +528,6 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
         return _unsupported(n, kind)
     en, zh = joined
     en, zh = join_anion_names(numbered, en, zh)
+    en, zh = join_ez_prefix(numbered, en, zh)   # 母体外挂双键的 E/Z 先补，再由 R/S 归并排序
     en, zh = join_rs_prefix(numbered, en, zh)
     return _ok(en, zh, time_ms, source)

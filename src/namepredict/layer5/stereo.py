@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 
-from rdkit.Chem import BondStereo, Mol
+from rdkit.Chem import BondStereo, BondType, Mol
 
 from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.layer4.locant_calc import locant_key
@@ -90,9 +90,55 @@ def ez_for_parent(numbered: dict) -> str:
     return _ez_prefix(numbered)
 
 
+def _parent_locants(parent: dict) -> dict[int, int | str]:
+    """母体原子索引 → 位次（整体编号标签优先，否则链序号）。"""
+    chain = parent.get("chain") or []
+    labels = (parent.get("numbering_scaffold") or {}).get("labels") or []
+    aligned = len(labels) == len(chain)
+    out: dict[int, int | str] = {}
+    for pos, idx in enumerate(chain):
+        lbl = labels[pos] if aligned else pos + 1
+        out[int(idx)] = int(lbl) if str(lbl).isdigit() else lbl
+    return out
+
+
+def _exo_ez_parts(numbered: dict) -> list[tuple[int | str, str]]:
+    """母体外挂立体双键的 (位次, 字母)：仅一端在母体内，位次取母体侧（P-91.2）。"""
+    parent = numbered.get("parent") or {}
+    mol, locants = parent.get("mol"), _parent_locants(parent)
+    if mol is None or not locants:
+        return []
+    parts: list[tuple[int | str, str]] = []
+    for bond in mol.GetBonds():
+        tag = _STEREO_TAG.get(bond.GetStereo(), "")
+        if not tag or bond.GetBondType() != BondType.DOUBLE:
+            continue
+        a, b = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+        if a in locants and b in locants:
+            continue  # 两端都在母体内：已由母体名承载
+        idx = a if a in locants else b
+        if idx in locants:
+            parts.append((locants[idx], tag[1]))
+    return parts
+
+
+def join_ez_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
+    """对外 E/Z 入口：补母体外挂双键的 E/Z 部件（母体名已有的位次不重复）。"""
+    extra = _exo_ez_parts(numbered)
+    if not extra:
+        return en, zh
+    have = {loc for loc, _ in _parse_stereo(_split_stereo_lead(en)[0])}
+    extra = [(loc, let) for loc, let in extra if loc not in have]
+    if not extra:
+        return en, zh
+    if (numbered.get("parent") or {}).get("kind") == "ester":
+        return _ester_en_rs(en, extra), _with_rs(zh, extra)
+    return _with_rs(en, extra), _with_rs(zh, extra)
+
+
 # --- CIP R/S 立体描述符 --------------------
 
-_RS_KINDS = _fg_reg.srs_fgs() | frozenset({"radical"})
+_RS_KINDS = _fg_reg.srs_fgs() | frozenset({"radical", "alkane"})  # alkane: 烃母体链上手性中心同样标 R/S（P-92）
 
 
 def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:

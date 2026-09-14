@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dataclasses import KW_ONLY, dataclass, replace
 from namepredict.layer5.stems import _en_stem, alkane_en, alkane_zh, zh_stem
-from namepredict.layer5.stereo import _ez_prefix, ez_for_parent
+from namepredict.layer5.stereo import _ez_prefix, _split_stereo_lead, ez_for_parent
 from namepredict.constants import CHAIN_RETAINED, Cl, EXO_RING_SUF, MULT_EN, MULT_ZH, HALIDE_EN, HALO_ZH
 
 def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:
@@ -292,6 +292,15 @@ def _ylidene_form(pair: tuple[str, str]) -> tuple[str, str]:
 EXO_RING_SEG = (("ene", "烯"), ("yne", "炔"))  # 环外主基的环内不饱和段保留完整 ene/yne
 
 
+def _cyclo_stereo(pair: tuple[str, str]) -> tuple[str, str]:
+    """环词干：前导 E/Z 立体块移到 cyclo/环 之前（P-91.2）。"""
+    out: list[str] = []
+    for text, cyc in zip(pair, ("cyclo", "环")):
+        tag, rest = _split_stereo_lead(text)
+        out.append(f"{tag}{cyc}{rest}")
+    return out[0], out[1]
+
+
 def _ring_prefix_located(numbered: dict) -> bool:
     """环上是否另带被编号前缀（P-66.6.1 主基位次不省）。"""
     chain = set((numbered.get("parent") or {}).get("chain") or [])
@@ -364,7 +373,7 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
             top = (f"{top[0]}-{loc_s}-{spec.en_suf}", f"{top[1]}-{loc_s}-{spec.zh_suf}")
     if top is not None:  # 无环自由基位次省略已下沉到段式引擎，环自由基不受影响。
         if spec.cyclic or spec.cyclic_unsat:
-            top = (f"cyclo{top[0]}", f"环{top[1]}")
+            top = _cyclo_stereo(top)
         if ylidene:
             top = _ylidene_form(top)
         return spec.wrap(top, numbered) if spec.wrap is not None else top

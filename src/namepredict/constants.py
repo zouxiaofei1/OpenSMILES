@@ -166,7 +166,7 @@ RS_LO = frozenset({"S", "P", "s"})   # 与之成对、取较低位次的次位�
 # ── L5 组装词表 ──────────────────────
 BIS_EN = {2: "bis", 3: "tris", 4: "tetrakis"}  # P-16.3.2 复合前缀倍增（bis/tris，非 di/tri）
 BIS_ZH = {2: "双", 3: "三", 4: "四"}
-BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl", "amino")   # O/S/N 桥后缀（gold 平铺式 -yl]oxy/-yl]amino：括号闭在 -yl 后、后缀放括号外，见 P-63.2.2.1）
+BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl", "amino")   # O/S/N 桥后缀（P-63.2.2.1）：平铺 [-yl]oxy 与合一 [-yloxy] 均属合法
 BRIDGE_SUFFIX_ZH = ("氧基", "硫基", "氨基")        # 与 BRIDGE_SUFFIX_EN 同序同位
 BRIDGE_YL_SUFFIX = tuple((f"yl{en}", en) for en in BRIDGE_SUFFIX_EN)      # -yl 型桥基：方括号闭在 -yl 后、桥后缀放括号外（[(2R)环己基]氧基）
 BRIDGE_ZH_YL_SUFFIX = tuple((f"基{zh}", zh) for zh in BRIDGE_SUFFIX_ZH)
