@@ -13,6 +13,7 @@ from namepredict.layer2.ring_scaffold import (
     retained_fusion_prefix,
 )
 from namepredict.layer1.ring_systems import sssr_rings
+from namepredict.layer4.numbering_engine import narrow
 
 _TEMPLATE_COUNTS: dict[str, Counter] = {  # 保留模板的元素计数
     sid: Counter(q.GetAtomWithIdx(i).GetAtomicNum() for i in range(q.GetNumAtoms()))
@@ -39,23 +40,24 @@ def _has_template_superset(mol, atom_ids) -> bool:
     return any(all(current[z] <= tc.get(z, 0) for z in current) for tc in _TEMPLATE_COUNTS.values())
 
 
-def _seedable(info, ring_atoms) -> bool:
-    """单环能否做稠合增长种子（精确匹配，P-25.2.1/25.3.2.2.1）。"""
-    return match_fusion_component(info, ring_atoms) is not None
-
-
-def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[int], tuple[str, frozenset[int]]]:
-    """增长式枚举环集内的保留母体候选（原子集去重、超集剪枝）。"""
-    mol = info["mol"]
+def _fusion_adj(ring_indices, fusion_edges) -> dict[int, set[int]]:
+    """融合图邻接表：环下标 → 相邻环下标（仅两端都在集合内的稠合边）。"""
     adj: dict[int, set[int]] = {r: set() for r in ring_indices}
     for i, j, _ in fusion_edges:
         if i in ring_indices and j in ring_indices:
             adj[i].add(j)
             adj[j].add(i)
+    return adj
+
+
+def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[int], tuple[str, frozenset[int]]]:
+    """增长式枚举环集内的保留母体候选（原子集去重、超集剪枝）。"""
+    mol = info["mol"]
+    adj = _fusion_adj(ring_indices, fusion_edges)
     out: dict[frozenset[int], tuple[str, frozenset[int]]] = {}
     for seed in sorted(ring_indices):
         seed_atoms = frozenset(rings[seed])
-        if not _seedable(info, seed_atoms):
+        if match_fusion_component(info, seed_atoms) is None:  # P-25.2.1/25.3.2.2.1
             continue
         stack: list[tuple[frozenset[int], frozenset[int]]] = [(seed_atoms, frozenset({seed}))]
         visited: set[frozenset[int]] = set()
@@ -76,12 +78,6 @@ def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[i
     return out
 
 
-def _keep_best(cands, key, *, reverse: bool = False):
-    """按 key 保留最优候选（reverse=True 取 min）。"""
-    best = (min if reverse else max)((key(c) for c in cands), default=None)
-    return [c for c in cands if key(c) == best] if best is not None else cands
-
-
 def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozenset[int], frozenset[int]] | None:
     """P-25.3.2.4 按准则(a)-(j) 选母体组分，仍并列取环集升序最小。"""
     cands = [(atoms, sid, rset) for atoms, (sid, rset) in
@@ -100,11 +96,12 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
         h = _hetero(c)
         return min(P25_SENIOR.index(z) for z in h) if h else len(P25_SENIOR)
 
-    cands = _keep_best(cands, _key_a, reverse=True)  # (a) 含有更优先的杂原子
-    cands = _keep_best(cands, lambda c: len(c[2]))   # (b) 环数更多
-    cands = _keep_best(cands, lambda c: tuple(sorted((len(rings[i]) for i in c[2]), reverse=True)))  # (c) 环大小降序最大
-    cands = _keep_best(cands, lambda c: sum(_hetero(c).values()))  # (d) 杂原子总数更多
-    cands = _keep_best(cands, lambda c: len(_hetero(c)))           # (e) 杂原子种类更多
+    cands = narrow(cands, _key_a)  # (a) 含有更优先的杂原子，取键最小
+    cands = narrow(cands, lambda c: len(c[2]), reverse=True)   # (b) 环数更多
+    cands = narrow(cands, lambda c: tuple(sorted((len(rings[i]) for i in c[2]), reverse=True)),
+                   reverse=True)  # (c) 环大小降序最大
+    cands = narrow(cands, lambda c: sum(_hetero(c).values()), reverse=True)  # (d) 杂原子总数更多
+    cands = narrow(cands, lambda c: len(_hetero(c)), reverse=True)           # (e) 杂原子种类更多
 
     def _key_f(c):
         """(f) 最高优先杂原子(P145_SENIOR)的 (-rank,计数)。"""
@@ -114,7 +111,7 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
         top = min(hc, key=lambda z: P145_SENIOR.index(z))
         return (-P145_SENIOR.index(top), hc[top])
 
-    cands = _keep_best(cands, _key_f)  # (f) 最高优先性杂原子数更多
+    cands = narrow(cands, _key_f, reverse=True)  # (f) 最高优先性杂原子数更多
     numbering = {c: _numbered_locants(info, rings, fusion_edges, c) for c in cands}  # (g)-(j): 依赖 L4 编号，逐准则收窄
     from namepredict.layer4.fused_numbering import fused_atoms
     from namepredict.layer4.locant_calc import locant_key
@@ -124,28 +121,27 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
         labels = numbering[c][0]
         return tuple(sorted((locant_key(labels[a]) for a in atoms if a in labels)))
 
-    def _gj(key_fn, *, reverse=False):
-        """按 key_fn 对可编号候选取最优值收窄（候选不足 2 个则原样返回）。"""
-        scored = [(c, key_fn(c)) for c in cands if numbering[c] is not None]
+    def _gj(key_fn, *, lowest=False):
+        """按 key_fn 对可编号候选取最优值收窄（可编号候选不足 2 个则原样返回）。"""
+        scored = [c for c in cands if numbering[c] is not None]
         if len(scored) < 2:
             return cands
-        best = (max if not reverse else min)(k for _, k in scored)
-        return [c for c, k in scored if k == best]
+        return narrow(scored, key_fn, reverse=not lowest)
 
     cands = _gj(lambda c: numbering[c][1])  # (g) 水平行环数最多
     cands = _gj(lambda c: _locant_tup(c, [a for a in c[0]
-                                          if mol.GetAtomWithIdx(a).GetAtomicNum() != C]), reverse=True)  # (h) 杂原子位次低
+                                          if mol.GetAtomWithIdx(a).GetAtomicNum() != C]), lowest=True)  # (h) 杂原子位次低
     for z in P145_SENIOR:  # (i) 按 F>Tl 逐元素位次低
         cands = _gj(lambda c, z=z: _locant_tup(c, [a for a in c[0]
-                                                   if mol.GetAtomWithIdx(a).GetAtomicNum() == z]), reverse=True)
+                                                   if mol.GetAtomWithIdx(a).GetAtomicNum() == z]), lowest=True)
 
     def _fused_carbons(c):
         """取候选子环集稠合原子的碳原子列表。"""
         fused = fused_atoms([rings[i] for i in sorted(c[2])])
         return [a for a in fused if mol.GetAtomWithIdx(a).GetAtomicNum() == C]
 
-    cands = _gj(lambda c: _locant_tup(c, _fused_carbons(c)), reverse=True)  # (j) 稠合碳位次低
-    cands = _keep_best(cands, lambda c: tuple(sorted(c[2])), reverse=True)  # 兜底：环集升序最小
+    cands = _gj(lambda c: _locant_tup(c, _fused_carbons(c)), lowest=True)  # (j) 稠合碳位次低
+    cands = narrow(cands, lambda c: tuple(sorted(c[2])))  # 兜底：环集升序最小，取键最小
     atoms, sid, rset = cands[0]
     return sid, atoms, rset
 
@@ -174,11 +170,7 @@ def _numbered_locants(info, rings, fusion_edges, cand):
 def _ring_components(remaining, fusion_edges) -> list[frozenset[int]]:
     """剩余环在融合图上的连通分量。"""
     rem = set(remaining)
-    adj: dict[int, set[int]] = {r: set() for r in rem}
-    for i, j, _ in fusion_edges:
-        if i in rem and j in rem:
-            adj[i].add(j)
-            adj[j].add(i)
+    adj = _fusion_adj(rem, fusion_edges)
     comps: list[frozenset[int]] = []
     seen: set[int] = set()
     for r in sorted(rem):

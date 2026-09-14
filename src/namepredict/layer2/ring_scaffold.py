@@ -8,7 +8,7 @@ from rdkit.Chem import Mol, MolFromSmarts, MolFromSmiles
 from rdkit import Chem
 from namepredict.tools import memo
 from namepredict.layer2.parent_skeleton import ParentSkeleton
-from namepredict.layer1.ring_systems import sssr_rings
+from namepredict.layer1.ring_systems import sssr_rings, kekulized
 
 @dataclass(frozen=True)# ScaffoldSpec 定义
 class NumberingPolicy:
@@ -33,7 +33,7 @@ class ScaffoldSpec:
     @property
     def identity(self) -> ScaffoldIdentity:
         """返回本规格的 ScaffoldIdentity。"""
-        return identity_of(self)
+        return ScaffoldIdentity(self.id, self.naming_class, self.n_rings, self.ring)
 
 
 @dataclass(frozen=True)
@@ -44,10 +44,6 @@ class ScaffoldIdentity:
     n_rings: int
     ring: str
 
-
-def identity_of(spec) -> ScaffoldIdentity:
-    """由 spec 构造 ScaffoldIdentity。"""
-    return ScaffoldIdentity(spec.id, spec.naming_class, spec.n_rings, spec.ring)
 
 FUSED56_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "6", "7", "7a")  # 保留 fused 母体的固定编号标签（P-25.4）
 PURINE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "5", "6", "7", "8", "9")  # purine（嘌呤）保留传统编号：桥头得纯数字位（P-25.3.3）
@@ -252,14 +248,10 @@ def _kekule_double_atoms(sid: str) -> frozenset[int]:
         return hit
     q = _Q.get(sid)
     out: set[int] = set()
-    if q is not None:
-        m = Chem.Mol(q)
-        try:
-            Chem.Kekulize(m, clearAromaticFlags=True)
-            out = {b.GetBeginAtomIdx() for b in m.GetBonds() if b.GetBondType() == Chem.BondType.DOUBLE}
-            out |= {b.GetEndAtomIdx() for b in m.GetBonds() if b.GetBondType() == Chem.BondType.DOUBLE}
-        except Exception:
-            out = set()
+    m = kekulized(q) if q is not None else None  # 缓存的是原子集合，分子副本不参与缓存
+    if m is not None:
+        out = {b.GetBeginAtomIdx() for b in m.GetBonds() if b.GetBondType() == Chem.BondType.DOUBLE}
+        out |= {b.GetEndAtomIdx() for b in m.GetBonds() if b.GetBondType() == Chem.BondType.DOUBLE}
     _KEKULE_ATOMS[sid] = frozenset(out)
     return _KEKULE_ATOMS[sid]
 
@@ -369,12 +361,6 @@ _ALL_SPECS: tuple[ScaffoldSpec, ...] = tuple(
     _spec_from_template(sid, entry) for sid, entry in _TEMPLATES.items()
 )
 _BY_ID: dict[str, ScaffoldSpec] = {s.id: s for s in _ALL_SPECS}
-_IDENTITIES: dict[str, ScaffoldIdentity] = {s.id: s.identity for s in _ALL_SPECS}
-
-
-def get_identity(spec_id: str) -> ScaffoldIdentity | None:
-    """按 id 查 ScaffoldIdentity（无则 None）。"""
-    return _IDENTITIES.get(spec_id)
 
 
 def get_spec(spec_id: str) -> ScaffoldSpec | None:
@@ -448,10 +434,6 @@ def standard_chain(spec_id: str | None, match: tuple[int, ...] | None) -> list[i
         return None
     return [match[t] for t in order]
 
-def _matched_id(info: dict, skeleton: ParentSkeleton) -> str | None:# 环解析
-    """按模板子图同构匹配骨架的 scaffold id。"""
-    return match_retained(info, skeleton.atom_ids)
-
 def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
     """无模板命中时的通用环身份兜底（全碳→carbocycle）。"""
     mol = info["mol"]
@@ -466,13 +448,10 @@ def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentit
 
 
 def resolve_ring_scaffold(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
-    """解析骨架的 scaffold 身份（显式/模板匹配/通用兜底）。"""
-    direct = get_identity(skeleton.scaffold_id or "")
-    if direct:
-        return direct
-    sid = _matched_id(info, skeleton)
+    """解析骨架的 scaffold 身份（模板匹配/通用兜底）。"""
+    sid = match_retained(info, skeleton.atom_ids)  # 按模板子图同构匹配 scaffold id
     if sid:
-        identity = get_identity(sid)
-        if identity:
-            return identity
+        spec = get_spec(sid)
+        if spec:
+            return spec.identity
     return _generic_carbocycle(info, skeleton)

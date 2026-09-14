@@ -1,10 +1,20 @@
 """环系拓扑 Layer1,4,5共用"""
 from __future__ import annotations
 
+from rdkit import Chem
 from rdkit.Chem import Mol
 
 from namepredict.tools import memo
 from namepredict.constants import C
+
+def kekulized(mol: Mol) -> Mol | None:
+    """返回 Kekulize 并清芳香标志后的分子副本；失败返 None。"""
+    kek = Chem.Mol(mol)
+    try:
+        Chem.Kekulize(kek, clearAromaticFlags=True)
+    except Exception:
+        return None
+    return kek
 
 def _sssr(mol: Mol) -> list[tuple[int, ...]]:
     """返回分子的全部 SSSR 最小环原子序列。"""
@@ -102,15 +112,7 @@ def _system_entry(
     edges = _member_edges(members, fusion_edges)
     return _system_dict(atoms, members, edges, mol)
 
-def _merge_spiro(
-    rings: list[tuple[int, ...]],
-    systems: list[dict], spiro_pairs: list[tuple[int, int, int]],
-) -> list[dict]:
-    """将共享螺原子的单环系合并为螺环系。"""
-    if not spiro_pairs or len(systems) <= 1:
-        return systems
-    result: list[dict] = []
-    return result
+
 
 def build_ring_systems(mol: Mol) -> list[dict]:
     """返回环系：稠合连通 + 螺环合并。"""
@@ -119,7 +121,4 @@ def build_ring_systems(mol: Mol) -> list[dict]:
         return []
     fused, spiro = _ring_pairs(rings)
     comps = _components(len(rings), fused)
-    systems = [
-        _system_entry(mol, rings, m, fused) for m in comps
-    ]
-    return _merge_spiro(rings, systems, spiro)
+    return [ _system_entry(mol, rings, m, fused) for m in comps]

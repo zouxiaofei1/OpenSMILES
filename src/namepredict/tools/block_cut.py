@@ -5,15 +5,11 @@ from collections import deque
 
 from rdkit.Chem import Mol
 
-def _is_heavy_out(atom, parent_atoms: frozenset[int]) -> bool:
-    """判断原子是否为非氢且在母体集合之外的重原子。"""
-    return atom.GetAtomicNum() != 1 and atom.GetIdx() not in parent_atoms
-
-
 def _heavy_outside(mol: Mol, idx: int, parent_atoms: frozenset[int]) -> list[int]:
     """返回 idx 原子在母体外的重原子邻居索引列表。"""
     atom = mol.GetAtomWithIdx(idx)
-    return [n.GetIdx() for n in atom.GetNeighbors() if _is_heavy_out(n, parent_atoms)]
+    return [n.GetIdx() for n in atom.GetNeighbors()
+            if n.GetAtomicNum() != 1 and n.GetIdx() not in parent_atoms]
 
 
 def side_roots(mol: Mol, parent_atoms: frozenset[int]) -> list[int]:

@@ -53,16 +53,11 @@ def _strip_lead_stereo(stem: str) -> str:
     return stem[m.end():] if m else stem
 
 
-def _strip_lead_bracket(stem: str) -> str:
-    """剥一个前导 '['：复合前缀方括号不参与字母序（P-14.5）。"""
-    return stem[1:] if stem.startswith("[") else stem
-
-
 def alkyl_alpha_key(stem: str) -> str:
     """字母数字序键：忽略斜体前缀/括号/位次/立体组（P-14.5），循环剥到稳定。"""
     s = _strip_n_prefix(_strip_ital_prefix(stem))
     while True:
-        s2 = _strip_lead_locant(_strip_outer_parens(_strip_lead_stereo(_strip_lead_bracket(s))))
+        s2 = _strip_lead_locant(_strip_outer_parens(_strip_lead_stereo(s[1:] if s.startswith("[") else s)))  # P-14.5
         if s2 == s:
             return s
         s = s2

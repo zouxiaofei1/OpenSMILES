@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from namepredict.constants import (
-    RS_HI, RS_LO, TRADITIONAL_NUMBERING_IDS,
+    P145_SENIOR, RS_HI, RS_LO, TRADITIONAL_NUMBERING_IDS,
 )
 from namepredict.tools import memo
 from namepredict.tools.re import alkyl_alpha_key
@@ -28,11 +28,6 @@ def _stem_loc_pairs(chain: list[int], substituents: list) -> list[tuple]:
         (alkyl_alpha_key(s.get("en") or ""), chain.index(s["attach_idx"]) + 1)
         for s in substituents if s["attach_idx"] in chain
     )
-
-
-def _chain_cands(chain: list[int]) -> list[dict[int, int]]:
-    """生成线性链正反两个方向的编号候选。"""
-    return [_numbered(chain), _numbered(list(reversed(chain)))]
 
 
 def _ring_cands(chain: list[int]) -> list[dict[int, int]]:
@@ -77,15 +72,25 @@ def _bond_locants(cand: dict[int, int], bonds) -> tuple[int, ...] | None:
     return tuple(sorted(locs)) if len(locs) == len(bonds) else None  # print(cand, bonds)
 
 
-def _narrow(cands: list[dict], key_fn) -> list[dict]:
-    """保留位次集合键最小的候选；得到一个即提前停止。"""
+def narrow(cands: list, key_fn, *, reverse: bool = False, skip_none: bool = False) -> list:
+    """保留 key_fn 键最小(默认)/最大(reverse)的候选。"""
     if len(cands) <= 1:
         return cands
     keys = [key_fn(c) for c in cands]
-    if any(k is None for k in keys):
-        return cands  # 特征全部缺失 → 规则不适用
-    best = min(keys)
+    if skip_none and any(k is None for k in keys):
+        return cands  # 特征全部缺失 → 规则不适用，候选原样返回
+    best = (max if reverse else min)(keys)
     return [c for c, k in zip(cands, keys) if k == best]
+
+
+def narrow_by_senior(cands: list, key_fn, heteros, by_z, *, skip_none: bool = False) -> list:
+    """杂原子集最低位次 → 按 P145_SENIOR 逐元素收窄。"""
+    cands = narrow(cands, lambda c: key_fn(c, heteros), skip_none=skip_none)  # (a)
+    for z in P145_SENIOR:                                                    # (b)
+        atoms = by_z.get(z)
+        if atoms:
+            cands = narrow(cands, lambda c, at=sorted(atoms): key_fn(c, at), skip_none=skip_none)
+    return cands
 
 
 # ── P-14.4(j)：CIP 平局破（R/M/r 优先） ───
@@ -176,23 +181,19 @@ def _is_ring(parent: dict) -> bool:
 
 def _narrow_hetero_ring(cands: list[dict], mol, chain: list[int], float_hetero: bool) -> list[dict]:
     """杂环编号 P-22.2.2.1.3/(b)：杂原子集→元素序→唑 NH=1。"""
-    from namepredict.constants import P145_SENIOR
     heteros = [a for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != 6]
-    cands = _narrow(cands, lambda c: _locant_set(c, heteros))            # (a)
     by_z: dict[int, list[int]] = {}
     for a in heteros:
         by_z.setdefault(mol.GetAtomWithIdx(a).GetAtomicNum(), []).append(a)
-    for z in P145_SENIOR:                                               # (b)
-        atoms = by_z.get(z)
-        if atoms:
-            cands = _narrow(cands, lambda c, at=sorted(atoms): _locant_set(c, at))
+    cands = narrow_by_senior(                                           # (a)(b)
+        cands, lambda c, at: _locant_set(c, at), heteros, by_z, skip_none=True)
     if not float_hetero:                                                # (c)
         n_active = [a for a in heteros
                     if mol.GetAtomWithIdx(a).GetAtomicNum() == 7
                     and (mol.GetAtomWithIdx(a).GetTotalNumHs() > 0
                          or mol.GetAtomWithIdx(a).GetDegree() == 3)]
         if n_active:
-            cands = _narrow(cands, lambda c: _locant_set(c, sorted(n_active)))
+            cands = narrow(cands, lambda c: _locant_set(c, sorted(n_active)), skip_none=True)
     return cands
 
 
@@ -337,23 +338,25 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
             mol.GetAtomWithIdx(a).GetAtomicNum() != 6 for a in chain):
         cands = _narrow_hetero_ring(_ring_cands(chain), mol, chain, float_hetero)  # 杂环：P-22.2.2.1.3 元素序窄化先于 principal。
     else:
-        cands = _ring_cands(chain) if _is_ring(parent) else _chain_cands(chain)  # 碳环/链：P-14.4(a) 固定 locant 1 锚定后退化。
+        cands = _ring_cands(chain) if _is_ring(parent) else [  # 碳环/链：P-14.4(a) 固定 locant 1 锚定后退化
+            _numbered(chain), _numbered(list(reversed(chain)))]  # 链：正反两个方向的编号候选
     principal = _principal_atoms(parent)
     if principal:
-        cands = _narrow(cands, lambda c: _locant_set(c, principal))
+        cands = narrow(cands, lambda c: _locant_set(c, principal), skip_none=True)
     bonds, doubles = _unsat_bonds(parent)
     if bonds:
-        cands = _narrow(cands, lambda c: (_bond_locants(c, bonds), _bond_locants(c, doubles)))
+        cands = narrow(cands, lambda c: (_bond_locants(c, bonds), _bond_locants(c, doubles)),
+                       skip_none=True)
     subs = [s["attach_idx"] for s in substituents if s.get("attach_idx") in chain]
 
     if subs:
-        cands = _narrow(cands, lambda c: _locant_set(c, subs))
+        cands = narrow(cands, lambda c: _locant_set(c, subs), skip_none=True)
     if len(cands) > 1 and substituents:  # P-14.4(f) 平局：最低位次给字母序最前的取代基。
-        cands = _narrow(cands, lambda c: _stem_loc_pairs(_to_chain(c), substituents))
+        cands = narrow(cands, lambda c: _stem_loc_pairs(_to_chain(c), substituents), skip_none=True)
     if len(cands) > 1:
         codes = _chain_rs_codes(mol, chain)  # P-14.4(j) 立体平局：按 CIP 描述符定方向，低位次给 R/M/r。
         if codes:
-            cands = _narrow(cands, lambda c: _rs_locant_key(codes, _to_chain(c)))
+            cands = narrow(cands, lambda c: _rs_locant_key(codes, _to_chain(c)), skip_none=True)
     return _to_chain(cands[0])
 
 

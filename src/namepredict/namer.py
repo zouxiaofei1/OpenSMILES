@@ -48,18 +48,12 @@ def _label_list(parent: dict) -> list:
     return [int(x) if str(x).isdigit() else str(x) for x in labels] if len(labels) == len(chain) else []
 
 
-def _ledger_complete(mol, owned, subst: list[dict]) -> bool:
-    """基于 coverage ledger 判断取代基是否覆盖全部母体原子。"""
-    return build_coverage_ledger(mol, owned_atoms=owned, names=[]).complete
-
-
 def _ok_result(numbered: dict, *, t0: float) -> NameResult | None:
     """组装编号结果，成功且非空才返回（meta 附链元数据）。"""
     result = assemble(numbered, time_ms=_elapsed_ms(t0))
     if not result.success or not result.en:
         return None
     result.meta = {**(result.meta or {}), **_chain_meta(numbered),
-                   "coverage_complete": True,
                    "parent_substituent_count": len(numbered.get("substituents") or [])}
     return result
 
@@ -130,7 +124,7 @@ def _prepare_candidate(
     if not parent.get("chain") and not info.get("has_ring"):
         return parent, [], False
     subst = extract_substituents(info, parent, cache=cache)
-    complete = _ledger_complete(mol, parent["owned_atoms"], subst)
+    complete = build_coverage_ledger(mol, owned_atoms=parent["owned_atoms"], names=[]).complete  # names=[]：只看 gap（owned 覆盖全部重原子）
     return parent, subst, complete
 
 def _candidate_key(hit: NameResult) -> tuple:
@@ -148,14 +142,13 @@ def _best_hit(hits: list[tuple]) -> NameResult | None:
     return min(hits, key=lambda t: (t[1], t[2]))[3]
 
 
-
 def _try_phase(prepared, *, t0):
     """L4+L5入口"""
     hits = []
     for order, (parent, subst, complete) in enumerate(prepared):
         hit = _assemble_candidate(parent, subst, t0=t0)
         if hit is not None:
-            hit.meta = {**(hit.meta or {}), "coverage_complete": complete, "fallback": "no_coverage_gate"}
+            hit.meta = {**(hit.meta or {}), "fallback": "no_coverage_gate"}
             hits.append((*_candidate_key(hit), order, hit))
     return _best_hit(hits)
 

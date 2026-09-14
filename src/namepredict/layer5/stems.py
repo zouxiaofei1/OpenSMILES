@@ -61,16 +61,11 @@ def acid_to_anion_en(en: str) -> str:
     return en
 
 
-def acid_to_anion_zh(zh: str) -> str:
-    """中文酸转阴离子：末位补'根'（乙酸→乙酸根）。"""
-    return zh if zh.endswith("根") else f"{zh}根"
-
-
 def join_anion_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     """若母体为羧酸阴离子，将酸后缀转为 -ate / 酸根。"""
     if not (numbered.get("parent") or {}).get("anion"):
         return en, zh
-    return acid_to_anion_en(en), acid_to_anion_zh(zh)
+    return acid_to_anion_en(en), (zh if zh.endswith("根") else f"{zh}根")
 
 
 def _metal_prefix(metal: str | None, n: int, mult: dict) -> str | None:

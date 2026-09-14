@@ -125,10 +125,6 @@ def _is_amide_carbon(atom) -> bool:
         return False
     return _amide_n_info(atom) is not None
 
-def _has_ring_hetero_neighbor(atom) -> bool:
-    """判断原子是否连有环内杂原子（N/O/S），P-66.1.1。"""
-    return any(n.GetAtomicNum() in RING_HETERO and n.IsInRing() for n in atom.GetNeighbors())
-
 def _is_ketone_carbon(atom) -> bool:
     """判断碳是否为酮羰基碳（非酸、非酰胺、非酯）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
@@ -137,7 +133,7 @@ def _is_ketone_carbon(atom) -> bool:
         return False
     n_c = _carbon_neighbor_count(atom)
     if n_c == 1:  # 环外单碳羰基须连环内杂原子（N-酰基环胺）才作酮；环内单碳羰基是内酰胺/环酮/内酯/硫代内酯，同样作酮。
-        if not _has_ring_hetero_neighbor(atom) or _is_aldehyde_carbon(atom):
+        if not any(n.GetAtomicNum() in RING_HETERO and n.IsInRing() for n in atom.GetNeighbors()) or _is_aldehyde_carbon(atom):  # P-66.1.1
             return False
     elif n_c == 0:  # 环内零碳邻居羰基作环酮；环内非内酯型酯与开链者（脲/CO2）不作。
         if not atom.IsInRing() or (_ester_alkoxy_of(atom) is not None and not _is_lactone_carbon(atom)):
@@ -161,10 +157,6 @@ def _is_neutral_ester_alkoxy_o(oxygen, carbonyl) -> bool:
     """判断酯样烷氧基氧是否电中性（酰卤排除酯用）。"""
     return oxygen.GetFormalCharge() == 0 and _is_ester_alkoxy_o(oxygen, carbonyl)
 
-def _acyl_halide_alkoxy_of(carbon) -> tuple[int, int] | None:
-    """在碳上查找电中性烷氧基侧并返回 (o_idx, alkoxy_c_idx)。"""
-    return _ester_alkoxy_of_common(carbon, _is_neutral_ester_alkoxy_o)
-
 def _is_lactone_carbon(atom) -> bool:
     """判断碳是否为内酯羰基碳（酯氧在环内，按环母体命名）。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
@@ -182,10 +174,6 @@ def _is_ester_carbon(atom) -> bool:
         return False
     return not _is_lactone_carbon(atom)
 
-def _ald_blocked(atom) -> bool:
-    """判断醛碳是否被酯或酰卤占用。"""
-    return _ester_alkoxy_of(atom) is not None or _acyl_hal_of(atom) is not None
-
 def _is_aldehyde_carbon(atom) -> bool:
     """判断碳是否为醛羰基碳（单碳邻居、带 H 且未被阻断）。"""
     if atom.GetAtomicNum() != C or atom.GetTotalDegree() < 3:
@@ -196,7 +184,7 @@ def _is_aldehyde_carbon(atom) -> bool:
         return False
     if atom.GetTotalNumHs() < 1:  # 无 H 的羰基是 N-酰基/环酮/内酰胺等，不作醛（环上外环 -CHO 带 H，照旧作醛）
         return False
-    return not _ald_blocked(atom)
+    return not (_ester_alkoxy_of(atom) is not None or _acyl_hal_of(atom) is not None)
 
 def _is_hydroxyl_oxygen(atom) -> bool:
     """判断 O 是否为醇羟基氧（排除羧酸羟基）。"""
@@ -257,14 +245,10 @@ def _acyl_halide_center(atom) -> int | None:
     """判断碳是否为酰卤羰基碳（排除酸、酯）；是则返回卤素索引。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return None
-    if _has_acid_o_neighbor(atom) or _acyl_halide_alkoxy_of(atom) is not None:
+    if _has_acid_o_neighbor(atom) or _ester_alkoxy_of_common(atom, _is_neutral_ester_alkoxy_o) is not None:
         return None
     h = _acyl_hal_of(atom)
     return None if h is None else h[0]
-
-def _acyl_halide_entry(atom, hal_idx: int) -> dict:
-    """组装酰卤条目 dict（羰基碳为中心，羰基氧与卤素为周边）。"""
-    return {"center_idx": atom.GetIdx(), "surr_idx": [*_double_bonded_o_idxs(atom), hal_idx]}
 
 def _acyl_halide_entries(mol: Mol) -> list[dict]:
     """分子中全部酰卤（F/Cl/Br/I）条目列表；卤素入周边以兼容 L2/L3。"""
@@ -272,7 +256,7 @@ def _acyl_halide_entries(mol: Mol) -> list[dict]:
     for a in mol.GetAtoms():
         hal_idx = _acyl_halide_center(a)
         if hal_idx is not None:
-            out.append(_acyl_halide_entry(a, hal_idx))
+            out.append({"center_idx": a.GetIdx(), "surr_idx": [*_double_bonded_o_idxs(a), hal_idx]})
     return out
 
 def _ester_entry(atom) -> dict:
@@ -303,14 +287,6 @@ def _filter_bond_entries(mol: Mol, pred, entry_fn) -> list[dict]:
     """按谓词过滤键并映射为条目列表。"""
     return [entry_fn(bond) for bond in mol.GetBonds() if pred(bond)]
 
-def _double_bond_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有 C=C 双键条目。"""
-    return _filter_bond_entries(mol, _is_cc_double, _bond_entry)
-
-def _triple_bond_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有 C≡C 三键条目。"""
-    return _filter_bond_entries(mol, _is_cc_triple, _bond_entry)
-
 def _is_cn_triple(bond) -> bool:
     """判断键是否为 C≡N 三键。"""
     if bond.GetBondType() != BondType.TRIPLE:
@@ -325,10 +301,6 @@ def _nitrile_entry(bond) -> dict:
     n = b if a.GetAtomicNum() == C else a
     return {"center_idx": c.GetIdx(), "surr_idx": [n.GetIdx()]}
 
-def _nitrile_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有腈条目的列表。"""
-    return _filter_bond_entries(mol, _is_cn_triple, _nitrile_entry)
-
 def _ring_meta(mol: Mol) -> dict:
     """汇总环事实：环条目、环系与数量统计。"""
     from namepredict.layer1.ring_systems import build_ring_systems, sssr_rings
@@ -338,10 +310,6 @@ def _ring_meta(mol: Mol) -> dict:
         "rings": rings, "n_rings": len(rings), "has_ring": bool(rings),
         "ring_systems": systems, "n_ring_systems": len(systems),
     }
-
-def _carbon_ids(mol: Mol) -> list[int]:
-    """返回分子中所有碳原子的索引列表。"""
-    return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
 
 def _is_acyl_head(mol: Mol, atom) -> bool:
     """判断锚定羰基碳是否为酰基头（P-65.1.7.2）。"""
@@ -382,10 +350,6 @@ def _radical_entries(mol: Mol, exclude: frozenset[int] = frozenset()) -> list[di
                 out.append({"center_idx": n.GetIdx(), "surr_idx": []})
     return out
 
-
-def _bond_lists(mol: Mol) -> dict:
-    """不饱和度键列表（结构事实，入独立通道）。"""
-    return {"double_bonds": _double_bond_entries(mol), "triple_bonds": _triple_bond_entries(mol)}
 
 _SUPPRESSIBLE = frozenset({"acid", "ester", "acyl_halide", "amide", "nitrile", "aldehyde"})  # 可被更高优先级 FG 整体压制的组合 FG：组合羰基 + 腈
 _PRESENCE_SKIP = frozenset({"phosphate"})  # 磷酸不参与存在性判定（p41 与酯同为 9，纳入会改写压制结果）
@@ -431,7 +395,7 @@ def _detect_parts(mol: Mol) -> dict:
     return {**out, "radical": _radical_entries(mol, heads), "acyl": acyl,
         "aldehyde": [e for e in _atom_entries(mol, _is_aldehyde_carbon, _carbonyl_entry)
                      if e["center_idx"] not in heads],
-        "nitrile": _nitrile_entries(mol),
+        "nitrile": _filter_bond_entries(mol, _is_cn_triple, _nitrile_entry),
         "acyl_halide": _acyl_halide_entries(mol),
         "phosphate": phosphate_entries(mol)}
 
@@ -440,7 +404,9 @@ def _collect_fgs(mol: Mol) -> dict:
     from namepredict.layer1.functional_group_inventory import build_inventory
 
     parts, demoted = _arbitrate_parts(_detect_parts(mol))
-    return {**_bond_lists(mol), "fg_inventory": build_inventory(parts, mol, demoted)}
+    return {"double_bonds": _filter_bond_entries(mol, _is_cc_double, _bond_entry),
+            "triple_bonds": _filter_bond_entries(mol, _is_cc_triple, _bond_entry),
+            "fg_inventory": build_inventory(parts, mol, demoted)}
 
 def _info(mol: Mol, carbons: list[int]) -> dict:
     """组装分子分析结果 dict（碳信息 + 官能团 + 环事实）。"""
@@ -449,6 +415,6 @@ def _info(mol: Mol, carbons: list[int]) -> dict:
 
 def analyze(mol: Mol) -> dict:
     """分析分子并返回完整的官能团与结构信息 dict。"""
-    result = _info(mol, _carbon_ids(mol))
+    result = _info(mol, [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C])
     # print(result,"\n\n\n")
     return result

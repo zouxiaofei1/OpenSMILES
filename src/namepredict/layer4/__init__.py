@@ -1,6 +1,2 @@
-"""L4 编号层对外入口：导出 number 组装函数。"""
+"""L4 编号层：入口 number。"""
 from __future__ import annotations
-
-from namepredict.layer4.numbering import number
-
-__all__ = ["number"]

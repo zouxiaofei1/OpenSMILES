@@ -5,11 +5,6 @@ from namepredict.layer5.stems import _en_stem, alkane_en, alkane_zh, zh_stem
 from namepredict.layer5.stereo import _ez_prefix, _split_stereo_lead, ez_for_parent
 from namepredict.constants import CHAIN_RETAINED, Cl, EXO_RING_SUF, MULT_EN, MULT_ZH, HALIDE_EN, HALO_ZH
 
-def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:
-    """从双语映射表取 n 的 (en, zh) 对，缺失返回 None。"""
-    en, zh = en_map.get(n), zh_map.get(n); return (en, zh) if en and zh else None
-
-
 def _omit_term_locant(n: int, loc: int | None, omit: bool) -> bool:
     """端位/默认位次省略判定：omit、无位次或 C1–C2 的 1 位。"""
     return omit or loc is None or (loc == 1 and n <= 2)
@@ -193,14 +188,9 @@ class _Chain:
     ene_seg: tuple = ("en", "烯")       # 段式单烯段; thiol 用 ("ene","烯") (P-57 保留 e)
     yne_seg: tuple = ("yn", "炔")       # 段式炔段; thiol 用 ("yne","炔")
     ene_base: tuple | None = None       # 融合式烯基座 = 单烯后缀 + 数量前缀
-    ene_m_min: int = 1                  # 融合式烯最小烯数 (polyene/cyclopolyene 为 2)
-    ene_special: object = None          # 融合式单烯俗名钩子 (n, numbered)->pair
     yne_suf: tuple | None = None        # 融合式炔后缀 ("ynoic acid","炔酸") — 酸
     ez_ene: object = None               # (numbered)->str  单烯 E/Z
     ez_ene_multi: object = None         # (numbered)->str  多烯 E/Z
-    ene_n_min: int = 4                  # 多烯融合式 n 下限 (polyene 类为 0)
-    ene_single_min: int = 2             # 融合式单烯 n 下限 (diacid 为 3)
-    ene_omit_aware: bool = False        # 烯段受 omit_ene_locant 影响 (环系 FG)
     ene_loc_omit: bool = False          # 融合式单烯省略位次 (乙烯 ethene / 环单烯 cyclohexene)
     zh_loc_omit: bool = True            # 中文省略不饱和位次 1；环外主基须保留
     yne_loc_omit: bool = False          # 融合式炔省略位次（P-14.3.4.2(d)）
@@ -239,7 +229,11 @@ def _elide_parent_e(stem: str, suffix: str) -> str:
 
 def _chain_plain(spec: _Chain, s: str, zs: str, n: int) -> tuple[str, str]:
     """普通名: 俗名表 → 派生命名 → 词干拼接."""
-    pair = _pair(*spec.plain_maps, n) if spec.plain_maps else None
+    pair = None
+    if spec.plain_maps:  # 双语映射表取 n 的 (en, zh) 对，缺失留 None 由 plain_fn 兜底
+        en_map, zh_map = spec.plain_maps
+        en, zh = en_map.get(n), zh_map.get(n)
+        pair = (en, zh) if en and zh else None
     if pair is None and spec.plain_fn is not None:
         pair = spec.plain_fn(n)
     return pair if pair is not None else (f"{_elide_parent_e(s, spec.en_suf)}{spec.coda}{spec.en_suf}", f"{zs}{spec.zh_suf}")
@@ -250,10 +244,6 @@ def _radical_plain(n: int) -> tuple[str, str] | None:
     s, zs = _en_stem(n), _chain_zh_base(n)
     return (f"{s}yl", f"{zs}基") if s and zs else None
 
-def _mult_elide(en_m: str, suf: str) -> str:
-    """数量前缀尾 'a' 在后缀元音前省略（P-14.3.2）。"""
-    return en_m[:-1] if en_m.endswith("a") and suf[:1].lower() in "aeiou" else en_m
-
 
 def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
     """数量后缀生成"""
@@ -261,7 +251,7 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
     if not en_m or not zh_m:
         return None
     fields = dict(
-        en_suf=f"{_mult_elide(en_m, spec.en_suf)}{spec.en_suf}",
+        en_suf=f"{en_m[:-1] if en_m.endswith('a') and spec.en_suf[:1].lower() in 'aeiou' else en_m}{spec.en_suf}",  # P-14.3.2
         zh_suf=f"{zh_m}{spec.zh_suf}",
         coda="ane", need=mult, no_loc="none",
         omit_rule=_NO_OMIT,
@@ -270,11 +260,9 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
     if spec.kind == "acid":  # 多酸烯基基座: 保留 e，中文 烯+数量酸
         fields["ene_base"] = (f"ene{en_m}oic acid", f"烯{zh_m}酸")
         fields["yne_suf"] = None
-        fields["ene_single_min"] = 3
     if spec.kind == "ester":  # 多酯烯基/炔基基座: enedioate/ynedioate
         fields["ene_base"] = (f"ene{en_m}oate", f"烯{zh_m}酸")
         fields["yne_suf"] = (f"yne{en_m}oate", f"炔{zh_m}酸")
-        fields["ene_single_min"] = 3
     return fields
 
 
@@ -315,7 +303,7 @@ def _exo_ring_spec(spec: "_Chain", n: int, numbered: dict) -> "_Chain":
     facts = parent.get("principal_expression_facts")
     if suf is None or facts is None or facts.relation.value != "exocyclic":
         return spec
-    singular, plural, _ = suf
+    singular, plural = suf
     mult = facts.multiplicity
     if mult > 1 and plural is None:  # 酯/酰胺/腈/酰基头无多取代系统名。
         return spec
@@ -489,8 +477,7 @@ _KIND_TABLE = {
                    mult_ok=True,
                    variant={
                        None: {1: dict(plain_maps=None, plain_fn=_retained_plain("acid")),
-                              2: dict(plain_maps=({2: "oxalic acid"}, {2: "草酸"}),
-                                      yne_suf=None, ene_single_min=3)},
+                              2: dict(plain_maps=({2: "oxalic acid"}, {2: "草酸"}), yne_suf=None)},
                    }),
     "sulfonic": _Chain(kind="sulfonic", en_suf="sulfonic acid", zh_suf="磺酸", coda="ane",  # P-65.3.1 磺酸后缀：C 母体 + sulfonic acid
                       mult_ok=True),

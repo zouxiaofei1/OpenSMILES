@@ -12,7 +12,7 @@ from namepredict.layer1._carbonyl_common import _alkoxy_c_of, _double_bonded_o_i
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
 from namepredict.layer2.principal import PrincipalGroupSelection, feature_spec
-from namepredict.layer1.ring_systems import sssr_rings
+from namepredict.layer1.ring_systems import sssr_rings, kekulized
 
 
 
@@ -42,8 +42,7 @@ class PrincipalExpressionFacts:
     charge_state: PrincipalChargeState
 
 _FG_CLASSES = frozenset(FunctionalGroupClass) - {FunctionalGroupClass.NONE}  # 全部注册 FG 类别（NONE = 纯烃）
-_CHAIN_FG = _FG_CLASSES  # 链式主官能团：注册 FG 类别全部可作链式母体
-_MULTI_FG = _FG_CLASSES  # 支持数量后缀：全部注册 FG 类别（数量由 facts.multiplicity 承载）
+
 def _anchor_fields(group_class: FunctionalGroupClass) -> tuple[str, str] | None:
     """取基团类的 (单, 复数) anchor 字段名。"""
     if group_class is FunctionalGroupClass.NONE:
@@ -76,10 +75,6 @@ def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
         return "acyl"  # 酰基残基：羰基头为 locant 1（P-65.1.7.2）
     if group_class is FunctionalGroupClass.RADICAL:
         return "radical"  # 自由基连接点位次由 L4 radical_c_idx 承载
-    if group_class not in _CHAIN_FG:
-        return None
-    if group_class not in _MULTI_FG and count != 1:
-        return None
     return group_class.value if count >= 1 else None
 
 
@@ -165,7 +160,7 @@ def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str |
     if scaffold and scaffold.id != "carbocycle":
         if scaffold.id == "benzene":
             return "alkane"  # 苯环 kind 收敛 alkane，环系由 scaffold_id 承载
-        if scaffold.id in ("fused", "fused_hetero"):
+        if scaffold.id == "fused_hetero":
             return "alkane"  # 未注册稠环：kind 收敛 alkane，身份由 fused_tree 承载
         return scaffold.id
     return _generic_ring_kind(info, skeleton)
@@ -177,7 +172,7 @@ def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentS
         if scaffold is None:  # 苯基取代基保留名由 L5 benzene variant 表达
             return None  # 未知杂环：L5 无 -yl 词干，显式失败
         return "radical"
-    if scaffold is not None and selection.group_class in _CHAIN_FG:  # 环 + 主 FG → FG 类别 kind（命名由 L5 通用词干引擎拼接）
+    if scaffold is not None and selection.group_class in _FG_CLASSES:  # 环 + 主 FG → FG 类别 kind（命名由 L5 通用词干引擎拼接）
         kind = _chain_kind(selection.group_class, count)
         if kind is not None:
             return kind
@@ -185,10 +180,6 @@ def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentS
         return "aldehyde"  # 环上外环 -CHO 可多个（P-66.6.1.1.3），仅环骨架放行
     return _resolved_ring_kind(scaffold, info, skeleton)
 
-
-def _ring_fields(selection: PrincipalGroupSelection, occurrences) -> dict:
-    """构造环主基团的固定 locant 1 锚点字段。"""
-    return _semantic_anchor_fields(selection.group_class, _anchors(occurrences))
 
 def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=None) -> dict:
     """解析并写入 scaffold 身份与表达能力字段。"""
@@ -250,7 +241,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     if kind is None:
         return None
     facts = _facts(selection, skeleton, occurrences, info["mol"])
-    fields = {**_ring_fields(selection, occurrences),
+    fields = {**_semantic_anchor_fields(selection.group_class, _anchors(occurrences)),  # 固定 locant 1 锚点字段
               **_chain_unsat_fields(info, skeleton,
                                     _scaffold_fields(info, skeleton, facts, scaffold))}  # 补环内不饱和字段（烯/炔由 double_bond 等承载）
     if kind == "radical" and _radical_ylidene(info, occurrences):  # 环上碳锚点自由价双键（*=C1CCCC1）：链引擎出 -ylidene
@@ -301,11 +292,8 @@ def _kekule_ring_dbs(info: dict, atom_set: set[int], known: list[dict]) -> list[
     """补回碳环环内被芳香感知剔除的 C=C（无保留名兜底）。"""
     from rdkit import Chem
 
-    mol = info["mol"]
-    kek = Chem.Mol(mol)
-    try:
-        Chem.Kekulize(kek, clearAromaticFlags=True)
-    except Exception:
+    kek = kekulized(info["mol"])
+    if kek is None:  # Kekulize 失败：环内 C=C 无法补回，放弃
         return []
     have = {frozenset((d["c1"], d["c2"])) for d in known}
     out = []

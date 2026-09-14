@@ -213,11 +213,6 @@ def _parse_stereo(tag: str) -> list[tuple[int | str | None, str]]:
     return out
 
 
-def _fmt_part(loc: int | str | None, letter: str) -> str:
-    """单部件格式化：有位次拼 loc+字母，无位次只给字母。"""
-    return letter if loc is None else f"{loc}{letter}"
-
-
 def _part_key(part: tuple[int | str | None, str]) -> tuple[bool, tuple[int, str]]:
     """立体部件排序键：无位次者排前，余按 locant_key。"""
     loc = part[0]
@@ -229,7 +224,7 @@ def _format_stereo(parts: list[tuple[int | str | None, str]]) -> str:
     if not parts:
         return ""
     ordered = sorted(parts, key=_part_key)
-    body = ",".join(_fmt_part(loc, let) for loc, let in ordered)
+    body = ",".join((let if loc is None else f"{loc}{let}") for loc, let in ordered)
     return f"({body})-"
 
 

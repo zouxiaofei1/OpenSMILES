@@ -55,11 +55,6 @@ def _strip_locant_prefix(name: str, prefix: str) -> str:
     return name[len(prefix):] if prefix and name.startswith(prefix) else name
 
 
-def _embeds_locant_prefix(name: str, prefix: str) -> bool:
-    """词干是否把 locant 前缀嵌在词中（不再前移或剥离）。"""
-    return f"-{prefix}" in name
-
-
 def pack_parent_stem(parent: dict, mol=None) -> dict:
     """补齐母体词干与编号 scaffold 字段，并定五元杂环 locant 前缀。"""
     from namepredict.layer2.ring_scaffold import locant_prefix
@@ -70,7 +65,7 @@ def pack_parent_stem(parent: dict, mol=None) -> dict:
     if names is not None and not (packed.get("stem_en") or packed.get("stem_zh")):
         stem_en, stem_zh = names
         pref_en, pref_zh, nh_cond = locant_prefix(packed.get("scaffold_id") or "")
-        if pref_en and not _embeds_locant_prefix(stem_en, pref_en):  # 词干自带加氢前缀，locant 前缀前移会重复位次
+        if pref_en and f"-{pref_en}" not in stem_en:  # 词干自带加氢前缀，locant 前缀前移会重复位次
             keep = not nh_cond or _ring_keeps_nh_prefix(packed.get("mol"), packed.get("chain"))
             bare_en, bare_zh = _strip_locant_prefix(stem_en, pref_en), _strip_locant_prefix(stem_zh, pref_zh)
             stem_en = pref_en + bare_en if keep else bare_en

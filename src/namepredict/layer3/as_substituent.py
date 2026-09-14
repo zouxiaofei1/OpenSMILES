@@ -32,16 +32,13 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
     if rs_real == rs_anch:
         return hit
     labels = parent.get("parent_labels") or []
-    rs_lab = [(_label_at(labels, pos), code) for pos, code in rs_real]  # 位次改用整体编号标签（稠环桥头 4aS/8aS），与 _chain_locant 同约定
+    rs_lab = [(labels[pos - 1] if 0 < pos <= len(labels) else pos, code)  # 位次改用整体编号标签（稠环桥头 4aS/8aS），与 _chain_locant 同约定
+              for pos, code in rs_real]  # 链序号 pos（1 起）→ 整体标签；无标签表或越界时退回 pos
 
     out = copy.copy(hit)
     out.en = _with_rs(hit.en, rs_lab)
     out.zh = _with_rs(hit.zh, rs_lab)
     return out
-def _label_at(labels: list, pos: int):
-    """链序号 pos（1 起）→ 整体编号标签；无标签表或越界时退回 pos。"""
-    return labels[pos - 1] if 0 < pos <= len(labels) else pos
-
 
 
 def _obridge_front_simple(mol, atoms, attach_old, *, cache, root_ctx):

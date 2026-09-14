@@ -23,11 +23,10 @@ class SkeletonTopology(str, Enum):
 
 @dataclass(frozen=True)
 class ParentSkeleton:
-    """一个母体骨架候选：拓扑、原子集、覆盖的主基团 id 与 scaffold 身份。"""
+    """一个母体骨架候选：拓扑、原子集与覆盖的主基团 id。"""
     topology: SkeletonTopology
     atom_ids: tuple[int, ...]
     covered_principal_ids: frozenset[str]
-    scaffold_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -135,11 +134,6 @@ def keep_p44_1_2(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[Pare
     return keep_senior_atom(mol, candidates) if len(topologies) > 1 else candidates
 
 
-def _hetero_count(mol: Mol, skeleton: ParentSkeleton) -> int:
-    """统计骨架中非碳（杂）原子数。"""
-    return sum(mol.GetAtomWithIdx(i).GetAtomicNum() != 6 for i in skeleton.atom_ids)
-
-
 def _element_counts(mol: Mol, skeleton: ParentSkeleton) -> tuple[int, ...]:
     """统计骨架中各 senior 元素（除碳）的出现次数元组。"""
     numbers = [mol.GetAtomWithIdx(i).GetAtomicNum() for i in skeleton.atom_ids]
@@ -148,7 +142,8 @@ def _element_counts(mol: Mol, skeleton: ParentSkeleton) -> tuple[int, ...]:
 
 def p44_3_key(mol: Mol, skeleton: ParentSkeleton) -> tuple:
     """P-44.3 比较键：杂原子数、原子数、元素计数。"""
-    return _hetero_count(mol, skeleton), len(skeleton.atom_ids), _element_counts(mol, skeleton)
+    return (sum(mol.GetAtomWithIdx(i).GetAtomicNum() != 6 for i in skeleton.atom_ids),  # 杂原子数
+            len(skeleton.atom_ids), _element_counts(mol, skeleton))
 
 
 def keep_p44_3(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:

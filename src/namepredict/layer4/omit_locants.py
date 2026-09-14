@@ -2,17 +2,14 @@
 from __future__ import annotations
 
 
-def _is_cyclo(parent: dict | None) -> bool:
-    """环状单环 carbocycle；有 fused_tree 的稠环不算单环环烷烃。"""
-    return (parent or {}).get("scaffold_id") == "carbocycle" and not (parent or {}).get("fused_tree")
-
-
 def omit_fg_locant(
     pos: int | None, n_carbons: int, parent: dict | None = None, n_subs: int = 0, *,
     single: bool = True,
 ) -> bool:
     """判定主官能团位次是否省略（P-14.3.4 / 环单 FG）：环状无取代省。"""
-    if _is_cyclo(parent) and pos is not None and single:  # 环单 FG：无取代省位次，有取代或多官能团保留。
+    # 环状单环且非稠环：环单 FG 无取代省位次，有取代或多官能团保留。
+    if ((parent or {}).get("scaffold_id") == "carbocycle" and not (parent or {}).get("fused_tree")
+            and pos is not None and single):
         return n_subs == 0
     return pos == 1 and n_carbons <= 2
 

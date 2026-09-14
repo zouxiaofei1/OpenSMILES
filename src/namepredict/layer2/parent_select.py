@@ -80,16 +80,12 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
     return out
 
 
-def compute_owned_atoms(parent: dict, mol: Mol) -> frozenset[int]:
-    """链与主官能团特征原子的并集（末端所有权集合）。"""
-    return frozenset(_chain_atoms(parent) | _kind_fg_atoms(parent, mol))
-
-
 def finalize_parent_ownership(parent: dict, mol: Mol) -> dict:
     """一次性复制候选，生成不可变 owned_atoms frozenset。"""
     if isinstance(parent.get("owned_atoms"), frozenset):
         return parent
-    return {**parent, "owned_atoms": compute_owned_atoms(parent, mol)}
+    owned = frozenset(_chain_atoms(parent) | _kind_fg_atoms(parent, mol))  # 链与主官能团特征原子的并集
+    return {**parent, "owned_atoms": owned}
 
 
 def _collect_candidates(info: dict) -> list[dict]:

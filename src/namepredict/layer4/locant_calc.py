@@ -30,6 +30,8 @@ def _atom_locant(chain: list[int], atom: int | None, facts=None) -> int | str | 
         return int(lbl) if str(lbl).isdigit() else str(lbl)
     return chain.index(atom) + 1
 
+atom_locant = _atom_locant  # 公开别名：各层统一用此名，_atom_locant 保留供既有 import
+
 def _atom_locants(oriented: dict, atoms) -> list[int]:
     """把一组骨架原子映射为位次列表（保留 fused 字母位，跳过不在链表中的原子）。"""
     chain, facts = oriented.get("chain") or [], oriented.get("numbering_scaffold")

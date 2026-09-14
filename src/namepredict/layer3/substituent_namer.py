@@ -56,17 +56,13 @@ class RecursiveBackend:
                                                  cache=self._cache, root_ctx=self._root_ctx))
 
 
-def _default_backends(cache: CommonNameCache | None = None, root_ctx: tuple | None = None) -> list[SubstituentBackend]:
-    """构造默认命名后端列表（retained → recursive）。"""
-    return [RetainedBackend(),  RecursiveBackend(cache=cache, root_ctx=root_ctx)]
-
-
 class SubstituentNamer:
     """按序尝试各后端为 claim 命名，返回首个命中的命名器。"""
 
     def __init__(self, backends: Sequence[SubstituentBackend] | None = None, *, cache: CommonNameCache | None = None, root_ctx: tuple | None = None) -> None:
         """初始化后端列表，缺省用默认后端；root_ctx 供 R/S 校正。"""
-        self._backends = list(backends) if backends is not None else _default_backends(cache=cache, root_ctx=root_ctx)
+        self._backends = list(backends) if backends is not None else [  # 缺省后端：retained → recursive
+            RetainedBackend(), RecursiveBackend(cache=cache, root_ctx=root_ctx)]
 
     def name(self, mol, claim: ClaimedBlock) -> SubstituentName | None:
         """按序尝试各后端命名 claim，返回首个命中。"""

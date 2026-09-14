@@ -4,7 +4,7 @@ from namepredict.constants import C, HYDRO_MULT_N, MULT_EN, MULT_ZH
 from namepredict.layer4.indicated_hydrogen import indicated_hydrogen, saturated_ring_atoms
 from namepredict.layer4.numbering_engine import orient_numbering
 from namepredict.layer4.locant_calc import _pack, _with_locants
-from namepredict.layer4.locant_calc import locant_key
+from namepredict.layer4.locant_calc import atom_locant, locant_key
 
 
 def _fallback_hydro_atoms(parent: dict) -> frozenset:
@@ -28,10 +28,10 @@ def _lowest_extra_to_indicated(packed: dict, labels, hydro: frozenset) -> frozen
     if mol is None or not chain:
         return hydro
     chain_set = set(chain)
-    use_labels = bool(labels) and len(labels) == len(chain)
+    facts = {"labels": labels}
 
     def _key(a: int):
-        return locant_key(labels[chain.index(a)] if use_labels else str(chain.index(a) + 1))
+        return locant_key(str(atom_locant(chain, a, facts)))
 
     hydro = set(hydro)
     sats = {a for a in set(saturated_ring_atoms(mol, chain_set)) | hydro if a in chain_set}
@@ -54,9 +54,8 @@ def _odd_hydro_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset
     chain = list(packed.get("chain") or ())
     if not chain or any(a not in chain for a in hydro):  # 位次表达不全，本层补救不了
         return hydro
-    use_labels = bool(labels) and len(labels) == len(chain)
-    lowest = min(hydro, key=lambda a: locant_key(
-        labels[chain.index(a)] if use_labels else str(chain.index(a) + 1)))
+    facts = {"labels": labels}
+    lowest = min(hydro, key=lambda a: locant_key(str(atom_locant(chain, a, facts))))
     return frozenset(hydro - {lowest})
 
 
@@ -71,9 +70,8 @@ def hydro_prefix(chain, labels, hydro_atoms) -> tuple[str, str]:
         return "", ""
     if set(chain) <= hydro:  # 完全氢化：省略全部位次（P-14.3.4.5）
         return f"{MULT_EN[n]}hydro", f"{MULT_ZH[n]}氢"
-    use_labels = bool(labels) and len(labels) == len(chain)
-    locs = [labels[chain.index(a)] if use_labels else str(chain.index(a) + 1)
-            for a in hydro if a in chain]
+    facts = {"labels": labels}
+    locs = [str(atom_locant(chain, a, facts)) for a in hydro if a in chain]
     if len(locs) != n:  # 加氢原子不全在编号链内：位次无法完整表达，放弃而非给错名
         return "", ""
     locs.sort(key=locant_key)

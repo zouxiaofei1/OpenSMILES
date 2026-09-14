@@ -10,12 +10,17 @@ from namepredict.constants import (
     BIS_EN, BIS_ZH, BRIDGE_SUFFIX_EN, BRIDGE_SUFFIX_ZH, MULT_EN, MULT_ZH, N_PREFIX_KINDS,
 )
 
-def _group_by_stem(substituents: list) -> dict[str, list]:
-    """按 en 词干对取代基分组，返回词干到列表的映射。"""
-    groups: dict[str, list] = {}
-    for s in substituents:
-        groups.setdefault(s.get("en") or "", []).append(s)
-    return groups
+def _mult_rows(items: list, key_fn, zh_fn, sort_key=None) -> list[list]:
+    """同基分组计数并按 sort_key 排序，返回 [en, zh, 倍数, 成员] 行。"""
+    table: dict[str, list] = {}
+    for it in items:
+        en = key_fn(it)
+        row = table.setdefault(en, [en, zh_fn(it), 0, []])
+        row[2] += 1
+        row[3].append(it)
+    rows = list(table.values())
+    rows.sort(key=(lambda r: r[0]) if sort_key is None else (lambda r: sort_key(r[0])))
+    return rows
 
 
 def _locant_str(subs: list) -> str:
@@ -210,16 +215,6 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
     return _place(mult, _wrap_stem(zh_stem, need), subs, omit)
 
 
-def _sorted_stems(groups: dict[str, list]) -> list[str]:
-    """按烷基字母键排序非空词干列表。"""
-    return sorted((k for k in groups if k), key=alkyl_alpha_key)
-
-
-def _n_prime_tokens(subs: list, primes: dict[int, int] | None) -> list[str]:
-    """N-型取代基位次记号：同一 N 为 N，其余依次加撇。"""
-    return sorted(("N" + "'" * ((primes or {}).get(s.get("attach_idx"), 0))) for s in subs)
-
-
 def _n_prefix(lang: str, n: int, stem: str, tokens: list[str], subs: list) -> str:
     """N- 前缀：N-甲基 / N,N-二甲基（N,N'-双）。"""
     if n == 1:
@@ -235,7 +230,7 @@ def _parts_for_stem(stem: str, subs: list, omit: bool,
         need = any(s.get("paren") for s in subs) or bool(stem and stem[0].isdigit())  # 复合取代基须整体加括号
         s_en = _wrap_stem(stem, need)
         s_zh = _wrap_stem(zh_stem, need)
-        tokens = _n_prime_tokens(subs, primes)  # 同 N 用 N,N-；跨不同 N 用 N,N'-
+        tokens = sorted(("N" + "'" * ((primes or {}).get(s.get("attach_idx"), 0))) for s in subs)  # 同 N 用 N,N-；跨不同 N 用 N,N'-
         return (_n_prefix("en", len(subs), s_en, tokens, subs),
                 _n_prefix("zh", len(subs), s_zh, tokens, subs))
     return (_prefix_one_en(stem, subs, omit, tail_sep),
@@ -290,8 +285,10 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     if not substituents:
         return "", ""
     omit = _omit_sub_locants(n_carbons, substituents, kind, scaffold, has_ene)
-    groups = _group_by_stem(substituents)
-    stems = _sorted_stems(groups)
+    rows = _mult_rows(substituents, lambda s: s.get("en") or "", lambda s: s.get("zh") or "",
+                      alkyl_alpha_key)  # 分组/排序键由调用侧给定，不与英文侧统一
+    groups = {en: members for en, _, _, members in rows}
+    stems = [en for en, _, _, _ in rows if en]
     bracket = bool(omit) and n_carbons == 1 and kind == "radical" \
         and len(groups) >= 2 and _groups_simple(groups)
     sep = "" if bracket else "-"

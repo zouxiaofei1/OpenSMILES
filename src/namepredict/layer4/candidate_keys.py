@@ -1,7 +1,7 @@
 """L4 并列候选母体比较键：P-44.1.1 后缀集、P-45.2.2 前缀集。"""
 from __future__ import annotations
 
-from namepredict.layer4.locant_calc import locant_key
+from namepredict.layer4.locant_calc import atom_locant, locant_key
 
 
 def suffix_locant_set(numbered: dict) -> tuple:
@@ -11,11 +11,9 @@ def suffix_locant_set(numbered: dict) -> tuple:
     parent = numbered.get("parent") or {}
     chain = parent.get("chain") or []
     labels = (parent.get("numbering_scaffold") or {}).get("labels") or []
-    locs = []
-    for atom in _principal_atoms(parent):
-        if atom in chain:
-            i = chain.index(atom)
-            locs.append(labels[i] if len(labels) == len(chain) else i + 1)
+    facts = {"labels": labels}
+    locs = [loc for atom in _principal_atoms(parent)
+            if (loc := atom_locant(chain, atom, facts)) is not None]
     return tuple(sorted(locant_key(x) for x in locs))
 
 

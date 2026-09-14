@@ -6,11 +6,6 @@ from rdkit.Chem import Mol
 from namepredict.tools.chain import _carbon_neighbors, _longest_from
 
 
-def _all_carbons(mol: Mol) -> list[int]:
-    """返回分子中所有碳原子索引列表。"""
-    return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
-
-
 def _side_count(mol: Mol, chain: list[int]) -> int:
     """统计链上非链内重原子邻居的个数（支链度）。"""
     chain_set = set(chain)
@@ -34,7 +29,8 @@ def _better(mol: Mol, cand: list[int], best: list[int]) -> bool:
 
 def _seed_carbons(mol: Mol, banned: set[int] = frozenset()) -> list[int]:
     """最长链种子降集：开链子图为多碳树时仅用开链叶，否则回退全碳。"""
-    carbons = [c for c in _all_carbons(mol) if c not in banned]
+    carbons = [a.GetIdx() for a in mol.GetAtoms()
+               if a.GetAtomicNum() == 6 and a.GetIdx() not in banned]  # 全碳原子索引
     if not carbons:
         return []
     has_ring_root = False

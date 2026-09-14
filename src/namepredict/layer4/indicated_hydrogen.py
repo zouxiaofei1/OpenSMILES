@@ -3,6 +3,9 @@ from __future__ import annotations
 
 from rdkit import Chem
 
+from namepredict.layer1.ring_systems import kekulized
+from namepredict.layer4.locant_calc import atom_locant
+
 
 def saturated_ring_atoms(mol, ring_atoms: set[int], exclude: frozenset[int] = frozenset()) -> list[int]:
     """返回仅单键连邻环原子且带氢的饱和环位；exclude 位由 hydro 表达。"""
@@ -11,11 +14,9 @@ def saturated_ring_atoms(mol, ring_atoms: set[int], exclude: frozenset[int] = fr
     ring_atoms = {i for i in ring_atoms if i < mol.GetNumAtoms() and mol.GetAtomWithIdx(i).IsInRing()}
     if not ring_atoms:
         return []
-    kek = Chem.Mol(mol)
-    try:
-        Chem.Kekulize(kek, clearAromaticFlags=True)
-    except Exception:
-        kek = mol
+    kek = kekulized(mol)
+    if kek is None:
+        kek = mol  # Kekulize 失败：芳香键仍是 AROMATIC，该位指示氢静默放弃
     out = []
     for i in sorted(ring_atoms):
         if i in exclude:  # 该位已由 hydro 前缀表达（如 2,3 位），不再标指示氢
@@ -34,7 +35,7 @@ def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=froze
     chain = list(chain or ())
     if not chain:
         return []
-    use_labels = bool(labels) and len(labels) == len(chain)
+    facts = {"labels": labels}
     sats = set(saturated_ring_atoms(mol, set(chain), exclude)) | {
         i for i in extra if i in chain and i not in exclude}
     sats = sorted(sats, key=chain.index)
@@ -42,6 +43,5 @@ def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=froze
         sats = sats[:1]
     out = []
     for atom in sats:
-        locant = labels[chain.index(atom)] if use_labels else chain.index(atom) + 1
-        out.append(str(locant))
+        out.append(str(atom_locant(chain, atom, facts)))
     return out

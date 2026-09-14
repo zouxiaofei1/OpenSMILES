@@ -158,13 +158,13 @@ BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl", "amino")   # O/S/N 桥后缀（P-63.2.2.1
 BRIDGE_SUFFIX_ZH = ("氧基", "硫基", "氨基")        # 与 BRIDGE_SUFFIX_EN 同序同位
 BRIDGE_YL_SUFFIX = tuple((f"yl{en}", en) for en in BRIDGE_SUFFIX_EN)      # -yl 型桥基：方括号闭在 -yl 后、桥后缀放括号外（[(2R)环己基]氧基）
 BRIDGE_ZH_YL_SUFFIX = tuple((f"基{zh}", zh) for zh in BRIDGE_SUFFIX_ZH)
-EXO_RING_SUF: dict[str, tuple] = {  # 环外主基系统名后缀表（group_class → 后缀规格），六个环外 worker 共用 `_exocyclic_ring_names` 一条管线：singular (en, zh) 单取代后缀；plural (en, zh) | None 多取代后缀基底（前拼 MULT_EN/MULT_ZH 倍数词）；None = 该主基无多取代系统名；plural_needs_loc bool 多取代时位次缺失即放弃（P-65.2.2：多羧酸位次必带）
-    "acid":     (("carboxylic acid", "羧酸"), ("carboxylic acid", "羧酸"), True),
-    "aldehyde": (("carbaldehyde", "甲醛"),    ("carbaldehyde", "甲醛"),    False),
-    "ester":    (("carboxylate", "羧酸"),     None,                        False),
-    "amide":    (("carboxamide", "甲酰胺"),   None,                        False),
-    "nitrile":  (("carbonitrile", "甲腈"),    None,                        False),
-    "acyl":     (("carbonyl", "羰基"),        None,                        False),
+EXO_RING_SUF: dict[str, tuple] = {  # 环外主基系统名后缀表（group_class → 后缀规格），六个环外 worker 共用 `_exocyclic_ring_names` 一条管线：singular (en, zh) 单取代后缀；plural (en, zh) | None 多取代后缀基底（前拼 MULT_EN/MULT_ZH 倍数词）；None = 该主基无多取代系统名
+    "acid":     (("carboxylic acid", "羧酸"), ("carboxylic acid", "羧酸")),
+    "aldehyde": (("carbaldehyde", "甲醛"),    ("carbaldehyde", "甲醛")),
+    "ester":    (("carboxylate", "羧酸"),     None),
+    "amide":    (("carboxamide", "甲酰胺"),   None),
+    "nitrile":  (("carbonitrile", "甲腈"),    None),
+    "acyl":     (("carbonyl", "羰基"),        None),
 }
 AZANE_PAREN_SUF = ("benzoyl", "carbonyl", "acetyl")  # azane 单取代基内层组加括号的尾缀白名单
 ALKOXY_YLOXY_EN = (  # O 锚点自由基 -yloxy 非保留名 → IUPAC 保留烷氧基（P-66.5.2.1.2：ethoxy/propoxy/butoxy/phenoxy）。尾部收拢使带取代基链也命中：2-methoxyethyloxy → 2-methoxyethoxy、3-chlorophenyloxy → 3-chlorophenoxy。

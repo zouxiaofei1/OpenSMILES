@@ -14,7 +14,9 @@ from namepredict.layer5.chain_engine import (
 from namepredict.layer5.stems import (
     _metal_en_prefix, _metal_zh_suffix, join_anion_names,
 )
-from namepredict.layer5.assembler_prefixes import _SIMPLE_CHAIN_YL_RE, _enclose, _prefix_for
+from namepredict.layer5.assembler_prefixes import (
+    _SIMPLE_CHAIN_YL_RE, _enclose, _mult_rows, _prefix_for,
+)
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
 from namepredict.types import NameResult
 
@@ -56,7 +58,7 @@ def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None
     """P 酰基前缀的取代基拼接（P-67.1.4.1.1.5，简单基平铺/括起）。"""
     from namepredict.tools.re import alkyl_alpha_key
 
-    groups: dict[str, list] = {}
+    pairs: list[tuple[str, str]] = []
     for s in subs:
         en, zh = (s.get("en") or "").strip(), (s.get("zh") or "").strip()
         if not en or not zh:
@@ -64,19 +66,18 @@ def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None
         oxido = _oxido_arm(s, mol)
         if oxido is not None:  # 酸式 H 已被夺去的 O⁻ 臂：hydroxy → oxido
             en, zh = oxido
-        row = groups.setdefault(en, [en, zh, 0])
-        row[2] += 1
-    rows = sorted(groups.values(), key=lambda t: alkyl_alpha_key(t[0]))
+        pairs.append((en, zh))
+    rows = _mult_rows(pairs, lambda p: p[0], lambda p: p[1], alkyl_alpha_key)
     if len(rows) == 1 and rows[0][2] > 1:  # 同基倍增（P-16.3.2 简单基用 di-）
-        en, zh, m = rows[0]
+        en, zh, m = rows[0][:3]
         m_en, m_zh = MULT_EN.get(m), MULT_ZH.get(m)
         if not m_en or not m_zh:
             return None
         return f"{m_en}{en}{stem_en}", f"{m_zh}{zh}{stem_zh}基"
-    compound = any("(" in en or "[" in en for en, _, _ in rows)  # 含自身带括号的复合组分：逐组分连字符 + 方括号围栏（P-16.5.2）
+    compound = any("(" in r[0] or "[" in r[0] for r in rows)  # 含自身带括号的复合组分：逐组分连字符 + 方括号围栏（P-16.5.2）
     en_parts: list[str] = []
     zh_parts: list[str] = []
-    for i, (en, zh, m) in enumerate(rows):
+    for i, (en, zh, m, _) in enumerate(rows):
         if m > 1:
             m_en, m_zh = MULT_EN.get(m), MULT_ZH.get(m)
             if not m_en or not m_zh:
@@ -147,16 +148,13 @@ def _alpha_key(name: str) -> str:
 _MONONUCLEAR_NAMES = ("oxidane", "azane", "sulfane", "sulfinyl", "sulfonyl", "imine")  # 本模块转换的单核母体氢化物（P-15.4.1 表 2.1）。
 
 
-def _anilino_en(base: str, yl: str) -> str:
-    """N-苯基（可带环取代基）的 azane 去氢为 anilino。"""
-    return base[: -len("phenyl")] + "anilino" if yl == "amino" and base.endswith("phenyl") else base + yl
-
-
 def _mononuclear_en(en: str) -> str | None:
     """单核氢化物 free 名 → 去氢取代基名。"""
     for en_suf in _MONONUCLEAR_NAMES:
         if en.endswith("-" + en_suf):
-            return _anilino_en(en[: -len(en_suf) - 1], MONONUCLEAR_YL[en_suf][1])
+            base = en[: -len(en_suf) - 1]
+            yl = MONONUCLEAR_YL[en_suf][1]
+            return base[: -len("phenyl")] + "anilino" if yl == "amino" and base.endswith("phenyl") else base + yl
     return None
 
 
@@ -343,17 +341,13 @@ def _unsupported(n: int, kind: str | None) -> NameResult:
     return _fail({"reason": "unsupported", "n_carbons": n, "kind": kind})
 
 # 名称拼接：前缀与母体组合（P-22.1.3）。
-def _needs_join_hyphen(body: str) -> bool:
-    """词干以数字、方括号位次集或 1H- 开头时需与前缀连字符分隔。"""
-    return bool(body) and (body[0].isdigit() or body[0] == "[" or body.startswith("1H-"))
-
-
 def join_parent_name(prefix: str, parent: str) -> str:
     """拼接前缀与母体名（数字/1H- 前导时加连字符）。"""
     if not prefix:
         return parent
     stereo, stem = _stereo_lead(parent)
-    body = f"{prefix}-{stem}" if _needs_join_hyphen(stem) else f"{prefix}{stem}"
+    needs_hyphen = bool(stem) and (stem[0].isdigit() or stem[0] == "[" or stem.startswith("1H-"))
+    body = f"{prefix}-{stem}" if needs_hyphen else f"{prefix}{stem}"
     return f"{stereo}{body}"
 
 _ZH_PLAIN_YL_RE = re.compile(r"^[^()\[\]\d]*-\d+-基$")  # 仅带位次的基：中文酯名保留「基」不加围栏
@@ -388,17 +382,12 @@ def _join_o_side_arms(arms: list[dict], *, group: bool, arm_zh_fn) -> tuple[str,
     if len(arms) == 1:
         return arms[0].get("en") or "", arm_zh_fn(arms[0].get("zh") or "")
     if group:
-        table: dict[str, list] = {}
-        for s in arms:
-            en = (s.get("en") or "").strip()
-            if not en:
-                continue
-            row = table.setdefault(en, [en, arm_zh_fn(s.get("zh") or ""), 0])
-            row[2] += 1
+        named = [s for s in arms if (s.get("en") or "").strip()]
+        rows = _mult_rows(named, lambda s: (s.get("en") or "").strip(),
+                          lambda s: arm_zh_fn(s.get("zh") or ""))  # 排序沿用原始字符串序
         parts_en: list[str] = []
         parts_zh: list[str] = []
-        for en in sorted(table):
-            _, zh, m = table[en]
+        for en, zh, m, _ in rows:
             if m == 1:
                 parts_en.append(en)
                 parts_zh.append(zh)

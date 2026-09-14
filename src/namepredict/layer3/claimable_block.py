@@ -28,12 +28,10 @@ class ClaimedBlock:
 def _is_amine_n(mol: Mol, n_idx: int) -> bool:
     """胺 N：非芳香、非环员 N（环 N 用环上位次定位）。"""
     atom = mol.GetAtomWithIdx(n_idx)
-    if atom.GetAtomicNum() != 7 or atom.GetIsAromatic() or atom.IsInRing():
-        return False
-    return True
+    return not (atom.GetAtomicNum() != 7 or atom.GetIsAromatic() or atom.IsInRing())
 
 
-def derive_slot(mol: Mol, attach_parent: int, owned_atoms: frozenset[int]) -> SideSlot:
+def derive_slot(mol: Mol, attach_parent: int) -> SideSlot:
     """仅从所属连接原子的角色推导 SideSlot。"""
     if _is_amine_n(mol, attach_parent):
         return SideSlot.AMINE_N
@@ -105,7 +103,7 @@ def _try_claim(
     if _has_dbl_o_edge(mol, atoms, owned):
         return None
     attach, root = edge
-    slot = derive_slot(mol, attach, owned)
+    slot = derive_slot(mol, attach)
     return claim_block(
         mol, owned_atoms=owned, attach_parent=attach, root=root, slot=slot
     )

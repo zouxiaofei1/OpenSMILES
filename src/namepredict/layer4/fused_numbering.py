@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 
-from namepredict.constants import C, P145_SENIOR
+from namepredict.constants import C
 from namepredict.layer4.indicated_hydrogen import saturated_ring_atoms
 from namepredict.layer4.locant_calc import locant_key
+from namepredict.layer4.numbering_engine import narrow, narrow_by_senior
 
 INDICATED_H = object()  # sub_layers 哨兵层：P-25.3.3.1.2(f) 指示氢最小化。
 
@@ -157,41 +158,29 @@ def number_fused_system(mol, rings, coords: list[dict], sub_layers=None,
     fused_heteros = sorted(a for a in fused if mol.GetAtomWithIdx(a).GetAtomicNum() != C)
     all_heteros = sorted(heteros)
 
-    def _keep(cands, atoms):
-        """保留杂原子/稠合原子位次集合最小的候选。"""
-        best = min(_locant_tuples(c[0], c[1], atoms) for c in cands)
-        return [c for c in cands if _locant_tuples(c[0], c[1], atoms) == best]
-
-    if all_heteros:
-        cands = _keep(cands, all_heteros)  # (a) 低位次给杂原子集合
-    hetero_by_z = defaultdict(list)  # (b) 按 F>Tl 顺序逐元素收窄该元素原子位次
-    for a in all_heteros:
-        hetero_by_z[mol.GetAtomWithIdx(a).GetAtomicNum()].append(a)
-    for z in P145_SENIOR:
-        if z in hetero_by_z:
-            cands = _keep(cands, sorted(hetero_by_z[z]))
+    if all_heteros:  # (a) 低位次给杂原子集合 (b) 按 F>Tl 顺序逐元素收窄该元素原子位次
+        hetero_by_z = defaultdict(list)
+        for a in all_heteros:
+            hetero_by_z[mol.GetAtomWithIdx(a).GetAtomicNum()].append(a)
+        cands = narrow_by_senior(cands, lambda c, at: _locant_tuples(c[0], c[1], at),
+                                 all_heteros, hetero_by_z)
     if fused_carbons:
-        cands = _keep(cands, fused_carbons)  # (c) 低位次给稠合碳
+        cands = narrow(cands, lambda c: _locant_tuples(c[0], c[1], fused_carbons))  # (c) 低位次给稠合碳
     if fused_heteros:
-        cands = _keep(cands, fused_heteros)  # (d) 低位次给稠合杂原子
+        cands = narrow(cands, lambda c: _locant_tuples(c[0], c[1], fused_heteros))  # (d) 低位次给稠合杂原子
     ring_atoms = set().union(*rings)
     ind_h_sats = sorted(saturated_ring_atoms(mol, ring_atoms))  # (f) 指示氢候选位：环内仅以单键连邻环原子且带 H 的饱和位
 
     def _as_indicated(cands):
         """P-25.3.3.1.2(f)：指示氢位次最小化；偶数个饱和带氢位时不适用。"""
-        k = len(ind_h_sats) % 2
-        if not k or len(cands) <= 1:
+        if not len(ind_h_sats) % 2:
             return cands
 
         def _key(c):
             """候选的指示氢位次键：全部带氢环位的位次集合升序；位次不全在链内返回 None。"""
             locs = _locant_tuples(c[0], c[1], ind_h_sats)
             return locs if len(locs) == len(ind_h_sats) else None
-        keys = [_key(c) for c in cands]
-        if any(k_ is None for k_ in keys):
-            return cands
-        best = min(keys)
-        return [c for c, k_ in zip(cands, keys) if k_ == best]
+        return narrow(cands, _key, skip_none=True)
 
     for layer in (sub_layers or ()):
         if len(cands) <= 1:
@@ -199,18 +188,16 @@ def number_fused_system(mol, rings, coords: list[dict], sub_layers=None,
         if layer is INDICATED_H:
             cands = _as_indicated(cands)  # (f) 指示氢位次
         elif layer:
-            cands = _keep(cands, sorted(layer))  # 镜像平局: 逐层按位次集合最小化收窄
+            cands = narrow(cands, lambda c: _locant_tuples(c[0], c[1], sorted(layer)))  # 镜像平局: 逐层按位次集合最小化收窄
     if len(cands) > 1 and alpha_subs:  # P-14.5: 位次集合仍相同时，字母序最前的取代基得最低位次
         def _alpha_key(c):
             """字母序键：[(取代基字母序键, 其位次键)] 排序元组。"""
             return tuple(sorted((k, locant_key(c[1][c[0].index(a)]))
                                 for k, a in alpha_subs if a in c[0]))
-        best = min(_alpha_key(c) for c in cands)
-        cands = [c for c in cands if _alpha_key(c) == best]
+        cands = narrow(cands, _alpha_key)
     if len(cands) > 1:  # P-14.4(j)：位次准则全平局时按 CIP 描述符定方向。
         from namepredict.layer4.numbering_engine import _chain_rs_codes, _rs_locant_key
         codes = _chain_rs_codes(mol, cands[0][0])
         if codes:
-            best = min(_rs_locant_key(codes, c[0], c[1]) for c in cands)
-            cands = [c for c in cands if _rs_locant_key(codes, c[0], c[1]) == best]
+            cands = narrow(cands, lambda c: _rs_locant_key(codes, c[0], c[1]))
     return cands[0]

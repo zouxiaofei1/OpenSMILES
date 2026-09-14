@@ -14,23 +14,13 @@ def _claim_kind(slot_value: str) -> str:
     return CLAIM_KIND.get(slot_value, "side")
 
 
-def _kind_for_named(named) -> str:
-    """由命名结果确定取代基 kind（优先特殊保留名）。"""
-    return NAME_KIND.get(named.en, _claim_kind(named.claim.slot.value))
-
-
-def _is_ring_attach(mol, idx: int) -> bool:
-    """附着原子是否为环员（环 N 用环上位次定位，不写 N- 前缀）。"""
-    return mol.GetAtomWithIdx(int(idx)).IsInRing()
-
-
 def sub_from_named(named, mol) -> dict:
     """将命名结果封装为取代基字典。"""
     claim = named.claim
     n_carbons = sum(1 for i in claim.atoms
                     if mol.GetAtomWithIdx(i).GetAtomicNum() == 6)
-    kind = _kind_for_named(named)
-    if kind in N_PREFIX_KINDS and _is_ring_attach(mol, claim.attach_parent):
+    kind = NAME_KIND.get(named.en, _claim_kind(named.claim.slot.value))  # 优先特殊保留名
+    if kind in N_PREFIX_KINDS and mol.GetAtomWithIdx(int(claim.attach_parent)).IsInRing():  # 附着原子为环员：环 N 用环上位次定位，不写 N- 前缀
         kind = _claim_kind("ring_c")  # 环氮（内酰胺/环胺母体的环员 N）有环上位次可用，改用位次定位而非 N- 前缀
     return {
         "kind": kind, "n_carbons": n_carbons,
