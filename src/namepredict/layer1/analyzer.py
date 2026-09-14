@@ -1,10 +1,12 @@
-"""L1 官能团分析器：枚举分子中各类官能团条目并汇总为分析结果 dict。"""
+"""L1 官能团分析器：枚举分子中各类官能团条目并汇总为分析结果 dict。
+酰卤 R–C(=O)–X（X=F/Cl/Br/I，P-65.5）检测内联于本模块。
+"""
 from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 from collections import deque
 from namepredict.constants import (
-    C,P, CARBONYL_COMPOSITES, FG_PARTS_KEY, H, N, O, RING_HETERO, S,
+    C,P, CARBONYL_COMPOSITES, FG_PARTS_KEY, H, HALO_Z, N, O, RING_HETERO, S,
 )
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1._carbonyl_common import (
@@ -98,9 +100,12 @@ def phosphate_entries(mol: Mol) -> list[dict]:
     result = [e for a in mol.GetAtoms() if a.GetAtomicNum() == P  and (e := _one_phosphate(mol, a.GetIdx())) is not None]
     return result
 def _acyl_hal_of(carbon) -> tuple[int, int] | None:
-    """惰性导入酰卤检测并返回碳上的卤素邻居信息。"""
-    from namepredict.layer1.acyl_halide import acyl_hal_of
-    return acyl_hal_of(carbon)
+    """返回碳上卤素邻居的 (hal_idx, hal_z)；无则返回 None。"""
+    for n in carbon.GetNeighbors():
+        z = n.GetAtomicNum()
+        if z in HALO_Z:  # 酰卤检测覆盖 F/Cl/Br/I（P-65.5）
+            return n.GetIdx(), z
+    return None
 
 def _is_carboxyl_carbon(atom) -> bool:
     """判断碳是否为羧基碳（羰基双键氧 + 酸性氧邻居）。"""
@@ -151,6 +156,14 @@ def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
 def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
     """在碳上查找酯烷氧基侧并返回 (o_idx, alkoxy_c_idx)。"""
     return _ester_alkoxy_of_common(carbon, _is_ester_alkoxy_o)
+
+def _is_neutral_ester_alkoxy_o(oxygen, carbonyl) -> bool:
+    """判断酯样烷氧基氧是否电中性（酰卤排除酯用）。"""
+    return oxygen.GetFormalCharge() == 0 and _is_ester_alkoxy_o(oxygen, carbonyl)
+
+def _acyl_halide_alkoxy_of(carbon) -> tuple[int, int] | None:
+    """在碳上查找电中性烷氧基侧并返回 (o_idx, alkoxy_c_idx)。"""
+    return _ester_alkoxy_of_common(carbon, _is_neutral_ester_alkoxy_o)
 
 def _is_lactone_carbon(atom) -> bool:
     """判断碳是否为内酯羰基碳（酯氧在环内，按环母体命名）。"""
@@ -240,10 +253,27 @@ def _amide_entry(atom) -> dict:
     n_idx, _ = _amide_n_info(atom)
     return {"center_idx": atom.GetIdx(), "surr_idx": [*_double_bonded_o_idxs(atom), n_idx]}
 
-def _acyl_chloride_entries(mol: Mol) -> list[dict]:
-    """酰卤条目（F/Cl/Br/I）；键保留以兼容 L2/L3。"""
-    from namepredict.layer1.acyl_halide import acyl_halide_entries
-    return acyl_halide_entries(mol)
+def _acyl_halide_center(atom) -> int | None:
+    """判断碳是否为酰卤羰基碳（排除酸、酯）；是则返回卤素索引。"""
+    if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
+        return None
+    if _has_acid_o_neighbor(atom) or _acyl_halide_alkoxy_of(atom) is not None:
+        return None
+    h = _acyl_hal_of(atom)
+    return None if h is None else h[0]
+
+def _acyl_halide_entry(atom, hal_idx: int) -> dict:
+    """组装酰卤条目 dict（羰基碳为中心，羰基氧与卤素为周边）。"""
+    return {"center_idx": atom.GetIdx(), "surr_idx": [*_double_bonded_o_idxs(atom), hal_idx]}
+
+def _acyl_halide_entries(mol: Mol) -> list[dict]:
+    """分子中全部酰卤（F/Cl/Br/I）条目列表；卤素入周边以兼容 L2/L3。"""
+    out: list[dict] = []
+    for a in mol.GetAtoms():
+        hal_idx = _acyl_halide_center(a)
+        if hal_idx is not None:
+            out.append(_acyl_halide_entry(a, hal_idx))
+    return out
 
 def _ester_entry(atom) -> dict:
     """组装酯条目 dict（碳为中心，羰基氧与酯氧为周边）。"""
@@ -401,7 +431,7 @@ def _detect_parts(mol: Mol) -> dict:
         "aldehydes": [e for e in _atom_entries(mol, _is_aldehyde_carbon, _carbonyl_entry)
                       if e["center_idx"] not in heads],
         "nitriles": _nitrile_entries(mol),
-        "acyl_chlorides": _acyl_chloride_entries(mol),
+        "acyl_chlorides": _acyl_halide_entries(mol),
         "phosphates": phosphate_entries(mol)}
 
 def _collect_fgs(mol: Mol) -> dict:

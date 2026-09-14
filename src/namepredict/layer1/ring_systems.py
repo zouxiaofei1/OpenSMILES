@@ -1,4 +1,4 @@
-"""由 SSSR 构建环系拓扑：稠合连通、螺环合并。"""
+"""环系拓扑 Layer1,4,5共用"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol
@@ -102,65 +102,6 @@ def _system_entry(
     edges = _member_edges(members, fusion_edges)
     return _system_dict(atoms, members, edges, mol)
 
-def _collect_merged_fields(
-    systems: list[dict], indices: list[int],
-) -> tuple[set[int], set[int], list[dict]]:
-    """收集待合并系统的 sssr、原子与杂原子字段。"""
-    sssr: set[int] = set()
-    atoms: set[int] = set()
-    hetero: list[dict] = []
-    for idx in indices:
-        s = systems[idx]
-        sssr.update(s["sssr_indices"])
-        atoms.update(s["atom_ids"])
-        hetero.extend(s["hetero_atoms"])
-    return sssr, atoms, hetero
-
-def _merged_spiro_system(
-    rings: list[tuple[int, ...]],
-    sys_indices: list[int], systems: list[dict],
-) -> dict:
-    """将共享一个螺原子的多个单环系合并为一个螺环系。"""
-    sssr, atoms, hetero = _collect_merged_fields(systems, sys_indices)
-    return {
-        "atom_ids": sorted(atoms),
-        "sssr_indices": sorted(sssr),
-        "fusion_edges": [],
-        "n_rings": len(sssr),
-        "n_atoms": len(atoms),
-        "hetero_atoms": hetero,
-        "is_aromatic_mancude": None,
-        "topology": "spiro",
-        "ring_sizes": sorted(len(rings[ri]) - 1 for ri in sssr),
-    }
-
-def _spiro_sys_indices(
-    systems: list[dict], spiro_pairs: list[tuple[int, int, int]],
-) -> list[int]:
-    """通过螺原子连接的系统并查集父数组。"""
-    n = len(systems)
-    parent = list(range(n))
-    for i, j, _ in spiro_pairs:
-        si = _find_sys_for_ring(systems, i)
-        sj = _find_sys_for_ring(systems, j)
-        if si >= 0 and sj >= 0 and si != sj:
-            _uf_union(parent, si, sj)
-    return parent
-
-def _find_sys_for_ring(systems: list[dict], ring_idx: int) -> int:
-    """返回包含指定环索引的系统下标；无则返回 -1。"""
-    for idx, s in enumerate(systems):
-        if ring_idx in s["sssr_indices"]:
-            return idx
-    return -1
-
-def _group_by_root(parent: list[int], n: int) -> dict[int, list[int]]:
-    """按并查集根分组下标。"""
-    buckets: dict[int, list[int]] = {}
-    for idx in range(n):
-        buckets.setdefault(_uf_find(parent, idx), []).append(idx)
-    return buckets
-
 def _merge_spiro(
     rings: list[tuple[int, ...]],
     systems: list[dict], spiro_pairs: list[tuple[int, int, int]],
@@ -168,14 +109,7 @@ def _merge_spiro(
     """将共享螺原子的单环系合并为螺环系。"""
     if not spiro_pairs or len(systems) <= 1:
         return systems
-    parent = _spiro_sys_indices(systems, spiro_pairs)
-    groups = _group_by_root(parent, len(systems))
     result: list[dict] = []
-    for indices in groups.values():
-        result.append(
-            _merged_spiro_system(rings, indices, systems)
-            if len(indices) > 1 else systems[indices[0]]
-        )
     return result
 
 def build_ring_systems(mol: Mol) -> list[dict]:
