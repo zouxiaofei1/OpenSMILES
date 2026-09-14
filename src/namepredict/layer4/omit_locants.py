@@ -9,11 +9,9 @@ def _is_cyclo(parent: dict | None) -> bool:
 
 def omit_fg_locant(
     pos: int | None, n_carbons: int, parent: dict | None = None, n_subs: int = 0, *,
-    single: bool = True, has_ene=None, has_yne=None,
+    single: bool = True,
 ) -> bool:
     """判定主官能团位次是否省略（P-14.3.4 / 环单 FG）：环状无取代省。"""
-    if parent and ((has_ene and has_ene(parent)) or (has_yne and has_yne(parent))):
-        return False
     if _is_cyclo(parent) and pos is not None and single:  # 环单 FG：无取代省位次，有取代或多官能团保留。
         return n_subs == 0
     return pos == 1 and n_carbons <= 2
@@ -21,15 +19,11 @@ def omit_fg_locant(
 
 def omit_unsat(
     n_carbons: int, kind: str | None = None, parent: dict | None = None, *,
-    has_ene=None, has_yne=None, triple: bool = False,
+    triple: bool = False,
 ) -> bool:
     """判定烯/炔位次是否省略（环单烯或短链）；triple 选择炔规则。"""
     if kind == "alkane" and (parent or {}).get("scaffold_id") == "carbocycle":  # 纯烃环单烯位次隐含省略；环多烯保留位次。
         if not (parent or {}).get("double_bonds"):
             return True
-    if kind == "alcohol" and parent and has_yne and has_yne(parent):
-        return False
-    if parent and has_ene and has_ene(parent) and kind not in ("alkene", "alkane"):  # 开链烃骨架（kind 为 alkane）不因自身双键而保留位次，交回短链规则
-        return False
     # 烯 ≤C2、炔 ≤C3 时位次 '1' 省略（P-14.3.4.2(d)）。
     return n_carbons <= (3 if triple else 2)

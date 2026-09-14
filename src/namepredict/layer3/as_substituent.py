@@ -87,9 +87,7 @@ def _radical_yl_from_sub(
     hit = _fix_rs_with_real(root_mol, block_root_order, anchored, hit)  # R/S 取决于宿主根分子：fresh 与 cache 命中都按当前根分子校正一次。
     if not hit.success or not hit.en:
         return None
-    if not (hit.meta or {}).get("parent_kind") in ("radical", "acyl"):
-        return None  # 锚定分子必被 L1 radical/acyl 条目检出、principal 必选（p41=1），理论不可达，防御。
-    composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0 
+    composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0
     # P-16.5.1.1 复合前缀必括；amido(P-66.1.1.4.3)免括
     need_paren = composite and hit.en not in (
         "phenyl", *SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN)
@@ -101,25 +99,13 @@ def _radical_yl_from_sub(
     return hit.en, hit.zh, need_paren
 
 
-def _yl_from_sub(
-     *, mol, atoms, attach_old,
-    cache: CommonNameCache | None = None, root_ctx: tuple | None = None,
-) -> tuple[str, str, bool] | None:
-    """连接点分派：碳→锚定 radical 优先；否则 H 封端 free-name。"""
-    from rdkit import Chem
-
-    if mol.GetAtomWithIdx(attach_old).GetAtomicNum() >1 :
-        hit = _radical_yl_from_sub(mol, atoms, attach_old,
-                                    cache=cache, root_ctx=root_ctx)
-        if hit is not None:  # print(Chem.MolToSmiles(mol),hit)
-            return hit
-    return None
-
 def name_as_substituent(
     mol, attach_old: int, atoms, *,
     cache: CommonNameCache | None = None, root_ctx: tuple | None = None,
 ) -> tuple[str, str, bool] | None:
     """在 attach_old 处切割，free-name 后输出 -yl 双语名。"""
     atoms = frozenset(atoms)
-    return _yl_from_sub( mol=mol, atoms=atoms, attach_old=attach_old,  # print(_yl_from_sub(...)) 调试用
-                        cache=cache, root_ctx=root_ctx)
+    if mol.GetAtomWithIdx(attach_old).GetAtomicNum() <= 1:
+        return None  # 连接点非重原子（dummy/氢）：无 -yl 名；dummy 锚点会自复制致无限递归
+    return _radical_yl_from_sub(mol, atoms, attach_old,  # print(_radical_yl_from_sub(...)) 调试用
+                                cache=cache, root_ctx=root_ctx)

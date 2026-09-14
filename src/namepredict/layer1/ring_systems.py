@@ -87,7 +87,7 @@ def _member_edges(
     ]
 
 def _system_dict(
-    atom_ids: set[int], members: list[int], edges: list, mol: Mol, spiro_in: bool,
+    atom_ids: set[int], members: list[int], edges: list, mol: Mol,
 ) -> dict:
     """组装单个环系的事实 dict。"""
     return {
@@ -106,17 +106,11 @@ def _system_entry(
     rings: list[tuple[int, ...]],
     members: list[int],
     fusion_edges: list[tuple[int, int, frozenset[int]]],
-    spiro_in: bool,
 ) -> dict:
     """为连通分量构建环系条目。"""
     atoms = _member_atoms(rings, members)
     edges = _member_edges(members, fusion_edges)
-    return _system_dict(atoms, members, edges, mol, spiro_in)
-
-def _spiro_touching(members: list[int], spiro: list[tuple[int, int, int]]) -> bool:
-    """判断分量是否与某条螺共享配对相连。"""
-    mset = set(members)
-    return any(i in mset or j in mset for i, j, _ in spiro)
+    return _system_dict(atoms, members, edges, mol)
 
 def _collect_merged_fields(
     systems: list[dict], indices: list[int],
@@ -133,7 +127,7 @@ def _collect_merged_fields(
     return sssr, atoms, hetero
 
 def _merged_spiro_system(
-    mol: Mol, rings: list[tuple[int, ...]],
+    rings: list[tuple[int, ...]],
     sys_indices: list[int], systems: list[dict],
 ) -> dict:
     """将共享一个螺原子的多个单环系合并为一个螺环系。"""
@@ -178,7 +172,7 @@ def _group_by_root(parent: list[int], n: int) -> dict[int, list[int]]:
     return buckets
 
 def _merge_spiro(
-    mol: Mol, rings: list[tuple[int, ...]],
+    rings: list[tuple[int, ...]],
     systems: list[dict], spiro_pairs: list[tuple[int, int, int]],
 ) -> list[dict]:
     """将共享螺原子的单环系合并为螺环系。"""
@@ -189,7 +183,7 @@ def _merge_spiro(
     result: list[dict] = []
     for indices in groups.values():
         result.append(
-            _merged_spiro_system(mol, rings, indices, systems)
+            _merged_spiro_system(rings, indices, systems)
             if len(indices) > 1 else systems[indices[0]]
         )
     return result
@@ -203,7 +197,6 @@ def build_ring_systems(mol: Mol) -> list[dict]:
     comps = _components(len(rings), fused)
     spiro = _spiro_pairs(rings)
     systems = [
-        _system_entry(mol, rings, m, fused, _spiro_touching(m, spiro))
-        for m in comps
+        _system_entry(mol, rings, m, fused) for m in comps
     ]
-    return _merge_spiro(mol, rings, systems, spiro)
+    return _merge_spiro(rings, systems, spiro)

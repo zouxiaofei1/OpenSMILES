@@ -8,6 +8,6 @@ def extract_substituents(info: dict, parent: dict, *, cache: CommonNameCache | N
     from namepredict.layer3.claim_extract import extract_claimed_sides
 
     mol, chain = info["mol"], parent.get("chain") or []
-    result =   extract_claimed_sides(info, parent, (), cache=cache)
+    result =   extract_claimed_sides(info, parent, cache=cache)
     
     return result

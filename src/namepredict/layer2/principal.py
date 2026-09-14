@@ -21,27 +21,23 @@ class PrincipalPriority:
 
 
 class PrincipalExpression(str, Enum):
-    """主基团的表达方式（作后缀/仅作前缀/仅兼容等级）。"""
+    """主基团的表达方式（作后缀）。"""
     SUFFIX = "suffix"
-    PREFIX_ONLY = "prefix_only"
-    LEGACY_COMPAT = "legacy_compat"
 
 
 @dataclass(frozen=True)
 class PrincipalFeatureSpec:
-    """主官能团规格：优先级、表达方式、兼容等级与锚点字段名。"""
+    """主官能团规格：优先级、表达方式与锚点字段名。"""
     priority: PrincipalPriority
     expression: PrincipalExpression
-    compatibility_rank: int = 0
     anchor_fields: tuple[str, str] | None = None
 
 
 def _spec_from_fg(sp: FgSpec) -> PrincipalFeatureSpec:
-    """由 FG 注册表条目构造主官能团规格（优先级/表达/兼容等级/锚点字段）。"""
+    """由 FG 注册表条目构造主官能团规格（优先级/表达/锚点字段）。"""
     return PrincipalFeatureSpec(
         PrincipalPriority(sp.p41, sp.path),
         PrincipalExpression(sp.expr),
-        sp.compat,
         sp.parent_anchor_fields,
     )
 
@@ -53,12 +49,6 @@ PRINCIPAL_REGISTRY: dict[FG, PrincipalFeatureSpec] = {
 def feature_spec(group_class: FG, registry: Mapping[FG, PrincipalFeatureSpec] = PRINCIPAL_REGISTRY) -> PrincipalFeatureSpec | None:
     """查 registry 返回基团类对应的规格（无则 None）。"""
     return registry.get(group_class)
-
-
-def principal_spec(group_class: FG, registry: Mapping[FG, PrincipalFeatureSpec] = PRINCIPAL_REGISTRY) -> PrincipalFeatureSpec | None:
-    """仅返回 SUFFIX 型规格（Legacy 不作主基团）。"""
-    spec = feature_spec(group_class, registry)
-    return spec if spec and spec.expression is PrincipalExpression.SUFFIX else None
 
 @dataclass(frozen=True)
 class PrincipalGroupSelection:
@@ -73,7 +63,7 @@ def select_principal_group(
 ) -> PrincipalGroupSelection | None:
     """按优先级选主官能团类并取全部 occurrence。"""
     classes = (entry.group_class for entry in inventory.entries if not entry.demoted)  # 降级叶（carboxy/cyano）不再作主基团候选
-    eligible = (group_class for group_class in set(classes) if principal_spec(group_class, registry))
-    selected = min(eligible, key=lambda group_class: principal_spec(group_class, registry).priority, default=None)
+    eligible = (group_class for group_class in set(classes) if feature_spec(group_class, registry))
+    selected = min(eligible, key=lambda group_class: feature_spec(group_class, registry).priority, default=None)
     occurrences = inventory.occurrences(selected) if selected else ()
     return PrincipalGroupSelection(selected, occurrences) if selected else PrincipalGroupSelection(FG.NONE, occurrences)

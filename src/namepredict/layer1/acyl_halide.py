@@ -32,24 +32,27 @@ def _acyl_hal_of(carbon) -> tuple[int, int] | None:
             return n.GetIdx(), z
     return None
 
-def _is_acyl_halide_carbon(atom) -> bool:
-    """判断碳原子是否为酰卤羰基碳（排除酸、酯、酰胺）。"""
+def _acyl_halide_center(atom) -> int | None:
+    """判断碳原子是否为酰卤羰基碳（排除酸、酯、酰胺）；是则返回卤素索引。"""
     if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
-        return False
+        return None
     if _has_acid_o_neighbor(atom) or _ester_alkoxy_of(atom) is not None:
-        return False
-    return _acyl_hal_of(atom) is not None
-
-def _entry(atom) -> dict:
-    """为酰卤羰基碳组装条目 dict（羰基碳为中心，羰基氧与卤素为周边）。"""
+        return None
     h = _acyl_hal_of(atom)
-    assert h is not None
-    hal_idx, _ = h
+    return None if h is None else h[0]
+
+def _entry(atom, hal_idx: int) -> dict:
+    """为酰卤羰基碳组装条目 dict（羰基碳为中心，羰基氧与卤素为周边）。"""
     return {"center_idx": atom.GetIdx(), "surr_idx": [*_double_bonded_o_idxs(atom), hal_idx]}
 
 def acyl_halide_entries(mol: Mol) -> list[dict]:
     """收集分子中所有酰卤条目的列表。"""
-    return [_entry(a) for a in mol.GetAtoms() if _is_acyl_halide_carbon(a)]
+    out: list[dict] = []
+    for a in mol.GetAtoms():
+        hal_idx = _acyl_halide_center(a)
+        if hal_idx is not None:
+            out.append(_entry(a, hal_idx))
+    return out
 
 def acyl_hal_of(carbon) -> tuple[int, int] | None:
     """返回碳上卤素邻居的 (hal_idx, hal_z)；无则返回 None。"""

@@ -31,14 +31,14 @@ from namepredict.layer1.functional_group_inventory import (
     FunctionalGroupInventory,
     inventory_from_info,
 )
-from namepredict.layer2.candidates import _collect_candidates
-from namepredict.layer2.parent_ownership import finalize_parent_ownership
+from namepredict.layer2.parent_select import _collect_candidates
+from namepredict.layer2.parent_select import finalize_parent_ownership
 from namepredict.layer2.principal_expression import (
     PrincipalChargeState,
     PrincipalExpressionFacts,
     PrincipalRelation,
 )
-from namepredict.layer2.parent_selector import select_parent
+from namepredict.layer2.parent_select import select_parent
 from namepredict.layer2.ring_scaffold import all_specs
 from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot, claim_block, iter_claims
 from namepredict.layer3.coverage import build_coverage_ledger
@@ -74,7 +74,7 @@ l2_parent_core_contract___HELPERS = frozenset({
 
 # Modules allowed to re-export / host try surface.
 l2_parent_core_contract___EXEMPT = frozenset({
-    "parent_selector.py",
+    "parent_select.py",
     "parent_core.py",
     "fg_helpers.py",
     "__init__.py",
@@ -87,7 +87,7 @@ def l2_parent_core_contract___parent_selector_helper_hits(path: Path) -> list[st
     for node in ast.walk(tree):
         if not isinstance(node, ast.ImportFrom) or not node.module:
             continue
-        if node.module != "namepredict.layer2.parent_selector":
+        if node.module != "namepredict.layer2.parent_select":
             continue
         for alias in node.names:
             if alias.name in l2_parent_core_contract___HELPERS:

@@ -12,11 +12,8 @@ from namepredict.layer1.ring_systems import sssr_rings
 
 @dataclass(frozen=True)# ScaffoldSpec 定义
 class NumberingPolicy:
-    """骨架编号策略：固定编号路径、物化开关、锚点与可取代位。"""
+    """骨架编号策略：固定编号路径。"""
     standard_path: tuple = ()
-    materialize_plan: bool = True
-    anchors: tuple[str, ...] = ()
-    substitutable: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -30,8 +27,6 @@ class ScaffoldSpec:
     ring: str
     retained: bool
     numbering: NumberingPolicy
-    sub_rules: object | None = None
-    principal_slots: object | None = None
     locant_prefix: str = ""  # 五元杂环 locant 前缀（P-61.2.4 / P-25.1）
     prefix_nh_conditional: bool = False
 
@@ -40,13 +35,11 @@ class ScaffoldSpec:
         """返回本规格的 ScaffoldIdentity。"""
         return identity_of(self)
 
-ScaffoldId = str
-
 
 @dataclass(frozen=True)
 class ScaffoldIdentity:
     """骨架身份：id、命名类、环数与环类型。"""
-    id: ScaffoldId
+    id: str
     naming_class: str
     n_rings: int
     ring: str
@@ -153,7 +146,7 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "thiazepane": {"smiles": "S1CCNCCC1", "stem_en": "1,4-thiazepane", "stem_zh": "1,4-硫杂氮杂环庚烷", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,4-"},
     "thiazine13": {"smiles": "S1C=NC=CC1", "stem_en": "1,3-thiazine", "stem_zh": "1,3-噻嗪", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,3]thiazino", "[1,3]噻嗪并"), "locant_prefix": "1,3-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
 
-   }  # NOTE: carbonyl mothers（醌/色烯酮等）
+}
 
 
 def component_stem(sid: str) -> tuple[str, str] | None:
@@ -395,16 +388,15 @@ def all_specs() -> tuple[ScaffoldSpec, ...]:
 
 
 def numbering_scaffold_facts(spec_id: str | None, atom_count: int) -> dict | None:
-    """物化纯母体 facts；``relative_stereo`` 预留环面约束。"""
+    """物化纯母体 facts（标签数与原子数相符时返回）。"""
     spec = get_spec(spec_id or "")
-    if spec is None or not spec.numbering.materialize_plan:
+    if spec is None:
         return None
     labels = spec.numbering.standard_path
     return None if not labels or len(labels) != atom_count else {
-        "scaffold_id": spec.id, "labels": labels, "relative_stereo": None,
+        "scaffold_id": spec.id, "labels": labels,
     }
 
-RetainedEntry = dict
 
 def match_retained(info: dict, atom_ids, *, mancude_only: bool = False) -> str | None:
     """返回模板精确覆盖 atom_ids 的保留母体 sid（否则 None）。"""

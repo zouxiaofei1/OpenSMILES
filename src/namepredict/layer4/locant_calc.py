@@ -3,7 +3,7 @@ from __future__ import annotations
 from namepredict.layer1.fg_registry import FG_SPECS
 import re
 from namepredict.layer4._chain_orient import _bond_min_locs
-from namepredict.layer4.omit_locants import omit_fg_locant as _omit_fg
+from namepredict.layer4.omit_locants import omit_fg_locant as _omit_fg, omit_unsat
 
 def locant_key(x) -> tuple[int, str]:
     """locant → 排序键：数字按数值，字母尾作次级键。"""
@@ -50,12 +50,6 @@ def _single_locant(oriented: dict, group: str) -> int | None:
 
 
 
-def _omit_unsat(n_carbons, kind=None, parent=None, triple=False):
-    """委托 omit_locants.omit_unsat 判定不饱和位次省略。"""
-    from namepredict.layer4.omit_locants import omit_unsat as _core
-    return _core(n_carbons, kind, parent, has_ene=None, has_yne=None,
-                 triple=triple)
-
 def _sub_locant(chain: list[int], attach: int, facts=None) -> int:
     """返回取代基附着原子的位次；无位次时取 0。"""
     loc = _atom_locant(chain, attach, facts)
@@ -97,9 +91,9 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
     kind = oriented.get("kind")
     return {
         "ene_locants": ene_locants(oriented),
-        "omit_ene_locant": _omit_unsat(n, kind, oriented),
+        "omit_ene_locant": omit_unsat(n, kind, oriented),
         "yne_locants": yne_locants(oriented),
-        "omit_yne_locant": _omit_unsat(n, kind, oriented, triple=True),
+        "omit_yne_locant": omit_unsat(n, kind, oriented, triple=True),
     }
 
 _FG_GROUP = {"oh": "alcohol", "amine": "amine", "ketone": "ketone", "sh": "thiol"}  # 记录 kind → principal_expression_facts 类别
@@ -111,8 +105,7 @@ def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
     if group is None:
         return False
     single = kind != "ketone" or len(_typed_group_atoms(oriented, "ketone")) == 1
-    return _omit_fg(_single_locant(oriented, group), n, oriented, n_subs, single=single,
-                    has_ene=None, has_yne=None)
+    return _omit_fg(_single_locant(oriented, group), n, oriented, n_subs, single=single)
 
 
 def _anchor_field_locants(oriented: dict, key: str) -> list[int] | None:

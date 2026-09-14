@@ -42,11 +42,6 @@ def _try_anchored_lookup(mol, claim: ClaimedBlock) -> SubstituentName | None:
     return _retained_hit(claim, en, zh, paren)
 
 
-def _retained_name(mol, claim: ClaimedBlock) -> SubstituentName | None:
-    """retained 叶子（alkyl/aryl/halo 等）经锚定表解析。"""
-    return _try_anchored_lookup(mol, claim)
-
-
 class RetainedBackend:
     """锚定表 retained 叶子：alkyl/aryl/halo 等。"""
 
@@ -54,7 +49,7 @@ class RetainedBackend:
 
     def try_name(self, mol, claim: ClaimedBlock) -> SubstituentName | None:
         """通过锚定表 retained 叶子尝试命名。"""
-        return _retained_name(mol, claim)
+        return _try_anchored_lookup(mol, claim)
 
 class RecursiveBackend:
     """有界递归 cut → free-name → yl_form。"""

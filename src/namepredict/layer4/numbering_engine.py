@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from namepredict.constants import (
-    FIXED_START_KEYS, RS_HI, RS_LO, TRADITIONAL_NUMBERING_IDS,
+    RS_HI, RS_LO, TRADITIONAL_NUMBERING_IDS,
 )
 from namepredict.tools import memo
 from namepredict.layer1.ring_systems import sssr_rings
@@ -221,7 +221,6 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
     if len(chains) == 1:
         return chains[0]
     from namepredict.layer2.ring_scaffold import _STANDARD_LABELS
-    from namepredict.layer4.locant_calc import locant_key
     suffixes = [a for a in _principal_atoms(parent) if a in chain]  # P-14.4(c)：principal 特征基团与自由价附着原子得最低位次。
     if parent.get("radical_c_idx") in chain:  # 自由基主基团：自由价连接点与 principal 同属 (c) 后缀类。
         suffixes.append(parent["radical_c_idx"])
@@ -306,7 +305,7 @@ def _fused_numbering(parent: dict, chain: list[int],
         return None
     fused_chain, labels = result
     parent["numbering_scaffold"] = {
-        "scaffold_id": "fused", "labels": tuple(labels), "relative_stereo": None,
+        "scaffold_id": "fused", "labels": tuple(labels),
     }
     return fused_chain #外环原子顺序
 
@@ -325,16 +324,12 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     if fused is not None:
         return fused
     mol = parent.get("mol")
-    anchor_as_principal = None  # 固定 locant 1 失败时把该原子并入 principal 竞争最低位次。
     if mol is not None and _is_ring(parent) and any(
             mol.GetAtomWithIdx(a).GetAtomicNum() != 6 for a in chain):
         cands = _narrow_hetero_ring(_ring_cands(chain), mol, chain, float_hetero)  # 杂环：P-22.2.2.1.3 元素序窄化先于 principal。
     else:
         cands = _ring_cands(chain) if _is_ring(parent) else _chain_cands(chain)  # 碳环/链：P-14.4(a) 固定 locant 1 锚定后退化。
     principal = _principal_atoms(parent)
-    
-    if anchor_as_principal is not None:
-        principal = sorted(set(principal) | {anchor_as_principal})
     if principal:
         cands = _narrow(cands, lambda c: _locant_set(c, principal))
     bonds, doubles = _unsat_bonds(parent)

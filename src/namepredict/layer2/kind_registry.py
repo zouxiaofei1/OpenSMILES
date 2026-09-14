@@ -36,9 +36,7 @@ def _attach_numbering_scaffold(packed: dict) -> dict:
     facts = numbering_scaffold_facts(
         packed.get("scaffold_id") or packed.get("kind"), len(packed.get("chain") or ()),
     )
-    return packed if facts is None else {
-        **packed, "numbering_scaffold": facts, "numbering_scaffold_required": True,
-    }
+    return packed if facts is None else {**packed, "numbering_scaffold": facts}
 
 
 def _ring_keeps_nh_prefix(mol, chain) -> bool:

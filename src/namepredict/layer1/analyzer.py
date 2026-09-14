@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 from collections import deque
-from namepredict.tools import memo
 from namepredict.constants import (
     C,P, CARBONYL_COMPOSITES, FG_PARTS_KEY, H, N, O, RING_HETERO, S,
 )
@@ -18,7 +17,7 @@ from namepredict.layer1._carbonyl_common import (
     _is_single_c_oh,
 )
 
-def _heavy(mol: Mol, a) -> list:
+def _heavy(a) -> list:
     """非氢邻居索引。"""
     return [n.GetIdx() for n in a.GetNeighbors() if n.GetAtomicNum() != 1]
 
@@ -45,7 +44,7 @@ def _one_phosphate(mol: Mol, p_idx: int) -> dict | None:
     p = mol.GetAtomWithIdx(p_idx)
     if p.GetTotalNumHs() != 0 or p.GetFormalCharge() != 0:
         return None
-    nei = _heavy(mol, p)
+    nei = _heavy(p)
     if len(nei) != 4 or any(mol.GetAtomWithIdx(i).GetAtomicNum() != O for i in nei):
         return None
     single_o: list[int] = []
@@ -61,14 +60,14 @@ def _one_phosphate(mol: Mol, p_idx: int) -> dict | None:
     if len(dbl_o) != 1 or len(single_o) != 3:
         return None
     da = mol.GetAtomWithIdx(dbl_o[0])
-    if da.GetFormalCharge() != 0 or da.GetTotalNumHs() != 0 or _heavy(mol, da) != [p_idx]:
+    if da.GetFormalCharge() != 0 or da.GetTotalNumHs() != 0 or _heavy(da) != [p_idx]:
         return None
     core = {p_idx, *nei}
     n_oh = n_om = n_arms = 0
     arm_all: set[int] = set()
     for o_idx in single_o:
         a = mol.GetAtomWithIdx(o_idx)
-        heavy = _heavy(mol, a)
+        heavy = _heavy(a)
         if a.GetFormalCharge() == 0 and a.GetTotalNumHs() >= 1 and heavy == [p_idx]:
             n_oh += 1
             continue
@@ -81,7 +80,7 @@ def _one_phosphate(mol: Mol, p_idx: int) -> dict | None:
         if len(others) != 1 or mol.GetAtomWithIdx(others[0]).GetAtomicNum() != C:
             return None
         comp = _arm_component(mol, others[0], core)
-        attaches = [j for i in comp for j in _heavy(mol, mol.GetAtomWithIdx(i)) if j in core]  # 组分只贴 1 个 core 原子（桥 O）；不能连到 P 或其它 O
+        attaches = [j for i in comp for j in _heavy(mol.GetAtomWithIdx(i)) if j in core]  # 组分只贴 1 个 core 原子（桥 O）；不能连到 P 或其它 O
         if not attaches or len(set(attaches)) != 1 or attaches[0] != o_idx:
             return None
         arm_all |= comp
@@ -330,18 +329,10 @@ def _nitrile_entries(mol: Mol) -> list[dict]:
     """收集分子中所有腈条目的列表。"""
     return _filter_bond_entries(mol, _is_cn_triple, _nitrile_entry)
 
-def _ring_entry(atom_ids: tuple) -> dict:
-    """将环原子索引元组组装为环条目 dict。"""
-    return {"atom_ids": atom_ids}
-
-def _ring_entries(mol: Mol) -> list[dict]:
-    """收集分子中所有环条目的列表（按 mol 记忆）。"""
-    return memo.by_mol("ring_entries", lambda m: [_ring_entry(r) for r in m.GetRingInfo().AtomRings()], mol)
-
 def _ring_meta(mol: Mol) -> dict:
     """汇总环事实：环条目、环系与数量统计。"""
-    from namepredict.layer1.ring_systems import build_ring_systems
-    rings = _ring_entries(mol)
+    from namepredict.layer1.ring_systems import build_ring_systems, sssr_rings
+    rings = [{"atom_ids": r} for r in sssr_rings(mol)]
     systems = build_ring_systems(mol)
     return {
         "rings": rings, "n_rings": len(rings), "has_ring": bool(rings),
@@ -362,7 +353,7 @@ def _is_acyl_head(mol: Mol, atom) -> bool:
         if nb.GetAtomicNum() == 0:
             continue
         b = mol.GetBondBetweenAtoms(atom.GetIdx(), nb.GetIdx())
-        if b is not None and b.GetBondType() == BondType.DOUBLE:
+        if b.GetBondType() == BondType.DOUBLE:
             continue  # 羰基 =O（或醛 C=C 等其它双键；真实酰基头无第二个双键）
         if nb.GetAtomicNum() == C:
             carbs.append(nb)

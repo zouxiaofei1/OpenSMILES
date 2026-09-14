@@ -100,18 +100,17 @@ AMIDO_RETAINED_EN = frozenset(v[0] for v in AMIDO_RETAINED.values())
 
 # ── L0 电荷归一 / 盐解离 ────────────────────
 DONOR_KIND = ("carboxyl", "phospho")  # 允许作为强酸供体的酸类：羧酸 + 磷酸。磷酸供体在「酰胺 O⁻ 受体」场景下才有产出（见 preprocessor 的二次互变归一，gold 把 N=C([O-]) 写成酰胺、把 P-OH 写成 oxidophosphoryl）；sulfo 实测 0 收益，关闭以免扩大 blast radius。
-ACID_KIND_PRIO = {"carboxyl": 1, "phospho": 2, "sulfo": 3}
 ACCEPTOR_Z = frozenset({O, N})  # 弱受体允许的元素：O（酚氧/烯醇氧/酰胺氧）、N（去质子化氮）；保守可只留 {O}。
-ACID_CENTERS = {          # 中心元素 → (最少双键氧数, 酸类名)；键序即 ACID_KIND_PRIO 的酸强度序
-    C: (1, "carboxyl"),    # C(=O)OH
-    P: (1, "phospho"),     # P(=O)OH
-    S: (1, "sulfo"),       # S(=O)nOH
+ACID_CENTERS = {          # 中心元素 → 酸类名；键序即供体搬运的酸强度序
+    C: "carboxyl",        # C(=O)OH
+    P: "phospho",         # P(=O)OH
+    S: "sulfo",           # S(=O)nOH
 }
 ALKALI_EN = {Li: "lithium", Na: "sodium", K: "potassium"}  # 原子序数 → 英文金属名（IUPAC 官能团类盐）
 METAL_ZH = {"lithium": "锂", "sodium": "钠", "potassium": "钾"}
 
 # ── L1 官能团 parts 键 ──────────────────
-FG_PARTS_KEY = {  # fg_registry 名 → parts 键（有 p41 的链 FG）；P-41 优先级仲裁：组合羰基 FG（酸/酯/酰卤/酰胺/醛/酸酐）被更高优先级 FG（如自由基）压制时退出主基团，其羰基碳降级入 ketones（oxo 前缀候选），组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属——不再丢失羰基氧。ketone/alcohol/thiol/amine 是基础成员 FG，永不退出。
+FG_PARTS_KEY = {  # fg_registry 名 → parts 键（有 p41 的链 FG）；P-41 优先级仲裁：组合羰基 FG（酸/酯/酰卤/酰胺/醛）被更高优先级 FG（如自由基）压制时退出主基团，其羰基碳降级入 ketones（oxo 前缀候选），组成成员（N/OH/烷氧基）由 L3 递归/anchored 路径归属——不再丢失羰基氧。ketone/alcohol/thiol/amine 是基础成员 FG，永不退出。
     "radical": "radicals", "acyl": "acyls", "acid": "carboxyls",
     "ester": "esters", "acyl_halide": "acyl_chlorides", "amide": "amides",
     "nitrile": "nitriles", "aldehyde": "aldehydes", "ketone": "ketones",
@@ -151,14 +150,12 @@ NAME_KIND = {  # 锚定表/保留叶子的名称暗含非烷基 kind，使 L5 �
    
    
 }
-CLAIM_KIND = {"amide_n": "n_block", "amine_n": "n_block",
+CLAIM_KIND = {"amine_n": "n_block",
               "ring_c": "alkyl", "chain_c": "alkyl"}  # claim 槽位 → 取代基 kind
 ESTER_O_SIDE_KINDS = frozenset({"ester", "phosphate"})  # O-侧酸侧（烷氧基臂）：连在 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 酯/磷酸整名消费。ester：酯酸侧烷氧臂；phosphate：磷酸酯 O–R 臂（kind=phosphate 母体，见 layer1/phosphate.py）。
 
 # ── L4 位次 / 编号 ──────────────────────
 HYDRO_MULT_N = frozenset({2, 4, 6, 8, 10, 12, 14, 16, 18, 20})  # 加氢前缀覆盖的氢原子数（P-31.2.2 以偶数倍增前缀表示双键的饱和，位次数为加氢原子数）；数量词本身取自本层（唯一来源），此处只表达 L4 的适用域，域外放弃而非给错名。
-OH_KINDS = ("alcohol",)
-AMINE_KINDS = ("amine",)
 TRADITIONAL_NUMBERING_IDS = frozenset({  # P-25.3.3：这些保留骨架按传统编号，不走 P-25.3.3.1 的优选取向自动编号。xanthene 及其硫属类似物（xanthene/thioxanthene）与 cyclopenta[a]phenanthrene（甾体 1-17）已按_TEMPLATES 的 standard 字段登记传统编号，故一并列入。
     "anthracene", "phenanthrene", "acridine", "carbazole", "purine",
     "xanthene", "thioxanthene", "cyclopenta[a]phenanthrene",

@@ -13,8 +13,8 @@ import pytest
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.parent_ownership import finalize_parent_ownership
-from namepredict.layer2.parent_selector import select_parent
+from namepredict.layer2.parent_select import finalize_parent_ownership
+from namepredict.layer2.parent_select import select_parent
 from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer4.numbering_engine import orient_numbering
 from namepredict.namer import SMILESNNamer

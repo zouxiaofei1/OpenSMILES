@@ -20,9 +20,9 @@ import pytest
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2 import kind_registry
-from namepredict.layer2.candidates import _collect_candidates
+from namepredict.layer2.parent_select import _collect_candidates
 from namepredict.layer2.kind_registry import pack_parent_stem
-from namepredict.layer2.parent_selector import _p44_1_1, select_parent
+from namepredict.layer2.parent_select import _p44_1_1, select_parent
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, keep_p44_2, keep_p44_4_unsaturation
 from namepredict.layer2.principal_expression import (
     PrincipalChargeState,
@@ -31,7 +31,7 @@ from namepredict.layer2.principal_expression import (
     express_chain_principal,
 )
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
-from namepredict.layer2.principal_parent import rule_driven_parent_candidates, select_principal_parent_skeletons
+from namepredict.layer2.parent_select import rule_driven_parent_candidates, select_principal_parent_skeletons
 from namepredict.layer4.candidate_keys import prefix_locant_set, suffix_locant_set
 from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh

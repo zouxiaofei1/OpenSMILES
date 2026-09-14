@@ -239,7 +239,7 @@ def _ring_deform(pts: list, n: int, tmpl: list | None = None) -> float:
     return best
 
 
-def _valid_deform_overlap(coords: dict, rings, fusion_edges, ring_templates: dict | None = None) -> bool:
+def _valid_deform_overlap(coords: dict, rings, ring_templates: dict | None = None) -> bool:
     """每环刚体拟合偏差与环间重叠检查。"""
     ring_templates = ring_templates or {}
     for r, ring in enumerate(rings):
@@ -345,10 +345,10 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
             coords, ring_templates = laid
             if flip:
                 coords = {a: (x, -y) for a, (x, y) in coords.items()}
-            if not _valid_deform_overlap(coords, rings, fusion_edges, ring_templates):
+            if not _valid_deform_overlap(coords, rings, ring_templates):
                 continue
             (q1, q2, q3, q4), above = _quadrant_fractions(coords, rings, row)
-            key = (len(row), round(q1, 9), round(-q3, 9), round(above, 9))  # 环数离散值无连续尾差, round 仍消除浮点累计的 ~1e-15 噪声
+            key = (len(row), q1, -q3, above)  # 象限/环数为离散值 0/0.25/0.5/1，无浮点累计尾差
             orient = Orientation(row, tuple((a, x, y) for a, (x, y) in sorted(coords.items())),
                                  (q1, q2, q3, q4), above)
             if best_key is None or key > best_key:

@@ -32,17 +32,14 @@ class ParentSkeleton:
 
 @dataclass(frozen=True)
 class PrincipalSkeletons:
-    """骨架枚举结果：全部候选与未被任何候选覆盖的 occurrence id。"""
+    """骨架枚举结果：全部候选。"""
     candidates: tuple[ParentSkeleton, ...]
-    unsupported_ids: frozenset[str]
 
 
 @dataclass(frozen=True)
 class SkeletonSelection:
-    """骨架筛选结果：胜出候选、交 L4 的下一规则标记与未覆盖 id。"""
+    """骨架筛选结果：胜出候选。"""
     candidates: tuple[ParentSkeleton, ...]
-    next_rule: str | None
-    unsupported_ids: frozenset[str] = frozenset()
 
 
 def _anchors(occurrences: tuple[FunctionalGroupOccurrence, ...]) -> list[int]:
@@ -138,16 +135,10 @@ def keep_senior_atom(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[
     return tuple(c for c in candidates if seniority.get(_senior_atom(mol, c), 0) == best)
 
 
-def keep_ring_over_chain(candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
-    """混合拓扑时保留环骨架。"""
-    topologies = {c.topology for c in candidates}
-    return tuple(c for c in candidates if c.topology is SkeletonTopology.RING_SYSTEM) if len(topologies) > 1 else candidates
-
-
 def keep_p44_1_2(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
-    """P-44.1.2：混合拓扑时环优先且取 senior 元素。"""
+    """P-44.1.2：混合拓扑时取 senior 元素。"""
     topologies = {c.topology for c in candidates}
-    return keep_ring_over_chain(keep_senior_atom(mol, candidates)) if len(topologies) > 1 else candidates
+    return keep_senior_atom(mol, candidates) if len(topologies) > 1 else candidates
 
 
 def _hetero_count(mol: Mol, skeleton: ParentSkeleton) -> int:
@@ -232,11 +223,9 @@ def keep_p44_4_unsaturation(mol: Mol, candidates: tuple[ParentSkeleton, ...], oc
     return tuple(c for c in candidates if p44_4_unsaturation_key(mol, c, occurrences) == best)
 
 
-def _finish_skeleton_selection(info: dict, candidates, occurrences, unsupported) -> SkeletonSelection:
+def _finish_skeleton_selection(info: dict, candidates, occurrences) -> SkeletonSelection:
     """末位应用不饱和度规则并封装选择结果。"""
-    candidates = keep_p44_4_unsaturation(info["mol"], candidates, occurrences)
-    next_rule = "L4:P-44.4.1.3+" if candidates else None
-    return SkeletonSelection(candidates, next_rule, unsupported)
+    return SkeletonSelection(keep_p44_4_unsaturation(info["mol"], candidates, occurrences))
 
 
 def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> SkeletonSelection:
@@ -249,11 +238,9 @@ def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOcc
         candidates = keep_p44_3(info["mol"], candidates)
     else:
         candidates = keep_p44_2(info["mol"], candidates)
-    return _finish_skeleton_selection(info, candidates, occurrences, enumerated.unsupported_ids)
+    return _finish_skeleton_selection(info, candidates, occurrences)
 
 
 def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> PrincipalSkeletons:
-    """枚举全部骨架候选，并计算未覆盖的 occurrence id。"""
-    candidates = tuple(_chain_candidates(info, occurrences) + _ring_candidates(info, occurrences))
-    covered = frozenset(i for candidate in candidates for i in candidate.covered_principal_ids)
-    return PrincipalSkeletons(candidates, frozenset(o.id for o in occurrences) - covered)
+    """枚举全部骨架候选。"""
+    return PrincipalSkeletons(tuple(_chain_candidates(info, occurrences) + _ring_candidates(info, occurrences)))

@@ -143,14 +143,13 @@ def _locant_tuples(chain: list[int], labels: list[str], atoms: list[int]) -> tup
     return tuple(locs)
 
 
-def number_fused_system(mol, rings, coords, sub_layers=None,
+def number_fused_system(mol, rings, coords: list[dict], sub_layers=None,
                         alpha_subs=None) -> tuple[list[int], list[str]] | None:
     """P-25.3.3 稠环编号: 依(a)-(d) 收窄，返回候选或 None。"""
     fused = fused_atoms(rings)
     heteros = _hetero_set(mol, fused) | _hetero_set(mol, set().union(*rings))
-    coords_list = [coords] if isinstance(coords, dict) else list(coords)
     cands: list[tuple[list[int], list[str]]] = []
-    for c in coords_list:
+    for c in coords:
         cands.extend(_candidates(mol, rings, c, fused))
     if not cands:
         return None

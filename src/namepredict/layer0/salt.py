@@ -4,7 +4,7 @@ from __future__ import annotations
 from rdkit import Chem
 from rdkit.Chem import Mol
 
-from namepredict.constants import ALKALI_EN, Cl, METAL_ZH, O
+from namepredict.constants import ALKALI_EN, Cl, METAL_ZH
 
 
 def _alkali_en(mol: Mol) -> str | None:
@@ -28,23 +28,19 @@ def _is_hcl_frag(mol: Mol) -> bool:
     return a.GetFormalCharge() == 0 and a.GetTotalNumHs() == 1
 
 
-def _bucket_frag(f: Mol, metals: list[str], organics: list[Mol]) -> int:
-    """对一个片段分类；若为 HCl 返回 1，否则返回 0。"""
-    m = _alkali_en(f)
-    if m is not None:
-        metals.append(m)
-        return 0
-    if _is_hcl_frag(f):
-        return 1
-    organics.append(f)
-    return 0
-
-
 def _partition(frags: tuple[Mol, ...]) -> tuple[list[str], list[Mol], int]:
     """将片段分为碱金属、有机片段并统计 HCl 个数。"""
     metals: list[str] = []
     organics: list[Mol] = []
-    n_hcl = sum(_bucket_frag(f, metals, organics) for f in frags)
+    n_hcl = 0
+    for f in frags:
+        m = _alkali_en(f)
+        if m is not None:
+            metals.append(m)
+        elif _is_hcl_frag(f):
+            n_hcl += 1
+        else:
+            organics.append(f)
     return metals, organics, n_hcl
 
 
@@ -72,8 +68,8 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
         if n_hcl:
             return None
         meta = _meta_metal(metals)
-        return (organics[0], meta) if meta else None
-    meta = _meta_hcl(n_hcl)
+    else:
+        meta = _meta_hcl(n_hcl)
     return (organics[0], meta) if meta else None
 
 
@@ -82,7 +78,5 @@ def dissociate_salt(mol: Mol) -> tuple[Mol, dict]:
     if len(Chem.GetMolFrags(mol)) < 2:
         return mol, {}
     frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
-    if len(frags) < 2:
-        return mol, {}
     hit = _from_frags(frags)
     return hit if hit is not None else (mol, {})

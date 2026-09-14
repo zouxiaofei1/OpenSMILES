@@ -14,7 +14,6 @@ class FgSpec:
     list_key: str  # L1 analyzer 列表复数 key（如 "hydroxyls"）
     p41: int = 0  # P-41 主官能团等级（0 = 非主官能团）
     path: tuple[int, ...] = ()  # P-43 优先级路径
-    compat: int = 0  # 兼容等级（legacy_rank 消费）
     expr: str = "suffix"  # 表达类型：suffix / prefix_only / legacy_compat
     anchors: tuple[str, ...] = ()  # occurrence payload 锚点 key（空 = 不收集锚点）
     parent_anchor_fields: tuple[str, str] | None = None  # parent 锚点字段（单, 复）
@@ -24,9 +23,6 @@ class FgSpec:
     keep_locant: bool = False  # 取代基位次保留（assembler_prefixes._KEEP_LOCANT_KINDS）
     locant_kind: str | None = None  # fg_locants 记录 kind（"oh"/"amine"/…）；None = 不产位次记录
     locant_source: str = "attachment"  # 位次原子来源：attachment 取 principal_expression_facts 骨架内附着原子；attachment_exocyclic 仅环外表达时取；anchor_field 取 parent_anchor_fields 首位语义字段（固定 locant 1 锚点）
-    oh_parent: bool = False  # 醇类母体（抑制羟基取代基提取）
-    nh2_parent: bool = False  # 胺类母体
-    oxo_parent: bool = False  # 酮类母体
 
 
 FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
@@ -49,14 +45,13 @@ FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("aldehyde", "aldehydes", p41=15,  anchors=("center_idx",),
            chain=True, rs=True, locant_kind="aldehyde", locant_source="attachment_exocyclic"),
     FgSpec("ketone", "ketones", p41=16,  anchors=("center_idx",),
-           chain=True, multi=True, rs=True, keep_locant=True, locant_kind="ketone",
-           oxo_parent=True),
+           chain=True, multi=True, rs=True, keep_locant=True, locant_kind="ketone"),
     FgSpec("alcohol", "hydroxyls", p41=17, path=(1,), anchors=("surr_idx",),  
-           chain=True, multi=True, rs=True, locant_kind="oh", oh_parent=True),
+           chain=True, multi=True, rs=True, locant_kind="oh"),
     FgSpec("thiol", "thiols", p41=17, path=(2,),  anchors=("surr_idx",), 
            chain=True, multi=True, rs=True, locant_kind="sh"),
     FgSpec("amine", "amines", p41=19,anchors=("surr_idx",),  
-           chain=True, multi=True, rs=True, locant_kind="amine", nh2_parent=True),
+           chain=True, multi=True, rs=True, locant_kind="amine"),
 )
 
 def chain_fgs() -> frozenset[str]:

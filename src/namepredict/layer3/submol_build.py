@@ -5,11 +5,6 @@ from rdkit import Chem
 from rdkit.Chem import Mol
 
 
-def _ordered(atoms: frozenset[int]) -> list[int]:
-    """返回排序后的原子索引列表。"""
-    return sorted(atoms)
-
-
 def _copy_atoms(em: Chem.RWMol, mol: Mol, order: list[int]) -> dict[int, int]:
     """复制原子到可写分子并记录新旧映射。"""
     inv: dict[int, int] = {}
@@ -105,7 +100,7 @@ def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol
     if attach_old not in atoms:
         return None
     em = Chem.RWMol()
-    inv = _copy_atoms(em, mol, _ordered(atoms))
+    inv = _copy_atoms(em, mol, sorted(atoms))
     copied = _copy_bonds(em, mol, inv)
     d = _add_anchor(em, inv[attach_old], _external_bond_type(mol, attach_old, atoms))
     _carry_alkene_stereo(em, mol, inv, copied, d)

@@ -9,10 +9,9 @@ from rdkit.Chem import BondType, Mol
 from namepredict.tools.block_cut import cut_block, side_roots
 
 class SideSlot(str, Enum):
-    """侧链连接原子的角色槽位（链碳/环碳/酰胺 N/胺 N/醚 O/其他）。"""
+    """侧链连接原子的角色槽位（链碳/环碳/胺 N/其他）。"""
     CHAIN_C = "chain_c"
     RING_C = "ring_c"
-    AMIDE_N = "amide_n"
     AMINE_N = "amine_n"
     OTHER = "other"
 
@@ -26,34 +25,21 @@ class ClaimedBlock:
     atoms: frozenset[int]
 
 
-def _is_amide_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
-    """酰胺 N：原子序数 7，与带双键 O 的所属羰基 C 以单键相连。"""
-    if mol.GetAtomWithIdx(n_idx).GetAtomicNum() != 7:
-        return False
-    return False
-
-def _is_amine_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
-    """胺 N：非芳香、非环员 N（环 N 用环上位次定位），连 owned 碳。"""
+def _is_amine_n(mol: Mol, n_idx: int) -> bool:
+    """胺 N：非芳香、非环员 N（环 N 用环上位次定位）。"""
     atom = mol.GetAtomWithIdx(n_idx)
     if atom.GetAtomicNum() != 7 or atom.GetIsAromatic() or atom.IsInRing():
         return False
     return True
 
 
-def _carbon_slot(atom) -> SideSlot:
-    """按是否成环返回碳原子的 slot 类型。"""
-    return SideSlot.RING_C if atom.IsInRing() else SideSlot.CHAIN_C
-
-
 def derive_slot(mol: Mol, attach_parent: int, owned_atoms: frozenset[int]) -> SideSlot:
     """仅从所属连接原子的角色推导 SideSlot。"""
-    if _is_amide_n(mol, attach_parent, owned_atoms):
-        return SideSlot.AMIDE_N
-    if _is_amine_n(mol, attach_parent, owned_atoms):
+    if _is_amine_n(mol, attach_parent):
         return SideSlot.AMINE_N
     atom = mol.GetAtomWithIdx(attach_parent)
     if atom.GetAtomicNum() == 6:
-        return _carbon_slot(atom)
+        return SideSlot.RING_C if atom.IsInRing() else SideSlot.CHAIN_C
     return SideSlot.OTHER
 
 

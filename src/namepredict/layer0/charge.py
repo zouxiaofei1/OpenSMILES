@@ -4,11 +4,11 @@ from __future__ import annotations
 from rdkit import Chem
 from rdkit.Chem import Mol, RWMol
 
-from namepredict.constants import ACCEPTOR_Z, ACID_CENTERS, ACID_KIND_PRIO, DONOR_KIND, O
+from namepredict.constants import ACCEPTOR_Z, ACID_CENTERS, DONOR_KIND, O
 
 
-def _oxo_neighbor(atom, heavy: int, min_oxo: int = 1):
-    """返回邻接的非芳香成酸中心原子（双键氧 ≥min_oxo）；无则 None。"""
+def _oxo_neighbor(atom, heavy: int):
+    """返回邻接的非芳香成酸中心原子（双键氧 ≥1）；无则 None。"""
     for n in atom.GetNeighbors():
         if n.GetAtomicNum() != heavy or n.GetIsAromatic():
             continue
@@ -18,14 +18,14 @@ def _oxo_neighbor(atom, heavy: int, min_oxo: int = 1):
             if b.GetOtherAtom(n).GetAtomicNum() == O
             and b.GetBondType() == Chem.BondType.DOUBLE
         )
-        if oxo >= min_oxo:
+        if oxo >= 1:
             return n
     return None
 
 def _acid_kind(atom) -> str | None:
     """按 ACID_CENTERS 表返回 O 所连成酸中心对应的酸类名。"""
-    for z, (min_oxo, kind) in ACID_CENTERS.items():
-        if _oxo_neighbor(atom, z, min_oxo):
+    for z, kind in ACID_CENTERS.items():
+        if _oxo_neighbor(atom, z):
             return kind
     return None
 
@@ -66,19 +66,13 @@ def _relocate_proton(mol: Mol, a_idx: int, d_idx: int) -> Mol | None:
     return out
 
 
-def _frag_of(mol: Mol) -> dict[int, int]:
-    """返回 {atom_idx: 片段号} 映射。"""
-    return {i: fi for fi, tup in enumerate(Chem.GetMolFrags(mol)) for i in tup}
-
-
 def normalize_acid_charge(mol: Mol) -> Mol:
-    # return mol
     """同片段内质子化强酸与去质子化弱酸位共存时逐次搬质子；无改动返回原 mol。"""
     if any(a.GetAtomicNum() == 0 for a in mol.GetAtoms()):
         return mol
     out = mol
     for _ in range(mol.GetNumAtoms()):  # 上界：每次消耗一对 donor/acceptor
-        frag_of = _frag_of(out)
+        frag_of = {i: fi for fi, tup in enumerate(Chem.GetMolFrags(out)) for i in tup}
         donors: list[int] = []
         acceptors: list[int] = []
         for i, a in enumerate(out.GetAtoms()):
@@ -90,7 +84,7 @@ def normalize_acid_charge(mol: Mol) -> Mol:
         if not donors or not acceptors:
             break
         ranks = list(Chem.CanonicalRankAtoms(out))
-        donors.sort(key=lambda i: (-ACID_KIND_PRIO.get(_acid_kind_of_oh(out.GetAtomWithIdx(i)), 0), ranks[i]))  # 供体：酸更强(更负 prio 取负序)优先，再取 canonical rank 最小保证确定性
+        donors.sort(key=lambda i: (-DONOR_KIND.index(_acid_kind_of_oh(out.GetAtomWithIdx(i))), ranks[i]))  # 供体：DONOR_KIND 序靠前优先，再取 rank 最小保确定性
         d_idx = donors[0]
         dfrag = frag_of[d_idx]
         same_frag = [i for i in acceptors if frag_of[i] == dfrag]

@@ -11,9 +11,7 @@ from namepredict.constants import N_PREFIX_KINDS
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer0.salt import dissociate_salt
 from namepredict.layer1.analyzer import analyze
-from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
-from namepredict.layer2.parent_ownership import finalize_parent_ownership
-from namepredict.layer2.parent_selector import select_parent
+from namepredict.layer2.parent_select import finalize_parent_ownership, select_parent
 from namepredict.layer3.coverage import build_coverage_ledger
 from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer3.substituent_namer import SubstituentName
@@ -49,16 +47,6 @@ def _label_list(parent: dict) -> list:
     chain = parent.get("chain") or []
     return [int(x) if str(x).isdigit() else str(x) for x in labels] if len(labels) == len(chain) else []
 
-
-def _claim_from_sub(s: dict, atoms: frozenset[int]) -> ClaimedBlock:
-    """由取代基 dict 与原子集构建 ClaimedBlock 归属块。"""
-    attach = s.get("attach_idx")
-    return ClaimedBlock(
-        slot=SideSlot.OTHER,
-        attach_parent=int(attach) if attach is not None else -1,
-        root=min(atoms),
-        atoms=atoms,
-    )
 
 def _ledger_complete(mol, owned, subst: list[dict]) -> bool:
     """基于 coverage ledger 判断取代基是否覆盖全部母体原子。"""

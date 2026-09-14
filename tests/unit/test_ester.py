@@ -18,8 +18,8 @@ import namepredict.namer as namer_module
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.kind_registry import pack_parent_stem
-from namepredict.layer2.parent_selector import select_parent
-from namepredict.layer2.principal_parent import rule_driven_parent_candidates
+from namepredict.layer2.parent_select import select_parent
+from namepredict.layer2.parent_select import rule_driven_parent_candidates
 from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh
 from rdkit import Chem
