@@ -45,15 +45,6 @@ def _overlap_atoms(counts: Counter[int]) -> frozenset[int]:
     """取出归属次数大于 1 的重叠原子。"""
     return frozenset(i for i, n in counts.items() if n > 1)
 
-
-def _covered_atoms(owned: frozenset[int], names: list[SubstituentName]) -> frozenset[int]:
-    """合并所有权与命名 claim 的覆盖原子集合。"""
-    covered = set(owned)
-    for name in names:
-        covered |= set(name.claim.atoms)
-    return frozenset(covered)
-
-
 def build_coverage_ledger(
     mol: Mol,
     *,
@@ -62,11 +53,10 @@ def build_coverage_ledger(
 ) -> CoverageLedger:
     """仅针对重原子构建 gap/overlap 台账；排除 H。"""
     heavy = _heavy_atoms(mol)
-    covered = _covered_atoms(owned_atoms, names)
     counts = _membership_counts(owned_atoms, names)
     return CoverageLedger(
         owned_atoms=owned_atoms,
         named_claims=tuple(names),
-        gap=frozenset(heavy - covered),
+        gap=frozenset(heavy - owned_atoms),
         overlap=_overlap_atoms(counts),
     )

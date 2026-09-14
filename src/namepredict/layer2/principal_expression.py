@@ -192,19 +192,6 @@ def _ring_fields(selection: PrincipalGroupSelection, occurrences) -> dict:
     """构造环主基团的固定 locant 1 锚点字段（其余锚点/特征原子经 principal_expression_facts 流转）。"""
     return _semantic_anchor_fields(selection.group_class, _anchors(occurrences))
 
-
-def _ring_fact_fields(fields: dict, facts: PrincipalExpressionFacts) -> dict:
-    """单附着酸/酯/酰胺/腈/醛/酰基加 ring_attach_idx：环外羰基的位次落在环附着原子上。"""
-    attachments = sorted(facts.attachment_atoms)
-    if len(attachments) == 1 and facts.group_class in (
-        FunctionalGroupClass.ACID, FunctionalGroupClass.ESTER,
-        FunctionalGroupClass.AMIDE, FunctionalGroupClass.NITRILE,
-        FunctionalGroupClass.ALDEHYDE, FunctionalGroupClass.ACYL,
-    ):
-        return {**fields, "ring_attach_idx": attachments[0]}  # ACYL：exocyclic 酰基头（苯甲酰/furan-2-carbonyl）的环附着原子位次，供 L4 在 locant_calc 计算 -carbonyl/benzoyl 词形所需 locant。
-    return fields
-
-
 def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=None) -> dict:
     """解析并写入 scaffold 身份与表达能力字段；稠环拆解独立于 scaffold 身份。"""
 
@@ -265,7 +252,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     if kind is None:
         return None
     facts = _facts(selection, skeleton, occurrences, info["mol"])
-    fields = {**_ring_fact_fields(_ring_fields(selection, occurrences), facts),
+    fields = {**_ring_fields(selection, occurrences),
               **_chain_unsat_fields(info, skeleton,
                                     _scaffold_fields(info, skeleton, facts, scaffold))}  # 补环内不饱和字段：kind 正交化后（醇/酮/纯烃环 → FG 类别/alkane），烯/炔由 double_bond(s)/triple_bond 字段承载（否则环烯酮/环烯醇/环烯烃烯丢失）。
     if kind == "radical" and _radical_ylidene(info, occurrences):  # 环上碳锚点自由价双键（*=C1CCCC1）：链引擎出 -ylidene

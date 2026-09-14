@@ -65,24 +65,6 @@ def _fg_locant(numbered: dict, kind: str) -> int | None:
     locs = rec.get("locants") if rec else None
     return locs[0] if locs and len(locs) == 1 else None
 
-def _has_ene(numbered: dict) -> bool:
-    """判断母体是否存在烯键（含父字典 double_bond(s) 回落：环外双键无链上位次）。"""
-    p = numbered.get("parent") or {}
-    return bool(
-        numbered.get("ene_locants")
-        or p.get("double_bond") or p.get("double_bonds")
-    )
-
-
-def _has_yne(numbered: dict) -> bool:
-    """判断母体是否存在炔键（含父字典 triple_bond(s) 回落）。"""
-    p = numbered.get("parent") or {}
-    return bool(
-        numbered.get("yne_locants")
-        or p.get("triple_bond") or p.get("triple_bonds")
-    )
-
-
 def _yl_loc_omitted(spec: "_Chain", fg: int) -> bool:
     """自由价位次是否省略：无环链式母体（非环、无稠环/杂环词干）的 C-1 自由价（P-29.2 方法 1 的烯/炔拓展；饱和链走 omit_rule/_radical_plain，此处供烯/炔段引擎源头不拼位次）。"""
     return (spec.yl_loc_omit and fg == 1

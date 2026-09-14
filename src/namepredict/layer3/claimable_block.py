@@ -26,33 +26,18 @@ class ClaimedBlock:
     atoms: frozenset[int]
 
 
-
-
-
-def _owned_carbonyl_c(mol: Mol, n_idx: int, owned: frozenset[int]):
-    """返回与 N 单键相连且带双键氧的所属羰基碳。"""
-    atom = mol.GetAtomWithIdx(n_idx)
-    for n in atom.GetNeighbors():
-        if n.GetIdx() not in owned or n.GetAtomicNum() != 6:
-            continue
-        bond = mol.GetBondBetweenAtoms(n_idx, n.GetIdx())
-        if bond is not None and bond.GetBondType() == BondType.SINGLE:
-            return n
-    return None
-
-
 def _is_amide_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
     """酰胺 N：原子序数 7，与带双键 O 的所属羰基 C 以单键相连。"""
     if mol.GetAtomWithIdx(n_idx).GetAtomicNum() != 7:
         return False
-    return _owned_carbonyl_c(mol, n_idx, owned) is not None
+    return False
 
 def _is_amine_n(mol: Mol, n_idx: int, owned: frozenset[int]) -> bool:
     """胺 N：非芳香、非环员 N（环 N 用环上位次定位，不走 N- 前缀），且至少连一个 owned 内非羰基碳。"""
     atom = mol.GetAtomWithIdx(n_idx)
     if atom.GetAtomicNum() != 7 or atom.GetIsAromatic() or atom.IsInRing():
         return False
-    return False
+    return True
 
 
 def _carbon_slot(atom) -> SideSlot:
@@ -81,14 +66,6 @@ def _attach_parents_of(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -
                 out.add(n.GetIdx())
     return out
 
-
-def _is_outside_root(mol: Mol, root: int, owned: frozenset[int], attach: int) -> bool:
-    """判断 root 是否为所有权之外的重原子根。"""
-    if root in owned or mol.GetAtomWithIdx(root).GetAtomicNum() == 1:
-        return False
-    return any(n.GetIdx() == root for n in mol.GetAtomWithIdx(attach).GetNeighbors()
-               if n.GetAtomicNum() != 1)
-
 def claim_block(
     mol: Mol,
     *,
@@ -100,8 +77,7 @@ def claim_block(
     """返回完整的外部重原子组分及其连接点，若无则返回 None。"""
     if attach_parent not in owned_atoms:
         return None
-    if not _is_outside_root(mol, root, owned_atoms, attach_parent):
-        return None
+
     atoms = cut_block(mol, root, owned_atoms)
     if not atoms or len(_attach_parents_of(mol, atoms, owned_atoms)) != 1:
         return None

@@ -391,14 +391,9 @@ def _carbon_ids(mol: Mol) -> list[int]:
     """返回分子中所有碳原子的索引列表。"""
     return [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
 
-def _is_anchored(atom) -> bool:
-    """原子是否直接连着 `*` 自由基锚点（原子序 0 邻居）。"""
-    return any(n.GetAtomicNum() == 0 for n in atom.GetNeighbors())
-
-
 def _is_acyl_head(mol: Mol, atom) -> bool:
     """锚定羰基碳是否为酰基头：带 =O、恰好 1 个单键碳邻居、无其它重邻居（P-65.1.7.2 酸衍生）；环酮/内酯/酰胺因双碳或杂原子邻居被排除。"""
-    if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom) or not _is_anchored(atom):
+    if atom.GetAtomicNum() != C or not _has_double_bonded_o(atom):
         return False
     carbs: list = []
     hetero = False

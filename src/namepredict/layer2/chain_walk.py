@@ -159,30 +159,9 @@ def _rebuild_path(prev: dict, end: int) -> list[int]:
         path.append(prev[path[-1]])
     return list(reversed(path))
 
-
-def _path_between(mol: Mol, a: int, b: int, banned: set[int] = frozenset()) -> list[int]:
-    """返回两碳原子间的最短路径（含两端）。"""
+def _chain_through_two(mol: Mol, a: int, b: int, banned: set[int] = frozenset()) -> list[int]:
+    """返回同时穿过 c1、c2 的最长链。"""
     if a == b:
         return [a]
     prev = _bfs_prev(mol, a, b, banned)
     return _rebuild_path(prev, b) if prev else [a]
-
-
-def _best_arm_away(mol: Mol, from_c: int, forbid: set[int], banned: set[int] = frozenset()) -> list[int]:
-    """返回从 from_c 出发避开 forbid 集合的最长臂。"""
-    best: list[int] = []
-    for nb in _carbon_neighbors(mol, from_c, banned):
-        if nb in forbid:
-            continue
-        path = _longest_from(mol, nb, forbid | {from_c}, banned)
-        if len(path) > len(best):
-            best = path
-    return best
-
-
-def _chain_through_two(mol: Mol, c1: int, c2: int, banned: set[int] = frozenset()) -> list[int]:
-    """返回同时穿过 c1、c2 的最长链。"""
-    path = _path_between(mol, c1, c2, banned)
-    left = _best_arm_away(mol, path[0], set(path[1:]), banned)
-    right = _best_arm_away(mol, path[-1], set(path[:-1]), banned)
-    return list(reversed(left)) + path + right

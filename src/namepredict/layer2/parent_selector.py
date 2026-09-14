@@ -22,16 +22,9 @@ def principal_key(parent: dict) -> P44Facts:
     """提取母体的主官能团打分键 facts。"""
     return ParentCandidate(parent, P44Facts(None, int(parent["principal_group_count"]))).facts
 
-
-def _p44_1_1(parent: dict) -> tuple[int, int]:
-    """P-44.1.1 键：(FG 等级, 基团个数)。"""
-    facts = principal_key(parent)
-    return facts.principal_group_class, facts.principal_group_count
-
-
 def _rank_candidates(info: dict, cands: list[dict]) -> list[dict]:
     """按评分降序排列候选母体。"""
-    return sorted(cands, key=lambda c: _p44_1_1(c), reverse=True)
+    return sorted(cands, key=lambda c: [], reverse=True)
 
 
 def _p45_2_prefix_count(info: dict, parent: dict) -> int:

@@ -200,17 +200,6 @@ def keep_max_principal_coverage(candidates: tuple[ParentSkeleton, ...]) -> tuple
     maximum = max((len(c.covered_principal_ids) for c in candidates), default=0)
     return tuple(c for c in candidates if len(c.covered_principal_ids) == maximum)
 
-
-def _principal_multiple_edges(mol: Mol, occurrences) -> set[frozenset[int]]:
-    """收集主官能团特征原子间的多重键边（不计入不饱和）。"""
-    edges = set()
-    for occurrence in occurrences:
-        atoms = occurrence.characteristic_atoms
-        edges |= {frozenset((b.GetBeginAtomIdx(), b.GetEndAtomIdx())) for b in mol.GetBonds()
-                  if b.GetBondTypeAsDouble() > 1 and {b.GetBeginAtomIdx(), b.GetEndAtomIdx()} <= atoms}
-    return edges
-
-
 def p44_4_unsaturation_key(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -> tuple[int, int]:
     """P-44.4 不饱和度键：(多重键数, 双键数)。 """
     return memo.by_key(
@@ -222,12 +211,12 @@ def p44_4_unsaturation_key(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -
 
 def _p44_4_unsaturation_key_uncached(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -> tuple[int, int]:
     """实际计算 P-44.4 不饱和度键（无记忆版本，见 p44_4_unsaturation_key）。"""
-    atoms, excluded = set(skeleton.atom_ids), _principal_multiple_edges(mol, occurrences)
+    atoms = set(skeleton.atom_ids)
     non_arom: list = []
     n_arom = 0
     for b in mol.GetBonds():
         edge = frozenset((b.GetBeginAtomIdx(), b.GetEndAtomIdx()))
-        if edge <= atoms and edge not in excluded:
+        if edge <= atoms :
             if b.GetIsAromatic():
                 n_arom += 1
             else:
