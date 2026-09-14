@@ -126,7 +126,7 @@
                   placeholder="SMILES 或基准 id，如 CCO / chebi-1"
                   required
                   spellcheck="false"
-                  aria-describedby="namer-error live-name-hint"
+                  aria-describedby="namer-error"
                 />
                 <button type="submit" id="btn-name" class="btn btn-primary" aria-label="Name SMILES">
                   <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -141,11 +141,7 @@
                   PubChem
                 </button>
               </div>
-              <label class="live-toggle">
-                <input type="checkbox" id="live-name-toggle" checked />
-                <span>实时命名</span>
-              </label>
-              <p id="live-name-hint" class="muted-text small">结构变化或编辑 SMILES 后约 0.7s 自动命名（默认开）</p>
+              <p class="muted-text small">结构变化或编辑 SMILES 后自动命名</p>
               <p id="namer-error" class="field-error" role="alert" hidden></p>
             </form>
             <div id="namer-result" class="namer-result hidden" aria-live="polite">
@@ -421,12 +417,13 @@
         </div>
       </div>
 
-      <!-- Debug Page（Pipeline 分层 + 打印调试 合并，开关切换） -->
+      <!-- Debug Page（Pipeline 分层 + 打印调试 + 批量打印 合并，开关切换） -->
       <div id="debug-page" class="debug-page hidden" role="tabpanel" aria-labelledby="tab-debug">
         <div class="debug-input-bar">
           <div class="debug-mode-seg" role="group" aria-label="调试模式">
             <button type="button" class="debug-mode-btn active" data-debug-mode="pipeline">Pipeline 分层</button>
             <button type="button" class="debug-mode-btn" data-debug-mode="print">打印输出</button>
+            <button type="button" class="debug-mode-btn" data-debug-mode="batch">批量打印</button>
           </div>
           <input id="debug-smiles" class="input" type="text"
                  placeholder="Enter SMILES, e.g. c1ccccc1C(=O)O or CC(=O)OC1CCCCC1"
@@ -450,6 +447,16 @@
             <span class="print-hint">执行 server/backend/debug.py —— 显示命名路径中所有 print() 输出</span>
           </div>
           <pre id="print-debug-output" class="print-output">（输入 SMILES，点击"Run"执行）</pre>
+        </div>
+        <div id="batch-print-panel" class="print-panel" hidden>
+          <div class="print-head">
+            <span class="print-title">批量打印 · merged_benchmark</span>
+            <span class="print-hint">点 Run 随机顺序跑整个数据集，只显示 print() 有输出的分子（最多 200 个）—— 用于查某个函数被哪些分子触发</span>
+            <input id="batch-filter" class="input batch-filter" type="text"
+                   placeholder="过滤关键字（如函数名），只看命中的行" autocomplete="off" spellcheck="false">
+            <span id="batch-filter-stat" class="print-hint"></span>
+          </div>
+          <pre id="batch-print-output" class="print-output print-output-tall">（点击"Run"开始跑整个 merged_benchmark）</pre>
         </div>
       </div>
 

@@ -5,7 +5,7 @@ from namepredict.layer5.stems import (
     ALKANE_EN, ALKANE_ZH, _en_stem, alkane_zh, zh_stem,
 )
 from namepredict.layer5.stereo import _ez_prefix, ez_for_parent
-from namepredict.constants import CHAIN_RETAINED, MULT_EN, MULT_ZH, HALIDE_EN, HALO_ZH
+from namepredict.constants import CHAIN_RETAINED, EXO_RING_SUF, MULT_EN, MULT_ZH, HALIDE_EN, HALO_ZH
 
 def _pair(en_map: dict, zh_map: dict, n: int) -> tuple[str, str] | None:
     """从双语映射表取 n 的 (en, zh) 对，缺失返回 None。"""
@@ -290,14 +290,56 @@ def _ylidene_form(pair: tuple[str, str]) -> tuple[str, str]:
     return en, zh
 
 
+EXO_RING_SEG = (("ene", "烯"), ("yne", "炔"))  # 环外主基的环内不饱和段保留完整 ene/yne（cyclohex-2-yne-1-carboxylic acid）
+
+
+def _ring_prefix_located(numbered: dict) -> bool:
+    """环上是否另带被编号前缀（烷基/卤素/羟基…）：环外主基后缀锚定 1 位后，其它环位取代必带前缀位次，主基位次不可省略（P-66.6.1：4-formylcyclohexane-1-carboxylic acid vs 无取代的 cyclohexanecarbaldehyde）；O 侧酯烷基与 N 端酰胺取代不算环上前缀。"""
+    chain = set((numbered.get("parent") or {}).get("chain") or [])
+    return any(not s.get("o_side") and s.get("attach_idx") in chain
+               for s in numbered.get("substituents") or [])
+
+
+def _exo_ring_spec(spec: "_Chain", n: int, numbered: dict) -> "_Chain":
+    """环外主基（-COOH/-CHO/-COOR/-CONH2/-CN/-CO-）的 spec 改写：后缀换 EXO_RING_SUF、母体取环词干、环内不饱和行进段式（P-65.2.2 多羧酸 / P-66.6.1.1.3 环醛 / P-65.1.7.2 酰基头）；非环外表达、苯环单取代保留名、无多取代系统名者原样返回。"""
+    suf = EXO_RING_SUF.get(spec.kind)
+    parent = numbered.get("parent") or {}
+    facts = parent.get("principal_expression_facts")
+    if suf is None or facts is None or facts.relation.value != "exocyclic":
+        return spec
+    singular, plural, _ = suf
+    mult = facts.multiplicity
+    if mult > 1 and plural is None:  # 酯/酰胺/腈/酰基头无多取代系统名。
+        return spec
+    sid = parent.get("scaffold_id")
+    if mult == 1 and sid == "benzene":  # 苯单取代保留名（benzoic acid/benzaldehyde…）由 variant 承担。
+        return spec
+    fields = dict(en_suf=singular[0], zh_suf=singular[1], fg=spec.kind, ene_base=None, yne_suf=None,
+                  mult_ok=plural is not None)  # 多取代后缀由数量机制生成（-dicarboxylic acid/-dicarbaldehyde）
+    if sid != "carbocycle" or parent.get("fused_tree"):  # 稠环/杂环词干（furan-2-/naphthalene-2-/tetracene-2-）已由 assembler 注入，后缀直接拼在词干后，位次恒显式。
+        return replace(spec, **fields)
+    base = _alkane_names(n)
+    if base is None:
+        return spec
+    if numbered.get("ene_locants") or numbered.get("yne_locants"):  # 环内不饱和：段式后缀（-2-yne-1-carboxylic acid）；单烯 1 位 EN 省略（cyclohexene-1-）、中文保留（环己-1-烯-1-）。
+        fields.update(stem=None, coda="ane", cyclic=True, zh_loc_omit=False,
+                      ene_seg=EXO_RING_SEG[0], yne_seg=EXO_RING_SEG[1])
+    else:  # 饱和环母体取完整氢化物：cyclohexane + carboxylic acid / 环己烷羧酸（词干已含环前缀，故关 cyclic）。
+        fields.update(stem=(f"cyclo{base[0]}", f"环{base[1]}"), coda="", cyclic=False)
+    fields["omit_rule"] = lambda n, loc, omit: omit or not _ring_prefix_located(numbered)  # 干净环省略主基位次（cyclohexanecarboxylic acid）
+    return replace(spec, **fields)
+
+
 def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None:
     """单链词干引擎: 数词干 + coda + 词缀后缀 + 位次 + 环; 烯/炔段插入由 spec 数据驱动."""
+
     if spec.plain_hook is not None:  # 无碳链母体（磷酸等 P 中心）：词尾由计数直接产出，不查碳数词表。
         hook = spec.plain_hook(numbered)
         if hook is not None:
             return hook
     if spec.aromatic and spec.kind == "alcohol":  # 芳香环醇统一"酚"（苯酚系；萘/吡啶/吲哚/喹啉同），主路径自动，非 variant 特例。
         spec = replace(spec, zh_suf="酚")
+    spec = _exo_ring_spec(spec, n, numbered)
     mult = _parent_multiplicity(numbered)
     if mult is not None and mult > 1 and spec.mult_ok:
         var = _generated_mult_fields(spec, mult)

@@ -2391,6 +2391,21 @@ select.input {
   color: var(--color-destructive-soft);
 }
 
+/* 批量打印: 输出要一屏看更多行(整表几千个分子), 过滤框收在头部右侧 */
+.print-output-tall {
+  max-height: calc(100vh - 300px);
+  min-height: 320px;
+}
+
+.batch-filter {
+  flex: 1;
+  min-width: 180px;
+  max-width: 360px;
+  min-height: 28px;
+  font-size: 12px;
+  padding: 2px 8px;
+}
+
 /* Timeline-style layer list */
 .layer-list {
   display: flex;

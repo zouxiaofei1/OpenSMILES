@@ -1,32 +1,45 @@
 /* Debug page: Pipeline 分层（/api/v1/debug）与 打印调试（/api/v1/debug-print）
-   合并为单一页面，通过顶部开关切换模式，共享同一个 SMILES 输入框。 */
+   合并为单一页面，通过顶部开关切换模式，共享同一个 SMILES 输入框；批量打印模式
+   忽略输入框，直接跑整个数据集。 */
 import { $, escapeHtml, api, API } from "./core.js";
 
 var debugDebounceTimer = null;
 var DEBUG_DEBOUNCE_MS = 400;
-var debugMode = "pipeline"; // "pipeline" | "print"
-var printStreamCtrl = null; // 打印流的 AbortController
-var printStreamSeq = 0;     // 每次 run 递增，用序号丢弃过期回调
+var debugMode = "pipeline"; // "pipeline" | "print" | "batch"
+var streamCtrl = null;      // 打印/批量流的 AbortController(两种模式互斥, 共用一个)
+var streamSeq = 0;          // 每次 run 递增，用序号丢弃过期回调
 
 function setDebugMode(mode) {
   debugMode = mode;
-  if (mode !== "print") stopPrintStream(); // 离开打印模式即中止进行中的流
+  stopStream(); // 离开当前模式即中止进行中的流
   var segBtns = document.querySelectorAll(".debug-mode-btn");
   for (var i = 0; i < segBtns.length; i++) {
     segBtns[i].classList.toggle("active", segBtns[i].getAttribute("data-debug-mode") === mode);
   }
   var pipeline = document.getElementById("debug-output");
   var printPanel = document.getElementById("print-debug-panel");
+  var batchPanel = document.getElementById("batch-print-panel");
   if (pipeline) pipeline.hidden = mode !== "pipeline";
   if (printPanel) printPanel.hidden = mode !== "print";
-  // 已有输入则在新模式下立即执行一次
+  if (batchPanel) batchPanel.hidden = mode !== "batch";
+
+  // 批量模式跑的是整个数据集, SMILES 输入无意义: 禁用并改为提示文案
   var input = document.getElementById("debug-smiles");
-  if (input && input.value.trim()) runDebug();
+  if (input) {
+    input.disabled = mode === "batch";
+    input.placeholder = mode === "batch"
+      ? "批量模式：不需要 SMILES，点 Run 跑整个 merged_benchmark"
+      : "Enter SMILES, e.g. c1ccccc1C(=O)O or CC(=O)OC1CCCCC1";
+  }
+
+  // 批量模式不能一进来就自动开跑(整表要几十秒), 必须点 Run; 其余模式沿用实时执行
+  if (mode !== "batch" && input && input.value.trim()) runDebug();
 }
 
 export function scheduleLiveDebug() {
-  // 两种模式都实时：输入/更改停顿 DEBUG_DEBOUNCE_MS 后自动执行，无需点 Run。
+  // 输入/更改停顿 DEBUG_DEBOUNCE_MS 后自动执行，无需点 Run；批量模式除外。
   // pipeline 走 /debug；print 走流式，新一轮 runPrintStream 会自动中止旧子进程。
+  if (debugMode === "batch") return;
   if (debugDebounceTimer) clearTimeout(debugDebounceTimer);
   debugDebounceTimer = setTimeout(function () {
     debugDebounceTimer = null;
@@ -35,6 +48,11 @@ export function scheduleLiveDebug() {
 }
 
 export async function runDebug() {
+  if (debugMode === "batch") {
+    await runBatchStream();
+    return;
+  }
+
   var input = document.getElementById("debug-smiles");
   if (!input) return;
   var smiles = input.value.trim();
@@ -61,69 +79,191 @@ export async function runDebug() {
   }
 }
 
-/* 打印调试 · 流式：读取 /debug-print-stream，子进程 stdout 每分块一到就增量更新
-   显示，内容一变化即“实时”呈现，而不是等整次跑完。 */
-function stopPrintStream() {
-  if (printStreamCtrl) {
-    try { printStreamCtrl.abort(); } catch (_) { /* ignore */ }
-    printStreamCtrl = null;
+/* 打印调试 · 流式：读取 text/plain 响应，子进程 stdout 每分块一到就交给 onChunk
+   增量更新显示，内容一变化即“实时”呈现，而不是等整次跑完。
+   onChunk(text, err)：正常分块给 text；出错给 err（此时已到流尾）。 */
+function stopStream() {
+  if (streamCtrl) {
+    try { streamCtrl.abort(); } catch (_) { /* ignore */ }
+    streamCtrl = null;
+  }
+}
+
+async function streamText(url, payload, onChunk) {
+  stopStream(); // 新一轮 run 先取消仍在跑的旧流
+  var mySeq = ++streamSeq;
+  var ctrl = new AbortController();
+  streamCtrl = ctrl;
+  try {
+    var res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "text/plain" },
+      body: JSON.stringify(payload),
+      signal: ctrl.signal,
+    });
+    if (!res.ok || !res.body) {
+      var errText = "";
+      try { errText = await res.text(); } catch (_) { /* ignore */ }
+      onChunk("", "Error: " + (errText || (res.status + " " + res.statusText)));
+      return;
+    }
+
+    var reader = res.body.getReader();
+    var dec = new TextDecoder("utf-8");
+    for (;;) {
+      var chunk = await reader.read();
+      if (chunk.done) break;
+      if (mySeq !== streamSeq) { // 已被新一轮/切模式取消，丢弃
+        try { reader.cancel(); } catch (_) { /* ignore */ }
+        return;
+      }
+      onChunk(dec.decode(chunk.value, { stream: true }), "");
+    }
+    onChunk(dec.decode(), "");
+  } catch (err) {
+    if (mySeq !== streamSeq) return; // 被取消，正常路径已处理
+    if (err && err.name === "AbortError") return;
+    onChunk("", "Error: " + (err && err.message ? err.message : String(err)));
+  } finally {
+    if (mySeq === streamSeq) streamCtrl = null;
   }
 }
 
 async function runPrintStream(smiles) {
   var out = document.getElementById("print-debug-output");
   if (!out) return;
-  stopPrintStream(); // 新一轮 run 先取消仍在跑的旧流
-  var mySeq = ++printStreamSeq;
-  var ctrl = new AbortController();
-  printStreamCtrl = ctrl;
-
   out.classList.remove("has-error");
-  out.textContent = "(运行中…)";
-  try {
-    var res = await fetch(API.debugPrintStream, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "text/plain" },
-      body: JSON.stringify({ smiles: smiles }),
-      signal: ctrl.signal,
-    });
-    if (!res.ok || !res.body) {
-      var errText = "";
-      try { errText = await res.text(); } catch (_) { /* ignore */ }
+  out.textContent = "";
+
+  var text = "";
+  await streamText(API.debugPrintStream, { smiles: smiles }, function (chunk, err) {
+    if (err) {
       out.classList.add("has-error");
-      out.textContent = "Error: " + (errText || (res.status + " " + res.statusText));
+      out.textContent = text + err;
       return;
     }
-
-    var reader = res.body.getReader();
-    var dec = new TextDecoder("utf-8");
-    var text = "";
-    var atBottom = true;
-    out.textContent = "";
-    for (;;) {
-      var chunk = await reader.read();
-      if (chunk.done) break;
-      if (mySeq !== printStreamSeq) { // 已被新一轮/切模式取消，丢弃
-        try { reader.cancel(); } catch (_) { /* ignore */ }
-        return;
-      }
-      text += dec.decode(chunk.value, { stream: true });
-      out.textContent = text;
-      // 原本贴底则跟随滚动；用户上翻查看时不被强制拉底
-      if (atBottom && out.scrollHeight - out.scrollTop - out.clientHeight < 24) {
-        out.scrollTop = out.scrollHeight;
-      }
+    text += chunk;
+    out.textContent = text;
+    // 原本贴底则跟随滚动；用户上翻查看时不被强制拉底
+    if (out.scrollHeight - out.scrollTop - out.clientHeight < 24) {
+      out.scrollTop = out.scrollHeight;
     }
-    text += dec.decode();
-    out.textContent = text || "(无输出)";
-  } catch (err) {
-    if (mySeq !== printStreamSeq) return; // 被取消，正常路径已处理
-    if (err && err.name === "AbortError") return;
-    out.classList.add("has-error");
-    out.textContent = "Error: " + (err && err.message ? err.message : String(err));
-  } finally {
-    if (mySeq === printStreamSeq) printStreamCtrl = null;
+  });
+  if (!text && !out.classList.contains("has-error")) out.textContent = "(无输出)";
+}
+
+/* ── 批量打印模式：整表跑一遍，输出按分子分组 ──
+   batchText 是累积的原始全文；无过滤时增量追加(便宜)，有过滤时按行筛选后整段重画
+   (节流)，命中行前补上所属分子的分组头，才知道是哪个分子触发的该 print。 */
+var batchText = "";
+var batchPaintedLen = 0;     // 已画出的字符数（无过滤时用于增量追加）
+var batchPaintedFilter = ""; // 上次画图用的过滤词，变了就整段重画
+var batchLastPaint = 0;
+var batchHits = 0;
+var batchRunning = false;
+var batchDone = false;
+var BATCH_PAINT_MS = 150;
+
+function batchFilterValue() {
+  var el = document.getElementById("batch-filter");
+  return el ? el.value.trim().toLowerCase() : "";
+}
+
+/* 分组头形如 "===== [12/3976] CCC(=O)N ====="，用于给命中行补出分子上下文。 */
+function isBatchBanner(line) {
+  return /^\s*=+ \[\d+\/\d+\]/.test(line);
+}
+
+/* 按行过滤批量输出：命中行连同它所属分子的分组头一起留下。 */
+function filterBatchText(text, filter) {
+  var lines = text.split("\n");
+  var kept = [];
+  var banner = "";
+  var hits = 0;
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    if (isBatchBanner(line)) { banner = line; continue; }
+    if (line.toLowerCase().indexOf(filter) !== -1) {
+      if (banner) { kept.push(banner); banner = ""; }
+      kept.push(line);
+      hits++;
+    }
   }
+  return { text: kept.length ? kept.join("\n") : "（没有匹配「" + filter + "」的行）", hits: hits };
+}
+
+/* 取最近的进度（后端每 250 个分子打一行 "##### 进度 i/N"）。分组头是稀疏的，不能
+   当进度用；只扫尾部避免全文正则。 */
+function batchProgress(text) {
+  var m = text.slice(-20000).match(/进度 (\d+)\/(\d+)/);
+  return m ? m[1] + "/" + m[2] : "";
+}
+
+function updateBatchStat() {
+  var el = document.getElementById("batch-filter-stat");
+  if (!el) return;
+  var parts = [];
+  if (batchRunning) parts.push("运行中");
+  else if (batchDone) parts.push("已完成");
+  var progress = batchProgress(batchText);
+  if (progress) parts.push(progress);
+  if (batchFilterValue()) parts.push("命中 " + batchHits + " 行");
+  el.textContent = parts.join(" · ");
+}
+
+/* 重画批量输出（force=true 立刻画，不受节流限制）。 */
+function paintBatch(force) {
+  var out = document.getElementById("batch-print-output");
+  if (!out || !batchText) return;
+  var filter = batchFilterValue();
+  var now = Date.now();
+  if (filter) {
+    if (!force && filter === batchPaintedFilter && now - batchLastPaint < BATCH_PAINT_MS) return;
+    var r = filterBatchText(batchText, filter);
+    out.textContent = r.text;
+    batchHits = r.hits;
+  } else if (force || batchPaintedFilter || batchPaintedLen > batchText.length) {
+    out.textContent = batchText;
+  } else {
+    out.textContent += batchText.slice(batchPaintedLen);
+  }
+  batchPaintedLen = batchText.length;
+  batchPaintedFilter = filter;
+  batchLastPaint = now;
+  updateBatchStat();
+}
+
+async function runBatchStream() {
+  var out = document.getElementById("batch-print-output");
+  if (!out) return;
+  out.classList.remove("has-error");
+  batchText = "";
+  batchPaintedLen = 0;
+  batchPaintedFilter = "";
+  batchHits = 0;
+  batchRunning = true;
+  batchDone = false;
+  out.textContent = "";
+  updateBatchStat();
+
+  await streamText(API.debugPrintBatchStream, {}, function (chunk, err) {
+    if (err) {
+      out.classList.add("has-error");
+      batchText += "\n" + err + "\n";
+    } else {
+      batchText += chunk;
+    }
+    if (!batchText) return;
+    paintBatch(false);
+    if (out.scrollHeight - out.scrollTop - out.clientHeight < 24) {
+      out.scrollTop = out.scrollHeight;
+    }
+  });
+
+  batchRunning = false;
+  batchDone = true;
+  if (!batchText && !out.classList.contains("has-error")) out.textContent = "(无输出)";
+  paintBatch(true);
 }
 
 function renderDebug(data) {
@@ -430,11 +570,16 @@ export function bindDebug() {
     });
     debugSmiles.addEventListener("input", scheduleLiveDebug);
   }
-  // 模式开关：Pipeline 分层 / 打印输出
+  // 模式开关：Pipeline 分层 / 打印输出 / 批量打印
   var modeBtns = document.querySelectorAll(".debug-mode-btn");
   for (var i = 0; i < modeBtns.length; i++) {
     modeBtns[i].addEventListener("click", function () {
       setDebugMode(this.getAttribute("data-debug-mode"));
     });
+  }
+  // 批量模式过滤框：只重画显示，原始输出仍留在 batchText 里，清空即恢复全文
+  var batchFilter = document.getElementById("batch-filter");
+  if (batchFilter) {
+    batchFilter.addEventListener("input", function () { paintBatch(true); });
   }
 }

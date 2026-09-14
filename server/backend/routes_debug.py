@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from rdkit import Chem
@@ -22,6 +22,10 @@ _ROOT = Path(__file__).resolve().parents[2]
 
 class DebugBody(BaseModel):
     smiles: str = Field(..., min_length=1)
+
+
+class BatchBody(BaseModel):
+    data_file: str | None = None
 
 
 def _mol_info(mol) -> dict:
@@ -131,8 +135,9 @@ def debug_smiles(body: DebugBody) -> dict[str, Any]:
     # namepredict 在请求内导入: src/ 编译失败时 app 仍能启动并返回 500 详情
     from namepredict.layer0.preprocessor import preprocess
     from namepredict.layer1.analyzer import analyze
+    from namepredict.layer2.candidates import _collect_candidates
     from namepredict.layer2.parent_ownership import finalize_parent_ownership
-    from namepredict.layer2.parent_selector import select_parent
+    from namepredict.layer2.parent_selector import _finalize_ranked, _reorder_p45_2
     from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
     from namepredict.layer3.coverage import build_coverage_ledger
     from namepredict.layer3.substituent_extractor import extract_substituents
@@ -166,17 +171,23 @@ def debug_smiles(body: DebugBody) -> dict[str, Any]:
 
     # ── L2: parent candidates / selection ──
     l2_start = time.perf_counter()
-    candidates_raw = select_parent(info, all_candidates=True)
-    selected = select_parent(info)
+    # select_parent() 已收敛为只回 P-45.2.1 并列最优组, 而本页要同时列出全量候选,
+    # 故照 parent_selector 自身的两步算一遍: 排序终态化 -> P-45.2 重排(全量 / 并列组)。
+    # _reorder_p45_2 回传的是原 dict 对象, is_selected 用 id 判同一候选(同 kind 可有多条)。
+    ranked = _reorder_p45_2(info, _finalize_ranked(info, _collect_candidates(info)))
+    selected_group = _reorder_p45_2(info, ranked, tied=True)
+    picked = {id(c) for c in selected_group}
     candidates = []
-    for c in candidates_raw:
+    for c in ranked:
         c_ser = _parent_serializable(c)
-        c_ser["is_selected"] = (c.get("kind") == selected.get("kind"))
+        c_ser["is_selected"] = id(c) in picked
         candidates.append(c_ser)
-    selected_ser = _parent_serializable(selected)
+    selected = selected_group[0] if selected_group else None
+    selected_ser = _parent_serializable(selected) if selected else {}
     l2_ms = (time.perf_counter() - l2_start) * 1000
     l2_out = {
         "n_candidates": len(candidates),
+        "n_selected": len(selected_group),
         "candidates": candidates,
         "selected": selected_ser,
         "time_ms": round(l2_ms, 2),
@@ -326,18 +337,20 @@ def debug_print(body: DebugBody) -> dict[str, Any]:
 # 返回，故这里用 Popen + 流式响应：stdout 逐行即时下发(实时滚出)，stderr 由
 # 守护线程并行收集(避免管道写满阻塞子进程)，结束时把 stderr/退出码补在尾部。
 _DEBUG_STREAM_TIMEOUT = 60  # 与旧 /debug-print 的 timeout 保持一致
+# 整表批量: 全量 merged_benchmark 单进程顺序跑实测约 2min, 留足慢机器/更多 print 的余量
+_BATCH_STREAM_TIMEOUT = 600
 _ERR_KEEP_LINES = 400
+_DEBUG_SCRIPT = _ROOT / "server" / "backend" / "debug.py"
 
 
-def _debug_print_stream(smiles: str):
-    """Yield debug.py stdout lines live, then stderr tail / exit code at the end."""
-    script = _ROOT / "server" / "backend" / "debug.py"
+def _stream_proc(argv: list[str], timeout: int, label: str):
+    """跑子进程并把 stdout 逐行 yield 出去, 结束时补 stderr 尾部与退出码。"""
     # PYTHONUNBUFFERED + -u: 子进程写管道默认块缓冲，会把 src 命名管线的 print
     # 攒到缓冲满才出现；去掉缓冲才能逐行实时到达。
     env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1"}
     try:
         proc = subprocess.Popen(
-            [sys.executable, "-u", str(script), smiles],
+            argv,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             encoding="utf-8",
@@ -346,7 +359,7 @@ def _debug_print_stream(smiles: str):
             cwd=str(_ROOT),
         )
     except Exception as exc:
-        yield f"[error] 启动 debug.py 失败: {exc}\n"
+        yield f"[error] 启动 {label} 失败: {exc}\n"
         return
 
     err_lines: list[str] = []
@@ -364,7 +377,7 @@ def _debug_print_stream(smiles: str):
 
     drain_thread = threading.Thread(target=_drain_err, daemon=True)
     drain_thread.start()
-    guard = threading.Timer(_DEBUG_STREAM_TIMEOUT, proc.kill)  # 兜底, 避免永久挂起
+    guard = threading.Timer(timeout, proc.kill)  # 兜底, 避免永久挂起
     guard.start()
 
     try:
@@ -410,6 +423,37 @@ def _debug_print_stream(smiles: str):
 def debug_print_stream(body: DebugBody) -> StreamingResponse:
     """Stream server/backend/debug.py output live (text/plain), line by line."""
     return StreamingResponse(
-        _debug_print_stream(body.smiles),
+        _stream_proc(
+            [sys.executable, "-u", str(_DEBUG_SCRIPT), body.smiles],
+            _DEBUG_STREAM_TIMEOUT,
+            "debug.py",
+        ),
+        media_type="text/plain; charset=utf-8",
+    )
+
+
+@router.post("/debug-print-batch-stream")
+def debug_print_batch_stream(body: BatchBody) -> StreamingResponse:
+    """Stream debug.py over a whole benchmark dataset, one banner per molecule.
+
+    与单分子打印同一套流式下发, 区别只是子进程跑的是 --dataset 整表: 想看某个
+    函数(某条 print)的输出去找哪个分子能触发它时, 比逐个分子猜 SMILES 快得多。
+    """
+    # 数据集名校验/解析复用 benchmark 预览那套(限定 benchmarks/ 下的 .json)
+    from server.backend.routes_benchmark import _resolve_source
+
+    try:
+        source = _resolve_source(body.data_file)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    if not source.is_file():
+        raise HTTPException(status_code=404, detail=f"数据集不存在: {source.name}")
+
+    return StreamingResponse(
+        _stream_proc(
+            [sys.executable, "-u", str(_DEBUG_SCRIPT), "--dataset", str(source)],
+            _BATCH_STREAM_TIMEOUT,
+            "debug.py --dataset",
+        ),
         media_type="text/plain; charset=utf-8",
     )

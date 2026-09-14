@@ -18,13 +18,13 @@ export const API = {
   debug: "/api/v1/debug",
   debugPrint: "/api/v1/debug-print",
   debugPrintStream: "/api/v1/debug-print-stream",
+  debugPrintBatchStream: "/api/v1/debug-print-batch-stream",
   gitCommits: "/api/v1/git/commits",
 };
 
 export const state = {
   currentCommit: null /* null = HEAD; set by the history picker */,
   namerHistory: [],
-  liveNameEnabled: true,
   ketcherReady: false,
   lastNamedSmiles: "",
   nameReqSeq: 0,

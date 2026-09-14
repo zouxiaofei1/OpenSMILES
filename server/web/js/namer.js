@@ -203,7 +203,6 @@ async function runName(smiles, opts) {
 }
 
 function scheduleLiveName() {
-  if (!state.liveNameEnabled) return;
   // 载入键入 SMILES 到 Ketcher 会触发 onChange: 此时结构并未真正变化,
   // 若据此用 getSmiles()(重排后的串)重命名会覆盖用户输入、引入另一套原子序。
   // 该 change 被静默吞掉, 但它是"还有载入在异步收尾"的信号 → 顺延静默期。
@@ -214,13 +213,12 @@ function scheduleLiveName() {
   if (state.liveDebounceTimer) clearTimeout(state.liveDebounceTimer);
   state.liveDebounceTimer = setTimeout(async () => {
     state.liveDebounceTimer = null;
-    if (!state.liveNameEnabled) return;
     let smiles = "";
     if (state.ketcherBridge && state.ketcherBridge.isReady()) {
       smiles = await state.ketcherBridge.getSmiles();
     }
     const CK = window.ChemNamerKetcher;
-    if (CK && CK.shouldSkipLiveName(true, smiles, state.lastNamedSmiles)) return;
+    if (CK && CK.shouldSkipLiveName(smiles, state.lastNamedSmiles)) return;
     if (smiles) {
       const input = $("smiles-input");
       if (input) {
@@ -232,8 +230,7 @@ function scheduleLiveName() {
   }, LIVE_NAME_DEBOUNCE_MS);
 }
 
-/* 输入框 SMILES 变化 → 自动执行「从 SMILES 载入」(同步画板结构)。画板同步独立于
-   「实时命名」开关: 关掉开关后输入变化仍会载入画板, 只是不再自动跑命名。 */
+/* 输入框 SMILES 变化 → 自动执行「从 SMILES 载入」(同步画板结构) + 命名。 */
 function scheduleLiveSmilesName() {
   if (state.suppressSmilesLive) {
     // 本次 input 事件来自画布写回输入框(scheduleLiveName): 输入框与画板本就一致,
@@ -251,7 +248,7 @@ function scheduleLiveSmilesName() {
     const smiles = await resolveTextToSmiles(typed);
     if (!smiles) return;
     const CK = window.ChemNamerKetcher;
-    // 1) 画板同步(不依赖「实时命名」开关)。载入会让 Ketcher 把结构重排成不同
+    // 1) 画板同步。载入会让 Ketcher 把结构重排成不同
     //    原子序的 SMILES 并触发 onChange, 需静默(见 scheduleLiveName 注释), 否则会
     //    写回输入框并引入另一套 atom-ids/locants 索引。begin/end 配对引用计数。
     if (state.ketcherBridge && state.ketcherBridge.isReady()) {
@@ -274,9 +271,8 @@ function scheduleLiveSmilesName() {
         }
       }
     }
-    // 2) 命名仅当「实时命名」开启时执行
-    if (!state.liveNameEnabled) return;
-    if (CK && CK.shouldSkipLiveName(true, smiles, state.lastNamedSmiles)) return;
+    // 2) 命名
+    if (CK && CK.shouldSkipLiveName(smiles, state.lastNamedSmiles)) return;
     await runName(smiles, { fromLive: true });
   }, LIVE_NAME_DEBOUNCE_MS);
 }
@@ -628,21 +624,6 @@ export function bindNamer() {
     $("btn-retry-ketcher").addEventListener("click", () => {
       ensureKetcher(true);
     });
-  $("live-name-toggle") &&
-    $("live-name-toggle").addEventListener("change", (ev) => {
-      state.liveNameEnabled = !!(ev.target && ev.target.checked);
-      if (!state.liveNameEnabled) {
-        if (state.liveDebounceTimer) {
-          clearTimeout(state.liveDebounceTimer);
-          state.liveDebounceTimer = null;
-        }
-        if (state.liveSmilesTimer) {
-          clearTimeout(state.liveSmilesTimer);
-          state.liveSmilesTimer = null;
-        }
-      }
-    });
-
   // Live SMILES input: when user edits the SMILES text box, auto-name + load into Ketcher
   $("smiles-input") &&
     $("smiles-input").addEventListener("input", () => {

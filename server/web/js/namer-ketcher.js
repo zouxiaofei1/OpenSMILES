@@ -7,8 +7,7 @@
   // Cold load pulls ~23MB main + ~11MB worker; allow slower disks/networks.
   const READY_TIMEOUT_MS = 60000;
 
-  function shouldSkipLiveName(liveEnabled, smiles, lastNamed) {
-    if (!liveEnabled) return true;
+  function shouldSkipLiveName(smiles, lastNamed) {
     const s = (smiles || "").trim();
     if (!s) return true;
     return s === (lastNamed || "");
