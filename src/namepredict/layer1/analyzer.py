@@ -6,16 +6,10 @@ from __future__ import annotations
 from rdkit.Chem import BondType, Mol
 from collections import deque
 from namepredict.constants import (
-    C, HALO_Z, N, O,
+    C, H,
 )
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1.fg_local_smarts import match_local_fg
-from namepredict.layer1._carbonyl_common import (
-    _alkoxy_c_of,
-    _amide_n_info,
-    _double_bonded_o_idxs,
-    _ester_alkoxy_of as _ester_alkoxy_of_common,
-)
 
 def _heavy(a) -> list:
     """非氢邻居索引。"""
@@ -74,65 +68,15 @@ def phosphate_entries(mol: Mol, matches: list[tuple[int, ...]] | None = None) ->
         matches = match_local_fg(mol).get("phosphate", [])
     out = [e for m in matches if (e := _phosphate_entry(mol, m)) is not None]
     return sorted(out, key=lambda e: e["p_idx"])
-def _acyl_hal_of(carbon) -> tuple[int, int] | None:
-    """返回碳上卤素邻居的 (hal_idx, hal_z)；无则返回 None。"""
-    for n in carbon.GetNeighbors():
-        z = n.GetAtomicNum()
-        if z in HALO_Z:  # 酰卤检测覆盖 F/Cl/Br/I（P-65.5）
-            return n.GetIdx(), z
-    return None
+def _surr_idx(atom) -> list[int]:
+    """周边原子：中心全部重原子邻居；碳中心不在环内时排除环内邻居。"""
+    ring_excl = atom.GetAtomicNum() == C and not atom.IsInRing()
+    return [n.GetIdx() for n in atom.GetNeighbors()
+            if n.GetAtomicNum() != H and not (ring_excl and n.IsInRing())]
 
-def _is_ester_alkoxy_o(oxygen, carbonyl) -> bool:
-    """判断 O 是否为酯烷氧基氧。"""
-    if oxygen.GetAtomicNum() != O or oxygen.GetTotalNumHs() != 0:
-        return False
-    return _alkoxy_c_of(oxygen, carbonyl) is not None
-
-def _ester_alkoxy_of(carbon) -> tuple[int, int] | None:
-    """在碳上查找酯烷氧基侧并返回 (o_idx, alkoxy_c_idx)。"""
-    return _ester_alkoxy_of_common(carbon, _is_ester_alkoxy_o)
-
-def _carbon_neighbor(atom):
-    """返回原子连有的第一个碳邻居。"""
-    return next(n for n in atom.GetNeighbors() if n.GetAtomicNum() == C)
-
-def _hydroxyl_entry(atom) -> dict:
-    """组装单个羟基条目 dict（氧为中心，所连碳为周边）。"""
-    return {"center_idx": atom.GetIdx(), "surr_idx": [_carbon_neighbor(atom).GetIdx()]}
-
-def _thiol_entry(atom) -> dict:
-    """组装硫醇条目 dict（硫为中心，碳为周边）。"""
-    return {"center_idx": atom.GetIdx(), "surr_idx": [_carbon_neighbor(atom).GetIdx()]}
-
-def _amine_entry(atom) -> dict:
-    """组装胺条目 dict（氮为中心，碳臂为周边）。"""
-    return {"center_idx": atom.GetIdx(),
-            "surr_idx": [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == C]}
-
-def _carboxyl_entry(atom) -> dict:
-    """组装羧基条目 dict（碳为中心，两个氧为周边）。"""
-    return {"center_idx": atom.GetIdx(),
-            "surr_idx": [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == O]}
-
-def _carbonyl_entry(atom) -> dict:
-    """组装单羰基条目 dict（羰基碳为中心，羰基氧为周边）。"""
-    return {"center_idx": atom.GetIdx(), "surr_idx": _double_bonded_o_idxs(atom)}
-
-def _amide_entry(atom) -> dict:
-    """组装单个酰胺条目 dict（羰基碳为中心，羰基氧与酰胺氮为周边）。"""
-    n_idx, _ = _amide_n_info(atom)
-    return {"center_idx": atom.GetIdx(), "surr_idx": [*_double_bonded_o_idxs(atom), n_idx]}
-
-def _acyl_halide_entry(mol: Mol, c_idx: int) -> dict:
-    """组装单个酰卤（F/Cl/Br/I）条目；卤素入周边以兼容 L2/L3。"""
-    a = mol.GetAtomWithIdx(c_idx)
-    hal_idx = _acyl_hal_of(a)[0]
-    return {"center_idx": c_idx, "surr_idx": [*_double_bonded_o_idxs(a), hal_idx]}
-
-def _ester_entry(atom) -> dict:
-    """组装酯条目 dict（碳为中心，羰基氧与酯氧为周边）。"""
-    o_idx, _ = _ester_alkoxy_of(atom)
-    return {"center_idx": atom.GetIdx(), "surr_idx": [*_double_bonded_o_idxs(atom), o_idx]}
+def _fg_entry(atom) -> dict:
+    """组装官能团条目 dict（中心原子 + 重原子周边）。"""
+    return {"center_idx": atom.GetIdx(), "surr_idx": _surr_idx(atom)}
 
 def _is_cc_double(bond) -> bool:
     """判断键是否为 C=C 双键（排除芳香键）。"""
@@ -155,11 +99,6 @@ def _bond_entry(bond) -> dict:
 
 def _filter_bond_entries(mol: Mol, pred, entry_fn) -> list[dict]:
     return [entry_fn(bond) for bond in mol.GetBonds() if pred(bond)]
-
-def _nitrile_entry(mol: Mol, c_idx: int) -> dict:
-    """组装腈条目 dict（腈碳为中心，氮为周边）。"""
-    n = next(x for x in mol.GetAtomWithIdx(c_idx).GetNeighbors() if x.GetAtomicNum() == N)
-    return {"center_idx": c_idx, "surr_idx": [n.GetIdx()]}
 
 def _ring_meta(mol: Mol) -> dict:
     """汇总环事实：环条目、环系与数量统计。"""
@@ -196,36 +135,27 @@ def _arbitrate_parts(parts: dict) -> tuple[dict, frozenset[str]]:
     return out, frozenset(demoted)
 
 
-# 局部环境 SMARTS 命中的 FG 键 → 条目构造器；顺序沿用历史输出
-_LOCAL_ENTRY_BUILDERS = (
-    ("acid", _carboxyl_entry),
-    ("alcohol", _hydroxyl_entry),
-    ("ester", _ester_entry),
-    ("amide", _amide_entry),
-    ("ketone", _carbonyl_entry),
-    ("amine", _amine_entry),
-    ("thiol", _thiol_entry),
-)
+# 局部环境 SMARTS 命中且无非局部判据的 FG 键；顺序沿用历史输出
+_LOCAL_ENTRY_FGS = ("acid", "alcohol", "ester", "amide", "ketone", "amine", "thiol",
+                    "nitrile", "acyl_halide")
 
 
 def _local_entries(mol: Mol, hits: dict) -> dict:
     """按局部环境命中结果组装各 FG 的条目列表（中心原子升序）。"""
-    return {fg: [entry(mol.GetAtomWithIdx(t[0])) for t in hits.get(fg, [])]
-            for fg, entry in _LOCAL_ENTRY_BUILDERS}
+    return {fg: [_fg_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get(fg, [])]
+            for fg in _LOCAL_ENTRY_FGS}
 
 
 def _detect_parts(mol: Mol) -> dict:
     """检测（未仲裁）分子中各类官能团条目。"""
     hits = match_local_fg(mol)
-    acyl = [_carbonyl_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("acyl", [])]  # 须先于 aldehyde/radical
+    acyl = [_fg_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("acyl", [])]  # 须先于 aldehyde/radical
     heads = frozenset(e["center_idx"] for e in acyl)
     out = _local_entries(mol, hits)
     result = {**out,
         "radical": [_radical_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("radical", []) if t[0] not in heads],
         "acyl": acyl,
-        "aldehyde": [e for e in (_carbonyl_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("aldehyde", [])) if e["center_idx"] not in heads],
-        "nitrile": [_nitrile_entry(mol, t[0]) for t in hits.get("nitrile", [])],
-        "acyl_halide": [_acyl_halide_entry(mol, t[0]) for t in hits.get("acyl_halide", [])],
+        "aldehyde": [e for e in (_fg_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("aldehyde", [])) if e["center_idx"] not in heads],
         "phosphate": phosphate_entries(mol, hits.get("phosphate", []))}
     print(result)
     return result
