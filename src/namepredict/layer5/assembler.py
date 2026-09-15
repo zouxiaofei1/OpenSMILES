@@ -325,7 +325,6 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         if sc_variant is not None:
             entry = replace(entry, variant=sc_variant)
         result = _chain_names(entry, n, numbered)
-        print("\n\nresult:   ",result)
         return result
 
     return _parent_stem_names(numbered)

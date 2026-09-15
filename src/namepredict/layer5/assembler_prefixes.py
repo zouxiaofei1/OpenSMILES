@@ -33,8 +33,6 @@ def _locant_str(subs: list) -> str:
         tokens.append("N" if kind in N_PREFIX_KINDS else s["locant"])
     return ",".join(str(x) for x in locant_str_sort(tokens))
 
-
-_KEEP_LOCANT_KINDS = _fg_reg.keep_locant_fgs()
 _DIGIT_RE = re.compile(r"\d")  # 取代基名中的位次数字
 
 
@@ -52,7 +50,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return True
     if kind == "amide":
         return {s.get("kind") for s in substituents} <= N_PREFIX_KINDS
-    if kind in _KEEP_LOCANT_KINDS:
+    if kind in ["acyl","ketone","acid"]:
         return False
     if any(s.get("paren") or (s.get("en") or "")[:1] == "(" for s in substituents):  # 复合取代基（显式括号）须保留母体 2- 消歧
         return False

@@ -1,18 +1,9 @@
-"""layer1 检测器共享的羰基检测原语。
-各检测器保留自己的 `_is_ester_alkoxy_o` 谓词。
-"""
+
 from __future__ import annotations
 
 from rdkit.Chem import BondType
 
 from namepredict.constants import C, H, N, O
-
-
-def _is_single_c_oh(atom) -> bool:
-    """判断 O 原子是否为与单一碳相连的羟基氧。"""
-    if atom.GetAtomicNum() != O or atom.GetTotalNumHs() < 1:
-        return False
-    return len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == C]) == 1
 
 
 def _dbl_o_on(bond, carbon) -> bool:
@@ -38,20 +29,6 @@ def _double_bonded_o_idxs(carbon) -> list[int]:
         if b is not None and b.GetBondType() == BondType.DOUBLE:
             out.append(n.GetIdx())
     return out
-
-
-def _is_carboxylate_o(atom) -> bool:
-    """判断 O 是否为羧酸盐阴离子氧。"""
-    if atom.GetAtomicNum() != O or atom.GetFormalCharge() != -1:
-        return False
-    return atom.GetTotalDegree() == 1 and atom.GetTotalNumHs() == 0
-
-
-def _has_acid_o_neighbor(carbon) -> bool:
-    """判断碳是否连有酸性羟基或羧酸盐氧邻居。"""
-    return any(
-        _is_single_c_oh(n) or _is_carboxylate_o(n) for n in carbon.GetNeighbors()
-    )
 
 
 def _alkoxy_c_of(oxygen, carbonyl) -> int | None:

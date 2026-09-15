@@ -1,5 +1,3 @@
-"""碳拓扑原语（tools 层；供 L2 链母体与 L3 侧链共用）。
-自 layer2 抽出，供 L3 复用最长开链游走，避免跨层导入。"""
 from __future__ import annotations
 
 from rdkit.Chem import Mol

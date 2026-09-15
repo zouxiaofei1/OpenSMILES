@@ -19,7 +19,6 @@ def _side_count(mol: Mol, chain: list[int]) -> int:
 
 
 def _better(mol: Mol, cand: list[int], best: list[int]) -> bool:
-    """候选是否优于当前最佳：长度优先，仅等长才数支链度（避免无谓全链扫描）。"""
     if not best:
         return True
     if len(cand) != len(best):

@@ -1,4 +1,4 @@
-"""3-8 元环标准形状模板与平面几何原语(P-25.3.2.3.1)。"""
+
 from __future__ import annotations
 
 import math
