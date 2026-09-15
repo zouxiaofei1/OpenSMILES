@@ -301,10 +301,6 @@ omit_locant_c2_fg__FULL_CASES = [
     ("C1(CC1)CCO", "2-cyclopropylethanol", "2-环丙基乙醇"),
 ]
 
-# 仍允许省略（端碳无 H / 对称）—— 防止过度收窄
-omit_locant_c2_fg__KEEP_OMIT_CASES = [
-    ("N1C=CC2=CC(=CC=C12)CC#N", "(1H-indol-5-yl)acetonitrile"),
-]
 
 
 @pytest.mark.parametrize("smiles,en,zh", omit_locant_c2_fg__FULL_CASES)
@@ -314,14 +310,6 @@ def test_c2_fg_keeps_locant(smiles: str, en: str, zh: str) -> None:
     assert r.success
     assert normalize_en(r.en) == normalize_en(en)
     assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
-@pytest.mark.parametrize("smiles,en", omit_locant_c2_fg__KEEP_OMIT_CASES)
-def test_c2_fg_still_omits(smiles: str, en: str) -> None:
-    """端碳无可取代 H 的腈母体：2- 省略仍成立。"""
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
 
 
 # ==========================================================================

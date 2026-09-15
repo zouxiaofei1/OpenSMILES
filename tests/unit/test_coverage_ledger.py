@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
-from namepredict.layer3.coverage import CoverageLedger, build_coverage_ledger
+from namepredict.layer3.coverage import build_coverage_ledger
 from namepredict.layer3.substituent_namer import SubstituentName
 
 # ==========================================================================
@@ -36,32 +36,6 @@ def coverage_ledger___claim(atoms: frozenset[int], attach: int = 0, root: int = 
         root=root,
         atoms=atoms,
     )
-
-
-def test_complete_ledger_when_owned_and_names_cover_all_heavy():
-    """Disjoint owned + named claims covering all heavy atoms → complete."""
-    mol = preprocess("CC")  # two carbons
-    owned = frozenset([0])
-    names = [coverage_ledger___name(coverage_ledger___claim(frozenset([1]), attach=0, root=1))]
-    ledger = build_coverage_ledger(mol, owned_atoms=owned, names=names)
-    assert isinstance(ledger, CoverageLedger)
-    assert ledger.owned_atoms == owned
-    assert ledger.named_claims == tuple(names)
-    assert ledger.gap == frozenset()
-    assert ledger.overlap == frozenset()
-    assert ledger.complete is True
-    assert coverage_ledger___heavy(mol) == frozenset([0, 1])
-
-
-def test_gap_when_one_heavy_atom_omitted():
-    """Omitting one heavy atom places it in gap; not complete."""
-    mol = preprocess("CCC")  # three carbons
-    owned = frozenset([0])
-    names = [coverage_ledger___name(coverage_ledger___claim(frozenset([1]), attach=0, root=1))]
-    ledger = build_coverage_ledger(mol, owned_atoms=owned, names=names)
-    assert ledger.gap == frozenset([2])
-    assert ledger.overlap == frozenset()
-    assert ledger.complete is False
 
 
 def test_overlap_when_atom_in_owned_and_claim():

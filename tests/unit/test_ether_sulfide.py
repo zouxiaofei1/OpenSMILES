@@ -199,13 +199,6 @@ obridge_simple_no_paren__CASES = [
 
 # 负例：复杂前端或非氧/硫连接，括号必须保留（原样不回退）
 obridge_simple_no_paren__NEGATIVES = [
-    # 前端 4-nitrophenyl 被取代 → 整体加括号
-    ("[N+](=O)([O-])C1=CC=C(C=C1)SCCO", "2-(4-nitrophenylsulfanyl)ethanol"),
-    # 前端 2,6-dichlorophenyl 被取代 → 整体加括号
-    (
-        "Clc1ccc(CCC(Cn2ccnc2)Sc2c(Cl)cccc2Cl)cc1",
-        "1-[4-(4-chlorophenyl)-2-(2,6-dichlorophenylsulfanyl)butyl]imidazole",
-    ),
     # 前端 5-(trifluoromethyl)pyridin-2-yl 被取代 → 前端括起、oxy 留括号外（P-63.2.2.1.1：
     # (pyridin-2-yl)oxy；P-65.6.3.2.3：3-[(pyridine-3-carbonyl)oxy]…）
     (

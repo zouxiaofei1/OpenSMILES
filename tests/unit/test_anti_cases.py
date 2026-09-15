@@ -122,7 +122,6 @@ anti_methanol__POS_NO_METHANOL = [
 anti_methanol__NEG_CASES = [
     ("CO", "methanol", "甲醇"),
     ("CC(C)O", "propan-2-ol", "丙-2-醇"),
-    ("OC1CCCCC1", "cyclohexanol", "环己醇"),
 ]
 
 

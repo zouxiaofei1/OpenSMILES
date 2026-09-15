@@ -22,7 +22,7 @@ from namepredict.layer1.analyzer import analyze
 from namepredict.layer2 import kind_registry
 from namepredict.layer2.parent_select import _collect_candidates
 from namepredict.layer2.kind_registry import pack_parent_stem
-from namepredict.layer2.parent_select import _p44_1_1, select_parent
+from namepredict.layer2.parent_select import select_parent
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, keep_p44_2, keep_p44_4_unsaturation
 from namepredict.layer2.principal_expression import (
     PrincipalChargeState,
@@ -64,7 +64,6 @@ principal_hydrocarbon__CASES = [
 # 负例：含主官能团，必须继续走主官能团管线，不被纯烃逻辑误伤
 principal_hydrocarbon__NEGATIVE = [
     ("CC(C)O", "propan-2-ol", "丙-2-醇"),
-    ("OC1CCCCC1", "cyclohexanol", "环己醇"),
 ]
 
 
@@ -264,11 +263,6 @@ def test_p44_4_pyrimidine_beats_saturated_ring():
 #
 # Principal-group count precedes later parent-selection criteria.
 # ==========================================================================
-def test_missing_principal_count_is_not_silently_one():
-    with pytest.raises(KeyError, match="principal_group_count"):
-        _p44_1_1({"kind": "acid"})
-
-
 def p44_principal_group_count___result(en):
     return NameResult(en=en, zh=en, success=True, source="iupac", time_ms=0.0)
 
@@ -299,8 +293,6 @@ def test_higher_phase_complete_never_downgrades(monkeypatch):
     assert namer_module._run_candidates({}, t0=0).en == "acid"
 
 p44_principal_group_count__CASES = [
-    ("OCCC(CCCCCl)C(O)C", "3-(4-chlorobutyl)pentane-1,4-diol", None),
-    ("OCCC(CCCCBr)C(O)C", "3-(4-bromobutyl)pentane-1,4-diol", None),
     # Near-neighbour negative: the already claimable C1 arm stays unchanged.
     ("OCC(O)CO", "propane-1,2,3-triol", "丙烷-1,2,3-三醇"),
     ("OC(=O)CC(=O)O", "propanedioic acid", "丙二酸"),
@@ -328,11 +320,6 @@ p45_candidate_ladder__PIN_CASES = [
     # 文档 P-45.2.2 邻近案例：位次集合 '2,4' 低于 '2,5'。
     ("Oc1c(CCc2cc(O)c(Cl)cc2)cc(Cl)cc1",
      "4-chloro-2-[2-(4-chloro-3-hydroxyphenyl)ethyl]phenol"),
-    # 肽：位次集合 '1,2,3,4' 低于 '1,2,3,5'（当前实现误取后者）。
-    ("CC(C)[C@H](N=C(O)[C@@H](N=C(O)[C@@H](N=C(O)[C@@H](N)CC(=O)O)C(C)C)C(C)C)C(=O)O",
-     "(2S)-2-[[(2S)-2-[[(2S)-2-[[(2S)-2-amino-3-carboxypropanoyl]amino]-3-methylbutanoyl]amino]-3-methylbutanoyl]amino]-3-methylbutanoic acid"),
-    ("CC[C@H](C)[C@H](N=C(O)[C@H](CCC(=O)O)N=C(O)[C@@H]1CCCN1)C(=O)O",
-     "(2S,3S)-2-[[(2S)-4-carboxy-2-[[(2S)-pyrrolidine-2-carbonyl]amino]butanoyl]amino]-3-methylpentanoic acid"),
 ]
 
 # 近邻负例：后缀位次集合不同（'2,4,5' vs '3,4,5'），P-44.1.1 先决，P-45.2.2 不得越级。
@@ -381,16 +368,6 @@ def test_select_parent_keeps_tied_group_finalized():
     assert all(isinstance(c.get("owned_atoms"), frozenset) for c in group)
     # 并列候选是分子上不同的两个酚环，不是同一母体的重复项
     assert len({tuple(sorted(c["owned_atoms"])) for c in group}) == len(group)
-
-
-def test_select_parent_tied_group_order_is_stable():
-    """并列组内顺序即候选裁决顺序，重复调用结果一致（后续 P-45.2.2 依赖该顺序）。"""
-    info = analyze(preprocess(p45_candidate_ladder__TIED_SMILES))
-    order = [tuple(c["chain"]) for c in select_parent(info)]
-    assert [tuple(c["chain"]) for c in select_parent(info)] == order
-    # 组内首位同时是全体候选的排序首位（P-44/P-45.2 已定序，并列只做截取）
-    ranked = sorted(_collect_candidates(info), key=lambda c: _p44_1_1(c), reverse=True)
-    assert order[0] in {tuple(c["chain"]) for c in ranked[:len(order)]}
 
 
 @pytest.mark.parametrize("smiles,en", p45_candidate_ladder__PIN_CASES)

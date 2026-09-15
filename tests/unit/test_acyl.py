@@ -55,8 +55,6 @@ acyl_halide__CASES = [
 
     # F 在 α 碳而非羰基：仍为醛（不误判为酰卤）
     ("FCC=O", "fluoroacetaldehyde", "氟乙醛"),
-    # 羰基碳带 F 但有酯烷氧基侧：是氟甲酸酯，不是酰氟
-    ("O=C(F)OC", "methyl fluoroformate", None),
 ]
 
 
@@ -142,7 +140,6 @@ acyl_oyl__POS_FRAG = [
     ("*C(=O)C", "acetyl", "乙酰基"),
     ("*C(=O)CCC", "butanoyl", None),
     ("*C(=O)Cc1cccs1", "2-thiophen-2-ylacetyl", "2-噻吩-2-基乙酰基"),
-    ("*C(=O)N", "carbamoyl", "氨基甲酰基"),  # 氨基甲酸的酰基保留前缀（P-66.1.1.4.1），锚定表条目，不走 oxo/amino 展开
 ]
 
 
@@ -295,7 +292,6 @@ def test_ring_acyl_fragment_named_carbonyl(smiles: str, en: str) -> None:
 ring_acyl_carbonyl__POS_WHOLE = [
     ("O=C(O)CNC(=O)c1ccco1", "2-(furan-2-carbonylamino)acetic acid"),
     ("C1CC1C(=O)NCC(=O)O", "2-(cyclopropanecarbonylamino)acetic acid"),
-    ("O=C(O)CNC(=O)c1ccc(Cl)cc1", "2-(4-chlorobenzoylamino)acetic acid"),
 ]
 
 

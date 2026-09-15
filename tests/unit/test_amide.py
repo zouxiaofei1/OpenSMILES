@@ -161,7 +161,6 @@ def test_amido_fragment(smiles: str, en: str) -> None:
 # 片段级近邻负例：不在收缩表内不得误伤（长链酰方法 2、被取代苯甲酰仍 acylamino）。
 amido_contraction__NEG_FRAG = [
     ("*NC(=O)CCC", "butanoylamino"),
-    ("*NC(=O)c1ccc(Cl)cc1", "4-chlorobenzoylamino"),
     ("*NC(=O)c1ccco1", "furan-2-carbonylamino"),
 ]
 

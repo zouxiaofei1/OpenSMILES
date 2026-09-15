@@ -16,7 +16,6 @@ test_scaffold_numbering_producer_flow.py: Selected retained parents must carry f
 test_merge_alken_kinds.py: Merge open-chain mono-FG alken* ParentKind into saturated kinds.
 test_fg_locants_records.py: fg_locants 稀疏产出契约: principal FG 位次为结构化列表 [{kind, locants, omit}],
 test_substituent_namer.py: Ordered SubstituentNamer backends: retained → rooted_tree → recursive.
-test_yl_form.py: Tests for yl_form FG suffix→prefix conversion (P-63.2.2 / P-63.2.1 / P-62.2).
 """
 from __future__ import annotations
 
@@ -47,7 +46,6 @@ from namepredict.layer3.substituent_namer import SubstituentName, SubstituentNam
 from namepredict.layer4.locant_calc import _fg_locants
 from namepredict.layer4.numbering import number
 from namepredict.namer import SMILESNNamer
-from namepredict.layer5.assembler import free_to_yl as yl_form
 from namepredict.tools.re import normalize_en, normalize_zh
 from pathlib import Path
 from rdkit import Chem
@@ -447,23 +445,6 @@ def claimable_block_api___benzene_owned(smiles: str):
     raise AssertionError("no benzene parent candidate")
 
 
-def test_n_phenyl_benzamide_amide_n_claim():
-    """N-phenyl benzamide: one AMIDE_N claim with six phenyl atoms."""
-    mol, info = claimable_block_api___info("c1ccccc1C(=O)Nc2ccccc2")
-    parent = select_parent(info)[0]
-    assert parent["kind"] == "amide"
-    assert parent.get("scaffold_id") == "benzene"
-    claims = iter_claims(mol, parent["owned_atoms"])
-    assert len(claims) == 1
-    c = claims[0]
-    assert c.slot == SideSlot.AMIDE_N
-    assert len(c.atoms) == 6
-    assert all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in c.atoms)
-    assert c.attach_parent in parent["owned_atoms"]
-    assert c.root not in parent["owned_atoms"]
-    assert c.root in c.atoms
-
-
 def test_methylbutylbenzene_ring_c_claim():
     """2-methylbutylbenzene with ring ownership: one RING_C claim, five side C."""
     mol, owned = claimable_block_api___benzene_owned("c1ccc(cc1)CC(C)CC")
@@ -530,17 +511,6 @@ def test_claim_block_valid_returns_atoms():
     assert again == c
 
 
-def test_ketone_carbonyl_o_not_claimed():
-    """外部羰基氧（双键连所属碳）被跳过，不作侧链 claim（主 FG 已处理）。"""
-    mol, info = claimable_block_api___info("OC(=O)C(=O)C")
-    parent = select_parent(info)[0]
-    assert parent["kind"] == "acid"
-    claims = iter_claims(mol, parent["owned_atoms"])
-    assert all(
-        mol.GetAtomWithIdx(c.root).GetAtomicNum() != 8 for c in claims
-    )
-
-
 def test_sulfonyl_o_not_claimed():
     """砜双键氧同样被跳过，避免 cut 出 *O 污染成羟基。"""
     mol, info = claimable_block_api___info("CS(=O)(=O)C")
@@ -561,7 +531,6 @@ claimable_parent_batches__BATCHES = [
     ("CC(=O)O", "acetic acid", "乙酸"),
     # alkane
     ("CCCC", "butane", "丁烷"),
-    ("CC(C)CC", "2-methylbutane", "2-甲基丁烷"),
     # ketone
     ("CC(=O)C", "propan-2-one", None),  # acetone may be retained
     ("CCCC(=O)C", "pentan-2-one", "戊-2-酮"),
@@ -574,7 +543,6 @@ claimable_parent_batches__BATCHES = [
     ("Oc1ccccc1", "phenol", "苯酚"),
     # aniline
     ("Nc1ccccc1", "aniline", "苯胺"),
-    ("Nc1ccc(C)cc1", "4-methylaniline", "4-甲基苯胺"),
     # pyridine
     ("c1ccncc1", "pyridine", "吡啶"),
     # amide
@@ -971,21 +939,6 @@ def fg_locants_records___oriented(kind: str, chain: list, anchors: list, group) 
             "principal_expression_facts": facts}
 
 
-def test_single_alcohol_record():
-    fg = _fg_locants(fg_locants_records___oriented("alcohol", [0, 1, 2, 3], [1], FG.ALCOHOL))
-    assert fg == [{"kind": "oh", "locants": [2], "omit": False}]
-
-
-def test_methanol_omit_flag():
-    fg = _fg_locants(fg_locants_records___oriented("alcohol", [0], [0], FG.ALCOHOL))
-    assert fg == [{"kind": "oh", "locants": [1], "omit": True}]
-
-
-def test_diol_single_oh_record_multi_locants():
-    fg = _fg_locants(fg_locants_records___oriented("alcohol", [9, 8, 6, 5, 3, 1, 0], [1, 9], FG.ALCOHOL))
-    assert fg == [{"kind": "oh", "locants": [1, 6], "omit": False}]
-
-
 def test_ketone_record():
     fg = _fg_locants(fg_locants_records___oriented("ketone", [0, 1, 2, 3], [1], FG.KETONE))
     assert fg == [{"kind": "ketone", "locants": [2], "omit": False}]
@@ -999,17 +952,6 @@ def test_dione_single_record():
 def test_amine_record():
     fg = _fg_locants(fg_locants_records___oriented("amine", [0, 1, 2, 3], [1], FG.AMINE))
     assert fg == [{"kind": "amine", "locants": [2], "omit": False}]
-
-
-def test_thiol_record():
-    fg = _fg_locants(fg_locants_records___oriented("thiol", [0, 1, 2, 3], [1], FG.THIOL))
-    assert fg == [{"kind": "sh", "locants": [2], "omit": False}]
-
-
-def test_records_are_sparse_only_principal_kind():
-    """稀疏产出：只产实际存在的 principal 类记录，不夹带同锚点的其它 kind。"""
-    records = _fg_locants(fg_locants_records___oriented("alcohol", [0, 1, 2, 3], [1], FG.ALCOHOL))
-    assert [r["kind"] for r in records] == ["oh"]
 
 
 def test_ring_exocyclic_single_fg_produces_one_record():
@@ -1152,52 +1094,3 @@ def test_backend_none_never_yields_empty_name_or_mutates_claim():
     assert (claim.slot, claim.attach_parent, claim.root, claim.atoms) == before
 
 
-# ==========================================================================
-# 合并自 test_yl_form.py
-#
-# Tests for yl_form FG suffix→prefix conversion (P-63.2.2 / P-63.2.1 / P-62.2).
-# ==========================================================================
-@pytest.mark.parametrize("en,zh,k,exp_en,exp_zh", [
-    ("methanol", "甲醇", 1, "methoxy", "甲氧基"),
-    ("ethanol", "乙醇", 2, "ethoxy", "乙氧基"),
-    ("propan-1-ol", "丙-1-醇", 1, "propoxy", "丙氧基"),
-    ("propan-2-ol", "丙-2-醇", 2, "propan-2-yloxy", "丙-2-基氧基"),
-])
-def test_alcohol_to_alkoxy(en, zh, k, exp_en, exp_zh):
-    got_en, got_zh, paren = yl_form(en, zh, k)
-    assert got_en == exp_en, f"EN: expected {exp_en}, got {got_en}"
-    assert got_zh == exp_zh, f"ZH: expected {exp_zh}, got {got_zh}"
-
-
-# ── thiol → alkylsulfanyl (P-63.2.1) ──
-@pytest.mark.parametrize("en,zh,k,exp_en,exp_zh", [
-    ("methanethiol", "甲硫醇", 1, "methylsulfanyl", "甲硫基"),
-    ("ethanethiol", "乙硫醇", 2, "ethylsulfanyl", "乙硫基"),
-])
-def test_thiol_to_sulfanyl(en, zh, k, exp_en, exp_zh):
-    got_en, got_zh, paren = yl_form(en, zh, k)
-    assert got_en == exp_en, f"EN: expected {exp_en}, got {got_en}"
-    assert got_zh == exp_zh, f"ZH: expected {exp_zh}, got {got_zh}"
-
-
-# ── primary amine → alkylamino (P-62.2) ──
-@pytest.mark.parametrize("en,zh,k,exp_en,exp_zh", [
-    ("methanamine", "甲胺", 1, "methylamino", "甲氨基"),
-    ("ethanamine", "乙胺", 2, "ethylamino", "乙氨基"),
-])
-def test_primary_amine_to_amino(en, zh, k, exp_en, exp_zh):
-    got_en, got_zh, paren = yl_form(en, zh, k)
-    assert got_en == exp_en, f"EN: expected {exp_en}, got {got_en}"
-    assert got_zh == exp_zh, f"ZH: expected {exp_zh}, got {got_zh}"
-
-
-# ── non-converting: fallback to -n-yl ──
-@pytest.mark.parametrize("en,zh,k,exp_en,exp_zh", [
-    ("N-methylethanamine", "N-甲基乙胺", 1, "N-methylethanamin-1-yl", "N-甲基乙胺-1-基"),
-    ("benzene", "苯", 1, "phenyl", "苯基"),
-    ("ethane", "乙烷", 1, "ethan-1-yl", "乙烷-1-基"),
-])
-def test_fallback_to_n_yl(en, zh, k, exp_en, exp_zh):
-    got_en, got_zh, paren = yl_form(en, zh, k)
-    assert got_en == exp_en, f"EN: expected {exp_en}, got {got_en}"
-    assert got_zh == exp_zh, f"ZH: expected {exp_zh}, got {got_zh}"

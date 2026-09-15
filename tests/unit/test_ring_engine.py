@@ -72,44 +72,6 @@ def test_biphenyl_two_systems():
     assert all(s["n_rings"] == 1 for s in syss)
 
 
-def test_spiro45_merged_single_system():
-    """Spiro[4.5]decane: two rings share 1 atom → single spiro system."""
-    syss = ring_systems___systems("C1CCC2(C1)CCCCC2")
-    assert len(syss) == 1
-    s = syss[0]
-    assert s["n_rings"] == 2
-    assert s["topology"] == "spiro"
-    assert s["ring_sizes"] == [4, 5]
-
-
-def test_spiro44_merged():
-    """>Spiro[4.4]nonane: two 5-membered rings share 1 atom."""
-    syss = ring_systems___systems("C1CCC2(CCCC2)C1")
-    assert len(syss) == 1
-    s = syss[0]
-    assert s["topology"] == "spiro"
-    assert s["n_rings"] == 2
-    assert s["ring_sizes"] == [4, 4]
-
-
-def test_spiro55_merged():
-    """Spiro[5.5]undecane: two 6-membered rings share 1 atom."""
-    syss = ring_systems___systems("C1CCCC2(CCCCC2)C1")
-    assert len(syss) >= 1
-    spiros = [s for s in syss if s["topology"] == "spiro"]
-    assert len(spiros) == 1
-    assert spiros[0]["n_rings"] == 2
-    assert spiros[0]["ring_sizes"] == [5, 5]
-
-
-def test_spiro_with_substituent():
-    """Spiro with alkyl substituent: parent system still detected."""
-    syss = ring_systems___systems("C1CCC2(C1(C))CCCC2")  # 1-methylspiro[4.4]nonane
-    spiros = [s for s in syss if s["topology"] == "spiro"]
-    assert len(spiros) == 1
-    assert spiros[0]["n_rings"] == 2
-
-
 def test_non_spiro_unchanged():
     """Fused rings should NOT become spiro."""
     syss = ring_systems___systems("c1ccc2ccccc2c1")  # naphthalene

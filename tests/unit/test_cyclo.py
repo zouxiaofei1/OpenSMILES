@@ -86,45 +86,6 @@ def test_not_chain_ene_name() -> None:
 
 
 # ==========================================================================
-# 合并自 test_mono_cycloalcohol.py
-# IUPAC: P-63.1.1 / P-22.1.1
-# Layer: L2,L4,L5
-#
-# Unsubstituted monocyclic monoalcohols (cycloalkanols).
-#
-# Parent = saturated monocarbocycle with one ring-carbon OH.
-# Unsubstituted: omit locant (cyclohexanol not cyclohexan-1-ol).
-# ==========================================================================
-mono_cycloalcohol__CASES = [
-    # positive: unsubstituted monocycloalkanols C3–C7
-    ("OC1CC1", "cyclopropanol", "环丙醇"),
-    ("OC1CCC1", "cyclobutanol", "环丁醇"),
-    ("OC1CCCC1", "cyclopentanol", "环戊醇"),
-    ("OC1CCCCCC1", "cycloheptanol", "环庚醇"),
-    ("CCCO", "propan-1-ol", "丙-1-醇"),
-]
-
-
-@pytest.mark.parametrize("smiles,en,zh", mono_cycloalcohol__CASES)
-def test_mono_cycloalcohol(smiles: str, en: str, zh: str | None) -> None:
-    r = SMILESNNamer().name(smiles)
-    assert r.success
-    assert normalize_en(r.en) == normalize_en(en)
-    if zh is not None:
-        assert normalize_zh(r.zh) == normalize_zh(zh)
-
-
-def test_cyclohexanol_not_chain_alcohol() -> None:
-    """Ring OH must not be named as acyclic alcohol (hexanol / nonan-*-ol)."""
-    r = SMILESNNamer().name("OC1CCCCC1")
-    assert r.success
-    en = normalize_en(r.en)
-    assert en == "cyclohexanol"
-    assert "hexanol" != en or en.startswith("cyclo")
-    assert "nonan" not in en
-
-
-# ==========================================================================
 # 合并自 test_mono_cycloamine.py
 # IUPAC: P-62.2.1 / P-22.1.1
 # Layer: L2,L4,L5

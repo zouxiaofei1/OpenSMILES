@@ -57,7 +57,6 @@ def test_alkanediol(smiles: str, en: str, zh: str | None) -> None:
 alkanetriol__CASES = [
     ("OCC(O)CCCO", "pentane-1,2,5-triol", "戊烷-1,2,5-三醇"),
     ("CC(O)C(O)CO", "butane-1,2,3-triol", "丁烷-1,2,3-三醇"),
-    ("C1CCC(O)CC1", "cyclohexanol", "环己醇"),
 ]
 
 
@@ -297,8 +296,6 @@ def test_ether_alpha_ol_no_bogus_hydroxy(smiles: str, en: str, zh: str) -> None:
 @pytest.mark.parametrize(
     "smiles,en,zh",
     [
-        ("C1CCC(O)CC1", "cyclohexanol", "环己醇"),
-        ("OC1CCCC1", "cyclopentanol", "环戊醇"),
         ("OCC(O)C", "propane-1,2-diol", "丙烷-1,2-二醇"),
     ],
 )

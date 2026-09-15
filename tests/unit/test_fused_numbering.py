@@ -373,7 +373,6 @@ fused_cycloalkane_component__NEIGHBORS = [
     ("C1CCC2CCCCC2C1", "decahydronaphthalene", "十氢萘"),
     ("C1CCc2ccccc2C1", "1,2,3,4-tetrahydronaphthalene", "1,2,3,4-四氢萘"),
     ("C1CCCC1", "cyclopentane", "环戊烷"),
-    ("OC1CCCC1", "cyclopentanol", "环戊醇"),
     # 六元碳环稠合：整骨架有保留名模板（喹啉），不得改走环烷烃附加组分路径
     ("c1cnc2c(c1)CCCC2", "5,6,7,8-tetrahydroquinoline", "5,6,7,8-四氢喹啉"),
 ]

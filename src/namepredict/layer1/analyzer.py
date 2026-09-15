@@ -1,12 +1,13 @@
 """L1 官能团分析器：枚举分子中各类官能团条目并汇总为分析结果 dict。
 酰卤 R–C(=O)–X（X=F/Cl/Br/I，P-65.5）检测内联于本模块。
+羰基原语 _double_bonded_o_idxs/_alkoxy_c_of 供 L2 主基团表达式复用。
 """
 from __future__ import annotations
 
 from rdkit.Chem import BondType, Mol
 from collections import deque
 from namepredict.constants import (
-    C, H,
+    C, H, O,
 )
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1.fg_local_smarts import match_local_fg
@@ -14,6 +15,27 @@ from namepredict.layer1.fg_local_smarts import match_local_fg
 def _heavy(a) -> list:
     """非氢邻居索引。"""
     return [n.GetIdx() for n in a.GetNeighbors() if n.GetAtomicNum() != 1]
+
+
+def _double_bonded_o_idxs(carbon) -> list[int]:
+    """返回碳上羰基双键氧的索引列表。"""
+    mol = carbon.GetOwningMol()
+    out: list[int] = []
+    for n in carbon.GetNeighbors():
+        if n.GetAtomicNum() != O:
+            continue
+        b = mol.GetBondBetweenAtoms(carbon.GetIdx(), n.GetIdx())
+        if b is not None and b.GetBondType() == BondType.DOUBLE:
+            out.append(n.GetIdx())
+    return out
+
+
+def _alkoxy_c_of(oxygen, carbonyl) -> int | None:
+    """返回氧上除羰基碳外的烷氧基碳索引。"""
+    for n in oxygen.GetNeighbors():
+        if n.GetAtomicNum() == C and n.GetIdx() != carbonyl.GetIdx():
+            return n.GetIdx()
+    return None
 
 
 def _arm_component(mol: Mol, start: int, core: set[int]) -> set[int]:

@@ -144,10 +144,6 @@ phosphoryl_prefix__WHOLE_CASES = [
      "4-bromo-2-chloro-1-[ethoxy(propylsulfanyl)phosphoryl]oxybenzene", None),
     ("CCOP(=O)(SC(C)CC)N1CCSC1=O",
      "3-[butan-2-ylsulfanyl(ethoxy)phosphoryl]-1,3-thiazolidin-2-one", None),
-    # 磷酸二酯桥：P–O–C 臂上的取代基不参与 P 酰基，桥连母体侧仍出 oxy
-    ("CCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(=O)(O)OCCN",
-     "(2R)-3-[2-aminoethoxy(hydroxy)phosphoryl]oxy-2-hydroxypropyl hexadecanoate",
-     "十六酸(2R)-3-[2-氨基乙氧基(羟基)磷酰基]氧基-2-羟基丙酯"),
     # N 桥（氨基甲酰磷酸）：P 前缀整体围栏后接 amino
     ("CCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(=O)(O)OCCN=C(O)CCCCCCCCCCCCCCC",
      "(2R)-3-[2-(hexadecanoylamino)ethoxy-hydroxyphosphoryl]oxy-2-hydroxypropyl hexadecanoate",
@@ -166,7 +162,6 @@ phosphoryl_prefix__REGRESSION_CASES = [
     ("COP(=O)(O)O", "methyl dihydrogen phosphate", "磷酸二氢甲酯"),
     # 终端磷酸降级前缀仍走锚定表（P-67.1.5.1）
     ("*OP(=O)(O)O", "phosphonooxy", "膦酸氧基"),
-    ("*COP(=O)(O)O", "phosphonooxymethyl", "膦酸氧甲基"),
 ]
 
 

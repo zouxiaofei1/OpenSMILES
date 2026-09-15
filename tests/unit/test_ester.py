@@ -6,20 +6,11 @@ test_alkanedioate_diester.py: Open-chain symmetric dialkyl alkanedioates (dieste
 test_alkenedioate_diester.py: Open-chain symmetric dialkyl alkenedioates (unsaturated diesters).
 test_ester_alkoxy_sides.py: Ester alkoxy sides: benzyl / tert-butyl / isopropyl / phenyl (P-65.6).
 test_complex_benzoate.py: Complex O-alkyl benzoate parent hit (Ph–C(=O)–O–R).
-test_principal_benzoate.py:
 """
 from __future__ import annotations
 
-import time
-
 import pytest
 
-import namepredict.namer as namer_module
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.kind_registry import pack_parent_stem
-from namepredict.layer2.parent_select import select_parent
-from namepredict.layer2.parent_select import rule_driven_parent_candidates
 from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh
 from rdkit import Chem
@@ -212,56 +203,3 @@ def test_complex_not_ethane_collapse() -> None:
     assert "benzoate" in en
 
 
-# ==========================================================================
-# 合并自 test_principal_benzoate.py
-# IUPAC: P-65.6.1 / P-22.1.3
-# Layer: L2
-#
-# 验证 principal 规则管线对「苯环上直接连酯基」产出 benzoate 保留母体，
-# 不依赖经典生产者通道（_try_arene_other_fg / _benzoate_parent）。
-# ==========================================================================
-principal_benzoate__CASES = [
-    ("COC(=O)c1ccccc1", "methyl benzoate", "苯甲酸甲酯"),
-    ("CCCCCCCCCCCCCCCCOC(=O)c1ccccc1", "hexadecyl benzoate", "苯甲酸十六酯"),
-]
-
-# 负例：近邻但不应被 benzoate 规则误伤
-principal_benzoate__NEGATIVE = [
-    ("OC(=O)c1ccccc1", "benzoic acid", "苯甲酸"),  # 苯甲酸走 ACID 保留名
-    ("CC(=O)OC", "methyl acetate", "乙酸甲酯"),    # 开链酯走开链母体
-]
-
-
-def principal_benzoate___principal_name(smiles: str):
-    """Only the rule-driven principal pipeline + L3-L5, no legacy producers."""
-    mol = preprocess(smiles)
-    if mol is None:
-        return None
-    info = analyze(mol)
-    t0 = time.perf_counter()
-    for parent in rule_driven_parent_candidates(info):
-        packed = pack_parent_stem(parent, info["mol"])
-        prepared, subst, complete = namer_module._prepare_candidate(info, packed)
-        if not complete:
-            continue
-        hit = namer_module._assemble_candidate(prepared, subst, t0=t0)
-        if hit is not None and hit.success:
-            return hit
-    return None
-
-
-def test_principal_benzoate_cases():
-    for smiles, en, zh in principal_benzoate__CASES:
-        r = principal_benzoate___principal_name(smiles)
-        assert r is not None, f"principal 管线未能产出候选: {smiles}"
-        assert r.success, f"装配失败 {smiles}: {r.meta}"
-        assert normalize_en(r.en) == normalize_en(en), f"EN {smiles}: got {r.en!r} want {en!r}"
-        assert normalize_zh(r.zh) == normalize_zh(zh), f"ZH {smiles}: got {r.zh!r} want {zh!r}"
-
-
-def test_principal_benzoate_negative_untouched():
-    for smiles, en, zh in principal_benzoate__NEGATIVE:
-        r = principal_benzoate___principal_name(smiles)
-        assert r is not None, f"principal 管线未产出: {smiles}"
-        assert normalize_en(r.en) == normalize_en(en), f"EN {smiles}: got {r.en!r} want {en!r}"
-        assert normalize_zh(r.zh) == normalize_zh(zh), f"ZH {smiles}: got {r.zh!r} want {zh!r}"

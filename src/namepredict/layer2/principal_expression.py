@@ -8,7 +8,7 @@ from namepredict.constants import (
     HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES, NITROGEN_STEM_BY_FREE_DOUBLE,
     O, PHOSPHORUS_STEM_BY_OXO, SULFUR_STEM_BY_OXO,
 )
-from namepredict.layer1._carbonyl_common import _alkoxy_c_of, _double_bonded_o_idxs
+from namepredict.layer1.analyzer import _alkoxy_c_of, _double_bonded_o_idxs
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
 from namepredict.layer2.principal import PrincipalGroupSelection, feature_spec

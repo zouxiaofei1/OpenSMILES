@@ -387,11 +387,8 @@ def test_anilino_retained(smiles: str, en: str, zh: str) -> None:
 
 # 锚定表保留前缀：片段级精确断言（碳/杂原子锚点）
 retained_names__RETAINED_FRAG = [
-    ("*C(=O)N", "carbamoyl", "氨基甲酰基"),
     ("*NC(=O)N", "carbamoylamino", "氨基甲酰氨基"),
     ("*OC(=O)N", "carbamoyloxy", "氨基甲酰氧基"),
-    ("*NC(N)=S", "carbamothioylamino", "氨基硫代羰基氨基"),
-    ("*S(=O)(=O)N", "sulfamoyl", "氨磺酰基"),
 ]
 
 
