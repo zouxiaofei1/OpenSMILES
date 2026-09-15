@@ -202,7 +202,6 @@ class _Chain:
     unsat_polyol: bool = False          # 多 FG 词干支持烯/炔插入 (diol/triol)
     variant: dict | None = None         # {scaffold: {multiplicity: 特例字段覆盖}}
     stem: tuple | None = None           # (en_stem, zh_stem) — 稠环/杂环词干覆盖
-    mult_ok: bool = False               # 支持数量后缀生成，并放行多 FG 语义
     aromatic: bool = False              # 芳香环 scaffold 标记；醇→酚 在此消费
     plain_hook: object = None           # (numbered)->pair|None  词尾由分子计数直接决定
 
@@ -311,7 +310,7 @@ def _exo_ring_spec(spec: "_Chain", n: int, numbered: dict) -> "_Chain":
     if mult == 1 and sid == "benzene":  # 苯单取代保留名由 variant 承担。
         return spec
     fields = dict(en_suf=singular[0], zh_suf=singular[1], fg=spec.kind, ene_base=None, yne_suf=None,
-                  mult_ok=plural is not None)  # 多取代后缀由数量机制生成
+                 )  # 多取代后缀由数量机制生成
     if sid != "carbocycle" or parent.get("fused_tree"):  # 稠环/杂环词干已注入，位次恒显式。
         return replace(spec, **fields)
     base = (alkane_en(n), alkane_zh(n))
@@ -337,7 +336,7 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         spec = replace(spec, zh_suf="酚")
     spec = _exo_ring_spec(spec, n, numbered)
     mult = _parent_multiplicity(numbered)
-    if mult is not None and mult > 1 and spec.mult_ok:
+    if mult is not None and mult > 1:
         var = _generated_mult_fields(spec, mult)
         if var is None:
             return None
@@ -459,12 +458,11 @@ _KIND_TABLE = {
     "alcohol": _Chain(kind="alcohol", en_suf="ol", zh_suf="醇",
                       fg="alcohol", need=1, omit_rule=_omit_term_locant,
                       ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                      mult_ok=True, zh_full=True, unsat_polyol=True),
+                      zh_full=True, unsat_polyol=True),
     "ketone": _Chain(kind="ketone", en_suf="one", zh_suf="酮",
                      fg="ketone", need=1, no_loc="none",
                      omit_rule=lambda n, loc, omit: n <= 2 and loc == 1,
-                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                     mult_ok=True, unsat_polyol=True),
+                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,unsat_polyol=True),
     "alkane": _Chain(kind="alkane", en_suf="ane", zh_suf="烷", coda="",
                      omit_rule=lambda n, loc, omit: omit or n <= 3,
                      ene_base=("ene", "烯"), yne_suf=("yne", "炔"),
@@ -473,41 +471,38 @@ _KIND_TABLE = {
     "acid": _Chain(kind="acid", en_suf="oic acid", zh_suf="酸",
                    ene_base=("enoic acid", "烯酸"),
                    yne_suf=("ynoic acid", "炔酸"),
-                   ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
-                   mult_ok=True,
+                   ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
                    variant={
                        None: {1: dict(plain_maps=None, plain_fn=_retained_plain("acid")),
                               2: dict(plain_maps=({2: "oxalic acid"}, {2: "草酸"}), yne_suf=None)},
                    }),
-    "sulfonic": _Chain(kind="sulfonic", en_suf="sulfonic acid", zh_suf="磺酸", coda="ane",  # P-65.3.1 磺酸后缀：C 母体 + sulfonic acid
-                      mult_ok=True),
+    "sulfonic": _Chain(kind="sulfonic", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,en_suf="sulfonic acid", zh_suf="磺酸", coda="ane",),
     "ester": _Chain(kind="ester", en_suf="oate", zh_suf="酸",
                     ene_base=("enoate", "烯酸"),
                     yne_suf=("ynoate", "炔酸"),
-                    ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
-                    mult_ok=True,
+                    ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
                     variant={
                         None: {1: dict(plain_maps=None, plain_fn=_retained_plain("ester")),
                                2: dict(plain_maps=({2: "oxalate"}, {2: "草酸"}))},  # P-65.1.1 保留名：乙二酸二酯 = oxalate
                     }),
-    "phosphate": _Chain(kind="phosphate", en_suf="phosphate", fg="phosphate", zh_suf="磷酸", coda="",  # P-67.1.3 无机功能母体：词尾由 plain_hook 切换
+    "phosphate": _Chain(kind="phosphate", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,en_suf="phosphate",fg="phosphate", zh_suf="磷酸", coda="",  # P-67.1.3 无机功能母体：词尾由 plain_hook 切换
                         plain_hook=_phosphate_tail),
     "acyl": _Chain(kind="acyl", en_suf="oyl", zh_suf="酰基",  # 酰基残基（P-65.1.7.2）：酸碳恒 locant 1，C1/C2 走保留名
                    ene_base=("enoyl", "烯酰基"),
                    yne_suf=("ynoyl", "炔酰基"),
-                   ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
+                   ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
                    # 苯环外酰基头 → 保留名 benzoyl（P-65.1.7.2）。
                    variant={None: {1: dict(plain_maps=None, plain_fn=_retained_plain("acyl"))}}),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
                     fg="thiol", need=1, omit_rule=_omit_term_locant,
                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                    mult_ok=True, zh_full=True, unsat_polyol=True,
+                     zh_full=True, unsat_polyol=True,
                     ene_seg=("ene", "烯"), yne_seg=("yne", "炔")),
     "amine": _Chain(kind="amine", en_suf="amine", zh_suf="胺",
                     fg="amine", need=1, omit_rule=_omit_term_locant,
                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                    mult_ok=True, zh_full=True, unsat_polyol=True),
-    "aldehyde": _Chain(kind="aldehyde", en_suf="al", zh_suf="醛",
+                    zh_full=True, unsat_polyol=True),
+    "aldehyde": _Chain(kind="aldehyde", en_suf="al",zh_suf="醛",
                        ene_base=("enal", "烯醛"),
                        yne_suf=("ynal", "炔醛"),
                        ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
@@ -517,10 +512,10 @@ _KIND_TABLE = {
                       yne_suf=("ynenitrile", "炔腈"),
                       ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
                       variant={None: {1: dict(plain_maps=None, plain_fn=_retained_plain("nitrile"))}}),
-    "amide": _Chain(kind="amide", en_suf="amide", zh_suf="酰胺", mult_ok=True,
+    "amide": _Chain(kind="amide", en_suf="amide", zh_suf="酰胺", 
                     ene_base=("enamide", "烯酰胺"),
                     yne_suf=("ynamide", "炔酰胺"),
-                    ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
+                    ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
                     variant={
                         None: {1: dict(plain_maps=None, plain_fn=_retained_plain("amide")),
                                2: dict(plain_maps=({2: "oxamide"}, {2: "草酰胺"}))},  # P-66.1.1 保留名：乙二酰胺 = oxamide
@@ -529,7 +524,6 @@ _KIND_TABLE = {
     "radical": _Chain(kind="radical", en_suf="yl", zh_suf="基", coda="an",
                       fg="radical", need=1, no_loc="none", yl_loc_omit=True,
                       omit_rule=lambda n, loc, omit: loc == 1,  # 饱和无环链/单环烃自由价在 C-1 时省略位次（P-29.2）
-                      plain_fn=_radical_plain,  # 省略位次用烷基型（ethyl/乙基）
-                      ene_seg=("en", "烯"), yne_seg=("yn", "炔"),
+                      plain_fn=_radical_plain, 
                       wrap=_with_ez),  # 烯基自由基需 E/Z 前缀
 }

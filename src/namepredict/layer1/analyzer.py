@@ -59,7 +59,7 @@ def _phosphate_entry(mol: Mol, core: tuple[int, ...]) -> dict | None:
     """校验磷酸候选的非局部条件并组装条目（臂单点回接 + 整分子纯度）。"""
     p_idx, _o_dbl, *o_sgl = core
     core_set = set(core)
-    n_oh = n_om = n_arms = 0
+    n_oh = n_om = 0
     arm_all: set[int] = set()
     for o_idx in o_sgl:
         o = mol.GetAtomWithIdx(o_idx)
@@ -73,15 +73,11 @@ def _phosphate_entry(mol: Mol, core: tuple[int, ...]) -> dict | None:
         if len(others) != 1:
             return None
         comp = _arm_component(mol, others[0], core_set)
-        attaches = [j for i in comp for j in _heavy(mol.GetAtomWithIdx(i)) if j in core_set]  # 组分只贴 1 个 core 原子（桥 O）；不能连到 P 或其它 O
-        if not attaches or len(set(attaches)) != 1 or attaches[0] != o_idx:
-            return None
         arm_all |= comp
-        n_arms += 1
     all_heavy = {a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() != 1}  # 整分子纯度：重原子 = core ∪ 臂（排除臂间成环、P–O–P 焦磷酸等）
     if all_heavy != (core_set | arm_all):
         return None
-    return {"p_idx": p_idx, "n_oh": n_oh, "n_om": n_om, "n_arms": n_arms}
+    return {"p_idx": p_idx, "n_oh": n_oh, "n_om": n_om}
 
 
 def phosphate_entries(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> list[dict]:
