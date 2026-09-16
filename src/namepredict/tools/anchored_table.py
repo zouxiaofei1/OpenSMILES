@@ -20,8 +20,8 @@ class RetainedSubstituent:
     anchored: tuple[str, ...] = ()  # 本保留基对应的锚定 canonical-SMILES 键
     paren: bool = False  # 作前缀时是否需要括号
 
-
-_REGISTRY: dict[str, RetainedSubstituent] = {  # 基础取代基（原 ANCHOR_TABLE 并入 registry）
+# 叶子节点，均为不可再取代的取代基
+_REGISTRY: dict[str, RetainedSubstituent] = {  
     "fluoro": RetainedSubstituent("fluoro", "氟", anchored=("*F",), paren=False),
     "chloro": RetainedSubstituent("chloro", "氯", anchored=("*Cl",), paren=False),
     "bromo": RetainedSubstituent("bromo", "溴", anchored=("*Br",), paren=False),
@@ -38,9 +38,6 @@ _REGISTRY: dict[str, RetainedSubstituent] = {  # 基础取代基（原 ANCHOR_TA
     "cyclohexylidene": RetainedSubstituent("cyclohexylidene", "环己亚基", anchored=("*=C1CCCCC1",), paren=False),
     "sulfanylidene": RetainedSubstituent("sulfanylidene", "硫烷亚基", anchored=("*=S",), paren=False),
     "diaminomethylidene": RetainedSubstituent("diaminomethylidene", "二氨基亚甲基", anchored=("*C(=N)N",), paren=True),  # 脒/胍残基 C(=N)N 按 P-66.1.1 取亚基式
-    "ethyl": RetainedSubstituent("ethyl", "乙基", anchored=("*CC",), paren=False),
-    "propyl": RetainedSubstituent("propyl", "丙基", anchored=("*CCC",), paren=False),
-    "butyl": RetainedSubstituent("butyl", "丁基", anchored=("*CCCC",), paren=False),
     "tert-butyl": RetainedSubstituent("tert-butyl", "叔丁基", anchored=("*C(C)(C)C",), paren=False),  # 支链 / 不饱和烷基
     "isopropyl": RetainedSubstituent("propan-2-yl", "丙-2-基", anchored=("*C(C)C",), paren=False),
     "isobutyl": RetainedSubstituent("2-methylpropyl", "2-甲基丙基", anchored=("*CC(C)C",), paren=False),
@@ -56,18 +53,22 @@ _REGISTRY: dict[str, RetainedSubstituent] = {  # 基础取代基（原 ANCHOR_TA
     "hydroperoxy": RetainedSubstituent("hydroperoxy", "氢过氧基", anchored=("*OO",), paren=False),
     "hydroxy": RetainedSubstituent("hydroxy", "羟基", anchored=("*O",), paren=False),
     "oxidanyl": RetainedSubstituent("oxidanyl", "氧基", anchored=("*[O]",), paren=False),
+    "oxido": RetainedSubstituent("oxido", "氧基", anchored=("*[O-]",), paren=False),  # 去质子酚氧负离子（P-66.1.1.4 阴离子前缀）
     "methylsulfanyl": RetainedSubstituent("methylsulfanyl", "甲硫基", anchored=("*SC",), paren=False),
     "ethylsulfanyl": RetainedSubstituent("ethylsulfanyl", "乙硫基", anchored=("*SCC",), paren=False),
     "sulfanyl": RetainedSubstituent("sulfanyl", "巯基", anchored=("*S",), paren=False),
+    "sulfido": RetainedSubstituent("sulfido", "硫代", anchored=("*[S-]",), paren=False),  # 去质子硫醇负离子（P-66.1.1.4 阴离子前缀）
     "selanyl": RetainedSubstituent("selanyl", "氢硒基", anchored=("*[SeH]",), paren=False),
     "methylsulfinyl": RetainedSubstituent("methylsulfinyl", "甲基亚磺酰", anchored=("*S(C)=O",), paren=False),
     "methylsulfonyl": RetainedSubstituent("methylsulfonyl", "甲磺酰基", anchored=("*S(C)(=O)=O",), paren=False),
     "sulfo": RetainedSubstituent("sulfo", "磺基", anchored=("*S(=O)(=O)O",), paren=False),
-    "tosyl": RetainedSubstituent("4-methylbenzenesulfonyl", "4-甲基苯磺酰基", anchored=("*S(=O)(=O)c1ccc(C)cc1",), paren=False),
+    "sulfonato": RetainedSubstituent("sulfonato", "磺酸根", anchored=("*S(=O)(=O)[O-]",), paren=False),
+    "sulfinato": RetainedSubstituent("sulfinato", "亚磺酸根", anchored=("*S(=O)[O-]",), paren=False),
+    "sulfonatooxy": RetainedSubstituent("sulfonatooxy", "磺酸氧基", anchored=("*OS(=O)(=O)[O-]",), paren=False),
     "carboxy": RetainedSubstituent("carboxy", "羧基", anchored=("*C(=O)O",), paren=False),
+    "carboxylato": RetainedSubstituent("carboxylato", "羧酸根", anchored=("*C(=O)[O-]",), paren=False),  # 去质子羧基（P-66.1.1.4）
     "carbamoyl": RetainedSubstituent("carbamoyl", "氨基甲酰基", anchored=("*C(N)=O",), paren=False),  # P-66.1.1.4.1 氨基甲酸酰基的保留前缀 carbamoyl
-    "carbamoylamino": RetainedSubstituent("carbamoylamino", "氨基甲酰氨基", anchored=("*NC(N)=O",), paren=True),  # P-66.1.1.6 ureido 已不推荐，优选 carbamoylamino
-    # 铵/𬭩型阳离子取代基（P-62.4.1）：带电 N 片段被丢弃故入表
+     "carbamoylamino": RetainedSubstituent("carbamoylamino", "氨基甲酰氨基", anchored=("*NC(N)=O",), paren=True),  # P-66.1.1.6 ureido 已不推荐，优选 carbamoylamino
     "azaniumyl": RetainedSubstituent("azaniumyl", "铵基", anchored=("*[NH3+]",), paren=False),
     "methylazaniumyl": RetainedSubstituent("methylazaniumyl", "甲基铵基", anchored=("*[NH2+]C",), paren=False),
     "dimethylazaniumyl": RetainedSubstituent("dimethylazaniumyl", "二甲基铵基", anchored=("*[NH+](C)C",), paren=True),

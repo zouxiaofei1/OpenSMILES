@@ -167,7 +167,7 @@ EXO_RING_SUF: dict[str, tuple] = {  # 环外主基系统名后缀表（group_cla
     "acyl":     (("carbonyl", "羰基"),        None),
 }
 AZANE_PAREN_SUF = ("benzoyl", "carbonyl", "acetyl")  # azane 单取代基内层组加括号的尾缀白名单
-ALKOXY_YLOXY_EN = (  # O 锚点自由基 -yloxy 非保留名 → IUPAC 保留烷氧基（P-66.5.2.1.2：ethoxy/propoxy/butoxy/phenoxy）。尾部收拢使带取代基链也命中：2-methoxyethyloxy → 2-methoxyethoxy、3-chlorophenyloxy → 3-chlorophenoxy。
+ALKOXY_YLOXY_EN = (  
   ("enyloxy", "enoxy"),  ("ethyloxy", "ethoxy"), ("propyloxy", "propoxy"), ("butyloxy", "butoxy"),
     ("phenyloxy", "phenoxy"),
 )
