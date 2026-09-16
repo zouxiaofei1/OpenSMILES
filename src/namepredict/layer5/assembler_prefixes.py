@@ -7,7 +7,8 @@ from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.layer4.locant_calc import locant_str_sort
 from namepredict.tools.re import alpha_order_key
 from namepredict.constants import (
-    BIS_EN, BIS_ZH, BRIDGE_SUFFIX_EN, BRIDGE_SUFFIX_ZH, MULT_EN, MULT_ZH, N_PREFIX_KINDS,
+    BIS_EN, BIS_ZH, BRIDGE_DIATOMIC_ZH, BRIDGE_SPLIT_SUFFIX_EN, BRIDGE_SPLIT_SUFFIX_ZH,
+    BRIDGE_SUFFIX_EN, BRIDGE_SUFFIX_ZH, DIATOMIC_BRIDGE_YL, MULT_EN, MULT_ZH, N_PREFIX_KINDS,
     OXO_CENTER_KINDS,
 )
 
@@ -142,7 +143,7 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
             or re.search(r"-\d+-\[", base[: base.find("[") + 1]))  # 括号前已有数字位次前缀：3-oxo-3-[X]propyl
     if "(" in base:  # 前端自带括号；端碳自由价链基平铺。
         return not _TERMINAL_CHAIN_YL_RE.search(base)
-    if suf in ("oxy", "sulfanyl") and re.search(r"\d", base) and base.endswith("phenyl"):  #
+    if suf in ("oxy", "sulfanyl", *DIATOMIC_BRIDGE_YL) and re.search(r"\d", base) and base.endswith("phenyl"):  #
         return True
     if suf == "amino":  # P-63.2.2.1.2：amino 桥按取代式融合，不拆。
         return False
@@ -151,7 +152,7 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
 
 def _split_bridge_suffix(stem: str) -> tuple[str, str] | None:
     """拆 O/S/N 桥平铺式为 (前端, 桥后缀)（P-63.2.2.1.1）。"""
-    for suf in BRIDGE_SUFFIX_EN:
+    for suf in BRIDGE_SPLIT_SUFFIX_EN:
         if not stem.endswith(suf):
             continue
         base = stem[: -len(suf)]
@@ -172,6 +173,8 @@ def _bridge_body(base: str, suf: str, merge: bool = False) -> str:
     if merge:  # 前端已含方括号（嵌套围栏）：桥后缀并入同一围栏，避免括界跨到外层
         return _enclose(f"{base}{suf}")
     body = f"{_enclose(base)}{suf}"
+    if suf in DIATOMIC_BRIDGE_YL + BRIDGE_DIATOMIC_ZH:  # 双原子桥：前端已围栏，整段再括一层
+        return f"[{body}]"
     return f"[{body}]" if body.startswith("[") and suf in ("amino", "氨基") else body
 
 
@@ -208,7 +211,7 @@ def _split_bridge_suffix_zh(zh_stem: str, en_stem: str) -> tuple[str, str] | Non
     """中文侧 O/S/N 桥平铺式拆分：判据与英文侧同步。"""
     if _split_bridge_suffix(en_stem) is None:
         return None
-    for suf in BRIDGE_SUFFIX_ZH:
+    for suf in BRIDGE_SPLIT_SUFFIX_ZH:
         if zh_stem.endswith(suf):
             base = zh_stem[: -len(suf)]
             if base.endswith("基"):

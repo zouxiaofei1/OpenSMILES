@@ -159,6 +159,17 @@ BIS_EN = {2: "bis", 3: "tris", 4: "tetrakis"}  # P-16.3.2 复合前缀倍增（b
 BIS_ZH = {2: "双", 3: "三", 4: "四"}
 BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl", "amino")   # O/S/N 桥后缀（P-63.2.2.1）：平铺 [-yl]oxy 与合一 [-yloxy] 均属合法
 BRIDGE_SUFFIX_ZH = ("氧基", "硫基", "氨基")        # 与 BRIDGE_SUFFIX_EN 同序同位
+DIATOMIC_BRIDGE_YL = ("diazenyl", "disulfanyl")   # 双原子桥合一保留前缀：-N=N-R / -S-S-R 收成 R-diazenyl / R-disulfanyl
+SIMPLE_BRIDGE_YL_NO_PAREN = frozenset(f"phenyl{s}" for s in DIATOMIC_BRIDGE_YL)  # 裸苯基前端 + 双原子桥：作前缀免括
+BRIDGE_FUSION_YL: dict[tuple[str, str], tuple[tuple[str, ...], str, str]] = {
+    # (中心单核氢化物词干, 前端名尾 en) → (前端名尾 zh 候选, 合一前缀 en, 合一前缀 zh)
+    ("azane", "imino"): (("亚氨基",), "diazenyl", "二氮烯基"),            # P-68.3.1.3：diazenyl 名优先于 azo 名
+    ("sulfane", "sulfanyl"): (("硫基", "巯基"), "disulfanyl", "二硫代基"),  # P-68.3.1.4：-S-S- 的保留前缀
+}
+BRIDGE_DIATOMIC_ZH = tuple(v[2] for v in BRIDGE_FUSION_YL.values())  # 双原子桥合一前缀的中文名尾
+# 可拆桥后缀（含双原子桥）：前端复合时前端加围栏、桥留括号外
+BRIDGE_SPLIT_SUFFIX_EN = BRIDGE_SUFFIX_EN + DIATOMIC_BRIDGE_YL
+BRIDGE_SPLIT_SUFFIX_ZH = BRIDGE_SUFFIX_ZH + BRIDGE_DIATOMIC_ZH
 BRIDGE_YL_SUFFIX = tuple((f"yl{en}", en) for en in BRIDGE_SUFFIX_EN)      # -yl 型桥基：方括号闭在 -yl 后、桥后缀放括号外（[(2R)环己基]氧基）
 BRIDGE_ZH_YL_SUFFIX = tuple((f"基{zh}", zh) for zh in BRIDGE_SUFFIX_ZH)
 EXO_RING_SUF: dict[str, tuple] = {  # 环外主基系统名后缀表（group_class → 后缀规格），六个环外 worker 共用 `_exocyclic_ring_names` 一条管线：singular (en, zh) 单取代后缀；plural (en, zh) | None 多取代后缀基底（前拼 MULT_EN/MULT_ZH 倍数词）；None = 该主基无多取代系统名
@@ -168,6 +179,7 @@ EXO_RING_SUF: dict[str, tuple] = {  # 环外主基系统名后缀表（group_cla
     "amide":    (("carboxamide", "甲酰胺"),   None),
     "nitrile":  (("carbonitrile", "甲腈"),    None),
     "acyl":     (("carbonyl", "羰基"),        None),
+    "acyl_halide": (("carbonyl", "甲酰"),     None),  # 卤素词由 chain_engine 按 hal_z 动态拼接
 }
 AZANE_PAREN_SUF = ("benzoyl", "carbonyl", "acetyl")  # azane 单取代基内层组加括号的尾缀白名单
 ALKOXY_YLOXY_EN = (  

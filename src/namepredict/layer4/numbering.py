@@ -100,7 +100,8 @@ def number(parent: dict, substituents: list) -> dict:
         hydro, pre = frozenset(), ("", "")
     extra = _extra_indicated(packed)
     packed["indicated_h_locants"] = indicated_hydrogen(
-        packed.get("mol"), packed.get("chain"), labels, hydro, extra)
+        packed.get("mol"), packed.get("chain"), labels, hydro, extra,
+        packed.get("scaffold_id"))
     packed["indicated_h_forced"] = bool(extra)
     packed["hydro_prefix"] = pre
     # print("layer4result",result,"\n\n\n\n\n")

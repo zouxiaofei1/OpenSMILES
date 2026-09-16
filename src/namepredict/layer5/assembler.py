@@ -5,7 +5,7 @@ import re
 from namepredict.constants import (
     ALKOXY_YLOXY_EN, ALKOXY_YLOXY_ZH, AMIDO_RETAINED, AZANE_PAREN_SUF, BIS_EN, BRIDGE_YL_SUFFIX,
     BRIDGE_ZH_YL_SUFFIX, ESTER_O_SIDE_KINDS, OXO_CENTER_KINDS,
-    MONONUCLEAR_BRIDGE, MONONUCLEAR_YL, MONONUCLEAR_ZERO_YL, MULT_EN,
+    BRIDGE_FUSION_YL, MONONUCLEAR_BRIDGE, MONONUCLEAR_YL, MONONUCLEAR_ZERO_YL, MULT_EN,
     MULT_ZH, PHOSPHORYL_STEMS, ZH_DIGITS, zh_bridge_root,
 )
 from namepredict.layer5.chain_engine import (
@@ -154,6 +154,8 @@ def _mononuclear_en(en: str) -> str | None:
         if en.endswith("-" + en_suf):
             base = en[: -len(en_suf) - 1]
             yl = MONONUCLEAR_YL[en_suf][1]
+            if yl in ("sulfonyl", "sulfinyl") and base == "phenyl":  # P-66.4.1 苯+S 桥取保留名 benzenesulfonyl
+                return "benzene" + yl
             return base[: -len("phenyl")] + "anilino" if yl == "amino" and base.endswith("phenyl") else base + yl
     return None
 
@@ -187,6 +189,20 @@ def free_to_yl(
     return None
 
 
+def _fused_bridge_name(stem_en: str, a: dict) -> tuple[str, str] | None:
+    """双原子桥合一保留前缀：R-亚氨基/硫基 → R-diazenyl/disulfanyl（P-68.3.1.3/.4）。"""
+    for (stem, tail_en), (tails_zh, en_suf, zh_suf) in BRIDGE_FUSION_YL.items():
+        if stem != stem_en or not a["en"].endswith(tail_en):
+            continue
+        tail_zh = next((t for t in tails_zh if a["zh"].endswith(t)), None)
+        if tail_zh is None:
+            continue
+        base_zh = a["zh"][: -len(tail_zh)]
+        base_en = a["en"][: -len(tail_en)]
+        return base_en + en_suf, (base_zh + "基" if base_zh else "") + zh_suf
+    return None
+
+
 def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     """杂原子锚点自由基：经 free_to_yl 转标准名（P-62.2）。"""
     parent = numbered.get("parent") or {}
@@ -202,6 +218,15 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
         a = subs[0]
         if stem_en == "sulfonyl" and a["en"].endswith("amino") and a["zh"].endswith("氨基"):  # P-66.1.1.4.2：N-取代基与 sulfamoyl 融合
             return a["en"][: -len("amino")] + "sulfamoyl", a["zh"] + "磺酰基"
+        if stem_en == "sulfonyl" and a["en"].endswith("anilino") and a["zh"].endswith("苯胺基"):  # P-66.1.1.4.2：N-芳基按苯基并入 sulfamoyl
+            bare = a["en"] == "anilino"
+            aryl_en = a["en"][: -len("anilino")] + "phenyl"
+            aryl_zh = a["zh"][: -len("苯胺基")] + "苯基"
+            return ((aryl_en if bare else _enclose(aryl_en)) + "sulfamoyl",
+                    _enclose(aryl_zh) + "氨基磺酰基")
+        fused = _fused_bridge_name(stem_en, a)  # -N=N-R / -S-S-R：中心与前端合一为 diazenyl / disulfanyl
+        if fused is not None:
+            return fused
         bridge = _bridge_enclosed_names(a, stem_en, stem_zh)  # 围栏在 L3 一次定形，中英文同步产出，L5 前缀渲染不再二次拆分
         if bridge is not None:
             if (stem_en, stem_zh) != ("azane", "氮烷"):  # N 桥复合前缀仍须 L5 整体围栏（P-16.5.2）
@@ -241,10 +266,92 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
             first["zh"] + "".join(f"({s['zh']})" for s in rest) + zero[1])
 
 
+_STEM_H_PREFIX_RE = re.compile(r"^(?:\d+[a-z]?H[-,])+")  # 词干自带指示氢前缀（1H- / 3H,4H- / 7H-…）
+
+
+def _split_stem_h_prefix(name: str) -> tuple[str, str]:
+    """拆出词干自带的指示氢前缀，返回 (前缀, 余下词干)。"""
+    m = _STEM_H_PREFIX_RE.match(name or "")
+    return (m.group(0), name[m.end():]) if m else ("", name or "")
+
+
 def _indicated_h_prefix(parent: dict) -> str:
     """把 L4 定好的指示氢位次拼成前缀（P-58.2.1）。"""
-    locants = parent.get("indicated_h_locants") or ()
-    return f"{','.join(f'{l}H' for l in locants)}-" if locants else ""
+    locants = [str(x) for x in (parent.get("indicated_h_locants") or ()) if str(x)]
+    seen: list[str] = []
+    for loc in locants:  # 同位次去重：嘌呤 7H/9H 等效位不得双写
+        if loc not in seen:
+            seen.append(loc)
+    return f"{','.join(f'{l}H' for l in seen)}-" if seen else ""
+
+
+def _with_indicated_h(name: str, ind: str) -> str:
+    """把 L4 指示氢前缀落到词干前：词干自带前缀被取代，避免 1H-7H- 双写。"""
+    if not ind or name.startswith(ind):
+        return name
+    return ind + _split_stem_h_prefix(name)[1]
+
+
+def _h_prefix_atoms(parent: dict, prefix: str) -> list[int]:
+    """词干指示氢前缀的位次 → 母体链原子（位次不可映射时返回空表）。"""
+    labels = (parent.get("numbering_scaffold") or {}).get("labels")
+    chain = list(parent.get("chain") or ())
+    if not chain:
+        return []
+    out: list[int] = []
+    for loc in re.findall(r"(\d+[a-z]?)H", prefix or ""):
+        for idx, atom in enumerate(chain):  # 缺 labels 时回退链序号（同 atom_locant）
+            lab = str(labels[idx]) if labels and len(labels) == len(chain) else str(idx + 1)
+            if lab == loc:
+                out.append(atom)
+                break
+    return out
+
+
+def _nh_only(parent: dict, ind: str) -> bool:
+    """指示氢是否全落在环内氮：仅 NH 才在非 forced 路径补前缀（P-58.2.1）。"""
+    mol = parent.get("mol")
+    atoms = _h_prefix_atoms(parent, ind)
+    return bool(atoms) and mol is not None and all(
+        mol.GetAtomWithIdx(i).GetAtomicNum() == 7 for i in atoms if i < mol.GetNumAtoms())
+
+
+def _ring_n_free(parent: dict) -> bool:
+    """母体环内氮是否都未被取代：N-取代基环（如 N-糖基尿嘧啶）不再写 NH 前缀。"""
+    mol = parent.get("mol")
+    chain = list(parent.get("chain") or ())
+    if mol is None or not chain:
+        return False
+    ring = set(chain)
+    for i in chain:
+        atom = mol.GetAtomWithIdx(i)
+        if atom.GetAtomicNum() != 7:
+            continue
+        if any(n.GetIdx() not in ring for n in atom.GetNeighbors()):
+            return False
+    return True
+
+
+def _stem_prefix_stale(parent: dict, prefix: str) -> bool:
+    """词干自带指示氢位次是否已成为羰基碳（P-58.2.1）：如茚-1,3-二酮的 C1。"""
+    atoms = _h_prefix_atoms(parent, prefix)
+    ring = set(parent.get("chain") or ())
+    mol = parent.get("mol")
+    if not atoms or mol is None:
+        return False
+    from rdkit import Chem
+    for i in atoms:
+        if i >= mol.GetNumAtoms():
+            return False
+        atom = mol.GetAtomWithIdx(i)
+        if atom.GetAtomicNum() != 6 or atom.GetTotalNumHs() > 0:
+            return False
+        if not any(b.GetBondType() != Chem.BondType.SINGLE
+                   and b.GetOtherAtomIdx(i) not in ring
+                   and mol.GetAtomWithIdx(b.GetOtherAtomIdx(i)).GetAtomicNum() != 6
+                   for b in atom.GetBonds()):
+            return False
+    return True
 
 
 def _ensure_fused_stem(numbered: dict) -> bool:
@@ -464,13 +571,18 @@ def join_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]
     """把 hydro 与指示氢前缀依次拼到母体名前。"""
     parent = numbered.get("parent") or {}
     pre = parent.get("hydro_prefix") or ("", "")
-    if not pre[0] and not parent.get("indicated_h_forced"):  # forced = 指示氢来自保留母体名未隐含的芳香位 H（P-58.2.1）
-        return names
+    ind = _indicated_h_prefix(parent)  # L4 位次为准（P-58.2.1）：词干自带前缀被取代，避免 1H-7H- 双写
     en, zh = names
-    ind = _indicated_h_prefix(parent)
-    if ind and not en.startswith(ind):
-        en, zh = ind + en, ind + zh
-    return (join_parent_name(pre[0], en), join_parent_name(pre[1], zh)) if pre[0] else (en, zh)
+    if ind and (pre[0] or parent.get("indicated_h_forced")
+                or (_nh_only(parent, ind) and _ring_n_free(parent))):  # 未取代 NH 环补指示氢
+        en, zh = _with_indicated_h(en, ind), _with_indicated_h(zh, ind)
+    elif not ind:  # 无 L4 位次时，词干自带前缀若已无 H（如茚二酮 C1）则失效
+        s_en, s_zh = _split_stem_h_prefix(en), _split_stem_h_prefix(zh)
+        if s_en[0] and _stem_prefix_stale(parent, s_en[0]):
+            en, zh = s_en[1], s_zh[1]
+    if not pre[0]:
+        return en, zh
+    return join_parent_name(pre[0], en), join_parent_name(pre[1], zh)
 
 
 def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str, str]:

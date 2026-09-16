@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from rdkit.Chem import Mol
+from rdkit.Chem import BondType, Mol
 
+from namepredict.constants import C, O, zh_bridge_root
 from namepredict.tools import memo
 from namepredict.layer3.submol_build import build_anchor_submol
 
@@ -36,7 +37,7 @@ _REGISTRY: dict[str, RetainedSubstituent] = {
     "propylidene": RetainedSubstituent("propylidene", "亚丙基", anchored=("*=CCC",), paren=False),
     "cyclopropylidene": RetainedSubstituent("cyclopropylidene", "环丙亚基", anchored=("*=C1CC1",), paren=False),
     "cyclohexylidene": RetainedSubstituent("cyclohexylidene", "环己亚基", anchored=("*=C1CCCCC1",), paren=False),
-    "sulfanylidene": RetainedSubstituent("sulfanylidene", "硫烷亚基", anchored=("*=S",), paren=False),
+    "sulfanylidene": RetainedSubstituent("sulfanylidene", "硫代", anchored=("*=S",), paren=False),  # P-66.1.2：=S 作前缀统一「硫代」（金标 0 处「硫烷亚基」）
     "diaminomethylidene": RetainedSubstituent("diaminomethylidene", "二氨基亚甲基", anchored=("*C(=N)N",), paren=True),  # 脒/胍残基 C(=N)N 按 P-66.1.1 取亚基式
     "tert-butyl": RetainedSubstituent("tert-butyl", "叔丁基", anchored=("*C(C)(C)C",), paren=False),  # 支链 / 不饱和烷基
     "isopropyl": RetainedSubstituent("propan-2-yl", "丙-2-基", anchored=("*C(C)C",), paren=False),
@@ -154,12 +155,48 @@ def _table_hit(mol: Mol, atoms: frozenset[int], attach_old: int | None) -> str |
     return _ANCHOR_INDEX.get(key)
 
 
+def _ester_o_side(mol: Mol, atoms: frozenset[int], attach_old: int) -> tuple[frozenset[int], int] | None:
+    """块恰为 -C(=O)-O-R（连接点=羰基碳）时返回 (O 侧原子集, 单键氧)，否则 None。"""
+    at = mol.GetAtomWithIdx(attach_old)
+    if at.GetAtomicNum() != C:
+        return None
+    dbl: list[int] = []
+    sgl: list[int] = []
+    for nb in at.GetNeighbors():
+        if nb.GetIdx() not in atoms:  # 块外邻居（母体侧）不参与判定
+            continue
+        if nb.GetAtomicNum() != O:
+            return None
+        bond = mol.GetBondBetweenAtoms(attach_old, nb.GetIdx())
+        (dbl if bond.GetBondType() == BondType.DOUBLE else sgl).append(nb.GetIdx())
+    if len(dbl) != 1 or len(sgl) != 1:
+        return None
+    front = frozenset(a for a in atoms if a not in (attach_old, dbl[0]))
+    return (front, sgl[0]) if len(front) > 1 else None
+
+
+def _alkoxycarbonyl(mol: Mol, atoms: frozenset[int], attach_old: int) -> tuple[str, str, bool] | None:
+    """-C(=O)-O-R 收成 <R>oxycarbonyl / <R>氧羰基（P-65.1.7.2 酯作前缀）。"""
+    from namepredict.layer3.as_substituent import name_as_substituent
+
+    side = _ester_o_side(mol, atoms, attach_old)
+    if side is None:
+        return None
+    front, o_idx = side
+    hit = name_as_substituent(mol, o_idx, front)
+    if hit is None or not hit[0].endswith("oxy"):
+        return None
+    return hit[0] + "carbonyl", zh_bridge_root(hit[1]) + "羰基", False
+
+
 def anchored_lookup(
     mol: Mol, atoms: frozenset[int], attach_old: int | None = None,
 ) -> tuple[str, str, bool] | None:
     """查找取代基原子集，返回 (en, zh, paren)；无命中返回 None。"""
     reg_key = _table_hit(mol, atoms, attach_old)
-    if reg_key is None:
+    if reg_key is not None:
+        en, zh = resolve_name(reg_key)
+        return en, zh, _REGISTRY[reg_key].paren
+    if attach_old is None:
         return None
-    en, zh = resolve_name(reg_key)
-    return en, zh, _REGISTRY[reg_key].paren
+    return _alkoxycarbonyl(mol, atoms, attach_old)

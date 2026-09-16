@@ -303,6 +303,11 @@ def _exo_ring_spec(spec: "_Chain", n: int, numbered: dict) -> "_Chain":
     if suf is None or facts is None or facts.relation.value != "exocyclic":
         return spec
     singular, plural = suf
+    if spec.kind == "acyl_halide":  # 卤素词随卤原子变化，环外后缀须动态拼接
+        he, hz = HALIDE_EN.get(parent.get("hal_z")), HALO_ZH.get(parent.get("hal_z"))
+        if he is None or hz is None:
+            return spec
+        singular = (f"{singular[0]} {he}", f"{singular[1]}{hz}")
     mult = facts.multiplicity
     if mult > 1 and plural is None:  # 酯/酰胺/腈/酰基头无多取代系统名。
         return spec

@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import copy
 
-from namepredict.constants import AMIDO_RETAINED_EN, SIMPLE_ALKOXY_NO_PAREN
+from namepredict.constants import (
+    AMIDO_RETAINED_EN, DIATOMIC_BRIDGE_YL, SIMPLE_ALKOXY_NO_PAREN, SIMPLE_BRIDGE_YL_NO_PAREN,
+)
 from namepredict.tools.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol
 
@@ -87,10 +89,11 @@ def _radical_yl_from_sub(
     composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0
     # P-16.5.1.1 复合前缀必括；amido(P-66.1.1.4.3)免括
     need_paren = composite and hit.en not in (
-        "phenyl", *SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN)
+        "phenyl", *SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN, *SIMPLE_BRIDGE_YL_NO_PAREN)
     if (hit.meta or {}).get("bridge_self_enclosed"):  # S 桥复合前端名已自含围栏（(4-甲氧基苯基)磺酰基），L5 不得再整体加括号
         need_paren = False
-    if need_paren and hit.en.endswith(("oxy", "sulfanyl")):  # 简单取代基+O/S 桥（…oxy/…sulfanyl 等）：P-63.2.1/.2.2 前端 R 为简单取代基时整个 O/S 前缀不加围栏
+    # P-63.2.1/.2.2 简单前端 + O/S 桥不加围栏；双原子桥（…disulfanyl）围栏改由 L5 按前端定形
+    if need_paren and hit.en.endswith(("oxy", "sulfanyl")) and not hit.en.endswith(DIATOMIC_BRIDGE_YL):
         if  _obridge_front_simple(mol, atoms, attach_old, cache=cache, root_ctx=root_ctx):
             need_paren = False
     return hit.en, hit.zh, need_paren
