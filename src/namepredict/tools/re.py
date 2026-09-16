@@ -63,6 +63,30 @@ def alkyl_alpha_key(stem: str) -> str:
         s = s2
 
 
+_MID_ITALIC_RE = re.compile(r"(?<![A-Za-z])(?:tert|sec)-")  # 词中斜体前缀 tert-/sec-
+_LOWER_LETTER_RE = re.compile(r"[a-z]")  # 非斜体罗马字母（斜体 R/S/E/Z/H/N 为大写，不参与首轮比较）
+_DIGIT_RUN_RE = re.compile(r"\d+")
+
+
+def _nonitalic_letters(stem: str) -> str:
+    """取词干中的非斜体罗马字母：位次/连字符/括号/立体描述符一律不参与比较。"""
+    return "".join(_LOWER_LETTER_RE.findall(_MID_ITALIC_RE.sub("", stem)))
+
+
+def _lead_locants(stem: str) -> tuple[int, ...]:
+    """首个非斜体罗马字母之前的位次集（P-14.5.4 平局判据），无位次最优先。"""
+    s = _MID_ITALIC_RE.sub("", stem)
+    m = _LOWER_LETTER_RE.search(s)
+    head = s[: m.start()] if m else s
+    return tuple(sorted(int(d) for d in _DIGIT_RUN_RE.findall(head)))
+
+
+def alpha_order_key(stem: str) -> tuple:
+    """P-14.5 字母数字序键：先比字母序列（忽略位次/连字符/斜体），再比首字母前位次。"""
+    s = _strip_n_prefix(alkyl_alpha_key(stem))
+    return (_nonitalic_letters(s), _lead_locants(stem))
+
+
 # ── 名称文本规范化（判分口径） ──────────────────────
 _WS = re.compile(r"\s+")
 

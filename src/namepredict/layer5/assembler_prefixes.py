@@ -5,7 +5,7 @@ import re
 
 from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.layer4.locant_calc import locant_str_sort
-from namepredict.tools.re import alkyl_alpha_key
+from namepredict.tools.re import alpha_order_key
 from namepredict.constants import (
     BIS_EN, BIS_ZH, BRIDGE_SUFFIX_EN, BRIDGE_SUFFIX_ZH, MULT_EN, MULT_ZH, N_PREFIX_KINDS,
     OXO_CENTER_KINDS,
@@ -268,7 +268,7 @@ def _n_prime_map(groups: dict[str, list], stems: list[str]) -> dict[int, int]:
             if (s.get("kind") or "") in N_PREFIX_KINDS and s.get("attach_idx") is not None:
                 seen.setdefault(s["attach_idx"], stem)
     return {a: i for i, a in enumerate(
-        sorted(seen, key=lambda a: (alkyl_alpha_key(seen[a]), a)))}
+        sorted(seen, key=lambda a: (alpha_order_key(seen[a]), a)))}
 
 
 def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
@@ -313,7 +313,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     if flat:
         substituents = [{**s, "paren": oxo_arm_fence(s.get("en") or "", s, mol)} for s in substituents]
     rows = _mult_rows(substituents, lambda s: s.get("en") or "", lambda s: s.get("zh") or "",
-                      alkyl_alpha_key)  # 分组/排序键由调用侧给定，不与英文侧统一
+                      alpha_order_key)  # P-14.5：全部前缀按字母数字序引用，非仅烷基
     groups = {en: members for en, _, _, members in rows}
     stems = [en for en, _, _, _ in rows if en]
     bracket = bool(omit) and n_carbons == 1 and kind == "radical" \

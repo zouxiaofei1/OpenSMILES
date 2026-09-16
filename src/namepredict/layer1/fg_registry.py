@@ -34,3 +34,21 @@ FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("amine", p41=19, anchors=("surr_idx",)),
 )
 
+
+# ── P-41 表 4.1 类 7：含氧酸的"酸式"判据 ──
+# 中心带 O⁻（阴离子）或中心为碳锚定酸式（膦酸/磺酸）的含氧酸按类 7 参与主基团竞争，
+# 排在类 9 酯与类 11 酰胺之前；中性磷酸/硫酸酯仍属类 9（按相应酸排羧酸酯之后）。
+OXO_ACID_P41 = 8  # 类 7 内排在羧酸（acid=7）之后的等级
+OXO_ACID_KINDS = frozenset({"sulfonic"})  # 碳锚定且自带酸式氢的 oxo_kind；phosphonate 另按 n_oh 判
+OXO_ACID_KIND_BY_H = {"phosphonate": 1}  # 碳锚定 P 酸：n_oh ≥ 该值时按酸式（膦酸/膦酸氢酯）
+
+
+def oxoacid_is_acid(payload: dict) -> bool:
+    """含氧酸 occurrence 是否按 P-41 类 7 的酸参与主基团竞争。"""
+    if int(payload.get("n_om") or 0) > 0:  # 中心带 O⁻：按酸根处理
+        return True
+    kind = payload.get("oxo_kind")
+    if kind in OXO_ACID_KINDS:
+        return True
+    need = OXO_ACID_KIND_BY_H.get(kind)
+    return need is not None and int(payload.get("n_oh") or 0) >= need

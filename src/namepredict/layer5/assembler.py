@@ -56,7 +56,7 @@ def _oxido_arm(s: dict, mol) -> tuple[str, str] | None:
 
 def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None) -> tuple[str, str] | None:
     """P 酰基前缀的取代基拼接（P-67.1.4.1.1.5，简单基平铺/括起）。"""
-    from namepredict.tools.re import alkyl_alpha_key
+    from namepredict.tools.re import alpha_order_key
 
     pairs: list[tuple[str, str]] = []
     for s in subs:
@@ -67,7 +67,7 @@ def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None
         if oxido is not None:  # 酸式 H 已被夺去的 O⁻ 臂：hydroxy → oxido
             en, zh = oxido
         pairs.append((en, zh))
-    rows = _mult_rows(pairs, lambda p: p[0], lambda p: p[1], alkyl_alpha_key)
+    rows = _mult_rows(pairs, lambda p: p[0], lambda p: p[1], alpha_order_key)
     if len(rows) == 1 and rows[0][2] > 1:  # 同基倍增（P-16.3.2 简单基用 di-）
         en, zh, m = rows[0][:3]
         m_en, m_zh = MULT_EN.get(m), MULT_ZH.get(m)

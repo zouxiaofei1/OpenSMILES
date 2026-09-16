@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Mapping
 
-from namepredict.layer1.fg_registry import FgSpec, FG_SPECS
+from namepredict.layer1.fg_registry import FgSpec, FG_SPECS, OXO_ACID_P41, oxoacid_is_acid
 from namepredict.layer1.functional_group_inventory import (
     FunctionalGroupClass as FG,
     FunctionalGroupInventory,
@@ -57,6 +57,17 @@ class PrincipalGroupSelection:
     occurrences: tuple[FunctionalGroupOccurrence, ...]
 
 
+def _effective_priority(group_class: FG, spec: PrincipalFeatureSpec,
+                        inventory: FunctionalGroupInventory) -> PrincipalPriority:
+    """候选类的实际 P-41 优先级：含氧酸为酸式时升到类 7（P-41 表 4.1）。"""
+    if group_class is not FG.OXOACID:
+        return spec.priority
+    occurrences = inventory.occurrences(group_class)
+    if occurrences and all(oxoacid_is_acid(o.payload) for o in occurrences):
+        return PrincipalPriority(OXO_ACID_P41, spec.priority.p43_path)
+    return spec.priority
+
+
 def select_principal_group(
     inventory: FunctionalGroupInventory,
     registry: Mapping[FG, PrincipalFeatureSpec] = PRINCIPAL_REGISTRY,
@@ -64,6 +75,7 @@ def select_principal_group(
     """按优先级选主官能团类并取全部 occurrence。"""
     classes = (entry.group_class for entry in inventory.entries if not entry.demoted)  # 降级叶（carboxy/cyano）不再作主基团候选
     eligible = (group_class for group_class in set(classes) if feature_spec(group_class, registry))
-    selected = min(eligible, key=lambda group_class: feature_spec(group_class, registry).priority, default=None)
+    selected = min(eligible, key=lambda group_class: _effective_priority(
+        group_class, feature_spec(group_class, registry), inventory), default=None)
     occurrences = inventory.occurrences(selected) if selected else ()
     return PrincipalGroupSelection(selected, occurrences) if selected else PrincipalGroupSelection(FG.NONE, occurrences)
