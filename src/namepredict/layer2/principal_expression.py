@@ -9,6 +9,7 @@ from namepredict.constants import (
     O, PHOSPHORUS_STEM_BY_OXO, SULFUR_STEM_BY_OXO,
 )
 from namepredict.layer1.analyzer import _alkoxy_c_of, _double_bonded_o_idxs
+from namepredict.layer1.analyzer import _OXO_Z_ANCHORED as _OXO_CENTER_PARENT
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
 from namepredict.layer2.principal import PrincipalGroupSelection, feature_spec
@@ -67,7 +68,13 @@ def _covered(selection: PrincipalGroupSelection, skeleton: ParentSkeleton):
     return tuple(o for o in selection.occurrences if o.id in ids)
 
 
-def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
+def _oxo_kind_of(occurrences) -> str | None:
+    """含氧酸类的主 kind：全部 occurrence 须同一 oxo_kind，否则不支持。"""
+    kinds = {o.payload.get("oxo_kind") for o in occurrences}
+    return kinds.pop() if len(kinds) == 1 else None
+
+
+def _chain_kind(group_class: FunctionalGroupClass, count: int, occurrences=()) -> str | None:
     """按链 FG 类别与个数决定 kind（不支持时 None）。"""
     if group_class is FunctionalGroupClass.NONE:
         return group_class.value if count == 0 else None
@@ -75,6 +82,8 @@ def _chain_kind(group_class: FunctionalGroupClass, count: int) -> str | None:
         return "acyl"  # 酰基残基：羰基头为 locant 1（P-65.1.7.2）
     if group_class is FunctionalGroupClass.RADICAL:
         return "radical"  # 自由基连接点位次由 L4 radical_c_idx 承载
+    if group_class in _OXO_FG_CLASSES:
+        return _oxo_kind_of(occurrences) if count >= 1 else None  # P/S 共用：kind 取自 L1 的 oxo_kind
     return group_class.value if count >= 1 else None
 
 
@@ -85,9 +94,13 @@ def _is_anion_occurrence(occurrence, mol) -> bool:
     return any(mol.GetAtomWithIdx(i).GetFormalCharge() < 0 for i in occurrence.payload.get("surr_idx") or ())
 
 
+_ANION_FLAG_FGS = frozenset({FunctionalGroupClass.ACID, FunctionalGroupClass.OXOACID})  # 全阴离子时转 -ate 的类别
+_OXO_FG_CLASSES = frozenset({FunctionalGroupClass.OXOACID, FunctionalGroupClass.SULFONAMIDE})  # 含氧酸合一类的全部 P-41 类别
+
+
 def _expression_flags(selection: PrincipalGroupSelection, occurrences, mol) -> dict:
     """主基团表达标志（酸全阴离子时加 anion）。"""
-    if selection.group_class is not FunctionalGroupClass.ACID:
+    if selection.group_class not in _ANION_FLAG_FGS:
         return {}
     return {"anion": True} if occurrences and all(_is_anion_occurrence(o, mol) for o in occurrences) else {}
 
@@ -166,14 +179,14 @@ def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str |
     return _generic_ring_kind(info, skeleton)
 
 
-def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold) -> str | None:
+def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold, occurrences=()) -> str | None:
     """决定环骨架母体的 kind（radical/正交化 FG 类/结构 kind）。"""
     if selection.group_class is FunctionalGroupClass.RADICAL:
         if scaffold is None:  # 苯基取代基保留名由 L5 benzene variant 表达
             return None  # 未知杂环：L5 无 -yl 词干，显式失败
         return "radical"
     if scaffold is not None and selection.group_class in _FG_CLASSES:  # 环 + 主 FG → FG 类别 kind（命名由 L5 通用词干引擎拼接）
-        kind = _chain_kind(selection.group_class, count)
+        kind = _chain_kind(selection.group_class, count, occurrences)
         if kind is not None:
             return kind
     if scaffold is not None and selection.group_class is FunctionalGroupClass.ALDEHYDE:
@@ -237,7 +250,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     from namepredict.layer2.ring_scaffold import resolve_ring_scaffold  # 骨架原子集已定：一次识别 scaffold 供下游复用
     scaffold = resolve_ring_scaffold(info, skeleton)
     occurrences = _covered(selection, skeleton)
-    kind = _ring_kind(info, selection, skeleton, len(occurrences), scaffold)
+    kind = _ring_kind(info, selection, skeleton, len(occurrences), scaffold, occurrences)
     if kind is None:
         return None
     facts = _facts(selection, skeleton, occurrences, info["mol"])
@@ -246,7 +259,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
                                     _scaffold_fields(info, skeleton, facts, scaffold))}  # 补环内不饱和字段（烯/炔由 double_bond 等承载）
     if kind == "radical" and _radical_ylidene(info, occurrences):  # 环上碳锚点自由价双键（*=C1CCCC1）：链引擎出 -ylidene
         fields = {**fields, "radical_ylidene": True}
-    if facts.group_class is FunctionalGroupClass.ACID:
+    if facts.group_class in _ANION_FLAG_FGS:
         fields = {**fields, **_expression_flags(selection, occurrences, info.get("mol"))}  # 环酸全阴离子补 anion 标志，L5 据此转 -ate
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
         fields = ester_fields(info, occurrences, fields)
@@ -314,20 +327,23 @@ def _implied_ring_atoms(fields: dict, atom_set: set[int]) -> frozenset[int]:
     return frozenset(atom_set) if fields.get("fused_tree") is not None else frozenset()
 
 
-def _chain_phosphate_fields(info: dict, occurrences, fields: dict) -> dict | None:
-    """L5 磷酸命名的计数与盐元数据，门控不过返回 None。"""
+def _chain_oxoacid_fields(info: dict, occurrences, fields: dict) -> dict | None:
+    """L5 含氧酸命名的 oxo_kind/计数/盐元数据，门控不过返回 None。"""
     if len(occurrences) != 1:
         return None
     payload = occurrences[0].payload
+    kind = payload.get("oxo_kind")
     n_oh, n_om = int(payload.get("n_oh", 0)), int(payload.get("n_om", 0))
+    fields = {**fields, "oxo_kind": kind, "n_oh": n_oh, "n_om": n_om}
+    if kind not in _OXO_CENTER_PARENT:  # 碳锚定：中心不入母体，无盐门控
+        return fields
     salt = dict(info.get("salt") or {})
     if n_om > 0:
         if salt.get("metal") and int(salt.get("n_metal") or 0) != n_om:
             return None
     elif salt.get("metal"):
         return None
-    return {**fields, "n_oh": n_oh, "n_om": n_om,
-            "n_arms": int(payload.get("n_arms", 0)), "salt_meta": salt or None}
+    return {**fields, "n_arms": int(payload.get("n_arms", 0)), "salt_meta": salt or None}
 
 
 def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
@@ -412,7 +428,7 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         return None
 
     occurrences = _covered(selection, skeleton)
-    kind = _chain_kind(selection.group_class, len(occurrences))
+    kind = _chain_kind(selection.group_class, len(occurrences), occurrences)
 
     if kind is None:
         return None
@@ -428,8 +444,8 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         fields = _chain_ester_fields(info, occurrences, fields)
     elif kind == "acyl_halide":
         fields = _chain_acyl_halide_fields(info, occurrences, fields)
-    elif kind == "phosphate":
-        fields = _chain_phosphate_fields(info, occurrences, fields)
+    elif selection.group_class in _OXO_FG_CLASSES:
+        fields = _chain_oxoacid_fields(info, occurrences, fields)
         if fields is None:
             return None
     return _parent_dict(kind, skeleton, occurrences, fields,

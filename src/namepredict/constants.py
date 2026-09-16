@@ -140,7 +140,10 @@ NAME_KIND = {  # 锚定表/保留叶子的名称暗含非烷基 kind，使 L5 �
 }
 CLAIM_KIND = {"amine_n": "n_block",
               "ring_c": "alkyl", "chain_c": "alkyl"}  # claim 槽位 → 取代基 kind
-ESTER_O_SIDE_KINDS = frozenset({"ester", "phosphate"})  # O-侧酸侧（烷氧基臂）：连在 parent 的 O 原子上的侧链是 O 侧烷基，由 L5 酯/磷酸整名消费。ester：酯酸侧烷氧臂；phosphate：磷酸酯 O–R 臂（kind=phosphate 母体，见 layer1/phosphate.py）。
+# O-侧臂 kind：连在 parent 的 O 上的侧链作 O 侧烷基，由 L5 酯/含氧酸整名消费
+ESTER_O_SIDE_KINDS = frozenset({"ester", "phosphate", "phosphonate", "sulfate", "sulfonate"})
+# 中心原子自任母体的含氧酸 kind（L2/L5 共用）；碳锚定的磺酸族不在内
+OXO_CENTER_KINDS = frozenset({"phosphate", "phosphonate", "sulfate"})
 
 # ── L4 位次 / 编号 ──────────────────────
 HYDRO_MULT_N = frozenset({2, 4, 6, 8, 10, 12, 14, 16, 18, 20})  # 加氢前缀覆盖的氢原子数（P-31.2.2 以偶数倍增前缀表示双键的饱和，位次数为加氢原子数）；数量词本身取自本层（唯一来源），此处只表达 L4 的适用域，域外放弃而非给错名。

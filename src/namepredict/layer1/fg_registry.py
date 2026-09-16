@@ -21,7 +21,8 @@ FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("radical", p41=1, anchors=("center_idx",), parent_anchor_fields=("radical_c_idx")),
     FgSpec("acyl", p41=1, anchors=("center_idx",), parent_anchor_fields=("acyl_c_idx")),
     FgSpec("acid", p41=7, path=(1,), anchors=("center_idx",)),
-    FgSpec("phosphate", p41=9, path=(1,), anchors=("p_idx",)),
+    FgSpec("oxoacid", p41=9, path=(0,), anchors=("center_idx",)),  # 含氧酸中心 P/S 合一类：oxo_kind 由 L1 payload 归一
+    FgSpec("sulfonamide", p41=11, path=(1,), anchors=("center_idx",)),  # P-41 类 11：磺酰胺与酰胺同组，排在酰胺之后
     FgSpec("ester", p41=9, anchors=("center_idx",), locant_source="attachment_exocyclic"),
     FgSpec("acyl_halide", p41=10, anchors=("center_idx",)),
     FgSpec("amide", p41=11, anchors=("center_idx",), locant_source="attachment_exocyclic"),

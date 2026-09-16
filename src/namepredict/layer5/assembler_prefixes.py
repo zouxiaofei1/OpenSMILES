@@ -8,6 +8,7 @@ from namepredict.layer4.locant_calc import locant_str_sort
 from namepredict.tools.re import alkyl_alpha_key
 from namepredict.constants import (
     BIS_EN, BIS_ZH, BRIDGE_SUFFIX_EN, BRIDGE_SUFFIX_ZH, MULT_EN, MULT_ZH, N_PREFIX_KINDS,
+    OXO_CENTER_KINDS,
 )
 
 def _mult_rows(items: list, key_fn, zh_fn, sort_key=None) -> list[list]:
@@ -52,6 +53,8 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return {s.get("kind") for s in substituents} <= N_PREFIX_KINDS
     if kind in ["acyl","ketone","acid"]:
         return False
+    if kind in OXO_CENTER_KINDS:  # 含氧酸中心母体：臂挂在中心原子上，母体链位次无意义
+        return True
     if any(s.get("paren") or (s.get("en") or "")[:1] == "(" for s in substituents):  # 复合取代基（显式括号）须保留母体 2- 消歧
         return False
     complex_sub = any(  # 自带位次的取代基同须保留，简单 FG 前缀省略
@@ -59,18 +62,39 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     )
     return (  # C2 单取代省略仅对端碳无 H 的母体成立（P-14.3.4.4）
         n_carbons == 2 and len(substituents) == 1
-        and kind not in ("alcohol", "amine", "thiol")
+        and kind not in ("alcohol", "amine", "thiol", "sulfonic", "sulfonate",
+                         "sulfonamide", "sulfonyl_chloride")  # 端碳已带后缀，C2 取代基位次不可省
         and not complex_sub
     )
 
 
-def _stem_needs_paren(stem: str, subs: list, omit: bool) -> bool:
+def _stem_needs_paren(stem: str, subs: list, omit: bool, flat: bool = False) -> bool:
     """加括号：显式标记、前导位次词干、前导立体描述符，或多个 CF3（英文）。"""
     if any(s.get("paren") for s in subs):
         return True
     if stem and stem[0].isdigit():
-        return True
+        return not flat  # 中心母体无位次，臂名前导位次不须围栏消歧
     return (not omit) and (stem == "trifluoromethyl" or bool(_STEREO_LEAD_RE.match(stem)))
+
+
+def oxo_arm_fence(name: str, sub: dict, mol) -> bool:
+    """含氧酸中心母体的臂名围栏：名称以围栏起头，或复合基挂在环上。"""
+    if (name or "")[:1] in "([":
+        return True
+    attach = sub.get("attach_idx")
+    if not sub.get("paren") or mol is None or attach is None:
+        return False
+    root = None  # 臂根：claim 原子中与附着原子成键者
+    for a in sub.get("atoms") or ():
+        try:
+            if mol.GetBondBetweenAtoms(int(a), int(attach)) is not None:
+                root = int(a)
+                break
+        except (ValueError, TypeError):
+            return False
+    if root is None:
+        return False
+    return mol.GetAtomWithIdx(root).IsInRing()
 
 
 def _enclose(s: str) -> str:
@@ -151,10 +175,11 @@ def _bridge_body(base: str, suf: str, merge: bool = False) -> str:
     return f"[{body}]" if body.startswith("[") and suf in ("amino", "氨基") else body
 
 
-def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False) -> str:
+def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
+                   flat: bool = False) -> str:
     """拼单个英文前缀：数量 + 词干（可省略位次时省略 locant）。"""
     mult = _mult_of("en", stem, subs, len(subs))
-    need = _stem_needs_paren(stem, subs, omit) and not _sbridge_flat_stem(stem)
+    need = _stem_needs_paren(stem, subs, omit, flat) and not _sbridge_flat_stem(stem)
     if mult and mult == MULT_EN.get(len(subs), "") and _MULT_WRAP_RE.search(stem):  # P-16.3.2：复合取代基的倍数前缀须加括号
         need = True
         mult = "bis" if stem[:1] in "aeiou" else "di"
@@ -194,11 +219,11 @@ def _split_bridge_suffix_zh(zh_stem: str, en_stem: str) -> tuple[str, str] | Non
 
 
 def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
-                   en_stem: str = "", tail_sep: bool = False) -> str:
+                   en_stem: str = "", tail_sep: bool = False, flat: bool = False) -> str:
     """拼单个中文前缀：数量 + 词干（CF3 特例：简单氟代甲基不加括号）。"""
     mult = _mult_of("zh", zh_stem, subs, len(subs))
     en = subs[0].get("en") or ""
-    need = any(s.get("paren") for s in subs) or (en[:1].isdigit() if en else False)  # 停用：简单氟代甲基不加括号
+    need = any(s.get("paren") for s in subs) or bool(en[:1].isdigit() and not flat)  # 停用：简单氟代甲基不加括号
     if not omit and _STEREO_LEAD_RE.match(en):  # 前导立体描述符 + 位次须整体围栏
         need = True
     if mult and mult == MULT_ZH.get(len(subs), "") and en_stem and _MULT_WRAP_RE.search(en_stem):  # 与英文侧同判：复合取代基用 双(...)
@@ -220,8 +245,8 @@ def _n_prefix(lang: str, n: int, stem: str, tokens: list[str], subs: list) -> st
     return f"{','.join(tokens)}-{_mult_of(lang, stem, subs, n)}{stem}"
 
 
-def _parts_for_stem(stem: str, subs: list, omit: bool,
-                    primes: dict[int, int] | None = None, tail_sep: bool = False) -> tuple[str, str]:
+def _parts_for_stem(stem: str, subs: list, omit: bool, primes: dict[int, int] | None = None,
+                    tail_sep: bool = False, flat: bool = False) -> tuple[str, str]:
     """按词干生成中英文前缀（N- 类取代基加 N- 前缀并强制省略位次）。"""
     zh_stem = subs[0].get("zh") or ""
     if subs and all((s.get("kind") or "") in N_PREFIX_KINDS for s in subs):  # 整组全为 N-型才走 N-计数前缀，混入 C-型时走数字通道
@@ -231,8 +256,8 @@ def _parts_for_stem(stem: str, subs: list, omit: bool,
         tokens = sorted(("N" + "'" * ((primes or {}).get(s.get("attach_idx"), 0))) for s in subs)  # 同 N 用 N,N-；跨不同 N 用 N,N'-
         return (_n_prefix("en", len(subs), s_en, tokens, subs),
                 _n_prefix("zh", len(subs), s_zh, tokens, subs))
-    return (_prefix_one_en(stem, subs, omit, tail_sep),
-            _prefix_one_zh(zh_stem, subs, omit, stem, tail_sep))
+    return (_prefix_one_en(stem, subs, omit, tail_sep, flat),
+            _prefix_one_zh(zh_stem, subs, omit, stem, tail_sep, flat))
 
 
 def _n_prime_map(groups: dict[str, list], stems: list[str]) -> dict[int, int]:
@@ -248,7 +273,7 @@ def _n_prime_map(groups: dict[str, list], stems: list[str]) -> dict[int, int]:
 
 def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
                    bracket: bool = False, primes: dict[int, int] | None = None,
-                   sep: str = "-") -> tuple[list[str], list[str]]:
+                   sep: str = "-", flat: bool = False) -> tuple[list[str], list[str]]:
     """汇总所有词干的中英文前缀部件列表（P-16.5.1.3.1 括号式）。"""
     en_parts: list[str] = []
     zh_parts: list[str] = []
@@ -259,7 +284,7 @@ def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
             en_parts.append(f"{MULT_EN.get(len(subs), '')}({stem})")
             zh_parts.append(f"{MULT_ZH.get(len(subs), '')}({subs[0].get('zh') or ''})")
             continue
-        en_p, zh_p = _parts_for_stem(stem, subs, omit, primes, tail_sep)
+        en_p, zh_p = _parts_for_stem(stem, subs, omit, primes, tail_sep, flat)
         en_parts.append(en_p)
         zh_parts.append(zh_p)
     return en_parts, zh_parts
@@ -277,12 +302,16 @@ def _groups_simple(groups: dict[str, list]) -> bool:
 
 
 def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
-                  scaffold: str | None = None, has_ene: bool = False) -> tuple[str, str]:
+                  scaffold: str | None = None, has_ene: bool = False,
+                  mol=None) -> tuple[str, str]:
     """组合完整取代基前缀：滤 O 侧、判 omit、按词干分组拼接。"""
     substituents = [s for s in substituents if not s.get("o_side")]  # ester 的 O 侧臂由 join_kind_name 消费
     if not substituents:
         return "", ""
     omit = _omit_sub_locants(n_carbons, substituents, kind, scaffold, has_ene)
+    flat = kind in OXO_CENTER_KINDS  # 中心母体：臂名围栏改由环基判据决定，去多余位次围栏
+    if flat:
+        substituents = [{**s, "paren": oxo_arm_fence(s.get("en") or "", s, mol)} for s in substituents]
     rows = _mult_rows(substituents, lambda s: s.get("en") or "", lambda s: s.get("zh") or "",
                       alkyl_alpha_key)  # 分组/排序键由调用侧给定，不与英文侧统一
     groups = {en: members for en, _, _, members in rows}
@@ -290,7 +319,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     bracket = bool(omit) and n_carbons == 1 and kind == "radical" \
         and len(groups) >= 2 and _groups_simple(groups)
     sep = "" if bracket else "-"
-    en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, _n_prime_map(groups, stems), sep)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
+    en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, _n_prime_map(groups, stems), sep, flat)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
     return sep.join(en_parts), sep.join(zh_parts)
 
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
@@ -300,4 +329,4 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "radical" and parent.get("radical_anchor_element"):  # 杂原子锚点自由基：烷基取代基已并入组装名（ethyloxy），不再加前缀。
         return "", ""
     return _build_prefix(numbered.get("substituents") or [], n, kind,
-                         parent.get("scaffold_id"), has_ene)
+                         parent.get("scaffold_id"), has_ene, parent.get("mol"))

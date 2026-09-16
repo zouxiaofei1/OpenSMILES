@@ -12,7 +12,8 @@ class FunctionalGroupClass(str, Enum):
     RADICAL = "radical"
     ACYL = "acyl"
     ACID = "acid"
-    PHOSPHATE = "phosphate"
+    OXOACID = "oxoacid"
+    SULFONAMIDE = "sulfonamide"
     ESTER = "ester"
     ACYL_HALIDE = "acyl_halide"
     AMIDE = "amide"
@@ -53,7 +54,7 @@ _FG_KEYS = tuple(sp.fg for sp in FG_SPECS)  # FG 类别注册唯一事实来源�
 
 _ANCHOR_KEYS = {FunctionalGroupClass(sp.fg): sp.anchors for sp in FG_SPECS if sp.anchors}  # 锚点 key（occurrence payload）：只有声明 anchors 的 FG 才收集；胺含多臂锚点（P-62.2）。
 
-from namepredict.constants import O
+from namepredict.constants import C, O
 
 
 def _idx(payload: dict, key: str) -> int | None:
@@ -69,10 +70,15 @@ def _hetero_neighbors(mol, idx: int | None, z: int) -> set[int]:
     return {n.GetIdx() for n in mol.GetAtomWithIdx(idx).GetNeighbors() if n.GetAtomicNum() == z}
 
 
-def _phosphate_atoms(mol, payload: dict) -> set[int]:
-    """磷酸：P 中心 + 其全部氧（=O 与三个单键 O，含 O–R 桥氧）。"""
-    p = _idx(payload, "p_idx")
-    return (set() if p is None else {p}) | _hetero_neighbors(mol, p, O)
+def _oxoacid_atoms(mol, payload: dict) -> set[int]:
+    """含氧酸：锚点碳 + 中心 P/S + 中心的非碳邻居（碳臂留给链/取代基侧）。"""
+    z = _idx(payload, "oxo_z")
+    if z is None:
+        return set()
+    out = {z} | {n.GetIdx() for n in mol.GetAtomWithIdx(z).GetNeighbors()
+                 if n.GetAtomicNum() not in (1, C)}
+    anchor = _idx(payload, "center_idx")
+    return out | ({anchor} if anchor is not None else set())
 
 
 def center_surr_atoms(payload: dict) -> frozenset[int]:
@@ -85,7 +91,8 @@ def center_surr_atoms(payload: dict) -> frozenset[int]:
 
 
 FG_ATOM_FNS = {  # 不走通用规则的例外类别
-    "phosphate": _phosphate_atoms,
+    "oxoacid": _oxoacid_atoms,
+    "sulfonamide": _oxoacid_atoms,  # 含氧酸合一类的 P-41 酰胺分组，特征原子同一判据
 }
 
 def _indices(payload: dict, keys: tuple[str, ...]) -> frozenset[int]:

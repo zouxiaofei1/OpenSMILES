@@ -417,18 +417,24 @@ def _ac_hal_chain(hal_z: int) -> _Chain | None:
 
 _ACYL_HALIDE_BY_HAL = {z: _ac_hal_chain(z) for z in HALIDE_EN}  # 按卤素原子序数索引的酰卤链 spec（F/Cl/Br/I）。
 
-_PHOSPHATE_TAIL = {  # P-67.1.3：P 上酸式氢数 → 双语母体词尾
-    3: ("phosphoric acid", "磷酸"),
-    2: ("dihydrogen phosphate", "磷酸二氢"),
-    1: ("hydrogen phosphate", "磷酸氢"),
-    0: ("phosphate", "磷酸"),
+_OXO_TAIL = {  # P-66.1.1/P-67.1.3：oxo_kind × 中心酸式氢数 → 双语功能母体词尾
+    ("phosphate", 3): ("phosphoric acid", "磷酸"),
+    ("phosphate", 2): ("dihydrogen phosphate", "磷酸二氢"),
+    ("phosphate", 1): ("hydrogen phosphate", "磷酸氢"),
+    ("phosphate", 0): ("phosphate", "磷酸"),
+    ("phosphonate", 2): ("phosphonic acid", "膦酸"),
+    ("phosphonate", 1): ("hydrogen phosphonate", "膦酸氢"),
+    ("phosphonate", 0): ("phosphonate", "膦酸"),
+    ("sulfate", 2): ("sulfuric acid", "硫酸"),
+    ("sulfate", 1): ("hydrogen sulfate", "硫酸氢"),
+    ("sulfate", 0): ("sulfate", "硫酸"),
 }
 
 
-def _phosphate_tail(numbered: dict) -> tuple[str, str] | None:
-    """磷酸母体词尾：按 P 上酸式氢数取双语词尾，0–3 之外返回 None。"""
+def _oxoacid_tail(numbered: dict) -> tuple[str, str] | None:
+    """含氧酸中心母体词尾：按 oxo_kind 与酸式氢数查表，表外返回 None。"""
     parent = numbered.get("parent") or {}
-    return _PHOSPHATE_TAIL.get(int(parent.get("n_oh") or 0))
+    return _OXO_TAIL.get((parent.get("oxo_kind"), int(parent.get("n_oh") or 0)))
 
 
 def _benzene_retained(en: str, zh: str, *, fg_drop: bool = False, omit_all: bool = False) -> dict:
@@ -446,7 +452,10 @@ _BENZENE_RETAINED = {  # 苯环单取代 scaffold 专属保留名（消费点 as
     "amine": _benzene_retained("aniline", "苯胺", fg_drop=True),
     "radical": _benzene_retained("phenyl", "苯基", omit_all=True),
     "acid": _benzene_retained("benzoic acid", "苯甲酸"),
-    "sulfonic": _benzene_retained("benzenesulfonic acid", "苯磺酸"),
+    "sulfonic": _benzene_retained("benzenesulfonic acid", "苯磺酸", omit_all=True),
+    "sulfonate": _benzene_retained("benzenesulfonate", "苯磺酸", omit_all=True),
+    "sulfonamide": _benzene_retained("benzenesulfonamide", "苯磺酰胺", omit_all=True),
+    "sulfonyl_chloride": _benzene_retained("benzenesulfonyl chloride", "苯磺酰氯", omit_all=True),
     "ester": _benzene_retained("benzoate", "苯甲酸"),
     "acyl": _benzene_retained("benzoyl", "苯甲酰基"),
     "aldehyde": _benzene_retained("benzaldehyde", "苯甲醛"),
@@ -476,7 +485,18 @@ _KIND_TABLE = {
                        None: {1: dict(plain_maps=None, plain_fn=_retained_plain("acid")),
                               2: dict(plain_maps=({2: "oxalic acid"}, {2: "草酸"}), yne_suf=None)},
                    }),
-    "sulfonic": _Chain(kind="sulfonic", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,en_suf="sulfonic acid", zh_suf="磺酸", coda="ane",),
+    "sulfonic": _Chain(kind="sulfonic", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
+                       en_suf="sulfonic acid", zh_suf="磺酸", coda="ane",
+                       fg="oxoacid", need=1, omit_rule=_omit_term_locant),  # P-65.3.1 取代式：链/环母体 + 磺酸后缀
+    "sulfonate": _Chain(kind="sulfonate", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
+                        en_suf="sulfonate", zh_suf="磺酸", coda="ane",
+                        fg="oxoacid", need=1, omit_rule=_omit_term_locant),  # 磺酸酯：O 侧臂 + 磺酸酯后缀
+    "sulfonamide": _Chain(kind="sulfonamide", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
+                          en_suf="sulfonamide", zh_suf="磺酰胺", coda="ane",
+                          fg="sulfonamide", need=1, omit_rule=_omit_term_locant),
+    "sulfonyl_chloride": _Chain(kind="sulfonyl_chloride", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
+                                en_suf="sulfonyl chloride", zh_suf="磺酰氯", coda="ane",
+                                fg="oxoacid", need=1, omit_rule=_omit_term_locant),
     "ester": _Chain(kind="ester", en_suf="oate", zh_suf="酸",
                     ene_base=("enoate", "烯酸"),
                     yne_suf=("ynoate", "炔酸"),
@@ -485,8 +505,12 @@ _KIND_TABLE = {
                         None: {1: dict(plain_maps=None, plain_fn=_retained_plain("ester")),
                                2: dict(plain_maps=({2: "oxalate"}, {2: "草酸"}))},  # P-65.1.1 保留名：乙二酸二酯 = oxalate
                     }),
-    "phosphate": _Chain(kind="phosphate", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,en_suf="phosphate",fg="phosphate", zh_suf="磷酸", coda="",  # P-67.1.3 无机功能母体：词尾由 plain_hook 切换
-                        plain_hook=_phosphate_tail),
+    "phosphate": _Chain(kind="phosphate", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent, en_suf="phosphate", fg="oxoacid", zh_suf="磷酸", coda="",  # P-67.1.3 无机功能母体：词尾由 plain_hook 切换
+                        plain_hook=_oxoacid_tail),
+    "phosphonate": _Chain(kind="phosphonate", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent, en_suf="phosphonic acid", fg="oxoacid", zh_suf="膦酸", coda="",  # P-67.1.2：膦酸功能母体，碳臂作前缀
+                          plain_hook=_oxoacid_tail),
+    "sulfate": _Chain(kind="sulfate", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent, en_suf="sulfate", fg="oxoacid", zh_suf="硫酸", coda="",  # 硫酸酯功能母体
+                      plain_hook=_oxoacid_tail),
     "acyl": _Chain(kind="acyl", en_suf="oyl", zh_suf="酰基",  # 酰基残基（P-65.1.7.2）：酸碳恒 locant 1，C1/C2 走保留名
                    ene_base=("enoyl", "烯酰基"),
                    yne_suf=("ynoyl", "炔酰基"),

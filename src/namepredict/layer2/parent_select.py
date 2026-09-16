@@ -13,6 +13,7 @@ from namepredict.layer2.parent_skeleton import (
 )
 from namepredict.layer2.principal_expression import express_chain_principal, express_ring_principal
 from namepredict.layer2.principal import PrincipalGroupSelection, select_principal_group
+from namepredict.constants import OXO_CENTER_KINDS
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,9 @@ def _chain_atoms(parent: dict) -> set[int]:
     return set(parent.get("chain") or ())
 
 
+_WHOLE_FG_ATOMS = frozenset({FunctionalGroupClass.OXOACID, FunctionalGroupClass.SULFONAMIDE})  # 特征原子全归主基团：中心非骨架成员，无可外借臂
+
+
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
     """主官能团所有权原子：骨架内（或邻骨架）锚点及其特征原子。"""
     facts = parent.get("principal_expression_facts")
@@ -74,6 +78,9 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
         linked = {n.GetIdx() for i in chain for n in mol.GetAtomWithIdx(i).GetNeighbors()}
         seeds = anchors & linked
     out = set(seeds)
+    if facts.group_class in _WHOLE_FG_ATOMS:  # 含氧酸：中心的氧/卤素跨两跳，仅归本骨架覆盖的 occurrence
+        covered = set(parent.get("covered_principal_ids") or ())
+        return out | {i for o in occurrences if o.id in covered for i in o.characteristic_atoms}
     for i in tuple(out):
         out |= {n.GetIdx() for n in mol.GetAtomWithIdx(i).GetNeighbors()
                 if n.GetIdx() in atoms and n.GetIdx() not in anchors}
@@ -84,7 +91,10 @@ def finalize_parent_ownership(parent: dict, mol: Mol) -> dict:
     """一次性复制候选，生成不可变 owned_atoms frozenset。"""
     if isinstance(parent.get("owned_atoms"), frozenset):
         return parent
-    owned = frozenset(_chain_atoms(parent) | _kind_fg_atoms(parent, mol))  # 链与主官能团特征原子的并集
+    fg_atoms = _kind_fg_atoms(parent, mol)
+    if parent.get("kind") in OXO_CENTER_KINDS:  # 含氧酸中心母体：链仅供编号，臂一律退为取代基
+        return {**parent, "owned_atoms": frozenset(fg_atoms)}
+    owned = frozenset(_chain_atoms(parent) | fg_atoms)  # 链与主官能团特征原子的并集
     return {**parent, "owned_atoms": owned}
 
 

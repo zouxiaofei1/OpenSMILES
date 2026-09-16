@@ -4,7 +4,7 @@ from dataclasses import replace
 import re
 from namepredict.constants import (
     ALKOXY_YLOXY_EN, ALKOXY_YLOXY_ZH, AMIDO_RETAINED, AZANE_PAREN_SUF, BIS_EN, BRIDGE_YL_SUFFIX,
-    BRIDGE_ZH_YL_SUFFIX, ESTER_O_SIDE_KINDS,
+    BRIDGE_ZH_YL_SUFFIX, ESTER_O_SIDE_KINDS, OXO_CENTER_KINDS,
     MONONUCLEAR_BRIDGE, MONONUCLEAR_YL, MONONUCLEAR_ZERO_YL, MULT_EN,
     MULT_ZH, PHOSPHORYL_STEMS, ZH_DIGITS, zh_bridge_root,
 )
@@ -15,7 +15,7 @@ from namepredict.layer5.stems import (
     _metal_en_prefix, _metal_zh_suffix, join_anion_names,
 )
 from namepredict.layer5.assembler_prefixes import (
-    _SIMPLE_CHAIN_YL_RE, _enclose, _mult_rows, _prefix_for,
+    _SIMPLE_CHAIN_YL_RE, _enclose, _mult_rows, _prefix_for, oxo_arm_fence,
 )
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
 from namepredict.types import NameResult
@@ -266,8 +266,8 @@ def _ensure_fused_stem(numbered: dict) -> bool:
     parent["stem_en"], parent["stem_zh"] = pre + name[0], pre + name[1]
     return True
 
-def _phosphate_arm_zh(zh: str) -> str:
-    """磷酸臂中文词：简单基去「基」，复合名原样保留。"""
+def _oxoacid_arm_zh(zh: str) -> str:
+    """含氧酸 O-侧臂中文词：简单基去「基」，复合名原样保留。"""
     if not zh.endswith("基") or "-" in zh or zh.startswith("("):
         return zh
     stem = zh[:-1]
@@ -276,14 +276,29 @@ def _phosphate_arm_zh(zh: str) -> str:
     return stem
 
 
-def join_phosphate_name(names: tuple[str, str], numbered: dict) -> tuple[str, str] | None:
-    """磷酸整名（P-67.1.3）：O-侧臂 + 词尾 + 金属盐。"""
-    tail_en, tail_zh = names
-    arms = _join_o_side_arms(_o_side_arms(numbered), group=True, arm_zh_fn=_phosphate_arm_zh)
+def _fenced_arm(name: str, sub: dict, mol) -> str:
+    """O-侧臂名围栏：判据命中时整体加括号（内含圆括号则升为方括号）。"""
+    return _enclose(name) if oxo_arm_fence(name, sub, mol) else name
+
+
+def _fenced_arms(arms: list[dict], mol) -> list[dict]:
+    """按围栏判据改写 O-侧臂的双语名。"""
+    return [{**a, "en": _fenced_arm(a.get("en") or "", a, mol),
+             "zh": _fenced_arm(a.get("zh") or "", a, mol)} for a in arms]
+
+
+def join_oxoacid_name(pre: tuple[str, str], names: tuple[str, str], numbered: dict) -> tuple[str, str] | None:
+    """含氧酸中心母体整名（P-67.1.3）：取代前缀 + O-侧臂 + 词尾 + 金属盐。"""
+    tail_en = join_parent_name(pre[0], names[0])
+    tail_zh = join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))
+    parent = numbered.get("parent") or {}
+    arms_in = _o_side_arms(numbered)
+    if parent.get("oxo_kind") != "phosphate":  # 磷酸酯臂不加围栏（P-67.1.3 惯例），其余中心母体按判据加
+        arms_in = _fenced_arms(arms_in, parent.get("mol"))
+    arms = _join_o_side_arms(arms_in, group=True, arm_zh_fn=_oxoacid_arm_zh)
     if arms is None:
         return None
     alk_en, alk_zh = arms
-    parent = numbered.get("parent") or {}
     salt_meta = parent.get("salt_meta") or {}
     metal_en = _metal_en_prefix(salt_meta)
     metal_zh = _metal_zh_suffix(salt_meta)
@@ -430,8 +445,8 @@ def join_kind_name(
 ) -> tuple[str, str] | None:
     """按 kind 分派：O-侧臂母体（酯/磷酸）走 O-侧拼接，其余走普通母体拼接。"""
     if kind in ESTER_O_SIDE_KINDS:
-        if kind == "phosphate":
-            return join_phosphate_name(names, numbered)
+        if kind in OXO_CENTER_KINDS:  # 中心自任母体（磷酸/膦酸/硫酸酯）：臂 + 功能母体词尾
+            return join_oxoacid_name(pre, names, numbered)
         return join_ester_name(pre[0], pre[1], names, numbered)
     en = join_parent_name(pre[0], names[0])
     zh = join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))

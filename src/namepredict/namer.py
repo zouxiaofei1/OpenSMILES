@@ -7,7 +7,7 @@ import time
 
 from namepredict.tools import memo
 from namepredict.tools.common_names import CommonNameCache
-from namepredict.constants import N_PREFIX_KINDS
+from namepredict.constants import N_PREFIX_KINDS, OXO_CENTER_KINDS
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer0.salt import dissociate_salt
 from namepredict.layer1.analyzer import analyze
@@ -173,7 +173,7 @@ def _apply_salt_suffix(result: NameResult, salt: dict) -> NameResult:
     """把盐元数据组装为名称后缀（碱金属盐/HCl 盐），仅成功结果生效。"""
     if not result.success or not salt:
         return result
-    if (result.meta or {}).get("parent_kind") == "phosphate":
+    if (result.meta or {}).get("parent_kind") in OXO_CENTER_KINDS:  # 含氧酸中心母体自带盐组装
         return result
     from namepredict.layer5.stems import join_metal_salt_names
 
