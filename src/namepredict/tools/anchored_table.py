@@ -57,7 +57,7 @@ _REGISTRY: dict[str, RetainedSubstituent] = {
     "oxido": RetainedSubstituent("oxido", "氧基", anchored=("*[O-]",), paren=False),  # 去质子酚氧负离子（P-66.1.1.4 阴离子前缀）
     "methylsulfanyl": RetainedSubstituent("methylsulfanyl", "甲硫基", anchored=("*SC",), paren=False),
     "ethylsulfanyl": RetainedSubstituent("ethylsulfanyl", "乙硫基", anchored=("*SCC",), paren=False),
-    "sulfanyl": RetainedSubstituent("sulfanyl", "巯基", anchored=("*S",), paren=False),
+    "sulfanyl": RetainedSubstituent("sulfanyl", "硫基", anchored=("*S",), paren=False),  # -SH 端点与 -S- 桥共用「硫基」，不按取代基语境分化
     "sulfido": RetainedSubstituent("sulfido", "硫代", anchored=("*[S-]",), paren=False),  # 去质子硫醇负离子（P-66.1.1.4 阴离子前缀）
     "selanyl": RetainedSubstituent("selanyl", "氢硒基", anchored=("*[SeH]",), paren=False),
     "methylsulfinyl": RetainedSubstituent("methylsulfinyl", "甲基亚磺酰", anchored=("*S(C)=O",), paren=False),

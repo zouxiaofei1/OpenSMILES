@@ -1,375 +1,217 @@
-# 添加新官能团 (Adding a New Functional Group)
+# 指南：新增官能团 (Adding a Functional Group)
 
-> **扩展指南** | 关联: [[architecture/overview]], [[architecture/layer1-analyzer]], [[architecture/layer2-parent-selector]], [[architecture/layer3-substituents]], [[architecture/layer4-numbering]], [[architecture/layer5-name-assembly]], [[concepts/functional-group-priority]], [[concepts/atom-ownership]], [[reference/core-data-contracts]]
+> 扩展落地清单 | 关联：[[architecture/overview]]、[[concepts/functional-group-priority]]、[[concepts/atom-ownership]]、[[reference/core-data-contracts]]
 
----
+主线为「检测 → 归一 → 注册 → 母体化 → 命名」五段。主示例取碳锚定的磺酸族 `sulfonic`：中心 S 不是碳骨架成员，但经一条直连碳臂接入母体，属碳锚定路径。文末给中心自任母体的对照示例。
 
-## 概述
-
-本指南说明如何向命名管线添加一个新的 functional group（官能团，FG）。工作示例是 **thiol（硫醇，R–SH）**：它是链式 SUFFIX 主官能团，走「L1 局部 SMARTS 检测 → L2 母体接线 → L5 链引擎命名」的标准路径，**L4 无需任何改动**。
-
-新增一个 FG 要动的**表项共 5 处**，其中 ①②③④ 在 L1、⑤ 在 L5：
-
-| # | 位置 | 作用 |
-|:---:|---|---|
-| ① | `layer1/fg_local_smarts.FG_SMARTS`（`fg_local_smarts.py:26`） | 加一条 `(FG 键, SMARTS)`，模式首原子即中心原子 |
-| ② | `layer1/functional_group_inventory.FunctionalGroupClass`（`functional_group_inventory.py:10`） | 加枚举成员，值 = ① 的 FG 键 |
-| ③ | `layer1/fg_registry.FG_SPECS`（`fg_registry.py:20`） | 登记 `FgSpec`（优先级 / 锚点 / 位次来源） |
-| ④ | `layer1/analyzer._LOCAL_ENTRY_FGS`（`analyzer.py:157`） | 把 FG 键加进元组，条目才由通用路径产出 |
-| ⑤ | `layer5/chain_engine._KIND_TABLE`（`chain_engine.py:457`） | 加 `_Chain` spec（该 FG 作母体时的词干与后缀） |
-
-**①②③④ 缺一不可**，漏一处即静默失效或 import 期报错：
-
-- 缺 ① → 无匹配中心原子；缺 ② → import 期 `ValueError`（`_ANCHOR_KEYS` 构建）；缺 ③ → 清单里没有该类别，L2 视同分子中无此 FG；缺 ④ → SMARTS 有命中但不产出条目。
-- 缺 ⑤ → 该 FG 作母体时 L5 查不到 spec：环骨架回落环词干（FG 后缀静默丢失），开链母体则以 `unsupported` 失败（`assembler.py:510`）。详见「常见陷阱」5。
-
-**`analyzer.py` 只在两类非局部判据下才需要改**：条目需要与另一 FG 的中心原子联动（酰基头 heads 联动），或需要对整分子做纯度/连通性校验（磷酸臂回接）——见 §1.4。
-
-**L2 / L3 / L4 的表全部由 `FG_SPECS` 与 `FunctionalGroupClass` 现算**，通常无需逐条登记：
-
-- `layer2/principal.PRINCIPAL_REGISTRY`（`principal.py:44`）——主官能团等级
-- `layer2/principal_expression._chain_kind`（`principal_expression.py:70`）——kind 收敛
-- `layer4/locant_calc._FG_LOCANTS`（`locant_calc.py:146`）——FG 位次记录
-- `layer5/stereo._RS_KINDS`（`stereo.py:141`）——R/S 适用类别
-
-开始之前建议先读 [[concepts/functional-group-priority]]（`p41`/`path` 体系）与 [[architecture/overview]]（6 层管线）。
-
----
-
-## 步骤 1: Layer 1 — 检测 (Detection)
-
-Layer 1 的职责是枚举各类官能团条目，汇总为带类型的 `FunctionalGroupInventory`。**检测本身是表驱动的**：SMARTS 表 + 局部命中枚举，非局部判据才回落到 `analyzer` 后置。
-
-### 1.1 加 SMARTS 表项
-
-`FG_SMARTS`（`fg_local_smarts.py:26`）是 `tuple[tuple[str, str], ...]`，共 17 条，每条 = `(FG 键, SMARTS)`。
-
-```python
-# 硫醇：S 上恰一个 H，与一个碳相连（R–S–H）；首原子 S 即中心原子
-("thiol", "[#16;X2;H1]~[#6]"),          # fg_local_smarts.py:46
-```
-
-规则：
-
-- **模式首原子 = 该 FG 的中心原子**；`match_local_fg`（`:68`）把它当作条目的 `center_idx`。
-- **同名多条取并集**：`_compile`（`:54`）按 FG 键归并编译；`match_local_fg` 用 `by_center.setdefault(m[0], m)` 按中心原子去重，同一中心原子只保留首个命中，故同名多条不会重复计数。现例：`ketone` 三条（`:40`/`:41`/`:42`，按碳邻居数与环内杂原子分支）、`amine` 三条（`:48`/`:49`/`:50`，按取代度分支）。
-- 输出 `{FG 键: [匹配元组, ...]}`，元组按中心原子索引升序；**除首元素外，匹配元组的其余元素不被通用条目路径消费**（`_fg_entry` 只读 `t[0]`，周边原子由 RDKit 邻居关系现算）。
-- SMARTS 写错时**编译期立即失败**：`_compile`（`:60`）对无法解析的模式 `raise ValueError`。
-- 涉及羰基时复用模块级私有原语，不要另起一份：`_ACID_O`（`:11`）、`_NOT_ACID`（`:13`）、`_NOT_ACYCLIC_ESTER`（`:15`）、`_NOT_HALO`（`:17`）、`_ONE_C`（`:19`）、`_RING_HET`（`:21`，环内杂原子，与 `constants.RING_HETERO`〔`constants.py:36`〕同义）、`_O_PHOS`（`:23`）。
-- 非局部判据不写进 SMARTS：酰基头的 heads 联动、磷酸的臂回接与整分子纯度都留在 `analyzer` 后置（§1.4）。
-
-### 1.2 登记 `FunctionalGroupClass`
-
-`FunctionalGroupClass`（`functional_group_inventory.py:10`）是 `str, Enum`，现有 13 个实类 + `NONE = "alkane"`（`:25`，纯烃占位，不参与 FG 检测）。
-
-加一个成员，**值必须与 `FgSpec.fg` 及 `FG_SMARTS` 的 FG 键逐字一致**：
-
-```python
-THIOL = "thiol"          # functional_group_inventory.py:23
-```
-
-必须加的原因：`_ANCHOR_KEYS`（`:54`）在 import 期、`_one`（`:106`）在构建期都做 `FunctionalGroupClass(key)`，缺成员直接 `ValueError`。
-
-### 1.3 登记 `FgSpec`
-
-`FgSpec`（`fg_registry.py:10`）是 `frozen dataclass`，7 个字段：
-
-| 字段 | 默认 | 含义 |
+| 段落 | 落点 | 文件 |
 |---|---|---|
-| `fg` | 必填 | `FunctionalGroupClass` 值；同时是 L1 条目键与 L4 `fg_locants` 记录的 kind |
-| `p41` | `0` | P-41 主官能团等级，**0 = 非主官能团**；越小优先级越高 |
-| `path` | `()` | P-43 同类内优先级路径，与 `p41` 合成 `PrincipalPriority` |
-| `expr` | `"suffix"` | 表达类型；`PrincipalExpression` 枚举只有 `suffix` 一个成员（`principal.py:23`） |
-| `anchors` | `()` | occurrence payload 中承载**母体连接原子**的键；空 = 不收集锚点 |
-| `parent_anchor_fields` | `None` | `(单数, 复数)` 锚点字段名，仅供固定 locant 1 的扁平字段使用 |
-| `locant_source` | `"attachment"` | L4 位次原子来源：`attachment` / `attachment_exocyclic` / `anchor_field` |
+| 检测 | `FG_SMARTS` | `layer1/fg_local_smarts.py` |
+| 归一 | `_oxo_kind` / `_oxoacid_entry` | `layer1/analyzer.py` |
+| 分类 | `_OXO_CLASS_BY_KIND` | `layer1/analyzer.py` |
+| 注册 | `FG_SPECS` / `FunctionalGroupClass` / `FG_ATOM_FNS` | `layer1/fg_registry.py`、`layer1/functional_group_inventory.py` |
+| 母体化 | `_WHOLE_FG_ATOMS` / `OXO_CENTER_KINDS` | `layer2/parent_select.py`、`constants.py` |
+| 命名 | `_KIND_TABLE` / `_OXO_TAIL` / `_BENZENE_RETAINED` | `layer5/chain_engine.py` |
 
-thiol 的声明（`fg_registry.py:32`），与上一行的 alcohol（`:31`）对照：
+## 1 局部检测：`FG_SMARTS`
 
-```python
-FgSpec("alcohol", p41=17, path=(1,), anchors=("surr_idx",)),
-FgSpec("thiol",   p41=17, path=(2,), anchors=("surr_idx",)),
-```
-
-- `p41=17` 同属 P-41 第 17 类，`path` 决定醇优先于硫醇（`PrincipalPriority` 可排序，`min()` 取胜）。
-- `anchors=("surr_idx",)` 因为中心原子是杂原子 S，与母体相连的是它的碳邻居。**锚点键选取规则**：中心原子即连接原子时用 `("center_idx",)`（acid/ester/amide/nitrile/aldehyde/ketone/acyl_halide），连接原子在中心周边时用 `("surr_idx",)`（alcohol/thiol/amine）。胺的多臂体现在 `surr_idx` 一次给出多个碳锚点（`functional_group_inventory.py:54` 注释，P-62.2）。
-- `locant_source` 保持默认 `"attachment"`（取 `principal_expression_facts` 中该 FG 类别的骨架内附着原子）。另两个取值的适用者：`attachment_exocyclic`（仅环外表达时取，ester/amide/nitrile/aldehyde）、`anchor_field`（取 `parent_anchor_fields[0]`，radical/acyl）。
-- `p41=0` 的 FG 不进 `PRINCIPAL_REGISTRY`（`principal.py:44` 过滤 `sp.p41`），也不进 `_arbitrate_parts` 的 p41 表（`analyzer.py:143`）。
-
-### 1.4 让条目进入 `_detect_parts`（**最易漏的一步**）
-
-`_detect_parts`（`analyzer.py:167`）的返回 dict 是清单构建的唯一输入。**FG_SMARTS 命中本身不产出条目**：通用路径由 `_local_entries`（`:161`）按 `_LOCAL_ENTRY_FGS`（`:157`）这个硬编码元组逐个 FG 键取值。
+`FG_SMARTS` 是 `tuple[tuple[str, str], ...]`，每条 `(FG 键, SMARTS)`，**模式首原子即该 FG 的中心原子**。`match_local_fg` 统一返回 `{FG 键: [原子元组, ...]}`，按中心原子升序、同名多条取并集。磺酸族的表项（S 带两个 =O，另两臂为酸式氧与直连碳臂）：
 
 ```python
-_LOCAL_ENTRY_FGS = ("acid", "alcohol", "ester", "amide", "ketone", "amine", "thiol",
-                    "nitrile", "acyl_halide")          # analyzer.py:157
+("oxoacid", "[#16;H0;+0](=[#8;X1;H0;+0])(=[#8;X1;H0;+0])" + _O_PHOS + _C_ARM)
 ```
 
-**新 FG 必须把 FG 键加进该元组**，否则 `_local_entries` 不产出该键 → `build_inventory`（`functional_group_inventory.py:114`）取到空序列 → 清单里该类别零 occurrence，L2 视同分子中没有这个官能团，命名静默回落到更低优先级的母体。元组顺序不影响清单产出顺序（清单顺序随 `FG_SPECS`），仅为便于对照。
+臂词常量按需复用，不另起一份：`_ACID_O`、`_NOT_ACID`、`_NOT_ACYCLIC_ESTER`、`_NOT_HALO`、`_ONE_C`、`_RING_HET`、`_O_PHOS`、`_O_ARM`、`_HALO_ARM`、`_N_ARM`、`_C_ARM`、`_SNY_ARM`。同族按臂型各占一条：`_HALO_ARM` → 磺酰卤、`_N_ARM` → 磺酰胺、`_O_ARM` → 磺酸酯、`_O_PHOS + _O_ARM` → 硫酸酯。`_compile` 按键归并编译，无法解析的模式立即报错。
 
-加进去后条目由 `_fg_entry`（`analyzer.py:95`）统一产出：
+## 2 非局部归一：`analyzer` 的含氧酸管线
 
-```python
-{"center_idx": int, "surr_idx": [int, ...]}
-```
+需要看整分子环境的 FG 才走本段；不看环境的 FG 跳过。含氧酸中心（P/S 非碳骨架成键）共用一条管线：
 
-`surr_idx` 由 `_surr_idx`（`:89`）算：中心原子的全部重原子邻居；中心是**非环碳**时排除环内邻居（避免环上取代基被当成 FG 周边）。
+1. `_oxo_roles` 数中心邻居角色（双键氧 / 羟基氧 / 阴离子氧 / O-臂 / 碳 / 卤素 / 氮 / 硫）；
+2. `_oxo_kind` 查表归一 `oxo_kind`：P 走 `_OXO_KIND_P`（键为 `(双键氧数, 有无直连碳臂)`），S 走 `_OXO_KIND_S_ARM`（键为另一臂角色 `halo` / `n` / `acid` / `o_arm`，值即 kind）；
+3. `_oxoacid_entry` 组装条目，入口 `oxoacid_entries`。
 
-**需要非局部校验的 FG 不走这条路径**，而是在 `_detect_parts` 里显式加键做后置过滤。现有四条：
+两条分支决定条目形态：
 
-| FG 键 | 处理 | 原因 |
+| 分支 | 判据 | 条目键 |
 |---|---|---|
-| `radical`（`:174`） | `_radical_entry`（`:131`），并排除 acyl 头 | 酰基残基 R–C(=O)–\* 的羰基碳不算自由基中心 |
-| `aldehyde`（`:176`） | `_fg_entry`，并排除 acyl 头 | 同上，酰基头优先作 acyl |
-| `acyl`（`:170`） | `_fg_entry`，**须先于 aldehyde/radical 计算 heads** | 提供 heads 集合 |
-| `phosphate`（`:177`） | `phosphate_entries`（`:83`）→ `_phosphate_entry`（`:58`） | 需臂单点回接 + 整分子纯度校验（重原子 = core ∪ 臂，排除焦磷酸/臂间成环） |
+| 中心自任母体 | `oxo_kind in _OXO_Z_ANCHORED` | `oxo_z` / `center_idx`（= 中心）/ `oxo_kind` / `n_oh` / `n_om` |
+| 碳锚定 | 直连碳臂唯一（`len(c_roots) == 1`） | 同上，但 `center_idx` 取该碳，另带 `surr_idx`（只收阴离子氧，供 L2 补 anion 标志） |
 
-`phosphate` 是**唯一不用 `center_idx`/`surr_idx` 形态的类别**：条目为 `{"p_idx", "n_oh", "n_om"}`。对应的 `FgSpec.anchors` 写 `("p_idx",)`（`fg_registry.py:24`），特征原子另由 `FG_ATOM_FNS` 定义（§1.5）。
+中心自任母体另需 `_arm_single_attach` 单点回接校验与整分子纯度校验（重原子 = core ∪ 臂，排除臂间成环、焦磷酸）。
 
-契约：`_detect_parts` 的键集必须落在 `FG_SPECS` 的 `fg` 集合内（`tests/unit/test_architecture_contracts.py:154` 的 `test_unsaturation_stays_out_of_fg_channel`）。双键/三键不走 FG 通道，由 `_collect_fgs`（`analyzer.py:181`）写入 `double_bonds`/`triple_bonds`。
+`_OXO_KIND_S_ARM` 是「S 带直连碳臂时，另一臂角色 → kind」的对照表：
 
-### 1.5 特征原子（默认无需改动）
+| 臂角色键 | 判据 | kind |
+|---|---|---|
+| `halo` | 有卤素臂 | `sulfonyl_chloride` |
+| `n` | 有非环氮臂 | `sulfonamide` |
+| `acid` | 有酸式氧（OH / O⁻） | `sulfonic` |
+| `o_arm` | 有 O-R 臂 | `sulfonate` |
 
-`FunctionalGroupOccurrence.characteristic_atoms`（`functional_group_inventory.py:33`）默认取「`center_idx` ∪ `surr_idx`」（`center_surr_atoms`，`:78`）。thiol 无需额外配置。
+加同族成员时只在本表补一行，不新写检测器。`oxoacid_entries` 另做两项收尾：缩合磷酸（P-O-P）须链上留有全酸式末端才按功能母体识别；链内 P 让位于更少质子化的中心。
 
-**只有特征原子不在锚点邻域时**才在 `FG_ATOM_FNS`（`:87`）登记类别专属函数 `fn(mol, payload) -> set[int]`。现仅一条：`"phosphate": _phosphate_atoms`，把 P 中心与其全部 O 邻居（含 O–R 桥氧）并入特征原子。
+## 3 P-41 分类：`_OXO_CLASS_BY_KIND`
 
-### 1.6 P-41 组合 FG 仲裁（仅组合羰基 / 腈相关才需要）
+`oxoacid_lists` 用 `_OXO_CLASS_BY_KIND` 把条目归位到 FG 键：键存在即落该键，否则落 `oxoacid`。磺酰胺经 `_OXO_KIND_S_ARM["n"]` 得 kind `sulfonamide`，再由本表落 `"sulfonamide"`（与酰胺同属类 11）。新 kind 需要落别的类时改这张表。
 
-`_arbitrate_parts`（`analyzer.py:141`）的 parts dict **键是 FG 类别值**（`acid`/`ester`/`acyl_halide`/…），三张元素表也都是 FG 键：
+## 4 注册元数据
 
-- `_SUPPRESSIBLE`（`:136`）：可被更高优先级 FG 整体压制的组合 FG（acid/ester/acyl_halide/amide/nitrile/aldehyde）
-- `_PRESENCE_SKIP`（`:137`）：不参与存在性判定的 FG（phosphate——`p41` 与酯同为 9，纳入会改写压制结果）
-- `_LEAF_DEMOTED`（`:138`）：降级为「前缀叶」的 FG（acid → carboxy、nitrile → cyano，P-61.1.3）；叶条目留在清单中并置 `demoted=True`（`FunctionalGroupOccurrence.demoted`，`functional_group_inventory.py:36`），其中心碳由 `parent_skeleton._demoted_leaf_carbons`（`parent_skeleton.py:43`）排除出主链；其余组合 FG 整组清空、羰基碳留在链内作 oxo/formyl 前缀
+`layer1/fg_registry.FG_SPECS` 加一条 `FgSpec`，字段按源码共 7 个：
 
-present 集由 `p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}` 现算（`:143`），所以新 FG 只要 `p41 != 0` 就自动参与压制判定，无需登记。只有**新 FG 本身是「应被更高优先级 FG 压制的组合 FG」**时，才把它的 FG 键加进 `_SUPPRESSIBLE`（并按需加进 `_LEAF_DEMOTED`）。
+| 字段 | 填什么 |
+|---|---|
+| `fg` | FG 键 / 类别值，同时是 L1 条目键与 L4 位次记录的 kind |
+| `p41` | P-41 主官能团等级，`0` = 非主官能团；越小越优先 |
+| `path` | P-43 同类内路径，与 `p41` 合成 `PrincipalPriority` |
+| `expr` | 表达类型，取值见 `PrincipalExpression` |
+| `anchors` | payload 中承载母体连接原子的键；空 = 不收集 |
+| `parent_anchor_fields` | `(单, 复)` 锚点字段名，仅供固定 locant 1 的扁平字段 |
+| `locant_source` | `attachment` / `attachment_exocyclic` / `anchor_field` |
 
----
-
-## 步骤 2: Layer 2 — 母体接线
-
-### 2.1 优先级与 kind（无需改动）
-
-`PRINCIPAL_REGISTRY`（`principal.py:44`）由 `FG_SPECS` 派生：
+磺酸族与磺酰胺各一条：
 
 ```python
-PRINCIPAL_REGISTRY = {FG(sp.fg): _spec_from_fg(sp) for sp in FG_SPECS if sp.p41}
+FgSpec("oxoacid", p41=9, path=(0,), anchors=("center_idx",))
+FgSpec("sulfonamide", p41=11, path=(1,), anchors=("center_idx",))
 ```
 
-`select_principal_group`（`:60`）取 `PrincipalPriority`（`:17`，`(p41_class, p43_path)`，`order=True`）最小的类，低优先级 FG 一律成为取代基。**无互斥谓词**——互斥由「只选单个最高优先级类」这一结构性单选择实现，新增 FG 无需配置互斥 keys。
+`layer1/functional_group_inventory.FunctionalGroupClass` 加成员，值必须与 `FgSpec.fg`、`FG_SMARTS` 键逐字一致——`_ANCHOR_KEYS` 与 `_one` 都做 `FunctionalGroupClass(key)`，缺成员即失败。
 
-kind 由 `principal_expression._chain_kind`（`principal_expression.py:70`）返回 `FunctionalGroupClass.value`：
+`FG_ATOM_FNS` 只在特征原子不走「`center_idx` ∪ `surr_idx`」通用形态时登记：`oxoacid` 与 `sulfonamide` 共用 `_oxoacid_atoms`，即「锚点碳 + 中心 P/S + 中心的非碳非氢邻居」。
 
-- `NONE`（无 FG）在 count == 0 时返回 `"alkane"`，否则 `None`
-- `ACYL` 前支返回 `"acyl"`；`RADICAL` 返回 `"radical"`
-- 其余类别：count ≥ 1 即返回 `group_class.value`
+## 5 P-41 酸式漂移（可选）
 
-环骨架走 `_ring_kind`（`:169`）：scaffold 存在且主 FG 是注册类别时复用 `_chain_kind`；否则回落 `_resolved_ring_kind`（`:158`）——保留 scaffold 取其 `id`，碳环与未注册芳香稠环收敛 `"alkane"`，`benzene` 也收敛 `"alkane"`（苯环身份由 `scaffold_id` 承载）。
+该类可整体升为 P-41 类 7 竞争时，用 `fg_registry.oxoacid_is_acid` 判定：中心带 O⁻、或 `oxo_kind in OXO_ACID_KINDS`、或 `n_oh >= OXO_ACID_KIND_BY_H[oxo_kind]`。命中时 `layer2/principal._effective_priority` 换成 `PrincipalPriority(OXO_ACID_P41, path)`，`OXO_ACID_P41 = 8` 排在羧酸之后。三张表同在 `fg_registry`，按新 kind 补行即可。
 
-**因此新增 FG 不需要在 L2 写任何 kind 分派**：`FunctionalGroupClass` 成员一加，`_chain_kind` 就能为它产出 kind，L5 按该 kind 查 `_KIND_TABLE`。
+## 6 母体化接线（L2）
 
-### 2.2 数量与环外表达（由表驱动，无需改动代码）
+注册完成后 L2 自动接线，只有例外情形才动手：
 
-- **多重度**由 occurrence 个数承载（`PrincipalExpressionFacts.multiplicity`，`principal_expression.py:36`；L5 侧 `_parent_multiplicity`，`chain_engine.py:46` 读它）。多基后缀由 `_generated_mult_fields`（`chain_engine.py:247`）自动生成——**不要为多重度另造 kind**。
-- **环外主基**：若新 FG 能以环上附着方式作主基（`facts.relation == "exocyclic"`），在 `constants.EXO_RING_SUF`（`constants.py:161`）加一行 `group_class → (singular, plural)`；`chain_engine._exo_ring_spec`（`:298`）据此改写 spec 的词尾/词干/位次规则，六个环外类别（acid/aldehyde/ester/amide/nitrile/acyl）共用该管线。`plural=None` 表示该类无多取代系统名。
-- **保留 scaffold 单取代保留名**：苯环走 `_BENZENE_RETAINED`（`chain_engine.py:444`，消费点 `assembler._names_for:323`）；其他 scaffold 走 `_Chain.variant` 的 `{scaffold_id: {multiplicity: 覆盖字段}}`（`chain_engine.py:203`）。
+- `select_principal_group` 取 `PrincipalPriority` 最小的类别作主基团，低优先级 FG 一律成为取代基；互斥由「只选单个最高优先级类」这一结构实现，无需配置互斥键。
+- `express_chain_principal` / `express_ring_principal` 按骨架拓扑表达主基团；`_chain_kind` 给出 kind，含氧酸类取 `_oxo_kind_of`，要求该类全部 occurrence 的 `oxo_kind` 一致，不一致即该类不支持。
+- `_chain_oxoacid_fields` 写入 `oxo_kind` / `n_oh` / `n_om`；`oxo_kind in _OXO_Z_ANCHORED` 时另做盐门控（金属数与 `n_om` 匹配，门控不过返回 `None` 使候选作废），碳锚定类无门控。
+- `_facts` 汇总 `multiplicity` / `relation`（`in_skeleton` / `exocyclic`）/ `attachment_atoms` / `charge_state`。多重度由 occurrence 个数承载，不要另造 kind。
+- `assemble` 依次接 hydro 前缀、环内阳离子后缀、`join_kind_name`、阴离子、E/Z、R/S；R/S 的适用集为全部 `FunctionalGroupClass` 值，新 FG 自动纳入。
 
-### 2.3 ownership（无需改动）
-
-ownership 由 `parent_select._kind_fg_atoms`（`parent_select.py:63`）通用推导：
-
-1. 种子 = 主基团 occurrence 的 `parent_anchors` ∩ 骨架；
-2. 锚点全在骨架外时（苯甲酸的羧基）改取「与骨架相邻的锚点」；
-3. 把种子的、属于该 FG `characteristic_atoms` 的邻居并入。
-
-`finalize_parent_ownership`（`:83`）取「链 ∪ 上述原子」固化为不可变 `owned_atoms` frozenset，L3 据此划分母体与边界外的取代基。
-
-**含杂原子的 FG 通常无需改动**：thiol 的 S 是锚点碳（`surr_idx`）的邻居且属特征原子集，自动进入 `owned_atoms`。只有特征原子不在锚点邻域（phosphate 的 P）才需 §1.5 的 `FG_ATOM_FNS`。详见 [[concepts/atom-ownership]]。
-
-### 2.4 需要额外字段时的挂钩点
+例外挂钩点：
 
 | 需求 | 挂钩点 |
 |---|---|
-| 位次由「固定 locant 1」的扁平字段承载 | `_SEMANTIC_ANCHOR_FGS`（`principal_expression.py:54`）放行类别 + `_semantic_anchor_fields`（`:57`）写字段 + `FgSpec.parent_anchor_fields` |
-| L5 整名需要新的计数 / 盐元数据字段 | 在 `express_chain_principal`（`:408`）的 `kind ==` 分支加 producer，如 `_chain_phosphate_fields`（`:317`，含盐门控，门控不过返回 `None` 使候选作废） |
-| 主官能团降级 / 表达标志 | `_expression_flags`（`:88`）、`_charge_state`（`:95`） |
+| 位次由固定 locant 1 的扁平字段承载 | `_SEMANTIC_ANCHOR_FGS` / `_semantic_anchor_fields` 放行并写字段，配 `FgSpec.parent_anchor_fields` |
+| L5 整名需要新的计数或盐元数据 | `express_chain_principal` 中按 `kind` 加 producer |
+| 该 FG 整体被更高优先级类压制 | `analyzer._SUPPRESSIBLE`（组合 FG）/ `_LEAF_DEMOTED`（降为前缀叶） |
 
----
+## 7 命名
 
-## 步骤 3: Layer 3 — 取代基提取（该 FG 作前缀时）
+`layer5/chain_engine._KIND_TABLE` 注册该 kind 的 `_Chain` 条目。字段按源码列全：
 
-当新 FG 不是主官能团时，它会以取代基前缀出现。需要做的事只有一件：**登记保留取代名**。
-
-`tools/anchored_table.py` 的 `_REGISTRY`（`:24`）是保留名的注册表，条目为 `RetainedSubstituent`（`:16`，字段 `en`/`zh`/`anchored`/`paren`）。`anchored` 是 canonical SMILES 且以 `*` 哑原子标注连接点：
-
-```python
-"sulfanyl": RetainedSubstituent("sulfanyl", "巯基", anchored=("*S",)),   # anchored_table.py:61
+```text
+词形:   kind / en_suf / zh_suf / coda
+位次:   fg / need / no_loc / omit_rule / yl_loc_omit / zh_loc_omit / ene_loc_omit / yne_loc_omit
+不饱和: ene_seg / yne_seg / ene_base / yne_suf / unsat_polyol
+形态:   ez_ene / ez_ene_multi / wrap / cyclic / cyclic_unsat / aromatic / stem / zh_full
+保留名: plain_maps / plain_fn / plain_hook / variant
 ```
 
-- import 期 `_build_anchor_index`（`:109`）会核对 anchored 键的 canonical 形式并校验跨条目唯一性，**非 canonical 或重复键立即 `ValueError`**。
-- 查表入口 `anchored_lookup`（`:156`）；`_WHOLE_ONLY_KEYS`（`:145`，`*O`/`*[O]`/`*N`）中的单原子杂原子键只供整分子自由基命名，不参与取代基查表，避免游离 O/N 被误作侧链。
-- 前缀的括号规则由 `layer3/as_substituent` 与 `_obridge_front_simple` 判定，通常无需为单个 FG 配置。
-- 前缀的词序、倍增与位次由 `assembler_prefixes._prefix_for`（`assembler_prefixes.py:296`）/`_build_prefix`（`:279`）统一处理。
-- claim 槽位到取代基 kind 的映射在 `constants.CLAIM_KIND`（`constants.py:141`，3 键：`amine_n`/`ring_c`/`chain_c`），消费点 `layer3/substituent_extractor.py:14`；缺省槽位回落 `"side"`。新 FG 一般不涉及该表。
-
-验证示例：`CC(O)CS` → `1-sulfanylpropan-2-ol` / 1-巯基丙-2-醇（thiol 让位于 OH，走 `sulfanyl` 前缀）。
-
----
-
-## 步骤 4: Layer 4 — 编号 (Numbering) —— 通常无需改动
-
-`numbering_engine.orient_numbering`（`numbering_engine.py:325`）的 P-14.4 候选管线按 kind 无关的统一规则收窄：枚举候选编号 → 杂环/稠环定起点 → 逐条按 principal 附着原子最低位次集 → 多重键 → 取代基位次集 → 字母序 / CIP 破局。
-
-**新增 FG 无需注册 orienter**：收窄用的 principal 附着原子取自 `parent["principal_expression_facts"]`，只要 L2 正确写入 facts 就自动生效。
-
-FG 位次记录由 `locant_calc._fg_locants`（`locant_calc.py:148`）产出，记录为 `{kind, locants, omit}`，`kind` 即 FG 类别值；表 `_FG_LOCANTS`（`:146`）由 `FG_SPECS` 现算：
+磺酸的条目：
 
 ```python
-_FG_LOCANTS = tuple((sp.fg, sp) for sp in FG_SPECS if sp.fg is not None)   # locant_calc.py:146
+"sulfonic": _Chain(kind="sulfonic", en_suf="sulfonic acid", zh_suf="磺酸", coda="ane",
+                   fg="oxoacid", need=1, omit_rule=_omit_term_locant,
+                   ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent)
 ```
 
-取哪些原子由 `_locants_for`（`:138`）按 `FgSpec.locant_source` 决定（§1.3）。
+- `fg` 是**位次记录的 kind**（= `FgSpec.fg`），不一定是 `kind`：`sulfonic` 的 `fg` 填 `"oxoacid"`，因为 L1 条目键与 L4 记录键都是 `oxoacid`；`sulfonamide` 两者同名。
+- `need=1` + `omit_rule=_omit_term_locant` 让单取代短链省位次。
+- 多基后缀由 `_generated_mult_fields` 按 `facts.multiplicity` 自动生成，不要为多重度另造 kind。
 
-**唯一可能需要动的地方是位次省略**：`_omit_for`（`:115`）按 `_FG_GROUP`（`:112`，`{记录 kind → principal_expression_facts 类别}`）分派到 `omit_locants.omit_fg_locant`（`omit_locants.py:5`，判据为「环状单环且无取代 → 省；否则 `pos == 1 and n_carbons <= 2`」）。
+载荷字段的取值含义：
 
-```python
-_FG_GROUP = {"oh": "alcohol", "amine": "amine", "ketone": "ketone", "sh": "thiol"}   # locant_calc.py:112
-```
-
-**要为新 FG 开环单 FG / C1–C2 省略，就加一条：键 = `FgSpec.fg`（记录 kind），值 = `principal_expression_facts` 的类别名。** 未落入 `_FG_GROUP` 的 kind 恒返回 `omit=False`（L5 侧 `omit_rule` 仍兜底端位省略）。
-
----
-
-## 步骤 5: Layer 5 — 名称组装 (Name Assembly)
-
-### 5.1 在 `_KIND_TABLE` 加 `_Chain` spec（方式 A）
-
-`_KIND_TABLE`（`chain_engine.py:457`）现有 15 entry：alcohol / ketone / alkane / acid / sulfonic / ester / phosphate / acyl / thiol / amine / aldehyde / nitrile / amide / acyl_halide / radical。
-
-`_Chain`（`:174`）是声明式配置规格：`kind`/`en_suf`/`zh_suf`/`coda`，关键字段另有
-
-- `fg`——对应 `fg_locants` 记录的 kind，**必须等于 `FgSpec.fg`**；
-- `need`——FG 位次数要求（`need=1` 单 FG；多 FG 由数量机制生成）；
-- `no_loc`——`"plain"`（无位次输出普通名）/ `"none"`（返回 None，如 ketone）；
-- `omit_rule`——`(n, loc, omit) -> bool`，True 表示省略位次；
-- `unsat_polyol`——多 FG 词干支持烯/炔插入；`ene_seg`/`yne_seg`/`ene_base`/`yne_suf`——不饱和段形态；
-- `variant`——`{scaffold_id: {multiplicity: 覆盖字段}}`；`plain_maps`/`plain_fn`——俗名/保留名；`wrap`——整体包裹（E/Z）；`plain_hook`——词尾由分子计数直接决定（磷酸）。
-
-thiol 的 spec（`:496`）：
-
-```python
-"thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
-                fg="thiol", need=1, omit_rule=_omit_term_locant,
-                ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                zh_full=True, unsat_polyol=True,
-                ene_seg=("ene", "烯"), yne_seg=("yne", "炔")),
-```
-
-- `coda="ane"` + `en_suf="thiol"` → 词干 `ethan` + `e` 省略（`_elide_parent_e`，`:224`）+ `thiol` = `ethanethiol`；
-- `need=1` + `omit_rule=_omit_term_locant`（`:8`，`omit or loc is None or (loc == 1 and n <= 2)`）→ `CCS` 出 `ethanethiol`，不出 `ethane-1-thiol`；
-- `unsat_polyol=True` + `ene_seg=("ene", "烯")` → 不饱和链走段式引擎（`_chain_enyne`，`:121`）。
-
-`_chain_names`（`:328`）统一渲染词干、位次与省略规则；**新增此类 FG 通常只需一条 spec，不动派发逻辑**。环式 FG 复用同一 entry：`_names_for`（`assembler.py:315`）在 parent 带 `stem_en`/`stem_zh` 时注入 `stem=(...)` 并把 `coda` 置空，环词干由 `kind_registry.pack_parent_stem`（`kind_registry.py:58`）在 L2 `_finalize_ranked`（`parent_select.py:118`）阶段写入。
-
-C1/C2 英文保留名放 `constants.CHAIN_RETAINED`（`constants.py:178`）；scaffold 专属保留名放 `_Chain.variant`（苯环单取代另见 `_BENZENE_RETAINED`，`chain_engine.py:444`）。
-
-### 5.2 特殊拼接才改 `_names_for`（方式 B）
-
-`_names_for`（`assembler.py:301`）当前只有 3 个分支：
-
-| 行 | 分支 |
+| 字段 | 取值 / 作用 |
 |---|---|
-| `:304` | `kind == "radical"` 且 parent 带 `radical_anchor_element` → `_mononuclear_radical_names`（`:190`，杂原子锚点母体自由基，P 的词干按 =O 数改写） |
-| `:307` | `kind == "acyl_halide"` 时按 `parent.hal_z` 换成对应卤素的 spec（`_ACYL_HALIDE_BY_HAL`，`chain_engine.py:418`） |
-| `:306`–`:330` | 其余一律查 `_KIND_TABLE`（`:306`），命中即交 `_chain_names` 并返回；未命中回落 `_parent_stem_names`（`:332`） |
+| `coda` | 饱和词干与后缀之间的词尾，`"ane"` 配元音开头的后缀时省 `e` |
+| `no_loc` | `"plain"` 出普通名；`"none"` 位次记录缺失即返回 `None` |
+| `omit_rule` | `(n, loc, omit) -> bool`，`True` 表示省略位次 |
+| `plain_hook` | `(numbered) -> pair`，词尾由分子计数直接决定，不查碳数词表 |
+| `variant` | `{scaffold_id: {multiplicity: 覆盖字段}}`，键 `None` 覆盖无 scaffold 情形 |
+| `plain_maps` / `plain_fn` | 俗名表 / 派生命名，二者皆空时回落词干拼接 |
+| `ene_base` / `yne_suf` | 融合式烯/炔基座；`ene_seg` / `yne_seg` 为段式段形 |
+| `unsat_polyol` | 多 FG 词干支持烯/炔插入（多醇/多硫醇） |
+| `cyclic` / `cyclic_unsat` | 恒加环前缀 / 仅在不饱和段上加环 |
+| `wrap` | `(pair, numbered) -> pair`，整体包裹（E/Z） |
 
-**整名组装不在 `_names_for` 分派，而在 `join_kind_name`（`assembler.py:427`）**：`kind in ESTER_O_SIDE_KINDS`（`constants.py:143`，ester/phosphate）时走 O-侧臂拼接（`join_ester_name` / `join_phosphate_name`，`:279`）。磷酸的母体词尾仍由 `_KIND_TABLE["phosphate"]` 的 `plain_hook=_phosphate_tail`（`chain_engine.py:428`）产出，O-侧烷氧臂在拼装期并入。
+其余词尾落点：
 
-### 5.3 接线到组装流水线（无需改动）
-
-`assemble`（`assembler.py:500`）统一完成后续变换，无需为单个 FG 手动接线：
-
-| 行 | 变换 |
+| 场景 | 落点 |
 |---|---|
-| `:511` | `join_hydro_prefix`——hydro 与指示氢前缀 |
-| `:512` | `join_ring_cation_suffix`——环内 N⁺/O⁺ 的 `-ium` |
-| `:514` | `join_kind_name`——前缀 / 酯 / 磷酸拼接 |
-| `:518` | `join_anion_names`——阴离子 |
-| `:519` | `join_ez_prefix`——母体外挂双键 E/Z |
-| `:520` | `join_rs_prefix`——R/S（`stereo._RS_KINDS`，`stereo.py:141` = 全部 `FunctionalGroupClass` 值 + `alkane`，新 FG 自动纳入） |
+| 中心自任母体的词尾 | `_OXO_TAIL`，键为 `(oxo_kind, 中心酸式氢数)`，由 `plain_hook=_oxoacid_tail` 消费；碳锚定族不查此表 |
+| 苯环单取代保留名 | `_BENZENE_RETAINED`（`sulfonic` → benzenesulfonic acid / 苯磺酸） |
+| 其他 scaffold 单取代保留名 | `_Chain.variant` 的 `{scaffold_id: {multiplicity: 覆盖字段}}` |
+| 环外主基系统名 | `constants.EXO_RING_SUF` 加 `group_class → (单, 复)`；由 `_exo_ring_spec` 改写词尾/词干/位次 |
+| 作取代基前缀时的保留名 | `src/namepredict/tools/anchored_table._REGISTRY` 加 `RetainedSubstituent`（如 `sulfo` / `sulfonato`），`anchored` 用带 `*` 的 canonical SMILES |
 
-若新 FG 自行组装盐形态，需在 `namer._apply_salt_suffix`（`namer.py:172`）加跳过条件（现按 `result.meta["parent_kind"] == "phosphate"` 跳过，`:176`）。
+## 8 原子归属
 
----
+| 条件 | 落点 |
+|---|---|
+| 特征原子跨两跳，或中心不是碳骨架成员 | `layer2/parent_select._WHOLE_FG_ATOMS` 加该 FG 类别（现有 `OXOACID`、`SULFONAMIDE`）；命中后 `_kind_fg_atoms` 按 `covered_principal_ids` 整组纳入特征原子 |
+| 中心自任母体、臂应退为取代基 | `constants.OXO_CENTER_KINDS` 加该 kind（`phosphate` / `phosphonate` / `sulfate`）；`finalize_parent_ownership` 随即把 `owned_atoms` 取成纯 FG 原子，链仅供编号 |
 
-## 测试
+碳锚定的 `sulfonic` 不入 `OXO_CENTER_KINDS`。
 
-新增 FG 至少覆盖四类用例，双语（en/zh）都要断言：
+## 9 自动跟进的派生表
 
-1. **简单 FG 作母体**：`CCS` → `ethanethiol` / 乙硫醇
-2. **不同链长 / 不饱和**：`CCCS`、`C=CCS` 等，验证词干、位次与段式不饱和
-3. **FG 作取代基**：与更高优先级 FG 共存，如 `CC(O)CS` → `1-sulfanylpropan-2-ol`
-4. **与其他取代基共存**：叠加 alkyl / halogen，验证编号与位次
-5. **契约测试**：`tests/unit/test_architecture_contracts.py:154` 会校验 `_detect_parts` 键集 ⊆ `FG_SPECS` 的 `fg` 集；`tests/unit/test_coverage_ledger.py` 校验无 gap / 无 overlap——新增 FG 不应改写已有 FG 的命名结果
+以下由注册表投影，无需手改：
 
-按主题落 `tests/unit/`（现例 `test_ether_sulfide.py` 覆盖 thiol/ether 负例）。pytest 用并行运行，benchmark 全量耗时较长，不要反复跑。
+- `layer1/functional_group_inventory` 的清单键 `_FG_KEYS` 与 `_ANCHOR_KEYS` ← `FG_SPECS`；
+- `layer2/principal.PRINCIPAL_REGISTRY` ← `p41 != 0` 的 `FgSpec`；
+- L4 `layer4/locant_calc._FG_LOCANTS` ← `FG_SPECS`；
+- 母体 kind 由 `principal_expression._chain_kind` 按 FG 类别现算，含氧酸类取自 L1 的 `oxo_kind`。
 
----
+## 改动点 → 文件 → 是否派生
 
-## 需修改文件汇总表
-
-| Layer | 文件 | 函数 / 表（锚点） | 添加内容 |
-|:---:|---|---|---|
-| L1 | `layer1/fg_local_smarts.py` | `FG_SMARTS`（`:26`） | `(FG 键, SMARTS)` 表项；首原子 = 中心原子，同名多条取并集 |
-| L1 | `layer1/functional_group_inventory.py` | `FunctionalGroupClass`（`:10`） | 枚举成员，值 = FG 键（缺则 import / 构建期 `ValueError`） |
-| L1 | `layer1/fg_registry.py` | `FG_SPECS`（`:20`） | `FgSpec`（7 字段：`fg`/`p41`/`path`/`expr`/`anchors`/`parent_anchor_fields`/`locant_source`） |
-| L1 | `layer1/analyzer.py` | `_LOCAL_ENTRY_FGS`（`:157`） | FG 键（走通用 `center_idx`/`surr_idx` 条目路径时**必须**加） |
-| L1 | `layer1/analyzer.py` | `_detect_parts`（`:167`） | **仅非局部判据**：显式条目键 + 后置过滤函数 |
-| L1 | `layer1/functional_group_inventory.py` | `FG_ATOM_FNS`（`:87`） | 仅当特征原子非「`center_idx` ∪ `surr_idx`」（现例 `_phosphate_atoms`，`:72`） |
-| L1 | `layer1/analyzer.py` | `_SUPPRESSIBLE`（`:136`）/ `_LEAF_DEMOTED`（`:138`） | 仅当新 FG 是应被更高优先级 FG 压制的组合 FG |
-| L2 | — | `PRINCIPAL_REGISTRY`（`principal.py:44`）、`_chain_kind`（`principal_expression.py:70`） | **无需改动**（由 `FG_SPECS` + `FunctionalGroupClass` 现算） |
-| L2 | `layer2/parent_select.py` | `_kind_fg_atoms`（`:63`） | **无需改动**（锚点邻域自动收敛；特征原子不在邻域时改走 `FG_ATOM_FNS`） |
-| L2 | `layer2/principal_expression.py` | `_chain_phosphate_fields`（`:317`）等 kind 分支 | 仅当 L5 整名需要新计数 / 盐元数据字段 |
-| L2 | `layer2/principal_expression.py` | `_SEMANTIC_ANCHOR_FGS`（`:54`） | 仅当位次由固定 locant 1 的扁平字段承载 |
-| L2 | `layer2/kind_registry.py` | — | **无需改动**（只注册 scaffold 词干，FG 主基团等级不存于此） |
-| L3 | `tools/anchored_table.py` | `_REGISTRY`（`:24`） | `RetainedSubstituent`（保留取代名 + `anchored` 锚定键 + `paren`） |
-| L3 | `layer3/as_substituent.py` | — | **无需改动**（括号规则自动判定） |
-| L4 | `layer4/locant_calc.py` | `_FG_LOCANTS`（`:146`）/ `_locants_for`（`:138`） | **无需改动**（由 `FG_SPECS` 现算） |
-| L4 | `layer4/locant_calc.py` | `_FG_GROUP`（`:112`） | 位次省略需登记「记录 kind → facts 类别」（键用 FG 类别值） |
-| L5 | `layer5/chain_engine.py` | `_KIND_TABLE`（`:457`） | `_Chain` spec（`fg` 必须 = `FgSpec.fg`） |
-| L5 | `layer5/chain_engine.py` | `_BENZENE_RETAINED`（`:444`）/ `_Chain.variant` | 保留 scaffold 单取代保留名（如需） |
-| L5 | `constants.py` | `EXO_RING_SUF`（`:161`） | 环外主基系统名后缀行（如需） |
-| L5 | `constants.py` | `CHAIN_RETAINED`（`:178`） | C1/C2 英文保留名（如需） |
-| L5 | `layer5/assembler.py` | `_names_for`（`:301`） | worker 分支（仅特殊拼接；整名拼接在 `join_kind_name`，`:427`） |
-| Namer | `namer.py` | `_apply_salt_suffix`（`:172`） | 自行组装盐形态时的跳过条件（如需） |
-
----
+| 改动点 | 文件 | 派生自动 |
+|---|---|---|
+| `FG_SMARTS` | `layer1/fg_local_smarts.py` | 手动 |
+| `_OXO_KIND_S_ARM` / `_OXO_CLASS_BY_KIND` | `layer1/analyzer.py` | 手动（仅含氧酸族） |
+| `FG_SPECS` | `layer1/fg_registry.py` | 手动 |
+| `FunctionalGroupClass` / `FG_ATOM_FNS` | `layer1/functional_group_inventory.py` | 手动 |
+| 清单键 / `_ANCHOR_KEYS` | `layer1/functional_group_inventory.py` | 派生 |
+| `_WHOLE_FG_ATOMS` | `layer2/parent_select.py` | 手动（仅跨跳特征原子） |
+| `PRINCIPAL_REGISTRY` / kind | `layer2/principal.py`、`principal_expression.py` | 派生 |
+| `OXO_CENTER_KINDS` / `EXO_RING_SUF` | `constants.py` | 手动（仅中心母体 / 环外表达） |
+| `_KIND_TABLE` / `_OXO_TAIL` / `_BENZENE_RETAINED` | `layer5/chain_engine.py` | 手动 |
+| `_FG_LOCANTS` | `layer4/locant_calc.py` | 派生 |
+| `_FG_GROUP` | `layer4/locant_calc.py` | 手动（仅位次省略特例） |
+| `_REGISTRY` | `src/namepredict/tools/anchored_table.py` | 手动（仅作取代基前缀时） |
 
 ## 常见陷阱
 
-1. **漏登记 `_LOCAL_ENTRY_FGS`**：`FG_SMARTS` + `FG_SPECS` + 枚举都加了，但没把 FG 键加进 `_LOCAL_ENTRY_FGS`（`analyzer.py:157`）→ `_detect_parts` 不产出该键 → 清单里零 occurrence → L2 视同无此 FG，命名静默回落到更低优先级母体（常表现为纯烃兜底名），且无任何报错。
-2. **四处命名不一致**：`FG_SMARTS` 键、`FgSpec.fg`、`FunctionalGroupClass` 值、`_Chain.fg` 必须同字。L4 按 `sp.fg` 记 kind（`locant_calc.py:146`），L5 按 `_Chain.fg` 查记录（`chain_engine._fg_locant`，`:56`）——不一致则位次丢失，或 `no_loc="none"` 时直接返回 None 使候选作废。
-3. **`anchors` 取错键**：`anchors` 决定 `parent_anchors`，进而决定 ownership 种子（`parent_select.py:63`）与 L4 附着位次（`_locants_for`）。中心原子即连接原子用 `center_idx`，连接原子在中心周边（醇/硫醇/胺）用 `surr_idx`。取错会让特征原子进不了 `owned_atoms`，被 L3 当成边界外的取代基碎片。
-4. **`p41` / `path` 设错**：`p41` 越小优先级越高，`0` = 不作主官能团（`PRINCIPAL_REGISTRY` 与 `_arbitrate_parts` 的 p41 表都不收 0）。同类内用 `path` 排序（alcohol `(1,)` 压 thiol `(2,)`）。`expr` 只有 `"suffix"` 一个合法值（`PrincipalExpression`，`principal.py:23`），写别的值 import 期 `ValueError`。
-5. **只注册 L5 不算接线**：`_KIND_TABLE["sulfonic"]`（`chain_engine.py:479`）与 `_BENZENE_RETAINED["sulfonic"]`（`:449`）都是惰性条目——没有 `FunctionalGroupClass` 成员、也没有 L2 生产者能产出 kind `sulfonic`，该 entry 永不被查到。**只加 L5 entry 不会带来任何命名能力**；顺序必须是 L1 检测 → L1 登记 → L2 自动收敛 → L5 spec。
-6. **不要为数量造 kind**：多重度由 `facts.multiplicity` 承载（§2.2），`_generated_mult_fields`（`chain_engine.py:247`）自动生成数量后缀。注册 `dithiol`/`trithiol` 之类的新 kind 不会有任何调用方。
-7. **位次省略的键名**：`_FG_GROUP`（`locant_calc.py:112`）的键是**记录 kind**（= `FgSpec.fg` = FG 类别值），值才是 `principal_expression_facts` 的类别名。用 `FgSpec` 里不存在的字段名作键，省略规则永远不会命中。
-8. **特征原子非通用形态时漏改 `FG_ATOM_FNS`**：中心原子不在锚点邻域（如磷酸的 P）会被 L3 当成边界外碎片，母体名缺该原子、碎片被误命名。
-9. **`_SUPPRESSIBLE` 键必须真实存在**：`_arbitrate_parts`（`analyzer.py:148`）做 `out[fg]`，登记了 `_detect_parts` 不产出的键会直接 `KeyError`。
-10. **整名 worker 与盐后缀重复**：自行组装盐形态的 FG 必须同时在 `namer._apply_salt_suffix`（`namer.py:172`）跳过通用盐后缀，否则金属盐叠加两次。
-11. **中文命名约定**：中文词干须遵循中国化学会命名原则（CCS）；双语输出一律同时验证。
+1. **漏注册 `FgSpec`**：清单键集与 `_ANCHOR_KEYS` 都来自 `FG_SPECS`，该类在 inventory 中不可见，下游整链静默断掉。
+2. **`p41` 填错**：主基团胜负被静默改写，波及已能命名的分子。同类内用 `path` 排先后（`sulfonamide` 的 `path=(1,)` 排在 `amide` 之后）。
+3. **特征原子范围决定 L3 提取边界**：范围过宽会把本该作取代基的碳抢走。`_oxoacid_atoms` 只收中心的非碳非氢邻居与锚点碳，碳臂留给链/取代基侧。
+4. **`_KIND_TABLE` 与 `_OXO_TAIL` 分离**：前者给该 kind 的基底词形（碳链母体），后者给中心母体按酸式氢数查的词尾。
+5. **`_Chain.fg` 不等于 `_Chain.kind`**：`fg` 必须等于 `FgSpec.fg`（位次记录 kind），`sulfonic` 即反例。
+6. **环形 / 无环、取代式 / 保留名的分叉要同时覆盖**：保留名走 `variant` 与 `_BENZENE_RETAINED`，环外表达走 `EXO_RING_SUF`，位次省略走 `_FG_GROUP`。
+7. **派生表不要手写**：清单键、`_ANCHOR_KEYS`、`PRINCIPAL_REGISTRY`、kind、`_FG_LOCANTS` 都由注册表投影，另立一份会与注册表脱节。
 
----
+## 验证
 
-## 相关页面
+1. 简单 FG 作母体：最短链、不同链长各一条，断言词干与位次省略；
+2. 不饱和链：验证段式引擎的烯/炔段形态；
+3. 与更高优先级 FG 共存：确认本 FG 退为取代基前缀；
+4. 与其他取代基叠加：验证编号与位次；
+5. 环骨架与环外表达各一条，确认保留名与 `EXO_RING_SUF` 分支被走到。
 
-- [[architecture/layer1-analyzer]] -- Layer 1 官能团检测（`FG_SMARTS` 表 + 清单构建）
-- [[architecture/layer2-parent-selector]] -- Layer 2 母体选择与主基团接线
-- [[architecture/layer3-substituents]] -- Layer 3 取代基提取与锚定表
-- [[architecture/layer4-numbering]] -- Layer 4 编号引擎与位次记录
-- [[architecture/layer5-name-assembly]] -- Layer 5 链引擎与名称组装
-- [[architecture/overview]] -- 6 层管线架构总览
-- [[concepts/functional-group-priority]] -- FG 优先级体系（`p41` / `path`）
-- [[concepts/atom-ownership]] -- 母体所有权（`owned_atoms`）
-- [[reference/core-data-contracts]] -- info dict / parent dict 字段契约
-- [[guides/adding-new-ring-system]] -- 添加新环系（骨架扩展指南）
+双语（en / zh）都要断言，用例按主题落 `tests/unit/`。pytest 并行运行；`tests/unit/test_architecture_contracts.py` 校验 `_detect_parts` 键集不越出 `FG_SPECS` 的 `fg` 集。
+
+## 对照示例：中心自任母体（`phosphate`）
+
+与碳锚定路径的三点差异：
+
+- `_oxoacid_entry` 走 `_OXO_Z_ANCHORED` 分支：`center_idx` 即中心原子，臂须单点回接并通过整分子纯度校验，条目不带 `surr_idx`；
+- `owned_atoms` 只取 FG 特征原子（`finalize_parent_ownership` 依 `OXO_CENTER_KINDS` 判定），链仅供编号，臂一律退为取代基；
+- 词尾走 `plain_hook=_oxoacid_tail` + `_OXO_TAIL`，按 `(oxo_kind, n_oh)` 出 phosphoric acid / dihydrogen phosphate 等，O 侧臂由 `join_kind_name` 按 `ESTER_O_SIDE_KINDS` 拼接。
+
+中心 kind 归入 `constants.OXO_CENTER_KINDS` 后，`namer._apply_salt_suffix` 自动跳过通用盐后缀，盐形态由该类自行组装。

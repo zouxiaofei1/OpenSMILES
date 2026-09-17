@@ -164,7 +164,7 @@ SIMPLE_BRIDGE_YL_NO_PAREN = frozenset(f"phenyl{s}" for s in DIATOMIC_BRIDGE_YL) 
 BRIDGE_FUSION_YL: dict[tuple[str, str], tuple[tuple[str, ...], str, str]] = {
     # (中心单核氢化物词干, 前端名尾 en) → (前端名尾 zh 候选, 合一前缀 en, 合一前缀 zh)
     ("azane", "imino"): (("亚氨基",), "diazenyl", "二氮烯基"),            # P-68.3.1.3：diazenyl 名优先于 azo 名
-    ("sulfane", "sulfanyl"): (("硫基", "巯基"), "disulfanyl", "二硫代基"),  # P-68.3.1.4：-S-S- 的保留前缀
+    ("sulfane", "sulfanyl"): (("硫基",), "disulfanyl", "二硫代基"),  # P-68.3.1.4：-S-S- 的保留前缀
 }
 BRIDGE_DIATOMIC_ZH = tuple(v[2] for v in BRIDGE_FUSION_YL.values())  # 双原子桥合一前缀的中文名尾
 # 可拆桥后缀（含双原子桥）：前端复合时前端加围栏、桥留括号外

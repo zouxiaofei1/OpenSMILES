@@ -1,226 +1,146 @@
-# 官能团优先层级 (Functional Group Priority Hierarchy)
-
-> **核心概念** | 关联: [[architecture/overview]], [[architecture/layer1-analyzer]], [[architecture/layer2-parent-selector]], [[architecture/layer4-numbering]], [[architecture/layer5-name-assembly]], [[concepts/atom-ownership]]
-
----
-
-## 概述
-
-IUPAC 有机命名中，一个分子可能同时含有多种官能团（Functional Group, FG），例如羟基酸（含 -COOH 和 -OH）、氨基酮（含 -NH&#8322; 和 >C=O）、氰基酯（含 -CN 和 -COOR）等。按照 IUPAC P-41 规则，这些官能团之间存在严格的**优先顺序**：优先级最高的官能团成为 **principal characteristic group（主特征基团）**，以母体后缀（suffix）表达；较低优先级的官能团退化为取代基前缀（prefix）。
-
-NamePredict 把这一优先级体系的**单一事实来源放在 `fg_registry.FG_SPECS`**（`fg_registry.py:20`，13 条 `FgSpec`）的 `p41` / `path` 两个字段上。`FgSpec`（`fg_registry.py:10`）共 7 个字段（`fg` / `p41` / `path` / `expr` / `anchors` / `parent_anchor_fields` / `locant_source`）。下游不另设派生副本，各自**从 `FG_SPECS` 现算**：
-
-| 下游表 | 位置 | 内容 |
-|---|---|---|
-| `PRINCIPAL_REGISTRY` | `layer2/principal.py:44` | 主基团等级表（取 `sp.p41` 非 0 的条目，13 条） |
-| `_FG_LOCANTS` | `layer4/locant_calc.py:146` | FG 位次表（`(sp.fg, sp)` 全量投影） |
-| `_RS_KINDS` | `layer5/stereo.py:141` | `frozenset(c.value for c in FunctionalGroupClass)`，全量类别枚举 |
-| `_FG_KEYS` / `_ANCHOR_KEYS` | `layer1/functional_group_inventory.py:52` / `:54` | L1 occurrence 产出顺序与锚点 key |
-
-`p41` / `path` 随后在三层接力：**L1 用 `p41` 做压制仲裁 → L2 用 `p41`/`path` 选主基团并收敛骨架 → L5 按 FG 类别 kind 分派后缀**。
-
-```mermaid
-flowchart TD
-    SPEC["fg_registry.FG_SPECS:20<br/>13 条 FgSpec（7 字段）<br/>p41 / path 单一权威"]
-    SMARTS["fg_local_smarts.FG_SMARTS:26<br/>17 条 SMARTS 覆盖 13 类<br/>match_local_fg:68"]
-    SM["FunctionalGroupClass 枚举值<br/>= parts 键 = FgSpec.fg = kind"]
-    ARB["analyzer._arbitrate_parts:141<br/>p41 现算:143 / _SUPPRESSIBLE:136<br/>_LEAF_DEMOTED:138 标 demoted"]
-    INV["build_inventory:114<br/>FunctionalGroupInventory<br/>13 实类 + NONE"]
-    REG["principal.PRINCIPAL_REGISTRY:44<br/>PrincipalPriority:17 (p41, path)"]
-    SEL["select_principal_group:60<br/>剔 demoted:65 → min(priority):67"]
-    SKEL["parent_skeleton.select_principal_skeletons:215<br/>覆盖度:178 → P-44.1.2:131 → P-44.3:149/P-44.2:171 → P-44.4:209"]
-    KIND["principal_expression._chain_kind:70 / _ring_kind:169<br/>kind = group_class.value，数量走 multiplicity:33"]
-    ORDER["parent_select._p45_2_prefix_count:97<br/>P-45.2.1 降序重排:104 → 并列组:128"]
-    L5["assembler._names_for:301<br/>chain_engine._KIND_TABLE:457（15 entry）"]
-    SPEC --> ARB
-    SPEC --> REG
-    SMARTS --> ARB
-    SM --> ARB
-    ARB --> INV
-    INV --> SEL
-    REG --> SEL
-    SEL --> SKEL
-    SKEL --> KIND
-    KIND --> ORDER
-    ORDER --> L5
-```
+# 官能团优先级体系 (Functional Group Priority)
+
+本文说明 NamePredict 中官能团优先级的声明处、跨层流转路径与仲裁规则。优先级数据以 `src/namepredict/layer1/fg_registry.py` 为唯一事实来源，L2 与 L5 只消费、不重新登记。
+
+## 优先级从哪来
+
+`fg_registry.FG_SPECS` 是全部官能团类别元数据的唯一声明处，每个条目是一个冻结 dataclass `FgSpec`。它的字段含义如下。
+
+| 字段 | 含义 |
+| --- | --- |
+| `fg` | 官能团类别字符串（`FunctionalGroupClass` 值），同时用作 L1 analyzer 的列表 key |
+| `p41` | P-41 表 4.1 的主官能团类号，`0` 表示不作主官能团 |
+| `path` | P-43 优先级路径，用于同类号内部再排序 |
+| `expr` | 表达类型（`suffix` / `prefix_only` / `legacy_compat`） |
+| `anchors` | occurrence payload 中的锚点 key，空表示不收集锚点 |
+| `parent_anchor_fields` | 母体锚点字段名（单数, 复数） |
+| `locant_source` | 位次原子来源：`attachment` / `attachment_exocyclic` / `anchor_field` |
 
----
+`FG_SPECS` 的全部条目及其 `p41` 如下。
 
-## 官能团优先级表（`FgSpec.p41` / `FgSpec.path`）
+| 顺序 | `fg` | `p41` | `path` | 备注 |
+| --- | --- | --- | --- | --- |
+| 1 | `radical` | 1 | `()` | 自由基，与酰基同级 |
+| 2 | `acyl` | 1 | `()` | |
+| 3 | `acid` | 7 | `(1,)` | 羧酸 |
+| 4 | `oxoacid` | 9 | `(0,)` | 含氧酸中心 P/S 合一类，`oxo_kind` 由 L1 payload 归一 |
+| 5 | `sulfonamide` | 11 | `(1,)` | P-41 类 11，与酰胺同组、排在酰胺之后 |
+| 6 | `ester` | 9 | `()` | 环外附着取位次 |
+| 7 | `acyl_halide` | 10 | `()` | |
+| 8 | `amide` | 11 | `()` | 环外附着取位次 |
+| 9 | `nitrile` | 14 | `()` | |
+| 10 | `aldehyde` | 15 | `()` | |
+| 11 | `ketone` | 16 | `()` | |
+| 12 | `alcohol` | 17 | `(1,)` | |
+| 13 | `thiol` | 17 | `(2,)` | 与醇同类号，路径靠后 |
+| 14 | `amine` | 19 | `()` | |
 
-**`p41` 数值越小优先级越高**（`select_principal_group` 取 `min`），`path` 为同 `p41` 类内的 P-43 决胜键。表格依据 `src/namepredict/layer1/fg_registry.py` 的 `FG_SPECS`（`fg_registry.py:20`）逐条生成，后缀列对应 L5 `chain_engine._KIND_TABLE`（`chain_engine.py:457`）同名 entry。
+类号越小越优先。`layer2/principal.PRINCIPAL_REGISTRY` 由 `FG_SPECS` 中 `p41` 非零的条目派生，经 `_spec_from_fg` 转成 `PrincipalFeatureSpec(PrincipalPriority(p41, path), expr, parent_anchor_fields)`。`PrincipalPriority` 是 `order=True` 的冻结 dataclass，字段为 `p41_class` 与 `p43_path`，因此可直接比较：先比类号，再按路径逐项比较。`select_principal_group` 用 `min(..., key=...)` 取出最小者，即优先级最高的类，再取该类全部 occurrence。
 
-| `p41` | `path` | FG 类别（= parts 键 = kind） | 后缀（EN / ZH） | `_KIND_TABLE` | 说明 |
-|:---:|:---:|---|---|:---:|---|
-| **1** | `()` | `radical` | `-yl` / `-基` | `:524` | 自由价（P-29/P-31）；`yl_loc_omit` + 自定义 `omit_rule` 使饱和无环链 C-1 自由价位次省略 |
-| **1** | `()` | `acyl` | `-oyl` / `-酰基` | `:490` | 锚定酰基残基（P-65.1.7.2）；酸碳恒 locant 1，C1/C2 走 `constants.CHAIN_RETAINED` 保留名 |
-| **7** | `(1,)` | `acid` | `-oic acid` / `-酸` | `:471` | 羧酸；`_LEAF_DEMOTED` 成员，被压制时保留条目并标 `demoted` |
-| **9** | `()` | `ester` | `-oate` / `-酸酯` | `:480` | 羧酸酯；与 `phosphate` 同 `p41=9`，`path=()` 使其胜出（P-43） |
-| **9** | `(1,)` | `phosphate` | `-phosphate` / `-磷酸` | `:488` | P 中心无碳词干，词尾由 `plain_hook=_phosphate_tail` 按 `n_oh` 切换；L1 `_PRESENCE_SKIP` 把它排除出压制存在性判定 |
-| **10** | `()` | `acyl_halide` | `-oyl fluoride/chloride/bromide/iodide` / `-酰氟/酰氯/酰溴/酰碘` | `:523` | 后缀随实际卤素：`_ACYL_HALIDE_BY_HAL`（`:418`，`_ac_hal_chain`:402 生成）按 `parent.hal_z` 覆盖默认 chloride（P-65.5） |
-| **11** | `()` | `amide` | `-amide` / `-酰胺` | `:515` | 酰胺 |
-| **14** | `()` | `nitrile` | `-nitrile` / `-腈` | `:510` | C&#8801;N；`_LEAF_DEMOTED` 成员 |
-| **15** | `()` | `aldehyde` | `-al` / `-醛` | `:505` | 醛基；环骨架另有 `_ring_kind`（`principal_expression.py:179`）显式分支放行多 -CHO（P-66.6.1.1.3） |
-| **16** | `()` | `ketone` | `-one` / `-酮` | `:462` | 羰基；含环内单碳/零碳羰基（内酰胺/内酯/硫代内酯、N-酰基环胺），由 `FG_SMARTS` 三条 ketone 分支承担 |
-| **17** | `(1,)` | `alcohol` | `-ol` / `-醇` | `:458` | 羟基；与 `thiol` 同 `p41=17`，`path=(1,)` 使其胜出（P-43） |
-| **17** | `(2,)` | `thiol` | `-thiol` / `-硫醇` | `:496` | 巯基 |
-| **19** | `()` | `amine` | `-amine` / `-胺` | `:501` | 氨基；多臂锚点语义见 P-62.2（`_chain_coverage`，`parent_skeleton.py:69`） |
+路径只在同类号内部起作用。`alcohol` 与 `thiol` 同为类 17，靠 `path` 分出先后：醇是 `(1,)`、硫醇是 `(2,)`，因此羟基优先作后缀，巯基让位。`acid` 的 `p41=7` 与 `path=(1,)` 使它排在类 7 内的首位；`oxoacid` 的 `path=(0,)` 只在它留在类 9 时参与比较，升到类 7 后沿用的仍是同一路径（见下节）。`sulfonamide` 的 `path=(1,)` 让它排在 `amide`（`path=()`）之后，两者同属类 11。
 
-> 源：`src/namepredict/layer1/fg_registry.py` 的 `FG_SPECS`（`p41`/`path`）→ `src/namepredict/layer2/principal.py` 的 `PRINCIPAL_REGISTRY`
+`FG_SPECS` 的注册顺序即 L1 检测列表的产出顺序：`functional_group_inventory._FG_KEYS` 直接取 `tuple(sp.fg for sp in FG_SPECS)`，清单条目按此顺序展开。`_ANCHOR_KEYS` 同样由 `FG_SPECS` 过滤 `anchors` 非空的条目派生，只有声明了锚点的类别才在 occurrence payload 中收集锚点。`FunctionalGroupClass.NONE` 的值为 `alkane`，用于无主官能团的场合：`select_principal_group` 在 `eligible` 为空时返回 `PrincipalGroupSelection(FG.NONE, ())`，把母体交给烷烃处理。
 
-### `_KIND_TABLE` 中无对应 `FgSpec` 的两个 kind
+`FgSpec.locant_source` 决定位次原子从哪里取：`attachment` 取 `principal_expression_facts` 中骨架内的附着原子，是默认值；`attachment_exocyclic` 只在环外表达时取，`ester`、`amide`、`nitrile`、`aldehyde` 用此值；`anchor_field` 取 `parent_anchor_fields` 首位语义字段，即固定 locant 1 的锚点。
 
-- **`alkane`**（`chain_engine.py:466`）—— 无主官能团时由 `FunctionalGroupClass.NONE`（枚举值 `"alkane"`，`functional_group_inventory.py:25`）投影；纯烃、苯与正交化环骨架共用该 kind。
-- **`sulfonic`**（`chain_engine.py:479`）—— `FunctionalGroupClass` 无同名枚举成员，L2 无产生它的 kind 落点，该 entry 只作为词表存在（P-65.3.1）。
+## 类 7 的含氧酸漂移
 
-### `FgSpec` 其余字段的分布
+`oxoacid` 在 `FG_SPECS` 中声明为 `p41=9`，但含氧酸的实际类别可随酸式漂移：同一个含氧酸中心，写成酸式时按 P-41 类 7 的「酸」参与竞争，写成中性酯/酸根时留在类 9。漂移后的等级常量是 `OXO_ACID_P41 = 8`，即类 7 内排在羧酸（`acid` 的 `7`）之后。
 
-| FG 类别 | `anchors` | `parent_anchor_fields` | `locant_source` |
-|---|---|---|---|
-| `radical` | `("center_idx",)` | `("radical_c_idx")` | `attachment` |
-| `acyl` | `("center_idx",)` | `("acyl_c_idx")` | `attachment` |
-| `acid` / `acyl_halide` / `ketone` | `("center_idx",)` | `None` | `attachment` |
-| `ester` / `amide` / `nitrile` / `aldehyde` | `("center_idx",)` | `None` | `attachment_exocyclic` |
-| `phosphate` | `("p_idx",)` | `None` | `attachment` |
-| `alcohol` / `thiol` / `amine` | `("surr_idx",)` | `None` | `attachment` |
+判定某个 occurrence 是否按酸式参与竞争由 `fg_registry.oxoacid_is_acid(payload)` 给出，三条判据依次为：
 
-- `expr` 13 条全部为默认值 `"suffix"`，与 `PrincipalExpression`（`principal.py:23`）当前唯一成员 `SUFFIX` 一致，故 `feature_spec` 对全部注册 FG 放行。
-- `anchors` 决定 occurrence 收集哪些 payload key：`center_idx`（羰基/腈/醛/酮/酰卤/酸/自由基）、`p_idx`（磷酸）、`surr_idx`（醇/硫醇/胺，碳臂即母体锚点），由 `_ANCHOR_KEYS`（`functional_group_inventory.py:54`）消费。
-- `parent_anchor_fields` 经 `PRINCIPAL_REGISTRY.anchor_fields` 传到 L2，由 `_semantic_anchor_fields`（`principal_expression.py:57`）写成 parent 的固定 locant 1 字段（`radical_c_idx` / `acyl_c_idx`）。
-- `locant_source` 只在 L4 `_locants_for`（`locant_calc.py:138`）三态分派中消费：`anchor_field` 分支（`:140`）走 `_anchor_field_locants`（`:124`）直读 `parent_anchor_fields[0]`，**当前无 `FgSpec` 取该值**；`attachment_exocyclic`（`:142`）在非环外表达时返回空位次表；其余取 `attachment` 默认分支。
+- 中心带 O⁻（`n_om > 0`）→ 按酸根处理，返回真。
+- `oxo_kind` 落在 `OXO_ACID_KINDS`（当前为 `frozenset({"sulfonic"})`）→ 碳锚定且自带酸式氢，返回真。
+- `oxo_kind` 落在 `OXO_ACID_KIND_BY_H`（当前为 `{"phosphonate": 1}`）→ 碳锚定 P 酸按氢数阈值判定，即 `n_oh >= 1` 时返回真。膦酸与膦酸氢酯因此落类 7，全酯化的膦酸酯留在类 9。
 
-> 注 1：`p41` 与 `path` 合成 `PrincipalPriority(p41_class, p43_path)`（`principal.py:17`，`order=True`）。`p41=1` 的 `radical` 与 `acyl` 两行键完全相同 `(1, ())`——同碳上二者由 L1 的 acyl heads 联动互斥（`analyzer.py:174`）；不同碳共存时（`*C(=O)C*`）`min` 在 `set` 迭代序中取首位，实测随 `PYTHONHASHSEED` 变化。
->
-> 注 2：数量派生 kind（`diacid`/`polycarboxylic`/`diol`/`triol`/`diamine`/`triamine`/`tetraamine`）与组合 kind（`cycloalcohol`/`cycloketone`/`cycloamine`/`cycloalkane_polycarboxylic` 等）都不存在——链式 FG 对任意 count 恒返回基团名 kind，多基团数只由 `principal_expression_facts.multiplicity`（`principal_expression.py:33`）承载。苯/杂环保留名（benzoic/phenol/aniline 等）由 L5 `_BENZENE_RETAINED`（`chain_engine.py:444`）提供，不占独立 kind 行。
+漂移的消费点在 `layer2/principal._effective_priority(group_class, spec, inventory)`。它是唯一允许类别漂移的地方，且只对 `FG.OXOACID` 生效。函数要求该类全部 occurrence 都满足 `oxoacid_is_acid`（`occurrences and all(...)`），即整类一致才升到 `PrincipalPriority(OXO_ACID_P41, spec.priority.p43_path)`；只要有一条不是酸式，整类保持 `spec.priority` 的类 9。路径 `p43_path` 原样带走，因此漂移只换类号、不改路径。`select_principal_group` 把 `_effective_priority` 作为 `min` 的 key，得到的就是漂移后的有效优先级。
 
----
+三个 kind 的分类去向：
 
-## KindMeta 数据结构
+| `oxo_kind` | 判据 | 分类去向 |
+| --- | --- | --- |
+| `sulfonic` | 恒为酸式 | 类 7，等级 8，作主基团出磺酸后缀 |
+| `phosphonate` | `n_oh >= 1` | 类 7，等级 8；`n_oh == 0` 时回类 9 |
+| `phosphate` / `sulfate` | 带 O⁻ 时按酸根 | 中性时类 9；带 O⁻ 时类 7 |
 
-`kind_registry.py:7` 定义了 `KindMeta` 数据类，作为 scaffold 母体种类的统一元数据容器：
+`layer1/analyzer._OXO_CLASS_BY_KIND` 负责把 `oxo_kind` 映射到 P-41 类别键，`{"sulfonamide": "sulfonamide"}` 使磺酰胺从含氧酸合一类中分出去，落类 11，其余 kind 留在 `oxoacid` 类。
 
-```python
-@dataclass(frozen=True)
-class KindMeta:
-    kind: str              # 母体种类标识符（如 "benzene", "naphthalene"）
-    en: str | None = None  # 英文 stem 名称
-    zh: str | None = None  # 中文 stem 名称
-    ring: str = "none"     # 环系类型: "none" | "hetero" | "carbo"
-    n_rings: int = 0       # 环的数量
-    retained: bool = False # 是否为 IUPAC 保留名（retained name）
-```
+## 三层接力
 
-名称为 `None` 的 scaffold 不登记（`kind_registry.py:81`）。全部 scaffold 母体种类经模块级函数统一注册：`_load_from_scaffold_specs()`（`kind_registry.py:76`，从 `ring_scaffold.all_specs()` 读取有词干的 spec，已存在则覆盖），并在模块导入时调用一次（`kind_registry.py:87`）。**`ring_scaffold` 的 scaffold spec 是 stem 的最终权威来源**。链式 FG kind 不预先注册——`KindMeta` 不承载主官能团等级，等级由 `FgSpec.p41` → `PrincipalPriority` 承载。
+优先级数据从声明到成词穿过三层，每层只消费上一层给出的事实。
 
----
+| 层 | 模块与函数 | 对优先级的消费方式 |
+| --- | --- | --- |
+| L1 声明 | `fg_registry.FG_SPECS` / `FgSpec.p41` / `p43_path` | 唯一声明处；同时提供 `oxoacid_is_acid` 判定酸式 |
+| L1 仲裁 | `analyzer._arbitrate_parts` | 按 `p41` 比较，压制组合 FG、标记降级叶 |
+| L2 选择 | `principal._effective_priority` / `select_principal_group` | 取有效优先级最小者作主基团 |
+| L2 骨架 | `parent_skeleton.select_principal_skeletons` / `parent_select._reorder_p45_2` | P-44 筛选与 P-45.2 排序 |
+| L5 出词尾 | `chain_engine._KIND_TABLE` / `_OXO_TAIL` | 按 kind 取后缀，含氧酸按 `oxo_kind` 与氢数查表 |
 
-## 三层 FG 生命周期
+L5 的 `_KIND_TABLE` 以 kind 字符串为键，每个 `_Chain` 记录 `en_suf` / `zh_suf` 等词尾信息，其中 `fg` 字段指回 FG 键，把产物重新绑到 L1 的类别上：
 
-### Layer 1: 检测与仲裁 —— `p41` 的第一次消费
+| `_KIND_TABLE` 键 | `fg` 字段 | 词尾 |
+| --- | --- | --- |
+| `alcohol` | `alcohol` | `ol` / 醇 |
+| `ketone` | `ketone` | `one` / 酮 |
+| `alkane` | 无 | `ane` / 烷 |
+| `acid` | 无 | `oic acid` / 酸 |
+| `sulfonic` | `oxoacid` | `sulfonic acid` / 磺酸，`coda="ane"` |
+| `sulfonate` | `oxoacid` | `sulfonate` / 磺酸 |
+| `sulfonamide` | `sulfonamide` | 磺酰胺 |
+| `sulfonyl_chloride` | `oxoacid` | 磺酰氯 |
+| `ester` | `ester` | `oate` / 酸 |
+| `phosphate` | `oxoacid` | `phosphate` / 磷酸 |
+| `phosphonate` | `oxoacid` | `phosphonic acid` / 膦酸 |
+| `sulfate` | `oxoacid` | `sulfate` / 硫酸 |
+| `acyl` | `acyl` | `oyl` / 酰基 |
+| `thiol` | `thiol` | `thiol` / 硫醇，`coda="ane"` |
+| `amine` | `amine` | `amine` / 胺 |
+| `aldehyde` | `aldehyde` | `al` / 醛 |
+| `nitrile` | `nitrile` | `enitrile` / 腈 |
+| `amide` | `amide` | `amide` / 酰胺 |
+| `radical` | `radical` | `yl` / 基，`coda="an"` |
 
-`src/namepredict/layer1/analyzer.py` 的检测是**表驱动**的：局部判据全部落在 `fg_local_smarts.FG_SMARTS`（`fg_local_smarts.py:26`）的 17 条 `(FG 键, SMARTS)` 上（覆盖 13 类，模式首原子即该官能团的中心原子，同名多条取并集），`match_local_fg(mol)`（`fg_local_smarts.py:68`）是唯一局部判定入口，返回 `{FG 键: [匹配元组升序]}`，同一中心原子只保留一条匹配。
+含氧酸中心母体的词尾不由 `en_suf` 直接给出，而由 `_OXO_TAIL` 查表：键是 `(oxo_kind, 中心酸式氢数)`，例如 `("phosphate", 3)` 取 `("phosphoric acid", "磷酸")`、`("phosphonate", 2)` 取 `("phosphonic acid", "膦酸")`、`("sulfate", 1)` 取 `("hydrogen sulfate", "硫酸氢")`。表内覆盖 `phosphate` / `phosphonate` / `sulfate` 三族、氢数从满酸式递减到全取代共十项：氢数等于该酸的最大酸式氢数时出「酸」义（`phosphoric acid` / 磷酸、`sulfuric acid` / 硫酸），氢数减少时逐级切到「二氢」「氢」义（`dihydrogen phosphate` / 磷酸二氢、`hydrogen phosphate` / 磷酸氢），氢数为 `0` 时出「酯」义（`phosphate` / 磷酸、`sulfate` / 硫酸）。查表函数 `_oxoacid_tail` 读 `numbered["parent"]` 的 `oxo_kind` 与 `n_oh`，表外返回 `None`，由调用方回落到常规 `en_suf`。
 
-**排他性由 SMARTS 内的否定子模式承担**，共享子模式定义在 `fg_local_smarts.py:11-23`：`_ACID_O`（酸性氧）、`_NOT_ACID`、`_NOT_ACYCLIC_ESTER`、`_NOT_HALO`、`_ONE_C`、`_RING_HET`、`_O_PHOS`。因此
+L1 的 `FunctionalGroupClass` 枚举与 `FG_SPECS` 的 `fg` 值一一对应，`sulfonamide` 是独立枚举值而非 `oxoacid` 的子类，因此 L5 侧磺酰胺走 `fg="sulfonamide"` 的分支，与酰胺同组而不与含氧酸同组。`_KIND_TABLE` 中 `fg` 字段缺失的 kind（`alkane`、`acid`）表示该 kind 不需要回绑 FG 键，`acid` 的词尾由 `variant` 中的保留名（如 `oxalic acid` / 草酸）承担。
 
-- 羧酸碳不会被同时认成酯 / 酰胺 / 酰卤 / 醛；
-- 内酯（环内酯氧）、硫代内酯、内酰胺、N-酰基环胺、零碳环羰基统一落 `ketone` 的三条分支（两个碳邻居 / 单碳连环内杂原子 / 环内零碳）；
-- 内酰胺与内酯的环内杂原子由 `_RING_HET` 判定，故环内 O/S 与羰基同环的化合物同归环酮（`oxolan-2-one`/`thiolan-2-one`/`1-pyrrolidin-1-ylethanone`）。
+## 压制与降级
 
-**非局部判据留在 `analyzer` 后置**：`_detect_parts`（`analyzer.py:167`）调 `match_local_fg(mol)` 后做三件事——酰基头的 heads 联动（`:171` 收集 heads，`:174` 从 radical 候选中剔除、`:176` 从 aldehyde 候选中剔除，避免醛→酮误降级）、磷酸的臂回接与整分子纯度校验（`_phosphate_entry`，`analyzer.py:58`；入口 `phosphate_entries`，`analyzer.py:83`）、按 `_LOCAL_ENTRY_FGS`（`analyzer.py:157`，9 个 FG 键）组装条目。parts dict 的键**就是 FG 类别值**，共 **13 个键**，与 `FG_SPECS` 的 `fg` 字段一一对应。
+L1 内部仲裁在 `analyzer._arbitrate_parts` 完成，涉及三个常量。
 
-**P-41 仲裁 `_arbitrate_parts(parts)`（`analyzer.py:141`）是 `p41` 的第一次消费**，由三个模块级 frozenset 常量界定行为：
+`_SUPPRESSIBLE` 是可被更高优先级 FG 整体压制的组合 FG 集合：`{"acid", "ester", "acyl_halide", "amide", "nitrile", "aldehyde"}`，即组合羰基加腈。仲裁先由 `FG_SPECS` 造出 `p41` 字典，再收集「存在」的 FG 集合；对 `_SUPPRESSIBLE` 中每个类别，只要存在另一个类号更小的 FG，该类就退出。退出方式分两种：`_LEAF_DEMOTED = ("acid", "nitrile")` 中的酸与腈整组碳被排除出主链，其 occurrence 标 `demoted=True`，成为 P-61.1.3 的前缀叶（`carboxy` / `cyano`）；其余组合 FG（酯/酰胺/醛/酰卤）的条目直接清空为「氧代」，羰基碳留在链内，只把 O 作 `oxo` / `formyl` 前缀，由 L3 锚定叶识别。
 
-| 常量 | 位置 | 取值 | 语义 |
-|---|---|---|---|
-| `_SUPPRESSIBLE` | `analyzer.py:136` | `{"acid", "ester", "acyl_halide", "amide", "nitrile", "aldehyde"}` | 可被更高优先级 FG 整体压制的组合羰基 FG + 腈 |
-| `_PRESENCE_SKIP` | `analyzer.py:137` | `{"phosphate"}` | 磷酸不参与存在性判定（`p41` 与酯同为 9，纳入会改写压制结果） |
-| `_LEAF_DEMOTED` | `analyzer.py:138` | `("acid", "nitrile")` | 降级为「前缀叶」的类别（P-61.1.3 carboxy/cyano） |
+`_PRESENCE_SKIP = {"oxoacid", "sulfonamide"}` 把含氧酸与磺酰胺排除在存在性判定之外。这两个类若计入 `present`，会参与对 `_SUPPRESSIBLE` 的比较并改写压制结果，因此仲裁阶段不看它们。
 
-算法：`p41` 表由 `FG_SPECS` 现算（`analyzer.py:143`）；`present` = 有 `p41` 且对应 parts 非空且不在 `_PRESENCE_SKIP` 的 FG 集合（`:144`）；对 `_SUPPRESSIBLE` 中每个类别 `fg`，若存在另一个 `present` 成员 `h` 满足 `p41[h] < p41[fg]`，则 `_LEAF_DEMOTED` 成员保留条目并对每条 occurrence 标 `demoted` id（`f"{fg}:{i}"`），其余整组清空（其羰基碳降级为「氧代」前缀候选）。`ketone`/`alcohol`/`thiol`/`amine` 是基础成员 FG，**永不退出**。
+降级状态随清单传递：`functional_group_inventory.FunctionalGroupOccurrence.demoted` 记录该标记，`FunctionalGroupInventory.occurrences` 与 `demoted_entries` 分别返回未降级与已降级的条目。`select_principal_group` 只用 `not entry.demoted` 的条目作候选，`_chain_candidates` 则通过 `_demoted_leaf_carbons` 把降级叶的碳排除出开链枚举。
 
-检测与仲裁结果经 `build_inventory(parts, mol, demoted)`（`functional_group_inventory.py:114`）收敛为**唯一 FG 出口** `FunctionalGroupInventory`（`:40`，13 个实类 `FunctionalGroupClass` + `NONE("alkane")`），随 `double_bonds`/`triple_bonds` 一起构成 info dict 传给 Layer 2。降级标记落在 `FunctionalGroupOccurrence.demoted`（`:36`）上：`occurrences()`（`:44`）过滤降级条目，`demoted_entries()`（`:48`）取回它们。
+`build_inventory(lists, mol, demoted)` 接收 `_arbitrate_parts` 给出的 `demoted` id 集（形如 `f"{fg}:{i}"`），组装 occurrence 时按 id 命中即置位。因此降级状态在 L1 出口就已固化进清单，L2 与后续各层只读取该结果，不重算。
 
-> **共现与仲裁的实际边界**：SMARTS 表并不保证一个杂原子只落进一个类别。实测 `CC(=O)N`（乙酰胺）同时产出 `amide:0` 与 `amine:0`——`amine` 的取代度分支不排除酰胺 N，`_arbitrate_parts` 也不压制 `amine`（不在 `_SUPPRESSIBLE` 中）。两者的取舍由 L2 的主基团等级表完成（amide 11 < amine 19 → 取酰胺）。同理 `CC(=O)N1CCCC1`（N-酰基吡咯烷）中环内 N 被 `!R` 排除，只产出 `ketone:0`，母体作环酮。
+三类状态因此可以并存于同一分子：主基团（`select_principal_group` 选出的类，出后缀）、前缀 FG（未压制但也未当选的类，出前缀）、降级叶（被压制且标 `demoted` 的酸/腈，出 `carboxy` / `cyano` 前缀）。`_SUPPRESSIBLE` 中酯/酰胺/醛/酰卤被压制时条目清空、不标 `demoted`，其氧化态由 L3 锚定叶从骨架中重新识别，所以它们的碳留在主链内参与编号。
 
-> **源:** `src/namepredict/layer1/analyzer.py`, `src/namepredict/layer1/fg_local_smarts.py` | 详情见 [[architecture/layer1-analyzer]]
+## P-45.2 排序与缩合磷酸次序
 
-### Layer 2: 主基团选择与骨架收敛 —— `p41`/`path` 的第二次消费
+P-44 拓扑规则只活在 `parent_skeleton.select_principal_skeletons` 的筛选谓词里。该函数按顺序调用：`keep_max_principal_coverage` 取主基团覆盖度最大者，`keep_p44_1_2` 在混合拓扑时取 senior 元素，随后按拓扑分流——纯开链走 `keep_p44_3`（杂原子数、原子数、元素计数取最大），含环走 `keep_p44_2`，最后统一由 `keep_p44_4_unsaturation` 按不饱和度键收尾。
 
-L2 分**主基团选择**、**骨架筛选**、**出口排序**三段：
+P-45.2 排序在 `parent_select._reorder_p45_2`。它对候选列表做稳定排序，排序键是三元组，比较方向为：
 
-**主基团选择（`principal.py`）**：`PRINCIPAL_REGISTRY`（`principal.py:44`）由 `FG_SPECS` 中 `p41 != 0` 的条目经 `_spec_from_fg`（`:36`）派生，**实测 13 条**，把 `FgSpec` 的 `p41`/`path`/`expr`/`parent_anchor_fields` 投影为 `PrincipalFeatureSpec`（`:29`）的 `PrincipalPriority`（`:17`）/`PrincipalExpression`（`:23`）/`anchor_fields`。`select_principal_group(inventory, registry)`（`principal.py:60`）先剔除 `demoted` 条目（`:65`），再 `min(eligible, key=priority)`（`:67`）选出**唯一**最高优先级主官能团类，取该类全部 occurrence 封装为 `PrincipalGroupSelection`（`:53`）；无合格主基团时回落 `PrincipalGroupSelection(FG.NONE, ())`（`:69`），下游走纯烃表达。L2 入口是 `select_principal_parent_skeletons`（`parent_select.py:25`）。
+1. `_p45_2_prefix_count(info, cand)` 降序——该候选 `owned_atoms` 边界外的 claim 个数，即前缀取代基团数目（P-45.2.1），少者优先。
+2. `_condensed_rank(info, cand)` 降序——缩合磷酸的链内桥氧数（P-67.2.1），多者优先。
+3. 原始序升序——保持枚举顺序，作为平局兜底。
 
-**骨架筛选（`parent_skeleton.py`，P-44）**：`select_principal_skeletons(info, occurrences)`（`parent_skeleton.py:215`）在候选骨架上依次施加
+`_condensed_rank` 只对 `oxo_kind == "phosphate"` 的候选计算，非磷酸候选恒返回 `0`，因此在第一键平局时磷酸候选才能凭第二键胜出。它从候选的 `covered_principal_ids` 与 `principal_occurrences` 中取出 `oxo_z`，对每个中心调用 `analyzer._p_bridge_arms` 并取最大值。`_p_bridge_arms` 统计中心原子的 O-P 桥氧数：中心必须是 P（原子序数 15，否则恒返回 0），逐个数非双键氧邻居中是否还连着另一个 P，是则计一个桥氧。链内桥氧越多，说明该磷酸中心越是多核磷酸的功能母体，排序越靠前。`_reorder_p45_2` 在 `tied=True` 时只保留第一键取最大值的候选，供 `select_parent` 返回并列最优。
 
-1. `keep_max_principal_coverage`（`:178`）——取覆盖主基团 occurrence 最多的骨架；覆盖口径见 `_chain_coverage`（`:69`）：胺任一臂在链即算覆盖（P-62.2），其余类别要求锚点全部落在骨架内；环骨架的附着判据见 `_ring_attaches`（`:84`）：胺/醇/自由基/酮只认直接附着；
-2. `keep_p44_1_2`（`:131`）——混合拓扑时取 senior 元素（`keep_senior_atom`，`:124`）；
-3. 纯开链走 `keep_p44_3`（`:149`，键 `p44_3_key`：`:143`），含环走 `keep_p44_2`（`:171`，键 `p44_2_key`：`:162`）；
-4. `keep_p44_4_unsaturation`（`:209`，键 `p44_4_unsaturation_key`：`:183`）。
+缩合磷酸的候选资格在 L1 阶段就已收窄：`analyzer.oxoacid_entries` 在识别含氧酸中心后做两道过滤。第一道要求链上留有全酸式末端——若没有任何中心的 `n_oh + n_om >= 2`，带 P-O-P 桥氧的中心被剔除，即全酯化的缩合磷酸不按功能母体识别（P-67.2.1）。第二道取全部中心里最大的 `n_om`，把 `n_om` 更小且带桥氧的链内中心剔除，让位给质子化更少的磷酸中心，避免磷酸酸根被写成前缀。只有通过这两道的候选，才会带着 `oxo_z` 进入 `_condensed_rank` 的桥氧计数。
 
-被压制的叶型降级条目，其中心碳由 `_demoted_leaf_carbons`（`parent_skeleton.py:43`）排除出主链（P-61.1.3 carboxy/cyano），进而在 `_open_chains`（`:58`）中作为 banned 集生效。
+`select_parent` 的调用链是 `_collect_candidates` → `_finalize_ranked` → `_reorder_p45_2(tied=True)`：先由规则驱动收集候选并去重，再由 `_finalize_ranked` 补齐契约、词干与编号并固化 `owned_atoms`，最后交 P-45.2 排序取并列最优。`_p45_2_prefix_count` 依赖的 `owned_atoms` 正是在 `finalize_parent_ownership` 中固化，因此排序键所用的 claim 计数与最终归属一致。
 
-**kind 投影（`principal_expression.py`）**：`_chain_kind(group_class, count)`（`:70`）把主基团类别映射为母体 kind——`NONE` 在 count 0 时返回 `"alkane"`，`ACYL` 固定返回 `"acyl"`，`RADICAL` 固定返回 `"radical"`，**其余类别在 count ≥ 1 时恒返回 `group_class.value`**；环骨架走 `_ring_kind`（`:169`），对 `_FG_CLASSES`（`:44`，全部类别除 `NONE`）成员复用同一映射，并为 `ALDEHYDE` 单列分支。因此 **kind 集合等于 `FunctionalGroupClass` 的枚举值（14 个），与 multiplicity 彻底解耦**：所有数量信息只写入 `PrincipalExpressionFacts.multiplicity`（`:33`），交 L5 承载。
+## 相关文件
 
-**出口排序（`parent_select.py`）**：L2 出口的唯一排序是 **P-45.2.1 前缀取代基计数**——`_p45_2_prefix_count`（`parent_select.py:97`）取 L3 `iter_claims(mol, owned_atoms)`（`layer3/claimable_block.py:123`）在 `owned_atoms` 边界外的 claim 个数，`_reorder_p45_2`（`:104`）按该计数降序稳定重排，`select_parent`（`:128`）以 `tied=True` 只返回并列最大组 `list[dict]`。P-44 的等级取舍全部落在 `parent_skeleton` 的筛选谓词与 `principal.select_principal_group` 的 `min()` 里，**L2 出口没有 P-44 排序键**。
-
-> **源:** `src/namepredict/layer2/principal.py:60`, `src/namepredict/layer2/parent_skeleton.py:215`, `src/namepredict/layer2/parent_select.py:97-131`, `src/namepredict/layer2/principal_expression.py:70` | 详情见 [[architecture/layer2-parent-selector]]
-
-### Layer 5: 后缀分派 —— `FgSpec.fg` 的第三次消费
-
-L5 由 `_names_for(kind, n, numbered)`（`assembler.py:301`）查 **`chain_engine._KIND_TABLE`**（`chain_engine.py:457`，**15 个 `_Chain` entry**）渲染词干、不饱和段、位次与环前缀：
-
-| entry | 行 | entry | 行 | entry | 行 |
-|---|---|---|---|---|---|
-| `alcohol` | `:458` | `ketone` | `:462` | `alkane` | `:466` |
-| `acid` | `:471` | `sulfonic` | `:479` | `ester` | `:480` |
-| `phosphate` | `:488` | `acyl` | `:490` | `thiol` | `:496` |
-| `amine` | `:501` | `aldehyde` | `:505` | `nitrile` | `:510` |
-| `amide` | `:515` | `acyl_halide` | `:523` | `radical` | `:524` |
-
-**后缀位次的来源**是 `_fg_locant(numbered, kind)`（`chain_engine.py:56`）：它从 `numbered["fg_locants"]` 中按 `kind` 取记录（`_fg_record`，`:40`），仅当恰好 1 个位次时返回，否则返回 `None`（段式渲染随之失败）。而 `fg_locants` 记录的 kind 正是 `FgSpec.fg`——`_FG_LOCANTS`（`locant_calc.py:146`）把 `(sp.fg, sp)` 全量投影后，由 `_locants_for`（`:138`）按 `locant_source` 三态分派取位次原子（`anchor_field` → `parent_anchor_fields[0]`；`attachment_exocyclic` → 仅环外表达时取；默认 → `_typed_atom_locants`，`:144`）。**`spec.fg` 与 `FgSpec.fg` 同名同值，是 L4 记录 kind 与 L5 查表 kind 的对齐点。**
-
-**数量后缀**不在 kind 中，而由 `_parent_multiplicity`（`chain_engine.py:46`）读 `principal_expression_facts.multiplicity`（缺失时回落 `parent.principal_group_count`），`_chain_names`（`:328`）在 `mult > 1` 时经 `_generated_mult_fields`（`:247`）生成式派生（alcohol→diol/triol/tetraol，amine→diamine/triamine/tetraamine，acid→dioic acid），再叠加 `variant` 特例覆盖（草酸/oxalate/oxamide 等）。多基团数既不改 kind，也不改 `_KIND_TABLE` 行数。
-
-**其余分支**：`acyl_halide` 一行的实际 spec 由 `_ACYL_HALIDE_BY_HAL`（`:418`）按 `parent.hal_z` 覆盖（消费点 `assembler.py:307`）；环外（exocyclic）主基由 `_exo_ring_spec`（`:298`）按 `constants.EXO_RING_SUF` 改写后缀（`…-carboxylic acid`/`…-carbaldehyde`/`…-carbonitrile` 等，P-65.2.2 / P-66.6.1.1.3）；苯单取代保留名由 `_BENZENE_RETAINED`（`:444`）提供（phenol/benzoic acid/aniline 等 10 键）；`kind == "radical"` 且 parent 带 `radical_anchor_element` 时短路到 `_mononuclear_radical_names`（`assembler.py:304`），不经 `_KIND_TABLE`。
-
-调度因此是分层的：**L1 按 FG 类别收敛 occurrence → L2 把主基团类别投影为同名 kind → L5 按 kind 查链引擎**。被选为主基团的 FG 获得后缀，劣后 FG 在 Layer 3 中转为取代基前缀（hydroxy-、oxo-、amino- 等）。
-
-> **源:** `src/namepredict/layer5/chain_engine.py:457`, `src/namepredict/layer5/assembler.py:301` | 详情见 [[architecture/layer5-name-assembly]]
-
----
-
-## 互斥排除（P-41 互斥约束）
-
-IUPAC P-41 规定某些 FG 之间不能作为母体共存。NamePredict 通过 **`select_principal_group` 的结构性单选择**实现互斥：在未降级（`not entry.demoted`）的 occurrence 里筛出 `feature_spec` 非空的类，按 `PrincipalPriority` 取 `min` 选出单个最高优先级主官能团，低优先级 FG 一律成为取代基，不需要逐候选互斥检查。
-
-L1 侧另有一道 `_arbitrate_parts`（`analyzer.py:141`）的 P-41 仲裁：`_SUPPRESSIBLE` 中的 6 个组合 FG 在存在更高 `p41` 等级 FG 时整组退出主基团（`_LEAF_DEMOTED` 的 acid/nitrile 保留条目并标 `demoted`，其碳排除出主链）。
-
-> 无 `fg_helpers.py` 与 `_no_fgs(info, keys)` 互斥谓词——互斥由 `select_principal_group` 的单选择与 `_arbitrate_parts` 的双重结构实现。
-
----
-
-## 注册体系：kind_registry 作为词干注册中心
-
-`src/namepredict/layer2/kind_registry.py` 是**词干与环元数据的注册查询中心**：保留 scaffold 的 stem/ring/n_rings/retained 由 `ring_scaffold` 的 scaffold spec 派生（`_load_from_scaffold_specs`，`kind_registry.py:76`），**不承载主官能团等级**（等级单一权威在 `fg_registry.FG_SPECS.p41/path` → `principal.PRINCIPAL_REGISTRY`）。公共 API：
-
-| API | 功能 |
-|---|---|
-| `kind_registry.get(kind)`（`kind_registry.py:20`） | 查 `KindMeta`（未注册返回 None） |
-| `kind_registry.parent_names(kind)`（`kind_registry.py:25`） | 返回 `(en_stem, zh_stem)` 元组 |
-| `kind_registry.pack_parent_stem(parent, mol)`（`kind_registry.py:58`） | 为候选补齐 `stem_en`/`stem_zh`（含五元杂环 locant 前缀终态化）与 `numbering_scaffold`；由 `parent_select._finalize_ranked`（`parent_select.py:116`）调用 |
-
-新增 FG 种类时，只需在两处数据表登记：`fg_registry.FG_SPECS`（注册元数据：`fg` / `p41` / `path` / `anchors` 等）与 `fg_local_smarts.FG_SMARTS`（检测模式）。主基团等级表（`principal.py:44`）、FG 位次表（`locant_calc.py:146`）、L5 查表 kind（`_KIND_TABLE` 若已有同名 entry）随之自动接通；`fg` 字段同时是 parts 键、`FunctionalGroupClass` 枚举值与 L5 kind，四处必须同串。评分、候选收集与组装逻辑不变，保持**开放-封闭原则**。
-
-> **源:** `src/namepredict/layer2/kind_registry.py`
-
----
-
-## 总结
-
-官能团优先级是 NamePredict 命名正确性的基石。从 Layer 1 的压制仲裁、Layer 2 的主基团等级与骨架筛选、到 Layer 5 的后缀分派，整个系统严格遵循 IUPAC P-41 与 P-44 的层级化思维，且**等级事实只登记一次**（`FgSpec.p41` / `FgSpec.path`）：
-
-1. **L1 保证「一碳一 FG」**——`FG_SMARTS` 的否定子模式使同一碳原子不会被重复识别为多个 FG；`_arbitrate_parts` 再用现算的 `p41` 表把组合羰基整组压制或标 `demoted`
-2. **L2 保证「优先级强制」**——`select_principal_group` 按 `PrincipalPriority` 取最小选出唯一 principal FG，`p41` 与 `path` 一并生效；骨架级 P-44 规则在其上收敛候选，并把类别投影为同名 kind
-3. **L5 保证「劣后 FG 降级」**——低优先级 FG 在 Layer 3 中从候选后缀降为取代基前缀；后缀位次经 `fg_locants` 记录（kind = `FgSpec.fg`）与 `_fg_locant` 对齐
-4. **互斥层保证「互斥正确」**——`select_principal_group` 的单选择结构性排除无法共存的 FG 组合，数量差异交由 `principal_expression_facts.multiplicity` 表达而非 kind 分裂
+- `src/namepredict/layer1/fg_registry.py`：`FgSpec`、`FG_SPECS`、`oxoacid_is_acid`、`OXO_ACID_P41`、`OXO_ACID_KINDS`、`OXO_ACID_KIND_BY_H`
+- `src/namepredict/layer1/functional_group_inventory.py`：`FunctionalGroupClass`、`FunctionalGroupOccurrence`、`FunctionalGroupInventory`、`_FG_KEYS`、`_ANCHOR_KEYS`
+- `src/namepredict/layer1/analyzer.py`：`_arbitrate_parts`、`_SUPPRESSIBLE`、`_PRESENCE_SKIP`、`_LEAF_DEMOTED`、`_OXO_CLASS_BY_KIND`、`_p_bridge_arms`
+- `src/namepredict/layer2/principal.py`：`PrincipalPriority`、`PRINCIPAL_REGISTRY`、`_effective_priority`、`select_principal_group`
+- `src/namepredict/layer2/parent_skeleton.py`：`select_principal_skeletons`、`keep_p44_1_2`、`keep_p44_2`、`keep_p44_3`、`keep_p44_4_unsaturation`
+- `src/namepredict/layer2/parent_select.py`：`_p45_2_prefix_count`、`_condensed_rank`、`_reorder_p45_2`、`select_parent`
+- `src/namepredict/layer5/chain_engine.py`：`_KIND_TABLE`、`_OXO_TAIL`、`_oxoacid_tail`
