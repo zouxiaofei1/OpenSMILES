@@ -259,9 +259,9 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
     if spec.kind == "acid":  # 多酸烯基基座: 保留 e，中文 烯+数量酸
         fields["ene_base"] = (f"ene{en_m}oic acid", f"烯{zh_m}酸")
         fields["yne_suf"] = None
-    if spec.kind == "ester":  # 多酯烯基/炔基基座: enedioate/ynedioate
-        fields["ene_base"] = (f"ene{en_m}oate", f"烯{zh_m}酸")
-        fields["yne_suf"] = (f"yne{en_m}oate", f"炔{zh_m}酸")
+    if spec.kind == "ester":  # 多酯烯基/炔基基座: enedioate/ynedioate（硫代酯按 thioate 词尾派生）
+        fields["ene_base"] = (f"ene{en_m}{spec.en_suf}", f"烯{zh_m}{spec.zh_suf}")
+        fields["yne_suf"] = (f"yne{en_m}{spec.en_suf}", f"炔{zh_m}{spec.zh_suf}")
     return fields
 
 
@@ -299,6 +299,8 @@ def _exo_ring_spec(spec: "_Chain", n: int, numbered: dict) -> "_Chain":
     """环外主基的 spec 改写（P-65.2.2 / P-66.6.1.1.3）。"""
     suf = EXO_RING_SUF.get(spec.kind)
     parent = numbered.get("parent") or {}
+    if suf is not None and spec.kind == "ester" and parent.get("thio_side"):  # P-65.6.3.3.7.1 环外硫代羧酸 S-酯
+        suf = (("carbothioate", "硫代甲酸"), None)
     facts = parent.get("principal_expression_facts")
     if suf is None or facts is None or facts.relation.value != "exocyclic":
         return spec

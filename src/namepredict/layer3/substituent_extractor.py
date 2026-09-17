@@ -29,13 +29,13 @@ def sub_from_named(named, mol) -> dict:
     }
 
 
-def _append_named(mol, claim, namer, out: list[dict], *, o_side: bool = False) -> None:
-    """为单个 claim 命名并追加到输出（可标记 O 侧）。"""
+def _append_named(mol, claim, namer, out: list[dict], *, o_side: bool = False, side_z: int = 8) -> None:
+    """为单个 claim 命名并追加到输出（可标记 O 侧；硫代酯的侧臂元素为 S）。"""
     named = namer.name(mol, claim)
     if named is None:
         return
     s = sub_from_named(named, mol)
-    if o_side and mol.GetAtomWithIdx(claim.attach_parent).GetAtomicNum() == 8:
+    if o_side and mol.GetAtomWithIdx(claim.attach_parent).GetAtomicNum() == side_z:
         s["o_side"] = True
     out.append(s)
 
@@ -51,7 +51,8 @@ def extract_substituents(info: dict, parent: dict, *, cache: CommonNameCache | N
     mol = info["mol"]
     # benzoate（苯 base + ester FG）靠 o_idx 字段识别 O-side；链状 ester 走 kind 表。
     o_side = parent.get("kind") in ESTER_O_SIDE_KINDS or parent.get("o_idx") is not None
+    side_z = 16 if parent.get("thio_side") else 8  # 硫代酯的酯侧臂元素为 S（P-65.6.3.3.7.1）
     namer, out = SubstituentNamer(cache=cache, root_ctx=info.get("root_ctx")), []
     for claim in iter_claims(mol, owned):
-        _append_named(mol, claim, namer, out, o_side=o_side)
+        _append_named(mol, claim, namer, out, o_side=o_side, side_z=side_z)
     return out

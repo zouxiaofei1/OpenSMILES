@@ -79,9 +79,13 @@ def _stem_needs_paren(stem: str, subs: list, omit: bool, flat: bool = False) -> 
 
 
 def oxo_arm_fence(name: str, sub: dict, mol) -> bool:
-    """含氧酸中心母体的臂名围栏：名称以围栏起头，或复合基挂在环上。"""
-    if (name or "")[:1] in "([":
-        return True
+    """含氧酸中心母体的臂名围栏：前导立体描述符，或复合基挂在环上。"""
+    if (name or "")[:1] == "[":
+        return False  # 臂名已自带完整方括号围栏（P-16.5.2），L5 不再二次围栏
+    if (name or "")[:1] == "(":
+        return True  # 前导圆括号仅为立体描述符（(2S)-…），非完整围栏
+    if len(re.findall(r"\d+(?:,\d+)*[a-z]*-", _STEREO_LEAD_RE.sub("", name or ""))) >= 2:
+        return True  # 自带多个位次段的复合臂名须整体围栏（P-16.5.1.3.1）；2,3- 只算一段
     attach = sub.get("attach_idx")
     if not sub.get("paren") or mol is None or attach is None:
         return False
@@ -125,6 +129,9 @@ _SIMPLE_CHAIN_YL_RE = re.compile(r"^(?:\d+-)?" + _CHAIN_STEM + r"a?n-\d+-yl$")  
 _SUBST_CHAIN_YL_RE = re.compile(_CHAIN_STEM + r"a?n-\d+-yl$")  # 带取代基的直链 -yl 仍与桥融合平铺。
 _TERMINAL_CHAIN_YL_RE = re.compile(_CHAIN_STEM + r"yl$")  # 自由价在端碳的直链基与桥融合平铺。
 _BENZYL_TAIL_RE = re.compile(r"\]methyl$")  # 苄基型前端：桥后缀直接缀在甲基上，不拆。
+_LOCANT_RE = re.compile(r"(?:^|[-,\[])\d")  # 位次数字：行首或 -,\[ 之后（立体描述符内的数字不算）
+_ACYL_FRONT_RE = re.compile(r"(?:oyl|carbonyl)$")  # 酰基前端词尾（乙酰氧/酰胺融合用）
+_LOCANT_SUBST_TAIL_RE = re.compile(r"[\d\]]-[^()]*yl$")  # 括号外仍带位次取代基的端基（1-(…)-4-methylsulfanylbutyl）
 
 
 def _front_needs_enclosure(base: str, suf: str) -> bool:
@@ -135,14 +142,16 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
         return False
     if _BENZYL_TAIL_RE.search(base):  # 苄基型前端（…yl]methylsulfanyl）：桥后缀直接缀在甲基上，不拆。
         return False
+    if suf == "amino" and _ACYL_FRONT_RE.search(base):  # P-63.2.2.1.2：amino 桥酰基前端按取代式融合（…oylamino/…carbonylamino）
+        return False
     if  re.match(r"^\(\d+[RrSs]", base) and not base.endswith("oyl"):  # 手性自由价碳前端须括起，酰基前端按 …oyloxy 融合
         return True
     if "[" in base:  # 方括号前端：amino 桥按位次前缀细分，其余不拆
         return True if suf != "amino" else bool(
             re.search(r"\]-?\d", base)                            # 括号后接数字位次前缀
             or re.search(r"-\d+-\[", base[: base.find("[") + 1]))  # 括号前已有数字位次前缀：3-oxo-3-[X]propyl
-    if "(" in base:  # 前端自带括号；端碳自由价链基平铺。
-        return not _TERMINAL_CHAIN_YL_RE.search(base)
+    if "(" in base:  # 前端自带括号；端碳自由价链基平铺，但其后仍带取代基位次者须围栏（P-16.5.1.1 复合前缀）。
+        return not _TERMINAL_CHAIN_YL_RE.search(base) or bool(_LOCANT_SUBST_TAIL_RE.search(base))
     if suf in ("oxy", "sulfanyl", *DIATOMIC_BRIDGE_YL) and re.search(r"\d", base) and base.endswith("phenyl"):  #
         return True
     if suf == "amino":  # P-63.2.2.1.2：amino 桥按取代式融合，不拆。
@@ -209,7 +218,8 @@ def _mult_of(lang: str, stem: str, subs: list, n: int) -> str:
 
 def _split_bridge_suffix_zh(zh_stem: str, en_stem: str) -> tuple[str, str] | None:
     """中文侧 O/S/N 桥平铺式拆分：判据与英文侧同步。"""
-    if _split_bridge_suffix(en_stem) is None:
+    sp = _split_bridge_suffix(en_stem)
+    if sp is None:
         return None
     for suf in BRIDGE_SPLIT_SUFFIX_ZH:
         if zh_stem.endswith(suf):
@@ -218,6 +228,17 @@ def _split_bridge_suffix_zh(zh_stem: str, en_stem: str) -> tuple[str, str] | Non
                 return base, suf
             if base.endswith("-") or base.endswith("氨"):  # 桥融合时「基」被氧基顶掉（…氨氧基），拆时补回。
                 return f"{base}基", suf
+    return _zh_front_ji(zh_stem, sp)
+
+
+def _zh_front_ji(zh_stem: str, sp: tuple[str, str]) -> tuple[str, str] | None:
+    """复合前端的「基」被上游切掉：前端自带围栏时在拆分点补回（酰基前端走融合式除外）。"""
+    if _ACYL_FRONT_RE.search(sp[0]) or not _front_needs_enclosure(*sp):
+        return None
+    for suf in BRIDGE_SPLIT_SUFFIX_ZH:
+        base = zh_stem[: -len(suf)]
+        if zh_stem.endswith(suf) and base and not base.endswith("基"):
+            return f"{base}基", suf
     return None
 
 
@@ -287,6 +308,8 @@ def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
             en_parts.append(f"{MULT_EN.get(len(subs), '')}({stem})")
             zh_parts.append(f"{MULT_ZH.get(len(subs), '')}({subs[0].get('zh') or ''})")
             continue
+        if bracket and not _LOCANT_RE.search(stem):  # P-16.5.1.3.1：首个引用的取代基从不加围栏（自带位次者除外）
+            subs = [{**s, "paren": False} for s in subs]
         en_p, zh_p = _parts_for_stem(stem, subs, omit, primes, tail_sep, flat)
         en_parts.append(en_p)
         zh_parts.append(zh_p)
@@ -294,20 +317,47 @@ def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
 
 
 def _groups_simple(groups: dict[str, list]) -> bool:
-    """全部词干为简单取代基（无括号、非 N- 类）才适用括号式。"""
+    """全部词干无前导位次且非 N- 类才适用括号式（前导位次词干已由位次连字符式消歧）。"""
     for subs in groups.values():
         for s in subs:
-            if s.get("paren") or (s.get("en") or "")[:1].isdigit():
-                return False
-            if (s.get("kind") or "") in N_PREFIX_KINDS:
+            if (s.get("en") or "")[:1].isdigit() or (s.get("kind") or "") in N_PREFIX_KINDS:
                 return False
     return True
+
+
+_O_SIDE_ARM_FENCE_KINDS = frozenset({"sulfonate", "phosphate"})  # 组装侧不判 O-侧臂围栏的两类中心母体
+
+
+def _o_side_arm_fence(name: str, sub: dict) -> bool:
+    """O-侧臂围栏（P-16.5.1.3.1）：自带多位次的复合臂名须整体括起。"""
+    if not sub.get("paren") or (name or "")[:1] in "[(" or re.search(r"[()\[\]]", name or ""):
+        return False  # 简单臂名与已自带围栏/含括号的臂名（立体描述符、复合前缀）不加
+    return len(re.findall(r"\d+(?:,\d+)*[a-z]*-", name)) >= 2
+
+
+def _fence_o_side_arms(subs: list, kind: str | None, mol) -> None:
+    """酯路径 O-侧臂名就地围栏：assembler 侧对这两类 kind 不判臂围栏。"""
+    if kind not in _O_SIDE_ARM_FENCE_KINDS or mol is None:
+        return
+    for s in subs:
+        if not s.get("o_side") or s.get("arm_fenced"):
+            continue
+        s["arm_fenced"] = True  # 同一 numbered 会被多次组装，标记防二次围栏
+        name = s.get("en") or ""
+        attach = s.get("attach_idx")
+        if not name or attach is None:
+            continue
+        if mol.GetAtomWithIdx(int(attach)).GetAtomicNum() == 16:  # 硫代酯 S-侧臂：assembler 侧已围栏
+            continue
+        if _o_side_arm_fence(name, s):
+            s["en"] = _enclose(name)
 
 
 def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
                   scaffold: str | None = None, has_ene: bool = False,
                   mol=None) -> tuple[str, str]:
     """组合完整取代基前缀：滤 O 侧、判 omit、按词干分组拼接。"""
+    _fence_o_side_arms(substituents, kind, mol)
     substituents = [s for s in substituents if not s.get("o_side")]  # ester 的 O 侧臂由 join_kind_name 消费
     if not substituents:
         return "", ""
@@ -319,8 +369,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
                       alpha_order_key)  # P-14.5：全部前缀按字母数字序引用，非仅烷基
     groups = {en: members for en, _, _, members in rows}
     stems = [en for en, _, _, _ in rows if en]
-    bracket = bool(omit) and n_carbons == 1 and kind == "radical" \
-        and len(groups) >= 2 and _groups_simple(groups)
+    bracket = bool(omit) and len(groups) >= 2 and _groups_simple(groups)  # P-16.5.1.3.1：位次省略的单核母体，首基平铺、余基括起
     sep = "" if bracket else "-"
     en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, _n_prime_map(groups, stems), sep, flat)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
     return sep.join(en_parts), sep.join(zh_parts)

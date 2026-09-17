@@ -86,13 +86,13 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "morpholine":  {"smiles": "C1COCCN1", "stem_en": "morpholine",  "stem_zh": "吗啉",   "naming_class": "monohetero", "fused": False},
     "piperazine":  {"smiles": "C1CNCCN1", "stem_en": "piperazine",  "stem_zh": "哌嗪",   "naming_class": "monohetero", "fused": False},
     "oxolane":     {"smiles": "C1CCOC1",  "stem_en": "oxolane",     "stem_zh": "四氢呋喃", "naming_class": "monohetero", "fused": False},
-    "oxane":       {"smiles": "C1CCCOC1", "stem_en": "oxane",       "stem_zh": "氧杂环己烷", "naming_class": "monohetero", "fused": True},
+    "oxane":       {"smiles": "C1CCCOC1", "stem_en": "oxane",       "stem_zh": "氧杂环己烷", "naming_class": "monohetero", "fused": True, "fused_prefix": ("pyrano", "吡喃并")},  # 稠合组分须 mancude（P-25.3.1.2.1/.2.3）：由 oxane 派生应取 pyrano
     "oxirane":     {"smiles": "C1CO1",    "stem_en": "oxirane",     "stem_zh": "环氧乙烷", "naming_class": "monohetero","fused": True,},  # 小环与含硫饱和杂环（P-22.2.2）
     "aziridine":   {"smiles": "C1CN1",    "stem_en": "aziridine",   "stem_zh": "氮杂环丙烷", "naming_class": "monohetero","fused": True,},
     "oxetane":     {"smiles": "C1COC1",   "stem_en": "oxetane",     "stem_zh": "氧杂环丁烷", "naming_class": "monohetero","fused": True,},
     "azetidine":   {"smiles": "C1CNC1",   "stem_en": "azetidine",   "stem_zh": "氮杂环丁烷", "naming_class": "monohetero","fused": True,},
-    "thiolane":    {"smiles": "C1CCSC1",  "stem_en": "thiolane",    "stem_zh": "四氢噻吩", "naming_class": "monohetero","fused": True,},
-    "thiane":      {"smiles": "C1CCSCC1", "stem_en": "thiane",      "stem_zh": "四氢噻喃", "naming_class": "monohetero","fused": True,},
+    "thiolane":    {"smiles": "C1CCSC1",  "stem_en": "thiolane",    "stem_zh": "四氢噻吩", "naming_class": "monohetero","fused": True, "fused_prefix": ("thieno", "噻吩并")},  # 同上：thiolane → thieno
+    "thiane":      {"smiles": "C1CCSCC1", "stem_en": "thiane",      "stem_zh": "四氢噻喃", "naming_class": "monohetero","fused": True, "fused_prefix": ("thiopyrano", "噻喃并")},  # 同上：thiane → thiopyrano（噻喃）
     "dioxolane":   {"smiles": "C1COCO1",  "stem_en": "1,3-dioxolane", "stem_zh": "1,3-二氧戊环", "naming_class": "monohetero", "locant_prefix": "1,3-"},  # 双氧/三氧饱和环（缩醛/缩酮、溶剂类骨架）
     "dioxane":     {"smiles": "C1COCCO1", "stem_en": "1,4-dioxane",   "stem_zh": "1,4-二氧六环", "naming_class": "monohetero", "locant_prefix": "1,4-"},
     "trioxane":    {"smiles": "C1OCOCO1", "stem_en": "1,3,5-trioxane", "stem_zh": "1,3,5-三氧六环", "naming_class": "monohetero", "locant_prefix": "1,3,5-"},
@@ -324,7 +324,7 @@ _FUSION_CARBOCYCLES: dict[str, dict] = {  # 单环烃附加组分（P-25.3.2.2.1
     "cyclopropane": {"smiles": "C1CC1",     "prefix_en": "cyclopropa", "prefix_zh": "环丙并"},
     "cyclobutane":  {"smiles": "C1CCC1",    "prefix_en": "cyclobuta",  "prefix_zh": "环丁并"},
     "cyclopentane": {"smiles": "C1CCCC1",   "prefix_en": "cyclopenta", "prefix_zh": "环戊并"},
-    "cyclohexane":  {"smiles": "C1CCCCC1",  "prefix_en": "cyclohexa",  "prefix_zh": "环己并"},
+    "cyclohexane":  {"smiles": "C1CCCCC1",  "prefix_en": "benzo",      "prefix_zh": "苯并"},  # P-25.3.2.2.1「除 benzo 外」：六元环的稠合前缀是保留前缀 benzo，非 cyclohexa
     "cycloheptane": {"smiles": "C1CCCCCC1", "prefix_en": "cyclohepta", "prefix_zh": "环庚并"},
     "cyclooctane":  {"smiles": "C1CCCCCCC1","prefix_en": "cycloocta",  "prefix_zh": "环辛并"},
 }

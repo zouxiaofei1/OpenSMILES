@@ -164,6 +164,22 @@ def _oxoacid_entry(mol: Mol, core: tuple[int, ...]) -> dict | None:
 _OXO_CLASS_BY_KIND = {"sulfonamide": "sulfonamide"}
 
 
+def _p_bridge_arms(mol: Mol, z_idx: int) -> int:
+    """中心 P 的 O-P 桥氧数（P-67.2 双核/多核磷酸的链内链节数；非 P 中心恒 0）。"""
+    z = mol.GetAtomWithIdx(z_idx)
+    if z.GetAtomicNum() != 15:
+        return 0
+    n = 0
+    for nb in z.GetNeighbors():
+        if nb.GetAtomicNum() != O:
+            continue
+        if mol.GetBondBetweenAtoms(z_idx, nb.GetIdx()).GetBondType() == BondType.DOUBLE:
+            continue
+        if any(x.GetAtomicNum() == 15 and x.GetIdx() != z_idx for x in nb.GetNeighbors()):
+            n += 1
+    return n
+
+
 def oxoacid_entries(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> list[dict]:
     """分子中全部含氧酸中心（P/S 非碳骨架成键）的条目列表。"""
     if matches is None:
@@ -173,7 +189,14 @@ def oxoacid_entries(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> l
         e = _oxoacid_entry(mol, m)
         if e is not None:
             by_z[e["oxo_z"]] = e
-    return [by_z[k] for k in sorted(by_z)]
+    entries = [by_z[k] for k in sorted(by_z)]
+    # 缩合磷酸（P-O-P）须链上留有全酸式末端（同一 P ≥2 个酸式氧）才按功能母体识别（P-67.2.1）
+    if not any(int(e["n_oh"]) + int(e["n_om"]) >= 2 for e in entries):
+        entries = [e for e in entries if not _p_bridge_arms(mol, e["oxo_z"])]
+    # 链内 P 让位于更少质子化的磷酸中心（P-41 酸根优先；否则抢走母体会把酸根写成前缀）
+    top_om = max((int(e["n_om"]) for e in entries), default=0)
+    return [e for e in entries
+            if not (int(e["n_om"]) < top_om and _p_bridge_arms(mol, e["oxo_z"]))]
 
 
 def oxoacid_lists(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> dict[str, list[dict]]:

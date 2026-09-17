@@ -111,16 +111,28 @@ def _p45_2_prefix_count(info: dict, parent: dict) -> int:
     return len(iter_claims(mol, parent.get("owned_atoms") or frozenset()))
 
 
+def _condensed_rank(info: dict, cand: dict) -> int:
+    """候选所辖缩合磷酸中心的链内桥氧数（P-67.2.1：多核磷酸以链中 P 为功能母体）；其余恒 0。"""
+    mol = info.get("mol")
+    if mol is None or cand.get("oxo_kind") != "phosphate":
+        return 0
+    from namepredict.layer1.analyzer import _p_bridge_arms
+    ids = set(cand.get("covered_principal_ids") or ())
+    zs = [o.payload["oxo_z"] for o in cand.get("principal_occurrences") or ()
+          if o.id in ids and o.payload.get("oxo_z") is not None]
+    return max((_p_bridge_arms(mol, int(z)) for z in zs), default=0)
+
+
 def _reorder_p45_2(info: dict, cands: list[dict], *, tied: bool = False) -> list[dict]:
     """P-45.2 流水线：按前缀取代基团数目（P-45.2.1）稳定重排候选。"""
     if len(cands) <= 1:
         return cands
-    keyed = sorted(((_p45_2_prefix_count(info, c), i, c) for i, c in enumerate(cands)),
-                   key=lambda t: (-t[0], t[1]))
+    keyed = sorted(((_p45_2_prefix_count(info, c), _condensed_rank(info, c), i, c)
+                    for i, c in enumerate(cands)), key=lambda t: (-t[0], -t[1], t[2]))
     if not tied:
-        return [c for _, _, c in keyed]
+        return [c for _, _, _, c in keyed]
     top = keyed[0][0]
-    return [c for k, _, c in keyed if k == top]
+    return [c for k, _, _, c in keyed if k == top]
 
 
 def _finalize_ranked(info: dict, cands: list[dict]) -> list[dict]:

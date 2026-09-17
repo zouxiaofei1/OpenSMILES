@@ -109,7 +109,7 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "omit_yne_locant": omit_unsat(n, kind, oriented, triple=True),
     }
 
-_FG_GROUP = {"oh": "alcohol", "amine": "amine", "ketone": "ketone", "sh": "thiol"}  # 记录 kind → principal_expression_facts 类别
+_FG_GROUP = {"alcohol": "alcohol", "amine": "amine", "ketone": "ketone", "thiol": "thiol"}  # 记录 kind → principal_expression_facts 类别（键须与 FG_SPECS 的 fg 一致）
 
 
 def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:

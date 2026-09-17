@@ -175,10 +175,10 @@ BRIDGE_ZH_YL_SUFFIX = tuple((f"基{zh}", zh) for zh in BRIDGE_SUFFIX_ZH)
 EXO_RING_SUF: dict[str, tuple] = {  # 环外主基系统名后缀表（group_class → 后缀规格），六个环外 worker 共用 `_exocyclic_ring_names` 一条管线：singular (en, zh) 单取代后缀；plural (en, zh) | None 多取代后缀基底（前拼 MULT_EN/MULT_ZH 倍数词）；None = 该主基无多取代系统名
     "acid":     (("carboxylic acid", "羧酸"), ("carboxylic acid", "羧酸")),
     "aldehyde": (("carbaldehyde", "甲醛"),    ("carbaldehyde", "甲醛")),
-    "ester":    (("carboxylate", "羧酸"),     None),
-    "amide":    (("carboxamide", "甲酰胺"),   None),
-    "nitrile":  (("carbonitrile", "甲腈"),    None),
-    "acyl":     (("carbonyl", "羰基"),        None),
+    "ester":    (("carboxylate", "羧酸"),     ("carboxylate", "羧酸")),
+    "amide":    (("carboxamide", "甲酰胺"),   ("carboxamide", "甲酰胺")),
+    "nitrile":  (("carbonitrile", "甲腈"),    ("carbonitrile", "甲腈")),
+    "acyl":     (("carbonyl", "羰基"),        ("carbonyl", "羰基")),
     "acyl_halide": (("carbonyl", "甲酰"),     None),  # 卤素词由 chain_engine 按 hal_z 动态拼接
 }
 AZANE_PAREN_SUF = ("benzoyl", "carbonyl", "acetyl")  # azane 单取代基内层组加括号的尾缀白名单

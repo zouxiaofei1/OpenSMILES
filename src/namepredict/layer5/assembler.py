@@ -9,13 +9,13 @@ from namepredict.constants import (
     MULT_ZH, PHOSPHORYL_STEMS, ZH_DIGITS, zh_bridge_root,
 )
 from namepredict.layer5.chain_engine import (
-    _ACYL_HALIDE_BY_HAL, _BENZENE_RETAINED, _KIND_TABLE, _chain_names,
+    _ACYL_HALIDE_BY_HAL, _BENZENE_RETAINED, _KIND_TABLE, _benzene_retained, _chain_names,
 )
 from namepredict.layer5.stems import (
     _metal_en_prefix, _metal_zh_suffix, join_anion_names,
 )
 from namepredict.layer5.assembler_prefixes import (
-    _SIMPLE_CHAIN_YL_RE, _enclose, _mult_rows, _prefix_for, oxo_arm_fence,
+    _SIMPLE_CHAIN_YL_RE, _STEREO_LEAD_RE, _enclose, _mult_rows, _prefix_for, oxo_arm_fence,
 )
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
 from namepredict.types import NameResult
@@ -394,13 +394,41 @@ def _fenced_arms(arms: list[dict], mol) -> list[dict]:
              "zh": _fenced_arm(a.get("zh") or "", a, mol)} for a in arms]
 
 
+def _fenced_arm_phosphate(name: str, sub: dict, mol) -> str:
+    """磷酸酯 O-侧臂围栏（P-67.1.3）：环上复合臂或带多个位次的支链臂整体括起。"""
+    if not name or "(" in name or name[:1] == "[":
+        return name  # 已自带括号的复合名不再二次围栏
+    if not sub.get("paren"):
+        return name  # 简单基（methyl/ethyl/…）无歧义，平铺
+    hit = oxo_arm_fence(name, sub, mol) or sum(
+        1 for seg in name.split("-") if seg[:1].isdigit()) > 1
+    return _enclose(name) if hit else name
+
+
+def _fenced_arms_phosphate(arms: list[dict], mol) -> list[dict]:
+    """按磷酸酯专用判据改写 O-侧臂的双语名。"""
+    if _all_arms_stereo_lead(arms):  # 全部臂名均带前导立体描述符：须整体围栏（P-16.5.1.3.1）
+        return [{**a, "en": _enclose(a.get("en") or ""), "zh": _enclose(a.get("zh") or "")}
+                for a in arms]
+    return [{**a, "en": _fenced_arm_phosphate(a.get("en") or "", a, mol),
+             "zh": _fenced_arm_phosphate(a.get("zh") or "", a, mol)} for a in arms]
+
+
+def _all_arms_stereo_lead(arms: list[dict]) -> bool:
+    """多个 O-侧臂是否全部以前导立体描述符开头（单臂不受 P-16.5.1.3.1 的第二臂规则支配）。"""
+    ens = [a.get("en") or "" for a in arms]
+    return len(ens) >= 2 and all(_STEREO_LEAD_RE.match(e) for e in ens)
+
+
 def join_oxoacid_name(pre: tuple[str, str], names: tuple[str, str], numbered: dict) -> tuple[str, str] | None:
     """含氧酸中心母体整名（P-67.1.3）：取代前缀 + O-侧臂 + 词尾 + 金属盐。"""
     tail_en = join_parent_name(pre[0], names[0])
     tail_zh = join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))
     parent = numbered.get("parent") or {}
     arms_in = _o_side_arms(numbered)
-    if parent.get("oxo_kind") != "phosphate":  # 磷酸酯臂不加围栏（P-67.1.3 惯例），其余中心母体按判据加
+    if parent.get("oxo_kind") == "phosphate":  # 磷酸酯臂按专用判据加围栏（P-67.1.3）
+        arms_in = _fenced_arms_phosphate(arms_in, parent.get("mol"))
+    else:  # 其余中心母体按判据加围栏
         arms_in = _fenced_arms(arms_in, parent.get("mol"))
     arms = _join_o_side_arms(arms_in, group=True, arm_zh_fn=_oxoacid_arm_zh)
     if arms is None:
@@ -429,6 +457,9 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     if kind == "acyl_halide":
         entry = _ACYL_HALIDE_BY_HAL.get(parent.get("hal_z")) or entry
     if entry is not None:
+        if kind == "ester" and parent.get("thio_side"):  # P-65.6.3.3.7.1 硫代羧酸 S-酯：thioate/硫酯词尾，无 C1/C2 保留名
+            entry = replace(entry, coda="ane", en_suf="thioate", zh_suf="硫",
+                            ene_base=("enethioate", "烯硫"), yne_suf=("ynethioate", "炔硫"), variant=None)
         sid = parent.get("scaffold_id")
         if kind == "alkane" and parent.get("fused_tree") and sid != "benzene":  # 未注册稠环无 FG：词干注入已完成，返回稠合 base 名
             return _parent_stem_names(numbered)
@@ -441,9 +472,12 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             rule = (lambda n, loc, omit: loc == 1) if kind == "radical" \
                 else (lambda n, loc, omit: bool(omit))
             entry = replace(entry, cyclic=True, ene_loc_omit=True, omit_rule=rule)
-        # 苯环单 FG 取 scaffold 专属保留名（P-61.2 表）。
-        sc_variant = _BENZENE_RETAINED[kind] if sid == "benzene" and kind in _BENZENE_RETAINED \
-            else (entry.variant or {}).get(sid)
+        # 苯环单 FG 取 scaffold 专属保留名（P-61.2 表）；环外硫代羧酸 S-酯走 carbothioate 词干。
+        if sid == "benzene" and kind == "ester" and parent.get("thio_side"):
+            sc_variant = _benzene_retained("benzenecarbothioate", "苯硫代甲酸")
+        else:
+            sc_variant = _BENZENE_RETAINED[kind] if sid == "benzene" and kind in _BENZENE_RETAINED \
+                else (entry.variant or {}).get(sid)
         if sc_variant is not None:
             entry = replace(entry, variant=sc_variant)
         result = _chain_names(entry, n, numbered)
@@ -503,9 +537,11 @@ def _join_o_side_arms(arms: list[dict], *, group: bool, arm_zh_fn) -> tuple[str,
     if len(arms) == 1:
         return arms[0].get("en") or "", arm_zh_fn(arms[0].get("zh") or "")
     if group:
+        from namepredict.tools.re import alpha_order_key
         named = [s for s in arms if (s.get("en") or "").strip()]
         rows = _mult_rows(named, lambda s: (s.get("en") or "").strip(),
-                          lambda s: arm_zh_fn(s.get("zh") or ""))  # 排序沿用原始字符串序
+                          lambda s: arm_zh_fn(s.get("zh") or ""),
+                          alpha_order_key)  # P-14.5：O-侧臂同按字母数字序引用
         parts_en: list[str] = []
         parts_zh: list[str] = []
         for en, zh, m, _ in rows:
@@ -532,15 +568,41 @@ def _join_o_side_arms(arms: list[dict], *, group: bool, arm_zh_fn) -> tuple[str,
     return " ".join(names_en), "".join(names_zh)  # 异名臂：依次平铺（methyl ethyl oxalate）
 
 
+def _fenced_arm_en(name: str) -> str:
+    """O 侧臂英文围栏：前导位次或自带括号的复合名须括起。"""
+    if not name or not (name[0].isdigit() or "(" in name):
+        return name
+    return f"[{name}]" if "(" in name else f"({name})"
+
+
+def _fenced_arm_zh(name: str) -> str:
+    """O 侧臂中文围栏：前导位次或自带括号的复合名须括起。"""
+    if not name or not (name[0].isdigit() or "(" in name or "[" in name):
+        return name
+    return f"[{name}]" if ("(" in name or "[" in name) else f"({name})"
+
+
+def _is_thio_side(numbered) -> bool:
+    """母体是否为硫代羧酸 S-酯（P-65.6.3.3.7.1）：S 侧臂改用 thioate 词尾与斜体 S。"""
+    return bool((numbered or {}).get("parent", {}).get("thio_side"))
+
+
 def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=None) -> tuple[str, str] | None:
-    """拼接酯名：O 侧作前缀、酸侧作主体（P-16.3.2 倍增）。"""
+    """拼接酯名：O 侧作前缀、酸侧作主体（P-16.3.2 倍增）；S 侧走 thioate 整名。"""
     en, zh = names
-    arms = _join_o_side_arms(_o_side_arms(numbered), group=False, arm_zh_fn=_zh_alkoxy_part)
+    thio = _is_thio_side(numbered)
+    arms_in = _o_side_arms(numbered)
+    if thio:
+        arms_in = [{**a, "en": _fenced_arm_en(a.get("en") or "")} for a in arms_in]
+    arms = _join_o_side_arms(arms_in, group=False, arm_zh_fn=_fenced_arm_zh if thio else _zh_alkoxy_part)
     # print("_join_o_side_arms",arms,numbered)
     if arms is None:
         return None
     alk_en, alk_zh = arms
     mid = join_parent_name(pre_en, en)
+    if thio:  # S-乙基 辛硫酯：位次符号在最前，酯词尾接在母体名后
+        return (f"S-{alk_en} {mid}" if alk_en else f"S-{mid}",
+                f"S-{alk_zh}{join_parent_name(pre_zh, zh)}酯" if alk_zh else join_parent_name(pre_zh, zh))
     en = f"{alk_en} {mid}" if alk_en else mid
     zh = f"{join_parent_name(pre_zh, zh)}{alk_zh}酯"
     return en, zh

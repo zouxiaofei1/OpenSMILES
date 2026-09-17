@@ -179,19 +179,25 @@ def _is_ring(parent: dict) -> bool:
     """按 scaffold_id 判断 parent 是否为环系。"""
     return bool(parent.get("scaffold_id"))
 
+def _nh_sites(heteros: list[int], mol) -> list[int]:
+    """P-22.2.2.1.4 指示氢位：环内可带 H 的 N（N-取代者须本为母体氢化物 NH 位，非 =N- 位）。"""
+    def _n(a):
+        return mol.GetAtomWithIdx(a)
+    has_h = [a for a in heteros if _n(a).GetAtomicNum() == 7 and _n(a).GetTotalNumHs() > 0]
+    subs = [a for a in heteros if _n(a).GetAtomicNum() == 7  # 无 H 的 N-取代者：三键全单且带取代基
+            and _n(a).GetTotalNumHs() == 0 and _n(a).GetDegree() == 3]
+    return has_h + [a for a in subs if has_h or _n(a).IsInRingSize(5)]
+
 def _narrow_hetero_ring(cands: list[dict], mol, chain: list[int], float_hetero: bool) -> list[dict]:
-    """杂环编号 P-22.2.2.1.3/(b)：杂原子集→元素序→唑 NH=1。"""
+    """杂环编号 P-22.2.2.1.3/(b)：杂原子集→元素序→指示氢 NH 位次最小化。"""
     heteros = [a for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != 6]
     by_z: dict[int, list[int]] = {}
     for a in heteros:
         by_z.setdefault(mol.GetAtomWithIdx(a).GetAtomicNum(), []).append(a)
     cands = narrow_by_senior(                                           # (a)(b)
         cands, lambda c, at: _locant_set(c, at), heteros, by_z, skip_none=True)
-    if not float_hetero:                                                # (c)
-        n_active = [a for a in heteros
-                    if mol.GetAtomWithIdx(a).GetAtomicNum() == 7
-                    and (mol.GetAtomWithIdx(a).GetTotalNumHs() > 0
-                         or mol.GetAtomWithIdx(a).GetDegree() == 3)]
+    if not float_hetero:                                                # (b)
+        n_active = _nh_sites(heteros, mol)
         if n_active:
             cands = narrow(cands, lambda c: _locant_set(c, sorted(n_active)), skip_none=True)
     return cands
@@ -300,13 +306,13 @@ def _fused_numbering(parent: dict, chain: list[int],
         layers.append(principal_atoms)  # P-14.4(c): principal 特征基团优先于取代基
     from namepredict.layer4.fused_numbering import INDICATED_H
     layers.append(INDICATED_H)  # P-25.3.3.1.2(f): 指示氢位次插在 (c) 之后。
+    hydro_atoms = sorted(a for a in (parent.get("hydro_atoms") or ()) if a in chain_set)
+    if hydro_atoms:
+        layers.append(hydro_atoms)  # P-14.4(e)(i): 加氢位次先于 (f) 可分离前缀；P-31.2.2 指示氢仍优先
     sub_atoms = sorted(s["attach_idx"] for s in (substituents or [])
                        if s.get("attach_idx") in chain_set)
     if sub_atoms:
         layers.append(sub_atoms)  # P-14.4(f): 取代基位次集合最小化
-    hydro_atoms = sorted(a for a in (parent.get("hydro_atoms") or ()) if a in chain_set)
-    if hydro_atoms:
-        layers.append(hydro_atoms)  # P-31.2.2: hydro 加氢位次最低（取代基之后、指示氢之前）
     from namepredict.tools.re import alpha_order_key
     alpha_subs = [(alpha_order_key(s.get("en") or ""), s["attach_idx"])
                   for s in (substituents or []) if s.get("attach_idx") in chain_set]

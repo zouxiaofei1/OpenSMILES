@@ -6,7 +6,7 @@ from enum import Enum
 
 from namepredict.constants import (
     HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES, NITROGEN_STEM_BY_FREE_DOUBLE,
-    O, PHOSPHORUS_STEM_BY_OXO, SULFUR_STEM_BY_OXO,
+    O, PHOSPHORUS_STEM_BY_OXO, S, SULFUR_STEM_BY_OXO,
 )
 from namepredict.layer1.analyzer import _alkoxy_c_of, _double_bonded_o_idxs
 from namepredict.layer1.analyzer import _OXO_Z_ANCHORED as _OXO_CENTER_PARENT
@@ -230,16 +230,27 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
 
 
 def _ester_o_idx(mol, e: dict) -> int | None:
-    """由酯条目现算酯氧索引：羰基碳上另连烷氧基碳的单键氧。"""
+    """由酯条目现算酯侧杂原子索引：羰基碳上另连烃基的单键 O 优先，无 O 时取 S（硫酯）。"""
     center = mol.GetAtomWithIdx(int(e["center_idx"]))
-    return next((n.GetIdx() for n in center.GetNeighbors()
-                 if n.GetAtomicNum() == O and _alkoxy_c_of(n, center) is not None), None)
+    sides = [n.GetIdx() for n in center.GetNeighbors()
+             if n.GetAtomicNum() in (O, S) and _alkoxy_c_of(n, center) is not None]
+    return next((i for i in sides if mol.GetAtomWithIdx(i).GetAtomicNum() == O),
+                sides[0] if sides else None)
+
+
+def _thio_fields(mol, o_idx: int | None) -> dict:
+    """硫代酯标记：S 侧臂的酯按 P-65.6.3.3.7.1 换用 thioate 词尾与斜体 S 位次。"""
+    if o_idx is None or mol.GetAtomWithIdx(o_idx).GetAtomicNum() != S:
+        return {}
+    return {"thio_side": True}
 
 
 def ester_fields(info: dict, occurrences, fields: dict) -> dict:
     """取首个酯 occurrence 并写入酯字段（alkoxy_n 恒 0）。"""
     o_idx = _ester_o_idx(info["mol"], occurrences[0].payload)
-    return {**fields, "o_idx": o_idx, "alkoxy_n": 0} if o_idx is not None else fields
+    if o_idx is None:
+        return fields
+    return {**fields, "o_idx": o_idx, "alkoxy_n": 0, **_thio_fields(info["mol"], o_idx)}
 
 
 def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
@@ -353,9 +364,10 @@ def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
     o_idx = _ester_o_idx(info["mol"], occurrences[0].payload)
     if o_idx is None:
         return fields
+    thio = _thio_fields(info["mol"], o_idx)
     if len(occurrences) == 1:
-        return {**fields, "o_idx": o_idx, "alkoxy_n": 0}
-    return {**fields, "o_idx": o_idx}
+        return {**fields, "o_idx": o_idx, "alkoxy_n": 0, **thio}
+    return {**fields, "o_idx": o_idx, **thio}
 
 def _anchor_free_double(mol: Mol, idx: int) -> bool:
     """锚点原子与 `*` 虚拟原子之间的键是否为双键。"""
