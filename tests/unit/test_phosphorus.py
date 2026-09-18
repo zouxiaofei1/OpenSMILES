@@ -87,12 +87,29 @@ def test_non_phosphate_guard(smiles: str, en: str, zh: str | None) -> None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
 
 
-# 结构近邻负例：不产出磷酸条目。P(III) / P–O–P 焦磷酸 / P–C 膦酸。
+# 结构近邻负例：不产出磷酸条目。P(III) / P–C 膦酸。
+# 焦磷酸 P–O–P 不在负例内：P-67.2 下每个链节仍算磷酸中心，见 CONDENSED 正例。
 phosphate__EXCLUDED = [
     "OP(O)O",                 # 亚磷酸 P(III)，无 P=O
-    "O=P(O)(O)OP(=O)(O)O",   # 焦磷酸 P–O–P
     "CCP(=O)(O)O",            # 膦酸 P–C
 ]
+
+
+# 缩合磷酸（P–O–P）正例：链上无全酸式末端时仍取磷酸为母体，不得退为…甲烷母体。
+condensed_phosphate__CASES = [
+    ("O=P(O)(O)OP(=O)(O)O", "phosphono dihydrogen phosphate", None),   # 与 PubChem CID 1023 一致
+    ("CCOP(=O)(O)OP(=O)(O)OCC", "ethoxy(hydroxy)phosphoryl ethyl hydrogen phosphate", None),
+    ("COP(=O)(OC)OP(=O)(OC)OC", "dimethoxyphosphoryl dimethyl phosphate", None),  # 与 PubChem CID 120330 一致
+]
+
+
+@pytest.mark.parametrize("smiles,en,zh", condensed_phosphate__CASES)
+def test_condensed_phosphate_parent(smiles: str, en: str, zh: str | None) -> None:
+    r = SMILESNNamer().name(smiles)
+    assert r.success, f"{smiles}: {r.meta}"
+    assert normalize_en(r.en) == normalize_en(en)
+    if zh is not None:
+        assert normalize_zh(r.zh) == normalize_zh(zh)
 
 
 @pytest.mark.parametrize("smiles", phosphate__EXCLUDED)
@@ -130,9 +147,10 @@ phosphoryl_prefix__STAR_CASES = [
     ("*OP(=O)(O)OC", "[hydroxy(methoxy)phosphoryl]oxy", "[羟基(甲氧基)磷酰基]氧基"),
     ("*OP(=O)(OCC)SCCC", "[ethoxy(propylsulfanyl)phosphoryl]oxy", None),
     ("*OP(=O)([O-])OC", "[methoxy(oxido)phosphoryl]oxy", None),
-    # 焦磷酸：P–O–P 两侧都必须是 phosphoryl，不得降级为碳
-    ("COP(=O)(O)OP(=O)(O)OC",
-     "[hydroxy-[[hydroxy(methoxy)phosphoryl]oxy]phosphoryl]oxymethane", None),
+    # 缩合磷酸片段：P–O–P 两侧都必须是 phosphoryl，不得降级为碳
+    ("*COP(=O)(O)OP(=O)(O)OC",
+     "[hydroxy-[[hydroxy(methoxy)phosphoryl]oxy]phosphoryl]oxymethyl",
+     "[羟基-[[羟基(甲氧基)磷酰基]氧基]磷酰基]氧基甲基"),
 ]
 
 phosphoryl_prefix__WHOLE_CASES = [

@@ -233,3 +233,39 @@ def test_methylsulfanyl_retained(smiles: str, en: str, zh: str | None) -> None:
     assert normalize_en(r.en) == normalize_en(en)
     if zh is not None:
         assert normalize_zh(r.zh) == normalize_zh(zh)
+
+
+# ==========================================================================
+# 硫酸族：无碳臂硫中心的硫酸母体识别
+# IUPAC: P-67.1.3, P-67.2.1
+# Layer: L1,L2,L5
+#
+# 无碳臂的硫中心两臂皆酸式氧或 O-臂：硫酸本体/酸根/硫酸(氢)酯同归 sulfate 母体；
+# S-O-S 链与 P-O-P 链同构——留一个链节作硫酸母体，其余作磺酰前缀，不得退为甲烷母体。
+# ==========================================================================
+sulfate__CASES = [
+    ("OS(=O)(=O)O", "sulfuric acid", "硫酸"),
+    ("OS(=O)(=O)[O-]", "hydrogen sulfate", None),
+    ("[O-]S(=O)(=O)[O-]", "sulfate", None),
+    ("COS(=O)(=O)O", "methyl hydrogen sulfate", "硫酸氢甲酯"),
+    ("COS(=O)(=O)OC", "dimethyl sulfate", "硫酸二甲酯"),
+    ("CCOS(=O)(=O)OCC", "diethyl sulfate", None),
+    ("OS(=O)(=O)OS(=O)(=O)O", "sulfo hydrogen sulfate", None),
+    ("COS(=O)(=O)OS(=O)(=O)OC", "methoxysulfonyl methyl sulfate", None),
+]
+
+# 碳臂硫中心仍走磺酸/磺酸酯族：硫酸族放开不得截胡
+sulfate__NEG_SULFONIC = [
+    ("CS(=O)(=O)O", "methanesulfonic acid", "甲磺酸"),
+    ("CS(=O)(=O)OC", "methyl methanesulfonate", "甲磺酸甲酯"),
+    ("O=S(=O)(O)CC", "ethanesulfonic acid", "乙磺酸"),
+]
+
+
+@pytest.mark.parametrize("smiles,en,zh", [*sulfate__CASES, *sulfate__NEG_SULFONIC])
+def test_sulfate_parent(smiles: str, en: str, zh: str | None) -> None:
+    r = SMILESNNamer().name(smiles)
+    assert r.success, f"{smiles}: {r.meta}"
+    assert normalize_en(r.en) == normalize_en(en)
+    if zh is not None:
+        assert normalize_zh(r.zh) == normalize_zh(zh)

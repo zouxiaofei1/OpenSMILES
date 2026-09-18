@@ -98,8 +98,8 @@ def _oxo_kind(mol: Mol, z_idx: int) -> str | None:
         return _OXO_KIND_P.get((r["oxo"], r["c"] > 0))
     if r["oxo"] != 2:
         return None
-    if not r["c"]:  # 无直连碳：中心自任母体，两臂须一酸式一 O-R（硫酸氢酯/硫酸酯）
-        return "sulfate" if r["oh"] + r["om"] == 1 and r["o_arm"] == 1 else None
+    if not r["c"]:  # 无直连碳：中心自任母体，两臂皆酸式氧或 O-臂（硫酸/硫酸根/硫酸酯/多硫酸链）
+        return "sulfate" if r["oh"] + r["om"] + r["o_arm"] == 2 else None
     arm = ("halo" if r["hal"] else "n" if r["n"] else "acid" if r["oh"] + r["om"] else "o_arm")
     return _OXO_KIND_S_ARM.get(arm)
 
@@ -145,7 +145,7 @@ def _oxoacid_entry(mol: Mol, core: tuple[int, ...]) -> dict | None:
         return None
     core_set = set(core)
     c_roots, o_roots, oh, om, _acid = _oxo_arm_roots(mol, z_idx)
-    if kind in _OXO_Z_ANCHORED:  # 中心为母体：臂单点回接 + 整分子纯度（排除臂间成环、焦磷酸等）
+    if kind in _OXO_Z_ANCHORED:  # 中心为母体：臂单点回接 + 整分子纯度（排除臂间成环）
         arm = _arm_single_attach(mol, c_roots + o_roots, core_set)
         if arm is None:
             return None
@@ -164,10 +164,11 @@ def _oxoacid_entry(mol: Mol, core: tuple[int, ...]) -> dict | None:
 _OXO_CLASS_BY_KIND = {"sulfonamide": "sulfonamide"}
 
 
-def _p_bridge_arms(mol: Mol, z_idx: int) -> int:
-    """中心 P 的 O-P 桥氧数（P-67.2 双核/多核磷酸的链内链节数；非 P 中心恒 0）。"""
+def _oxo_bridge_arms(mol: Mol, z_idx: int) -> int:
+    """中心 P/S 的 O-桥氧数（P-67.2 双核/多核磷酸与多硫酸的链内链节数；非 P/S 中心恒 0）。"""
     z = mol.GetAtomWithIdx(z_idx)
-    if z.GetAtomicNum() != 15:
+    znum = z.GetAtomicNum()
+    if znum not in (15, 16):
         return 0
     n = 0
     for nb in z.GetNeighbors():
@@ -175,7 +176,7 @@ def _p_bridge_arms(mol: Mol, z_idx: int) -> int:
             continue
         if mol.GetBondBetweenAtoms(z_idx, nb.GetIdx()).GetBondType() == BondType.DOUBLE:
             continue
-        if any(x.GetAtomicNum() == 15 and x.GetIdx() != z_idx for x in nb.GetNeighbors()):
+        if any(x.GetAtomicNum() == znum and x.GetIdx() != z_idx for x in nb.GetNeighbors()):
             n += 1
     return n
 
@@ -190,13 +191,17 @@ def oxoacid_entries(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> l
         if e is not None:
             by_z[e["oxo_z"]] = e
     entries = [by_z[k] for k in sorted(by_z)]
-    # 缩合磷酸（P-O-P）须链上留有全酸式末端（同一 P ≥2 个酸式氧）才按功能母体识别（P-67.2.1）
+    # 缩合含氧酸（P-O-P / S-O-S）须链上留有全酸式末端（同一中心 ≥2 个酸式氧）才按功能母体识别（P-67.2.1）
     if not any(int(e["n_oh"]) + int(e["n_om"]) >= 2 for e in entries):
-        entries = [e for e in entries if not _p_bridge_arms(mol, e["oxo_z"])]
-    # 链内 P 让位于更少质子化的磷酸中心（P-41 酸根优先；否则抢走母体会把酸根写成前缀）
+        # 无全酸式末端时也不能整链退为取代基：至少留酸式氧最多的链节作母体（否则母体落到甲烷）
+        top_acid = max((int(e["n_oh"]) + int(e["n_om"]) for e in entries), default=0)
+        entries = [e for e in entries
+                   if not _oxo_bridge_arms(mol, e["oxo_z"])
+                   or int(e["n_oh"]) + int(e["n_om"]) == top_acid]
+    # 链内中心让位于更少质子化的酸中心（P-41 酸根优先；否则抢走母体会把酸根写成前缀）
     top_om = max((int(e["n_om"]) for e in entries), default=0)
     return [e for e in entries
-            if not (int(e["n_om"]) < top_om and _p_bridge_arms(mol, e["oxo_z"]))]
+            if not (int(e["n_om"]) < top_om and _oxo_bridge_arms(mol, e["oxo_z"]))]
 
 
 def oxoacid_lists(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> dict[str, list[dict]]:

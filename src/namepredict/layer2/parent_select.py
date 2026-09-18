@@ -112,15 +112,15 @@ def _p45_2_prefix_count(info: dict, parent: dict) -> int:
 
 
 def _condensed_rank(info: dict, cand: dict) -> int:
-    """候选所辖缩合磷酸中心的链内桥氧数（P-67.2.1：多核磷酸以链中 P 为功能母体）；其余恒 0。"""
+    """候选所辖缩合含氧酸中心的链内桥氧数（P-67.2.1：多核磷酸/硫酸以链中中心为功能母体）；其余恒 0。"""
     mol = info.get("mol")
-    if mol is None or cand.get("oxo_kind") != "phosphate":
+    if mol is None or cand.get("oxo_kind") not in ("phosphate", "sulfate"):
         return 0
-    from namepredict.layer1.analyzer import _p_bridge_arms
+    from namepredict.layer1.analyzer import _oxo_bridge_arms
     ids = set(cand.get("covered_principal_ids") or ())
     zs = [o.payload["oxo_z"] for o in cand.get("principal_occurrences") or ()
           if o.id in ids and o.payload.get("oxo_z") is not None]
-    return max((_p_bridge_arms(mol, int(z)) for z in zs), default=0)
+    return max((_oxo_bridge_arms(mol, int(z)) for z in zs), default=0)
 
 
 def _reorder_p45_2(info: dict, cands: list[dict], *, tied: bool = False) -> list[dict]:
