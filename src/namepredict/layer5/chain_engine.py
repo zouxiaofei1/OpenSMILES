@@ -113,7 +113,7 @@ def _unsat_loc_omit(spec: "_Chain", b: str, form: str, single: bool, numbered: d
     if not single or form not in ("fused", "polyol"):
         return False
     if b == "ene":
-        return form == "fused" and spec.ene_loc_omit and bool(numbered.get("omit_ene_locant"))
+        return (spec.ene_loc_omit or form == "polyol") and bool(numbered.get("omit_ene_locant"))
     return bool(numbered.get("omit_yne_locant")) and (spec.yne_loc_omit or form == "polyol")
 
 

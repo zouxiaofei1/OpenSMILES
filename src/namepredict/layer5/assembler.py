@@ -105,6 +105,24 @@ def _azane_acyl_stereo_lead(en: str) -> bool:
     tag, stem = _stereo_lead(en)
     return bool(tag) and (stem.endswith("oyl") or "carbonyl" in stem)
 
+_SUB_LOCANT_RE = re.compile(r"(?:^|[-(\[])\d+(?:,\d+)*[a-z]?-(?!(?:en|yn|an|in))")  # 取代基自带位次（排除母体词干内烯/炔位次）
+_AZANE_ACYL_RE = re.compile(r"(?:oyl|carbonyl)$")  # 酰基前端词尾
+
+
+def _azane_front_needs_paren(a: dict) -> bool:
+    """azane 前端是否须括起再缀 amino（P-63.2.2.1.1）：前端自带多个位次段（复合取代基）。
+
+    单取代前端（2-sulfanylethyl、2-hydroxyethyl）、酰基前端与苯基前端（走 anilino 保留式）
+    直接与 amino 融合（…oylamino / …anilino）。
+    """
+    name = a.get("en") or ""
+    if not name or _AZANE_ACYL_RE.search(name) or any(c in name for c in "()[]"):
+        return False  # 酰基前端走融合式；已自带括号的前端由 L5 统一升级围栏
+    if name.endswith("phenyl"):
+        return False  # 苯基前端走 anilino 保留式（P-62.2.1.1），不再单独括起
+    return len(_SUB_LOCANT_RE.findall(name)) >= 2
+
+
 def _azane_sub_needs_paren(a: dict) -> bool:
     """azane 单取代基是否需括起再缀 amino（P-16.5.1.1）。"""
     if not a.get("paren"):  # 简单取代基（methyl/chloro…）无歧义，平铺。
@@ -236,10 +254,12 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
             amido = AMIDO_RETAINED.get(a.get("en") or "")  # P-66.1.1.4.3 方法 1：单 N-酰基残基收成 amido 保留式
             if amido is not None:
                 return amido
-            if _azane_acyl_stereo_lead(a.get("en") or "") or _azane_sub_needs_paren(a):  # 方法 2 需把内层组整体括起再加 amino（P-29.3.2）
+            if _azane_acyl_stereo_lead(a.get("en") or "") or _azane_sub_needs_paren(a):
                 w_en = _enclose(a["en"])  # 内层已含括号（立体描述符）时升级为方括号（P-16.5.2 嵌套）
                 w_zh = _enclose(a["zh"])
                 return f"{w_en}amino", f"{w_zh}氨基"
+            if _azane_front_needs_paren(a):
+                return f"({a['en']})amino", f"({a['zh']})氨基"  # 复合前端：前端括起再缀 amino（P-63.2.2.1.1）
         en, zh = free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
                             paren=bool(a.get("paren")))[:2]
         return _retained_alkoxy(en, zh) if stem_en == "oxidane" else (en, zh)
@@ -448,6 +468,16 @@ def join_oxoacid_name(pre: tuple[str, str], names: tuple[str, str], numbered: di
     return f"{alk_en} {tail_en}", f"{tail_zh}{alk_zh}酯"
 
 
+def _c1_amino(parent: dict) -> bool:
+    """单碳母体（C1 保留名）的官能团碳是否直连 N（氨基甲酸酯类，P-66.3.2）。"""
+    mol, chain = parent.get("mol"), list(parent.get("chain") or ())
+    if mol is None or len(chain) != 1:
+        return False
+    atom = mol.GetAtomWithIdx(int(chain[0]))
+    return atom.GetAtomicNum() == 6 and any(
+        n.GetAtomicNum() == 7 for n in atom.GetNeighbors())
+
+
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     """链引擎按表 kind 派发，再转具体 worker。"""
     parent = numbered.get("parent") or {}
@@ -481,6 +511,13 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         if sc_variant is not None:
             entry = replace(entry, variant=sc_variant)
         result = _chain_names(entry, n, numbered)
+        if result and _c1_amino(parent):
+            if kind == "ester":  # P-66.3.2 氨基甲酸酯：酸碳连 N → carbamate/氨基甲酸
+                result = (result[0].replace("formate", "carbamate"),
+                          result[1].replace("甲酸", "氨基甲酸"))
+            elif kind == "acyl_halide":  # P-66.1.1.4.1 氨基甲酰卤：carbamoyl/氨基甲酰
+                result = (result[0].replace("formyl", "carbamoyl"),
+                          result[1].replace("甲酰", "氨基甲酰"))
         return result
 
     return _parent_stem_names(numbered)

@@ -99,11 +99,11 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "oxazolidine": {"smiles": "C1NCCO1",  "stem_en": "1,3-oxazolidine", "stem_zh": "1,3-噁唑烷", "naming_class": "monohetero", "locant_prefix": "1,3-"},  # 饱和 5 元双杂环（噁唑烷/咪唑烷/噻唑烷）
     "imidazolidine":{"smiles": "C1NCCN1", "stem_en": "imidazolidine",  "stem_zh": "咪唑烷", "naming_class": "monohetero"},
     "thiazolidine":{"smiles": "C1NCCS1",  "stem_en": "1,3-thiazolidine", "stem_zh": "1,3-噻唑烷", "naming_class": "monohetero", "locant_prefix": "1,3-"},
-    "dihydrofuran":  {"smiles": "C1C=CCO1",   "stem_en": "2,5-dihydrofuran", "stem_zh": "2,5-二氢呋喃", "naming_class": "monohetero"},  # 部分不饱和 5/6 元杂环（P-22.2.2 加氢前缀）
-    "dihydropyran":  {"smiles": "C1=COCCC1",  "stem_en": "3,4-dihydro-2H-pyran", "stem_zh": "3,4-二氢-2H-吡喃", "naming_class": "monohetero"},
-    "dihydropyrrole":{"smiles": "C1C=CCN1",   "stem_en": "2,5-dihydro-1H-pyrrole", "stem_zh": "2,5-二氢-1H-吡咯", "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "dihydroimidazole":{"smiles": "C1=NCCN1", "stem_en": "4,5-dihydro-1H-imidazole", "stem_zh": "4,5-二氢-1H-咪唑", "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "dihydrothiazole":{"smiles": "C1=NCCS1",  "stem_en": "4,5-dihydro-1,3-thiazole", "stem_zh": "4,5-二氢-1,3-噻唑", "naming_class": "monohetero", "locant_prefix": "1,3-"},
+    "dihydrofuran":  {"smiles": "C1C=CCO1",   "stem_en": "2,5-dihydrofuran", "stem_zh": "2,5-二氢呋喃", "naming_class": "monohetero", "standard": (("1", "2", "3", "4", "5"), (4, 0, 1, 2, 3))},  # 部分不饱和 5/6 元杂环（P-22.2.2 加氢前缀）；字面位次即固定编号(P-14.4(a)/(b))
+    "dihydropyran":  {"smiles": "C1=COCCC1",  "stem_en": "3,4-dihydro-2H-pyran", "stem_zh": "3,4-二氢-2H-吡喃", "naming_class": "monohetero", "standard": (("1", "2", "3", "4", "5", "6"), (2, 3, 4, 5, 0, 1))},
+    "dihydropyrrole":{"smiles": "C1C=CCN1",   "stem_en": "2,5-dihydro-1H-pyrrole", "stem_zh": "2,5-二氢-1H-吡咯", "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True, "standard": (("1", "2", "3", "4", "5"), (4, 0, 1, 2, 3))},
+    "dihydroimidazole":{"smiles": "C1=NCCN1", "stem_en": "4,5-dihydro-1H-imidazole", "stem_zh": "4,5-二氢-1H-咪唑", "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True, "standard": (("1", "2", "3", "4", "5"), (4, 0, 1, 2, 3))},
+    "dihydrothiazole":{"smiles": "C1=NCCS1",  "stem_en": "4,5-dihydro-1,3-thiazole", "stem_zh": "4,5-二氢-1,3-噻唑", "naming_class": "monohetero", "locant_prefix": "1,3-", "standard": (("1", "2", "3", "4", "5"), (4, 0, 1, 2, 3))},
     "indole":         {"smiles": "c1ccc2[nH]ccc2c1", "stem_en": "1H-indole",      "stem_zh": "吲哚",     "naming_class": "fused56", "fused": True, "fused_stem": ("indole", "吲哚"), "locant_prefix": "1H-", "prefix_nh_conditional": True, "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},  # fused 5+6（9 原子）标准编号，杂原子走远离桥头方向
     "indazole":       {"smiles": "c1ccc2cn[nH]c2c1", "stem_en": "indazole",       "stem_zh": "吲唑",     "naming_class": "fused56", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True, "standard": (FUSED56_LABELS, (6, 5, 4, 3, 2, 1, 0, 8, 7))},
     "benzimidazole":  {"smiles": "c1ccc2[nH]cnc2c1", "stem_en": "benzimidazole",  "stem_zh": "苯并咪唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
@@ -145,12 +145,23 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
 }
 
 
+def _bracketed_stem(entry: dict) -> tuple[str, str]:
+    """杂原子位次带方括号的稠合组分名（P-25.3.5 稠合母体须引用完整位次）。"""
+    lp = entry.get("locant_prefix") or ""
+    bare = lp[:-1] if lp.endswith("-") else ""
+    if bare and bare.replace(",", "").isdigit() \
+            and not entry["stem_en"][:1].isdigit():  # 1-/1,3-/1,2,4- 型；"1H-" 与词干已带位次（1,2-oxazole）不重复加
+        br = f"[{bare}]"
+        return br + entry["stem_en"], br + entry["stem_zh"]
+    return entry["stem_en"], entry["stem_zh"]
+
+
 def component_stem(sid: str) -> tuple[str, str] | None:
     """稠合组分词干 """
     entry = _TEMPLATES.get(sid)
     if not entry or not entry.get("fused"):
         return None
-    return entry.get("fused_stem") or (entry["stem_en"], entry["stem_zh"])
+    return entry.get("fused_stem") or _bracketed_stem(entry)
 
 
 def retained_fusion_prefix(sid: str) -> tuple[str, str] | None:

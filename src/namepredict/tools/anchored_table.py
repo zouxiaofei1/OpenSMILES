@@ -83,7 +83,7 @@ _REGISTRY: dict[str, RetainedSubstituent] = {
     "phosphonatooxy": RetainedSubstituent("phosphonatooxy", "膦酸氧基", anchored=("*OP(=O)([O-])O", "*OP(=O)([O-])[O-]"), paren=False),
     "phosphonooxymethyl": RetainedSubstituent("phosphonooxymethyl", "膦酸氧甲基", anchored=("*COP(=O)(O)O",), paren=True),
     "phosphonatooxymethyl": RetainedSubstituent("phosphonatooxymethyl", "膦酸氧甲基", anchored=("*COP(=O)([O-])O",), paren=True),
-    "formyl": RetainedSubstituent("formyl", "甲酰", anchored=("*C=O",), paren=False),
+    "formyl": RetainedSubstituent("formyl", "甲酰基", anchored=("*C=O",), paren=False),
     "carboxymethyl": RetainedSubstituent("carboxymethyl", "羧甲基", anchored=("*CC(=O)O",), paren=True),
     "hydroxymethyl": RetainedSubstituent("hydroxymethyl", "羟甲基", anchored=("*CO",), paren=True),
     "nitroso": RetainedSubstituent("nitroso", "亚硝基", anchored=("*N=O",), paren=False),

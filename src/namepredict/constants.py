@@ -201,7 +201,8 @@ CHAIN_RETAINED = {  # C1/C2 开链英文 IUPAC 保留名（formic/acetic…）�
 RETAINED_FUSION_ALIASES: dict[str, tuple[str, str]] = {  # 稠合组装名 → 保留名（P-25.1.1）；只收位次形态与稠合名完全相同的条目，命中即整名替换
     "benzo[c]furan":       ("2-benzofuran",  "2-苯并呋喃"),    # 异苯并呋喃：O 占 2 位，1/3 位为环碳
     "benzo[c]pyrrole":     ("isoindole",     "异吲哚"),        # N 占 2 位
-    "benzo[b]benzofuran":  ("dibenzofuran",  "二苯并呋喃"),
+    "benzo[b]benzofuran":  ("dibenzofuran",  "二苯并呋喃"),      # 兼容无方括号写法
+    "benzo[b][1]benzofuran": ("dibenzofuran", "二苯并呋喃"),     # 组分名按 P-25.3.5 引用 [1]
     "benzo[b]quinoxaline": ("phenazine",     "菲嗪"),
     "benzo[a]indene":      ("fluorene",      "芴"),
     "benzo[d]1,2-oxazole": ("1,2-benzoxazole", "1,2-苯并噁唑"),
