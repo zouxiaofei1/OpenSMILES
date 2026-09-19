@@ -726,6 +726,7 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     """组装入口：取名 → 前缀 → 阴离子/R-S/金属盐后缀。"""
     from namepredict.layer5.stereo import join_ez_prefix, join_rs_prefix
+    print("layer5 assembling!!!")
     parent = numbered.get("parent") or {}  # 母体 kind 与碳数 n（无则 0）
     kind, n = parent.get("kind"), int(parent.get("n_carbons") or 0)
     if not _ensure_fused_stem(numbered):

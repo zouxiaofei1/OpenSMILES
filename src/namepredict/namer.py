@@ -86,7 +86,7 @@ def _remap_candidates(parent: dict) -> list[int]:
         out.extend(sorted(facts.anchor_atoms))
     return out
 
-_MAX_TIED_CANDIDATES = 4  # P-45.2.2 需要为每个并列候选各跑一次 L3–L5，上限防止组合爆炸（benchmark 中并列组多为 2–4 个）。
+
 
 
 def _subs_for_numbering(parent: dict, subst: list[dict]) -> list[dict]:
@@ -117,14 +117,18 @@ def _prepare_candidate(
     info: dict, parent: dict, *, cache: CommonNameCache | None = None,
 ) -> tuple[dict, list[dict], bool]:
     """完成母体归属与取代基提取，返回三元组。"""
+    print("l3")
     mol = info["mol"]
     parent = finalize_parent_ownership(parent, mol)
     if not parent.get("owned_atoms"):
+        print(11)
         return parent, [], False
     if not parent.get("chain") and not info.get("has_ring"):
+        print(22)
         return parent, [], False
     subst = extract_substituents(info, parent, cache=cache)
-    complete = build_coverage_ledger(mol, owned_atoms=parent["owned_atoms"], names=[]).complete  # names=[]：只看 gap（owned 覆盖全部重原子）
+    complete = build_coverage_ledger(mol, owned_atoms=parent["owned_atoms"], names=[]).complete  
+    print(parent,subst,complete)
     return parent, subst, complete
 
 def _candidate_key(hit: NameResult) -> tuple:
@@ -146,6 +150,7 @@ def _try_phase(prepared, *, t0):
     """L4+L5入口"""
     hits = []
     for order, (parent, subst, complete) in enumerate(prepared):
+        
         hit = _assemble_candidate(parent, subst, t0=t0)
         if hit is not None:
             hit.meta = {**(hit.meta or {}), "fallback": "no_coverage_gate"}
@@ -154,16 +159,17 @@ def _try_phase(prepared, *, t0):
 
 
 def _candidate_phases(info: dict) -> list[list[dict]]:
-    """选取候选母体阶段列表（P-45.2.1 并列组，有上限）。"""
+    """选取候选母体阶段列表"""
     group = select_parent(info)
-    return [group[:_MAX_TIED_CANDIDATES]] if group else [[]]
+    return [group] if group else [[]]
 
 
 def _run_candidates(
     info: dict, *, t0: float, cache: CommonNameCache | None = None,
 ) -> NameResult:
-    """仅尝试 P-44.1.1 高优先级阶段；绝不降级能力。"""
+    """_run_candidates"""
     phase = _candidate_phases(info)[0]#Layer2入口
+    print("phase",phase,"end")
     prepared = [_prepare_candidate(info, cand, cache=cache) for cand in phase]#L3
     hit = _try_phase(prepared, t0=t0)#L4入口
     return hit or _fail(_elapsed_ms(t0), "no_assemblable_candidate")

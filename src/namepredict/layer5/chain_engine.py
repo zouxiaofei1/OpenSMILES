@@ -229,7 +229,7 @@ def _elide_parent_e(stem: str, suffix: str) -> str:
 def _chain_plain(spec: _Chain, s: str, zs: str, n: int) -> tuple[str, str]:
     """普通名: 俗名表 → 派生命名 → 词干拼接."""
     pair = None
-    if spec.plain_maps:  # 双语映射表取 n 的 (en, zh) 对，缺失留 None 由 plain_fn 兜底
+    if spec.plain_maps: 
         en_map, zh_map = spec.plain_maps
         en, zh = en_map.get(n), zh_map.get(n)
         pair = (en, zh) if en and zh else None

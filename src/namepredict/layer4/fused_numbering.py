@@ -124,7 +124,7 @@ def _candidates(mol, rings, coords, fused: set[int]) -> list[tuple[list[int], li
     for sr in _top_rings(coords, rings):
         starts = _top_atoms(coords, rings[sr], fused)
         if not starts:
-            for nb_ring in rings:  # 最上端环无起点时取相邻环者(P-25.3.3.1.1 兜底)
+            for nb_ring in rings:  
                 if set(nb_ring) & set(rings[sr]):
                     starts = _top_atoms(coords, nb_ring, fused)
                     if starts:

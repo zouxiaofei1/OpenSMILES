@@ -24,7 +24,7 @@ def _component_numbering(mol, node, rings, fusion_edges, shared=None):
     if not rset:
         return None, None
     sub_rings = [rings[i] for i in rset]
-    if shared is None:  # 兜底: 取附加组分的 fusion_shared（可能为空）
+    if shared is None:  
         shared = node.attached[0].fusion_shared[0] if node.attached and node.attached[0].fusion_shared else None
     idx_map = {i: k for k, i in enumerate(rset)}
     sub_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in fusion_edges

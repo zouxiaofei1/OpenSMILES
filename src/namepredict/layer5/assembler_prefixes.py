@@ -202,9 +202,6 @@ def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
             return _place(mult, _bridge_body(*sp, merge=merge), subs, omit)
     return _place(mult, _wrap_stem(stem, need), subs, omit)
 
-
-# 复合数量前缀语言参数：语言 → (sentinel, 倍增表)。
-# sentinel 兜底 retained 组合叶；paren 标记递归组分。
 _COMPLEX_MULT_LANG = {"en": ("carboxy", BIS_EN, MULT_EN), "zh": ("羧", BIS_ZH, MULT_ZH)}
 
 

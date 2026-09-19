@@ -163,9 +163,9 @@ def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
         n_rings = sum(1 for ring in sssr_rings(mol) if set(ring) <= atoms)  # 未注册芳香稠环 kind 收敛 alkane
         if n_rings >= 2:
             return "alkane"
-        return None
+        # return None
     all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atoms)
-    return "alkane" if all_carbon else None  # 纯烃环统一 kind='alkane'（环系/不饱和度另由字段承载）
+    return "alkane"   # 纯烃环统一 kind='alkane'（环系/不饱和度另由字段承载）
 
 
 def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str | None:
@@ -198,10 +198,12 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
     """解析并写入 scaffold 身份与表达能力字段。"""
 
     from namepredict.layer2.ring_expression_policy import supports_ring_expression
+    print("resolving scaffold...")
     if scaffold is None:
         from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
         scaffold = resolve_ring_scaffold(info, skeleton)  # print(scaffold)
     fields: dict = {}
+    print(scaffold)
     if scaffold:
         supported = supports_ring_expression(scaffold, facts) if facts else False
         match = None  # 保留 fused 模板匹配映射，供 L4 固定编号用
@@ -214,6 +216,7 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
         fields = {"scaffold_id": scaffold.id, "scaffold_identity": scaffold,
                   "scaffold_match": match,
                   "typed_ring_expression_supported": supported}  # print({"scaffold_id": scaffold.id, "scaffold_identity": scaffold, "scaffold_match": match, "typed_ring_expression_supported": supported})
+        
         if match:  # 加氢原子集：编号完成后由 L4 换算为 hydro 前缀位次
             hydro = hydrogenated_atoms(info["mol"], scaffold.id, match)
             if hydro:
@@ -262,6 +265,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     scaffold = resolve_ring_scaffold(info, skeleton)
     occurrences = _covered(selection, skeleton)
     kind = _ring_kind(info, selection, skeleton, len(occurrences), scaffold, occurrences)
+    print(scaffold,"kind",kind)
     if kind is None:
         return None
     facts = _facts(selection, skeleton, occurrences, info["mol"])
@@ -303,7 +307,7 @@ def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> d
     """为骨架内 C=C/C≡C 附加双/三键位次字段（mancude 环内略过）。"""
     atom_set = set(skeleton.atom_ids)
     dbs, tbs = _chain_polys(info, atom_set)
-    if fields.get("scaffold_id") == "carbocycle":  # 无保留 mancude 名兜底的碳环：环内 C=C 由 Kekulé 补回
+    if fields.get("scaffold_id") == "carbocycle":  
         dbs = dbs + _kekule_ring_dbs(info, atom_set, dbs)
     implied = _implied_ring_atoms(fields, atom_set)
     if implied:
@@ -313,7 +317,6 @@ def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> d
 
 
 def _kekule_ring_dbs(info: dict, atom_set: set[int], known: list[dict]) -> list[dict]:
-    """补回碳环环内被芳香感知剔除的 C=C（无保留名兜底）。"""
     from rdkit import Chem
 
     kek = kekulized(info["mol"])

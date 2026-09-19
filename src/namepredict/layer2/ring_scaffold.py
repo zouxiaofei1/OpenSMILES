@@ -446,23 +446,23 @@ def standard_chain(spec_id: str | None, match: tuple[int, ...] | None) -> list[i
     return [match[t] for t in order]
 
 def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
-    """无模板命中时的通用环身份兜底（全碳→carbocycle）。"""
     mol = info["mol"]
-    all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
-    if not all_carbon:
-        atoms = set(skeleton.atom_ids)
-        n_rings = sum(1 for ring in sssr_rings(mol) if set(ring) <= atoms)
-        if n_rings >= 2:
-            return ScaffoldIdentity("fused_hetero", "fused_hetero", n_rings, "hetero")
-        return None
+    # all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
+    # if not all_carbon:
+    atoms = set(skeleton.atom_ids)
+    n_rings = sum(1 for ring in sssr_rings(mol) if set(ring) <= atoms)
+    if n_rings >= 2:
+        return ScaffoldIdentity("fused_hetero", "fused_hetero", n_rings, "hetero")
     return ScaffoldIdentity("carbocycle", "carbocycle", 1, "carbo")
+   
 
 
 def resolve_ring_scaffold(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
-    """解析骨架的 scaffold 身份（模板匹配/通用兜底）。"""
+    """解析骨架的 scaffold 身份"""
     sid = match_retained(info, skeleton.atom_ids)  # 按模板子图同构匹配 scaffold id
     if sid:
         spec = get_spec(sid)
         if spec:
             return spec.identity
+    print("no_sid")
     return _generic_carbocycle(info, skeleton)

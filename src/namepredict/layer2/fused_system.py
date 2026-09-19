@@ -141,7 +141,7 @@ def _select_base(info, rings, fusion_edges, ring_indices) -> tuple[str, frozense
         return [a for a in fused if mol.GetAtomWithIdx(a).GetAtomicNum() == C]
 
     cands = _gj(lambda c: _locant_tup(c, _fused_carbons(c)), lowest=True)  # (j) 稠合碳位次低
-    cands = narrow(cands, lambda c: tuple(sorted(c[2])))  # 兜底：环集升序最小，取键最小
+    cands = narrow(cands, lambda c: tuple(sorted(c[2]))) 
     atoms, sid, rset = cands[0]
     return sid, atoms, rset
 

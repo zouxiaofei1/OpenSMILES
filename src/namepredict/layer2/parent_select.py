@@ -45,14 +45,17 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
         parent = ((express_ring_principal(info, selection.principal, skeleton))
                   if skeleton.topology is SkeletonTopology.RING_SYSTEM
                   else express_chain_principal(info, selection.principal, skeleton))
-        if parent is not None and not _unsupported_typed_ring(parent, selection):
-            parents.append(parent)
+        # print(parent)
+        # if parent is not None and not _unsupported_typed_ring(parent, selection):
+        parents.append(parent)
+    print("parents",parents)
     return parents
 
 
 def rule_driven_parent_candidates(info: dict) -> list[dict]:
     """规则驱动入口：返回最终母体候选（无主官能团时纯烃）。"""
     selection = select_principal_parent_skeletons(info)
+    print("selection",selection)
     return _express_selected(selection, info)
 
 
