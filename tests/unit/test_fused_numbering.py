@@ -353,8 +353,7 @@ fused_cycloalkane_component__AROMATIC_FUSED_CASES = [
     ("c1cnc2c(c1)CCC2", "cyclopenta[b]pyridine", "环戊并[b]吡啶"),
     # 同上换母体杂环：吡嗪
     ("c1cnc2c(n1)CCC2", "cyclopenta[b]pyrazine", "环戊并[b]吡嗪"),
-    # 环大小随附加组分变：环丁并/环庚并
-    ("c1cnc2c(c1)CC2", "cyclobuta[b]pyridine", "环丁并[b]吡啶"),
+    # 环大小随附加组分变：环庚并（环丁并见下面 P-52.2.4.1 用例）
     ("c1cnc2c(c1)CCCCC2", "cyclohepta[b]pyridine", "环庚并[b]吡啶"),
 ]
 
@@ -365,6 +364,15 @@ def test_aromatic_fused_cycloalkane_component(smiles: str, en_tail: str, zh_sub:
     assert r.success, smiles
     assert r.en.endswith(en_tail), r.en
     assert zh_sub in r.zh, r.zh
+
+
+# P-52.2.4.1 五元环要求：不足两个五元或更多元环时稠合命名法不给 PIN，
+# von Baeyer 才是优选名。PubChem 作 2-azabicyclo[4.2.0]octa-1(6),2,4-triene；
+# 按 P-31.1.4.2(1)「复合位次数目最少」严格解为 -1,3,5-triene（见 P-23 桥环轮次）。
+def test_cyclobuta_fused_aromatic_uses_von_baeyer() -> None:
+    r = SMILESNNamer().name("c1cnc2c(c1)CC2")
+    assert r.success
+    assert "bicyclo[4.2.0]octa" in r.en, r.en
 
 
 # 近邻负例：已注册稠环与单环烃不得被本轮组分路径改写

@@ -374,6 +374,62 @@ def _stem_prefix_stale(parent: dict, prefix: str) -> bool:
     return True
 
 
+def _ensure_parent_stem(numbered: dict) -> bool:
+    """母体词干注入：桥环 von Baeyer → 稠环稠合 → 大环杂单环生成式。"""
+    parent = numbered.get("parent") or {}
+    if parent.get("bridged_node") is not None:
+        return _ensure_bridged_stem(numbered)
+    if not _ensure_fused_stem(numbered):
+        return False
+    return _ensure_generated_stem(numbered)
+
+
+def _ensure_generated_stem(numbered: dict) -> bool:
+    """P-23.3.1 生成式词干：>10 元纯杂单环无保留名，取 'a' 前缀 + 环烷。不适用即放行。
+
+    带主特征基团的大环杂单环走 FG 分支的词干重建，本轮不接（缺口见 P-23 轮次记录）。
+    """
+    parent = numbered.get("parent") or {}
+    if parent.get("stem_en") and parent.get("stem_zh"):
+        return True
+    mol, chain = parent.get("mol"), list(parent.get("chain") or ())
+    if (mol is None or parent.get("scaffold_id") != "carbocycle" or len(chain) <= 10
+            or parent.get("kind") != "alkane"):
+        return True  # ≤10 元环归 Hantzsch-Widman 保留名；带 FG 者保持既有行为
+    from namepredict.layer5.skeleton_replacement import prefix_from_chain
+    a_en, a_zh = prefix_from_chain(mol, chain)
+    if not a_en:
+        return a_en is not None  # 无杂原子（纯环烷）放行；词表外元素判失败
+    from namepredict.layer5.stems import alkane_en, alkane_zh
+    en, zh = alkane_en(len(chain)), alkane_zh(len(chain))
+    if not en or not zh:
+        return False
+    parent["stem_en"], parent["stem_zh"] = f"{a_en}cyclo{en}", f"{a_zh}环{zh}"
+    parent["stem_bare_en"] = f"{a_en}cyclo{en[:-3]}"
+    parent["stem_bare_zh"] = f"{a_zh}环{zh[:-1]}"
+    return True
+
+
+def _ensure_bridged_stem(numbered: dict) -> bool:
+    """P-23 桥环词干注入：饱和取完整名、带不饱和取裸词干（同 _exo_ring_spec 惯例）。"""
+    parent = numbered.get("parent") or {}
+    if parent.get("stem_en") and parent.get("stem_zh"):
+        return True
+    mol, node = parent.get("mol"), parent.get("bridged_node")
+    chain = list(parent.get("chain") or ())
+    if mol is None or node is None or not chain:
+        return False
+    from namepredict.layer5.bridged_namer import bridged_parent_names
+    names = bridged_parent_names(mol, node, chain)
+    if names is None:
+        return False
+    (full_en, full_zh), (bare_en, bare_zh) = names
+    parent["stem_bare_en"], parent["stem_bare_zh"] = bare_en, bare_zh
+    unsat = bool(numbered.get("ene_locants") or numbered.get("yne_locants"))
+    parent["stem_en"], parent["stem_zh"] = (bare_en, bare_zh) if unsat else (full_en, full_zh)
+    return True
+
+
 def _ensure_fused_stem(numbered: dict) -> bool:
     """未注册稠环词干注入：由 fused_tree 组装稠合 base 名。"""
     parent = numbered.get("parent") or {}
@@ -486,6 +542,11 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     entry = _KIND_TABLE.get(kind)
     if kind == "acyl_halide":
         entry = _ACYL_HALIDE_BY_HAL.get(parent.get("hal_z")) or entry
+    if parent.get("stem_bare_en") and kind in ("bridged", "alkane"):
+        # 无主特征基团的环系（桥环 / >10 元杂单环）：须走链引擎才会渲染 ene/yne 位次
+        return _chain_names(replace(_KIND_TABLE["alkane"],
+                                    stem=(parent["stem_bare_en"], parent["stem_bare_zh"]),
+                                    coda=""), n, numbered)
     if entry is not None:
         if kind == "ester" and parent.get("thio_side"):  # P-65.6.3.3.7.1 硫代羧酸 S-酯：thioate/硫酯词尾，无 C1/C2 保留名
             entry = replace(entry, coda="ane", en_suf="thioate", zh_suf="硫",
@@ -726,10 +787,10 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     """组装入口：取名 → 前缀 → 阴离子/R-S/金属盐后缀。"""
     from namepredict.layer5.stereo import join_ez_prefix, join_rs_prefix
-    print("layer5 assembling!!!")
+    # print("layer5 assembling!!!")
     parent = numbered.get("parent") or {}  # 母体 kind 与碳数 n（无则 0）
     kind, n = parent.get("kind"), int(parent.get("n_carbons") or 0)
-    if not _ensure_fused_stem(numbered):
+    if not _ensure_parent_stem(numbered):
         return _unsupported(n, kind)
     names = _names_for(kind, n, numbered)#n 碳数
 

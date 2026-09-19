@@ -304,7 +304,6 @@ def _detect_parts(mol: Mol) -> dict:
         "acyl": acyl,
         "aldehyde": [e for e in (_fg_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("aldehyde", [])) if e["center_idx"] not in heads],
         **oxoacid_lists(mol, hits.get("oxoacid", []))}
-    print(result)
     return result
 
 def _collect_fgs(mol: Mol) -> dict:

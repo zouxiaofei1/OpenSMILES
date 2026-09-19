@@ -82,6 +82,8 @@ def hydro_prefix(chain, labels, hydro_atoms) -> tuple[str, str]:
 def number(parent: dict, substituents: list) -> dict:
     """对 parent 定向编号并组装位次结果（含指示氢前缀 P-58.2.1）。"""
     chain = orient_numbering(parent, substituents)
+    if chain is None:  # 定向失败（如桥环候选不可判定）：显式失败，不让 None 顺流触发 TypeError
+        raise ValueError("numbering_failed")
     oriented = {**parent, "chain": chain}
     result = _pack(oriented, _with_locants(chain, substituents, oriented.get("numbering_scaffold")))
     packed = result.get("parent") or {}

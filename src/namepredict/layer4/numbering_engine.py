@@ -269,6 +269,8 @@ def _fused_numbering(parent: dict, chain: list[int],
     sid = parent.get("scaffold_id")
     if sid in TRADITIONAL_NUMBERING_IDS:
         return None
+    if parent.get("bridged_node") is not None:  # 桥环走 P-23：chain_fused 判据对桥环恒真
+        return None
     mol = parent.get("mol")
     from namepredict.layer2.ring_scaffold import get_spec
     spec = get_spec(parent.get("scaffold_id") or "")
@@ -333,6 +335,9 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     chain = parent.get("chain") or []
     if not chain:
         return None
+    if parent.get("bridged_nodes") is not None:  # P-23 桥环：编号只能由 L2 候选裁决
+        from namepredict.layer4.bridged_numbering import bridged_numbering
+        return bridged_numbering(parent, substituents)  # 无论成败都不再下落（_fused 会误吞桥环）
     fixed = _fixed_numbering(parent, chain, substituents)
     if fixed is not None:
         return fixed
@@ -340,6 +345,8 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     if fused is not None:
         return fused
     mol = parent.get("mol")
+    if parent.get("bridged_node") is not None:  # 桥环兜底：chain 非环序，旋转/翻转枚举无意义
+        return None
     if mol is not None and _is_ring(parent) and any(
             mol.GetAtomWithIdx(a).GetAtomicNum() != 6 for a in chain):
         cands = _narrow_hetero_ring(_ring_cands(chain), mol, chain, float_hetero)  # 杂环：P-22.2.2.1.3 元素序窄化先于 principal。

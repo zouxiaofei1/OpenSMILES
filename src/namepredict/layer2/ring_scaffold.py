@@ -464,5 +464,5 @@ def resolve_ring_scaffold(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdent
         spec = get_spec(sid)
         if spec:
             return spec.identity
-    print("no_sid")
+    # print("no_sid")
     return _generic_carbocycle(info, skeleton)

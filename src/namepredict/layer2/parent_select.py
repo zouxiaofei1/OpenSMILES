@@ -48,7 +48,7 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
         # print(parent)
         # if parent is not None and not _unsupported_typed_ring(parent, selection):
         parents.append(parent)
-    print("parents",parents)
+    # print("parents",parents)
     return parents
 
 

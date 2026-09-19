@@ -318,7 +318,7 @@ def _exo_ring_spec(spec: "_Chain", n: int, numbered: dict) -> "_Chain":
         return spec
     fields = dict(en_suf=singular[0], zh_suf=singular[1], fg=spec.kind, ene_base=None, yne_suf=None,
                  )  # 多取代后缀由数量机制生成
-    if sid != "carbocycle" or parent.get("fused_tree"):  # 稠环/杂环词干已注入，位次恒显式。
+    if sid != "carbocycle" or parent.get("fused_tree") or parent.get("stem_generated"):  # 稠环/杂环/生成式词干已注入，位次恒显式。
         return replace(spec, **fields)
     base = (alkane_en(n), alkane_zh(n))
     if base[0] is None or base[1] is None:

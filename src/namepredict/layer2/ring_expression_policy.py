@@ -30,11 +30,11 @@ _POLICIES = (
                          FG.KETONE, frozenset({"in_skeleton"})),
     RingExpressionPolicy(frozenset({"xanthene", "steroid"}), FG.KETONE, frozenset({"in_skeleton"})),  # 传统编号保留母体（呫吨/甾体）：缺此条则环内酮、环内醇被 _unsupported_typed_ring 拦截。
     RingExpressionPolicy(frozenset({"xanthene", "steroid"}), FG.ALCOHOL, frozenset({"in_skeleton"})),
-    RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.ALCOHOL, frozenset({"in_skeleton"})),  # 未注册稠环(fused_hetero/fused): kind 已正交化, 主 FG 走 L5 fused_tree 组装, 需放开 typed 表达(否则环酮被 _unsupported_typed_ring 拦截)。
-    RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.KETONE, frozenset({"in_skeleton"})),
-    RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.AMINE, frozenset({"in_skeleton"})),
-    RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.ACID, frozenset({"exocyclic"})),
-    RingExpressionPolicy(frozenset({"fused_hetero", "fused"}), FG.NITRILE, frozenset({"exocyclic"})),
+    RingExpressionPolicy(frozenset({"fused_hetero", "fused", "bridged"}), FG.ALCOHOL, frozenset({"in_skeleton"})),  # 未注册稠环(fused_hetero/fused)与桥环(bridged): kind 已正交化, 主 FG 走 L5 fused_tree/bridged_node 组装, 需放开 typed 表达(否则环酮被 _unsupported_typed_ring 拦截)。
+    RingExpressionPolicy(frozenset({"fused_hetero", "fused", "bridged"}), FG.KETONE, frozenset({"in_skeleton"})),
+    RingExpressionPolicy(frozenset({"fused_hetero", "fused", "bridged"}), FG.AMINE, frozenset({"in_skeleton"})),
+    RingExpressionPolicy(frozenset({"fused_hetero", "fused", "bridged"}), FG.ACID, frozenset({"exocyclic"})),
+    RingExpressionPolicy(frozenset({"fused_hetero", "fused", "bridged"}), FG.NITRILE, frozenset({"exocyclic"})),
 )
 
 

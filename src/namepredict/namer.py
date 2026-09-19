@@ -117,18 +117,14 @@ def _prepare_candidate(
     info: dict, parent: dict, *, cache: CommonNameCache | None = None,
 ) -> tuple[dict, list[dict], bool]:
     """完成母体归属与取代基提取，返回三元组。"""
-    print("l3")
     mol = info["mol"]
     parent = finalize_parent_ownership(parent, mol)
     if not parent.get("owned_atoms"):
-        print(11)
         return parent, [], False
     if not parent.get("chain") and not info.get("has_ring"):
-        print(22)
         return parent, [], False
     subst = extract_substituents(info, parent, cache=cache)
     complete = build_coverage_ledger(mol, owned_atoms=parent["owned_atoms"], names=[]).complete  
-    print(parent,subst,complete)
     return parent, subst, complete
 
 def _candidate_key(hit: NameResult) -> tuple:
@@ -169,7 +165,6 @@ def _run_candidates(
 ) -> NameResult:
     """_run_candidates"""
     phase = _candidate_phases(info)[0]#Layer2入口
-    print("phase",phase,"end")
     prepared = [_prepare_candidate(info, cand, cache=cache) for cand in phase]#L3
     hit = _try_phase(prepared, t0=t0)#L4入口
     return hit or _fail(_elapsed_ms(t0), "no_assemblable_candidate")
