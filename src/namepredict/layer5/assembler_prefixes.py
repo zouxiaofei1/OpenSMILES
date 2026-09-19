@@ -8,8 +8,8 @@ from namepredict.layer4.locant_calc import locant_str_sort
 from namepredict.tools.re import alpha_order_key
 from namepredict.constants import (
     BIS_EN, BIS_ZH, BRIDGE_DIATOMIC_ZH, BRIDGE_SPLIT_SUFFIX_EN, BRIDGE_SPLIT_SUFFIX_ZH,
-    BRIDGE_SUFFIX_EN, BRIDGE_SUFFIX_ZH, DIATOMIC_BRIDGE_YL, MULT_EN, MULT_ZH, N_PREFIX_KINDS,
-    OXO_CENTER_KINDS,
+    BRIDGE_SUFFIX_EN, BRIDGE_SUFFIX_ZH, DIATOMIC_BRIDGE_YL, MULT_EN, MULT_ZH, N_LOCANT_KINDS,
+    N_PREFIX_KINDS, OXO_CENTER_KINDS,
 )
 
 def _mult_rows(items: list, key_fn, zh_fn, sort_key=None) -> list[list]:
@@ -41,6 +41,10 @@ _DIGIT_RE = re.compile(r"\d")  # 取代基名中的位次数字
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None,
                       scaffold: str | None = None, has_ene: bool = False) -> bool:
     """判断取代基位次可否省略（环烷烃/苯单取代、酰胺 N- 等情形）。"""
+    if kind in N_LOCANT_KINDS:  # 脲/硫脲/胍保留名母体：N 位次须显式写出（1,3-二甲基脲）
+        return False
+    if kind == "carbamic_acid":  # P-65.2.1.1：N-取代氨基甲酸不带位次（dimethylcarbamic acid）
+        return True
     if kind == "radical":  # 自由基母体：连接点隐含 locant 1，单碳链省略位次
         return n_carbons == 1
     if n_carbons <= 1:  # 单碳母体位次省略；N-/C- 型共存时 C 侧须带位次
@@ -352,13 +356,13 @@ def _fence_o_side_arms(subs: list, kind: str | None, mol) -> None:
 
 def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
                   scaffold: str | None = None, has_ene: bool = False,
-                  mol=None) -> tuple[str, str]:
+                  mol=None, locant_kind: str | None = None) -> tuple[str, str]:
     """组合完整取代基前缀：滤 O 侧、判 omit、按词干分组拼接。"""
     _fence_o_side_arms(substituents, kind, mol)
     substituents = [s for s in substituents if not s.get("o_side")]  # ester 的 O 侧臂由 join_kind_name 消费
     if not substituents:
         return "", ""
-    omit = _omit_sub_locants(n_carbons, substituents, kind, scaffold, has_ene)
+    omit = _omit_sub_locants(n_carbons, substituents, locant_kind or kind, scaffold, has_ene)
     flat = kind in OXO_CENTER_KINDS  # 中心母体：臂名围栏改由环基判据决定，去多余位次围栏
     if flat:
         substituents = [{**s, "paren": oxo_arm_fence(s.get("en") or "", s, mol)} for s in substituents]
@@ -375,7 +379,10 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     """从 numbered 提取上下文并委托 _build_prefix。"""
     parent = numbered.get("parent") or {}
     has_ene = bool(parent.get("double_bond") or parent.get("double_bonds"))
+    if parent.get("subs_consumed"):  # 取代基已并入 C1 保留名（carbamoyl 等），不再另加前缀
+        return "", ""
     if kind == "radical" and parent.get("radical_anchor_element"):  # 杂原子锚点自由基：烷基取代基已并入组装名（ethyloxy），不再加前缀。
         return "", ""
     return _build_prefix(numbered.get("substituents") or [], n, kind,
-                         parent.get("scaffold_id"), has_ene, parent.get("mol"))
+                         parent.get("scaffold_id"), has_ene, parent.get("mol"),
+                         locant_kind=parent.get("locant_kind"))

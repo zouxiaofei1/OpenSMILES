@@ -168,9 +168,12 @@ def _layout(row: tuple[int, ...], rings, fusion_edges) -> tuple[dict | None, dic
             if used_tmpl:
                 ring_templates[r] = used_tmpl[0]
         placed.add(r)
-    for r in range(len(rings)):
-        if r not in placed and not _place_neighbor(r, rings, coords, placed, edge):
+    rest = [r for r in range(len(rings)) if r not in placed]  # 行外环须按「已有已摆邻居」的次序递推
+    while rest:
+        done = [r for r in rest if _place_neighbor(r, rings, coords, placed, edge)]
+        if not done:
             return None
+        rest = [r for r in rest if r not in done]
     return coords, ring_templates
 
 

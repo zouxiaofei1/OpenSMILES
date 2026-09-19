@@ -32,6 +32,8 @@ alkanediol__CASES = [
     ("CC(C)C(O)CO", "3-methylbutane-1,2-diol", "3-甲基丁烷-1,2-二醇"),
     ("OCCCCO", "butane-1,4-diol", "丁烷-1,4-二醇"),
     ("CC(O)C", "propan-2-ol", "丙-2-醇"),
+    ("CC(C)(O)O", "propane-2,2-diol", "丙烷-2,2-二醇"),  # 同碳二醇：位次须重复写出
+    ("OC1(O)CCCCC1", "cyclohexane-1,1-diol", "环己烷-1,1-二醇"),
 ]
 
 
@@ -138,6 +140,7 @@ alkanethiol__CASES = [
     # 二硫醇（数量后缀生成式，对齐 amine）
     ("SCCS", "ethane-1,2-dithiol", "乙烷-1,2-二硫醇"),
     ("SCCCCS", "butane-1,4-dithiol", "丁烷-1,4-二硫醇"),
+    ("CC(C)(S)S", "propane-2,2-dithiol", "丙烷-2,2-二硫醇"),  # 同碳二硫醇：位次须重复写出
 ]
 
 

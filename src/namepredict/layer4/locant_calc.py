@@ -50,6 +50,48 @@ def _single_locant(oriented: dict, group: str) -> int | None:
     return locs[0] if len(locs) == 1 else None
 
 
+def _occ_attachment(oriented: dict, anchors: set, atoms: set) -> int | None:
+    """occurrence 锚点 → 骨架内附着原子（骨架外取骨架内邻居）。"""
+    inside = anchors & atoms
+    if inside:
+        return min(inside)
+    mol = oriented.get("mol")
+    if mol is None:
+        return min(anchors) if anchors else None
+    neighbours = [n.GetIdx() for i in anchors
+                  for n in mol.GetAtomWithIdx(i).GetNeighbors() if n.GetIdx() in atoms]
+    return min(neighbours) if neighbours else None
+
+
+def _occurrence_locants(oriented: dict, spec) -> list[int]:
+    """逐 occurrence 求附着位次（同一原子承载多个同类 FG 时保留重数）。"""
+    facts = oriented.get("principal_expression_facts")
+    if facts is None or facts.group_class.value != spec.fg:
+        return []
+    ids = set(oriented.get("covered_principal_ids") or ())
+    chain, atoms = oriented.get("chain") or [], set(oriented.get("chain") or ())
+    scaffold = oriented.get("numbering_scaffold")
+    out = []
+    for occ in oriented.get("principal_occurrences") or ():
+        if occ.id not in ids:
+            continue
+        anchors = {i for key in spec.anchors for i in (occ.payload.get(key) or ())}
+        atom = _occ_attachment(oriented, anchors, atoms)
+        loc = _atom_locant(chain, atom, scaffold)
+        if loc is not None:
+            out.append(loc)
+    return out
+
+
+def _expand_shared_locants(oriented: dict, spec, locs: list) -> list:
+    """同位次重复 FG 补回重复位次（偕二醇 propane-2,2-diol）；正常情形原样返回。"""
+    facts = oriented.get("principal_expression_facts")
+    mult = facts.multiplicity if facts is not None and facts.group_class.value == spec.fg else None
+    if not mult or mult <= len(locs):
+        return locs
+    per_occ = locant_str_sort(_occurrence_locants(oriented, spec))
+    return per_occ if len(per_occ) == mult else locs
+
 
 def _sub_locant(chain: list[int], attach: int, facts=None) -> int:
     """返回取代基附着原子的位次；无位次时取 0。"""
@@ -153,6 +195,8 @@ def _fg_locants(oriented: dict, n_subs: int = 0) -> list[dict]:
         locs = _locants_for(oriented, spec)
         if not locs:
             continue
+        if spec.locant_source == "attachment":
+            locs = _expand_shared_locants(oriented, spec, locs)
         records.append({
             "kind": kind, "locants": locant_str_sort(locs), "omit": _omit_for(kind, oriented, n, n_subs),
         })

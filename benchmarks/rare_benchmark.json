@@ -1,0 +1,503 @@
+[
+ {
+  "id": "chebi-1744",
+  "smiles": "CC(C)C[C@H](N=C(O)CN=C(O)c1cc(Cl)ccc1Cl)B(O)O",
+  "english_name": "[(1R)-1-[[2-[(2,5-dichlorobenzoyl)amino]acetyl]amino]-3-methylbutyl]boronic acid",
+  "chinese_name": "[(1R)-1-[[2-[(2,5-二氯苯甲酰)氨基]乙酰]氨基]-3-甲基丁基]硼酸",
+  "source": "chebi",
+  "tier": 3,
+  "features": [
+   "amide",
+   "benzene",
+   "boronic_acid",
+   "chiral",
+   "chloride",
+   "methyl"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "boron"
+  ]
+ },
+ {
+  "id": "chebi-1916",
+  "smiles": "O=C(CCCCCN=C(O)COc1ccc(/C=C/c2ccc3n2[B-](F)(F)[N+]2=C(C4=S=CC=C4)C=CC2=C3)cc1)ON1C(=O)CCC1=O",
+  "english_name": "2,5-dioxopyrrolidin-1-yl 6-[[2-[4-[(1E)-2-(2,2-difluoro-12-thiophen-2-yl-3-aza-1-azonia-2-boranuidatricyclo[7.3.0.03,7]dodeca-1(12),4,6,8,10-pentaen-4-yl)ethenyl]phenoxy]acetyl]amino]hexanoate",
+  "chinese_name": "(2,5-二氧代吡咯烷-1-基) 6-[[2-[4-[(1E)-2-(2,2-二氟-12-硫代吩-2-基-3-氮杂-1-氮杂-2-硼酸基三环[7.3.0.03,7]十二碳-1(12),4,6,8,10-五烯-4-基)乙烯基]苯氧基]乙酰基]氨基]己酸",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "amide",
+   "enamine",
+   "ether",
+   "fluorine",
+   "imide",
+   "lactam"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "boron"
+  ]
+ },
+ {
+  "id": "chebi-2142",
+  "smiles": "O=C(CCCCCN=C(O)COc1ccc(/C=C/c2ccc3n2[B-](F)(F)[N+]2=C(c4ccc[nH]4)C=CC2=C3)cc1)ON1C(=O)CCC1=O",
+  "english_name": "2,5-dioxopyrrolidin-1-yl 6-[[2-[4-[(1E)-2-[2,2-difluoro-12-(1H-pyrrol-2-yl)-3-aza-1-azonia-2-boranuidatricyclo[7.3.0.03,7]dodeca-1(12),4,6,8,10-pentaen-4-yl]ethenyl]phenoxy]acetyl]amino]hexanoate",
+  "chinese_name": "(2,5-二氧代吡咯烷-1-基) 6-[[2-[4-[(1E)-2-[2,2-二氟-12-(1H-吡咯-2-基)-3-氮杂-1-氮杂-2-硼杂环十二碳-1(12),4,6,8,10-五烯-4-基]乙烯基]苯氧基]乙酰基]氨基]己酸",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "amide",
+   "fluorine",
+   "imide",
+   "lactam",
+   "pyrrole",
+   "pyrrolidine"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "boron"
+  ]
+ },
+ {
+  "id": "chebi-2791",
+  "smiles": "CC(C)C[C@H](N=C(O)CN=C(O)c1cc(Cl)ccc1Cl)B1OC(=O)C(CC(=O)O)(CC(=O)O)O1",
+  "english_name": "2-[4-(carboxymethyl)-2-[(1R)-1-[[2-[(2,5-dichlorobenzoyl)amino]acetyl]amino]-3-methylbutyl]-5-oxo-1,3,2-dioxaborolan-4-yl]acetic acid",
+  "chinese_name": "2-[4-(羧基甲基)-2-[(1R)-1-[[2-[(2,5-二氯苯甲酰)氨基]乙酰]氨基]-3-甲基丁基]-5-氧代-1,3,2-二氧硼戊环-4-基]乙酸",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "amide",
+   "aromatic",
+   "benzene",
+   "carboxylic_acid",
+   "dicarboxylic_acid",
+   "lactone"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "boron"
+  ]
+ },
+ {
+  "id": "chebi-346",
+  "smiles": "O=C([C@@H]1CCCN1)N1CCC[C@H]1B(O)O",
+  "english_name": "[(2R)-1-[(2S)-pyrrolidine-2-carbonyl]pyrrolidin-2-yl]boronic acid",
+  "chinese_name": "[(2R)-1-[(2S)-吡咯烷-2-甲酰基]吡咯烷-2-基]硼酸",
+  "source": "chebi",
+  "tier": 3,
+  "features": [
+   "amide",
+   "amine",
+   "boronic_acid",
+   "chiral",
+   "pyrrolidine",
+   "stereochemistry"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "boron"
+  ]
+ },
+ {
+  "id": "tiers-51373",
+  "smiles": "BrC=1C=C(C=C(C1)C(F)(F)F)B(O)O",
+  "english_name": "[3-bromo-5-(trifluoromethyl)phenyl]boronic acid",
+  "chinese_name": "[3-溴-5-(三氟甲基)苯基]硼酸",
+  "source": "smiles_tiers",
+  "tier": 3,
+  "features": [
+   "boronic_acid",
+   "bromo",
+   "trifluoromethyl",
+   "substituent_locant"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "rare_tag": [
+   "boron"
+  ]
+ },
+ {
+  "id": "tiers-63826",
+  "smiles": "CC1(OB(OC1(C)C)C=1C=NC(=NC1)NC(OCC1=CC=CC=C1)=O)C",
+  "english_name": "benzyl N-[5-(4,4,5,5-tetramethyl-1,3,2-dioxaborolan-2-yl)pyrimidin-2-yl]carbamate",
+  "chinese_name": "苄基 N-[5-(4,4,5,5-四甲基-1,3,2-二氧杂硼杂环戊烷-2-基)嘧啶-2-基]氨基甲酸酯",
+  "source": "smiles_tiers",
+  "tier": 5,
+  "features": [
+   "boronate_ester",
+   "pyrimidine",
+   "carbamate",
+   "protecting_group"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "rare_tag": [
+   "boron"
+  ]
+ },
+ {
+  "id": "tiers-68805",
+  "smiles": "C(C)(=O)C1=C(SC=C1)B(O)O",
+  "english_name": "(3-acetylthiophen-2-yl)boronic acid",
+  "chinese_name": "(3-乙酰基噻吩-2-基)硼酸",
+  "source": "smiles_tiers",
+  "tier": 3,
+  "features": [
+   "boronic_acid",
+   "ketone",
+   "thiophene"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "rare_tag": [
+   "boron"
+  ]
+ },
+ {
+  "id": "tiers-83257",
+  "smiles": "ClC=1C=C(C(=O)O)C=CC1B1OC(C(O1)(C)C)(C)C",
+  "english_name": "3-chloro-4-(4,4,5,5-tetramethyl-1,3,2-dioxaborolan-2-yl)benzoic acid",
+  "chinese_name": "3-氯-4-(4,4,5,5-四甲基-1,3,2-二氧杂硼杂环戊烷-2-基)苯甲酸",
+  "source": "smiles_tiers",
+  "tier": 4,
+  "features": [
+   "boronate_ester",
+   "carboxylic_acid",
+   "chloride"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "rare_tag": [
+   "boron"
+  ]
+ },
+ {
+  "id": "tiers-8543",
+  "smiles": "N1=C(C=CC=C1)C=1C=C(C=CC1)B(O)O",
+  "english_name": "(3-pyridin-2-ylphenyl)boronic acid",
+  "chinese_name": "(3-吡啶-2-基苯基)硼酸",
+  "source": "smiles_tiers",
+  "tier": 4,
+  "features": [
+   "boronic_acid",
+   "heterocycle",
+   "biaryl"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "rare_tag": [
+   "boron"
+  ]
+ },
+ {
+  "id": "tiers-9744",
+  "smiles": "[Cl-].COC=1C=C(C[P+](C2=CC=CC=C2)(C2=CC=CC=C2)C2=CC=CC=C2)C=CC1",
+  "english_name": "(3-methoxyphenyl)methyl-triphenylphosphanium chloride",
+  "chinese_name": "(3-甲氧基苯基)甲基三苯基氯化鏻",
+  "source": "smiles_tiers",
+  "tier": 3,
+  "features": [
+   "phosphonium_salt",
+   "ether"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "rare_tag": [
+   "cation_onium"
+  ]
+ },
+ {
+  "id": "chebi-1066",
+  "smiles": "C/C1=C2/N=C(/C=C3\\N/C(=C(/C)C4=N[C@@](C)([C@@H]5N=C1[C@](C)(CCC(=O)O)[C@H]5CC(=O)O)[C@@](C)(CC(=N)[O-])[C@@H]4CCC(=O)O)[C@@](C)(CC(=N)[O-])[C@@H]3CCC(=O)O)C(C)(C)[C@@H]2CCC(=O)O",
+  "english_name": "3-[(1R,2S,3S,5Z,7S,8S,9Z,13S,14Z,17R,18R,19R)-2,7-bis(2-amino-2-oxoethyl)-3,13,17-tris(2-carboxylatoethyl)-18-(carboxylatomethyl)-1,2,5,7,12,12,15,17-octamethyl-3,8,13,18,19,22-hexahydrocorrin-21,23,24-triium-8-yl]propanoate",
+  "chinese_name": "3-[(1R,2S,3S,5Z,7S,8S,9Z,13S,14Z,17R,18R,19R)-2,7-双(2-氨基-2-氧代乙基)-3,13,17-三(2-羧酸根乙基)-18-(羧酸根甲基)-1,2,5,7,12,12,15,17-八甲基-3,8,13,18,19,22-六氢卟吩-21,23,24-三正离子-8-基]丙酸根",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "alkene",
+   "amide",
+   "amine",
+   "carboxylic_acid",
+   "fused_ring",
+   "imine"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "cation_other"
+  ]
+ },
+ {
+  "id": "chebi-2710",
+  "smiles": "O=C1C=CC(=C2Oc3cc(O)cc(O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4O)c3C=C2O[C@@H]2O[C@H](C[O+]=C(O)C=Cc3ccc(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)C=C1",
+  "english_name": "[3-(3,4-dihydroxyphenyl)-1-[[(2R,3S,4S,5R,6S)-3,4,5-trihydroxy-6-[2-(4-hydroxyphenyl)-7-oxo-5-[(2S,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxychromen-3-yl]oxyoxan-2-yl]methoxy]prop-2-enylidene]oxidanium",
+  "chinese_name": "[3-(3,4-二羟基苯基)-1-[[(2R,3S,4S,5R,6S)-3,4,5-三羟基-6-[2-(4-羟基苯基)-7-氧代-5-[(2S,3R,4S,5S,6R)-3,4,5-三羟基-6-(羟甲基)氧杂环己烷-2-基]氧基色烯-3-基]氧基氧杂环己烷-2-基]甲氧基]丙-2-烯亚基]氧鎓",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "alcohol",
+   "carboxylic_acid",
+   "ether",
+   "fused_ring",
+   "ketone",
+   "tetrahydropyran"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "cation_other"
+  ]
+ },
+ {
+  "id": "tiers-59592",
+  "smiles": "N(=[N+]=[N-])I1OC(C2=C1C=CC=C2)=O",
+  "english_name": "1-azido-1lambda3,2-benziodoxol-3-one",
+  "chinese_name": "1-叠氮基-1λ³,2-苯并碘氧杂戊-3-酮",
+  "source": "smiles_tiers",
+  "tier": 4,
+  "features": [
+   "azide",
+   "hypervalent_iodine",
+   "benziodoxolone"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "rare_tag": [
+   "hypervalent_iodine",
+   "lambda"
+  ]
+ },
+ {
+  "id": "chebi-1109",
+  "smiles": "CC1=C(C(=O)OCCN(Cc2ccccc2)c2ccccc2)[C@H](c2cccc([N+](=O)[O-])c2)C(P2(=O)OCC(C)(C)CO2)=C(C)N1",
+  "english_name": "2-(N-benzylanilino)ethyl (4S)-5-(5,5-dimethyl-2-oxo-1,3,2lambda5-dioxaphosphinan-2-yl)-2,6-dimethyl-4-(3-nitrophenyl)-1,4-dihydropyridine-3-carboxylate",
+  "chinese_name": "2-[(N-苄基苯胺基)乙基] (4S)-5-(5,5-二甲基-2-氧代-1,3,2λ5-二氧杂磷杂环己烷-2-基)-2,6-二甲基-4-(3-硝基苯基)-1,4-二氢吡啶-3-羧酸酯",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "alkene",
+   "amine",
+   "benzene",
+   "ester",
+   "nitro",
+   "phosphorus"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "lambda"
+  ]
+ },
+ {
+  "id": "chebi-1179",
+  "smiles": "CCOP(=S)(OCC)Oc1cc(C)nc(C(C)C)n1",
+  "english_name": "diethoxy-(6-methyl-2-propan-2-ylpyrimidin-4-yl)oxy-sulfanylidene-lambda5-phosphane",
+  "chinese_name": "二乙氧基-(6-甲基-2-丙-2-基嘧啶-4-基)氧基硫代磷",
+  "source": "chebi",
+  "tier": 3,
+  "features": [
+   "methyl",
+   "multiplier",
+   "phosphorus",
+   "pyrimidine"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "lambda"
+  ]
+ },
+ {
+  "id": "chebi-1365",
+  "smiles": "CCOP(=S)(OCC)Oc1nc(Cl)c(Cl)cc1Cl",
+  "english_name": "diethoxy-sulfanylidene-[(3,5,6-trichloro-pyridin-2-yl)oxy]-λ5-phosphane",
+  "chinese_name": "二乙氧基-硫代-[(3,5,6-三氯-吡啶-2-基)氧基]-λ5-膦",
+  "source": "chebi",
+  "tier": 3,
+  "features": [
+   "chloride",
+   "locant",
+   "multiplier",
+   "pyridine"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "lambda"
+  ]
+ },
+ {
+  "id": "chebi-1812",
+  "smiles": "CCOP(=S)(OCC)Oc1ccc(S(C)=O)cc1",
+  "english_name": "diethoxy-(4-methylsulfinylphenoxy)-sulfanylidene-lambda5-phosphane",
+  "chinese_name": "二乙氧基-(4-甲磺酰基苯氧基)硫代磷",
+  "source": "chebi",
+  "tier": 3,
+  "features": [
+   "benzene",
+   "chiral",
+   "methyl",
+   "multiplier",
+   "phenyl",
+   "sulfoxide"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "lambda"
+  ]
+ },
+ {
+  "id": "chebi-263",
+  "smiles": "Cc1cc(=NC(=O)C2=C(O)c3ccccc3S(=O)(=O)N2C)[nH]o1",
+  "english_name": "4-hydroxy-2-methyl-N-(5-methyl-1,2-oxazol-3-yl)-1,1-dioxo-1lambda6,2-benzothiazine-3-carboxamide",
+  "chinese_name": "4-羟基-2-甲基-N-(5-甲基-1,2-噁唑-3-基)-1,1-二氧化-1λ6,2-苯并噻嗪-3-甲酰胺",
+  "source": "chebi",
+  "tier": 3,
+  "features": [
+   "alcohol",
+   "amide",
+   "fused_heterocycle",
+   "fused_ring",
+   "isoxazole",
+   "sulfonamide"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "lambda"
+  ]
+ },
+ {
+  "id": "chebi-270",
+  "smiles": "COP(=S)(OC)Oc1ccc([N+](=O)[O-])c(C)c1",
+  "english_name": "dimethoxy-(3-methyl-4-nitrophenoxy)-sulfanylidene-lambda5-phosphane",
+  "chinese_name": "二甲氧基-(3-甲基-4-硝基苯氧基)-硫代磷(Ⅴ)",
+  "source": "chebi",
+  "tier": 3,
+  "features": [
+   "benzene",
+   "methoxy",
+   "methyl",
+   "nitro",
+   "phosphate"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "lambda"
+  ]
+ },
+ {
+  "id": "chebi-3200",
+  "smiles": "CCOP(=S)(OCC)Oc1ncn(-c2ccccc2)n1",
+  "english_name": "diethoxy-[(1-phenyl-1,2,4-triazol-3-yl)oxy]-sulfanylidene-lambda5-phosphane",
+  "chinese_name": "二乙氧基-[(1-苯基-1,2,4-三唑-3-基)氧基]-硫代磷(Ⅴ)",
+  "source": "chebi",
+  "tier": 3,
+  "features": [
+   "benzene",
+   "phosphate",
+   "retained_name",
+   "triazole"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "lambda"
+  ]
+ },
+ {
+  "id": "chebi-3272",
+  "smiles": "Nc1ncnc2c1ncn2[C@@H]1O[C@@H]2COP(=O)([O-])O[C@H]3[C@@H](O)[C@H](n4cnc5c(N)ncnc54)O[C@@H]3COP(=O)([O-])O[C@H]3[C@@H](O)[C@H](n4cnc5c(N)ncnc54)O[C@@H]3COP(=O)([O-])O[C@H]3[C@@H](O)[C@H](n4cnc5c(N)ncnc54)O[C@@H]3COP(=O)([O-])O[C@H]3[C@@H](O)[C@H](n4cnc5c(N)ncnc54)O[C@@H]3COP(=O)([O-])O[C@H]3[C@@H](O)[C@H](n4cnc5c(N)ncnc54)O[C@@H]3COP(=O)([O-])O[C@H]2[C@H]1O",
+  "english_name": "(1S,6R,8R,9R,10S,15R,17R,18R,19S,24R,26R,27R,28S,33R,35R,36R,37S,42R,44R,45R,46S,51R,53R,54R)-8,17,26,35,44,53-hexakis(6-aminopurin-9-yl)-3,12,21,30,39,48-hexaoxido-3,12,21,30,39,48-hexaoxo-2,4,7,11,13,16,20,22,25,29,31,34,38,40,43,47,49,52-octadecaoxa-3lambda5,12lambda5,21lambda5,30lambda5,39lambda5,48lambda5-hexaphosphaheptacyclo[49.3.0.06,10.015,19.024,28.033,37.042,46]tetrapentacontane-9,18,27,36,45,54-hexol",
+  "chinese_name": "(1S,6R,8R,9R,10S,15R,17R,18R,19S,24R,26R,27R,28S,33R,35R,36R,37S,42R,44R,45R,46S,51R,53R,54R)-8,17,26,35,44,53-六(6-氨基嘌呤-9-基)-3,12,21,30,39,48-六氧代-3,12,21,30,39,48-六氧代-2,4,7,11,13,16,20,22,25,29,31,34,38,40,43,47,49,52-十八氧-3λ5,12λ5,21λ5,30λ5,39λ5,48λ5-六磷杂七环[49.3.0.06,10.015,19.024,28.033,37.042,46]四十五烷-9,18,27,36,45,54-六醇",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "alcohol",
+   "ether",
+   "fused_ring",
+   "phosphate",
+   "primary_amine",
+   "purine"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "lambda"
+  ]
+ },
+ {
+  "id": "chebi-3285",
+  "smiles": "O=P1(O)OCC(CO)O1",
+  "english_name": "(2-hydroxy-2-oxo-1,3,2lambda5-dioxaphospholan-4-yl)methanol",
+  "chinese_name": "(2-羟基-2-氧代-1,3,2λ5-二氧杂磷杂环戊烷-4-基)甲醇",
+  "source": "chebi",
+  "tier": 2,
+  "features": [
+   "alcohol",
+   "chiral",
+   "heterocycle",
+   "locant",
+   "phosphate"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "lambda"
+  ]
+ },
+ {
+  "id": "chebi-395",
+  "smiles": "O=S1(=O)N2CN3CCN(C2)CN1C3",
+  "english_name": "9lambda6-thia-1,3,6,8-tetrazatricyclo[4.3.1.13,8]undecane 9,9-dioxide",
+  "chinese_name": "9λ6-硫杂-1,3,6,8-四氮杂三环[4.3.1.13,8]十一烷-9,9-二氧化物",
+  "source": "chebi",
+  "tier": 2,
+  "features": [
+   "amine",
+   "bridged_ring",
+   "fused_heterocycle",
+   "fused_ring",
+   "heterocycle",
+   "sulfonamide"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "rare_tag": [
+   "lambda"
+  ]
+ }
+]

@@ -2,12 +2,15 @@
 from __future__ import annotations
 from dataclasses import replace
 import re
+from rdkit.Chem import BondType
 from namepredict.constants import (
     ALKOXY_YLOXY_EN, ALKOXY_YLOXY_ZH, AMIDO_RETAINED, AZANE_PAREN_SUF, BIS_EN, BRIDGE_YL_SUFFIX,
-    BRIDGE_ZH_YL_SUFFIX, ESTER_O_SIDE_KINDS, OXO_CENTER_KINDS,
+    BRIDGE_ZH_YL_SUFFIX, C, ESTER_O_SIDE_KINDS, N, O, OXO_CENTER_KINDS, S,
     BRIDGE_FUSION_YL, MONONUCLEAR_BRIDGE, MONONUCLEAR_YL, MONONUCLEAR_ZERO_YL, MULT_EN,
     MULT_ZH, PHOSPHORYL_STEMS, ZH_DIGITS, zh_bridge_root,
 )
+from namepredict.tools.anchored_table import carbamoyl_prefix_name
+from namepredict.tools.re import alpha_order_key
 from namepredict.layer5.chain_engine import (
     _ACYL_HALIDE_BY_HAL, _BENZENE_RETAINED, _KIND_TABLE, _benzene_retained, _chain_names,
 )
@@ -534,9 +537,113 @@ def _c1_amino(parent: dict) -> bool:
         n.GetAtomicNum() == 7 for n in atom.GetNeighbors())
 
 
+def _c1_two_hetero(parent: dict) -> tuple[list[int], list[int], dict[int, int]] | None:
+    """单碳母体官能团碳的 (单键 N, 单键 O, 双键杂原子→索引)；非单碳碳中心返回 None。"""
+    mol, chain = parent.get("mol"), list(parent.get("chain") or ())
+    if mol is None or len(chain) != 1:
+        return None
+    atom = mol.GetAtomWithIdx(int(chain[0]))
+    if atom.GetAtomicNum() != C:
+        return None
+    sgl_n: list[int] = []
+    sgl_o: list[int] = []
+    dbl: dict[int, int] = {}
+    for nb in atom.GetNeighbors():
+        z = nb.GetAtomicNum()
+        if z <= 1:
+            continue  # 氢与锚定哑原子不计
+        bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nb.GetIdx())
+        if bond.GetBondType() == BondType.SINGLE:
+            (sgl_n if z == N else sgl_o if z == O else []).append(nb.GetIdx())
+        elif bond.GetBondType() == BondType.DOUBLE:
+            dbl[z] = nb.GetIdx()
+        else:
+            return None
+    return sgl_n, sgl_o, dbl
+
+
+def _is_dbl_hetero_sub(mol, sub: dict, het_idx: int) -> bool:
+    """取代基块是否即母体碳上那个双键杂原子（=S/=N 已并入保留名，须撤下）。"""
+    return het_idx in (sub.get("atoms") or ())
+
+
+def _sub_on_n(mol, sub: dict, n_atoms: set[int]) -> int | None:
+    """取代基块在母体侧所连的氮原子索引；不连氮返回 None。"""
+    for a in sub.get("atoms") or ():
+        for nb in mol.GetAtomWithIdx(int(a)).GetNeighbors():
+            if nb.GetIdx() in n_atoms:
+                return nb.GetIdx()
+    return None
+
+
+def _urea_subs(numbered: dict, n_atoms: list[int], locants: tuple[str, str],
+               force: bool = False) -> str | None:
+    """脲/硫脲/胍母体：N-取代基按数字位次引用（P-14.4 最低位次给先引用者）。"""
+    mol = (numbered.get("parent") or {}).get("mol")
+    subs = numbered.get("substituents") or []
+    if mol is None:
+        return None
+    groups: dict[int, list] = {}
+    for s in subs:
+        n_idx = _sub_on_n(mol, s, set(n_atoms))
+        if n_idx is not None:
+            groups.setdefault(n_idx, []).append(s)
+    for s in subs:
+        s["kind"] = "side"  # 改走数字位次通道，不再按 N- 前缀渲染
+    if len(subs) < 2 and not force:  # 全分子仅一个取代基、无歧义：位次省略（(4-甲基苯基)脲）
+        return None
+    order = sorted(groups, key=lambda i: alpha_order_key(groups[i][0].get("en") or ""))
+    for pos, n_idx in enumerate(order[: len(locants)]):
+        for s in groups[n_idx]:
+            s["locant"] = locants[pos]
+    return "urea"
+
+
+def _c1_retained(numbered: dict) -> tuple[str, str] | None:
+    """单碳母体带两个杂原子时的保留名（P-66.3 脲/硫脲/胍，P-65.2.1.5 carbamoyl）。"""
+    parent = numbered.get("parent") or {}
+    env = _c1_two_hetero(parent)
+    if env is None:
+        return None
+    sgl_n, sgl_o, dbl = env
+    kind = parent.get("kind")
+    mol = parent.get("mol")
+    if kind == "radical" and len(sgl_n) == 1 and dbl.get(O) is not None and not sgl_o:
+        n_idx = sgl_n[0]
+        side = next((s for s in (numbered.get("substituents") or []) if n_idx in (s.get("atoms") or ())), None)
+        if side is None:  # 伯酰胺：无可引用 N-取代基
+            parent["subs_consumed"] = True
+            return "carbamoyl", "氨基甲酰基"
+        named = carbamoyl_prefix_name(side.get("en") or "", side.get("zh") or "",
+                                      in_ring=mol.GetAtomWithIdx(n_idx).IsInRing())
+        if named is None:
+            return None
+        parent["subs_consumed"] = True
+        return named
+    if kind == "amide" and len(sgl_n) == 2 and dbl.get(O) is not None:
+        parent["locant_kind"] = _urea_subs(numbered, sgl_n, ("1", "3")) and "urea"
+        return "urea", "脲"
+    if kind == "amine" and len(sgl_n) == 2 and dbl.get(S) is not None:
+        numbered["substituents"] = [s for s in (numbered.get("substituents") or [])
+                                    if not _is_dbl_hetero_sub(mol, s, dbl[S])]
+        parent["locant_kind"] = _urea_subs(numbered, sgl_n, ("1", "3")) and "thiourea"
+        return "thiourea", "硫脲"
+    if kind == "amine" and len(sgl_n) == 2 and dbl.get(N) is not None:
+        numbered["substituents"] = [s for s in (numbered.get("substituents") or [])
+                                    if not _is_dbl_hetero_sub(mol, s, dbl[N])]
+        parent["locant_kind"] = _urea_subs(numbered, sgl_n, ("2", "3"), force=True) and "guanidine"
+        return "guanidine", "胍"
+    if kind == "ester" and len(sgl_o) == 2 and dbl.get(O) is not None and not sgl_n:
+        return "carbonate", "碳酸"  # P-65.6.3.3 碳酸二酯：O-侧臂由酯拼接消费
+    return None
+
+
 def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     """链引擎按表 kind 派发，再转具体 worker。"""
     parent = numbered.get("parent") or {}
+    retained = _c1_retained(numbered)  # 单碳双杂原子保留名优先于系统名
+    if retained is not None:
+        return retained
     if kind == "radical" and parent.get("radical_anchor_element"):
         return _mononuclear_radical_names(numbered)
     entry = _KIND_TABLE.get(kind)
@@ -576,6 +683,12 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             if kind == "ester":  # P-66.3.2 氨基甲酸酯：酸碳连 N → carbamate/氨基甲酸
                 result = (result[0].replace("formate", "carbamate"),
                           result[1].replace("甲酸", "氨基甲酸"))
+            elif kind == "acid":  # P-66.3.2 氨基甲酸：酸碳连 N → carbamic acid/氨基甲酸
+                result = (result[0].replace("formic acid", "carbamic acid"),
+                          result[1].replace("甲酸", "氨基甲酸"))
+                parent["locant_kind"] = "carbamic_acid"  # P-65.2.1.1 N-取代基不带 N 位次（dimethylcarbamic acid）
+                for s in numbered.get("substituents") or []:
+                    s["kind"] = "side"  # 撤下 N- 前缀通道，改由位次省略渲染
             elif kind == "acyl_halide":  # P-66.1.1.4.1 氨基甲酰卤：carbamoyl/氨基甲酰
                 result = (result[0].replace("formyl", "carbamoyl"),
                           result[1].replace("甲酰", "氨基甲酰"))

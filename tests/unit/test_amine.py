@@ -109,6 +109,7 @@ alkanediamine__CASES = [
     ("NCC(C)CN", "2-methylpropane-1,3-diamine", "2-甲基丙烷-1,3-二胺"),
     ("CC(N)C", "propan-2-amine", "丙-2-胺"),
     ("C1CCC(N)CC1", "cyclohexanamine", "环己胺"),
+    ("CC(C)(N)N", "propane-2,2-diamine", "丙烷-2,2-二胺"),  # 同碳二胺：位次须重复写出
 ]
 
 

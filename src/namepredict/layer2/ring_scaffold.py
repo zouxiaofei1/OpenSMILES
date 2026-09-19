@@ -65,6 +65,7 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "pyrene":      {"smiles": "c1cc2ccc3cccc4ccc(c1)c2c34", "stem_en": "pyrene",  "stem_zh": "芘", "naming_class": "pyrene", "fused": True, "standard": (PYRENE_LABELS, (6, 7, 8, 9, 10, 11, 12, 13, 0, 1, 2, 14, 3, 4, 5, 15))},
     "indene":      {"smiles": "C1=CCc2ccccc21", "stem_en": "1H-indene", "stem_zh": "1H-茚", "naming_class": "fused56", "fused": True, "fused_stem": ("indene", "茚"), "standard": (FUSED56_LABELS, (2, 1, 0, 8, 7, 6, 5, 4, 3))},  # 茚（PIN 1H-indene），5+6 稠合碳环，并入 fused56
     "chrysene":    {"smiles": "c1ccc2c(c1)ccc1c3ccccc3ccc21", "stem_en": "chrysene", "stem_zh": "屈", "naming_class": "chrysene", "fused": True, "fused_prefix": ("chryseno", "䓛并")},  # 䓛（PIN chrysene，中文用「屈」），四环稠烃
+    "picene":      {"smiles": "c1ccc2c(c1)ccc1c2ccc2c3ccccc3ccc21", "stem_en": "picene", "stem_zh": "苉", "naming_class": "picene", "fused": True, "fused_prefix": ("piceno", "苉并")},  # 苉（表 2.7 第 6 位保留名），五环稠烃，按 P-25.3.3 编号
     "furan":       {"smiles": "c1ccoc1",    "stem_en": "furan",       "stem_zh": "呋喃",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("furo", "呋喃并")},  # monocyclic heteroarenes
     "thiophene":   {"smiles": "c1ccsc1",    "stem_en": "thiophene",   "stem_zh": "噻吩",   "naming_class": "monohetero", "fused": True, "fused_prefix": ("thieno", "噻吩并")},
     "pyrrole":     {"smiles": "c1cc[nH]c1", "stem_en": "pyrrole",     "stem_zh": "吡咯",   "naming_class": "monohetero", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
@@ -98,7 +99,9 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "trioxane":    {"smiles": "C1OCOCO1", "stem_en": "1,3,5-trioxane", "stem_zh": "1,3,5-三氧六环", "naming_class": "monohetero", "locant_prefix": "1,3,5-"},
     "oxazolidine": {"smiles": "C1NCCO1",  "stem_en": "1,3-oxazolidine", "stem_zh": "1,3-噁唑烷", "naming_class": "monohetero", "locant_prefix": "1,3-"},  # 饱和 5 元双杂环（噁唑烷/咪唑烷/噻唑烷）
     "imidazolidine":{"smiles": "C1NCCN1", "stem_en": "imidazolidine",  "stem_zh": "咪唑烷", "naming_class": "monohetero"},
+    "pyrazolidine": {"smiles": "C1CNNC1", "stem_en": "pyrazolidine", "stem_zh": "吡唑烷", "naming_class": "monohetero"},  # 表 2.3 保留名：饱和吡唑环须用它而非氢化 pyrazole
     "thiazolidine":{"smiles": "C1NCCS1",  "stem_en": "1,3-thiazolidine", "stem_zh": "1,3-噻唑烷", "naming_class": "monohetero", "locant_prefix": "1,3-"},
+    "thiadiazolidine124": {"smiles": "S1NCNC1", "stem_en": "1,2,4-thiadiazolidine", "stem_zh": "1,2,4-噻二唑烷", "naming_class": "monohetero", "locant_prefix": "1,2,4-"},  # 饱和 S,N,N 五元环取 HW 名（P-22.2.2），勿退回氢化 thiadiazole
     "dihydrofuran":  {"smiles": "C1C=CCO1",   "stem_en": "2,5-dihydrofuran", "stem_zh": "2,5-二氢呋喃", "naming_class": "monohetero", "standard": (("1", "2", "3", "4", "5"), (4, 0, 1, 2, 3))},  # 部分不饱和 5/6 元杂环（P-22.2.2 加氢前缀）；字面位次即固定编号(P-14.4(a)/(b))
     "dihydropyran":  {"smiles": "C1=COCCC1",  "stem_en": "3,4-dihydro-2H-pyran", "stem_zh": "3,4-二氢-2H-吡喃", "naming_class": "monohetero", "standard": (("1", "2", "3", "4", "5", "6"), (2, 3, 4, 5, 0, 1))},
     "dihydropyrrole":{"smiles": "C1C=CCN1",   "stem_en": "2,5-dihydro-1H-pyrrole", "stem_zh": "2,5-二氢-1H-吡咯", "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True, "standard": (("1", "2", "3", "4", "5"), (4, 0, 1, 2, 3))},
@@ -124,6 +127,8 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "chromene":     {"smiles": "C1=COc2ccccc2C1", "stem_en": "chromene",   "stem_zh": "色烯",  "naming_class": "naph_family", "fused": True, "fused_prefix": ("chromeno", "色烯并"), "standard": (NAPH_LABELS, (2, 1, 0, 9, 8, 7, 6, 5, 4, 3))},  # 苯并吡喃（保留名 chromene/isochromene）
     "isochromene":  {"smiles": "C1=CC2=CC=CC=C2CO1", "stem_en": "isochromene", "stem_zh": "异色烯", "naming_class": "naph_family", "fused": True, "fused_prefix": ("isochromeno", "异色烯并"), "standard": (NAPH_LABELS, (8, 9, 0, 1, 2, 3, 4, 5, 6, 7))},
     "purine":       {"smiles": "c1ncc2[nH]cnc2n1", "stem_en": "7H-purine",     "stem_zh": "嘌呤",   "naming_class": "purine", "fused": True, "fused_stem": ("purine", "嘌呤"), "locant_prefix": "7H-", "prefix_nh_conditional": True, "standard": (PURINE_LABELS, (1, 0, 8, 7, 3, 2, 4, 5, 6))},  # 保留名 purine（嘌呤）/ pteridine（蝶啶）
+    "indolizine":   {"smiles": "c1ccn2ccccc12", "stem_en": "indolizine", "stem_zh": "中氮茚", "naming_class": "indolizine", "fused": True, "fused_prefix": ("indolizino", "中氮茚并")},  # 表 2.8 第 20 位保留名，5+6 稠环，编号按 P-25.3.3（N 得数字位 4）
+    "pyrrolizine":  {"smiles": "C1=CC2=CC=CN2C1", "stem_en": "pyrrolizine", "stem_zh": "吡咯嗪", "naming_class": "pyrrolizine", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True, "fused_prefix": ("pyrrolizino", "吡咯嗪并")},  # 表 2.8 第 21 位保留名 1H-pyrrolizine，5+5 稠环，按 P-25.3.3 编号
     "pteridine":    {"smiles": "c1cnc2ncncc2n1",    "stem_en": "pteridine",    "stem_zh": "蝶啶",   "naming_class": "naph_family", "fused": True, "standard": (NAPH_LABELS, (4, 5, 6, 7, 8, 9, 0, 1, 2, 3))},
     "xanthene":     {"smiles": "C1c2ccccc2Oc2ccccc21", "stem_en": "xanthene",     "stem_zh": "氧杂蒽", "naming_class": "xanthene", "fused": True, "standard": (XANTHENE_LABELS, (12, 11, 10, 9, 8, 5, 4, 3, 2, 1, 0, 13, 7, 6))},  # 呫吨/噻吨（表 2.8 第 22 项；P-25.3.3 传统编号）
     "thioxanthene": {"smiles": "C1c2ccccc2Sc2ccccc21", "stem_en": "thioxanthene", "stem_zh": "噻吨",   "naming_class": "xanthene", "fused": True, "standard": (XANTHENE_LABELS, (12, 11, 10, 9, 8, 5, 4, 3, 2, 1, 0, 13, 7, 6))},
@@ -137,7 +142,7 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "tetrazine1245": {"smiles": "n1ncnnc1", "stem_en": "1,2,4,5-tetrazine", "stem_zh": "1,2,4,5-四嗪", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,2,4,5-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
     "thiazole12": {"smiles": "c1cncs1", "stem_en": "1,2-thiazole", "stem_zh": "1,2-噻唑", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2]thiazolo", "[1,2]噻唑并"), "locant_prefix": "1,2-", "standard": (("1", "2", "3", "4", "5"), (4, 3, 2, 1, 0))},
     "oxepane": {"smiles": "O1CCCCCC1", "stem_en": "oxepane", "stem_zh": "氧杂环庚烷", "naming_class": "monohetero", "fused": True},  # 七元含氧/含氮饱和环（P-22.2.2）
-    "azepane": {"smiles": "N1CCCCCC1", "stem_en": "azepane", "stem_zh": "氮杂环庚烷", "naming_class": "monohetero", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
+    "azepane": {"smiles": "N1CCCCCC1", "stem_en": "azepane", "stem_zh": "氮杂环庚烷", "naming_class": "monohetero", "fused": True, "fused_stem": ("azepine", "氮杂卓"), "locant_prefix": "1H-", "prefix_nh_conditional": True},  # 作稠合母体须取 mancude 词干 azepine（P-25.3.1.2.2）
     "oxazepane": {"smiles": "O1CCNCCC1", "stem_en": "1,4-oxazepane", "stem_zh": "1,4-氧杂氮杂环庚烷", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,4-"},
     "thiazepane": {"smiles": "S1CCNCCC1", "stem_en": "1,4-thiazepane", "stem_zh": "1,4-硫杂氮杂环庚烷", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,4-"},
     "thiazine13": {"smiles": "S1C=NC=CC1", "stem_en": "1,3-thiazine", "stem_zh": "1,3-噻嗪", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,3]thiazino", "[1,3]噻嗪并"), "locant_prefix": "1,3-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
@@ -416,15 +421,31 @@ def _is_induced_match(m: Mol, q: Mol, atoms: frozenset[int]) -> bool:
     return _induced_bond_count(m, atoms) == q.GetNumBonds()
 
 
+def _isolated_saturated_ring(mol: Mol, atoms: frozenset[int]) -> bool:
+    """原子集是否为不与他环稠合的单环，且 Kekulé 视图环内无重键（RDKit 会误判芳香）。"""
+    rings = sssr_rings(mol)
+    if not any(frozenset(r) == atoms for r in rings):
+        return False
+    in_rings = Counter(a for r in rings for a in r)
+    if any(in_rings[a] > 1 for a in atoms):
+        return False  # 桥头位：属稠合/桥环系统，走 P-25.3.4 氢化 mancude 名
+    kek = memo.by_mol("kekulized", kekulized, mol) or mol
+    return all(b.GetBondType() == Chem.BondType.SINGLE for b in kek.GetBonds()
+               if b.GetBeginAtomIdx() in atoms and b.GetEndAtomIdx() in atoms)
+
+
 def _match_with_map(info: dict, atom_ids, *, mancude_only: bool = False) -> tuple[str, tuple[int, ...]] | None:
     """模板精确覆盖 atom_ids 时返回 (sid, match)。"""
     mol = info["mol"]
 
     atoms = frozenset(atom_ids)
     elem = _elem_sig(mol, atom_ids)
+    sat_ring = _isolated_saturated_ring(mol, atoms)  # 已饱和单环须取饱和母体氢化物名（P-31.2）
     for sid, q in _Q.items():
         if mancude_only and not _TEMPLATES[sid].get("fused"):
             continue  # 饱和保留名不作稠合组分（P-25.2.1 表 2.8）
+        if sat_ring and any(b.GetBondType() != Chem.BondType.SINGLE for b in q.GetBonds()):
+            continue
         if _TEMPLATE_ELEM[sid] != elem:
             continue
         for m in mol.GetSubstructMatches(q, uniquify=True):
@@ -435,6 +456,8 @@ def _match_with_map(info: dict, atom_ids, *, mancude_only: bool = False) -> tupl
         for sid, qh in _Q_H.items():
             if mancude_only and not _TEMPLATES[sid].get("fused"):
                 continue  # 氢化骨架同样只取 mancude 母体（P-25.3.4）
+            if sat_ring and any(b.GetBondType() != Chem.BondType.SINGLE for b in _Q[sid].GetBonds()):
+                continue
             if _TEMPLATE_ELEM[sid] != elem:
                 continue
             for m in mol_h.GetSubstructMatches(qh, uniquify=True):
