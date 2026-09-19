@@ -1,6 +1,6 @@
 # Layer1: 官能团分析 (Functional Group Analyzer)
 
-> **源文件:** `layer1/` 目录 6 个 `.py`（725 行） | **对外接口:** `analyze`、`oxoacid_entries`、`inventory_from_info` | **下游:** L2 母体选择、L3 取代基、L5 词尾
+> **源文件:** `layer1/` 目录 6 个 `.py`（733 行） | **对外接口:** `analyze`、`oxoacid_entries`、`inventory_from_info` | **下游:** L2 母体选择、L3 取代基、L5 词尾
 
 ## 概述
 
@@ -20,7 +20,7 @@ Layer1 是 SMILES → IUPAC 双语命名管线的第一层：输入 RDKit `Mol`�
 
 共享臂词常量供模式拼接：`_ACID_O`（酸式氧 = 单碳羟基氧或羧酸根阴离子氧）、`_NOT_ACID`、`_NOT_ACYCLIC_ESTER`、`_NOT_HALO`、`_ONE_C`、`_RING_HET`。
 
-全表 24 条模式、13 个 FG 键（`sulfonamide` 由含氧酸条目派生，不出现在本表）：
+全表 27 条模式、13 个 FG 键（`sulfonamide` 由含氧酸条目派生，不出现在本表）：
 
 | FG 键 | 条数 | 模式要点 |
 | --- | --- | --- |
@@ -33,11 +33,11 @@ Layer1 是 SMILES → IUPAC 双语命名管线的第一层：输入 RDKit `Mol`�
 | aldehyde | 1 | 至多一个碳邻居、无卤素 |
 | nitrile | 1 | C≡N |
 | ketone | 3 | 双碳；单碳须连环内杂原子（P-66.1.1）；环内零碳排非内酯型酯 |
-| oxoacid | 7 | 中心 P/S 含氧酸，见下节 |
+| oxoacid | 10 | 中心 P/S 含氧酸，见下节 |
 | alcohol / thiol | 各 1 | 羟基连非酰基碳 / 巯基连碳 |
 | amine | 3 | 按取代度分三条（H2,H3,H4 / H1 / H0），环内与芳香氮不入 |
 
-含氧酸 7 条覆盖：磷酸 P(=O)(O)₃、膦酸 P(=O)(O)₂-X、磺酸/磺酸盐、磺酰卤、磺酰胺、磺酸酯、硫酸氢酯/硫酸酯。臂词为 `_O_PHOS`（单键氧三态 OH / O⁻ / O-R，臂根限碳或磷，故 P-O-P 桥氧即多聚磷酸；排除哑原子臂）、`_O_ARM`、`_HALO_ARM`、`_N_ARM`（非环氮）、`_C_ARM`（直连碳）、`_SNY_ARM`（膦酸第三臂，C/S/N 均可）。模式只判"中心元素 + 双键氧数 + 臂型"，具体种类交由后处理归一。
+含氧酸 10 条覆盖：磷酸 P(=O)(O)₃、膦酸 P(=O)(O)₂-X、磺酸/磺酸盐、磺酰卤、磺酰胺、磺酸酯、硫酸氢酯/硫酸酯、硫酸/硫酸根（两臂皆酸式氧或 O-臂）、二硫酸链端节（酸式/酯臂 + S-O-S 桥臂）、多硫酸链中节（两桥臂）。臂词为 `_O_PHOS`（单键氧三态 OH / O⁻ / O-R，臂根限碳或磷，故 P-O-P 桥氧即多聚磷酸；排除哑原子臂）、`_O_ARM`（O-R 臂）、`_O_S_ARM`（S-O-S 桥臂，与 `_O_PHOS` 内的磷臂并列）、`_HALO_ARM`、`_N_ARM`（非环氮）、`_C_ARM`（直连碳）、`_SNY_ARM`（膦酸第三臂，C/S/N 均可）。模式只判"中心元素 + 双键氧数 + 臂型"，具体种类交由后处理归一。
 
 ## 非局部后处理
 
@@ -48,10 +48,10 @@ SMARTS 只约束中心原子邻域，整分子环境由 `analyzer` 后处理定�
 检测 — 归一 — 分类三段共用一条管线，中心元素 P 与 S 走同一张表。
 
 - `_oxo_roles(mol, z_idx)` 计中心原子邻居角色：双键氧 `oxo`、羟基氧 `oh`、阴离子氧 `om`、O-臂 `o_arm`、碳 `c`、卤素 `hal`、氮 `n`、硫 `s`。
-- `_oxo_kind(mol, z_idx)` 依元素与角色归一 kind。P 由 `_OXO_KIND_P` 按 `(双键氧数, 有无直连碳臂)` 映射为 `phosphate` / `phosphonate`；S 须两个双键氧，无直连碳时由「一酸式一 O-R」判 `sulfate`（否则失败），有直连碳时另一臂经 `_OXO_KIND_S_ARM` 映射 `halo`→`sulfonyl_chloride`、`n`→`sulfonamide`、`acid`→`sulfonic`、`o_arm`→`sulfonate`。
+- `_oxo_kind(mol, z_idx)` 依元素与角色归一 kind。P 由 `_OXO_KIND_P` 按 `(双键氧数, 有无直连碳臂)` 映射为 `phosphate` / `phosphonate`；S 须两个双键氧，无直连碳时要求「酸式氧 + O-臂 + S 桥臂合计为 2」判 `sulfate`（覆盖硫酸、硫酸根与多硫酸链节，否则失败），有直连碳时另一臂经 `_OXO_KIND_S_ARM` 映射 `halo`→`sulfonyl_chloride`、`n`→`sulfonamide`、`acid`→`sulfonic`、`o_arm`→`sulfonate`。
 - `_oxo_arm_roots` 取中心原子的 (直连碳臂, O-臂根碳, 羟基氧, 阴离子氧, 酸式氧)；`_arm_single_attach` 要求各臂单点回接且互不相连（`_arm_component` 做不穿 core 的连通搜索）。
-- `_oxoacid_entry` 组装条目并归一 `oxo_kind`。中心自任母体的 `_OXO_Z_ANCHORED`（`phosphate` / `phosphonate` / `sulfate`）额外要求整分子纯度：全部重原子 = core ∪ 臂，臂间成环与焦磷酸一类均被排除，`center_idx` 即中心原子；碳锚定的 kind 要求直连碳臂唯一并以该碳为 `center_idx`，`surr_idx` 只收阴离子氧，供 L2 补 anion 标志。
-- `oxoacid_entries` 按 `oxo_z` 去重排序，对缩合磷酸（P-O-P）做两级门控：链上须留有全酸式末端（同一 P ≥2 个酸式氧，P-67.2.1）；链内 P 让位于更少质子化的磷酸中心（`_p_bridge_arms` 计 O-P 桥氧数，非 P 中心恒 0）。
+- `_oxoacid_entry` 组装条目并归一 `oxo_kind`。中心自任母体的 `_OXO_Z_ANCHORED`（`phosphate` / `phosphonate` / `sulfate`）额外要求整分子纯度：全部重原子 = core ∪ 臂，臂间成环一类被排除，`center_idx` 即中心原子；碳锚定的 kind 要求直连碳臂唯一并以该碳为 `center_idx`，`surr_idx` 只收阴离子氧，供 L2 补 anion 标志。
+- `oxoacid_entries` 按 `oxo_z` 去重排序，对缩合含氧酸（P-O-P / S-O-S）做两级门控：链上须留有全酸式末端（同一中心 ≥2 个酸式氧，P-67.2.1）；无此末端时带桥氧的链节只在酸式氧（`n_oh + n_om`）达全链最大值时保留作母体，否则整链退为取代基、母体会落到甲烷；链内中心让位于更少质子化的酸中心（P-41 酸根优先，`_oxo_bridge_arms` 计单键 O 上另一同元素中心数，非 P/S 中心恒 0）。保留的链节即送入 [[architecture/layer2-parent-selector]] 的母体候选。
 - `oxoacid_lists` 按 `_OXO_CLASS_BY_KIND` 把条目归位到 P-41 类别键：磺酰胺落 `"sulfonamide"`（类 11），其余落 `"oxoacid"`（类 9）。`phosphate_entries` 是「仅 `phosphate` kind」的视图。
 - `_PRESENCE_SKIP` 含 `oxoacid` 与 `sulfonamide`：含氧酸不参与存在性判定，纳入会改写压制结果。
 

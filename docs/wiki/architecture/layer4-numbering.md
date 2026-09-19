@@ -1,6 +1,6 @@
 # Layer4: 编号与位次 (Numbering & Locants)
 
-源文件 10 个 `.py`（约 1564 行）｜对外接口 `numbering.number`
+源文件 11 个 `.py`（约 1719 行）｜对外接口 `numbering.number`
 
 ## 概述
 
@@ -9,10 +9,10 @@ Layer4 承接 Layer2 选定的母体 `parent` 与 Layer3 提取的取代基 `sub
 职责边界：
 
 - 只决定骨架的「原子顺序 / 位次」，不生成名称文本、不选母体、不改动取代基集合。
-- 编号不适用时 `orient_numbering` 返回 `None`，由上层回退，本层不产出半截命名结果。
+- 编号不适用时 `orient_numbering` 返回 `None`，`number` 随即抛 `ValueError("numbering_failed")`；本层不产出半截命名结果。
 - 指示氢、加氢前缀、位次省略标志都在本层定稿，Layer5 只做拼接与词形变化。
 
-输入 `parent` 的关键字段：`mol`（RDKit 分子）、`chain`（L2 给出的母体骨架原子顺序）、`scaffold_id` 与 `scaffold_match`（保留名母体模板）、`numbering_scaffold`（模板 locant 标签）、`principal_expression_facts`（P-14.4(c) 主特征基团附着原子）、`double_bond` / `double_bonds` / `triple_bond` / `triple_bonds`（不饱和键）、`hydro_atoms`（L2 判定的加氢环位）、`radical_c_idx`（游离价连接点）、`fused_tree`、`ring_attach_idx`、`kind`、`n_carbons`。`substituents` 每项至少含 `attach_idx`（附着原子）、`en`（英文前缀）、`kind`。
+输入 `parent` 的关键字段：`mol`（RDKit 分子）、`chain`（L2 给出的母体骨架原子顺序）、`scaffold_id` 与 `scaffold_match`（保留名母体模板）、`numbering_scaffold`（模板 locant 标签）、`principal_expression_facts`（P-14.4(c) 主 FG 附着原子，含 `multiplicity`）、`covered_principal_ids` / `principal_occurrences`（主 FG 逐 occurrence 数据）、`bridged_nodes`（P-23 并列候选）/ `bridged_node`（裁决后写回的选中节点）、`double_bond` / `double_bonds` / `triple_bond` / `triple_bonds`（不饱和键）、`hydro_atoms`（L2 判定的加氢环位）、`radical_c_idx`（游离价连接点）、`fused_tree`、`ring_attach_idx`、`kind`、`n_carbons`。`substituents` 每项至少含 `attach_idx`（附着原子）、`en`（英文前缀）、`kind`。
 
 输出 numbered dict 的关键键：
 
@@ -24,7 +24,7 @@ Layer4 承接 Layer2 选定的母体 `parent` 与 Layer3 提取的取代基 `sub
 
 数据流：`number(parent, substituents)` 先调 `orient_numbering` 得到定向后的 `chain`，用 `{**parent, "chain": chain}` 生成 `oriented`；`locant_calc._with_locants` 给每个取代基补 `locant`；`locant_calc._pack` 组装 `fg_locants` 与不饱和位次两组记录。随后在 `packed`（即 `oriented`）上依次处理加氢位与指示氢，最后返回 `result`。`result["parent"]` 与传入的 `parent` 是同一 dict 对象，本层对 `parent` 的字段写入对调用方可见。
 
-文件分工：`numbering.py`（入口与加氢前缀）、`numbering_engine.py`（候选枚举、收窄原语、三层分派、稠合组分编号）、`fused_numbering.py`（P-25.3.3 外周编号）、`fused_orientation.py`（优选取向）、`ring_geometry.py`（平面几何原语）、`indicated_hydrogen.py`（指示氢位次）、`locant_calc.py`（位次计算与打包）、`omit_locants.py`（位次省略规则）、`candidate_keys.py`（并列候选比较键）、`__init__.py`。
+文件分工：`numbering.py`（入口与加氢前缀）、`numbering_engine.py`（候选枚举、收窄原语、三层分派、稠合组分编号）、`bridged_numbering.py`（P-23 桥环编号裁决）、`fused_numbering.py`（P-25.3.3 外周编号）、`fused_orientation.py`（优选取向）、`ring_geometry.py`（平面几何原语）、`indicated_hydrogen.py`（指示氢位次）、`locant_calc.py`（位次计算与打包）、`omit_locants.py`（位次省略规则）、`candidate_keys.py`（并列候选比较键）、`__init__.py`。
 
 实现约定：
 
@@ -35,10 +35,11 @@ Layer4 承接 Layer2 选定的母体 `parent` 与 Layer3 提取的取代基 `sub
 
 ## 三层分派
 
-`numbering_engine.orient_numbering(parent, substituents, *, float_hetero=False)` 是唯一的定向入口，按固定优先级尝试三条路径，先命中者胜出。
+`numbering_engine.orient_numbering(parent, substituents, *, float_hetero=False)` 是唯一的定向入口，桥环先短路，其余按固定优先级尝试三条路径，先命中者胜出。
 
+- 桥环短路（P-23）：`parent["bridged_nodes"]` 存在时直接返回 `bridged_numbering(parent, substituents)`，无论成败都不再下落（`chain_fused` 判据对桥环恒真，会被 `_fused_numbering` 误吞）；只带 `bridged_node` 时在 `_fused_numbering` 之后兜底返回 `None`（桥环 `chain` 非环序）。
 1. `_fixed_numbering`（P-14.4(a)）：母体命中保留模板且模板可全覆盖环系时，按模板的 `standard_chain` 映射固定编号，直接返回而不进入候选枚举。多个对称映射并存时，用 `(c) 后缀位次集 / (f) 前缀位次集 / (g) 引用序` 三元键取最小；无后缀也无前缀时直接取首个映射。
-2. `_fused_numbering`（P-25.3.3）：多环稠合系统走几何优选取向 + 外周编号。`TRADITIONAL_NUMBERING_IDS` 中的骨架（anthracene、phenanthrene、acridine、carbazole、purine、xanthene、thioxanthene、cyclopenta[a]phenanthrene）按传统编号，从这条路径排除。
+2. `_fused_numbering`（P-25.3.3）：多环稠合系统走几何优选取向 + 外周编号。`TRADITIONAL_NUMBERING_IDS` 中的骨架（anthracene、phenanthrene、acridine、carbazole、purine、xanthene、thioxanthene、cyclopenta[a]phenanthrene）按传统编号，从这条路径排除；`parent["bridged_node"]` 非空时同样直接返回 `None`。
 3. 通用候选枚举：单环与开链走 P-14.4 候选生成 + 逐层收窄。
 
 `float_hetero=True` 时（由 `fused_component_numbering` 在对称杂环上透传）跳过杂环指示氢 NH 位次的收窄，保留镜像候选，让 locant 1 由稠合原子定。
@@ -49,7 +50,7 @@ Layer4 承接 Layer2 选定的母体 `parent` 与 Layer3 提取的取代基 `sub
 
 候选生成：`_ring_cands` 对环给出全部 `n` 个旋转与 `2n` 个翻转候选；开链给 `_numbered(chain)` 与 `_numbered(reversed(chain))` 两个方向。`_numbered` / `_to_chain` 在「原子顺序列表」与「`{原子: 位次}`」之间互转，收窄全程在后者上做。
 
-收窄原语（公共原语，L2 亦复用）：
+收窄原语（公共原语，L2 与 `bridged_numbering` 亦复用）：
 
 - `narrow(cands, key_fn, *, reverse=False, skip_none=False)`：保留 `key_fn` 键最小（`reverse=True` 取最大）的全部候选。`skip_none=True` 且存在 `None` 键时，表示该判据不适用，候选原样返回。
 - `narrow_by_senior(cands, key_fn, heteros, by_z, *, skip_none=False)`：先按杂原子全集的位次集合收窄，再按 `P145_SENIOR` 逐元素收窄该元素原子的位次，实现 P-14.4(a)(b) 的元素序。
@@ -75,7 +76,7 @@ CIP 由 `assign_cip` 经 `memo.by_mol("cip", ...)` 记忆化重算：隐式 H �
 
 `fused_orientation` 负责 P-25.3.2.3 的几何优选取向。
 
-`horizontal_rows` 从每条共享边出发，沿 `opposite_bonds`（偶环 1 条对面边、奇环 2 条）向两侧递归扩展水平行，按长度降序返回全部行候选。`_layout` 按行摆放：首环用 `RING_TEMPLATES[n]`（正 n 边形，一条边竖直）落位，其余环以共享边对齐，`_opposite_side` 让新环落在前一环的对面；行内奇环双侧融合时改用 `ring_shape_template` 的变形环模板，构造不出则该行弃用。行以外的环由 `_place_neighbor` 递归摆放，重叠面积超阈值时改试对侧。`_valid_deform_overlap` 用 `rigid_fit`（Kabsch 2D 刚体+缩放拟合）检查每环相对模板的最大偏差不超过 `DEFORM_MAX`，并检查非共享环之间重叠不超过 `OVERLAP_FRAC`。
+`horizontal_rows` 从每条共享边出发，沿 `opposite_bonds`（偶环 1 条对面边、奇环 2 条）向两侧递归扩展水平行，按长度降序返回全部行候选。`_layout` 按行摆放：首环用 `RING_TEMPLATES[n]`（正 n 边形，一条边竖直）落位，其余环以共享边对齐，`_opposite_side` 让新环落在前一环的对面；行内奇环双侧融合时改用 `ring_shape_template` 的变形环模板，构造不出则该行弃用。行以外的环迭代摆放：反复调用 `_place_neighbor` 摆放「已有已摆放邻环」的环，直到没有新环可摆；仍摆不下则整行弃用（返回 `None`）。`_place_neighbor` 重叠面积超阈值时改试对侧。`_valid_deform_overlap` 用 `rigid_fit`（Kabsch 2D 刚体+缩放拟合）检查每环相对模板的最大偏差不超过 `DEFORM_MAX`，并检查非共享环之间重叠不超过 `OVERLAP_FRAC`。
 
 `preferred_orientations` 对每个候选行取 `flip` 镜像，评分键为 `(水平行环数, Q1 右上象限占比, -Q3 左下象限占比, 水平轴上方环数)`，取最大者，并列全部返回。象限占比由 `_quadrant_fractions` 以水平行中心为原点、按环计数法累加；`_row_center` 对偶数行取中间一对环的共同键中点、奇数行取中心环质心。`Orientation` 是冻结 dataclass，`coord_dict()` 给出 `{原子: (x, y)}`。
 
@@ -92,7 +93,16 @@ CIP 由 `assign_cip` 经 `memo.by_mol("cip", ...)` 记忆化重算：隐式 H �
 
 `fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edges=None)` 给单个稠合组分自身编号（P-25.4 / P-25.3.3），稠合点当作取代基处理。单环组分、或有 `_STANDARD_ORDERS` 固定编号的组分走 `orient_numbering`（`shared` 非空时置 `float_hetero=True`，让对称杂环保留镜像、由稠合原子定 locant 1），标签由 `_component_labels` 补出；其余多环组分走 `preferred_orientations` + `number_fused_system`，把稠合点原子集作为单层 `sub_layers` 逐层最小化位次（P-25.3.1.3）。返回 `(chain, labels)`，失败返回 `(None, None)`。
 
-`ring_geometry` 提供平面几何原语：`regular_polygon` 与 `RING_TEMPLATES`（3–19 元环）、`ring_shape_template`（5/7 元环变形模板）、`ring_cyclic`（求以指定边为首的环序）、`rigid_fit` / `apply_rigid`（Kabsch 刚体拟合）、`clip_polygon`（Sutherland–Hodgman 裁剪）、`polygon_area` / `overlap_area` / `centroid`。模板与阈值 `DEFORM_MAX` / `OVERLAP_FRAC` 是本模块的模块级常量，取向判定完全基于坐标与离散计数，评分键的象限值与环数为 0/0.25/0.5/1 的离散值，不引入浮点累计尾差。
+`ring_geometry` 提供平面几何原语：`regular_polygon` 与 `RING_TEMPLATES`（3–98 元环）、`ring_shape_template`（5/7 元环变形模板）、`ring_cyclic`（求以指定边为首的环序）、`rigid_fit` / `apply_rigid`（Kabsch 刚体拟合）、`clip_polygon`（Sutherland–Hodgman 裁剪）、`polygon_area` / `overlap_area` / `centroid`。模板与阈值 `DEFORM_MAX` / `OVERLAP_FRAC` 是本模块的模块级常量，取向判定完全基于坐标与离散计数，评分键的象限值与环数为 0/0.25/0.5/1 的离散值，不引入浮点累计尾差。
+
+## 桥环编号
+
+`bridged_numbering.bridged_numbering(parent, substituents)` 只做裁决：von Baeyer 拆解与 P-23.2 拓扑收窄已由 L2 完成，本层只在并列最优 `BridgedNode` 间按 P-23.3.2 与 P-14.4 定编号。
+
+- `_candidates` 优先取 `parent["bridged_nodes"]`，缺失时回落为只含 `parent["bridged_node"]` 的单元素表；无候选或 `chain` 为空时返回 `None`。
+- `_narrow_ladder` 依次施加五项判据（剩 1 个即停）：P-23.3.2.1 杂原子位次集合最低 → P-23.3.2.2 按元素序逐元素窄化（复用 `narrow_by_senior`，`_by_z` 按原子序数分组）→ P-14.4(c) 后缀位次最低 → P-14.4(f) 取代基位次集合最低 → P-14.4(g) 字母序最前的取代基得最低位次（`_alpha_locants` 用 `alpha_order_key`）。P-23.3.2.2 的序列等价于 `P145_SENIOR` 去掉卤素——卤素一价，做不了骨架原子。
+- `_pick_equivalent` + `_feature_key`：剩余候选的渲染特征（`descriptor`、`locant_pairs` 次级桥上标位次对、杂原子/后缀/取代基位次）全同才取首个，否则判为**不可判定**并返回 `None`。
+- 命中后把选中节点写回 `parent["bridged_node"]`，返回其位次升序原子表供下游当 `chain` 用，两者须自洽。
 
 ## 杂环编号与指示氢
 
@@ -122,6 +132,9 @@ CIP 由 `assign_cip` 经 `memo.by_mol("cip", ...)` 记忆化重算：隐式 H �
 - `locant_key(x)`：locant → `(数值, 字母尾)` 排序键，兼容数字与字母位混合；`locant_str_sort` 按此键排序 locant 集合。
 - `_FG_GROUP`：记录 kind → `principal_expression_facts` 类别映射，键与 `FG_SPECS` 的 `fg` 同形：`{"alcohol": "alcohol", "amine": "amine", "ketone": "ketone", "thiol": "thiol"}`。`_omit_for` 据此把 FG 记录的省略判定接到 `omit_locants.omit_fg_locant`（ketone 多原子时 `single=False`）。`_FG_LOCANTS` 由 `FG_SPECS` 派生 `(记录 kind, spec)` 对，保证跨层的 fg 一致性。
 - `_locants_for` 按 `spec.locant_source` 取位次：`anchor_field` 走 `_anchor_field_locants`（如 `radical_c_idx`），`attachment_exocyclic` 仅在该 FG 确以环外方式表达（`_exocyclic_only`）时取附着原子，否则走 `_typed_atom_locants`。
+- `_occ_attachment(oriented, anchors, atoms)`：occurrence 锚点 → 骨架内附着原子，锚点全在骨架外时取骨架内邻居。
+- `_occurrence_locants(oriented, spec)`：逐 occurrence 求附着位次，同一原子承载多个同类 FG 时保留重数。
+- `_expand_shared_locants(oriented, spec, locs)`：`_fg_locants` 对 `spec.locant_source == "attachment"` 的项调用；仅当 `facts.multiplicity` 大于已收位次数、逐 occurrence 位次个数恰等于 `multiplicity` 时，改用逐 occurrence 位次补回重复位次（偕二醇 `propane-2,2-diol`），否则原样返回。
 - `_unsat_locants` / `ene_locants` / `yne_locants` / `_bond_locants` / `_bond_min_locs`：取每根不饱和键较小端点的位次，排序后打包，并附 `omit_ene_locant` / `omit_yne_locant`。
 - `omit_locants.omit_fg_locant(pos, n_carbons, parent, n_subs, *, single=True)`：`carbocycle` 且非稠环的环单 FG 无取代时省略位次；否则位次为 1 且碳数不超过 2 时省略。
 - `omit_locants.omit_unsat(n_carbons, kind, parent, *, triple=False)`：纯烃环无多双键时烯位次隐含省略；烯 ≤C2、炔 ≤C3 时位次 `1` 省略（P-14.3.4.2(d)）。
@@ -144,6 +157,7 @@ numbering_engine.fused_component_numbering(mol, scaffold_id, sub_rings, shared=N
 numbering_engine.narrow(cands, key_fn, *, reverse=False, skip_none=False) -> list
 numbering_engine.narrow_by_senior(cands, key_fn, heteros, by_z, *, skip_none=False) -> list
 numbering_engine.assign_cip(mol) -> None
+bridged_numbering.bridged_numbering(parent, substituents) -> list[int] | None
 fused_numbering.number_fused_system(mol, rings, coords, sub_layers=None, alpha_subs=None)
 fused_numbering.fused_atoms(rings) -> set[int]
 fused_orientation.preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]
@@ -159,7 +173,7 @@ tools.re.alpha_order_key(stem) -> tuple
 
 与本层的接口面：
 
-- 入口 `numbering.number(parent, substituents)` 由 `namer._assemble_candidate` 调用，取代基先经 `namer._subs_for_numbering` 筛选与重挂。
+- 入口 `numbering.number(parent, substituents)` 由 `namer._assemble_candidate` 调用，取代基先经 `namer._subs_for_numbering` 筛选与重挂；`ValueError("numbering_failed")` 由该调用点捕获，候选判为失败。
 - `numbering_engine.orient_numbering`、`narrow`、`narrow_by_senior`、`assign_cip`、`_principal_atoms`、`_chain_rs_codes`、`_rs_locant_key`、`fused_component_numbering` 均为跨层复用的公共原语。
 - `fused_numbering.fused_atoms`、`number_fused_system`、`fused_orientation.preferred_orientations` 供 L2 与 L5 直接调用。
 - `candidate_keys.suffix_locant_set` / `prefix_locant_set` 给出 P-44.1.1 / P-45.2.2 的并列候选比较键，`namer` 把它写入结果的 `meta`。
@@ -169,10 +183,12 @@ L2 侧：
 - `layer2.fused_system` 复用 `narrow` 做 (a)–(f) 逐准则收窄，并调用 `fused_atoms` / `number_fused_system` / `preferred_orientations` / `locant_key` 完成 (g)–(j) 依赖编号的收窄。
 - `layer2.ring_scaffold` 提供 `get_spec`、`_Q` / `_Q_H`、`standard_chain`、`_STANDARD_LABELS` / `_STANDARD_ORDERS`、`numbering_scaffold_facts`、`extra_indicated_atoms`，是本层固定编号与指示氢护栏的数据来源。
 - `layer2.kind_registry` 经 `numbering_scaffold_facts` 给 parent 挂 `numbering_scaffold`。
-- `layer2.principal_expression` 写入 `principal_expression_facts` 与 `hydro_atoms`，供本层 P-14.4(c) 与 P-31.2.2 使用。
+- `layer2.principal_expression` 写入 `principal_expression_facts`（含 `covered_principal_ids` / `principal_occurrences`）与 `hydro_atoms`，供本层 P-14.4(c) 与 P-31.2.2 使用。
+- `layer2.bridged_system` 的并列最优 `BridgedNode` 经 `principal_expression` 写入 `bridged_nodes`（见 [[architecture/layer2-parent-selector]]），编号裁决留给本层。
 
 L5 侧：
 
 - `layer5.assembler` 读 `parent.indicated_h_locants` / `indicated_h_forced` / `hydro_prefix` / `numbering_scaffold.labels`，由 `join_hydro_prefix` 决定加氢前缀与指示氢的拼接形态。
+- `layer5.assembler._ensure_bridged_stem` 读 `parent.bridged_node` 与 `chain`，经 `bridged_namer.bridged_parent_names` 注入桥环词干，描述符与上标位次取自本层选中的同一节点。
 - `layer5.chain_engine` 按 `fg_locants` 的 `kind` 查找主官能团位次，读 `omit_ene_locant` / `omit_yne_locant` / `ene_locants` / `yne_locants` 决定段式后缀。
 - `layer5.assembler_prefixes` 用 `locant_str_sort` 与 `alpha_order_key` 排序前缀引用顺序；`layer5.stereo` 用 `locant_key` 与 `assign_cip`；`layer5.fused_namer` 用 `fused_component_numbering` 给稠合组分编号。

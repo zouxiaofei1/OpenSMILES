@@ -1,6 +1,6 @@
 # Layer5: 名称组装 (Name Assembly)
 
-> 源文件 7 个（约 2146 行） · 对外接口 `assemble`
+> 源文件 9 个（约 2463 行） · 对外接口 `assemble`
 
 ## 概述
 
@@ -12,10 +12,12 @@ Layer5 是命名流水线的末层，把 Layer4 输出的编号结果（numbered
 | --- | --- | --- |
 | `parent.kind` | 母体类别 | 选 `_KIND_TABLE` 条目 |
 | `parent.n_carbons` | 母体碳数 | 词干生成 |
-| `parent.stem_en` / `parent.stem_zh` | 环式/稠环词干 | 覆盖碳数词干 |
-| `parent.scaffold_id` | 骨架 ID | `benzene` / `carbocycle` / 稠环 |
-| `parent.chain` | 母体原子序列 | 指示氢位次映射 |
+| `parent.stem_en` / `parent.stem_zh` | 环式/稠环/桥环词干（`stem_bare_en` / `stem_bare_zh` 为裸词干） | 覆盖碳数词干 |
+| `parent.scaffold_id` | 骨架 ID | `benzene` / `carbocycle` / `bridged` / 稠环 |
+| `parent.bridged_node` | P-23 桥环拆解节点 | `bridged_namer` 取描述符与次级桥位次对 |
+| `parent.chain` | 母体原子序列 | 指示氢位次映射、'a' 前缀位次 |
 | `parent.mol` | RDKit 分子 | 臂根成环判定与手性 |
+| `parent.locant_kind` / `parent.subs_consumed` | 位次省略 kind / 取代基已并入保留名 | `_omit_sub_locants` 判据、前缀关闭 |
 | `parent.numbering_scaffold.labels` | 原子 → 位次标签 | 位次串渲染 |
 | `parent.oxo_kind` / `parent.n_oh` | 含氧酸中心元素与酸式氢数 | 词尾查表 |
 | `parent.thio_side` | 硫代羧酸 S-酯标记 | 走 thioate 词尾与 `S-` 斜体 |
@@ -23,7 +25,7 @@ Layer5 是命名流水线的末层，把 Layer4 输出的编号结果（numbered
 | `parent.hydro_prefix` | 加氢前缀 | 拼到母体名前 |
 | `parent.indicated_h_locants` | 指示氢位次 | 拼 `nH-` 前缀 |
 | `parent.salt_meta` / `parent.n_om` | 金属盐与游离根计数 | 盐式与「根」后缀 |
-| `substituents` | 取代基记录 | `o_side`、`paren`、`attach_idx`、`atoms`、`arm_fenced` |
+| `substituents` | 取代基记录 | `o_side`、`paren`、`attach_idx`、`atoms`、`arm_fenced`、`kind` |
 | `fg_locants` | 主官能团位次记录 | `kind` / `locants` / `omit` |
 
 ### 输出 NameResult
@@ -34,7 +36,7 @@ Layer5 是命名流水线的末层，把 Layer4 输出的编号结果（numbered
 
 `assemble(numbered, *, time_ms=0.0, source="iupac")` 按固定顺序执行：
 
-1. `_ensure_fused_stem` — 稠环词干缺失时由 `fused_namer.fused_parent_names` 组装注入，并前置 L4 指示氢位次；失败即返回 unsupported。
+1. `_ensure_parent_stem` — 词干注入分派：桥环走 `_ensure_bridged_stem`，其余先 `_ensure_fused_stem`（稠环由 `fused_namer.fused_parent_names` 组装注入，并前置 L4 指示氢位次）再 `_ensure_generated_stem`（大环杂单环生成式词干）；任一环节失败即返回 unsupported。
 2. `_names_for(kind, n, numbered)` — 取母体双语名。
 3. `join_hydro_prefix` — 拼接 hydro 前缀与指示氢前缀。
 4. `join_ring_cation_suffix` — 环内 N⁺/O⁺ 缀 `-{位次}-ium`（P-62.4.1）。
@@ -55,7 +57,7 @@ Layer5 是命名流水线的末层，把 Layer4 输出的编号结果（numbered
 
 - 词尾：`kind`、`en_suf`、`zh_suf`、`coda`（饱和词干后接段，默认 `"an"`，部分 kind 用 `""` 或 `"ane"`）。
 - 位次：`no_loc`（`"plain"` 无位次回落普通名 / `"none"` 直接返回 None）、`omit_rule`（`(n, loc, omit) -> bool`，True 表示省略位次）、`fg`、`need`、`ene_loc_omit`、`yne_loc_omit`、`yl_loc_omit`、`zh_loc_omit`。
-- 不饱和段：`ene_seg`、`yne_seg`（段式单烯/炔段）、`ene_base`、`yne_suf`（融合式基座）、`unsat_polyol`、`zh_full`、`ez_ene`、`ez_ene_multi`。
+- 不饱和段：`ene_seg`、`yne_seg`（段式单烯/炔段，默认 `None` 表示由后缀首字母推导）、`ene_base`、`yne_suf`（融合式基座）、`unsat_polyol`、`zh_full`、`ez_ene`、`ez_ene_multi`。
 - 覆盖与派生：`plain_maps`（俗名表）、`plain_fn`（按碳数派生命名）、`plain_hook`（按分子计数直接给词尾）、`variant`（`{scaffold 或 multiplicity: 字段覆盖 dict}`）、`stem`、`aromatic`、`cyclic`、`cyclic_unsat`、`wrap`。
 
 三个位次规则常量：`_NO_OMIT`（恒不省）、`_omit_all`（恒省）、`_omit_term_locant`（`omit` 或无位次，或 `n <= 2` 且位次为 1 时省）。
@@ -78,7 +80,9 @@ Layer5 是命名流水线的末层，把 Layer4 输出的编号结果（numbered
 - `polyol`：词干内嵌烯/炔段，FG 后缀后拼。
 - `seg`：段式后缀（`ene_seg` / `yne_seg`），FG 位次经 `_fg_yl_tail` 拼接，C-1 自由价经 `_yl_loc_omitted` 省略位次（P-29.2）。
 
-位次省略由 `_unsat_loc_omit` 统一判定，仅单段且形态为 `fused` / `polyol` 时（P-14.3.4.2(d)）生效。
+段式段的词形由 `_unsat_seg(spec, b)` 定：`ene_seg` / `yne_seg` 显式给出时直接采用；否则看 `spec.en_suf` 首字母，非元音（`aeiouy` 之外）时保留末端 `e`（`ene` / `yne`，`carboxylic acid`、`thiol` 一类，P-16.7.1(a)、P-59.1.9），元音开头时用 `en` / `yn`。段式段因此恒有词形可出。
+
+位次省略由 `_unsat_loc_omit` 统一判定，仅单段且形态为 `fused` / `polyol` 时（P-14.3.4.2(d)）生效。烯段的条件是 `spec.ene_loc_omit` 或形态为 `polyol`，炔段是 `spec.yne_loc_omit` 或形态为 `polyol`，两者都另要求 L4 的 `omit_ene_locant` / `omit_yne_locant`。
 
 ### 多 FG 字段派生 `_generated_mult_fields`
 
@@ -123,7 +127,7 @@ Layer5 是命名流水线的末层，把 Layer4 输出的编号结果（numbered
 | `phosphonate` | `phosphonic acid` / `膦酸` | `coda=""`、`fg="oxoacid"`、`plain_hook=_oxoacid_tail` |
 | `sulfate` | `sulfate` / `硫酸` | `coda=""`、`fg="oxoacid"`、`plain_hook=_oxoacid_tail` |
 | `acyl` | `oyl` / `酰基` | `ene_base`、`yne_suf`、`variant` C1/C2 保留名 |
-| `thiol` | `thiol` / `硫醇` | `coda="ane"`、`fg="thiol"`、`need=1`、`ene_seg=("ene","烯")`、`yne_seg=("yne","炔")` |
+| `thiol` | `thiol` / `硫醇` | `coda="ane"`、`fg="thiol"`、`need=1`、`zh_full`、`unsat_polyol`（段式段保留 `e` 由 `_unsat_seg` 推导） |
 | `amine` | `amine` / `胺` | `fg="amine"`、`need=1`、`zh_full`、`unsat_polyol` |
 | `aldehyde` | `al` / `醛` | `ene_base=("enal","烯醛")`、`yne_suf`、`variant` C1/C2 |
 | `nitrile` | `enitrile` / `腈` | `ene_base=("enenitrile","烯腈")`、`yne_suf`、`variant` C1/C2 |
@@ -141,12 +145,22 @@ Layer5 是命名流水线的末层，把 Layer4 输出的编号结果（numbered
 
 ## 母体拼接入口
 
+### 词干注入分派 `_ensure_parent_stem`
+
+`_ensure_parent_stem(numbered)` 是 `assemble` 入口的词干注入分派；各分支先看 `stem_en` / `stem_zh`，二者已在即放行。
+
+- `parent.bridged_node` 非空 → `_ensure_bridged_stem`（P-23 桥环词干）；否则先 `_ensure_fused_stem`（未注册稠环）再 `_ensure_generated_stem`（生成式词干），前者失败即整体失败。
+
+`_ensure_bridged_stem` 由 `bridged_namer.bridged_parent_names` 取完整名与裸词干两式：裸词干写入 `parent.stem_bare_en` / `parent.stem_bare_zh`；环内无不饱和（无 `ene_locants` / `yne_locants`）时 `stem_en` / `stem_zh` 取完整名，否则取裸词干，由链引擎自行拼 `ane` / 「烷」与不饱和段。
+
+`_ensure_generated_stem` 处理无保留名的 >10 元杂单环（`scaffold_id == "carbocycle"`、`kind == "alkane"`、`chain` 长度 > 10）：由 `prefix_from_chain` 取 'a' 前缀，拼成 `{前缀}cyclo{烷词干}` / `{前缀}环{烷}`，同写 `stem_en`/`stem_zh` 与 `stem_bare_en`/`stem_bare_zh`。≤10 元环归 Hantzsch-Widman 保留名，带主特征基团者与纯碳环均放行，词表外元素判失败。
+
 ### `join_kind_name` 三条路径
 
 ```
-kind ∈ ESTER_O_SIDE_KINDS 且 kind ∈ OXO_CENTER_KINDS  →  join_oxoacid_name
-kind ∈ ESTER_O_SIDE_KINDS                              →  join_ester_name
-其余                                                   →  join_parent_name
+kind ∈ ESTER_O_SIDE_KINDS 且 ∈ OXO_CENTER_KINDS → join_oxoacid_name
+kind ∈ ESTER_O_SIDE_KINDS                       → join_ester_name
+其余                                            → join_parent_name
 ```
 
 - `ESTER_O_SIDE_KINDS = {ester, phosphate, phosphonate, sulfate, sulfonate}`：O 侧臂由本层整名消费，取代基前缀中已滤除 `o_side` 记录。
@@ -157,18 +171,37 @@ kind ∈ ESTER_O_SIDE_KINDS                              →  join_ester_name
 
 ### `_names_for` 派发
 
-`_names_for(kind, n, numbered)` 先取 `_KIND_TABLE[kind]` 作为 `entry`，再按分子上下文逐层改写：
+`_names_for(kind, n, numbered)` 先试 `_c1_retained`（单碳母体保留名，命中即直接返回），再取 `_KIND_TABLE[kind]` 作为 `entry`，按分子上下文逐层改写：
 
 1. **杂原子锚点**：`kind == "radical"` 且 `parent.radical_anchor_element` 存在时转 `_mononuclear_radical_names`。
 2. **酰卤**：`kind == "acyl_halide"` 时用 `_ACYL_HALIDE_BY_HAL.get(parent.hal_z)` 覆盖默认的氯化物 spec。
-3. **硫代酯条目改写**：`kind == "ester"` 且 `parent.thio_side` 时经 `dataclasses.replace` 把词尾换成 thioate 族并清空 `variant`（详见「酯与硫代酯」）。
-4. **稠环词干直取**：`kind == "alkane"` 且 `parent.fused_tree` 存在、`scaffold_id != "benzene"` 时，返回 `_parent_stem_names`，由 `_ensure_fused_stem` 注入的稠合 base 名直接作为母体名。
-5. **苯 base**：`scaffold_id == "benzene"` 且 `kind == "alkane"` 时返回 `("benzene", "苯")`。
-6. **环式 FG 词干注入**：`parent.stem_en` / `parent.stem_zh` 同时存在时覆盖 `entry.stem` 并把 `coda` 置空（位次 omit 由 L4 决定），`aromatic` 置为 `scaffold_id == "benzene"`。
-7. **单环饱和烃自由基**：`scaffold_id == "carbocycle"` 时置 `cyclic=True`、`ene_loc_omit=True`，`omit_rule` 对自由基为「`loc == 1`」，其余沿用 L4 的 `omit`。
-8. **scaffold 专属保留名**：`variant` 先取苯环硫代酯专用的 `benzenecarbothioate`，再取 `_BENZENE_RETAINED[kind]`（`benzene` scaffold）或 `entry.variant.get(sid)`。
+3. **裸词干环系**：`parent.stem_bare_en` 存在且 `kind` 为 `bridged` 或 `alkane` 时，取 `_KIND_TABLE["alkane"]` 并把 `stem` 换成裸词干、`coda` 置空后交 `_chain_names`，使环内 `ene` / `yne` 位次照常渲染（`bridged` 无表条目）。
+4. **硫代酯条目改写**：`kind == "ester"` 且 `parent.thio_side` 时经 `dataclasses.replace` 把词尾换成 thioate 族并清空 `variant`（详见「酯与硫代酯」）。
+5. **稠环词干直取**：`kind == "alkane"` 且 `parent.fused_tree` 存在、`scaffold_id != "benzene"` 时返回 `_parent_stem_names`，把 `_ensure_fused_stem` 注入的稠合 base 名直接当母体名。
+6. **苯 base**：`scaffold_id == "benzene"` 且 `kind == "alkane"` 时返回 `("benzene", "苯")`。
+7. **环式 FG 词干注入**：`parent.stem_en` / `parent.stem_zh` 同时存在时覆盖 `entry.stem` 并把 `coda` 置空（位次 omit 由 L4 决定），`aromatic` 置为 `scaffold_id == "benzene"`。桥环带主特征基团时 kind 取该 FG 类别，词干即由此注入。
+8. **单环饱和烃自由基**：`scaffold_id == "carbocycle"` 时置 `cyclic=True`、`ene_loc_omit=True`，`omit_rule` 对自由基为「`loc == 1`」，其余沿用 L4 的 `omit`。
+9. **scaffold 专属保留名**：`variant` 先取苯环硫代酯专用的 `benzenecarbothioate`，再取 `_BENZENE_RETAINED[kind]`（`benzene` scaffold）或 `entry.variant.get(sid)`。
 
-改写完成后交 `_chain_names(entry, n, numbered)` 生成双语名。无对应 kind 条目时回落 `_parent_stem_names`。
+改写完成后交 `_chain_names(entry, n, numbered)` 生成双语名，结果再经 `_c1_amino` 做氨基甲酸类词尾替换；无对应 kind 条目时回落 `_parent_stem_names`。
+
+### C1 保留名 `_c1_retained`
+
+`_c1_retained(numbered)` 识别单碳母体官能团碳上的两个杂原子，命中即返回保留名双语对。`_c1_two_hetero(parent)` 按 `parent.chain` 长度为 1 定位该碳，统计单键 N、单键 O 与双键杂原子（氢与哑原子不计，非单/双键键型即不适用）：
+
+- `radical` + 一个单键 N + `=O` 且无双键 O → 伯酰胺取 `carbamoyl` / `氨基甲酰基`；N 带取代基时经 `carbamoyl_prefix_name` 产出 `<N-取代基>carbamoyl`，取不到名即回落系统名；命中后 `parent.subs_consumed` 置真，取代基前缀关闭。
+- `amide` + 两个单键 N + `=O` → `urea` / `脲`；`amine` + 两个单键 N + `=S` → 先撤下 `=S` 侧取代基块再返回 `thiourea` / `硫脲`；`=N` 同法得 `guanidine` / `胍`。
+- `ester` + 两个单键 O + `=O` 且无单键 N → `carbonate` / `碳酸`，O 侧臂仍由 `join_ester_name` 消费。
+
+脲 / 硫脲 / 胍经 `_urea_subs` 把 N-取代基改走数字位次通道：各取代基块 `kind` 置 `"side"`，按所连 N 分组后以取代基名 `alpha_order_key` 排序，依次取 `("1","3")`（胍为 `("2","3")` 且强制编号）写入 `s["locant"]`；全分子只有一个取代基且非强制时不写位次（`(4-甲基苯基)脲`），成功时另置 `parent.locant_kind`。
+
+### 氨基甲酸类 `_c1_amino`
+
+`_c1_amino(parent)` 判单碳母体官能团碳是否直连 N（`chain` 长度 1、该碳为碳且邻居含氮）。命中时替换 `_chain_names` 结果的词尾：
+
+- `ester`：`formate` / `甲酸` → `carbamate` / `氨基甲酸`（P-66.3.2）。
+- `acid`：`formic acid` / `甲酸` → `carbamic acid` / `氨基甲酸`，并置 `parent.locant_kind = "carbamic_acid"`、把全部取代基 `kind` 改为 `"side"`，N-取代基因而不带位次（`dimethylcarbamic acid`）。
+- `acyl_halide`：`formyl` / `甲酰` → `carbamoyl` / `氨基甲酰`（P-66.1.1.4.1）。
 
 ### 含氧酸中心母体 `join_oxoacid_name`
 
@@ -180,6 +213,25 @@ kind ∈ ESTER_O_SIDE_KINDS                              →  join_ester_name
 4. 末段分四种情形：无臂且有金属 → 酸式盐（英文金属前置、中文金属直接缀于酸式词后，如磷酸二氢钾）；无臂且 `n_om > 0` → 游离根（负电荷不标注，中文补「根」）；无臂 → 纯酸；有臂且有金属 → 酯盐（英文 `{metal} {arms} {tail}`，中文 `{tail}{arms}酯 {metal}盐`）；有臂无金属 → 英文 `{arms} {tail}`，中文 `{tail}{arms}酯`。
 
 臂的中文词由 `_oxoacid_arm_zh` 渲染：简单基去「基」（`甲基` → `甲`），全数字词干补「烷基」，含连字符或括号的复合名原样保留。
+
+## 桥环母体命名 `bridged_namer.py`
+
+`bridged_parent_names(mol, node, chain)` 由 L4 选中的桥环节点产出 `((完整英, 完整中), (裸词干英, 裸词干中))`，不可组装时返回 `None`：
+
+- `ring_count_prefix(n_rings)`：1 环无前缀、2 环 `bi` / `双`、≥3 环取 `MULT_EN` / `MULT_ZH`（不用 `dicyclo`）。
+- 环数 = `len(node.descriptor) - 1`，骨架碳数 = `sum(node.descriptor) + 2`，烷词干取 `stems.alkane_en` / `alkane_zh`。
+- `descriptor_str(descriptor, locant_pairs)` 把次级桥的上标位次对直接续在对应长度数字之后（`2.2.1`、`2.2.2.0,2` 一类），各长度数字以 `.` 分隔，判分口径不带上标花括号。
+- 'a' 前缀由 `skeleton_replacement.prefix_from_chain` 给出，整名即 `{a}{环数词头}cyclo[{描述符}]{烷}` / `{a}{环数词头}环[{描述符}]{烷}`，裸词干去掉英语尾 `ane` 与中文「烷」。
+
+本模块不 import L2，`node` 只按鸭子类型读 `descriptor` 与 `locant_pairs`。
+
+## 骨架置换前缀 `skeleton_replacement.py`
+
+`prefix_from_chain(mol, chain)` 由骨架原子序表产出 P-23.3.1 的 'a' 前缀：逐原子取原子序，非碳者按元素归组；无杂原子返回两个空串，词表外元素返回 `None`。位次为原子在 `chain` 中的序号 + 1。
+
+`skeleton_replacement_prefix(locants_by_z)` 按元素分组渲染：组内位次升序、逗号连接并加数量前缀，组间按 `P145_SENIOR` 的引用顺序（F > Cl > Br > I > O > S > Se > Te > N > P > …）用连字符连接，得到 `4-thia-1-aza` / `4-硫杂-1-氮杂`。英文数量词尾 `a` 仅在后接元素名以 `a` 开头时省略（`tetraza` 对 `tetraoxa`）；元素或数量超出词表即返回 `None`，不臆造前缀。
+
+词表 `A_PREFIX_EN` / `A_PREFIX_ZH` 覆盖 B / Si / As / Se / Sb 等元素（5 硼杂、7 氮杂、8 氧杂、14 硅杂、15 磷杂、16 硫杂、33 砷杂、34 硒杂、51 锑杂），同时服务于桥环母体名与 `_ensure_generated_stem` 的生成式词干。
 
 ## 酯与硫代酯
 
@@ -213,6 +265,8 @@ kind ∈ ESTER_O_SIDE_KINDS                              →  join_ester_name
 - 单取代基：先试 sulfamoyl 融合（`sulfonyl` + `amino` → `…sulfamoyl`；`sulfonyl` + N-芳基按苯基并入，见下）；再试 `_fused_bridge_name` 双原子桥合一；再试 `_bridge_enclosed_names` 桥围栏；`azane` 中心另走 `AMIDO_RETAINED` 保留式与内层括起加 `amino` 两条支路；最后对 `f"{sub}-{stem}"` 调 `free_to_yl`，`oxidane` 中心再经 `_retained_alkoxy` 收拢为保留烷氧基。
 - 多取代基：仅 `azane` 中心的双取代基成立（O/S 双烷基非标准自由基），按英文名排序后分「同基倍增」「N-芳基-N-某基取 anilino（P-62.2.1.1）」「首基平铺、其余各基加括号（P-62.2.2.1）」三路。
 
+**azane 前端围栏**：`_azane_front_needs_paren(a)` 处理 azane 单取代时前端自带多个位次段的复合取代基（P-63.2.2.1.1），命中即整体圆括后再缀 `amino` / `氨基`；酰基前端（`oyl` / `carbonyl` 词尾）、苯基前端（走 `anilino` 保留式，P-62.2.1.1）与已自带括号的前端不括。
+
 **苯磺酰/苯亚磺酰保留名**：`_mononuclear_en` 在基为 `phenyl` 且后缀为 `sulfonyl`/`sulfinyl` 时取 `benzenesulfonyl`（P-66.4.1）；`_mononuclear_zh` 对应 `base + 「基」` 走 `zh_bridge_root`。**N-芳基并入 sulfamoyl**：`stem_en == "sulfonyl"` 且取代基名以 `anilino` / `苯胺基` 结尾时，把 `anilino` 还原为 `phenyl` / `苯基` 后并入 `sulfamoyl` / `氨基磺酰基`，裸 `anilino` 时前端免括、带取代基时经 `_enclose` 括起（P-66.1.1.4.2）。
 
 **双原子桥合一**：`_fused_bridge_name(stem_en, a)` 按 `BRIDGE_FUSION_YL` 把前端尾 `imino`/`sulfanyl` 与中心单核氢化物 `azane`/`sulfane` 合一为 `diazenyl` / `disulfanyl`（中文 二氮烯基 / 二硫代基，P-68.3.1.3/.4），该路径优先于桥围栏路径。
@@ -228,25 +282,25 @@ kind ∈ ESTER_O_SIDE_KINDS                              →  join_ester_name
 - 环外硫代羧酸 S-酯：`ester` 且 `thio_side` 时后缀改用 `("carbothioate", "硫代甲酸")`。
 - 环外酰卤：卤素词按 `parent.hal_z` 由 `HALIDE_EN` / `HALO_ZH` 动态拼接（如 `carbonyl chloride` / `甲酰氯`）。
 - 多取代且 plural 为 None 时放弃；苯环单取代由 `variant` 保留名承担，不改写 spec。
-- 稠环/杂环：词干已注入，位次恒显式。
-- 纯碳环：环内有不饱和键时用段式后缀（`coda="ane"`、`cyclic=True`、`zh_loc_omit=False`）；饱和时取完整氢化物词干 `cyclo{alkane}` / `环{烷}` 并关闭 `cyclic`。`omit_rule` 为「`omit` 或本环无位次取代基」，故干净环省略主基位次（`cyclohexanecarboxylic acid`），环上另带被编号前缀时保留（P-66.6.1）。
+- 稠环/杂环/生成式词干：`scaffold_id` 非 `carbocycle`、或已注入 `fused_tree`、或 `stem_generated` 为真时词干已注入，位次恒显式。
+- 纯碳环：环内有不饱和键时用段式后缀（`coda="ane"`、`cyclic=True`、`zh_loc_omit=False`），段形由 `_unsat_seg` 按后缀推导；饱和时取完整氢化物词干 `cyclo{alkane}` / `环{烷}` 并关闭 `cyclic`。`omit_rule` 为「`omit` 或本环无位次取代基」，故干净环省略主基位次（`cyclohexanecarboxylic acid`），环上另带被编号前缀时保留（P-66.6.1）。
 
 ## 前缀组装与围栏
 
-`assembler_prefixes.py` 负责取代基前缀的分组、围栏与双语渲染。入口 `_prefix_for` 从 numbered 取上下文后委托 `_build_prefix`。
+`assembler_prefixes.py` 负责取代基前缀的分组、围栏与双语渲染。入口 `_prefix_for` 从 numbered 取上下文（含 `parent.locant_kind`）后委托 `_build_prefix`；`parent.subs_consumed` 为真时返回空前缀（取代基已并入 C1 保留名）。
 
 ### `_build_prefix` 流程
 
 1. `_fence_o_side_arms` 就地围栏 O 侧臂。
 2. 滤除 `o_side` 记录（O 侧臂由 `join_kind_name` 消费）。
-3. `_omit_sub_locants` 判定取代基位次可否省略。
+3. `_omit_sub_locants` 判定取代基位次可否省略（母体 kind 取 `locant_kind or kind`）。
 4. `flat = kind in OXO_CENTER_KINDS`：为真时用 `oxo_arm_fence` 重算每个取代基的 `paren` 标记，使臂名围栏由环基判据决定，并去掉多余位次围栏。
 5. `_mult_rows` 按英文名分组计数，排序键统一为 `alpha_order_key`（P-14.5 字母数字序）。
 6. 计算 `bracket = omit and len(groups) >= 2 and _groups_simple(groups)`，据以选择 `sep`（`""` 或 `"-"`）并调用 `_collect_parts`。
 
 ### 位次省略 `_omit_sub_locants`
 
-按母体情形分派：自由基母体仅单碳链省位次；`n_carbons <= 1` 省位次，但 N- 型与 C- 型取代基共存时 C 侧须带位次；纯烃环/苯环单取代位次隐含（环烯除外）；酰胺仅在取代基全为 N- 型时省；`acyl` / `ketone` / `acid` 恒不省；`kind in OXO_CENTER_KINDS` 恒返回 True（臂挂在中心原子上，母体链位次无意义）；含显式括号或自带位次的复合取代基不省；`n_carbons == 2` 的单取代仅在端碳无 H 的母体成立，`alcohol` / `amine` / `thiol` / `sulfonic` / `sulfonate` / `sulfonamide` / `sulfonyl_chloride` 除外。
+前两条优先判据：`kind` 属 `N_LOCANT_KINDS`（`urea` / `thiourea` / `guanidine`）时恒不省（`1,3-二甲基脲`）；`kind == "carbamic_acid"` 时恒省（`dimethylcarbamic acid`）。其后按母体情形分派：自由基母体仅单碳链省位次；`n_carbons <= 1` 省位次，但 N- 型与 C- 型取代基共存时 C 侧须带位次；纯烃环/苯环单取代位次隐含（环烯除外）；酰胺仅在取代基全为 N- 型时省；`acyl` / `ketone` / `acid` 恒不省；`kind in OXO_CENTER_KINDS` 恒返回 True（臂挂在中心原子上，母体链位次无意义）；含显式括号或自带位次的复合取代基不省；`n_carbons == 2` 的单取代仅在端碳无 H 的母体成立，`alcohol` / `amine` / `thiol` / `sulfonic` / `sulfonate` / `sulfonamide` / `sulfonyl_chloride` 除外。
 
 ### 通用臂围栏 `oxo_arm_fence`
 
@@ -351,6 +405,8 @@ kind ∈ ESTER_O_SIDE_KINDS                              →  join_ester_name
 | `stems.py` | 碳数词干表、酸转阴离子、金属盐后缀 |
 | `stereo.py` | E/Z 与 CIP R/S 立体前缀 |
 | `fused_namer.py` | 未注册稠环的稠合 base 名组装 |
+| `bridged_namer.py` | P-23 桥环母体名（环数词头 + 描述符 + 'a' 前缀） |
+| `skeleton_replacement.py` | P-23.3.1 骨架置换 'a' 前缀 |
 
 ### 对外接口
 
@@ -363,6 +419,7 @@ assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> Name
 ### 跨层依赖
 
 - 自 L1：`mol`（RDKit）、单核母体氢化物词表、官能团类别。
-- 自 L2：`kind`、`n_carbons`、`scaffold_id`、`oxo_kind`、`n_oh`、`salt_meta`、`fused_tree`。
-- 自 L4：`chain`、`numbering_scaffold.labels`、`fg_locants`、`indicated_h_locants`、`hydro_prefix`、`double_bond(s)`。
+- 自 L2：`kind`、`n_carbons`、`scaffold_id`、`oxo_kind`、`n_oh`、`salt_meta`、`fused_tree`、`bridged_node`。
+- 自 L4：`chain`、`numbering_scaffold.labels`、`fg_locants`、`indicated_h_locants`、`hydro_prefix`、`double_bond(s)`、`ene_locants` / `yne_locants`。
+- 本层不 import L2：`bridged_namer` 只按鸭子类型读 `bridged_node` 的 `descriptor` 与 `locant_pairs`；候选由 L2 给出、L4 选中写回，须与该次编号自洽。
 - 本层回注：`fused_namer` 依赖 L4 的 `fused_component_numbering`；`stereo` 依赖 L4 的 `assign_cip` 与 `locant_key` / `locant_str_sort`。

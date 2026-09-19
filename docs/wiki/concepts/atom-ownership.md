@@ -94,7 +94,7 @@
 
 ### 边界的反向使用：P-45.2.1 计数
 
-`owned_atoms` 不只是 L3 的输入，也是 L2 候选排序的基准。`_p45_2_prefix_count` 就地取用 L3 的 `iter_claims`，以边界外的 claim 个数作 P-45.2.1 键；`_reorder_p45_2` 按 `(计数降序, 缩合磷酸链内桥氧数降序, 原序)` 稳定重排，第二键由 `_condensed_rank` 给出（仅 `oxo_kind == "phosphate"` 时取链中 P 的 `_p_bridge_arms`，其余恒 0）。`tied=True` 时只保留计数最高的并列组，即 `select_parent` 的返回值——归属边界越紧，计数键越高，越可能在并列中胜出。
+`owned_atoms` 不只是 L3 的输入，也是 L2 候选排序的基准。`_p45_2_prefix_count` 就地取用 L3 的 `iter_claims`，以边界外的 claim 个数作 P-45.2.1 键；`_reorder_p45_2` 按 `(计数降序, 缩合含氧酸链内桥氧数降序, 原序)` 稳定重排，第二键由 `_condensed_rank` 给出（`oxo_kind` 为 `phosphate` 或 `sulfate` 时取链中中心原子的 `analyzer._oxo_bridge_arms`，其余恒 0）。`tied=True` 时只保留计数最高的并列组，即 `select_parent` 的返回值——归属边界越紧，计数键越高，越可能在并列中胜出。
 
 ## L3：消耗与槽位
 

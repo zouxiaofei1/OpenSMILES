@@ -126,12 +126,12 @@ P-44 拓扑规则只活在 `parent_skeleton.select_principal_skeletons` 的筛�
 P-45.2 排序在 `parent_select._reorder_p45_2`。它对候选列表做稳定排序，排序键是三元组，比较方向为：
 
 1. `_p45_2_prefix_count(info, cand)` 降序——该候选 `owned_atoms` 边界外的 claim 个数，即前缀取代基团数目（P-45.2.1），少者优先。
-2. `_condensed_rank(info, cand)` 降序——缩合磷酸的链内桥氧数（P-67.2.1），多者优先。
+2. `_condensed_rank(info, cand)` 降序——缩合含氧酸（磷酸 / 硫酸）的链内桥氧数（P-67.2.1），多者优先。
 3. 原始序升序——保持枚举顺序，作为平局兜底。
 
-`_condensed_rank` 只对 `oxo_kind == "phosphate"` 的候选计算，非磷酸候选恒返回 `0`，因此在第一键平局时磷酸候选才能凭第二键胜出。它从候选的 `covered_principal_ids` 与 `principal_occurrences` 中取出 `oxo_z`，对每个中心调用 `analyzer._p_bridge_arms` 并取最大值。`_p_bridge_arms` 统计中心原子的 O-P 桥氧数：中心必须是 P（原子序数 15，否则恒返回 0），逐个数非双键氧邻居中是否还连着另一个 P，是则计一个桥氧。链内桥氧越多，说明该磷酸中心越是多核磷酸的功能母体，排序越靠前。`_reorder_p45_2` 在 `tied=True` 时只保留第一键取最大值的候选，供 `select_parent` 返回并列最优。
+`_condensed_rank` 只对 `oxo_kind ∈ ("phosphate", "sulfate")` 的候选计算，其余候选恒返回 `0`，因此在第一键平局时缩合磷酸 / 硫酸候选才能凭第二键胜出。它从候选的 `covered_principal_ids` 与 `principal_occurrences` 中取出 `oxo_z`，对每个中心调用 `analyzer._oxo_bridge_arms` 并取最大值。`_oxo_bridge_arms` 统计中心原子的 O-桥氧数：中心须为 P 或 S（原子序数 15 / 16，否则恒返回 0），逐个数非双键氧邻居中是否还连着同种中心原子，是则计一个桥氧。链内桥氧越多，说明该中心越是多核（P-O-P / S-O-S）链的功能母体，排序越靠前。`_reorder_p45_2` 在 `tied=True` 时只保留第一键取最大值的候选，供 `select_parent` 返回并列最优。
 
-缩合磷酸的候选资格在 L1 阶段就已收窄：`analyzer.oxoacid_entries` 在识别含氧酸中心后做两道过滤。第一道要求链上留有全酸式末端——若没有任何中心的 `n_oh + n_om >= 2`，带 P-O-P 桥氧的中心被剔除，即全酯化的缩合磷酸不按功能母体识别（P-67.2.1）。第二道取全部中心里最大的 `n_om`，把 `n_om` 更小且带桥氧的链内中心剔除，让位给质子化更少的磷酸中心，避免磷酸酸根被写成前缀。只有通过这两道的候选，才会带着 `oxo_z` 进入 `_condensed_rank` 的桥氧计数。
+缩合含氧酸的候选资格在 L1 阶段就已收窄：`analyzer.oxoacid_entries` 在识别含氧酸中心后做两道过滤。第一道要求链上留有全酸式末端——若没有任何中心的 `n_oh + n_om >= 2`，带 P-O-P / S-O-S 桥氧的中心被剔除，即全酯化的缩合链不按功能母体识别（P-67.2.1）；此时整链也不退为取代基，至少留酸式氧（`n_oh + n_om`）最多的链节作母体。第二道取全部中心里最大的 `n_om`，把 `n_om` 更小且带桥氧的链内中心剔除，让位给质子化更少的酸中心，避免酸根被写成前缀。只有通过这两道的候选，才会带着 `oxo_z` 进入 `_condensed_rank` 的桥氧计数。
 
 `select_parent` 的调用链是 `_collect_candidates` → `_finalize_ranked` → `_reorder_p45_2(tied=True)`：先由规则驱动收集候选并去重，再由 `_finalize_ranked` 补齐契约、词干与编号并固化 `owned_atoms`，最后交 P-45.2 排序取并列最优。`_p45_2_prefix_count` 依赖的 `owned_atoms` 正是在 `finalize_parent_ownership` 中固化，因此排序键所用的 claim 计数与最终归属一致。
 
@@ -139,7 +139,7 @@ P-45.2 排序在 `parent_select._reorder_p45_2`。它对候选列表做稳定排
 
 - `src/namepredict/layer1/fg_registry.py`：`FgSpec`、`FG_SPECS`、`oxoacid_is_acid`、`OXO_ACID_P41`、`OXO_ACID_KINDS`、`OXO_ACID_KIND_BY_H`
 - `src/namepredict/layer1/functional_group_inventory.py`：`FunctionalGroupClass`、`FunctionalGroupOccurrence`、`FunctionalGroupInventory`、`_FG_KEYS`、`_ANCHOR_KEYS`
-- `src/namepredict/layer1/analyzer.py`：`_arbitrate_parts`、`_SUPPRESSIBLE`、`_PRESENCE_SKIP`、`_LEAF_DEMOTED`、`_OXO_CLASS_BY_KIND`、`_p_bridge_arms`
+- `src/namepredict/layer1/analyzer.py`：`_arbitrate_parts`、`_SUPPRESSIBLE`、`_PRESENCE_SKIP`、`_LEAF_DEMOTED`、`_OXO_CLASS_BY_KIND`、`_oxo_bridge_arms`
 - `src/namepredict/layer2/principal.py`：`PrincipalPriority`、`PRINCIPAL_REGISTRY`、`_effective_priority`、`select_principal_group`
 - `src/namepredict/layer2/parent_skeleton.py`：`select_principal_skeletons`、`keep_p44_1_2`、`keep_p44_2`、`keep_p44_3`、`keep_p44_4_unsaturation`
 - `src/namepredict/layer2/parent_select.py`：`_p45_2_prefix_count`、`_condensed_rank`、`_reorder_p45_2`、`select_parent`
