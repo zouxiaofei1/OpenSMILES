@@ -17,7 +17,7 @@ def regular_polygon(n: int, *, right_edge_vertical: bool = True) -> list[tuple[f
 
 
 RING_TEMPLATES: dict[int, list[tuple[float, float]]] = {
-    n: regular_polygon(n) for n in range(3, 20)
+    n: regular_polygon(n) for n in range(3, 99)
 }
 _ROW_WIDTH = 3 ** 0.5
 

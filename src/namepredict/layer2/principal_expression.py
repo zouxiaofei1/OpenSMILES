@@ -327,7 +327,7 @@ def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> d
     """为骨架内 C=C/C≡C 附加双/三键位次字段（mancude 环内略过）。"""
     atom_set = set(skeleton.atom_ids)
     dbs, tbs = _chain_polys(info, atom_set)
-    if fields.get("scaffold_id") == "carbocycle":  
+    if fields.get("scaffold_id") in ("carbocycle", "bridged"):
         dbs = dbs + _kekule_ring_dbs(info, atom_set, dbs)
     implied = _implied_ring_atoms(fields, atom_set)
     if implied:

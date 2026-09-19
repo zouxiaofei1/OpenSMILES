@@ -139,6 +139,12 @@ def test_azulene_no_longer_misidentified_as_naphthalene():
     assert ring_template_match___resolve("C1=CC2=CC=CC=CC2=CC1") == "carbocycle"
 
 
+def test_twistane_no_longer_misidentified_as_naphthalene():
+    # 扭曲烷三环骨架：naphthalene 是其非诱导子图（多余环闭合键不可见），曾误配为 naphthalene。
+    assert ring_template_match___template_id("C12C3CC(C(C1)CC3)CC2") is None
+    assert ring_template_match___resolve("C12C3CC(C(C1)CC3)CC2") == "fused_hetero"
+
+
 def test_isoindole_no_longer_misidentified_as_indole():
     # 苯并[c]吡咯：五元组与 indole 字段全等曾误配为 indole；未注册非全碳
     # 多环回落 fused_hetero（L5 按 fused_tree 组装稠合名），仍非 indole。

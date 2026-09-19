@@ -405,6 +405,21 @@ def _fusion_naming_applies(mol, rings, atom_ids) -> bool:
     return not _cannot_be_mancude(mol, rings, atom_ids)
 
 
+def _tree_ring_indices(node) -> set[int]:
+    """稠环树覆盖的 SSSR 环下标（含全部附加组分）。"""
+    out = set(node.ring_indices)
+    for child in node.attached:
+        out |= _tree_ring_indices(child)
+    return out
+
+
+def _tree_covers_rings(fused_tree, system: dict) -> bool:
+    """稠环树是否覆盖环系的全部环（少一个环的稠合名会静默丢环）。"""
+    if fused_tree is None:
+        return False
+    return _tree_ring_indices(fused_tree) == set(system.get("sssr_indices") or ())
+
+
 def try_bridged_scaffold(info: dict, scaffold, fused_tree, system: dict) -> list[BridgedNode]:
     """路由到桥环：稠合命名法不适用，或 P25 命名失败。"""
     nodes = decompose_bridged_system(info, system)
@@ -412,12 +427,15 @@ def try_bridged_scaffold(info: dict, scaffold, fused_tree, system: dict) -> list
         return []
     mol = info["mol"]
     atom_ids = system.get("atom_ids") or ()
+    sssr = system.get("sssr_indices") or ()
     all_rings = sssr_rings(mol)
-    rings = [all_rings[i] for i in (system.get("sssr_indices") or ())]
+    rings = [all_rings[i] for i in sssr]
     if not _fusion_naming_applies(mol, rings, atom_ids):  # 条件A：稠合不适用则直接走桥环
         return nodes
     if scaffold is None or scaffold.id != "fused_hetero":
-        return []
-    if fused_tree is not None and _p25_names_ok(mol, fused_tree):
+        return []  # 保留模板身份与环系同构（P-25.2）→ 保持既有稠环路径
+    if not _tree_covers_rings(fused_tree, system):
+        return nodes  # 稠环树盖不住环系的全部环：稠合名必丢环
+    if _p25_names_ok(mol, fused_tree):
         return []  # 条件B：P25 能产名则保持既有稠环路径
     return nodes

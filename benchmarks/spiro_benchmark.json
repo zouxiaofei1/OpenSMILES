@@ -1,0 +1,679 @@
+[
+ {
+  "id": "chebi-1034",
+  "smiles": "C[C@H]1CC[C@]2(NC1)O[C@H]1C[C@H]3[C@@H]4CC=C5C[C@@H](O[C@@H]6O[C@H](CO)[C@H](O[C@@H]7O[C@H](CO)[C@@H](O)[C@H](O[C@@H]8OC[C@@H](O)[C@H](O)[C@H]8O)[C@H]7O[C@@H]7O[C@H](CO)[C@@H](O)[C@H](O)[C@H]7O)[C@H](O)[C@H]6O)CC[C@]5(C)[C@H]4CC[C@]3(C)[C@H]1[C@@H]2C",
+  "english_name": "(2S,3R,4S,5S,6R)-2-[(2S,3R,4S,5R,6R)-2-[(2R,3R,4R,5R,6R)-4,5-dihydroxy-2-(hydroxymethyl)-6-[(1S,2S,4S,5'S,6S,7S,8R,9S,12S,13R,16S)-5',7,9,13-tetramethylspiro[5-oxapentacyclo[10.8.0.02,9.04,8.013,18]icos-18-ene-6,2'-piperidine]-16-yl]oxyoxan-3-yl]oxy-5-hydroxy-6-(hydroxymethyl)-4-[(2S,3R,4S,5R)-3,4,5-trihydroxyoxan-2-yl]oxyoxan-3-yl]oxy-6-(hydroxymethyl)oxane-3,4,5-triol",
+  "chinese_name": "(2S,3R,4S,5S,6R)-2-[(2S,3R,4S,5R,6R)-2-[(2R,3R,4R,5R,6R)-4,5-二羟基-2-(羟甲基)-6-[(1S,2S,4S,5'S,6S,7S,8R,9S,12S,13R,16S)-5',7,9,13-四甲基螺[5-氧杂五环[10.8.0.02,9.04,8.013,18]二十碳-18-烯-6,2'-哌啶]-16-基]氧基氧杂环己烷-3-基]氧基-5-羟基-6-(羟甲基)-4-[(2S,3R,4S,5R)-3,4,5-三羟基氧杂环己烷-2-基]氧基氧杂环己烷-3-基]氧基-6-(羟甲基)氧杂环己烷-3,4,5-三醇",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-1082",
+  "smiles": "CO[C@H]1C[C@H](O[C@H]2[C@H](C)[C@@H](O[C@@H]3O[C@H](C)C[C@H](N(C)C)[C@H]3OP(=O)([O-])O)[C@@H](C)C[C@@]3(CO3)C(=O)[C@H](C)[C@@H](O)[C@@H](C)[C@@H](C)OC(=O)[C@@H]2C)O[C@@H](C)[C@@H]1O",
+  "english_name": "(2S,3R,4S,6R)-4-(dimethylazaniumyl)-2-[[(3R,5S,6S,7R,8S,9R,12R,13R,14S,15R)-14-hydroxy-8-[(2R,4S,5S,6S)-5-hydroxy-4-methoxy-6-methyloxan-2-yl]oxy-5,7,9,12,13,15-hexamethyl-10,16-dioxo-1,11-dioxaspiro[2.13]hexadecan-6-yl]oxy]-6-methyloxan-3-yl phosphate",
+  "chinese_name": "[(2S,3R,4S,6R)-4-(二甲基铵基)-2-[[[(3R,5S,6S,7R,8S,9R,12R,13R,14S,15R)-14-羟基-8-[(2R,4S,5S,6S)-5-羟基-4-甲氧基-6-甲基氧杂环己烷-2-基]氧基-5,7,9,12,13,15-六甲基-10,16-二氧代-1,11-二氧杂螺[2.13]十六烷-6-基]氧基]-6-甲基氧杂环己烷-3-基]磷酸",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-1115",
+  "smiles": "C=C1[C@]23C(=O)O[C@@H](C)[C@@]24O[C@]2(C(=C)[C@@]5(C=CC(=O)OC5(C)C)CC[C@@]32C)[C@@H](O)[C@]1(C)OC4=O",
+  "english_name": "(1R,2S,5S,7S,8S,9R,12S,13S)-8-hydroxy-2,6',6',9,13-pentamethyl-6,16-dimethylidenespiro[10,14,17-trioxapentacyclo[7.6.1.17,12.01,12.02,7]heptadecane-5,5'-pyran]-2',11,15-trione",
+  "chinese_name": "(1R,2S,5S,7S,8S,9R,12S,13S)-8-羟基-2,6',6',9,13-五甲基-6,16-二亚甲基螺[10,14,17-三氧杂五环[7.6.1.17,12.01,12.02,7]十七烷-5,5'-吡喃]-2',11,15-三酮",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "bridged_ring",
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "bridged+spiro",
+  "n_bridgehead_atoms": 3,
+  "n_spiro_atoms": 2,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-1240",
+  "smiles": "COc1ccc2c(c1)N=C(O)[C@@]21C=C2C(=O)N3CCC[C@H]3C(=O)N2[C@H]1C=C(C)C",
+  "english_name": "(5S,6S,9S)-6'-methoxy-6-(2-methylprop-1-enyl)spiro[1,7-diazatricyclo[7.3.0.03,7]dodec-3-ene-5,3'-1H-indole]-2,2',8-trione",
+  "chinese_name": "(5S,6S,9S)-6'-甲氧基-6-(2-甲基丙-1-烯基)螺[1,7-二氮杂三环[7.3.0.03,7]十二-3-烯-5,3'-1H-吲哚]-2,2',8-三酮",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-125",
+  "smiles": "O=C1OC2(c3ccc(N=C=S)cc31)c1cc(Br)c(O)c(Br)c1Oc1c2cc(Br)c(O)c1Br",
+  "english_name": "2',4',5',7'-tetrabromo-3',6'-dihydroxy-6-isothiocyanatospiro[2-benzofuran-3,9'-xanthene]-1-one",
+  "chinese_name": "2',4',5',7'-四溴-3',6'-二羟基-6-异硫氰酸酯螺[2-苯并呋喃-3,9'-蒽]-1-酮",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-129",
+  "smiles": "COc1cc(O)c2c(=O)oc3c(c2c1)[C@@](C)(O)C[C@@H](OC)[C@@]31C[C@@H](O)C(=O)O1",
+  "english_name": "(1S,3R,3'R,4S)-1,3',7-trihydroxy-3,9-dimethoxy-1-methylspiro[2,3-dihydrobenzo[c]chromene-4,5'-oxolane]-2',6-dione",
+  "chinese_name": "(1S,3R,3'R,4S)-1,3',7-三羟基-3,9-二甲氧基-1-甲基螺[2,3-二氢苯并[c]色烯-4,5'-氧杂环丁烷]-2',6-二酮",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-14",
+  "smiles": "COC1=C(Br)[C@H](O)[C@@]2(C=C1Br)CC(C(=O)NCCCCNC(=O)C1=NO[C@@]3(C=C(Br)C(=O)[C@H](Br)[C@H]3O)C1)=NO2",
+  "english_name": "(5S,6R)-7,9-dibromo-N-[4-[[(5R,6S,7R)-7,9-dibromo-6-hydroxy-8-oxo-1-oxa-2-azaspiro[4.5]deca-2,9-diene-3-carbonyl]amino]butyl]-6-hydroxy-8-methoxy-1-oxa-2-azaspiro[4.5]deca-2,7,9-triene-3-carboxamide",
+  "chinese_name": "(5S,6R)-7,9-二溴-N-[4-[(5R,6S,7R)-7,9-二溴-6-羟基-8-氧代-1-氧杂-2-氮杂螺[4.5]癸-2,9-二烯-3-羰基]氨基]丁基]-6-羟基-8-甲氧基-1-氧杂-2-氮杂螺[4.5]癸-2,7,9-三烯-3-甲酰胺",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 2,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-1461",
+  "smiles": "CO[C@@H]1C[C@@H](C[C@H]2CC[C@H](C)[C@H]([C@@H](C)C(=O)O)O2)O[C@]2(O[C@](C)([C@H]3CC[C@@](C)([C@@H]4O[C@@H]([C@H]5O[C@@](O)(CO)[C@H](C)C[C@@H]5C)C[C@@H]4C)O3)C[C@H]2C)[C@@H]1C",
+  "english_name": "(2R)-2-[(2R,3S,6R)-6-[[(2S,4R,5R,6R,7R,9R)-2-[(2R,5S)-5-[(2R,3S,5R)-5-[(2S,3S,5R,6R)-6-hydroxy-6-(hydroxymethyl)-3,5-dimethyloxan-2-yl]-3-methyloxolan-2-yl]-5-methyloxolan-2-yl]-7-methoxy-2,4,6-trimethyl-1,10-dioxaspiro[4.5]decan-9-yl]methyl]-3-methyloxan-2-yl]propanoic acid",
+  "chinese_name": "(2R)-2-[(2R,3S,6R)-6-[(2S,4R,5R,6R,7R,9R)-2-[(2R,5S)-5-[(2R,3S,5R)-5-[(2S,3S,5R,6R)-6-羟基-6-(羟甲基)-3,5-二甲基氧杂环己烷-2-基]-3-甲基四氢呋喃-2-基]-5-甲基四氢呋喃-2-基]-7-甲氧基-2,4,6-三甲基-1,10-二氧杂螺[4.5]癸-9-基]甲基]-3-甲基氧杂环己烷-2-基]丙酸",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-1512",
+  "smiles": "C[C@@H](OC[C@@]1(c2ccccc2)CC[C@]2(CCC(O)=N2)CN1)c1cc(C(F)(F)F)cc(C(F)(F)F)c1.Cl",
+  "english_name": "(5S,8S)-8-[[(1R)-1-[3,5-bis(trifluoromethyl)phenyl]ethoxy]methyl]-8-phenyl-1,9-diazaspiro[4.5]decan-2-one hydrochloride",
+  "chinese_name": "(5S,8S)-8-[[(1R)-1-[3,5-双(三氟甲基)苯基]乙氧基]甲基]-8-苯基-1,9-二氮杂螺[4.5]癸烷-2-酮盐酸盐",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-156",
+  "smiles": "COC(=O)C1=CO[C@@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2OC)[C@H]2[C@@H]1[C@@H]1O[C@@H]1[C@@]21C=C(C(=O)c2ccc(OC)c(O)c2)C(=O)O1",
+  "english_name": "methyl (1S,2S,4S,5R,6S,7S)-7-[(2S,3R,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-methoxyoxan-2-yl]oxy-4'-(3-hydroxy-4-methoxybenzoyl)-5'-oxospiro[3,8-dioxatricyclo[4.4.0.02,4]dec-9-ene-5,2'-furan]-10-carboxylate",
+  "chinese_name": "(1S,2S,4S,5R,6S,7S)-7-[(2S,3R,4S,5S,6R)-4,5-二羟基-6-(羟甲基)-3-甲氧基氧杂环己烷-2-基]氧基-4'-(3-羟基-4-甲氧基苯甲酰基)-5'-氧代螺[3,8-二氧杂三环[4.4.0.02,4]癸-9-烯-5,2'-呋喃]-10-羧酸甲酯",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-1701",
+  "smiles": "C/C=C(\\C)C(=O)O[C@@H](C[C@@]1(C)[C@H](C)C[C@H](OC(C)=O)[C@]2(COC(C)=O)[C@@H]1CCC[C@]21CO1)C1=CC(=O)OC1",
+  "english_name": "(1S)-2-[(1S,2R,4S,4aR,5R,8aR)-4-acetyloxy-4a-(acetyloxymethyl)-1,2-dimethylspiro[3,4,6,7,8,8a-hexahydro-2H-naphthalene-5,2'-oxirane]-1-yl]-1-(5-oxo-2H-furan-3-yl)ethyl (2E)-2-methylbut-2-enoate",
+  "chinese_name": "[(1S)-2-[(1S,2R,4S,4aR,5R,8aR)-4-乙酰氧基-4a-(乙酰氧基甲基)-1,2-二甲基螺[3,4,6,7,8,8a-六氢-2H-萘-5,2'-环氧乙烷]-1-基]-1-(5-氧代-2H-呋喃-3-基)乙基] (2E)-2-甲基丁-2-烯酸酯",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-1787",
+  "smiles": "CC(=O)OC[C@]12[C@@H](OC(C)=O)C[C@@H](C)[C@]3(C)C[C@H](C4=CC(=O)OC4)O[C@H](CC[C@]14CO4)[C@H]32",
+  "english_name": "[(1R,3R,5S,6R,8S,9R,10R,13R)-8-acetyloxy-5,6-dimethyl-3-(5-oxo-2H-furan-3-yl)spiro[2-oxatricyclo[7.3.1.05,13]tridecane-10,2'-oxirane]-9-yl]methyl acetate",
+  "chinese_name": "[(1R,3R,5S,6R,8S,9R,10R,13R)-8-乙酰氧基-5,6-二甲基-3-(5-氧代-2H-呋喃-3-基)螺[2-氧杂三环[7.3.1.05,13]十三烷-10,2'-环氧乙烷]-9-基]甲基乙酸酯",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-1914",
+  "smiles": "N=C(N)NCC1COC2(CCCCC2)O1",
+  "english_name": "2-(1,4-dioxaspiro[4.5]decan-3-ylmethyl)guanidine",
+  "chinese_name": "2-[(1,4-二氧杂螺[4.5]癸-3-基)甲基]胍",
+  "source": "chebi",
+  "tier": 3,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-249",
+  "smiles": "CCCCCCCCCCCCCCCC(=O)O[C@H]1CC[C@@](C)(OC(C)=O)[C@@H]2O[C@H](C[C@]1(C)O)[C@@H]1[C@H]2[C@@H](C(C)C)[C@H](OC(C)=O)[C@H](OC(C)=O)[C@@]12CO2",
+  "english_name": "(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-triacetyloxy-10-hydroxy-10,14-dimethyl-3-propan-2-ylspiro[15-oxatricyclo[6.6.1.02,7]pentadecane-6,2'-oxirane]-11-yl hexadecanoate",
+  "chinese_name": "[(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-三乙酰氧基-10-羟基-10,14-二甲基-3-丙-2-基螺[15-氧杂三环[6.6.1.02,7]十五烷-6,2'-环氧乙烷]-11-基] 十六酸酯",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "bridged_ring",
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "bridged+spiro",
+  "n_bridgehead_atoms": 2,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-2537",
+  "smiles": "O=C1OC2(c3ccc(O)cc3Oc3cc(O)ccc32)c2ccccc21",
+  "english_name": "3',6'-dihydroxyspiro[2-benzofuran-3,9'-xanthene]-1-one",
+  "chinese_name": "3',6'-二羟基螺[2-苯并呋喃-3,9'-氧杂蒽]-1-酮",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-2580",
+  "smiles": "C[C@H]1CC[C@]2(NC1)O[C@H]1C[C@H]3[C@@H]4CC[C@H]5C[C@@H](O[C@@H]6O[C@H](CO)[C@H](O[C@@H]7O[C@H](CO)[C@@H](O)[C@H](O[C@@H]8OC[C@@H](O)[C@H](O)[C@H]8O)[C@H]7O[C@@H]7O[C@H](CO)[C@@H](O)[C@H](O)[C@H]7O)[C@H](O)[C@H]6O)CC[C@]5(C)[C@H]4CC[C@]3(C)[C@H]1[C@@H]2C",
+  "english_name": "(2S,3R,4S,5S,6R)-2-[(2S,3R,4S,5R,6R)-2-[(2R,3R,4R,5R,6R)-4,5-dihydroxy-2-(hydroxymethyl)-6-[(1R,2S,4S,5'S,6S,7S,8R,9S,12S,13S,16S,18S)-5',7,9,13-tetramethylspiro[5-oxapentacyclo[10.8.0.02,9.04,8.013,18]icosane-6,2'-piperidine]-16-yl]oxyoxan-3-yl]oxy-5-hydroxy-6-(hydroxymethyl)-4-[(2S,3R,4S,5R)-3,4,5-trihydroxyoxan-2-yl]oxyoxan-3-yl]oxy-6-(hydroxymethyl)oxane-3,4,5-triol",
+  "chinese_name": "(2S,3R,4S,5S,6R)-2-[(2S,3R,4S,5R,6R)-2-[(2R,3R,4R,5R,6R)-4,5-二羟基-2-(羟甲基)-6-[(1R,2S,4S,5'S,6S,7S,8R,9S,12S,13S,16S,18S)-5',7,9,13-四甲基螺[5-氧杂五环[10.8.0.02,9.04,8.013,18]二十烷-6,2'-哌啶]-16-基]氧基氧杂环己烷-3-基]氧基-5-羟基-6-(羟甲基)-4-[(2S,3R,4S,5R)-3,4,5-三羟基氧杂环己烷-2-基]氧基氧杂环己烷-3-基]氧基-6-(羟甲基)氧杂环己烷-3,4,5-三醇",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-2644",
+  "smiles": "CC[C@H](C)CC/C=C/C=C(\\C)[C@@H](O)C/C=C/C=C/C(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@]2(OCc3cc(O)cc(O)c32)[C@@H]1O",
+  "english_name": "(3S,3'R,4'S,5'R,6'R)-3',4,5',6-tetrahydroxy-6'-(hydroxymethyl)spiro[1H-2-benzofuran-3,2'-oxane]-4'-yl (2E,4E,7S,8E,10E,14S)-7-hydroxy-8,14-dimethylhexadeca-2,4,8,10-tetraenoate",
+  "chinese_name": "[(3S,3'R,4'S,5'R,6'R)-3',4,5',6-四羟基-6'-(羟甲基)螺[1H-2-苯并呋喃-3,2'-氧杂环己烷]-4'-基] (2E,4E,7S,8E,10E,14S)-7-羟基-8,14-二甲基十六碳-2,4,8,10-四烯酸酯",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-2709",
+  "smiles": "Cc1nc(-c2ccc(-c3ccc(C(=O)N4CCc5cc6c(cc54)C4(CCN(C)CC4)CO6)cc3)c(C)c2)no1",
+  "english_name": "[4-[2-methyl-4-(5-methyl-1,2,4-oxadiazol-3-yl)phenyl]phenyl]-(1'-methylspiro[6,7-dihydro-2H-furo[2,3-f]indole-3,4'-piperidine]-5-yl)methanone",
+  "chinese_name": "[4-[2-甲基-4-(5-甲基-1,2,4-噁二唑-3-基)苯基]苯基]-(1'-甲基螺[6,7-二氢-2H-呋喃并[2,3-f]吲哚-3,4'-哌啶]-5-基)甲酮",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-2811",
+  "smiles": "CC1(C)C[C@H]2C=C(C(=O)O)[C@@H]3COC(=O)[C@]4(CO4)[C@]23C1",
+  "english_name": "(1R,4aR,6aS,9aR)-8,8-dimethyl-2-oxospiro[4a,6a,7,9-tetrahydro-4H-pentaleno[1,6a-c]pyran-1,2'-oxirane]-5-carboxylic acid",
+  "chinese_name": "(1R,4aR,6aS,9aR)-8,8-二甲基-2-氧代螺[4a,6a,7,9-四氢-4H-戊烯并[1,6a-c]吡喃-1,2'-环氧乙烷]-5-羧酸",
+  "source": "chebi",
+  "tier": 3,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 2,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-2839",
+  "smiles": "CC[C@H]1/C=C/C=C/C[C@@H](C)[C@H](O)[C@@](C)(O)C(=O)[C@@H](C)[C@H](O)[C@@H](C)C(=O)[C@@H](C)[C@H](O)[C@@H](C)/C=C/C(=O)O[C@@H]2[C@H](C)[C@H](CC1)O[C@]1(CC[C@H](C)[C@H](C[C@@H](C)O)O1)[C@H]2C",
+  "english_name": "(1R,4E,5'S,6S,6'S,7R,8S,10R,11R,12S,14R,15S,16R,18E,20E,22R,25S,27R,28S,29R)-22-ethyl-7,11,14,15-tetrahydroxy-6'-[(2R)-2-hydroxypropyl]-5',6,8,10,12,14,16,28,29-nonamethylspiro[2,26-dioxabicyclo[23.3.1]nonacosa-4,18,20-triene-27,2'-oxane]-3,9,13-trione",
+  "chinese_name": "(1R,4E,5'S,6S,6'S,7R,8S,10R,11R,12S,14R,15S,16R,18E,20E,22R,25S,27R,28S,29R)-22-乙基-7,11,14,15-四羟基-6'-[(2R)-2-羟基丙基]-5',6,8,10,12,14,16,28,29-九甲基螺[2,26-二氧杂双环[23.3.1]二十九碳-4,18,20-三烯-27,2'-氧杂环己烷]-3,9,13-三酮",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "bridged_ring",
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "bridged+spiro",
+  "n_bridgehead_atoms": 2,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-2923",
+  "smiles": "CC[C@H]1/C=C/C=C/C[C@@H](C)[C@H](O)[C@@](C)(O)C(=O)[C@@H](C)[C@H](O)[C@@H](C)C(=O)[C@@H](C)[C@H](O)[C@@H](C)/C=C/C(=O)O[C@@H]2[C@H](C)[C@H](CC1)O[C@@]1(O[C@@H](C[C@@H](C)O)[C@@H](C)CC1=O)[C@H]2C",
+  "english_name": "(1R,4E,5'S,6S,6'S,7R,8S,10R,11R,12S,14R,15S,16R,18E,20E,22R,25S,27S,28S,29R)-22-ethyl-7,11,14,15-tetrahydroxy-6'-[(2R)-2-hydroxypropyl]-5',6,8,10,12,14,16,28,29-nonamethylspiro[2,26-dioxabicyclo[23.3.1]nonacosa-4,18,20-triene-27,2'-oxane]-3,3',9,13-tetrone",
+  "chinese_name": "(1R,4E,5'S,6S,6'S,7R,8S,10R,11R,12S,14R,15S,16R,18E,20E,22R,25S,27S,28S,29R)-22-乙基-7,11,14,15-四羟基-6'-[(2R)-2-羟基丙基]-5',6,8,10,12,14,16,28,29-九甲基螺[2,26-二氧杂双环[23.3.1]二十九碳-4,18,20-三烯-27,2'-氧杂环己烷]-3,3',9,13-四酮",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "bridged_ring",
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "bridged+spiro",
+  "n_bridgehead_atoms": 2,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-3118",
+  "smiles": "C=CCO[C@]1(C(=O)[O-])C[C@@H](O)[C@@H](O)[C@@H]([C@H]2CO[C@@]3(C[C@@H](O)[C@@H](O)[C@@H]([C@H](O)CO)O3)C(=O)O2)O1",
+  "english_name": "(2R,4R,5R,6S)-6-[(3R,6R,8R,9R,10R)-8-[(1R)-1,2-dihydroxyethyl]-9,10-dihydroxy-5-oxo-1,4,7-trioxaspiro[5.5]undecan-3-yl]-4,5-dihydroxy-2-prop-2-enoxyoxane-2-carboxylate",
+  "chinese_name": "(2R,4R,5R,6S)-6-[(3R,6R,8R,9R,10R)-8-[(1R)-1,2-二羟基乙基]-9,10-二羟基-5-氧代-1,4,7-三氧杂螺[5.5]十一烷-3-基]-4,5-二羟基-2-丙-2-烯氧基氧杂环己烷-2-羧酸根",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-3130",
+  "smiles": "CCCCCCCCCCCCCC(=O)O[C@H]1CC[C@@](C)(OC(C)=O)[C@@H]2O[C@H](C[C@]1(C)O)[C@@H]1[C@H]2[C@@H](C(C)C)[C@H](OC(C)=O)[C@H](OC(C)=O)[C@@]12CO2",
+  "english_name": "(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-triacetyloxy-10-hydroxy-10,14-dimethyl-3-propan-2-ylspiro[15-oxatricyclo[6.6.1.02,7]pentadecane-6,2'-oxirane]-11-yl tetradecanoate",
+  "chinese_name": "[(1R,2R,3R,4S,5S,6S,7S,8R,10S,11S,14R)-4,5,14-三乙酰氧基-10-羟基-10,14-二甲基-3-丙-2-基螺[15-氧杂三环[6.6.1.02,7]十五烷-6,2'-环氧乙烷]-11-基] 十四酸酯",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "bridged_ring",
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "bridged+spiro",
+  "n_bridgehead_atoms": 2,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-3233",
+  "smiles": "COc1ccc(-c2nnc(C(=O)N3CC(Oc4ccc(CN5CC6(COC6)C5)cc4)C3)o2)cc1",
+  "english_name": "[5-(4-methoxyphenyl)-1,3,4-oxadiazol-2-yl]-[3-[4-(2-oxa-6-azaspiro[3.3]heptan-6-ylmethyl)phenoxy]azetidin-1-yl]methanone",
+  "chinese_name": "[5-(4-甲氧基苯基)-1,3,4-噁二唑-2-基]-[3-[4-(2-氧杂-6-氮杂螺[3.3]庚烷-6-基甲基)苯氧基]氮杂环丁烷-1-基]甲酮",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-332",
+  "smiles": "Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)(O)OP(=O)(O)OP(=O)(O)O)[C@H]2OC3(O[C@H]21)C([N+](=O)[O-])=CC([N+](=O)[O-])=CC3[N+](=O)[O-]",
+  "english_name": "[(3aR,4R,6R,6aR)-4-(6-aminopurin-9-yl)-1',3',5'-trinitrospiro[3a,4,6,6a-tetrahydrofuro[3,4-d][1,3]dioxole-2,6'-cyclohexa-1,3-diene]-6-yl]methoxy-hydroxyphosphoryl phosphono hydrogen phosphate",
+  "chinese_name": "[(3aR,4R,6R,6aR)-4-(6-氨基嘌呤-9-基)-1',3',5'-三硝基螺[3a,4,6,6a-四氢呋喃[3,4-d][1,3]二氧戊环-2,6'-环己-1,3-二烯]-6-基]甲氧基-羟基磷酰基]磷酸氢酯",
+  "source": "chebi",
+  "tier": 5,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-568",
+  "smiles": "O=C1OC2(c3ccccc31)c1cc([N+](=O)[O-])c([O-])c(Br)c1Oc1c2cc([N+](=O)[O-])c([O-])c1Br",
+  "english_name": "4',5'-dibromo-2',7'-dinitro-3-oxospiro[2-benzofuran-1,9'-xanthene]-3',6'-diolate",
+  "chinese_name": "4',5'-二溴-2',7'-二硝基-3-氧代螺[2-苯并呋喃-1,9'-氧杂蒽]-3',6'-二酚",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-82",
+  "smiles": "N=C1N=C(O)C2(N=C(O)N=C2O)N1",
+  "english_name": "2-amino-1,3,6,8-tetrazaspiro[4.4]non-1-ene-4,7,9-trione",
+  "chinese_name": "2-氨基-1,3,6,8-四氮杂螺[4.4]壬-1-烯-4,7,9-三酮",
+  "source": "chebi",
+  "tier": 2,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-924",
+  "smiles": "C[NH2+][C@H]1C[C@@H]([NH3+])[C@H](O)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@@H]3O[C@]4(O[C@H]23)O[C@H](C([NH3+])CO)[C@H](O)[C@H](O)[C@H]4O)[C@@H]1O",
+  "english_name": "[(1S,2R,3R,4S,5R)-5-azaniumyl-3-[[(2R,3'R,3aS,4S,4'S,5'R,6R,6'R,7S,7aS)-6'-(1-azaniumyl-2-hydroxyethyl)-3',4',5',7-tetrahydroxy-6-(hydroxymethyl)spiro[4,6,7,7a-tetrahydro-3aH-[1,3]dioxolo[4,5-c]pyran-2,2'-oxane]-4-yl]oxy-2,4-dihydroxycyclohexyl]-methylazanium",
+  "chinese_name": "[(1S,2R,3R,4S,5R)-5-铵基-3-[[(2R,3'R,3aS,4S,4'S,5'R,6R,6'R,7S,7aS)-6'-(1-铵基-2-羟乙基)-3',4',5',7-四羟基-6-(羟甲基)螺[4,6,7,7a-四氢-3aH-[1,3]二氧戊环并[4,5-c]吡喃-2,2'-氧杂环己烷]-4-基]氧基-2,4-二羟基环己基]-甲基铵",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "chebi-929",
+  "smiles": "O=C1OC2(c3ccccc31)c1cc([N+](=O)[O-])c(O)c(Br)c1Oc1c2cc([N+](=O)[O-])c(O)c1Br",
+  "english_name": "4',5'-dibromo-3',6'-dihydroxy-2',7'-dinitrospiro[2-benzofuran-3,9'-xanthene]-1-one",
+  "chinese_name": "4',5'-二溴-3',6'-二羟基-2',7'-二硝基螺[2-苯并呋喃-3,9'-氧杂蒽]-1-酮",
+  "source": "chebi",
+  "tier": 4,
+  "features": [
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": false,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "tiers-112188",
+  "smiles": "FC=1C=C(C=CC1F)N1C2(SCC1=O)C(N(C1=CC=CC=C12)CC(=O)NC1=CC=C(C=C1)CC)=O",
+  "english_name": "2-[3-(3,4-difluorophenyl)-2',4-dioxospiro[1,3-thiazolidine-2,3'-indole]-1'-yl]-N-(4-ethylphenyl)acetamide",
+  "chinese_name": "2-[3-(3,4-二氟苯基)-2',4-二氧代螺[1,3-噻唑烷-2,3'-吲哚]-1'-基]-N-(4-乙基苯基)乙酰胺",
+  "source": "smiles_tiers",
+  "tier": 5,
+  "features": [
+   "amide",
+   "spiro",
+   "thiazolidine",
+   "indole",
+   "halogen",
+   "ketone"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "tiers-121931",
+  "smiles": "CC1=C(C=CC(=C1)C)NC(CN1C(C2(SCC(N2C2=CC(=C(C=C2)C)C)=O)C2=CC=CC=C12)=O)=O",
+  "english_name": "N-(2,4-dimethylphenyl)-2-[3-(3,4-dimethylphenyl)-2',4-dioxospiro[1,3-thiazolidine-2,3'-indole]-1'-yl]acetamide",
+  "chinese_name": "N-(2,4-二甲基苯基)-2-[3-(3,4-二甲基苯基)-2',4-二氧代螺[1,3-噻唑烷-2,3'-吲哚]-1'-基]乙酰胺",
+  "source": "smiles_tiers",
+  "tier": 5,
+  "features": [
+   "spiro",
+   "indoline",
+   "thiazolidine",
+   "amide",
+   "heterocycle"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "tiers-128583",
+  "smiles": "O1C(COC12CCCCC2)CNC(C(=O)NC2=CC(=CC=C2)F)=O",
+  "english_name": "N-(1,4-dioxaspiro[4.5]decan-3-ylmethyl)-N'-(3-fluorophenyl)oxamide",
+  "chinese_name": "N-(1,4-二氧杂螺[4.5]癸烷-3-基甲基)-N'-(3-氟苯基)草酰胺",
+  "source": "smiles_tiers",
+  "tier": 4,
+  "features": [
+   "spiro_compounds",
+   "dioxolane",
+   "oxalamide",
+   "fluorine",
+   "spiro"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "tiers-131559",
+  "smiles": "C(C1=CC=CC=C1)N1C(NC2(C1=O)CCN(CC2)S(=O)(=O)C2=CC(=C(C=C2)OC)C)=O",
+  "english_name": "3-benzyl-8-(4-methoxy-3-methylphenyl)sulfonyl-1,3,8-triazaspiro[4.5]decane-2,4-dione",
+  "chinese_name": "3-苄基-8-(4-甲氧基-3-甲基苯基)磺酰基-1,3,8-三氮杂螺[4.5]癸烷-2,4-二酮",
+  "source": "smiles_tiers",
+  "tier": 4,
+  "features": [
+   "spiro",
+   "imide",
+   "sulfonamide",
+   "ether"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "tiers-150280",
+  "smiles": "COC=1C=C(C(=O)N2C(C(=NC23CCCC3)C3=CC=C(C=C3)C)=S)C=CC1OC",
+  "english_name": "(3,4-dimethoxyphenyl)-[2-(4-methylphenyl)-3-sulfanylidene-1,4-diazaspiro[4.4]non-1-en-4-yl]methanone",
+  "chinese_name": "(3,4-二甲氧基苯基)-[2-(4-甲基苯基)-3-硫代-1,4-二氮杂螺[4.4]壬-1-烯-4-基]甲酮",
+  "source": "smiles_tiers",
+  "tier": 5,
+  "features": [
+   "spiro",
+   "thioamide",
+   "ketone",
+   "ether"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "tiers-6342",
+  "smiles": "O1CCOC12CCC(CC2)NC",
+  "english_name": "N-methyl-1,4-dioxaspiro[4.5]decan-8-amine",
+  "chinese_name": "N-甲基-1,4-二氧杂螺[4.5]癸烷-8-胺",
+  "source": "smiles_tiers",
+  "tier": 3,
+  "features": [
+   "spiro",
+   "acetal",
+   "secondary_amine"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ },
+ {
+  "id": "tiers-68910",
+  "smiles": "O=C1NC2(C1)CCN(CC2)C(=O)OC(C)(C)C",
+  "english_name": "tert-butyl 2-oxo-1,7-diazaspiro[3.5]nonane-7-carboxylate",
+  "chinese_name": "2-氧代-1,7-二氮杂螺[3.5]壬烷-7-羧酸叔丁酯",
+  "source": "smiles_tiers",
+  "tier": 4,
+  "features": [
+   "spiro",
+   "lactam",
+   "carbamate",
+   "Boc"
+  ],
+  "eval_en": true,
+  "eval_zh": true,
+  "human_reviewed": false,
+  "ring_type": "spiro",
+  "n_bridgehead_atoms": 0,
+  "n_spiro_atoms": 1,
+  "von_baeyer_named": true
+ }
+]

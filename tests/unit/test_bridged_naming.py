@@ -16,6 +16,8 @@ CASES = [
     ("C1CC2CCC1C2", "bicyclo[2.2.1]heptane", "双环[2.2.1]庚烷"),
     ("C12CNCC(CC1)CC2", "3-azabicyclo[3.2.2]nonane", "3-氮杂双环[3.2.2]壬烷"),
     ("C1C2CC3CC1CC(C2)C3", "tricyclo[3.3.1.13,7]decane", "三环[3.3.1.13,7]癸烷"),
+    # 扭曲烷（C10H16）：萘为其非诱导子图，曾丢环丢氢出 decahydronaphthalene（C10H18）
+    ("C12C3CC(C(C1)CC3)CC2", "tricyclo[4.4.0.03,8]decane", "三环[4.4.0.03,8]癸烷"),
     # 0 原子主桥（桥头直键）
     ("O=C1C2C(C2CC1)C(=O)OCC", None, None),
 ]

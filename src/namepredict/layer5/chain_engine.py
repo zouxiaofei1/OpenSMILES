@@ -90,6 +90,16 @@ def _bond_form(spec: "_Chain", b: str) -> str | None:
     return None
 
 
+def _unsat_seg(spec: "_Chain", b: str) -> tuple:
+    """段式烯/炔段：后缀首字母为辅音时保留末端 e（P-16.7.1(a)、P-59.1.9）。"""
+    explicit = spec.ene_seg if b == "ene" else spec.yne_seg
+    if explicit is not None:
+        return explicit
+    if spec.en_suf[:1].lower() not in "aeiouy":  # carboxylic acid / thiol 等保留 e
+        return ("ene", "烯") if b == "ene" else ("yne", "炔")
+    return ("en", "烯") if b == "ene" else ("yn", "炔")
+
+
 def _bond_seg_str(spec: "_Chain", b: str, form: str, cnt: int, *, terminal: bool) -> tuple[str, str] | None:
     """不饱和键段的词段（不含词干与位次）。"""
     m_en, m_zh = MULT_EN.get(cnt), MULT_ZH.get(cnt)
@@ -104,8 +114,8 @@ def _bond_seg_str(spec: "_Chain", b: str, form: str, cnt: int, *, terminal: bool
             return f"{m_en}en", f"{m_zh}烯"
         suf = spec.ene_base if b == "ene" else spec.yne_suf
         return (f"{m_en}{suf[0]}", f"{m_zh}{suf[1]}") if suf is not None else None
-    seg = spec.ene_seg if b == "ene" else spec.yne_seg
-    return (f"{m_en}{seg[0]}", f"{m_zh}{seg[1]}") if seg is not None else None
+    seg = _unsat_seg(spec, b)
+    return f"{m_en}{seg[0]}", f"{m_zh}{seg[1]}"
 
 
 def _unsat_loc_omit(spec: "_Chain", b: str, form: str, single: bool, numbered: dict) -> bool:
@@ -185,8 +195,8 @@ class _Chain:
     need: int | None = None            # FG 位次数要求 (need=1 单 FG; 多 FG 由数量生成)
     plain_maps: tuple | None = None    # 俗名表 (en_dict, zh_dict), 查不到时回落生成
     plain_fn: object = None            # 派生命名 (n)->pair — 酸酐从酸派生
-    ene_seg: tuple = ("en", "烯")       # 段式单烯段; thiol 用 ("ene","烯") (P-57 保留 e)
-    yne_seg: tuple = ("yn", "炔")       # 段式炔段; thiol 用 ("yne","炔")
+    ene_seg: tuple | None = None        # 段式单烯段; None = 按后缀首字母推导 (P-16.7.1(a))
+    yne_seg: tuple | None = None        # 段式炔段; None 同上
     ene_base: tuple | None = None       # 融合式烯基座 = 单烯后缀 + 数量前缀
     yne_suf: tuple | None = None        # 融合式炔后缀 ("ynoic acid","炔酸") — 酸
     ez_ene: object = None               # (numbered)->str  单烯 E/Z
@@ -276,9 +286,6 @@ def _ylidene_form(pair: tuple[str, str]) -> tuple[str, str]:
     return en, zh
 
 
-EXO_RING_SEG = (("ene", "烯"), ("yne", "炔"))  # 环外主基的环内不饱和段保留完整 ene/yne
-
-
 def _cyclo_stereo(pair: tuple[str, str]) -> tuple[str, str]:
     """环词干：前导 E/Z 立体块移到 cyclo/环 之前（P-91.2）。"""
     out: list[str] = []
@@ -324,8 +331,7 @@ def _exo_ring_spec(spec: "_Chain", n: int, numbered: dict) -> "_Chain":
     if base[0] is None or base[1] is None:
         return spec
     if numbered.get("ene_locants") or numbered.get("yne_locants"):  # 环内不饱和：段式后缀，单烯 1 位 EN 省略
-        fields.update(stem=None, coda="ane", cyclic=True, zh_loc_omit=False,
-                      ene_seg=EXO_RING_SEG[0], yne_seg=EXO_RING_SEG[1])
+        fields.update(stem=None, coda="ane", cyclic=True, zh_loc_omit=False)
     else:  # 饱和环母体取完整氢化物（词干已含环前缀，故关 cyclic）。
         fields.update(stem=(f"cyclo{base[0]}", f"环{base[1]}"), coda="", cyclic=False)
     fields["omit_rule"] = lambda n, loc, omit: omit or not _ring_prefix_located(numbered)  # 干净环省略主基位次（cyclohexanecarboxylic acid）
@@ -527,8 +533,7 @@ _KIND_TABLE = {
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
                     fg="thiol", need=1, omit_rule=_omit_term_locant,
                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                     zh_full=True, unsat_polyol=True,
-                    ene_seg=("ene", "烯"), yne_seg=("yne", "炔")),
+                     zh_full=True, unsat_polyol=True),
     "amine": _Chain(kind="amine", en_suf="amine", zh_suf="胺",
                     fg="amine", need=1, omit_rule=_omit_term_locant,
                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,

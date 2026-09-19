@@ -401,19 +401,34 @@ def match_retained(info: dict, atom_ids, *, mancude_only: bool = False) -> str |
     return hit[0] if hit else None
 
 
+def _induced_bond_count(m: Mol, atoms: frozenset[int]) -> int:
+    """原子集诱导子图的键数（只数两端都在集内的键）。"""
+    return sum(1 for b in m.GetBonds()
+               if b.GetBeginAtomIdx() in atoms and b.GetEndAtomIdx() in atoms)
+
+
+def _is_induced_match(m: Mol, q: Mol, atoms: frozenset[int]) -> bool:
+    """匹配须为诱导覆盖：集内键数等于模板键数。
+
+    子图同构容忍目标多出的键，环闭合键会因此隐形；若不校验，
+    环系的真子图模板（如萘嵌入三环骨架）会把多出的环静默丢掉。
+    """
+    return _induced_bond_count(m, atoms) == q.GetNumBonds()
+
+
 def _match_with_map(info: dict, atom_ids, *, mancude_only: bool = False) -> tuple[str, tuple[int, ...]] | None:
     """模板精确覆盖 atom_ids 时返回 (sid, match)。"""
     mol = info["mol"]
-  
+
     atoms = frozenset(atom_ids)
-    elem = _elem_sig(mol, atom_ids)  
+    elem = _elem_sig(mol, atom_ids)
     for sid, q in _Q.items():
         if mancude_only and not _TEMPLATES[sid].get("fused"):
             continue  # 饱和保留名不作稠合组分（P-25.2.1 表 2.8）
         if _TEMPLATE_ELEM[sid] != elem:
             continue
-        for m in mol.GetSubstructMatches(q, uniquify=True): 
-            if set(m) == atoms: 
+        for m in mol.GetSubstructMatches(q, uniquify=True):
+            if set(m) == atoms and _is_induced_match(mol, q, atoms):
                 return sid, m
     mol_h = memo.by_mol("hydrogenated", _hydrogenated, mol)  # 精确匹配失败后按完全氢化骨架再比对（P-25.3.4）
     if mol_h is not None:
@@ -423,7 +438,7 @@ def _match_with_map(info: dict, atom_ids, *, mancude_only: bool = False) -> tupl
             if _TEMPLATE_ELEM[sid] != elem:
                 continue
             for m in mol_h.GetSubstructMatches(qh, uniquify=True):
-                if set(m) == atoms:
+                if set(m) == atoms and _is_induced_match(mol_h, qh, atoms):
                     return sid, m
     return None
 
