@@ -286,6 +286,22 @@ def _ylidene_form(pair: tuple[str, str]) -> tuple[str, str]:
     return en, zh
 
 
+def _ylidyne_form(pair: tuple[str, str]) -> tuple[str, str]:
+    """自由价为三键（P-31.2.3）：-yl → -ylidyne/次基。"""
+    en, zh = pair
+    if en.endswith("yl"):
+        en = en[:-2] + "ylidyne"
+    if zh.endswith("基"):
+        stem = zh[:-1]
+        zh = f"{stem}次基" if stem.startswith("环") else f"次{stem}基"
+    return en, zh
+
+
+def _free_valence_form(pair: tuple[str, str], order: int) -> tuple[str, str]:
+    """自由价键级对应的基名形态（P-31.2.3）：双键 -ylidene/亚基，三键 -ylidyne/次基。"""
+    return _ylidyne_form(pair) if order == 3 else _ylidene_form(pair)
+
+
 def _cyclo_stereo(pair: tuple[str, str]) -> tuple[str, str]:
     """环词干：前导 E/Z 立体块移到 cyclo/环 之前（P-91.2）。"""
     out: list[str] = []
@@ -361,7 +377,9 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         if var:
             spec = replace(spec, **var)
 
-    ylidene = spec.kind == "radical" and bool((numbered.get("parent") or {}).get("radical_ylidene"))
+    free_order = (numbered.get("parent") or {}).get("free_valence_order") or 0
+    if spec.kind != "radical":  # 自由价形态只对自由基类母体生效
+        free_order = 0
     top = _chain_enyne(spec, n, numbered)
     if top is not None and spec.unsat_polyol:  # 多 FG 词干模式: 词干 + FG 位次 + 后缀
         rec = _fg_record(numbered, spec.fg)
@@ -374,8 +392,8 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
     if top is not None:  # 无环自由基位次省略已下沉到段式引擎，环自由基不受影响。
         if spec.cyclic or spec.cyclic_unsat:
             top = _cyclo_stereo(top)
-        if ylidene:
-            top = _ylidene_form(top)
+        if free_order > 1:
+            top = _free_valence_form(top, free_order)
         return spec.wrap(top, numbered) if spec.wrap is not None else top
     if spec.stem:
         s, zs = spec.stem
@@ -407,8 +425,8 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         pair = _chain_plain(spec, s, zs, n)
     if spec.cyclic:
         pair = (f"cyclo{pair[0]}", f"环{pair[1]}")
-    if ylidene:
-        pair = _ylidene_form(pair)
+    if free_order > 1:
+        pair = _free_valence_form(pair, free_order)
     return spec.wrap(pair, numbered) if spec.wrap is not None else pair
 
 

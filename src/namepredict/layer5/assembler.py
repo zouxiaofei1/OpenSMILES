@@ -6,7 +6,8 @@ from rdkit.Chem import BondType
 from namepredict.constants import (
     ALKOXY_YLOXY_EN, ALKOXY_YLOXY_ZH, AMIDO_RETAINED, AZANE_PAREN_SUF, BIS_EN, BRIDGE_YL_SUFFIX,
     BRIDGE_ZH_YL_SUFFIX, C, ESTER_O_SIDE_KINDS, N, O, OXO_CENTER_KINDS, S,
-    BRIDGE_FUSION_YL, MONONUCLEAR_BRIDGE, MONONUCLEAR_YL, MONONUCLEAR_ZERO_YL, MULT_EN,
+    BRIDGE_FUSION_YL, CATION_STEMS, MONONUCLEAR_BRIDGE, MONONUCLEAR_HYDRIDES,
+    MONONUCLEAR_YL, MONONUCLEAR_ZERO_YL, MULT_EN,
     MULT_ZH, PHOSPHORYL_STEMS, ZH_DIGITS, zh_bridge_root,
 )
 from namepredict.tools.anchored_table import carbamoyl_prefix_name
@@ -166,7 +167,7 @@ def _alpha_key(name: str) -> str:
 
 
 # free 母体名 → P-29 -yl 取代基形式的双语转换。
-_MONONUCLEAR_NAMES = ("oxidane", "azane", "sulfane", "sulfinyl", "sulfonyl", "imine")  # 本模块转换的单核母体氢化物（P-15.4.1 表 2.1）。
+_MONONUCLEAR_NAMES = tuple(MONONUCLEAR_HYDRIDES)  # 本模块转换的单核母体氢化物（P-15.4.1 表 2.1）+ 阳离子词干（P-73.1.1）
 
 
 def _mononuclear_en(en: str) -> str | None:
@@ -189,6 +190,8 @@ def _mononuclear_zh(zh: str) -> str | None:
             base = zh[: -len(zh_suf) - 1]
             if zy == "氨基" and base.endswith("苯基"):
                 return base[: -len("苯基")] + "苯胺基"
+            if en_suf in CATION_STEMS:  # P-73.1.1 阳离子前缀保留烃基尾「基」（甲基铵基，非甲铵基）
+                return base + zy
             return zh_bridge_root(base) + zy
     return None
 
@@ -222,6 +225,18 @@ def _fused_bridge_name(stem_en: str, a: dict) -> tuple[str, str] | None:
         base_en = a["en"][: -len(tail_en)]
         return base_en + en_suf, (base_zh + "基" if base_zh else "") + zh_suf
     return None
+
+
+def _same_name_groups(subs: list) -> list[tuple[int, str, str]]:
+    """相邻同名取代基按数量收拢为 (数量, en, zh)，保持字母序。"""
+    out: list[tuple[int, str, str]] = []
+    for s in subs:
+        if out and out[-1][1] == s["en"]:
+            n, en, zh = out[-1]
+            out[-1] = (n + 1, en, zh)
+        else:
+            out.append((1, s["en"], s["zh"]))
+    return out
 
 
 def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
@@ -267,15 +282,17 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
                             paren=bool(a.get("paren")))[:2]
         return _retained_alkoxy(en, zh) if stem_en == "oxidane" else (en, zh)
     zero = MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
-    if (stem_en, stem_zh) != ("azane", "氮烷") or zero is None or len(subs) != 2:  # 多取代基仅 N（azane）双烷基成立：O/S 双烷基非标准自由基，明确失败。
-        return None
+    cation = stem_en in CATION_STEMS  # P-73.1.1 阳离子词干：2/3 个烃基臂照样成立（二甲基铵基/三甲基铵基）
+    if (not cation and (stem_en, stem_zh) != ("azane", "氮烷")) or zero is None or not 2 <= len(subs) <= (3 if cation else 2):
+        return None  # 多取代基仅 N（azane）双烷基/阳离子 N 三烷基成立：O/S 双烷基非标准自由基，明确失败。
     ordered = sorted(subs, key=lambda s: s["en"])
     if len({s["en"] for s in ordered}) == 1:
         base = ordered[0]
+        base_zh = base["zh"] if cation else zh_bridge_root(base["zh"])  # 阳离子前缀保留烃基尾「基」（甲基铵基）
         return (f"{MULT_EN[len(ordered)]}{base['en']}{zero[0]}",
-                f"{MULT_ZH[len(ordered)]}{zh_bridge_root(base['zh'])}{zero[1]}")
+                f"{MULT_ZH[len(ordered)]}{base_zh}{zero[1]}")
     aryl = [s for s in ordered if s["en"].endswith("phenyl") and s["zh"].endswith("苯基")]
-    if len(aryl) == 1:  # P-62.2.1.1：N-芳基-N-某基胺取 anilino
+    if len(aryl) == 1 and not cation:  # P-62.2.1.1：N-芳基-N-某基胺取 anilino（阳离子无此保留名）
         ring = aryl[0]
         other = next(s for s in ordered if s is not ring)
         ring_en, ring_zh = ring["en"][: -len("phenyl")], ring["zh"][: -len("苯基")]
@@ -284,9 +301,11 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
                     f"{ring_zh}-N-{other['zh']}苯胺基" if ring_zh else f"N-{other['zh']}苯胺基")
         return (f"N-{other['en']}-{ring_en}anilino" if ring_en else f"N-{other['en']}anilino",
                 f"N-{other['zh']}-{ring_zh}苯胺基" if ring_zh else f"N-{other['zh']}苯胺基")
-    first, rest = ordered[0], ordered[1:]  # 双不同 N-取代基：首基平铺，其余各基加括号（P-62.2.2.1）
-    return (first["en"] + "".join(f"({s['en']})" for s in rest) + zero[0],
-            first["zh"] + "".join(f"({s['zh']})" for s in rest) + zero[1])
+    groups = _same_name_groups(ordered)  # 双不同 N-取代基：首基平铺、其余各基加括号（P-62.2.2.1）；同名基按数量词收拢（P-16.5.1.3.1）
+    en_tail = groups[0][1] if groups[0][0] == 1 else MULT_EN[groups[0][0]] + groups[0][1]
+    zh_tail = groups[0][2] if groups[0][0] == 1 else MULT_ZH[groups[0][0]] + groups[0][2]
+    return (en_tail + "".join(f"{MULT_EN[n]}({en})" if n > 1 else f"({en})" for n, en, _ in groups[1:]) + zero[0],
+            zh_tail + "".join(f"{MULT_ZH[n]}({zh})" if n > 1 else f"({zh})" for n, _, zh in groups[1:]) + zero[1])
 
 
 _STEM_H_PREFIX_RE = re.compile(r"^(?:\d+[a-z]?H[-,])+")  # 词干自带指示氢前缀（1H- / 3H,4H- / 7H-…）

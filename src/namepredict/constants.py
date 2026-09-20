@@ -115,6 +115,11 @@ MONONUCLEAR_HYDRIDES: dict[str, tuple] = {
     "oxidane":    ("O", "氧化烷", ("hydroxy",   "羟基"),     ("oxy",      "氧基"), "氧基"),
     "azane":      ("N", "氮烷",   ("amino",     "氨基"),     ("amino",    "氨基"), "氨基"),
     "sulfane":    ("S", "硫烷",   ("sulfanyl",  "硫基"),     ("sulfanyl", "硫基"), "硫基"),
+    # 自由价落在阳离子上（P-73.1.1）：词干取阳离子名，去氢名即 铵基 一族前缀
+    "azanium":    ("N", "铵",     ("azaniumyl",    "铵基"),     None, "铵基"),
+    "oxidanium":  ("O", "氧鎓",   ("oxidaniumyl",  "氧鎓基"),   None, "氧鎓基"),
+    "phosphanium":("P", "鏻",     ("phosphaniumyl", "鏻基"),    None, "鏻基"),
+    "sulfanium":  ("S", "硫鎓",   ("sulfaniumyl",  "硫鎓基"),   None, "硫鎓基"),
     "sulfinyl":   ("S", "亚磺酰", ("sulfinyl",  "亚磺酰基"), None,                 "基亚磺酰基"),
     "sulfonyl":   ("S", "磺酰",   ("sulfonyl",  "磺酰基"),   None,                 "磺酰基"),
     "imine":      ("N", "亚胺",   ("imino",     "亚氨基"),   None,                 "亚氨基"),
@@ -128,7 +133,7 @@ NITROGEN_STEM_BY_FREE_DOUBLE = {False: "azane", True: "imine"}  # P-66.1.1：N �
 MONONUCLEAR_ZERO_YL = {(en, v[1]): v[2] for en, v in MONONUCLEAR_HYDRIDES.items()}         # (free_en, free_zh) → 零价去氢名
 MONONUCLEAR_BRIDGE = {(en, v[1]): v[3] for en, v in MONONUCLEAR_HYDRIDES.items() if v[3]}  # (free_en, free_zh) → 桥后缀（仅 O/N/S 三行）
 MONONUCLEAR_YL = {en: (v[1], (v[3] or v[2])[0], v[4]) for en, v in MONONUCLEAR_HYDRIDES.items()}  # free_en → (free_zh, 去氢 yl_en, 组装名中文尾)
-PHOSPHORYL_STEMS = tuple(en for en, v in MONONUCLEAR_HYDRIDES.items() if v[0] == "P")  # 替代碳词干的 P 酰基词干（避免 P 被当碳中心）
+PHOSPHORYL_STEMS = tuple(en for en, v in MONONUCLEAR_HYDRIDES.items() if v[0] == "P" and en != "phosphanium")  # 替代碳词干的 P 酰基词干（避免 P 被当碳中心）；阳离子词干不按酰基拼接
 
 # ── L2 单核母体阳离子（P-73.1.1）────────────
 # 表 2.1 去词尾 'ne' 的系统名（P-73.1.1.2：-ane 换成 -ium），本次只登记元素支持集内的行
@@ -155,6 +160,11 @@ CATION_RETAINED_NAMES = {
     Br: ("bromonium",   "溴鎓"),
     I:  ("iodonium",    "碘鎓"),
 }
+
+
+CATION_FREE_STEMS = {z: en for z, en in MONONUCLEAR_CATION_SYSTEMATIC.items()
+                     if en in MONONUCLEAR_HYDRIDES}  # 带电锚点的自由价词干（有氢化物行的元素）
+CATION_STEMS = frozenset(CATION_FREE_STEMS.values())  # 阳离子词干名（P-73.1.1），L5 据此保留烃基尾「基」
 
 
 def cation_parent_names(z: int) -> tuple[str, str] | None:

@@ -5,7 +5,8 @@ from dataclasses import dataclass, replace
 from enum import Enum
 
 from namepredict.constants import (
-    HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES, NITROGEN_STEM_BY_FREE_DOUBLE,
+    CATION_FREE_STEMS, HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES,
+    NITROGEN_STEM_BY_FREE_DOUBLE,
     O, PHOSPHORUS_STEM_BY_OXO, S, SULFUR_STEM_BY_OXO, cation_parent_names,
 )
 from namepredict.layer1.analyzer import _alkoxy_c_of, _double_bonded_o_idxs
@@ -259,8 +260,9 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
               **_chain_unsat_fields(info, skeleton,
                                     _scaffold_fields(info, skeleton, facts, scaffold,
                                                      fused_tree, bridged))}  # 补环内不饱和字段（烯/炔由 double_bond 等承载）
-    if kind == "radical" and _radical_ylidene(info, occurrences):  # 环上碳锚点自由价双键（*=C1CCCC1）：链引擎出 -ylidene
-        fields = {**fields, "radical_ylidene": True}
+    free_order = _radical_free_order(info, occurrences) if kind == "radical" else 0
+    if free_order > 1:  # 环上碳锚点自由价非单键（*=C1CCCC1 / *#C1CCCC1）：链引擎出 -ylidene/-ylidyne
+        fields = {**fields, "free_valence_order": free_order}
     if facts.group_class in _ANION_FLAG_FGS:
         fields = {**fields, **_expression_flags(selection, occurrences, info.get("mol"))}  # 环酸全阴离子补 anion 标志，L5 据此转 -ate
     if facts.group_class is FunctionalGroupClass.ESTER and facts.multiplicity == 1:
@@ -359,15 +361,16 @@ def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
         return {**fields, "o_idx": o_idx, "alkoxy_n": 0, **thio}
     return {**fields, "o_idx": o_idx, **thio}
 
-def _anchor_free_double(mol: Mol, idx: int) -> bool:
-    """锚点原子与 `*` 虚拟原子之间的键是否为双键。"""
+def _anchor_free_order(mol: Mol, idx: int) -> int:
+    """锚点原子与 `*` 虚拟原子之间的键级（无哑原子邻居返回 0）。"""
     from rdkit.Chem import BondType
 
+    order = {BondType.SINGLE: 1, BondType.DOUBLE: 2, BondType.TRIPLE: 3}
     for nb in mol.GetAtomWithIdx(idx).GetNeighbors():
         if nb.GetAtomicNum() == 0:
             b = mol.GetBondBetweenAtoms(idx, nb.GetIdx())
-            return b is not None and b.GetBondType() == BondType.DOUBLE
-    return False
+            return order.get(b.GetBondType(), 0) if b is not None else 0
+    return 0
 
 
 def _anchor_oxo_count(mol: Mol, idx: int) -> int:
@@ -382,14 +385,19 @@ def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
     anchors = sorted({i for o in occurrences for i in o.parent_anchors})
     if len(anchors) != 1:
         return None
-    stem_en = MONONUCLEAR_BY_ELEMENT.get(mol.GetAtomWithIdx(anchors[0]).GetAtomicNum())
+    atom = mol.GetAtomWithIdx(anchors[0])
+    charged = atom.GetFormalCharge() == 1 and atom.GetAtomicNum() in CATION_FREE_STEMS
+    stem_en = (CATION_FREE_STEMS.get(atom.GetAtomicNum()) if charged
+               else MONONUCLEAR_BY_ELEMENT.get(atom.GetAtomicNum()))
     if stem_en is None:
         return None
     element = MONONUCLEAR_HYDRIDES[stem_en][0]
-    if element == "S":  # 硫的氧化态并入词干（sulfane/sulfinyl/sulfonyl）
+    if charged:  # 阳离子词干已由电荷定死（P-73.1.1），不再并入氧化态/自由价键级
+        pass
+    elif element == "S":  # 硫的氧化态并入词干（sulfane/sulfinyl/sulfonyl）
         stem_en = SULFUR_STEM_BY_OXO.get(_anchor_oxo_count(mol, anchors[0]), stem_en)
     elif element == "N":  # 自由价键级并入词干（azane/imine）
-        stem_en = NITROGEN_STEM_BY_FREE_DOUBLE[_anchor_free_double(mol, anchors[0])]
+        stem_en = NITROGEN_STEM_BY_FREE_DOUBLE[_anchor_free_order(mol, anchors[0]) == 2]
     elif element == "P":  # 磷的氧化态并入词干（P-67.1.4.1.1.2）
         stem_en = PHOSPHORUS_STEM_BY_OXO.get(_anchor_oxo_count(mol, anchors[0]))
         if stem_en is None:  # 非 0/1 个 =O（如二氧代磷烷）无对应酰基词干，明确失败
@@ -414,13 +422,13 @@ def _mononuclear_cation(info: dict, skeleton: ParentSkeleton,
     return new, {"stem_en": names[0], "stem_zh": names[1], "single_atom_skeleton": True}
 
 
-def _radical_ylidene(info: dict, occurrences) -> bool:
-    """碳锚点自由价是否为双键（*=C< ylidene，出 -ylidene）。"""
+def _radical_free_order(info: dict, occurrences) -> int:
+    """碳锚点的自由价键级（双键 *=C< 出 -ylidene，三键 *#C 出 -ylidyne）。"""
     mol = info.get("mol")
     anchors = sorted({i for o in occurrences for i in o.parent_anchors})
     if mol is None or len(anchors) != 1:
-        return False
-    return _anchor_free_double(mol, anchors[0])
+        return 0
+    return _anchor_free_order(mol, anchors[0])
 
 
 def _chain_acyl_halide_fields(info: dict, occurrences, fields: dict) -> dict:
@@ -451,10 +459,11 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
     extra: dict = {}
     if kind == "radical":
         mono = _mononuclear_radical(info, skeleton, occurrences)
+        free_order = _radical_free_order(info, occurrences)
         if mono is not None:
             skeleton, extra = mono
-        elif _radical_ylidene(info, occurrences):  # 碳锚点自由价双键（*=C<）：链引擎出 -ylidene
-            extra = {"radical_ylidene": True}
+        elif free_order > 1:  # 碳锚点自由价非单键（*=C< / *#C）：链引擎出 -ylidene/-ylidyne
+            extra = {"free_valence_order": free_order}
     if kind == "cation":
         mono = _mononuclear_cation(info, skeleton, occurrences)
         if mono is None:
