@@ -11,12 +11,14 @@ N  = 7
 O  = 8
 F  = 9
 Na = 11
+Mg = 12
 Al = 13
 Si = 14
 P  = 15
 S  = 16
 Cl = 17
 K  = 19
+Ca = 20
 Ga = 31
 Ge = 32
 As = 33
@@ -100,15 +102,21 @@ AMIDO_RETAINED = {  # P-66.1.1.4.3
 AMIDO_RETAINED_EN = frozenset(v[0] for v in AMIDO_RETAINED.values())
 
 # ── L0 电荷归一 / 盐解离 ────────────────────
-DONOR_KIND = ("carboxyl", "phospho")  # 允许作为强酸供体的酸类：羧酸 + 磷酸。磷酸供体在「酰胺 O⁻ 受体」场景下才有产出（见 preprocessor 的二次互变归一，gold 把 N=C([O-]) 写成酰胺、把 P-OH 写成 oxidophosphoryl）；sulfo 实测 0 收益，关闭以免扩大 blast radius。
+DONOR_KIND = ("carboxyl", "phospho", "sulfo")  # 允许作为强酸供体的酸类：羧酸/磷酸/磺酸。磷酸供体在「酰胺 O⁻ 受体」场景下才有产出（见 preprocessor 的二次互变归一，gold 把 N=C([O-]) 写成酰胺、把 P-OH 写成 oxidophosphoryl）；磺酸供体在「净负离子的胺受体」场景下才有产出（sulfonatooxy 两性离子式）。
 ACCEPTOR_Z = frozenset({O, N})  # 弱受体允许的元素：O（酚氧/烯醇氧/酰胺氧）、N（去质子化氮）；保守可只留 {O}。
 ACID_CENTERS = {          # 中心元素 → 酸类名；键序即供体搬运的酸强度序
     C: "carboxyl",        # C(=O)OH
     P: "phospho",         # P(=O)OH
     S: "sulfo",           # S(=O)nOH
 }
-ALKALI_EN = {Li: "lithium", Na: "sodium", K: "potassium"}  # 原子序数 → 英文金属名（IUPAC 官能团类盐）
-METAL_ZH = {"lithium": "锂", "sodium": "钠", "potassium": "钾"}
+METAL_ION_EN = {Li: "lithium", Na: "sodium", Mg: "magnesium", K: "potassium",
+                Ca: "calcium"}  # 反离子金属阳离子（P-71.2）：原子序数 → 英文金属名
+METAL_ION_ZH = {"lithium": "锂", "sodium": "钠", "potassium": "钾",
+                "magnesium": "镁", "calcium": "钙"}
+HALIDE_ZH = {F: "氟化物", Cl: "氯化物", Br: "溴化物", I: "碘化物"}  # 卤素阴离子 X⁻（P-71.2）
+HALIDE_HX_EN = {F: "hydrofluoride", Cl: "hydrochloride",   # 中性卤化氢加合物 HX（P-71.3）
+                Br: "hydrobromide", I: "hydroiodide"}
+HALIDE_HX_ZH = {F: "氢氟酸盐", Cl: "盐酸盐", Br: "氢溴酸盐", I: "氢碘酸盐"}
 
 # ── L2/L5 单核母体氢化物（P-15.4.1）────────────
 MONONUCLEAR_HYDRIDES: dict[str, tuple] = {
@@ -119,7 +127,7 @@ MONONUCLEAR_HYDRIDES: dict[str, tuple] = {
     "azanium":    ("N", "铵",     ("azaniumyl",    "铵基"),     None, "铵基"),
     "oxidanium":  ("O", "氧鎓",   ("oxidaniumyl",  "氧鎓基"),   None, "氧鎓基"),
     "phosphanium":("P", "鏻",     ("phosphaniumyl", "鏻基"),    None, "鏻基"),
-    "sulfanium":  ("S", "硫鎓",   ("sulfaniumyl",  "硫鎓基"),   None, "硫鎓基"),
+    "sulfanium":  ("S", "硫鎓",   ("sulfonio",     "硫鎓基"),   None, "硫鎓基"),
     "sulfinyl":   ("S", "亚磺酰", ("sulfinyl",  "亚磺酰基"), None,                 "基亚磺酰基"),
     "sulfonyl":   ("S", "磺酰",   ("sulfonyl",  "磺酰基"),   None,                 "磺酰基"),
     "imine":      ("N", "亚胺",   ("imino",     "亚氨基"),   None,                 "亚氨基"),
@@ -165,6 +173,8 @@ CATION_RETAINED_NAMES = {
 CATION_FREE_STEMS = {z: en for z, en in MONONUCLEAR_CATION_SYSTEMATIC.items()
                      if en in MONONUCLEAR_HYDRIDES}  # 带电锚点的自由价词干（有氢化物行的元素）
 CATION_STEMS = frozenset(CATION_FREE_STEMS.values())  # 阳离子词干名（P-73.1.1），L5 据此保留烃基尾「基」
+CATION_YL_STEMS = frozenset(v[1] for en, v in MONONUCLEAR_YL.items()
+                            if en in CATION_STEMS)  # 阳离子母体派生的去氢前缀（azaniumyl/oxidaniumyl/…）；为复合前缀，倍数用 bis(azaniumyl)（P-16.3.2）
 
 
 def cation_parent_names(z: int) -> tuple[str, str] | None:

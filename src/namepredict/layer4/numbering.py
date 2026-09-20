@@ -93,11 +93,17 @@ def number(parent: dict, substituents: list) -> dict:
     if not hydro or (len(fb) in HYDRO_MULT_N and set(hydro) < fb):
         hydro = fb
     # print(hydro)
+    hydro_all = hydro
     hydro = _lowest_extra_to_indicated(packed, labels, hydro)
     # print(hydro)
     hydro = _odd_hydro_to_indicated(packed, labels, hydro)
     # print(hydro)
     pre = hydro_prefix(packed.get("chain"), labels, hydro)
+    # 加氢位被搬进指示氢且前缀不再提它：仅当该位是模板未隐含的加氢位（保留名已含的 CH2 不算）时，
+    # 才要求 L5 写出指示氢，否则饱和度整段丢失
+    moved = hydro_all - hydro
+    packed["hydro_fallback"] = bool(moved) and bool(
+        moved & _extra_hydrogenated(packed))
     if not pre[0]:  # hydro 位次表达不出（奇数值/超表/不在链内）则整体退回指示氢，不产半截名
         hydro, pre = frozenset(), ("", "")
     extra = _extra_indicated(packed)
@@ -116,3 +122,11 @@ def _extra_indicated(packed: dict) -> frozenset:
 
     sid, match, mol = packed.get("scaffold_id"), packed.get("scaffold_match"), packed.get("mol")
     return extra_indicated_atoms(mol, sid, match) if sid and match and mol is not None else frozenset()
+
+
+def _extra_hydrogenated(packed: dict) -> frozenset:
+    """氢数多于保留母体模板的环位（P-58.2.1 加氢指示氢）。"""
+    from namepredict.layer2.ring_scaffold import extra_hydrogenated_atoms
+
+    sid, match, mol = packed.get("scaffold_id"), packed.get("scaffold_match"), packed.get("mol")
+    return extra_hydrogenated_atoms(mol, sid, match) if sid and match and mol is not None else frozenset()

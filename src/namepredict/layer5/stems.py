@@ -89,11 +89,16 @@ def _metal_zh_suffix(salt: dict) -> str | None:
 
 
 def join_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
-    """应用碱金属盐或酸式盐后缀（对齐 gold 格式）。"""
+    """应用金属盐、卤化物盐或氢卤酸盐后缀（P-71.2/P-71.3）。"""
+    from namepredict.constants import BIS_EN, BIS_ZH
+
     salt = numbered.get("salt") or {}
     if salt.get("metal"):
         pref = _metal_en_prefix(salt)
         suf = _metal_zh_suffix(salt)
+        n_org = int(salt.get("n_org") or 1)  # 有机阴离子份数：>1 用 bis 括起（calcium bis(...acetate)）
+        if n_org > 1 and pref and en.endswith("ate"):
+            return f"{pref} {BIS_EN.get(n_org, '')}({en})", f"{BIS_ZH.get(n_org, '')}({zh}){suf or ''}"
         return (
             f"{pref} {en}" if pref and en.endswith("ate") else en,
             zh[:-1] + suf if suf and zh.endswith("酸根") else zh,
@@ -101,4 +106,7 @@ def join_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     acid_en = salt.get("acid_salt")
     if acid_en:
         return f"{en} {acid_en}", f"{zh}{salt.get('acid_salt_zh') or acid_en}"
+    halide = salt.get("halide")
+    if halide:
+        return f"{en} {halide}", f"{zh}{salt.get('halide_zh') or halide}"
     return en, zh

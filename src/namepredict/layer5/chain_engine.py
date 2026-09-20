@@ -168,6 +168,8 @@ def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
     else:
         tail_en = tail_zh = ""
     a_en = "a" if any(g[3] >= 2 for g in segs) else ""
+    if a_en and spec.stem and s.endswith("ane"):  # 注入的完整母体名（…ane）多烯须取 …a 形态（P-31.1.4）：octadecane → octadeca
+        s, a_en = s[:-2], ""
     parts_en: list[str] = []
     parts_zh: list[str] = []
     for i, (b, loc, locs, cnt, multi) in enumerate(segs):

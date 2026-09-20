@@ -2,6 +2,7 @@
 from __future__ import annotations
 from dataclasses import replace
 import re
+from rdkit import Chem
 from rdkit.Chem import BondType
 from namepredict.constants import (
     ALKOXY_YLOXY_EN, ALKOXY_YLOXY_ZH, AMIDO_RETAINED, AZANE_PAREN_SUF, BIS_EN, BRIDGE_YL_SUFFIX,
@@ -350,6 +351,44 @@ def _h_prefix_atoms(parent: dict, prefix: str) -> list[int]:
     return out
 
 
+_DIHYDRO_STEM_RE = re.compile(r"^(\d+(?:,\d+)*)-dihydro(.+)$")
+_DIHYDRO_STEM_ZH_RE = re.compile(r"^(\d+(?:,\d+)*)-二氢(.+)$")
+
+
+def _dihydro_stem_kept(parent: dict, locants: str) -> list[str]:
+    """滤出词干 'N,M-二氢' 中真正饱和的位次：已带多重键者改由指示氢表达。"""
+    mol = parent.get("mol")
+    if mol is None:
+        return locants.split(",")
+    keep: list[str] = []
+    for loc in locants.split(","):
+        atoms = _h_prefix_atoms(parent, f"{loc}H-")
+        if atoms and any(b.GetBondType() != Chem.BondType.SINGLE
+                         for b in mol.GetAtomWithIdx(atoms[0]).GetBonds()):
+            continue  # 该位已是酮/烯碳，不能再算二氢（P-58.2.1）
+        keep.append(loc)
+    return keep
+
+
+def _dihydro_stem_fix(parent: dict, stem_en: str, stem_zh: str) -> tuple[str, str]:
+    """词干自带的 'N,M-二氢' 中已带多重键的位次改为指示氢（P-58.2.1）：
+    5-oxo-2,5-dihydrofuran-3-yl → 5-oxo-2H-furan-3-yl（同一位不得既是酮又是 CH2）。"""
+    m = _DIHYDRO_STEM_RE.match(stem_en or "")
+    if not m:
+        return stem_en, stem_zh
+    locs = m.group(1)
+    keep = _dihydro_stem_kept(parent, locs)
+    if len(keep) == len(locs.split(",")):
+        return stem_en, stem_zh
+    rest_en, rest_zh = m.group(2), stem_zh
+    mz = _DIHYDRO_STEM_ZH_RE.match(stem_zh or "")
+    if mz:
+        rest_zh = mz.group(2)
+    if not keep:  # 全部位次都带多重键：只剩母体名，由 L4 指示氢另行补位
+        return rest_en, rest_zh
+    return f"{','.join(keep)}H-{rest_en}", f"{','.join(keep)}H-{rest_zh}"
+
+
 def _nh_only(parent: dict, ind: str) -> bool:
     """指示氢是否全落在环内氮：仅 NH 才在非 forced 路径补前缀（P-58.2.1）。"""
     mol = parent.get("mol")
@@ -412,9 +451,8 @@ def _ensure_generated_stem(numbered: dict) -> bool:
     if parent.get("stem_en") and parent.get("stem_zh"):
         return True
     mol, chain = parent.get("mol"), list(parent.get("chain") or ())
-    if (mol is None or parent.get("scaffold_id") != "carbocycle" or len(chain) <= 10
-            or parent.get("kind") != "alkane"):
-        return True  # ≤10 元环归 Hantzsch-Widman 保留名；带 FG 者保持既有行为
+    if mol is None or parent.get("scaffold_id") != "carbocycle" or len(chain) <= 10:
+        return True  # ≤10 元环归 Hantzsch-Widman 保留名
     from namepredict.layer5.skeleton_replacement import prefix_from_chain
     a_en, a_zh = prefix_from_chain(mol, chain)
     if not a_en:
@@ -426,6 +464,7 @@ def _ensure_generated_stem(numbered: dict) -> bool:
     parent["stem_en"], parent["stem_zh"] = f"{a_en}cyclo{en}", f"{a_zh}环{zh}"
     parent["stem_bare_en"] = f"{a_en}cyclo{en[:-3]}"
     parent["stem_bare_zh"] = f"{a_zh}环{zh[:-1]}"
+    parent["stem_generated"] = True  # 'a' 前缀生成式词干：位次恒显式，自由基取裸词干
     return True
 
 
@@ -680,7 +719,10 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         if sid == "benzene" and kind == "alkane":  # 苯 base：母体名由 sid 驱动
             return ("benzene", "苯")
         if parent.get("stem_en") and parent.get("stem_zh"):  # 环式 FG 的 locant omit 由 L4 决定，coda 置空
-            entry = replace(entry, stem=(parent["stem_en"], parent["stem_zh"]), coda="",
+            stem = _dihydro_stem_fix(parent, parent["stem_en"], parent["stem_zh"])
+            if kind == "radical" and parent.get("stem_generated"):  # 生成式词干（'a' 前缀大环）的自由基取裸词干（P-29.2）：…tetrazacyclododec-1-yl
+                stem = (parent["stem_bare_en"], parent["stem_bare_zh"])
+            entry = replace(entry, stem=stem, coda="",
                             omit_rule=lambda n, loc, omit: bool(omit), aromatic=(sid == "benzene"))
         elif sid == "carbocycle":  # 单环饱和烃自由基按 P-29.2 省略 1 位自由价，余沿用 L4 omit
             rule = (lambda n, loc, omit: loc == 1) if kind == "radical" \
@@ -862,7 +904,7 @@ def join_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]
     pre = parent.get("hydro_prefix") or ("", "")
     ind = _indicated_h_prefix(parent)  # L4 位次为准（P-58.2.1）：词干自带前缀被取代，避免 1H-7H- 双写
     en, zh = names
-    if ind and (pre[0] or parent.get("indicated_h_forced")
+    if ind and (pre[0] or parent.get("indicated_h_forced") or parent.get("hydro_fallback")
                 or (_nh_only(parent, ind) and _ring_n_free(parent))):  # 未取代 NH 环补指示氢
         en, zh = _with_indicated_h(en, ind), _with_indicated_h(zh, ind)
     elif not ind:  # 无 L4 位次时，词干自带前缀若已无 H（如茚二酮 C1）则失效

@@ -8,6 +8,14 @@ from namepredict.layer0.charge import normalize_acid_charge
 from namepredict.layer0.tautomer import normalize_amide_tautomer
 
 
+def _strip_isotopes(mol: Mol) -> Mol:
+    """清除同位素标记：命名管线不产出同位素名，保留会让锚定键匹配失败。"""
+    for atom in mol.GetAtoms():
+        if atom.GetIsotope():
+            atom.SetIsotope(0)
+    return mol
+
+
 def preprocess(smiles: str) -> Mol | None:
     """清洗解析 SMILES 为 RDKit 分子；空输入/失败返回 None。"""
     if not smiles or not str(smiles).strip():
@@ -15,6 +23,7 @@ def preprocess(smiles: str) -> Mol | None:
     mol = Chem.MolFromSmiles(str(smiles).strip(), sanitize=False)
     if mol is None:
         return None
+    mol = _strip_isotopes(mol)
     try:
         Chem.SanitizeMol(mol)
         Chem.AssignStereochemistry(mol, force=True, cleanIt=False, flagPossibleStereoCenters=True)

@@ -95,8 +95,10 @@ def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=froze
     facts = {"labels": labels}
     sats = set(saturated_ring_atoms(mol, set(chain), exclude)) | {
         i for i in extra if i in chain and i not in exclude}
-    if not extra and _is_monocycle(mol, chain) \
-            and _ring_double_bonds(kekulized(mol) or mol, set(chain)) == 1 \
+    rdb = _ring_double_bonds(kekulized(mol) or mol, set(chain))
+    if not extra and _is_monocycle(mol, chain) and rdb == 0:
+        sats = set()  # 全饱和单环：母体氢化物名已隐含全部 H，无指示氢（P-58.2.1）
+    elif not extra and _is_monocycle(mol, chain) and rdb == 1 \
             and not _is_retained_scaffold(scaffold_id):
         sats = set()  # 单环仅一个环内双键（环己烯/环戊烯）：氢位无歧义
     sats = sorted(sats, key=chain.index)

@@ -4,7 +4,7 @@ from __future__ import annotations
 from rdkit import Chem
 from rdkit.Chem import Mol, RWMol
 
-from namepredict.constants import ACCEPTOR_Z, ACID_CENTERS, DONOR_KIND, O
+from namepredict.constants import ACCEPTOR_Z, ACID_CENTERS, C, DONOR_KIND, N, O
 
 
 def _oxo_neighbor(atom, heavy: int):
@@ -45,16 +45,43 @@ def _is_weak_anion(atom) -> bool:
         return False
     return True
 
+def _is_base_n(atom) -> bool:
+    """判定中性脂肪胺氮（可接受质子的碱位，P-73.1.2）：有 N-H、非酰胺/亚胺、不连 O。"""
+    if atom.GetAtomicNum() != N or atom.GetFormalCharge() != 0 or atom.GetIsAromatic():
+        return False
+    if atom.GetTotalNumHs() < 1:
+        return False
+    for b in atom.GetBonds():
+        if b.GetBondType() != Chem.BondType.SINGLE:  # =N- / [N+]= 非碱位
+            return False
+        nb = b.GetOtherAtom(atom)
+        if nb.GetIsAromatic():  # 芳胺（苯胺/嘌呤氨基等）：碱性弱，仍按 amino 命名
+            return False
+        if nb.GetAtomicNum() == O:  # N-O 键（羟胺/N-氧化物）非碱位
+            return False
+        if nb.GetAtomicNum() == C and any(  # 酰胺/氨基甲酸酯氮：孤对已离域，不质子化
+            b2.GetBondType() == Chem.BondType.DOUBLE
+            and b2.GetOtherAtom(nb).GetAtomicNum() == O
+            for b2 in nb.GetBonds()
+        ):
+            return False
+    return True
+
+
+def _net_charge(mol: Mol) -> int:
+    """分子净形式电荷。"""
+    return sum(a.GetFormalCharge() for a in mol.GetAtoms())
+
 
 def _relocate_proton(mol: Mol, a_idx: int, d_idx: int) -> Mol | None:
-    """把质子从强酸供体搬到弱酸受体，只做电荷/H 记账；消毒失败返回 None。"""
+    """把质子从强酸供体搬到受体，只做电荷/H 记账；消毒失败返回 None。"""
     m = RWMol(mol)
     acc = m.GetAtomWithIdx(a_idx)
     don = m.GetAtomWithIdx(d_idx)
-    acc.SetFormalCharge(0)
+    acc.SetFormalCharge(acc.GetFormalCharge() + 1)  # 阴离子受体 -1→0；中性胺氮 0→+1
     acc.SetNumExplicitHs(acc.GetNumExplicitHs() + 1)
     acc.SetNoImplicit(True)
-    don.SetFormalCharge(-1)
+    don.SetFormalCharge(don.GetFormalCharge() - 1)
     don.SetNumExplicitHs(max(0, don.GetNumExplicitHs() - 1))
     don.SetNoImplicit(True)
     out = m.GetMol()
@@ -71,16 +98,21 @@ def normalize_acid_charge(mol: Mol) -> Mol:
     if any(a.GetAtomicNum() == 0 for a in mol.GetAtoms()):
         return mol
     out = mol
+    anionic = _net_charge(mol) < 0  # 净负离子才把中性胺氮当受体（保净电荷内的两性离子式，P-73.1.2）
     for _ in range(mol.GetNumAtoms()):  # 上界：每次消耗一对 donor/acceptor
         frag_of = {i: fi for fi, tup in enumerate(Chem.GetMolFrags(out)) for i in tup}
         donors: list[int] = []
-        acceptors: list[int] = []
+        anions: list[int] = []
+        bases: list[int] = []
         for i, a in enumerate(out.GetAtoms()):
             kind = _acid_kind_of_oh(a)
             if kind in DONOR_KIND:
                 donors.append(i)
-            elif _is_weak_anion(a):  # 弱受体不会同时是强酸供体
-                acceptors.append(i)
+            elif _is_weak_anion(a):  # 已去质子化的弱酸位：受体首选
+                anions.append(i)
+            elif anionic and _is_base_n(a):  # 无弱酸位时才把中性胺氮当受体
+                bases.append(i)
+        acceptors = anions or bases
         if not donors or not acceptors:
             break
         ranks = list(Chem.CanonicalRankAtoms(out))

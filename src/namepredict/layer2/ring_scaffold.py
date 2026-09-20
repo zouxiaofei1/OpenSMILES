@@ -52,7 +52,7 @@ ACRIDINE_LABELS: tuple[str, ...] = ("1","2","3","4","4a","5","6","7","8","8a","9
 PHENOTHIAZINE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "9", "9a", "10", "10a", "10b")  # phenothiazine（14 原子）：S5、N10
 NAPH_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a")
 ANTHRACENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "10", "10a", "5", "6", "7", "8", "8a", "9", "9a")  # anthracene(14 原子): 中环碳得数字位(P-25.4.1)
-PHENANTHRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "4b", "5", "6", "7", "8", "8a", "8b", "9", "10")  # phenanthrene(14 原子): 桥头带 a 位(P-25.4.1)
+PHENANTHRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "4b", "5", "6", "7", "8", "8a", "9", "10", "10a")  # phenanthrene(14 原子) 传统编号(P-14.4(a))：中环两个 CH 得 9,10，桥头 4a,4b,8a,10a
 PYRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "5a", "6", "7", "8", "8a", "8b", "9", "10", "10a", "10b")  # pyrene(16 原子): 外周 1-10(P-25.3.3.3.1)
 XANTHENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a", "9", "9a", "10", "10a")  # xanthene/thioxanthene: 中央碳 9、O/S 10
 STEROID_LABELS: tuple[str, ...] = tuple(str(i) for i in range(1, 18))  # 甾体传统编号 1-17 全数字(10/13 为角甲基碳)
@@ -61,7 +61,7 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "benzene":     {"smiles": "c1ccccc1",             "stem_en": "benzene",    "stem_zh": "苯",   "naming_class": "mono_carbo", "fused": True, "fused_prefix": ("benzo", "苯并")},  # carbocycles
     "naphthalene": {"smiles": "c1ccc2ccccc2c1",       "stem_en": "naphthalene","stem_zh": "萘",    "naming_class": "naph_family", "fused": True, "fused_prefix": ("naphtho", "萘并")},
     "anthracene":  {"smiles": "c1ccc2cc3ccccc3cc2c1", "stem_en": "anthracene", "stem_zh": "蒽",    "naming_class": "anthra", "fused": True, "fused_prefix": ("anthra", "蒽并"), "standard": (ANTHRACENE_LABELS, (13, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12))},  # 模板原子序即外周环序，缺此字段蒽位号会错
-    "phenanthrene":{"smiles": "c1ccc2c(c1)ccc1ccccc12", "stem_en": "phenanthrene","stem_zh": "菲", "naming_class": "phenanthrene", "fused": True, "fused_prefix": ("phenanthro", "菲并"), "standard": (PHENANTHRENE_LABELS, (9, 10, 11, 12, 13, 8, 5, 0, 1, 2, 3, 4, 6, 7))},
+    "phenanthrene":{"smiles": "c1ccc2c(c1)ccc1ccccc12", "stem_en": "phenanthrene","stem_zh": "菲", "naming_class": "phenanthrene", "fused": True, "fused_prefix": ("phenanthro", "菲并"), "standard": (PHENANTHRENE_LABELS, (9, 10, 11, 12, 13, 3, 2, 1, 0, 5, 4, 6, 7, 8))},  # 模板原子序即按 1,2,3,4,4a,4b,5,6,7,8,8a,9,10,10a 的外周行走序
     "pyrene":      {"smiles": "c1cc2ccc3cccc4ccc(c1)c2c34", "stem_en": "pyrene",  "stem_zh": "芘", "naming_class": "pyrene", "fused": True, "standard": (PYRENE_LABELS, (6, 7, 8, 9, 10, 11, 12, 13, 0, 1, 2, 14, 3, 4, 5, 15))},
     "indene":      {"smiles": "C1=CCc2ccccc21", "stem_en": "1H-indene", "stem_zh": "1H-茚", "naming_class": "fused56", "fused": True, "fused_stem": ("indene", "茚"), "standard": (FUSED56_LABELS, (2, 1, 0, 8, 7, 6, 5, 4, 3))},  # 茚（PIN 1H-indene），5+6 稠合碳环，并入 fused56
     "chrysene":    {"smiles": "c1ccc2c(c1)ccc1c3ccccc3ccc21", "stem_en": "chrysene", "stem_zh": "屈", "naming_class": "chrysene", "fused": True, "fused_prefix": ("chryseno", "䓛并")},  # 䓛（PIN chrysene，中文用「屈」），四环稠烃
@@ -98,6 +98,10 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "dioxane":     {"smiles": "C1COCCO1", "stem_en": "1,4-dioxane",   "stem_zh": "1,4-二氧六环", "naming_class": "monohetero", "locant_prefix": "1,4-"},
     "trioxane":    {"smiles": "C1OCOCO1", "stem_en": "1,3,5-trioxane", "stem_zh": "1,3,5-三氧六环", "naming_class": "monohetero", "locant_prefix": "1,3,5-"},
     "oxazolidine": {"smiles": "C1NCCO1",  "stem_en": "1,3-oxazolidine", "stem_zh": "1,3-噁唑烷", "naming_class": "monohetero", "locant_prefix": "1,3-"},  # 饱和 5 元双杂环（噁唑烷/咪唑烷/噻唑烷）
+    "dithiolane12": {"smiles": "C1CSSC1", "stem_en": "dithiolane", "stem_zh": "二硫杂环戊烷", "naming_class": "monohetero", "fused": False},  # 1,2-二硫戊环（P-22.2.2 HW 名；金标不写 1,2- 位次）
+    "dioxaborolane132": {"smiles": "B1OCCO1", "stem_en": "1,3,2-dioxaborolane", "stem_zh": "1,3,2-二氧杂硼杂环戊烷", "naming_class": "monohetero", "locant_prefix": "1,3,2-", "fused": False},  # 硼酸酯母体（P-22.2.2）：B 得 2 位，两个 O 得 1,3
+    "oxazinane13": {"smiles": "C1CNCOC1", "stem_en": "1,3-oxazinane", "stem_zh": "1,3-氧杂嗪烷", "naming_class": "monohetero", "locant_prefix": "1,3-", "fused": False},  # 六元 O/N 饱和环（P-22.2.2，O1/N3 得最低位次）
+    "diazinane13": {"smiles": "C1CNCNC1", "stem_en": "1,3-diazinane", "stem_zh": "1,3-二嗪烷", "naming_class": "monohetero", "locant_prefix": "1,3-", "fused": False},  # 六元 N/N 饱和环（巴比妥酸母体）
     "imidazolidine":{"smiles": "C1NCCN1", "stem_en": "imidazolidine",  "stem_zh": "咪唑烷", "naming_class": "monohetero"},
     "pyrazolidine": {"smiles": "C1CNNC1", "stem_en": "pyrazolidine", "stem_zh": "吡唑烷", "naming_class": "monohetero"},  # 表 2.3 保留名：饱和吡唑环须用它而非氢化 pyrazole
     "thiazolidine":{"smiles": "C1NCCS1",  "stem_en": "1,3-thiazolidine", "stem_zh": "1,3-噻唑烷", "naming_class": "monohetero", "locant_prefix": "1,3-"},
@@ -267,6 +271,19 @@ def mancude_ring_atoms(scaffold_id: str, match) -> frozenset[int]:
     dbl = _kekule_double_atoms(scaffold_id)
     keep = {i for ring in q.GetRingInfo().AtomRings() if set(ring) & dbl for i in ring}
     return frozenset(match[qi] for qi in keep if qi < len(match))
+
+
+def extra_hydrogenated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
+    """氢数多于保留母体模板同位的环原子（P-58.2.1 指示氢）：如 4H-异喹啉-1,3-二酮的 C4。"""
+    q = _Q.get(scaffold_id or "")
+    if q is None or not match or len(match) != q.GetNumAtoms():
+        return frozenset()
+    return frozenset(
+        mi for qi, mi in enumerate(match)
+        if mi < mol.GetNumAtoms() and mol.GetAtomWithIdx(mi).IsInRing()
+        and q.GetAtomWithIdx(qi).GetTotalNumHs() < mol.GetAtomWithIdx(mi).GetTotalNumHs()
+    )
+
 
 def extra_indicated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
     """模板同位无 H 而分子有 H 的芳香杂环原子（P-58.2.1 指示氢）。"""

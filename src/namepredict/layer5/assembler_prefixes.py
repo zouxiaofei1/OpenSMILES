@@ -8,8 +8,8 @@ from namepredict.layer4.locant_calc import locant_str_sort
 from namepredict.tools.re import alpha_order_key
 from namepredict.constants import (
     BIS_EN, BIS_ZH, BRIDGE_DIATOMIC_ZH, BRIDGE_SPLIT_SUFFIX_EN, BRIDGE_SPLIT_SUFFIX_ZH,
-    BRIDGE_SUFFIX_EN, BRIDGE_SUFFIX_ZH, DIATOMIC_BRIDGE_YL, MULT_EN, MULT_ZH, N_LOCANT_KINDS,
-    N_PREFIX_KINDS, OXO_CENTER_KINDS,
+    BRIDGE_SUFFIX_EN, BRIDGE_SUFFIX_ZH, CATION_YL_STEMS, DIATOMIC_BRIDGE_YL, MULT_EN, MULT_ZH,
+    N_LOCANT_KINDS, N_PREFIX_KINDS, OXO_CENTER_KINDS,
 )
 
 def _mult_rows(items: list, key_fn, zh_fn, sort_key=None) -> list[list]:
@@ -75,10 +75,24 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
     )
 
 
+_INDICATED_H_LEAD_RE = re.compile(r"^\d+H-")  # 前导指示氢（1H-咪唑-5-基），非取代基位次
+
+def _ring_fused_lead(stem: str) -> bool:
+    """词干是否为「环基 + 连接组分」式复合前缀（1H-咪唑-5-基甲基、1,3-苯并二氧杂环戊烯-5-基氧基甲基）。
+
+    此类词干的前导数字属于环系名自身编号（或指示氢），不是取代基位次，
+    与母体位次不构成同类位次冲突（P-16.5.1.2）。
+    """
+    s = stem or ""
+    return bool(_INDICATED_H_LEAD_RE.match(s)) or (s[:1].isdigit() and "-yl" in s[:-2])
+
+
 def _stem_needs_paren(stem: str, subs: list, omit: bool, flat: bool = False) -> bool:
     """加括号：显式标记、前导位次词干、前导立体描述符，或多个 CF3（英文）。"""
     if any(s.get("paren") for s in subs):
         return True
+    if _ring_fused_lead(stem):
+        return (not omit) and not flat  # 母体位次省略时无同类位次可混，前缀无需围栏
     if stem and stem[0].isdigit():
         return not flat  # 中心母体无位次，臂名前导位次不须围栏消歧
     return (not omit) and (stem == "trifluoromethyl" or bool(_STEREO_LEAD_RE.match(stem)))
@@ -120,7 +134,11 @@ def _wrap_stem(stem: str, need: bool) -> str:
 
 def _place(mult: str, s: str, subs: list, omit: bool) -> str:
     """拼数量前缀与词干体：位次省略时直接相接，否则位次串以连字符前置。"""
-    return f"{mult}{s}" if omit else f"{_locant_str(subs)}-{mult}{s}"
+    if omit:
+        if mult and s[:1].isdigit():  # 倍数前缀不得与位次数字直连（P-16.3.2：bis(3-…)，非 bis3-…）
+            return f"{mult}({s})"
+        return f"{mult}{s}"
+    return f"{_locant_str(subs)}-{mult}{s}"
 
 _STEREO_LEAD_RE = re.compile(r"\(\d+[RSEZ](?:,\d+[RSEZ])*\)-")  # 取代基名以立体描述符开头：(1Z)-、(2R,4R)-、(9Z,12Z)-。
 
@@ -202,6 +220,8 @@ def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
     if mult and mult == MULT_EN.get(len(subs), "") and _MULT_WRAP_RE.search(stem):  # P-16.3.2：复合取代基的倍数前缀须加括号
         need = True
         mult = "bis" if stem[:1] in "aeiou" else "di"
+    if len(subs) > 1 and stem in CATION_YL_STEMS:  # P-16.3.2：阳离子去氢前缀属复合前缀，倍数用 bis(...)：bis(azaniumyl)
+        need, mult = True, BIS_EN.get(len(subs), mult)
     if need:
         sp = _split_bridge_suffix(stem)
         if sp is not None:  # O/S/N 桥平铺式：桥后缀留括号外（P-63.2.2.1.1）。
@@ -257,6 +277,8 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
     if mult and mult == MULT_ZH.get(len(subs), "") and en_stem and _MULT_WRAP_RE.search(en_stem):  # 与英文侧同判：复合取代基用 双(...)
         need = True
         mult = BIS_ZH.get(len(subs), mult)
+    if len(subs) > 1 and en_stem in CATION_YL_STEMS:  # 与英文侧同判：阳离子去氢前缀用 双(铵基)
+        need, mult = True, BIS_ZH.get(len(subs), mult)
     if need:
         sp = _split_bridge_suffix_zh(zh_stem, en_stem)
         if sp is not None:  # 与英文侧同形：桥后缀留括号外（P-63.2.2.1.1）
@@ -321,9 +343,19 @@ def _n_prime_map(groups: dict[str, list], stems: list[str]) -> dict[int, int]:
         sorted(seen, key=lambda a: (alpha_order_key(seen[a]), a)))}
 
 
+def _arm_tail(name: str, n: int, bare: bool, mult: dict, bis: dict) -> str:
+    """括号式后继臂（P-16.5.1.3.1）：原式「倍数(名)」；阳离子臂按 P-73.1.1 改直连式。"""
+    if not bare:
+        return f"{mult.get(n, '')}({name})"
+    if name[:1].isdigit() or "(" in name or "[" in name:  # 带位次/围栏的复合臂：倍数前缀须整体成段
+        return f"{bis.get(n, '')}({name})" if n > 1 else _enclose(name)
+    return f"{mult.get(n, '')}{name}" if n > 1 else name
+
+
 def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
                    bracket: bool = False, primes: dict[int, int] | None = None,
-                   sep: str = "-", flat: bool = False) -> tuple[list[str], list[str]]:
+                   sep: str = "-", flat: bool = False,
+                   bare: bool = False) -> tuple[list[str], list[str]]:
     """汇总所有词干的中英文前缀部件列表（P-16.5.1.3.1 括号式）。"""
     en_parts: list[str] = []
     zh_parts: list[str] = []
@@ -331,8 +363,8 @@ def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
         subs = groups[stem]
         tail_sep = sep == "-" and i < len(stems) - 1  # 该前缀后仍接别的前缀（括界须自行闭合）
         if bracket and i >= 1:
-            en_parts.append(f"{MULT_EN.get(len(subs), '')}({stem})")
-            zh_parts.append(f"{MULT_ZH.get(len(subs), '')}({subs[0].get('zh') or ''})")
+            en_parts.append(_arm_tail(stem, len(subs), bare, MULT_EN, BIS_EN))
+            zh_parts.append(_arm_tail(subs[0].get("zh") or "", len(subs), bare, MULT_ZH, BIS_ZH))
             continue
         if bracket and not _LOCANT_RE.search(stem):  # P-16.5.1.3.1：首个引用的取代基从不加围栏（自带位次者除外）
             subs = [{**s, "paren": False} for s in subs]
@@ -340,6 +372,22 @@ def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
         en_parts.append(en_p)
         zh_parts.append(zh_p)
     return en_parts, zh_parts
+
+
+_LOCANT_SEG_RE = re.compile(r"\d+(?:,\d+)*[a-z]*-")  # 名内位次段（2,3- 算一段）
+
+
+def _cation_arm_hyphen(groups: dict[str, list]) -> bool:
+    """阳离子臂名间是否以连字符分段（P-73.1.1）：三臂以上，或存在复合臂时须显式分隔。"""
+    if len(groups) >= 3:
+        return True
+    for name, subs in groups.items():
+        if "(" in name or "[" in name:  # 自带围栏的复合臂
+            return True
+        if name[:1].isdigit() and (len(_LOCANT_SEG_RE.findall(_strip_nested_fence(name))) >= 2
+                                   or len(subs) > 1):  # 多位次臂名，或带位次的倍增臂
+            return True
+    return False
 
 
 def _groups_simple(groups: dict[str, list]) -> bool:
@@ -399,8 +447,9 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     groups = {en: members for en, _, _, members in rows}
     stems = [en for en, _, _, _ in rows if en]
     bracket = bool(omit) and len(groups) >= 2 and (bare or _groups_simple(groups))  # P-16.5.1.3.1：位次省略的单核母体，首基平铺、余基括起
-    sep = "" if bracket else "-"
-    en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, _n_prime_map(groups, stems), sep, flat)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
+    arm_hyphen = bool(bare and bracket and _cation_arm_hyphen(groups))  # 阳离子臂名整体前置于阳离子名，复合臂间以连字符分段（P-73.1.1）
+    sep = "-" if (arm_hyphen or not bracket) else ""
+    en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, _n_prime_map(groups, stems), sep, flat, arm_hyphen)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
     return sep.join(en_parts), sep.join(zh_parts)
 
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
