@@ -62,14 +62,6 @@ def _idx(payload: dict, key: str) -> int | None:
     v = payload.get(key)
     return int(v) if v is not None else None
 
-
-def _hetero_neighbors(mol, idx: int | None, z: int) -> set[int]:
-    """返回指定原子的某种元素邻居索引。"""
-    if idx is None:
-        return set()
-    return {n.GetIdx() for n in mol.GetAtomWithIdx(idx).GetNeighbors() if n.GetAtomicNum() == z}
-
-
 def _oxoacid_atoms(mol, payload: dict) -> set[int]:
     """含氧酸：锚点碳 + 中心 P/S + 中心的非碳邻居（碳臂留给链/取代基侧）。"""
     z = _idx(payload, "oxo_z")

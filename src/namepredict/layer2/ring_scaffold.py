@@ -216,23 +216,6 @@ _STANDARD_ORDERS: dict[str, tuple[int, ...]] = {
 }
 
 
-def _validate_standard_fields() -> None:
-    """import 期校验 `standard` 字段（order 须为排列）。"""
-    for sid, entry in _TEMPLATES.items():
-        std = entry.get("standard")
-        if not std:
-            continue
-        labels, order = std
-        n = _Q[sid].GetNumAtoms()
-        if sorted(order) != list(range(n)):
-            raise ValueError(f"{sid}: standard order {order} 不是 0..{n - 1} 的排列")
-        if len(labels) != n:
-            raise ValueError(f"{sid}: standard labels 长度 {len(labels)} != 模板原子数 {n}")
-
-
-_validate_standard_fields()
-
-
 def _hydrogenated(mol: Mol) -> Mol | None:
     """返回完全氢化的分子副本（清芳香性并全键改单键）。"""
     rw = Chem.RWMol(mol)

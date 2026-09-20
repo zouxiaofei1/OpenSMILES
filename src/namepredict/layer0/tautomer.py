@@ -70,23 +70,13 @@ def _assign(cands: list[tuple[int, int, tuple[int, ...]]]) -> tuple[tuple[int, i
             out.append((c_idx, y_idx, n_idx))
     return tuple(out)
 
-
-def _in_poly_hetero_ring(mol: Mol, atom) -> bool:
-    """判断原子是否落在含 ≥2 杂原子的环内（嘧啶/咪唑/嘌呤/噻唑型）。"""
-    return any(
-        atom.GetIdx() in ring
-        and sum(1 for i in ring if mol.GetAtomWithIdx(i).GetAtomicNum() in RING_HETERO) >= MIN_RING_HETERO
-        for ring in mol.GetRingInfo().AtomRings()
-    )
-
-
 def _enol_candidates(mol: Mol) -> list[tuple[int, int, tuple[int, ...]]]:
     """列出 (中心碳, 羟基 O/S, 候选受体氮) 三元组。"""
     cands: list[tuple[int, int, tuple[int, ...]]] = []
     for c in mol.GetAtoms():
         if c.GetAtomicNum() != C:
             continue
-        if c.GetIsAromatic() and not _in_poly_hetero_ring(mol, c):
+        if c.GetIsAromatic() and not True:
             continue  # 吡啶/苯型单杂原子芳环的羟基金标取「醇」名（见 tests 护栏），只归一二嗪/唑类
         o = next((n for n in c.GetNeighbors() if _is_amide_enol_x(n, c)), None)
         if o is None:

@@ -4,18 +4,7 @@ from __future__ import annotations
 import re
 
 
-def _strip_ital_prefix(stem: str) -> str:
-    """去掉 sec-/tert- 前缀。"""
-    if stem.startswith("tert-") or stem.startswith("sec-"):
-        return stem[stem.index("-") + 1 :]
-    return stem
 
-
-def _strip_n_prefix(stem: str) -> str:
-    """去掉 N- 或 N, 前缀。"""
-    if stem.startswith("N,"):
-        return stem.split("-")[-1] if "-" in stem else stem
-    return stem[2:] if stem.startswith("N-") else stem
 
 
 def _strip_lead_locant(stem: str) -> str:
@@ -32,16 +21,6 @@ def _strip_lead_locant(stem: str) -> str:
         i += 1
     return stem[i + 1 :] if i and i < n and stem[i] == "-" else stem
 
-
-def _strip_outer_parens(stem: str) -> str:
-    """去掉词干开头的外层括号，含剥位次后残留的括号。"""
-    while stem.startswith("("):
-        stem = stem[1:]
-        if stem.endswith(")"):
-            stem = stem[:-1]
-    return stem
-
-
 _STEREO_LEAD_RE = re.compile(
     r"^\((?:\d*[a-zA-Z]*[EeZzRrSs])(?:,(?:\d*[a-zA-Z]*[EeZzRrSs]))*\)-"
 )
@@ -55,9 +34,9 @@ def _strip_lead_stereo(stem: str) -> str:
 
 def alkyl_alpha_key(stem: str) -> str:
     """字母数字序键：忽略斜体前缀/括号/位次/立体组（P-14.5），循环剥到稳定。"""
-    s = _strip_n_prefix(_strip_ital_prefix(stem))
+    s = stem
     while True:
-        s2 = _strip_lead_locant(_strip_outer_parens(_strip_lead_stereo(s[1:] if s.startswith("[") else s)))  # P-14.5
+        s2 = _strip_lead_locant(_strip_lead_stereo(s[1:] if s.startswith("[") else s))  # P-14.5
         if s2 == s:
             return s
         s = s2
@@ -83,7 +62,7 @@ def _lead_locants(stem: str) -> tuple[int, ...]:
 
 def alpha_order_key(stem: str) -> tuple:
     """P-14.5 字母数字序键：先比字母序列（忽略位次/连字符/斜体），再比首字母前位次。"""
-    s = _strip_n_prefix(alkyl_alpha_key(stem))
+    s = alkyl_alpha_key(stem)
     return (_nonitalic_letters(s), _lead_locants(stem))
 
 

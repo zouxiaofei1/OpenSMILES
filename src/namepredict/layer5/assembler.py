@@ -388,10 +388,7 @@ def _ensure_parent_stem(numbered: dict) -> bool:
 
 
 def _ensure_generated_stem(numbered: dict) -> bool:
-    """P-23.3.1 生成式词干：>10 元纯杂单环无保留名，取 'a' 前缀 + 环烷。不适用即放行。
-
-    带主特征基团的大环杂单环走 FG 分支的词干重建，本轮不接（缺口见 P-23 轮次记录）。
-    """
+    """P-23.3.1 生成式词干：>10 元纯杂单环无保留名"""
     parent = numbered.get("parent") or {}
     if parent.get("stem_en") and parent.get("stem_zh"):
         return True

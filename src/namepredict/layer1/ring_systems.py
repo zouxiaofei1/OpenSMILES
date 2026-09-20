@@ -61,15 +61,6 @@ def _components(n: int, edges: list[tuple[int, int, frozenset[int]]]) -> list[li
         buckets.setdefault(_uf_find(parent, i), []).append(i)
     return list(buckets.values())
 
-def _hetero_atoms(mol: Mol, atom_ids: set[int]) -> list[dict]:
-    """返回环系中非碳原子（索引与原子序数）列表。"""
-    out: list[dict] = []
-    for i in sorted(atom_ids):
-        z = mol.GetAtomWithIdx(i).GetAtomicNum()
-        if z != C:
-            out.append({"idx": i, "Z": z})
-    return out
-
 def _member_atoms(rings: list[tuple[int, ...]], members: list[int]) -> set[int]:
     """汇总分量内全部环成员的原子集合。"""
     atom_ids: set[int] = set()
@@ -96,7 +87,7 @@ def _system_dict(
         "fusion_edges": edges,
         "n_rings": len(members),
         "n_atoms": len(atom_ids),
-        "hetero_atoms": _hetero_atoms(mol, atom_ids),
+        "hetero_atoms": None,
         "is_aromatic_mancude": None,
         "topology": None,
     }

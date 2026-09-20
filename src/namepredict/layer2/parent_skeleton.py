@@ -133,17 +133,10 @@ def keep_p44_1_2(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[Pare
     topologies = {c.topology for c in candidates}
     return keep_senior_atom(mol, candidates) if len(topologies) > 1 else candidates
 
-
-def _element_counts(mol: Mol, skeleton: ParentSkeleton) -> tuple[int, ...]:
-    """统计骨架中各 senior 元素（除碳）的出现次数元组。"""
-    numbers = [mol.GetAtomWithIdx(i).GetAtomicNum() for i in skeleton.atom_ids]
-    return tuple(numbers.count(z) for z in _SENIOR_ATOMS if z != 6)
-
-
 def p44_3_key(mol: Mol, skeleton: ParentSkeleton) -> tuple:
     """P-44.3 比较键：杂原子数、原子数、元素计数。"""
     return (sum(mol.GetAtomWithIdx(i).GetAtomicNum() != 6 for i in skeleton.atom_ids),  # 杂原子数
-            len(skeleton.atom_ids), _element_counts(mol, skeleton))
+            len(skeleton.atom_ids), None)
 
 
 def keep_p44_3(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:

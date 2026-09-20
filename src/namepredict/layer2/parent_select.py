@@ -30,14 +30,6 @@ def select_principal_parent_skeletons(info: dict) -> PrincipalParentSelection:
     skeletons = select_principal_skeletons(info, occurrences)
     return PrincipalParentSelection(principal, skeletons)
 
-
-def _unsupported_typed_ring(parent: dict, selection: PrincipalParentSelection) -> bool:
-    """判断环酮是否因未支持的 typed 表达被排除。"""
-    return (selection.principal.group_class is FunctionalGroupClass.KETONE
-            and parent.get("scaffold_identity") is not None
-            and parent.get("typed_ring_expression_supported") is False)
-
-
 def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[dict]:
     """按骨架拓扑表达主基团，过滤不支持者。"""
     parents = []
@@ -45,8 +37,6 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
         parent = ((express_ring_principal(info, selection.principal, skeleton))
                   if skeleton.topology is SkeletonTopology.RING_SYSTEM
                   else express_chain_principal(info, selection.principal, skeleton))
-        # print(parent)
-        # if parent is not None and not _unsupported_typed_ring(parent, selection):
         parents.append(parent)
     # print("parents",parents)
     return parents

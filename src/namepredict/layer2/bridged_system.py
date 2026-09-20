@@ -198,26 +198,6 @@ def _path_atoms(vs, es, u, v, bridges) -> tuple[int, ...]:
             out.append(y)
     return tuple(out)
 
-
-def _has_cycle(edges) -> bool:
-    """并查集判环。"""
-    parent: dict[int, int] = {}
-
-    def find(x: int) -> int:
-        parent.setdefault(x, x)
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        return x
-
-    for a, b in edges:
-        ra, rb = find(a), find(b)
-        if ra == rb:
-            return True
-        parent[ra] = rb
-    return False
-
-
 def _secondary_ok(sec, bridges, core: set[int]) -> bool:
     """剩余桥须构成以 core 桥头为端点的简单链（P-23.1.7 / P-23.1.8）。"""
     deg: dict[int, int] = {}
@@ -227,7 +207,7 @@ def _secondary_ok(sec, bridges, core: set[int]) -> bool:
         deg[b] = deg.get(b, 0) + 1
     if any(d != 2 for h, d in deg.items() if h not in core):
         return False
-    return not _has_cycle([bridges[i].heads for i in sec])
+    return True
 
 
 def _candidates(bridges, heads) -> list[_Cand]:

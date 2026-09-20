@@ -33,13 +33,6 @@ class FusedNode:
     fused_prefix: tuple[str, str] | None = None  # 附加组分保留前缀 (en, zh)；None = 走通用规则
     fused_omit_numbers: bool = False             # 稠合描述符省略数字位次（P-25.3.8.1：一级单环烃附加组分）
 
-
-def _has_template_superset(mol, atom_ids) -> bool:
-    """当前原子集元素计数是否 ≤ 某保留模板计数（增长剪枝必要条件）。"""
-    current = Counter(mol.GetAtomWithIdx(i).GetAtomicNum() for i in atom_ids)
-    return any(all(current[z] <= tc.get(z, 0) for z in current) for tc in _TEMPLATE_COUNTS.values())
-
-
 def _fusion_adj(ring_indices, fusion_edges) -> dict[int, set[int]]:
     """融合图邻接表：环下标 → 相邻环下标（仅两端都在集合内的稠合边）。"""
     adj: dict[int, set[int]] = {r: set() for r in ring_indices}
@@ -69,8 +62,6 @@ def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[i
             sid = match_fusion_component(info, atoms)
             if sid is not None:
                 out.setdefault(atoms, (sid, rset))
-            if not _has_template_superset(mol, atoms):
-                continue
             for nb in adj:
                 if nb in rset or not any(nb in adj[r] for r in rset):
                     continue

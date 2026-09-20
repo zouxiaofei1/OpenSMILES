@@ -43,13 +43,6 @@ def _typed_atom_locants(oriented: dict, group: str) -> list[int]:
     """返回指定基团全部附着原子在链上的位次列表。"""
     return locant_str_sort(_atom_locants(oriented, _typed_group_atoms(oriented, group)))
 
-
-def _single_locant(oriented: dict, group: str) -> int | None:
-    """主官能团唯一位次；多原子或缺失返回 None。"""
-    locs = _typed_atom_locants(oriented, group)
-    return locs[0] if len(locs) == 1 else None
-
-
 def _occ_attachment(oriented: dict, anchors: set, atoms: set) -> int | None:
     """occurrence 锚点 → 骨架内附着原子（骨架外取骨架内邻居）。"""
     inside = anchors & atoms
@@ -160,30 +153,7 @@ def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
     if group is None:
         return False
     single = kind != "ketone" or len(_typed_group_atoms(oriented, "ketone")) == 1
-    return _omit_fg(_single_locant(oriented, group), n, oriented, n_subs, single=single)
-
-
-def _anchor_field_locants(oriented: dict, key: str) -> list[int] | None:
-    """由固定 locant 1 锚点字段（radical_c_idx）算位次列表。"""
-    value = oriented.get(key)
-    if value is None:
-        return None
-    return locant_str_sort(_atom_locants(oriented, [value])) or None
-
-
-def _exocyclic_only(oriented: dict) -> bool:
-    """principal 基团是否以环外方式表达（位次落在环附着原子）。"""
-    facts = oriented.get("principal_expression_facts")
-    return bool(facts) and facts.relation.value == "exocyclic"
-
-
-def _locants_for(oriented: dict, spec) -> list[int]:
-    """取 spec 对应主官能团的位次列表；该 FG 非主官能团时为空。"""
-    if spec.locant_source == "anchor_field":
-        return _anchor_field_locants(oriented, spec.parent_anchor_fields[0]) or []
-    if spec.locant_source == "attachment_exocyclic" and not _exocyclic_only(oriented):
-        return []
-    return _typed_atom_locants(oriented, spec.fg)
+    return _omit_fg(True, n, oriented, n_subs, single=single)
 
 _FG_LOCANTS = tuple((sp.fg, sp) for sp in FG_SPECS if sp.fg is not None)  # (记录 kind, spec)：由 fg_registry 承载跨层一致性。
 
@@ -192,7 +162,7 @@ def _fg_locants(oriented: dict, n_subs: int = 0) -> list[dict]:
     n = oriented.get("n_carbons", 0)
     records = []
     for kind, spec in _FG_LOCANTS:
-        locs = _locants_for(oriented, spec)
+        locs = _typed_atom_locants(oriented, spec.fg)
         if not locs:
             continue
         if spec.locant_source == "attachment":

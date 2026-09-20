@@ -104,15 +104,6 @@ def _expression_flags(selection: PrincipalGroupSelection, occurrences, mol) -> d
         return {}
     return {"anion": True} if occurrences and all(_is_anion_occurrence(o, mol) for o in occurrences) else {}
 
-
-def _charge_state(occurrences, mol) -> PrincipalChargeState:
-    """按 occurrence 阴离子情况推断电荷状态。"""
-    charges = [_is_anion_occurrence(o, mol) for o in occurrences]
-    if charges and all(charges):
-        return PrincipalChargeState.ANION
-    return PrincipalChargeState.MIXED if any(charges) else PrincipalChargeState.NEUTRAL
-
-
 def _skeletal_attachments(mol, skeleton, occurrences) -> frozenset[int]:
     """计算主官能团在骨架内的附着原子（骨架外则取邻居）。"""
     atoms = set(skeleton.atom_ids)
@@ -132,7 +123,7 @@ def _facts(selection, skeleton, occurrences, mol=None) -> PrincipalExpressionFac
     attachment = _skeletal_attachments(mol, skeleton, occurrences)
     return PrincipalExpressionFacts(selection.group_class, len(occurrences), relation,
                                     tuple(o.id for o in occurrences), characteristic, anchors, attachment,
-                                    _charge_state(occurrences, mol))
+                                   None)
 
 
 def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
@@ -144,30 +135,6 @@ def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
             "principal_group_count": len(occurrences), "principal_expression_facts": facts, **fields}
 
 
-# 苯系保留名由 L5 苯 variant 注入；L2 只表达结构 kind。
-
-
-def _ring_endocyclic_triple(mol: Mol, atoms: set[int]) -> bool:
-    """骨架内是否有成环三键（有则不能按 mancude 芳香保留名表达）。"""
-    from rdkit import Chem
-    return any(b.GetBondType() == Chem.BondType.TRIPLE and b.IsInRing()
-               and b.GetBeginAtomIdx() in atoms and b.GetEndAtomIdx() in atoms
-               for b in mol.GetBonds())
-
-
-def _generic_ring_kind(info: dict, skeleton: ParentSkeleton) -> str | None:
-    """无保留 scaffold 时的通用环 kind（统一收敛为 alkane）。"""
-    mol = info["mol"]
-    atoms = set(skeleton.atom_ids)
-    if any(mol.GetAtomWithIdx(i).GetIsAromatic() for i in atoms) and not _ring_endocyclic_triple(mol, atoms):
-        n_rings = sum(1 for ring in sssr_rings(mol) if set(ring) <= atoms)  # 未注册芳香稠环 kind 收敛 alkane
-        if n_rings >= 2:
-            return "alkane"
-        # return None
-    all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atoms)
-    return "alkane"   # 纯烃环统一 kind='alkane'（环系/不饱和度另由字段承载）
-
-
 def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str | None:
     """按保留 scaffold 解析环 kind（稠环收敛为 alkane）。"""
     if scaffold and scaffold.id != "carbocycle":
@@ -176,7 +143,7 @@ def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str |
         if scaffold.id == "fused_hetero":
             return "alkane"  # 未注册稠环：kind 收敛 alkane，身份由 fused_tree 承载
         return scaffold.id
-    return _generic_ring_kind(info, skeleton)
+    return "alkane"
 
 
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold, occurrences=()) -> str | None:

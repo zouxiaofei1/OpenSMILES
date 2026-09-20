@@ -197,27 +197,6 @@ _ANILINO_EN, _ANILINO_ZH = "anilino", "苯胺基"
 _PHENYL_EN, _PHENYL_ZH = "phenyl", "苯基"
 
 
-def _carbamoyl_side(mol: Mol, atoms: frozenset[int], attach_old: int) -> tuple[int, frozenset[int]] | None:
-    """块恰为 -C(=O)-N(R)(R')（连接点=羰基碳）时返回 (N 原子, N 侧原子集)。"""
-    at = mol.GetAtomWithIdx(attach_old)
-    if at.GetAtomicNum() != C:
-        return None
-    dbl_o = sgl_n = -1
-    for nb in at.GetNeighbors():
-        if nb.GetIdx() not in atoms:
-            return None  # 块根外接母体侧以外的原子：非纯酰基块
-        bond = mol.GetBondBetweenAtoms(attach_old, nb.GetIdx())
-        if nb.GetAtomicNum() == O and bond.GetBondType() == BondType.DOUBLE and dbl_o < 0:
-            dbl_o = nb.GetIdx()
-        elif nb.GetAtomicNum() == N and bond.GetBondType() == BondType.SINGLE and sgl_n < 0:
-            sgl_n = nb.GetIdx()
-        else:
-            return None  # 块根只容一个 =O 与一个 -N
-    if dbl_o < 0 or sgl_n < 0:
-        return None
-    front = frozenset(a for a in atoms if a not in (attach_old, dbl_o))
-    return (sgl_n, front) if len(front) > 1 else None
-
 
 def carbamoyl_prefix_name(en: str, zh: str, *, in_ring: bool) -> tuple[str, str] | None:
     """N-侧胺名 → carbamoyl 一族前缀名（P-65.2.1.5）；不合式返回 None。"""
@@ -248,21 +227,6 @@ def carbamoyl_prefix_name(en: str, zh: str, *, in_ring: bool) -> tuple[str, str]
     return None
 
 
-def _carbamoyl_deriv(mol: Mol, atoms: frozenset[int], attach_old: int) -> tuple[str, str, bool] | None:
-    """-C(=O)-N(R)(R') 收成 <N-取代基>carbamoyl / <环胺>-<位次>-carbonyl（P-65.2.1.5）。"""
-    side = _carbamoyl_side(mol, atoms, attach_old)
-    if side is None:
-        return None
-    n_idx, front = side
-    from namepredict.layer3.as_substituent import name_as_substituent
-
-    hit = name_as_substituent(mol, n_idx, front)
-    if hit is None:
-        return None
-    named = carbamoyl_prefix_name(hit[0], hit[1], in_ring=mol.GetAtomWithIdx(n_idx).IsInRing())
-    return (named[0], named[1], True) if named is not None else None
-
-
 def anchored_lookup(
     mol: Mol, atoms: frozenset[int], attach_old: int | None = None,
 ) -> tuple[str, str, bool] | None:
@@ -273,5 +237,4 @@ def anchored_lookup(
         return en, zh, _REGISTRY[reg_key].paren
     if attach_old is None:
         return None
-    hit = _carbamoyl_deriv(mol, atoms, attach_old)
-    return hit if hit is not None else _alkoxycarbonyl(mol, atoms, attach_old)
+    return  _alkoxycarbonyl(mol, atoms, attach_old)

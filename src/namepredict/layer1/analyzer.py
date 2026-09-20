@@ -211,10 +211,6 @@ def oxoacid_lists(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> dic
         out.setdefault(_OXO_CLASS_BY_KIND.get(e["oxo_kind"], "oxoacid"), []).append(e)
     return out
 
-
-def phosphate_entries(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> list[dict]:
-    """仅磷酸 kind（P(=O)(O⁄O⁻⁄OR)₃）的条目视图；膦酸与硫含氧酸不在内。"""
-    return [e for e in oxoacid_entries(mol, matches) if e["oxo_kind"] == "phosphate"]
 def _surr_idx(atom) -> list[int]:
     """周边原子：中心全部重原子邻居；碳中心不在环内时排除环内邻居。"""
     ring_excl = atom.GetAtomicNum() == C and not atom.IsInRing()
