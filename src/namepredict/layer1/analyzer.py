@@ -263,10 +263,17 @@ _PRESENCE_SKIP = frozenset({"oxoacid", "sulfonamide"})  # 含氧酸不参与存�
 _LEAF_DEMOTED = ("acid", "nitrile")  # 降级为"前缀叶"的组合 FG：整组碳排除出主链（P-61.1.3 carboxy/cyano）。其余组合 FG（酯/酰胺/醛/酰卤）降级为"氧代"——羰基碳留在链内，仅 O 作 oxo/formyl 前缀，由 L3 锚定叶识别。
 
 
-def _arbitrate_parts(parts: dict) -> tuple[dict, frozenset[str]]:
+def _has_negative_atom(mol: Mol) -> bool:
+    """分子内是否存在形式电荷为负的原子（P-41 表 4.1 类 4 阴离子）。"""
+    return mol is not None and any(a.GetFormalCharge() < 0 for a in mol.GetAtoms())
+
+
+def _arbitrate_parts(parts: dict, mol: Mol | None = None) -> tuple[dict, frozenset[str]]:
     """P-41 仲裁：更高优先级 FG 使组合 FG 退出，叶型标 demoted。"""
     p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
     present = {fg for fg in p41 if parts.get(fg) and fg not in _PRESENCE_SKIP}
+    if _has_negative_atom(mol):
+        present.discard("cation")  # 阴离子（类 4）> 阳离子（类 6）：酸根在场时阳离子不压制酸
     out = dict(parts)
     demoted: set[str] = set()
     for fg in _SUPPRESSIBLE:
@@ -280,7 +287,7 @@ def _arbitrate_parts(parts: dict) -> tuple[dict, frozenset[str]]:
 
 # 局部环境 SMARTS 命中且无非局部判据的 FG 键；顺序沿用历史输出
 _LOCAL_ENTRY_FGS = ("acid", "alcohol", "ester", "amide", "ketone", "amine", "thiol",
-                    "nitrile", "acyl_halide")
+                    "nitrile", "acyl_halide", "cation")
 
 
 def _local_entries(mol: Mol, hits: dict) -> dict:
@@ -300,13 +307,22 @@ def _detect_parts(mol: Mol) -> dict:
         "acyl": acyl,
         "aldehyde": [e for e in (_fg_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("aldehyde", [])) if e["center_idx"] not in heads],
         **oxoacid_lists(mol, hits.get("oxoacid", []))}
-    return result
+    return _drop_claimed_cations(result)
+
+
+def _drop_claimed_cations(parts: dict) -> dict:
+    """已被其它 FG 检测器命中中心的原子不再作阳离子：只留未被 fg 检测器检测到的阳离子。"""
+    cations = parts.get("cation") or []
+    if not cations:
+        return parts
+    claimed = {e["center_idx"] for fg, entries in parts.items() if fg != "cation" for e in entries}
+    return {**parts, "cation": [e for e in cations if e["center_idx"] not in claimed]}
 
 def _collect_fgs(mol: Mol) -> dict:
     """聚合官能团条目并构建带类型清单（FG 唯一出口）。"""
     from namepredict.layer1.functional_group_inventory import build_inventory
 
-    parts, demoted = _arbitrate_parts(_detect_parts(mol))
+    parts, demoted = _arbitrate_parts(_detect_parts(mol), mol)
     return {"double_bonds": _filter_bond_entries(mol, _is_cc_double, _bond_entry),
             "triple_bonds": _filter_bond_entries(mol, _is_cc_triple, _bond_entry),
             "fg_inventory": build_inventory(parts, mol, demoted)}

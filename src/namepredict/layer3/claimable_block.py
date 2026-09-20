@@ -26,9 +26,10 @@ class ClaimedBlock:
 
 
 def _is_amine_n(mol: Mol, n_idx: int) -> bool:
-    """胺 N：非芳香、非环员 N（环 N 用环上位次定位）。"""
+    """胺 N：非芳香、非环员、电中性的 N（环 N 用环上位次定位，N+ 作母体阳离子不写 N- 前缀）。"""
     atom = mol.GetAtomWithIdx(n_idx)
-    return not (atom.GetAtomicNum() != 7 or atom.GetIsAromatic() or atom.IsInRing())
+    return not (atom.GetAtomicNum() != 7 or atom.GetIsAromatic() or atom.IsInRing()
+                or atom.GetFormalCharge() != 0)
 
 
 def derive_slot(mol: Mol, attach_parent: int) -> SideSlot:

@@ -57,9 +57,14 @@ class PrincipalGroupSelection:
     occurrences: tuple[FunctionalGroupOccurrence, ...]
 
 
+_CATION_ANION_GATED = 99  # 阴离子在场时阳离子让位（表 4.1 类 4 > 类 6）：置底即不再作母体
+
+
 def _effective_priority(group_class: FG, spec: PrincipalFeatureSpec,
                         inventory: FunctionalGroupInventory) -> PrincipalPriority:
     """候选类的实际 P-41 优先级：含氧酸为酸式时升到类 7（P-41 表 4.1）。"""
+    if group_class is FG.CATION and inventory.has_anion:
+        return PrincipalPriority(_CATION_ANION_GATED, spec.priority.p43_path)
     if group_class is not FG.OXOACID:
         return spec.priority
     occurrences = inventory.occurrences(group_class)

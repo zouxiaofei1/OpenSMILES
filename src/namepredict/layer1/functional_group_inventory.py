@@ -11,6 +11,7 @@ class FunctionalGroupClass(str, Enum):
     """官能团类别枚举（对应 fg_registry 的 p41 优先级体系）。"""
     RADICAL = "radical"
     ACYL = "acyl"
+    CATION = "cation"
     ACID = "acid"
     OXOACID = "oxoacid"
     SULFONAMIDE = "sulfonamide"
@@ -41,6 +42,7 @@ class FunctionalGroupOccurrence:
 class FunctionalGroupInventory:
     """官能团清单：承载全部出现并提供按类查询/统计。"""
     entries: tuple[FunctionalGroupOccurrence, ...]
+    has_anion: bool = False  # 分子内存在负形式电荷原子（P-41 表 4.1 类 4）：阴离子 > 阳离子
 
     def occurrences(self, group_class: FunctionalGroupClass) -> tuple[FunctionalGroupOccurrence, ...]:
         """返回给定官能团类的全部出现（不含被 P-41 仲裁降级的叶条目）。"""
@@ -82,9 +84,16 @@ def center_surr_atoms(payload: dict) -> frozenset[int]:
     return frozenset(out)
 
 
+def _cation_atoms(mol, payload: dict) -> set[int]:
+    """阳离子：特征原子只有阳离子中心本身，周边碳全留给取代基侧。"""
+    center = _idx(payload, "center_idx")
+    return {center} if center is not None else set()
+
+
 FG_ATOM_FNS = {  # 不走通用规则的例外类别
     "oxoacid": _oxoacid_atoms,
     "sulfonamide": _oxoacid_atoms,  # 含氧酸合一类的 P-41 酰胺分组，特征原子同一判据
+    "cation": _cation_atoms,  # 单核母体阳离子作母体时只占一个原子（P-73.1.1）
 }
 
 def _indices(payload: dict, keys: tuple[str, ...]) -> frozenset[int]:
@@ -114,7 +123,8 @@ def build_inventory(lists: dict, mol=None, demoted: frozenset[str] = frozenset()
     """由官能团列表构建带类型的清单；demoted 为降级 id 集。"""
     entries = tuple(_one(key, i, item, mol, f"{key}:{i}" in demoted)
                     for key in _FG_KEYS for i, item in enumerate(lists.get(key) or ()))
-    return FunctionalGroupInventory(entries)
+    has_anion = mol is not None and any(a.GetFormalCharge() < 0 for a in mol.GetAtoms())
+    return FunctionalGroupInventory(entries, has_anion)
 
 def inventory_from_info(info: dict) -> FunctionalGroupInventory:
     """从分析信息中取出清单；缺失即显式失败。"""

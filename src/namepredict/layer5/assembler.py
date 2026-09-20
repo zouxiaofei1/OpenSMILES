@@ -855,8 +855,19 @@ def join_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]
     return join_parent_name(pre[0], en), join_parent_name(pre[1], zh)
 
 
+def _zh_ring_cation(zh: str, stem_zh: str, suffix: str) -> str:
+    """中文环阳离子：母体词干后插 -{位次}-正离子（中化会 6.7.2，不用“鎓”）。"""
+    if not zh or not stem_zh or "鎓" in zh:
+        return zh
+    for stem in (stem_zh, _split_stem_h_prefix(stem_zh)[1]):  # 词干自带 1H- 时按去前缀词干定位
+        if stem and stem in zh:
+            at = zh.index(stem) + len(stem)
+            return zh[:at] + suffix + zh[at:]
+    return zh
+
+
 def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str, str]:
-    """环内 N+/O+ → 母体名缀 -{位次}-ium（P-62.4.1）。"""
+    """环内 N+/O+ → 母体名缀 -{位次}-ium/-{位次}-鎓（P-62.4.1）。"""
     parent = numbered.get("parent") or {}
     mol = parent.get("mol")
     chain = parent.get("chain") or []
@@ -879,11 +890,12 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
     idx = chain.index(charged[0])
     loc = labels[idx] if labels and len(labels) == len(chain) else str(idx + 1)
     if stem_en.endswith("ene"):  # 色烯型氧鎓保留名：chromene → chromenylium
-        base, ium = stem_en[:-1], f"{stem_en[:-3]}enylium"
+        base, ium, zh_suf = stem_en[:-1], f"{stem_en[:-3]}enylium", "鎓"
     elif stem_en.endswith("e"):
-        base, ium = stem_en[:-1], f"{stem_en[:-1]}-{loc}-ium"
+        base, ium, zh_suf = stem_en[:-1], f"{stem_en[:-1]}-{loc}-ium", f"-{loc}-鎓"
     else:
-        base, ium = stem_en, f"{stem_en}-{loc}-ium"
+        base, ium, zh_suf = stem_en, f"{stem_en}-{loc}-ium", f"-{loc}-鎓"
+    zh = _zh_ring_cation(zh, parent.get("stem_zh") or "", zh_suf)
     if stem_en in en:  # 完整母体名：整词干替换
         return en.replace(stem_en, ium, 1), zh
     token = base + "e" if base + "e" in en else base

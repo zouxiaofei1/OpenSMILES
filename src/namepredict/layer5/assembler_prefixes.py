@@ -47,6 +47,8 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return True
     if kind == "radical":  # 自由基母体：连接点隐含 locant 1，单碳链省略位次
         return n_carbons == 1
+    if kind == "cation":  # 单核母体阳离子：取代基全挂在同一个原子上，位次恒可省（P-73.1.1）
+        return True
     if n_carbons <= 1:  # 单碳母体位次省略；N-/C- 型共存时 C 侧须带位次
         kinds = {(s.get("kind") or "") for s in substituents}
         return not (kinds & N_PREFIX_KINDS and kinds - N_PREFIX_KINDS)
@@ -195,7 +197,8 @@ def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
                    flat: bool = False) -> str:
     """拼单个英文前缀：数量 + 词干（可省略位次时省略 locant）。"""
     mult = _mult_of("en", stem, subs, len(subs))
-    need = _stem_needs_paren(stem, subs, omit, flat) and not _sbridge_flat_stem(stem)
+    need = (_stem_needs_paren(stem, subs, omit, flat)
+            and not _is_bare(subs) and not _sbridge_flat_stem(stem))
     if mult and mult == MULT_EN.get(len(subs), "") and _MULT_WRAP_RE.search(stem):  # P-16.3.2：复合取代基的倍数前缀须加括号
         need = True
         mult = "bis" if stem[:1] in "aeiou" else "di"
@@ -248,7 +251,7 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
     """拼单个中文前缀：数量 + 词干（CF3 特例：简单氟代甲基不加括号）。"""
     mult = _mult_of("zh", zh_stem, subs, len(subs))
     en = subs[0].get("en") or ""
-    need = any(s.get("paren") for s in subs) or bool(en[:1].isdigit() and not flat)  # 停用：简单氟代甲基不加括号
+    need = (any(s.get("paren") for s in subs) or bool(en[:1].isdigit() and not flat)) and not _is_bare(subs)  # 停用：简单氟代甲基不加括号
     if not omit and _STEREO_LEAD_RE.match(en):  # 前导立体描述符 + 位次须整体围栏
         need = True
     if mult and mult == MULT_ZH.get(len(subs), "") and en_stem and _MULT_WRAP_RE.search(en_stem):  # 与英文侧同判：复合取代基用 双(...)
@@ -268,6 +271,16 @@ def _n_prefix(lang: str, n: int, stem: str, tokens: list[str], subs: list) -> st
     if n == 1:
         return f"{tokens[0]}-{stem}"
     return f"{','.join(tokens)}-{_mult_of(lang, stem, subs, n)}{stem}"
+
+
+def _is_bare(subs: list) -> bool:
+    """该组前缀是否免去二次围栏（单核母体阳离子的臂名前置于母体名，无位次可混，P-73.6）。"""
+    return any(s.get("bare") for s in subs)
+
+
+def cation_arm_bare(name: str) -> bool:
+    """阳离子母体的臂名是否免围栏：母体名无位次可混，仅前导立体描述符须整体括起（P-16.5.2）。"""
+    return not _STEREO_LEAD_RE.match(name or "")
 
 
 def _parts_for_stem(stem: str, subs: list, omit: bool, primes: dict[int, int] | None = None,
@@ -363,6 +376,9 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     if not substituents:
         return "", ""
     omit = _omit_sub_locants(n_carbons, substituents, locant_kind or kind, scaffold, has_ene)
+    bare = kind == "cation"  # 单核母体阳离子：臂名直接前置于阳离子名，无母体位次可混，不再二次围栏
+    if bare:
+        substituents = [{**s, "bare": cation_arm_bare(s.get("en") or "")} for s in substituents]
     flat = kind in OXO_CENTER_KINDS  # 中心母体：臂名围栏改由环基判据决定，去多余位次围栏
     if flat:
         substituents = [{**s, "paren": oxo_arm_fence(s.get("en") or "", s, mol)} for s in substituents]
@@ -370,7 +386,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
                       alpha_order_key)  # P-14.5：全部前缀按字母数字序引用，非仅烷基
     groups = {en: members for en, _, _, members in rows}
     stems = [en for en, _, _, _ in rows if en]
-    bracket = bool(omit) and len(groups) >= 2 and _groups_simple(groups)  # P-16.5.1.3.1：位次省略的单核母体，首基平铺、余基括起
+    bracket = bool(omit) and len(groups) >= 2 and (bare or _groups_simple(groups))  # P-16.5.1.3.1：位次省略的单核母体，首基平铺、余基括起
     sep = "" if bracket else "-"
     en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, _n_prime_map(groups, stems), sep, flat)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
     return sep.join(en_parts), sep.join(zh_parts)

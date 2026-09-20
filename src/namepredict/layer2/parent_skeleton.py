@@ -105,6 +105,13 @@ def _ring_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     return basic
 
 
+def _cation_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
+    """单核母体阳离子：只以阳离子原子本身作骨架候选（P-73.1.1）。"""
+    return [ParentSkeleton(SkeletonTopology.ACYCLIC, (a,),
+                           frozenset(o.id for o in occurrences if a in o.parent_anchors))
+            for a in _anchors(occurrences)]
+
+
 def _chain_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     """枚举去重后的开链骨架候选。"""
     paths = _open_chains(info["mol"], _anchors(occurrences), _demoted_leaf_carbons(info))
@@ -219,5 +226,8 @@ def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOcc
 
 
 def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> SkeletonSelection:
-    """枚举全部骨架候选。"""
+    """枚举全部骨架候选；主基团为单核阳离子时只向阳离子原子收敛，不进链/环枚举。"""
+    if occurrences and all(o.group_class is FunctionalGroupClass.CATION for o in occurrences):
+        # P-73.7(c)：多阳离子中心时取优先元素（N > P > … > O > S），比 P-44 拓扑规则更专
+        return SkeletonSelection(tuple(keep_senior_atom(info["mol"], tuple(_cation_candidates(info, occurrences)))))
     return SkeletonSelection(tuple(_chain_candidates(info, occurrences) + _ring_candidates(info, occurrences)))

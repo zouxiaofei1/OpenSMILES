@@ -6,7 +6,7 @@ from enum import Enum
 
 from namepredict.constants import (
     HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES, NITROGEN_STEM_BY_FREE_DOUBLE,
-    O, PHOSPHORUS_STEM_BY_OXO, S, SULFUR_STEM_BY_OXO,
+    O, PHOSPHORUS_STEM_BY_OXO, S, SULFUR_STEM_BY_OXO, cation_parent_names,
 )
 from namepredict.layer1.analyzer import _alkoxy_c_of, _double_bonded_o_idxs
 from namepredict.layer1.analyzer import _OXO_Z_ANCHORED as _OXO_CENTER_PARENT
@@ -400,6 +400,20 @@ def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
                  "stem_en": stem_en, "stem_zh": stem_zh}
 
 
+def _mononuclear_cation(info: dict, skeleton: ParentSkeleton,
+                        occurrences) -> tuple[ParentSkeleton, dict] | None:
+    """单核母体阳离子收敛为阳离子原子骨架（P-73.1.1.2），仅支持单锚点。"""
+    mol = info["mol"]
+    anchors = sorted({i for o in occurrences for i in o.parent_anchors})
+    if len(anchors) != 1:
+        return None
+    names = cation_parent_names(mol.GetAtomWithIdx(anchors[0]).GetAtomicNum())
+    if names is None:
+        return None
+    new = replace(skeleton, atom_ids=(anchors[0],))
+    return new, {"stem_en": names[0], "stem_zh": names[1], "single_atom_skeleton": True}
+
+
 def _radical_ylidene(info: dict, occurrences) -> bool:
     """碳锚点自由价是否为双键（*=C< ylidene，出 -ylidene）。"""
     mol = info.get("mol")
@@ -441,6 +455,11 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
             skeleton, extra = mono
         elif _radical_ylidene(info, occurrences):  # 碳锚点自由价双键（*=C<）：链引擎出 -ylidene
             extra = {"radical_ylidene": True}
+    if kind == "cation":
+        mono = _mononuclear_cation(info, skeleton, occurrences)
+        if mono is None:
+            return None
+        skeleton, extra = mono
     fields = _chain_unsat_fields(info, skeleton, {**_chain_fields(selection, occurrences, info.get("mol")), **extra})
     if kind == "ester":
         fields = _chain_ester_fields(info, occurrences, fields)

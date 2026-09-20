@@ -130,6 +130,41 @@ MONONUCLEAR_BRIDGE = {(en, v[1]): v[3] for en, v in MONONUCLEAR_HYDRIDES.items()
 MONONUCLEAR_YL = {en: (v[1], (v[3] or v[2])[0], v[4]) for en, v in MONONUCLEAR_HYDRIDES.items()}  # free_en → (free_zh, 去氢 yl_en, 组装名中文尾)
 PHOSPHORYL_STEMS = tuple(en for en, v in MONONUCLEAR_HYDRIDES.items() if v[0] == "P")  # 替代碳词干的 P 酰基词干（避免 P 被当碳中心）
 
+# ── L2 单核母体阳离子（P-73.1.1）────────────
+# 表 2.1 去词尾 'ne' 的系统名（P-73.1.1.2：-ane 换成 -ium），本次只登记元素支持集内的行
+MONONUCLEAR_CATION_SYSTEMATIC = {
+    B:  "boranium",      # borane
+    C:  "methanium",     # methane（保留名，泛 'ane' 命名法的碳基准）
+    N:  "azanium",       # azane
+    O:  "oxidanium",     # oxidane
+    F:  "fluoranium",    # fluorane
+    P:  "phosphanium",   # phosphane
+    S:  "sulfanium",     # sulfane
+    Cl: "chloranium",    # chlorane
+    Br: "bromanium",     # bromane
+    I:  "iodanium",      # iodane
+}
+# 表 7.3 第 15/16/17 族单核母体阳离子的保留名（仅一般命名；中文取此表，P 按测试集作「鏻」）
+CATION_RETAINED_NAMES = {
+    N:  ("ammonium",    "铵"),
+    P:  ("phosphonium", "鏻"),
+    O:  ("oxonium",     "氧鎓"),
+    S:  ("sulfonium",   "硫鎓"),
+    F:  ("fluoronium",  "氟鎓"),
+    Cl: ("chloronium",  "氯鎓"),
+    Br: ("bromonium",   "溴鎓"),
+    I:  ("iodonium",    "碘鎓"),
+}
+
+
+def cation_parent_names(z: int) -> tuple[str, str] | None:
+    """单核母体阳离子的 (en, zh)：英文取表 2.1 系统名，中文取表 7.3 保留名；缺一即无。"""
+    en = MONONUCLEAR_CATION_SYSTEMATIC.get(z)
+    retained = CATION_RETAINED_NAMES.get(z)
+    if en is None or retained is None:
+        return None
+    return en, retained[1]
+
 # ── L3 取代基词表 ──────────────────────
 SIMPLE_ALKOXY_NO_PAREN = frozenset({  # 简单保留烷氧基作前缀不加括号
     "methoxy", "ethoxy", "propoxy", "butoxy", "phenoxy", "isopropoxy",
