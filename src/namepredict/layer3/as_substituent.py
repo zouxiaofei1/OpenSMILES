@@ -21,7 +21,7 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
     if parent.get("parent_kind") != "radical":
         return hit
     chain = parent.get("parent_chain") or []
-    if len(chain) < 2 or any(i >= len(block_root_order) for i in chain):  # [0]-collapsed 或含 * 的链：本层未产出 R/S，跳过。
+    if not chain or any(i >= len(block_root_order) for i in chain):  # 空链或含 * 的链：无法映射回根分子，跳过。
         return hit
     real = [block_root_order[i] for i in chain]
     rs_anch = _cip_on_chain(anchored, chain)      # * 锚定算出的（可能错误）R/S
@@ -34,7 +34,8 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
     if rs_real == rs_anch:
         return hit
     labels = parent.get("parent_labels") or []
-    rs_lab = [(labels[pos - 1] if 0 < pos <= len(labels) else pos, code)  # 位次改用整体编号标签（稠环桥头 4aS/8aS），与 _chain_locant 同约定
+    single = len(chain) == 1  # 单原子链＝该原子即唯一位次，位次号省略（与 stereo._rs_parts 同约定）
+    rs_lab = [(None if single else (labels[pos - 1] if 0 < pos <= len(labels) else pos), code)  # 位次改用整体编号标签（稠环桥头 4aS/8aS），与 _chain_locant 同约定
               for pos, code in rs_real]  # 链序号 pos（1 起）→ 整体标签；无标签表或越界时退回 pos
 
     out = copy.copy(hit)

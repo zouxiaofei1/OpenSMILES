@@ -6,7 +6,7 @@ parent["bridged_node"]，返回其位次升序原子表供下游当 chain 用。
 from __future__ import annotations
 
 from namepredict.layer4.numbering_engine import _locant_set, _principal_atoms, narrow
-from namepredict.layer4.numbering_engine import narrow_by_senior
+from namepredict.layer4.numbering_engine import _unsat_bonds, narrow_by_senior
 from namepredict.tools.re import alpha_order_key
 
 CARBON = 6
@@ -68,7 +68,23 @@ def _narrow_ladder(nodes: list, parent: dict, substituents: list, mol, chain: li
         nodes = narrow(nodes, lambda nd: key(nd, subs), skip_none=True)
     if len(nodes) > 1 and substituents:  # P-14.4(g) 字母序最前的取代基位次最低
         nodes = narrow(nodes, lambda nd: _alpha_locants(nd, chain, substituents), skip_none=True)
+    bonds, _ = _unsat_bonds(parent)
+    if len(nodes) > 1 and bonds:  # P-31.1.4.2 残余平局：复合位次数目最少 → 忽略括号比较 → 全集合最低
+        nodes = narrow(nodes, lambda nd: _unsat_key(nd, bonds), skip_none=True)
     return nodes
+
+
+def _unsat_key(node, bonds) -> tuple | None:
+    """多重键的 P-31.1.4.2 键：复合位次数目最少 → 忽略括号内比较 → 全集合最低。"""
+    lows, alls, n_comp = [], [], 0
+    for a, b in bonds:
+        if a not in node.numbering or b not in node.numbering:
+            return None
+        lo, hi = sorted((node.numbering[a], node.numbering[b]))
+        lows.append(lo)
+        alls += [lo, hi]
+        n_comp += hi - lo != 1
+    return (n_comp, tuple(sorted(lows)), tuple(sorted(alls)))
 
 
 def _alpha_locants(node, chain: list[int], substituents: list) -> tuple:

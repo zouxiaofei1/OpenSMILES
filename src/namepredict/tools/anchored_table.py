@@ -63,6 +63,7 @@ _REGISTRY: dict[str, RetainedSubstituent] = {
     "selanyl": RetainedSubstituent("selanyl", "氢硒基", anchored=("*[SeH]",), paren=False),
     "methylsulfinyl": RetainedSubstituent("methylsulfinyl", "甲基亚磺酰", anchored=("*S(C)=O",), paren=False),
     "methylsulfonyl": RetainedSubstituent("methylsulfonyl", "甲磺酰基", anchored=("*S(C)(=O)=O",), paren=False),
+    "methanesulfonamido": RetainedSubstituent("methanesulfonamido", "甲磺酰胺基", anchored=("*NS(C)(=O)=O",), paren=True),  # P-66.1.1.4.3：甲磺酰基的 N-酰基残基作前缀
     "sulfo": RetainedSubstituent("sulfo", "磺基", anchored=("*S(=O)(=O)O",), paren=False),
     "sulfonato": RetainedSubstituent("sulfonato", "磺酸根", anchored=("*S(=O)(=O)[O-]",), paren=False),
     "sulfinato": RetainedSubstituent("sulfinato", "亚磺酸根", anchored=("*S(=O)[O-]",), paren=False),

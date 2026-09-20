@@ -167,9 +167,9 @@ def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
         tail_en, tail_zh = _fg_yl_tail(spec, fg)  # 段式: FG/自由价位次与后缀尾段（C-1 省略下沉在 _fg_yl_tail）
     else:
         tail_en = tail_zh = ""
+    if spec.stem and s.endswith("ane"):  # 注入的完整母体名去 ane 后直接承接不饱和段（P-14.3.4.2）：azacyclododecane → azacyclododec-9-en / octadecane → octadeca-9,12-diene
+        s = s[:-3]
     a_en = "a" if any(g[3] >= 2 for g in segs) else ""
-    if a_en and spec.stem and s.endswith("ane"):  # 注入的完整母体名（…ane）多烯须取 …a 形态（P-31.1.4）：octadecane → octadeca
-        s, a_en = s[:-2], ""
     parts_en: list[str] = []
     parts_zh: list[str] = []
     for i, (b, loc, locs, cnt, multi) in enumerate(segs):
@@ -268,9 +268,12 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
         omit_rule=_NO_OMIT,
         plain_maps=None,
     )
-    if spec.kind == "acid":  # 多酸烯基基座: 保留 e，中文 烯+数量酸
-        fields["ene_base"] = (f"ene{en_m}oic acid", f"烯{zh_m}酸")
-        fields["yne_suf"] = None
+    if spec.kind == "acid":
+        if spec.fg is not None and not spec.cyclic:  # 环外羧酸：后缀自带位次，不饱和段独立保留 e（P-65.1.1）：prop-1-ene-1,2,3-tricarboxylic acid
+            fields.update(ene_base=None, yne_suf=None, unsat_polyol=True)
+        else:  # 多酸烯基基座: 保留 e，中文 烯+数量酸
+            fields["ene_base"] = (f"ene{en_m}oic acid", f"烯{zh_m}酸")
+            fields["yne_suf"] = None
     if spec.kind == "ester":  # 多酯烯基/炔基基座: enedioate/ynedioate（硫代酯按 thioate 词尾派生）
         fields["ene_base"] = (f"ene{en_m}{spec.en_suf}", f"烯{zh_m}{spec.zh_suf}")
         fields["yne_suf"] = (f"yne{en_m}{spec.en_suf}", f"炔{zh_m}{spec.zh_suf}")
@@ -444,7 +447,8 @@ def _ac_hal_chain(hal_z: int) -> _Chain | None:
                   yne_suf=(f"ynoyl {he}", f"炔酰{hz}"),
                   ez_ene=_ez_prefix, ez_ene_multi=ez_for_parent,
                   variant={
-                      None: {1: dict(plain_maps=None, plain_fn=lambda n, t=retained: t.get(n))},
+                      None: {1: dict(plain_maps=None, plain_fn=lambda n, t=retained: t.get(n)),
+                             2: dict(plain_maps=None, plain_fn=_const_plain((f"oxalyl di{he}", f"草酰二{hz}")))},  # P-65.1.1 保留名：乙二酰二卤 = oxalyl
                       "benzene": {1: dict(plain_maps=None, plain_fn=_const_plain((f"benzoyl {he}", f"苯甲酰{hz}")))},
                   })
 
@@ -461,6 +465,9 @@ _OXO_TAIL = {  # P-66.1.1/P-67.1.3：oxo_kind × 中心酸式氢数 → 双语�
     ("sulfate", 2): ("sulfuric acid", "硫酸"),
     ("sulfate", 1): ("hydrogen sulfate", "硫酸氢"),
     ("sulfate", 0): ("sulfate", "硫酸"),
+    ("boronic", 2): ("boronic acid", "硼酸"),      # P-68.2.1：R-B(OH)2 以功能母体词尾命名，R 退为取代基
+    ("boronic", 1): ("hydrogen boronate", "硼酸氢"),
+    ("boronic", 0): ("boronate", "硼酸"),
 }
 
 
@@ -543,6 +550,8 @@ _KIND_TABLE = {
     "phosphonate": _Chain(kind="phosphonate", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent, en_suf="phosphonic acid", fg="oxoacid", zh_suf="膦酸", coda="",  # P-67.1.2：膦酸功能母体，碳臂作前缀
                           plain_hook=_oxoacid_tail),
     "sulfate": _Chain(kind="sulfate", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent, en_suf="sulfate", fg="oxoacid", zh_suf="硫酸", coda="",  # 硫酸酯功能母体
+                      plain_hook=_oxoacid_tail),
+    "boronic": _Chain(kind="boronic", ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent, en_suf="boronic acid", fg="oxoacid", zh_suf="硼酸", coda="",  # P-68.2.1：硼酸功能母体，碳基作前缀
                       plain_hook=_oxoacid_tail),
     "acyl": _Chain(kind="acyl", en_suf="oyl", zh_suf="酰基",  # 酰基残基（P-65.1.7.2）：酸碳恒 locant 1，C1/C2 走保留名
                    ene_base=("enoyl", "烯酰基"),

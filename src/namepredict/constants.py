@@ -199,7 +199,7 @@ CLAIM_KIND = {"amine_n": "n_block",
 # O-侧臂 kind：连在 parent 的 O 上的侧链作 O 侧烷基，由 L5 酯/含氧酸整名消费
 ESTER_O_SIDE_KINDS = frozenset({"ester", "phosphate", "phosphonate", "sulfate", "sulfonate"})
 # 中心原子自任母体的含氧酸 kind（L2/L5 共用）；碳锚定的磺酸族不在内
-OXO_CENTER_KINDS = frozenset({"phosphate", "phosphonate", "sulfate"})
+OXO_CENTER_KINDS = frozenset({"phosphate", "phosphonate", "sulfate", "boronic"})
 
 # ── L4 位次 / 编号 ──────────────────────
 HYDRO_MULT_N = frozenset({2, 4, 6, 8, 10, 12, 14, 16, 18, 20})  # 加氢前缀覆盖的氢原子数（P-31.2.2 以偶数倍增前缀表示双键的饱和，位次数为加氢原子数）；数量词本身取自本层（唯一来源），此处只表达 L4 的适用域，域外放弃而非给错名。
@@ -262,6 +262,11 @@ RETAINED_FUSION_ALIASES: dict[str, tuple[str, str]] = {  # 稠合组装名 → �
     "benzo[b]quinoxaline": ("phenazine",     "菲嗪"),
     "benzo[a]indene":      ("fluorene",      "芴"),
     "benzo[d]1,2-oxazole": ("1,2-benzoxazole", "1,2-苯并噁唑"),
+    "benzo[d]1,2-thiazole": ("1,2-benzothiazole", "1,2-苯并噻唑"),  # 硫属类似物，位次形态与 oxazole 行同构
+    "pyrido[3,2-b]pyridine": ("1,5-naphthyridine", "1,5-萘啶"),   # 双氮稠合：两 N 分处两环且位次一致
+    "pyrido[2,1-a]isoquinoline": ("benzo[a]quinolizine", "苯并[a]喹嗪"),
     "benzo[b]anthracene":  ("tetracene",     "并四苯"),
+    "benzo[c]thiophene":   ("2-benzothiophene", "2-苯并噻吩"),  # 异苯并噻吩：S 占 2 位（≠ benzo[b]thiophene 的 1- 异构）
+    "benzo[d]azepine":     ("3-benzazepine", "3-苯并氮杂卓"),    # N 占 3 位；稠合位次与亚甲基分布均与稠合名一一对应
 }
 HS_NUMBER = "甲乙丙丁戊己庚辛壬癸"

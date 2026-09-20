@@ -114,7 +114,8 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "indole":         {"smiles": "c1ccc2[nH]ccc2c1", "stem_en": "1H-indole",      "stem_zh": "吲哚",     "naming_class": "fused56", "fused": True, "fused_stem": ("indole", "吲哚"), "locant_prefix": "1H-", "prefix_nh_conditional": True, "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},  # fused 5+6（9 原子）标准编号，杂原子走远离桥头方向
     "indazole":       {"smiles": "c1ccc2cn[nH]c2c1", "stem_en": "indazole",       "stem_zh": "吲唑",     "naming_class": "fused56", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True, "standard": (FUSED56_LABELS, (6, 5, 4, 3, 2, 1, 0, 8, 7))},
     "benzimidazole":  {"smiles": "c1ccc2[nH]cnc2c1", "stem_en": "benzimidazole",  "stem_zh": "苯并咪唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True},
-    "benzofuran":     {"smiles": "c1ccc2occc2c1",    "stem_en": "benzofuran",     "stem_zh": "苯并呋喃", "naming_class": "fused56", "fused": True, "locant_prefix": "1-", "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},
+    "benzofuran":     {"smiles": "c1ccc2occc2c1",    "stem_en": "benzofuran",     "stem_zh": "苯并呋喃", "naming_class": "fused56", "fused": True, "locant_prefix": "1-", "fused_prefix": ("[1]benzofuro", "[1]苯并呋喃并"), "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},  # 附加组分前缀：benzofuran → [1]benzofuro（保留前缀，非「去尾 e 加 o」通用式）
+    "benzofuran2":    {"smiles": "c1ccc2cocc2c1",    "stem_en": "benzofuran",     "stem_zh": "苯并呋喃", "naming_class": "fused56", "fused": True, "locant_prefix": "2-", "fused_prefix": ("[2]benzofuro", "[2]苯并呋喃并"), "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},  # 异苯并呋喃（PIN 2-benzofuran，P-25.1 表 2.8）：O 居五元环中央不与桥头相邻，与 1- 异构区分
     "benzothiophene": {"smiles": "c1ccc2sccc2c1",    "stem_en": "benzothiophene", "stem_zh": "苯并噻吩", "naming_class": "fused56", "fused": True, "locant_prefix": "1-", "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},
     "benzothiazole":  {"smiles": "c1ccc2scnc2c1",    "stem_en": "benzothiazole",  "stem_zh": "苯并噻唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1,3-", "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},
     "benzoxazole":    {"smiles": "c1ccc2ocnc2c1",    "stem_en": "benzoxazole",    "stem_zh": "苯并噁唑", "naming_class": "fused56", "fused": True, "locant_prefix": "1,3-", "standard": (FUSED56_LABELS, (4, 5, 6, 7, 8, 0, 1, 2, 3))},
@@ -144,12 +145,30 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "thiadiazole124": {"smiles": "s1ncnc1", "stem_en": "1,2,4-thiadiazole", "stem_zh": "1,2,4-噻二唑", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2,4]thiadiazolo", "[1,2,4]噻二唑并"), "locant_prefix": "1,2,4-", "standard": (("1", "2", "3", "4", "5"), (0, 1, 2, 3, 4))},
     "triazine124": {"smiles": "n1ncncc1", "stem_en": "1,2,4-triazine", "stem_zh": "1,2,4-三嗪", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2,4]triazino", "[1,2,4]三嗪并"), "locant_prefix": "1,2,4-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
     "tetrazine1245": {"smiles": "n1ncnnc1", "stem_en": "1,2,4,5-tetrazine", "stem_zh": "1,2,4,5-四嗪", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,2,4,5-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
-    "thiazole12": {"smiles": "c1cncs1", "stem_en": "1,2-thiazole", "stem_zh": "1,2-噻唑", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2]thiazolo", "[1,2]噻唑并"), "locant_prefix": "1,2-", "standard": (("1", "2", "3", "4", "5"), (4, 3, 2, 1, 0))},
+    "thiazole12": {"smiles": "c1cnsc1", "stem_en": "1,2-thiazole", "stem_zh": "1,2-噻唑", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2]thiazolo", "[1,2]噻唑并"), "locant_prefix": "1,2-", "standard": (("1", "2", "3", "4", "5"), (3, 2, 1, 0, 4))},  # 异噻唑：S1/N2 相邻（原 c1cncs1 与 thiazole 同构，1,2- 名实不符）
     "oxepane": {"smiles": "O1CCCCCC1", "stem_en": "oxepane", "stem_zh": "氧杂环庚烷", "naming_class": "monohetero", "fused": True},  # 七元含氧/含氮饱和环（P-22.2.2）
     "azepane": {"smiles": "N1CCCCCC1", "stem_en": "azepane", "stem_zh": "氮杂环庚烷", "naming_class": "monohetero", "fused": True, "fused_stem": ("azepine", "氮杂卓"), "locant_prefix": "1H-", "prefix_nh_conditional": True},  # 作稠合母体须取 mancude 词干 azepine（P-25.3.1.2.2）
     "oxazepane": {"smiles": "O1CCNCCC1", "stem_en": "1,4-oxazepane", "stem_zh": "1,4-氧杂氮杂环庚烷", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,4-"},
     "thiazepane": {"smiles": "S1CCNCCC1", "stem_en": "1,4-thiazepane", "stem_zh": "1,4-硫杂氮杂环庚烷", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,4-"},
     "thiazine13": {"smiles": "S1C=NC=CC1", "stem_en": "1,3-thiazine", "stem_zh": "1,3-噻嗪", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,3]thiazino", "[1,3]噻嗪并"), "locant_prefix": "1,3-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
+    "azulene":      {"smiles": "c1ccc2cccc2cc1", "stem_en": "azulene", "stem_zh": "薁", "naming_class": "naph_family", "fused": True, "fused_prefix": ("azuleno", "薁并")},  # 表 2.7 保留名，5+7 稠合碳环（桥头 3a/8a）
+    "pentalene":    {"smiles": "C1=CC=C2C=CC=C12", "stem_en": "pentalene", "stem_zh": "戊搭烯", "naming_class": "pentalene", "fused": True, "fused_prefix": ("pentaleno", "戊搭烯并"), "standard": (("1", "2", "3", "3a", "4", "5", "6", "6a"), tuple(range(8)))},  # 表 2.7 保留名 5+5 稠合双环（P-25.1.2.3 多轮烯），桥头 3a/6a
+    "phenalene":    {"smiles": "C1ccc2cccc3cccc1c23", "stem_en": "phenalene", "stem_zh": "菲那烯", "naming_class": "phenalene", "standard": (("1", "2", "3", "3a", "4", "5", "6", "6a", "7", "8", "9", "9a", "9b"), tuple(range(13)))},  # 表 2.7 保留名 1H-phenalene（P-25.3.3.3.1 新编号）：内碳 9b，模板原子序即外周 1,2,3,3a…9a
+    "phthalazine":  {"smiles": "c1ccc2cnncc2c1", "stem_en": "phthalazine", "stem_zh": "酞嗪", "naming_class": "naph_family", "fused": True, "fused_prefix": ("phthalazino", "酞嗪并"), "standard": (NAPH_LABELS, (4, 5, 6, 7, 8, 9, 0, 1, 2, 3))},  # 2,3-二氮杂萘：N 得 2/3 位，C1 与 C4 分居两环
+    "naphthyridine18": {"smiles": "c1cc2cccnc2nc1", "stem_en": "1,8-naphthyridine", "stem_zh": "1,8-萘啶", "naming_class": "naph_family", "fused": True, "fused_prefix": ("[1,8]naphthyridino", "[1,8]萘啶并")},  # N1/N8 分居两环
+    "benzodioxine14": {"smiles": "O1C=COc2ccccc12", "stem_en": "1,4-benzodioxine", "stem_zh": "1,4-苯并二噁英", "naming_class": "naph_family", "fused": True, "locant_prefix": "1,4-"},  # 2,3-二氢体即常见 1,4-苯并二噁烷母体
+    "benzodioxin12": {"smiles": "O1OC=CC2=CC=CC=C12", "stem_en": "1,2-benzodioxin", "stem_zh": "1,2-苯并二噁英", "naming_class": "naph_family", "fused": True, "locant_prefix": "1,2-"},  # 相邻双氧（O1/O2）
+    "benzothiophene2": {"smiles": "c1ccc2cscc2c1", "stem_en": "2-benzothiophene", "stem_zh": "2-苯并噻吩", "naming_class": "fused56", "fused": True, "fused_prefix": ("2-benzothieno", "2-苯并噻吩并")},  # 异苯并噻吩（P-25.1 表 2.8）；与 c1ccc2sccc2c1 的 1- 异构区分
+    "pyrrolopyridazine12b": {"smiles": "c1ccn2ncccc12", "stem_en": "pyrrolo[1,2-b]pyridazine", "stem_zh": "吡咯并[1,2-b]哒嗪", "naming_class": "fused56", "fused": True, "fused_prefix": ("pyrrolo[1,2-b]pyridazino", "吡咯并[1,2-b]哒嗪并")},  # 桥头 N（5+6，9 原子）
+    # 7H-pyrrolo[2,3-d]pyrimidine 未登记：它会与 pyrimido[5,4-b]indole 争夺母体组分并致金标退化（tiers-25570），实测净收益为负
+    "pyrazolopyrimidine54d": {"smiles": "c1n[nH]c2ncncc12", "stem_en": "pyrazolo[5,4-d]pyrimidine", "stem_zh": "吡唑并[5,4-d]嘧啶", "naming_class": "purine", "fused": True, "fused_prefix": ("pyrazolo[5,4-d]pyrimidino", "吡唑并[5,4-d]嘧啶并")},
+    "adamantane":   {"smiles": "C1C2CC3CC1CC(C2)C3", "stem_en": "adamantane", "stem_zh": "金刚烷", "naming_class": "adamantane", "fused": False},  # 表 2.7 保留名：三环桥烃，非稠合零件故 fused=False
+    "benzodiazepine14": {"smiles": "N1C=CN=Cc2ccccc12", "stem_en": "1,4-benzodiazepine", "stem_zh": "1,4-苯并二氮杂卓", "naming_class": "naph_family", "fused": True, "locant_prefix": "1,4-", "fused_prefix": ("[1,4]benzodiazepino", "[1,4]苯并二氮杂卓并")},  # 两个 N 相隔 C2/C3（P-25.1 表 2.8）
+    "benzoxazine31": {"smiles": "N1COCc2ccccc12", "stem_en": "3,1-benzoxazine", "stem_zh": "3,1-苯并噁嗪", "naming_class": "naph_family", "fused": True, "locant_prefix": "3,1-", "fused_prefix": ("[3,1]benzoxazino", "[3,1]苯并噁嗪并")},  # 母体式：N1/C2/O3/C4，羰基由 FG 后缀补（2,4-二酮）
+    "phenoxazine":  {"smiles": "c1ccc2Nc3ccccc3Oc2c1", "stem_en": "phenoxazine", "stem_zh": "吩噁嗪", "naming_class": "phenothiazine", "fused": True, "locant_prefix": "10H-", "prefix_nh_conditional": True, "fused_prefix": ("phenoxazino", "吩噁嗪并")},  # 吩噻嗪的 O 类似物（表 2.8 第 4 位）；N10 得指示氢
+    "benzazepine1": {"smiles": "C1=CC=Cc2ccccc2N1", "stem_en": "1-benzazepine", "stem_zh": "1-苯并氮杂卓", "naming_class": "naph_family", "fused": True, "locant_prefix": "1H-", "prefix_nh_conditional": True, "fused_stem": ("[1]benzazepine", "[1]苯并氮杂卓")},  # 稠合时按 P-25.3.5 引用位次 [1]
+    "benzothiazepine15": {"smiles": "S1C=CCNc2ccccc12", "stem_en": "1,5-benzothiazepine", "stem_zh": "1,5-苯并硫氮杂卓", "naming_class": "naph_family", "fused": True, "locant_prefix": "1,5-", "fused_prefix": ("[1,5]benzothiazepino", "[1,5]苯并硫氮杂卓并")},
+    "benzothiazine13": {"smiles": "S1C=NCc2ccccc12", "stem_en": "1,3-benzothiazine", "stem_zh": "1,3-苯并噻嗪", "naming_class": "naph_family", "fused": True, "locant_prefix": "1,3-", "fused_prefix": ("[1,3]benzothiazino", "[1,3]苯并噻嗪并")},
 
 }
 
@@ -353,7 +372,8 @@ _FUSION_CARBOCYCLES: dict[str, dict] = {  # 单环烃附加组分（P-25.3.2.2.1
 def _cyclo_component_query(smiles: str) -> Mol:
     """由环状 SMILES 原子数派生纯碳环骨架查询（SMARTS）。"""
     n = MolFromSmiles(smiles).GetNumAtoms()
-    return MolFromSmarts("[#6]1" + "[#6]" * (n - 1) + "1")
+    # 键级用 ~ 通配：附加组分只论环大小与元素，不饱和碳环（环戊烯/环己烯等）同样可作稠合零件（P-25.3.2.2.1）
+    return MolFromSmarts("[#6]1" + "~[#6]" * (n - 1) + "~1")
 
 
 _Q_CYCLO: dict[str, Mol] = {sid: _cyclo_component_query(e["smiles"]) for sid, e in _FUSION_CARBOCYCLES.items()}

@@ -42,7 +42,7 @@ FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
 # 排在类 9 酯与类 11 酰胺之前；中性磷酸/硫酸酯仍属类 9（按相应酸排羧酸酯之后）。
 OXO_ACID_P41 = 8  # 类 7 内排在羧酸（acid=7）之后的等级
 OXO_ACID_KINDS = frozenset({"sulfonic"})  # 碳锚定且自带酸式氢的 oxo_kind；phosphonate 另按 n_oh 判
-OXO_ACID_KIND_BY_H = {"phosphonate": 1}  # 碳锚定 P 酸：n_oh ≥ 该值时按酸式（膦酸/膦酸氢酯）
+OXO_ACID_KIND_BY_H = {"phosphonate": 1, "boronic": 1}  # 碳锚定 P/B 酸：n_oh ≥ 该值时按酸式（膦酸/膦酸氢酯/硼酸）
 
 
 def oxoacid_is_acid(payload: dict) -> bool:

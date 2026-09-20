@@ -90,7 +90,8 @@ def _has_dbl_o_edge(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> b
             if n.GetAtomicNum() != 1 and n.GetIdx() in owned:
                 bond = mol.GetBondBetweenAtoms(a, n.GetIdx())
                 if bond is not None and bond.GetBondType() == BondType.DOUBLE and  n.GetAtomicNum() != 6:
-                    return True
+                    if not (n.GetAtomicNum() == 16 and n.IsInRing()):  # 环内 S 的 =O 无主 FG 承接（非 acyclic sulfurane 路径），须按 oxo 前缀 claim
+                        return True
     return False
 
 

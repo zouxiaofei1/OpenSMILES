@@ -15,6 +15,13 @@ def locant_str_sort(locs) -> list:
     return sorted(locs, key=locant_key)
 
 
+def _as_bond_pairs(value) -> tuple:
+    """把键取值统一成键对序列：单个键对或键对序列均可。"""
+    if not value or isinstance(value, (int, str)):
+        return ()
+    return tuple(value) if isinstance(value[0], (tuple, list)) else (tuple(value),)
+
+
 def _typed_group_atoms(parent: dict, group: str) -> list[int]:
     """返回 parent 中指定基团类型的附着原子。"""
     facts = parent.get("principal_expression_facts")
@@ -100,24 +107,30 @@ _UNSAT_BOND_KEY = {"ene": "double", "yne": "triple"}  # 不饱和键类别 → �
 def _unsat_bonds(oriented: dict, b: str) -> list | None:
     """取某类不饱和键的边列表，单键标量与多键列表统一成列表。"""
     key = _UNSAT_BOND_KEY[b]
-    scalar = oriented.get(f"{key}_bond")
-    return [scalar] if scalar else oriented.get(f"{key}_bonds") or None
+    pairs = _as_bond_pairs(oriented.get(f"{key}_bond")) or _as_bond_pairs(oriented.get(f"{key}_bonds"))
+    return list(pairs) or None
 
 
-def _bond_min_locs(chain: list[int], bonds) -> tuple[int, ...] | None:
-    """返回全部键较小端点位次的排序元组；有键无位次则 None。"""
+def _bond_locant(chain: list[int], bond) -> int | str:
+    """单键位次：两端编号相邻取较小者，否则写复合位次 x(y)（P-31.1.4.2(1)）。"""
+    lo, hi = sorted((chain.index(bond[0]) + 1, chain.index(bond[1]) + 1))
+    return lo if hi - lo == 1 else f"{lo}({hi})"
+
+
+def _bond_min_locs(chain: list[int], bonds) -> tuple | None:
+    """返回全部键位次的排序元组（跨位次键为复合位次）；有键无位次则 None。"""
     if not bonds:
         return None
     locs = []
     for b in bonds:
         if not b or b[0] not in chain or b[1] not in chain:
             return None
-        locs.append(min(chain.index(b[0]), chain.index(b[1])) + 1)
-    return tuple(sorted(locs))
+        locs.append(_bond_locant(chain, b))
+    return tuple(sorted(locs, key=locant_key))
 
 
-def _bond_locants(oriented: dict, b: str) -> list[int] | None:
-    """返回某类不饱和键较小端点位次的排序列表；缺失返回 None。"""
+def _bond_locants(oriented: dict, b: str) -> list | None:
+    """返回某类不饱和键位次的排序列表；缺失返回 None。"""
     bonds = _unsat_bonds(oriented, b)
     if not bonds:
         return None
@@ -125,13 +138,13 @@ def _bond_locants(oriented: dict, b: str) -> list[int] | None:
     return list(locs) if locs else None
 
 
-def ene_locants(oriented: dict) -> list[int] | None:
-    """返回全部双键端点较小位次的排序列表（单烯亦为单元素列表）。"""
+def ene_locants(oriented: dict) -> list | None:
+    """返回全部双键位次的排序列表（单烯亦为单元素列表；跨位次键写作 x(y)）。"""
     return _bond_locants(oriented, "ene")
 
 
-def yne_locants(oriented: dict) -> list[int] | None:
-    """返回全部三键端点较小位次的排序列表（单炔亦为单元素列表）。"""
+def yne_locants(oriented: dict) -> list | None:
+    """返回全部三键位次的排序列表（单炔亦为单元素列表；跨位次键写作 x(y)）。"""
     return _bond_locants(oriented, "yne")
 
 def _unsat_locants(oriented: dict, n: int) -> dict:

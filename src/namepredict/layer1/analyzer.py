@@ -55,7 +55,7 @@ def _arm_component(mol: Mol, start: int, core: set[int]) -> set[int]:
     return comp
 
 
-_OXO_Z_ANCHORED = frozenset({"phosphate", "phosphonate", "sulfate"})  # 中心原子自任母体的 oxo_kind（碳骨架退为取代基）
+_OXO_Z_ANCHORED = frozenset({"phosphate", "phosphonate", "sulfate", "boronic"})  # 中心原子自任母体的 oxo_kind（碳骨架退为取代基）
 _OXO_KIND_P = {(1, False): "phosphate", (1, True): "phosphonate"}  # P：(双键氧数, 有无直连碳臂) → kind
 _OXO_KIND_S_ARM = {"halo": "sulfonyl_chloride", "n": "sulfonamide",   # S 带碳臂时：另一臂角色 → kind
                    "acid": "sulfonic", "o_arm": "sulfonate"}
@@ -89,11 +89,13 @@ def _oxo_roles(mol: Mol, z_idx: int) -> dict:
 
 
 def _oxo_kind(mol: Mol, z_idx: int) -> str | None:
-    """按中心元素、双键氧数与臂角色归一 oxo_kind（P/S 同一张表驱动）。"""
+    """按中心元素、双键氧数与臂角色归一 oxo_kind（B/P/S 同一张表驱动）。"""
     z = mol.GetAtomWithIdx(z_idx).GetAtomicNum()
-    if z not in (15, 16):
+    if z not in (5, 15, 16):
         return None
     r = _oxo_roles(mol, z_idx)
+    if z == 5:  # 硼酸 B(OH)2：恰一个碳臂 + 彻底酸式的两个氧（P-68.2.1）；硼酸酯（O-臂）不在此列
+        return "boronic" if r["c"] == 1 and r["oh"] + r["om"] == 2 else None
     if z == 15:
         return _OXO_KIND_P.get((r["oxo"], r["c"] > 0))
     if r["oxo"] != 2:
@@ -204,10 +206,23 @@ def oxoacid_entries(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> l
             if not (int(e["n_om"]) < top_om and _oxo_bridge_arms(mol, e["oxo_z"]))]
 
 
+def boronic_entries(mol: Mol) -> list[dict]:
+    """硼酸中心条目：SMARTS 表未登记 B，按元素直接扫描（B 无局部双键氧可匹配）。"""
+    out: list[dict] = []
+    for a in mol.GetAtoms():
+        if a.GetAtomicNum() != 5:
+            continue
+        core = (a.GetIdx(),) + tuple(sorted(n.GetIdx() for n in a.GetNeighbors() if n.GetAtomicNum() == O))
+        e = _oxoacid_entry(mol, core)
+        if e is not None:
+            out.append(e)
+    return out
+
+
 def oxoacid_lists(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> dict[str, list[dict]]:
     """含氧酸条目按 P-41 类别键归位（同一检测器，类别由 oxo_kind 表决定）。"""
     out: dict[str, list[dict]] = {}
-    for e in oxoacid_entries(mol, matches):
+    for e in oxoacid_entries(mol, matches) + boronic_entries(mol):
         out.setdefault(_OXO_CLASS_BY_KIND.get(e["oxo_kind"], "oxoacid"), []).append(e)
     return out
 

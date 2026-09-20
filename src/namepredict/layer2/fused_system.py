@@ -9,6 +9,7 @@ from namepredict.layer2.ring_scaffold import (
     _Q,
     component_stem,
     match_fusion_component,
+    match_retained,
     omits_fusion_numbers,
     retained_fusion_prefix,
 )
@@ -208,6 +209,11 @@ def _decompose(info, rings, fusion_edges, ring_indices, fusion_shared=()) -> Fus
 def decompose_fused_system(info, system) -> FusedNode | None:
     """公共入口: 环系拆解为 FusedNode 树，无候选返回 None。"""
     rings = list(sssr_rings(info["mol"]))
+    atom_ids = tuple(system.get("atom_ids") or ())
+    if atom_ids:  # 整环系已是一个不可作稠合组分的保留母体（如金刚烷这类笼状桥烃）：稠合拆解无意义且会误判加氢
+        sid = match_retained(info, atom_ids)
+        if sid is not None and component_stem(sid) is None:
+            return None
     node = _decompose(info, rings, system.get("fusion_edges") or [],
                       frozenset(system.get("sssr_indices") or ()))
     return node

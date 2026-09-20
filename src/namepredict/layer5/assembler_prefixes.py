@@ -90,11 +90,11 @@ def _ring_fused_lead(stem: str) -> bool:
 def _stem_needs_paren(stem: str, subs: list, omit: bool, flat: bool = False) -> bool:
     """加括号：显式标记、前导位次词干、前导立体描述符，或多个 CF3（英文）。"""
     if any(s.get("paren") for s in subs):
-        return True
+        return not _CATION_YL_TAIL_RE.search(stem)  # 单核阳离子基名单词整体（dimethylsulfonio），无需围栏
     if _ring_fused_lead(stem):
         return (not omit) and not flat  # 母体位次省略时无同类位次可混，前缀无需围栏
     if stem and stem[0].isdigit():
-        return not flat  # 中心母体无位次，臂名前导位次不须围栏消歧
+        return (not flat) and not (omit and any(s.get("ring_yl") for s in subs))  # 母体位次已省略时环基名无须围栏消歧（P-16.5.1.2）
     return (not omit) and (stem == "trifluoromethyl" or bool(_STEREO_LEAD_RE.match(stem)))
 
 
@@ -120,6 +120,20 @@ def oxo_arm_fence(name: str, sub: dict, mol) -> bool:
     if root is None:
         return False
     return mol.GetAtomWithIdx(root).IsInRing()
+
+
+def _sub_root_in_ring(sub: dict, mol) -> bool:
+    """取代基根原子（与附着原子成键者）是否在环上（P-16.5.1.2）。"""
+    attach = sub.get("attach_idx")
+    if attach is None:
+        return False
+    for a in sub.get("atoms") or ():
+        try:
+            if mol.GetBondBetweenAtoms(int(a), int(attach)) is not None:
+                return mol.GetAtomWithIdx(int(a)).IsInRing()
+        except (ValueError, TypeError):
+            return False
+    return False
 
 
 def _enclose(s: str) -> str:
@@ -156,6 +170,7 @@ _BENZYL_TAIL_RE = re.compile(r"\]methyl$")  # 苄基型前端：桥后缀直接�
 _LOCANT_RE = re.compile(r"(?:^|[-,\[])\d")  # 位次数字：行首或 -,\[ 之后（立体描述符内的数字不算）
 _ACYL_FRONT_RE = re.compile(r"(?:oyl|carbonyl)$")  # 酰基前端词尾（乙酰氧/酰胺融合用）
 _LOCANT_SUBST_TAIL_RE = re.compile(r"[\d\]]-[^()]*yl$")  # 括号外仍带位次取代基的端基（1-(…)-4-methylsulfanylbutyl）
+_CATION_YL_TAIL_RE = re.compile(r"(onio|onium|inium)$")  # 单核阳离子去氢基名词尾（dimethylsulfonio）
 
 
 def _front_needs_enclosure(base: str, suf: str) -> bool:
@@ -435,6 +450,8 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     substituents = [s for s in substituents if not s.get("o_side")]  # ester 的 O 侧臂由 join_kind_name 消费
     if not substituents:
         return "", ""
+    if mol is not None:  # 环基取代基名自带位次体系，标记后供 _stem_needs_paren 免围栏
+        substituents = [{**s, "ring_yl": _sub_root_in_ring(s, mol)} for s in substituents]
     omit = _omit_sub_locants(n_carbons, substituents, locant_kind or kind, scaffold, has_ene)
     bare = kind == "cation"  # 单核母体阳离子：臂名直接前置于阳离子名，无母体位次可混，不再二次围栏
     if bare:
