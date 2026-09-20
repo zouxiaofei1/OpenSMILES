@@ -874,6 +874,17 @@ def join_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]
     return join_parent_name(pre[0], en), join_parent_name(pre[1], zh)
 
 
+def _cation_insert(en: str, stem: str, base: str) -> tuple[int, int] | None:
+    """环阳离子后缀插入点：(切点, 吞字)；跳过连接元音，免切出 iuma 乱词。"""
+    at = en.find(stem)
+    if at < 0:
+        return None
+    pos = at + len(stem)
+    if stem == base and en[pos:pos + 1] == "a":
+        pos += 1  # 连接元音：heptadec → heptadeca-…
+    return (pos - 1, 1) if en[pos - 1:pos] == "e" else (pos, 0)
+
+
 def _zh_ring_cation(zh: str, stem_zh: str, suffix: str) -> str:
     """中文环阳离子：母体词干后插 -{位次}-正离子（中化会 6.7.2，不用“鎓”）。"""
     if not zh or not stem_zh or "鎓" in zh:
@@ -915,15 +926,14 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
     else:
         base, ium, zh_suf = stem_en, f"{stem_en}-{loc}-ium", f"-{loc}-鎓"
     zh = _zh_ring_cation(zh, parent.get("stem_zh") or "", zh_suf)
-    if stem_en in en:  # 完整母体名：整词干替换
-        return en.replace(stem_en, ium, 1), zh
-    token = base + "e" if base + "e" in en else base
-    if token in en:
-        if stem_en.endswith("ene"):  # 色烯型氧鎓：chromene/chromen → chromenylium
-            return en.replace(token, ium, 1), zh
-        at = en.index(token) + len(token)  # 其余在词干后插入 -{位次}-ium
-        return en[:at] + f"-{loc}-ium" + en[at:], zh
-    return names
+    if stem_en.endswith("ene"):  # 色烯型氧鎓保留名：chromene → chromenylium
+        token = base + "e" if base + "e" in en else base
+        return (en.replace(token, ium, 1), zh) if token in en else names
+    hit = _cation_insert(en, stem_en, base) if stem_en in en else _cation_insert(en, base, base)
+    if hit is None:
+        return names
+    cut, drop = hit  # 其余在母体词干后插入 -{位次}-ium
+    return en[:cut] + f"-{loc}-ium" + en[cut + drop:], zh
 
 def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> NameResult:
     """组装入口：取名 → 前缀 → 阴离子/R-S/金属盐后缀。"""

@@ -278,9 +278,21 @@ def _is_bare(subs: list) -> bool:
     return any(s.get("bare") for s in subs)
 
 
+def _strip_nested_fence(name: str) -> str:
+    """由内向外剥掉嵌套围栏，只留顶层正文（用于数顶层位次段）。"""
+    while True:
+        stripped = re.sub(r"\([^()]*\)|\[[^\[\]]*\]", "", name)
+        if stripped == name:
+            return name
+        name = stripped
+
+
 def cation_arm_bare(name: str) -> bool:
-    """阳离子母体的臂名是否免围栏：母体名无位次可混，仅前导立体描述符须整体括起（P-16.5.2）。"""
-    return not _STEREO_LEAD_RE.match(name or "")
+    """阳离子母体臂名是否免围栏：前导立体描述符或自带多个位次段者须围栏。"""
+    if _STEREO_LEAD_RE.match(name or ""):
+        return False
+    top = _strip_nested_fence(name or "")
+    return len(re.findall(r"\d+(?:,\d+)*[a-z]*-", top)) < 2  # 2,3- 只算一段
 
 
 def _parts_for_stem(stem: str, subs: list, omit: bool, primes: dict[int, int] | None = None,

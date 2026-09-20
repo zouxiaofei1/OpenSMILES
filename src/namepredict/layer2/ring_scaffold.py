@@ -204,7 +204,11 @@ def match_fusion_carbocycle(info: dict, atom_ids) -> str | None:
 
 def match_fusion_component(info: dict, atom_ids) -> str | None:
     """稠环拆解的组分匹配（P-25.3.2）：保留母体优先，其次单环烃。"""
-    return match_retained(info, atom_ids, mancude_only=True) or match_fusion_carbocycle(info, atom_ids)
+    mol = info["mol"]
+    # 按原子集记忆：对称笼架多个环集张成同一原子集，不记忆会重复全模板扫描
+    return memo.by_key("fusion_component", (id(mol), frozenset(atom_ids)),
+                       lambda: match_retained(info, atom_ids, mancude_only=True)
+                       or match_fusion_carbocycle(info, atom_ids), mol)
 
 _Q: dict[str, Mol] = {sid: MolFromSmiles(entry["smiles"]) for sid, entry in _TEMPLATES.items()}  # 查询子结构与元素签名，import 时构建一次。
 

@@ -17,17 +17,12 @@ Run from the project root:
 
 from __future__ import annotations
 
-import io
 import os
 import subprocess
-import sys
-import threading
 import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-# uvicorn 的启动失败(traceback)与访问日志同时落一份到 tmp/, 事后可查。
-LOG_PATH = ROOT / "tmp" / "dev-server.log"
 # 8666 rather than the old 8766: 8766 falls inside a Windows excluded port range
 # (8726-8825) reserved by Hyper-V/WSL/Docker, so bind() fails with WinError 10013
 # no matter what is or is not listening.  Check the current reservations with
@@ -44,7 +39,6 @@ SKIP_DIRS = {
     ".mypy_cache", ".pytest_cache", ".ruff_cache",
 }
 
-_log: io.TextIOWrapper | None = None  # 当前 uvicorn 的日志句柄
 _started_at = 0.0  # 本进程起 uvicorn 的时刻, 用于识别"启动即退出"
 
 # 启动后这么快就退出, 基本只有两种原因(src/ 导入失败、端口被占), 提示指个方向。
@@ -92,53 +86,13 @@ def snapshot() -> dict[str, float]:
     return snap
 
 
-def _tee(stream, fh) -> None:
-    """子进程输出一路写控制台、一路写日志文件。
-
-    重启时日志句柄会被关掉, 而旧进程可能还在吐最后几行, 故写失败直接放弃。
-    """
-    for line in stream:
-        try:
-            sys.stdout.write(line)
-            sys.stdout.flush()
-            fh.write(line)
-            fh.flush()
-        except (OSError, ValueError):
-            return
-
-
 def start_server() -> subprocess.Popen:
-    """起 uvicorn, stdout/stderr 经 tee 同时进控制台与 tmp/dev-server.log。"""
-    global _log, _started_at
-    print(f"[dev] uvicorn on http://127.0.0.1:{PORT}/  (日志: {LOG_PATH})", flush=True)
-    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _close_log()
-    _log = open(LOG_PATH, "a", encoding="utf-8", errors="replace")
-    _log.write(f"\n===== {time.strftime('%Y-%m-%d %H:%M:%S')} uvicorn 启动 =====\n")
-    _log.flush()
-    proc = subprocess.Popen(
-        UVICORN,
-        cwd=str(ROOT),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        encoding="utf-8",
-        errors="replace",
-        bufsize=1,  # uvicorn 日志按行出来, 便于 tee 逐行落盘
-    )
-    threading.Thread(target=_tee, args=(proc.stdout, _log), daemon=True).start()
+    """起 uvicorn, 输出直接继承控制台, 不落盘。"""
+    global _started_at
+    print(f"[dev] uvicorn on http://127.0.0.1:{PORT}/", flush=True)
+    proc = subprocess.Popen(UVICORN, cwd=str(ROOT))
     _started_at = time.monotonic()
     return proc
-
-
-def _close_log() -> None:
-    """关掉上一轮的日志句柄, 避免重启时句柄泄漏。"""
-    global _log
-    if _log is not None:
-        try:
-            _log.close()
-        except OSError:
-            pass
-        _log = None
 
 
 def restart(proc: subprocess.Popen | None) -> subprocess.Popen:
@@ -167,7 +121,7 @@ def main() -> None:
                 print(f"[dev] uvicorn 已退出 (code={code}), 重启中", flush=True)
                 if time.monotonic() - _started_at < _FAST_EXIT_SEC:
                     print("[dev] 启动即退出: 多为 src/ 导入失败或端口被占, "
-                          f"详见上方输出与 {LOG_PATH}", flush=True)
+                          "详见上方输出", flush=True)
                     time.sleep(1.0)  # 等端口释放 / 避免失败热循环
                 proc = restart(proc)
                 prev = snapshot()
@@ -190,7 +144,6 @@ def main() -> None:
         if proc is not None and proc.poll() is None:
             proc.terminate()
         kill_port_tree(PORT)
-        _close_log()
 
 
 if __name__ == "__main__":

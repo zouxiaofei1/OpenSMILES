@@ -12,7 +12,9 @@ from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology
 from namepredict.layer2.ring_scaffold import match_retained, resolve_ring_scaffold
+from namepredict.layer4.fused_numbering import _boundary_walk
 from namepredict.layer4.ring_geometry import RING_TEMPLATES, clip_polygon, overlap_area, polygon_area, regular_polygon, ring_cyclic, ring_shape_template
+from namepredict.namer import SMILESNNamer
 
 # ==========================================================================
 # 合并自 test_ring_systems.py
@@ -272,3 +274,41 @@ def test_overlap_area_known():
     assert abs(overlap_area(a, b) - 1.0) < 1e-9
     # 重叠面积方向对称
     assert abs(overlap_area(b, a) - 1.0) < 1e-9
+
+
+# ==========================================================================
+# 合并自 test_fused_numbering.py
+# IUPAC: P-25.3.3.1.2
+# Layer: L4
+#
+# 稠环外边界行走：外边界图须为简单环，否则拒绝而非绕内环死循环。
+# ==========================================================================
+def test_boundary_walk_accepts_simple_cycle():
+    """正方形外边界：走满 4 个顶点并闭回起点。"""
+    coords = {0: (0.0, 0.0), 1: (1.0, 0.0), 3: (1.0, 1.0), 2: (0.0, 1.0)}
+    neighbors = {0: {1, 2}, 1: {0, 3}, 2: {0, 3}, 3: {1, 2}}
+    exterior = frozenset(frozenset(e) for e in ((0, 1), (1, 3), (2, 3), (0, 2)))
+    walk = _boundary_walk(coords, neighbors, exterior, 0)
+    assert len(walk) == 4 and sorted(walk) == [0, 1, 2, 3]
+
+
+def test_boundary_walk_rejects_fork():
+    """中途外部度为 3：拒绝，不绕内环打转。"""
+    coords = {a: (float(a), 0.0) for a in range(5)}
+    neighbors = {0: {1, 2}, 1: {0, 3, 4}, 2: {0, 3}, 3: {1, 2}, 4: {1}}
+    exterior = frozenset(frozenset(e) for e in ((0, 1), (1, 3), (2, 3), (0, 2), (1, 4)))
+    assert _boundary_walk(coords, neighbors, exterior, 0) == []
+
+
+def test_boundary_walk_rejects_forked_start():
+    """起点外部度非 2：拒绝。"""
+    coords = {a: (float(a), 0.0) for a in range(4)}
+    neighbors = {0: {1, 2, 3}, 1: {0, 2}, 2: {0, 1}, 3: {0}}
+    exterior = frozenset(frozenset(e) for e in ((0, 1), (1, 2), (0, 2), (0, 3)))
+    assert _boundary_walk(coords, neighbors, exterior, 0) == []
+
+
+def test_cage_carbohydride_naming_terminates():
+    """高稠合笼状输入：稠环无候选后回落，命名必须终止。"""
+    result = SMILESNNamer().name("C123C45C61C42C1C5C6C31")
+    assert result.en and result.zh

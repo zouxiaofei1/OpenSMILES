@@ -179,7 +179,7 @@ def _ring_scaffold_and_nodes(info: dict, skeleton: ParentSkeleton):
         fused = decompose_fused_system(info, system)
         from namepredict.layer2.bridged_system import try_bridged_scaffold
         bridged = try_bridged_scaffold(info, scaffold, fused, system)
-        print("bridgedNode List! :",bridged)
+        # print("bridgedNode List! :",bridged)
         if bridged:  # 桥环接管骨架身份，kind 由 _resolved_ring_kind 兜底为 "bridged"
             scaffold = bridged[0].scaffold_identity()
     return scaffold, fused, bridged

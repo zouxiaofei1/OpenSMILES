@@ -68,19 +68,27 @@ def _exterior_edges(rings) -> frozenset[frozenset[int]]:
 
 def _boundary_walk(coords: dict, neighbors: dict, exterior: frozenset[frozenset[int]],
                    start: int) -> list[int]:
-    """沿外部边单闭环行走外边界，鞋带面积强制顺时针；逆时针则整体反转。"""
-    walk = [start]
-    prev, cur = None, start
-    while True:
-        ext = [nb for nb in neighbors[cur]
-               if frozenset((cur, nb)) in exterior and nb != prev]
-        if not ext:
-            break
-        nxt = ext[0]
+    """沿外部边单闭环行走外边界，鞋带面积强制顺时针；非单一简单环返回空表。"""
+    ext = sorted(nb for nb in neighbors[start] if frozenset((start, nb)) in exterior)
+    if len(ext) != 2:  # 外边界图应是简单环：起点度非 2 即非平面稠环系统
+        return []
+    walk, seen = [start, ext[0]], {start, ext[0]}
+    prev, cur = start, ext[0]
+    while cur != start:
+        nxts = [nb for nb in neighbors[cur]
+                if frozenset((cur, nb)) in exterior and nb != prev]
+        if len(nxts) != 1:  # 分叉或断头：外边界不是简单环
+            return []
+        nxt = nxts[0]
         if nxt == start:
             break
+        if nxt in seen:  # 绕回已访问原子：走入内环，永不回到起点
+            return []
         walk.append(nxt)
+        seen.add(nxt)
         prev, cur = cur, nxt
+    if len(walk) < 3:
+        return []
     area = 0.0
     for i, a in enumerate(walk):
         x1, y1 = coords[a]
