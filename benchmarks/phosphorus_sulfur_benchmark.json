@@ -4233,8 +4233,8 @@
  {
   "id": "chebi-753",
   "smiles": "Cc1cc(Nc2ncc(Cl)c(=Nc3ccccc3S(=O)(=O)C(C)C)[nH]2)c(OC(C)C)cc1C1CCNCC1",
-  "english_name": "5-chloro-2-N-(5-methyl-4-piperidin-4-yl-2-propan-2-yloxyphenyl)-4-N-(2-propan-2-ylsulfonylphenyl)pyrimidine-2,4-diamine",
-  "chinese_name": "5-氯-N2-(5-甲基-4-哌啶-4-基-2-丙-2-氧基苯基)-N4-(2-丙-2-磺酰基苯基)嘧啶-2,4-二胺",
+  "english_name": "5-chloro-N-(5-methyl-4-piperidin-4-yl-2-propan-2-yloxyphenyl)-N'-(2-propan-2-ylsulfonylphenyl)pyrimidine-2,4-diamine",
+  "chinese_name": "5-氯-N-(5-甲基-4-哌啶-4-基-2-丙-2-氧基苯基)-N'-(2-丙-2-磺酰基苯基)嘧啶-2,4-二胺",
   "source": "chebi",
   "tier": 4,
   "features": [],
@@ -6609,8 +6609,8 @@
  {
   "id": "chebi-2072",
   "smiles": "CSc1nc(=NC(C)C)[nH]c(=NC(C)C)[nH]1",
-  "english_name": "6-methylsulfanyl-2-N,4-N-di(propan-2-yl)-1,3,5-triazine-2,4-diamine",
-  "chinese_name": "6-甲硫基-2,4-双(丙-2-基氨基)-1,3,5-三嗪",
+  "english_name": "6-methylsulfanyl-N,N'-di(propan-2-yl)-1,3,5-triazine-2,4-diamine",
+  "chinese_name": "6-甲硫基-N,N'-双(丙-2-基)-1,3,5-三嗪-2,4-二胺",
   "source": "chebi",
   "tier": 3,
   "features": [],
@@ -7977,8 +7977,8 @@
  {
   "id": "chebi-2804",
   "smiles": "CCCN[C@H]1CCc2[nH]c(=N)sc2C1.Cl.Cl",
-  "english_name": "(6S)-6-N-propyl-4,5,6,7-tetrahydro-1,3-benzothiazole-2,6-diamine dihydrochloride",
-  "chinese_name": "(6S)-6-丙基-4,5,6,7-四氢-1,3-苯并噻唑-2,6-二胺二盐酸盐",
+  "english_name": "(6S)-N-propyl-4,5,6,7-tetrahydro-1,3-benzothiazole-2,6-diamine dihydrochloride",
+  "chinese_name": "(6S)-N-丙基-4,5,6,7-四氢-1,3-苯并噻唑-2,6-二胺二盐酸盐",
   "source": "chebi",
   "tier": 3,
   "features": [],

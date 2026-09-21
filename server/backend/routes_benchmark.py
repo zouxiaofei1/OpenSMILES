@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
 
 from benchmarks import preview_metrics as metrics
 from server.backend import history_store
@@ -339,6 +340,42 @@ def get_benchmark_preview(commit: str | None = None, data_file: str | None = Non
         "gen_done": gen_done,
         "gen_total": gen_total,
         "data_file": data_name,
+    }
+
+
+class DiffRow(BaseModel):
+    """POST /benchmark-preview/diff 的一行入参; 名称原样传入, 不做归一化。"""
+
+    pred_en: str = ""
+    pred_zh: str = ""
+    gold_en: str = ""
+    gold_zh: str = ""
+
+
+class DiffBody(BaseModel):
+    """Request body for POST /benchmark-preview/diff.
+
+    批量而非单条: 「全部高亮」开关一开就要算一整页(最多 500 行), 逐行发请求会有
+    几百次往返; 双击单行只是 rows 长度为 1 的同一个入口。
+    """
+
+    rows: list[DiffRow] = Field(default_factory=list)
+
+
+@router.post("/benchmark-preview/diff")
+def benchmark_preview_diff(body: DiffBody) -> dict[str, Any]:
+    """整页的预测名 ↔ 金标名逐字符差异(Namer 页 gold 卡同源实现), 按行回应。
+
+    与 body.rows 等长的 diffs 数组, 该行无金标名时对应项为 null。
+    按需算而不是并进 rows: 差异是展示态, 不属于缓存行的一部分, 且全量预计算
+    3975 行 × 2 语言要 4.3s, 而 /benchmark-preview 在加载/切文件/生成完成时都会走。
+    """
+    return {
+        "ok": True,
+        "diffs": [
+            metrics.build_gold_diff(r.pred_en, r.pred_zh, {"en": r.gold_en, "zh": r.gold_zh})
+            for r in body.rows
+        ],
     }
 
 

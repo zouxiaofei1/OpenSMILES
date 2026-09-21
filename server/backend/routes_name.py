@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import difflib
 import json
 import threading
 from collections import OrderedDict
@@ -16,7 +15,7 @@ import httpx
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from benchmarks.preview_metrics import similarity
+from benchmarks.preview_metrics import build_gold_diff
 from server.backend.atom_ids_svg import build_atom_ids_svg
 from server.backend.deps import get_namer, name_result_dict
 from server.backend.locants_svg import build_locants_svg
@@ -128,68 +127,8 @@ def _id_or_text(text: str) -> str:
 
 
 # ── 引擎名 ↔ 基准名 差异(Namer 页 gold 卡的并排高亮)──────────────────────────
-# 相似度阈值: 归一化后引擎名与基准名达到该相似度才高亮差异。命得基本对时差异
-# 才是可看的细节(如 (furan-3-yl) 少一层括号); 错得离谱时整名标红没有信息量。
-GOLD_DIFF_MIN_SIM = 0.70
-
-
-def _name_similarity(pred: str, gold: str, lang: str) -> float:
-    """归一化后的字符级相似度 0..1, 用于判断差异是否值得高亮。
-
-    与 benchmark 预览页共用同一实现(preview_metrics), 两边百分比一致;
-    gold 非空(调用处已保证)故不会取到 None。"""
-    return similarity(pred, gold, lang) or 0.0
-
-
-def _diff_sides(pred: str, gold: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """逐字符 diff → (引擎侧片段, gold 侧片段), 片段形如 {"t": 文本, "same": bool}。
-
-    在原始串(未归一)上比对, 前端高亮的就是名称原貌; 相邻同类片段合并以减少 DOM 节点。
-    """
-    left: list[dict[str, Any]] = []
-    right: list[dict[str, Any]] = []
-
-    def push(acc: list[dict[str, Any]], text: str, same: bool) -> None:
-        if not text:
-            return
-        if acc and acc[-1]["same"] == same:
-            acc[-1]["t"] += text
-        else:
-            acc.append({"t": text, "same": same})
-
-    matcher = difflib.SequenceMatcher(None, pred, gold, autojunk=False)
-    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-        same = tag == "equal"
-        push(left, pred[i1:i2], same)
-        push(right, gold[j1:j2], same)
-    return left, right
-
-
-def build_gold_diff(
-    pred_en: str, pred_zh: str, gold: dict[str, Any] | None
-) -> dict[str, Any] | None:
-    """引擎名 ↔ 基准名 的相似度与逐字符差异; 无 gold 返回 None。
-
-    每种语言各给 {similarity, show, pred, gold}: show 由相似度是否 ≥ 阈值决定,
-    前端据此只在"命得基本对"时高亮细节。gold 缺该语言名称则跳过该语言。
-    """
-    if not gold:
-        return None
-    out: dict[str, Any] = {}
-    for lang, pred in (("en", pred_en), ("zh", pred_zh)):
-        ref = (gold.get(lang) or "").strip()
-        if not ref:
-            continue
-        pred = (pred or "").strip()
-        sim = _name_similarity(pred, ref, lang)
-        left, right = _diff_sides(pred, ref)
-        out[lang] = {
-            "similarity": round(sim, 4),
-            "show": sim >= GOLD_DIFF_MIN_SIM,
-            "pred": left,
-            "gold": right,
-        }
-    return out or None
+# 实现放在 preview_metrics: benchmark 预览页的行内高亮用同一个函数, 两页不会
+# 出现分割位置或百分比不一致。
 
 
 # ── PubChem 查询: PUG-REST property/IUPACName（PubChem 页 2.1.1 IUPAC Name）──────

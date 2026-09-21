@@ -254,6 +254,8 @@
           <span class="chip">页 <b id="bm-page">1</b> / <b id="bm-pages">1</b></span>
           <button id="bm-next" class="btn btn-secondary btn-sm" type="button">下一页</button>
           <button id="bm-refresh" class="btn btn-secondary btn-sm" type="button" title="重新生成预览数据">刷新</button>
+          <button id="bm-diff-toggle" class="btn btn-secondary btn-sm" type="button"
+                  aria-pressed="false" title="高亮 / 隐藏本页所有行预测名与正确名的字符差异">全部差异</button>
           <button id="bm-side-toggle" class="btn btn-secondary btn-sm" type="button"
                   aria-expanded="true" title="展开 / 收回左栏排除面板">排除</button>
         </div>
@@ -303,6 +305,7 @@
         <footer class="bm-footer">
           正确命名 = benchmark 金标 english_name / chinese_name。
           match = 预测与金标一致。结构由 SmilesDrawer 渲染。
+          双击任意行，原地高亮预测名与正确名的字符差异（再双击还原）；「全部差异」一次高亮本页所有行。
         </footer>
       </div>
 

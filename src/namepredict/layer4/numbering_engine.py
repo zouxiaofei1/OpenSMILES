@@ -7,6 +7,7 @@ from namepredict.constants import (
 from namepredict.tools import memo
 from namepredict.tools.re import alpha_order_key
 from namepredict.layer1.ring_systems import sssr_rings
+from namepredict.layer4.indicated_hydrogen import saturated_ring_atoms
 from namepredict.layer4.locant_calc import locant_key
 
 
@@ -233,6 +234,17 @@ def _is_ring(parent: dict) -> bool:
     """按 scaffold_id 判断 parent 是否为环系。"""
     return bool(parent.get("scaffold_id"))
 
+
+def _hydro_indicated_atoms(parent: dict, chain: list[int]) -> list[int]:
+    """加氢位与指示氢位（饱和环位）的并集：P-14.4(b)(d)(e)(i) 一起最小化。"""
+    if not parent.get("hydro_atoms"):  # 饱和度由 ene 词尾表达者（环烯/环炔）不参与
+        return []
+    mol = parent.get("mol")
+    chain_set = set(chain)
+    sats = set(saturated_ring_atoms(mol, chain_set)) & chain_set if mol is not None else set()
+    return sorted(sats | set(parent.get("hydro_atoms") or ()))
+
+
 def _nh_sites(heteros: list[int], mol) -> list[int]:
     """P-22.2.2.1.4 指示氢位：环内可带 H 的 N（N-取代者须本为母体氢化物 NH 位，非 =N- 位）。"""
     def _n(a):
@@ -416,6 +428,9 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     principal = _principal_atoms(parent)
     if principal:
         cands = narrow(cands, lambda c: _locant_set(c, principal), skip_none=True)
+    hydro = _hydro_indicated_atoms(parent, chain)
+    if hydro:  # P-14.4(b)(d)(e)(i)：加氢/指示氢位次先于多重键与取代基
+        cands = narrow(cands, lambda c: _locant_set(c, hydro), skip_none=True)
     bonds, doubles = _unsat_bonds(parent)
     if bonds:
         cands = narrow(cands, lambda c: (_bond_locants(c, bonds), _bond_locants(c, doubles)),

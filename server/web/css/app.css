@@ -1551,8 +1551,9 @@ select.input {
   display: none !important;
 }
 
-/* 工具栏上的排除开关: 打开时保持按下态 */
-#bm-side-toggle.is-on {
+/* 工具栏上的开关(排除面板 / 全部差异): 打开时保持按下态 */
+#bm-side-toggle.is-on,
+#bm-diff-toggle.is-on {
   color: var(--color-accent);
   border-color: var(--color-accent);
   background: var(--color-accent-subtle);

@@ -9,6 +9,7 @@ export const API = {
   atomIdsSvg: "/api/v1/name/atom-ids-svg",
   benchmarkPreview: "/api/v1/benchmark-preview",
   benchmarkDatasets: "/api/v1/benchmark-preview/datasets",
+  benchmarkDiff: "/api/v1/benchmark-preview/diff",
   benchmarkRefresh: "/api/v1/benchmark-preview/refresh",
   benchmarkStatus: "/api/v1/benchmark-preview/status",
   codeAnalysis: "/api/v1/code-analysis",
@@ -54,6 +55,9 @@ export const state = {
   bmFeatQuery: "", // 特征搜索词(只影响左栏列表, 不影响表格)
   bmSideOpen: true, // 左栏是否展开
   bmExCount: 0, // 上次过滤被排除掉的行数, 供「已排除」chip 显示
+  bmDiffs: new Map(), // 已高亮的行: abs(bmRows 下标) → gold_diff; 换数据文件时清空
+  bmDiffAll: false, // 「全部差异」开关: 开着时本页每行都自动高亮
+  bmDiffPending: new Set(), // 已发出、尚未返回的差异请求行下标, 防重复请求
   // code analysis
   caData: null,
   // call graph

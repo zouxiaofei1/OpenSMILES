@@ -1,5 +1,6 @@
 /* Benchmark Preview page: load/refresh, poll generation, filter + render table. */
 import { state, api, API } from "./core.js";
+import { diffSegmentsHtml } from "./namer.js";
 
 function bm$(id) {
   return document.getElementById("bm-" + id);
@@ -62,6 +63,9 @@ function showBmSkeleton() {
 function bmApplyData(data, resetPage) {
   state.bmRows = (data && data.rows) || [];
   state.bmFiles = (data && data.files) || [];
+  // 行数组换了, 旧的 abs 下标全部失效, 高亮缓存与在途请求必须跟着清
+  state.bmDiffs.clear();
+  state.bmDiffPending.clear();
   state.bmLoaded = true;
   if (resetPage) state.bmPage = 1;
   state.bmGenerating = !!(data && data.generating);
@@ -447,6 +451,123 @@ function bmBadge(r) {
   return ' <span class="bm-badge bm-fail">miss</span>';
 }
 
+/* 某语言某一侧的差异片段 → HTML; 无片段返回空串让调用方回落到纯文本。
+   与 Namer 页的区别: 这里不看后端给的 show —— 预览页不设相似度门槛, 双击即全量
+   高亮(错得离谱的行同样要把差异标出来, 那正是要排查的样本)。 */
+function bmDiffHtml(diff, lang, side) {
+  var d = diff && diff[lang];
+  var segs = d && d[side];
+  return segs && segs.length ? diffSegmentsHtml(segs) : "";
+}
+
+/* 预测名单元格; 文本与高亮两个版本都由它产出, 重绘后高亮不会丢。 */
+function bmPredCellHtml(r, diff) {
+  var en = bmDiffHtml(diff, "en", "pred") || bmEsc(r.en) || "<span style='color:#94a3b8'>(空)</span>";
+  var zh = bmDiffHtml(diff, "zh", "pred") || bmEsc(r.zh);
+  return '<div class="bm-name-en">' + en + bmBadge(r) + "</div>" +
+    (zh ? '<div class="bm-name-zh">' + zh + "</div>" : "");
+}
+
+/* 正确命名单元格; 与预测名同构, 只是空值占位文案不同。 */
+function bmGoldCellHtml(r, diff) {
+  var en = bmDiffHtml(diff, "en", "gold") || bmEsc(r.ge) || "<span style='color:#94a3b8'>(无英标)</span>";
+  var zh = bmDiffHtml(diff, "zh", "gold") || bmEsc(r.gz);
+  return '<div class="bm-gold-en">' + en + "</div>" +
+    (zh ? '<div class="bm-gold-zh">' + zh + "</div>" : "");
+}
+
+/* 把某行的两个名称单元格重写成高亮(diff 非空)或纯文本(diff 为 null)版本。 */
+function bmPaintDiff(tr, r, diff) {
+  var predTd = tr.querySelector(".bm-td-pred");
+  var goldTd = tr.querySelector(".bm-td-gold");
+  if (predTd) predTd.innerHTML = bmPredCellHtml(r, diff);
+  if (goldTd) goldTd.innerHTML = bmGoldCellHtml(r, diff);
+}
+
+/* 一批行下标 → diff 接口的请求体; 缺字段给空串, 后端据此跳过该语言。 */
+function bmDiffBody(absList) {
+  return JSON.stringify({
+    rows: absList.map(function (a) {
+      var r = state.bmRows[a] || {};
+      return {
+        pred_en: r.en || "", pred_zh: r.zh || "",
+        gold_en: r.ge || "", gold_zh: r.gz || "",
+      };
+    }),
+  });
+}
+
+/* 向 diff 接口要一批行的差异, 返回与入参等长的数组(某项为 null = 该行无金标名)。
+   取不到一律返回 null: 差异只是阅读辅助, 失败就保持纯文本, 不打断浏览。
+   请求期间可能换过数据文件, 那时行下标已指向别的分子, 结果必须作废。 */
+async function bmRequestDiffs(absList) {
+  if (!absList.length) return null;
+  var rows = state.bmRows;
+  try {
+    var res = await api(API.benchmarkDiff, { method: "POST", body: bmDiffBody(absList) });
+    if (state.bmRows !== rows) return null;
+    return (res && res.diffs) || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/* 按 abs 找回当前 DOM 里的行, 重画其名称单元格(行可能已被翻页/过滤刷掉, 那就不用管)。 */
+function bmPaintRows(absList) {
+  for (var i = 0; i < absList.length; i++) {
+    var a = absList[i];
+    var diff = state.bmDiffs.get(a);
+    var r = state.bmRows[a];
+    if (!diff || !r) continue;
+    var tr = document.querySelector('#bm-tbody tr[data-abs="' + a + '"]');
+    if (tr) bmPaintDiff(tr, r, diff);
+  }
+}
+
+/* 「全部差异」开关开着时, 给本页还缺差异的行补请求; 已有/在途的跳过。
+   只问本页: 整页重绘(输入筛选/拖滑块/2s 生成轮询)都会走到这里, 而已有差异的行走
+   的是"want 为空直接返回"的短路, 所以重复调用没有代价。 */
+async function bmEnsurePageDiffs(absList) {
+  if (!state.bmDiffAll) return;
+  var want = [];
+  for (var i = 0; i < absList.length; i++) {
+    var a = absList[i];
+    if (!state.bmDiffs.has(a) && !state.bmDiffPending.has(a)) want.push(a);
+  }
+  if (!want.length) return;
+  want.forEach(function (a) { state.bmDiffPending.add(a); });
+  var diffs = await bmRequestDiffs(want);
+  want.forEach(function (a) { state.bmDiffPending.delete(a); });
+  // 期间开关被关掉: 这批结果作废, 否则刚清干净的高亮又被画回去
+  if (!diffs || !state.bmDiffAll) return;
+  for (var k = 0; k < want.length; k++) {
+    if (diffs[k]) state.bmDiffs.set(want[k], diffs[k]);
+  }
+  // 只重画这一批: 整表重绘会连带 SmilesDrawer 重画全部结构图
+  bmPaintRows(want);
+}
+
+/* 双击行 → 原地切换命名差异高亮, 已高亮的再双击还原。
+   只重写两个名称单元格, 不重绘整行: 结构图 SVG 不会被 SmilesDrawer 重画;
+   <mark> 只包住原有字符, 文本与换行位置不变, 所以表格排版纹丝不动。
+   「全部差异」开关开着时整页本就都亮着, 没有再逐行切换的余地。 */
+async function bmToggleDiff(tr) {
+  if (state.bmDiffAll) return;
+  var abs = parseInt(tr.getAttribute("data-abs"), 10);
+  var r = isNaN(abs) ? null : state.bmRows[abs];
+  if (!r) return;
+  if (state.bmDiffs.has(abs)) {
+    state.bmDiffs.delete(abs);
+    bmPaintDiff(tr, r, null);
+    return;
+  }
+  var diffs = await bmRequestDiffs([abs]);
+  var diff = diffs && diffs[0];
+  if (!diff) return; // 该行两种语言都没有金标名, 没有可比对的差异
+  state.bmDiffs.set(abs, diff);
+  bmPaintDiff(tr, r, diff);
+}
+
 function bmDrawAll() {
   if (typeof SmilesDrawer === "undefined" || !SmilesDrawer.SvgDrawer) {
     var wraps = document.querySelectorAll("#bm-tbody .bm-struct-wrap");
@@ -548,22 +669,19 @@ function renderBenchmark() {
     var abs = slice[j].abs;
     var r = slice[j].r;
     var cls = r.ok ? "bm-match" : "bm-miss";
-    var predEn = bmEsc(r.en) || "<span style='color:#94a3b8'>(空)</span>";
-    var predZh = bmEsc(r.zh);
-    var goldEn = bmEsc(r.ge) || "<span style='color:#94a3b8'>(无英标)</span>";
-    var goldZh = bmEsc(r.gz);
+    var diff = state.bmDiffs.get(abs) || null;
     html +=
-      '<tr class="' + cls + '">' +
+      '<tr class="' + cls + '" data-abs="' + abs + '">' +
       '<td><span class="bm-idx">#' + (abs + 1) + '</span><span class="bm-smiles">' + bmEsc(r.s) + "</span>" +
       bmSimHtml(r) + "</td>" +
-      '<td><div class="bm-name-en">' + predEn + bmBadge(r) + "</div>" +
-      (predZh ? '<div class="bm-name-zh">' + predZh + "</div>" : "") + "</td>" +
-      '<td><div class="bm-gold-en">' + goldEn + "</div>" +
-      (goldZh ? '<div class="bm-gold-zh">' + goldZh + "</div>" : "") + "</td>" +
+      '<td class="bm-td-pred">' + bmPredCellHtml(r, diff) + "</td>" +
+      '<td class="bm-td-gold">' + bmGoldCellHtml(r, diff) + "</td>" +
       '<td><div class="bm-struct-wrap"><svg data-smiles="' + bmEsc(r.s) + '"></svg></div></td>' +
       "</tr>";
   }
   tbody.innerHTML = html;
+  // 「全部差异」开着时, 本页还缺高亮的行在这里补上
+  bmEnsurePageDiffs(slice.map(function (s) { return s.abs; }));
   requestAnimationFrame(function () { bmDrawAll(); });
 }
 
@@ -610,6 +728,33 @@ export function bindBenchmark() {
   }
   if (bm$("refresh")) {
     bm$("refresh").addEventListener("click", refreshBenchmark);
+  }
+
+  // 「全部差异」: 一键让本页每行都高亮, 再点全还原
+  if (bm$("diff-toggle")) {
+    bm$("diff-toggle").addEventListener("click", function () {
+      state.bmDiffAll = !state.bmDiffAll;
+      this.classList.toggle("is-on", state.bmDiffAll);
+      this.setAttribute("aria-pressed", state.bmDiffAll ? "true" : "false");
+      // 关掉时清缓存: 下次再开是整页重新取, 不会和上一轮的高亮混着
+      if (!state.bmDiffAll) {
+        state.bmDiffs.clear();
+        state.bmDiffPending.clear();
+      }
+      renderBenchmark(); // 开: 内部补本页差异; 关: 重绘回纯文本
+    });
+  }
+
+  // 双击行原地高亮预测名 ↔ 正确名的字符差异(再双击还原); 事件委托, 行是重绘出来的
+  if (bm$("tbody")) {
+    bm$("tbody").addEventListener("dblclick", function (ev) {
+      var tr = ev.target.closest ? ev.target.closest("tr[data-abs]") : null;
+      if (!tr) return;
+      // 双击默认会选中一段文本, 而这里高亮的正是逐字符差异, 选区只会碍眼
+      var sel = window.getSelection && window.getSelection();
+      if (sel) sel.removeAllRanges();
+      bmToggleDiff(tr);
+    });
   }
 
   // ── 左栏排除面板 ──

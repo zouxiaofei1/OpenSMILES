@@ -373,8 +373,9 @@ function renderNamerGold(gold, result) {
   box.hidden = false;
 }
 
-/* 逐字符差异片段 → HTML: 一致片段原样, 差异片段用 <mark> 高亮。 */
-function diffSegmentsHtml(segs) {
+/* 逐字符差异片段 → HTML: 一致片段原样, 差异片段用 <mark> 高亮。
+   benchmark 预览页的行内高亮也走这里, 两页的 <mark> 结构保持一致。 */
+export function diffSegmentsHtml(segs) {
   return (segs || [])
     .map((s) => {
       const text = escapeHtml(s.t);
