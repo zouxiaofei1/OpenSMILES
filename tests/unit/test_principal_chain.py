@@ -25,14 +25,13 @@ from namepredict.layer2.kind_registry import pack_parent_stem
 from namepredict.layer2.parent_select import select_parent
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, keep_p44_2, keep_p44_4_unsaturation
 from namepredict.layer2.principal_expression import (
-    PrincipalChargeState,
     PrincipalExpressionFacts,
     PrincipalRelation,
     express_chain_principal,
 )
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_select import rule_driven_parent_candidates, select_principal_parent_skeletons
-from namepredict.layer4.candidate_keys import prefix_locant_set, suffix_locant_set
+from namepredict.layer4.locant_calc import prefix_locant_set, suffix_locant_set
 from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh
 from namepredict.types import NameResult
@@ -77,9 +76,7 @@ def principal_hydrocarbon___principal_name(smiles: str):
     for parent in rule_driven_parent_candidates(info):
         # 模拟完整管线的词干填充（iter_parent_candidates 内部会 pack）。
         packed = pack_parent_stem(parent, info["mol"])
-        parent, subst, complete = namer_module._prepare_candidate(info, packed)
-        if not complete:
-            continue
+        parent, subst = namer_module._prepare_candidate(info, packed)
         hit = namer_module._assemble_candidate(parent, subst, t0=t0)
         if hit is not None and hit.success:
             return hit
@@ -267,30 +264,9 @@ def p44_principal_group_count___result(en):
     return NameResult(en=en, zh=en, success=True, source="iupac", time_ms=0.0)
 
 
-def p44_principal_group_count___prepared(kind, complete):
-    return ({"kind": kind}, [], complete)
+def p44_principal_group_count___prepared(kind):
+    return ({"kind": kind}, [])
 
-
-def test_higher_phase_partial_preserves_seniority(monkeypatch):
-    phases = [[{"kind": "acid"}], [{"kind": "alcohol"}]]
-    monkeypatch.setattr(namer_module, "_candidate_phases", lambda info: phases)
-    monkeypatch.setattr(
-        namer_module, "_prepare_candidate",
-        lambda info, parent, **kwargs: p44_principal_group_count___prepared(parent["kind"], parent["kind"] == "alcohol"),
-    )
-    monkeypatch.setattr(namer_module, "_assemble_candidate", lambda p, *a, **k: p44_principal_group_count___result(p["kind"]))
-    assert namer_module._run_candidates({}, t0=0).en == "acid"
-
-
-def test_higher_phase_complete_never_downgrades(monkeypatch):
-    phases = [[{"kind": "acid"}], [{"kind": "alcohol"}]]
-    monkeypatch.setattr(namer_module, "_candidate_phases", lambda info: phases)
-    monkeypatch.setattr(
-        namer_module, "_prepare_candidate",
-        lambda info, parent, **kwargs: p44_principal_group_count___prepared(parent["kind"], True),
-    )
-    monkeypatch.setattr(namer_module, "_assemble_candidate", lambda p, *a, **k: p44_principal_group_count___result(p["kind"]))
-    assert namer_module._run_candidates({}, t0=0).en == "acid"
 
 p44_principal_group_count__CASES = [
     # Near-neighbour negative: the already claimable C1 arm stays unchanged.
@@ -347,7 +323,7 @@ def p45_candidate_ladder___facts(attachment: set) -> PrincipalExpressionFacts:
         group_class=FunctionalGroupClass.ALCOHOL, multiplicity=len(attachment),
         relation=PrincipalRelation.IN_SKELETON, occurrence_ids=(),
         characteristic_atoms=frozenset(), anchor_atoms=frozenset(attachment),
-        attachment_atoms=frozenset(attachment), charge_state=PrincipalChargeState.NEUTRAL)
+        attachment_atoms=frozenset(attachment))
 
 
 def test_suffix_locant_set_uses_principal_attachment_atoms():

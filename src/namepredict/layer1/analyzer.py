@@ -7,7 +7,7 @@ from __future__ import annotations
 from rdkit.Chem import BondType, Mol
 from collections import deque
 from namepredict.constants import (
-    C, H, N, O, S,
+    C, H, N, O, OXO_CENTER_KINDS, S,
 )
 from namepredict.layer1.fg_registry import FG_SPECS
 from namepredict.layer1.fg_local_smarts import match_local_fg
@@ -55,45 +55,50 @@ def _arm_component(mol: Mol, start: int, core: set[int]) -> set[int]:
     return comp
 
 
-_OXO_Z_ANCHORED = frozenset({"phosphate", "phosphonate", "sulfate", "boronic"})  # 中心原子自任母体的 oxo_kind（碳骨架退为取代基）
 _OXO_KIND_P = {(1, False): "phosphate", (1, True): "phosphonate"}  # P：(双键氧数, 有无直连碳臂) → kind
 _OXO_KIND_S_ARM = {"halo": "sulfonyl_chloride", "n": "sulfonamide",   # S 带碳臂时：另一臂角色 → kind
                    "acid": "sulfonic", "o_arm": "sulfonate"}
 
 
-def _oxo_roles(mol: Mol, z_idx: int) -> dict:
-    """中心原子的邻居角色计数：双键氧/羟基氧/阴离子氧/O-臂/碳/卤素/氮/硫。"""
-    roles = {"oxo": 0, "oh": 0, "om": 0, "o_arm": 0, "c": 0, "hal": 0, "n": 0, "s": 0}
+def _oxo_partition(mol: Mol, z_idx: int) -> dict[str, list[int]]:
+    """中心原子邻居按角色分桶：双键氧/羟基氧/阴离子氧/O-臂氧与臂根碳/碳/卤素/氮/硫。
+
+    o_arm 存 O-臂的氧原子（计数用），o_arm_root 存臂根碳（_arm_single_attach 用）——
+    两者个数不同，勿只看长度。
+    """
+    part: dict[str, list[int]] = {k: [] for k in
+                                  ("oxo", "oh", "om", "o_arm", "o_arm_root", "c", "hal", "n", "s")}
     for n in mol.GetAtomWithIdx(z_idx).GetNeighbors():
         z, i = n.GetAtomicNum(), n.GetIdx()
         if z in (1, 0):
             continue
         if z == O:
             if mol.GetBondBetweenAtoms(z_idx, i).GetBondType() == BondType.DOUBLE:
-                roles["oxo"] += 1
+                part["oxo"].append(i)
             elif n.GetFormalCharge() == -1:
-                roles["om"] += 1
+                part["om"].append(i)
             elif n.GetTotalNumHs() >= 1:
-                roles["oh"] += 1
+                part["oh"].append(i)
             else:
-                roles["o_arm"] += 1
+                part["o_arm"].append(i)
+                part["o_arm_root"].extend(j for j in _heavy(n) if j != z_idx)
         elif z == C:
-            roles["c"] += 1
+            part["c"].append(i)
         elif z in (9, 17, 35, 53):
-            roles["hal"] += 1
+            part["hal"].append(i)
         elif z == N:
-            roles["n"] += 1
+            part["n"].append(i)
         elif z == S:
-            roles["s"] += 1
-    return roles
+            part["s"].append(i)
+    return part
 
 
-def _oxo_kind(mol: Mol, z_idx: int) -> str | None:
+def _oxo_kind(mol: Mol, z_idx: int, part: dict | None = None) -> str | None:
     """按中心元素、双键氧数与臂角色归一 oxo_kind（B/P/S 同一张表驱动）。"""
     z = mol.GetAtomWithIdx(z_idx).GetAtomicNum()
     if z not in (5, 15, 16):
         return None
-    r = _oxo_roles(mol, z_idx)
+    r = {k: len(v) for k, v in (part or _oxo_partition(mol, z_idx)).items()}
     if z == 5:  # 硼酸 B(OH)2：恰一个碳臂 + 彻底酸式的两个氧（P-68.2.1）；硼酸酯（O-臂）不在此列
         return "boronic" if r["c"] == 1 and r["oh"] + r["om"] == 2 else None
     if z == 15:
@@ -104,28 +109,6 @@ def _oxo_kind(mol: Mol, z_idx: int) -> str | None:
         return "sulfate" if r["oh"] + r["om"] + r["o_arm"] == 2 else None
     arm = ("halo" if r["hal"] else "n" if r["n"] else "acid" if r["oh"] + r["om"] else "o_arm")
     return _OXO_KIND_S_ARM.get(arm)
-
-
-def _oxo_arm_roots(mol: Mol, z_idx: int) -> tuple[list[int], list[int], list[int], list[int], list[int]]:
-    """中心原子的 (直连碳臂, O-臂根碳, 羟基氧, 阴离子氧, 酸式氧) 索引。"""
-    c_roots: list[int] = []
-    o_roots: list[int] = []
-    oh: list[int] = []
-    om: list[int] = []
-    acid: list[int] = []
-    for n in mol.GetAtomWithIdx(z_idx).GetNeighbors():
-        if n.GetAtomicNum() == 6:
-            c_roots.append(n.GetIdx())
-        elif n.GetAtomicNum() == O and mol.GetBondBetweenAtoms(z_idx, n.GetIdx()).GetBondType() != BondType.DOUBLE:
-            if n.GetFormalCharge() == -1:
-                om.append(n.GetIdx())
-                acid.append(n.GetIdx())
-            elif n.GetTotalNumHs() >= 1:
-                oh.append(n.GetIdx())
-                acid.append(n.GetIdx())
-            else:
-                o_roots.extend(j for j in _heavy(n) if j != z_idx)
-    return c_roots, o_roots, oh, om, acid
 
 
 def _arm_single_attach(mol: Mol, roots: list[int], core: set[int]) -> set[int] | None:
@@ -142,12 +125,13 @@ def _arm_single_attach(mol: Mol, roots: list[int], core: set[int]) -> set[int] |
 def _oxoacid_entry(mol: Mol, core: tuple[int, ...]) -> dict | None:
     """校验含氧酸候选的非局部条件并归一 oxo_kind、锚点与负载。"""
     z_idx = core[0]
-    kind = _oxo_kind(mol, z_idx)
+    part = _oxo_partition(mol, z_idx)  # 一次分桶供 kind 判定与臂根取用
+    kind = _oxo_kind(mol, z_idx, part)
     if kind is None:
         return None
     core_set = set(core)
-    c_roots, o_roots, oh, om, _acid = _oxo_arm_roots(mol, z_idx)
-    if kind in _OXO_Z_ANCHORED:  # 中心为母体：臂单点回接 + 整分子纯度（排除臂间成环）
+    c_roots, o_roots, oh, om = part["c"], part["o_arm_root"], part["oh"], part["om"]
+    if kind in OXO_CENTER_KINDS:  # 中心为母体：臂单点回接 + 整分子纯度（排除臂间成环）
         arm = _arm_single_attach(mol, c_roots + o_roots, core_set)
         if arm is None:
             return None
@@ -236,27 +220,23 @@ def _fg_entry(atom) -> dict:
     """组装官能团条目 dict（中心原子 + 重原子周边）。"""
     return {"center_idx": atom.GetIdx(), "surr_idx": _surr_idx(atom)}
 
-def _is_cc_double(bond) -> bool:
-    """判断键是否为 C=C 双键（排除芳香键）。"""
-    if bond.GetBondType() != BondType.DOUBLE or bond.GetIsAromatic():
-        return False
-    a, b = bond.GetBeginAtom(), bond.GetEndAtom()
-    return a.GetAtomicNum() == C and b.GetAtomicNum() == C
-
-def _is_cc_triple(bond) -> bool:
-    """判断键是否为 C≡C 三键。"""
-    if bond.GetBondType() != BondType.TRIPLE:
-        return False
-    a, b = bond.GetBeginAtom(), bond.GetEndAtom()
-    return a.GetAtomicNum() == C and b.GetAtomicNum() == C
-
-def _bond_entry(bond) -> dict:
-    """将 C=C/C≡C 键组装为条目 dict（两碳索引有序）。"""
-    a, b = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-    return {"c1": min(a, b), "c2": max(a, b)}
-
-def _filter_bond_entries(mol: Mol, pred, entry_fn) -> list[dict]:
-    return [entry_fn(bond) for bond in mol.GetBonds() if pred(bond)]
+def _cc_bond_entries(mol: Mol) -> tuple[list[dict], list[dict]]:
+    """一遍遍历全部键，按 C=C（排除芳香）与 C≡C 分别组装条目（两碳索引有序）。"""
+    dbl: list[dict] = []
+    tpl: list[dict] = []
+    for b in mol.GetBonds():
+        bt = b.GetBondType()
+        if bt == BondType.DOUBLE and not b.GetIsAromatic():
+            dst = dbl
+        elif bt == BondType.TRIPLE:
+            dst = tpl
+        else:
+            continue
+        if b.GetBeginAtom().GetAtomicNum() != C or b.GetEndAtom().GetAtomicNum() != C:
+            continue
+        a, z = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
+        dst.append({"c1": min(a, z), "c2": max(a, z)})
+    return dbl, tpl
 
 def _ring_meta(mol: Mol) -> dict:
     """汇总环事实：环条目、环系与数量统计。"""
@@ -338,8 +318,8 @@ def _collect_fgs(mol: Mol) -> dict:
     from namepredict.layer1.functional_group_inventory import build_inventory
 
     parts, demoted = _arbitrate_parts(_detect_parts(mol), mol)
-    return {"double_bonds": _filter_bond_entries(mol, _is_cc_double, _bond_entry),
-            "triple_bonds": _filter_bond_entries(mol, _is_cc_triple, _bond_entry),
+    double_bonds, triple_bonds = _cc_bond_entries(mol)
+    return {"double_bonds": double_bonds, "triple_bonds": triple_bonds,
             "fg_inventory": build_inventory(parts, mol, demoted)}
 
 def _info(mol: Mol, carbons: list[int]) -> dict:

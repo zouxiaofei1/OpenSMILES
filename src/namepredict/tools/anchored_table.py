@@ -9,6 +9,7 @@ from rdkit.Chem import BondType, Mol
 
 from namepredict.constants import C, N, O, zh_bridge_root
 from namepredict.tools import memo
+from namepredict.tools.re import SUB_LOCANT_RE
 from namepredict.layer3.submol_build import build_anchor_submol
 
 
@@ -192,7 +193,6 @@ def _alkoxycarbonyl(mol: Mol, atoms: frozenset[int], attach_old: int) -> tuple[s
 
 
 _RING_YL_EN_RE = re.compile(r"^(.+?)-(\d+[a-z]?)-yl$")  # 环胺 N-侧基名（pyrrolidin-1-yl）
-_LOCANT_SEG_RE = re.compile(r"(?:^|[-(\[])\d+(?:,\d+)*[a-z]?-(?!(?:en|yn|an|in))")  # 取代基自带位次段（复合环名判据）
 _AMINO_EN, _AMINO_ZH = "amino", "氨基"
 _ANILINO_EN, _ANILINO_ZH = "anilino", "苯胺基"
 _PHENYL_EN, _PHENYL_ZH = "phenyl", "苯基"
@@ -216,7 +216,7 @@ def carbamoyl_prefix_name(en: str, zh: str, *, in_ring: bool) -> tuple[str, str]
         if "(" in stem_en and not fenced:
             # 复合 N-取代基自带内层括号：整体加方括号围栏再接 carbamoyl（P-16.5.1.1/P-16.5.2）
             stem_en, stem_zh = f"[{stem_en}]", f"[{stem_zh}]"
-        elif len(_LOCANT_SEG_RE.findall(stem_en)) >= 2 and not fenced:  # 复合环名前导多位次段：括起消歧（P-16.5.1.3.1）
+        elif len(SUB_LOCANT_RE.findall(stem_en)) >= 2 and not fenced:  # 复合环名前导多位次段：括起消歧（P-16.5.1.3.1）
             stem_en, stem_zh = f"({stem_en})", f"({stem_zh})"
         return stem_en + "carbamoyl", stem_zh + "氨基甲酰基"
     if en.endswith(_ANILINO_EN):  # N-芳基用 anilino 保留名，须换回「芳基」再接 carbamoyl

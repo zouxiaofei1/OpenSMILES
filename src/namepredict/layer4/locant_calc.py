@@ -1,8 +1,7 @@
-"""L4 位次计算：将官能团/取代基附着原子映射为链上位次。"""
+"""L4 位次计算：附着原子 → 链上位次，含 FG/烯炔位次省略规则与并列候选母体比较键。"""
 from __future__ import annotations
 from namepredict.layer1.fg_registry import FG_SPECS
 import re
-from namepredict.layer4.omit_locants import omit_fg_locant as _omit_fg, omit_unsat
 
 def locant_key(x) -> tuple[int, str]:
     """locant → 排序键：数字按数值，字母尾与撇号作次级键。"""
@@ -161,12 +160,12 @@ _FG_GROUP = {"alcohol": "alcohol", "amine": "amine", "ketone": "ketone", "thiol"
 
 
 def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
-    """FG 记录 omit 标志：环状判断交由 omit_locants 完成。"""
+    """FG 记录 omit 标志：环状判断交由同文件的 omit_fg_locant 完成。"""
     group = _FG_GROUP.get(kind)
     if group is None:
         return False
     single = kind != "ketone" or len(_typed_group_atoms(oriented, "ketone")) == 1
-    return _omit_fg(True, n, oriented, n_subs, single=single)
+    return omit_fg_locant(True, n, oriented, n_subs, single=single)
 
 _FG_LOCANTS = tuple((sp.fg, sp) for sp in FG_SPECS if sp.fg is not None)  # (记录 kind, spec)：由 fg_registry 承载跨层一致性。
 
@@ -194,3 +193,50 @@ def _pack(oriented: dict, substituents: list) -> dict:
         **_unsat_locants(oriented, oriented.get("n_carbons", 0)),
     }
     return result
+
+
+# ── FG 位次省略规则（原 omit_locants.py；P-14.3.4 / 环单 FG） ──
+
+def omit_fg_locant(
+    pos: int | None, n_carbons: int, parent: dict | None = None, n_subs: int = 0, *,
+    single: bool = True,
+) -> bool:
+    """判定主官能团位次是否省略（P-14.3.4 / 环单 FG）：环状无取代省。"""
+    # 环状单环且非稠环：环单 FG 无取代省位次，有取代或多官能团保留。
+    if ((parent or {}).get("scaffold_id") == "carbocycle" and not (parent or {}).get("fused_tree")
+            and pos is not None and single):
+        return n_subs == 0
+    return pos == 1 and n_carbons <= 2
+
+
+def omit_unsat(
+    n_carbons: int, kind: str | None = None, parent: dict | None = None, *,
+    triple: bool = False,
+) -> bool:
+    """判定烯/炔位次是否省略（环单烯或短链）；triple 选择炔规则。"""
+    if kind == "alkane" and (parent or {}).get("scaffold_id") == "carbocycle":  # 纯烃环单烯位次隐含省略；环多烯保留位次。
+        if not (parent or {}).get("double_bonds"):
+            return True
+    # 烯 ≤C2、炔 ≤C3 时位次 '1' 省略（P-14.3.4.2(d)）。
+    return n_carbons <= (3 if triple else 2)
+
+
+# ── 并列候选母体比较键（原 candidate_keys.py；P-44.1.1 / P-45.2.2） ──
+
+def suffix_locant_set(numbered: dict) -> tuple:
+    """P-44.1.1：principal 特征基团位次集合（P-14.3.5）。"""
+    from namepredict.layer4.numbering_engine import _principal_atoms  # 函数内导入：避开 locant_calc ↔ numbering_engine 环
+
+    parent = numbered.get("parent") or {}
+    chain = parent.get("chain") or []
+    labels = (parent.get("numbering_scaffold") or {}).get("labels") or []
+    facts = {"labels": labels}
+    locs = [loc for atom in _principal_atoms(parent)
+            if (loc := _atom_locant(chain, atom, facts)) is not None]
+    return tuple(sorted(locant_key(x) for x in locs))
+
+
+def prefix_locant_set(numbered: dict) -> tuple:
+    """P-45.2.2：前缀取代基位次集合（P-14.3.5）；无位次前缀不入键。"""
+    locs = [s["locant"] for s in (numbered.get("substituents") or []) if s.get("locant") is not None]
+    return tuple(sorted(locant_key(x) for x in locs))

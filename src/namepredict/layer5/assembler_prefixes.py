@@ -95,7 +95,7 @@ def _stem_needs_paren(stem: str, subs: list, omit: bool, flat: bool = False) -> 
         return (not omit) and not flat  # 母体位次省略时无同类位次可混，前缀无需围栏
     if stem and stem[0].isdigit():
         return (not flat) and not (omit and any(s.get("ring_yl") for s in subs))  # 母体位次已省略时环基名无须围栏消歧（P-16.5.1.2）
-    return (not omit) and (stem == "trifluoromethyl" or bool(_STEREO_LEAD_RE.match(stem)))
+    return (not omit) and (stem == "trifluoromethyl" or bool(_STEREO_LEAD_ENCLOSE_RE.match(stem)))
 
 
 def oxo_arm_fence(name: str, sub: dict, mol) -> bool:
@@ -104,7 +104,7 @@ def oxo_arm_fence(name: str, sub: dict, mol) -> bool:
         return False  # 臂名已自带完整方括号围栏（P-16.5.2），L5 不再二次围栏
     if (name or "")[:1] == "(":
         return True  # 前导圆括号仅为立体描述符（(2S)-…），非完整围栏
-    if len(re.findall(r"\d+(?:,\d+)*[a-z]*-", _STEREO_LEAD_RE.sub("", name or ""))) >= 2:
+    if len(_LOCANT_RUN_RE.findall(_STEREO_LEAD_ENCLOSE_RE.sub("", name or ""))) >= 2:
         return True  # 自带多个位次段的复合臂名须整体围栏（P-16.5.1.3.1）；2,3- 只算一段
     attach = sub.get("attach_idx")
     if not sub.get("paren") or mol is None or attach is None:
@@ -154,7 +154,9 @@ def _place(mult: str, s: str, subs: list, omit: bool) -> str:
         return f"{mult}{s}"
     return f"{_locant_str(subs)}-{mult}{s}"
 
-_STEREO_LEAD_RE = re.compile(r"\(\d+[RSEZ](?:,\d+[RSEZ])*\)-")  # 取代基名以立体描述符开头：(1Z)-、(2R,4R)-、(9Z,12Z)-。
+# 取代基名以带位次的立体描述符开头：(1Z)-、(2R,4R)-。与 tools.re._STEREO_LEAD_STRIP_RE 不同——
+# 那份供 P-14.5 排序剥除、允许无位次，本份供围栏判定、要求每位次带 token，勿互换。
+_STEREO_LEAD_ENCLOSE_RE = re.compile(r"\(\d+[RSEZ](?:,\d+[RSEZ])*\)-")
 
 _BRIDGE_SELF_FENCE = ("sulfanyl", "sulfinyl", "硫基", "亚磺酰基")  # 前端自带方括号时并入同一围栏的桥后缀（P-16.5.1.3）
 _FRONT_TAILS = ("yl", "sulfanyl", "amino")  # 可作桥前端的词尾：-yl 自由价基，或本身即复合桥前端（…amino）
@@ -287,7 +289,7 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
     mult = _mult_of("zh", zh_stem, subs, len(subs))
     en = subs[0].get("en") or ""
     need = (any(s.get("paren") for s in subs) or bool(en[:1].isdigit() and not flat)) and not _is_bare(subs)  # 停用：简单氟代甲基不加括号
-    if not omit and _STEREO_LEAD_RE.match(en):  # 前导立体描述符 + 位次须整体围栏
+    if not omit and _STEREO_LEAD_ENCLOSE_RE.match(en):  # 前导立体描述符 + 位次须整体围栏
         need = True
     if mult and mult == MULT_ZH.get(len(subs), "") and en_stem and _MULT_WRAP_RE.search(en_stem):  # 与英文侧同判：复合取代基用 双(...)
         need = True
@@ -326,10 +328,10 @@ def _strip_nested_fence(name: str) -> str:
 
 def cation_arm_bare(name: str) -> bool:
     """阳离子母体臂名是否免围栏：前导立体描述符或自带多个位次段者须围栏。"""
-    if _STEREO_LEAD_RE.match(name or ""):
+    if _STEREO_LEAD_ENCLOSE_RE.match(name or ""):
         return False
     top = _strip_nested_fence(name or "")
-    return len(re.findall(r"\d+(?:,\d+)*[a-z]*-", top)) < 2  # 2,3- 只算一段
+    return len(_LOCANT_RUN_RE.findall(top)) < 2  # 2,3- 只算一段
 
 
 def _parts_for_stem(stem: str, subs: list, omit: bool, primes: dict[int, int] | None = None,
@@ -389,7 +391,7 @@ def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
     return en_parts, zh_parts
 
 
-_LOCANT_SEG_RE = re.compile(r"\d+(?:,\d+)*[a-z]*-")  # 名内位次段（2,3- 算一段）
+_LOCANT_RUN_RE = re.compile(r"\d+(?:,\d+)*[a-z]*-")  # 名内位次段（2,3- 算一段），与 tools.re.SUB_LOCANT_RE 不同：无段首锚点
 
 
 def _cation_arm_hyphen(groups: dict[str, list]) -> bool:
@@ -399,7 +401,7 @@ def _cation_arm_hyphen(groups: dict[str, list]) -> bool:
     for name, subs in groups.items():
         if "(" in name or "[" in name:  # 自带围栏的复合臂
             return True
-        if name[:1].isdigit() and (len(_LOCANT_SEG_RE.findall(_strip_nested_fence(name))) >= 2
+        if name[:1].isdigit() and (len(_LOCANT_RUN_RE.findall(_strip_nested_fence(name))) >= 2
                                    or len(subs) > 1):  # 多位次臂名，或带位次的倍增臂
             return True
     return False
@@ -421,7 +423,7 @@ def _o_side_arm_fence(name: str, sub: dict) -> bool:
     """O-侧臂围栏（P-16.5.1.3.1）：自带多位次的复合臂名须整体括起。"""
     if not sub.get("paren") or (name or "")[:1] in "[(" or re.search(r"[()\[\]]", name or ""):
         return False  # 简单臂名与已自带围栏/含括号的臂名（立体描述符、复合前缀）不加
-    return len(re.findall(r"\d+(?:,\d+)*[a-z]*-", name)) >= 2
+    return len(_LOCANT_RUN_RE.findall(name)) >= 2
 
 
 def _fence_o_side_arms(subs: list, kind: str | None, mol) -> None:

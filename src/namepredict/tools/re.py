@@ -1,4 +1,8 @@
-"""命名文本辅助函数。"""
+"""命名文本辅助函数。
+
+alpha_order_key 系列供管线内 P-14.5 排序；normalize_en/normalize_zh/nospace 是
+测试与 benchmark 的判分口径，管线本身不调用它们。
+"""
 from __future__ import annotations
 
 import re
@@ -21,14 +25,21 @@ def _strip_lead_locant(stem: str) -> str:
         i += 1
     return stem[i + 1 :] if i and i < n and stem[i] == "-" else stem
 
-_STEREO_LEAD_RE = re.compile(
+# 立体描述符剥除（P-14.5 排序用）：允许无位次的 (E)-、(R)-，也允许 1aR 型。与
+# layer5.assembler_prefixes._STEREO_LEAD_ENCLOSE_RE 不同——那份要求每个 token 带位次，
+# 用于判"是否须整体围栏"，两者语义不同，勿互换。
+_STEREO_LEAD_STRIP_RE = re.compile(
     r"^\((?:\d*[a-zA-Z]*[EeZzRrSs])(?:,(?:\d*[a-zA-Z]*[EeZzRrSs]))*\)-"
 )
+
+# 取代基名额外的位次段（复合环名/复合臂名判据）：段首或 -([ 之后起，排除母体词干内烯/炔位次。
+# layer5.assembler 与 tools.anchored_table 共用这一份，勿各自内联。
+SUB_LOCANT_RE = re.compile(r"(?:^|[-(\[])\d+(?:,\d+)*[a-z]?-(?!(?:en|yn|an|in))")
 
 
 def _strip_lead_stereo(stem: str) -> str:
     """剥除词干最前的立体描述符组及其连字符（P-14.5）。"""
-    m = _STEREO_LEAD_RE.match(stem)
+    m = _STEREO_LEAD_STRIP_RE.match(stem)
     return stem[m.end():] if m else stem
 
 

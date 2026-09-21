@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from namepredict.constants import (
-    P145_SENIOR, RS_HI, RS_LO, TRADITIONAL_NUMBERING_IDS,
+    C, P145_SENIOR, RS_HI, RS_LO, TRADITIONAL_NUMBERING_IDS,
 )
 from namepredict.tools import memo
 from namepredict.tools.re import alpha_order_key
@@ -91,6 +91,60 @@ def narrow_by_senior(cands: list, key_fn, heteros, by_z, *, skip_none: bool = Fa
         if atoms:
             cands = narrow(cands, lambda c, at=sorted(atoms): key_fn(c, at), skip_none=skip_none)
     return cands
+
+
+# ── 桥环/螺环编号共享设施（P-23.3.2 / P-24.2.2 / P-14.4 通用段） ───
+
+def candidates(parent: dict, key: str) -> list:
+    """L2 下传的并列候选；无对应节点返回空表。"""
+    nodes = parent.get(f"{key}s")
+    if nodes:
+        return list(nodes)
+    node = parent.get(key)
+    return [node] if node is not None else []
+
+
+def hetero_atoms(mol, atoms) -> list[int]:
+    """骨架杂原子，按给定原子序列顺序。"""
+    if mol is None:
+        return []
+    return [a for a in atoms if mol.GetAtomWithIdx(a).GetAtomicNum() != C]
+
+
+def by_z(mol, atoms: list[int]) -> dict[int, list[int]]:
+    """原子序数 → 该元素的骨架原子列表。"""
+    out: dict[int, list[int]] = {}
+    for a in atoms:
+        out.setdefault(mol.GetAtomWithIdx(a).GetAtomicNum(), []).append(a)
+    return out
+
+
+def alpha_locants(numbering: dict[int, int], chain: list[int], substituents: list) -> tuple:
+    """按前修饰基字母序排列的位次元组（P-14.4(g)）。"""
+    pairs = sorted(
+        (alpha_order_key(s.get("en") or ""), numbering.get(s["attach_idx"], 0))
+        for s in substituents if s.get("attach_idx") in chain)
+    return tuple(loc for _, loc in pairs)
+
+
+def pick_equivalent(nodes: list, feat):
+    """并列候选特征全同才取首个，否则视为不可判定。"""
+    if not nodes:
+        return None
+    return nodes[0] if len({feat(nd) for nd in nodes}) == 1 else None
+
+
+def node_feature_key(mol, chain: list[int], parent: dict, substituents: list, extra):
+    """候选渲染特征工厂：描述符 + extra(node) + 杂原子/后缀/取代基位次。"""
+    def feat(node) -> tuple:
+        het = tuple(sorted((mol.GetAtomWithIdx(a).GetAtomicNum(), node.numbering[a])
+                           for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != C)) \
+            if mol is not None else ()
+        suffix = tuple(sorted(node.numbering[a] for a in _principal_atoms(parent) if a in chain))
+        subs = tuple(sorted(node.numbering[s["attach_idx"]] for s in (substituents or [])
+                            if s.get("attach_idx") in chain))
+        return (node.descriptor, extra(node), het, suffix, subs)
+    return feat
 
 
 # ── P-14.4(j)：CIP 平局破（R/M/r 优先） ───
@@ -244,7 +298,6 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
     if not suffixes and not prefixes:
         return chains[0]
     labels = _STANDARD_LABELS.get(sid) or ()
-    from namepredict.tools.re import alpha_order_key
     alpha_subs = [(alpha_order_key(s.get("en") or ""), s["attach_idx"])
                   for s in (substituents or []) if s.get("attach_idx") in chain]
 
@@ -317,7 +370,6 @@ def _fused_numbering(parent: dict, chain: list[int],
                        if s.get("attach_idx") in chain_set)
     if sub_atoms:
         layers.append(sub_atoms)  # P-14.4(f): 取代基位次集合最小化
-    from namepredict.tools.re import alpha_order_key
     alpha_subs = [(alpha_order_key(s.get("en") or ""), s["attach_idx"])
                   for s in (substituents or []) if s.get("attach_idx") in chain_set]
     result = number_fused_system(mol, rings, [o.coord_dict() for o in orients], layers, alpha_subs)

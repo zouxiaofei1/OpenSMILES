@@ -12,10 +12,9 @@ from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer0.salt import dissociate_salt
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.parent_select import finalize_parent_ownership, select_parent
-from namepredict.layer3.coverage import build_coverage_ledger
 from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer3.substituent_namer import SubstituentName
-from namepredict.layer4.candidate_keys import prefix_locant_set, suffix_locant_set
+from namepredict.layer4.locant_calc import prefix_locant_set, suffix_locant_set
 from namepredict.layer4.numbering import number
 from namepredict.layer5.assembler import assemble
 from namepredict.types import NameResult
@@ -115,17 +114,15 @@ def _assemble_candidate(parent, subst, *, t0: float) -> NameResult | None:
 
 def _prepare_candidate(
     info: dict, parent: dict, *, cache: CommonNameCache | None = None,
-) -> tuple[dict, list[dict], bool]:
-    """完成母体归属与取代基提取，返回三元组。"""
+) -> tuple[dict, list[dict]]:
+    """完成母体归属与取代基提取，返回 (母体, 取代基表)。"""
     mol = info["mol"]
     parent = finalize_parent_ownership(parent, mol)
     if not parent.get("owned_atoms"):
-        return parent, [], False
+        return parent, []
     if not parent.get("chain") and not info.get("has_ring"):
-        return parent, [], False
-    subst = extract_substituents(info, parent, cache=cache)
-    complete = build_coverage_ledger(mol, owned_atoms=parent["owned_atoms"], names=[]).complete  
-    return parent, subst, complete
+        return parent, []
+    return parent, extract_substituents(info, parent, cache=cache)
 
 def _candidate_key(hit: NameResult) -> tuple:
     """候选裁决键：(P-44.1.1 后缀位次, P-45.2.2 前缀位次)。"""
@@ -143,28 +140,20 @@ def _best_hit(hits: list[tuple]) -> NameResult | None:
 
 
 def _try_phase(prepared, *, t0):
-    """L4+L5入口"""
+    """L4+L5入口：逐候选装配，取裁决最优者。"""
     hits = []
-    for order, (parent, subst, complete) in enumerate(prepared):
-        
+    for order, (parent, subst) in enumerate(prepared):
         hit = _assemble_candidate(parent, subst, t0=t0)
         if hit is not None:
-            hit.meta = {**(hit.meta or {}), "fallback": "no_coverage_gate"}
             hits.append((*_candidate_key(hit), order, hit))
     return _best_hit(hits)
-
-
-def _candidate_phases(info: dict) -> list[list[dict]]:
-    """选取候选母体阶段列表"""
-    group = select_parent(info)
-    return [group] if group else [[]]
 
 
 def _run_candidates(
     info: dict, *, t0: float, cache: CommonNameCache | None = None,
 ) -> NameResult:
     """_run_candidates"""
-    phase = _candidate_phases(info)[0]#Layer2入口
+    phase = select_parent(info) or []#Layer2入口
     prepared = [_prepare_candidate(info, cand, cache=cache) for cand in phase]#L3
     hit = _try_phase(prepared, t0=t0)#L4入口
     return hit or _fail(_elapsed_ms(t0), "no_assemblable_candidate")
@@ -193,7 +182,7 @@ def _name_mol(
     t0: float | None = None,
     root_ctx: tuple | None = None,
 ) -> NameResult:
-    """从 mol 运行 L1–L5，带 coverage 门控的候选重试。"""
+    """从 mol 运行 L1–L5：解盐、分析、候选装配、盐后缀。"""
     t0 = t0 if t0 is not None else time.perf_counter()
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")

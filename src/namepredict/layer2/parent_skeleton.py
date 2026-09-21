@@ -13,6 +13,7 @@ from namepredict.layer1.functional_group_inventory import (
 )
 from namepredict.layer2.chain_walk import _all_chains_through, _chain_through_two, _longest_chain
 from namepredict.layer1.ring_systems import sssr_rings
+from namepredict.layer4.numbering_engine import narrow
 
 
 class SkeletonTopology(str, Enum):
@@ -120,6 +121,7 @@ def _chain_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
 
 
 _SENIOR_ATOMS = (N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl, O, S, Se, Te, C)
+_SENIORITY = {z: i for i, z in enumerate(reversed(_SENIOR_ATOMS), 1)}  # 元素 → 优先序数（N 最高，C 最低）
 
 
 def _senior_atom(mol: Mol, skeleton: ParentSkeleton) -> int:
@@ -130,9 +132,8 @@ def _senior_atom(mol: Mol, skeleton: ParentSkeleton) -> int:
 
 def keep_senior_atom(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
     """保留含最优先元素（senior）的候选。"""
-    seniority = {z: i for i, z in enumerate(reversed(_SENIOR_ATOMS), 1)}
-    best = max((seniority.get(_senior_atom(mol, c), 0) for c in candidates), default=0)
-    return tuple(c for c in candidates if seniority.get(_senior_atom(mol, c), 0) == best)
+    return tuple(narrow(list(candidates), lambda c: _SENIORITY.get(_senior_atom(mol, c), 0),
+                        reverse=True))
 
 
 def keep_p44_1_2(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
@@ -148,9 +149,8 @@ def p44_3_key(mol: Mol, skeleton: ParentSkeleton) -> tuple:
 
 def keep_p44_3(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
     """P-44.3：开链候选按 p44_3_key 取最大。"""
-    chains = tuple(c for c in candidates if c.topology is SkeletonTopology.ACYCLIC)
-    best = max((p44_3_key(mol, c) for c in chains), default=())
-    return tuple(c for c in chains if p44_3_key(mol, c) == best)
+    chains = [c for c in candidates if c.topology is SkeletonTopology.ACYCLIC]
+    return tuple(narrow(chains, lambda c: p44_3_key(mol, c), reverse=True))
 
 
 def _ring_count(mol: Mol, skeleton: ParentSkeleton) -> int:
@@ -164,21 +164,19 @@ def p44_2_key(mol: Mol, skeleton: ParentSkeleton) -> tuple:
     numbers = [mol.GetAtomWithIdx(i).GetAtomicNum() for i in skeleton.atom_ids]
     hetero = [z for z in numbers if z != C]
     has_n = N in hetero
-    senior = next((len(_SENIOR_ATOMS) - i for i, z in enumerate(_SENIOR_ATOMS) if z in hetero), 0)
+    senior = next((_SENIORITY[z] for z in _SENIOR_ATOMS if z in hetero), 0)
     return bool(hetero), numbers.count(N) if has_n else 0, senior if not has_n else 0, _ring_count(mol, skeleton), len(numbers), len(hetero)
 
 
 def keep_p44_2(mol: Mol, candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
     """P-44.2：环候选按 p44_2_key 取最大。"""
-    rings = tuple(c for c in candidates if c.topology is SkeletonTopology.RING_SYSTEM)
-    best = max((p44_2_key(mol, c) for c in rings), default=())
-    return tuple(c for c in rings if p44_2_key(mol, c) == best)
+    rings = [c for c in candidates if c.topology is SkeletonTopology.RING_SYSTEM]
+    return tuple(narrow(rings, lambda c: p44_2_key(mol, c), reverse=True))
 
 
 def keep_max_principal_coverage(candidates: tuple[ParentSkeleton, ...]) -> tuple[ParentSkeleton, ...]:
     """保留覆盖主官能团最多的候选。"""
-    maximum = max((len(c.covered_principal_ids) for c in candidates), default=0)
-    return tuple(c for c in candidates if len(c.covered_principal_ids) == maximum)
+    return tuple(narrow(list(candidates), lambda c: len(c.covered_principal_ids), reverse=True))
 
 def p44_4_unsaturation_key(mol: Mol, skeleton: ParentSkeleton, occurrences=()) -> tuple[int, int]:
     """P-44.4 不饱和度键：(多重键数, 双键数)。 """
@@ -208,8 +206,8 @@ def _p44_4_unsaturation_key_uncached(mol: Mol, skeleton: ParentSkeleton, occurre
 
 def keep_p44_4_unsaturation(mol: Mol, candidates: tuple[ParentSkeleton, ...], occurrences=()) -> tuple[ParentSkeleton, ...]:
     """P-44.4：按不饱和度键取最大候选。"""
-    best = max((p44_4_unsaturation_key(mol, c, occurrences) for c in candidates), default=())
-    return tuple(c for c in candidates if p44_4_unsaturation_key(mol, c, occurrences) == best)
+    return tuple(narrow(list(candidates),
+                        lambda c: p44_4_unsaturation_key(mol, c, occurrences), reverse=True))
 
 
 def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> SkeletonSelection:

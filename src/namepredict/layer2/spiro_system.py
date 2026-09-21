@@ -8,10 +8,10 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, replace
 
+from namepredict.constants import C
 from namepredict.layer1.ring_systems import sssr_rings
 from namepredict.layer2.ring_scaffold import match_retained
 
-CARBON = 6
 _BRACKET = re.compile(r"\[([^\]]*)\]")
 _MAX_WALKS = 64  # 段回路候选上限
 SPIRO_SCAFFOLDS = ("mono_spiro", "fused_bridged_spiro")
@@ -145,7 +145,7 @@ def _number_walk(segs: list[_Seg], walk: tuple) -> tuple[dict, tuple, tuple]:
 
 def _ring_kind(mol, atom_ids) -> str:
     """环组分的元素类型：全碳为 carbo，否则 hetero。"""
-    return "carbo" if all(mol.GetAtomWithIdx(a).GetAtomicNum() == CARBON
+    return "carbo" if all(mol.GetAtomWithIdx(a).GetAtomicNum() == C
                           for a in atom_ids) else "hetero"
 
 
@@ -185,11 +185,6 @@ def decompose_spiro_system(info: dict, system: dict) -> list:
     out = [SpiroNode("mono_spiro", atom_ids, free, comps, desc, sups, num, kind, len(indices))
            for num, desc, sups in walks]
     return [nd for nd in out if _numbers_all(nd, atom_ids)]
-
-
-def has_spiro_system(system: dict | None) -> bool:
-    """环系是否含自由螺连接（P-24.1）。"""
-    return bool(system is not None and system.get("free_spiro_atoms"))
 
 
 def _numbers_all(node: SpiroNode, atom_ids) -> bool:
@@ -312,7 +307,7 @@ def _mono_numberings(mol, ring) -> list[FbsNumbering]:
     from namepredict.layer4.numbering_engine import _narrow_hetero_ring, _ring_cands
     chain = list(ring)
     cands = _ring_cands(chain)
-    if any(mol.GetAtomWithIdx(a).GetAtomicNum() != CARBON for a in chain):
+    if any(mol.GetAtomWithIdx(a).GetAtomicNum() != C for a in chain):
         cands = _narrow_hetero_ring(cands, mol, chain, False)
     return [_from_numbering(c) for c in cands]
 
@@ -429,7 +424,7 @@ def _build_component(mol, info, system, comp: list[int], free, k: int) -> FbsCom
         node = None
     elif len(comp) == 1:  # 未注册单环：碳环出 cyclo 基名，杂环本版不支持
         chain = tuple(sub_rings[0])
-        if any(mol.GetAtomWithIdx(a).GetAtomicNum() != CARBON for a in chain):
+        if any(mol.GetAtomWithIdx(a).GetAtomicNum() != C for a in chain):
             return None
         kind, sid, node, extra = "mono_ring", None, None, ()
         nums = _mono_numberings(mol, chain)
@@ -549,14 +544,9 @@ def decompose_fbs_system(info: dict, system: dict) -> list[FbsNode]:
         links.append((hit[0], slot_of[hit[1]], pos))
     cites = tuple(tuple(slot_of[k] for k in grp) for grp in groups)
     atom_ids = tuple(sorted({a for c in ranked for a in c.atom_ids}))
-    ring = "carbo" if all(mol.GetAtomWithIdx(a).GetAtomicNum() == CARBON for a in atom_ids) \
+    ring = "carbo" if all(mol.GetAtomWithIdx(a).GetAtomicNum() == C for a in atom_ids) \
         else "hetero"
     return [FbsNode(atom_ids, free, ranked, tuple(links), cites, ring,
                     len(system.get("sssr_indices") or ()))]
 
 
-def has_polycyclic_component(system: dict | None) -> bool:
-    """环系拆掉自由螺原子后是否仍有多环组分（P-24.5 开关）。"""
-    if not system or not system.get("free_spiro_atoms"):
-        return False
-    return len(component_indices(system)) != len(system.get("sssr_indices") or ())

@@ -27,6 +27,12 @@ class FunctionalGroupClass(str, Enum):
     NONE = 'alkane'
 
 
+# 含氧酸合一类的全部 P-41 类别。两处消费者同一集合：
+# L2 表达式按它判阴离子标志（principal_expression），L2 父体归属按它把特征原子全归主基团
+# （parent_select：中心非骨架成员，无可外借臂）。
+OXO_FG_CLASSES = frozenset({FunctionalGroupClass.OXOACID, FunctionalGroupClass.SULFONAMIDE})
+
+
 @dataclass(frozen=True)
 class FunctionalGroupOccurrence:
     """单个官能团出现：id、类别、特征原子、母体锚点、附加负载与 P-41 仲裁状态。"""

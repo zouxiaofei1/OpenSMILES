@@ -10,41 +10,34 @@ from namepredict.constants import (
 )
 
 
-def _single_atom(mol: Mol):
-    """单原子片段返回该原子，否则 None。"""
+def _frag_role(mol: Mol) -> tuple[str, str | int] | None:
+    """单原子片段的盐角色：金属阳离子/卤素阴离子/卤化氢 → ("metal"|"halide"|"hx", 值)。
+
+    金属取英文金属名（P-71.2），卤素取原子序数；多原子或非盐离子返回 None。
+    """
     if mol.GetNumAtoms() != 1:
         return None
-    return mol.GetAtomWithIdx(0)
-
-def _metal_ion(mol: Mol) -> str | None:
-    """单原子金属阳离子 → 英文金属名（P-71.2）；非金属或多原子返回 None。"""
-    a = _single_atom(mol)
-    if a is None or a.GetFormalCharge() < 1:
+    a = mol.GetAtomWithIdx(0)
+    z, q = a.GetAtomicNum(), a.GetFormalCharge()
+    if q >= 1 and z in METAL_ION_EN:
+        return "metal", METAL_ION_EN[z]
+    if z not in HALO_Z:
         return None
-    return METAL_ION_EN.get(a.GetAtomicNum())
+    if q == -1 and a.GetTotalNumHs() == 0:
+        return "halide", z
+    if q == 0 and a.GetTotalNumHs() == 1:
+        return "hx", z
+    return None
 
-def _halide_ion(mol: Mol) -> int | None:
-    """单原子卤素阴离子 [X-] → 原子序数；否则 None。"""
-    a = _single_atom(mol)
-    if a is None or a.GetFormalCharge() != -1 or a.GetAtomicNum() not in HALO_Z:
+
+def _mult_word(base: str | None, n: int, mult: dict) -> str | None:
+    """按份数给基名加数量前缀（n=1 不加）；缺词表返回 None。"""
+    if not base:
         return None
-    return a.GetAtomicNum() if a.GetTotalNumHs() == 0 else None
-
-def _hydrogen_halide(mol: Mol) -> int | None:
-    """中性卤化氢 HX（卤素带 1 个 H）→ 原子序数；否则 None。"""
-    a = _single_atom(mol)
-    if a is None or a.GetFormalCharge() != 0 or a.GetAtomicNum() not in HALO_Z:
-        return None
-    return a.GetAtomicNum() if a.GetTotalNumHs() == 1 else None
-
-
-def _mult_word(words: dict[int, str], n: int, mult: dict) -> str | None:
-    """按份数加数量前缀（n=1 不加）；缺词表返回 None。"""
     if n == 1:
-        return words.get(1) or None
+        return base
     m = mult.get(n)
-    base = words.get(1)
-    return f"{m}{base}" if m and base else None
+    return f"{m}{base}" if m else None
 
 
 def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
@@ -54,19 +47,15 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
     hx: list[int] = []       # 中性卤化氢 HX 的原子序数
     organics: list[Mol] = []
     for f in frags:
-        m = _metal_ion(f)
-        if m is not None:
-            metals.append(m)
-            continue
-        z = _halide_ion(f)
-        if z is not None:
-            anions.append(z)
-            continue
-        z = _hydrogen_halide(f)
-        if z is not None:
-            hx.append(z)
-            continue
-        organics.append(f)
+        role = _frag_role(f)
+        if role is None:
+            organics.append(f)
+        elif role[0] == "metal":
+            metals.append(role[1])
+        elif role[0] == "halide":
+            anions.append(role[1])
+        else:
+            hx.append(role[1])
     if not organics or len({Chem.MolToSmiles(f, isomericSmiles=False) for f in organics}) != 1:
         return None  # 无有机片段，或存在多种有机片段：非简单盐
     organic = organics[0]
@@ -80,16 +69,16 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
     elif anions:  # 卤素阴离子 X⁻：有机物须为阳离子（P-71.2 有机阳离子 + 卤离子）
         if hx or len(set(anions)) != 1 or charge <= 0:
             return None
-        en = _mult_word({1: HALIDE_EN[anions[0]]}, len(anions), MULT_EN)
-        zh = _mult_word({1: HALIDE_ZH[anions[0]]}, len(anions), MULT_ZH)
+        en = _mult_word(HALIDE_EN[anions[0]], len(anions), MULT_EN)
+        zh = _mult_word(HALIDE_ZH[anions[0]], len(anions), MULT_ZH)
         if en is None or zh is None:
             return None
         meta = {"halide": en, "halide_zh": zh, "n_org": n_org}
     else:  # 中性卤化氢 HX：有机物须为中性碱（氢卤酸盐）
         if len(set(hx)) != 1 or charge != 0:
             return None
-        en = _mult_word({1: HALIDE_HX_EN[hx[0]]}, len(hx), MULT_EN)
-        zh = _mult_word({1: HALIDE_HX_ZH[hx[0]]}, len(hx), MULT_ZH)
+        en = _mult_word(HALIDE_HX_EN[hx[0]], len(hx), MULT_EN)
+        zh = _mult_word(HALIDE_HX_ZH[hx[0]], len(hx), MULT_ZH)
         if en is None or zh is None:
             return None
         meta = {"acid_salt": en, "acid_salt_zh": zh, "n_org": n_org}
@@ -98,8 +87,8 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
 
 def dissociate_salt(mol: Mol) -> tuple[Mol, dict]:
     """返回有机 mol 与盐元数据；非简单盐时 meta 为空。"""
-    if len(Chem.GetMolFrags(mol)) < 2:
-        return mol, {}
     frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
+    if len(frags) < 2:
+        return mol, {}
     hit = _from_frags(frags)
     return hit if hit is not None else (mol, {})

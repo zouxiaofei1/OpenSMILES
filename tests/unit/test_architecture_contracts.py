@@ -33,7 +33,6 @@ from namepredict.layer1.functional_group_inventory import (
 from namepredict.layer2.parent_select import _collect_candidates
 from namepredict.layer2.parent_select import finalize_parent_ownership
 from namepredict.layer2.principal_expression import (
-    PrincipalChargeState,
     PrincipalExpressionFacts,
     PrincipalRelation,
 )
@@ -934,7 +933,7 @@ def fg_locants_records___oriented(kind: str, chain: list, anchors: list, group) 
     facts = PrincipalExpressionFacts(
         group_class=group, multiplicity=len(anchors), relation=PrincipalRelation.IN_SKELETON,
         occurrence_ids=(), characteristic_atoms=frozenset(), anchor_atoms=frozenset(anchors),
-        attachment_atoms=frozenset(anchors), charge_state=PrincipalChargeState.NEUTRAL)
+        attachment_atoms=frozenset(anchors))
     return {"kind": kind, "n_carbons": len(chain), "chain": list(chain),
             "principal_expression_facts": facts}
 

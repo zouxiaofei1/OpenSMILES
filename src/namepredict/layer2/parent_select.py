@@ -5,7 +5,9 @@ from dataclasses import dataclass
 
 from rdkit.Chem import Mol
 
-from namepredict.layer1.functional_group_inventory import FunctionalGroupClass, inventory_from_info
+from namepredict.layer1.functional_group_inventory import (
+    FunctionalGroupClass, OXO_FG_CLASSES, inventory_from_info,
+)
 from namepredict.layer2.parent_skeleton import (
     SkeletonSelection,
     SkeletonTopology,
@@ -54,7 +56,6 @@ def _chain_atoms(parent: dict) -> set[int]:
     return set(parent.get("chain") or ())
 
 
-_WHOLE_FG_ATOMS = frozenset({FunctionalGroupClass.OXOACID, FunctionalGroupClass.SULFONAMIDE})  # 特征原子全归主基团：中心非骨架成员，无可外借臂
 
 
 def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
@@ -71,7 +72,7 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
         linked = {n.GetIdx() for i in chain for n in mol.GetAtomWithIdx(i).GetNeighbors()}
         seeds = anchors & linked
     out = set(seeds)
-    if facts.group_class in _WHOLE_FG_ATOMS:  # 含氧酸：中心的氧/卤素跨两跳，仅归本骨架覆盖的 occurrence
+    if facts.group_class in OXO_FG_CLASSES:  # 含氧酸：中心的氧/卤素跨两跳，仅归本骨架覆盖的 occurrence
         covered = set(parent.get("covered_principal_ids") or ())
         return out | {i for o in occurrences if o.id in covered for i in o.characteristic_atoms}
     for i in tuple(out):

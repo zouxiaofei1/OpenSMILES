@@ -116,11 +116,11 @@ def test_condensed_phosphate_parent(smiles: str, en: str, zh: str | None) -> Non
 def test_phosphate_detector_excludes(smiles: str) -> None:
     from namepredict.layer0.preprocessor import preprocess
     from namepredict.layer0.salt import dissociate_salt
-    from namepredict.layer1.analyzer import phosphate_entries
+    from namepredict.layer1.analyzer import oxoacid_entries
 
     mol = preprocess(smiles)
     organic, _salt = dissociate_salt(mol)
-    assert phosphate_entries(organic) == [], smiles
+    assert [e for e in oxoacid_entries(organic) if e["oxo_kind"] == "phosphate"] == [], smiles
 
 
 # ==========================================================================

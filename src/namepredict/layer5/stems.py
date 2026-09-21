@@ -52,6 +52,16 @@ def alkane_zh(n: int) -> str | None:
     z = zh_num(n)
     return f"{z}烷" if z else None
 
+
+def stem_forms(body_en: str, body_zh: str, stem_en: str, stem_zh: str) -> tuple[tuple[str, str], tuple[str, str]]:
+    """(完整名, 裸词干) 两形态：裸词干 = 完整名去掉 en 尾 'ane' / zh 尾 '烷'。
+
+    FG 分支要带烷的完整名（后缀去 e 用），链式词干引擎要裸词干（自行拼 ane/烷 或 a…-triene）。
+    桥环、螺环与大环杂单环生成式共用此形态约定。
+    """
+    return ((f"{body_en}{stem_en}", f"{body_zh}{stem_zh}"),
+            (f"{body_en}{stem_en[:-3]}", f"{body_zh}{stem_zh[:-1]}"))
+
 def acid_to_anion_en(en: str) -> str:
     """酸转阴离子英文名（-oic/-ic acid → -oate/-ate）。"""
     if en.endswith("oic acid"):

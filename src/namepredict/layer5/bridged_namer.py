@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from namepredict.constants import MULT_EN, MULT_ZH
 from namepredict.layer5.skeleton_replacement import prefix_from_chain
-from namepredict.layer5.stems import alkane_en, alkane_zh
+from namepredict.layer5.stems import alkane_en, alkane_zh, stem_forms
 
 
 def ring_count_prefix(n_rings: int) -> tuple[str, str] | None:
@@ -43,8 +43,7 @@ def bridged_body_names(node):
         return None
     desc = descriptor_str(node.descriptor, node.locant_pairs)
     body_en, body_zh = f"{prefix[0]}cyclo[{desc}]", f"{prefix[1]}环[{desc}]"
-    return ((f"{body_en}{stem_en}", f"{body_zh}{stem_zh}"),
-            (f"{body_en}{stem_en[:-3]}", f"{body_zh}{stem_zh[:-1]}"))
+    return stem_forms(body_en, body_zh, stem_en, stem_zh)
 
 
 def bridged_parent_names(mol, node, chain: list[int]):

@@ -12,7 +12,7 @@ from namepredict.constants import (
     MULT_ZH, PHOSPHORYL_STEMS, ZH_DIGITS, zh_bridge_root,
 )
 from namepredict.tools.anchored_table import carbamoyl_prefix_name
-from namepredict.tools.re import alpha_order_key
+from namepredict.tools.re import SUB_LOCANT_RE, alpha_order_key
 from namepredict.layer5.chain_engine import (
     _ACYL_HALIDE_BY_HAL, _BENZENE_RETAINED, _KIND_TABLE, _benzene_retained, _chain_names,
 )
@@ -20,7 +20,8 @@ from namepredict.layer5.stems import (
     _metal_en_prefix, _metal_zh_suffix, join_anion_names,
 )
 from namepredict.layer5.assembler_prefixes import (
-    _SIMPLE_CHAIN_YL_RE, _STEREO_LEAD_RE, _enclose, _mult_rows, _prefix_for, oxo_arm_fence,
+    _ACYL_FRONT_RE, _SIMPLE_CHAIN_YL_RE, _STEREO_LEAD_ENCLOSE_RE, _enclose, _mult_rows,
+    _prefix_for, oxo_arm_fence,
 )
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
 from namepredict.types import NameResult
@@ -61,7 +62,6 @@ def _oxido_arm(s: dict, mol) -> tuple[str, str] | None:
 
 def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None) -> tuple[str, str] | None:
     """P 酰基前缀的取代基拼接（P-67.1.4.1.1.5，简单基平铺/括起）。"""
-    from namepredict.tools.re import alpha_order_key
 
     pairs: list[tuple[str, str]] = []
     for s in subs:
@@ -112,8 +112,6 @@ def _azane_acyl_stereo_lead(en: str) -> bool:
 
 _SPIRO_KINDS = ("mono_spiro", "fused_bridged_spiro")  # P-24 螺环 scaffold 直取的 kind（不在 _KIND_TABLE）
 
-_SUB_LOCANT_RE = re.compile(r"(?:^|[-(\[])\d+(?:,\d+)*[a-z]?-(?!(?:en|yn|an|in))")  # 取代基自带位次（排除母体词干内烯/炔位次）
-_AZANE_ACYL_RE = re.compile(r"(?:oyl|carbonyl)$")  # 酰基前端词尾
 
 
 def _azane_front_needs_paren(a: dict) -> bool:
@@ -123,11 +121,11 @@ def _azane_front_needs_paren(a: dict) -> bool:
     直接与 amino 融合（…oylamino / …anilino）。
     """
     name = a.get("en") or ""
-    if not name or _AZANE_ACYL_RE.search(name) or any(c in name for c in "()[]"):
+    if not name or _ACYL_FRONT_RE.search(name) or any(c in name for c in "()[]"):
         return False  # 酰基前端走融合式；已自带括号的前端由 L5 统一升级围栏
     if name.endswith("phenyl"):
         return False  # 苯基前端走 anilino 保留式（P-62.2.1.1），不再单独括起
-    return len(_SUB_LOCANT_RE.findall(name)) >= 2
+    return len(SUB_LOCANT_RE.findall(name)) >= 2
 
 
 def _azane_sub_needs_paren(a: dict) -> bool:
@@ -162,11 +160,6 @@ def _bridge_enclosed_names(a: dict, stem_en: str, stem_zh: str) -> tuple[str, st
     w_en = _enclose(a["en"])  # 前端自带括号时升级方括号（P-16.5.2 嵌套标记）
     w_zh = _enclose(a["zh"])
     return f"{w_en}{stem_en}", f"{w_zh}{stem_zh}基"  # ZH 前端基不可省（(4-甲氧基苯基)磺酰基，非 …苯磺酰基）
-
-
-def _alpha_key(name: str) -> str:
-    """P-14.5 字母序比较键：以小写字母为准，忽略位次/括号/连字符等非字母字符。"""
-    return "".join(c for c in name.lower() if c.isalpha())
 
 
 # free 母体名 → P-29 -yl 取代基形式的双语转换。
@@ -299,16 +292,16 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
         ring = aryl[0]
         other = next(s for s in ordered if s is not ring)
         ring_en, ring_zh = ring["en"][: -len("phenyl")], ring["zh"][: -len("苯基")]
-        if _alpha_key(ring_en) <= _alpha_key(other["en"]):
+        if alpha_order_key(ring_en) <= alpha_order_key(other["en"]):
             return (f"{ring_en}-N-{other['en']}anilino" if ring_en else f"N-{other['en']}anilino",
                     f"{ring_zh}-N-{other['zh']}苯胺基" if ring_zh else f"N-{other['zh']}苯胺基")
         return (f"N-{other['en']}-{ring_en}anilino" if ring_en else f"N-{other['en']}anilino",
                 f"N-{other['zh']}-{ring_zh}苯胺基" if ring_zh else f"N-{other['zh']}苯胺基")
-    groups = _same_name_groups(ordered)  # 双不同 N-取代基：首基平铺、其余各基加括号（P-62.2.2.1）；同名基按数量词收拢（P-16.5.1.3.1）
-    en_tail = groups[0][1] if groups[0][0] == 1 else MULT_EN[groups[0][0]] + groups[0][1]
-    zh_tail = groups[0][2] if groups[0][0] == 1 else MULT_ZH[groups[0][0]] + groups[0][2]
-    return (en_tail + "".join(f"{MULT_EN[n]}({en})" if n > 1 else f"({en})" for n, en, _ in groups[1:]) + zero[0],
-            zh_tail + "".join(f"{MULT_ZH[n]}({zh})" if n > 1 else f"({zh})" for n, _, zh in groups[1:]) + zero[1])
+    groups = _mult_rows(ordered, lambda s: s["en"], lambda s: s["zh"])  # 双不同 N-取代基：首基平铺、其余各基加括号（P-62.2.2.1）；同名基按数量词收拢（P-16.5.1.3.1）
+    en_tail = groups[0][0] if groups[0][2] == 1 else MULT_EN[groups[0][2]] + groups[0][0]
+    zh_tail = groups[0][1] if groups[0][2] == 1 else MULT_ZH[groups[0][2]] + groups[0][1]
+    return (en_tail + "".join(f"{MULT_EN[r[2]]}({r[0]})" if r[2] > 1 else f"({r[0]})" for r in groups[1:]) + zero[0],
+            zh_tail + "".join(f"{MULT_ZH[r[2]]}({r[1]})" if r[2] > 1 else f"({r[1]})" for r in groups[1:]) + zero[1])
 
 
 _STEM_H_PREFIX_RE = re.compile(r"^(?:\d+[a-z]?H[-,])+")  # 词干自带指示氢前缀（1H- / 3H,4H- / 7H-…）
@@ -422,7 +415,6 @@ def _stem_prefix_stale(parent: dict, prefix: str) -> bool:
     mol = parent.get("mol")
     if not atoms or mol is None:
         return False
-    from rdkit import Chem
     for i in atoms:
         if i >= mol.GetNumAtoms():
             return False
@@ -440,6 +432,8 @@ def _stem_prefix_stale(parent: dict, prefix: str) -> bool:
 def _ensure_parent_stem(numbered: dict) -> bool:
     """母体词干注入：螺环 P-24 → 桥环 von Baeyer → 稠环稠合 → 大环杂单环生成式。"""
     parent = numbered.get("parent") or {}
+    if parent.get("stem_en") and parent.get("stem_zh"):
+        return True  # 已注入则幂等返回；各子注入器共用此守卫
     if parent.get("fbs_node") is not None:
         return _ensure_fbs_stem(numbered)
     if parent.get("spiro_node") is not None:
@@ -454,8 +448,6 @@ def _ensure_parent_stem(numbered: dict) -> bool:
 def _ensure_generated_stem(numbered: dict) -> bool:
     """P-23.3.1 生成式词干：>10 元纯杂单环无保留名"""
     parent = numbered.get("parent") or {}
-    if parent.get("stem_en") and parent.get("stem_zh"):
-        return True
     mol, chain = parent.get("mol"), list(parent.get("chain") or ())
     if mol is None or parent.get("scaffold_id") != "carbocycle" or len(chain) <= 10:
         return True  # ≤10 元环归 Hantzsch-Widman 保留名
@@ -463,28 +455,37 @@ def _ensure_generated_stem(numbered: dict) -> bool:
     a_en, a_zh = prefix_from_chain(mol, chain)
     if not a_en:
         return a_en is not None  # 无杂原子（纯环烷）放行；词表外元素判失败
-    from namepredict.layer5.stems import alkane_en, alkane_zh
+    from namepredict.layer5.stems import alkane_en, alkane_zh, stem_forms
     en, zh = alkane_en(len(chain)), alkane_zh(len(chain))
     if not en or not zh:
         return False
-    parent["stem_en"], parent["stem_zh"] = f"{a_en}cyclo{en}", f"{a_zh}环{zh}"
-    parent["stem_bare_en"] = f"{a_en}cyclo{en[:-3]}"
-    parent["stem_bare_zh"] = f"{a_zh}环{zh[:-1]}"
+    (full_en, full_zh), (bare_en, bare_zh) = stem_forms(f"{a_en}cyclo", f"{a_zh}环", en, zh)
+    parent["stem_en"], parent["stem_zh"] = full_en, full_zh
+    parent["stem_bare_en"], parent["stem_bare_zh"] = bare_en, bare_zh
     parent["stem_generated"] = True  # 'a' 前缀生成式词干：位次恒显式，自由基取裸词干
     return True
 
 
 def _ensure_spiro_stem(numbered: dict) -> bool:
-    """P-24 螺环词干注入：饱和取完整名、带不饱和取裸词干（同 _exo_ring_spec 惯例）。"""
+    """P-24 螺环词干注入。"""
+    from namepredict.layer5.spiro_namer import spiro_parent_names
+    return _ensure_ring_stem(numbered, "spiro_node", spiro_parent_names)
+
+
+def _ensure_bridged_stem(numbered: dict) -> bool:
+    """P-23 桥环词干注入。"""
+    from namepredict.layer5.bridged_namer import bridged_parent_names
+    return _ensure_ring_stem(numbered, "bridged_node", bridged_parent_names)
+
+
+def _ensure_ring_stem(numbered: dict, node_key: str, namer) -> bool:
+    """P-23/P-24 通用环词干注入：饱和取完整名、带不饱和取裸词干（同 _exo_ring_spec 惯例）。"""
     parent = numbered.get("parent") or {}
-    if parent.get("stem_en") and parent.get("stem_zh"):
-        return True
-    mol, node = parent.get("mol"), parent.get("spiro_node")
+    mol, node = parent.get("mol"), parent.get(node_key)
     chain = list(parent.get("chain") or ())
     if mol is None or node is None or not chain:
         return False
-    from namepredict.layer5.spiro_namer import spiro_parent_names
-    names = spiro_parent_names(mol, node, chain)
+    names = namer(mol, node, chain)
     if names is None:
         return False
     (full_en, full_zh), (bare_en, bare_zh) = names
@@ -497,8 +498,6 @@ def _ensure_spiro_stem(numbered: dict) -> bool:
 def _ensure_fbs_stem(numbered: dict) -> bool:
     """P-24.5~24.7 组分式螺环词干注入：组分名自带不饱和，故不设裸词干形态。"""
     parent = numbered.get("parent") or {}
-    if parent.get("stem_en") and parent.get("stem_zh"):
-        return True
     mol, node = parent.get("mol"), parent.get("fbs_node")
     if mol is None or node is None:
         return False
@@ -510,31 +509,9 @@ def _ensure_fbs_stem(numbered: dict) -> bool:
     return True
 
 
-def _ensure_bridged_stem(numbered: dict) -> bool:
-    """P-23 桥环词干注入：饱和取完整名、带不饱和取裸词干（同 _exo_ring_spec 惯例）。"""
-    parent = numbered.get("parent") or {}
-    if parent.get("stem_en") and parent.get("stem_zh"):
-        return True
-    mol, node = parent.get("mol"), parent.get("bridged_node")
-    chain = list(parent.get("chain") or ())
-    if mol is None or node is None or not chain:
-        return False
-    from namepredict.layer5.bridged_namer import bridged_parent_names
-    names = bridged_parent_names(mol, node, chain)
-    if names is None:
-        return False
-    (full_en, full_zh), (bare_en, bare_zh) = names
-    parent["stem_bare_en"], parent["stem_bare_zh"] = bare_en, bare_zh
-    unsat = bool(numbered.get("ene_locants") or numbered.get("yne_locants"))
-    parent["stem_en"], parent["stem_zh"] = (bare_en, bare_zh) if unsat else (full_en, full_zh)
-    return True
-
-
 def _ensure_fused_stem(numbered: dict) -> bool:
     """未注册稠环词干注入：由 fused_tree 组装稠合 base 名。"""
     parent = numbered.get("parent") or {}
-    if parent.get("stem_en") and parent.get("stem_zh"):
-        return True
     node = parent.get("fused_tree")
     if node is None:
         return True
@@ -593,7 +570,7 @@ def _fenced_arms_phosphate(arms: list[dict], mol) -> list[dict]:
 def _all_arms_stereo_lead(arms: list[dict]) -> bool:
     """多个 O-侧臂是否全部以前导立体描述符开头（单臂不受 P-16.5.1.3.1 的第二臂规则支配）。"""
     ens = [a.get("en") or "" for a in arms]
-    return len(ens) >= 2 and all(_STEREO_LEAD_RE.match(e) for e in ens)
+    return len(ens) >= 2 and all(_STEREO_LEAD_ENCLOSE_RE.match(e) for e in ens)
 
 
 def join_oxoacid_name(pre: tuple[str, str], names: tuple[str, str], numbered: dict) -> tuple[str, str] | None:
@@ -848,7 +825,6 @@ def _join_o_side_arms(arms: list[dict], *, group: bool, arm_zh_fn) -> tuple[str,
     if len(arms) == 1:
         return arms[0].get("en") or "", arm_zh_fn(arms[0].get("zh") or "")
     if group:
-        from namepredict.tools.re import alpha_order_key
         named = [s for s in arms if (s.get("en") or "").strip()]
         rows = _mult_rows(named, lambda s: (s.get("en") or "").strip(),
                           lambda s: arm_zh_fn(s.get("zh") or ""),

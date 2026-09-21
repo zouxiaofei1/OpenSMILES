@@ -4,11 +4,10 @@ from __future__ import annotations
 from rdkit import Chem
 from rdkit.Chem import Mol, RWMol
 
-from namepredict.constants import C, N, O, RING_HETERO, S
+from namepredict.constants import C, N, O, S
 
 ENOL_X = (O, S)  # 烯醇/烯硫醇式杂原子：环上羟基、巯基的 H 可迁往相邻环氮。
 N_VALENCE = 3  # 中性氮价态上限：接收质子的氮度 + 氢数不许超过它。
-MIN_RING_HETERO = 1  # 环内烯醇归一所需的最少杂原子数：吡啶型单杂原子环的金标仍取「醇」名。
 
 
 def _is_amide_enol_x(atom, carbon) -> bool:
@@ -76,8 +75,6 @@ def _enol_candidates(mol: Mol) -> list[tuple[int, int, tuple[int, ...]]]:
     for c in mol.GetAtoms():
         if c.GetAtomicNum() != C:
             continue
-        if c.GetIsAromatic() and not True:
-            continue  # 吡啶/苯型单杂原子芳环的羟基金标取「醇」名（见 tests 护栏），只归一二嗪/唑类
         o = next((n for n in c.GetNeighbors() if _is_amide_enol_x(n, c)), None)
         if o is None:
             continue

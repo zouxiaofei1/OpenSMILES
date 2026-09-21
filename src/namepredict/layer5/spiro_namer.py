@@ -10,13 +10,12 @@ from dataclasses import replace
 
 from rdkit import Chem
 
-from namepredict.constants import BIS_EN, BIS_ZH, MULT_EN, MULT_ZH
+from namepredict.constants import BIS_EN, BIS_ZH, C, MULT_EN, MULT_ZH
 from namepredict.layer1.ring_systems import kekulized
 from namepredict.layer4.locant_calc import locant_key
 from namepredict.layer5.skeleton_replacement import prefix_from_chain, skeleton_replacement_prefix
-from namepredict.layer5.stems import alkane_en, alkane_zh
+from namepredict.layer5.stems import alkane_en, alkane_zh, stem_forms
 
-CARBON = 6
 APOSTROPHE = "'"
 
 
@@ -52,8 +51,7 @@ def spiro_parent_names(mol, node, chain: list[int]):
         return None
     desc = spiro_descriptor_str(node.descriptor, node.descriptor_superscripts)
     body_en, body_zh = f"{mult[0]}[{desc}]", f"{mult[1]}[{desc}]"
-    return ((f"{a_en}{body_en}{stem_en}", f"{a_zh}{body_zh}{stem_zh}"),
-            (f"{a_en}{body_en}{stem_en[:-3]}", f"{a_zh}{body_zh}{stem_zh[:-1]}"))
+    return stem_forms(f"{a_en}{body_en}", f"{a_zh}{body_zh}", stem_en, stem_zh)
 
 
 # ── P-24.5~24.7 组分式螺环母体名 ────────────────────────
@@ -169,7 +167,7 @@ def _a_prefix(mol, comp, num) -> tuple[str, str] | None:
     by_z: dict[int, list[int]] = {}
     for a in comp.atom_ids:
         z = mol.GetAtomWithIdx(a).GetAtomicNum()
-        if z != CARBON:
+        if z != C:
             by_z.setdefault(z, []).append(int(num.locants[a]))
     if not by_z:
         return "", ""

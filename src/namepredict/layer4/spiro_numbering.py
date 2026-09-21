@@ -8,54 +8,32 @@ from __future__ import annotations
 from dataclasses import replace
 from itertools import product
 
+from namepredict.constants import C
 from namepredict.layer4.locant_calc import locant_key
-from namepredict.layer4.numbering_engine import _bond_locants, _locant_set, narrow
-from namepredict.layer4.numbering_engine import _principal_atoms, _unsat_bonds, narrow_by_senior
-from namepredict.tools.re import alpha_order_key
+from namepredict.layer4.numbering_engine import (
+    _bond_locants, _locant_set, _principal_atoms, _unsat_bonds, alpha_locants, by_z,
+    candidates, hetero_atoms, narrow, narrow_by_senior, node_feature_key, pick_equivalent,
+)
 
-CARBON = 6
 APOSTROPHE = "'"
 _MAX_COMBOS = 4096  # 组分候选组合上限
 
 
 def spiro_numbering(parent: dict, substituents: list) -> list[int] | None:
     """返回螺环骨架的位次升序原子表；候选不可判定时返回 None。"""
-    nodes = _candidates(parent, "spiro_node")
+    nodes = candidates(parent, "spiro_node")
     chain = list(parent.get("chain") or ())
     if not nodes or not chain:
         return None
     mol = parent.get("mol")
-    heteros = _hetero_atoms(mol, chain)
+    heteros = hetero_atoms(mol, chain)
     nodes = _narrow_ladder(nodes, parent, substituents, mol, chain, heteros)
-    best = _pick_equivalent(nodes, _spiro_feature_key(mol, chain, parent, substituents))
+    best = pick_equivalent(nodes, node_feature_key(mol, chain, parent, substituents,
+                                                  lambda nd: nd.descriptor_superscripts))
     if best is None:
         return None
     parent["spiro_node"] = best  # L5 依它取描述符，须与选中的编号自洽
     return sorted(best.numbering, key=best.numbering.get)
-
-
-def _candidates(parent: dict, key: str) -> list:
-    """L2 下传的并列候选；无对应节点返回空表。"""
-    nodes = parent.get(f"{key}s")
-    if nodes:
-        return list(nodes)
-    node = parent.get(key)
-    return [node] if node is not None else []
-
-
-def _hetero_atoms(mol, atoms) -> list[int]:
-    """骨架杂原子，按给定原子序列顺序。"""
-    if mol is None:
-        return []
-    return [a for a in atoms if mol.GetAtomWithIdx(a).GetAtomicNum() != CARBON]
-
-
-def _by_z(mol, atoms: list[int]) -> dict[int, list[int]]:
-    """原子序数 → 该元素的骨架原子列表。"""
-    out: dict[int, list[int]] = {}
-    for a in atoms:
-        out.setdefault(mol.GetAtomWithIdx(a).GetAtomicNum(), []).append(a)
-    return out
 
 
 def _narrow_ladder(nodes: list, parent: dict, substituents: list, mol, chain: list[int],
@@ -66,61 +44,32 @@ def _narrow_ladder(nodes: list, parent: dict, substituents: list, mol, chain: li
     「螺[4.5]癸-1,9-二烯-6-酮」的 6-酮优先于 10-酮 定案。少数金标与此相反。
     """
     key = lambda nd, atoms: _locant_set(nd.numbering, atoms)
-    if len(nodes) > 1:  # P-24.2.2.1 / P-24.2.3.1 螺原子位次集合最低
-        nodes = narrow(nodes, lambda nd: key(nd, list(nd.free_spiro_atoms)))
-    if len(nodes) > 1:  # P-24.2.2.2 / P-24.2.3.2 描述符数字按引用顺序取小
-        nodes = narrow(nodes, lambda nd: (nd.descriptor, nd.descriptor_superscripts))
-    if len(nodes) > 1 and heteros and mol is not None:  # P-24.2.4.1.2(a) 集合 → (b) 逐元素
-        nodes = narrow_by_senior(nodes, key, heteros, _by_z(mol, heteros), skip_none=True)
+    nodes = narrow(nodes, lambda nd: key(nd, list(nd.free_spiro_atoms)))  # P-24.2.2.1 / P-24.2.3.1 螺原子位次集合最低
+    nodes = narrow(nodes, lambda nd: (nd.descriptor, nd.descriptor_superscripts))  # P-24.2.2.2 / P-24.2.3.2 描述符数字取小
+    if heteros and mol is not None:  # P-24.2.4.1.2(a) 集合 → (b) 逐元素
+        nodes = narrow_by_senior(nodes, key, heteros, by_z(mol, heteros), skip_none=True)
     principal = [a for a in _principal_atoms(parent) if a in chain]
-    if len(nodes) > 1 and principal:  # P-14.4(c) 主特征基团（后缀）位次最低
+    if principal:  # P-14.4(c) 主特征基团（后缀）位次最低
         nodes = narrow(nodes, lambda nd: key(nd, principal), skip_none=True)
     bonds, doubles = _unsat_bonds(parent)
-    if len(nodes) > 1 and bonds and mol is not None:  # P-14.4(e) 双键位次最低
+    if bonds and mol is not None:  # P-14.4(e) 双键位次最低
         nodes = narrow(nodes, lambda nd: (_bond_locants(nd.numbering, bonds),
                                           _bond_locants(nd.numbering, doubles)), skip_none=True)
     subs = sorted(s["attach_idx"] for s in (substituents or [])
                   if s["attach_idx"] in chain)
-    if len(nodes) > 1 and subs:  # P-14.4(f) 取代基位次集合最低
+    if subs:  # P-14.4(f) 取代基位次集合最低
         nodes = narrow(nodes, lambda nd: key(nd, subs), skip_none=True)
-    if len(nodes) > 1 and substituents:  # P-14.4(g) 字母序最前的取代基位次最低
-        nodes = narrow(nodes, lambda nd: _alpha_locants(nd, chain, substituents), skip_none=True)
+    if substituents:  # P-14.4(g) 字母序最前的取代基位次最低
+        nodes = narrow(nodes, lambda nd: alpha_locants(nd.numbering, chain, substituents),
+                       skip_none=True)
     return nodes
-
-
-def _alpha_locants(node, chain: list[int], substituents: list) -> tuple:
-    """按前修饰基字母序排列的位次元组（P-14.4(g)）。"""
-    pairs = sorted(
-        (alpha_order_key(s.get("en") or ""), node.numbering.get(s["attach_idx"], 0))
-        for s in substituents if s.get("attach_idx") in chain)
-    return tuple(loc for _, loc in pairs)
-
-
-def _spiro_feature_key(mol, chain: list[int], parent: dict, substituents: list):
-    """候选渲染特征：描述符 + 上标 + 杂原子/后缀/取代基位次。"""
-    def feat(node) -> tuple:
-        het = tuple(sorted((mol.GetAtomWithIdx(a).GetAtomicNum(), node.numbering[a])
-                           for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != CARBON)) \
-            if mol is not None else ()
-        suffix = tuple(sorted(node.numbering[a] for a in _principal_atoms(parent) if a in chain))
-        subs = tuple(sorted(node.numbering[s["attach_idx"]] for s in (substituents or [])
-                            if s.get("attach_idx") in chain))
-        return (node.descriptor, node.descriptor_superscripts, het, suffix, subs)
-    return feat
-
-
-def _pick_equivalent(nodes: list, feat):
-    """并列候选特征全同才取首个，否则视为不可判定。"""
-    if not nodes:
-        return None
-    return nodes[0] if len({feat(nd) for nd in nodes}) == 1 else None
 
 
 # ── P-24.5~24.7 组分式螺环编号 ──────────────────────────
 
 def fbs_numbering(parent: dict, substituents: list) -> list[int] | None:
     """返回组分式螺环骨架的位次升序原子表；候选不可判定时返回 None。"""
-    nodes = _candidates(parent, "fbs_node")
+    nodes = candidates(parent, "fbs_node")
     mol = parent.get("mol")
     if not nodes or mol is None:
         return None
@@ -148,12 +97,6 @@ def fbs_numbering(parent: dict, substituents: list) -> list[int] | None:
     return chain
 
 
-def _spiro_set(num, spiros) -> tuple:
-    """组分内螺原子本位次集合（按位次排序）。"""
-    loc = num.locants
-    return tuple(sorted(locant_key(loc[a]) for a in spiros if a in loc))
-
-
 def _fbs_locant_set(num, atoms) -> tuple:
     """指定原子集在组分候选下的位次集合。"""
     loc = num.locants
@@ -166,10 +109,10 @@ def _fbs_feature_key(mol, comp, substituents):
         loc = num.locants
         het = tuple(sorted((mol.GetAtomWithIdx(a).GetAtomicNum(), str(loc[a]))
                            for a in comp.atom_ids if a in loc
-                           and mol.GetAtomWithIdx(a).GetAtomicNum() != CARBON))
+                           and mol.GetAtomWithIdx(a).GetAtomicNum() != C))
         subs = tuple(sorted(str(loc[s["attach_idx"]]) for s in (substituents or ())
                             if s.get("attach_idx") in loc))
-        return (het, _spiro_set(num, comp.spiro_atoms), subs)
+        return (het, _fbs_locant_set(num, comp.spiro_atoms), subs)
     return feat
 
 
@@ -183,19 +126,17 @@ def _shrink(comp, mol, parent, substituents) -> list:
     if not cands:
         return []
     principal = [a for a in _principal_atoms(parent) if a in comp.atom_ids]
-    if len(cands) > 1 and principal:  # P-14.4(c)：主特征基团（后缀）位次最低
+    if principal:  # P-14.4(c)：主特征基团（后缀）位次最低
         cands = narrow(cands, lambda c: _fbs_locant_set(c, principal), skip_none=True)
-    if len(cands) > 1:  # P-24.5.2 / P-24.5.4：螺稠合位次优先于 'a' 前缀位次
-        cands = narrow(cands, lambda c: _spiro_set(c, comp.spiro_atoms), skip_none=True)
-    heteros = _hetero_atoms(mol, comp.atom_ids)
-    if len(cands) > 1 and heteros:  # P-14.4(e)/P-22.2.2.1.3：杂原子位次集合最低
-        by_z: dict[int, list[int]] = {}
-        for a in heteros:
-            by_z.setdefault(mol.GetAtomWithIdx(a).GetAtomicNum(), []).append(a)
-        cands = narrow_by_senior(cands, _fbs_locant_set, heteros, by_z, skip_none=True)
+    # P-24.5.2 / P-24.5.4：螺稠合位次优先于 'a' 前缀位次
+    cands = narrow(cands, lambda c: _fbs_locant_set(c, comp.spiro_atoms), skip_none=True)
+    heteros = hetero_atoms(mol, comp.atom_ids)
+    if heteros:  # P-14.4(e)/P-22.2.2.1.3：杂原子位次集合最低
+        cands = narrow_by_senior(cands, _fbs_locant_set, heteros, by_z(mol, heteros),
+                                 skip_none=True)
     subs = sorted({s["attach_idx"] for s in (substituents or ())
                    if s.get("attach_idx") in comp.atom_ids})
-    if len(cands) > 1 and subs:  # P-14.4(f)：取代基位次集合最低
+    if subs:  # P-14.4(f)：取代基位次集合最低
         cands = narrow(cands, lambda c: _fbs_locant_set(c, subs), skip_none=True)
     return cands
 

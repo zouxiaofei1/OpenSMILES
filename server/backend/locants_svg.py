@@ -33,6 +33,8 @@ def _orientation_coords(mol, chain: list[int]) -> dict[int, tuple[float, float]]
         if not systems:
             return None
         sys0 = systems[0]
+        # 注意：L1 的 _system_dict 不产出 is_aromatic_mancude，故 not None 恒真、
+        # 此处恒退。要启用本路径须先在 L1 按 P-21.1 补出该字段。
         if not sys0.get("is_aromatic_mancude") or len(sys0.get("sssr_indices") or []) < 2:
             return None
         rings = list(mol.GetRingInfo().AtomRings())

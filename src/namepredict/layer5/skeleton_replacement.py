@@ -5,9 +5,8 @@
 """
 from __future__ import annotations
 
-from namepredict.constants import MULT_EN, MULT_ZH, P145_SENIOR
+from namepredict.constants import C, MULT_EN, MULT_ZH, P145_SENIOR
 
-CARBON = 6
 
 A_PREFIX_EN = {5: "bora", 7: "aza", 8: "oxa", 14: "sila",
                15: "phospha", 16: "thia", 33: "arsa", 34: "selena", 51: "stiba"}
@@ -20,7 +19,7 @@ def prefix_from_chain(mol, chain: list[int]) -> tuple[str, str] | None:
     by_z: dict[int, list[int]] = {}
     for a in chain:
         z = mol.GetAtomWithIdx(a).GetAtomicNum()
-        if z != CARBON:
+        if z != C:
             by_z.setdefault(z, []).append(a)
     if not by_z:
         return "", ""

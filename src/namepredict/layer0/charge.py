@@ -7,27 +7,16 @@ from rdkit.Chem import Mol, RWMol
 from namepredict.constants import ACCEPTOR_Z, ACID_CENTERS, C, DONOR_KIND, N, O
 
 
-def _oxo_neighbor(atom, heavy: int):
-    """返回邻接的非芳香成酸中心原子（双键氧 ≥1）；无则 None。"""
-    for n in atom.GetNeighbors():
-        if n.GetAtomicNum() != heavy or n.GetIsAromatic():
-            continue
-        oxo = sum(
-            1
-            for b in n.GetBonds()
-            if b.GetOtherAtom(n).GetAtomicNum() == O
-            and b.GetBondType() == Chem.BondType.DOUBLE
-        )
-        if oxo >= 1:
-            return n
-    return None
-
 def _acid_kind(atom) -> str | None:
-    """按 ACID_CENTERS 表返回 O 所连成酸中心对应的酸类名。"""
-    for z, kind in ACID_CENTERS.items():
-        if _oxo_neighbor(atom, z):
-            return kind
-    return None
+    """按 ACID_CENTERS 表返回 O 所连成酸中心对应的酸类名（中心非芳香且带 ≥1 双键氧）。"""
+    oxo_z: set[int] = set()
+    for n in atom.GetNeighbors():
+        if n.GetIsAromatic():
+            continue
+        if any(b.GetOtherAtom(n).GetAtomicNum() == O
+               and b.GetBondType() == Chem.BondType.DOUBLE for b in n.GetBonds()):
+            oxo_z.add(n.GetAtomicNum())
+    return next((kind for z, kind in ACID_CENTERS.items() if z in oxo_z), None)
 
 def _acid_kind_of_oh(atom) -> str | None:
     """判中性含 H 的 O 是否为质子化强酸 OH；否则 None。"""
@@ -68,11 +57,6 @@ def _is_base_n(atom) -> bool:
     return True
 
 
-def _net_charge(mol: Mol) -> int:
-    """分子净形式电荷。"""
-    return sum(a.GetFormalCharge() for a in mol.GetAtoms())
-
-
 def _relocate_proton(mol: Mol, a_idx: int, d_idx: int) -> Mol | None:
     """把质子从强酸供体搬到受体，只做电荷/H 记账；消毒失败返回 None。"""
     m = RWMol(mol)
@@ -98,7 +82,7 @@ def normalize_acid_charge(mol: Mol) -> Mol:
     if any(a.GetAtomicNum() == 0 for a in mol.GetAtoms()):
         return mol
     out = mol
-    anionic = _net_charge(mol) < 0  # 净负离子才把中性胺氮当受体（保净电荷内的两性离子式，P-73.1.2）
+    anionic = Chem.GetFormalCharge(mol) < 0  # 净负离子才把中性胺氮当受体（保净电荷内的两性离子式，P-73.1.2）
     for _ in range(mol.GetNumAtoms()):  # 上界：每次消耗一对 donor/acceptor
         frag_of = {i: fi for fi, tup in enumerate(Chem.GetMolFrags(out)) for i in tup}
         donors: list[int] = []

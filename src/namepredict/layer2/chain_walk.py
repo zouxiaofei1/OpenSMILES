@@ -122,31 +122,13 @@ def _all_chains_through(mol: Mol, c_idx: int, banned: set[int] = frozenset()) ->
     return [list(c) for c in chains]
 
 
-def _bfs_prev(mol: Mol, start: int, goal: int, banned: set[int] = frozenset()) -> dict | None:
-    """BFS 求 start 到 goal 的最短路径前驱表。"""
-    prev: dict = {start: None}
-    q = [start]
-    while q:
-        cur = q.pop(0)
-        if cur == goal:
-            return prev
-        for nb in _carbon_neighbors(mol, cur, banned):
-            if nb not in prev:
-                prev[nb] = cur
-                q.append(nb)
-    return None
-
-
-def _rebuild_path(prev: dict, end: int) -> list[int]:
-    """根据前驱表重建 start→end 的路径。"""
-    path = [end]
-    while prev[path[-1]] is not None:
-        path.append(prev[path[-1]])
-    return list(reversed(path))
-
 def _chain_through_two(mol: Mol, a: int, b: int, banned: set[int] = frozenset()) -> list[int]:
-    """返回同时穿过 c1、c2 的最长链。"""
+    """返回同时穿过 c1、c2 的最长链。
+
+    开链碳子图是森林（_carbon_neighbors 排除成环与芳香碳），故 a→b 路径唯一，
+    直接复用 _component_leaves 的父表，无需另写一份 BFS 与路径重建。
+    """
     if a == b:
         return [a]
-    prev = _bfs_prev(mol, a, b, banned)
-    return _rebuild_path(prev, b) if prev else [a]
+    parent, _, _ = _component_leaves(mol, a, -1, banned)
+    return _component_path(parent, b, a) if b in parent else [a]

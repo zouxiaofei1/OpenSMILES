@@ -45,7 +45,11 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
 
 
 def _obridge_front_simple(mol, atoms, attach_old, *, cache, root_ctx):
-    """O/S 桥前端是否为简单取代基；无法判定时返回 None。"""
+    """O/S 桥前端是否为简单取代基；无法判定时返回 None。
+
+    前端命名走 SubstituentNamer 的 retained → recursive 后端顺序，与其它取代基同一来源，
+    避免这里手写一份后端顺序而在后端增删时静默漂移。
+    """
     a = mol.GetAtomWithIdx(attach_old)
     if a.GetAtomicNum() not in (8, 16) or a.GetDegree() != 2:
         return None
@@ -53,14 +57,12 @@ def _obridge_front_simple(mol, atoms, attach_old, *, cache, root_ctx):
            if n.GetAtomicNum() != 1 and n.GetIdx() in atoms]
     if len(ins) != 1:
         return None
-    front = frozenset(atoms) - {attach_old}
-    f = ins[0]
-    from namepredict.tools.anchored_table import anchored_lookup
-    ret = anchored_lookup(mol, front, f)
-    if ret is not None:
-        return not ret[2]
-    fr = name_as_substituent(mol, f, front, cache=cache, root_ctx=root_ctx)
-    return None if fr is None else (not fr[2])
+    from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
+    from namepredict.layer3.substituent_namer import SubstituentNamer
+    claim = ClaimedBlock(slot=SideSlot.OTHER, attach_parent=attach_old, root=ins[0],
+                         atoms=frozenset(atoms) - {attach_old})
+    named = SubstituentNamer(cache=cache, root_ctx=root_ctx).name(mol, claim)
+    return None if named is None else (not named.requires_parentheses)
 
 
 def _radical_yl_from_sub(

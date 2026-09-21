@@ -13,7 +13,7 @@ import pytest
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG, inventory_from_info
 from namepredict.layer2.parent_select import _collect_candidates
-from namepredict.layer2.principal_expression import PrincipalChargeState, PrincipalRelation, express_chain_principal
+from namepredict.layer2.principal_expression import PrincipalRelation, express_chain_principal
 from namepredict.layer2.parent_select import select_principal_parent_skeletons
 from namepredict.namer import SMILESNNamer
 from namepredict.tools.re import normalize_en, normalize_zh
@@ -25,9 +25,9 @@ from rdkit import Chem
 # Layer: L2,L4,L5
 # ==========================================================================
 p43_acid_principal_expression_facts__CASES = [
-    ("CCCC(=O)O", "acid", 1, PrincipalRelation.IN_SKELETON, "neutral", "butanoic acid", "丁酸"),
-    ("O=C(O)CCC(=O)O", "acid", 2, PrincipalRelation.IN_SKELETON, "neutral", "butanedioic acid", "丁二酸"),
-    ("CCCC(=O)[O-]", "acid", 1, PrincipalRelation.IN_SKELETON, "anion", "butanoate", "丁酸根"),
+    ("CCCC(=O)O", "acid", 1, PrincipalRelation.IN_SKELETON, "butanoic acid", "丁酸"),
+    ("O=C(O)CCC(=O)O", "acid", 2, PrincipalRelation.IN_SKELETON, "butanedioic acid", "丁二酸"),
+    ("CCCC(=O)[O-]", "acid", 1, PrincipalRelation.IN_SKELETON, "butanoate", "丁酸根"),
 ]
 
 
@@ -39,8 +39,8 @@ def p43_acid_principal_expression_facts___parent(smiles, kind, count):
                 and parent["principal_expression_facts"].multiplicity == count)
 
 
-@pytest.mark.parametrize("smiles,kind,count,relation,charge,en,zh", p43_acid_principal_expression_facts__CASES)
-def test_acid_principal_expression_facts(smiles, kind, count, relation, charge, en, zh):
+@pytest.mark.parametrize("smiles,kind,count,relation,en,zh", p43_acid_principal_expression_facts__CASES)
+def test_acid_principal_expression_facts(smiles, kind, count, relation, en, zh):
     facts = p43_acid_principal_expression_facts___parent(smiles, kind, count)["principal_expression_facts"]
     assert facts.group_class.value == "acid"
     assert facts.multiplicity == count
@@ -48,16 +48,10 @@ def test_acid_principal_expression_facts(smiles, kind, count, relation, charge, 
     assert len(facts.occurrence_ids) == count
     assert facts.characteristic_atoms
     assert facts.attachment_atoms
-    assert facts.charge_state == charge
     result = SMILESNNamer().name(smiles)
     assert result.success
     assert normalize_en(result.en) == normalize_en(en)
     assert normalize_zh(result.zh) == normalize_zh(zh)
-
-
-def test_partially_deprotonated_diacid_has_mixed_charge_state():
-    parent = p43_acid_principal_expression_facts___parent("O=C([O-])CCC(=O)O", "acid", 2)
-    assert parent["principal_expression_facts"].charge_state is PrincipalChargeState.MIXED
 
 
 def test_facts_include_only_occurrences_covered_by_selected_skeleton():
@@ -117,7 +111,6 @@ def test_primary_polyamine_typed_facts_and_names(smiles, kind, count, en, zh):
     assert len(facts.attachment_atoms) == count
     expected = {a for o in inventory_from_info(info).occurrences(FG.AMINE) for a in o.parent_anchors}
     assert set(facts.attachment_atoms) == expected
-    assert facts.charge_state is PrincipalChargeState.NEUTRAL
     result = SMILESNNamer().name(smiles)
     assert result.success
     assert normalize_en(result.en) == normalize_en(en)
@@ -180,7 +173,6 @@ def test_alcohol_principal_expression_facts_and_names(smiles, kind, count, en, z
     assert facts.relation is PrincipalRelation.IN_SKELETON
     assert len(facts.occurrence_ids) == count
     assert len(facts.attachment_atoms) == count
-    assert facts.charge_state is PrincipalChargeState.NEUTRAL
     result = SMILESNNamer().name(smiles)
     assert result.success
     assert normalize_en(result.en) == normalize_en(en)
@@ -229,7 +221,6 @@ def test_ketone_principal_expression_facts_and_names(smiles, kind, count, en, zh
     assert facts.relation is PrincipalRelation.IN_SKELETON
     assert len(facts.occurrence_ids) == count
     assert facts.characteristic_atoms and facts.attachment_atoms
-    assert facts.charge_state is PrincipalChargeState.NEUTRAL
     result = SMILESNNamer().name(smiles)
     assert result.success
     assert normalize_en(result.en) == normalize_en(en)

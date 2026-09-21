@@ -532,7 +532,6 @@ function renderL1(l) {
       html += '<span class="badge">' + rs.topology + '</span> ';
       html += '<span class="chip">' + rs.n_rings + ' rings</span> ';
       html += '<span class="chip">' + rs.n_atoms + ' atoms</span> ';
-      html += '<span class="chip ' + (rs.is_aromatic_mancude ? 'accent' : '') + '">mancude=' + rs.is_aromatic_mancude + '</span>';
       if (hets) html += '<span class="chip info">hetero: ' + escapeHtml(hets) + '</span>';
       html += '<div style="margin-top:4px"><span class="atom-list">atoms=[' + (rs.atom_ids || []).slice(0,30).join(',') + (rs.atom_ids && rs.atom_ids.length > 30 ? '...' : '') + ']</span></div>';
       html += '</div>';

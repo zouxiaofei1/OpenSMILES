@@ -359,6 +359,12 @@ def _elem_sig(mol: Mol, atom_ids) -> frozenset:
 
 _TEMPLATE_ELEM: dict[str, frozenset] = {sid: _elem_sig(q, range(q.GetNumAtoms())) for sid, q in _Q.items()}
 
+# 原模板是否含多重键（P-31.2 已饱和单环须排除芳香/不饱和母体）。两轮匹配共用原模板的键型。
+_HAS_MULTI_BOND: dict[str, bool] = {
+    sid: any(b.GetBondType() != Chem.BondType.SINGLE for b in q.GetBonds())
+    for sid, q in _Q.items()
+}
+
 _FUSION_CARBOCYCLES: dict[str, dict] = {  # 单环烃附加组分（P-25.3.2.2.1），只作稠合零件
     "cyclopropane": {"smiles": "C1CC1",     "prefix_en": "cyclopropa", "prefix_zh": "环丙并"},
     "cyclobutane":  {"smiles": "C1CCC1",    "prefix_en": "cyclobuta",  "prefix_zh": "环丁并"},
@@ -465,29 +471,26 @@ def _match_with_map(info: dict, atom_ids, *, mancude_only: bool = False) -> tupl
     atoms = frozenset(atom_ids)
     elem = _elem_sig(mol, atom_ids)
     sat_ring = _isolated_saturated_ring(mol, atoms)  # 已饱和单环须取饱和母体氢化物名（P-31.2）
-    for sid, q in _Q.items():
-        if mancude_only and not _TEMPLATES[sid].get("fused"):
-            continue  # 饱和保留名不作稠合组分（P-25.2.1 表 2.8）
-        if sat_ring and any(b.GetBondType() != Chem.BondType.SINGLE for b in q.GetBonds()):
-            continue
-        if _TEMPLATE_ELEM[sid] != elem:
-            continue
-        for m in mol.GetSubstructMatches(q, uniquify=True):
-            if set(m) == atoms and _is_induced_match(mol, q, atoms):
-                return sid, m
-    mol_h = memo.by_mol("hydrogenated", _hydrogenated, mol)  # 精确匹配失败后按完全氢化骨架再比对（P-25.3.4）
-    if mol_h is not None:
-        for sid, qh in _Q_H.items():
+
+    def _scan(base: Mol, qmap) -> tuple[str, tuple[int, ...]] | None:
+        """在 base 分子上按 qmap 的顺序找精确覆盖 atoms 的模板。"""
+        for sid, q in qmap.items():
             if mancude_only and not _TEMPLATES[sid].get("fused"):
-                continue  # 氢化骨架同样只取 mancude 母体（P-25.3.4）
-            if sat_ring and any(b.GetBondType() != Chem.BondType.SINGLE for b in _Q[sid].GetBonds()):
+                continue  # 饱和保留名不作稠合组分（P-25.2.1 表 2.8）
+            if sat_ring and _HAS_MULTI_BOND[sid]:
                 continue
             if _TEMPLATE_ELEM[sid] != elem:
                 continue
-            for m in mol_h.GetSubstructMatches(qh, uniquify=True):
-                if set(m) == atoms and _is_induced_match(mol_h, qh, atoms):
+            for m in base.GetSubstructMatches(q, uniquify=True):
+                if set(m) == atoms and _is_induced_match(base, q, atoms):
                     return sid, m
-    return None
+        return None
+
+    hit = _scan(mol, _Q)
+    if hit is not None:
+        return hit
+    mol_h = memo.by_mol("hydrogenated", _hydrogenated, mol)  # 精确匹配失败后按完全氢化骨架再比对（P-25.3.4）
+    return _scan(mol_h, _Q_H) if mol_h is not None else None
 
 
 def locant_prefix(spec_id: str | None) -> tuple[str, str, bool]:

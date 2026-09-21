@@ -46,8 +46,6 @@ def _lowest_extra_to_indicated(packed: dict, labels, hydro: frozenset) -> frozen
 
 def _odd_hydro_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset:
     """加氢位为奇数时最低者改用指示氢（P-51.1.1.4、P-58.2.1.2）。"""
-    from namepredict.constants import HYDRO_MULT_N
-
     n = len(hydro or ())
     if not n or n in HYDRO_MULT_N:
         return hydro

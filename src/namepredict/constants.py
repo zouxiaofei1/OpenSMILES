@@ -198,7 +198,7 @@ CLAIM_KIND = {"amine_n": "n_block",
               "ring_c": "alkyl", "chain_c": "alkyl"}  # claim 槽位 → 取代基 kind
 # O-侧臂 kind：连在 parent 的 O 上的侧链作 O 侧烷基，由 L5 酯/含氧酸整名消费
 ESTER_O_SIDE_KINDS = frozenset({"ester", "phosphate", "phosphonate", "sulfate", "sulfonate"})
-# 中心原子自任母体的含氧酸 kind（L2/L5 共用）；碳锚定的磺酸族不在内
+# 中心原子自任母体的含氧酸 kind（L1/L2/L5 共用）；碳锚定的磺酸族不在内
 OXO_CENTER_KINDS = frozenset({"phosphate", "phosphonate", "sulfate", "boronic"})
 
 # ── L4 位次 / 编号 ──────────────────────

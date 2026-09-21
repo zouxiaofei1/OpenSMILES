@@ -16,13 +16,9 @@ def kekulized(mol: Mol) -> Mol | None:
         return None
     return kek
 
-def _sssr(mol: Mol) -> list[tuple[int, ...]]:
-    """返回分子的全部 SSSR 最小环原子序列。"""
-    return memo.by_mol("sssr", lambda m: list(m.GetRingInfo().AtomRings()), mol)
-
 def sssr_rings(mol: Mol) -> list[tuple[int, ...]]:
-    """供各层统一调用的环访问器（与 _sssr 同一次记忆）。"""
-    return _sssr(mol)
+    """分子的全部 SSSR 最小环原子序列（各层统一入口，按分子记忆）。"""
+    return memo.by_mol("sssr", lambda m: list(m.GetRingInfo().AtomRings()), mol)
 
 def _ring_pairs(rings: list[tuple[int, ...]]) -> tuple[list, list]:
     """单遍扫全部环对：共享 >=2 原子为稠合边、恰好 1 个为螺环对。"""
@@ -38,28 +34,28 @@ def _ring_pairs(rings: list[tuple[int, ...]]) -> tuple[list, list]:
                 spiro.append((i, j, next(iter(sh))))
     return fused, spiro
 
-def _uf_find(parent: list[int], x: int) -> int:
-    """并查集查找根（含路径压缩）。"""
-    while parent[x] != x:
-        parent[x] = parent[parent[x]]
-        x = parent[x]
-    return x
-
-def _uf_union(parent: list[int], a: int, b: int) -> None:
-    """并查集合并两个根。"""
-    ra, rb = _uf_find(parent, a), _uf_find(parent, b)
-    if ra != rb:
-        parent[rb] = ra
-
 def _components(n: int, edges: list[tuple[int, int, frozenset[int]]]) -> list[list[int]]:
-    """对环索引做并查集连通分量。"""
-    parent = list(range(n))
+    """环索引的连通分量，按最小成员升序、分量内成员升序（环数规模小，不需并查集）。"""
+    adj: dict[int, list[int]] = {i: [] for i in range(n)}
     for i, j, _ in edges:
-        _uf_union(parent, i, j)
-    buckets: dict[int, list[int]] = {}
-    for i in range(n):
-        buckets.setdefault(_uf_find(parent, i), []).append(i)
-    return list(buckets.values())
+        adj[i].append(j)
+        adj[j].append(i)
+    seen: set[int] = set()
+    out: list[list[int]] = []
+    for start in range(n):
+        if start in seen:
+            continue
+        comp: list[int] = []
+        stack = [start]
+        while stack:
+            v = stack.pop()
+            if v in seen:
+                continue
+            seen.add(v)
+            comp.append(v)
+            stack.extend(adj[v])
+        out.append(sorted(comp))
+    return out
 
 def _member_atoms(rings: list[tuple[int, ...]], members: list[int]) -> set[int]:
     """汇总分量内全部环成员的原子集合。"""
@@ -125,8 +121,8 @@ def _system_dict(
         "free_spiro_atoms": list(free_spiro),
         "n_rings": len(members),
         "n_atoms": len(atom_ids),
-        "hetero_atoms": None,
-        "is_aromatic_mancude": None,
+        "hetero_atoms": [{"idx": i, "Z": z} for i in sorted(atom_ids)
+                         if (z := mol.GetAtomWithIdx(i).GetAtomicNum()) not in (1, C)],
         "topology": "spiro" if free_spiro else None,
     }
 
@@ -149,7 +145,7 @@ def _system_entry(
 
 def build_ring_systems(mol: Mol) -> list[dict]:
     """返回环系：稠合连通 + 螺环合并。"""
-    rings = _sssr(mol)
+    rings = sssr_rings(mol)
     if not rings:
         return []
     fused, spiro = _ring_pairs(rings)

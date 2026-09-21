@@ -7,15 +7,15 @@ from enum import Enum
 from namepredict.constants import (
     CATION_FREE_STEMS, HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES,
     NITROGEN_STEM_BY_FREE_DOUBLE,
-    O, PHOSPHORUS_STEM_BY_OXO, S, SULFUR_STEM_BY_OXO, cation_parent_names,
+    O, OXO_CENTER_KINDS, PHOSPHORUS_STEM_BY_OXO, S, SULFUR_STEM_BY_OXO,
+    cation_parent_names,
 )
 from namepredict.layer1.analyzer import _alkoxy_c_of, _double_bonded_o_idxs
-from namepredict.layer1.analyzer import _OXO_Z_ANCHORED as _OXO_CENTER_PARENT
-from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
+from namepredict.layer1.functional_group_inventory import FunctionalGroupClass, OXO_FG_CLASSES
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
 from namepredict.layer2.principal import PrincipalGroupSelection, feature_spec
 from namepredict.layer2.spiro_system import SPIRO_SCAFFOLDS
-from namepredict.layer1.ring_systems import sssr_rings, kekulized
+from namepredict.layer1.ring_systems import kekulized
 
 
 
@@ -25,16 +25,9 @@ class PrincipalRelation(str, Enum):
     EXOCYCLIC = "exocyclic"
 
 
-class PrincipalChargeState(str, Enum):
-    """主基团的电荷状态（中性/全阴离子/阴离子混合）。"""
-    NEUTRAL = "neutral"
-    ANION = "anion"
-    MIXED = "mixed"
-
-
 @dataclass(frozen=True)
 class PrincipalExpressionFacts:
-    """主基团表达事实：类别、个数、与骨架关系、特征/锚点/附着原子集与电荷态。"""
+    """主基团表达事实：类别、个数、与骨架关系、特征/锚点/附着原子集。"""
     group_class: FunctionalGroupClass
     multiplicity: int
     relation: PrincipalRelation
@@ -42,7 +35,6 @@ class PrincipalExpressionFacts:
     characteristic_atoms: frozenset[int]
     anchor_atoms: frozenset[int]  # 官能团原锚点（occurrence.parent_anchors）
     attachment_atoms: frozenset[int]  # 骨架内附着原子：骨架外的锚点取其骨架内邻居（exocyclic）
-    charge_state: PrincipalChargeState
 
 _FG_CLASSES = frozenset(FunctionalGroupClass) - {FunctionalGroupClass.NONE}  # 全部注册 FG 类别（NONE = 纯烃）
 
@@ -84,7 +76,7 @@ def _chain_kind(group_class: FunctionalGroupClass, count: int, occurrences=()) -
         return "acyl"  # 酰基残基：羰基头为 locant 1（P-65.1.7.2）
     if group_class is FunctionalGroupClass.RADICAL:
         return "radical"  # 自由基连接点位次由 L4 radical_c_idx 承载
-    if group_class in _OXO_FG_CLASSES:
+    if group_class in OXO_FG_CLASSES:
         return _oxo_kind_of(occurrences) if count >= 1 else None  # P/S 共用：kind 取自 L1 的 oxo_kind
     return group_class.value if count >= 1 else None
 
@@ -97,7 +89,6 @@ def _is_anion_occurrence(occurrence, mol) -> bool:
 
 
 _ANION_FLAG_FGS = frozenset({FunctionalGroupClass.ACID, FunctionalGroupClass.OXOACID})  # 全阴离子时转 -ate 的类别
-_OXO_FG_CLASSES = frozenset({FunctionalGroupClass.OXOACID, FunctionalGroupClass.SULFONAMIDE})  # 含氧酸合一类的全部 P-41 类别
 
 
 def _expression_flags(selection: PrincipalGroupSelection, occurrences, mol) -> dict:
@@ -124,8 +115,8 @@ def _facts(selection, skeleton, occurrences, mol=None) -> PrincipalExpressionFac
     anchors = frozenset(i for o in occurrences for i in o.parent_anchors)
     attachment = _skeletal_attachments(mol, skeleton, occurrences)
     return PrincipalExpressionFacts(selection.group_class, len(occurrences), relation,
-                                    tuple(o.id for o in occurrences), characteristic, anchors, attachment,
-                                   None)
+                                    tuple(o.id for o in occurrences), characteristic, anchors,
+                                    attachment)
 
 
 def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
@@ -349,7 +340,7 @@ def _chain_oxoacid_fields(info: dict, occurrences, fields: dict) -> dict | None:
     kind = payload.get("oxo_kind")
     n_oh, n_om = int(payload.get("n_oh", 0)), int(payload.get("n_om", 0))
     fields = {**fields, "oxo_kind": kind, "n_oh": n_oh, "n_om": n_om}
-    if kind not in _OXO_CENTER_PARENT:  # 碳锚定：中心不入母体，无盐门控
+    if kind not in OXO_CENTER_KINDS:  # 碳锚定：中心不入母体，无盐门控
         return fields
     salt = dict(info.get("salt") or {})
     if n_om > 0:
@@ -357,7 +348,7 @@ def _chain_oxoacid_fields(info: dict, occurrences, fields: dict) -> dict | None:
             return None
     elif salt.get("metal"):
         return None
-    return {**fields, "n_arms": int(payload.get("n_arms", 0)), "salt_meta": salt or None}
+    return {**fields, "salt_meta": salt or None}
 
 
 def _chain_ester_fields(info: dict, occurrences, fields: dict) -> dict:
@@ -485,7 +476,7 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         fields = _chain_ester_fields(info, occurrences, fields)
     elif kind == "acyl_halide":
         fields = _chain_acyl_halide_fields(info, occurrences, fields)
-    elif selection.group_class in _OXO_FG_CLASSES:
+    elif selection.group_class in OXO_FG_CLASSES:
         fields = _chain_oxoacid_fields(info, occurrences, fields)
         if fields is None:
             return None
