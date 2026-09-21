@@ -161,8 +161,8 @@ def spiro_scaffold_identity(info: dict, system: dict):
     return ScaffoldIdentity(sid, sid, len(indices), _ring_kind(mol, atom_ids))
 
 
-def decompose_spiro_system(info: dict, system: dict) -> list[SpiroNode]:
-    """公共入口：环系拆解为并列螺环候选，不可命名返回空表。"""
+def decompose_spiro_system(info: dict, system: dict) -> list:
+    """公共入口：环系拆解为并列螺环候选（单环组分→SpiroNode，多环→FbsNode）。"""
     free = tuple(system.get("free_spiro_atoms") or ())
     if not free:
         return []
@@ -173,8 +173,9 @@ def decompose_spiro_system(info: dict, system: dict) -> list[SpiroNode]:
     kind = _ring_kind(mol, atom_ids)
     spiros = frozenset(free)
     segs = _segments(rings, indices, spiros)
-    if segs is None:  # 含稠合/桥环组分：P-24.5~24.7 组分式命名，本版不实现
-        return []
+    if segs is None:  # 含多环组分：转 P-24.5~24.7 组分式命名
+        from namepredict.layer2.fbs_system import decompose_fbs_system
+        return decompose_fbs_system(info, system)
     comps = tuple(SpiroComponent(k, tuple(sorted(rings[i])), i,
                                  tuple(a for a in rings[i] if a in spiros))
                   for k, i in enumerate(indices))

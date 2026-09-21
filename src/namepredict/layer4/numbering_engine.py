@@ -337,6 +337,9 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     chain = parent.get("chain") or []
     if not chain:
         return None
+    if parent.get("fbs_nodes") is not None:  # P-24.5+ 组分式螺环：逐组分裁决
+        from namepredict.layer4.fbs_numbering import fbs_numbering
+        return fbs_numbering(parent, substituents)
     if parent.get("spiro_nodes") is not None:  # P-24 螺环：编号只能由 L2 候选裁决
         from namepredict.layer4.spiro_numbering import spiro_numbering
         return spiro_numbering(parent, substituents)  # 无论成败都不再下落（_fused 会误吞螺环）

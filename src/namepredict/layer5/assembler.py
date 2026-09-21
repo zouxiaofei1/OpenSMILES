@@ -440,6 +440,8 @@ def _stem_prefix_stale(parent: dict, prefix: str) -> bool:
 def _ensure_parent_stem(numbered: dict) -> bool:
     """母体词干注入：螺环 P-24 → 桥环 von Baeyer → 稠环稠合 → 大环杂单环生成式。"""
     parent = numbered.get("parent") or {}
+    if parent.get("fbs_node") is not None:
+        return _ensure_fbs_stem(numbered)
     if parent.get("spiro_node") is not None:
         return _ensure_spiro_stem(numbered)
     if parent.get("bridged_node") is not None:
@@ -489,6 +491,22 @@ def _ensure_spiro_stem(numbered: dict) -> bool:
     parent["stem_bare_en"], parent["stem_bare_zh"] = bare_en, bare_zh
     unsat = bool(numbered.get("ene_locants") or numbered.get("yne_locants"))
     parent["stem_en"], parent["stem_zh"] = (bare_en, bare_zh) if unsat else (full_en, full_zh)
+    return True
+
+
+def _ensure_fbs_stem(numbered: dict) -> bool:
+    """P-24.5~24.7 组分式螺环词干注入：组分名自带不饱和，故不设裸词干形态。"""
+    parent = numbered.get("parent") or {}
+    if parent.get("stem_en") and parent.get("stem_zh"):
+        return True
+    mol, node = parent.get("mol"), parent.get("fbs_node")
+    if mol is None or node is None:
+        return False
+    from namepredict.layer5.fbs_namer import fbs_parent_name
+    name = fbs_parent_name(mol, node)
+    if name is None or not name[0] or not name[1]:
+        return False
+    parent["stem_en"], parent["stem_zh"] = name
     return True
 
 

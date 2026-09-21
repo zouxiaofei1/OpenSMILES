@@ -29,19 +29,32 @@ def descriptor_str(descriptor: tuple[int, ...], locant_pairs) -> str:
     return ".".join(parts)
 
 
-def bridged_parent_names(mol, node, chain: list[int]):
-    """桥环名 → ((完整英, 完整中), (裸词干英, 裸词干中))；不可组装返回 None。"""
+def bridged_body_names(node):
+    """von Baeyer 主体名（不含 'a' 前缀）→ ((完整英, 完整中), (裸词干英, 裸词干中))。
+
+    P-24.5.2 / P-24.3.4：'a' 前缀须挂在 spiro/spirobi 之前而非组分名内，
+    故组分式螺环要取不带 'a' 的主体名，前缀由调用方另拼。
+    """
     prefix = ring_count_prefix(len(node.descriptor) - 1)
     if prefix is None:
         return None
-    n = sum(node.descriptor) + 2
-    stem_en, stem_zh = alkane_en(n), alkane_zh(n)
+    stem_en, stem_zh = alkane_en(sum(node.descriptor) + 2), alkane_zh(sum(node.descriptor) + 2)
     if not stem_en or not stem_zh:
+        return None
+    desc = descriptor_str(node.descriptor, node.locant_pairs)
+    body_en, body_zh = f"{prefix[0]}cyclo[{desc}]", f"{prefix[1]}环[{desc}]"
+    return ((f"{body_en}{stem_en}", f"{body_zh}{stem_zh}"),
+            (f"{body_en}{stem_en[:-3]}", f"{body_zh}{stem_zh[:-1]}"))
+
+
+def bridged_parent_names(mol, node, chain: list[int]):
+    """桥环名 → ((完整英, 完整中), (裸词干英, 裸词干中))；不可组装返回 None。"""
+    body = bridged_body_names(node)
+    if body is None:
         return None
     a_en, a_zh = prefix_from_chain(mol, chain)
     if a_en is None:
         return None
-    desc = descriptor_str(node.descriptor, node.locant_pairs)
-    body_en, body_zh = f"{prefix[0]}cyclo[{desc}]", f"{prefix[1]}环[{desc}]"
-    return ((f"{a_en}{body_en}{stem_en}", f"{a_zh}{body_zh}{stem_zh}"),
-            (f"{a_en}{body_en}{stem_en[:-3]}", f"{a_zh}{body_zh}{stem_zh[:-1]}"))
+    (full_en, full_zh), (bare_en, bare_zh) = body
+    return ((f"{a_en}{full_en}", f"{a_zh}{full_zh}"),
+            (f"{a_en}{bare_en}", f"{a_zh}{bare_zh}"))

@@ -5,9 +5,9 @@ import re
 from namepredict.layer4.omit_locants import omit_fg_locant as _omit_fg, omit_unsat
 
 def locant_key(x) -> tuple[int, str]:
-    """locant → 排序键：数字按数值，字母尾作次级键。"""
-    m = re.match(r"(\d+)([a-z]*)", str(x))
-    return (int(m.group(1)), m.group(2)) if m else (0, "")
+    """locant → 排序键：数字按数值，字母尾与撇号作次级键。"""
+    m = re.match(r"(\d+)([a-z]*)(\'*)", str(x))
+    return (int(m.group(1)), m.group(2) + m.group(3)) if m else (0, "")
 
 
 def locant_str_sort(locs) -> list:

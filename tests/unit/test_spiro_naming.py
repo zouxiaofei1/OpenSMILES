@@ -35,7 +35,7 @@ IUPAC_POLYSPIRO = [
 
 # 非自由螺连接：两环除共用原子外还有桥相连（P-24.1 排除，归 P-23）
 NON_FREE_SPIRO = "C1CC23CC(C2)C13"
-# 稠合+螺环（P-24.5 组分式命名）：本版未实现，须显式失败而非静默错名
+# 含多环环组分的螺环（P-24.5）：走组分式命名，见 test_fbs_naming.py
 FUSED_BRIDGED_SPIRO = "O=C1OC2(c3ccccc31)c1ccccc1Oc1ccccc12"
 
 
@@ -113,8 +113,8 @@ def test_mono_spiro_needs_only_monocyclic_components():
         {"fused_bridged_spiro"}
 
 
-def test_fused_bridged_spiro_fails_explicitly():
-    """P-24.5 组分式螺环未实现：须显式失败，不得给静默错名。"""
+def test_fused_bridged_spiro_uses_component_style():
+    """P-24.5：多环组分不再走 spiro[x.y]，改出组分式名（保留名 + 带撇位次）。"""
     r = SMILESNNamer().name(FUSED_BRIDGED_SPIRO)
-    assert not r.success
-    assert r.en == ""
+    assert r.success
+    assert normalize_en(r.en) == normalize_en("spiro[2-benzofuran-3,9'-xanthene]-1-one")

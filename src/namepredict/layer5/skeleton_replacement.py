@@ -28,8 +28,11 @@ def prefix_from_chain(mol, chain: list[int]) -> tuple[str, str] | None:
     return skeleton_replacement_prefix(locants) or (None, None)
 
 
-def skeleton_replacement_prefix(locants_by_z: dict[int, list[int]]) -> tuple[str, str] | None:
-    """产出 '4-thia-1-aza' / '4-硫杂-1-氮杂' 型前缀串；词表外元素返回 None。"""
+def skeleton_replacement_prefix(locants_by_z: dict[int, list[int]], marks: str = "") -> tuple[str, str] | None:
+    """产出 '4-thia-1-aza' / '4-硫杂-1-氮杂' 型前缀串；词表外元素返回 None。
+
+    marks 为位次撇号后缀（组分式螺环第 k 个组分传 k 个撇号，P-24.6）。
+    """
     parts_en: list[str] = []
     parts_zh: list[str] = []
     for z in P145_SENIOR:  # P-23.3.1 引用顺序（F>Cl>Br>I>O>S>Se>Te>N>P>…）
@@ -40,7 +43,7 @@ def skeleton_replacement_prefix(locants_by_z: dict[int, list[int]]) -> tuple[str
         mult_en, mult_zh = MULT_EN.get(len(locants)), MULT_ZH.get(len(locants))
         if en is None or zh is None or mult_en is None or mult_zh is None:
             return None  # 词表外元素或数量超出词表：不得臆造前缀
-        loc = ",".join(str(x) for x in locants)
+        loc = ",".join(f"{x}{marks}" for x in locants)
         # 数量词尾 'a' 仅在后接元素名以 'a' 开头时省略（tetraza 对 tetraoxa）
         if mult_en.endswith("a") and en.startswith("a"):
             mult_en = mult_en[:-1]

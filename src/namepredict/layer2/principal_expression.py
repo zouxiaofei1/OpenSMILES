@@ -216,9 +216,11 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
             hydro = hydrogenated_atoms(info["mol"], scaffold.id, match)
             if hydro:
                 fields["hydro_atoms"] = hydro
-    if scaffold is not None and scaffold.id in SPIRO_SCAFFOLDS:  # P-24：身份由 spiro_node 承载
-        fields["spiro_node"] = spiro[0] if spiro else None  # 空候选 → L4 显式失败，不得下沉 P-25
-        fields["spiro_nodes"] = tuple(spiro)
+    if scaffold is not None and scaffold.id in SPIRO_SCAFFOLDS:  # P-24：身份由螺环节点承载
+        fields["fbs_node" if scaffold.id == "fused_bridged_spiro" else "spiro_node"] = \
+            spiro[0] if spiro else None  # 空候选 → L4 显式失败，不得下沉 P-25
+        fields["fbs_nodes" if scaffold.id == "fused_bridged_spiro" else "spiro_nodes"] = \
+            tuple(spiro)
     elif bridged:  # P-23 桥环：身份由 bridged_node 承载，并列编号候选下传 L4（P-14.4 裁决）
         fields["bridged_node"] = bridged[0]
         fields["bridged_nodes"] = tuple(bridged)
@@ -301,10 +303,11 @@ def _unsat_bond_fields(dbs: list[dict], tbs: list[dict]) -> dict:
 
 def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> dict:
     """为骨架内 C=C/C≡C 附加双/三键位次字段（mancude 环内略过）。"""
+    if fields.get("scaffold_id") == "fused_bridged_spiro":
+        return fields  # P-24.5+：不饱和在各组分名内，母体层不再出 ene/yne 位次
     atom_set = set(skeleton.atom_ids)
     dbs, tbs = _chain_polys(info, atom_set)
-    if fields.get("scaffold_id") in ("carbocycle", "bridged", "mono_spiro",
-                                     "fused_bridged_spiro"):
+    if fields.get("scaffold_id") in ("carbocycle", "bridged", "mono_spiro"):
         dbs = dbs + _kekule_ring_dbs(info, atom_set, dbs)
     implied = _implied_ring_atoms(fields, atom_set)
     if implied:
