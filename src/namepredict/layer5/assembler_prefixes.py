@@ -95,6 +95,10 @@ def _stem_needs_paren(stem: str, subs: list, omit: bool, flat: bool = False) -> 
         return (not omit) and not flat  # 母体位次省略时无同类位次可混，前缀无需围栏
     if stem and stem[0].isdigit():
         return (not flat) and not (omit and any(s.get("ring_yl") for s in subs))  # 母体位次已省略时环基名无须围栏消歧（P-16.5.1.2）
+    if (  # P-16.5.1.4：酰基前缀自带母体氢化物名时须围栏，避免一名两母体；烷氧羰基（…oxycarbonyl）除外
+        stem.endswith("carbonyl") and stem != "carbonyl" and "oxy" not in stem
+    ):
+        return (not omit) and not flat
     return (not omit) and (stem == "trifluoromethyl" or bool(_STEREO_LEAD_ENCLOSE_RE.match(stem)))
 
 
@@ -159,7 +163,7 @@ def _place(mult: str, s: str, subs: list, omit: bool) -> str:
 _STEREO_LEAD_ENCLOSE_RE = re.compile(r"\(\d+[RSEZ](?:,\d+[RSEZ])*\)-")
 
 _BRIDGE_SELF_FENCE = ("sulfanyl", "sulfinyl", "硫基", "亚磺酰基")  # 前端自带方括号时并入同一围栏的桥后缀（P-16.5.1.3）
-_FRONT_TAILS = ("yl", "sulfanyl", "amino")  # 可作桥前端的词尾：-yl 自由价基，或本身即复合桥前端（…amino）
+_FRONT_TAILS = ("yl", "ylidene", "sulfanyl", "amino")  # 可作桥前端的词尾：-yl/-ylidene 自由价基，或本身即复合桥前端（…amino）
 _MULT_WRAP_RE = re.compile(r"-\d+-yl$|oyloxy$")  # 须整体加括号的复合词干：位次链基与酰氧基
 
 
@@ -168,11 +172,35 @@ _CHAIN_STEM = (r"(?:meth|eth|prop|but|pent|hex|hept|oct|non|dec|undec|dodec|trid
 _SIMPLE_CHAIN_YL_RE = re.compile(r"^(?:\d+-)?" + _CHAIN_STEM + r"a?n-\d+-yl$")  # 无取代直链 -yl 与 O/S 桥融合平铺，不拆围栏。
 _SUBST_CHAIN_YL_RE = re.compile(_CHAIN_STEM + r"a?n-\d+-yl$")  # 带取代基的直链 -yl 仍与桥融合平铺。
 _TERMINAL_CHAIN_YL_RE = re.compile(_CHAIN_STEM + r"yl$")  # 自由价在端碳的直链基与桥融合平铺。
-_BENZYL_TAIL_RE = re.compile(r"\]methyl$")  # 苄基型前端：桥后缀直接缀在甲基上，不拆。
+_BENZYL_TAIL_RE = re.compile(r"[)\]]methyl$")  # 苄基型前端：桥后缀直接缀在甲基上，不拆。
 _LOCANT_RE = re.compile(r"(?:^|[-,\[])\d")  # 位次数字：行首或 -,\[ 之后（立体描述符内的数字不算）
 _ACYL_FRONT_RE = re.compile(r"(?:oyl|carbonyl)$")  # 酰基前端词尾（乙酰氧/酰胺融合用）
 _LOCANT_SUBST_TAIL_RE = re.compile(r"[\d\]]-[^()]*yl$")  # 括号外仍带位次取代基的端基（1-(…)-4-methylsulfanylbutyl）
 _CATION_YL_TAIL_RE = re.compile(r"(onio|onium|inium)$")  # 单核阳离子去氢基名词尾（dimethylsulfonio）
+_MERGE_TAIL_RE = re.compile(r"\][a-z]*yl$")  # 端部为「方括号组 + 直链 -yl」：桥后缀可并入同一围栏
+
+
+_RING_STEM_RE = re.compile(  # 常见环系基名词干（判定复合前缀用）
+    r"cyclo|benzen|naphthalen|anthracen|phenanthren|pyridin|pyrimidin|pyridazin|pyrazin|triazin|"
+    r"pyrrol|imidazol|pyrazol|triazol|tetrazol|oxazol|thiazol|oxan|thian|oxolan|thiolan|furan|thiophen|"
+    r"indol|indazol|indolin|quinolin|isoquinolin|purin|pteridin|chromen|chromanon|piperidin|piperazin|"
+    r"morpholin|azepan|azetidin|aziridin|oxepan|thiepan|picen|gonan|androstan|estran|pregnan|cholestan"
+)
+
+
+_FRONT_LOCANT_NUM_RE = re.compile(r"(?:^|[-,\[])(\d+)")  # 前端名内位次数字（不含立体描述符内的数字）
+
+
+def _locant_conflict(base: str) -> bool:
+    """同一位次数字在前端名内出现二次：指向不同结构要素，须围栏（P-16.5.1.2）。"""
+    nums = _FRONT_LOCANT_NUM_RE.findall(base)
+    return len(nums) != len(set(nums))
+
+
+def _composite_front(base: str) -> bool:
+    """桥前端是否为复合前缀（P-16.5.1.1）：环系基上另挂烃基取代基者须围栏。"""
+    hit = _RING_STEM_RE.search(base)
+    return bool(hit) and hit.start() > 0 and bool(_LOCANT_RE.search(base))
 
 
 def _front_needs_enclosure(base: str, suf: str) -> bool:
@@ -183,7 +211,11 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
         return False
     if _BENZYL_TAIL_RE.search(base):  # 苄基型前端（…yl]methylsulfanyl）：桥后缀直接缀在甲基上，不拆。
         return False
-    if suf == "amino" and _ACYL_FRONT_RE.search(base):  # P-63.2.2.1.2：amino 桥酰基前端按取代式融合（…oylamino/…carbonylamino）
+    if base.endswith("ylidene") and "[" not in base:  # 简单 (X)亚基前端与桥融合（…methylideneamino）
+        return False
+    if suf == "oxy" and base.endswith("carbonyl"):  # P-63.2.2.1：酰基前端与氧桥融合（…carbonyloxy）
+        return False
+    if suf == "amino" and _ACYL_FRONT_RE.search(base):  # P-63.2.2.1.2：amino 桥酰基前端按取代式融合（…oylamino）
         return False
     if  re.match(r"^\(\d+[RrSs]", base) and not base.endswith("oyl"):  # 手性自由价碳前端须括起，酰基前端按 …oyloxy 融合
         return True
@@ -191,8 +223,11 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
         return True if suf != "amino" else bool(
             re.search(r"\]-?\d", base)                            # 括号后接数字位次前缀
             or re.search(r"-\d+-\[", base[: base.find("[") + 1]))  # 括号前已有数字位次前缀：3-oxo-3-[X]propyl
-    if "(" in base:  # 前端自带括号；端碳自由价链基平铺，但其后仍带取代基位次者须围栏（P-16.5.1.1 复合前缀）。
-        return not _TERMINAL_CHAIN_YL_RE.search(base) or bool(_LOCANT_SUBST_TAIL_RE.search(base))
+    if "(" in base:  # 前端自带括号：端碳自由价链基平铺，同一位次指向不同要素者须围栏（P-16.5.1.2）。
+        flat = _TERMINAL_CHAIN_YL_RE.search(base) and not _locant_conflict(base)
+        return (not flat) or bool(_LOCANT_SUBST_TAIL_RE.search(base))
+    if _composite_front(base):  # 复合前缀（自带位次的环基/链基）作桥前端须围栏（P-16.5.1.1）
+        return True
     if suf in ("oxy", "sulfanyl", *DIATOMIC_BRIDGE_YL) and re.search(r"\d", base) and base.endswith("phenyl"):  #
         return True
     if suf == "amino":  # P-63.2.2.1.2：amino 桥按取代式融合，不拆。
@@ -219,13 +254,15 @@ def _sbridge_flat_stem(stem: str) -> bool:
 
 
 def _bridge_body(base: str, suf: str, merge: bool = False) -> str:
-    """O/S/N 桥平铺主体：前端围栏 + 桥后缀留外（P-63.2.2.1.2）；merge 时同括。"""
-    if merge:  # 前端已含方括号（嵌套围栏）：桥后缀并入同一围栏，避免括界跨到外层
-        return _enclose(f"{base}{suf}")
+    """O/S/N 桥平铺主体：前端围栏 + 桥后缀留外（P-63.2.2.1.2）；merge 时整段自闭合围栏。"""
     body = f"{_enclose(base)}{suf}"
+    if merge:  # 该前缀后仍接其他前缀：括界须自行闭合（P-16.5.1.3.1）
+        return _enclose(f"{base}{suf}") if _MERGE_TAIL_RE.search(base) else f"[{body}]"
     if suf in DIATOMIC_BRIDGE_YL + BRIDGE_DIATOMIC_ZH:  # 双原子桥：前端已围栏，整段再括一层
         return f"[{body}]"
-    return f"[{body}]" if body.startswith("[") and suf in ("amino", "氨基") else body
+    if suf in ("amino", "氨基"):  # 前端围栏 + 氨基：整段再括一层（P-16.5.4.1.5 括号种类升级）
+        return f"[{body}]"
+    return body
 
 
 def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
