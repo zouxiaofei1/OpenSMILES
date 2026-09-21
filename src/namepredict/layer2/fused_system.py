@@ -208,6 +208,8 @@ def _decompose(info, rings, fusion_edges, ring_indices, fusion_shared=()) -> Fus
 
 def decompose_fused_system(info, system) -> FusedNode | None:
     """公共入口: 环系拆解为 FusedNode 树，无候选返回 None。"""
+    if system.get("free_spiro_atoms"):
+        return None  # 螺连结的环组分不参与稠合拆解（P-24.1）：留给 P-24
     rings = list(sssr_rings(info["mol"]))
     atom_ids = tuple(system.get("atom_ids") or ())
     if atom_ids:  # 整环系已是一个不可作稠合组分的保留母体（如金刚烷这类笼状桥烃）：稠合拆解无意义且会误判加氢

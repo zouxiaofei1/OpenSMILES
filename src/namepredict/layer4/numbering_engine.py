@@ -271,6 +271,8 @@ def _fused_numbering(parent: dict, chain: list[int],
         return None
     if parent.get("bridged_node") is not None:  # 桥环走 P-23：chain_fused 判据对桥环恒真
         return None
+    if parent.get("spiro_node") is not None:  # 螺环走 P-24：chain_fused 判据对螺环同样恒真
+        return None
     mol = parent.get("mol")
     from namepredict.layer2.ring_scaffold import get_spec
     spec = get_spec(parent.get("scaffold_id") or "")
@@ -335,6 +337,9 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     chain = parent.get("chain") or []
     if not chain:
         return None
+    if parent.get("spiro_nodes") is not None:  # P-24 螺环：编号只能由 L2 候选裁决
+        from namepredict.layer4.spiro_numbering import spiro_numbering
+        return spiro_numbering(parent, substituents)  # 无论成败都不再下落（_fused 会误吞螺环）
     if parent.get("bridged_nodes") is not None:  # P-23 桥环：编号只能由 L2 候选裁决
         from namepredict.layer4.bridged_numbering import bridged_numbering
         return bridged_numbering(parent, substituents)  # 无论成败都不再下落（_fused 会误吞桥环）

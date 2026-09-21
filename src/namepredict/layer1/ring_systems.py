@@ -77,19 +77,57 @@ def _member_edges(
         (i, j, sorted(sh)) for i, j, sh in fusion_edges if i in mset and j in mset
     ]
 
+def _split_count(adj: dict[int, list[int]], removed: int) -> int:
+    """去掉 removed 后，其环内邻居分属的连通分量数。"""
+    seen: set[int] = set()
+    count = 0
+    for start in adj.get(removed) or ():
+        if start in seen:
+            continue
+        count += 1
+        stack = [start]
+        while stack:
+            v = stack.pop()
+            if v in seen:
+                continue
+            seen.add(v)
+            stack.extend(u for u in adj[v] if u != removed)
+    return count
+
+
+def _free_spiro_atoms(mol: Mol, rings: list[tuple[int, ...]], members: list[int],
+                      spiro_edges: list[tuple[int, int, int]]) -> tuple[int, ...]:
+    """分量的自由螺原子：去掉后环子图断成 >=2 分量（P-24.1 自由螺连接）。"""
+    if not spiro_edges:
+        return ()
+    atoms: set[int] = set()
+    for i in members:
+        atoms |= set(rings[i])
+    adj = {v: sorted(n.GetIdx() for n in mol.GetAtomWithIdx(v).GetNeighbors()
+                     if n.GetIdx() in atoms) for v in atoms}
+    out: list[int] = []
+    for _, _, s in spiro_edges:
+        if s not in out and _split_count(adj, s) >= 2:
+            out.append(s)
+    return tuple(sorted(out))
+
+
 def _system_dict(
     atom_ids: set[int], members: list[int], edges: list, mol: Mol,
+    spiro_edges: list | None = None, free_spiro: tuple[int, ...] = (),
 ) -> dict:
-    """组装单个环系的事实 dict。"""
+    """组装单个环系的事实 dict（螺环系附 spiro_edges 与自由螺原子）。"""
     return {
         "atom_ids": sorted(atom_ids),
         "sssr_indices": sorted(members),
         "fusion_edges": edges,
+        "spiro_edges": list(spiro_edges or ()),
+        "free_spiro_atoms": list(free_spiro),
         "n_rings": len(members),
         "n_atoms": len(atom_ids),
         "hetero_atoms": None,
         "is_aromatic_mancude": None,
-        "topology": None,
+        "topology": "spiro" if free_spiro else None,
     }
 
 def _system_entry(
@@ -97,11 +135,15 @@ def _system_entry(
     rings: list[tuple[int, ...]],
     members: list[int],
     fusion_edges: list[tuple[int, int, frozenset[int]]],
+    spiro_pairs: list[tuple[int, int, int]] = (),
 ) -> dict:
-    """为连通分量构建环系条目。"""
+    """为连通分量构建环系条目（含螺环合并后的自由螺原子判定）。"""
     atoms = _member_atoms(rings, members)
     edges = _member_edges(members, fusion_edges)
-    return _system_dict(atoms, members, edges, mol)
+    mset = set(members)
+    spiro_edges = [(i, j, s) for i, j, s in spiro_pairs if i in mset and j in mset]
+    return _system_dict(atoms, members, edges, mol, spiro_edges,
+                        _free_spiro_atoms(mol, rings, members, spiro_edges))
 
 
 
@@ -111,5 +153,5 @@ def build_ring_systems(mol: Mol) -> list[dict]:
     if not rings:
         return []
     fused, spiro = _ring_pairs(rings)
-    comps = _components(len(rings), fused)
-    return [ _system_entry(mol, rings, m, fused) for m in comps]
+    comps = _components(len(rings), fused + spiro)  # 螺环对并入连通分量
+    return [ _system_entry(mol, rings, m, fused, spiro) for m in comps]

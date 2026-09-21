@@ -402,6 +402,8 @@ def _tree_covers_rings(fused_tree, system: dict) -> bool:
 
 def try_bridged_scaffold(info: dict, scaffold, fused_tree, system: dict) -> list[BridgedNode]:
     """路由到桥环：稠合命名法不适用，或 P25 命名失败。"""
+    if system.get("free_spiro_atoms"):
+        return []  # 含自由螺连接的环系归 P-24，不按 P-23 桥环命名
     nodes = decompose_bridged_system(info, system)
     if not nodes:
         return []

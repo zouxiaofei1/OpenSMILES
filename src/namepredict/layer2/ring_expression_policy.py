@@ -15,6 +15,9 @@ class RingExpressionPolicy:
     relations: frozenset[str]
 
 
+_CYCLIC_CORE = frozenset({"fused_hetero", "fused", "bridged",
+                          "mono_spiro", "fused_bridged_spiro"})  # 多环骨架共用同一套环表达策略
+
 _POLICIES = (
     RingExpressionPolicy(frozenset({"carbocycle"}), FG.ALCOHOL, frozenset({"in_skeleton"})),
     RingExpressionPolicy(frozenset({"carbocycle"}), FG.KETONE, frozenset({"in_skeleton"})),
@@ -30,11 +33,11 @@ _POLICIES = (
                          FG.KETONE, frozenset({"in_skeleton"})),
     RingExpressionPolicy(frozenset({"xanthene", "steroid"}), FG.KETONE, frozenset({"in_skeleton"})),  #
     RingExpressionPolicy(frozenset({"xanthene", "steroid"}), FG.ALCOHOL, frozenset({"in_skeleton"})),
-    RingExpressionPolicy(frozenset({"fused_hetero", "fused", "bridged"}), FG.ALCOHOL, frozenset({"in_skeleton"})),  
-    RingExpressionPolicy(frozenset({"fused_hetero", "fused", "bridged"}), FG.KETONE, frozenset({"in_skeleton"})),
-    RingExpressionPolicy(frozenset({"fused_hetero", "fused", "bridged"}), FG.AMINE, frozenset({"in_skeleton"})),
-    RingExpressionPolicy(frozenset({"fused_hetero", "fused", "bridged"}), FG.ACID, frozenset({"exocyclic"})),
-    RingExpressionPolicy(frozenset({"fused_hetero", "fused", "bridged"}), FG.NITRILE, frozenset({"exocyclic"})),
+    RingExpressionPolicy(_CYCLIC_CORE, FG.ALCOHOL, frozenset({"in_skeleton"})),
+    RingExpressionPolicy(_CYCLIC_CORE, FG.KETONE, frozenset({"in_skeleton"})),
+    RingExpressionPolicy(_CYCLIC_CORE, FG.AMINE, frozenset({"in_skeleton"})),
+    RingExpressionPolicy(_CYCLIC_CORE, FG.ACID, frozenset({"exocyclic"})),
+    RingExpressionPolicy(_CYCLIC_CORE, FG.NITRILE, frozenset({"exocyclic"})),
 )
 
 

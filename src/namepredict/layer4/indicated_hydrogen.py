@@ -77,6 +77,15 @@ def _is_monocycle(mol, chain: list[int]) -> bool:
     return True
 
 
+def _is_spiro_scaffold(scaffold_id: str | None) -> bool:
+    """母体是否为 P-24 螺环（螺环名 + ene/yne 位次已完整表达氢化度）。"""
+    if not scaffold_id:
+        return False
+    from namepredict.layer2.spiro_system import SPIRO_SCAFFOLDS
+
+    return scaffold_id in SPIRO_SCAFFOLDS
+
+
 def _is_retained_scaffold(scaffold_id: str | None) -> bool:
     """母体是否命中共有保留名模板（萘/噻吨等 mancude 系统）。"""
     if not scaffold_id:
@@ -96,7 +105,9 @@ def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=froze
     sats = set(saturated_ring_atoms(mol, set(chain), exclude)) | {
         i for i in extra if i in chain and i not in exclude}
     rdb = _ring_double_bonds(kekulized(mol) or mol, set(chain))
-    if not extra and _is_monocycle(mol, chain) and rdb == 0:
+    if _is_spiro_scaffold(scaffold_id):
+        sats = {i for i in extra if i in chain and i not in exclude}  # 螺环只留模板未隐含的强制指示氢
+    elif not extra and _is_monocycle(mol, chain) and rdb == 0:
         sats = set()  # 全饱和单环：母体氢化物名已隐含全部 H，无指示氢（P-58.2.1）
     elif not extra and _is_monocycle(mol, chain) and rdb == 1 \
             and not _is_retained_scaffold(scaffold_id):

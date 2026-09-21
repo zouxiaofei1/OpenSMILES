@@ -14,6 +14,7 @@ from namepredict.layer1.analyzer import _OXO_Z_ANCHORED as _OXO_CENTER_PARENT
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
 from namepredict.layer2.principal import PrincipalGroupSelection, feature_spec
+from namepredict.layer2.spiro_system import SPIRO_SCAFFOLDS
 from namepredict.layer1.ring_systems import sssr_rings, kekulized
 
 
@@ -169,10 +170,13 @@ def _skeleton_system(info: dict, skeleton: ParentSkeleton) -> dict | None:
 
 
 def _ring_scaffold_and_nodes(info: dict, skeleton: ParentSkeleton):
-    """一次识别 scaffold 与 P-25 稠环 / P-23 桥环节点（桥环仅在 P25 必失败时回退）。"""
+    """一次识别 scaffold 与 P-24 螺环 / P-25 稠环 / P-23 桥环节点。"""
+    system = _skeleton_system(info, skeleton)
+    if system is not None and system.get("free_spiro_atoms"):  # P-24 早于 P-25/P-23 短路
+        from namepredict.layer2.spiro_system import decompose_spiro_system, spiro_scaffold_identity
+        return spiro_scaffold_identity(info, system), None, [], decompose_spiro_system(info, system)
     from namepredict.layer2.ring_scaffold import resolve_ring_scaffold
     scaffold = resolve_ring_scaffold(info, skeleton)
-    system = _skeleton_system(info, skeleton)
     fused, bridged = None, []
     if system is not None and len(system.get("sssr_indices") or ()) >= 2:
         from namepredict.layer2.fused_system import decompose_fused_system
@@ -182,17 +186,17 @@ def _ring_scaffold_and_nodes(info: dict, skeleton: ParentSkeleton):
         # print("bridgedNode List! :",bridged)
         if bridged:  # 桥环接管骨架身份，kind 由 _resolved_ring_kind 兜底为 "bridged"
             scaffold = bridged[0].scaffold_identity()
-    return scaffold, fused, bridged
+    return scaffold, fused, bridged, []
 
 
 def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=None,
-                     fused_tree=None, bridged=()) -> dict:
+                     fused_tree=None, bridged=(), spiro=()) -> dict:
     """解析并写入 scaffold 身份与表达能力字段（节点由调用方一次算好传入）。"""
 
     from namepredict.layer2.ring_expression_policy import supports_ring_expression
 
     if scaffold is None:
-        scaffold, fused_tree, bridged = _ring_scaffold_and_nodes(info, skeleton)
+        scaffold, fused_tree, bridged, spiro = _ring_scaffold_and_nodes(info, skeleton)
     fields: dict = {}
     # print(scaffold)
     if scaffold:
@@ -212,7 +216,10 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
             hydro = hydrogenated_atoms(info["mol"], scaffold.id, match)
             if hydro:
                 fields["hydro_atoms"] = hydro
-    if bridged:  # P-23 桥环：身份由 bridged_node 承载，并列编号候选下传 L4（P-14.4 裁决）
+    if scaffold is not None and scaffold.id in SPIRO_SCAFFOLDS:  # P-24：身份由 spiro_node 承载
+        fields["spiro_node"] = spiro[0] if spiro else None  # 空候选 → L4 显式失败，不得下沉 P-25
+        fields["spiro_nodes"] = tuple(spiro)
+    elif bridged:  # P-23 桥环：身份由 bridged_node 承载，并列编号候选下传 L4（P-14.4 裁决）
         fields["bridged_node"] = bridged[0]
         fields["bridged_nodes"] = tuple(bridged)
     elif fused_tree is not None:  # 多环骨架的稠环拆解结构（P-25.3.2）
@@ -249,7 +256,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     """环骨架：表达主基团并生成母体 dict（不支持返回 None）。"""
     if skeleton.topology is not SkeletonTopology.RING_SYSTEM:
         return None
-    scaffold, fused_tree, bridged = _ring_scaffold_and_nodes(info, skeleton)  # 骨架原子集已定：一次识别供下游复用
+    scaffold, fused_tree, bridged, spiro = _ring_scaffold_and_nodes(info, skeleton)  # 骨架原子集已定：一次识别供下游复用
     occurrences = _covered(selection, skeleton)
     kind = _ring_kind(info, selection, skeleton, len(occurrences), scaffold, occurrences)
     # print(scaffold,"kind",kind)
@@ -259,7 +266,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     fields = {**_semantic_anchor_fields(selection.group_class, _anchors(occurrences)),  # 固定 locant 1 锚点字段
               **_chain_unsat_fields(info, skeleton,
                                     _scaffold_fields(info, skeleton, facts, scaffold,
-                                                     fused_tree, bridged))}  # 补环内不饱和字段（烯/炔由 double_bond 等承载）
+                                                     fused_tree, bridged, spiro))}  # 补环内不饱和字段（烯/炔由 double_bond 等承载）
     free_order = _radical_free_order(info, occurrences) if kind == "radical" else 0
     if free_order > 1:  # 环上碳锚点自由价非单键（*=C1CCCC1 / *#C1CCCC1）：链引擎出 -ylidene/-ylidyne
         fields = {**fields, "free_valence_order": free_order}
@@ -296,7 +303,8 @@ def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> d
     """为骨架内 C=C/C≡C 附加双/三键位次字段（mancude 环内略过）。"""
     atom_set = set(skeleton.atom_ids)
     dbs, tbs = _chain_polys(info, atom_set)
-    if fields.get("scaffold_id") in ("carbocycle", "bridged"):
+    if fields.get("scaffold_id") in ("carbocycle", "bridged", "mono_spiro",
+                                     "fused_bridged_spiro"):
         dbs = dbs + _kekule_ring_dbs(info, atom_set, dbs)
     implied = _implied_ring_atoms(fields, atom_set)
     if implied:

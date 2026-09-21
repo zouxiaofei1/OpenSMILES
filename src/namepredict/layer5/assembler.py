@@ -110,6 +110,8 @@ def _azane_acyl_stereo_lead(en: str) -> bool:
     tag, stem = _stereo_lead(en)
     return bool(tag) and (stem.endswith("oyl") or "carbonyl" in stem)
 
+_SPIRO_KINDS = ("mono_spiro", "fused_bridged_spiro")  # P-24 螺环 scaffold 直取的 kind（不在 _KIND_TABLE）
+
 _SUB_LOCANT_RE = re.compile(r"(?:^|[-(\[])\d+(?:,\d+)*[a-z]?-(?!(?:en|yn|an|in))")  # 取代基自带位次（排除母体词干内烯/炔位次）
 _AZANE_ACYL_RE = re.compile(r"(?:oyl|carbonyl)$")  # 酰基前端词尾
 
@@ -436,8 +438,10 @@ def _stem_prefix_stale(parent: dict, prefix: str) -> bool:
 
 
 def _ensure_parent_stem(numbered: dict) -> bool:
-    """母体词干注入：桥环 von Baeyer → 稠环稠合 → 大环杂单环生成式。"""
+    """母体词干注入：螺环 P-24 → 桥环 von Baeyer → 稠环稠合 → 大环杂单环生成式。"""
     parent = numbered.get("parent") or {}
+    if parent.get("spiro_node") is not None:
+        return _ensure_spiro_stem(numbered)
     if parent.get("bridged_node") is not None:
         return _ensure_bridged_stem(numbered)
     if not _ensure_fused_stem(numbered):
@@ -465,6 +469,26 @@ def _ensure_generated_stem(numbered: dict) -> bool:
     parent["stem_bare_en"] = f"{a_en}cyclo{en[:-3]}"
     parent["stem_bare_zh"] = f"{a_zh}环{zh[:-1]}"
     parent["stem_generated"] = True  # 'a' 前缀生成式词干：位次恒显式，自由基取裸词干
+    return True
+
+
+def _ensure_spiro_stem(numbered: dict) -> bool:
+    """P-24 螺环词干注入：饱和取完整名、带不饱和取裸词干（同 _exo_ring_spec 惯例）。"""
+    parent = numbered.get("parent") or {}
+    if parent.get("stem_en") and parent.get("stem_zh"):
+        return True
+    mol, node = parent.get("mol"), parent.get("spiro_node")
+    chain = list(parent.get("chain") or ())
+    if mol is None or node is None or not chain:
+        return False
+    from namepredict.layer5.spiro_namer import spiro_parent_names
+    names = spiro_parent_names(mol, node, chain)
+    if names is None:
+        return False
+    (full_en, full_zh), (bare_en, bare_zh) = names
+    parent["stem_bare_en"], parent["stem_bare_zh"] = bare_en, bare_zh
+    unsat = bool(numbered.get("ene_locants") or numbered.get("yne_locants"))
+    parent["stem_en"], parent["stem_zh"] = (bare_en, bare_zh) if unsat else (full_en, full_zh)
     return True
 
 
@@ -704,8 +728,8 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
     entry = _KIND_TABLE.get(kind)
     if kind == "acyl_halide":
         entry = _ACYL_HALIDE_BY_HAL.get(parent.get("hal_z")) or entry
-    if parent.get("stem_bare_en") and kind in ("bridged", "alkane"):
-        # 无主特征基团的环系（桥环 / >10 元杂单环）：须走链引擎才会渲染 ene/yne 位次
+    if parent.get("stem_bare_en") and kind in ("bridged", "alkane", *_SPIRO_KINDS):
+        # 无主特征基团的环系（螺环/桥环 / >10 元杂单环）：须走链引擎才会渲染 ene/yne 位次
         return _chain_names(replace(_KIND_TABLE["alkane"],
                                     stem=(parent["stem_bare_en"], parent["stem_bare_zh"]),
                                     coda=""), n, numbered)
