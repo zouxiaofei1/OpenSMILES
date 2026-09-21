@@ -502,7 +502,7 @@ def _ensure_fbs_stem(numbered: dict) -> bool:
     mol, node = parent.get("mol"), parent.get("fbs_node")
     if mol is None or node is None:
         return False
-    from namepredict.layer5.fbs_namer import fbs_parent_name
+    from namepredict.layer5.spiro_namer import fbs_parent_name
     name = fbs_parent_name(mol, node)
     if name is None or not name[0] or not name[1]:
         return False
