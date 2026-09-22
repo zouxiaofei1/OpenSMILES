@@ -219,7 +219,9 @@ def _fused_bridge_name(stem_en: str, a: dict) -> tuple[str, str] | None:
             continue
         base_zh = a["zh"][: -len(tail_zh)]
         base_en = a["en"][: -len(tail_en)]
-        return base_en + en_suf, (base_zh + "基" if base_zh else "") + zh_suf
+        # 前端中文名尾已带「基」（如 甲基二硫代基 去掉尾后为 甲基）：不再补「基」，避免 甲基基…
+        zh_head = base_zh if base_zh.endswith("基") else (base_zh + "基" if base_zh else "")
+        return base_en + en_suf, zh_head + zh_suf
     return None
 
 
@@ -235,6 +237,16 @@ def _same_name_groups(subs: list) -> list[tuple[int, str, str]]:
     return out
 
 
+def _thioxo_fused_stem(stem_en: str, stem_zh: str, subs: list[dict]) -> tuple[str, str, list[dict]]:
+    """P 锚点无 =O 而恰有一个 =S 时并入词干：<取代基>phosphinothioyl（P-67.1.4.1.1.4）。"""
+    if stem_en != "phosphanyl":
+        return stem_en, stem_zh, subs
+    hit = [s for s in subs if (s.get("en") or "") == "sulfanylidene"]
+    if len(hit) != 1:
+        return stem_en, stem_zh, subs
+    return "phosphinothioyl", "硫代磷酰基", [s for s in subs if s is not hit[0]]
+
+
 def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     """杂原子锚点自由基：经 free_to_yl 转标准名（P-62.2）。"""
     parent = numbered.get("parent") or {}
@@ -245,6 +257,7 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     if not subs:
         return MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
     if stem_en in PHOSPHORYL_STEMS:  # P-67.1.4.1.1.5：P 酰基前缀按取代基拼接
+        stem_en, stem_zh, subs = _thioxo_fused_stem(stem_en, stem_zh, subs)
         return _phosphoryl_sub_names(subs, stem_en, stem_zh, parent.get("mol"))
     if len(subs) == 1:
         a = subs[0]
@@ -558,8 +571,20 @@ def _fenced_arm_phosphate(name: str, sub: dict, mol) -> str:
     return _enclose(name) if hit else name
 
 
+_P_ACYL_ARM_TAIL = ("phosphoryl", "phosphanyl", "phosphinothioyl")  # P 酰基臂名尾（含 P=S 词干）
+
+
+def _is_condensed_phosphate(arms: list[dict]) -> bool:
+    """侧臂中是否含缩合磷酸的 P 酰基臂（-O-P(=O)(OH)- 的 phosphoryl 名），即 P-O-P 二酯。"""
+    return any((a.get("en") or "").endswith(_P_ACYL_ARM_TAIL) for a in arms)
+
+
 def _fenced_arms_phosphate(arms: list[dict], mol) -> list[dict]:
     """按磷酸酯专用判据改写 O-侧臂的双语名。"""
+    if _is_condensed_phosphate(arms) and any((a.get("en") or "")[:1] == "(" for a in arms):
+        # 缩合磷酸酯（P-O-P）中任一侧臂以前导立体描述符起（非完整围栏）：两臂须同时整体围栏，否则臂界不清（P-16.5.1.3.1/P-67.1.3）
+        return [{**a, "en": _enclose(a.get("en") or ""), "zh": _enclose(a.get("zh") or "")}
+                for a in arms]
     if _all_arms_stereo_lead(arms):  # 全部臂名均带前导立体描述符：须整体围栏（P-16.5.1.3.1）
         return [{**a, "en": _enclose(a.get("en") or ""), "zh": _enclose(a.get("zh") or "")}
                 for a in arms]
@@ -673,6 +698,18 @@ def _urea_subs(numbered: dict, n_atoms: list[int], locants: tuple[str, str],
     return "urea"
 
 
+def _carbamothioylamino_prefix(side_en: str, side_zh: str) -> tuple[str, str] | None:
+    """N-侧胺名 → <R>carbamothioyl / <R>氨基硫代羰基（P-66.1.1.4 硫代氨基甲酸残基；尾「amino/氨基」由自由价渲染补出）。"""
+    if not side_en.endswith("amino") or not side_zh.endswith("氨基"):
+        return None
+    stem_en, stem_zh = side_en[: -len("amino")], side_zh[: -len("氨基")]
+    if not stem_en or not stem_zh:
+        return None
+    if not stem_zh.endswith("基"):  # 中文胺名去「氨基」会连「基」一起削掉（环己氨基 → 环己），须补回
+        stem_zh += "基"
+    return _enclose(stem_en) + "carbamothioyl", _enclose(stem_zh) + "氨基硫代羰基" + "基"
+
+
 def _c1_retained(numbered: dict) -> tuple[str, str] | None:
     """单碳母体带两个杂原子时的保留名（P-66.3 脲/硫脲/胍，P-65.2.1.5 carbamoyl）。"""
     parent = numbered.get("parent") or {}
@@ -690,6 +727,16 @@ def _c1_retained(numbered: dict) -> tuple[str, str] | None:
             return "carbamoyl", "氨基甲酰基"
         named = carbamoyl_prefix_name(side.get("en") or "", side.get("zh") or "",
                                       in_ring=mol.GetAtomWithIdx(n_idx).IsInRing())
+        if named is None:
+            return None
+        parent["subs_consumed"] = True
+        return named
+    if kind == "radical" and len(sgl_n) == 1 and dbl.get(S) is not None and not sgl_o:
+        n_idx = sgl_n[0]  # 硫代氨基甲酸残基：=S 并入 carbamothioyl，N-侧取代基并入前缀（P-66.1.1.4）
+        side = next((s for s in (numbered.get("substituents") or []) if n_idx in (s.get("atoms") or ())), None)
+        if side is None:
+            return None  # 伯硫代酰胺（-C(=S)NH₂）：无 N-取代基可并入
+        named = _carbamothioylamino_prefix(side.get("en") or "", side.get("zh") or "")
         if named is None:
             return None
         parent["subs_consumed"] = True

@@ -51,7 +51,8 @@ FG_SMARTS: tuple[tuple[str, str], ...] = (
     ("ester", f"[#6;X3;{_NOT_ACID}](=[#8;X1])[#16;X2;H0;+0;!R]~[#6]"),
     ("acyl_halide", f"[#6;X3;{_NOT_ACID};{_NOT_ACYCLIC_ESTER}](=[#8;X1])~[#9,#17,#35,#53]"),
     # 酰胺 N 除羰基碳/H 外只容 C 或不再连碳的 O（哑原子、杂原子均拒）
-    ("amide", f"[#6;X3;{_NOT_ACID};{_NOT_ACYCLIC_ESTER}](=[#8;X1])-[#7;X3;!R;!$([#7;X3]~[!#6;!#8]);!$([#7;X3]~[#8;X2]~[#6])]"),
+    # N 允许 X2：-C(=O)-N=C< 的亚胺型酰胺 N（gold 取 carboxamide 后缀 + N-亚基前缀，P-66.1.1.1.1.3）
+    ("amide", f"[#6;X3;{_NOT_ACID};{_NOT_ACYCLIC_ESTER}](=[#8;X1])-[#7;X2,X3;!R;!$([#7;X2,X3]~[!#6;!#8]);!$([#7;X3]~[#8;X2]~[#6])]"),
     ("aldehyde", f"[#6;X3;H1,H2;{_ONE_C};{_NOT_ACID};{_NOT_ACYCLIC_ESTER};{_NOT_HALO}](=[#8;X1])"),
     ("nitrile", "[#6;+0;X2]#[#7;X1;+0]"),
     # 酮按碳邻居数分三条：两个碳 / 单碳须连环内杂原子（P-66.1.1）/ 环内零碳

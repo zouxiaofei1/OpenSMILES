@@ -280,7 +280,10 @@ def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
         sp = _split_bridge_suffix(stem)
         if sp is not None:  # O/S/N 桥平铺式：桥后缀留括号外（P-63.2.2.1.1）。
             merge = tail_sep and sp[1] in _BRIDGE_SELF_FENCE and "[" in sp[0]
-            return _place(mult, _bridge_body(*sp, merge=merge), subs, omit)
+            body = _bridge_body(*sp, merge=merge)
+            if len(subs) > 1 and mult in (MULT_EN.get(len(subs)), BIS_EN.get(len(subs))):
+                return _place(BIS_EN.get(len(subs), mult), _enclose(body), subs, omit)  # 桥后缀留在围栏外：倍数组须整体围栏（P-16.3.2）
+            return _place(mult, body, subs, omit)
     return _place(mult, _wrap_stem(stem, need), subs, omit)
 
 _COMPLEX_MULT_LANG = {"en": ("carboxy", BIS_EN, MULT_EN), "zh": ("羧", BIS_ZH, MULT_ZH)}
@@ -325,7 +328,9 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
     """拼单个中文前缀：数量 + 词干（CF3 特例：简单氟代甲基不加括号）。"""
     mult = _mult_of("zh", zh_stem, subs, len(subs))
     en = subs[0].get("en") or ""
-    need = (any(s.get("paren") for s in subs) or bool(en[:1].isdigit() and not flat)) and not _is_bare(subs)  # 停用：简单氟代甲基不加括号
+    omit_ring_yl = omit and any(s.get("ring_yl") for s in subs)  # 母体位次已省时环基词干免围栏，与英文侧同判（P-16.5.1.2）
+    need = (any(s.get("paren") for s in subs)
+            or bool(en[:1].isdigit() and not flat and not omit_ring_yl)) and not _is_bare(subs)
     if not omit and _STEREO_LEAD_ENCLOSE_RE.match(en):  # 前导立体描述符 + 位次须整体围栏
         need = True
     if mult and mult == MULT_ZH.get(len(subs), "") and en_stem and _MULT_WRAP_RE.search(en_stem):  # 与英文侧同判：复合取代基用 双(...)

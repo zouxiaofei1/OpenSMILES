@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from rdkit.Chem import Mol
+from rdkit.Chem import BondType, Mol
 
 from namepredict.layer1.functional_group_inventory import (
     FunctionalGroupClass, OXO_FG_CLASSES, inventory_from_info,
@@ -15,7 +15,7 @@ from namepredict.layer2.parent_skeleton import (
 )
 from namepredict.layer2.principal_expression import express_chain_principal, express_ring_principal
 from namepredict.layer2.principal import PrincipalGroupSelection, select_principal_group
-from namepredict.constants import OXO_CENTER_KINDS
+from namepredict.constants import C, N, O, OXO_CENTER_KINDS
 
 
 @dataclass(frozen=True)
@@ -141,7 +141,70 @@ def _finalize_ranked(info: dict, cands: list[dict]) -> list[dict]:
     ]
 
 
+def _oxo_ester_arm_carbons(mol: Mol, z_idx: int) -> list[int]:
+    """含氧酸中心的 O-酯臂碳（中心-O-C 的碳）；O-桥与酸式氧不计。"""
+    out: list[int] = []
+    for nb in mol.GetAtomWithIdx(z_idx).GetNeighbors():
+        if nb.GetAtomicNum() != O:
+            continue
+        if mol.GetBondBetweenAtoms(z_idx, nb.GetIdx()).GetBondType() == BondType.DOUBLE:
+            continue
+        out += [x.GetIdx() for x in nb.GetNeighbors() if x.GetAtomicNum() == C]
+    return out
+
+
+def _ester_arm_component(mol: Mol, root: int) -> frozenset[int]:
+    """酯臂碳的连通块：不越中心 P/S，也不越与中心成键的酯氧/桥氧。"""
+    seen: set[int] = set()
+    stack = [root]
+    while stack:
+        i = stack.pop()
+        if i in seen:
+            continue
+        seen.add(i)
+        for nb in mol.GetAtomWithIdx(i).GetNeighbors():
+            j = nb.GetIdx()
+            if j in seen or nb.GetAtomicNum() == 15:
+                continue
+            if nb.GetAtomicNum() == O and any(x.GetAtomicNum() == 15 for x in nb.GetNeighbors()):
+                continue
+            stack.append(j)
+    return frozenset(seen)
+
+
+def _oxo_ester_side_score(mol: Mol, cand: dict) -> tuple[int, int]:
+    """酯侧打分 (臂上芳香含氮环数, -臂内氧数)：越小越优先（P-67.1.3 磷酸二酯取糖/多元醇侧作母体）。"""
+    ids = set(cand.get("covered_principal_ids") or ())
+    zs = [o.payload["oxo_z"] for o in cand.get("principal_occurrences") or ()
+          if o.id in ids and o.payload.get("oxo_z") is not None]
+    nuc, n_o = 0, 0
+    seen_arms: list[int] = []
+    for z in zs:
+        seen_arms += _oxo_ester_arm_carbons(mol, int(z))
+    for arm in seen_arms:
+        comp = _ester_arm_component(mol, arm)
+        n_o = max(n_o, sum(1 for i in comp if mol.GetAtomWithIdx(i).GetAtomicNum() == 8))
+        for ring in mol.GetRingInfo().AtomRings():
+            if not all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
+                continue
+            if not any(i in comp for i in ring):
+                continue
+            if any(mol.GetAtomWithIdx(i).GetAtomicNum() == N for i in ring):
+                nuc += 1
+    return nuc, -n_o
+
+
+def _reorder_oxo_ester_side(info: dict, cands: list[dict]) -> list[dict]:
+    """缩合磷酸酯的母体侧定向：并列候选改取「糖/多元醇/甘油」侧（P-67.1.3，数据驱动定向规则）。"""
+    mol = info.get("mol")
+    if mol is None or len(cands) <= 1:
+        return cands
+    if any(c.get("oxo_kind") != "phosphate" for c in cands):
+        return cands
+    return sorted(cands, key=lambda c: _oxo_ester_side_score(mol, c))
+
+
 def select_parent(info: dict) -> list[dict]:
     """P-44 收集->P-45.2->P-45.2.1 并列最优"""
     cands = _finalize_ranked(info, _collect_candidates(info))
-    return _reorder_p45_2(info, cands, tied=True)
+    return _reorder_oxo_ester_side(info, _reorder_p45_2(info, cands, tied=True))

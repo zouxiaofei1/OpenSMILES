@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import re
 
 from namepredict.constants import (
     AMIDO_RETAINED_EN, DIATOMIC_BRIDGE_YL, SIMPLE_ALKOXY_NO_PAREN, SIMPLE_BRIDGE_YL_NO_PAREN,
@@ -44,6 +45,9 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
     return out
 
 
+_P_ACYL_STEM_TAIL = ("phosphoryl", "phosphanyl", "phosphinothioyl")  # P 酰基词干名尾（P-67.1.4.1.1）
+
+
 def _obridge_front_simple(mol, atoms, attach_old, *, cache, root_ctx):
     """O/S 桥前端是否为简单取代基；无法判定时返回 None。
 
@@ -62,7 +66,13 @@ def _obridge_front_simple(mol, atoms, attach_old, *, cache, root_ctx):
     claim = ClaimedBlock(slot=SideSlot.OTHER, attach_parent=attach_old, root=ins[0],
                          atoms=frozenset(atoms) - {attach_old})
     named = SubstituentNamer(cache=cache, root_ctx=root_ctx).name(mol, claim)
-    return None if named is None else (not named.requires_parentheses)
+    if named is None:
+        return None
+    en = named.en or ""
+    # P 酰基单体名（dimethoxyphosphinothioyl / dimethoxyphosphoryl）无内部连字符或括号：按单词前缀直连，不再围栏
+    if en.endswith(_P_ACYL_STEM_TAIL) and not re.search(r"[-\-()\[\]]", en):  # noqa: RUF001
+        return True
+    return not named.requires_parentheses
 
 
 def _radical_yl_from_sub(
