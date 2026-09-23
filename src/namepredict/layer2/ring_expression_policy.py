@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from namepredict.constants import HW_CLASS
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG
 from namepredict.layer2.ring_scaffold import ScaffoldIdentity
 
@@ -17,6 +18,7 @@ class RingExpressionPolicy:
 
 _CYCLIC_CORE = frozenset({"fused_hetero", "fused", "bridged",
                           "mono_spiro", "fused_bridged_spiro"})  # 多环骨架共用同一套环表达策略
+_HW = frozenset({HW_CLASS})  # 生成式 Hantzsch-Widman 杂单环（P-22.2.2）
 
 _POLICIES = (
     RingExpressionPolicy(frozenset({"carbocycle"}), FG.ALCOHOL, frozenset({"in_skeleton"})),
@@ -38,6 +40,16 @@ _POLICIES = (
     RingExpressionPolicy(_CYCLIC_CORE, FG.AMINE, frozenset({"in_skeleton"})),
     RingExpressionPolicy(_CYCLIC_CORE, FG.ACID, frozenset({"exocyclic"})),
     RingExpressionPolicy(_CYCLIC_CORE, FG.NITRILE, frozenset({"exocyclic"})),
+    # 生成式 HW 杂单环（P-22.2.2）：环内嵌 FG 同环系内核，环外 FG 走后缀
+    RingExpressionPolicy(_HW, FG.ALCOHOL, frozenset({"in_skeleton"})),
+    RingExpressionPolicy(_HW, FG.KETONE, frozenset({"in_skeleton"})),
+    RingExpressionPolicy(_HW, FG.AMINE, frozenset({"in_skeleton"})),
+    RingExpressionPolicy(_HW, FG.AMIDE, frozenset({"in_skeleton"})),
+    RingExpressionPolicy(_HW, FG.ESTER, frozenset({"in_skeleton"})),
+    RingExpressionPolicy(_HW, FG.ACID, frozenset({"exocyclic"})),
+    RingExpressionPolicy(_HW, FG.NITRILE, frozenset({"exocyclic"})),
+    RingExpressionPolicy(_HW, FG.ALDEHYDE, frozenset({"exocyclic"})),
+    RingExpressionPolicy(_HW, FG.SULFONAMIDE, frozenset({"exocyclic"})),
 )
 
 

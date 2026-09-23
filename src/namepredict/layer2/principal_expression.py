@@ -194,6 +194,7 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
         supported = supports_ring_expression(scaffold, facts) if facts else False
         match = None  # 保留 fused 模板匹配映射，供 L4 固定编号用
         from namepredict.layer2.ring_scaffold import _match_with_map, get_spec, hydrogenated_atoms
+        from namepredict.layer2.hantzsch_widman import hydro_atoms as hw_hydro_atoms, is_hw_scaffold
         spec = get_spec(scaffold.id)
         if spec and spec.retained:  # 保留模板都取 match，供算加氢位（P-31.2.2）
             hit = _match_with_map(info, skeleton.atom_ids)
@@ -205,6 +206,10 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
         
         if match:  # 加氢原子集：编号完成后由 L4 换算为 hydro 前缀位次
             hydro = hydrogenated_atoms(info["mol"], scaffold.id, match)
+            if hydro:
+                fields["hydro_atoms"] = hydro
+        elif is_hw_scaffold(scaffold.id):  # 生成式 HW 环：mancude 参照之外的氢位由 hydro 前缀表达（P-54.4.1）
+            hydro = hw_hydro_atoms(info["mol"], skeleton.atom_ids)
             if hydro:
                 fields["hydro_atoms"] = hydro
     if scaffold is not None and scaffold.id in SPIRO_SCAFFOLDS:  # P-24：身份由螺环节点承载
@@ -326,10 +331,14 @@ def _kekule_ring_dbs(info: dict, atom_set: set[int], known: list[dict]) -> list[
 def _implied_ring_atoms(fields: dict, atom_set: set[int]) -> frozenset[int]:
     """保留 mancude 母体覆盖的分子原子集（多重键由母体名隐含）。"""
     from namepredict.layer2.ring_scaffold import mancude_ring_atoms
+    from namepredict.layer2.hantzsch_widman import is_hw_scaffold
     implied = mancude_ring_atoms(fields.get("scaffold_id"), fields.get("scaffold_match"))
     if implied:
         return implied
-    return frozenset(atom_set) if fields.get("fused_tree") is not None else frozenset()
+    if fields.get("fused_tree") is not None:
+        return frozenset(atom_set)
+    # 生成式 HW 环：环内不饱和由词干（-ole/-ine/-epine…）承载，不得再摊成 ene 位次
+    return frozenset(atom_set) if is_hw_scaffold(fields.get("scaffold_id")) else frozenset()
 
 
 def _chain_oxoacid_fields(info: dict, occurrences, fields: dict) -> dict | None:

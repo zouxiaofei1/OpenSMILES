@@ -50,9 +50,12 @@ def test_large_heteromonocycle_uses_a_prefix(smiles, en):
     assert normalize_en(r.en) == normalize_en(en)
 
 
-def test_small_heteromonocycle_untouched():
-    """≤10 元环归 Hantzsch-Widman 保留名，生成式前缀不得抢入。"""
-    assert SMILESNNamer().name("C1CCCCCCN1").en == "cyclooctane"
+def test_small_heteromonocycle_uses_hw_name_not_a_prefix():
+    """≤10 元杂单环取 Hantzsch-Widman 名（P-22.2.2），骨架置换 'a' 前缀不得抢入。"""
+    r = SMILESNNamer().name("C1CCCCCCN1")
+    assert r.success, r
+    assert normalize_en(r.en) == normalize_en("azocane")
+    assert r.en != "1-azacyclooctane"  # 'a' 前缀形式只用于 >10 元环
 
 
 def test_ring_count_prefix_uses_multiplicative_forms():

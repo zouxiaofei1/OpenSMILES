@@ -95,6 +95,13 @@ def _is_retained_scaffold(scaffold_id: str | None) -> bool:
     return get_spec(scaffold_id) is not None
 
 
+def is_hw(scaffold_id: str | None) -> bool:
+    """母体是否为生成式 Hantzsch-Widman 杂单环（P-22.2.2）。"""
+    from namepredict.layer2.hantzsch_widman import is_hw_scaffold
+
+    return is_hw_scaffold(scaffold_id)
+
+
 def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=frozenset(),
                        scaffold_id: str | None = None) -> list[str]:
     """返回指示氢位次列表：位次取 labels，缺失时用链序号（P-58.2.1）。"""
@@ -110,8 +117,8 @@ def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=froze
     elif not extra and _is_monocycle(mol, chain) and rdb == 0:
         sats = set()  # 全饱和单环：母体氢化物名已隐含全部 H，无指示氢（P-58.2.1）
     elif not extra and _is_monocycle(mol, chain) and rdb == 1 \
-            and not _is_retained_scaffold(scaffold_id):
-        sats = set()  # 单环仅一个环内双键（环己烯/环戊烯）：氢位无歧义
+            and not _is_retained_scaffold(scaffold_id) and not is_hw(scaffold_id):
+        sats = set()  # 单环仅一个环内双键（环己烯/环戊烯）：氢位无歧义；HW 名按 mancude 词干读，须标指示氢
     sats = sorted(sats, key=chain.index)
     if len(sats) > 1 and all(mol.GetAtomWithIdx(i).GetAtomicNum() == 7 for i in sats):  # 互变异构冗余护栏：饱和位全为氮且多于一个时只留最低位次。
         sats = sats[:1]

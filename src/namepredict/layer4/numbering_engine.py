@@ -255,11 +255,15 @@ def _nh_sites(heteros: list[int], mol) -> list[int]:
     return has_h + [a for a in subs if has_h or _n(a).IsInRingSize(5)]
 
 def _narrow_hetero_ring(cands: list[dict], mol, chain: list[int], float_hetero: bool) -> list[dict]:
-    """杂环编号 P-22.2.2.1.3/(b)：杂原子集→元素序→指示氢 NH 位次最小化。"""
+    """杂环编号 P-22.2.2.1.3/(b)：位次 1 给最先元素→杂原子集→元素序→指示氢 NH 位次最小化。"""
     heteros = [a for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != 6]
     by_z: dict[int, list[int]] = {}
     for a in heteros:
         by_z.setdefault(mol.GetAtomWithIdx(a).GetAtomicNum(), []).append(a)
+    first = next((z for z in P145_SENIOR if z in by_z), None)  # (0) 引用序最先者得位次 '1'
+    if first is not None:
+        atoms = by_z[first]
+        cands = narrow(cands, lambda c: min(c[a] for a in atoms), skip_none=True)
     cands = narrow_by_senior(                                           # (a)(b)
         cands, lambda c, at: _locant_set(c, at), heteros, by_z, skip_none=True)
     if not float_hetero:                                                # (b)

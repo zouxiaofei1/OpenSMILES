@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from rdkit.Chem import Mol, MolFromSmarts, MolFromSmiles
 from rdkit import Chem
+from namepredict.constants import HW_COMPONENT_PREFIX
 from namepredict.tools import memo
 from namepredict.layer2.parent_skeleton import ParentSkeleton
 from namepredict.layer1.ring_systems import sssr_rings, kekulized
@@ -89,23 +90,14 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "oxolane":     {"smiles": "C1CCOC1",  "stem_en": "oxolane",     "stem_zh": "四氢呋喃", "naming_class": "monohetero", "fused": False},
     "oxane":       {"smiles": "C1CCCOC1", "stem_en": "oxane",       "stem_zh": "氧杂环己烷", "naming_class": "monohetero", "fused": True, "fused_prefix": ("pyrano", "吡喃并")},  # 稠合组分须 mancude（P-25.3.1.2.1/.2.3）：由 oxane 派生应取 pyrano
     "oxirane":     {"smiles": "C1CO1",    "stem_en": "oxirane",     "stem_zh": "环氧乙烷", "naming_class": "monohetero","fused": True,},  # 小环与含硫饱和杂环（P-22.2.2）
-    "aziridine":   {"smiles": "C1CN1",    "stem_en": "aziridine",   "stem_zh": "氮杂环丙烷", "naming_class": "monohetero","fused": True,},
-    "oxetane":     {"smiles": "C1COC1",   "stem_en": "oxetane",     "stem_zh": "氧杂环丁烷", "naming_class": "monohetero","fused": True,},
-    "azetidine":   {"smiles": "C1CNC1",   "stem_en": "azetidine",   "stem_zh": "氮杂环丁烷", "naming_class": "monohetero","fused": True,},
     "thiolane":    {"smiles": "C1CCSC1",  "stem_en": "thiolane",    "stem_zh": "四氢噻吩", "naming_class": "monohetero","fused": True, "fused_prefix": ("thieno", "噻吩并")},  # 同上：thiolane → thieno
     "thiane":      {"smiles": "C1CCSCC1", "stem_en": "thiane",      "stem_zh": "四氢噻喃", "naming_class": "monohetero","fused": True, "fused_prefix": ("thiopyrano", "噻喃并")},  # 同上：thiane → thiopyrano（噻喃）
     "dioxolane":   {"smiles": "C1COCO1",  "stem_en": "1,3-dioxolane", "stem_zh": "1,3-二氧戊环", "naming_class": "monohetero", "locant_prefix": "1,3-"},  # 双氧/三氧饱和环（缩醛/缩酮、溶剂类骨架）
     "dioxane":     {"smiles": "C1COCCO1", "stem_en": "1,4-dioxane",   "stem_zh": "1,4-二氧六环", "naming_class": "monohetero", "locant_prefix": "1,4-"},
     "trioxane":    {"smiles": "C1OCOCO1", "stem_en": "1,3,5-trioxane", "stem_zh": "1,3,5-三氧六环", "naming_class": "monohetero", "locant_prefix": "1,3,5-"},
-    "oxazolidine": {"smiles": "C1NCCO1",  "stem_en": "1,3-oxazolidine", "stem_zh": "1,3-噁唑烷", "naming_class": "monohetero", "locant_prefix": "1,3-"},  # 饱和 5 元双杂环（噁唑烷/咪唑烷/噻唑烷）
     "dithiolane12": {"smiles": "C1CSSC1", "stem_en": "dithiolane", "stem_zh": "二硫杂环戊烷", "naming_class": "monohetero", "fused": False},  # 1,2-二硫戊环（P-22.2.2 HW 名；金标不写 1,2- 位次）
-    "dioxaborolane132": {"smiles": "B1OCCO1", "stem_en": "1,3,2-dioxaborolane", "stem_zh": "1,3,2-二氧杂硼杂环戊烷", "naming_class": "monohetero", "locant_prefix": "1,3,2-", "fused": False},  # 硼酸酯母体（P-22.2.2）：B 得 2 位，两个 O 得 1,3
-    "oxazinane13": {"smiles": "C1CNCOC1", "stem_en": "1,3-oxazinane", "stem_zh": "1,3-氧杂嗪烷", "naming_class": "monohetero", "locant_prefix": "1,3-", "fused": False},  # 六元 O/N 饱和环（P-22.2.2，O1/N3 得最低位次）
-    "diazinane13": {"smiles": "C1CNCNC1", "stem_en": "1,3-diazinane", "stem_zh": "1,3-二嗪烷", "naming_class": "monohetero", "locant_prefix": "1,3-", "fused": False},  # 六元 N/N 饱和环（巴比妥酸母体）
     "imidazolidine":{"smiles": "C1NCCN1", "stem_en": "imidazolidine",  "stem_zh": "咪唑烷", "naming_class": "monohetero"},
     "pyrazolidine": {"smiles": "C1CNNC1", "stem_en": "pyrazolidine", "stem_zh": "吡唑烷", "naming_class": "monohetero"},  # 表 2.3 保留名：饱和吡唑环须用它而非氢化 pyrazole
-    "thiazolidine":{"smiles": "C1NCCS1",  "stem_en": "1,3-thiazolidine", "stem_zh": "1,3-噻唑烷", "naming_class": "monohetero", "locant_prefix": "1,3-"},
-    "thiadiazolidine124": {"smiles": "S1NCNC1", "stem_en": "1,2,4-thiadiazolidine", "stem_zh": "1,2,4-噻二唑烷", "naming_class": "monohetero", "locant_prefix": "1,2,4-"},  # 饱和 S,N,N 五元环取 HW 名（P-22.2.2），勿退回氢化 thiadiazole
     "dihydrofuran":  {"smiles": "C1C=CCO1",   "stem_en": "2,5-dihydrofuran", "stem_zh": "2,5-二氢呋喃", "naming_class": "monohetero", "standard": (("1", "2", "3", "4", "5"), (4, 0, 1, 2, 3))},  # 部分不饱和 5/6 元杂环（P-22.2.2 加氢前缀）；字面位次即固定编号(P-14.4(a)/(b))
     "dihydropyran":  {"smiles": "C1=COCCC1",  "stem_en": "3,4-dihydro-2H-pyran", "stem_zh": "3,4-二氢-2H-吡喃", "naming_class": "monohetero", "standard": (("1", "2", "3", "4", "5", "6"), (2, 3, 4, 5, 0, 1))},
     "dihydropyrrole":{"smiles": "C1C=CCN1",   "stem_en": "2,5-dihydro-1H-pyrrole", "stem_zh": "2,5-二氢-1H-吡咯", "naming_class": "monohetero", "locant_prefix": "1H-", "prefix_nh_conditional": True, "standard": (("1", "2", "3", "4", "5"), (4, 0, 1, 2, 3))},
@@ -146,10 +138,7 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "triazine124": {"smiles": "n1ncncc1", "stem_en": "1,2,4-triazine", "stem_zh": "1,2,4-三嗪", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2,4]triazino", "[1,2,4]三嗪并"), "locant_prefix": "1,2,4-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
     "tetrazine1245": {"smiles": "n1ncnnc1", "stem_en": "1,2,4,5-tetrazine", "stem_zh": "1,2,4,5-四嗪", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,2,4,5-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
     "thiazole12": {"smiles": "c1cnsc1", "stem_en": "1,2-thiazole", "stem_zh": "1,2-噻唑", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,2]thiazolo", "[1,2]噻唑并"), "locant_prefix": "1,2-", "standard": (("1", "2", "3", "4", "5"), (3, 2, 1, 0, 4))},  # 异噻唑：S1/N2 相邻（原 c1cncs1 与 thiazole 同构，1,2- 名实不符）
-    "oxepane": {"smiles": "O1CCCCCC1", "stem_en": "oxepane", "stem_zh": "氧杂环庚烷", "naming_class": "monohetero", "fused": True},  # 七元含氧/含氮饱和环（P-22.2.2）
     "azepane": {"smiles": "N1CCCCCC1", "stem_en": "azepane", "stem_zh": "氮杂环庚烷", "naming_class": "monohetero", "fused": True, "fused_stem": ("azepine", "氮杂卓"), "locant_prefix": "1H-", "prefix_nh_conditional": True},  # 作稠合母体须取 mancude 词干 azepine（P-25.3.1.2.2）
-    "oxazepane": {"smiles": "O1CCNCCC1", "stem_en": "1,4-oxazepane", "stem_zh": "1,4-氧杂氮杂环庚烷", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,4-"},
-    "thiazepane": {"smiles": "S1CCNCCC1", "stem_en": "1,4-thiazepane", "stem_zh": "1,4-硫杂氮杂环庚烷", "naming_class": "monohetero", "fused": True, "locant_prefix": "1,4-"},
     "thiazine13": {"smiles": "S1C=NC=CC1", "stem_en": "1,3-thiazine", "stem_zh": "1,3-噻嗪", "naming_class": "monohetero", "fused": True, "fused_prefix": ("[1,3]thiazino", "[1,3]噻嗪并"), "locant_prefix": "1,3-", "standard": (("1", "2", "3", "4", "5", "6"), (0, 1, 2, 3, 4, 5))},
     "azulene":      {"smiles": "c1ccc2cccc2cc1", "stem_en": "azulene", "stem_zh": "薁", "naming_class": "naph_family", "fused": True, "fused_prefix": ("azuleno", "薁并")},  # 表 2.7 保留名，5+7 稠合碳环（桥头 3a/8a）
     "pentalene":    {"smiles": "C1=CC=C2C=CC=C12", "stem_en": "pentalene", "stem_zh": "戊搭烯", "naming_class": "pentalene", "fused": True, "fused_prefix": ("pentaleno", "戊搭烯并"), "standard": (("1", "2", "3", "3a", "4", "5", "6", "6a"), tuple(range(8)))},  # 表 2.7 保留名 5+5 稠合双环（P-25.1.2.3 多轮烯），桥头 3a/6a
@@ -186,6 +175,9 @@ def _bracketed_stem(entry: dict) -> tuple[str, str]:
 
 def component_stem(sid: str) -> tuple[str, str] | None:
     """稠合组分词干 """
+    if sid.startswith(HW_COMPONENT_PREFIX):  # 生成式 HW 组分（P-25.3.2.1.2）
+        from namepredict.layer2.hantzsch_widman import component_names
+        return component_names(sid)
     entry = _TEMPLATES.get(sid)
     if not entry or not entry.get("fused"):
         return None
@@ -226,12 +218,15 @@ def match_fusion_carbocycle(info: dict, atom_ids) -> str | None:
 
 
 def match_fusion_component(info: dict, atom_ids) -> str | None:
-    """稠环拆解的组分匹配（P-25.3.2）：保留母体优先，其次单环烃。"""
+    """稠环拆解的组分匹配（P-25.3.2）：保留母体优先，其次单环烃，最后生成式 HW 名。"""
     mol = info["mol"]
+    from namepredict.layer2.hantzsch_widman import component_key
+
     # 按原子集记忆：对称笼架多个环集张成同一原子集，不记忆会重复全模板扫描
     return memo.by_key("fusion_component", (id(mol), frozenset(atom_ids)),
                        lambda: match_retained(info, atom_ids, mancude_only=True)
-                       or match_fusion_carbocycle(info, atom_ids), mol)
+                       or match_fusion_carbocycle(info, atom_ids)
+                       or component_key(mol, atom_ids), mol)
 
 _Q: dict[str, Mol] = {sid: MolFromSmiles(entry["smiles"]) for sid, entry in _TEMPLATES.items()}  # 查询子结构与元素签名，import 时构建一次。
 
@@ -536,5 +531,9 @@ def resolve_ring_scaffold(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdent
         spec = get_spec(sid)
         if spec:
             return spec.identity
+    from namepredict.layer2.hantzsch_widman import identity as hw_identity
+    hw = hw_identity(info, skeleton)  # 未命中模板的 3-10 元杂单环走生成式 HW（P-22.2.2）
+    if hw is not None:
+        return hw
     # print("no_sid")
     return _generic_carbocycle(info, skeleton)

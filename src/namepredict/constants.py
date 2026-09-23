@@ -44,6 +44,34 @@ N_LOCANT_KINDS = frozenset({"urea", "thiourea", "guanidine"})  # 保留名母体
 P25_SENIOR = (N, F, Cl, Br, I, O, S, Se, Te, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)  # 杂原子优先序（稠环母体组分选择 P-25.3.2.4 / 稠环与杂环编号 P-25.3.3.1.2(b)）两条序列同源不同序，勿混用：P25 用于"选哪个组分当母体"，P145 用于"哪个杂原子得低位次"。
 P145_SENIOR = (F, Cl, Br, I, O, S, Se, Te, N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)
 
+# ── Hantzsch-Widman 杂单环（P-22.2.2）────────────
+HW_ID = "hw_mono"  # 生成式 HW 杂单环骨架 id：不登记进 _TEMPLATES，靠生成器产出词干
+HW_CLASS = "heterocycle"  # 其 naming_class（与 monohetero 分列，避免改动既有模板行为）
+HW_COMPONENT_PREFIX = "hw:"  # 稠合组分编码前缀：'hw:' + 环序元素符号串
+
+HW_PREFIX_EN = {9: "fluora", 17: "chlora", 35: "broma", 53: "ioda",  # Table 2.4 'a' 前缀（按优先性递减）
+                8: "oxa", 16: "thia", 34: "selena", 52: "tellura",
+                7: "aza", 15: "phospha", 33: "arsa", 51: "stiba", 83: "bisma",
+                14: "sila", 32: "germa", 50: "stanna", 82: "plumba",
+                5: "bora", 13: "aluma", 31: "galla", 49: "indiga", 81: "thalla"}
+HW_PREFIX_ZH = {9: "氟杂", 17: "氯杂", 35: "溴杂", 53: "碘杂",  # 表 3-3 中文前缀（长式）
+                8: "氧杂", 16: "硫杂", 34: "硒杂", 52: "碲杂",
+                7: "氮杂", 15: "磷杂", 33: "砷杂", 51: "锑杂", 83: "铋杂",
+                14: "硅杂", 32: "锗杂", 50: "锡杂", 82: "铅杂",
+                5: "硼杂", 13: "铝杂", 31: "镓杂", 49: "铟杂", 81: "铊杂"}
+HW_ZH_SHORT = {(5, 8): "噁", (5, 16): "噻", (6, 16): "噻"}  # 含氮环的短式（噁唑/噻唑/噻嗪），键为 (环大小, 原子序数)
+HW_MAX_VALENCE = {1: 1, 5: 3, 6: 4, 7: 3, 8: 2, 9: 1, 13: 3, 14: 4, 15: 3, 16: 2, 17: 1,  # Table 2.4 键数，供 mancude 参照
+                  31: 3, 32: 4, 33: 3, 34: 2, 35: 1, 49: 3, 50: 4, 51: 3, 52: 2, 53: 1, 81: 3, 82: 4, 83: 3}
+HW_VOWELS = frozenset("aeiou")  # 首尾元音省略判据（P-22.2.2.1.1）
+HW_SIX_A = frozenset({O, S, Se, Te, Bi})  # Table 2.5 六元环 A 组
+HW_SIX_B = frozenset({N, Si, Ge, Sn, Pb})  # Table 2.5 六元环 B 组（余者归 C 组）
+HW_UNSAT_SIX = {"A": "ine", "B": "ine", "C": "inine"}  # 六元不饱和词干（P-22.2.2.1.6）
+HW_SAT_SIX = {"A": "ane", "B": "inane", "C": "inane"}  # 六元饱和词干
+HW_UNSAT_TAIL = {7: "epine", 8: "ocine", 9: "onine", 10: "ecine"}  # Table 2.5 七至十元不饱和
+HW_SAT_TAIL = {7: "epane", 8: "ocane", 9: "onane", 10: "ecane"}
+HW_ZH_RING = {3: "环丙", 4: "环丁", 5: "环戊", 6: "环己",  # 中文基干环前缀（表 3-4）
+              7: "环庚", 8: "环辛", 9: "环壬", 10: "环癸"}
+
 _MULT_EN_10 = {1: "", 2: "di", 3: "tri", 4: "tetra", 5: "penta",  # 倍数前缀（P-14.2 Table 1.4；数量词与母链碳数同源，支持到 99）en 数量词（deca/undeca/…/icosa/henicosa…）同时供 layer5.stems 生成长链母链词干，故下沉到本层：en_num_term 是唯一来源，stems 取词干仅去其尾 'a'。
                6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
 _MULT_ZH_10 = {1: "", 2: "二", 3: "三", 4: "四", 5: "五",

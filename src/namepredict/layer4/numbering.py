@@ -104,11 +104,12 @@ def number(parent: dict, substituents: list) -> dict:
         moved & _extra_hydrogenated(packed))
     if not pre[0]:  # hydro 位次表达不出（奇数值/超表/不在链内）则整体退回指示氢，不产半截名
         hydro, pre = frozenset(), ("", "")
+    from namepredict.layer2.hantzsch_widman import is_hw_scaffold
     extra = _extra_indicated(packed)
     packed["indicated_h_locants"] = indicated_hydrogen(
         packed.get("mol"), packed.get("chain"), labels, hydro, extra,
         packed.get("scaffold_id"))
-    packed["indicated_h_forced"] = bool(extra)
+    packed["indicated_h_forced"] = bool(extra) or is_hw_scaffold(packed.get("scaffold_id"))
     packed["hydro_prefix"] = pre
     # print("layer4result",result,"\n\n\n\n\n")
     return result

@@ -58,9 +58,11 @@ def _strip_locant_prefix(name: str, prefix: str) -> str:
 def pack_parent_stem(parent: dict, mol=None) -> dict:
     """补齐母体词干与编号 scaffold 字段，并定五元杂环 locant 前缀。"""
     from namepredict.layer2.ring_scaffold import locant_prefix
+    from namepredict.layer2.hantzsch_widman import parent_names as hw_parent_names
 
     packed = parent if parent.get("mol") is not None else {**parent, "mol": mol}
     names = (parent_names(packed.get("scaffold_id") or "")
+             or hw_parent_names(packed.get("scaffold_id"), packed.get("mol"), packed.get("chain"))
              or parent_names(packed.get("kind") or ""))
     if names is not None and not (packed.get("stem_en") or packed.get("stem_zh")):
         stem_en, stem_zh = names
