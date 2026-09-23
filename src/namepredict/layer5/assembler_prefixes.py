@@ -333,6 +333,11 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
             or bool(en[:1].isdigit() and not flat and not omit_ring_yl)) and not _is_bare(subs)
     if not omit and _STEREO_LEAD_ENCLOSE_RE.match(en):  # 前导立体描述符 + 位次须整体围栏
         need = True
+    if (  # P-16.5.1.4：酰基前缀自带母体氢化物名须围栏（与英文侧同判）；烷氧羰基除外
+        zh_stem.endswith("羰基") and zh_stem != "羰基" and "氧羰基" not in zh_stem
+        and not omit and not flat and not _is_bare(subs)
+    ):
+        need = True
     if mult and mult == MULT_ZH.get(len(subs), "") and en_stem and _MULT_WRAP_RE.search(en_stem):  # 与英文侧同判：复合取代基用 双(...)
         need = True
         mult = BIS_ZH.get(len(subs), mult)
@@ -510,8 +515,9 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     bracket = bool(omit) and len(groups) >= 2 and (bare or _groups_simple(groups))  # P-16.5.1.3.1：位次省略的单核母体，首基平铺、余基括起
     arm_hyphen = bool(bare and bracket and _cation_arm_hyphen(groups))  # 阳离子臂名整体前置于阳离子名，复合臂间以连字符分段（P-73.1.1）
     sep = "-" if (arm_hyphen or not bracket) else ""
+    sep_zh = "-" if not bracket else ""  # 中文无臂分段符，位次间的连字符仍保留
     en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, _n_prime_map(groups, stems), sep, flat, arm_hyphen)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
-    return sep.join(en_parts), sep.join(zh_parts)
+    return sep.join(en_parts), sep_zh.join(zh_parts)
 
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     """从 numbered 提取上下文并委托 _build_prefix。"""

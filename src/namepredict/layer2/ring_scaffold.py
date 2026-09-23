@@ -293,15 +293,22 @@ def mancude_ring_atoms(scaffold_id: str, match) -> frozenset[int]:
 
 
 def extra_hydrogenated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
-    """氢数多于保留母体模板同位的环原子（P-58.2.1 指示氢）：如 4H-异喹啉-1,3-二酮的 C4。"""
+    """氢数多于保留母体模板同位、或模板双键位已饱和的环原子（P-58.2.1）：如 4H-异喹啉-1,3-二酮的 C4。"""
     q = _Q.get(scaffold_id or "")
     if q is None or not match or len(match) != q.GetNumAtoms():
         return frozenset()
-    return frozenset(
-        mi for qi, mi in enumerate(match)
-        if mi < mol.GetNumAtoms() and mol.GetAtomWithIdx(mi).IsInRing()
-        and q.GetAtomWithIdx(qi).GetTotalNumHs() < mol.GetAtomWithIdx(mi).GetTotalNumHs()
-    )
+    dbl = _kekule_double_atoms(scaffold_id)
+    out: set[int] = set()
+    for qi, mi in enumerate(match):
+        if mi >= mol.GetNumAtoms() or not mol.GetAtomWithIdx(mi).IsInRing():
+            continue
+        atom = mol.GetAtomWithIdx(mi)
+        if q.GetAtomWithIdx(qi).GetTotalNumHs() < atom.GetTotalNumHs():
+            out.add(mi)  # 模板同位氢数增加：加氢位
+        elif qi in dbl and atom.GetTotalNumHs() > 0 and all(  # 模板双键位已饱和：H 数可能不增（该位另有取代基）
+                b.GetBondType() == Chem.BondType.SINGLE for b in atom.GetBonds()):
+            out.add(mi)
+    return frozenset(out)
 
 
 def extra_indicated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
