@@ -1,0 +1,1622 @@
+[
+  {
+    "id": "truefail-0033",
+    "smiles": "[2H]OC(=O)C([2H])([2H])N([2H])[2H]",
+    "english_name": "deuterio 2,2-dideuterio-2-(dideuterioamino)acetate",
+    "chinese_name": "氘 2,2-二氘-2-(二氘氨基)乙酸",
+    "source": "chebi_truefail",
+    "tier": 1,
+    "features": [
+      "skeleton_reorder"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-aminoacetic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0083",
+    "smiles": "[2H]C([2H])(C(=O)O)C([2H])([2H])C(=O)O",
+    "english_name": "2,2,3,3-tetradeuteriobutanedioic acid",
+    "chinese_name": "2,2,3,3-四氘丁二酸",
+    "source": "chebi_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "butanedioic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0186",
+    "smiles": "[2H]OC(=O)C([2H])(N([2H])[2H])C([2H])([2H])[2H]",
+    "english_name": "deuterio 2,3,3,3-tetradeuterio-2-(dideuterioamino)propanoate",
+    "chinese_name": "(2S,3S)-2,3,3,3-四氘-2-(二氘氨基)丙酸",
+    "source": "chebi_truefail",
+    "tier": 2,
+    "features": [
+      "skeleton_reorder"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-aminopropanoic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0235",
+    "smiles": "[3H]Cc1cn([C@H]2C[C@H](O)[C@@H](CO)O2)c(=O)nc1O",
+    "english_name": "1-[(2R,4S,5R)-4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]-5-(tritiomethyl)pyrimidine-2,4-dione",
+    "chinese_name": "1-[(2R,4S,5R)-4-羟基-5-(羟甲基)氧杂环戊烷-2-基]-5-(氚甲基)嘧啶-2,4-二酮",
+    "source": "chebi_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "1-[(2R,4S,5R)-4-hydroxy-5-(hydroxymethyl)oxolan-2-yl]-5-methylpyrimidine-2,4-dione",
+    "isotope_tag": [
+      "3H"
+    ]
+  },
+  {
+    "id": "truefail-0239",
+    "smiles": "[2H]C([2H])([2H])C([2H])(N)C(=O)O",
+    "english_name": "2-amino-2,3,3,3-tetradeuteriopropanoic acid",
+    "chinese_name": "2-氨基-2,3,3,3-四氘代丙酸",
+    "source": "chebi_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-aminopropanoic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0266",
+    "smiles": "[2H]C([2H])(C(=O)O)C(O)(C(=O)O)C([2H])([2H])C(=O)O",
+    "english_name": "1,1,3,3-tetradeuterio-2-hydroxypropane-1,2,3-tricarboxylic acid",
+    "chinese_name": "1,1,3,3-四氘-2-羟基丙烷-1,2,3-三羧酸",
+    "source": "chebi_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "3-carboxy-3-hydroxypentanedioic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0282",
+    "smiles": "[2H]C([2H])([2H])[C@]([2H])(N)C(=O)O",
+    "english_name": "(2S)-2-amino-2,3,3,3-tetradeuteriopropanoic acid",
+    "chinese_name": "(2S)-2-氨基-2,3,3,3-四氘代丙酸",
+    "source": "chebi_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(2S)-2-aminopropanoic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0290",
+    "smiles": "[2H]C(Cl)(Cl)Cl",
+    "english_name": "trichloro(deuterio)methane",
+    "chinese_name": "三氯(氘)甲烷",
+    "source": "chebi_tautomer",
+    "tier": 1,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "trichloromethane",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0396",
+    "smiles": "CNc1ccc(/C=C/c2ccc(OCCOCCOCC[18F])cc2)cc1",
+    "english_name": "4-[(1E)-2-[4-[2-[2-(2-(18F)fluoranylethoxy)ethoxy]ethoxy]phenyl]ethenyl]-N-methylaniline",
+    "chinese_name": "N-甲基-4-[(E)-2-[4-[2-[2-(2-(18F)氟乙氧基)乙氧基]乙氧基]苯基]乙烯基]苯胺",
+    "source": "chebi_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "4-[(1E)-2-[4-[2-[2-(2-fluoroethoxy)ethoxy]ethoxy]phenyl]ethenyl]-N-methylaniline",
+    "isotope_tag": [
+      "18F"
+    ]
+  },
+  {
+    "id": "truefail-0451",
+    "smiles": "O=[13CH][13C@H](O)[13C@@H](O)[13C@H](O)[13C@H](O)[13CH2]O",
+    "english_name": "(2R,3S,4R,5R)-2,3,4,5,6-pentahydroxy(1,2,3,4,5,6-13C6)hexanal",
+    "chinese_name": "(2R,3S,4R,5R)-2,3,4,5,6-五羟基(1,2,3,4,5,6-13C6)己醛",
+    "source": "chebi_truefail",
+    "tier": 3,
+    "features": [
+      "skeleton_reorder"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(2R,3S,4R,5R)-2,3,4,5,6-pentahydroxyhexanal",
+    "isotope_tag": [
+      "13C"
+    ]
+  },
+  {
+    "id": "truefail-0464",
+    "smiles": "[2H]C([2H])([2H])C(O)(CCC[C@@H](CC#CC(O)(C(F)(F)F)C(F)(F)F)[C@H]1CC[C@H]2/C(=C/C=C3/C[C@@H](O)C[C@H](O)C3=C)CCC[C@]12C)C([2H])([2H])[2H]",
+    "english_name": "(1R,3S,5Z)-5-[(2E)-2-[(1R,3aS,7aR)-7a-methyl-1-[(6S)-11,11,11-trideuterio-1,1,1-trifluoro-2,10-dihydroxy-10-(trideuteriomethyl)-2-(trifluoromethyl)undec-3-yn-6-yl]-2,3,3a,5,6,7-hexahydro-1H-inden-4-ylidene]ethylidene]-4-methylidenecyclohexane-1,3-diol",
+    "chinese_name": "(1R,3S,5Z)-5-[(2E)-2-[(1R,3aS,7aR)-7a-甲基-1-[(6S)-11,11,11-三氘-1,1,1-三氟-2,10-二羟基-10-(三氘甲基)-2-(三氟甲基)十一碳-3-炔-6-基]-2,3,3a,5,6,7-六氢-1H-茚-4-亚基]乙亚基]-4-亚甲基环己烷-1,3-二醇",
+    "source": "chebi_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(1R,3S,5Z)-5-[(2E)-2-[(1R,3aS,7aR)-7a-methyl-1-[(6S)-1,1,1-trifluoro-2,10-dihydroxy-10-methyl-2-(trifluoromethyl)undec-3-yn-6-yl]-2,3,3a,5,6,7-hexahydro-1H-inden-4-ylidene]ethylidene]-4-methylidenecyclohexane-1,3-diol",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0496",
+    "smiles": "[2H]C([2H])(C(=O)O)C([2H])([2H])C([2H])(N)C(=O)O",
+    "english_name": "2-amino-2,3,3,4,4-pentadeuteriopentanedioic acid",
+    "chinese_name": "2-氨基-2,3,3,4,4-五氘戊二酸",
+    "source": "chebi_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-aminopentanedioic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0564",
+    "smiles": "[2H]C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C(=O)O",
+    "english_name": "2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14,14-heptacosadeuteriotetradecanoic acid",
+    "chinese_name": "十四烷酸",
+    "source": "chebi_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "tetradecanoic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0588",
+    "smiles": "OC[C@H]1O[13C@H](O)[13C@H](O)[C@@H](O)[C@@H]1O",
+    "english_name": "(2S,3R,4S,5S,6R)-6-(hydroxymethyl)(2,3-13C2)oxane-2,3,4,5-tetrol",
+    "chinese_name": "(2S,3R,4S,5S,6R)-6-(羟甲基)(2,3-13C2)氧杂环己烷-2,3,4,5-四醇",
+    "source": "chebi_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(2S,3R,4S,5S,6R)-6-(hydroxymethyl)oxane-2,3,4,5-tetrol",
+    "isotope_tag": [
+      "13C"
+    ]
+  },
+  {
+    "id": "truefail-0630",
+    "smiles": "[2H]c1c([2H])c([2H])c(CC(N)C(=O)O)c([2H])c1[2H]",
+    "english_name": "2-amino-3-(2,3,4,5,6-pentadeuteriophenyl)propanoic acid",
+    "chinese_name": "2-氨基-3-(2,3,4,5,6-五氘代苯基)丙酸",
+    "source": "chebi_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-amino-3-phenylpropanoic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0646",
+    "smiles": "[2H]C([2H])([2H])C(=O)C([2H])([2H])[2H]",
+    "english_name": "1,1,1,3,3,3-hexadeuteriopropan-2-one",
+    "chinese_name": "1,1,1,3,3,3-六氘代丙烷-2-酮",
+    "source": "chebi_tautomer",
+    "tier": 1,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "propan-2-one",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0706",
+    "smiles": "[2H]C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C(=O)O",
+    "english_name": "2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,13-pentacosadeuteriotridecanoic acid",
+    "chinese_name": "十三烷酸",
+    "source": "chebi_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "tridecanoic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "truefail-0716",
+    "smiles": "CNc1ccc(/C=C/c2ccc(OCCOCCOCC[18F])nc2)cc1",
+    "english_name": "4-[(E)-2-[6-[2-[2-(2-(18F)fluoranylethoxy)ethoxy]ethoxy]pyridin-3-yl]ethenyl]-N-methylaniline",
+    "chinese_name": "4-[(E)-2-[6-[2-[2-(2-(18F)氟乙氧基)乙氧基]乙氧基]吡啶-3-基]乙烯基]-N-甲基苯胺",
+    "source": "chebi_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "4-[(1E)-2-[6-[2-[2-(2-fluoroethoxy)ethoxy]ethoxy]pyridin-3-yl]ethenyl]-N-methylaniline",
+    "isotope_tag": [
+      "18F"
+    ]
+  },
+  {
+    "id": "truefail-0728",
+    "smiles": "COC(=O)[C@H]1[C@@H](c2ccc([123I])cc2)C[C@@H]2CC[C@H]1N2CCCF",
+    "english_name": "methyl (1R,2S,3S,5S)-8-(3-fluoropropyl)-3-(4-(123I)iodanylphenyl)-8-azabicyclo[3.2.1]octane-2-carboxylate",
+    "chinese_name": "(1R,2S,3S,5S)-8-(3-氟丙基)-3-(4-(123I)碘苯基)-8-氮杂双环[3.2.1]辛烷-2-羧酸甲酯",
+    "source": "chebi_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "methyl (1R,2S,3S,5S)-8-(3-fluoropropyl)-3-(4-iodophenyl)-8-azabicyclo[3.2.1]octane-2-carboxylate",
+    "isotope_tag": [
+      "123I"
+    ]
+  },
+  {
+    "id": "truefail-0756",
+    "smiles": "CNc1ccc(-c2nc3ccc(O)cc3s2)cc1[18F]",
+    "english_name": "2-[3-(18F)fluoranyl-4-(methylamino)phenyl]-1,3-benzothiazol-6-ol",
+    "chinese_name": "2-[3-(18F)氟-4-(甲氨基)苯基]-1,3-苯并噻唑-6-醇",
+    "source": "chebi_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-[3-fluoro-4-(methylamino)phenyl]-1,3-benzothiazol-6-ol",
+    "isotope_tag": [
+      "18F"
+    ]
+  },
+  {
+    "id": "pubchem-101539459",
+    "smiles": "[2H]C1(N=N1)[2H]",
+    "english_name": "3,3-dideuteriodiazirine",
+    "chinese_name": "3,3-二氘代氮杂环丙烷",
+    "source": "pubchem_truefail",
+    "tier": 1,
+    "features": [
+      "element_loss"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "cyclopropene",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-12238481",
+    "smiles": "[2H]C1(CC1C([2H])([2H])[2H])[2H]",
+    "english_name": "1,1-dideuterio-2-(trideuteriomethyl)cyclopropane",
+    "chinese_name": "1,1-二氘-2-(三氘甲基)环丙烷",
+    "source": "pubchem_tautomer",
+    "tier": 1,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "methylcyclopropane",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-172916656",
+    "smiles": "[2H]NC(=S)N/N=C/C(C)C",
+    "english_name": "1-deuterio-3-[(1E)-2-methylpropylideneamino]thiourea",
+    "chinese_name": "1-氘-3-[(E)-2-甲基丙叉氨基]硫脲",
+    "source": "pubchem_truefail",
+    "tier": 2,
+    "features": [
+      "element_loss"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "[[(1E)-2-methylpropylideneamino]amino]thiourea",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-101051687",
+    "smiles": "[2H]C1=NC=C(C=C1)C",
+    "english_name": "2-deuterio-5-methylpyridine",
+    "chinese_name": "2-氘-5-甲基吡啶",
+    "source": "pubchem_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "3-methylpyridine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-89638156",
+    "smiles": "[2H]B(C(C)C)PI",
+    "english_name": "[deuterio(propan-2-yl)boranyl]-iodophosphane",
+    "chinese_name": "碘化(氘代异丙基)硼基磷",
+    "source": "pubchem_truefail",
+    "tier": 2,
+    "features": [
+      "element_loss"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-[(iodophosphanyl)methyl]propane",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-176728589",
+    "smiles": "[2H]C1CC(CC(N1)[2H])C(C)(C)C",
+    "english_name": "4-tert-butyl-2,6-dideuteriopiperidine",
+    "chinese_name": "4-叔丁基-2,6-二氘代哌啶",
+    "source": "pubchem_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "4-tert-butylpiperidine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-172402509",
+    "smiles": "[2H]C1=C(N=C(N1C([2H])([2H])[2H])Br)Br",
+    "english_name": "2,4-dibromo-5-deuterio-1-(trideuteriomethyl)imidazole",
+    "chinese_name": "2,4-二溴-5-氘-1-(三氘甲基)咪唑",
+    "source": "pubchem_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2,4-dibromo-1-methylimidazole",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-159404272",
+    "smiles": "[2H]CC(=O)OCCCC(C)C",
+    "english_name": "4-methylpentyl 2-deuterioacetate",
+    "chinese_name": "2-氘乙酸-4-甲基戊酯",
+    "source": "pubchem_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "4-methylpentyl acetate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-12914719",
+    "smiles": "[2H]C1=C(C1C(=O)O)CCCC",
+    "english_name": "2-butyl-3-deuteriocycloprop-2-ene-1-carboxylic acid",
+    "chinese_name": "2-丁基-3-氘代环丙烯-1-羧酸",
+    "source": "pubchem_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-butylcycloprop-2-ene-1-carboxylic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-170640541",
+    "smiles": "[2H]C([2H])([2H])[C@H](CCC)C([2H])([2H])O",
+    "english_name": "(2R)-1,1-dideuterio-2-(trideuteriomethyl)pentan-1-ol",
+    "chinese_name": "(2R)-1,1-二氘-2-(三氘甲基)戊-1-醇",
+    "source": "pubchem_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(2R)-2-methylpentan-1-ol",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-59589498",
+    "smiles": "[2H]C([2H])(C1=C(N=CS1)CC)Br",
+    "english_name": "5-[bromo(dideuterio)methyl]-4-ethyl-1,3-thiazole",
+    "chinese_name": "5-(溴(二氘)甲基)-4-乙基-1,3-噻唑",
+    "source": "pubchem_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "5-(bromomethyl)-4-ethyl-1,3-thiazole",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-10725339",
+    "smiles": "[H][C@@]1(C[C@H]2CCCCC2=C1)[2H]",
+    "english_name": "(2S,7aR)-2-deuterio-2,4,5,6,7,7a-hexahydro-1H-indene",
+    "chinese_name": "(2S,7aR)-2-氘-2,4,5,6,7,7a-六氢-1H-茚",
+    "source": "pubchem_truefail",
+    "tier": 2,
+    "features": [
+      "element_loss"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(3aR)-3,3a,4,5,6,7-hexahydro-1H-indene",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-58301406",
+    "smiles": "[2H]C1(CCCC1)C(=O)O",
+    "english_name": "1-deuteriocyclopentane-1-carboxylic acid",
+    "chinese_name": "1-氘代环戊烷-1-羧酸",
+    "source": "pubchem_tautomer",
+    "tier": 2,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "cyclopentanecarboxylic acid",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-10563388",
+    "smiles": "[2H]C(CCCC)(CCCCCCCCOCOC)O",
+    "english_name": "5-deuterio-13-(methoxymethoxy)tridecan-5-ol",
+    "chinese_name": "5-氘-13-(甲氧基甲氧基)十三烷-5-醇",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "13-(methoxymethoxy)tridecan-5-ol",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-13658360",
+    "smiles": "[2H]C(CC1=CC=CC=C1)C(=O)C2=CC=CC=N2",
+    "english_name": "2-deuterio-3-phenyl-1-pyridin-2-ylpropan-1-one",
+    "chinese_name": "2-氘-3-苯基-1-(吡啶-2-基)丙烷-1-酮",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "3-phenyl-1-pyridin-2-ylpropan-1-one",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-71314813",
+    "smiles": "[2H]C1(C(N(C(C(N1)([2H])[2H])([2H])[2H])C2=NSC3=C2C=CC=C3Cl)([2H])[2H])[2H]",
+    "english_name": "7-chloro-3-(2,2,3,3,5,5,6,6-octadeuteriopiperazin-1-yl)-1,2-benzothiazole",
+    "chinese_name": "7-氯-3-(2,2,3,3,5,5,6,6-八氘代哌嗪-1-基)-1,2-苯并噻唑",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "1-(7-chloro-1,2-benzothiazol-3-yl)piperazine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-71749978",
+    "smiles": "[2H]C1=CC(=C(C(=C1)N2C(=NC3=CC=CC=C3C2=O)C)C([2H])([2H])[2H])[2H]",
+    "english_name": "3-[3,5-dideuterio-2-(trideuteriomethyl)phenyl]-2-methylquinazolin-4-one",
+    "chinese_name": "3-[3,5-二氘-2-(三氘甲基)苯基]-2-甲基喹唑啉-4-酮",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-methyl-3-(2-methylphenyl)quinazolin-4-one",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-13023637",
+    "smiles": "[2H]C([2H])([2H])OC1(CC[C@@H]2CCCC[C@H]2O1)OC([2H])([2H])[2H]",
+    "english_name": "(4aS,8aR)-2,2-bis(trideuteriomethoxy)-3,4,4a,5,6,7,8,8a-octahydrochromene",
+    "chinese_name": "(4aS,8aR)-2,2-双(三氘代甲氧基)-3,4,4a,5,6,7,8,8a-八氢-2H-色烯",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(4aS,8aR)-2,2-dimethoxy-3,4,4a,5,6,7,8,8a-octahydrochromene",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-12402997",
+    "smiles": "C1=C(C=C(C(=C1N)Cl)N)[14C]#N",
+    "english_name": "3,5-diamino-4-chloro(14C)benzonitrile",
+    "chinese_name": "3,5-二氨基-4-氯(14C)苯甲腈",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "3,5-diamino-4-chlorobenzonitrile",
+    "isotope_tag": [
+      "14C"
+    ]
+  },
+  {
+    "id": "pubchem-10038240",
+    "smiles": "[2H]C1=C(C=CC=C1)N2C[C@H]3[C@@H]([C@@H]2C([2H])C#N)OC(O3)(C)C",
+    "english_name": "2-[(3aR,4S,6aS)-5-(2-deuteriophenyl)-2,2-dimethyl-3a,4,6,6a-tetrahydro-[1,3]dioxolo[4,5-c]pyrrol-4-yl]-2-deuterioacetonitrile",
+    "chinese_name": "2-[(3aR,4S,6aS)-5-(2-氘代苯基)-2,2-二甲基-3a,4,6,6a-四氢-[1,3]二氧戊环[4,5-c]吡咯-4-基]-2-氘代乙腈",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-[(1S,5R,6S)-3,3-dimethyl-7-phenyl-2,4-dioxa-7-azabicyclo[3.3.0]octan-6-yl]acetonitrile",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-141503066",
+    "smiles": "[2H]COC([2H])[C@H]1C[C@H](N(C1)C(=O)OC(C)(C)C)C=O",
+    "english_name": "tert-butyl (2S,4S)-4-[deuterio(deuteriomethoxy)methyl]-2-formylpyrrolidine-1-carboxylate",
+    "chinese_name": "叔丁基(2S,4S)-4-[氘(氘甲氧基)甲基]-2-甲酰基吡咯烷-1-羧酸酯",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "tert-butyl (2S,4S)-2-formyl-4-(methoxymethyl)pyrrolidine-1-carboxylate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-157849538",
+    "smiles": "[2H]C1CC(C(=O)NC1=C)([2H])C(C)(C)C",
+    "english_name": "3-tert-butyl-3,5-dideuterio-6-methylidenepiperidin-2-one",
+    "chinese_name": "3-叔丁基-3,5-二氘-6-亚甲基哌啶-2-酮",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "3-tert-butyl-6-methylidenepiperidin-2-one",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-21311251",
+    "smiles": "[2H]C(=O)[C@H]([C@@H]([C@H]([C@H](CO)O)O)O)N",
+    "english_name": "(2S,3S,4R,5S)-2-amino-1-deuterio-3,4,5,6-tetrahydroxyhexan-1-one",
+    "chinese_name": "(2S,3S,4R,5S)-2-氨基-1-氘-3,4,5,6-四羟基己醛",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(2S,3S,4R,5S)-2-amino-3,4,5,6-tetrahydroxyhexanal",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-176728429",
+    "smiles": "[2H]C1(CN(C(C(N1C(C)C)([2H])[2H])([2H])[2H])C(C)(C)C)[2H]",
+    "english_name": "1-tert-butyl-2,2,3,3,5,5-hexadeuterio-4-propan-2-ylpiperazine",
+    "chinese_name": "1-叔丁基-2,2,3,3,5,5-六氘-4-丙-2-基哌嗪",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "1-tert-butyl-4-propan-2-ylpiperazine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-176091746",
+    "smiles": "[2H]C1=CC(=CC2=C1C=CC(=N2)C)C3=NC=CS3",
+    "english_name": "2-(5-deuterio-2-methylquinolin-7-yl)-1,3-thiazole",
+    "chinese_name": "2-(5-氘-2-甲基喹啉-7-基)-1,3-噻唑",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-methyl-7-(1,3-thiazol-2-yl)quinoline",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-59668189",
+    "smiles": "[2H]C1(OC2=C(O1)C=C(C=C2)C([2H])([2H])C([2H])(C([2H])([2H])[2H])N([2H])C([2H])([2H])[2H])[2H]",
+    "english_name": "N,1,1,1,2,3,3-heptadeuterio-3-(2,2-dideuterio-1,3-benzodioxol-5-yl)-N-(trideuteriomethyl)propan-2-amine",
+    "chinese_name": "N,1,1,1,2,3,3-七氘-3-(2,2-二氘-1,3-苯并二氧戊环-5-基)-N-(三氘甲基)丙-2-胺",
+    "source": "pubchem_tautomer",
+    "tier": 3,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "1-(1,3-benzodioxol-5-yl)-N-methylpropan-2-amine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-155610696",
+    "smiles": "[2H]C(C)(C1=CC(=NC=C1)C2=CC=CC3=C2OC4=C3C=CC=N4)C(C)C",
+    "english_name": "8-[4-(2-deuterio-3-methylbutan-2-yl)-pyridin-2-yl]-[1]benzofuro[2,3-b]pyridine",
+    "chinese_name": "8-[4-(2-氘-3-甲基丁-2-基)-2-吡啶基]-[1]苯并呋罗[2,3-b]吡啶",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "8-[4-(3-methylbutan-2-yl)pyridin-2-yl]-[1]benzofuro[2,3-b]pyridine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-140798317",
+    "smiles": "[H][C@]([2H])(C1=NC(=CC=C1)N2C3=C(C=CC(=C3)C4=NC(=CC=C4)C(CCC)N)C=N2)O",
+    "english_name": "(S)-[6-[6-[6-(1-aminobutyl)-pyridin-2-yl]indazol-1-yl]-pyridin-2-yl]-deuteriomethanol",
+    "chinese_name": "(S)-[6-[6-[6-(1-丁胺基)-2-吡啶基]吲唑-1-基]-2-吡啶基]-氘代甲醇",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "[6-[6-[6-(1-aminobutyl)pyridin-2-yl]indazol-1-yl]pyridin-2-yl]methanol",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-169442198",
+    "smiles": "[2H]C([2H])([2H])[N+](C)(C)C[C@@H](CC(=O)[O-])OC(=O)C[C@@H](CCCCCCCCCCCCC)O",
+    "english_name": "(3R)-4-[dimethyl(trideuteriomethyl)azaniumyl]-3-[(3R)-3-hydroxyhexadecanoyl]oxybutanoate",
+    "chinese_name": "(3R)-4-[(二甲基三氘甲基)铵基]-3-[(3R)-3-羟基十六酰氧基]丁酸",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(3R)-3-[(3R)-3-hydroxyhexadecanoyl]oxy-4-(trimethylazaniumyl)butanoate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-175978061",
+    "smiles": "[2H]C([2H])([2H])NC(=O)C1=C(C=CN=N1)NC2=C3C(=CC=C2)N4C(=NC=N4)CN3C",
+    "english_name": "4-[(5-methyl-4H-[1,2,4]triazolo[1,5-a]quinoxalin-6-yl)amino]-N-(trideuteriomethyl)pyridazine-3-carboxamide",
+    "chinese_name": "N-(三氘代甲基)-4-[(5-甲基-4H-[1,2,4]三唑并[1,5-a]喹喔啉-6-基)氨基]吡嗪-3-甲酰胺",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "N-methyl-4-(5-methyl-4H-[1,2,4]triazolo[1,5-a]quinoxalin-6-ylamino)pyridazine-3-carboxamide",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-25145275",
+    "smiles": "[2H]C1=C(C(=C(C(=C1C(=O)C2=CC=C(C=C2)Cl)[2H])[2H])OC(C(=O)OC(C)C)(C([2H])([2H])[2H])C([2H])([2H])[2H])[2H]",
+    "english_name": "propan-2-yl 2-[4-(4-chlorobenzoyl)-2,3,5,6-tetradeuteriophenoxy]-3,3,3-trideuterio-2-(trideuteriomethyl)propanoate",
+    "chinese_name": "丙-2-基 2-[4-(4-氯苯甲酰)-2,3,5,6-四氘苯氧基]-3,3,3-三氘-2-(三氘甲基)丙酸酯",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "propan-2-yl 2-[4-(4-chlorobenzoyl)phenoxy]-2-methylpropanoate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-158433849",
+    "smiles": "[2H]C1=C(C(=C(C(=C1[2H])[2H])C([2H])(C([2H])([2H])C([2H])([2H])[NH2+]C([2H])([2H])[2H])OC2=C(C(=C(C(=C2[2H])[2H])C)[2H])[2H])[2H])[2H].[Cl-]",
+    "english_name": "[1,1,2,2,3-pentadeuterio-3-(2,3,4,5,6-pentadeuteriophenyl)-3-(2,3,5,6-tetradeuterio-4-methylphenoxy)propyl]-(trideuteriomethyl)azanium chloride",
+    "chinese_name": "[1,1,2,2,3-五氘-3-(2,3,4,5,6-五氘苯基)-3-(2,3,5,6-四氘-4-甲基苯氧基)丙基]-(三氘甲基)铵氯化物",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "methyl-[3-(4-methylphenoxy)-3-phenylpropyl]azanium chloride",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-176338474",
+    "smiles": "[2H]C([2H])([2H])OC1=C(C(=C(C(=C1)CC(=O)CC(=O)OC(C)(C)C)F)F)F",
+    "english_name": "tert-butyl 3-oxo-4-[2,3,4-trifluoro-5-(trideuteriomethoxy)phenyl]butanoate",
+    "chinese_name": "叔丁基3-氧代-4-[2,3,4-三氟-5-(三氘代甲氧基)苯基]丁酸酯",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "tert-butyl 3-oxo-4-(2,3,4-trifluoro-5-methoxyphenyl)butanoate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-155414522",
+    "smiles": "[2H]C([2H])([2H])N1C2=NC(=NC(=C2C=N1)NC(C)(C)C)NC[C@@H](C3=CC=CC=C3)N",
+    "english_name": "N-[(2R)-2-amino-2-phenylethyl]-N'-tert-butyl-1-(trideuteriomethyl)pyrazolo[3,4-d]pyrimidine-4,6-diamine",
+    "chinese_name": "6-[(2R)-2-氨基-2-苯基乙基]-4-叔丁基-1-(三氘代甲基)吡唑并[3,4-d]嘧啶-4,6-二胺",
+    "source": "pubchem_truefail",
+    "tier": 4,
+    "features": [
+      "skeleton_reorder"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "N-[(2R)-2-amino-2-phenylethyl]-N'-tert-butyl-1-methylpyrazolo[5,4-d]pyrimidine-4,6-diamine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-89060557",
+    "smiles": "[2H]C([2H])([2H])N1[C@@H](CCC[C@@H]1C([2H])([2H])C(=O)C2=CC=CC=C2)C([2H])([2H])C(C3=CC=CC=C3)O",
+    "english_name": "2,2-dideuterio-2-[(2R,6S)-6-(1,1-dideuterio-2-hydroxy-2-phenylethyl)-1-(trideuteriomethyl)piperidin-2-yl]-1-phenylethanone",
+    "chinese_name": "2,2-二氘-2-[(2R,6S)-6-(1,1-二氘-2-羟基-2-苯基乙基)-1-(三氘甲基)哌啶-2-基]-1-苯基乙酮",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-[(2R,6S)-6-(2-hydroxy-2-phenylethyl)-1-methylpiperidin-2-yl]-1-phenylethanone",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-164177277",
+    "smiles": "[2H]N1C(N(C(=C1C2=CC=CC=C2)C)C3=CC=CC=C3C)C4CCCCC4",
+    "english_name": "2-cyclohexyl-1-deuterio-4-methyl-3-(2-methylphenyl)-5-phenyl-2H-imidazole",
+    "chinese_name": "2-环己基-1-氘代-4-甲基-3-(2-甲基苯基)-5-苯基-2H-咪唑",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-cyclohexyl-5-methyl-1-(2-methylphenyl)-4-phenyl-2H-imidazole",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-89955703",
+    "smiles": "[2H]C1=CN(C2=C1C(=NC(=N2)[2H])N3C(C(C(C(C3([2H])[2H])([2H])[2H])([2H])N(C)C(=O)OC(C)(C)C)([2H])[2H])([2H])[2H])[2H]",
+    "english_name": "tert-butyl N-methyl-N-[2,2,3,3,4,5,5,6,6-nonadeuterio-1-(2,5,7-trideuteriopyrrolo[2,3-d]pyrimidin-4-yl)piperidin-4-yl]carbamate",
+    "chinese_name": "叔丁基N-甲基-N-[2,2,3,3,4,5,5,6,6-九氘代-1-(2,5,7-三氘代吡咯并[2,3-d]嘧啶-4-基)哌啶-4-基]氨基甲酸酯",
+    "source": "pubchem_truefail",
+    "tier": 4,
+    "features": [
+      "element_loss"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "tert-butyl N-methylcarbamate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-12651181",
+    "smiles": "[2H]C(CCC)C([2H])CCCCCCCCCCCCC(=O)OC",
+    "english_name": "methyl 14,15-dideuteriooctadecanoate",
+    "chinese_name": "甲基十四十五二氘十八酸酯",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "methyl octadecanoate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-12771957",
+    "smiles": "[2H]C([2H])([2H])OC1=CC=C(C=C1)C(=O)C(C2=CC=CC=C2)C3=CC=C(C=C3)OC",
+    "english_name": "2-(4-methoxyphenyl)-2-phenyl-1-[4-(trideuteriomethoxy)phenyl]ethanone",
+    "chinese_name": "2-(4-甲氧基苯基)-2-苯基-1-[4-(三氘代甲氧基)苯基]乙酮",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "1,2-bis(4-methoxyphenyl)-2-phenylethanone",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-11131210",
+    "smiles": "[2H]C1=C(C(=C(C(=C1[2H])[2H])C(=O)OC2=C(CCCC2=O)NCC3=CC=CC=C3)[2H])[2H]",
+    "english_name": "[2-(benzylamino)-6-oxocyclohexen-1-yl] 2,3,4,5,6-pentadeuteriobenzoate",
+    "chinese_name": "(2-苄氨基-6-氧代环己-1-烯基) 2,3,4,5,6-五氘代苯甲酸酯",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-(benzylamino)-6-oxocyclohexen-1-yl benzoate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-58549809",
+    "smiles": "[2H]C1=C(C(=C2[C@@H](C(=O)N(C(CC2=C1[2H])([2H])C)C)NC(=O)[C@H](C)CC(=O)[C@]([2H])(C([2H])(C)C([2H])([2H])[2H])O)[2H])[2H]",
+    "english_name": "(2R,5S)-5,6,7,7,7-pentadeuterio-5-hydroxy-2,6-dimethyl-4-oxo-N-[(5S)-2,6,7,8,9-pentadeuterio-2,3-dimethyl-4-oxo-1,5-dihydro-3-benzazepin-5-yl]heptanamide",
+    "chinese_name": "(2R,5S)-5,6,7,7,7-五氘代-5-羟基-2,6-二甲基-4-氧代-N-[(5S)-2,6,7,8,9-五氘代-2,3-二甲基-4-氧代-1,5-二氢-3-苯并氮杂卓-5-基]庚酰胺",
+    "source": "pubchem_truefail",
+    "tier": 4,
+    "features": [
+      "skeleton_reorder"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(2R,5S)-N-[(1S)-3,4-dimethyl-2-oxo-4,5-dihydro-1H-3-benzazepin-1-yl]-5-hydroxy-2,6-dimethyl-4-oxoheptanamide",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-175803181",
+    "smiles": "[2H]C1=C(C(=C(C(=C1[2H])[2H])C2C(=O)NC(=C([2H])C3=C(N=CN3)C(C)(C)C=C)C(=O)N2)[2H])[2H]",
+    "english_name": "3-[deuterio-[4-(2-methylbut-3-en-2-yl)-1H-imidazol-5-yl]methylidene]-6-(2,3,4,5,6-pentadeuteriophenyl)piperazine-2,5-dione",
+    "chinese_name": "3-[氘代-[4-(3-甲基丁-1-烯-3-基)-1H-咪唑-5-基]亚甲基]-6-(五氘代苯基)哌嗪-2,5-二酮",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "3-[[4-(2-methylbut-3-en-2-yl)-1H-imidazol-5-yl]methylidene]-6-phenylpiperazine-2,5-dione",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-164853969",
+    "smiles": "[2H]C([2H])([2H])OC1=C(C(=CC(=C1)C(=O)C2=CN=C(N2)C3=CNC4=CC=CC=C43)OC)OC",
+    "english_name": "[3,4-dimethoxy-5-(trideuteriomethoxy)phenyl]-[2-(1H-indol-3-yl)-1H-imidazol-5-yl]methanone",
+    "chinese_name": "(3,4-二甲氧基-5-(三氘代甲氧基)苯基)-(2-(1H-吲哚-3-基)-1H-咪唑-5-基)甲酮",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "[2-(1H-indol-3-yl)-1H-imidazol-5-yl]-(3,4,5-trimethoxyphenyl)methanone",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-158779532",
+    "smiles": "[2H]C([2H])(C(=O)CC1=CC2=C(C=CC(=N2)C3=NN=C(S3)C)C=N1)N4CCOCC4",
+    "english_name": "1,1-dideuterio-3-[2-(5-methyl-1,3,4-thiadiazol-2-yl)-1,6-naphthyridin-7-yl]-1-morpholin-4-ylpropan-2-one",
+    "chinese_name": "1,1-二氘-3-[2-(5-甲基-1,3,4-噻二唑-2-基)-1,6-萘啶-7-基]-1-吗啉-4-基丙烷-2-酮",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "1-[2-(5-methyl-1,3,4-thiadiazol-2-yl)pyrido[3,2-c]pyridin-7-yl]-3-morpholin-4-ylpropan-2-one",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-12541030",
+    "smiles": "[2H]C([2H])(CCCCC)C([2H])([2H])CC/C=C\\CCCCCCC(=O)OC",
+    "english_name": "methyl (8Z)-12,12,13,13-tetradeuteriooctadec-8-enoate",
+    "chinese_name": "(Z)-12,12,13,13-四氘十八碳-8-烯酸甲酯",
+    "source": "pubchem_tautomer",
+    "tier": 4,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "methyl (8Z)-octadec-8-enoate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-168795144",
+    "smiles": "[2H]C([2H])(C1CCOCC1)N2C[C@H]3CC(C[C@H]3C2)NC4=NN=C(C=C4C(F)(F)F)C5=C(C=CC(=C5)F)C(F)(F)F",
+    "english_name": "(3aS,6aR)-2-[dideuterio(oxan-4-yl)methyl]-N-[6-[5-fluoro-2-(trifluoromethyl)phenyl]-4-(trifluoromethyl)pyridazin-3-yl]-3,3a,4,5,6,6a-hexahydro-1H-cyclopenta[c]pyrrol-5-amine",
+    "chinese_name": "(3aS,6aR)-2-[二氘代(氧杂环己烷-4-基)甲基]-N-[6-(5-氟-2-(三氟甲基)苯基)-4-(三氟甲基)哒嗪-3-基]-3,3a,4,5,6,6a-六氢-1H-环戊并[c]吡咯-5-胺",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "6-[5-fluoro-2-(trifluoromethyl)phenyl]-N-[(3aR,6aS)-2-(oxan-4-ylmethyl)-3,3a,4,5,6,6a-hexahydro-1H-cyclopenta[c]pyrrol-5-yl]-4-(trifluoromethyl)pyridazin-3-amine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-168843046",
+    "smiles": "[2H]C1=CC(=CC(=C1C2=CC(=NC=C2C([2H])([2H])[2H])C3=CC=CC4=C3OC5=C4C=CC=C5C6=CC=CC=C6)C([2H])([2H])[2H])C7(CCC(CC7)(C)C)[2H]",
+    "english_name": "4-[2-deuterio-4-(1-deuterio-4,4-dimethylcyclohexyl)-6-(trideuteriomethyl)phenyl]-2-(6-phenyldibenzofuran-4-yl)-5-(trideuteriomethyl)pyridine",
+    "chinese_name": "4-[2-氘-4-(1-氘-4,4-二甲基环己基)-6-(三氘代甲基)苯基]-2-(6-苯基二苯并呋喃-4-基)-5-(三氘代甲基)吡啶",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "4-[4-(4,4-dimethylcyclohexyl)-2-methylphenyl]-5-methyl-2-(6-phenyldibenzofuran-4-yl)pyridine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-171812042",
+    "smiles": "[2H]C([2H])([2H])OCC12CCC(N1C(=O)OC(C)(C)C)CN(C2)C3=NC(=NC4=C(C(=NC=C43)Cl)F)Cl",
+    "english_name": "tert-butyl 3-(2,7-dichloro-8-fluoropyrido[4,3-d]pyrimidin-4-yl)-1-(trideuteriomethoxymethyl)-3,8-diazabicyclo[3.2.1]octane-8-carboxylate",
+    "chinese_name": "叔丁基 3-(2,7-二氯-8-氟吡啶并[4,3-d]嘧啶-4-基)-1-(三氘代甲氧甲基)-3,8-二氮杂双环[3.2.1]辛烷-8-羧酸酯",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "tert-butyl 3-(2,7-dichloro-8-fluoropyrido[4,3-d]pyrimidin-4-yl)-1-(methoxymethyl)-3,8-diazabicyclo[3.2.1]octane-8-carboxylate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-71725767",
+    "smiles": "[3H]C1=CC(=CC(=C1C(=N)N)[3H])CNC(=O)[C@@H]2CCN2C(=O)[C@@H](C3CCCCC3)NCC(=O)O",
+    "english_name": "2-[[(1R)-2-[(2S)-2-[(4-carbamimidoyl-3,5-ditritiophenyl)methylcarbamoyl]azetidin-1-yl]-1-cyclohexyl-2-oxoethyl]amino]acetic acid",
+    "chinese_name": "2-{[(1R)-2-[(2S)-2-(4-氨基甲酰基-3,5-二氘代苯甲基)氨甲酰基]氮杂环丁烷-1-基]-1-环己基-2-氧代乙基}氨基乙酸",
+    "source": "pubchem_truefail",
+    "tier": 5,
+    "features": [
+      "element_loss"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-[[(1R)-1-cyclohexyl-2-[(2S)-2-[[[4-(diaminomethylidene)phenyl]methyl]carbamoyl]azetidin-1-yl]-2-oxoethyl]amino]acetic acid",
+    "isotope_tag": [
+      "3H"
+    ]
+  },
+  {
+    "id": "pubchem-172845530",
+    "smiles": "[2H]C([2H])([2H])N1CC[C@H](C(C1)(F)F)OC2=C3C(=CN=C2OC)N=CN=C3NC4=CC(=C(C=C4)OC5=CC6=NC=NN6C=N5)C",
+    "english_name": "5-[(4R)-3,3-difluoro-1-(trideuteriomethyl)piperidin-4-yl]oxy-6-methoxy-N-[3-methyl-4-([1,2,4]triazolo[1,5-c]pyrimidin-7-yloxy)phenyl]pyrido[3,4-d]pyrimidin-4-amine",
+    "chinese_name": "N-[3-甲基-4-({[1,2,4]三唑并[1,5-c]嘧啶-7-基}氧基)苯基]-6-甲氧基-5-{[(4R)-3,3-二氟-1-(三氘代甲基)哌啶-4-基]氧基}吡啶并[3,4-d]嘧啶-4-胺",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "5-[(4R)-3,3-difluoro-1-methylpiperidin-4-yl]oxy-6-methoxy-N-[3-methyl-4-(1,3,7,9-tetrazabicyclo[4.3.0]nona-2,4,6,8-tetraen-4-yl)oxyphenyl]pyrido[3,4-d]pyrimidin-4-amine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-158342206",
+    "smiles": "CC(COC1=C(C=C(C=C1)C(C)(C)C2=CC=C(C=C2)OCC(CN3CCSCC3)O)[123I])CCl",
+    "english_name": "1-[4-[2-[4-(3-chloro-2-methylpropoxy)-3-(123I)iodophenyl]propan-2-yl]phenoxy]-3-thiomorpholin-4-ylpropan-2-ol",
+    "chinese_name": "1-[4-[2-[4-(3-氯-2-甲基丙氧基)-3-(123I)碘苯基]丙-2-基]苯氧基]-3-硫吗啉-4-基丙-2-醇",
+    "source": "pubchem_truefail",
+    "tier": 5,
+    "features": [
+      "element_loss"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "1-[4-[2-[4-(3-chloro-2-methylpropoxy)-3-iodophenyl]propan-2-yl]phenoxy]-3-cyclohexan-4-ylpropan-2-ol",
+    "isotope_tag": [
+      "123I"
+    ]
+  },
+  {
+    "id": "pubchem-122449905",
+    "smiles": "[2H]C([2H])([C@@H]1[C@@H](C([C@@H](O1)N2C=CC(=O)NC2=S)(C)O)O)OP(=O)(OCOC(=O)C(C)C)OCOC(=O)C(C)C",
+    "english_name": "[[dideuterio-[(2R,3S,5R)-3,4-dihydroxy-4-methyl-5-(4-oxo-2-sulfanylidenepyrimidin-1-yl)oxolan-2-yl]methoxy]-(2-methylpropanoyloxymethoxy)phosphoryl]oxymethyl 2-methylpropanoate",
+    "chinese_name": "[[二氘基-[(2R,3S,5R)-3,4-二羟基-4-甲基-5-(4-氧代-2-硫亚吡啶-1-基)四氢呋喃-2-基]甲氧基]-[(2-甲基丙酰氧基)甲氧基]磷酰基]氧甲基 2-甲基丙酸酯",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "[[(2R,3S,5R)-3,4-dihydroxy-4-methyl-5-(4-oxo-2-sulfanylidenepyrimidin-1-yl)oxolan-2-yl]methoxy-[(2-methylpropanoyloxy)methoxy]phosphoryl]oxymethyl 2-methylpropanoate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-49856768",
+    "smiles": "[2H]C1(C(C(C1([2H])[2H])([2H])CC([2H])(C(=O)C(=O)N)NC(=O)[C@@H]2[C@@H]3[C@@H](C3(C([2H])([2H])[2H])C([2H])([2H])[2H])CN2C(=O)[C@H](CC(C)(C)C)NC(=O)NC(C)(C)C)([2H])[2H])[2H]",
+    "english_name": "(1R,2S,5S)-N-[4-amino-2-deuterio-1-(1,2,2,3,3,4,4-heptadeuteriocyclobutyl)-3,4-dioxobutan-2-yl]-3-[(2S)-2-(tert-butylcarbamoylamino)-4,4-dimethylpentanoyl]-6,6-bis(trideuteriomethyl)-3-azabicyclo[3.1.0]hexane-2-carboxamide",
+    "chinese_name": "(1R,2S,5S)-N-[4-氨基-2-氘-1-(1,2,2,3,3,4,4-七氘代环丁基)-3,4-二氧代丁-2-基]-3-[(2S)-2-(叔丁基氨甲酰氨基)-4,4-二甲基戊酰]-6,6-双(三氘代甲基)-3-氮杂双环[3.1.0]己烷-2-甲酰胺",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(1R,2S,5S)-N-(4-amino-1-cyclobutyl-3,4-dioxobutan-2-yl)-3-[(2S)-2-(tert-butylcarbamoylamino)-4,4-dimethylpentanoyl]-6,6-dimethyl-3-azabicyclo[3.1.0]hexane-2-carboxamide",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-171420997",
+    "smiles": "[2H]C1=C(C(=C2C(=C1[2H])C(=C(C(=C2C3=C4C=CC=CC4=C(C5=CC=CC=C53)C6=CC(=C7C8=CC=CC=C8OC7=C6)C9CC=CC=C9)[2H])[2H])[2H])[2H])[2H]",
+    "english_name": "1-cyclohexa-2,4-dien-1-yl-3-[10-(2,3,4,5,6,7,8-heptadeuterionaphthalen-1-yl)anthracen-9-yl]dibenzofuran",
+    "chinese_name": "1-环己二烯基-3-[10-(2,3,4,5,6,7,8-七氘代萘基)蒽-9-基]二苯并呋喃",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "1-cyclohexa-2,4-dien-1-yl-3-(10-naphthalen-1-ylanthracen-9-yl)dibenzofuran",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-25256264",
+    "smiles": "[2H]C1=C(C(=C2C(=C1N(C)C)C[C@H]3C[C@H]4[C@@H](C(=O)/C(=C(\\N)/O)/C(=O)[C@]4(C(=O)C3=C2O)O)N(C([2H])([2H])[2H])C([2H])([2H])[2H])O)NC(=O)CNC(C)(C)C",
+    "english_name": "N-[(5aR,6aS,7S,9Z,10aS)-9-[amino(hydroxy)methylidene]-7-[bis(trideuteriomethyl)amino]-3-deuterio-4-(dimethylamino)-1,10a,12-trihydroxy-8,10,11-trioxo-5a,6,6a,7-tetrahydro-5H-tetracen-2-yl]-2-(tert-butylamino)acetamide",
+    "chinese_name": "N-{(5aR,6aS,7S,9Z,10aS)-9-[氨基(羟基)亚甲基]-7-[双(三氘代甲基)氨基]-3-氘代-4-(二甲氨基)-1,10a,12-三羟基-8,10,11-三氧代-5a,6,6a,7-四氢-5H-四环烯-2-基}-2-(叔丁氨基)乙酰胺",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "N-[(5aR,6aS,7S,9Z,10aS)-9-[amino(hydroxy)methylidene]-4,7-bis(dimethylamino)-1,10a,12-trihydroxy-8,10,11-trioxo-5a,6,6a,7-tetrahydro-5H-tetracen-2-yl]-2-(tert-butylamino)acetamide",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-117897812",
+    "smiles": "[2H]CN1C=C(N=N1)S(=O)(=O)N2CCN(CC2)C3(CCC(CC3)(F)F)CNC(=O)C4=C(C=C(C=C4)C(F)(F)F)Cl",
+    "english_name": "2-chloro-N-[[1-[4-[1-(deuteriomethyl)-1,2,3-triazol-4-yl]sulfonylpiperazin-1-yl]-4,4-difluorocyclohexyl]methyl]-4-(trifluoromethyl)benzamide",
+    "chinese_name": "2-氯-N-{[1-[4-[1-(氘代甲基)-1H-三唑-4-基]磺酰基哌嗪-1-基]-4,4-二氟环己基}甲基}-4-(三氟甲基)苯甲酰胺",
+    "source": "pubchem_truefail",
+    "tier": 5,
+    "features": [
+      "element_loss"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-chloro-N-[[4,4-difluoro-1-[4-(1-methylcyclopenta-2,4-dien-4-yl)sulfonylpiperazin-1-yl]cyclohexyl]methyl]-4-(trifluoromethyl)benzamide",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-54771756",
+    "smiles": "[2H]C1=C(C(=C(C(=C1[2H])[2H])C(=O)N2CCN(CC2)C(=O)C(=O)C3=CNC4=C3C(=CN=C4N5C=CN=N5)F)[2H])[2H]",
+    "english_name": "1-[4-fluoro-7-(1,2,3-triazol-1-yl)-1H-pyrrolo[2,3-c]pyridin-3-yl]-2-[4-(2,3,4,5,6-pentadeuteriobenzoyl)piperazin-1-yl]ethane-1,2-dione",
+    "chinese_name": "1-[4-氟-7-(1H-1,2,4-三唑-1-基)-1H-吡咯并[2,3-c]吡啶-3-基]-2-[4-(2,3,4,5,6-五氘代苯甲酰)哌嗪-1-基]乙烷-1,2-二酮",
+    "source": "pubchem_truefail",
+    "tier": 5,
+    "features": [
+      "element_loss"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "1-(4-benzoylpiperazin-1-yl)-2-(7-cyclopenta-2,4-dien-1-yl-4-fluoro-1H-pyrrolo[2,3-c]pyridin-3-yl)ethane-1,2-dione",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-145761143",
+    "smiles": "[2H]C1=CN=C(N=C1)N2C3=C(C=CC(=C3)OC4=CC=CC(=C4)C5=CC=CC=N5)C6=C2C=C(C=C6)OC7=CC=CC(=C7)C8=CC=CC=N8",
+    "english_name": "9-(5-deuteriopyrimidin-2-yl)-2,7-bis(3-pyridin-2-ylphenoxy)carbazole",
+    "chinese_name": "9-[5-氘代嘧啶-2-基]-2,7-双[(3-吡啶-2-基苯氧基)]咔唑",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-[2,7-bis(3-pyridin-2-ylphenoxy)carbazol-9-yl]pyrimidine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-138520572",
+    "smiles": "[2H]C([2H])([2H])C1(CCOC2=C(C=CC(=C21)Cl)S(=O)(=O)NC(C3=NNC(=O)O3)C(C)C4=C(C=CC(=C4C)C)F)OC(=O)C",
+    "english_name": "[5-chloro-8-[[2-(6-fluoro-2,3-dimethylphenyl)-1-(2-oxo-3H-1,3,4-oxadiazol-5-yl)propyl]sulfamoyl]-4-(trideuteriomethyl)-2,3-dihydrochromen-4-yl] acetate",
+    "chinese_name": "乙酸{5-氯-8-[{[2-(6-氟-2,3-二甲基苯基)-1-(2-氧代-3H-1,3,4-噁二唑-5-基)丙基]氨基}磺酰]-4-(三氘代甲基)-2,3-二氢色烯-4-基}酯",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "5-chloro-8-[2-(6-fluoro-2,3-dimethylphenyl)-1-(5-oxo-4H-1,3,4-oxadiazol-2-yl)propylsulfamoyl]-4-methyl-2,3-dihydrochromen-4-yl acetate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-169285984",
+    "smiles": "[2H]C1(C(=C(CC#N)N2C=C(C=N2)C3=C4C=CN(C4=NC=N3)S(=O)(=O)C5=CC=C(C=C5)C)C(C(C1([2H])[2H])([2H])[2H])([2H])[2H])[2H]",
+    "english_name": "3-[4-[7-(4-methylphenyl)sulfonylpyrrolo[2,3-d]pyrimidin-4-yl]pyrazol-1-yl]-3-(2,2,3,3,4,4,5,5-octadeuteriocyclopentylidene)propanenitrile",
+    "chinese_name": "3-[4-{7-[4-甲基苯基]磺酰基}-1H-吡咯并[2,3-d]嘧啶-4-基]-1H-吡唑-1-基]-3-(2,2,3,3,4,4,5,5-八氘代环戊叉)丙腈",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "3-cyclopentylidene-3-[4-[7-(4-methylphenyl)sulfonylpyrrolo[2,3-d]pyrimidin-4-yl]pyrazol-1-yl]propanenitrile",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-177071585",
+    "smiles": "[2H]C1=C(C(=C(C(=C1[2H])[2H])C2(C3=C(C(=C(C(=C3[2H])C4=C5C(=C(C6=C(C(=C(C(=C6C5=C(C7=C(C(=C(C(=C74)[2H])[2H])[2H])[2H])[2H])[2H])[2H])[2H])[2H])[2H])[2H])[2H])[2H])C8=C2C9=C(C(=C(C(=C9C(=C8[2H])[2H])[2H])[2H])[2H])[2H])C)[2H])[2H]",
+    "english_name": "1,2,3,4,5,6,8,9,10,11,12-undecadeuterio-7-[1,2,3,4,5,6,7,8,10-nonadeuterio-11-methyl-11-(2,3,4,5,6-pentadeuteriophenyl)benzo[a]fluoren-9-yl]benzo[a]anthracene",
+    "chinese_name": "1,2,3,4,5,6,8,9,10,11,12-十一氘代-7-[1,2,3,4,5,6,7,8,10-九氘代-11-甲基-11-(2,3,4,5,6-五氘代苯基)苯并[a]芴-9-基]苯并[a]蒽",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "7-(11-methyl-11-phenylindeno[2,1-a]naphthalen-9-yl)benzo[a]anthracene",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-57620171",
+    "smiles": "[2H]C([2H])([C@@](C)(C(=O)OCC(C)C)N[C@@](C)(CC)C(=O)N1[C@@H](C[C@H]2[C@@H]1C(C(C2)(C)C)(C)C)C=O)C([2H])(C)C3=CC(=C(C=C3)C)C",
+    "english_name": "2-methylpropyl (2S)-2-[[(2S)-1-[(2S,3aS,6aR)-2-formyl-5,5,6,6-tetramethyl-3,3a,4,6a-tetrahydro-2H-cyclopenta[b]pyrrol-1-yl]-2-methyl-1-oxobutan-2-yl]amino]-3,3,4-trideuterio-4-(3,4-dimethylphenyl)-2-methylpentanoate",
+    "chinese_name": "2-甲基丙基(2S)-2-{[(2S)-1-[(2S,3aS,6aR)-2-甲酰基-5,5,6,6-四甲基-3,3a,4,6a-四氢-2H-环戊并[b]吡咯-1-基]-2-甲基-1-氧代丁烷-2-基]氨基}-3,3,4-三氘-4-(3,4-二甲基苯基)-2-甲基戊酸酯",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-methylpropyl (2S)-4-(3,4-dimethylphenyl)-2-[[(2S)-1-[(2S,3aS,6aR)-2-formyl-5,5,6,6-tetramethyl-3,3a,4,6a-tetrahydro-2H-cyclopenta[b]pyrrol-1-yl]-2-methyl-1-oxobutan-2-yl]amino]-2-methylpentanoate",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-164778723",
+    "smiles": "[2H]C([2H])(C1=CC(=[N+](C=C1F)C)C2=C3C(=C(C=C2C)C4=CC=CC=C4)C5=C(O3)C(=CC=C5)[N+]#[C-])C(C)C",
+    "english_name": "4-(1,1-dideuterio-2-methylpropyl)-5-fluoro-2-(6-isocyano-3-methyl-1-phenyldibenzofuran-4-yl)-1-methylpyridin-1-ium",
+    "chinese_name": "4-[1,1-二氘代-2-甲基丙基]-5-氟-2-(6-异氰基-3-甲基-1-苯基二苯并呋喃-4-基)-1-甲基吡啶-1-鎓",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "5-fluoro-2-(6-isocyano-3-methyl-1-phenyldibenzofuran-4-yl)-1-methyl-4-(2-methylpropyl)pyridin-1-ium",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-59865222",
+    "smiles": "[2H]C1=C(C(=C(C2=C1[C@@](OC2C)(C3=C(C(=C(C=C3)F)C)C)C([2H])([2H])C([2H])(C)C([2H])([2H])N(C)C(C)C)C)[N+]#[C-])C",
+    "english_name": "1,1,2,3,3-pentadeuterio-3-[(1S)-7-deuterio-1-(4-fluoro-2,3-dimethylphenyl)-5-isocyano-3,4,6-trimethyl-3H-2-benzofuran-1-yl]-N,2-dimethyl-N-propan-2-ylpropan-1-amine",
+    "chinese_name": "1,1,2,3,3-五氘代-3-[(1S)-7-氘代-1-(4-氟-2,3-二甲基苯基)-5-异氰基-3,4,6-三甲基-3H-2-苯并呋喃-1-基]-N,2-二甲基-N-丙-2-基丙烷-1-胺",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "3-[(1S)-1-(4-fluoro-2,3-dimethylphenyl)-5-isocyano-3,4,6-trimethyl-3H-2-benzofuran-1-yl]-N,2-dimethyl-N-propan-2-ylpropan-1-amine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-168774217",
+    "smiles": "[2H]C([2H])([2H])OC1=NC(=NC2=C1C(=CN2)C3=CC4=C(C=C3)N=NN4CC(F)F)NC5CCC(CC5)OC",
+    "english_name": "5-[3-(2,2-difluoroethyl)benzotriazol-5-yl]-N-(4-methoxycyclohexyl)-4-(trideuteriomethoxy)-7H-pyrrolo[2,3-d]pyrimidin-2-amine",
+    "chinese_name": "5-[3-(2,2-二氟乙基)苯并三唑-5-基]-N-(4-甲氧基环己基)-4-(三氘代甲氧基)-7H-吡咯并[2,3-d]嘧啶-2-胺",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "5-[9-(2,2-difluoroethyl)-7,8,9-triazabicyclo[4.3.0]nona-1(6),2,4,7-tetraen-3-yl]-4-methoxy-N-(4-methoxycyclohexyl)-7H-pyrrolo[2,3-d]pyrimidin-2-amine",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-57343827",
+    "smiles": "C/C(=C\\C1=[N+](C2=C(S1)C=CC(=C2)OC)CCO)/C=C\\3/N(C4=C(S3)C=CC(=C4)OCC[18F])CCO",
+    "english_name": "2-[(2Z)-5-(2-(18F)fluoroethoxy)-2-[(2E)-3-[3-(2-hydroxyethyl)-5-methoxy-1,3-benzothiazol-3-ium-2-yl]-2-methylprop-2-enylidene]-1,3-benzothiazol-3-yl]ethanol",
+    "chinese_name": "2-{[(2Z)-5-[2-(18F)氟乙氧基]-2-[(E)-3-[3-(2-羟乙基)-5-甲氧基-1,3-苯并噻唑-3-鎓-2-基]-2-甲基丙-2-烯叉基]-1,3-苯并噻唑-3-基}乙醇",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-[2-[(1E,3Z)-3-[5-(2-fluoroethoxy)-3-(2-hydroxyethyl)-1,3-benzothiazol-2-ylidene]-2-methylprop-1-enyl]-5-methoxy-1,3-benzothiazol-3-ium-3-yl]ethanol",
+    "isotope_tag": [
+      "18F"
+    ]
+  },
+  {
+    "id": "pubchem-166503251",
+    "smiles": "[2H]C1=C(C2=C(C(=C1)/C(=C(\\[2H])/C(=C(/[2H])\\C(=N)[2H])/C3=C(C(=C(C(=C3[2H])[2H])C4(CCC(CC4)(C)C)[2H])[2H])[2H])/C)OC5=C2C(=C(C6=C(C(=C(C(=C65)[2H])[2H])[2H])[2H])[2H])[2H])[2H]",
+    "english_name": "(2E,4E)-1,2,4-trideuterio-5-(1,2,3,4,5,6,7,8-octadeuterionaphtho[1,2-b][1]benzofuran-10-yl)-3-[2,3,5,6-tetradeuterio-4-(1-deuterio-4,4-dimethylcyclohexyl)phenyl]hexa-2,4-dien-1-imine",
+    "chinese_name": "(2E,4E)-1,2,4-三氘代-5-[1,2,3,4,5,6,7,8-八氘代萘并[1,2-b][1]苯并呋喃-10-基]-3-[2,3,5,6-四氘代-4-(1-氘代-4,4-二甲基环己基)苯基]己-2,4-二烯-1-亚胺",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "10-[(2E,4E)-4-[4-(4,4-dimethylcyclohexyl)phenyl]-6-iminohexa-2,4-dien-2-yl]naphtho[1,2-b][1]benzofuran",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-156118323",
+    "smiles": "[2H]C([2H])([2H])C1=NC(=C2N1C(=CN=C2N)Cl)C3=C(C(=C(C=C3)NC(=O)[C@@H](C4=CC(=CC(=C4)F)C(F)(F)F)O)F)F",
+    "english_name": "(2R)-N-[4-[8-amino-5-chloro-3-(trideuteriomethyl)imidazo[1,5-a]pyrazin-1-yl]-2,3-difluorophenyl]-2-[3-fluoro-5-(trifluoromethyl)phenyl]-2-hydroxyacetamide",
+    "chinese_name": "(2R)-N-[4-[8-氨基-5-氯-3-(三氘代甲基)咪唑并[1,5-a]吡嗪-1-基]-2,3-二氟苯基]-2-[3-氟-5-(三氟甲基)苯基]-2-羟基乙酰胺",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "(2R)-N-[4-(8-amino-5-chloro-3-methylimidazo[1,5-a]pyrazin-1-yl)-2,3-difluorophenyl]-2-[3-fluoro-5-(trifluoromethyl)phenyl]-2-hydroxyacetamide",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-153436663",
+    "smiles": "[2H]C1=C(C(=C2C(=C1[2H])C(=C3C(=C(C(=C(C3=C2C4=CC5=C(C=C4)SC6=CC7=CC=CC=C7C=C65)[2H])[2H])[2H])[2H])C8=CC=CC=C8)[2H])[2H]",
+    "english_name": "2-(1,2,3,4,5,6,7,8-octadeuterio-10-phenylanthracen-9-yl)naphtho[2,3-b][1]benzothiole",
+    "chinese_name": "2-(1,2,3,4,5,6,7,8-八氘代-10-苯基蒽-9-基)萘并[2,3-b][1]苯并噻吩",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "2-(10-phenylanthracen-9-yl)naphtho[3,2-b][1]benzothiophene",
+    "isotope_tag": [
+      "2H"
+    ]
+  },
+  {
+    "id": "pubchem-176192844",
+    "smiles": "[2H]C1(CC(CC(N1OC(=O)C2=C(OC3=C2C(=C(C=C3)O)C)C4=C(C=C(C=C4)OC)COC)([2H])[2H])C5=CC(=CC=C5)Cl)[2H]",
+    "english_name": "[4-(3-chlorophenyl)-2,2,6,6-tetradeuteriopiperidin-1-yl] 5-hydroxy-2-[4-methoxy-2-(methoxymethyl)phenyl]-4-methyl-1-benzofuran-3-carboxylate",
+    "chinese_name": "[4-(3-氯苯基)-2,2,6,6-四氘代哌啶-1-基] 5-羟基-2-[4-甲氧基-2-(甲氧甲基)苯基]-4-甲基-1-苯并呋喃-3-羧酸酯",
+    "source": "pubchem_tautomer",
+    "tier": 5,
+    "features": [
+      "tautomer_protonation"
+    ],
+    "eval_en": true,
+    "eval_zh": false,
+    "human_reviewed": false,
+    "prev_pred": "3-[4-(3-chlorophenyl)piperidin-1-yloxycarbonyl]-2-[4-methoxy-2-(methoxymethyl)phenyl]-4-methyl-1-benzofuran-5-ol",
+    "isotope_tag": [
+      "2H"
+    ]
+  }
+]

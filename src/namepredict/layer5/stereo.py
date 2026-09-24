@@ -5,7 +5,6 @@ import re
 
 from rdkit.Chem import BondStereo, BondType, Mol
 
-from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
 from namepredict.layer4.locant_calc import locant_key
 from namepredict.layer4.numbering_engine import assign_cip
 
@@ -138,9 +137,6 @@ def join_ez_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
 
 # --- CIP R/S 立体描述符 --------------------
 
-_RS_KINDS = frozenset(c.value for c in FunctionalGroupClass)  # 全部 FG 类别 + 烃母体（NONE = alkane）；烃链手性中心同样标 R/S（P-92）
-
-
 def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:
     """返回母体链上手性中心的 (链序号, R/S) 列表。"""
     assign_cip(mol)
@@ -177,11 +173,13 @@ def _collapsed_parent(parent: dict) -> bool:
 
 
 def _rs_parts(numbered: dict) -> list[tuple[int | str, str]]:
-    """取母体手性中心的 (位次, R/S) 列表（P-92）。"""
+    """取母体手性中心的 (位次, R/S) 列表（P-92）。
+
+    不做 kind 门控：parent 的 kind 混用两套词汇表，含氧酸母体存的是
+    L1 的 oxo_kind（sulfonic/sulfonate/…），与 FG 类别枚举对不上。
+    """
     parent = numbered.get("parent") or {}
-    kind = parent.get("kind")
-    is_ring_parent = bool(parent.get("scaffold_id"))
-    if (kind not in _RS_KINDS and not is_ring_parent) or _collapsed_parent(parent):
+    if _collapsed_parent(parent):
         return []
     mol, chain = parent.get("mol"), parent.get("chain") or []
     if mol is None or not chain:

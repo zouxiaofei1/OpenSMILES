@@ -119,13 +119,13 @@ export function ensureKetcher(forceRetry) {
   state.ketcherBridge.init();
 }
 
-/* 输入可能是 merged_benchmark id(chebi-1 / tiers-1), 判断其形态。
+/* 输入可能是基准 id(chebi-1 / truefail-0001), 判断其形态。
    真正的 SMILES 不可能整串匹配 ^[A-Za-z0-9]+-\d+$; 非 id 无需网络往返。 */
 function isBenchmarkId(text) {
   return /^[A-Za-z0-9]+-\d+$/.test(text);
 }
 
-/* 把可能为 merged_benchmark id 的输入解析成该行的权威 smiles 串再往下走:
+/* 把可能为基准 id 的输入解析成该行的权威 smiles 串再往下走:
    命中 → 真实 SMILES; 否则原样返回(坏输入照旧交给 namer 报「无法解析」)。
    这样命名 / SVG / history 与直接输入那条 SMILES 完全一致, 不引入第二套索引。 */
 async function resolveTextToSmiles(text) {
@@ -243,7 +243,7 @@ function scheduleLiveSmilesName() {
     state.liveSmilesTimer = null;
     const typed = (($("smiles-input") && $("smiles-input").value) || "").trim();
     if (!typed) return;
-    // 用户可输 merged_benchmark id(chebi-1 / tiers-1): 先解析成真实 SMILES,
+    // 用户可输基准 id(chebi-1 / truefail-0001): 先解析成真实 SMILES,
     // 之后载入画板 / 命名 / SVG 都用这一个权威串, 与直接输入该 SMILES 一致。
     const smiles = await resolveTextToSmiles(typed);
     if (!smiles) return;
@@ -329,12 +329,12 @@ function showNamerResult(result) {
     }
   }
   if ($("namer-time")) $("namer-time").textContent = Math.round(result.time_ms || 0) + " ms";
-  // 命中 merged_benchmark 且相似度达阈值时, 引擎名就地高亮与基准名的差异
+  // 命中基准数据集且相似度达阈值时, 引擎名就地高亮与基准名的差异
   const gd = result.success ? result.gold_diff : null;
   setDiffHtml("namer-en", result.en, diffSide(gd, "en", "pred"));
   setDiffHtml("namer-zh", result.zh, diffSide(gd, "zh", "pred"));
   if ($("namer-source")) $("namer-source").textContent = result.source || "—";
-  // 基准答案(merged_benchmark): 命中才显示,失败/未命中一律隐藏
+  // 基准答案(数据来源见 gold.dataset): 命中才显示,失败/未命中一律隐藏
   renderNamerGold(result.success ? result.gold : null, result);
   // 命名失败时清空并隐藏结构图,避免旧结构残留
   if (!result.success) {
@@ -343,7 +343,7 @@ function showNamerResult(result) {
   }
 }
 
-/* 结果卡内显示 merged_benchmark 命中记录(gold): 无命中/传入 null 时隐藏并清空。
+/* 结果卡内显示命中记录(gold): 无命中/传入 null 时隐藏并清空。
    result.gold_diff 里相似度达阈值的语言, gold 名称直接在原有行内逐字符高亮与引擎名
    的差异; 未达阈值(或无 gold_diff)照旧显示纯文本。 */
 function renderNamerGold(gold, result) {
@@ -357,6 +357,10 @@ function renderNamerGold(gold, result) {
   setDiffHtml("namer-gold-en", gold.en, diffSide(gd, "en", "gold"));
   setDiffHtml("namer-gold-zh", gold.zh, diffSide(gd, "zh", "gold"));
   renderGoldSims(gd);
+  // 金标来自哪份数据集要显式写出来: 同一个分子可能落在多份基准里, 名字不完全一致
+  if ($("namer-gold-dataset")) {
+    $("namer-gold-dataset").textContent = gold.dataset ? " " + gold.dataset : "";
+  }
   const tier = $("namer-gold-tier");
   if (tier) {
     if (gold.tier !== undefined && gold.tier !== null) {
@@ -596,7 +600,7 @@ export function bindNamer() {
       }
       try {
         setNamerError("");
-        // 输入可能为 merged_benchmark id → 先解析成该行真实 SMILES 再载入画板
+        // 输入可能为基准 id → 先解析成该行真实 SMILES 再载入画板
         const smiles = await resolveTextToSmiles(typed);
         // 引用计数 + 安静期判定解除静默, 连续点击(并发载入)不会互相击穿。
         // 见 KETCHER_MUTE_TAIL_MS 处注释。

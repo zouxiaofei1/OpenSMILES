@@ -155,10 +155,10 @@
                 <div><dt>zh</dt><dd id="namer-zh" class="mono">—</dd></div>
                 <div><dt>source</dt><dd id="namer-source" class="mono">—</dd></div>
               </dl>
-              <!-- merged_benchmark 命中时显示标准答案(gold);未命中保持隐藏 -->
+              <!-- 命中基准数据集时显示标准答案(gold, 标题带来源数据集);未命中保持隐藏 -->
               <div id="namer-gold" class="namer-gold" hidden>
                 <div class="namer-gold-head">
-                  <span class="namer-gold-title">基准名称 · merged_benchmark</span>
+                  <span class="namer-gold-title">基准名称 ·<span id="namer-gold-dataset" class="namer-gold-dataset"></span></span>
                   <span id="namer-gold-tier" class="chip" hidden></span>
                   <span id="namer-gold-source" class="muted-text small mono"></span>
                   <!-- 引擎名与基准名的相似度(0-100), 按语言各一条 -->

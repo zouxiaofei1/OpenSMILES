@@ -1062,6 +1062,13 @@ select.input {
   text-transform: uppercase;
 }
 
+/* 数据集文件名跟在标题小字后面: 标题整体 uppercase(对中文无效果), 文件名要原样小写 */
+.namer-gold-dataset {
+  margin-left: var(--space-xs);
+  font-family: var(--mono);
+  text-transform: none;
+}
+
 .namer-pubchem-link {
   margin-left: auto;
   font-size: 12px;

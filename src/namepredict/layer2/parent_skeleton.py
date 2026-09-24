@@ -83,11 +83,12 @@ def _chain_coverage(chain: list[int], occurrences) -> frozenset[str]:
 
 
 def _ring_attaches(mol: Mol, ring: set[int], occurrence: FunctionalGroupOccurrence) -> bool:
-    """判断 occurrence 是否附着于环（胺/醇/酮/自由基只认直接附着）。"""
+    """判断 occurrence 是否附着于环（胺/醇/硫醇/酮/自由基只认直接附着）。"""
     if occurrence.parent_anchors & ring:
         return True
-    if occurrence.group_class in (FunctionalGroupClass.AMINE, FunctionalGroupClass.ALCOHOL,FunctionalGroupClass.RADICAL,FunctionalGroupClass.KETONE):
-        return False
+    if occurrence.group_class in (FunctionalGroupClass.AMINE, FunctionalGroupClass.ALCOHOL, FunctionalGroupClass.THIOL,
+                                  FunctionalGroupClass.RADICAL, FunctionalGroupClass.KETONE):
+        return False  # 隔碳的 SH 不能作环的后缀（P-63.1.5 同醇），只作 sulfanyl 前缀
     return any(n.GetIdx() in ring for a in occurrence.parent_anchors for n in mol.GetAtomWithIdx(a).GetNeighbors())
 
 
