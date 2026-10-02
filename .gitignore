@@ -27,3 +27,4 @@ agent_loop/memory/secrets.json
 profiles/
 server/settings.json
 data/pubchem_analysis
+/webjs/bundles
