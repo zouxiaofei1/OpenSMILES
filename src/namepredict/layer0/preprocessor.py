@@ -8,8 +8,23 @@ from namepredict.layer0.charge import normalize_acid_charge
 from namepredict.layer0.tautomer import normalize_amide_tautomer
 
 
+def _capture_hydrogen_isotopes(mol: Mol) -> None:
+    """把氘/氚计数记到其重原子邻居属性上（供 L5 生成同位素前缀），清零前须先采集。"""
+    for atom in mol.GetAtoms():
+        iso = atom.GetIsotope()
+        if atom.GetAtomicNum() != 1 or iso not in (2, 3):
+            continue
+        nb = atom.GetNeighbors()
+        if len(nb) != 1:
+            continue
+        key = "iso2H" if iso == 2 else "iso3H"
+        heavy = nb[0]
+        heavy.SetIntProp(key, (heavy.GetIntProp(key) if heavy.HasProp(key) else 0) + 1)
+
+
 def _strip_isotopes(mol: Mol) -> Mol:
     """清除同位素标记：命名管线不产出同位素名，保留会让锚定键匹配失败。"""
+    _capture_hydrogen_isotopes(mol)
     for atom in mol.GetAtoms():
         if atom.GetIsotope():
             atom.SetIsotope(0)

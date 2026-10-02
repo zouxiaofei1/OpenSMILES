@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 
 from namepredict.layer1 import fg_registry as _fg_reg
-from namepredict.layer4.locant_calc import locant_str_sort
+from namepredict.layer4.locant_calc import atom_locant, locant_str_sort
 from namepredict.tools.re import alpha_order_key
 from namepredict.constants import (
     BIS_EN, BIS_ZH, BRIDGE_DIATOMIC_ZH, BRIDGE_SPLIT_SUFFIX_EN, BRIDGE_SPLIT_SUFFIX_ZH,
@@ -41,6 +41,8 @@ _DIGIT_RE = re.compile(r"\d")  # 取代基名中的位次数字
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None,
                       scaffold: str | None = None, has_ene: bool = False) -> bool:
     """判断取代基位次可否省略（环烷烃/苯单取代、酰胺 N- 等情形）。"""
+    if any((s.get("kind") or "") in ("isotope", _DEUTERO_PREFIX_KIND) for s in substituents):  # 同位素前缀恒带位次（2-deuterioacetate）
+        return False
     if kind in N_LOCANT_KINDS:  # 脲/硫脲/胍保留名母体：N 位次须显式写出（1,3-二甲基脲）
         return False
     if kind == "carbamic_acid":  # P-65.2.1.1：N-取代氨基甲酸不带位次（dimethylcarbamic acid）
@@ -519,6 +521,51 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, _n_prime_map(groups, stems), sep, flat, arm_hyphen)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
     return sep.join(en_parts), sep_zh.join(zh_parts)
 
+_ISOTOPE_STEMS = (("iso2H", "deuterio", "氘代"), ("iso3H", "tritio", "氚代"))  # 氢同位素 → 前缀词干
+
+
+def _isotope_subs(parent: dict) -> list:
+    """骨架原子上的氘/氚 → 逐个带母体位次的同位素前缀记录（供 _build_prefix 排序并加多位次）。"""
+    mol, chain = parent.get("mol"), list(parent.get("chain") or ())
+    if mol is None or not chain:
+        return []
+    facts = parent.get("numbering_scaffold")
+    out: list = []
+    for idx in chain:
+        atom = mol.GetAtomWithIdx(idx)
+        for key, en, zh in _ISOTOPE_STEMS:
+            if not atom.HasProp(key):
+                continue
+            loc = atom_locant(chain, idx, facts)
+            if loc is None:
+                continue
+            out.extend({"en": en, "zh": zh, "kind": "isotope", "locant": loc}
+                       for _ in range(atom.GetIntProp(key)))
+    return out
+
+
+_DEUTERO_GROUP = {"methyl": ("methyl", "甲基"), "methoxy": ("methoxy", "甲氧基")}
+_DEUTERO_PREFIX_KIND = "isotope_group"
+
+
+def _deutero_group(s: dict, mol) -> dict | None:
+    """氘/氚取代的甲基或甲氧基 → 同位素修饰基名（deuteriomethyl/trideuteriomethyl 等，须围栏）。"""
+    root = _DEUTERO_GROUP.get(s.get("en") or "")
+    if root is None or mol is None:
+        return None
+    d = t = 0
+    for a in s.get("atoms") or ():
+        atom = mol.GetAtomWithIdx(a)
+        d += atom.GetIntProp("iso2H") if atom.HasProp("iso2H") else 0
+        t += atom.GetIntProp("iso3H") if atom.HasProp("iso3H") else 0
+    if (d and t) or not (d or t):  # 仅单类同位素取代；D/T 混标写法各异不做
+        return None
+    stem, zh_root = root
+    return {**s, "en": MULT_EN.get(d + t, "") + ("deuterio" if d else "tritio") + stem,
+            "zh": MULT_ZH.get(d + t, "") + ("氘" if d else "氚") + zh_root,
+            "paren": True, "kind": _DEUTERO_PREFIX_KIND}
+
+
 def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     """从 numbered 提取上下文并委托 _build_prefix。"""
     parent = numbered.get("parent") or {}
@@ -527,6 +574,11 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
         return "", ""
     if kind == "radical" and parent.get("radical_anchor_element"):  # 杂原子锚点自由基：烷基取代基已并入组装名（ethyloxy），不再加前缀。
         return "", ""
-    return _build_prefix(numbered.get("substituents") or [], n, kind,
+    mol = parent.get("mol")
+    subs = []  # 非同位素取代基保持原对象：_build_prefix 内就地标记（O 侧臂围栏）须回写 numbered
+    for s in (numbered.get("substituents") or []):
+        subs.append(_deutero_group(s, mol) or s)
+    subs += _isotope_subs(parent)
+    return _build_prefix(subs, n, kind,
                          parent.get("scaffold_id"), has_ene, parent.get("mol"),
                          locant_kind=parent.get("locant_kind"))
