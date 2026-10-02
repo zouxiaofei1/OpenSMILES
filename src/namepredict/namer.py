@@ -5,6 +5,8 @@ from __future__ import annotations
 import copy
 import time
 
+from rdkit import Chem
+
 from namepredict.tools import memo
 from namepredict.tools.common_names import CommonNameCache
 from namepredict.constants import N_PREFIX_KINDS, OXO_CENTER_KINDS
@@ -175,6 +177,30 @@ def _apply_salt_suffix(result: NameResult, salt: dict) -> NameResult:
     return out
 
 
+def _join_fragment_names(mol, result: NameResult, *, cache) -> tuple[str, str] | None:
+    """非简单盐的多片段体系：母体片段名在前、其余独立片段名顺次后拼（P-71），防整段丢弃。"""
+    chain = set((result.meta or {}).get("parent_chain") or ())
+    if not result.success or not chain or not (result.en or "").strip():
+        return None
+    tuples = Chem.GetMolFrags(mol)
+    if len(tuples) < 2:
+        return None
+    pf = next((i for i, t in enumerate(tuples) if chain & set(t)), None)  # 母体所在片段
+    if pf is None:
+        return None
+    frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
+    en, zh = result.en or "", result.zh or ""
+    for i, frag in enumerate(frags):
+        if i == pf:
+            continue
+        sub = _name_mol(frag, cache=cache)
+        if not sub.success or not (sub.en or "").strip() or not (sub.zh or "").strip():
+            return None
+        en = f"{en} {sub.en}"
+        zh = f"{zh} {sub.zh}"
+    return en, zh
+
+
 def _name_mol(
     mol,
     *,
@@ -198,6 +224,11 @@ def _name_mol(
     info["salt"] = salt  # 磷酸母体 producer 的盐门控与 salt_meta 来源
     result = _run_candidates(info, t0=t0, cache=run_cache)
     result = _apply_salt_suffix(result, salt)
+    if not salt:  # 非简单盐的多片段：拼接各独立片段名，避免整段丢弃
+        joined = _join_fragment_names(mol, result, cache=run_cache)
+        if joined is not None:
+            result = copy.copy(result)
+            result.en, result.zh = joined
     if salt and result.success:
         result.meta = {**(result.meta or {}), "salt": salt}
     return result
