@@ -666,6 +666,19 @@ def _is_dbl_hetero_sub(mol, sub: dict, het_idx: int) -> bool:
     return het_idx in (sub.get("atoms") or ())
 
 
+_IMINO_EN, _IMINO_ZH = "imino", "亚氨基"
+
+
+def _imino_alkyl_name(en: str, zh: str) -> tuple[str, str] | None:
+    """=N-R 块名 <R>imino → 亚胺 N 上的烃基 R（P-66.4.1.2.1）；裸 =NH 返回 None。"""
+    if not en.endswith(_IMINO_EN) or not zh.endswith(_IMINO_ZH):
+        return None
+    r_en, r_zh = en[: -len(_IMINO_EN)], zh[: -len(_IMINO_ZH)]
+    if not r_en or not r_zh:
+        return None
+    return _fenced_arm_en(r_en), _fenced_arm_zh(r_zh)
+
+
 def _sub_on_n(mol, sub: dict, n_atoms: set[int]) -> int | None:
     """取代基块在母体侧所连的氮原子索引；不连氮返回 None。"""
     for a in sub.get("atoms") or ():
@@ -750,9 +763,22 @@ def _c1_retained(numbered: dict) -> tuple[str, str] | None:
         parent["locant_kind"] = _urea_subs(numbered, sgl_n, ("1", "3")) and "thiourea"
         return "thiourea", "硫脲"
     if kind == "amine" and len(sgl_n) == 2 and dbl.get(N) is not None:
-        numbered["substituents"] = [s for s in (numbered.get("substituents") or [])
-                                    if not _is_dbl_hetero_sub(mol, s, dbl[N])]
-        parent["locant_kind"] = _urea_subs(numbered, sgl_n, ("2", "3"), force=True) and "guanidine"
+        imine_n = dbl[N]
+        kept: list[dict] = []
+        n_imine = 0
+        for s in (numbered.get("substituents") or []):
+            if _is_dbl_hetero_sub(mol, s, imine_n):  # =N 块：裸 =NH 撤下，带烃基者保留为 2 位取代基
+                named = _imino_alkyl_name(s.get("en") or "", s.get("zh") or "")
+                if named is None:
+                    continue
+                s["en"], s["zh"] = named  # 围栏已按 R 名定形，勿再二次括起
+                s["paren"] = False
+                s["locant"] = "2"
+                n_imine += 1
+            kept.append(s)
+        numbered["substituents"] = kept
+        am_locants = ("1", "3") if n_imine else ("2", "3")  # 无亚胺取代基时沿用单取代胍惯例
+        parent["locant_kind"] = _urea_subs(numbered, sgl_n, am_locants, force=True) and "guanidine"
         return "guanidine", "胍"
     if kind == "ester" and len(sgl_o) == 2 and dbl.get(O) is not None and not sgl_n:
         return "carbonate", "碳酸"  # P-65.6.3.3 碳酸二酯：O-侧臂由酯拼接消费
