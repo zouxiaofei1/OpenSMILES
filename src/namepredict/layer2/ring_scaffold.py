@@ -86,6 +86,7 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "pyrrolidine": {"smiles": "C1CCNC1",  "stem_en": "pyrrolidine", "stem_zh": "吡咯烷", "naming_class": "monohetero", "fused": False},  # saturated monohetero rings（P-22.2.2）
     "piperidine":  {"smiles": "C1CCNCC1", "stem_en": "piperidine",  "stem_zh": "哌啶",   "naming_class": "monohetero", "fused": False},
     "morpholine":  {"smiles": "C1COCCN1", "stem_en": "morpholine",  "stem_zh": "吗啉",   "naming_class": "monohetero", "fused": False},
+    "thiomorpholine": {"smiles": "C1CSCCN1", "stem_en": "thiomorpholine", "stem_zh": "硫代吗啉", "naming_class": "monohetero", "fused": False},  # 吗啉硫类似物（表 2.8 保留名），未登记则回退成 1,4-thiazinane
     "piperazine":  {"smiles": "C1CNCCN1", "stem_en": "piperazine",  "stem_zh": "哌嗪",   "naming_class": "monohetero", "fused": False},
     "oxolane":     {"smiles": "C1CCOC1",  "stem_en": "oxolane",     "stem_zh": "四氢呋喃", "naming_class": "monohetero", "fused": False},
     "oxane":       {"smiles": "C1CCCOC1", "stem_en": "oxane",       "stem_zh": "氧杂环己烷", "naming_class": "monohetero", "fused": True, "fused_prefix": ("pyrano", "吡喃并")},  # 稠合组分须 mancude（P-25.3.1.2.1/.2.3）：由 oxane 派生应取 pyrano
