@@ -1099,8 +1099,12 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
     chain = parent.get("chain") or []
     if mol is None or not chain:
         return names
-    if sum(a.GetFormalCharge() for a in mol.GetAtoms()) < 0:
-        return names  # 净正/中（盐、两性离子）都可能含环阳离子；净负分子不处理
+    if sum(a.GetFormalCharge() for a in mol.GetAtoms()) < 0:  # 净负仅两性离子（环内正电中心 + [O-]）保留路径
+        has_ring_cation = any(a.GetFormalCharge() == 1 and a.GetSymbol() in ("N", "O") and a.IsInRing()
+                              for a in mol.GetAtoms())
+        has_oxide = any(a.GetFormalCharge() == -1 and a.GetSymbol() == "O" for a in mol.GetAtoms())
+        if not (has_ring_cation and has_oxide):
+            return names
     en, zh = names
     if "ium" in en:
         return names

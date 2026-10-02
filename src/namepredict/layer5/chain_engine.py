@@ -363,6 +363,9 @@ def _exo_ring_spec(spec: "_Chain", n: int, numbered: dict) -> "_Chain":
     return replace(spec, **fields)
 
 
+_ZH_CODA_KINDS = frozenset({"sulfonic", "sulfonate", "sulfonamide", "sulfonyl_chloride"})  # 中文带「烷」coda 的 S 链后缀母体
+
+
 def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None:
     """单链词干引擎: 数词干 + coda + 后缀 + 位次 + 环。"""
 
@@ -429,7 +432,8 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
             if spec.stem:  # 稠环词干已含基座，直接拼后缀（P-60.2(a)）
                 pair = (f"{_elide_parent_e(s, spec.en_suf)}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
             else:
-                pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zs}-{loc_s}-{spec.zh_suf}")
+                zstem = alkane_zh(n) if spec.kind in _ZH_CODA_KINDS else zs  # S 链后缀中文保留「烷」（丙烷-1-磺酰氯）
+                pair = (f"{s}{spec.coda}-{loc_s}-{spec.en_suf}", f"{zstem}-{loc_s}-{spec.zh_suf}")
     else:
         pair = _chain_plain(spec, s, zs, n)
     if spec.cyclic:
