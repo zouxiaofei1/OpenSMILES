@@ -137,7 +137,7 @@ def _build_anchor_index() -> dict[str, str]:
 _ANCHOR_INDEX: dict[str, str] = _build_anchor_index()
 
 
-def resolve_name(key: str) -> tuple[str, str]:
+def _resolve_name(key: str) -> tuple[str, str]:
     """返回 registry 键对应的 (en, zh)。"""
     entry = _REGISTRY[key]
     return entry.en, entry.zh
@@ -253,8 +253,8 @@ def anchored_lookup(
         # P-34：-C(=NH)NH2 经碳连母体取 carbamimidoyl；经 N 连（胍亚氨基桥）仍用 diaminomethylidene
         if reg_key == "diaminomethylidene" and _attached_via_carbon(mol, atoms, attach_old):
             return "carbamimidoyl", "氨基甲亚氨酰基", False
-        en, zh = resolve_name(reg_key)
+        en, zh = _resolve_name(reg_key)
         return en, zh, _REGISTRY[reg_key].paren
     if attach_old is None:
         return None
-    return  _alkoxycarbonyl(mol, atoms, attach_old)
+    return _alkoxycarbonyl(mol, atoms, attach_old)

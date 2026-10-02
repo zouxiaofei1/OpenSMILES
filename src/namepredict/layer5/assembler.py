@@ -197,9 +197,7 @@ def _fg_prefix(en: str, zh: str) -> tuple[str, str] | None:
     zh_out = _mononuclear_zh(zh) if en_out else None
     return (en_out, zh_out) if en_out and zh_out else None
 
-def free_to_yl(
-    en: str, zh: str, attach_locant: int, *, paren: bool = True,
-) -> tuple[str, str, bool] | None:
+def free_to_yl(en: str, zh: str) -> tuple[str, str, bool] | None:
     """把 free 母体名转 P-29 -yl 双语形式（P-63.2.2 醇/胺）。"""
     fg = _fg_prefix(en, zh)
     if fg is not None:
@@ -223,18 +221,6 @@ def _fused_bridge_name(stem_en: str, a: dict) -> tuple[str, str] | None:
         zh_head = base_zh if base_zh.endswith("基") else (base_zh + "基" if base_zh else "")
         return base_en + en_suf, zh_head + zh_suf
     return None
-
-
-def _same_name_groups(subs: list) -> list[tuple[int, str, str]]:
-    """相邻同名取代基按数量收拢为 (数量, en, zh)，保持字母序。"""
-    out: list[tuple[int, str, str]] = []
-    for s in subs:
-        if out and out[-1][1] == s["en"]:
-            n, en, zh = out[-1]
-            out[-1] = (n + 1, en, zh)
-        else:
-            out.append((1, s["en"], s["zh"]))
-    return out
 
 
 def _thioxo_fused_stem(stem_en: str, stem_zh: str, subs: list[dict]) -> tuple[str, str, list[dict]]:
@@ -287,8 +273,7 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
                 return f"{w_en}amino", f"{w_zh}氨基"
             if _azane_front_needs_paren(a):
                 return f"({a['en']})amino", f"({a['zh']})氨基"  # 复合前端：前端括起再缀 amino（P-63.2.2.1.1）
-        en, zh = free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}", 1,
-                            paren=bool(a.get("paren")))[:2]
+        en, zh = free_to_yl(f"{a['en']}-{stem_en}", f"{a['zh']}-{stem_zh}")[:2]
         return _retained_alkoxy(en, zh) if stem_en == "oxidane" else (en, zh)
     zero = MONONUCLEAR_ZERO_YL.get((stem_en, stem_zh))
     cation = stem_en in CATION_STEMS  # P-73.1.1 阳离子词干：2/3 个烃基臂照样成立（二甲基铵基/三甲基铵基）
@@ -349,14 +334,11 @@ def _h_prefix_atoms(parent: dict, prefix: str) -> list[int]:
     chain = list(parent.get("chain") or ())
     if not chain:
         return []
-    out: list[int] = []
-    for loc in re.findall(r"(\d+[a-z]?)H", prefix or ""):
-        for idx, atom in enumerate(chain):  # 缺 labels 时回退链序号（同 atom_locant）
-            lab = str(labels[idx]) if labels and len(labels) == len(chain) else str(idx + 1)
-            if lab == loc:
-                out.append(atom)
-                break
-    return out
+    seq: dict[str, int] = {}
+    for idx, atom in enumerate(chain):  # 缺 labels 时回退链序号（同 atom_locant）
+        lab = str(labels[idx]) if labels and len(labels) == len(chain) else str(idx + 1)
+        seq.setdefault(lab, atom)
+    return [seq[loc] for loc in re.findall(r"(\d+[a-z]?)H", prefix or "") if loc in seq]
 
 
 _DIHYDRO_STEM_RE = re.compile(r"^(\d+(?:,\d+)*)-dihydro(.+)$")
@@ -601,7 +583,7 @@ def _all_arms_stereo_lead(arms: list[dict]) -> bool:
 def join_oxoacid_name(pre: tuple[str, str], names: tuple[str, str], numbered: dict) -> tuple[str, str] | None:
     """含氧酸中心母体整名（P-67.1.3）：取代前缀 + O-侧臂 + 词尾 + 金属盐。"""
     tail_en = join_parent_name(pre[0], names[0])
-    tail_zh = join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))
+    tail_zh = _zh_parent_1h(names, pre)
     parent = numbered.get("parent") or {}
     arms_in = _o_side_arms(numbered)
     if parent.get("oxo_kind") == "phosphate":  # 磷酸酯臂按专用判据加围栏（P-67.1.3）
@@ -1004,7 +986,7 @@ def join_kind_name(
     en = join_parent_name(pre[0], names[0])
     if kind == "cation" and pre[0] and names[0].startswith("oxo"):  # 单核阳离子氧代词干：与前臂以连字符分段（P-73.1.1）
         en = f"{pre[0]}-{names[0]}"
-    zh = join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))
+    zh = _zh_parent_1h(names, pre)
     return en, zh
 
 
@@ -1043,6 +1025,11 @@ def _chalcogen_nitrile_alias(en: str, zh: str, numbered: dict) -> tuple[str, str
     if _STEREO_LEAD_ENCLOSE_RE.match(r_en) or (r_en[:1].isdigit() and "[" in r_en):  # 前导立体描述符/位次+内层方括号的 R 段须整体围栏（P-16.5.1.3.1）
         r_en = f"[{r_en}]"
     return f"{r_en} {tail_en}", f"{tail_zh}{r_zh}酯"
+
+
+def _zh_parent_1h(names: tuple[str, str], pre: tuple) -> str:
+    """中文母体名补 1H- 后与前缀名拼接（稠环/螺环母体前缀化）。"""
+    return join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))
 
 
 def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:

@@ -90,7 +90,7 @@ def center_surr_atoms(payload: dict) -> frozenset[int]:
     return frozenset(out)
 
 
-def _cation_atoms(mol, payload: dict) -> set[int]:
+def _cation_atoms(_mol, payload: dict) -> set[int]:
     """阳离子：特征原子只有阳离子中心本身，周边碳全留给取代基侧。"""
     center = _idx(payload, "center_idx")
     return {center} if center is not None else set()
@@ -142,11 +142,13 @@ def _one(key: str, index: int, payload: dict, mol, demoted: bool = False) -> Fun
                                      _characteristic_atoms(group_class, mol, payload), anchors, payload, demoted)
 
 
-def build_inventory(lists: dict, mol=None, demoted: frozenset[str] = frozenset()) -> FunctionalGroupInventory:
+def build_inventory(lists: dict, mol=None, demoted: frozenset[str] = frozenset(),
+                    has_anion: bool | None = None) -> FunctionalGroupInventory:
     """由官能团列表构建带类型的清单；demoted 为降级 id 集。"""
     entries = tuple(_one(key, i, item, mol, f"{key}:{i}" in demoted)
                     for key in _FG_KEYS for i, item in enumerate(lists.get(key) or ()))
-    has_anion = mol is not None and any(a.GetFormalCharge() < 0 for a in mol.GetAtoms())
+    if has_anion is None:
+        has_anion = mol is not None and any(a.GetFormalCharge() < 0 for a in mol.GetAtoms())
     return FunctionalGroupInventory(entries, has_anion)
 
 def inventory_from_info(info: dict) -> FunctionalGroupInventory:

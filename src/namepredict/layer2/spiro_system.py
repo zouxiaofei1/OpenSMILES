@@ -10,7 +10,7 @@ from dataclasses import dataclass, replace
 
 from namepredict.constants import C
 from namepredict.layer1.ring_systems import sssr_rings
-from namepredict.layer2.ring_scaffold import match_retained
+from namepredict.layer2.ring_scaffold import _ring_kind, match_retained
 
 _BRACKET = re.compile(r"\[([^\]]*)\]")
 _MAX_WALKS = 64  # 段回路候选上限
@@ -141,12 +141,6 @@ def _number_walk(segs: list[_Seg], walk: tuple) -> tuple[dict, tuple, tuple]:
             nxt += 1
             sups.append(0)
     return num, tuple(desc), tuple(sups)
-
-
-def _ring_kind(mol, atom_ids) -> str:
-    """环组分的元素类型：全碳为 carbo，否则 hetero。"""
-    return "carbo" if all(mol.GetAtomWithIdx(a).GetAtomicNum() == C
-                          for a in atom_ids) else "hetero"
 
 
 def spiro_scaffold_identity(info: dict, system: dict):
@@ -354,11 +348,10 @@ def _retained_matches(info: dict, sid: str, atoms, primary: tuple[int, ...]) -> 
     return hits or [primary]
 
 
-def _flat_numberings(info, system, comp, atoms, spiros, sub_rings, sub_edges):
+def _flat_numberings(info, sub, spiros, sub_rings, sub_edges):
     """多环非保留组分：先后试 von Baeyer（P-23）与稠合树（P-25）。"""
     from namepredict.layer2.bridged_system import decompose_bridged_system
     from namepredict.layer2.fused_system import decompose_fused_system
-    sub = _component_system(system, comp, atoms)
     nodes = decompose_bridged_system(info, sub)
     if nodes:
         from namepredict.layer5.bridged_namer import bridged_body_names
@@ -408,7 +401,8 @@ def _build_component(mol, info, system, comp: list[int], free, k: int) -> FbsCom
     rings = list(sssr_rings(mol))
     atoms = tuple(sorted({a for r in comp for a in rings[r]}))
     sub_rings = [rings[r] for r in sorted(comp)]
-    sub_edges = _component_system(system, comp, atoms)["fusion_edges"]
+    sub = _component_system(system, comp, atoms)
+    sub_edges = sub["fusion_edges"]
     spiros = tuple(sorted(a for a in atoms if a in free))
     sid = match_retained(info, atoms)
     bare_en = bare_zh = None
@@ -431,7 +425,7 @@ def _build_component(mol, info, system, comp: list[int], free, k: int) -> FbsCom
         base_en, base_zh = _cyclo_base(False)(len(chain)) or (None, None)
         bare_en, bare_zh = _cyclo_base(True)(len(chain)) or (None, None)
     else:
-        flat = _flat_numberings(info, system, comp, atoms, spiros, sub_rings, sub_edges)
+        flat = _flat_numberings(info, sub, spiros, sub_rings, sub_edges)
         if flat is None:
             return None
         kind, node, (base_en, base_zh), nums, extra = flat
@@ -544,8 +538,7 @@ def decompose_fbs_system(info: dict, system: dict) -> list[FbsNode]:
         links.append((hit[0], slot_of[hit[1]], pos))
     cites = tuple(tuple(slot_of[k] for k in grp) for grp in groups)
     atom_ids = tuple(sorted({a for c in ranked for a in c.atom_ids}))
-    ring = "carbo" if all(mol.GetAtomWithIdx(a).GetAtomicNum() == C for a in atom_ids) \
-        else "hetero"
+    ring = _ring_kind(mol, atom_ids)
     return [FbsNode(atom_ids, free, ranked, tuple(links), cites, ring,
                     len(system.get("sssr_indices") or ()))]
 

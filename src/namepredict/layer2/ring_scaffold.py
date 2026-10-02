@@ -6,10 +6,16 @@ from dataclasses import dataclass
 
 from rdkit.Chem import Mol, MolFromSmarts, MolFromSmiles
 from rdkit import Chem
-from namepredict.constants import HW_COMPONENT_PREFIX
+from namepredict.constants import HW_COMPONENT_PREFIX, C
 from namepredict.tools import memo
-from namepredict.layer2.parent_skeleton import ParentSkeleton
-from namepredict.layer1.ring_systems import sssr_rings, kekulized
+from namepredict.layer2.parent_skeleton import ParentSkeleton, _ring_count
+from namepredict.layer1.ring_systems import kekulized
+
+
+def _ring_kind(mol, atom_ids) -> str:
+    """环组分的元素类型：全碳为 carbo，否则 hetero。"""
+    return "carbo" if all(mol.GetAtomWithIdx(a).GetAtomicNum() == C for a in atom_ids) else "hetero"
+
 
 @dataclass(frozen=True)# ScaffoldSpec 定义
 class NumberingPolicy:
@@ -394,7 +400,7 @@ def _spec_from_template(sid: str, entry: dict) -> ScaffoldSpec:
     """由模板条目派生 ScaffoldSpec（环数/环型自动算）。"""
     q = _Q[sid]
     n_rings = len(q.GetRingInfo().AtomRings())
-    ring = "carbo" if all(q.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in range(q.GetNumAtoms())) else "hetero"
+    ring = _ring_kind(q, range(q.GetNumAtoms()))
     standard = entry.get("standard")
     numbering = NumberingPolicy(standard_path=standard[0] if standard else ())
     return ScaffoldSpec(
@@ -457,13 +463,10 @@ def _is_induced_match(m: Mol, q: Mol, atoms: frozenset[int]) -> bool:
 
 def _isolated_saturated_ring(mol: Mol, atoms: frozenset[int]) -> bool:
     """原子集是否为不与他环稠合的单环，且 Kekulé 视图环内无重键（RDKit 会误判芳香）。"""
-    rings = sssr_rings(mol)
-    if not any(frozenset(r) == atoms for r in rings):
+    from namepredict.layer2.hantzsch_widman import isolated_ring
+    if not isolated_ring(mol, atoms):
         return False
-    in_rings = Counter(a for r in rings for a in r)
-    if any(in_rings[a] > 1 for a in atoms):
-        return False  # 桥头位：属稠合/桥环系统，走 P-25.3.4 氢化 mancude 名
-    kek = memo.by_mol("kekulized", kekulized, mol) or mol
+    kek = kekulized(mol) or mol
     return all(b.GetBondType() == Chem.BondType.SINGLE for b in kek.GetBonds()
                if b.GetBeginAtomIdx() in atoms and b.GetEndAtomIdx() in atoms)
 
@@ -515,11 +518,7 @@ def standard_chain(spec_id: str | None, match: tuple[int, ...] | None) -> list[i
     return [match[t] for t in order]
 
 def _generic_carbocycle(info: dict, skeleton: ParentSkeleton) -> ScaffoldIdentity | None:
-    mol = info["mol"]
-    # all_carbon = all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in skeleton.atom_ids)
-    # if not all_carbon:
-    atoms = set(skeleton.atom_ids)
-    n_rings = sum(1 for ring in sssr_rings(mol) if set(ring) <= atoms)
+    n_rings = _ring_count(info["mol"], skeleton)
     if n_rings >= 2:
         return ScaffoldIdentity("fused_hetero", "fused_hetero", n_rings, "hetero")
     return ScaffoldIdentity("carbocycle", "carbocycle", 1, "carbo")

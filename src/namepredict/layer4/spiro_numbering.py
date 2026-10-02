@@ -11,8 +11,8 @@ from itertools import product
 from namepredict.constants import C
 from namepredict.layer4.locant_calc import locant_key
 from namepredict.layer4.numbering_engine import (
-    _bond_locants, _locant_set, _principal_atoms, _unsat_bonds, alpha_locants, by_z,
-    candidates, hetero_atoms, narrow, narrow_by_senior, node_feature_key, pick_equivalent,
+    _bond_locant_pairs, _locant_set, _principal_atoms, _unsat_bonds, alpha_locants, by_z,
+    candidates, hetero_atoms, narrow, narrow_by_senior, resolve_numbering,
 )
 
 APOSTROPHE = "'"
@@ -21,19 +21,8 @@ _MAX_COMBOS = 4096  # 组分候选组合上限
 
 def spiro_numbering(parent: dict, substituents: list) -> list[int] | None:
     """返回螺环骨架的位次升序原子表；候选不可判定时返回 None。"""
-    nodes = candidates(parent, "spiro_node")
-    chain = list(parent.get("chain") or ())
-    if not nodes or not chain:
-        return None
-    mol = parent.get("mol")
-    heteros = hetero_atoms(mol, chain)
-    nodes = _narrow_ladder(nodes, parent, substituents, mol, chain, heteros)
-    best = pick_equivalent(nodes, node_feature_key(mol, chain, parent, substituents,
-                                                  lambda nd: nd.descriptor_superscripts))
-    if best is None:
-        return None
-    parent["spiro_node"] = best  # L5 依它取描述符，须与选中的编号自洽
-    return sorted(best.numbering, key=best.numbering.get)
+    return resolve_numbering(parent, substituents, "spiro_node",
+                             lambda nd: nd.descriptor_superscripts, _narrow_ladder)
 
 
 def _narrow_ladder(nodes: list, parent: dict, substituents: list, mol, chain: list[int],
@@ -53,8 +42,7 @@ def _narrow_ladder(nodes: list, parent: dict, substituents: list, mol, chain: li
         nodes = narrow(nodes, lambda nd: key(nd, principal), skip_none=True)
     bonds, doubles = _unsat_bonds(parent)
     if bonds and mol is not None:  # P-14.4(e) 双键位次最低
-        nodes = narrow(nodes, lambda nd: (_bond_locants(nd.numbering, bonds),
-                                          _bond_locants(nd.numbering, doubles)), skip_none=True)
+        nodes = narrow(nodes, lambda nd: _bond_locant_pairs(nd.numbering, bonds, doubles), skip_none=True)
     subs = sorted(s["attach_idx"] for s in (substituents or [])
                   if s["attach_idx"] in chain)
     if subs:  # P-14.4(f) 取代基位次集合最低

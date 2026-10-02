@@ -50,13 +50,10 @@ def _locant_set(cand: dict[int, int], atoms: list[int]) -> tuple[int, ...] | Non
     return tuple(locs) if locs else None
 
 
-def _bond_locants(cand: dict[int, int], bonds) -> tuple[int, ...] | None:
-    """计算各多重键沿编号方向占据的边位置（seam 感知，每条键一个数）。"""
+def _edge_locants(pos: dict[int, int], n: int, bonds) -> tuple[int, ...] | None:
+    """在已建的编号顺序映射下，算一组键占据的边位次（seam 感知，每条键一个数）。"""
     if not bonds:
         return None
-    order = sorted(cand, key=cand.get)  # locant 升序 → 环/链遍历顺序
-    n = len(order)
-    pos = {a: i for i, a in enumerate(order)}
     locs = []
     for a, b in bonds:
         if a not in pos or b not in pos:
@@ -70,7 +67,17 @@ def _bond_locants(cand: dict[int, int], bonds) -> tuple[int, ...] | None:
             locs.append(n)                   # seam 闭合边：跨编号首尾，记 n
         else:
             return None                      # 端点不沿编号相邻：判据不适用
-    return tuple(sorted(locs)) if len(locs) == len(bonds) else None  # print(cand, bonds)
+    return tuple(sorted(locs)) if len(locs) == len(bonds) else None
+
+
+def _bond_locant_pairs(cand: dict[int, int], bonds, doubles) -> tuple:
+    """一次构建编号顺序，同时给出双键/多重键两组位次（P-14.4(e)）。"""
+    if not bonds:
+        return None, None
+    order = sorted(cand, key=cand.get)  # locant 升序 → 环/链遍历顺序
+    pos = {a: i for i, a in enumerate(order)}
+    n = len(order)
+    return _edge_locants(pos, n, bonds), _edge_locants(pos, n, doubles)
 
 
 def narrow(cands: list, key_fn, *, reverse: bool = False, skip_none: bool = False) -> list:
@@ -254,18 +261,32 @@ def _nh_sites(heteros: list[int], mol) -> list[int]:
             and _n(a).GetTotalNumHs() == 0 and _n(a).GetDegree() == 3]
     return has_h + [a for a in subs if has_h or _n(a).IsInRingSize(5)]
 
+def resolve_numbering(parent: dict, substituents: list, node_key: str, feature_fn, ladder_fn) -> list[int] | None:
+    """编号裁决公共外壳：候选 → 收窄阶梯 → 并列等价 → 写回节点并按位次升序返回。"""
+    nodes = candidates(parent, node_key)
+    chain = list(parent.get("chain") or ())
+    if not nodes or not chain:
+        return None
+    mol = parent.get("mol")
+    heteros = hetero_atoms(mol, chain)
+    nodes = ladder_fn(nodes, parent, substituents, mol, chain, heteros)
+    best = pick_equivalent(nodes, node_feature_key(mol, chain, parent, substituents, feature_fn))
+    if best is None:
+        return None
+    parent[node_key] = best  # L5 依它取描述符/上标，须与选中的编号自洽
+    return sorted(best.numbering, key=best.numbering.get)
+
+
 def _narrow_hetero_ring(cands: list[dict], mol, chain: list[int], float_hetero: bool) -> list[dict]:
     """杂环编号 P-22.2.2.1.3/(b)：位次 1 给最先元素→杂原子集→元素序→指示氢 NH 位次最小化。"""
-    heteros = [a for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != 6]
-    by_z: dict[int, list[int]] = {}
-    for a in heteros:
-        by_z.setdefault(mol.GetAtomWithIdx(a).GetAtomicNum(), []).append(a)
-    first = next((z for z in P145_SENIOR if z in by_z), None)  # (0) 引用序最先者得位次 '1'
+    heteros = hetero_atoms(mol, chain)
+    zmap = by_z(mol, heteros)
+    first = next((z for z in P145_SENIOR if z in zmap), None)  # (0) 引用序最先者得位次 '1'
     if first is not None:
-        atoms = by_z[first]
+        atoms = zmap[first]
         cands = narrow(cands, lambda c: min(c[a] for a in atoms), skip_none=True)
     cands = narrow_by_senior(                                           # (a)(b)
-        cands, lambda c, at: _locant_set(c, at), heteros, by_z, skip_none=True)
+        cands, lambda c, at: _locant_set(c, at), heteros, zmap, skip_none=True)
     if not float_hetero:                                                # (b)
         n_active = _nh_sites(heteros, mol)
         if n_active:
@@ -423,11 +444,12 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     mol = parent.get("mol")
     if parent.get("bridged_node") is not None:  # 桥环兜底：chain 非环序，旋转/翻转枚举无意义
         return None
-    if mol is not None and _is_ring(parent) and any(
+    is_ring = _is_ring(parent)
+    if mol is not None and is_ring and any(
             mol.GetAtomWithIdx(a).GetAtomicNum() != 6 for a in chain):
         cands = _narrow_hetero_ring(_ring_cands(chain), mol, chain, float_hetero)  # 杂环：P-22.2.2.1.3 元素序窄化先于 principal。
     else:
-        cands = _ring_cands(chain) if _is_ring(parent) else [  # 碳环/链：P-14.4(a) 固定 locant 1 锚定后退化
+        cands = _ring_cands(chain) if is_ring else [  # 碳环/链：P-14.4(a) 固定 locant 1 锚定后退化
             _numbered(chain), _numbered(list(reversed(chain)))]  # 链：正反两个方向的编号候选
     principal = _principal_atoms(parent)
     if principal:
@@ -437,8 +459,7 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
         cands = narrow(cands, lambda c: _locant_set(c, hydro), skip_none=True)
     bonds, doubles = _unsat_bonds(parent)
     if bonds:
-        cands = narrow(cands, lambda c: (_bond_locants(c, bonds), _bond_locants(c, doubles)),
-                       skip_none=True)
+        cands = narrow(cands, lambda c: _bond_locant_pairs(c, bonds, doubles), skip_none=True)
     subs = [s["attach_idx"] for s in substituents if s.get("attach_idx") in chain]
 
     if subs:

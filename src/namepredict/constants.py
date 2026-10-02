@@ -35,7 +35,6 @@ Bi = 83
 
 # ── 常用集合 ──────────────────────────
 HALO_Z = frozenset({F, Cl, Br, I})
-RING_HETERO = frozenset({N, O, S})  # 环内杂原子：其单碳酰基按环酮命名（内酰胺/内酯/硫代内酯、N-酰基环胺），见 layer1.analyzer._is_ketone_carbon。
 HALO_ZH = {F: "氟", Cl: "氯", Br: "溴", I: "碘"}
 HALIDE_EN = {F: "fluoride", Cl: "chloride", Br: "bromide", I: "iodide"}
 N_PREFIX_KINDS = frozenset({"n_alkyl", "n_block"})  # N-取代基 kind（P-62.2.2.1）：走 N- 前缀、位次以 N 标注或隐含省略，不参与数字位次通道。

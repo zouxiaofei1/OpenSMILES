@@ -177,17 +177,18 @@ def oxoacid_entries(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> l
         if e is not None:
             by_z[e["oxo_z"]] = e
     entries = [by_z[k] for k in sorted(by_z)]
+    arms = {e["oxo_z"]: _oxo_bridge_arms(mol, e["oxo_z"]) for e in entries}  # 桥臂数每条只算一次
     # 缩合含氧酸（P-O-P / S-O-S）须链上留有全酸式末端（同一中心 ≥2 个酸式氧）才按功能母体识别（P-67.2.1）
     if not any(int(e["n_oh"]) + int(e["n_om"]) >= 2 for e in entries):
         # 无全酸式末端时也不能整链退为取代基：至少留酸式氧最多的链节作母体（否则母体落到甲烷）
         top_acid = max((int(e["n_oh"]) + int(e["n_om"]) for e in entries), default=0)
         entries = [e for e in entries
-                   if not _oxo_bridge_arms(mol, e["oxo_z"])
+                   if not arms[e["oxo_z"]]
                    or int(e["n_oh"]) + int(e["n_om"]) == top_acid]
     # 链内中心让位于更少质子化的酸中心（P-41 酸根优先；否则抢走母体会把酸根写成前缀）
     top_om = max((int(e["n_om"]) for e in entries), default=0)
     return [e for e in entries
-            if not (int(e["n_om"]) < top_om and _oxo_bridge_arms(mol, e["oxo_z"]))]
+            if not (int(e["n_om"]) < top_om and arms[e["oxo_z"]])]
 
 
 def boronic_entries(mol: Mol) -> list[dict]:
@@ -263,11 +264,14 @@ def _has_negative_atom(mol: Mol) -> bool:
     return mol is not None and any(a.GetFormalCharge() < 0 for a in mol.GetAtoms())
 
 
-def _arbitrate_parts(parts: dict, mol: Mol | None = None) -> tuple[dict, frozenset[str]]:
+def _arbitrate_parts(parts: dict, mol: Mol | None = None,
+                     has_anion: bool | None = None) -> tuple[dict, frozenset[str]]:
     """P-41 仲裁：更高优先级 FG 使组合 FG 退出，叶型标 demoted。"""
     p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
     present = {fg for fg in p41 if parts.get(fg) and fg not in _PRESENCE_SKIP}
-    if _has_negative_atom(mol):
+    if has_anion is None:
+        has_anion = _has_negative_atom(mol)
+    if has_anion:
         present.discard("cation")  # 阴离子（类 4）> 阳离子（类 6）：酸根在场时阳离子不压制酸
     out = dict(parts)
     demoted: set[str] = set()
@@ -317,17 +321,14 @@ def _collect_fgs(mol: Mol) -> dict:
     """聚合官能团条目并构建带类型清单（FG 唯一出口）。"""
     from namepredict.layer1.functional_group_inventory import build_inventory
 
-    parts, demoted = _arbitrate_parts(_detect_parts(mol), mol)
+    has_anion = _has_negative_atom(mol)  # 负电荷扫描全流程只算一次
+    parts, demoted = _arbitrate_parts(_detect_parts(mol), mol, has_anion)
     double_bonds, triple_bonds = _cc_bond_entries(mol)
     return {"double_bonds": double_bonds, "triple_bonds": triple_bonds,
-            "fg_inventory": build_inventory(parts, mol, demoted)}
-
-def _info(mol: Mol, carbons: list[int]) -> dict:
-    """组装分子分析结果 dict（碳信息 + 官能团 + 环事实）。"""
-    base = {"mol": mol, "carbon_ids": carbons, "n_carbons": len(carbons)}
-    return {**base, **_collect_fgs(mol), **_ring_meta(mol)}
+            "fg_inventory": build_inventory(parts, mol, demoted, has_anion)}
 
 def analyze(mol: Mol) -> dict:
-    """分析分子并返回完整的官能团与结构信息 dict。"""
-    result = _info(mol, [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C])
-    return result
+    """分析分子并返回完整的官能团与结构信息 dict（碳信息 + 官能团 + 环事实）。"""
+    carbons = [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
+    base = {"mol": mol, "carbon_ids": carbons, "n_carbons": len(carbons)}
+    return {**base, **_collect_fgs(mol), **_ring_meta(mol)}

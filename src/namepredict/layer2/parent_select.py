@@ -6,8 +6,9 @@ from dataclasses import dataclass
 from rdkit.Chem import BondType, Mol
 
 from namepredict.layer1.functional_group_inventory import (
-    FunctionalGroupClass, OXO_FG_CLASSES, inventory_from_info,
+    OXO_FG_CLASSES, inventory_from_info,
 )
+from namepredict.layer1.ring_systems import sssr_rings
 from namepredict.layer2.parent_skeleton import (
     SkeletonSelection,
     SkeletonTopology,
@@ -105,15 +106,20 @@ def _p45_2_prefix_count(info: dict, parent: dict) -> int:
     return len(iter_claims(mol, parent.get("owned_atoms") or frozenset()))
 
 
+def _covered_oxo_z(cand: dict) -> list:
+    """候选所辖含氧酸中心（covered occurrence 带 oxo_z 者）的 oxo_z 列表。"""
+    ids = set(cand.get("covered_principal_ids") or ())
+    return [o.payload["oxo_z"] for o in cand.get("principal_occurrences") or ()
+            if o.id in ids and o.payload.get("oxo_z") is not None]
+
+
 def _condensed_rank(info: dict, cand: dict) -> int:
     """候选所辖缩合含氧酸中心的链内桥氧数（P-67.2.1：多核磷酸/硫酸以链中中心为功能母体）；其余恒 0。"""
     mol = info.get("mol")
     if mol is None or cand.get("oxo_kind") not in ("phosphate", "sulfate"):
         return 0
     from namepredict.layer1.analyzer import _oxo_bridge_arms
-    ids = set(cand.get("covered_principal_ids") or ())
-    zs = [o.payload["oxo_z"] for o in cand.get("principal_occurrences") or ()
-          if o.id in ids and o.payload.get("oxo_z") is not None]
+    zs = _covered_oxo_z(cand)
     return max((_oxo_bridge_arms(mol, int(z)) for z in zs), default=0)
 
 
@@ -174,17 +180,16 @@ def _ester_arm_component(mol: Mol, root: int) -> frozenset[int]:
 
 def _oxo_ester_side_score(mol: Mol, cand: dict) -> tuple[int, int]:
     """酯侧打分 (臂上芳香含氮环数, -臂内氧数)：越小越优先（P-67.1.3 磷酸二酯取糖/多元醇侧作母体）。"""
-    ids = set(cand.get("covered_principal_ids") or ())
-    zs = [o.payload["oxo_z"] for o in cand.get("principal_occurrences") or ()
-          if o.id in ids and o.payload.get("oxo_z") is not None]
+    zs = _covered_oxo_z(cand)
     nuc, n_o = 0, 0
     seen_arms: list[int] = []
     for z in zs:
         seen_arms += _oxo_ester_arm_carbons(mol, int(z))
+    mol_rings = sssr_rings(mol)
     for arm in seen_arms:
         comp = _ester_arm_component(mol, arm)
         n_o = max(n_o, sum(1 for i in comp if mol.GetAtomWithIdx(i).GetAtomicNum() == 8))
-        for ring in mol.GetRingInfo().AtomRings():
+        for ring in mol_rings:
             if not all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
                 continue
             if not any(i in comp for i in ring):

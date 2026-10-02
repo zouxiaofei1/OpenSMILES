@@ -43,6 +43,15 @@ def _fg_record(numbered: dict, kind: str) -> dict | None:
     return next((f for f in numbered.get("fg_locants") or [] if f.get("kind") == kind), None)
 
 
+def _fg_locs(numbered: dict, spec) -> tuple[dict | None, list | None]:
+    """FG 位次记录与位次；位次缺失或数量不符 spec.need 时 locs 为 None。"""
+    rec = _fg_record(numbered, spec.fg)
+    locs = rec["locants"] if rec else None
+    if not locs or (spec.need is not None and len(locs) != spec.need):
+        return rec, None
+    return rec, locs
+
+
 def _parent_multiplicity(numbered: dict) -> int | None:
     """主官能团数量：facts.multiplicity 优先。"""
     parent = numbered.get("parent") or {}
@@ -280,31 +289,16 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
     return fields
 
 
-def _ylidene_form(pair: tuple[str, str]) -> tuple[str, str]:
-    """自由价为双键（P-31.2.3）：-yl → -ylidene/亚基。"""
-    en, zh = pair
-    if en.endswith("yl"):
-        en = en[:-2] + "ylidene"
-    if zh.endswith("基"):
-        stem = zh[:-1]
-        zh = f"{stem}亚基" if stem.startswith("环") else f"亚{stem}基"
-    return en, zh
-
-
-def _ylidyne_form(pair: tuple[str, str]) -> tuple[str, str]:
-    """自由价为三键（P-31.2.3）：-yl → -ylidyne/次基。"""
-    en, zh = pair
-    if en.endswith("yl"):
-        en = en[:-2] + "ylidyne"
-    if zh.endswith("基"):
-        stem = zh[:-1]
-        zh = f"{stem}次基" if stem.startswith("环") else f"次{stem}基"
-    return en, zh
-
-
 def _free_valence_form(pair: tuple[str, str], order: int) -> tuple[str, str]:
     """自由价键级对应的基名形态（P-31.2.3）：双键 -ylidene/亚基，三键 -ylidyne/次基。"""
-    return _ylidyne_form(pair) if order == 3 else _ylidene_form(pair)
+    en_tail, zh_lead = ("ylidyne", "次") if order == 3 else ("ylidene", "亚")
+    en, zh = pair
+    if en.endswith("yl"):
+        en = en[:-2] + en_tail
+    if zh.endswith("基"):
+        stem = zh[:-1]
+        zh = f"{stem}{zh_lead}基" if stem.startswith("环") else f"{zh_lead}{stem}基"
+    return en, zh
 
 
 def _cyclo_stereo(pair: tuple[str, str]) -> tuple[str, str]:
@@ -394,9 +388,8 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
         free_order = 0
     top = _chain_enyne(spec, n, numbered)
     if top is not None and spec.unsat_polyol:  # 多 FG 词干模式: 词干 + FG 位次 + 后缀
-        rec = _fg_record(numbered, spec.fg)
-        locs = rec["locants"] if rec else None
-        if not locs or (spec.need is not None and len(locs) != spec.need):
+        _, locs = _fg_locs(numbered, spec)
+        if locs is None:
             top = None
         else:
             loc_s = ",".join(str(x) for x in locs)
@@ -419,9 +412,8 @@ def _chain_names(spec: _Chain, n: int, numbered: dict) -> tuple[str, str] | None
     if s is None or zs is None:
         return None
     if spec.fg is not None:      # FG 位次: 记录缺失或数量不符 → no_loc
-        rec = _fg_record(numbered, spec.fg)
-        locs = rec["locants"] if rec else None
-        if not locs or (spec.need is not None and len(locs) != spec.need):
+        rec, locs = _fg_locs(numbered, spec)
+        if locs is None:
             if spec.no_loc == "none":
                 return None
             pair = _chain_plain(spec, s, zs, n)

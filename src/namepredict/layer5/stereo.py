@@ -5,7 +5,7 @@ import re
 
 from rdkit.Chem import BondStereo, BondType, Mol
 
-from namepredict.layer4.locant_calc import locant_key
+from namepredict.layer4.locant_calc import _atom_locant, locant_key
 from namepredict.layer4.numbering_engine import assign_cip
 
 
@@ -92,13 +92,8 @@ def ez_for_parent(numbered: dict) -> str:
 def _parent_locants(parent: dict) -> dict[int, int | str]:
     """母体原子索引 → 位次（整体编号标签优先，否则链序号）。"""
     chain = parent.get("chain") or []
-    labels = (parent.get("numbering_scaffold") or {}).get("labels") or []
-    aligned = len(labels) == len(chain)
-    out: dict[int, int | str] = {}
-    for pos, idx in enumerate(chain):
-        lbl = labels[pos] if aligned else pos + 1
-        out[int(idx)] = int(lbl) if str(lbl).isdigit() else lbl
-    return out
+    facts = parent.get("numbering_scaffold") or {}
+    return {int(idx): _atom_locant(chain, idx, facts) for idx in chain}
 
 
 def _exo_ez_parts(numbered: dict) -> list[tuple[int | str, str]]:
@@ -130,9 +125,7 @@ def join_ez_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     extra = [(loc, let) for loc, let in extra if loc not in have]
     if not extra:
         return en, zh
-    if (numbered.get("parent") or {}).get("kind") == "ester":
-        return _ester_en_rs(en, extra), _with_rs(zh, extra)
-    return _with_rs(en, extra), _with_rs(zh, extra)
+    return _apply_rs(en, zh, extra, numbered)
 
 
 # --- CIP R/S 立体描述符 --------------------
@@ -152,11 +145,9 @@ def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:
 def _chain_locant(parent: dict, pos: int) -> int | str:
     """链上第 pos 位（1 起）→ locant，退回链序号。"""
     chain = parent.get("chain") or []
-    labels = (parent.get("numbering_scaffold") or {}).get("labels") or []
-    if len(labels) == len(chain) and 1 <= pos <= len(labels):
-        lbl = labels[pos - 1]
-        return int(lbl) if str(lbl).isdigit() else str(lbl)
-    return pos
+    if not 1 <= pos <= len(chain):
+        return pos
+    return _atom_locant(chain, chain[pos - 1], parent.get("numbering_scaffold") or {}) or pos
 
 
 def _collapsed_parent(parent: dict) -> bool:
@@ -248,11 +239,16 @@ def _ester_en_rs(en: str, rs: list[tuple[int | str | None, str]]) -> str:
     return f"{alkyl} {_with_rs(acyl, rs)}"
 
 
+def _apply_rs(en: str, zh: str, parts: list, numbered: dict) -> tuple[str, str]:
+    """立体部件应用到名称：酯在烷基词后插入，其余直接前缀（中文恒为前缀）。"""
+    if (numbered.get("parent") or {}).get("kind") == "ester":
+        return _ester_en_rs(en, parts), _with_rs(zh, parts)
+    return _with_rs(en, parts), _with_rs(zh, parts)
+
+
 def join_rs_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     """对外 R/S 入口：算手性部件并应用到中英文名称（酯特殊插入）。"""
     rs = _rs_parts(numbered)
     if not rs:
         return en, zh
-    if (numbered.get("parent") or {}).get("kind") == "ester":
-        return _ester_en_rs(en, rs), _with_rs(zh, rs)
-    return _with_rs(en, rs), _with_rs(zh, rs)
+    return _apply_rs(en, zh, rs, numbered)

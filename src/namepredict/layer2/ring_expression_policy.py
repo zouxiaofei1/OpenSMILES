@@ -53,8 +53,11 @@ _POLICIES = (
 )
 
 
+_POLICY_INDEX = frozenset(
+    (nc, p.group_class, rel) for p in _POLICIES for nc in p.naming_classes for rel in p.relations
+)  # 展平为 O(1) 查询集，避免每次全表扫描
+
+
 def supports_ring_expression(scaffold: ScaffoldIdentity, facts) -> bool:
     """判断 scaffold 是否支持该主基团的 typed 环表达。"""
-    return any(scaffold.naming_class in policy.naming_classes
-               and facts.group_class is policy.group_class
-               and facts.relation.value in policy.relations for policy in _POLICIES)
+    return (scaffold.naming_class, facts.group_class, facts.relation.value) in _POLICY_INDEX

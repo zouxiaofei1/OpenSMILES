@@ -7,14 +7,19 @@ from rdkit.Chem import Mol
 from namepredict.tools import memo
 from namepredict.constants import C
 
-def kekulized(mol: Mol) -> Mol | None:
-    """返回 Kekulize 并清芳香标志后的分子副本；失败返 None。"""
+def _kekulize_uncached(mol: Mol) -> Mol | None:
+    """Kekulize 并清芳香标志的分子副本；失败返 None。"""
     kek = Chem.Mol(mol)
     try:
         Chem.Kekulize(kek, clearAromaticFlags=True)
     except Exception:
         return None
     return kek
+
+
+def kekulized(mol: Mol) -> Mol | None:
+    """分子的 Kekulize 副本（各层统一入口，按分子记忆）；失败返 None。"""
+    return memo.by_mol("kekulized", _kekulize_uncached, mol)
 
 def sssr_rings(mol: Mol) -> list[tuple[int, ...]]:
     """分子的全部 SSSR 最小环原子序列（各层统一入口，按分子记忆）。"""
@@ -91,14 +96,11 @@ def _split_count(adj: dict[int, list[int]], removed: int) -> int:
     return count
 
 
-def _free_spiro_atoms(mol: Mol, rings: list[tuple[int, ...]], members: list[int],
+def _free_spiro_atoms(mol: Mol, atoms: set[int],
                       spiro_edges: list[tuple[int, int, int]]) -> tuple[int, ...]:
     """分量的自由螺原子：去掉后环子图断成 >=2 分量（P-24.1 自由螺连接）。"""
     if not spiro_edges:
         return ()
-    atoms: set[int] = set()
-    for i in members:
-        atoms |= set(rings[i])
     adj = {v: sorted(n.GetIdx() for n in mol.GetAtomWithIdx(v).GetNeighbors()
                      if n.GetIdx() in atoms) for v in atoms}
     out: list[int] = []
@@ -139,7 +141,7 @@ def _system_entry(
     mset = set(members)
     spiro_edges = [(i, j, s) for i, j, s in spiro_pairs if i in mset and j in mset]
     return _system_dict(atoms, members, edges, mol, spiro_edges,
-                        _free_spiro_atoms(mol, rings, members, spiro_edges))
+                        _free_spiro_atoms(mol, atoms, spiro_edges))
 
 
 

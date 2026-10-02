@@ -42,14 +42,17 @@ def derive_slot(mol: Mol, attach_parent: int) -> SideSlot:
     return SideSlot.OTHER
 
 
+def _owned_edges(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> list[tuple[int, int]]:
+    """组分原子到所有权集合的连接边 (owned 原子位次, 组分原子位次)。"""
+    return [(n.GetIdx(), a)
+            for a in atoms
+            for n in mol.GetAtomWithIdx(a).GetNeighbors()
+            if n.GetAtomicNum() != 1 and n.GetIdx() in owned]
+
+
 def _attach_parents_of(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> set[int]:
     """返回组分原子在所有权集合中的连接点集合。"""
-    out: set[int] = set()
-    for a in atoms:
-        for n in mol.GetAtomWithIdx(a).GetNeighbors():
-            if n.GetAtomicNum() != 1 and n.GetIdx() in owned:
-                out.add(n.GetIdx())
-    return out
+    return {n for n, _ in _owned_edges(mol, atoms, owned)}
 
 def claim_block(
     mol: Mol,
@@ -73,12 +76,7 @@ def _canonical_edge(
     mol: Mol, atoms: frozenset[int], owned: frozenset[int]
 ) -> tuple[int, int] | None:
     """所属与该组分之间最小（attach_parent, root）边。"""
-    edges = [
-        (n.GetIdx(), a)
-        for a in atoms
-        for n in mol.GetAtomWithIdx(a).GetNeighbors()
-        if n.GetAtomicNum() != 1 and n.GetIdx() in owned
-    ]
+    edges = _owned_edges(mol, atoms, owned)
     return min(edges) if edges else None
 
 def _has_dbl_o_edge(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> bool:
@@ -98,17 +96,14 @@ def _has_dbl_o_edge(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> b
 def _try_claim(
     mol: Mol, owned: frozenset[int], atoms: frozenset[int]
 ) -> ClaimedBlock | None:
-    """尝试为单一组分建立 claim 并返回其块。"""
-    edge = _canonical_edge(mol, atoms, owned)
-    if edge is None:
+    """尝试为单一组分建立 claim（atoms 已切分，不重切）；须恰好一个连接点。"""
+    edges = _owned_edges(mol, atoms, owned)
+    if not edges or len({n for n, _ in edges}) != 1:
         return None
     if _has_dbl_o_edge(mol, atoms, owned):
         return None
-    attach, root = edge
-    slot = derive_slot(mol, attach)
-    return claim_block(
-        mol, owned_atoms=owned, attach_parent=attach, root=root, slot=slot
-    )
+    attach, root = min(edges)
+    return ClaimedBlock(slot=derive_slot(mol, attach), attach_parent=attach, root=root, atoms=atoms)
 
 
 def _unique_components(mol: Mol, owned: frozenset[int]) -> list[frozenset[int]]:

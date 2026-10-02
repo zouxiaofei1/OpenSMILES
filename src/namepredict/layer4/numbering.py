@@ -19,6 +19,12 @@ def _fallback_hydro_atoms(parent: dict) -> frozenset:
     return carbons if len(carbons) != len(out) and len(carbons) in HYDRO_MULT_N else out
 
 
+def _locant_of(chain, labels):
+    """链原子 → 排序键闭包（按整体编号标签定位次）。"""
+    facts = {"labels": labels}
+    return lambda a: locant_key(str(atom_locant(chain, a, facts)))
+
+
 def _lowest_extra_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset:
     """把加氢位中最低位次改用指示氢表达 """
     if not hydro:
@@ -28,11 +34,7 @@ def _lowest_extra_to_indicated(packed: dict, labels, hydro: frozenset) -> frozen
     if mol is None or not chain:
         return hydro
     chain_set = set(chain)
-    facts = {"labels": labels}
-
-    def _key(a: int):
-        return locant_key(str(atom_locant(chain, a, facts)))
-
+    _key = _locant_of(chain, labels)
     hydro = set(hydro)
     sats = {a for a in set(saturated_ring_atoms(mol, chain_set)) | hydro if a in chain_set}
     indicated = sats - hydro  # 现行指示氢位（上游按元素切分后的剩余）
@@ -52,8 +54,7 @@ def _odd_hydro_to_indicated(packed: dict, labels, hydro: frozenset) -> frozenset
     chain = list(packed.get("chain") or ())
     if not chain or any(a not in chain for a in hydro):  # 位次表达不全，本层补救不了
         return hydro
-    facts = {"labels": labels}
-    lowest = min(hydro, key=lambda a: locant_key(str(atom_locant(chain, a, facts))))
+    lowest = min(hydro, key=_locant_of(chain, labels))
     return frozenset(hydro - {lowest})
 
 

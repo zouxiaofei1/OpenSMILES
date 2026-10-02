@@ -100,7 +100,8 @@ def normalize_acid_charge(mol: Mol) -> Mol:
         if not donors or not acceptors:
             break
         ranks = list(Chem.CanonicalRankAtoms(out))
-        donors.sort(key=lambda i: (-DONOR_KIND.index(_acid_kind_of_oh(out.GetAtomWithIdx(i))), ranks[i]))  # 供体：DONOR_KIND 序靠前优先，再取 rank 最小保确定性
+        kinds = {i: DONOR_KIND.index(_acid_kind_of_oh(out.GetAtomWithIdx(i))) for i in donors}  # 供体种类每原子只算一次
+        donors.sort(key=lambda i: (-kinds[i], ranks[i]))  # 供体：DONOR_KIND 序靠前优先，再取 rank 最小保确定性
         d_idx = donors[0]
         dfrag = frag_of[d_idx]
         same_frag = [i for i in acceptors if frag_of[i] == dfrag]

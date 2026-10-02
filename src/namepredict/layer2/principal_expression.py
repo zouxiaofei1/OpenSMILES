@@ -130,13 +130,9 @@ def _parent_dict(kind: str, skeleton: ParentSkeleton, occurrences, fields: dict,
 
 def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str | None:
     """按保留 scaffold 解析环 kind（稠环收敛为 alkane）。"""
-    if scaffold and scaffold.id != "carbocycle":
-        if scaffold.id == "benzene":
-            return "alkane"  # 苯环 kind 收敛 alkane，环系由 scaffold_id 承载
-        if scaffold.id == "fused_hetero":
-            return "alkane"  # 未注册稠环：kind 收敛 alkane，身份由 fused_tree 承载
-        return scaffold.id
-    return "alkane"
+    if scaffold and scaffold.id not in ("carbocycle", "benzene", "fused_hetero"):
+        return scaffold.id  # 其余保留骨架：kind 即 id
+    return "alkane"  # 碳环/苯环/未注册稠环：kind 收敛 alkane，身份由 scaffold_id 或 fused_tree 承载
 
 
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold, occurrences=()) -> str | None:
@@ -213,10 +209,9 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
             if hydro:
                 fields["hydro_atoms"] = hydro
     if scaffold is not None and scaffold.id in SPIRO_SCAFFOLDS:  # P-24：身份由螺环节点承载
-        fields["fbs_node" if scaffold.id == "fused_bridged_spiro" else "spiro_node"] = \
-            spiro[0] if spiro else None  # 空候选 → L4 显式失败，不得下沉 P-25
-        fields["fbs_nodes" if scaffold.id == "fused_bridged_spiro" else "spiro_nodes"] = \
-            tuple(spiro)
+        skey = "fbs" if scaffold.id == "fused_bridged_spiro" else "spiro"
+        fields[f"{skey}_node"] = spiro[0] if spiro else None  # 空候选 → L4 显式失败，不得下沉 P-25
+        fields[f"{skey}_nodes"] = tuple(spiro)
     elif bridged:  # P-23 桥环：身份由 bridged_node 承载，并列编号候选下传 L4（P-14.4 裁决）
         fields["bridged_node"] = bridged[0]
         fields["bridged_nodes"] = tuple(bridged)

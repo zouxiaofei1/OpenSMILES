@@ -228,11 +228,7 @@ def suffix_locant_set(numbered: dict) -> tuple:
     from namepredict.layer4.numbering_engine import _principal_atoms  # 函数内导入：避开 locant_calc ↔ numbering_engine 环
 
     parent = numbered.get("parent") or {}
-    chain = parent.get("chain") or []
-    labels = (parent.get("numbering_scaffold") or {}).get("labels") or []
-    facts = {"labels": labels}
-    locs = [loc for atom in _principal_atoms(parent)
-            if (loc := _atom_locant(chain, atom, facts)) is not None]
+    locs = _atom_locants(parent, _principal_atoms(parent))
     return tuple(sorted(locant_key(x) for x in locs))
 
 

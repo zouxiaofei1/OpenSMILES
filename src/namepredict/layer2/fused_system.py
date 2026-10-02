@@ -16,11 +16,6 @@ from namepredict.layer2.ring_scaffold import (
 from namepredict.layer1.ring_systems import sssr_rings
 from namepredict.layer4.numbering_engine import narrow
 
-_TEMPLATE_COUNTS: dict[str, Counter] = {  # 保留模板的元素计数
-    sid: Counter(q.GetAtomWithIdx(i).GetAtomicNum() for i in range(q.GetNumAtoms()))
-    for sid, q in _Q.items()
-}
-
 
 @dataclass(frozen=True)
 class FusedNode:
@@ -46,7 +41,6 @@ def _fusion_adj(ring_indices, fusion_edges) -> dict[int, set[int]]:
 
 def _candidates_for(info, rings, fusion_edges, ring_indices) -> dict[frozenset[int], tuple[str, frozenset[int]]]:
     """增长式枚举环集内的保留母体候选（原子集去重、超集剪枝）。"""
-    mol = info["mol"]
     adj = _fusion_adj(ring_indices, fusion_edges)
     out: dict[frozenset[int], tuple[str, frozenset[int]]] = {}
     for seed in sorted(ring_indices):

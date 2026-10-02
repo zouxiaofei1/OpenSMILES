@@ -6,26 +6,15 @@ parent["bridged_node"]，返回其位次升序原子表供下游当 chain 用。
 from __future__ import annotations
 
 from namepredict.layer4.numbering_engine import (
-    _locant_set, _principal_atoms, _unsat_bonds, alpha_locants, by_z, candidates,
-    hetero_atoms, narrow, narrow_by_senior, node_feature_key, pick_equivalent,
+    _locant_set, _principal_atoms, _unsat_bonds, alpha_locants, by_z,
+    narrow, narrow_by_senior, resolve_numbering,
 )
 
 
 def bridged_numbering(parent: dict, substituents: list) -> list[int] | None:
     """返回桥环骨架的位次升序原子表；候选不可判定时返回 None。"""
-    nodes = candidates(parent, "bridged_node")
-    chain = list(parent.get("chain") or ())
-    if not nodes or not chain:
-        return None
-    mol = parent.get("mol")
-    heteros = hetero_atoms(mol, chain)
-    nodes = _narrow_ladder(nodes, parent, substituents, mol, chain, heteros)
-    best = pick_equivalent(nodes, node_feature_key(mol, chain, parent, substituents,
-                                                  lambda nd: nd.locant_pairs))
-    if best is None:
-        return None
-    parent["bridged_node"] = best  # L5 依它取描述符与上标，须与选中的编号自洽
-    return sorted(best.numbering, key=best.numbering.get)
+    return resolve_numbering(parent, substituents, "bridged_node",
+                             lambda nd: nd.locant_pairs, _narrow_ladder)
 
 
 def _narrow_ladder(nodes: list, parent: dict, substituents: list, mol, chain: list[int],

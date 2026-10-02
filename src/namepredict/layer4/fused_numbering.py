@@ -99,7 +99,7 @@ def _boundary_walk(coords: dict, neighbors: dict, exterior: frozenset[frozenset[
     return walk
 
 
-def _assign_labels(walk: list[int], fused_carbons: set[int], mol) -> tuple[list[int], list[str]]:
+def _assign_labels(walk: list[int], fused_carbons: set[int]) -> tuple[list[int], list[str]]:
     """非稠合原子/稠合杂原子→下一数字; 稠合碳→紧邻前数字+a/b/c 递增。"""
     chain: list[int] = []
     labels: list[str] = []
@@ -123,11 +123,10 @@ def _hetero_set(mol, atoms: set[int]) -> set[int]:
     return {a for a in atoms if mol.GetAtomWithIdx(a).GetAtomicNum() != C}
 
 
-def _candidates(mol, rings, coords, fused: set[int]) -> list[tuple[list[int], list[str]]]:
+def _candidates(mol, rings, coords, fused: set[int],
+                neighbors, exterior) -> list[tuple[list[int], list[str]]]:
     """P-25.3.3.1.1 全部编号候选: 起点环与起点原子平局组合。"""
     fused_carbons = {a for a in fused if mol.GetAtomWithIdx(a).GetAtomicNum() == C}
-    neighbors = _ring_neighbors(rings)
-    exterior = _exterior_edges(rings)
     cands: list[tuple[list[int], list[str]]] = []
     for sr in _top_rings(coords, rings):
         starts = _top_atoms(coords, rings[sr], fused)
@@ -139,7 +138,7 @@ def _candidates(mol, rings, coords, fused: set[int]) -> list[tuple[list[int], li
                         break
         for s in starts:
             walk = _boundary_walk(coords, neighbors, exterior, s)
-            chain, labels = _assign_labels(walk, fused_carbons, mol)
+            chain, labels = _assign_labels(walk, fused_carbons)
             if chain:
                 cands.append((chain, labels))
     return cands
@@ -147,8 +146,7 @@ def _candidates(mol, rings, coords, fused: set[int]) -> list[tuple[list[int], li
 
 def _locant_tuples(chain: list[int], labels: list[str], atoms: list[int]) -> tuple:
     """候选编号下某原子集的位次元组(按 locant 键排序)。"""
-    locs = sorted((locant_key(labels[chain.index(a)]) for a in atoms if a in chain),
-                  key=lambda k: (k[0], k[1]))
+    locs = sorted(locant_key(labels[chain.index(a)]) for a in atoms if a in chain)
     return tuple(locs)
 
 
@@ -156,10 +154,13 @@ def number_fused_system(mol, rings, coords: list[dict], sub_layers=None,
                         alpha_subs=None) -> tuple[list[int], list[str]] | None:
     """P-25.3.3 稠环编号: 依(a)-(d) 收窄，返回候选或 None。"""
     fused = fused_atoms(rings)
-    heteros = _hetero_set(mol, fused) | _hetero_set(mol, set().union(*rings))
+    ring_atoms = set().union(*rings)
+    heteros = _hetero_set(mol, fused) | _hetero_set(mol, ring_atoms)
+    neighbors = _ring_neighbors(rings)  # 与坐标无关：按环集算一次
+    exterior = _exterior_edges(rings)
     cands: list[tuple[list[int], list[str]]] = []
     for c in coords:
-        cands.extend(_candidates(mol, rings, c, fused))
+        cands.extend(_candidates(mol, rings, c, fused, neighbors, exterior))
     if not cands:
         return None
     fused_carbons = sorted(a for a in fused if mol.GetAtomWithIdx(a).GetAtomicNum() == C)
@@ -176,7 +177,6 @@ def number_fused_system(mol, rings, coords: list[dict], sub_layers=None,
         cands = narrow(cands, lambda c: _locant_tuples(c[0], c[1], fused_carbons))  # (c) 低位次给稠合碳
     if fused_heteros:
         cands = narrow(cands, lambda c: _locant_tuples(c[0], c[1], fused_heteros))  # (d) 低位次给稠合杂原子
-    ring_atoms = set().union(*rings)
     ind_h_sats = sorted(saturated_ring_atoms(mol, ring_atoms))  # (f) 指示氢候选位：环内仅以单键连邻环原子且带 H 的饱和位
 
     def _as_indicated(cands):

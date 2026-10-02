@@ -5,6 +5,7 @@ from dataclasses import dataclass, replace
 from itertools import permutations
 
 from namepredict.layer1.ring_systems import sssr_rings
+from namepredict.layer2.ring_scaffold import _ring_kind
 from namepredict.layer4.numbering_engine import narrow
 
 _MAX_CYCLES = 256  # 桥图简单环枚举上限
@@ -347,7 +348,7 @@ def decompose_bridged_system(info: dict, system: dict) -> list[BridgedNode]:
     bridges = _bridges(adj, heads)
     if bridges is None or len(bridges) - len(heads) + 1 != r:
         return []
-    ring = "hetero" if any(mol.GetAtomWithIdx(i).GetAtomicNum() != 6 for i in atom_ids) else "carbo"
+    ring = _ring_kind(mol, atom_ids)
     nodes = [n for c in _candidates(bridges, heads)
              if (n := _to_node(c, bridges, atom_ids, ring, r)) is not None]
     nodes = [n for n in nodes if sum(n.descriptor) + 2 == len(n.atom_ids)]  # P-23.2.6.1.4

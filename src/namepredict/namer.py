@@ -16,7 +16,6 @@ from namepredict.layer0.salt import dissociate_salt
 from namepredict.layer1.analyzer import analyze
 from namepredict.layer2.parent_select import finalize_parent_ownership, select_parent
 from namepredict.layer3.substituent_extractor import extract_substituents
-from namepredict.layer3.substituent_namer import SubstituentName
 from namepredict.layer4.locant_calc import prefix_locant_set, suffix_locant_set
 from namepredict.layer4.numbering import number
 from namepredict.layer5.assembler import assemble

@@ -3,12 +3,11 @@ from __future__ import annotations
 
 import re
 
-from namepredict.layer1 import fg_registry as _fg_reg
 from namepredict.layer4.locant_calc import atom_locant, locant_str_sort
 from namepredict.tools.re import alpha_order_key
 from namepredict.constants import (
     BIS_EN, BIS_ZH, BRIDGE_DIATOMIC_ZH, BRIDGE_SPLIT_SUFFIX_EN, BRIDGE_SPLIT_SUFFIX_ZH,
-    BRIDGE_SUFFIX_EN, BRIDGE_SUFFIX_ZH, CATION_YL_STEMS, DIATOMIC_BRIDGE_YL, MULT_EN, MULT_ZH,
+    CATION_YL_STEMS, DIATOMIC_BRIDGE_YL, MULT_EN, MULT_ZH,
     N_LOCANT_KINDS, N_PREFIX_KINDS, OXO_CENTER_KINDS,
 )
 
@@ -118,31 +117,28 @@ def oxo_arm_fence(name: str, sub: dict, mol) -> bool:
     attach = sub.get("attach_idx")
     if not sub.get("paren") or mol is None or attach is None:
         return False
-    root = None  # 臂根：claim 原子中与附着原子成键者
-    for a in sub.get("atoms") or ():
-        try:
-            if mol.GetBondBetweenAtoms(int(a), int(attach)) is not None:
-                root = int(a)
-                break
-        except (ValueError, TypeError):
-            return False
-    if root is None:
-        return False
-    return mol.GetAtomWithIdx(root).IsInRing()
+    root = _root_atom(sub, mol)  # 臂根：claim 原子中与附着原子成键者
+    return root is not None and mol.GetAtomWithIdx(root).IsInRing()
 
 
 def _sub_root_in_ring(sub: dict, mol) -> bool:
     """取代基根原子（与附着原子成键者）是否在环上（P-16.5.1.2）。"""
+    root = _root_atom(sub, mol)
+    return root is not None and mol.GetAtomWithIdx(root).IsInRing()
+
+
+def _root_atom(sub: dict, mol) -> int | None:
+    """取代基根原子：claim 原子中与附着原子成键者；无则 None。"""
     attach = sub.get("attach_idx")
-    if attach is None:
-        return False
+    if attach is None or mol is None:
+        return None
     for a in sub.get("atoms") or ():
         try:
             if mol.GetBondBetweenAtoms(int(a), int(attach)) is not None:
-                return mol.GetAtomWithIdx(int(a)).IsInRing()
+                return int(a)
         except (ValueError, TypeError):
-            return False
-    return False
+            return None
+    return None
 
 
 def _enclose(s: str) -> str:
