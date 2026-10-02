@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import copy
 import time
+from collections import Counter
 
 from rdkit import Chem
 
 from namepredict.tools import memo
 from namepredict.tools.common_names import CommonNameCache
-from namepredict.constants import N_PREFIX_KINDS, OXO_CENTER_KINDS
+from namepredict.constants import BIS_EN, BIS_ZH, N_PREFIX_KINDS, OXO_CENTER_KINDS
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer0.salt import dissociate_salt
 from namepredict.layer1.analyzer import analyze
@@ -189,16 +190,30 @@ def _join_fragment_names(mol, result: NameResult, *, cache) -> tuple[str, str] |
     if pf is None:
         return None
     frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
-    en, zh = result.en or "", result.zh or ""
+    names: list[tuple[str, str]] = [(result.en or "", result.zh or "")]  # 母体名居首，其余按片段顺序
     for i, frag in enumerate(frags):
         if i == pf:
             continue
         sub = _name_mol(frag, cache=cache)
         if not sub.success or not (sub.en or "").strip() or not (sub.zh or "").strip():
             return None
-        en = f"{en} {sub.en}"
-        zh = f"{zh} {sub.zh}"
-    return en, zh
+        names.append((sub.en, sub.zh))
+    counts = Counter(n_en for n_en, _ in names)
+    seen: set[str] = set()
+    parts_en, parts_zh = [], []
+    for n_en, n_zh in names:
+        if n_en in seen:
+            continue
+        seen.add(n_en)
+        k = counts[n_en]
+        b_en, b_zh = BIS_EN.get(k), BIS_ZH.get(k)
+        if k > 1 and b_en and b_zh:  # 重复片段整体围栏加倍数（P-16.3.2）
+            parts_en.append(f"{b_en}({n_en})")
+            parts_zh.append(f"{b_zh}({n_zh})")
+            continue
+        parts_en.extend([n_en] * k)
+        parts_zh.extend([n_zh] * k)
+    return " ".join(parts_en), " ".join(parts_zh)
 
 
 def _name_mol(
