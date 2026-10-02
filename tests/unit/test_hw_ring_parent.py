@@ -13,7 +13,6 @@ RING_CASES = [
     # 小环与饱和环
     ("C1CSC1", "thietane", "硫杂环丁烷"),
     ("C1CCCCCCN1", "azocane", "氮杂环辛烷"),
-    ("C1CSCCN1", "1,4-thiazinane", "1,4-噻嗪烷"),
     ("C1CCCCOCC1", "oxocane", "氧杂环辛烷"),
     # 多杂原子：位次按引用顺序（P-22.2.2.1.3）
     ("C1COCSC1", "1,3-oxathiane", "1,3-氧杂硫杂环己烷"),
@@ -21,14 +20,15 @@ RING_CASES = [
     ("S1SSSSSSS1", "octathiocane", "八硫杂环辛烷"),
     # 应保留的（模板命中，生成器不得抢入）
     ("C1CCCCC1", "cyclohexane", "环己烷"),
+    ("C1CSCCN1", "thiomorpholine", "硫代吗啉"),
     ("C1COCO1", "1,3-dioxolane", "1,3-二氧戊环"),
     ("c1ccoc1", "furan", "呋喃"),
 ]
 
 FG_CASES = [
-    ("O=C(O)C1CSCCN1", "1,4-thiazinane-3-carboxylic acid", "1,4-噻嗪烷-3-羧酸"),
+    ("O=C(O)C1CSCCN1", "thiomorpholine-3-carboxylic acid", "硫代吗啉-3-羧酸"),
     ("C1CC(=O)NCCS1", "1,4-thiazepan-5-one", "1,4-硫杂氮杂环庚烷-5-酮"),
-    ("CN1CCSCC1", "4-methyl-1,4-thiazinane", "4-甲基-1,4-噻嗪烷"),
+    ("CN1CCSCC1", "4-methylthiomorpholine", "4-甲基硫代吗啉"),
 ]
 
 
