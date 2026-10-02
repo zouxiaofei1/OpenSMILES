@@ -836,7 +836,7 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         elif sid == "benzene" and kind == "amide" and parent.get("amide_z") == S:
             sc_variant = _benzene_retained("benzenecarbothioamide", "苯硫代甲酰胺")
         elif sid == "benzene" and kind == "amide" and parent.get("amide_z") == N:
-            sc_variant = _benzene_retained("benzenecarboximidamide", "苯甲亚氨酰胺")
+            sc_variant = _benzene_retained("benzenecarboximidamide", "苯甲脒")  # P-61.2 苯甲脒习用名
         else:
             sc_variant = _BENZENE_RETAINED[kind] if sid == "benzene" and kind in _BENZENE_RETAINED \
                 else (entry.variant or {}).get(sid)

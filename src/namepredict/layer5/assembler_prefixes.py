@@ -25,14 +25,17 @@ def _mult_rows(items: list, key_fn, zh_fn, sort_key=None) -> list[list]:
     return rows
 
 
-def _locant_str(subs: list) -> str:
-    """按位次排序拼接成逗号串；N-型取代基渲染为字母位次 N。"""
+def _locant_str(subs: list, primes: dict[int, int] | None = None) -> str:
+    """按位次排序拼接成逗号串；N-型取代基渲染为字母位次 N（带撇号）。"""
     tokens = []
     for s in subs:
         if "locant" not in s:
             continue
         kind = s.get("kind") or ""
-        tokens.append("N" if kind in N_PREFIX_KINDS else s["locant"])
+        if kind in N_PREFIX_KINDS:  # C/N 同名基混编时 N 侧仍须按引用序带 N′（P-14.5）
+            tokens.append("N" + "'" * ((primes or {}).get(s.get("attach_idx"), 0)))
+        else:
+            tokens.append(s["locant"])
     return ",".join(str(x) for x in locant_str_sort(tokens))
 
 _DIGIT_RE = re.compile(r"\d")  # 取代基名中的位次数字
@@ -152,13 +155,14 @@ def _wrap_stem(stem: str, need: bool) -> str:
     return _enclose(stem) if need else stem
 
 
-def _place(mult: str, s: str, subs: list, omit: bool) -> str:
+def _place(mult: str, s: str, subs: list, omit: bool,
+           primes: dict[int, int] | None = None) -> str:
     """拼数量前缀与词干体：位次省略时直接相接，否则位次串以连字符前置。"""
     if omit:
         if mult and s[:1].isdigit():  # 倍数前缀不得与位次数字直连（P-16.3.2：bis(3-…)，非 bis3-…）
             return f"{mult}({s})"
         return f"{mult}{s}"
-    return f"{_locant_str(subs)}-{mult}{s}"
+    return f"{_locant_str(subs, primes)}-{mult}{s}"
 
 # 取代基名以带位次的立体描述符开头：(1Z)-、(2R,4R)-。与 tools.re._STEREO_LEAD_STRIP_RE 不同——
 # 那份供 P-14.5 排序剥除、允许无位次，本份供围栏判定、要求每位次带 token，勿互换。
@@ -268,7 +272,7 @@ def _bridge_body(base: str, suf: str, merge: bool = False) -> str:
 
 
 def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
-                   flat: bool = False) -> str:
+                   flat: bool = False, primes: dict[int, int] | None = None) -> str:
     """拼单个英文前缀：数量 + 词干（可省略位次时省略 locant）。"""
     mult = _mult_of("en", stem, subs, len(subs))
     need = (_stem_needs_paren(stem, subs, omit, flat)
@@ -284,9 +288,9 @@ def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
             merge = tail_sep and sp[1] in _BRIDGE_SELF_FENCE and "[" in sp[0]
             body = _bridge_body(*sp, merge=merge)
             if len(subs) > 1 and mult in (MULT_EN.get(len(subs)), BIS_EN.get(len(subs))):
-                return _place(BIS_EN.get(len(subs), mult), _enclose(body), subs, omit)  # 桥后缀留在围栏外：倍数组须整体围栏（P-16.3.2）
-            return _place(mult, body, subs, omit)
-    return _place(mult, _wrap_stem(stem, need), subs, omit)
+                return _place(BIS_EN.get(len(subs), mult), _enclose(body), subs, omit, primes)  # 桥后缀留在围栏外：倍数组须整体围栏（P-16.3.2）
+            return _place(mult, body, subs, omit, primes)
+    return _place(mult, _wrap_stem(stem, need), subs, omit, primes)
 
 _COMPLEX_MULT_LANG = {"en": ("carboxy", BIS_EN, MULT_EN), "zh": ("羧", BIS_ZH, MULT_ZH)}
 
@@ -326,7 +330,8 @@ def _zh_front_ji(zh_stem: str, sp: tuple[str, str]) -> tuple[str, str] | None:
 
 
 def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
-                   en_stem: str = "", tail_sep: bool = False, flat: bool = False) -> str:
+                   en_stem: str = "", tail_sep: bool = False, flat: bool = False,
+                   primes: dict[int, int] | None = None) -> str:
     """拼单个中文前缀：数量 + 词干（CF3 特例：简单氟代甲基不加括号）。"""
     mult = _mult_of("zh", zh_stem, subs, len(subs))
     en = subs[0].get("en") or ""
@@ -350,8 +355,8 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
         if sp is not None:  # 与英文侧同形：桥后缀留括号外（P-63.2.2.1.1）
             en_sp = _split_bridge_suffix(en_stem)
             merge = tail_sep and bool(en_sp) and en_sp[1] in _BRIDGE_SELF_FENCE and "[" in en_sp[0]
-            return _place(mult, _bridge_body(*sp, merge=merge), subs, omit)
-    return _place(mult, _wrap_stem(zh_stem, need), subs, omit)
+            return _place(mult, _bridge_body(*sp, merge=merge), subs, omit, primes)
+    return _place(mult, _wrap_stem(zh_stem, need), subs, omit, primes)
 
 
 def _n_prefix(lang: str, n: int, stem: str, tokens: list[str], subs: list) -> str:
@@ -394,8 +399,8 @@ def _parts_for_stem(stem: str, subs: list, omit: bool, primes: dict[int, int] | 
         tokens = sorted(("N" + "'" * ((primes or {}).get(s.get("attach_idx"), 0))) for s in subs)  # 同 N 用 N,N-；跨不同 N 用 N,N'-
         return (_n_prefix("en", len(subs), s_en, tokens, subs),
                 _n_prefix("zh", len(subs), s_zh, tokens, subs))
-    return (_prefix_one_en(stem, subs, omit, tail_sep, flat),
-            _prefix_one_zh(zh_stem, subs, omit, stem, tail_sep, flat))
+    return (_prefix_one_en(stem, subs, omit, tail_sep, flat, primes),
+            _prefix_one_zh(zh_stem, subs, omit, stem, tail_sep, flat, primes))
 
 
 def _n_prime_map(groups: dict[str, list], stems: list[str]) -> dict[int, int]:
