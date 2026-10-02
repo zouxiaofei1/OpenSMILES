@@ -102,7 +102,8 @@ _REGISTRY: dict[str, RetainedSubstituent] = {
     "hydrazinyl": RetainedSubstituent("hydrazinyl", "肼基", anchored=("*NN",), paren=False),
     "anilino": RetainedSubstituent("anilino", "苯胺基", anchored=("*Nc1ccccc1",), paren=False),
     "diazenyl": RetainedSubstituent("diazenyl", "二氮烯基", anchored=("*N=N",), paren=False),
-    "diazo": RetainedSubstituent("diazo", "重氮基", anchored=("*[N+]=[N-]",), paren=False),
+    "diazo": RetainedSubstituent("diazo", "重氮基", anchored=("*=[N+]=[N-]",), paren=False),  # P-66.3：重氮基 C=N+=N-，取代体碳以双键连 N+（原单键锚不可达）
+    "diazonio": RetainedSubstituent("diazonio", "重氮鎓基", anchored=("*[N+]#N",), paren=False),  # P-65.3：重氮鎓 Ar-N2+，N+ 直连母体作 diazonio 前缀
     "cyano": RetainedSubstituent("cyano", "氰基", anchored=("*C#N",), paren=False),
     "isocyano": RetainedSubstituent("isocyano", "异氰基", anchored=("*[N+]#[C-]",), paren=False),
 }
