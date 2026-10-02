@@ -48,6 +48,14 @@ def _frag_role(mol: Mol) -> tuple[str, str, str] | None:
     return None
 
 
+def _is_halide_ion(mol: Mol) -> bool:
+    """片段是否为单原子卤离子 X⁻。"""
+    if mol.GetNumAtoms() != 1:
+        return False
+    a = mol.GetAtomWithIdx(0)
+    return a.GetAtomicNum() in HALO_Z and a.GetFormalCharge() == -1
+
+
 def _mult_word(base: str | None, n: int, mult: dict) -> str | None:
     """按份数给基名加数量前缀（n=1 不加）；缺词表返回 None。"""
     if not base:
@@ -85,7 +93,12 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
         meta = {"metal": metals[0][0], "metal_zh": metals[0][1],
                 "n_metal": len(metals), "n_org": n_org}
     elif anions:  # 卤素/多原子阴离子 X⁻：有机物须为阳离子（P-71.2 有机阳离子 + 阴离子）
-        if hx or len(set(anions)) != 1 or charge <= 0:
+        if hx or len(set(anions)) != 1:
+            return None
+        # 中性单有机片段 + 单一卤离子：按卤化物后缀命名（P-71.2/表 2.7 加成物式）
+        neutral_halide = (charge == 0 and n_org == 1 and len(anions) == 1
+                          and any(_is_halide_ion(f) for f in frags))
+        if charge <= 0 and not neutral_halide:
             return None
         en = _mult_word(anions[0][0], len(anions), MULT_EN)
         zh = _mult_word(anions[0][1], len(anions), MULT_ZH)
