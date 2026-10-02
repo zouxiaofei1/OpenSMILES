@@ -9,7 +9,7 @@ from rdkit.Chem import Mol
 from namepredict.tools import memo
 from namepredict.constants import Al, As, B, Bi, C, Ga, Ge, In, N, O, P, Pb, S, Sb, Se, Si, Sn, Te, Tl
 from namepredict.layer1.functional_group_inventory import (
-    FunctionalGroupClass, FunctionalGroupOccurrence, inventory_from_info,
+    OXO_FG_CLASSES, FunctionalGroupClass, FunctionalGroupOccurrence, inventory_from_info,
 )
 from namepredict.layer2.chain_walk import _all_chains_through, _chain_through_two, _longest_chain
 from namepredict.layer1.ring_systems import sssr_rings
@@ -82,6 +82,9 @@ def _chain_coverage(chain: list[int], occurrences) -> frozenset[str]:
     return frozenset(out)
 
 
+_RING_AS_SUBSTITUENT_KINDS = frozenset({"boronic", "phosphonate"})  # 中心母体优先于环的含氧酸 kind
+
+
 def _ring_attaches(mol: Mol, ring: set[int], occurrence: FunctionalGroupOccurrence) -> bool:
     """判断 occurrence 是否附着于环（胺/醇/硫醇/酮/自由基只认直接附着）。"""
     if occurrence.parent_anchors & ring:
@@ -89,6 +92,11 @@ def _ring_attaches(mol: Mol, ring: set[int], occurrence: FunctionalGroupOccurren
     if occurrence.group_class in (FunctionalGroupClass.AMINE, FunctionalGroupClass.ALCOHOL, FunctionalGroupClass.THIOL,
                                   FunctionalGroupClass.RADICAL, FunctionalGroupClass.KETONE):
         return False  # 隔碳的 SH 不能作环的后缀（P-63.1.5 同醇），只作 sulfanyl 前缀
+    if (occurrence.group_class in OXO_FG_CLASSES
+            and all(mol.GetAtomWithIdx(a).GetAtomicNum() == C for a in occurrence.parent_anchors)):
+        return False  # 碳锚定含氧酸/磺酰胺：锚碳在环外时环不作母体，桥碳入母体链（P-65.3.1 取代式）
+    if (occurrence.payload or {}).get("oxo_kind") in _RING_AS_SUBSTITUENT_KINDS:
+        return False  # 硼酸/膦酸：环一律退为取代基，中心自任母体（P-68.2.1）
     return any(n.GetIdx() in ring for a in occurrence.parent_anchors for n in mol.GetAtomWithIdx(a).GetNeighbors())
 
 
