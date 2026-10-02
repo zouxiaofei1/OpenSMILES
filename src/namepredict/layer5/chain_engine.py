@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import KW_ONLY, dataclass, replace
 from namepredict.layer5.stems import _en_stem, alkane_en, alkane_zh, zh_stem
 from namepredict.layer5.stereo import _ez_prefix, _split_stereo_lead, ez_for_parent
-from namepredict.constants import CHAIN_RETAINED, Cl, EXO_RING_SUF, MULT_EN, MULT_ZH, HALIDE_EN, HALO_ZH
+from namepredict.constants import CHAIN_RETAINED, Cl, EXO_RING_SUF, MULT_EN, MULT_ZH, HALIDE_EN, HALO_ZH, N, S
 
 def _omit_term_locant(n: int, loc: int | None, omit: bool) -> bool:
     """端位/默认位次省略判定：omit、无位次或 C1–C2 的 1 位。"""
@@ -329,6 +329,10 @@ def _exo_ring_spec(spec: "_Chain", n: int, numbered: dict) -> "_Chain":
     parent = numbered.get("parent") or {}
     if suf is not None and spec.kind == "ester" and parent.get("thio_side"):  # P-65.6.3.3.7.1 环外硫代羧酸 S-酯
         suf = (("carbothioate", "硫代甲酸"), None)
+    if suf is not None and spec.kind == "amide" and parent.get("amide_z") == S:  # P-43 类 16：环外硫代酰胺
+        suf = (("carbothioamide", "硫代甲酰胺"), ("carbothioamide", "硫代甲酰胺"))
+    elif suf is not None and spec.kind == "amide" and parent.get("amide_z") == N:  # P-43 类 17：环外脒
+        suf = (("carboximidamide", "亚氨酰胺"), ("carboximidamide", "亚氨酰胺"))
     facts = parent.get("principal_expression_facts")
     if suf is None or facts is None or facts.relation.value != "exocyclic":
         return spec

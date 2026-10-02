@@ -158,6 +158,14 @@ def _table_hit(mol: Mol, atoms: frozenset[int], attach_old: int | None) -> str |
     return _ANCHOR_INDEX.get(key)
 
 
+def _attached_via_carbon(mol: Mol, atoms: frozenset[int], attach_old: int | None) -> bool:
+    """块连接原子的块外邻居是否为碳（经碳连母体）。"""
+    if attach_old is None:
+        return False
+    return any(nb.GetAtomicNum() == C and nb.GetIdx() not in atoms
+               for nb in mol.GetAtomWithIdx(attach_old).GetNeighbors())
+
+
 def _ester_o_side(mol: Mol, atoms: frozenset[int], attach_old: int) -> tuple[frozenset[int], int] | None:
     """块恰为 -C(=O)-O-R（连接点=羰基碳）时返回 (O 侧原子集, 单键氧)，否则 None。"""
     at = mol.GetAtomWithIdx(attach_old)
@@ -234,6 +242,9 @@ def anchored_lookup(
     """查找取代基原子集，返回 (en, zh, paren)；无命中返回 None。"""
     reg_key = _table_hit(mol, atoms, attach_old)
     if reg_key is not None:
+        # P-34：-C(=NH)NH2 经碳连母体取 carbamimidoyl；经 N 连（胍亚氨基桥）仍用 diaminomethylidene
+        if reg_key == "diaminomethylidene" and _attached_via_carbon(mol, atoms, attach_old):
+            return "carbamimidoyl", "氨基甲亚氨酰基", False
         en, zh = resolve_name(reg_key)
         return en, zh, _REGISTRY[reg_key].paren
     if attach_old is None:

@@ -6,7 +6,7 @@ from enum import Enum
 
 from namepredict.constants import (
     CATION_FREE_STEMS, HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES,
-    NITROGEN_STEM_BY_FREE_DOUBLE,
+    N, NITROGEN_STEM_BY_FREE_DOUBLE,
     O, OXO_CENTER_KINDS, PHOSPHORUS_STEM_BY_OXO, S, SULFUR_STEM_BY_OXO,
     cation_parent_names,
 )
@@ -265,6 +265,8 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
               **_chain_unsat_fields(info, skeleton,
                                     _scaffold_fields(info, skeleton, facts, scaffold,
                                                      fused_tree, bridged, spiro))}  # 补环内不饱和字段（烯/炔由 double_bond 等承载）
+    if kind == "amide":
+        fields = _amide_fields(info, occurrences, fields)
     free_order = _radical_free_order(info, occurrences) if kind == "radical" else 0
     if free_order > 1:  # 环上碳锚点自由价非单键（*=C1CCCC1 / *#C1CCCC1）：链引擎出 -ylidene/-ylidyne
         fields = {**fields, "free_valence_order": free_order}
@@ -456,6 +458,20 @@ def _chain_acyl_halide_fields(info: dict, occurrences, fields: dict) -> dict:
     return {**fields, "hal_idx": hal, "hal_z": mol.GetAtomWithIdx(hal).GetAtomicNum()}
 
 
+def _amide_fields(info: dict, occurrences, fields: dict) -> dict:
+    """酰胺母体双键杂原子元素：=S/=N 时供 L5 切换 thioamide/imidamide 词尾（P-43 类 16/17）。"""
+    mol = info.get("mol")
+    if mol is None:
+        return fields
+    for o in occurrences:
+        c = mol.GetAtomWithIdx(int(o.payload.get("center_idx")))
+        for nb in c.GetNeighbors():
+            b = mol.GetBondBetweenAtoms(c.GetIdx(), nb.GetIdx())
+            if b.GetBondTypeAsDouble() == 2.0 and nb.GetAtomicNum() in (N, S):
+                return {**fields, "amide_z": nb.GetAtomicNum()}
+    return fields
+
+
 def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
                             skeleton: ParentSkeleton) -> dict | None:
     """链骨架：表达主基团并生成母体 dict（不支持返回 None）。"""
@@ -485,6 +501,8 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         fields = _chain_ester_fields(info, occurrences, fields)
     elif kind == "acyl_halide":
         fields = _chain_acyl_halide_fields(info, occurrences, fields)
+    elif kind == "amide":
+        fields = _amide_fields(info, occurrences, fields)
     elif selection.group_class in OXO_FG_CLASSES:
         fields = _chain_oxoacid_fields(info, occurrences, fields)
         if fields is None:

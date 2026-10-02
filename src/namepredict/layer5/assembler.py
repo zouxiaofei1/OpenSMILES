@@ -757,12 +757,12 @@ def _c1_retained(numbered: dict) -> tuple[str, str] | None:
     if kind == "amide" and len(sgl_n) == 2 and dbl.get(O) is not None:
         parent["locant_kind"] = _urea_subs(numbered, sgl_n, ("1", "3")) and "urea"
         return "urea", "脲"
-    if kind == "amine" and len(sgl_n) == 2 and dbl.get(S) is not None:
+    if kind in ("amine", "amide") and len(sgl_n) == 2 and dbl.get(S) is not None:
         numbered["substituents"] = [s for s in (numbered.get("substituents") or [])
                                     if not _is_dbl_hetero_sub(mol, s, dbl[S])]
         parent["locant_kind"] = _urea_subs(numbered, sgl_n, ("1", "3")) and "thiourea"
         return "thiourea", "硫脲"
-    if kind == "amine" and len(sgl_n) == 2 and dbl.get(N) is not None:
+    if kind in ("amine", "amide") and len(sgl_n) == 2 and dbl.get(N) is not None:
         imine_n = dbl[N]
         kept: list[dict] = []
         n_imine = 0
@@ -805,6 +805,12 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         if kind == "ester" and parent.get("thio_side"):  # P-65.6.3.3.7.1 硫代羧酸 S-酯：thioate/硫酯词尾，无 C1/C2 保留名
             entry = replace(entry, coda="ane", en_suf="thioate", zh_suf="硫",
                             ene_base=("enethioate", "烯硫"), yne_suf=("ynethioate", "炔硫"), variant=None)
+        if kind == "amide" and parent.get("amide_z"):  # P-43 类 16/17：=S/=N 置换改用硫代酰胺/亚氨酰胺词尾
+            z = parent["amide_z"]
+            if z == S:
+                entry = replace(entry, en_suf="thioamide", zh_suf="硫代酰胺", coda="ane", variant=None)
+            elif z == N:
+                entry = replace(entry, en_suf="imidamide", zh_suf="亚氨酰胺", variant=None)
         sid = parent.get("scaffold_id")
         if kind == "alkane" and parent.get("fused_tree") and sid != "benzene":  # 未注册稠环无 FG：词干注入已完成，返回稠合 base 名
             return _parent_stem_names(numbered)
@@ -823,6 +829,10 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         # 苯环单 FG 取 scaffold 专属保留名（P-61.2 表）；环外硫代羧酸 S-酯走 carbothioate 词干。
         if sid == "benzene" and kind == "ester" and parent.get("thio_side"):
             sc_variant = _benzene_retained("benzenecarbothioate", "苯硫代甲酸")
+        elif sid == "benzene" and kind == "amide" and parent.get("amide_z") == S:
+            sc_variant = _benzene_retained("benzenecarbothioamide", "苯硫代甲酰胺")
+        elif sid == "benzene" and kind == "amide" and parent.get("amide_z") == N:
+            sc_variant = _benzene_retained("benzenecarboximidamide", "苯甲亚氨酰胺")
         else:
             sc_variant = _BENZENE_RETAINED[kind] if sid == "benzene" and kind in _BENZENE_RETAINED \
                 else (entry.variant or {}).get(sid)
