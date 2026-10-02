@@ -53,12 +53,12 @@ def _fusion_letter(parent_chain, shared) -> str | None:
     return chr(97 + i)
 
 
-def _fusion_numbers(child_chain, child_labels, parent_chain, shared) -> tuple:
+def _fusion_numbers(child_chain, child_labels, parent_chain, shared) -> tuple | None:
     """附加组分共享原子位次(顺序沿母体低位次端→高位次端)。"""
     labels = dict(zip(child_chain, child_labels))
     shared = [a for a in shared if a in labels]
     if len(shared) != 2:
-        return ()
+        return None  # 位次缺失即判失败，交由上层回退，勿吐出 [-字母] 畸形名
     ordered = sorted(shared, key=lambda a: parent_chain.index(a))
     return tuple(labels[a] for a in ordered)
 
@@ -88,9 +88,9 @@ def _fused_one(mol, parent_node, child_node, rings, fusion_edges) -> tuple[str, 
     for sh in child_node.fusion_shared:
         letter = _fusion_letter(parent_chain, sh)
         numbers = _fusion_numbers(child_chain, child_labels, parent_chain, sh)
-        if letter:
+        if letter and numbers:
             break
-    if not letter:
+    if not letter or not numbers:
         return None
     desc = f"[{','.join(map(str, numbers))}-{letter}]"
     return prefix[0] + desc, prefix[1] + desc

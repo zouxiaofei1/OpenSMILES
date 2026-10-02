@@ -120,6 +120,8 @@ MULT_ZH = {n: (zh_numeral(n) or "") for n in range(1, 100)}
 
 def zh_bridge_root(name: str) -> str:
     """桥后缀（氨基/氧基/硫基）前的中文烃基名去尾「基」。"""
+    if name.endswith("羰基"):
+        return name  # 羰基/甲氧羰基等酰基名保留「基」：金标作羰基氨基而非羰氨基
     return name[:-1] if name.endswith("基") else name
 
 AMIDO_RETAINED = {  # P-66.1.1.4.3
