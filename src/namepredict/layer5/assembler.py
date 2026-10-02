@@ -1008,6 +1008,43 @@ def join_kind_name(
     return en, zh
 
 
+_CHALCOGEN_NITRILE_TAIL = {"sulfanyl": ("thiocyanate", "硫氰酸", "硫基"), "oxy": ("cyanate", "氰酸", "氧基")}  # P-65.6.3.1：R-S-C#N / R-O-C#N 按官能母体「R (thio)cyanate」
+
+
+def _strip_nitrile_tail(name: str, tail: str, suffix: str) -> str | None:
+    """从 `<R><tail><suffix>` 或 `[<R><tail>]<suffix>` 取出已按 L5 规则围栏的 R 段。"""
+    for closes in ("]", ")", ""):
+        body = f"{tail}{closes}{suffix}"
+        if name.endswith(body):
+            r = name[: -len(body)]
+            return r[1:] if closes and r.startswith(("[", "(")) else r
+    return None
+
+
+def _chalcogen_nitrile_alias(en: str, zh: str, numbered: dict) -> tuple[str, str]:
+    """腈碳唯一重邻居为 S/O 时改按官能母体名 R (thio)cyanate 表达（P-65.6.3.1）。"""
+    parent = (numbered or {}).get("parent") or {}
+    if parent.get("kind") != "nitrile" or int(parent.get("n_carbons") or 0) != 1:
+        return en, zh
+    subs = numbered.get("substituents") or []
+    if len(subs) != 1:  # 单取代基且取代基名尾即桥元素，方为 R-X-C#N
+        return en, zh
+    s_en = (subs[0].get("en") or "").strip()
+    tail = next((t for t in _CHALCOGEN_NITRILE_TAIL if s_en.endswith(t)), None)
+    if tail is None:
+        return en, zh
+    tail_en, tail_zh, zh_bridge = _CHALCOGEN_NITRILE_TAIL[tail]
+    r_en = _strip_nitrile_tail(en, tail, "formonitrile")
+    r_zh = _strip_nitrile_tail(zh, zh_bridge, "甲腈")
+    if not r_en or not r_zh:
+        return en, zh
+    if tail == "oxy" and not r_en.endswith(("yl", ")", "]")):  # 烷氧基名去 -oxy 补 -yl：methoxy → methyl（复合基已自带 -yl）
+        r_en += "yl"
+    if _STEREO_LEAD_ENCLOSE_RE.match(r_en) or (r_en[:1].isdigit() and "[" in r_en):  # 前导立体描述符/位次+内层方括号的 R 段须整体围栏（P-16.5.1.3.1）
+        r_en = f"[{r_en}]"
+    return f"{r_en} {tail_en}", f"{tail_zh}{r_zh}酯"
+
+
 def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
     """环被取代时，中文保留名 1H- 母体补加 1H- 前缀。"""
     if not prefix or not en_parent.startswith("1H-") or zh_parent.startswith("1H-"):
@@ -1112,7 +1149,7 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     joined = join_kind_name(kind, _prefix_for(numbered, kind, n), names, numbered)
     if joined is None:
         return _unsupported(n, kind)
-    en, zh = joined
+    en, zh = _chalcogen_nitrile_alias(joined[0], joined[1], numbered)
     en, zh = join_anion_names(numbered, en, zh)
     en, zh = join_ez_prefix(numbered, en, zh)   # 母体外挂双键的 E/Z 先补，再由 R/S 归并排序
     en, zh = join_rs_prefix(numbered, en, zh)

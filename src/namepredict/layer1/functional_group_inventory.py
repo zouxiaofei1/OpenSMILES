@@ -62,7 +62,7 @@ _FG_KEYS = tuple(sp.fg for sp in FG_SPECS)  # FG 类别注册唯一事实来源�
 
 _ANCHOR_KEYS = {FunctionalGroupClass(sp.fg): sp.anchors for sp in FG_SPECS if sp.anchors}  # 锚点 key（occurrence payload）：只有声明 anchors 的 FG 才收集；胺含多臂锚点（P-62.2）。
 
-from namepredict.constants import C, O
+from namepredict.constants import C, N, O
 
 
 def _idx(payload: dict, key: str) -> int | None:
@@ -96,10 +96,27 @@ def _cation_atoms(mol, payload: dict) -> set[int]:
     return {center} if center is not None else set()
 
 
+def _nitrile_atoms(mol, payload: dict) -> set[int]:
+    """腈：特征原子只含腈碳与其三键氮，R 侧连接原子留给取代基/链（P-66.1.5）。"""
+    from rdkit.Chem import BondType
+
+    center = _idx(payload, "center_idx")
+    if center is None or mol is None:
+        return set()
+    out = {center}
+    for nb in mol.GetAtomWithIdx(center).GetNeighbors():
+        if nb.GetAtomicNum() != N:
+            continue
+        if mol.GetBondBetweenAtoms(center, nb.GetIdx()).GetBondType() == BondType.TRIPLE:
+            out.add(nb.GetIdx())
+    return out
+
+
 FG_ATOM_FNS = {  # 不走通用规则的例外类别
     "oxoacid": _oxoacid_atoms,
     "sulfonamide": _oxoacid_atoms,  # 含氧酸合一类的 P-41 酰胺分组，特征原子同一判据
     "cation": _cation_atoms,  # 单核母体阳离子作母体时只占一个原子（P-73.1.1）
+    "nitrile": _nitrile_atoms,  # 腈的 R 侧连接原子不并入所有权（P-66.1.5）
 }
 
 def _indices(payload: dict, keys: tuple[str, ...]) -> frozenset[int]:

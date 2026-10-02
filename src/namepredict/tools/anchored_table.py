@@ -33,6 +33,8 @@ _REGISTRY: dict[str, RetainedSubstituent] = {
     "oxo": RetainedSubstituent("oxo", "氧代", anchored=("*=O",), paren=False),
     "isocyanato": RetainedSubstituent("isocyanato", "异氰酸基", anchored=("*N=C=O",), paren=False),
     "isothiocyanato": RetainedSubstituent("isothiocyanato", "异硫氰酸基", anchored=("*N=C=S",), paren=False),
+    "cyanato": RetainedSubstituent("cyanato", "氰氧基", anchored=("*OC#N",), paren=False),  # P-67.1.4.2：-O-C#N 由 cyanic acid 衍生的取代基前缀
+    "thiocyanato": RetainedSubstituent("thiocyanato", "硫氰基", anchored=("*SC#N",), paren=False),  # P-67.1.4.2：-S-C#N 由 thiocyanic acid 衍生的取代基前缀
     "methyl": RetainedSubstituent("methyl", "甲基", anchored=("*C",), paren=False),
     "methylidene": RetainedSubstituent("methylidene", "亚甲基", anchored=("*=C",), paren=False),
     "ethylidene": RetainedSubstituent("ethylidene", "亚乙基", anchored=("*=CC",), paren=False),
@@ -62,6 +64,7 @@ _REGISTRY: dict[str, RetainedSubstituent] = {
     "sulfanyl": RetainedSubstituent("sulfanyl", "硫基", anchored=("*S",), paren=False),  # -SH 端点与 -S- 桥共用「硫基」，不按取代基语境分化
     "sulfido": RetainedSubstituent("sulfido", "硫代", anchored=("*[S-]",), paren=False),  # 去质子硫醇负离子（P-66.1.1.4 阴离子前缀）
     "selanyl": RetainedSubstituent("selanyl", "氢硒基", anchored=("*[SeH]",), paren=False),
+    "methylselanyl": RetainedSubstituent("methylselanyl", "甲硒基", anchored=("*[Se]C",), paren=False),  # P-63.2 同类硫的 methylsulfanyl 对应的硒类似物
     "methylsulfinyl": RetainedSubstituent("methylsulfinyl", "甲基亚磺酰", anchored=("*S(C)=O",), paren=False),
     "methylsulfonyl": RetainedSubstituent("methylsulfonyl", "甲磺酰基", anchored=("*S(C)(=O)=O",), paren=False),
     "methanesulfonamido": RetainedSubstituent("methanesulfonamido", "甲磺酰胺基", anchored=("*NS(C)(=O)=O",), paren=True),  # P-66.1.1.4.3：甲磺酰基的 N-酰基残基作前缀
@@ -86,6 +89,10 @@ _REGISTRY: dict[str, RetainedSubstituent] = {
     "phosphonatooxy": RetainedSubstituent("phosphonatooxy", "膦酸氧基", anchored=("*OP(=O)([O-])O", "*OP(=O)([O-])[O-]"), paren=False),
     "phosphonooxymethyl": RetainedSubstituent("phosphonooxymethyl", "膦酸氧甲基", anchored=("*COP(=O)(O)O",), paren=True),
     "phosphonatooxymethyl": RetainedSubstituent("phosphonatooxymethyl", "膦酸氧甲基", anchored=("*COP(=O)([O-])O",), paren=True),
+    "borono": RetainedSubstituent("borono", "硼酸", anchored=("*B(O)O",), paren=False),  # P-67.1.4.2：-B(OH)2 预选前缀 borono
+    "trimethylsilyl": RetainedSubstituent("trimethylsilyl", "三甲基甲硅烷基", anchored=("*[Si](C)(C)C",), paren=False),  # P-67.1.4.2：-Si(CH3)3 由 silane 衍生
+    "difluoroboranyl": RetainedSubstituent("difluoroboranyl", "二氟硼烷基", anchored=("*B(F)F",), paren=False),  # P-68：-BF2 由 borane 衍生的 boranyl 前缀
+    "diphenylboranyl": RetainedSubstituent("diphenylboranyl", "二苯基硼烷基", anchored=("*B(c1ccccc1)c1ccccc1",), paren=False),  # P-68 例：bis(diphenylboranyl)
     "formyl": RetainedSubstituent("formyl", "甲酰基", anchored=("*C=O",), paren=False),
     "carboxymethyl": RetainedSubstituent("carboxymethyl", "羧甲基", anchored=("*CC(=O)O",), paren=True),
     "hydroxymethyl": RetainedSubstituent("hydroxymethyl", "羟甲基", anchored=("*CO",), paren=True),
