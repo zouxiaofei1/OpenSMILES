@@ -1123,7 +1123,7 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
     if "ium" in en:
         return names
     charged = [a.GetIdx() for a in mol.GetAtoms()
-               if a.GetFormalCharge() == 1 and a.GetSymbol() in ("N", "O")
+               if a.GetFormalCharge() == 1 and a.GetSymbol() in ("N", "O", "S", "P")
                and a.IsInRing() and a.GetIdx() in chain]
     if not charged:
         return names
@@ -1131,18 +1131,32 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
     if not stem_en:
         return names
     labels = (parent.get("numbering_scaffold") or {}).get("labels")
-    idx = chain.index(charged[0])
-    loc = labels[idx] if labels and len(labels) == len(chain) else str(idx + 1)
-    if stem_en.endswith("ene"):  # 色烯型氧鎓保留名：chromene → chromenylium
+    use_labels = bool(labels) and len(labels) == len(chain)
+    # 环内多正电：各位次升序逗号连接（P-62.4.1 倍加词 di/tri）
+    locs = [str(labels[chain.index(i)] if use_labels else chain.index(i) + 1) for i in charged]
+    locs.sort(key=lambda s: int(s) if s.isdigit() else 10 ** 6)
+    if len(locs) > 3:  # 超三电荷罕见，退回单电荷旧行为
+        locs = locs[:1]
+    loc = ",".join(locs)
+    en_mult, zh_mult = {1: "", 2: "di", 3: "tri"}.get(len(locs), ""), {1: "", 2: "二", 3: "三"}.get(len(locs), "")
+    multi = len(locs) > 1
+    if stem_en.startswith("chrom") and stem_en.endswith("ene"):  # 色烯型氧鎓保留名：chromene → chromenylium
         base, ium, zh_suf = stem_en[:-1], f"{stem_en[:-3]}enylium", "鎓"
-    elif stem_en.endswith("e"):
+    elif stem_en.endswith("e") and not multi:
         base, ium, zh_suf = stem_en[:-1], f"{stem_en[:-1]}-{loc}-ium", f"-{loc}-鎓"
-    else:
+    elif stem_en.endswith("e"):  # 多电荷：diium 前母体词尾 e 不省略
+        base, ium, zh_suf = stem_en, f"{stem_en}-{loc}-{en_mult}ium", f"-{loc}-{zh_mult}鎓"
+    elif not multi:
         base, ium, zh_suf = stem_en, f"{stem_en}-{loc}-ium", f"-{loc}-鎓"
+    else:
+        base, ium, zh_suf = stem_en, f"{stem_en}-{loc}-{en_mult}ium", f"-{loc}-{zh_mult}鎓"
     zh = _zh_ring_cation(zh, parent.get("stem_zh") or "", zh_suf)
-    if stem_en.endswith("ene"):  # 色烯型氧鎓保留名：chromene → chromenylium
+    if stem_en.startswith("chrom") and stem_en.endswith("ene"):  # 色烯型氧鎓保留名：chromene → chromenylium
         token = base + "e" if base + "e" in en else base
         return (en.replace(token, ium, 1), zh) if token in en else names
+    if multi:  # 多电荷直接在母体词干后插入 -{位次}-diium
+        at = en.find(stem_en)
+        return (en[:at + len(stem_en)] + f"-{loc}-{en_mult}ium" + en[at + len(stem_en):], zh) if at >= 0 else names
     hit = _cation_insert(en, stem_en, base) if stem_en in en else _cation_insert(en, base, base)
     if hit is None:
         return names
