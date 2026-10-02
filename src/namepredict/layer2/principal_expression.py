@@ -431,8 +431,11 @@ def _mononuclear_cation(info: dict, skeleton: ParentSkeleton,
     names = cation_parent_names(mol.GetAtomWithIdx(anchors[0]).GetAtomicNum())
     if names is None:
         return None
+    stem_en = names[0]
+    if _anchor_oxo_count(mol, anchors[0]):  # 锚点 =O 折进阳离子词干（oxophosphanium/oxoazanium），否则氧被整段丢弃
+        stem_en = "oxo" + stem_en
     new = replace(skeleton, atom_ids=(anchors[0],))
-    return new, {"stem_en": names[0], "stem_zh": names[1], "single_atom_skeleton": True}
+    return new, {"stem_en": stem_en, "stem_zh": names[1], "single_atom_skeleton": True}
 
 
 def _radical_free_order(info: dict, occurrences) -> int:
@@ -497,7 +500,7 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
             return None
         skeleton, extra = mono
     fields = _chain_unsat_fields(info, skeleton, {**_chain_fields(selection, occurrences, info.get("mol")), **extra})
-    if kind == "ester":
+    if kind in ("ester", "acid"):  # 酸碳带 O-烃臂者即碳酸单酯，同样记 o_idx 供 L5 识别 O 侧臂
         fields = _chain_ester_fields(info, occurrences, fields)
     elif kind == "acyl_halide":
         fields = _chain_acyl_halide_fields(info, occurrences, fields)

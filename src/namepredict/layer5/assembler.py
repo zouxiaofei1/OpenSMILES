@@ -20,8 +20,8 @@ from namepredict.layer5.stems import (
     _metal_en_prefix, _metal_zh_suffix, join_anion_names,
 )
 from namepredict.layer5.assembler_prefixes import (
-    _ACYL_FRONT_RE, _SIMPLE_CHAIN_YL_RE, _STEREO_LEAD_ENCLOSE_RE, _enclose, _mult_rows,
-    _prefix_for, oxo_arm_fence,
+    _ACYL_FRONT_RE, _LOCANT_RUN_RE, _SIMPLE_CHAIN_YL_RE, _STEREO_LEAD_ENCLOSE_RE, _enclose,
+    _mult_rows, _prefix_for, oxo_arm_fence,
 )
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
 from namepredict.types import NameResult
@@ -780,7 +780,11 @@ def _c1_retained(numbered: dict) -> tuple[str, str] | None:
         am_locants = ("1", "3") if n_imine else ("2", "3")  # 无亚胺取代基时沿用单取代胍惯例
         parent["locant_kind"] = _urea_subs(numbered, sgl_n, am_locants, force=True) and "guanidine"
         return "guanidine", "胍"
-    if kind == "ester" and len(sgl_o) == 2 and dbl.get(O) is not None and not sgl_n:
+    if kind in ("ester", "acid") and len(sgl_o) == 2 and dbl.get(O) is not None and not sgl_n:
+        if kind == "acid":
+            if parent.get("o_idx") is None:  # 无酯臂者为碳酸本身，不按单酯保留名处理
+                return None
+            return ("carbonate" if parent.get("anion") else "hydrogen carbonate"), "碳酸"
         return "carbonate", "碳酸"  # P-65.6.3.3 碳酸二酯：O-侧臂由酯拼接消费
     return None
 
@@ -945,6 +949,13 @@ def _fenced_arm_en(name: str) -> str:
     return f"[{name}]" if "(" in name else f"({name})"
 
 
+def _carbonate_arm_en(name: str) -> str:
+    """碳酸单酯 O-侧臂围栏（P-16.5.1.3.1）：多名次复合臂括起，已含方括号/单名次者不加。"""
+    if not name or "[" in name or name[:1] in "([":
+        return name
+    return f"[{name}]" if len(_LOCANT_RUN_RE.findall(name)) >= 2 else name
+
+
 def _fenced_arm_zh(name: str) -> str:
     """O 侧臂中文围栏：前导位次或自带括号的复合名须括起。"""
     if not name or not (name[0].isdigit() or "(" in name or "[" in name):
@@ -964,6 +975,8 @@ def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=N
     arms_in = _o_side_arms(numbered)
     if thio:
         arms_in = [{**a, "en": _fenced_arm_en(a.get("en") or "")} for a in arms_in]
+    elif ((numbered or {}).get("parent") or {}).get("kind") == "acid":  # 碳酸单酯：复合臂按 P-16.5.1.3.1 括起
+        arms_in = [{**a, "en": _carbonate_arm_en(a.get("en") or "")} for a in arms_in]
     arms = _join_o_side_arms(arms_in, group=False, arm_zh_fn=_fenced_arm_zh if thio else _zh_alkoxy_part)
     # print("_join_o_side_arms",arms,numbered)
     if arms is None:
@@ -983,11 +996,14 @@ def join_kind_name(
     numbered=None,
 ) -> tuple[str, str] | None:
     """按 kind 分派：O-侧臂母体（酯/磷酸）走 O-侧拼接，其余走普通母体拼接。"""
-    if kind in ESTER_O_SIDE_KINDS:
+    par = (numbered or {}).get("parent") or {}
+    if kind in ESTER_O_SIDE_KINDS or (kind == "acid" and par.get("o_idx") is not None):
         if kind in OXO_CENTER_KINDS:  # 中心自任母体（磷酸/膦酸/硫酸酯）：臂 + 功能母体词尾
             return join_oxoacid_name(pre, names, numbered)
         return join_ester_name(pre[0], pre[1], names, numbered)
     en = join_parent_name(pre[0], names[0])
+    if kind == "cation" and pre[0] and names[0].startswith("oxo"):  # 单核阳离子氧代词干：与前臂以连字符分段（P-73.1.1）
+        en = f"{pre[0]}-{names[0]}"
     zh = join_parent_name(pre[1], zh_1h_parent(names[0], names[1], pre[1]))
     return en, zh
 
