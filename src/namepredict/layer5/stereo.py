@@ -179,10 +179,13 @@ def _rs_parts(numbered: dict) -> list[tuple[int | str, str]]:
     L1 的 oxo_kind（sulfonic/sulfonate/…），与 FG 类别枚举对不上。
     """
     parent = numbered.get("parent") or {}
-    if _collapsed_parent(parent):
-        return []
     mol, chain = parent.get("mol"), parent.get("chain") or []
     if mol is None or not chain:
+        return []
+    # 碳/硫单原子母体省略位次号（同 as_substituent 约定）；磷碎片位次由外部骨架给出，不适用
+    if len(chain) == 1 and mol.GetAtomWithIdx(int(chain[0])).GetAtomicNum() != 15:
+        return [(None, code) for _, code in _cip_on_chain(mol, chain)]
+    if _collapsed_parent(parent):
         return []
     return [(_chain_locant(parent, pos), code) for pos, code in _cip_on_chain(mol, chain)]
 
@@ -231,6 +234,8 @@ def _with_rs(name: str, rs: list[tuple[int | str | None, str]]) -> str:
     if not rs:
         return name
     tag, stem = _split_stereo_lead(name)
+    if tag and not _parse_stereo(tag):  # 前导括号非立体块（如 (4-chlorophenyl)-）不应被当立体标签吞掉
+        tag, stem = "", name
     parts = [(loc, let) for loc, let in _parse_stereo(tag) if let not in ("R", "S")] + list(rs)
     return f"{_format_stereo(parts)}{stem}"
 
