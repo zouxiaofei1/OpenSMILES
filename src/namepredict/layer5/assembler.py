@@ -1052,6 +1052,19 @@ def zh_1h_parent(en_parent: str, zh_parent: str, prefix: str) -> str:
     return f"1H-{zh_parent}"
 
 
+def _ind_h_carbon_ok(parent: dict, names: tuple[str, str]) -> bool:
+    """保留杂环母体上碳位指示氢的补写门（P-58.2.1）：L4 已判定母体类别，此处只查位次与词干。"""
+    if not parent.get("ind_h_carbon_ok"):
+        return False
+    mol = parent.get("mol")
+    atoms = _h_prefix_atoms(parent, _indicated_h_prefix(parent))
+    if mol is None or not atoms or not all(
+            mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in atoms if i < mol.GetNumAtoms()):
+        return False
+    en = names[0] or ""
+    return "hydro" not in en and not re.search(r"\d+[a-z]?H-", en)
+
+
 def join_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]:
     """把 hydro 与指示氢前缀依次拼到母体名前。"""
     parent = numbered.get("parent") or {}
@@ -1059,7 +1072,8 @@ def join_hydro_prefix(names: tuple[str, str], numbered: dict) -> tuple[str, str]
     ind = _indicated_h_prefix(parent)  # L4 位次为准（P-58.2.1）：词干自带前缀被取代，避免 1H-7H- 双写
     en, zh = names
     if ind and (pre[0] or parent.get("indicated_h_forced") or parent.get("hydro_fallback")
-                or (_nh_only(parent, ind) and _ring_n_free(parent))):  # 未取代 NH 环补指示氢
+                or (_nh_only(parent, ind) and _ring_n_free(parent))
+                or _ind_h_carbon_ok(parent, names)):  # 保留杂环母体的碳位指示氢（L4 判类别）
         en, zh = _with_indicated_h(en, ind), _with_indicated_h(zh, ind)
     elif not ind:  # 无 L4 位次时，词干自带前缀若已无 H（如茚二酮 C1）则失效
         s_en, s_zh = _split_stem_h_prefix(en), _split_stem_h_prefix(zh)

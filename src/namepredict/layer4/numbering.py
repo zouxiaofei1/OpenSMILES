@@ -110,9 +110,22 @@ def number(parent: dict, substituents: list) -> dict:
         packed.get("mol"), packed.get("chain"), labels, hydro, extra,
         packed.get("scaffold_id"))
     packed["indicated_h_forced"] = bool(extra) or is_hw_scaffold(packed.get("scaffold_id"))
+    packed["ind_h_carbon_ok"] = _ind_h_carbon_scaffold_ok(packed.get("scaffold_id"))
     packed["hydro_prefix"] = pre
     # print("layer4result",result,"\n\n\n\n\n")
     return result
+
+
+def _ind_h_carbon_scaffold_ok(scaffold_id: str | None) -> bool:
+    """母体是否为可写碳位指示氢的保留杂环名（单环杂芳/稠合杂芳；苯并二氧戊环、金刚烷等除外）。"""
+    if not scaffold_id:
+        return False
+    from namepredict.layer2.ring_scaffold import get_spec
+
+    sp = get_spec(scaffold_id)
+    # benzodioxole 的 CH2、adamantane/mono_carbo 的饱和位由保留名本身表达，不得补指示氢（P-58.2.1）
+    return sp is not None and getattr(sp, "naming_class", "") not in (
+        "benzodioxole", "adamantane", "mono_carbo")
 
 
 def _extra_indicated(packed: dict) -> frozenset:
