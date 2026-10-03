@@ -10,7 +10,7 @@
 | 归一 | `_oxo_kind` / `_oxoacid_entry` | `layer1/analyzer.py` |
 | 分类 | `_OXO_CLASS_BY_KIND` | `layer1/analyzer.py` |
 | 注册 | `FG_SPECS` / `FunctionalGroupClass` / `FG_ATOM_FNS` | `layer1/fg_registry.py`、`layer1/functional_group_inventory.py` |
-| 母体化 | `_WHOLE_FG_ATOMS` / `OXO_CENTER_KINDS` | `layer2/parent_select.py`、`constants.py` |
+| 母体化 | `_kind_fg_atoms` / `OXO_FG_CLASSES` / `OXO_CENTER_KINDS` | `layer2/parent_select.py`、`layer1/functional_group_inventory.py`、`constants.py` |
 | 命名 | `_KIND_TABLE` / `_OXO_TAIL` / `_BENZENE_RETAINED` | `layer5/chain_engine.py` |
 
 ## 1 局部检测：`FG_SMARTS`
@@ -21,21 +21,21 @@
 ("oxoacid", "[#16;H0;+0](=[#8;X1;H0;+0])(=[#8;X1;H0;+0])" + _O_PHOS + _C_ARM)
 ```
 
-臂词常量按需复用（不另起一份）：`_ACID_O`、`_NOT_ACID`、`_NOT_ACYCLIC_ESTER`、`_NOT_HALO`、`_ONE_C`、`_RING_HET`、`_O_PHOS`、`_O_ARM`、`_O_S_ARM`、`_HALO_ARM`、`_N_ARM`、`_C_ARM`、`_SNY_ARM`。同族按臂型各占一条：`_HALO_ARM` → 磺酰卤、`_N_ARM` → 磺酰胺、`_O_ARM` → 磺酸酯、`_O_PHOS + _O_ARM` → 硫酸酯、`_O_PHOS * 2` → 硫酸（含硫酸根）、`_O_PHOS + _O_S_ARM` / `_O_S_ARM * 2` → 多硫酸链端节 / 中节（`_O_S_ARM` 为 S-O-S 桥臂）。`_compile` 按键归并编译，无法解析即报错。
+臂词常量按需复用（不另起一份）：`_ACID_O`、`_NOT_ACID`、`_NOT_ACYCLIC_ESTER`、`_NOT_HALO`、`_ONE_C`、`_RING_HET`、`_O_PHOS`、`_O_ARM`、`_O_S_ARM`、`_HALO_ARM`、`_N_ARM`、`_C_ARM`、`_SNY_ARM`。同族按臂型各占一条：`_HALO_ARM` → 磺酰卤、`_N_ARM` → 磺酰胺、`_O_ARM` → 磺酸酯、`_O_PHOS + _O_ARM` → 硫酸酯、`_O_PHOS * 2` → 硫酸（含硫酸根）、`_O_PHOS + _O_S_ARM` / `_O_S_ARM * 2` → 多硫酸链端节 / 中节（`_O_S_ARM` 为 S-O-S 桥臂）。同一个 FG 键也可由多条 SMARTS 覆盖不同双键杂原子：`amide` 键有 C=O / C=S / C=N 三条（`=O` 酰胺 / 硫代酰胺 / 脒同属 P-41 类 11），歧义由 L2 写入的 `parent["amide_z"]` 消解、L5 按它切换词尾。`_compile` 按键归并编译，无法解析即报错。
 
 ## 2 非局部归一：`analyzer` 的含氧酸管线
 
-需要看整分子环境的 FG 才走本段。含氧酸中心（P/S 非碳骨架成键）共用一条管线：
+需要看整分子环境的 FG 才走本段。含氧酸中心（B/P/S 非碳骨架成键）共用一条管线：
 
-1. `_oxo_roles` 数中心邻居角色（双键氧 / 羟基氧 / 阴离子氧 / O-臂 / 碳 / 卤素 / 氮 / 硫）；
-2. `_oxo_kind` 查表归一 `oxo_kind`：P 走 `_OXO_KIND_P`（键为 `(双键氧数, 有无直连碳臂)`），S 走 `_OXO_KIND_S_ARM`（键为另一臂角色 `halo` / `n` / `acid` / `o_arm`，值即 kind）；S 无直连碳臂时不查该表，`n_oh + n_om + o_arm == 2` 即 `sulfate`（硫酸、硫酸根、多硫酸链节）；
-3. `_oxoacid_entry` 组装条目，入口 `oxoacid_entries`。
+1. `_oxo_partition` 数中心邻居角色（双键氧 / 羟基氧 / 阴离子氧 / O-臂 / 碳 / 卤素 / 氮 / 硫），返回 `oxo` / `oh` / `om` / `o_arm` / `o_arm_root` / `c` / `hal` / `n` / `s` 分桶；
+2. `_oxo_kind` 归一 `oxo_kind`：P 走 `_OXO_KIND_P`（键为 `(双键氧数, 有无直连碳臂)`），S 走 `_OXO_KIND_S_ARM`（键为另一臂角色 `halo` / `n` / `acid` / `o_arm`，值即 kind）；S 无直连碳臂时不查该表，`n_oh + n_om + o_arm == 2` 即 `sulfate`（硫酸、硫酸根、多硫酸链节）；B 不登记 `FG_SMARTS`，由 `boronic_entries` 按元素扫描，恰一个碳臂 + 两个酸式氧即 `boronic`；
+3. `_oxoacid_entry` 组装条目，入口 `oxoacid_entries`（B 另由 `boronic_entries` 补入）。
 
 两条分支决定条目形态：
 
 | 分支 | 判据 | 条目键 |
 |---|---|---|
-| 中心自任母体 | `oxo_kind in _OXO_Z_ANCHORED` | `oxo_z` / `center_idx`（= 中心）/ `oxo_kind` / `n_oh` / `n_om` |
+| 中心自任母体 | `oxo_kind in OXO_CENTER_KINDS` | `oxo_z` / `center_idx`（= 中心）/ `oxo_kind` / `n_oh` / `n_om` |
 | 碳锚定 | 直连碳臂唯一（`len(c_roots) == 1`） | 同上，但 `center_idx` 取该碳，另带 `surr_idx`（只收阴离子氧，供 L2 补 anion 标志） |
 
 中心自任母体另需 `_arm_single_attach` 单点回接与整分子纯度校验（重原子 = core ∪ 臂）。
@@ -78,11 +78,11 @@ FgSpec("sulfonamide", p41=11, path=(1,), anchors=("center_idx",))
 
 `layer1/functional_group_inventory.FunctionalGroupClass` 加成员，值必须与 `FgSpec.fg`、`FG_SMARTS` 键逐字一致——`_ANCHOR_KEYS` 与 `_one` 都做 `FunctionalGroupClass(key)`，缺成员即失败。
 
-`FG_ATOM_FNS` 只在特征原子不走「`center_idx` ∪ `surr_idx`」通用形态时登记：`oxoacid` 与 `sulfonamide` 共用 `_oxoacid_atoms`，即「锚点碳 + 中心 P/S + 中心的非碳非氢邻居」。
+`FG_ATOM_FNS` 只在特征原子不走「`center_idx` ∪ `surr_idx`」通用形态时登记：`oxoacid` 与 `sulfonamide` 共用 `_oxoacid_atoms`，即「锚点碳 + 中心 B/P/S + 中心的非碳非氢邻居」；`azanide`、`heterane` 与 `cation` 共用 `_cation_atoms`（只占中心本身），`nitrile` 用 `_nitrile_atoms`（腈碳 + 三键氮，R 侧不留）。
 
 ## 5 P-41 酸式漂移（可选）
 
-该类可整体升为 P-41 类 7 竞争时，用 `fg_registry.oxoacid_is_acid` 判定：中心带 O⁻、或 `oxo_kind in OXO_ACID_KINDS`、或 `n_oh >= OXO_ACID_KIND_BY_H[oxo_kind]`；命中时 `layer2/principal._effective_priority` 换成 `PrincipalPriority(OXO_ACID_P41, path)`（`OXO_ACID_P41 = 8`，排在羧酸之后）。三张表同在 `fg_registry`，按新 kind 补行即可。
+该类可整体升为 P-41 类 7 竞争时，用 `fg_registry.oxoacid_is_acid` 判定：中心带 O⁻、或 `oxo_kind in OXO_ACID_KINDS`、或 `n_oh >= OXO_ACID_KIND_BY_H[oxo_kind]`（当前含 `phosphonate` / `boronic`）；命中时 `layer2/principal._effective_priority` 换成 `PrincipalPriority(OXO_ACID_P41, path)`（`OXO_ACID_P41 = 8`，排在羧酸之后）。三张表同在 `fg_registry`，按新 kind 补行即可。电荷型定级同在此函数：醇/硫醇盐经 `anion_os` 升类 4（`_ANION_OS_P41`），阳离子在 `inventory.has_anion` 时置底（`_CATION_ANION_GATED`）。
 
 ## 6 母体化接线（L2）
 
@@ -90,9 +90,9 @@ FgSpec("sulfonamide", p41=11, path=(1,), anchors=("center_idx",))
 
 - `select_principal_group` 取 `PrincipalPriority` 最小的类别作主基团，低优先级 FG 一律成为取代基（互斥由「只选单个最高优先级类」实现）。
 - `express_chain_principal` / `express_ring_principal` 按骨架拓扑表达主基团；`_chain_kind` 给出 kind，含氧酸类取 `_oxo_kind_of`，要求该类全部 occurrence 的 `oxo_kind` 一致，否则该类不支持。
-- `_chain_oxoacid_fields` 写入 `oxo_kind` / `n_oh` / `n_om`；`oxo_kind in _OXO_Z_ANCHORED` 时另做盐门控（金属数与 `n_om` 匹配，不过则返回 `None` 使候选作废），碳锚定类无门控。
-- `_facts` 汇总 `multiplicity` / `relation`（`in_skeleton` / `exocyclic`）/ `attachment_atoms` / `charge_state`；多重度由 occurrence 个数承载，不要另造 kind。
-- `assemble` 依次接 hydro 前缀、环内阳离子后缀、`join_kind_name`、阴离子、E/Z、R/S；R/S 适用集为全部 `FunctionalGroupClass` 值。
+- `_chain_oxoacid_fields` 写入 `oxo_kind` / `n_oh` / `n_om`；`oxo_kind in OXO_CENTER_KINDS` 时另做盐门控（金属数与 `n_om` 匹配，不过则返回 `None` 使候选作废），碳锚定类无门控。
+- `_facts` 汇总 `group_class` / `multiplicity` / `relation`（`in_skeleton` / `exocyclic`）/ `occurrence_ids` / `characteristic_atoms` / `anchor_atoms` / `attachment_atoms`；多重度由 occurrence 个数承载，不要另造 kind。
+- `assemble` 依次接 hydro 前缀、环内阳离子后缀、核素描述符（`join_isotope_descriptor`）、`join_kind_name`、环内 λ 杂原子 =O 的 oxide 分离、硫族/腈别名切换、阴离子、E/Z、R/S；盐后缀由 `namer._apply_salt_suffix` 收尾。
 
 例外挂钩点：
 
@@ -146,9 +146,10 @@ FgSpec("sulfonamide", p41=11, path=(1,), anchors=("center_idx",))
 | 中心自任母体的词尾 | `_OXO_TAIL`，键为 `(oxo_kind, 中心酸式氢数)`，由 `plain_hook=_oxoacid_tail` 消费；碳锚定族不查此表 |
 | 苯环单取代保留名 | `_BENZENE_RETAINED`（`sulfonic` → benzenesulfonic acid / 苯磺酸） |
 | 其他 scaffold 单取代保留名 | `_Chain.variant` 的 `{scaffold_id: {multiplicity: 覆盖字段}}` |
+| 酰胺族按双键杂原子换词尾 | `parent["amide_z"]` 记 `=O`/`=S`/`=N` 的杂原子序数（`principal_expression` 写入）；L5 据它把 `amide` 词尾换成 `thioamide` / 硫代酰胺 或 `imidamide` / 亚氨酰胺，环外经 `_exo_ring_spec` 出 `carbothioamide` / `carboximidamide` |
 | 环外主基系统名 | `constants.EXO_RING_SUF` 加 `group_class → (单, 复)`；由 `_exo_ring_spec` 改写词尾/词干/位次 |
 | 单碳母体带两个杂原子 / 官能团碳直连 N 的词尾 | `assembler._c1_retained`（`urea` / `thiourea` / `guanidine` / `carbonate`）与 `_c1_amino`（`carbamate` / `carbamic acid` / `carbamoyl`）；`locant_kind` 记保留名，`subs_consumed` 表示取代基已并入母体名 |
-| 作取代基前缀时的保留名 | `src/namepredict/tools/anchored_table._REGISTRY` 加 `RetainedSubstituent`（如 `sulfo` / `sulfonato`），`anchored` 用带 `*` 的 canonical SMILES；`formyl` 的中文名为「甲酰基」。`-C(=O)-N(R)(R')` 不走注册表，由 `_carbamoyl_deriv` / `carbamoyl_prefix_name` 收成 `<N-取代基>carbamoyl` 或环胺的 `<母体>-<位次>-carbonyl`（P-65.2.1.5） |
+| 作取代基前缀时的保留名 | `src/namepredict/tools/anchored_table._REGISTRY` 加 `RetainedSubstituent`（如 `sulfo` / `sulfonato` / `borono` / `trimethylsilyl` / `selanyl` / `thiocyanato` / `diazonio`），`anchored` 用带 `*` 的 canonical SMILES；`formyl` 的中文名为「甲酰基」。`-C(=O)-N(R)(R')` 不走注册表，由 `carbamoyl_prefix_name` 收成 `<N-取代基>carbamoyl` 或环胺的 `<母体>-<位次>-carbonyl`（P-65.2.1.5） |
 
 - 保留名母体的位次口径：`constants.N_LOCANT_KINDS` 的 kind 让 `assembler_prefixes._omit_sub_locants` 判「位次不可省」（`1,3-二甲基脲`）；`locant_kind == "carbamic_acid"` 反之（`dimethylcarbamic acid`）。
 
@@ -156,8 +157,8 @@ FgSpec("sulfonamide", p41=11, path=(1,), anchors=("center_idx",))
 
 | 条件 | 落点 |
 |---|---|
-| 特征原子跨两跳，或中心不是碳骨架成员 | `parent_select._WHOLE_FG_ATOMS` 加该 FG 类别；命中后 `_kind_fg_atoms` 按 `covered_principal_ids` 整组纳入特征原子 |
-| 中心自任母体、臂应退为取代基 | `constants.OXO_CENTER_KINDS` 加该 kind（`phosphate` / `phosphonate` / `sulfate`）；`finalize_parent_ownership` 把 `owned_atoms` 取成纯 FG 原子，链仅供编号 |
+| 特征原子跨两跳，或中心不是碳骨架成员 | `functional_group_inventory.OXO_FG_CLASSES` 加该 FG 类别；`parent_select._kind_fg_atoms` 命中后按 `covered_principal_ids` 整组纳入特征原子 |
+| 中心自任母体、臂应退为取代基 | `constants.OXO_CENTER_KINDS` 加该 kind（`phosphate` / `phosphonate` / `sulfate` / `boronic`）；`finalize_parent_ownership` 把 `owned_atoms` 取成纯 FG 原子，链仅供编号 |
 
 碳锚定的 `sulfonic` 不入 `OXO_CENTER_KINDS`。
 
@@ -179,12 +180,13 @@ FgSpec("sulfonamide", p41=11, path=(1,), anchors=("center_idx",))
 | `FG_SPECS` | `layer1/fg_registry.py` | 手动 |
 | `FunctionalGroupClass` / `FG_ATOM_FNS` | `layer1/functional_group_inventory.py` | 手动 |
 | 清单键 / `_ANCHOR_KEYS` | `layer1/functional_group_inventory.py` | 派生 |
-| `_WHOLE_FG_ATOMS` | `layer2/parent_select.py` | 手动（仅跨跳特征原子） |
+| `_kind_fg_atoms`（`OXO_FG_CLASSES`） | `layer2/parent_select.py`、`layer1/functional_group_inventory.py` | 手动（仅跨跳特征原子） |
 | `PRINCIPAL_REGISTRY` / kind | `layer2/principal.py`、`principal_expression.py` | 派生 |
 | `OXO_CENTER_KINDS` / `EXO_RING_SUF` | `constants.py` | 手动（仅中心母体 / 环外表达） |
 | `_KIND_TABLE` / `_OXO_TAIL` / `_BENZENE_RETAINED` | `layer5/chain_engine.py` | 手动 |
 | `_c1_retained` / `_c1_amino` | `layer5/assembler.py` | 手动（仅 C1 双杂原子 / 官能团碳直连 N） |
-| `carbamoyl_prefix_name` / `_carbamoyl_deriv` | `tools/anchored_table.py` | 手动（仅 `-C(=O)-N(R)(R')`） |
+| `parent["amide_z"]` 词尾切换 | `layer2/principal_expression.py`（写入）、`layer5/assembler.py` / `chain_engine._exo_ring_spec`（消费） | 手动（仅酰胺族双键杂原子置换） |
+| `carbamoyl_prefix_name` | `tools/anchored_table.py` | 手动（仅 `-C(=O)-N(R)(R')`） |
 | `_FG_LOCANTS` | `layer4/locant_calc.py` | 派生 |
 | `_FG_GROUP` | `layer4/locant_calc.py` | 手动（仅位次省略特例） |
 | `_REGISTRY` | `src/namepredict/tools/anchored_table.py` | 手动（仅作取代基前缀时） |
@@ -213,8 +215,10 @@ FgSpec("sulfonamide", p41=11, path=(1,), anchors=("center_idx",))
 
 与碳锚定路径的三点差异：
 
-- `_oxoacid_entry` 走 `_OXO_Z_ANCHORED` 分支：`center_idx` 即中心原子，臂须单点回接并通过整分子纯度校验，条目不带 `surr_idx`；
+- `_oxoacid_entry` 走 `OXO_CENTER_KINDS` 分支：`center_idx` 即中心原子，臂须单点回接并通过整分子纯度校验，条目不带 `surr_idx`；
 - `owned_atoms` 只取 FG 特征原子（`finalize_parent_ownership` 依 `OXO_CENTER_KINDS` 判定），链仅供编号，臂退为取代基；
 - 词尾走 `plain_hook=_oxoacid_tail` + `_OXO_TAIL`，按 `(oxo_kind, n_oh)` 出 phosphoric acid / dihydrogen phosphate 等，O 侧臂由 `join_kind_name` 按 `ESTER_O_SIDE_KINDS` 拼接。
 
 中心 kind 归入 `OXO_CENTER_KINDS` 后，`namer._apply_salt_suffix` 自动跳过通用盐后缀，盐形态由该类自行组装。
+
+相关页面：[[architecture/layer1-analyzer]]、[[architecture/layer2-parent-selector]]、[[architecture/layer5-name-assembly]]、[[concepts/functional-group-priority]]、[[guides/adding-new-ring-system]]。

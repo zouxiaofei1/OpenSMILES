@@ -12,7 +12,7 @@
 | L2 | 把锚点对齐骨架，合成不可变 `owned_atoms` | `_kind_fg_atoms` → `finalize_parent_ownership` |
 | L3 | 在边界外枚举并命名取代基 | `extract_substituents` → `iter_claims` |
 
-`owned_atoms` 同时是 L2 候选排序的基准：`_p45_2_prefix_count` 以边界外的 claim 个数作 P-45.2.1 键，`_reorder_p45_2` 据此降序、只保留并列最大组，`select_parent` 返回该组。归属边界越紧（边界外组分越多），计数键越高。
+`owned_atoms` 同时是 L2 候选排序的基准：`_p45_2_prefix_count` 以边界外的 claim 个数作 P-45.2.1 键，`_reorder_p45_2` 据此降序、只保留并列最大组；`select_parent` 再对磷酸候选施加 `_reorder_oxo_ester_side` 定向（P-67.1.3，取糖 / 多元醇侧），返回该组。归属边界越紧（边界外组分越多），计数键越高。
 
 ## L1：事实来源
 
@@ -24,7 +24,7 @@
 特征原子由 `_characteristic_atoms` 给出，分两条路：
 
 - **通用规则** `center_surr_atoms`：`{center_idx} ∪ surr_idx`；
-- **例外表** `FG_ATOM_FNS`：登记 `oxoacid` 与 `sulfonamide`，二者共用 `_oxoacid_atoms` = 锚点碳 + 中心 P/S（payload 的 `oxo_z`）+ 中心的非碳邻居。中心的**碳臂不进特征原子**，留给链或取代基侧。
+- **例外表** `FG_ATOM_FNS`：登记六类。`oxoacid` 与 `sulfonamide` 共用 `_oxoacid_atoms` = 锚点碳 + 中心 P/S（payload 的 `oxo_z`）+ 中心的非碳邻居，中心的**碳臂不进特征原子**，留给链或取代基侧；`cation` / `azanide` / `heterane` 共用 `_cation_atoms`，只占中心自身，周边原子全退为取代基 / 前缀；`nitrile` 用 `_nitrile_atoms`，只取腈碳与三键氮，R 侧连接原子不入。
 
 以磺酰胺 `CS(=O)(=O)N` 为例：`center_idx` 是锚点碳、`oxo_z` 是 S，特征原子为 `{C, S, =O, =O, N}`。N 与锚点碳相隔两跳，靠邻接扩展取不到——这正是含氧酸族走整取的原因。`center_surr_atoms` 同时是通用规则的唯一实现：未在 `FG_ATOM_FNS` 登记例外的类别一律退回它。
 
@@ -35,9 +35,11 @@
 | radical / acyl | `center_idx` | `center_surr_atoms` |
 | acid | `center_idx` | `{C, =O, OH}` |
 | ester | `center_idx` | `{C, =O, O_single}`，不含烷氧臂碳 |
-| acyl_halide / amide / nitrile / aldehyde / ketone | `center_idx` | `center_surr_atoms`，即羰基或氰基中心与其周边原子 |
+| acyl_halide / amide / aldehyde / ketone / thione | `center_idx` | `center_surr_atoms`，即羰基（或 C=S / 酰卤）中心与其周边原子 |
+| nitrile | `center_idx` | `_nitrile_atoms`：腈碳与三键氮，R 侧连接原子不入 |
 | alcohol / thiol / amine | `surr_idx` | `center_surr_atoms`；锚点是连接碳，O / S / N 由一跳扩展进入 |
 | oxoacid / sulfonamide | `center_idx` | `_oxoacid_atoms` |
+| cation / azanide / heterane | `center_idx` | `_cation_atoms`：仅中心原子 |
 
 锚点键决定"哪条原子是母体入口"：羧酸族取羰基碳，醇 / 硫醇 / 胺取连接碳而非中心杂原子。
 
@@ -50,12 +52,12 @@
 `_kind_fg_atoms(parent, mol)` 读 `parent["principal_expression_facts"]`（缺失即返回空集）与 `parent["principal_occurrences"]`（全量主官能团 occurrence，不限本骨架覆盖），按三态处理：
 
 1. **取 seed**：`seeds = anchors ∩ chain`；锚点全在骨架外时，改取与骨架原子相邻的锚点。该兜底承接的是外环官能团——苯甲酸 `c1ccccc1C(=O)O` 的羧基碳不在环骨架上，锚点经邻接命中后成为 seed。
-2. **`_WHOLE_FG_ATOMS = {OXOACID, SULFONAMIDE}`**：只取本骨架覆盖的 occurrence（`parent["covered_principal_ids"]`）的 `characteristic_atoms` 并入 seed，**不做邻接扩展**。这两类的中心 P/S 不是碳骨架成员，没有可外借的臂，跨两跳的氧 / 氮必须整取。
+2. **`facts.group_class ∈ OXO_FG_CLASSES = {oxoacid, sulfonamide}`**：只取本骨架覆盖的 occurrence（`parent["covered_principal_ids"]`）的 `characteristic_atoms` 并入 seed，**不做邻接扩展**。这两类的中心 P/S 不是碳骨架成员，没有可外借的臂，跨两跳的氧 / 氮必须整取。
 3. **其余类别**：沿 seed 的邻居做**一跳**扩展，只并入既落在全体 occurrence 特征原子集内、又不是锚点的邻居，不回代。
 
 `finalize_parent_ownership(parent, mol)` 折叠出 `owned_atoms`：
 
-- 若 `parent["kind"] ∈ OXO_CENTER_KINDS`（`phosphate` / `phosphonate` / `sulfate`）：只取主官能团特征原子，**不含 `chain`**——链仅供编号，臂一律退为取代基。
+- 若 `parent["kind"] ∈ OXO_CENTER_KINDS`（`phosphate` / `phosphonate` / `sulfate` / `boronic`）：只取主官能团特征原子，**不含 `chain`**——链仅供编号，臂一律退为取代基。
 - 否则取 `frozenset(_chain_atoms(parent) | _kind_fg_atoms(parent, mol))`，即骨架原子与主官能团特征原子的并集。
 - 结果带缓存语义：`owned_atoms` 已是 `frozenset` 时直接返回原 dict，不重算。
 
@@ -90,19 +92,19 @@
 
 `PrincipalExpressionFacts` 记录 `group_class` / `multiplicity` / `relation` / `occurrence_ids` 与三个原子集：`characteristic_atoms`（全体 occurrence 特征原子的并集）、`anchor_atoms`（原锚点）、`attachment_atoms`（骨架内附着原子，骨架外的锚点取其骨架内邻居）。`_kind_fg_atoms` 只消费 occurrence 上的两个原子集与 `parent["covered_principal_ids"]`，不重算邻接关系。
 
-母体 dict 由 `_parent_dict` 组装，同时写入两个 occurrence 视图：`covered_principal_ids` 是本骨架覆盖的条目 id 元组，`principal_occurrences` 则是**全量**主官能团 occurrence。后者取全量而非本骨架子集，是因为未被本骨架覆盖的同级基团仍属母体——漏掉其异原子会被 L3 切成假前缀。`_WHOLE_FG_ATOMS` 分支则反向只认 `covered_principal_ids`，故 `CP(=O)(O)O` 的甲基碳虽在 `chain` 内也不进所有权。
+母体 dict 由 `_parent_dict` 组装，同时写入两个 occurrence 视图：`covered_principal_ids` 是本骨架覆盖的条目 id 元组，`principal_occurrences` 则是**全量**主官能团 occurrence。后者取全量而非本骨架子集，是因为未被本骨架覆盖的同级基团仍属母体——漏掉其异原子会被 L3 切成假前缀。`OXO_FG_CLASSES` 分支则反向只认 `covered_principal_ids`，故 `CP(=O)(O)O` 的甲基碳虽在 `chain` 内也不进所有权。
 
 ### 边界的反向使用：P-45.2.1 计数
 
-`owned_atoms` 不只是 L3 的输入，也是 L2 候选排序的基准。`_p45_2_prefix_count` 就地取用 L3 的 `iter_claims`，以边界外的 claim 个数作 P-45.2.1 键；`_reorder_p45_2` 按 `(计数降序, 缩合含氧酸链内桥氧数降序, 原序)` 稳定重排，第二键由 `_condensed_rank` 给出（`oxo_kind` 为 `phosphate` 或 `sulfate` 时取链中中心原子的 `analyzer._oxo_bridge_arms`，其余恒 0）。`tied=True` 时只保留计数最高的并列组，即 `select_parent` 的返回值——归属边界越紧，计数键越高，越可能在并列中胜出。
+`owned_atoms` 不只是 L3 的输入，也是 L2 候选排序的基准。`_p45_2_prefix_count` 就地取用 L3 的 `iter_claims`，以边界外的 claim 个数作 P-45.2.1 键；`_reorder_p45_2` 按 `(计数降序, 缩合含氧酸链内桥氧数降序, 原序)` 稳定重排，第二键由 `_condensed_rank` 给出（`oxo_kind` 为 `phosphate` 或 `sulfate` 时取链中中心原子的 `analyzer._oxo_bridge_arms`，其余恒 0）。`tied=True` 时只保留计数最高的并列组。`select_parent` 随后对整组施加 `_reorder_oxo_ester_side`：当候选全为 `oxo_kind == phosphate` 时，按 `_oxo_ester_side_score`（臂上芳香含氮环数升序、臂内氧数降序）定向，把糖 / 多元醇侧选作母体（P-67.1.3）。归属边界越紧，P-45.2.1 计数键越高，越可能在并列中胜出。
 
 ## L3：消耗与槽位
 
-`extract_substituents(info, parent)` 只在 `owned_atoms` 边界内取 claim：
+`extract_substituents(info, parent)` 在所有权边界外取 claim：
 
 - `iter_claims(mol, owned)` 遍历边界外的重原子连通组分，结果按 `(attach_parent, root, slot.value)` 排序，输出顺序确定；
-- `_canonical_edge` 取组分与母体之间的最小 `(attach_parent, root)` 边，`claim_block` 再校验连接点确实属于 `owned_atoms`、且组分只有唯一一个回接点（多回接点即桥连，不成 claim）；
-- `_has_dbl_o_edge` 滤掉"经双键连到 owned 内非碳重原子"的组分，主官能团成分不切成假羟基侧链；
+- `_owned_edges` 列出组分与母体之间的全部 `(owned 原子, 组分原子)` 边，`_try_claim` 与 `claim_block` 要求这些边的 owned 端只有唯一一个（多回接点即桥连，不成 claim），并取最小边作 `(attach_parent, root)`；
+- `_has_dbl_o_edge` 滤掉"经双键连到 owned 内非碳重原子"的组分（环内 S / P 的 `=O` 无主 FG 承接，作例外放行），主官能团成分不切成假羟基侧链；
 - 命名返回 `None` 的 claim 被静默跳过，其原子只能体现为 gap。
 
 `claimable_block` 提供两种结构：`ClaimedBlock`（`slot` / `attach_parent` / `root` / `atoms`，冻结 dataclass）与 `SideSlot`（4 值：`chain_c` / `ring_c` / `amine_n` / `other`）。槽位到取代基 kind 由 `constants.CLAIM_KIND` 映射（`amine_n` → `n_block`，`ring_c` / `chain_c` → `alkyl`），未登记槽位退回 `"side"`。
@@ -113,13 +115,13 @@ O- 侧臂不走槽位通路：`extract_substituents` 先算 `o_side`（`kind ∈
 
 `derive_slot` 只看母体侧连接原子的角色：`_is_amine_n` 判定非芳香、非环员的 N 才是 `amine_n`；碳原子按是否成环分 `ring_c` / `chain_c`；其余杂原子落 `other`。环员 N 与芳香 N 因此走 `other`——内酰胺 N 上的甲基、环胺的环外臂都按位次或普通前缀处理，不用 N- 前缀。
 
-kind 落定后还有一道改写：`sub_from_named` 在 kind 属 `N_PREFIX_KINDS`（`n_block` / `n_alkyl`）而附着原子本身是环员时，改用 `ring_c` 映射的 `alkyl`，即环氮改用环上位次定位。实测乙酰苯胺 `CC(=O)Nc1ccccc1` 的苯基臂落 `amine_n` → `n_block`；`CCN(CC)CC` 两条链外乙基臂同样落 `amine_n`。
+kind 落定后还有一道改写：`sub_from_named(named, mol, parent)` 在 kind 属 `N_PREFIX_KINDS`（`n_block` / `n_alkyl`）且附着原子是环员、或附着原子落在母体骨架 `chain` 内时，改用 `ring_c` 映射的 `alkyl`，即改以数字位次定位。实测乙酰苯胺 `CC(=O)Nc1ccccc1` 的苯基臂落 `amine_n` → `n_block`；`CCN(CC)CC` 两条链外乙基臂同样落 `amine_n`。
 
 ### claim 枚举
 
-`iter_claims` 的组分来源是 `side_roots`（母体原子的外部重原子邻居）逐一起 `cut_block`，割出的连通块按原子集去重（`_unique_components`），再对每个组分试建 claim。`cut_block` 拒绝穿越 `owned_atoms`，因此 claim 原子按构造位于边界外，彼此不重叠。
+`iter_claims` 的组分来源是 `side_roots`（母体原子的外部重原子邻居）逐一起 `cut_block`，割出的连通块按原子集去重（`_unique_components`），再对每个组分试建 claim。`cut_block` 拒绝穿越传入的 owned 集，因此 claim 原子按构造位于边界外、彼此不重叠。`extract_substituents` 实际传入 `cut_owned = owned_atoms ∪ _amidine_n_owned ∪ _hydrazide_n_owned`：脒 / 胍母体的亚胺氮与酰肼远端 N 临时并入切分边界，其上的臂从该 N 外侧键起切，避免被吸进母体或丢失。
 
-命中的 claim 经 `SubstituentNamer` 取到名字后，由 `sub_from_named` 封装为取代基 dict：`kind`、`n_carbons`（块内碳数）、`attach_idx`（即 `attach_parent`）、`atoms`（排序后的原子索引）、`en` / `zh` / `paren`，O- 侧臂再补 `o_side` 标记。归属信息到此转化为下游可消费的字段，`atoms` 是后续覆盖台账的唯一输入面。
+`_side_arm_claim` 再把切在桥杂原子（O / S）上、非链内的侧臂并回该桥原子、改挂到链上原子，使硫代酯等的支臂拿到可定位次。命中的 claim 经 `SubstituentNamer` 取到名字后，由 `sub_from_named` 封装为取代基 dict：`kind`、`n_carbons`（块内碳数）、`attach_idx`（即 `attach_parent`）、`atoms`（排序后的原子索引）、`en` / `zh` / `paren`，O- 侧臂再补 `o_side` 标记，酰肼两端 N 的取代基由 `_mark_hydrazide_primes` 补 `n_prime`（0 = N′）。归属信息到此转化为下游可消费的字段，`atoms` 是后续覆盖台账的唯一输入面。
 
 ## 覆盖完整性
 
@@ -141,3 +143,5 @@ gap 随母体类别而变：`CC(=O)C(C)=O` 的酮母体覆盖全部 6 个重原�
 ### 归属边界与命名实体
 
 归属只解决"哪些原子属于谁"，不解决"叫什么"。母体侧的名字由 L4 编号与 L5 词干组装承担，边界外的 claim 由取代基命名通道产出词条；两侧在整名阶段合流。因此 `owned_atoms` 的正确性判据是几何的：重原子被恰好一次声明，而命名是否成立由后续层独立决定。
+
+相关页面：[[architecture/layer1-analyzer]]、[[architecture/layer2-parent-selector]]、[[architecture/layer3-substituents]]、[[architecture/layer4-numbering]]、[[reference/core-data-contracts]]。
