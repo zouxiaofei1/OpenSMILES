@@ -85,6 +85,15 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
 
 _INDICATED_H_LEAD_RE = re.compile(r"^\d+H-")  # 前导指示氢（1H-咪唑-5-基），非取代基位次
 
+_STEM_LOCANT_RE = re.compile(r"(?:^|[-,\[\]])\d+")  # 词干名内位次数字
+
+
+def _stem_has_locant(stem: str) -> bool:
+    """词干名内是否带位次数字（立体/核素描述符内的数字不计，P-16.5.1.2）。"""
+    s = _STEREO_LEAD_ENCLOSE_RE.sub("", _ISO_DESC_RE.sub("", stem or ""))
+    return bool(_STEM_LOCANT_RE.search(s))
+
+
 def _ring_fused_lead(stem: str) -> bool:
     """词干是否为「环基 + 连接组分」式复合前缀（1H-咪唑-5-基甲基、1,3-苯并二氧杂环戊烯-5-基氧基甲基）。
 
@@ -98,7 +107,8 @@ def _ring_fused_lead(stem: str) -> bool:
 def _stem_needs_paren(stem: str, subs: list, omit: bool, flat: bool = False) -> bool:
     """加括号：显式标记、前导位次词干、前导立体描述符，或多个 CF3（英文）。"""
     if any(s.get("paren") for s in subs):
-        return not _CATION_YL_TAIL_RE.search(stem)  # 单核阳离子基名单词整体（dimethylsulfonio），无需围栏
+        return (not _CATION_YL_TAIL_RE.search(stem)  # 单核阳离子基名单词整体（dimethylsulfonio），无需围栏
+                and not _flat_bridge_stem(stem))  # 简单前端与 R-imino 融合式（methylimino）无须围栏（P-66.4.1.2.1）
     if _ring_fused_lead(stem):
         return (not omit) and not flat  # 母体位次省略时无同类位次可混，前缀无需围栏
     if stem and stem[0].isdigit():
@@ -238,16 +248,30 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
         return (not flat) or bool(_LOCANT_SUBST_TAIL_RE.search(base))
     if _composite_front(base):  # 复合前缀（自带位次的环基/链基）作桥前端须围栏（P-16.5.1.1）
         return True
-    if suf in ("oxy", "sulfanyl", *DIATOMIC_BRIDGE_YL) and re.search(r"\d", base) and base.endswith("phenyl"):  #
+    if suf in ("oxy", "sulfanyl", *DIATOMIC_BRIDGE_YL, _IMINO_EN) and re.search(r"\d", base) and base.endswith("phenyl"):  #
         return True
     if suf == "amino":  # P-63.2.2.1.2：amino 桥按取代式融合，不拆。
         return False
     return bool(re.search(r"-\d+-yl$", base)) and not _SUBST_CHAIN_YL_RE.search(base)
 
 
+_IMINO_EN, _IMINO_ZH = "imino", "亚氨基"
+_BRIDGE_SPLIT_EN = BRIDGE_SPLIT_SUFFIX_EN + (_IMINO_EN,)  # 含 R-imino 融合式（P-66.4.1.2.1）
+_BRIDGE_SPLIT_ZH = BRIDGE_SPLIT_SUFFIX_ZH + (_IMINO_ZH,)
+
+
+def _flat_bridge_stem(stem: str) -> bool:
+    """词干是否为「简单前端 + R-imino」融合式（methylimino、ethylimino）：整体平铺不围栏。"""
+    if not (stem or "").endswith(_IMINO_EN):
+        return False
+    base = stem[: -len(_IMINO_EN)]
+    return (base.endswith(_FRONT_TAILS) and not _stem_has_locant(base)
+            and not _front_needs_enclosure(base, _IMINO_EN))
+
+
 def _split_bridge_suffix(stem: str) -> tuple[str, str] | None:
     """拆 O/S/N 桥平铺式为 (前端, 桥后缀)（P-63.2.2.1.1）。"""
-    for suf in BRIDGE_SPLIT_SUFFIX_EN:
+    for suf in _BRIDGE_SPLIT_EN:
         if not stem.endswith(suf):
             continue
         base = stem[: -len(suf)]
@@ -314,7 +338,7 @@ def _split_bridge_suffix_zh(zh_stem: str, en_stem: str) -> tuple[str, str] | Non
     sp = _split_bridge_suffix(en_stem)
     if sp is None:
         return None
-    for suf in BRIDGE_SPLIT_SUFFIX_ZH:
+    for suf in _BRIDGE_SPLIT_ZH:
         if zh_stem.endswith(suf):
             base = zh_stem[: -len(suf)]
             if base.endswith("基"):
@@ -328,7 +352,7 @@ def _zh_front_ji(zh_stem: str, sp: tuple[str, str]) -> tuple[str, str] | None:
     """复合前端的「基」被上游切掉：前端自带围栏时在拆分点补回（酰基前端走融合式除外）。"""
     if _ACYL_FRONT_RE.search(sp[0]) or not _front_needs_enclosure(*sp):
         return None
-    for suf in BRIDGE_SPLIT_SUFFIX_ZH:
+    for suf in _BRIDGE_SPLIT_ZH:
         base = zh_stem[: -len(suf)]
         if zh_stem.endswith(suf) and base and not base.endswith("基"):
             return f"{base}基", suf
@@ -342,7 +366,7 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
     mult = _mult_of("zh", zh_stem, subs, len(subs), omit)
     en = subs[0].get("en") or ""
     omit_ring_yl = omit and any(s.get("ring_yl") for s in subs)  # 母体位次已省时环基词干免围栏，与英文侧同判（P-16.5.1.2）
-    need = (any(s.get("paren") for s in subs)
+    need = ((any(s.get("paren") for s in subs) and not _flat_bridge_stem(en))
             or bool(en[:1].isdigit() and not flat and not omit_ring_yl)) and not _is_bare(subs)
     if not omit and _STEREO_LEAD_ENCLOSE_RE.match(en):  # 前导立体描述符 + 位次须整体围栏
         need = True
@@ -365,11 +389,12 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
     return _place(mult, _wrap_stem(zh_stem, need), subs, omit, primes)
 
 
-def _n_prefix(lang: str, n: int, stem: str, tokens: list[str], subs: list) -> str:
-    """N- 前缀：N-甲基 / N,N-二甲基（N,N'-双）。"""
+def _n_prefix(lang: str, n: int, stem: str, tokens: list[str], subs: list, need: bool = False) -> str:
+    """N- 前缀：N-甲基 / N,N-二甲基（带位次的复合基倍增作 N,N'-二(丙-2-基)，P-16.3.2）。"""
+    body = _wrap_stem(stem, need)
     if n == 1:
-        return f"{tokens[0]}-{stem}"
-    return f"{','.join(tokens)}-{_mult_of(lang, stem, subs, n)}{stem}"
+        return f"{tokens[0]}-{body}"
+    return f"{','.join(tokens)}-{_mult_of(lang, stem, subs, n)}{body}"
 
 
 def _is_bare(subs: list) -> bool:
@@ -399,13 +424,11 @@ def _parts_for_stem(stem: str, subs: list, omit: bool, primes: dict[int, int] | 
     """按词干生成中英文前缀（N- 类取代基加 N- 前缀并强制省略位次）。"""
     zh_stem = subs[0].get("zh") or ""
     if subs and all((s.get("kind") or "") in N_PREFIX_KINDS for s in subs):  # 整组全为 N-型才走 N-计数前缀，混入 C-型时走数字通道
-        need = (any(s.get("paren") for s in subs) or bool(stem and stem[0].isdigit())
-                or bool(_STEREO_LEAD_ENCLOSE_RE.match(stem)))  # 复合取代基、前导立体描述符须整体加括号（P-16.5.1.1）
-        s_en = _wrap_stem(stem, need)
-        s_zh = _wrap_stem(zh_stem, need)
+        need = (_stem_needs_paren(stem, subs, omit, flat)
+                or (len(subs) > 1 and _stem_has_locant(stem)))  # 复合取代基/带位次基的倍数组须整体加括号（P-16.5.1.1、P-16.3.2）
         tokens = sorted(("N" + "'" * ((primes or {}).get(s.get("attach_idx"), 0))) for s in subs)  # 同 N 用 N,N-；跨不同 N 用 N,N'-
-        return (_n_prefix("en", len(subs), s_en, tokens, subs),
-                _n_prefix("zh", len(subs), s_zh, tokens, subs))
+        return (_n_prefix("en", len(subs), stem, tokens, subs, need),
+                _n_prefix("zh", len(subs), zh_stem, tokens, subs, need))
     return (_prefix_one_en(stem, subs, omit, tail_sep, flat, primes),
             _prefix_one_zh(zh_stem, subs, omit, stem, tail_sep, flat, primes))
 

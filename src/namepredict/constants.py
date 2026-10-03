@@ -49,6 +49,10 @@ ISO_H_PROPS = ((2, "iso2H", "deuterio", "氘代"), (3, "iso3H", "tritio", "氚�
 P25_SENIOR = (N, F, Cl, Br, I, O, S, Se, Te, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)  # 杂原子优先序（稠环母体组分选择 P-25.3.2.4 / 稠环与杂环编号 P-25.3.3.1.2(b)）两条序列同源不同序，勿混用：P25 用于"选哪个组分当母体"，P145 用于"哪个杂原子得低位次"。
 P145_SENIOR = (F, Cl, Br, I, O, S, Se, Te, N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)
 
+# 母体骨架选择的优先原子序（P-44.1.2）：N 最高、C 最低。
+# L2 的 _SENIOR_ATOMS 与 L1 的标准价单核判定共用此唯一来源。
+PARENT_SENIOR_ATOMS = (N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl, O, S, Se, Te, C)
+
 # ── Hantzsch-Widman 杂单环（P-22.2.2）────────────
 HW_ID = "hw_mono"  # 生成式 HW 杂单环骨架 id：不登记进 _TEMPLATES，靠生成器产出词干
 HW_CLASS = "heterocycle"  # 其 naming_class（与 monohetero 分列，避免改动既有模板行为）

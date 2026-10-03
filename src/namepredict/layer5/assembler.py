@@ -80,6 +80,8 @@ def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None
         m_en, m_zh = MULT_EN.get(m), MULT_ZH.get(m)
         if not m_en or not m_zh:
             return None
+        if re.search(r"\d", en):  # 基名含位次（propan-2-yl）：同基倍增须括起 tri(propan-2-yl)
+            en = f"({en})"
         return f"{m_en}{en}{stem_en}", f"{m_zh}{zh}{stem_zh}{zh_tail}"
     compound = hyphen_join or any("(" in r[0] or "[" in r[0] for r in rows)  # 含自身带括号的复合组分：逐组分连字符 + 方括号围栏（P-16.5.2）
     en_parts: list[str] = []
@@ -388,6 +390,7 @@ def _heterane_names(numbered: dict) -> tuple[str, str] | None:
     lam = parent.get("lambda_n")  # 键数偏离标准值时带 λ（P-14.1.3），标准价不带
     lam_en = lambda_mark(lam, en=True) if lam else ""
     lam_zh = lambda_mark(lam) if lam else ""
+    yl = _heterane_yl_suffix(parent)  # 片段态（连哑原子）转 -yl / -ylidene，否则 None
     subs = [s for s in (numbered.get("substituents") or []) if s.get("en") and s.get("zh")]
     if not subs:  # 无取代基：裸母体氢化物（sulfane / λ4-sulfane）
         free_en = f"{lam_en}-{stem_en}" if lam_en else stem_en
@@ -395,11 +398,14 @@ def _heterane_names(numbered: dict) -> tuple[str, str] | None:
     else:  # 代基前缀与 λ、λ 与词干之间均以连字符分段：pentafluoro-lambda6-sulfane（P-21.1.2.1）
         tail_en = f"-{lam_en}-{stem_en}" if lam_en else stem_en
         tail_zh = f"-{lam_zh}-{stem_zh}" if lam_zh else stem_zh
-        hit = _phosphoryl_sub_names(subs, tail_en, tail_zh, parent.get("mol"), zh_tail="", hyphen_join=True)
+        # 片段（连哑原子）或带 λ 时逐组分连字符；母体态简单基平铺、余基括起
+        hyphen = bool(lam_en) or yl is not None
+        hit = _phosphoryl_sub_names(subs, tail_en, tail_zh, parent.get("mol"), zh_tail="",
+                                    hyphen_join=hyphen)
         if hit is None:
             return None
         free_en, free_zh = hit
-    return _heterane_to_yl(free_en, free_zh, _heterane_yl_suffix(parent))
+    return _heterane_to_yl(free_en, free_zh, yl)
 
 
 _STEM_H_PREFIX_RE = re.compile(r"^(?:\d+[a-z]?H[-,])+")  # 词干自带指示氢前缀（1H- / 3H,4H- / 7H-…）
@@ -804,10 +810,24 @@ def _urea_subs(numbered: dict, n_atoms: list[int], locants: tuple[str, str],
         s["kind"] = "side"  # 改走数字位次通道，不再按 N- 前缀渲染
     if len(subs) < 2 and not force:  # 全分子仅一个取代基、无歧义：位次省略（(4-甲基苯基)脲）
         return None
-    order = sorted(groups, key=lambda i: alpha_order_key(groups[i][0].get("en") or ""))
-    for pos, n_idx in enumerate(order[: len(locants)]):
+    idxs = sorted(groups)
+    nums = [int(x) for x in locants]
+    best_key, best_loc = None, None
+    if len(idxs) <= len(nums):  # P-14.4(f)：全部 N-取代基的位次多重集最低；(g) 字母序破平
+        from itertools import permutations
+        for perm in permutations(nums, len(idxs)):
+            loc_of = dict(zip(idxs, perm))
+            key = (tuple(sorted(loc_of[i] for i in idxs for _ in groups[i])),
+                   tuple(min(alpha_order_key(s.get("en") or "") for s in groups[i])
+                         for i in sorted(idxs, key=lambda j: loc_of[j])))
+            if best_key is None or key < best_key:
+                best_key, best_loc = key, loc_of
+    if best_loc is None:  # 取代基多于可用位次：退回字母序（保持原行为）
+        order = sorted(idxs, key=lambda i: alpha_order_key(groups[i][0].get("en") or ""))
+        best_loc = {n: nums[p] for p, n in enumerate(order[: len(nums)])}
+    for n_idx, loc in best_loc.items():
         for s in groups[n_idx]:
-            s["locant"] = locants[pos]
+            s["locant"] = str(loc)
     return "urea"
 
 

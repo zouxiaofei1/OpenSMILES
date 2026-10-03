@@ -7,7 +7,10 @@ from __future__ import annotations
 
 from rdkit import Chem
 
-from namepredict.constants import B, Br, C, Cl, F, I, N, O, P, Po, S, Se, STANDARD_BONDING_NUMBERS, Te
+from namepredict.constants import (
+    Al, As, B, Bi, Br, C, Cl, F, Ga, Ge, I, In, N, O, P, PARENT_SENIOR_ATOMS, Pb, Po, S, Sb, Se,
+    Si, Sn, STANDARD_BONDING_NUMBERS, Te, Tl,
+)
 
 # 酸性氧：与单一碳相连的羟基氧，或羧酸盐阴离子氧
 _ACID_O = "[$([#8;H1]),$([#8;-1;X1;H0])]"
@@ -48,6 +51,10 @@ _HETERANE_Z = tuple(z for z in STANDARD_BONDING_NUMBERS if z != C)
 
 HETERANE_CHAIN_Z = tuple(z for z in STANDARD_BONDING_NUMBERS if z not in (C, B))  # 硼烷按 P-21.2.2 排除
 
+# 标准价单核母体氢化物中心元素（P-44.1.2 + P-68.1/2/3）：被烃基饱和时自任母体。
+# 排除 O/S/Se/Te（P-68.4.0 硫族不自任母体）与 N（取代胺走 P-62 后缀）。
+HYDRIDE_STD_Z = frozenset({B, Al, Ga, In, Tl, Si, Ge, Sn, Pb, P, As, Sb, Bi})
+
 
 def _oxo_guard(z: int) -> str:
     """排除带 =O 的中心（归含氧酸通路）；非硫元素另排除 =S（归磷硫酰通路），硫自身的 S=S 属链不饱和。"""
@@ -58,6 +65,16 @@ def _oxo_guard(z: int) -> str:
 def _heterane_local(z: int, v: int) -> str:
     """杂原子烃中心的局部模式：中性、键数为 v、不带 oxo/thioxo。"""
     return f"[#{z};v{v};+0{_oxo_guard(z)}]"
+
+
+def _standard_heterane_local(z: int) -> str:
+    """标准价单核母体中心：非环、中性、无 oxo/thioxo、邻居只含 C 或 H。
+
+    !R：环内标准价杂原子走 HW/环系路径（C1CCPCC1→phosphinane）。
+    邻居限 C/H：排除连杂原子的（C[Si](C)(C)O/Cl 走取代基，不夺母体）。
+    """
+    return (f"[#{z};v{STANDARD_BONDING_NUMBERS[z]};+0;!R{_oxo_guard(z)}"
+            f";!$([#{z}]~[!#6;!#1])]")
 
 
 HETERANE_MIN_CHAIN = {N: 3, O: 3, S: 3, Se: 3, Te: 3, Po: 3}  # 取代链须 ≥3 连的元素：硫族 1–2 连续原子不作母体氢化物（P-68.4.0），N 参照 P-68.3.1.4.1 的 triazane 起
@@ -71,6 +88,22 @@ def _is_parent_hydride(mol, comp: set[int], z: int) -> bool:
             if n.GetAtomicNum() not in (1, z):
                 return False
     return True
+
+
+def is_standard_parent_hydride_center(mol, idx: int) -> bool:
+    """标准价单杂原子是否为母体中心（P-44.1.2 / P-68.1/2/3）。
+
+    局部形态由 _standard_heterane_local 的 SMARTS 保证，此处只补两条全分子判据：
+    元素唯一（多于一个则退取代基，如 C[Si](C)(C)CC[Si](C)(C)C）；
+    该元素为全分子最优先元素（更优先元素在场则不自任母体，避免丢原子）。
+    """
+    z = mol.GetAtomWithIdx(idx).GetAtomicNum()
+    if z not in HYDRIDE_STD_Z:
+        return False
+    if sum(1 for a in mol.GetAtoms() if a.GetAtomicNum() == z) != 1:
+        return False
+    present = {a.GetAtomicNum() for a in mol.GetAtoms()}
+    return next((s for s in PARENT_SENIOR_ATOMS if s in present), None) == z
 
 
 def heterane_chain_ok(mol, idx: int) -> bool:
@@ -90,7 +123,7 @@ def heterane_chain_ok(mol, idx: int) -> bool:
                 comp.add(n.GetIdx())
                 stack.append(n.GetIdx())
     if len(comp) == 1:
-        return False  # 标准键数的孤立杂原子不自任母体（硫醚/醚等归 P-41 类 41）
+        return is_standard_parent_hydride_center(mol, idx)  # 标准价单核母体氢化物（P-44.1.2）
     if _is_parent_hydride(mol, comp, z):
         return True
     return len(comp) >= HETERANE_MIN_CHAIN.get(z, HETERANE_CHAIN_MIN_DEFAULT)
@@ -158,6 +191,8 @@ FG_SMARTS: tuple[tuple[str, str], ...] = (
       if v > STANDARD_BONDING_NUMBERS[z]],
     # 杂原子链母体（P-21.2.2）：每元素一条（或多条分档），命中即该原子属于一条均一杂原子链
     *[("heterane", p) for z in HETERANE_CHAIN_Z for p in _heterane_chain_local(z)],
+    # 标准价单核母体氢化物（P-44.1.2 / P-68.1/2/3）：被烃基饱和的杂原子自任母体
+    *[("heterane", _standard_heterane_local(z)) for z in sorted(HYDRIDE_STD_Z)],
 )
 
 

@@ -22,10 +22,15 @@ def is_nonstandard(atom: Atom) -> bool:
     return std is not None and bonding_number(atom) != std
 
 
+def is_lambda_marked(atom: Atom) -> bool:
+    """该原子是否应标 λn：键数偏离标准值且电中性（P-14.1.2；带电原子归 -ium/-ide 路径）。"""
+    return atom.GetFormalCharge() == 0 and is_nonstandard(atom)
+
+
 def nonstandard_bonding(mol: Mol) -> dict[int, int]:
     """全分子的非标准键数原子：{原子 idx: 键数}；带电原子归 -ium/-ide 路径，不标 λ。"""
     return {a.GetIdx(): bonding_number(a) for a in mol.GetAtoms()
-            if a.GetFormalCharge() == 0 and is_nonstandard(a)}
+            if is_lambda_marked(a)}
 
 
 def lambda_mark(n: int, *, en: bool = False) -> str:

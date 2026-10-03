@@ -63,6 +63,7 @@ PHENANTHRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "4b", "5", "6"
 PYRENE_LABELS: tuple[str, ...] = ("1", "2", "3", "3a", "4", "5", "5a", "6", "7", "8", "8a", "8b", "9", "10", "10a", "10b")  # pyrene(16 原子): 外周 1-10(P-25.3.3.3.1)
 XANTHENE_LABELS: tuple[str, ...] = ("1", "2", "3", "4", "4a", "5", "6", "7", "8", "8a", "9", "9a", "10", "10a")  # xanthene/thioxanthene: 中央碳 9、O/S 10
 STEROID_LABELS: tuple[str, ...] = tuple(str(i) for i in range(1, 18))  # 甾体传统编号 1-17 全数字(10/13 为角甲基碳)
+ADAMANTANE_LABELS: tuple[str, ...] = tuple(str(i) for i in range(1, 11))  # 金刚烷保留编号 1-10：1,3,5,7 为次甲基碳，其余为亚甲基碳
 
 _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一事实来源）
     "benzene":     {"smiles": "c1ccccc1",             "stem_en": "benzene",    "stem_zh": "苯",   "naming_class": "mono_carbo", "fused": True, "fused_prefix": ("benzo", "苯并")},  # carbocycles
@@ -160,7 +161,7 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "pyrrolopyridazine12b": {"smiles": "c1ccn2ncccc12", "stem_en": "pyrrolo[1,2-b]pyridazine", "stem_zh": "吡咯并[1,2-b]哒嗪", "naming_class": "fused56", "fused": True, "fused_prefix": ("pyrrolo[1,2-b]pyridazino", "吡咯并[1,2-b]哒嗪并")},  # 桥头 N（5+6，9 原子）
     # 7H-pyrrolo[2,3-d]pyrimidine 未登记：它会与 pyrimido[5,4-b]indole 争夺母体组分并致金标退化（tiers-25570），实测净收益为负
     "pyrazolopyrimidine54d": {"smiles": "c1n[nH]c2ncncc12", "stem_en": "pyrazolo[5,4-d]pyrimidine", "stem_zh": "吡唑并[5,4-d]嘧啶", "naming_class": "purine", "fused": True, "fused_prefix": ("pyrazolo[5,4-d]pyrimidino", "吡唑并[5,4-d]嘧啶并")},
-    "adamantane":   {"smiles": "C1C2CC3CC1CC(C2)C3", "stem_en": "adamantane", "stem_zh": "金刚烷", "naming_class": "adamantane", "fused": False},  # 表 2.7 保留名：三环桥烃，非稠合零件故 fused=False
+    "adamantane":   {"smiles": "C1C2CC3CC1CC(C2)C3", "stem_en": "adamantane", "stem_zh": "金刚烷", "naming_class": "adamantane", "fused": False, "standard": (ADAMANTANE_LABELS, (1, 2, 3, 4, 5, 6, 7, 8, 0, 9))},  # 表 2.7 保留名：三环桥烃，非稠合零件故 fused=False；固定编号 1,3,5,7 给次甲基碳（P-25.1 保留名表）
     "benzodiazepine14": {"smiles": "N1C=CN=Cc2ccccc12", "stem_en": "1,4-benzodiazepine", "stem_zh": "1,4-苯并二氮杂卓", "naming_class": "naph_family", "fused": True, "locant_prefix": "1,4-", "fused_prefix": ("[1,4]benzodiazepino", "[1,4]苯并二氮杂卓并")},  # 两个 N 相隔 C2/C3（P-25.1 表 2.8）
     "benzoxazine31": {"smiles": "N1COCc2ccccc12", "stem_en": "3,1-benzoxazine", "stem_zh": "3,1-苯并噁嗪", "naming_class": "naph_family", "fused": True, "locant_prefix": "3,1-", "fused_prefix": ("[3,1]benzoxazino", "[3,1]苯并噁嗪并")},  # 母体式：N1/C2/O3/C4，羰基由 FG 后缀补（2,4-二酮）
     "phenoxazine":  {"smiles": "c1ccc2Nc3ccccc3Oc2c1", "stem_en": "phenoxazine", "stem_zh": "吩噁嗪", "naming_class": "phenothiazine", "fused": True, "locant_prefix": "10H-", "prefix_nh_conditional": True, "fused_prefix": ("phenoxazino", "吩噁嗪并")},  # 吩噻嗪的 O 类似物（表 2.8 第 4 位）；N10 得指示氢

@@ -7,10 +7,14 @@ from enum import Enum
 from rdkit.Chem import Mol
 
 from namepredict.tools import memo
-from namepredict.constants import Al, As, B, Bi, C, Ga, Ge, H, In, N, O, P, PARENT_HYDRIDE_STEMS, Pb, Po, S, Sb, Se, Si, Sn, Te, Tl
+from namepredict.constants import (
+    Al, As, B, Bi, C, Ga, Ge, H, In, N, O, P, PARENT_HYDRIDE_STEMS, PARENT_SENIOR_ATOMS, Pb, Po,
+    S, Sb, Se, Si, Sn, Te, Tl,
+)
 from namepredict.layer1.functional_group_inventory import (
     OXO_FG_CLASSES, FunctionalGroupClass, FunctionalGroupOccurrence, inventory_from_info,
 )
+from namepredict.layer1.fg_local_smarts import is_standard_parent_hydride_center
 from namepredict.layer2.chain_walk import _all_chains_through, _chain_through_two, _longest_chain
 from namepredict.layer1.ring_systems import sssr_rings
 from namepredict.layer4.numbering_engine import narrow
@@ -141,9 +145,10 @@ def _heterane_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     out: list[ParentSkeleton] = []
     for z, atoms in by_z.items():
         zset = set(atoms)
-        if len(zset) == 1:  # 单原子只认非标准键数（P-14.1.3）：链模式的单端也会命中
-            if is_nonstandard(mol.GetAtomWithIdx(atoms[0])):
-                out.append(ParentSkeleton(SkeletonTopology.ACYCLIC, (atoms[0],), covered[atoms[0]]))
+        if len(zset) == 1:  # 单原子：非标准价（P-14.1.3）或标准价单核母体氢化物（P-44.1.2）
+            idx = atoms[0]
+            if is_nonstandard(mol.GetAtomWithIdx(idx)) or is_standard_parent_hydride_center(mol, idx):
+                out.append(ParentSkeleton(SkeletonTopology.ACYCLIC, (idx,), covered[idx]))
             continue
         banned = {a.GetIdx() for a in mol.GetAtoms()
                   if a.GetAtomicNum() == z and a.GetIdx() not in zset}  # 不越出杂原子烃网络
@@ -163,7 +168,7 @@ def _chain_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     return [ParentSkeleton(SkeletonTopology.ACYCLIC, tuple(path), _chain_coverage(path, occurrences)) for path in unique.values()]
 
 
-_SENIOR_ATOMS = (N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl, O, S, Se, Te, C)
+_SENIOR_ATOMS = PARENT_SENIOR_ATOMS  # 母体优先序唯一来源（constants，P-44.1.2）
 _SENIORITY = {z: i for i, z in enumerate(reversed(_SENIOR_ATOMS), 1)}  # 元素 → 优先序数（N 最高，C 最低）
 
 

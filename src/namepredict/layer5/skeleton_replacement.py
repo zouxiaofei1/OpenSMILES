@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from namepredict.constants import C, MULT_EN, MULT_ZH, P145_SENIOR
-from namepredict.tools.lambda_notation import bonding_number, is_nonstandard, lambda_mark
+from namepredict.tools.lambda_notation import bonding_number, is_lambda_marked, lambda_mark
 
 
 A_PREFIX_EN = {5: "bora", 7: "aza", 8: "oxa", 14: "sila",
@@ -29,7 +29,7 @@ def prefix_from_chain(mol, chain: list[int], *, lambda_ok: bool = True) -> tuple
             continue
         by_z.setdefault(z, []).append(a)
         atom = mol.GetAtomWithIdx(a)
-        if lambda_ok and is_nonstandard(atom):
+        if lambda_ok and is_lambda_marked(atom):
             lam[i + 1] = bonding_number(atom)
     if not by_z:
         return "", ""

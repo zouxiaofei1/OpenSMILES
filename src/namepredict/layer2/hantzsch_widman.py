@@ -17,7 +17,7 @@ from namepredict.constants import (
     HW_UNSAT_SIX, HW_UNSAT_TAIL, HW_VOWELS, HW_ZH_RING, HW_ZH_SHORT, I,
     MULT_EN, MULT_ZH, N, P, P145_SENIOR, Pb, Sb, Si, Sn, zh_numeral,
 )
-from namepredict.tools.lambda_notation import bonding_number, is_nonstandard, lambda_mark
+from namepredict.tools.lambda_notation import bonding_number, is_lambda_marked, lambda_mark
 
 _PT = Chem.GetPeriodicTable()
 
@@ -124,7 +124,7 @@ def ring_lambda_atoms(ordered, mol) -> dict[int, int]:
     out: dict[int, int] = {}
     for i, idx in enumerate(ordered):
         atom = mol.GetAtomWithIdx(idx)
-        if atom.GetAtomicNum() in HW_RING_LAMBDA_Z and is_nonstandard(atom):
+        if atom.GetAtomicNum() in HW_RING_LAMBDA_Z and is_lambda_marked(atom):
             out[i + 1] = bonding_number(atom)
     return out
 

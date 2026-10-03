@@ -253,13 +253,15 @@ def _hydro_indicated_atoms(parent: dict, chain: list[int]) -> list[int]:
 
 
 def _nh_sites(heteros: list[int], mol) -> list[int]:
-    """P-22.2.2.1.4 指示氢位：环内可带 H 的 N（N-取代者须本为母体氢化物 NH 位，非 =N- 位）。"""
+    """P-14.4(b)/P-31.2.2 指示氢位：环内 NH 及其 N-取代等价位；无 NH 则位次不定。"""
     def _n(a):
         return mol.GetAtomWithIdx(a)
-    has_h = [a for a in heteros if _n(a).GetAtomicNum() == 7 and _n(a).GetTotalNumHs() > 0]
-    subs = [a for a in heteros if _n(a).GetAtomicNum() == 7  # 无 H 的 N-取代者：三键全单且带取代基
-            and _n(a).GetTotalNumHs() == 0 and _n(a).GetDegree() == 3]
-    return has_h + [a for a in subs if has_h or _n(a).IsInRingSize(5)]
+    n_atoms = [a for a in heteros if _n(a).GetAtomicNum() == 7]
+    has_h = [a for a in n_atoms if _n(a).GetTotalNumHs() > 0]
+    if not has_h:
+        return []
+    subs = [a for a in n_atoms if _n(a).GetTotalNumHs() == 0 and _n(a).GetDegree() == 3]
+    return has_h + subs  # NH 与 N-取代位同为母体指示氢位：位次集并列，交由后续 (c)(f) 裁决
 
 def resolve_numbering(parent: dict, substituents: list, node_key: str, feature_fn, ladder_fn) -> list[int] | None:
     """编号裁决公共外壳：候选 → 收窄阶梯 → 并列等价 → 写回节点并按位次升序返回。"""
