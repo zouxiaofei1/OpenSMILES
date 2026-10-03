@@ -12,11 +12,12 @@ from itertools import combinations, permutations
 from rdkit import Chem
 
 from namepredict.constants import (
-    C, HW_CLASS, HW_COMPONENT_PREFIX, HW_ID, HW_MAX_VALENCE, HW_PREFIX_EN,
-    HW_PREFIX_ZH, HW_SAT_SIX, HW_SAT_TAIL, HW_SIX_A, HW_SIX_B, HW_UNSAT_SIX,
-    HW_UNSAT_TAIL, HW_VOWELS, HW_ZH_RING, HW_ZH_SHORT, MULT_EN, MULT_ZH, N,
-    P145_SENIOR, zh_numeral,
+    As, B, Bi, C, Ge, HW_CLASS, HW_COMPONENT_PREFIX, HW_ID, HW_MAX_VALENCE,
+    HW_PREFIX_EN, HW_PREFIX_ZH, HW_SAT_SIX, HW_SAT_TAIL, HW_SIX_A, HW_SIX_B,
+    HW_UNSAT_SIX, HW_UNSAT_TAIL, HW_VOWELS, HW_ZH_RING, HW_ZH_SHORT, I,
+    MULT_EN, MULT_ZH, N, P, P145_SENIOR, Pb, Sb, Si, Sn, zh_numeral,
 )
+from namepredict.tools.lambda_notation import bonding_number, is_nonstandard, lambda_mark
 
 _PT = Chem.GetPeriodicTable()
 
@@ -107,6 +108,27 @@ def locant_string(by_z: dict[int, list[int]]) -> str:
     return ",".join(str(loc) for locs in by_z.values() for loc in locs)
 
 
+def locant_string_lambda(by_z: dict[int, list[int]], lambda_at: dict[int, int] | None, *,
+                         en: bool) -> str:
+    """带 λ 的位次串（P-22.2.7.1：λn 紧跟杂原子位次之后，如 1λ6,3λ5）。"""
+    marks = lambda_at or {}
+    return ",".join(f"{loc}{lambda_mark(marks[loc], en=en)}" if loc in marks else str(loc)
+                    for locs in by_z.values() for loc in locs)
+
+
+HW_RING_LAMBDA_Z = frozenset({P, As, Sb, Bi, B, I, Si, Ge, Sn, Pb})  # 环内 λ 适用元素：硫族/氮氧的高价由 dioxo/oxide 前缀表达，不复标 λ
+
+
+def ring_lambda_atoms(ordered, mol) -> dict[int, int]:
+    """已编号环序 → {1 起位次: 键数}，仅收键数偏离标准值的环内杂原子（P-14.1.3）。"""
+    out: dict[int, int] = {}
+    for i, idx in enumerate(ordered):
+        atom = mol.GetAtomWithIdx(idx)
+        if atom.GetAtomicNum() in HW_RING_LAMBDA_Z and is_nonstandard(atom):
+            out[i + 1] = bonding_number(atom)
+    return out
+
+
 def _hetero_terms(n: int, zs, by_z: dict[int, list[int]], *, en: bool) -> list[str]:
     """元素前缀项（含倍数词）；中文在含氮五/六元环里把 N 折入唑/嗪基干，故中文跳过 N。"""
     has_n = N in zs
@@ -133,10 +155,11 @@ def _zh_folded_n(n: int, zs, by_z: dict[int, list[int]], zh_base: str) -> str:
     return f"{MULT_ZH[count]}{zh_base}" if count else zh_base
 
 
-def hw_name_from_cycle(zs, n_db: int) -> tuple[str, str, str] | None:
+def hw_name_from_cycle(zs, n_db: int, lambda_at: dict[int, int] | None = None) -> tuple[str, str, str] | None:
     """已编号环序元素表 + 环内双键数 → (英文名, 中文名, 英文位次前缀)。
 
     传入的 zs 必须是编号后的顺序：第 i 个原子的位次为 i+1。
+    lambda_at 为 {1 起位次: 键数}，命中者在位次后带 λn（P-22.2.7.1）。
     """
     if not 3 <= len(zs) <= 10:
         return None
@@ -148,10 +171,14 @@ def hw_name_from_cycle(zs, n_db: int) -> tuple[str, str, str] | None:
     if stem is None or zh_base is None:
         return None
     zh_base = _zh_folded_n(len(zs), zs, by_z, zh_base)
-    locs = "" if omit_locants(len(zs), zs) else f"{locant_string(by_z)}-"
-    en = f"{locs}{elide_a(_hetero_terms(len(zs), zs, by_z, en=True) + [stem])}"
-    zh = f"{locs}{''.join(_hetero_terms(len(zs), zs, by_z, en=False))}{zh_base}"
-    return en, zh, locs
+    if omit_locants(len(zs), zs):
+        locs_en = locs_zh = ""
+    else:
+        locs_en = f"{locant_string_lambda(by_z, lambda_at, en=True)}-"
+        locs_zh = f"{locant_string_lambda(by_z, lambda_at, en=False)}-"
+    en = f"{locs_en}{elide_a(_hetero_terms(len(zs), zs, by_z, en=True) + [stem])}"
+    zh = f"{locs_zh}{''.join(_hetero_terms(len(zs), zs, by_z, en=False))}{zh_base}"
+    return en, zh, locs_en
 
 
 def omit_locants(n: int, zs) -> bool:
@@ -235,7 +262,7 @@ def parent_names(sid: str | None, mol, chain) -> tuple[str, str] | None:
     zs = tuple(mol.GetAtomWithIdx(a).GetAtomicNum() for a in ordered)
     if not in_scope(zs):
         return None
-    names = hw_name_from_cycle(zs, ring_double_bonds(mol, ordered))
+    names = hw_name_from_cycle(zs, ring_double_bonds(mol, ordered), ring_lambda_atoms(ordered, mol))
     return (names[0], names[1]) if names else None
 
 

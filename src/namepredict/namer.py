@@ -10,7 +10,9 @@ from rdkit import Chem
 
 from namepredict.tools import memo
 from namepredict.tools.common_names import CommonNameCache
-from namepredict.constants import BIS_EN, BIS_ZH, N_PREFIX_KINDS, OXO_CENTER_KINDS
+from namepredict.constants import (
+    BIS_EN, BIS_ZH, N_PREFIX_KINDS, OXO_CENTER_KINDS, SIMPLE_MAX_HEAVY, SIMPLE_MOLECULES,
+)
 from namepredict.layer0.preprocessor import preprocess
 from namepredict.layer0.salt import _frag_role, dissociate_salt, pair_unique_ions
 from namepredict.layer1.analyzer import analyze
@@ -34,6 +36,13 @@ def _fail(time_ms: float = 0.0, reason: str = "parse", **meta) -> NameResult:
 def _elapsed_ms(t0: float) -> float:
     """计算自 t0 起已消耗的毫秒数。"""
     return (time.perf_counter() - t0) * 1000.0
+
+
+def _simple_species(mol) -> tuple[str, str] | None:
+    """≤3 重原子的单质/简单分子查表（constants.SIMPLE_MOLECULES）；未命中返回 None。"""
+    if mol.GetNumHeavyAtoms() > SIMPLE_MAX_HEAVY:
+        return None
+    return SIMPLE_MOLECULES.get(Chem.MolToSmiles(mol))
 
 
 def _chain_meta(numbered: dict) -> dict:
@@ -242,6 +251,10 @@ def _name_mol(
     t0 = t0 if t0 is not None else time.perf_counter()
     if mol is None:
         return _fail(_elapsed_ms(t0), "parse")
+    simple = _simple_species(mol)  # 单元素/极简单分子无母体链环，直接在入口给出保留名
+    if simple is not None:
+        return NameResult(en=simple[0], zh=simple[1], success=True, source="iupac",
+                          time_ms=_elapsed_ms(t0), meta={"reason": "simple_species"})
     organic, salt = dissociate_salt(mol)
     if root_ctx is None:  # 顶层整分子
         root_mol, to_root = organic, list(range(organic.GetNumAtoms()))

@@ -106,6 +106,7 @@ def number(parent: dict, substituents: list) -> dict:
         hydro, pre = frozenset(), ("", "")
     from namepredict.layer2.hantzsch_widman import is_hw_scaffold
     extra = _extra_indicated(packed)
+    packed["lambda_locants"] = _lambda_locants(packed.get("mol"), packed.get("chain"), labels)
     packed["indicated_h_locants"] = indicated_hydrogen(
         packed.get("mol"), packed.get("chain"), labels, hydro, extra,
         packed.get("scaffold_id"))
@@ -114,6 +115,33 @@ def number(parent: dict, substituents: list) -> dict:
     packed["hydro_prefix"] = pre
     # print("layer4result",result,"\n\n\n\n\n")
     return result
+
+
+def _lambda_locants(mol, chain, labels) -> tuple[tuple[str, int, int], ...]:
+    """整体编号下需 λ/δ 标注的骨架原子 → ((位次, 键数|0, δ 双键数|0), …)。
+
+    环内 λ 只用于 HW_RING_LAMBDA_Z 元素：硫族/氮氧的环内高价由 dioxo/oxide 前缀表达，
+    名称里不复标 λ（与 P-22.2.7 同一口径）。δ 计该原子直接相连的连续双键数（P-25.7.2）。
+    """
+    from namepredict.layer2.hantzsch_widman import HW_RING_LAMBDA_Z
+    from namepredict.tools.lambda_notation import bonding_number, is_nonstandard
+
+    if mol is None or not chain or not labels:
+        return ()
+    ring = set(chain)
+    out: list[tuple[str, int, int]] = []
+    for idx, loc in zip(chain, labels):
+        atom = mol.GetAtomWithIdx(idx)
+        if atom.GetAtomicNum() == 6:
+            continue
+        n = bonding_number(atom) if atom.GetAtomicNum() in HW_RING_LAMBDA_Z and is_nonstandard(atom) else 0
+        delta = sum(1 for b in atom.GetBonds()  # 只数骨架内的连续双键，=O/=S 等环外双键不计
+                    if b.GetBondTypeAsDouble() == 2.0 and not b.GetIsAromatic()
+                    and b.GetOtherAtomIdx(idx) in ring)
+        delta = delta if delta >= 2 else 0  # 单个双键常规表达，δ 只标连续形式（P-25.7.2）
+        if n or delta:
+            out.append((str(loc), n, delta))
+    return tuple(out)
 
 
 def _ind_h_carbon_scaffold_ok(scaffold_id: str | None) -> bool:

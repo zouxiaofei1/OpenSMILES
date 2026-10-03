@@ -134,6 +134,32 @@ def test_heterane_chain_excludes_ring_and_charged():
     assert n.name("NNCC").en == "hydrazinylethane"
 
 
+# ── 环系 λ（P-22.2.7 / P-23.6 / P-25.6）──────────
+RING_LAMBDA_CASES = [
+    ("O=P1(NCCCl)OCCCN1", "1,3,2lambda5-oxazaphosphinane"),          # P-22.2.7.1：λ 紧跟杂原子位次
+    ("O=S1(=O)N2CN3CCN(C2)CN1C3", "9lambda6-thia-"),                 # P-23.6.1：λ 置于 'a' 前缀之前
+    ("N(=[N+]=[N-])I1OC(C2=C1C=CC=C2)=O", "1-azido-1lambda3-"),      # P-25.6：λ 在稠环系统名首
+]
+
+
+@pytest.mark.parametrize("smiles,fragment", RING_LAMBDA_CASES)
+def test_ring_lambda_present(smiles, fragment):
+    """环系非标准键数标 λ，且各自落在规则要求的位置。"""
+    assert fragment in n.name(smiles).en
+
+
+def test_ring_lambda_absent_for_standard_valence():
+    """标准价杂环不带 λ（噻吩/吡啶）。"""
+    assert "lambda" not in n.name("c1ccsc1").en
+    assert "lambda" not in n.name("c1ccncc1").en
+
+
+def test_heterane_chain_lambda():
+    """链上非标准键数原子带 λ 位次（P-21.2.4：λn 置于各位次之后）。"""
+    assert n.name("[SH2](S)S").en == "2lambda4-trisulfane"   # P-21.2.4 原文例
+    assert n.name("SSSS").en == "tetrasulfane"               # 标准价链不带 λ
+
+
 def test_heterane_chain_excludes_non_parent_hydrides():
     """不是母体氢化物的同元素相邻原子不算链：过氧 -O-OH、二硫化物 R-S-S-R。"""
     assert "oxidane" not in n.name("CC(=O)OO").en        # 过氧乙酸走含氧酸通路

@@ -1,0 +1,16 @@
+FAILED tests/unit/test_acyl.py::test_ring_hetero_acyl_one
+FAILED tests/unit/test_amide.py::test_guard_no_false_normalization
+FAILED tests/unit/test_bridged_naming.py::test_bridged_parent_name
+FAILED tests/unit/test_bridged_numbering.py::test_numbering_is_deterministic
+FAILED tests/unit/test_bridged_system.py::test_entry_gate_marks_bridged
+FAILED tests/unit/test_carbonyl.py::test_formyl_prefix
+FAILED tests/unit/test_carbonyl.py::test_formyl_prefix
+FAILED tests/unit/test_carbonyl.py::test_formyl_prefix
+FAILED tests/unit/test_noncarbon_hydride.py::test_heterane_chain_saturated
+FAILED tests/unit/test_noncarbon_hydride.py::test_heterane_chain_unsaturation
+FAILED tests/unit/test_prefixes.py::test_alkyl_alpha_key_tert_pentyl
+FAILED tests/unit/test_prefixes.py::test_alkyl_alpha_key_tert_pentyl
+FAILED tests/unit/test_registry.py::test_retained_prefix_whole_molecule
+FAILED tests/unit/test_ring_engine.py::test_azulene_no_longer_misidentified_as_naphthalene
+FAILED tests/unit/test_ring_engine.py::test_saturated_skeleton_near_neighbours_stay_unmatched
+FAILED tests/unit/test_stereo_rs.py::test_non_stereo_leading_parens_unaffected

@@ -22,7 +22,7 @@ from namepredict.layer5.stems import (
 )
 from namepredict.layer5.assembler_prefixes import (
     _ACYL_FRONT_RE, _LOCANT_RUN_RE, _SIMPLE_CHAIN_YL_RE, _STEREO_LEAD_ENCLOSE_RE, _enclose,
-    _mult_rows, _prefix_for, oxo_arm_fence,
+    _mult_rows, _prefix_for, join_isotope_descriptor, oxo_arm_fence,
 )
 from namepredict.layer5.stereo import _split_stereo_lead as _stereo_lead
 from namepredict.types import NameResult
@@ -333,6 +333,27 @@ def _heterane_to_yl(en: str, zh: str, suffix: str | None) -> tuple[str, str]:
     return en, zh
 
 
+def _heterane_chain_lambda(numbered: dict) -> tuple[str, str]:
+    """杂原子链的 λ 位次前缀（P-21.2.4：λn 置于各位次之后）：2λ4- / 2lambda4-。"""
+    from namepredict.layer4.locant_calc import atom_locant
+    from namepredict.tools.lambda_notation import locant_lambda_str
+
+    parent = numbered.get("parent") or {}
+    lams, mol, chain = parent.get("lambda_atoms") or {}, parent.get("mol"), list(parent.get("chain") or ())
+    if not lams or mol is None or not chain:
+        return "", ""
+    facts = parent.get("numbering_scaffold")
+    items: list[tuple[str, int]] = []
+    for idx in chain:
+        n = lams.get(idx)
+        loc = atom_locant(chain, idx, facts) if n else None
+        if loc is not None:
+            items.append((str(loc), n))
+    if not items:
+        return "", ""
+    return f"{locant_lambda_str(items, en=True)}-", f"{locant_lambda_str(items)}-"
+
+
 def _heterane_chain_yl(numbered: dict, names: tuple[str, str]) -> tuple[str, str]:
     """杂原子链片段（带哑原子）→ -yl 名（P-29.2）：disilane → disilanyl、pentasilane → pentasilan-2-yl。"""
     parent = numbered.get("parent") or {}
@@ -597,8 +618,26 @@ def _ensure_fused_stem(numbered: dict) -> bool:
     if name is None or not name[0] or not name[1]:
         return False
     pre = _indicated_h_prefix(parent)  # L4 已按整体编号定好指示氢位次（P-58.2.1），此处补到最前
-    parent["stem_en"], parent["stem_zh"] = pre + name[0], pre + name[1]
+    lam_en, lam_zh = _lambda_prefix(parent)  # λ 置于名首、指示氢之后（P-25.6 / P-24.8.2）
+    parent["stem_en"], parent["stem_zh"] = pre + lam_en + name[0], pre + lam_zh + name[1]
     return True
+
+
+def _lambda_prefix(parent: dict) -> tuple[str, str]:
+    """环系整体编号下的 λ/δ 前缀（P-25.6 / P-25.7.2）：5λ5-、2λ4δ2-；无则两空串。"""
+    from namepredict.tools.lambda_notation import delta_mark, lambda_mark
+
+    items = parent.get("lambda_locants") or ()
+    if not items:
+        return "", ""
+    def render(en: bool) -> str:
+        parts = []
+        for loc, n, delta in items:
+            mark = lambda_mark(n, en=en) if n else ""
+            mark += delta_mark(delta) if delta else ""
+            parts.append(f"{loc}{mark}")
+        return ",".join(parts) + "-"
+    return render(True), render(False)
 
 def _oxoacid_arm_zh(zh: str) -> str:
     """含氧酸 O-侧臂中文词：简单基去「基」，复合名原样保留。"""
@@ -869,7 +908,9 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
                                     stem=(parent["stem_bare_en"], parent["stem_bare_zh"]),
                                     coda=""), n, numbered)
         if bare is not None and kind == "heterane":
-            return _heterane_chain_yl(numbered, bare)  # 链作取代基时转 -yl（disilane → disilanyl）
+            yl_en, yl_zh = _heterane_chain_yl(numbered, bare)  # 链作取代基时转 -yl（disilane → disilanyl）
+            lam_en, lam_zh = _heterane_chain_lambda(numbered)  # 非标准键数原子带 λ（P-21.2.4）
+            return lam_en + yl_en, lam_zh + yl_zh
         return bare
     if entry is not None:
         if kind == "ester" and parent.get("thio_side"):  # P-65.6.3.3.7.1 硫代羧酸 S-酯：thioate/硫酯词尾，无 C1/C2 保留名
@@ -1248,6 +1289,7 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
         return _unsupported(n, kind)
     names = join_hydro_prefix(names, numbered)
     names = join_ring_cation_suffix(numbered, names)
+    names = join_isotope_descriptor(names, numbered)  # 核素描述符紧贴母体词干前（P-82.2.1）
 
     joined = join_kind_name(kind, _prefix_for(numbered, kind, n), names, numbered)
     if joined is None:

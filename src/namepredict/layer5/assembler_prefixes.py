@@ -7,7 +7,7 @@ from namepredict.layer4.locant_calc import atom_locant, locant_str_sort
 from namepredict.tools.re import alpha_order_key
 from namepredict.constants import (
     BIS_EN, BIS_EN_SET, BIS_ZH, BRIDGE_DIATOMIC_ZH, BRIDGE_SPLIT_SUFFIX_EN, BRIDGE_SPLIT_SUFFIX_ZH,
-    CATION_YL_STEMS, DIATOMIC_BRIDGE_YL, MULT_EN, MULT_ZH,
+    CATION_YL_STEMS, DIATOMIC_BRIDGE_YL, HALO_Z, ISO_H_PROPS, ISO_NUCLIDE_PROP, MULT_EN, MULT_ZH,
     N_LOCANT_KINDS, N_PREFIX_KINDS, OXO_CENTER_KINDS,
 )
 
@@ -38,12 +38,16 @@ def _locant_str(subs: list, primes: dict[int, int] | None = None) -> str:
     return ",".join(str(x) for x in locant_str_sort(tokens))
 
 _DIGIT_RE = re.compile(r"\d")  # 取代基名中的位次数字
+# 核素描述符 (14C) / (2,3-13C2)：非嵌套围栏，判定外层围栏时须排除（(2S) 类立体描述符不匹配）
+_ISO_DESC_RE = re.compile(r"\(\d+(?:,\d+)*-\d{1,3}[A-Z][a-z]?\d*\)|\(\d{2,}[A-Z][a-z]?\d*\)")
 
 
 def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = None,
                       scaffold: str | None = None, has_ene: bool = False) -> bool:
     """判断取代基位次可否省略（环烷烃/苯单取代、酰胺 N- 等情形）。"""
-    if any((s.get("kind") or "") in ("isotope", _DEUTERO_PREFIX_KIND) for s in substituents):  # 同位素前缀恒带位次（2-deuterioacetate）
+    if n_carbons > 1 and any(  # 多碳母体：同位素前缀恒带位次（2-deuterioacetate）
+        (s.get("kind") or "") in ("isotope", _DEUTERO_PREFIX_KIND) for s in substituents
+    ):
         return False
     if kind in N_LOCANT_KINDS:  # 脲/硫脲/胍保留名母体：N 位次须显式写出（1,3-二甲基脲）
         return False
@@ -145,7 +149,7 @@ def _enclose(s: str) -> str:
     """给名称加围栏：已带完整方括号者不二次围栏；含圆括号改用方括号（P-16.5.2）。"""
     if s[:1] == "[" and s[-1:] == "]":
         return s  # 已是完整方括号围栏名（L3 定形）：再括一层成 [[…]] 无先例
-    return f"[{s}]" if "(" in s else f"({s})"
+    return f"[{s}]" if "(" in _ISO_DESC_RE.sub("", s) else f"({s})"
 
 
 def _wrap_stem(stem: str, need: bool) -> str:
@@ -417,9 +421,12 @@ def _n_prime_map(groups: dict[str, list], stems: list[str]) -> dict[int, int]:
         sorted(seen, key=lambda a: (alpha_order_key(seen[a]), a)))}
 
 
-def _arm_tail(name: str, n: int, bare: bool, mult: dict, bis: dict) -> str:
-    """括号式后继臂（P-16.5.1.3.1）：原式「倍数(名)」；阳离子臂按 P-73.1.1 改直连式。"""
+def _arm_tail(name: str, n: int, bare: bool, mult: dict, bis: dict,
+              inline_mult: bool = False) -> str:
+    """括号式后继臂（P-16.5.1.3.1）：原式「倍数(名)」；同位素臂倍数入括号；阳离子臂按 P-73.1.1 改直连式。"""
     if not bare:
+        if inline_mult:  # 同位素臂：倍数随词干入括号（dideuterio，非 di(deuterio)）
+            return f"({mult.get(n, '')}{name})"
         return f"{mult.get(n, '')}({name})"
     if name[:1].isdigit() or "(" in name or "[" in name:  # 带位次/围栏的复合臂：倍数前缀须整体成段
         return f"{bis.get(n, '')}({name})" if n > 1 else _enclose(name)
@@ -437,8 +444,9 @@ def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
         subs = groups[stem]
         tail_sep = sep == "-" and i < len(stems) - 1  # 该前缀后仍接别的前缀（括界须自行闭合）
         if bracket and i >= 1:
-            en_parts.append(_arm_tail(stem, len(subs), bare, MULT_EN, BIS_EN))
-            zh_parts.append(_arm_tail(subs[0].get("zh") or "", len(subs), bare, MULT_ZH, BIS_ZH))
+            inline = all((s.get("kind") or "") in ("isotope", _DEUTERO_PREFIX_KIND) for s in subs)
+            en_parts.append(_arm_tail(stem, len(subs), bare, MULT_EN, BIS_EN, inline))
+            zh_parts.append(_arm_tail(subs[0].get("zh") or "", len(subs), bare, MULT_ZH, BIS_ZH, inline))
             continue
         if bracket and not _LOCANT_RE.search(stem):  # P-16.5.1.3.1：首个引用的取代基从不加围栏（自带位次者除外）
             subs = [{**s, "paren": False} for s in subs]
@@ -529,9 +537,6 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, _n_prime_map(groups, stems), sep, flat, arm_hyphen)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
     return sep.join(en_parts), sep_zh.join(zh_parts)
 
-_ISOTOPE_STEMS = (("iso2H", "deuterio", "氘代"), ("iso3H", "tritio", "氚代"))  # 氢同位素 → 前缀词干
-
-
 def _isotope_subs(parent: dict) -> list:
     """骨架原子上的氘/氚 → 逐个带母体位次的同位素前缀记录（供 _build_prefix 排序并加多位次）。"""
     mol, chain = parent.get("mol"), list(parent.get("chain") or ())
@@ -541,7 +546,7 @@ def _isotope_subs(parent: dict) -> list:
     out: list = []
     for idx in chain:
         atom = mol.GetAtomWithIdx(idx)
-        for key, en, zh in _ISOTOPE_STEMS:
+        for _, key, en, zh in ISO_H_PROPS:
             if not atom.HasProp(key):
                 continue
             loc = atom_locant(chain, idx, facts)
@@ -550,6 +555,59 @@ def _isotope_subs(parent: dict) -> list:
             out.extend({"en": en, "zh": zh, "kind": "isotope", "locant": loc}
                        for _ in range(atom.GetIntProp(key)))
     return out
+
+
+_NUCLIDE_RE = re.compile(r"(\d+)([A-Z][a-z]?)")  # "13C"/"123I" → (质量数, 元素符号)
+
+
+def _nuclide_groups(parent: dict) -> dict:
+    """母体实体上带核素属性的原子 → {(元素, 质量数): [位次, ...]}（腈碳等位次为 None）。"""
+    mol, owned = parent.get("mol"), parent.get("owned_atoms") or frozenset()
+    if mol is None or not owned:
+        return {}
+    chain, facts = parent.get("chain") or (), parent.get("numbering_scaffold")
+    groups: dict = {}
+    for idx in owned:
+        atom = mol.GetAtomWithIdx(idx)
+        if not atom.HasProp(ISO_NUCLIDE_PROP):
+            continue
+        m = _NUCLIDE_RE.match(atom.GetProp(ISO_NUCLIDE_PROP))
+        groups.setdefault((m.group(2), int(m.group(1))), []).append(atom_locant(chain, idx, facts))
+    return groups
+
+
+def join_isotope_descriptor(names: tuple[str, str], numbered: dict) -> tuple[str, str]:
+    """母体核素描述符 '(位次-13C6)' 紧贴母体词干前（P-82.2.1 括号紧贴、P-82.3 排序）。"""
+    groups = _nuclide_groups(numbered.get("parent") or {})
+    if not groups:
+        return names
+    parts = []
+    for sym, mass in sorted(groups):  # P-82.3.1 元素字母序、P-82.3.2 同元素质量数升序
+        locs = groups[(sym, mass)]
+        count = str(len(locs)) if len(locs) > 1 else ""  # 单原子不写计数下标（金标作 (14C)）
+        if any(loc is None for loc in locs):  # 位次不可定位：省位次（金标 (14C)benzonitrile）
+            parts.append(f"({mass}{sym}{count})")
+            continue
+        locs = ",".join(str(x) for x in locant_str_sort(locs))
+        parts.append(f"({locs}-{mass}{sym}{count})")
+    desc = "".join(parts)
+    return f"{desc}{names[0]}", f"{desc}{names[1]}"
+
+
+_HALO_SUB_RE = re.compile(r"^(fluoro|chloro|bromo|iodo)$")  # 卤素取代基前缀名
+
+
+def _iso_halo_sub(s: dict, mol) -> dict | None:
+    """卤素核素取代基 → 前缀名前加 (核素)（P-82.2.2 同位素修饰取代基）。"""
+    atoms = s.get("atoms") or ()
+    if mol is None or len(atoms) != 1 or not _HALO_SUB_RE.match(s.get("en") or ""):
+        return None
+    atom = mol.GetAtomWithIdx(int(atoms[0]))
+    if atom.GetAtomicNum() not in HALO_Z or not atom.HasProp(ISO_NUCLIDE_PROP):
+        return None
+    nuc = atom.GetProp(ISO_NUCLIDE_PROP)
+    return {**s, "en": f"({nuc}){s['en']}", "zh": f"({nuc}){s.get('zh') or ''}",
+            "kind": "isotope_halo"}
 
 
 _DEUTERO_GROUP = {"methyl": ("methyl", "甲基"), "methoxy": ("methoxy", "甲氧基")}
@@ -587,7 +645,7 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     mol = parent.get("mol")
     subs = []  # 非同位素取代基保持原对象：_build_prefix 内就地标记（O 侧臂围栏）须回写 numbered
     for s in (numbered.get("substituents") or []):
-        subs.append(_deutero_group(s, mol) or s)
+        subs.append(_iso_halo_sub(s, mol) or _deutero_group(s, mol) or s)
     subs += _isotope_subs(parent)
     return _build_prefix(subs, n, kind,
                          parent.get("scaffold_id"), has_ene, parent.get("mol"),

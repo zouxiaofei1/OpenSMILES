@@ -42,6 +42,10 @@ HALIDE_EN = {F: "fluoride", Cl: "chloride", Br: "bromide", I: "iodide"}
 N_PREFIX_KINDS = frozenset({"n_alkyl", "n_block"})  # N-取代基 kind（P-62.2.2.1）：走 N- 前缀、位次以 N 标注或隐含省略，不参与数字位次通道。
 N_LOCANT_KINDS = frozenset({"urea", "thiourea", "guanidine"})  # 保留名母体：N 取代基按 1/3 数字位次引用，位次不可省（P-66.3.1 脲/硫脲/胍）
 
+# ── 同位素（P-8 同位素修饰化合物）──────────
+ISO_NUCLIDE_PROP = "isoNuclide"  # 非氢核素属性，值形如 "13C"/"18F"/"123I"，挂核素原子自身
+ISO_H_PROPS = ((2, "iso2H", "deuterio", "氘代"), (3, "iso3H", "tritio", "氚代"))  # (质量数, 重原子属性名, 英文词干, 中文词干)
+
 P25_SENIOR = (N, F, Cl, Br, I, O, S, Se, Te, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)  # 杂原子优先序（稠环母体组分选择 P-25.3.2.4 / 稠环与杂环编号 P-25.3.3.1.2(b)）两条序列同源不同序，勿混用：P25 用于"选哪个组分当母体"，P145 用于"哪个杂原子得低位次"。
 P145_SENIOR = (F, Cl, Br, I, O, S, Se, Te, N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl)
 
@@ -162,6 +166,54 @@ AMIDO_RETAINED = {  # P-66.1.1.4.3
     "benzoyl": ("benzamido", "苯甲酰胺基"),
 }
 AMIDO_RETAINED_EN = frozenset(v[0] for v in AMIDO_RETAINED.values())
+
+# ── L0 简单分子 / 单质查表（规范 SMILES → (en, zh)）────
+# 单元素与极简单分子无母体链/环，走不到 L2–L5，故在命名入口直接查表。名称取 IUPAC 保留名
+# （P-21：water/ammonia/氢卤酸二元名）。键为 L0 电荷归一后的规范 SMILES，取值限制重原子 ≤ 3。
+SIMPLE_MAX_HEAVY = 3  # 查表覆盖的重原子上限；超出者仍走常规管线
+ELEMENT_METAL_NAMES = {  # 单质金属：元素符号 → (en, zh)；中性单原子，键在 SIMPLE_MOLECULES 补成 "[X]"
+    "Li": ("lithium", "锂"), "Be": ("beryllium", "铍"), "Na": ("sodium", "钠"),
+    "Mg": ("magnesium", "镁"), "Al": ("aluminium", "铝"), "K": ("potassium", "钾"),
+    "Ca": ("calcium", "钙"), "Sc": ("scandium", "钪"), "Ti": ("titanium", "钛"),
+    "V": ("vanadium", "钒"), "Cr": ("chromium", "铬"), "Mn": ("manganese", "锰"),
+    "Fe": ("iron", "铁"), "Co": ("cobalt", "钴"), "Ni": ("nickel", "镍"),
+    "Cu": ("copper", "铜"), "Zn": ("zinc", "锌"), "Ga": ("gallium", "镓"),
+    "Ge": ("germanium", "锗"), "As": ("arsenic", "砷"), "Rb": ("rubidium", "铷"),
+    "Sr": ("strontium", "锶"), "Y": ("yttrium", "钇"), "Zr": ("zirconium", "锆"),
+    "Nb": ("niobium", "铌"), "Mo": ("molybdenum", "钼"), "Tc": ("technetium", "锝"),
+    "Ru": ("ruthenium", "钌"), "Rh": ("rhodium", "铑"), "Pd": ("palladium", "钯"),
+    "Ag": ("silver", "银"), "Cd": ("cadmium", "镉"), "In": ("indium", "铟"),
+    "Sn": ("tin", "锡"), "Sb": ("antimony", "锑"), "Cs": ("caesium", "铯"),
+    "Ba": ("barium", "钡"), "La": ("lanthanum", "镧"), "Ce": ("cerium", "铈"),
+    "Hf": ("hafnium", "铪"), "Ta": ("tantalum", "钽"), "W": ("tungsten", "钨"),
+    "Re": ("rhenium", "铼"), "Os": ("osmium", "锇"), "Ir": ("iridium", "铱"),
+    "Pt": ("platinum", "铂"), "Au": ("gold", "金"), "Hg": ("mercury", "汞"),
+    "Tl": ("thallium", "铊"), "Pb": ("lead", "铅"), "Bi": ("bismuth", "铋"),
+    "Th": ("thorium", "钍"), "U": ("uranium", "铀"),
+}
+SIMPLE_MOLECULES: dict[str, tuple[str, str]] = {
+    # 单元素分子（H₂/O₂/O₃）；N₂/F₂/Cl₂/Br₂/I₂/H₂O₂/N₂H₄ 由 L2 均一杂原子链命名，不在此覆盖
+    "[H][H]": ("hydrogen", "氢"), "O=O": ("oxygen", "氧"),
+    "O=[O+][O-]": ("ozone", "臭氧"),
+    # 母体氢化物（P-21 第 15/16/17 族保留名与二元名）
+    "O": ("water", "水"), "S": ("hydrogen sulfide", "硫化氢"), "P": ("phosphine", "膦"),
+    "N": ("ammonia", "氨"), "[SeH2]": ("hydrogen selenide", "硒化氢"),
+    "[TeH2]": ("hydrogen telluride", "碲化氢"), "[AsH3]": ("arsine", "胂"),
+    "[SbH3]": ("stibine", "锑化氢"), "[SiH4]": ("silane", "硅烷"),
+    "B": ("borane", "硼烷"),
+    "F": ("hydrogen fluoride", "氟化氢"), "Cl": ("hydrogen chloride", "氯化氢"),
+    "Br": ("hydrogen bromide", "溴化氢"), "I": ("hydrogen iodide", "碘化氢"),
+    # 简单氧化物 / 硫化物 / 氮化物
+    "NO": ("hydroxylamine", "羟胺"), "[N]=O": ("nitric oxide", "一氧化氮"),
+    "[N-]=[N+]=O": ("nitrous oxide", "一氧化二氮"), "O=[N+][O-]": ("nitrogen dioxide", "二氧化氮"),
+    "[C-]#[O+]": ("carbon monoxide", "一氧化碳"), "O=C=O": ("carbon dioxide", "二氧化碳"),
+    "S=C=S": ("carbon disulfide", "二硫化碳"), "O=C=S": ("carbonyl sulfide", "氧硫化碳"),
+    "O=S=O": ("sulfur dioxide", "二氧化硫"),
+    # 简单卤素化合物
+    "OCl": ("hypochlorous acid", "次氯酸"), "NCl": ("chloramine", "氯胺"),
+    "ClOCl": ("dichlorine monoxide", "一氧化二氯"), "O=[Cl+][O-]": ("chlorine dioxide", "二氧化氯"),
+    **{f"[{sym}]": nm for sym, nm in ELEMENT_METAL_NAMES.items()},
+}
 
 # ── L0 电荷归一 / 盐解离 ────────────────────
 DONOR_KIND = ("carboxyl", "phospho", "sulfo")  # 允许作为强酸供体的酸类：羧酸/磷酸/磺酸。磷酸供体在「酰胺 O⁻ 受体」场景下才有产出（见 preprocessor 的二次互变归一，gold 把 N=C([O-]) 写成酰胺、把 P-OH 写成 oxidophosphoryl）；磺酸供体在「净负离子的胺受体」场景下才有产出（sulfonatooxy 两性离子式）。
