@@ -167,7 +167,7 @@ def number_fused_system(mol, rings, coords: list[dict], sub_layers=None,
     fused_heteros = sorted(a for a in fused if mol.GetAtomWithIdx(a).GetAtomicNum() != C)
     all_heteros = sorted(heteros)
 
-    if all_heteros:  # (a) 低位次给杂原子集合 (b) 按 F>Tl 顺序逐元素收窄该元素原子位次
+    if all_heteros:  # (a) 低位次给杂原子 (b) 按 F>Tl 逐元素收窄
         hetero_by_z = defaultdict(list)
         for a in all_heteros:
             hetero_by_z[mol.GetAtomWithIdx(a).GetAtomicNum()].append(a)

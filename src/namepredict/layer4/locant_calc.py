@@ -1,4 +1,4 @@
-"""L4 位次计算：附着原子 → 链上位次，含 FG/烯炔位次省略规则与并列候选母体比较键。"""
+"""L4 位次计算：附着原子 → 链上位次，含 FG/烯炔位次省略与候选比较键。"""
 from __future__ import annotations
 from namepredict.layer1.fg_registry import FG_SPECS
 import re
@@ -83,7 +83,7 @@ def _occurrence_locants(oriented: dict, spec) -> list[int]:
 
 
 def _expand_shared_locants(oriented: dict, spec, locs: list) -> list:
-    """同位次重复 FG 补回重复位次（偕二醇 propane-2,2-diol）；正常情形原样返回。"""
+    """同位次重复 FG 补回重复位次（偕二醇 propane-2,2-diol）。"""
     facts = oriented.get("principal_expression_facts")
     mult = facts.multiplicity if facts is not None and facts.group_class.value == spec.fg else None
     if not mult or mult <= len(locs):
@@ -111,7 +111,7 @@ def _unsat_bonds(oriented: dict, b: str) -> list | None:
 
 
 def _bond_locant(chain: list[int], bond) -> int | str:
-    """单键位次：两端编号相邻取较小者，否则写复合位次 x(y)（P-31.1.4.2(1)）。"""
+    """单键位次：相邻取较小者，否则写复合位次 x(y)。"""
     lo, hi = sorted((chain.index(bond[0]) + 1, chain.index(bond[1]) + 1))
     return lo if hi - lo == 1 else f"{lo}({hi})"
 
@@ -156,11 +156,11 @@ def _unsat_locants(oriented: dict, n: int) -> dict:
         "omit_yne_locant": omit_unsat(n, kind, oriented, triple=True),
     }
 
-_FG_GROUP = {"alcohol": "alcohol", "amine": "amine", "ketone": "ketone", "thiol": "thiol"}  # 记录 kind → principal_expression_facts 类别（键须与 FG_SPECS 的 fg 一致）
+_FG_GROUP = {"alcohol": "alcohol", "amine": "amine", "ketone": "ketone", "thiol": "thiol"}  # 记录 kind 到 FG 类别映射（FG_SPECS）
 
 
 def _omit_for(kind: str, oriented: dict, n: int, n_subs: int) -> bool:
-    """FG 记录 omit 标志：环状判断交由同文件的 omit_fg_locant 完成。"""
+    """FG 记录 omit 标志；环状判断交 omit_fg_locant。"""
     group = _FG_GROUP.get(kind)
     if group is None:
         return False
@@ -195,14 +195,11 @@ def _pack(oriented: dict, substituents: list) -> dict:
     return result
 
 
-# ── FG 位次省略规则（原 omit_locants.py；P-14.3.4 / 环单 FG） ──
-
 def omit_fg_locant(
     pos: int | None, n_carbons: int, parent: dict | None = None, n_subs: int = 0, *,
     single: bool = True,
 ) -> bool:
     """判定主官能团位次是否省略（P-14.3.4 / 环单 FG）：环状无取代省。"""
-    # 环状单环且非稠环：环单 FG 无取代省位次，有取代或多官能团保留。
     if ((parent or {}).get("scaffold_id") == "carbocycle" and not (parent or {}).get("fused_tree")
             and pos is not None and single):
         return n_subs == 0
@@ -214,20 +211,17 @@ def omit_unsat(
     triple: bool = False,
 ) -> bool:
     """判定烯/炔位次是否省略（环单烯或短链）；triple 选择炔规则。"""
-    if kind == "heterane":  # 杂原子链（P-14.3.4.2(d)）：二核与三核的单一不饱和键省略位次（diazene / triazene / disilyne）
+    if kind == "heterane":  # 杂原子链：二核与三核的单一不饱和键省略位次（P-14.3.4.2(d)）
         return n_carbons <= 3
     if kind == "alkane" and (parent or {}).get("scaffold_id") == "carbocycle":  # 纯烃环单烯位次隐含省略；环多烯保留位次。
         if not (parent or {}).get("double_bonds"):
             return True
-    # 烯 ≤C2、炔 ≤C3 时位次 '1' 省略（P-14.3.4.2(d)）。
-    return n_carbons <= (3 if triple else 2)
+    return n_carbons <= (3 if triple else 2)  # 烯 ≤C2、炔 ≤C3 时位次 '1' 省略（P-14.3.4.2(d)）。
 
-
-# ── 并列候选母体比较键（原 candidate_keys.py；P-44.1.1 / P-45.2.2） ──
 
 def suffix_locant_set(numbered: dict) -> tuple:
     """P-44.1.1：principal 特征基团位次集合（P-14.3.5）。"""
-    from namepredict.layer4.numbering_engine import _principal_atoms  # 函数内导入：避开 locant_calc ↔ numbering_engine 环
+    from namepredict.layer4.numbering_engine import _principal_atoms  # 函数内导入：避开与 numbering_engine 的环
 
     parent = numbered.get("parent") or {}
     locs = _atom_locants(parent, _principal_atoms(parent))

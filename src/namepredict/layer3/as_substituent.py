@@ -36,8 +36,8 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
     if rs_real == rs_anch:
         return hit
     labels = parent.get("parent_labels") or []
-    single = len(chain) == 1  # 单原子链＝该原子即唯一位次，位次号省略（与 stereo._rs_parts 同约定）
-    rs_lab = [(None if single else (labels[pos - 1] if 0 < pos <= len(labels) else pos), code)  # 位次改用整体编号标签（稠环桥头 4aS/8aS），与 _chain_locant 同约定
+    single = len(chain) == 1  # 单原子链即唯一位次，省略位次号（同 stereo._rs_parts）
+    rs_lab = [(None if single else (labels[pos - 1] if 0 < pos <= len(labels) else pos), code)  # 位次改用整体编号标签（稠环桥头 4aS/8aS）
               for pos, code in rs_real]  # 链序号 pos（1 起）→ 整体标签；无标签表或越界时退回 pos
 
     out = copy.copy(hit)
@@ -48,13 +48,12 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
 
 _P_ACYL_STEM_TAIL = ("phosphoryl", "phosphanyl", "phosphinothioyl")  # P 酰基词干名尾（P-67.1.4.1.1）
 
-# N-取代脒自由名：氨基 N 上另挂取代基者取 carbamimidoyl(R)amino（P-66.4.1.3.1 优选前缀）
 _AMIDINE_N_AMINO_EN = re.compile(r"^diaminomethylidene\((.+)\)amino$")
 _AMIDINE_N_AMINO_ZH = re.compile(r"^二氨基亚甲基\((.+)\)氨基$")
 
 
 def _carbamimidoyl_prefix_fixup(en: str, zh: str) -> tuple[str, str]:
-    """N-取代脒的自由名 diaminomethylidene(R)amino 改写为 carbamimidoyl(R)amino。"""
+    """N-取代脒自由名改写为 carbamimidoyl(R)amino。"""
     m = _AMIDINE_N_AMINO_EN.match(en or "")
     if m is None:
         return en, zh
@@ -64,11 +63,7 @@ def _carbamimidoyl_prefix_fixup(en: str, zh: str) -> tuple[str, str]:
 
 
 def _obridge_front_simple(mol, atoms, attach_old, *, cache, root_ctx):
-    """O/S 桥前端是否为简单取代基；无法判定时返回 None。
-
-    前端命名走 SubstituentNamer 的 retained → recursive 后端顺序，与其它取代基同一来源，
-    避免这里手写一份后端顺序而在后端增删时静默漂移。
-    """
+    """O/S 桥前端是否为简单取代基；无法判定时返回 None。"""
     a = mol.GetAtomWithIdx(attach_old)
     if a.GetAtomicNum() not in (8, 16) or a.GetDegree() != 2:
         return None
@@ -84,7 +79,6 @@ def _obridge_front_simple(mol, atoms, attach_old, *, cache, root_ctx):
     if named is None:
         return None
     en = named.en or ""
-    # P 酰基单体名（dimethoxyphosphinothioyl / dimethoxyphosphoryl）无内部连字符或括号：按单词前缀直连，不再围栏
     if en.endswith(_P_ACYL_STEM_TAIL) and not re.search(r"[-\-()\[\]]", en):  # noqa: RUF001
         return True
     return not named.requires_parentheses
@@ -100,7 +94,7 @@ def _radical_yl_from_sub(
     anchored = build_anchor_submol(mol, atoms, attach_old)
     if anchored is None:
         return None
-    root_mol, to_root = root_ctx if root_ctx is not None else (mol, None)  # 根分子上下文：块原子→原始根分子索引，供 R/S 在完整分子上重算（糖苷异头碳 CIP 随配基翻转，切断碎片会算反）。
+    root_mol, to_root = root_ctx if root_ctx is not None else (mol, None)  # 根分子上下文：块原子→根分子索引，供 R/S 在完整分子上重算
     order = sorted(atoms)
     block_root_order = order if to_root is None else [to_root[o] for o in order]
     anchored_to_root = block_root_order + [-1]          # 锚定子结构按 order 复制 + 末尾 dummy
@@ -110,22 +104,20 @@ def _radical_yl_from_sub(
         hit = _name_mol(anchored, cache=cache,
                         root_ctx=(root_mol, anchored_to_root))
         if cache is not None and hit.success and hit.en:
-            _cache_put(cache, smiles, copy.copy(hit))  # 只缓存片段自身自由基名（保留锚定链、不做宿主校正）；立体随宿主根变化，须按当前根重算，不能跨根共享。
-    hit = _fix_rs_with_real(root_mol, block_root_order, anchored, hit)  # R/S 取决于宿主根分子：fresh 与 cache 命中都按当前根分子校正一次。
+            _cache_put(cache, smiles, copy.copy(hit))  # 只缓存片段自身自由基名；立体须按当前根重算，不能跨根共享
+    hit = _fix_rs_with_real(root_mol, block_root_order, anchored, hit)  # R/S 取决于宿主根分子：fresh 与 cache 命中都校正一次
     if not hit.success or not hit.en:
         return None
     composite = int((hit.meta or {}).get("parent_substituent_count") or 0) > 0
-    # P-16.5.1.1 复合前缀必括；amido(P-66.1.1.4.3)免括
-    need_paren = composite and hit.en not in (
+    need_paren = composite and hit.en not in (  # P-16.5.1.1 复合前缀必括；amido 类免括
         "phenyl", *SIMPLE_ALKOXY_NO_PAREN, *AMIDO_RETAINED_EN, *SIMPLE_BRIDGE_YL_NO_PAREN)
-    if (hit.meta or {}).get("bridge_self_enclosed"):  # S 桥复合前端名已自含围栏（(4-甲氧基苯基)磺酰基），L5 不得再整体加括号
+    if (hit.meta or {}).get("bridge_self_enclosed"):  # S 桥复合前端名已自含围栏，L5 不得再整体加括号
         need_paren = False
-    # P-63.2.1/.2.2 简单前端 + O/S 桥不加围栏；双原子桥（…disulfanyl）围栏改由 L5 按前端定形
     if need_paren and hit.en.endswith(("oxy", "sulfanyl")) and not hit.en.endswith(DIATOMIC_BRIDGE_YL):
         if  _obridge_front_simple(mol, atoms, attach_old, cache=cache, root_ctx=root_ctx):
             need_paren = False
-    en, zh = retained_dehydro_yl(hit.en, hit.zh)  # 保留名取代基改保留去氢前缀（adamantan-2-yl → 2-adamantyl，P-29.2）
-    en, zh = _carbamimidoyl_prefix_fixup(en, zh)  # N-取代脒片段改 carbamimidoyl 形式（P-66.4.1.3.1）
+    en, zh = retained_dehydro_yl(hit.en, hit.zh)  # 保留名取代基改去氢前缀（adamantan-2-yl）
+    en, zh = _carbamimidoyl_prefix_fixup(en, zh)  # N-取代脒片段改 carbamimidoyl 形式
     return en, zh, need_paren
 
 
@@ -136,6 +128,6 @@ def name_as_substituent(
     """在 attach_old 处切割，free-name 后输出 -yl 双语名。"""
     atoms = frozenset(atoms)
     if mol.GetAtomWithIdx(attach_old).GetAtomicNum() <= 1:
-        return None  # 连接点非重原子（dummy/氢）：无 -yl 名；dummy 锚点会自复制致无限递归
-    return _radical_yl_from_sub(mol, atoms, attach_old,  # print(_radical_yl_from_sub(...)) 调试用
+        return None  # 非重原子连接点（dummy/氢）：无 -yl 名，dummy 会无限递归
+    return _radical_yl_from_sub(mol, atoms, attach_old,
                                 cache=cache, root_ctx=root_ctx)

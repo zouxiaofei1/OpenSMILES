@@ -1,7 +1,6 @@
-"""P-22.2.2 Hantzsch-Widman 杂单环命名：3-10 元环的词干、位次与名称组装。
-
-未命中保留模板的杂单环由本模块生成词干（饱和/mancude 两形态），
-位次按 P-22.2.2.1.3 的元素优先序排列，省略判定见 P-22.2.2.1.7。
+"""P-22.2.2 Hantzsch-Widman 杂单环命名：词干、位次与组装。
+未命中保留模板者生成词干；位次按元素优先序（P-22.2.2.1.3），
+省略判定见 P-22.2.2.1.7。
 """
 from __future__ import annotations
 
@@ -28,7 +27,7 @@ def ring_heteros(zs) -> tuple[int, ...]:
 
 
 def six_group(zs) -> str:
-    """六元环词干分组：由优先性最低的杂原子（名称紧邻词干者）所属组决定（P-22.2.2.1.6）。"""
+    """六元环词干分组：由紧邻词干的最低优先杂原子定（P-22.2.2.1.6）。"""
     least = max(ring_heteros(zs), key=P145_SENIOR.index)
     if least in HW_SIX_A:
         return "A"
@@ -36,7 +35,7 @@ def six_group(zs) -> str:
 
 
 def unsat_stem(n: int, zs) -> str | None:
-    """不饱和（mancude）词干（Table 2.5、P-22.2.2.1.5.1）。"""
+    """不饱和（mancude）词干（P-22.2.2.1.5.1）。"""
     if n == 3:
         return "irine" if set(ring_heteros(zs)) == {N} else "irene"
     if n == 4:
@@ -95,7 +94,7 @@ def elide_a(terms: list[str]) -> str:
 
 
 def locant_map(zs) -> dict[int, list[int]]:
-    """按 P-22.2.2.1.3 引用顺序分组的 {元素: 位次升序}（zs 为已编号的环序）。"""
+    """{元素: 位次升序}，按 P-22.2.2.1.3 引用顺序分组。"""
     out: dict[int, list[int]] = {}
     for i, z in enumerate(zs):
         if z != C:
@@ -104,23 +103,23 @@ def locant_map(zs) -> dict[int, list[int]]:
 
 
 def locant_string(by_z: dict[int, list[int]]) -> str:
-    """位次串按引用顺序排列（非数值升序），如 1,6,2-dioxazepane 的 '1,6,2'。"""
+    """位次串按引用顺序（非数值升序），如 '1,6,2'。"""
     return ",".join(str(loc) for locs in by_z.values() for loc in locs)
 
 
 def locant_string_lambda(by_z: dict[int, list[int]], lambda_at: dict[int, int] | None, *,
                          en: bool) -> str:
-    """带 λ 的位次串（P-22.2.7.1：λn 紧跟杂原子位次之后，如 1λ6,3λ5）。"""
+    """带 λ 的位次串（P-22.2.7.1：λn 紧跟位次后）。"""
     marks = lambda_at or {}
     return ",".join(f"{loc}{lambda_mark(marks[loc], en=en)}" if loc in marks else str(loc)
                     for locs in by_z.values() for loc in locs)
 
 
-HW_RING_LAMBDA_Z = frozenset({P, As, Sb, Bi, B, I, Si, Ge, Sn, Pb})  # 环内 λ 适用元素：硫族/氮氧的高价由 dioxo/oxide 前缀表达，不复标 λ
+HW_RING_LAMBDA_Z = frozenset({P, As, Sb, Bi, B, I, Si, Ge, Sn, Pb})  # 环内 λ 适用元素（硫族/氮氧高价由 dioxo/oxide 前缀表达）
 
 
 def ring_lambda_atoms(ordered, mol) -> dict[int, int]:
-    """已编号环序 → {1 起位次: 键数}，仅收键数偏离标准值的环内杂原子（P-14.1.3）。"""
+    """已编号环序 → {位次: 键数}，仅收非标准价环内杂原子。"""
     out: dict[int, int] = {}
     for i, idx in enumerate(ordered):
         atom = mol.GetAtomWithIdx(idx)
@@ -130,7 +129,7 @@ def ring_lambda_atoms(ordered, mol) -> dict[int, int]:
 
 
 def _hetero_terms(n: int, zs, by_z: dict[int, list[int]], *, en: bool) -> list[str]:
-    """元素前缀项（含倍数词）；中文在含氮五/六元环里把 N 折入唑/嗪基干，故中文跳过 N。"""
+    """元素前缀项（含倍数词）；中文含氮五/六元环跳过 N。"""
     has_n = N in zs
     folded = (not en) and has_n and n in (5, 6)
     short = has_n and n in (5, 6)  # 噁/噻短式只在唑/嗪系（含氮环）启用
@@ -156,11 +155,7 @@ def _zh_folded_n(n: int, zs, by_z: dict[int, list[int]], zh_base: str) -> str:
 
 
 def hw_name_from_cycle(zs, n_db: int, lambda_at: dict[int, int] | None = None) -> tuple[str, str, str] | None:
-    """已编号环序元素表 + 环内双键数 → (英文名, 中文名, 英文位次前缀)。
-
-    传入的 zs 必须是编号后的顺序：第 i 个原子的位次为 i+1。
-    lambda_at 为 {1 起位次: 键数}，命中者在位次后带 λn（P-22.2.7.1）。
-    """
+    """已编号环序 + 双键数 → (英文名, 中文名, 位次前缀)。"""
     if not 3 <= len(zs) <= 10:
         return None
     by_z = locant_map(zs)
@@ -208,7 +203,6 @@ def _arrangement_classes(n: int, heteros: tuple[int, ...]) -> int:
     return len(classes)
 
 
-# ── 骨架身份与词干入口（L2 接线）──────────────
 
 def is_hw_scaffold(sid: str | None) -> bool:
     """sid 是否为生成式 HW 杂单环骨架。"""
@@ -243,7 +237,7 @@ def ring_double_bonds(mol, chain) -> int:
 
 
 def ring_numbering(mol, chain) -> list[int] | None:
-    """P-22.2.2.1.3 环编号：复用 L4 窄化引擎，保证名中位次与 L4 编号同源。"""
+    """P-22.2.2.1.3 环编号：复用 L4 窄化引擎，与 L4 同源。"""
     from namepredict.layer4.numbering_engine import (
         _narrow_hetero_ring, _ring_cands, _to_chain,
     )
@@ -253,7 +247,7 @@ def ring_numbering(mol, chain) -> list[int] | None:
 
 
 def parent_names(sid: str | None, mol, chain) -> tuple[str, str] | None:
-    """生成式 HW 母体双语名（含位次前缀）；非 HW 骨架或词表外元素返回 None。"""
+    """生成式 HW 母体双语名；非 HW 骨架或词表外元素返回 None。"""
     if not is_hw_scaffold(sid) or mol is None or not chain:
         return None
     ordered = ring_numbering(mol, chain)
@@ -297,13 +291,13 @@ def _max_matching_mask(n: int, capable) -> int:
 
 
 def effective_valence(atom) -> int | None:
-    """有效价：Table 2.4 键数 + 形式电荷（N+ 视作 4 价、O- 视作 1 价）。"""
+    """有效价：键数 + 形式电荷（N+ 视作 4 价、O- 视作 1 价）。"""
     base = HW_MAX_VALENCE.get(atom.GetAtomicNum())
     return None if base is None else base + atom.GetFormalCharge()
 
 
 def mancude_hydrogens(mol, chain) -> tuple[dict[int, int], int] | None:
-    """mancude 参照：({环原子: 参照氢数}, 参照环内双键数)（P-22.2.2.1.1/P-31.2）。"""
+    """mancude 参照：({环原子: 氢数}, 环内双键数)。"""
     from namepredict.layer1.ring_systems import kekulized
 
     order = ring_order(mol, chain)
@@ -334,10 +328,7 @@ def mancude_hydrogens(mol, chain) -> tuple[dict[int, int], int] | None:
 
 
 def hydro_atoms(mol, chain) -> frozenset[int]:
-    """加氢位：实际氢数多于 mancude 参照的环原子（P-31.2.2 / P-54.4.1）。
-
-    环内无重键时取饱和词干，加氢前缀不再使用（否则饱和环会被误标 dihydro）。
-    """
+    """加氢位：实际氢多于 mancude 参照的环原子。"""
     if ring_double_bonds(mol, chain) == 0:
         return frozenset()
     ref = mancude_hydrogens(mol, chain)
@@ -367,7 +358,7 @@ def _mancude_db(zs) -> int:
 
 
 def component_key(mol, atoms) -> str | None:
-    """稠合组分键 'hw:OCOCC'：仅 3-10 元、含杂、mancude 的孤立环（P-25.2.2.1.1）。"""
+    """稠合组分键 'hw:OCOCC'：3-10 元含杂 mancude 孤立环。"""
     order = ring_order(mol, atoms)
     if order is None or not 3 <= len(order) <= 10:
         return None
@@ -385,10 +376,7 @@ def component_key(mol, atoms) -> str | None:
 
 
 def component_names(sid: str) -> tuple[str, str] | None:
-    """'hw:…' → 稠合母体组分词干 (en, zh)（P-25.3.2.1.2）。
-
-    附加组分前缀由 fused_namer 的「去尾 e 加 o」通用式给出（P-25.3.2.2.2）。
-    """
+    """'hw:…' → 稠合母体组分词干 (en, zh)。"""
     zs = _parse_key(sid)
     if zs is None or not 3 <= len(zs) <= 10:
         return None
@@ -403,7 +391,7 @@ def component_names(sid: str) -> tuple[str, str] | None:
 
 
 def identity(info: dict, skeleton):
-    """未命中保留模板的 3-10 元孤立含杂单环 → 生成式 HW 骨架身份（P-22.2.2）。"""
+    """3-10 元孤立含杂单环 → 生成式 HW 骨架身份。"""
     from namepredict.layer2.ring_scaffold import ScaffoldIdentity
 
     mol = info.get("mol")

@@ -24,7 +24,7 @@ class SubstituentBackend(Protocol):
     name: str
 
 def _named(claim: ClaimedBlock, hit: tuple[str, str, bool] | None) -> SubstituentName | None:
-    """把后端命中的 (en, zh, paren) 封装为 SubstituentName；未命中或空名返回 None。"""
+    """把后端命中结果封装为 SubstituentName；空名返回 None。"""
     if hit is None:
         return None
     en, zh, paren = hit

@@ -26,13 +26,10 @@ class FunctionalGroupClass(str, Enum):
     ALCOHOL = "alcohol"
     THIOL = "thiol"
     AMINE = "amine"
-    HETERANE = "heterane"  # 非碳母体氢化物（P-21 / P-41 类 21–39）：杂原子自任母体，余者作取代基
+    HETERANE = "heterane"  # 非碳母体氢化物（P-21 类 21–39）：杂原子自任母体
     NONE = 'alkane'
 
 
-# 含氧酸合一类的全部 P-41 类别。两处消费者同一集合：
-# L2 表达式按它判阴离子标志（principal_expression），L2 父体归属按它把特征原子全归主基团
-# （parent_select：中心非骨架成员，无可外借臂）。
 OXO_FG_CLASSES = frozenset({FunctionalGroupClass.OXOACID, FunctionalGroupClass.SULFONAMIDE})
 
 
@@ -44,7 +41,7 @@ class FunctionalGroupOccurrence:
     characteristic_atoms: frozenset[int]
     parent_anchors: frozenset[int]
     payload: dict
-    demoted: bool = False  # 被 P-41 仲裁降级为前缀叶（羧酸 carboxy / 腈 cyano，P-61.1.3）：不再作主基团候选，其碳排除出主链
+    demoted: bool = False  # 被 P-41 仲裁降级为前缀叶（P-61.1.3）
 
 
 @dataclass(frozen=True)
@@ -61,9 +58,9 @@ class FunctionalGroupInventory:
         """返回被 P-41 仲裁降级为前缀叶的全部条目。"""
         return tuple(e for e in self.entries if e.demoted)
 
-_FG_KEYS = tuple(sp.fg for sp in FG_SPECS)  # FG 类别注册唯一事实来源在 fg_registry.FG_SPECS；L1 列表 key 即类别值，产出顺序随注册顺序。
+_FG_KEYS = tuple(sp.fg for sp in FG_SPECS)  # 类别注册来源见 fg_registry.FG_SPECS
 
-_ANCHOR_KEYS = {FunctionalGroupClass(sp.fg): sp.anchors for sp in FG_SPECS if sp.anchors}  # 锚点 key（occurrence payload）：只有声明 anchors 的 FG 才收集；胺含多臂锚点（P-62.2）。
+_ANCHOR_KEYS = {FunctionalGroupClass(sp.fg): sp.anchors for sp in FG_SPECS if sp.anchors}  # 只有声明 anchors 的 FG 才收集锚点
 
 from namepredict.constants import C, N, O
 
@@ -100,7 +97,7 @@ def _cation_atoms(_mol, payload: dict) -> set[int]:
 
 
 def _nitrile_atoms(mol, payload: dict) -> set[int]:
-    """腈：特征原子只含腈碳与其三键氮，R 侧连接原子留给取代基/链（P-66.1.5）。"""
+    """腈：特征原子只含腈碳与三键氮（P-66.1.5）。"""
     from rdkit.Chem import BondType
 
     center = _idx(payload, "center_idx")

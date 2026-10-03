@@ -12,7 +12,7 @@ from namepredict.constants import (
 )
 
 def _mult_rows(items: list, key_fn, zh_fn, sort_key=None) -> list[list]:
-    """同基分组计数并按 sort_key 排序，返回 [en, zh, 倍数, 成员] 行。"""
+    """同基分组计数排序，返回 [en, zh, 倍数, 成员] 行。"""
     table: dict[str, list] = {}
     for it in items:
         en = key_fn(it)
@@ -25,7 +25,7 @@ def _mult_rows(items: list, key_fn, zh_fn, sort_key=None) -> list[list]:
 
 
 def _sub_prime(s: dict, primes: dict[int, int] | None) -> int:
-    """取代基的撇号个数：显式 n_prime（酰肼两端定死）优先，否则按 N 引用序查表（P-14.5）。"""
+    """取代基撇号数：显式 n_prime 优先，否则按 N 引用序查（P-14.5）。"""
     if s.get("n_prime") is not None:
         return int(s["n_prime"])
     return (primes or {}).get(s.get("attach_idx"), 0)
@@ -45,7 +45,6 @@ def _locant_str(subs: list, primes: dict[int, int] | None = None) -> str:
     return ",".join(str(x) for x in locant_str_sort(tokens))
 
 _DIGIT_RE = re.compile(r"\d")  # 取代基名中的位次数字
-# 核素描述符 (14C) / (2,3-13C2)：非嵌套围栏，判定外层围栏时须排除（(2S) 类立体描述符不匹配）
 _ISO_DESC_RE = re.compile(r"\(\d+(?:,\d+)*-\d{1,3}[A-Z][a-z]?\d*\)|\(\d{2,}[A-Z][a-z]?\d*\)")
 
 
@@ -58,11 +57,11 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return False
     if kind in N_LOCANT_KINDS:  # 脲/硫脲/胍保留名母体：N 位次须显式写出（1,3-二甲基脲）
         return False
-    if kind == "carbamic_acid":  # P-65.2.1.1：N-取代氨基甲酸不带位次（dimethylcarbamic acid）
+    if kind == "carbamic_acid":  # P-65.2.1.1：N-取代氨基甲酸不带位次
         return True
     if kind == "radical":  # 自由基母体：连接点隐含 locant 1，单碳链省略位次
         return n_carbons == 1
-    if kind in ("cation", "azanide"):  # 单核母体阳/阴离子：取代基全挂在同一个原子上，位次恒可省（P-73.1.1 / P-72.2.2.2）
+    if kind in ("cation", "azanide"):  # 单核母体阳/阴离子：取代基全挂同一原子，位次恒可省
         return True
     if n_carbons <= 1:  # 单碳母体位次省略；N-/C- 型共存时 C 侧须带位次
         kinds = {(s.get("kind") or "") for s in substituents}
@@ -102,11 +101,7 @@ def _stem_has_locant(stem: str) -> bool:
 
 
 def _ring_fused_lead(stem: str) -> bool:
-    """词干是否为「环基 + 连接组分」式复合前缀（1H-咪唑-5-基甲基、1,3-苯并二氧杂环戊烯-5-基氧基甲基）。
-
-    此类词干的前导数字属于环系名自身编号（或指示氢），不是取代基位次，
-    与母体位次不构成同类位次冲突（P-16.5.1.2）。
-    """
+    """词干是否为「环基 + 连接组分」式复合前缀（P-16.5.1.2）。"""
     s = stem or ""
     return bool(_INDICATED_H_LEAD_RE.match(s)) or (s[:1].isdigit() and "-yl" in s[:-2])
 
@@ -114,17 +109,15 @@ def _ring_fused_lead(stem: str) -> bool:
 def _stem_needs_paren(stem: str, subs: list, omit: bool, flat: bool = False) -> bool:
     """加括号：显式标记、前导位次词干、前导立体描述符，或多个 CF3（英文）。"""
     if _STEREO_LEAD_ENCLOSE_RE.match(stem) and not flat:
-        # P-16.5.2.4 + P-16.5.4.1.3：前缀内已用圆括号（立体描述符）者整体须方括号围栏，
-        # 与母体位次是否省略无关
         return True
     if any(s.get("paren") for s in subs):
         return (not _CATION_YL_TAIL_RE.search(stem)  # 单核阳离子基名单词整体（dimethylsulfonio），无需围栏
-                and not _flat_bridge_stem(stem))  # 简单前端与 R-imino 融合式（methylimino）无须围栏（P-66.4.1.2.1）
+                and not _flat_bridge_stem(stem))  # 简单前端与 R-imino 融合式无须围栏（P-66.4.1.2.1）
     if _ring_fused_lead(stem):
         return (not omit) and not flat  # 母体位次省略时无同类位次可混，前缀无需围栏
     if stem and stem[0].isdigit():
         return (not flat) and not (omit and any(s.get("ring_yl") for s in subs))  # 母体位次已省略时环基名无须围栏消歧（P-16.5.1.2）
-    if (  # P-16.5.1.4：酰基前缀自带母体氢化物名时须围栏，避免一名两母体；烷氧羰基（…oxycarbonyl）除外
+    if (  # P-16.5.1.4：酰基前缀自带母体氢化物名须围栏
         stem.endswith("carbonyl") and stem != "carbonyl" and "oxy" not in stem
     ):
         return (not omit) and not flat
@@ -138,7 +131,7 @@ def oxo_arm_fence(name: str, sub: dict, mol) -> bool:
     if (name or "")[:1] == "(":
         return True  # 前导圆括号仅为立体描述符（(2S)-…），非完整围栏
     if len(_LOCANT_RUN_RE.findall(_STEREO_LEAD_ENCLOSE_RE.sub("", name or ""))) >= 2:
-        return True  # 自带多个位次段的复合臂名须整体围栏（P-16.5.1.3.1）；2,3- 只算一段
+        return True  # 自带多个位次段的复合臂名须整体围栏（P-16.5.1.3.1）
     attach = sub.get("attach_idx")
     if not sub.get("paren") or mol is None or attach is None:
         return False
@@ -171,7 +164,7 @@ _ACYL_TAIL_RE = re.compile(r"(?:oyl|carbonyl)$")  # 酰基臂尾（P-16.5.1.4：
 
 
 def _arm_fence_needed(name: str) -> bool:
-    """臂名是否须整体围栏（P-16.5.2）：内含括号/方括号却无前导围栏；前导立体描述符或酰基尾须围栏。"""
+    """臂名是否须整体围栏（P-16.5.2）：含括号却无前导围栏；立体/酰基尾须围栏。"""
     if name[:1] == "[":
         return False  # 已带前导方括号围栏
     if name[:1] == "(":  # 前导圆括号自成围栏（(4-…苯基)磺酰基），仅立体描述符/酰基尾须再围栏
@@ -180,7 +173,7 @@ def _arm_fence_needed(name: str) -> bool:
 
 
 def _azanide_arm_bare(s: dict) -> bool:
-    """azanide 臂是否免二次围栏：须围栏的复合臂与带位次臂交给 _stem_needs_paren 定形。"""
+    """azanide 臂是否免二次围栏（其余交 _stem_needs_paren）。"""
     en = s.get("en") or ""
     if _arm_fence_needed(en):
         return False
@@ -188,7 +181,7 @@ def _azanide_arm_bare(s: dict) -> bool:
 
 
 def _enclose(s: str) -> str:
-    """给名称加围栏：已带完整方括号者不二次围栏；含圆括号改用方括号（P-16.5.2）。"""
+    """给名称加围栏：已带完整方括号者不二次围栏；含圆括号改用方括号。"""
     if s[:1] == "[" and s[-1:] == "]":
         return s  # 已是完整方括号围栏名（L3 定形）：再括一层成 [[…]] 无先例
     return f"[{s}]" if "(" in _ISO_DESC_RE.sub("", s) else f"({s})"
@@ -203,18 +196,16 @@ def _place(mult: str, s: str, subs: list, omit: bool,
            primes: dict[int, int] | None = None) -> str:
     """拼数量前缀与词干体：位次省略时直接相接，否则位次串以连字符前置。"""
     if omit:
-        if mult and s[:1].isdigit():  # 倍数前缀不得与位次数字直连（P-16.3.2：bis(3-…)，非 bis3-…）
+        if mult and s[:1].isdigit():  # 倍数前缀不得与位次数字直连（P-16.3.2：bis(3-…)）
             return f"{mult}({s})"
         return f"{mult}{s}"
     return f"{_locant_str(subs, primes)}-{mult}{s}"
 
-# 取代基名以带位次的立体描述符开头：(1Z)-、(2R,4R)-。与 tools.re._STEREO_LEAD_STRIP_RE 不同——
-# 那份供 P-14.5 排序剥除、允许无位次，本份供围栏判定、要求每位次带 token，勿互换。
 _STEREO_LEAD_ENCLOSE_RE = re.compile(r"\(\d+[RSEZ](?:,\d+[RSEZ])*\)-")
 
 _BRIDGE_SELF_FENCE = ("sulfanyl", "sulfinyl", "硫基", "亚磺酰基")  # 前端自带方括号时并入同一围栏的桥后缀（P-16.5.1.3）
-_FRONT_TAILS = ("yl", "ylidene", "sulfanyl", "amino")  # 可作桥前端的词尾：-yl/-ylidene 自由价基，或本身即复合桥前端（…amino）
-_FLAT_IMINO_SIMPLE = ("hydroxy",) + tuple(SIMPLE_ALKOXY_NO_PAREN)  # R-imino 融合式的简单含氧前端（hydroxy/methoxy/ethoxyimino，P-66.4.1.2.1）
+_FRONT_TAILS = ("yl", "ylidene", "sulfanyl", "amino")  # 可作桥前端的词尾：-yl/-ylidene 自由价基或复合桥前端
+_FLAT_IMINO_SIMPLE = ("hydroxy",) + tuple(SIMPLE_ALKOXY_NO_PAREN)  # R-imino 融合式的简单含氧前端（P-66.4.1.2.1）
 _MULT_WRAP_RE = re.compile(r"-\d+-yl$|oyloxy$")  # 须整体加括号的复合词干：位次链基与酰氧基
 
 
@@ -226,7 +217,7 @@ _TERMINAL_CHAIN_YL_RE = re.compile(_CHAIN_STEM + r"yl$")  # 自由价在端碳�
 _BENZYL_TAIL_RE = re.compile(r"[)\]]methyl$")  # 苄基型前端：桥后缀直接缀在甲基上，不拆。
 _LOCANT_RE = re.compile(r"(?:^|[-,\[])\d")  # 位次数字：行首或 -,\[ 之后（立体描述符内的数字不算）
 _ACYL_FRONT_RE = re.compile(r"(?:oyl|carbonyl)$")  # 酰基前端词尾（乙酰氧/酰胺融合用）
-_LOCANT_SUBST_TAIL_RE = re.compile(r"[\d\]]-[^()]*yl$")  # 括号外仍带位次取代基的端基（1-(…)-4-methylsulfanylbutyl）
+_LOCANT_SUBST_TAIL_RE = re.compile(r"[\d\]]-[^()]*yl$")  # 括号外仍带位次取代基的端基
 _CATION_YL_TAIL_RE = re.compile(r"(onio|onium|inium)$")  # 单核阳离子去氢基名词尾（dimethylsulfonio）
 _MERGE_TAIL_RE = re.compile(r"\][a-z]*yl$")  # 端部为「方括号组 + 直链 -yl」：桥后缀可并入同一围栏
 
@@ -243,7 +234,7 @@ _FRONT_LOCANT_NUM_RE = re.compile(r"(?:^|[-,\[])(\d+)")  # 前端名内位次数
 
 
 def _locant_conflict(base: str) -> bool:
-    """同一位次数字在前端名内出现二次：指向不同结构要素，须围栏（P-16.5.1.2）。"""
+    """同一位次数字在前端名内出现二次：须围栏（P-16.5.1.2）。"""
     nums = _FRONT_LOCANT_NUM_RE.findall(base)
     return len(nums) != len(set(nums))
 
@@ -256,7 +247,7 @@ def _composite_front(base: str) -> bool:
 
 def _front_needs_enclosure(base: str, suf: str) -> bool:
     """O/S/N 桥前端是否为自带围栏的复合取代基。"""
-    if base.endswith(("sulfanyl", "amino")):  # 前端自身即复合桥名（…aminooxy）：后端另起一重前缀（P-63.2.2.1）
+    if base.endswith(("sulfanyl", "amino")):  # 前端自身即复合桥名（…aminooxy）：另起一重前缀
         return True
     if base.endswith(("sulfonyl", "sulfinyl")):  # 磺酰基前端围栏由 L3 定形，此处不拆。
         return False
@@ -268,7 +259,7 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
         return False
     if suf == "oxy" and base.endswith("carbonyl"):  # P-63.2.2.1：酰基前端与氧桥融合（…carbonyloxy）
         return False
-    if suf == "amino" and _ACYL_FRONT_RE.search(base):  # P-63.2.2.1.2：amino 桥酰基前端按取代式融合（…oylamino）
+    if suf == "amino" and _ACYL_FRONT_RE.search(base):  # P-63.2.2.1.2：amino 桥酰基前端按取代式融合
         return False
     if  re.match(r"^\(\d+[RrSs]", base) and not base.endswith("oyl"):  # 手性自由价碳前端须括起，酰基前端按 …oyloxy 融合
         return True
@@ -276,7 +267,7 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
         return True if suf != "amino" else bool(
             re.search(r"\]-?\d", base)                            # 括号后接数字位次前缀
             or re.search(r"-\d+-\[", base[: base.find("[") + 1]))  # 括号前已有数字位次前缀：3-oxo-3-[X]propyl
-    if "(" in base:  # 前端自带括号：端碳自由价链基平铺，同一位次指向不同要素者须围栏（P-16.5.1.2）。
+    if "(" in base:  # 前端自带括号：端碳自由价链基平铺，余须围栏
         flat = _TERMINAL_CHAIN_YL_RE.search(base) and not _locant_conflict(base)
         return (not flat) or bool(_LOCANT_SUBST_TAIL_RE.search(base))
     if _composite_front(base):  # 复合前缀（自带位次的环基/链基）作桥前端须围栏（P-16.5.1.1）
@@ -294,7 +285,7 @@ _BRIDGE_SPLIT_ZH = BRIDGE_SPLIT_SUFFIX_ZH + (_IMINO_ZH,)
 
 
 def _flat_bridge_stem(stem: str) -> bool:
-    """词干是否为「简单前端 + R-imino」融合式（methylimino、ethylimino）：整体平铺不围栏。"""
+    """词干是否为「简单前端 + R-imino」融合式（整体平铺不围栏）。"""
     if not (stem or "").endswith(_IMINO_EN):
         return False
     base = stem[: -len(_IMINO_EN)]
@@ -322,7 +313,7 @@ def _sbridge_flat_stem(stem: str) -> bool:
 
 
 def _bridge_body(base: str, suf: str, merge: bool = False) -> str:
-    """O/S/N 桥平铺主体：前端围栏 + 桥后缀留外（P-63.2.2.1.2）；merge 时整段自闭合围栏。"""
+    """O/S/N 桥平铺主体：前端围栏 + 桥后缀留外（P-63.2.2.1.2）。"""
     body = f"{_enclose(base)}{suf}"
     if merge:  # 该前缀后仍接其他前缀：括界须自行闭合（P-16.5.1.3.1）
         return _enclose(f"{base}{suf}") if _MERGE_TAIL_RE.search(base) else f"[{body}]"
@@ -342,9 +333,9 @@ def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
     if mult and mult == MULT_EN.get(len(subs), "") and _MULT_WRAP_RE.search(stem):  # P-16.3.2：复合取代基的倍数前缀须加括号
         need = True
         mult = "bis" if stem[:1] in "aeiou" else "di"
-    if len(subs) > 1 and stem in CATION_YL_STEMS:  # P-16.3.2：阳离子去氢前缀属复合前缀，倍数用 bis(...)：bis(azaniumyl)
+    if len(subs) > 1 and stem in CATION_YL_STEMS:  # P-16.3.2：阳离子去氢前缀属复合前缀，用 bis(...)
         need, mult = True, BIS_EN.get(len(subs), mult)
-    if mult in BIS_EN_SET:  # P-16.3.2：bis/tris 的操作数须整体围栏：bis(carboxymethyl)
+    if mult in BIS_EN_SET:  # P-16.3.2：bis/tris 的操作数须整体围栏
         need = True
     if need:
         sp = _split_bridge_suffix(stem)
@@ -360,10 +351,10 @@ _COMPLEX_MULT_LANG = {"en": ("carboxy", BIS_EN, MULT_EN), "zh": ("羧", BIS_ZH, 
 
 
 def _mult_of(lang: str, stem: str, subs: list, n: int, omit: bool = False) -> str:
-    """数量前缀（P-16.3.2）：位次已省（全挂同一原子）的复合组分用 bis/tris。"""
+    """数量前缀（P-16.3.2）：位次已省的复合组分用 bis/tris。"""
     sentinel, bis, mult = _COMPLEX_MULT_LANG[lang]
     if any(s.get("paren") for s in subs) or (omit and sentinel in stem):
-        return bis.get(n, "")  # 无位次可依凭：复合组分须 bis/tris 免歧义（bis(carboxymethyl)）
+        return bis.get(n, "")  # 无位次可依凭：复合组分须 bis/tris 免歧义
     return mult.get(n, "")  # 带位次的复数前缀按 di/tri（3,4-dicarboxybutanoyl）
 
 
@@ -404,7 +395,7 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
             or bool(en[:1].isdigit() and not flat and not omit_ring_yl)) and not _is_bare(subs)
     if not omit and _STEREO_LEAD_ENCLOSE_RE.match(en):  # 前导立体描述符 + 位次须整体围栏
         need = True
-    if (  # P-16.5.1.4：酰基前缀自带母体氢化物名须围栏（与英文侧同判）；烷氧羰基除外
+    if (  # P-16.5.1.4：酰基前缀自带母体氢化物名须围栏
         zh_stem.endswith("羰基") and zh_stem != "羰基" and "氧羰基" not in zh_stem
         and not omit and not flat and not _is_bare(subs)
     ):
@@ -424,7 +415,7 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
 
 
 def _n_prefix(lang: str, n: int, stem: str, tokens: list[str], subs: list, need: bool = False) -> str:
-    """N- 前缀：N-甲基 / N,N-二甲基（带位次的复合基倍增作 N,N'-二(丙-2-基)，P-16.3.2）。"""
+    """N- 前缀：N-甲基 / N,N-二甲基（复合基倍增用 N,N'-）。"""
     body = _wrap_stem(stem, need)
     if n == 1:
         return f"{tokens[0]}-{body}"
@@ -432,7 +423,7 @@ def _n_prefix(lang: str, n: int, stem: str, tokens: list[str], subs: list, need:
 
 
 def _is_bare(subs: list) -> bool:
-    """该组前缀是否免去二次围栏（单核母体阳离子的臂名前置于母体名，无位次可混，P-73.6）。"""
+    """该组前缀是否免二次围栏（单核阳离子臂名前置于母体名）。"""
     return any(s.get("bare") for s in subs)
 
 
@@ -459,7 +450,7 @@ def _parts_for_stem(stem: str, subs: list, omit: bool, primes: dict[int, int] | 
     zh_stem = subs[0].get("zh") or ""
     if subs and all((s.get("kind") or "") in N_PREFIX_KINDS for s in subs):  # 整组全为 N-型才走 N-计数前缀，混入 C-型时走数字通道
         need = (_stem_needs_paren(stem, subs, omit, flat)
-                or (len(subs) > 1 and _stem_has_locant(stem)))  # 复合取代基/带位次基的倍数组须整体加括号（P-16.5.1.1、P-16.3.2）
+                or (len(subs) > 1 and _stem_has_locant(stem)))  # 复合取代基/带位次基的倍数组须整体加括号
         tokens = sorted(("N" + "'" * _sub_prime(s, primes)) for s in subs)  # 同 N 用 N,N-；跨不同 N 用 N,N'-
         return (_n_prefix("en", len(subs), stem, tokens, subs, need),
                 _n_prefix("zh", len(subs), zh_stem, tokens, subs, need))
@@ -468,7 +459,7 @@ def _parts_for_stem(stem: str, subs: list, omit: bool, primes: dict[int, int] | 
 
 
 def _hydrazide_primes(parent: dict) -> dict[int, int] | None:
-    """酰肼母体（P-66.3.3.1）的固定撇号映射：羰基侧 N → N，肼远端 N → N′。"""
+    """酰肼母体的固定撇号映射（P-66.3.3.1）：羰基侧 N、肼远端 N′。"""
     hn = parent.get("hydrazide_n_idx")
     if hn is None:
         return None
@@ -492,7 +483,7 @@ def _n_prime_map(groups: dict[str, list], stems: list[str]) -> dict[int, int]:
 
 def _arm_tail(name: str, n: int, bare: bool, mult: dict, bis: dict,
               inline_mult: bool = False) -> str:
-    """括号式后继臂（P-16.5.1.3.1）：原式「倍数(名)」；同位素臂倍数入括号；阳离子臂按 P-73.1.1 改直连式。"""
+    """括号式后继臂（P-16.5.1.3.1）：原式「倍数(名)」。"""
     if not bare:
         if inline_mult:  # 同位素臂：倍数随词干入括号（dideuterio，非 di(deuterio)）
             return f"({mult.get(n, '')}{name})"
@@ -525,11 +516,11 @@ def _collect_parts(groups: dict[str, list], stems: list[str], omit: bool,
     return en_parts, zh_parts
 
 
-_LOCANT_RUN_RE = re.compile(r"\d+(?:,\d+)*[a-z]*-")  # 名内位次段（2,3- 算一段），与 tools.re.SUB_LOCANT_RE 不同：无段首锚点
+_LOCANT_RUN_RE = re.compile(r"\d+(?:,\d+)*[a-z]*-")  # 名内位次段（2,3- 算一段），与 SUB_LOCANT_RE 不同
 
 
 def _cation_arm_hyphen(groups: dict[str, list]) -> bool:
-    """阳离子臂名间是否以连字符分段（P-73.1.1）：三臂以上，或存在复合臂时须显式分隔。"""
+    """阳离子臂名间是否以连字符分段（P-73.1.1）：三臂以上。"""
     if len(groups) >= 3:
         return True
     for name, subs in groups.items():
@@ -542,7 +533,7 @@ def _cation_arm_hyphen(groups: dict[str, list]) -> bool:
 
 
 def _groups_simple(groups: dict[str, list]) -> bool:
-    """全部词干无前导位次且非 N- 类才适用括号式（前导位次词干已由位次连字符式消歧）。"""
+    """全部词干无前导位次且非 N- 类才适用括号式。"""
     for subs in groups.values():
         for s in subs:
             if (s.get("en") or "")[:1].isdigit() or (s.get("kind") or "") in N_PREFIX_KINDS:
@@ -561,7 +552,7 @@ def _o_side_arm_fence(name: str, sub: dict) -> bool:
 
 
 def _fence_o_side_arms(subs: list, kind: str | None, mol) -> None:
-    """酯路径 O-侧臂名就地围栏：assembler 侧对这两类 kind 不判臂围栏。"""
+    """酯路径 O-侧臂名就地围栏（assembler 侧不判）。"""
     if kind not in _O_SIDE_ARM_FENCE_KINDS or mol is None:
         return
     for s in subs:
@@ -591,7 +582,7 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
         substituents = [{**s, "ring_yl": _sub_root_in_ring(s, mol)} for s in substituents]
     omit = _omit_sub_locants(n_carbons, substituents, locant_kind or kind, scaffold, has_ene)
     bare = kind in ("cation", "azanide")  # 单核母体阳/阴离子：臂名直接前置于母体名，无母体位次可混，不再二次围栏
-    if kind == "azanide":  # P-16.5.2：复合臂名围栏由 _stem_needs_paren/_arm_tail 按判据统一定形
+    if kind == "azanide":  # P-16.5.2：复合臂名围栏由判据统一定形
         substituents = [{**s, "bare": _azanide_arm_bare(s)} for s in substituents]
     elif bare:
         substituents = [{**s, "bare": cation_arm_bare(s.get("en") or "")} for s in substituents]
@@ -607,13 +598,13 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     sep = "-" if (arm_hyphen or not bracket) else ""
     sep_zh = "-" if not bracket else ""  # 中文无臂分段符，位次间的连字符仍保留
     primes = _n_prime_map(groups, stems)
-    if forced_primes:  # 酰肼（P-66.3.3.1）：羰基侧 N 恒为 N、肼远端 N 恒为 N′，不随字母序漂移
+    if forced_primes:  # 酰肼：羰基侧 N 恒为 N、肼远端 N 恒为 N′
         primes = {**primes, **forced_primes}
     en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, primes, sep, flat, arm_hyphen)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
     return sep.join(en_parts), sep_zh.join(zh_parts)
 
 def _isotope_subs(parent: dict) -> list:
-    """骨架原子上的氘/氚 → 逐个带母体位次的同位素前缀记录（供 _build_prefix 排序并加多位次）。"""
+    """骨架原子上的氘/氚 → 带母体位次的同位素前缀记录。"""
     mol, chain = parent.get("mol"), list(parent.get("chain") or ())
     if mol is None or not chain:
         return []
@@ -636,7 +627,7 @@ _NUCLIDE_RE = re.compile(r"(\d+)([A-Z][a-z]?)")  # "13C"/"123I" → (质量数, 
 
 
 def _nuclide_groups(parent: dict) -> dict:
-    """母体实体上带核素属性的原子 → {(元素, 质量数): [位次, ...]}（腈碳等位次为 None）。"""
+    """母体上带核素属性的原子 → {(元素, 质量数): [位次...]}。"""
     mol, owned = parent.get("mol"), parent.get("owned_atoms") or frozenset()
     if mol is None or not owned:
         return {}
@@ -652,7 +643,7 @@ def _nuclide_groups(parent: dict) -> dict:
 
 
 def join_isotope_descriptor(names: tuple[str, str], numbered: dict) -> tuple[str, str]:
-    """母体核素描述符 '(位次-13C6)' 紧贴母体词干前（P-82.2.1 括号紧贴、P-82.3 排序）。"""
+    """母体核素描述符 '(位次-13C6)' 紧贴母体词干前（P-82.2.1）。"""
     groups = _nuclide_groups(numbered.get("parent") or {})
     if not groups:
         return names
@@ -690,7 +681,7 @@ _DEUTERO_PREFIX_KIND = "isotope_group"
 
 
 def _deutero_group(s: dict, mol) -> dict | None:
-    """氘/氚取代的甲基或甲氧基 → 同位素修饰基名（deuteriomethyl/trideuteriomethyl 等，须围栏）。"""
+    """氘/氚取代的甲基或甲氧基 → 同位素修饰基名（须围栏）。"""
     root = _DEUTERO_GROUP.get(s.get("en") or "")
     if root is None or mol is None:
         return None
@@ -716,9 +707,9 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     if kind == "radical" and parent.get("radical_anchor_element"):  # 杂原子锚点自由基：烷基取代基已并入组装名（ethyloxy），不再加前缀。
         return "", ""
     if kind == "heterane" and parent.get("heterane_z") and not parent.get("stem_bare_en"):
-        return "", ""  # 单核杂原子烃：臂名已并入组装名（pentafluoro-lambda6-sulfane）；多核链仍走常规前缀
+        return "", ""  # 单核杂原子烃：臂名已并入组装名；多核链仍走常规前缀
     mol = parent.get("mol")
-    subs = []  # 非同位素取代基保持原对象：_build_prefix 内就地标记（O 侧臂围栏）须回写 numbered
+    subs = []  # 非同位素取代基保持原对象：就地标记须回写 numbered
     for s in (numbered.get("substituents") or []):
         subs.append(_iso_halo_sub(s, mol) or _deutero_group(s, mol) or s)
     subs += _isotope_subs(parent)

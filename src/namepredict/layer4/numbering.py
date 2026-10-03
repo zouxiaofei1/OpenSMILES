@@ -80,7 +80,7 @@ def hydro_prefix(chain, labels, hydro_atoms) -> tuple[str, str]:
 def number(parent: dict, substituents: list) -> dict:
     """对 parent 定向编号并组装位次结果（含指示氢前缀 P-58.2.1）。"""
     chain = orient_numbering(parent, substituents)
-    if chain is None:  # 定向失败（如桥环候选不可判定）：显式失败，不让 None 顺流触发 TypeError
+    if chain is None:  # 定向失败：显式失败，不让 None 顺流触发 TypeError
         raise ValueError("numbering_failed")
     oriented = {**parent, "chain": chain}
     result = _pack(oriented, _with_locants(chain, substituents, oriented.get("numbering_scaffold")))
@@ -89,20 +89,15 @@ def number(parent: dict, substituents: list) -> dict:
     hydro = packed.get("hydro_atoms") or frozenset()
     fb = _fallback_hydro_atoms(packed)  # 未注册稠环推导
     if not hydro or (set(hydro) < fb and (len(fb) in HYDRO_MULT_N or len(fb) - 1 in HYDRO_MULT_N)):
-        hydro = fb  # 奇数个饱和位也可回退：随后 _odd_hydro_to_indicated 会把最低位次改由指示氢表达
-    # print(hydro)
+        hydro = fb  # 奇数个饱和位也可回退，随后改由指示氢表达
     hydro_all = hydro
     hydro = _lowest_extra_to_indicated(packed, labels, hydro)
-    # print(hydro)
     hydro = _odd_hydro_to_indicated(packed, labels, hydro)
-    # print(hydro)
     pre = hydro_prefix(packed.get("chain"), labels, hydro)
-    # 加氢位被搬进指示氢且前缀不再提它：仅当该位是模板未隐含的加氢位（保留名已含的 CH2 不算）时，
-    # 才要求 L5 写出指示氢，否则饱和度整段丢失
     moved = hydro_all - hydro
     packed["hydro_fallback"] = bool(moved) and bool(
         moved & _extra_hydrogenated(packed))
-    if not pre[0]:  # hydro 位次表达不出（奇数值/超表/不在链内）则整体退回指示氢，不产半截名
+    if not pre[0]:  # hydro 位次表达不出则整体退回指示氢，不产半截名
         hydro, pre = frozenset(), ("", "")
     from namepredict.layer2.hantzsch_widman import is_hw_scaffold
     extra = _extra_indicated(packed)
@@ -113,16 +108,11 @@ def number(parent: dict, substituents: list) -> dict:
     packed["indicated_h_forced"] = bool(extra) or is_hw_scaffold(packed.get("scaffold_id"))
     packed["ind_h_carbon_ok"] = _ind_h_carbon_scaffold_ok(packed.get("scaffold_id"))
     packed["hydro_prefix"] = pre
-    # print("layer4result",result,"\n\n\n\n\n")
     return result
 
 
 def _lambda_locants(mol, chain, labels) -> tuple[tuple[str, int, int], ...]:
-    """整体编号下需 λ/δ 标注的骨架原子 → ((位次, 键数|0, δ 双键数|0), …)。
-
-    环内 λ 只用于 HW_RING_LAMBDA_Z 元素：硫族/氮氧的环内高价由 dioxo/oxide 前缀表达，
-    名称里不复标 λ（与 P-22.2.7 同一口径）。δ 计该原子直接相连的连续双键数（P-25.7.2）。
-    """
+    """整体编号下需 λ/δ 标注的骨架原子 → (位次, 键数, δ 双键数)。"""
     from namepredict.layer2.hantzsch_widman import HW_RING_LAMBDA_Z
     from namepredict.tools.lambda_notation import bonding_number, is_lambda_marked
 
@@ -145,13 +135,12 @@ def _lambda_locants(mol, chain, labels) -> tuple[tuple[str, int, int], ...]:
 
 
 def _ind_h_carbon_scaffold_ok(scaffold_id: str | None) -> bool:
-    """母体是否为可写碳位指示氢的保留杂环名（单环杂芳/稠合杂芳；苯并二氧戊环、金刚烷等除外）。"""
+    """母体是否为可写碳位指示氢的保留杂环名（苯并二氧戊环等除外）。"""
     if not scaffold_id:
         return False
     from namepredict.layer2.ring_scaffold import get_spec
 
     sp = get_spec(scaffold_id)
-    # benzodioxole 的 CH2、adamantane/mono_carbo 的饱和位由保留名本身表达，不得补指示氢（P-58.2.1）
     return sp is not None and getattr(sp, "naming_class", "") not in (
         "benzodioxole", "adamantane", "mono_carbo")
 

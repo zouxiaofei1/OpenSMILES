@@ -1,8 +1,6 @@
-"""P-23 von Baeyer 桥环母体名：环数词头 + 描述符 + 烷词干 + 骨架置换 'a' 前缀。
+"""P-23 von Baeyer 桥环母体名：环数词头 + 描述符 + 烷词干 + 'a' 前缀。
 
-同时给出两种词干形态：FG 分支要带 "ane/烷" 的完整名（后缀去 e 用），
-链式词干引擎要裸词干（自行拼 "ane/烷" 或 "a…-triene"）。L5 不得 import L2，
-因此 node 只按鸭子类型读 descriptor / locant_pairs。
+给两种词干形态（带 ane/烷 的完整名与裸词干）；node 按鸭子类型读 descriptor / locant_pairs。
 """
 from __future__ import annotations
 
@@ -30,11 +28,7 @@ def descriptor_str(descriptor: tuple[int, ...], locant_pairs) -> str:
 
 
 def bridged_body_names(node):
-    """von Baeyer 主体名（不含 'a' 前缀）→ ((完整英, 完整中), (裸词干英, 裸词干中))。
-
-    P-24.5.2 / P-24.3.4：'a' 前缀须挂在 spiro/spirobi 之前而非组分名内，
-    故组分式螺环要取不带 'a' 的主体名，前缀由调用方另拼。
-    """
+    """von Baeyer 主体名（不含 'a' 前缀）→ 完整名与裸词干两种形态。"""
     prefix = ring_count_prefix(len(node.descriptor) - 1)
     if prefix is None:
         return None
@@ -47,7 +41,7 @@ def bridged_body_names(node):
 
 
 def bridged_parent_names(mol, node, chain: list[int]):
-    """桥环名 → ((完整英, 完整中), (裸词干英, 裸词干中))；不可组装返回 None。"""
+    """桥环名 → (完整名, 裸词干) 两形态；不可组装返回 None。"""
     body = bridged_body_names(node)
     if body is None:
         return None

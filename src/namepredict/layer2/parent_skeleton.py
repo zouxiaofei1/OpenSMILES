@@ -91,15 +91,15 @@ _RING_AS_SUBSTITUENT_KINDS = frozenset({"boronic", "phosphonate"})  # 中心母�
 
 
 def _ring_attaches(mol: Mol, ring: set[int], occurrence: FunctionalGroupOccurrence) -> bool:
-    """判断 occurrence 是否附着于环（胺/醇/硫醇/酮/自由基只认直接附着）。"""
+    """判断 occurrence 是否附着于环（只认直接附着）。"""
     if occurrence.parent_anchors & ring:
         return True
     if occurrence.group_class in (FunctionalGroupClass.AMINE, FunctionalGroupClass.ALCOHOL, FunctionalGroupClass.THIOL,
                                   FunctionalGroupClass.RADICAL, FunctionalGroupClass.KETONE):
-        return False  # 隔碳的 SH 不能作环的后缀（P-63.1.5 同醇），只作 sulfanyl 前缀
+        return False  # 隔碳的 SH 不能作环后缀，只作 sulfanyl 前缀
     if (occurrence.group_class in OXO_FG_CLASSES
             and all(mol.GetAtomWithIdx(a).GetAtomicNum() == C for a in occurrence.parent_anchors)):
-        return False  # 碳锚定含氧酸/磺酰胺：锚碳在环外时环不作母体，桥碳入母体链（P-65.3.1 取代式）
+        return False  # 碳锚定含氧酸：锚碳在环外时环不作母体（P-65.3.1）
     if (occurrence.payload or {}).get("oxo_kind") in _RING_AS_SUBSTITUENT_KINDS:
         return False  # 硼酸/膦酸：环一律退为取代基，中心自任母体（P-68.2.1）
     return any(n.GetIdx() in ring for a in occurrence.parent_anchors for n in mol.GetAtomWithIdx(a).GetNeighbors())
@@ -128,12 +128,7 @@ def _cation_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
 
 
 def _heterane_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
-    """非碳母体氢化物骨架：单核取杂原子本身，多核走同元素链枚举（同碳链的 P-44.3 路径）。
-
-    链候选由 `_all_chains_through` / `_chain_through_two` 在同元素开链子图上枚举，
-    支链与取代基自然退给 L3 递归；P-44.3 再由杂原子数、链长择优。最小链长由 L1 的
-    链 SMARTS 分档保证（硫族/N 取代链 ≥3 连，纯母体氢化物 ≥2 连）。
-    """
+    """非碳母体氢化物骨架：单核取杂原子本身，多核走同元素链。"""
     mol = info["mol"]
     anchors = _anchors(occurrences)
     if not anchors:
@@ -145,7 +140,7 @@ def _heterane_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     out: list[ParentSkeleton] = []
     for z, atoms in by_z.items():
         zset = set(atoms)
-        if len(zset) == 1:  # 单原子：非标准价（P-14.1.3）或标准价单核母体氢化物（P-44.1.2）
+        if len(zset) == 1:  # 单原子：非标准价或标准价单核母体氢化物
             idx = atoms[0]
             if is_nonstandard(mol.GetAtomWithIdx(idx)) or is_standard_parent_hydride_center(mol, idx):
                 out.append(ParentSkeleton(SkeletonTopology.ACYCLIC, (idx,), covered[idx]))
@@ -284,16 +279,12 @@ def select_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOcc
 
 
 def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroupOccurrence, ...]) -> SkeletonSelection:
-    """枚举全部骨架候选；主基团为单核阳离子时只向阳离子原子收敛，不进链/环枚举。"""
+    """枚举全部骨架候选（单核阳离子只向阳离子原子收敛）。"""
     if occurrences and all(o.group_class is FunctionalGroupClass.CATION for o in occurrences):
-        # P-73.7(c)：多阳离子中心时取优先元素（N > P > … > O > S），比 P-44 拓扑规则更专
         return SkeletonSelection(tuple(keep_senior_atom(info["mol"], tuple(_cation_candidates(info, occurrences)))))
     if occurrences and all(o.group_class is FunctionalGroupClass.AZANIDE for o in occurrences):
-        # P-72.2.2.2(2)：氮负离子自任母体，只以阴离子 N 本身作骨架候选（全部臂退为前缀）
         return SkeletonSelection(tuple(_cation_candidates(info, occurrences)))
     if occurrences and all(o.group_class is FunctionalGroupClass.HETERANE for o in occurrences):
-        # P-21：杂原子烃以杂原子自任母体（P-41 类 21–39 皆高于碳 40）。环候选一并枚举，
-        # 同级元素时由 P-44.2「环优先于链」裁决，避免把含杂原子的环拆成开链。
         cands = _heterane_candidates(info, occurrences) + _ring_candidates(info, occurrences)
         return SkeletonSelection(tuple(keep_senior_atom(info["mol"], tuple(cands))))
     return SkeletonSelection(tuple(_chain_candidates(info, occurrences) + _ring_candidates(info, occurrences)))

@@ -8,21 +8,19 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class FgSpec:
-    fg: str  # FunctionalGroupClass 值（权威枚举字符串，如 "alcohol"）；同作 L1 analyzer 列表 key
+    fg: str  # FunctionalGroupClass 枚举值；同作 L1 列表 key
     p41: int = 0  # P-41 主官能团等级（0 = 非主官能团）
     path: tuple[int, ...] = ()  # P-43 优先级路径
-    expr: str = "suffix"  # 表达类型：suffix / prefix_only / legacy_compat
+    expr: str = "suffix"  # 表达类型：suffix/prefix_only/legacy_compat
     anchors: tuple[str, ...] = ()  # occurrence payload 锚点 key（空 = 不收集锚点）
     parent_anchor_fields: tuple[str, str] | None = None  # parent 锚点字段（单, 复）
-    locant_source: str = "attachment"  # 位次原子来源：attachment 取 principal_expression_facts 骨架内附着原子；attachment_exocyclic 仅环外表达时取；anchor_field 取 parent_anchor_fields 首位语义字段（固定 locant 1 锚点）
+    locant_source: str = "attachment"  # 位次原子来源（attachment/anchor_field 等）
 
 
 FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("radical", p41=1, anchors=("center_idx",), parent_anchor_fields=("radical_c_idx")),
     FgSpec("acyl", p41=1, anchors=("center_idx",), parent_anchor_fields=("acyl_c_idx")),
-    # 氮负离子母体（P-72.2.2.2(2) 预选阴离子母体名 azanide）：阴离子类 4，高于酸 7/酰胺 11/酮 16
     FgSpec("azanide", p41=4, anchors=("center_idx",)),
-    # 单核母体阳离子（P-73.1.1）：P-41 表 4.1 类 6，高于酸类 7（铵 > 羧酸）
     FgSpec("cation", p41=6, anchors=("center_idx",)),
     FgSpec("acid", p41=7, path=(1,), anchors=("center_idx",)),
     FgSpec("oxoacid", p41=9, path=(0,), anchors=("center_idx",)),  # 含氧酸中心 P/S 合一类：oxo_kind 由 L1 payload 归一
@@ -33,22 +31,16 @@ FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("nitrile", p41=14, anchors=("center_idx",), locant_source="attachment_exocyclic"),
     FgSpec("aldehyde", p41=15, anchors=("center_idx",), locant_source="attachment_exocyclic"),
     FgSpec("ketone", p41=16, anchors=("center_idx",)),
-    # 酮的硫族类似物（P-64.6）：C=S 与酮同类 16，P-43 路径 (1,) 使其让位于 C=O（C=O > C=S）
     FgSpec("thione", p41=16, path=(1,), anchors=("center_idx",)),
     FgSpec("alcohol", p41=17, path=(1,), anchors=("surr_idx",)),
     FgSpec("thiol", p41=17, path=(2,), anchors=("surr_idx",)),
     FgSpec("amine", p41=19, anchors=("surr_idx",)),
-    # 非碳母体氢化物（P-41 表 4.1 类 21–39）：杂原子自任母体、其余作取代基。类 21–39 整段
-    # 低于胺 19、高于碳 40，故单列一个等级即可；元素间次序由 L2 的 P-44.1.2 优先原子裁决。
     FgSpec("heterane", p41=36, anchors=("center_idx",)),
 )
 
 
-# ── P-41 表 4.1 类 7：含氧酸的"酸式"判据 ──
-# 中心带 O⁻（阴离子）或中心为碳锚定酸式（膦酸/磺酸）的含氧酸按类 7 参与主基团竞争，
-# 排在类 9 酯与类 11 酰胺之前；中性磷酸/硫酸酯仍属类 9（按相应酸排羧酸酯之后）。
 OXO_ACID_P41 = 8  # 类 7 内排在羧酸（acid=7）之后的等级
-OXO_ACID_KINDS = frozenset({"sulfonic"})  # 碳锚定且自带酸式氢的 oxo_kind；phosphonate 另按 n_oh 判
+OXO_ACID_KINDS = frozenset({"sulfonic"})  # 碳锚定且带酸式氢的 oxo_kind
 OXO_ACID_KIND_BY_H = {"phosphonate": 1, "boronic": 1}  # 碳锚定 P/B 酸：n_oh ≥ 该值时按酸式（膦酸/膦酸氢酯/硼酸）
 
 

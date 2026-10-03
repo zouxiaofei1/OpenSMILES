@@ -50,7 +50,7 @@ def preprocess(smiles: str) -> Mol | None:
         Chem.AssignStereochemistry(mol, force=True, cleanIt=False, flagPossibleStereoCenters=True)
         mol = normalize_amide_tautomer(mol)
         mol = normalize_acid_charge(mol)
-        mol = normalize_amide_tautomer(mol)  # 电荷重定位把酰胺 O⁻ 变成中性 C(OH)=N（弱酸位受体），此时才出现可归一的酰胺烯醇位，须再跑一次（否则留下 1-hydroxyethylideneamino 式亚胺醇名，gold 取酰胺式）。
+        mol = normalize_amide_tautomer(mol)  # 电荷重定位后才出现可归一的酰胺烯醇位，须再跑一次
     except Exception:
         return None
     return mol

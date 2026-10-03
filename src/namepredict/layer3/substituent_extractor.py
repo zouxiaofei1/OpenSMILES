@@ -42,10 +42,7 @@ def _amidine_n_owned(mol, parent: dict | None) -> frozenset[int]:
 
 
 def _hydrazide_n_owned(mol, parent: dict | None) -> frozenset[int]:
-    """酰肼母体（P-66.3.0）：远端 N 并入所有权边界，其臂须从 N 外侧键起切改记 N′。
-
-    近端 N 本属酰胺特征原子；两端都并入后，取代基各自挂在对应 N 上，L5 按 N/N′ 引用。
-    """
+    """酰肼母体（P-66.3.0）：远端 N 并入所有权边界并改记 N′。"""
     idx = (parent or {}).get("hydrazide_n_idx")
     return frozenset({int(idx)}) if idx is not None else frozenset()
 
@@ -59,7 +56,7 @@ def sub_from_named(named, mol, parent: dict | None = None) -> dict:
     attach = mol.GetAtomWithIdx(int(claim.attach_parent))
     in_parent = parent is not None and int(claim.attach_parent) in set(parent.get("chain") or ())
     if kind in N_PREFIX_KINDS and (attach.IsInRing() or in_parent):  # 附着原子为环员或母体骨架成员：有数字位次可用，不写 N- 前缀
-        kind = _claim_kind("ring_c")  # 环氮（内酰胺/环胺母体的环员 N）与均一氮链（1-methyltriazane）改用位次定位而非 N- 前缀
+        kind = _claim_kind("ring_c")  # 环氮与均一氮链改用位次定位而非 N- 前缀
     return {
         "kind": kind, "n_carbons": n_carbons,
         "attach_idx": claim.attach_parent, "atoms": sorted(claim.atoms),
@@ -81,9 +78,6 @@ def _append_named(mol, claim, namer, out: list[dict], *, o_side: bool = False, s
 
 def _side_arm_claim(mol, claim, chain: frozenset[int]):
     """把切在所有权内非链杂原子上的侧臂并回该杂原子、改挂到链上原子。"""
-    # 硫代酯的 S 臂按原样切在 S 上时 L4 无位次可给，整段臂
-    # 会被 _subs_for_numbering 丢弃，名称只剩母体（methyl propanedioate）。
-    # 并入 S 后臂名自带 sulfanyl，位次可定。
     from dataclasses import replace
 
     a = int(claim.attach_parent)
@@ -107,7 +101,6 @@ def extract_substituents(info: dict, parent: dict, *, cache: CommonNameCache | N
     if owned is None:
         return []
     mol = info["mol"]
-    # benzoate（苯 base + ester FG）靠 o_idx 字段识别 O-side；链状 ester 走 kind 表。
     o_side = parent.get("kind") in ESTER_O_SIDE_KINDS or parent.get("o_idx") is not None
     side_z = 16 if parent.get("thio_side") else 8  # 硫代酯的酯侧臂元素为 S（P-65.6.3.3.7.1）
     chain = frozenset(parent.get("chain") or ())
@@ -122,11 +115,7 @@ def extract_substituents(info: dict, parent: dict, *, cache: CommonNameCache | N
 
 
 def _mark_hydrazide_primes(subs: list[dict], parent: dict | None) -> list[dict]:
-    """酰肼（P-66.3.3.1）两端 N 的取代基定死撇号：羰基侧 N → N，远端 N → N′。
-
-    位次重挂（namer._remap_attach）会把 N-型取代基归到同一母体锚点，
-    L5 的字母序撇号表无法再区分两端 N，故在提取阶段就写死。
-    """
+    """酰肼（P-66.3.3.1）两端 N 取代基定死撇号：羰基侧 N，远端 N′。"""
     hn = (parent or {}).get("hydrazide_n_idx")
     if hn is None:
         return subs

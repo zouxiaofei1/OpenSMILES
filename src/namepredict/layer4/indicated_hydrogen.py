@@ -8,7 +8,7 @@ from namepredict.layer4.locant_calc import atom_locant
 
 
 def _flanked_by_exo_double(mol, idx: int, ring_atoms: set[int]) -> bool:
-    """环碳两侧环邻位是否都带环外杂原子多重键（如 1,3-二酮的 C2，P-14.4）。"""
+    """环碳两侧环邻位是否都带环外杂原子多重键（P-14.4）。"""
     atom = mol.GetAtomWithIdx(idx)
     if atom.GetAtomicNum() != 6:
         return False
@@ -124,7 +124,7 @@ def _forced_h_atom(mol, idx: int, ring: set[int]) -> bool:
 
 def indicated_hydrogen_atoms(mol, chain, exclude=frozenset(), extra=frozenset(),
                              scaffold_id: str | None = None) -> list[int]:
-    """指示氢所在环位原子表（P-58.2.1）：与 indicated_hydrogen 同判据，供编号 P-14.4(b) 用。"""
+    """指示氢所在环位原子表（P-58.2.1），供编号 P-14.4(b) 用。"""
     chain = list(chain or ())
     if not chain:
         return []
@@ -137,7 +137,7 @@ def indicated_hydrogen_atoms(mol, chain, exclude=frozenset(), extra=frozenset(),
         sats = set()  # 全饱和单环：母体氢化物名已隐含全部 H，无指示氢（P-58.2.1）
     elif not extra and _is_monocycle(mol, chain) and rdb == 1 \
             and not _is_retained_scaffold(scaffold_id) and not is_hw(scaffold_id):
-        sats = set()  # 单环仅一个环内双键（环己烯/环戊烯）：氢位无歧义；HW 名按 mancude 词干读，须标指示氢
+        sats = set()  # 单环仅一个环内双键：氢位无歧义；HW 名须标指示氢
     if is_hw(scaffold_id) and not extra:  # 生成式 HW 环：H 由价态强制者不作指示氢（P-58.2.1）
         sats = {i for i in sats if not _forced_h_atom(mol, i, set(chain))}
     sats = sorted(sats, key=chain.index)

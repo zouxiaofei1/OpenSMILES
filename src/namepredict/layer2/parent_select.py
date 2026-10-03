@@ -41,14 +41,12 @@ def _express_selected(selection: PrincipalParentSelection, info: dict) -> list[d
                   if skeleton.topology is SkeletonTopology.RING_SYSTEM
                   else express_chain_principal(info, selection.principal, skeleton))
         parents.append(parent)
-    # print("parents",parents)
     return parents
 
 
 def rule_driven_parent_candidates(info: dict) -> list[dict]:
     """规则驱动入口：返回最终母体候选（无主官能团时纯烃）。"""
     selection = select_principal_parent_skeletons(info)
-    # print("selection",selection)
     return _express_selected(selection, info)
 
 
@@ -69,7 +67,7 @@ def _kind_fg_atoms(parent: dict, mol: Mol) -> set[int]:
     anchors = {a for o in occurrences for a in o.parent_anchors}
     atoms = {a for o in occurrences for a in o.characteristic_atoms}
     seeds = anchors & chain
-    if not seeds:  # 锚点全在骨架外：exocyclic 基团（苯甲酸的羧基），改取与骨架相邻的锚点
+    if not seeds:  # 锚点全在骨架外（exocyclic）：改取与骨架相邻者
         linked = {n.GetIdx() for i in chain for n in mol.GetAtomWithIdx(i).GetNeighbors()}
         seeds = anchors & linked
     out = set(seeds)
@@ -107,14 +105,14 @@ def _p45_2_prefix_count(info: dict, parent: dict) -> int:
 
 
 def _covered_oxo_z(cand: dict) -> list:
-    """候选所辖含氧酸中心（covered occurrence 带 oxo_z 者）的 oxo_z 列表。"""
+    """候选所辖含氧酸中心的 oxo_z 列表。"""
     ids = set(cand.get("covered_principal_ids") or ())
     return [o.payload["oxo_z"] for o in cand.get("principal_occurrences") or ()
             if o.id in ids and o.payload.get("oxo_z") is not None]
 
 
 def _condensed_rank(info: dict, cand: dict) -> int:
-    """候选所辖缩合含氧酸中心的链内桥氧数（P-67.2.1：多核磷酸/硫酸以链中中心为功能母体）；其余恒 0。"""
+    """候选所辖缩合含氧酸中心的链内桥氧数（P-67.2.1）。"""
     mol = info.get("mol")
     if mol is None or cand.get("oxo_kind") not in ("phosphate", "sulfate"):
         return 0
@@ -179,7 +177,7 @@ def _ester_arm_component(mol: Mol, root: int) -> frozenset[int]:
 
 
 def _oxo_ester_side_score(mol: Mol, cand: dict) -> tuple[int, int]:
-    """酯侧打分 (臂上芳香含氮环数, -臂内氧数)：越小越优先（P-67.1.3 磷酸二酯取糖/多元醇侧作母体）。"""
+    """酯侧打分 (臂上芳香含氮环数, -臂内氧数)：越小越优先。"""
     zs = _covered_oxo_z(cand)
     nuc, n_o = 0, 0
     seen_arms: list[int] = []
@@ -200,7 +198,7 @@ def _oxo_ester_side_score(mol: Mol, cand: dict) -> tuple[int, int]:
 
 
 def _reorder_oxo_ester_side(info: dict, cands: list[dict]) -> list[dict]:
-    """缩合磷酸酯的母体侧定向：并列候选改取「糖/多元醇/甘油」侧（P-67.1.3，数据驱动定向规则）。"""
+    """缩合磷酸酯的母体侧定向：并列候选取糖/多元醇侧。"""
     mol = info.get("mol")
     if mol is None or len(cands) <= 1:
         return cands

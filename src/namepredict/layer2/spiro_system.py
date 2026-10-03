@@ -1,7 +1,6 @@
-"""P-24 螺环拆解：环组分划分 + von Baeyer 螺描述符 + 组分式螺环候选。
-
-全为单环组分时走 P-24.2 螺描述符，含多环组分时走 P-24.5~24.7 组分式命名。
-L2 只枚举候选，编号裁决交 L4；L5 不得 import L2，node 按鸭子类型读。
+"""P-24 螺环拆解：环组分划分 + 螺描述符 + 组分式候选。
+全为单环组分走 P-24.2，含多环组分走 P-24.5~24.7 组分式命名。
+L2 只枚举候选，编号交 L4；L5 不得 import L2。
 """
 from __future__ import annotations
 
@@ -144,7 +143,7 @@ def _number_walk(segs: list[_Seg], walk: tuple) -> tuple[dict, tuple, tuple]:
 
 
 def spiro_scaffold_identity(info: dict, system: dict):
-    """螺环系的 scaffold 身份：全单环组分为 mono_spiro，否则 fused_bridged_spiro。"""
+    """螺环系的 scaffold 身份（mono_spiro / fbs）。"""
     from namepredict.layer2.ring_scaffold import ScaffoldIdentity
     mol = info["mol"]
     rings = list(sssr_rings(mol))
@@ -157,7 +156,7 @@ def spiro_scaffold_identity(info: dict, system: dict):
 
 
 def decompose_spiro_system(info: dict, system: dict) -> list:
-    """公共入口：环系拆解为并列螺环候选（单环组分→SpiroNode，多环→FbsNode）。"""
+    """环系拆解为并列螺环候选（SpiroNode / FbsNode）。"""
     free = tuple(system.get("free_spiro_atoms") or ())
     if not free:
         return []
@@ -186,8 +185,6 @@ def _numbers_all(node: SpiroNode, atom_ids) -> bool:
     return len(node.numbering) == len(atom_ids) and set(node.numbering.values()) == set(
         range(1, len(atom_ids) + 1))
 
-
-# ── P-24.5~24.7 组分式螺环（含多环组分） ────────────────
 
 @dataclass(frozen=True)
 class FbsNumbering:
@@ -240,13 +237,11 @@ class FbsNode:
         return "fused_bridged_spiro"
 
     def scaffold_identity(self):
-        """转为 L2 scaffold 身份（id 与命名类同为 fused_bridged_spiro）。"""
+        """转为 L2 scaffold 身份（命名类同为族名）。"""
         from namepredict.layer2.ring_scaffold import ScaffoldIdentity
         return ScaffoldIdentity("fused_bridged_spiro", "fused_bridged_spiro",
                                 self.n_rings, self.ring)
 
-
-# ── 环组分划分 ──────────────────────────────────────────
 
 def component_indices(system: dict) -> list[list[int]]:
     """环系按自由螺原子切成环组分（非自由螺原子不切断），返回环下标组。"""
@@ -277,7 +272,7 @@ def component_indices(system: dict) -> list[list[int]]:
 
 
 def _component_system(system: dict, comp: list[int], atoms: tuple[int, ...]) -> dict:
-    """构造只含本组分的环系 dict（atom_ids 须为组分自身，否则环数会算错）。"""
+    """构造只含本组分的环系 dict（atom_ids 为组分自身）。"""
     cs = set(comp)
     local = {r: k for k, r in enumerate(sorted(comp))}
     return {
@@ -288,8 +283,6 @@ def _component_system(system: dict, comp: list[int], atoms: tuple[int, ...]) -> 
         "spiro_edges": [], "free_spiro_atoms": [],
     }
 
-
-# ── 组分编号候选 ────────────────────────────────────────
 
 def _from_numbering(num: dict[int, int]) -> FbsNumbering:
     """整数编号映射 → 编号候选（位次写成字符串）。"""
@@ -308,18 +301,14 @@ def _mono_numberings(mol, ring) -> list[FbsNumbering]:
 
 
 def _fused_component_numbering(mol, sid, sub_rings, spiros, sub_edges):
-    """委托 L4 给多环组分编号（稠合点作 sub_layer 逐层最小化，P-25.3.1.3）。"""
+    """委托 L4 给多环组分编号（P-25.3.1.3）。"""
     from namepredict.layer4.numbering_engine import fused_component_numbering
     return fused_component_numbering(mol, sid, sub_rings, list(spiros) or None, sub_edges)
 
 
 def _retained_numberings(mol, sid: str, matches: list, sub_rings: list,
                          spiros, sub_edges: list) -> list[FbsNumbering]:
-    """保留名组分：固定编号视图优先，否则按组分自身取向编号（P-25.3.3）。
-
-    对称保留母体的模板自同构各给一个候选（如 2-benzofuran 的 1/3 位互换），
-    哪个取向入选由 L4 按 P-24.5.2 的螺位次最小定。
-    """
+    """保留名组分：固定编号视图优先，否则按自身取向。"""
     from namepredict.layer2.ring_scaffold import _STANDARD_LABELS, standard_chain
     labels = _STANDARD_LABELS.get(sid) or ()
     fixed = [FbsNumbering(tuple(c), tuple(labels)) for c in
@@ -333,7 +322,7 @@ def _retained_numberings(mol, sid: str, matches: list, sub_rings: list,
 
 
 def _retained_matches(info: dict, sid: str, atoms, primary: tuple[int, ...]) -> list:
-    """保留模板在组分原子集上的全部映射（含氢化骨架回退，对称母体给出取向候选）。"""
+    """保留模板在组分原子集上的全部映射（含氢化回退）。"""
     from namepredict.layer2.ring_scaffold import _Q, _Q_H, _hydrogenated
     from namepredict.tools import memo
     want = set(atoms)
@@ -378,7 +367,7 @@ def _flat_numberings(info, sub, spiros, sub_rings, sub_edges):
 
 
 def _retained_base(mol, sid: str, chain) -> tuple:
-    """保留名组分基名（含 'a' 位次前缀，同 pack_parent_stem 口径）。"""
+    """保留名组分基名（含 'a' 位次前缀）。"""
     from namepredict.layer2.kind_registry import pack_parent_stem
     packed = pack_parent_stem({"scaffold_id": sid, "mol": mol, "chain": list(chain or ())}, mol)
     return packed.get("stem_en"), packed.get("stem_zh")
@@ -434,8 +423,7 @@ def _build_component(mol, info, system, comp: list[int], free, k: int) -> FbsCom
         kind = "mono_ring" if len(comp) == 1 else "fused_ring"
         nums = _retained_numberings(mol, sid, matches, sub_rings, spiros, sub_edges)
         base_en, base_zh = _retained_base(mol, sid, nums[0].chain if nums else ())
-        # 组分内多氢的饱和位补加氢前缀；排序仍按裸基名（P-24.5.1）
-        hydro = _component_hydro_prefix(mol, sid, atoms, nums, spiros)
+        hydro = _component_hydro_prefix(mol, sid, atoms, nums, spiros)  # 饱和位补加氢前缀
         extra = () if kind == "mono_ring" else tuple("".join(_BRACKET.findall(base_en or "")))
         node = None
     elif len(comp) == 1:  # 未注册单环：碳环出 cyclo 基名，杂环本版不支持
@@ -464,20 +452,14 @@ def _build_component(mol, info, system, comp: list[int], free, k: int) -> FbsCom
                         bare_en, bare_zh, sid, node, tuple(nums), extra, hydro)
 
 
-# ── 引用序（P-24.5.3 / P-24.6 / P-24.7.2） ──────────────
-
 def _order_key(comp: FbsComponent) -> tuple:
-    """引用序键：字母数字序 → 斜体稠合字母/von Baeyer 描述符（P-24.5.3）。"""
+    """引用序键：字母数字序 → 稠合字母/描述符。"""
     from namepredict.tools.re import alpha_order_key
     return (alpha_order_key(comp.base_en or ""), comp.order_extra)
 
 
 def citation_order(comps: list[FbsComponent], edges: list[list[tuple[int, int]]]):
-    """P-24.5.1/24.6/24.7 定组分引用序，返回按引用项分组的组分下标（失败返回 None）。
-
-    每个引用项是一个元组：长度 1 为单组分，>1 为同名端组分的倍增词组
-    （P-24.7.1 的 tris(...) 与 P-24.7.2 的 bis(...)）。
-    """
+    """定组分引用序，返回按引用项分组的组分下标。"""
     n = len(comps)
     deg = [len(edges[k]) for k in range(n)]
     term = [k for k in range(n) if deg[k] == 1]
@@ -508,7 +490,7 @@ def citation_order(comps: list[FbsComponent], edges: list[list[tuple[int, int]]]
 
 
 def _terminals_then_center(comps: list[FbsComponent], center: int, others: list[int]):
-    """P-24.7.2：字母序最早的端组分先列，随后中心，其余端组分按字母序（同名合并为组）。"""
+    """P-24.7.2：字母序最早的端组分先列，随后中心。"""
     by_name: dict[str, list[int]] = {}
     for k in others:
         by_name.setdefault(comps[k].base_en or str(k), []).append(k)
@@ -516,8 +498,6 @@ def _terminals_then_center(comps: list[FbsComponent], center: int, others: list[
     return ((tuple(by_name[names[0]]), (center,))
             + tuple(tuple(by_name[nm]) for nm in names[1:]))
 
-
-# ── 公共入口 ────────────────────────────────────────────
 
 def decompose_fbs_system(info: dict, system: dict) -> list[FbsNode]:
     """公共入口：多环组分螺环系拆解为 FbsNode（不可命名返回空表）。"""

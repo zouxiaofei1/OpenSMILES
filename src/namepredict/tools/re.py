@@ -1,8 +1,5 @@
-"""命名文本辅助函数。
-
-alpha_order_key 系列供管线内 P-14.5 排序；normalize_en/normalize_zh/nospace 是
-测试与 benchmark 的判分口径，管线本身不调用它们。
-"""
+"""命名文本辅助函数：P-14.5 排序键与名称规范化（判分口径）。
+normalize_*/nospace 仅供测试与判分，管线不调用。"""
 from __future__ import annotations
 
 import re
@@ -25,15 +22,10 @@ def _strip_lead_locant(stem: str) -> str:
         i += 1
     return stem[i + 1 :] if i and i < n and stem[i] == "-" else stem
 
-# 立体描述符剥除（P-14.5 排序用）：允许无位次的 (E)-、(R)-，也允许 1aR 型。与
-# layer5.assembler_prefixes._STEREO_LEAD_ENCLOSE_RE 不同——那份要求每个 token 带位次，
-# 用于判"是否须整体围栏"，两者语义不同，勿互换。
 _STEREO_LEAD_STRIP_RE = re.compile(
     r"^\((?:\d*[a-zA-Z]*[EeZzRrSs])(?:,(?:\d*[a-zA-Z]*[EeZzRrSs]))*\)-"
 )
 
-# 取代基名额外的位次段（复合环名/复合臂名判据）：段首或 -([ 之后起，排除母体词干内烯/炔位次。
-# layer5.assembler 与 tools.anchored_table 共用这一份，勿各自内联。
 SUB_LOCANT_RE = re.compile(r"(?:^|[-(\[])\d+(?:,\d+)*[a-z]?-(?!(?:en|yn|an|in))")
 
 
@@ -77,8 +69,7 @@ def alpha_order_key(stem: str) -> tuple:
     return (_nonitalic_letters(s), _lead_locants(stem))
 
 
-# 倍增前缀围栏（bis(...) 等）：多组分名排序时须先剥去再比首词。
-_MULT_PAREN_RE = re.compile(r"^(?:bis|tris|tetrakis)\(")
+_MULT_PAREN_RE = re.compile(r"^(?:bis|tris|tetrakis)\(")  # 倍增前缀围栏（bis(...) 等）：多组分名排序时须先剥去再比首词。
 _ANY_LETTER_RE = re.compile(r"[A-Za-z]")
 
 
@@ -98,11 +89,7 @@ def _drop_balanced_group(s: str) -> str:
 
 
 def component_order_key(name: str) -> str:
-    """多组分名字母序键：忽略前导位次/立体描述符/括号组/倍增前缀，取首个字母起。
-
-    用于非盐多组分（加成物、混合物）按组分名字母序排列（P-77 多组分惯例）。
-    注意不能用 alkyl_alpha_key：它按取代基语义把方括号当斜体标记剥除，会毁掉括号结构。
-    """
+    """多组分名字母序键：剥前导位次/立体/括号/倍增前缀后取首字母。"""
     s = _strip_lead_locant(_strip_lead_stereo(name))
     s = _MULT_PAREN_RE.sub("", s)
     while s[:1] in ("(", "["):
@@ -111,7 +98,6 @@ def component_order_key(name: str) -> str:
     return s[m.start() :].lower() if m else name.lower()
 
 
-# ── 名称文本规范化（判分口径） ──────────────────────
 _WS = re.compile(r"\s+")
 
 

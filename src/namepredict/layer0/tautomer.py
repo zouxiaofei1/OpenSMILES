@@ -17,9 +17,9 @@ def _is_amide_enol_x(atom, carbon) -> bool:
     bond = carbon.GetOwningMol().GetBondBetweenAtoms(carbon.GetIdx(), atom.GetIdx())
     if bond is None or bond.GetBondType() != Chem.BondType.SINGLE:
         return False
-    if atom.GetDegree() != 1:  # 只与碳相连：排除以独立 H 原子（或其它重原子）形式成键的羟基，避免 H 记账复杂化。
+    if atom.GetDegree() != 1:  # 只与碳相连：排除以独立 H 原子形式成键的羟基
         return False
-    return atom.GetTotalNumHs() >= 1  # 隐氢与 [OH] 显式氢记账都接受：normalize_acid_charge 搬质子时写的是 explicit-H，只认隐氢会漏掉紧随其后新生成的酰胺烯醇位。
+    return atom.GetTotalNumHs() >= 1  # 隐氢与显式 H 记账都接受：只认隐氢会漏新生成位点
 
 
 def _is_amide_enol_n(atom, carbon) -> bool:
@@ -29,7 +29,7 @@ def _is_amide_enol_n(atom, carbon) -> bool:
     if atom.GetNumExplicitHs() != 0:  # 已有显式 H 的氮（吡咯型 [nH]）不接收迁移质子：再补 H 会超价。
         return False
     if atom.GetDegree() + atom.GetTotalNumHs() >= N_VALENCE:
-        return False  # 连满的氮（N-取代芳氮，如 N-甲基吡啶酮的 N）不能再接质子，否则消毒报价态超限。
+        return False  # 连满的氮不能再接质子，否则消毒报价态超限
     bond = carbon.GetOwningMol().GetBondBetweenAtoms(carbon.GetIdx(), atom.GetIdx())
     return bond is not None and bond.GetBondType() in (Chem.BondType.DOUBLE, Chem.BondType.AROMATIC)
 
@@ -39,7 +39,7 @@ def _is_imine_n(atom, carbon) -> bool:
     if atom.GetAtomicNum() != N or atom.GetFormalCharge() != 0:
         return False
     if atom.GetDegree() + atom.GetTotalNumHs() >= N_VALENCE:
-        return False  # 连满的氮接不了质子：端位 =NH 与 N-烃基 =N-R 的度+氢都恰好为 2
+        return False  # 连满的氮接不了质子：端位 =NH 与 =N-R 度+氢恰为 2
     if any(n.GetAtomicNum() != C for n in atom.GetNeighbors() if n.GetIdx() != carbon.GetIdx()):
         return False  # 肟/腙/磺酰胺的氮还连 O 或 N，不属脒，不迁移
     if atom.IsInRing():
@@ -134,10 +134,10 @@ def _normalize_amide(rw: RWMol, sites: tuple[tuple[int, int, int], ...]) -> None
         x = rw.GetAtomWithIdx(x_idx)
         if x.GetTotalNumHs() != 1:  # 羟基上多余/缺失的 H 无法靠重算隐氢弥补，本点位放弃
             continue
-        x.SetNumExplicitHs(0)  # 羟基 O/S 的一个 H 搬到 N 上：先把 O 的 H 记账清零，否则 C=X 双键会让 O 价态超限、消毒失败整体回退
+        x.SetNumExplicitHs(0)  # 先把 O 的 H 记账清零，否则 C=X 双键会让 O 超价
         x.SetNoImplicit(False)
         n = rw.GetAtomWithIdx(n_idx)
-        n.SetNumExplicitHs(n.GetNumExplicitHs() + 1)  # 芳环 N 的隐氢受芳香性约束不会自动补，必须显式加，否则 Kekulé 奇偶不匹配
+        n.SetNumExplicitHs(n.GetNumExplicitHs() + 1)  # 芳环 N 的隐氢不会自动补，必须显式加，否则 Kekulé 不匹配
         n.SetNoImplicit(False)
         rw.RemoveBond(c_idx, x_idx)
         rw.AddBond(c_idx, x_idx, Chem.BondType.DOUBLE)
@@ -166,7 +166,6 @@ def normalize_amide_tautomer(mol: Mol) -> Mol:
     """把烯醇/烯硫醇式 C(-XH)=N 与环外亚胺式 C(=N-H)-N< 归一化为酮式/胺式。"""
     amide = _assign(_enol_candidates(mol))
     amidine = tuple(s for s in _assign(_amidine_candidates(mol)) if s[0] not in {a[0] for a in amide})
-    # P-66.4.4：酰胺肟 C(=N)(N-OH) 归一为 C(=N-OH)-NH2（金标取羟基亚胺式）
     amidoxime = tuple(s for s in _assign(_amidoxime_candidates(mol)) if s[0] not in {a[0] for a in amide})
     if not amide and not amidine and not amidoxime:
         return mol

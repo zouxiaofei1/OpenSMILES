@@ -1,7 +1,6 @@
 """P-23.3.1 骨架置换（'a'）前缀：骨架碳被杂原子置换后的取代前缀。
 
-组内位次升序逗号连接并加数量前缀（`3,14-dioxa`），组间按 P-23.3.1 的
-引用顺序用连字符连接（`4-thia-1-aza`）。环外取代基由上层在其前拼接。
+组内位次升序逗号连接并加数量前缀（`3,14-dioxa`）；组间按引用顺序连字符连接（`4-thia-1-aza`）。
 """
 from __future__ import annotations
 
@@ -16,11 +15,7 @@ A_PREFIX_ZH = {5: "硼杂", 7: "氮杂", 8: "氧杂", 14: "硅杂",
 
 
 def prefix_from_chain(mol, chain: list[int], *, lambda_ok: bool = True) -> tuple[str, str] | None:
-    """由骨架原子序表产出 'a' 前缀；无杂原子返回两个空串，词表外返回 None。
-
-    lambda_ok 时对键数非标准的骨架杂原子在位次后加 λn（P-23.6.1 / P-15.4.1.3）；
-    稠环组分名不标 λ（P-25.6「只在完整环系中标注」），调用方传 False。
-    """
+    """由骨架原子序表产出 'a' 前缀；无杂原子返回空串，词表外返回 None。"""
     by_z: dict[int, list[int]] = {}
     lam: dict[int, int] = {}
     for i, a in enumerate(chain):
@@ -39,11 +34,7 @@ def prefix_from_chain(mol, chain: list[int], *, lambda_ok: bool = True) -> tuple
 
 def skeleton_replacement_prefix(locants_by_z: dict[int, list[int]], marks: str = "",
                                 lambda_at: dict[int, int] | None = None) -> tuple[str, str] | None:
-    """产出 '4-thia-1-aza' / '4-硫杂-1-氮杂' 型前缀串；词表外元素返回 None。
-
-    marks 为位次撇号后缀（组分式螺环第 k 个组分传 k 个撇号，P-24.6）。
-    lambda_at 为 {位次: 键数}，命中者在位次后紧贴 λn（P-23.6.1：λ 置于 'a' 前缀之前）。
-    """
+    """产出 '4-thia-1-aza' 型骨架置换前缀串；词表外元素返回 None。"""
     marks_at = lambda_at or {}
     parts_en: list[str] = []
     parts_zh: list[str] = []
@@ -59,7 +50,6 @@ def skeleton_replacement_prefix(locants_by_z: dict[int, list[int]], marks: str =
                           for x in locants)
         loc_zh = ",".join(f"{x}{marks}" + (lambda_mark(marks_at[x]) if x in marks_at else "")
                           for x in locants)
-        # 数量词尾 'a' 仅在后接元素名以 'a' 开头时省略（tetraza 对 tetraoxa）
         if mult_en.endswith("a") and en.startswith("a"):
             mult_en = mult_en[:-1]
         parts_en.append(f"{loc_en}-{mult_en}{en}")

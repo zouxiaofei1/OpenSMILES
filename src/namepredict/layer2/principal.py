@@ -62,8 +62,7 @@ _ANION_OS_P41 = 4  # 表 4.1 类 4 阴离子：氧/硫负离子作特征基团�
 
 
 def _has_charged_acid(inventory: FunctionalGroupInventory, mol) -> bool:
-    """分子内是否有阴离子型酸（羧酸根/磺酸根/亚磺酸根等）：阴离子酸根仍是母体，
-    中性酸（-COOH/-SO3H）不阻断氧/硫负离子作母体（降为 carboxy/sulfo 前缀）。"""
+    """是否有阴离子型酸：酸根仍作母体，中性酸不阻断。"""
     if mol is None:
         return False
     for occ in inventory.occurrences(FG.ACID):  # 羧酸根：阴离子氧在 surr_idx 中
@@ -78,7 +77,7 @@ def _has_charged_acid(inventory: FunctionalGroupInventory, mol) -> bool:
 
 def _effective_priority(group_class: FG, spec: PrincipalFeatureSpec,
                         inventory: FunctionalGroupInventory, mol=None) -> PrincipalPriority:
-    """候选类的实际 P-41 优先级：含氧酸为酸式时升到类 7（P-41 表 4.1）。"""
+    """候选类的实际 P-41 优先级：含氧酸式时升到类 7。"""
     if group_class in (FG.ALCOHOL, FG.THIOL):
         occurrences = inventory.occurrences(group_class)
         if (occurrences and all(o.payload.get("anion_os") for o in occurrences)

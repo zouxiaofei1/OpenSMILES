@@ -1,4 +1,4 @@
-"""P-23 扩展 von Baeyer 桥环拆解：主环/主桥/次级桥 + 全原子位次。"""
+"""P-23 扩展 von Baeyer 桥环拆解：主环/主桥/次级桥与位次。"""
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
@@ -201,7 +201,7 @@ def _path_atoms(vs, es, u, v, bridges) -> tuple[int, ...]:
     return tuple(out)
 
 def _secondary_ok(sec, bridges, core: set[int]) -> bool:
-    """剩余桥须构成以 core 桥头为端点的简单链（P-23.1.7 / P-23.1.8）。"""
+    """剩余桥须构成以 core 桥头为端点的简单链。"""
     deg: dict[int, int] = {}
     for i in sec:
         a, b = bridges[i].heads
@@ -213,11 +213,7 @@ def _secondary_ok(sec, bridges, core: set[int]) -> bool:
 
 
 def _main_paths(g, vs, rset: set[int], eset: set[int]) -> list[tuple[tuple[int, ...], tuple[int, ...]]]:
-    """主桥候选：H 中两端在环上、内部顶点不在环上的简单路径（P-23.1.2 / P-23.2.4）。
-
-    主桥是连接两个主环桥头原子的无支链原子链；链内原子可本身是桥头（如
-    phenalene 型中心原子），此时它在 H 中是多段桥的公共顶点，须并成一条主桥。
-    """
+    """主桥候选：H 中两端在环上、内部顶点不在环上的路径。"""
     out: list[tuple[tuple[int, ...], tuple[int, ...]]] = []
 
     def walk(start: int, cur: int, verts: list[int], edges: list[int]) -> None:
@@ -238,7 +234,7 @@ def _main_paths(g, vs, rset: set[int], eset: set[int]) -> list[tuple[tuple[int, 
 
 
 def _candidates(bridges, heads) -> list[_Cand]:
-    """枚举全部 (主环, 主桥头对, 主桥) 结构候选（P-23.2.1 / P-23.2.6.2.1）。"""
+    """枚举全部 (主环, 主桥头对, 主桥) 结构候选。"""
     g, out = _h_graph(heads, bridges), []
     for vs, es in _cycles(g, heads, _MAX_CYCLES):
         rset, eset = set(vs), set(es)
@@ -270,12 +266,7 @@ def _number_one(seg: BridgeSegment, cur: dict[int, int]) -> BridgeSegment:
 
 
 def _number_secondary(core_num: dict[int, int], segs):
-    """编号次级桥（独立在前、依赖在后），返回结果仍保持给定的引用顺序。
-
-    P-23.2.6.3：独立次级桥的**编号顺序**是「从连接主环最高编号桥头原子的桥起」，
-    与它们在名称中的**引用顺序**（P-23.2.6.2.5 位次序列最低）是两条不同的规则，
-    故此处按桥头位次降序编号、却按调用方给的引用序返回。
-    """
+    """编号次级桥（独立在前），返回保持给定引用序。"""
     cur, core = core_num, set(core_num)  # 就地续编号：新原子须写回调用方的映射
     ind = [s for s in segs if s.heads[0] in core and s.heads[1] in core]
     dep = [s for s in segs if s not in ind]
@@ -295,7 +286,7 @@ def _number_secondary(core_num: dict[int, int], segs):
 
 
 def _main_bridge_atoms(cand: _Cand, bridges) -> tuple[tuple[int, ...], int]:
-    """沿主桥路径展开桥内原子（沿 start→end 序），返回 (原子表, 抵达顶点)。"""
+    """沿主桥路径展开桥内原子，返回 (原子表, 抵达顶点)。"""
     atoms: list[int] = []
     cur = cand.start
     for e in cand.main_e:
@@ -351,7 +342,7 @@ def _to_node(cand: _Cand, bridges, atom_ids, ring: str, r: int) -> BridgedNode |
 
 
 def _orders(segs: list):
-    """次级桥引用顺序候选：长桥在前由 P-23.2.6.2.2 定，同长度组内交 P-23.2.6.2.5 裁决。"""
+    """次级桥引用顺序候选：长桥优先，同长组内另裁决。"""
     if len(segs) < 2:
         return [tuple(segs)]
     groups: dict[int, list] = {}
@@ -371,7 +362,7 @@ def _locants(node: BridgedNode) -> tuple[int, ...]:
 
 
 def narrow_candidates(nodes: list[BridgedNode]) -> list[BridgedNode]:
-    """按 P-23.2.6.2.1~2.5 依次收窄；末步不做确定性 tie-break。"""
+    """按 P-23.2.6.2.1~2.5 依次收窄（末步不定 tie）。"""
     steps = [
         (lambda n: sum(n.ring_segments) + 2, True),          # P-23.2.1 主环原子数最大
         (lambda n: len(n.main_bridge), True),                # P-23.2.4 主桥最长（先于对称）
@@ -387,7 +378,7 @@ def narrow_candidates(nodes: list[BridgedNode]) -> list[BridgedNode]:
 
 
 def decompose_bridged_system(info: dict, system: dict) -> list[BridgedNode]:
-    """公共入口：环系按 P-23 拆解为并列最优 BridgedNode 候选，非桥环返回空表。"""
+    """环系按 P-23 拆解为并列最优 BridgedNode；非桥环返回空。"""
     mol = info["mol"]
     atom_ids = tuple(sorted(system.get("atom_ids") or ()))
     if len(atom_ids) < 4:
@@ -417,11 +408,7 @@ def _p25_names_ok(mol, fused_tree) -> bool:
 
 
 def _cannot_be_mancude(mol, rings, atom_ids) -> bool:
-    """组分环能否写出最大非累积双键（P-25.3.1.2）。
-
-    mancude 性是环骨架的性质，与取代基无关：只看环系内 σ 键数。
-    环系内已占满 4 根 σ 键的碳（4x 单键的环交界原子）腾不出 π 键。
-    """
+    """组分环能否写出最大非累积双键（P-25.3.1.2）。"""
     atoms = set(atom_ids)
     for ring in rings:
         for i in ring:
@@ -434,13 +421,7 @@ def _cannot_be_mancude(mol, rings, atom_ids) -> bool:
 
 
 def _ring_adjacency_is_tree(rings) -> bool:
-    """环邻接图（顶点=SSSR 环，边=共享成键的两环）是否为一棵树。
-
-    P-25.5 / P-52.2.4.4：稠合原理只作用于一个组分对（相邻共享一条键的两环）逐对
-    消去；当出现第三组分邻位+迫位稠合于两个本身邻位/迫位稠合的组分时（环邻接图
-    成环），或环系非连通时，「组分对」不再唯一，稠合名原理上不可行，PIN 走
-    P-23 von Baeyer。故非树 → False 即回退桥环。
-    """
+    """环邻接图（顶点=SSSR 环，边=共享键）是否为一棵树。"""
     n = len(rings)
     parent = list(range(n))
 
@@ -463,20 +444,16 @@ def _ring_adjacency_is_tree(rings) -> bool:
 
 
 def _fusion_naming_applies(mol, rings, atom_ids) -> bool:
-    """稠合命名法是否适用（P-25.5 组分对 + P-52.2.4.1 五元环 + P-25.3.1.2 mancude）。"""
+    """稠合命名法是否适用（组分对/五元环/mancude）。"""
     if not _ring_adjacency_is_tree(rings):
-        return False  # P-25.5/P-52.2.4.4：环邻接图非树 → 稠合不可行，走 von Baeyer
+        return False  # 环邻接图非树 → 稠合不可行，走 von Baeyer
     if sum(1 for r in rings if len(r) >= 5) < 2:
         return False  # 不足两个五元或更多元环：von Baeyer 才是 PIN
     return not _cannot_be_mancude(mol, rings, atom_ids)
 
 
 def _has_retained_peri_parent(fused_tree, all_rings) -> bool:
-    """稠合树里是否有保留的迫位稠合母体（如芘/phenalene，P-25.1.1）。
-
-    该类保留名本身即编码了非树（邻位+迫位）稠合，不能再被 von Baeyer 拆解；
-    其苯并/附加组分仍按 P-25.3 稠合命名（保留母体优先）。ring_indices 为全局下标。
-    """
+    """稠合树里是否有保留的迫位稠合母体（P-25.1.1）。"""
     if fused_tree is None:
         return False
     spec = get_spec(fused_tree.scaffold_id)

@@ -13,8 +13,6 @@ from namepredict.tools.re import SUB_LOCANT_RE
 from namepredict.layer3.submol_build import build_anchor_submol
 
 
-# ── 取代基注册表（IUPAC 2013 P-29/P-57）──
-
 @dataclass(frozen=True)
 class RetainedSubstituent:
     """一个保留取代基条目的双语名称与锚定键。"""
@@ -23,8 +21,7 @@ class RetainedSubstituent:
     anchored: tuple[str, ...] = ()  # 本保留基对应的锚定 canonical-SMILES 键
     paren: bool = False  # 作前缀时是否需要括号
 
-# 叶子节点，均为不可再取代的取代基
-_REGISTRY: dict[str, RetainedSubstituent] = {  
+_REGISTRY: dict[str, RetainedSubstituent] = {  # 叶子节点，均为不可再取代的取代基
     "fluoro": RetainedSubstituent("fluoro", "氟", anchored=("*F",), paren=False),
     "chloro": RetainedSubstituent("chloro", "氯", anchored=("*Cl",), paren=False),
     "bromo": RetainedSubstituent("bromo", "溴", anchored=("*Br",), paren=False),
@@ -33,8 +30,8 @@ _REGISTRY: dict[str, RetainedSubstituent] = {
     "oxo": RetainedSubstituent("oxo", "氧代", anchored=("*=O",), paren=False),
     "isocyanato": RetainedSubstituent("isocyanato", "异氰酸基", anchored=("*N=C=O",), paren=False),
     "isothiocyanato": RetainedSubstituent("isothiocyanato", "异硫氰酸基", anchored=("*N=C=S",), paren=False),
-    "cyanato": RetainedSubstituent("cyanato", "氰氧基", anchored=("*OC#N",), paren=False),  # P-67.1.4.2：-O-C#N 由 cyanic acid 衍生的取代基前缀
-    "thiocyanato": RetainedSubstituent("thiocyanato", "硫氰基", anchored=("*SC#N",), paren=False),  # P-67.1.4.2：-S-C#N 由 thiocyanic acid 衍生的取代基前缀
+    "cyanato": RetainedSubstituent("cyanato", "氰氧基", anchored=("*OC#N",), paren=False),  # P-67.1.4.2：-O-C#N 由 cyanic acid 衍生
+    "thiocyanato": RetainedSubstituent("thiocyanato", "硫氰基", anchored=("*SC#N",), paren=False),  # P-67.1.4.2：-S-C#N 由 thiocyanic 酸衍生
     "methyl": RetainedSubstituent("methyl", "甲基", anchored=("*C",), paren=False),
     "methylidene": RetainedSubstituent("methylidene", "亚甲基", anchored=("*=C",), paren=False),
     "ethylidene": RetainedSubstituent("ethylidene", "亚乙基", anchored=("*=CC",), paren=False),
@@ -75,7 +72,7 @@ _REGISTRY: dict[str, RetainedSubstituent] = {
     "carboxy": RetainedSubstituent("carboxy", "羧基", anchored=("*C(=O)O",), paren=False),
     "carboxylato": RetainedSubstituent("carboxylato", "羧酸根", anchored=("*C(=O)[O-]",), paren=False),  # 去质子羧基（P-66.1.1.4）
     "carbamoyl": RetainedSubstituent("carbamoyl", "氨基甲酰基", anchored=("*C(N)=O",), paren=False),  # P-66.1.1.4.1 氨基甲酸酰基的保留前缀 carbamoyl
-     "carbamoylamino": RetainedSubstituent("carbamoylamino", "氨基甲酰氨基", anchored=("*NC(N)=O",), paren=True),  # P-66.1.1.6 ureido 已不推荐，优选 carbamoylamino
+     "carbamoylamino": RetainedSubstituent("carbamoylamino", "氨基甲酰氨基", anchored=("*NC(N)=O",), paren=True),  # P-66.1.1.6：优选 carbamoylamino
     "azaniumyl": RetainedSubstituent("azaniumyl", "铵基", anchored=("*[NH3+]",), paren=False),
     "methylazaniumyl": RetainedSubstituent("methylazaniumyl", "甲基铵基", anchored=("*[NH2+]C",), paren=False),
     "dimethylazaniumyl": RetainedSubstituent("dimethylazaniumyl", "二甲基铵基", anchored=("*[NH+](C)C",), paren=True),
@@ -102,7 +99,7 @@ _REGISTRY: dict[str, RetainedSubstituent] = {
     "hydrazinyl": RetainedSubstituent("hydrazinyl", "肼基", anchored=("*NN",), paren=False),
     "anilino": RetainedSubstituent("anilino", "苯胺基", anchored=("*Nc1ccccc1",), paren=False),
     "diazenyl": RetainedSubstituent("diazenyl", "二氮烯基", anchored=("*N=N",), paren=False),
-    "diazo": RetainedSubstituent("diazo", "重氮基", anchored=("*=[N+]=[N-]",), paren=False),  # P-66.3：重氮基 C=N+=N-，取代体碳以双键连 N+（原单键锚不可达）
+    "diazo": RetainedSubstituent("diazo", "重氮基", anchored=("*=[N+]=[N-]",), paren=False),  # P-66.3：重氮基 C=N+=N-，碳以双键连 N+
     "diazonio": RetainedSubstituent("diazonio", "重氮鎓基", anchored=("*[N+]#N",), paren=False),  # P-65.3：重氮鎓 Ar-N2+，N+ 直连母体作 diazonio 前缀
     "cyano": RetainedSubstituent("cyano", "氰基", anchored=("*C#N",), paren=False),
     "isocyano": RetainedSubstituent("isocyano", "异氰基", anchored=("*[N+]#[C-]",), paren=False),
@@ -155,7 +152,7 @@ def _anchored_key_uncached(mol: Mol, atoms: frozenset[int], attach_old: int) -> 
     anchor = build_anchor_submol(mol, atoms, attach_old)
     return MolToSmiles(anchor) if anchor is not None else None
 
-_WHOLE_ONLY_KEYS = frozenset({"*O", "*[O]", "*N"})  # 整分子顶层才命中的锚定键：游离 O/N 自由基（表 2.1 去氢），L3 跳过
+_WHOLE_ONLY_KEYS = frozenset({"*O", "*[O]", "*N"})  # 整分子顶层才命中的锚定键：游离 O/N 自由基，L3 跳过
 
 
 def _table_hit(mol: Mol, atoms: frozenset[int], attach_old: int | None) -> str | None:
@@ -209,7 +206,7 @@ def _alkoxycarbonyl(mol: Mol, atoms: frozenset[int], attach_old: int) -> tuple[s
 
 
 _RING_YL_EN_RE = re.compile(r"^(.+?)-(\d+[a-z]?)-yl$")  # 环胺 N-侧基名（pyrrolidin-1-yl）
-_FREE_VALENCE_YL_RE = re.compile(r"-\d+[a-z]?-yl$")  # 带位次的自由价词尾（…pentan-2-yl / …triazin-2-yl）
+_FREE_VALENCE_YL_RE = re.compile(r"-\d+[a-z]?-yl$")  # 带位次的自由价词尾（…pentan-2-yl 等）
 _AMINO_EN, _AMINO_ZH = "amino", "氨基"
 _ANILINO_EN, _ANILINO_ZH = "anilino", "苯胺基"
 _PHENYL_EN, _PHENYL_ZH = "phenyl", "苯基"
@@ -231,9 +228,9 @@ def carbamoyl_prefix_name(en: str, zh: str, *, in_ring: bool) -> tuple[str, str]
         stem_en, stem_zh = en[: -len(_AMINO_EN)], zh[: -len(_AMINO_ZH)]
         fenced = stem_en.startswith("(") and stem_en.endswith(")")
         if "(" in stem_en and not fenced:
-            if stem_en.endswith(")"):  # 取代胺名（methyl(propyl)）：围栏须连 carbamoyl 一并括起（P-16.5.1.1）
+            if stem_en.endswith(")"):  # 取代胺名须连 carbamoyl 一并括起（P-16.5.1.1）
                 return f"[{stem_en}carbamoyl]", f"[{stem_zh}氨基甲酰基]"
-            if _FREE_VALENCE_YL_RE.search(stem_en):  # 自由价词尾（…pentan-2-yl）：围栏止于词尾（P-16.5.1.2）
+            if _FREE_VALENCE_YL_RE.search(stem_en):  # 自由价词尾：围栏止于词尾（P-16.5.1.2）
                 return f"[{stem_en}]carbamoyl", f"[{stem_zh}]氨基甲酰基"
             return stem_en + "carbamoyl", stem_zh + "氨基甲酰基"  # 前导位次隔开的取代基括号无需围栏
         if len(SUB_LOCANT_RE.findall(stem_en)) >= 2 and not fenced:  # 复合环名前导多位次段：括起消歧（P-16.5.1.3.1）
@@ -372,7 +369,6 @@ def anchored_lookup(
     """查找取代基原子集，返回 (en, zh, paren)；无命中返回 None。"""
     reg_key = _table_hit(mol, atoms, attach_old)
     if reg_key is not None:
-        # P-34/P-66.4.1.3.1：-C(=NH)NH2 不经 N 连母体（C/S/O/P…）一律取 carbamimidoyl；经 N 连（胍亚氨基桥）仍用 diaminomethylidene
         if reg_key == "diaminomethylidene" and not _attached_via_nitrogen(mol, atoms, attach_old):
             return "carbamimidoyl", "氨基甲亚氨酰基", False
         en, zh = _resolve_name(reg_key)

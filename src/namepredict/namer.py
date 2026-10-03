@@ -258,17 +258,15 @@ def _name_mol(
     organic, salt = dissociate_salt(mol)
     if root_ctx is None:  # 顶层整分子
         root_mol, to_root = organic, list(range(organic.GetNumAtoms()))
-        run_cache = CommonNameCache(max_entries=2000) if cache is not None else None  # 顶层整分子：内部 `*` 片段名仅在本分子运行内共享（同根立体一致）；跨根缓存会带入别的宿主异头立体，须禁用。
+        run_cache = CommonNameCache(max_entries=2000) if cache is not None else None  # 顶层整分子：片段名仅本分子内共享，跨根缓存会带入异头立体差
     else:
-        root_mol, to_root = root_ctx  # 无盐时 organic 即 mol、索引不变；锚定碎片必为单片段不含盐，映射直接沿用。
+        root_mol, to_root = root_ctx  # 无盐时 organic 即 mol，索引不变；锚定碎片映射直接沿用
         run_cache = cache
     info = analyze(organic) # 进入Layer1
     info["root_ctx"] = (root_mol, to_root)
     info["salt"] = salt  # 磷酸母体 producer 的盐门控与 salt_meta 来源
     result = _run_candidates(info, t0=t0, cache=run_cache)
     result = _apply_salt_suffix(result, salt)
-    # 多片段体系：配对阴阳离子成盐，其余组分按字母序拼接，绝不丢弃。
-    # 已配盐但有机部分组装失败时同样回落，否则整分子静默变空名。
     if not salt or not result.success:
         joined = _name_components(mol, cache=run_cache)
         if joined is not None and joined[0].strip():

@@ -22,12 +22,7 @@ def _carbon_neighbors(mol: Mol, idx: int, banned: set[int] = frozenset()) -> lis
 
 def _dfs_path(mol: Mol, node: int, path: list[int], forbid: set[int],
               banned: set[int] = frozenset(), z: int = 6) -> list[int]:
-    """深度优先寻找从 node 出发的最长开链路径（限同元素 z）。
-
-    path 为进入时的前缀（末位即 node）。改用显式栈迭代：长链不再消耗
-    Python 递归深度，也不再逐帧复制路径（原为 O(L²)）。邻居访问顺序与
-    「先到的最长优先」判据同递归版，返回值逐一对应。
-    """
+    """从 node 出发的最长开链路径（限同元素 z）；显式栈迭代版。"""
     prefix = list(path)
     if not prefix or prefix[-1] != node:  # 前缀未含 node 时补上
         prefix.append(node)
@@ -37,8 +32,7 @@ def _dfs_path(mol: Mol, node: int, path: list[int], forbid: set[int],
     nbrs: dict[int, list[int]] = {}
     parent: dict[int, int] = {}
     depth0 = len(prefix)
-    # 帧 = [节点, 邻居游标, 子树最优终点, 最优长度, 本节点深度]
-    stack: list[list] = [[node, 0, node, depth0, depth0]]
+    stack: list[list] = [[node, 0, node, depth0, depth0]]  # 帧 = [节点, 邻居游标, 子树最优终点, 最优长度, 本节点深度]
     while stack:
         frame = stack[-1]
         u, i, end, best, depth = frame

@@ -62,7 +62,7 @@ def _longest_chain(mol: Mol, banned: set[int] = frozenset(), z: int = 6) -> list
 
 def _component_leaves(mol: Mol, neighbor: int, forbid: int, banned: set[int] = frozenset(),
                       z: int = 6) -> tuple[dict, list[int], int]:
-    """DFS neighbor 开链同元素组件（禁走 forbid），返回父表与最深叶。"""
+    """DFS neighbor 开链同元素组件（禁走 forbid），返回最深叶。"""
     parent: dict = {neighbor: forbid}
     order = [neighbor]
     dist = {neighbor: 1}
@@ -131,11 +131,7 @@ def _all_chains_through(mol: Mol, c_idx: int, banned: set[int] = frozenset(),
 
 def _chain_through_two(mol: Mol, a: int, b: int, banned: set[int] = frozenset(),
                        z: int = 6) -> list[int]:
-    """返回同时穿过 c1、c2 的最长链。
-
-    开链同元素子图是森林（_element_neighbors 排除成环与芳香原子），故 a→b 路径唯一，
-    直接复用 _component_leaves 的父表，无需另写一份 BFS 与路径重建。
-    """
+    """返回同时穿过 c1、c2 的最长链（开链子图是森林，路径唯一）。"""
     if a == b:
         return [a]
     parent, _, _ = _component_leaves(mol, a, -1, banned, z)

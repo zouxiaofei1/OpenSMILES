@@ -65,7 +65,7 @@ def _covered(selection: PrincipalGroupSelection, skeleton: ParentSkeleton):
 
 
 def _oxo_kind_of(occurrences) -> str | None:
-    """含氧酸类的主 kind：全部 occurrence 须同一 oxo_kind，否则不支持。"""
+    """含氧酸类的主 kind（须全部同 oxo_kind）。"""
     kinds = {o.payload.get("oxo_kind") for o in occurrences}
     return kinds.pop() if len(kinds) == 1 else None
 
@@ -84,7 +84,7 @@ def _chain_kind(group_class: FunctionalGroupClass, count: int, occurrences=()) -
 
 
 def _is_anion_occurrence(occurrence, mol) -> bool:
-    """occurrence 是否为阴离子：周边原子（醇/硫醇另看中心 O⁻/S⁻）带负形式电荷。"""
+    """occurrence 是否为阴离子（周边原子带负电荷）。"""
     if mol is None:
         return False
     idxs = list(occurrence.payload.get("surr_idx") or ())
@@ -93,8 +93,7 @@ def _is_anion_occurrence(occurrence, mol) -> bool:
     return any(i is not None and mol.GetAtomWithIdx(i).GetFormalCharge() < 0 for i in idxs)
 
 
-# 全阴离子时转 -ate/-olate 的类别
-_ANION_FLAG_FGS = frozenset({FunctionalGroupClass.ACID, FunctionalGroupClass.OXOACID,
+_ANION_FLAG_FGS = frozenset({FunctionalGroupClass.ACID, FunctionalGroupClass.OXOACID,  # 全阴离子时转 -ate/-olate 的类别
                              FunctionalGroupClass.ALCOHOL, FunctionalGroupClass.THIOL})
 
 
@@ -139,7 +138,7 @@ def _resolved_ring_kind(scaffold, info: dict, skeleton: ParentSkeleton) -> str |
     """按保留 scaffold 解析环 kind（稠环收敛为 alkane）。"""
     if scaffold and scaffold.id not in ("carbocycle", "benzene", "fused_hetero"):
         return scaffold.id  # 其余保留骨架：kind 即 id
-    return "alkane"  # 碳环/苯环/未注册稠环：kind 收敛 alkane，身份由 scaffold_id 或 fused_tree 承载
+    return "alkane"  # 碳环/苯环/未注册稠环：kind 收敛 alkane，身份另存
 
 
 def _ring_kind(info: dict, selection: PrincipalGroupSelection, skeleton: ParentSkeleton, count: int, scaffold, occurrences=()) -> str | None:
@@ -164,7 +163,7 @@ def _skeleton_system(info: dict, skeleton: ParentSkeleton) -> dict | None:
 
 
 def _ring_scaffold_and_nodes(info: dict, skeleton: ParentSkeleton):
-    """一次识别 scaffold 与 P-24 螺环 / P-25 稠环 / P-23 桥环节点。"""
+    """一次识别 scaffold 与 P-24/P-25/P-23 节点。"""
     system = _skeleton_system(info, skeleton)
     if system is not None and system.get("free_spiro_atoms"):  # P-24 早于 P-25/P-23 短路
         from namepredict.layer2.spiro_system import decompose_spiro_system, spiro_scaffold_identity
@@ -177,20 +176,18 @@ def _ring_scaffold_and_nodes(info: dict, skeleton: ParentSkeleton):
         fused = decompose_fused_system(info, system)
         from namepredict.layer2.bridged_system import try_bridged_scaffold
         bridged = try_bridged_scaffold(info, scaffold, fused, system)
-        # print("bridgedNode List! :",bridged)
-        if bridged:  # 桥环接管骨架身份，kind 由 _resolved_ring_kind 兜底为 "bridged"
+        if bridged:  # 桥环接管身份，kind 兜底为 "bridged"
             scaffold = bridged[0].scaffold_identity()
     return scaffold, fused, bridged, []
 
 
 def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=None,
                      fused_tree=None, bridged=(), spiro=()) -> dict:
-    """解析并写入 scaffold 身份与表达能力字段（节点由调用方一次算好传入）。"""
+    """解析并写入 scaffold 身份与表达能力字段。"""
 
     if scaffold is None:
         scaffold, fused_tree, bridged, spiro = _ring_scaffold_and_nodes(info, skeleton)
     fields: dict = {}
-    # print(scaffold)
     if scaffold:
         match = None  # 保留 fused 模板匹配映射，供 L4 固定编号用
         from namepredict.layer2.ring_scaffold import _match_with_map, get_spec, hydrogenated_atoms
@@ -201,13 +198,13 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
             match = hit[1] if hit and hit[0] == scaffold.id else None
 
         fields = {"scaffold_id": scaffold.id, "scaffold_identity": scaffold,
-                  "scaffold_match": match}  # print({"scaffold_id": scaffold.id, "scaffold_identity": scaffold, "scaffold_match": match})
-        
+                  "scaffold_match": match}
+
         if match:  # 加氢原子集：编号完成后由 L4 换算为 hydro 前缀位次
             hydro = hydrogenated_atoms(info["mol"], scaffold.id, match)
             if hydro:
                 fields["hydro_atoms"] = hydro
-        elif is_hw_scaffold(scaffold.id):  # 生成式 HW 环：mancude 参照之外的氢位由 hydro 前缀表达（P-54.4.1）
+        elif is_hw_scaffold(scaffold.id):  # 生成式 HW 环：氢位由 hydro 前缀表达（P-54.4.1）
             hydro = hw_hydro_atoms(info["mol"], skeleton.atom_ids)
             if hydro:
                 fields["hydro_atoms"] = hydro
@@ -215,7 +212,7 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
         skey = "fbs" if scaffold.id == "fused_bridged_spiro" else "spiro"
         fields[f"{skey}_node"] = spiro[0] if spiro else None  # 空候选 → L4 显式失败，不得下沉 P-25
         fields[f"{skey}_nodes"] = tuple(spiro)
-    elif bridged:  # P-23 桥环：身份由 bridged_node 承载，并列编号候选下传 L4（P-14.4 裁决）
+    elif bridged:  # P-23 桥环：bridged_node 承载身份，编号下传 L4
         fields["bridged_node"] = bridged[0]
         fields["bridged_nodes"] = tuple(bridged)
     elif fused_tree is not None:  # 多环骨架的稠环拆解结构（P-25.3.2）
@@ -224,7 +221,7 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
 
 
 def _ester_o_idx(mol, e: dict) -> int | None:
-    """由酯条目现算酯侧杂原子索引：羰基碳上另连烃基的单键 O 优先，无 O 时取 S（硫酯）。"""
+    """由酯条目现算酯侧杂原子索引（单键 O 优先，无则取 S）。"""
     center = mol.GetAtomWithIdx(int(e["center_idx"]))
     sides = [n.GetIdx() for n in center.GetNeighbors()
              if n.GetAtomicNum() in (O, S) and _alkoxy_c_of(n, center) is not None]
@@ -233,7 +230,7 @@ def _ester_o_idx(mol, e: dict) -> int | None:
 
 
 def _thio_fields(mol, o_idx: int | None) -> dict:
-    """硫代酯标记：S 侧臂的酯按 P-65.6.3.3.7.1 换用 thioate 词尾与斜体 S 位次。"""
+    """硫代酯标记：S 侧臂改用 thioate 词尾（P-65.6.3.3.7.1）。"""
     if o_idx is None or mol.GetAtomWithIdx(o_idx).GetAtomicNum() != S:
         return {}
     return {"thio_side": True}
@@ -255,7 +252,6 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     scaffold, fused_tree, bridged, spiro = _ring_scaffold_and_nodes(info, skeleton)  # 骨架原子集已定：一次识别供下游复用
     occurrences = _covered(selection, skeleton)
     kind = _ring_kind(info, selection, skeleton, len(occurrences), scaffold, occurrences)
-    # print(scaffold,"kind",kind)
     if kind is None:
         return None
     facts = _facts(selection, skeleton, occurrences, info["mol"])
@@ -266,7 +262,7 @@ def express_ring_principal(info: dict, selection: PrincipalGroupSelection,
     if kind == "amide":
         fields = _amide_fields(info, occurrences, fields)
     free_order = _radical_free_order(info, occurrences) if kind == "radical" else 0
-    if free_order > 1:  # 环上碳锚点自由价非单键（*=C1CCCC1 / *#C1CCCC1）：链引擎出 -ylidene/-ylidyne
+    if free_order > 1:  # 环上碳锚点自由价非单键：链引擎出 -ylidene/-ylidyne
         fields = {**fields, "free_valence_order": free_order}
     if facts.group_class in _ANION_FLAG_FGS:
         fields = {**fields, **_expression_flags(selection, occurrences, info.get("mol"))}  # 环酸全阴离子补 anion 标志，L5 据此转 -ate
@@ -324,7 +320,7 @@ def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> d
         return fields  # P-24.5+：不饱和在各组分名内，母体层不再出 ene/yne 位次
     atom_set = set(skeleton.atom_ids)
     dbs, tbs = _chain_polys(info, atom_set)
-    if fields.get("stem_bare_en"):  # 杂原子链（P-21.2.2）：重键在链内杂原子之间，不在 info 的 C=C/C≡C 表里
+    if fields.get("stem_bare_en"):  # 杂原子链：重键不在 info 的 C=C/C≡C 表里
         hd, ht = _hetero_chain_polys(info["mol"], atom_set, dbs, tbs)
         dbs, tbs = dbs + hd, tbs + ht
     if fields.get("scaffold_id") in ("carbocycle", "bridged", "mono_spiro"):
@@ -361,12 +357,11 @@ def _implied_ring_atoms(fields: dict, atom_set: set[int]) -> frozenset[int]:
         return implied
     if fields.get("fused_tree") is not None:
         return frozenset(atom_set)
-    # 生成式 HW 环：环内不饱和由词干（-ole/-ine/-epine…）承载，不得再摊成 ene 位次
     return frozenset(atom_set) if is_hw_scaffold(fields.get("scaffold_id")) else frozenset()
 
 
 def _chain_oxoacid_fields(info: dict, occurrences, fields: dict) -> dict | None:
-    """L5 含氧酸命名的 oxo_kind/计数/盐元数据，门控不过返回 None。"""
+    """L5 含氧酸命名的 oxo_kind/计数/盐元数据。"""
     if len(occurrences) != 1:
         return None
     payload = occurrences[0].payload
@@ -424,7 +419,7 @@ def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
     charged = atom.GetFormalCharge() == 1 and atom.GetAtomicNum() in CATION_FREE_STEMS
     stem_en = (CATION_FREE_STEMS.get(atom.GetAtomicNum()) if charged
                else MONONUCLEAR_BY_ELEMENT.get(atom.GetAtomicNum()))
-    if stem_en is None:  # 其余元素（Si/Ge/Sn/Pb、B 族、卤素…）：按杂原子烃处理（P-21.1），取名交 _heterane_names
+    if stem_en is None:  # 其余元素：按杂原子烃处理（P-21.1）
         z = atom.GetAtomicNum()
         forms = PARENT_HYDRIDE_STEMS.get(z)
         if forms is None:
@@ -462,7 +457,7 @@ def _mononuclear_cation(info: dict, skeleton: ParentSkeleton,
     if names is None:
         return None
     stem_en = names[0]
-    if _anchor_oxo_count(mol, anchors[0]):  # 锚点 =O 折进阳离子词干（oxophosphanium/oxoazanium），否则氧被整段丢弃
+    if _anchor_oxo_count(mol, anchors[0]):  # 锚点 =O 折进阳离子词干，否则氧被丢弃
         stem_en = "oxo" + stem_en
     new = replace(skeleton, atom_ids=(anchors[0],))
     return new, {"stem_en": stem_en, "stem_zh": names[1], "single_atom_skeleton": True}
@@ -470,7 +465,7 @@ def _mononuclear_cation(info: dict, skeleton: ParentSkeleton,
 
 def _mononuclear_azanide(info: dict, skeleton: ParentSkeleton,
                          occurrences) -> tuple[ParentSkeleton, dict] | None:
-    """N⁻ 收敛为单原子阴离子母体（P-72.2.2.2(2) 预选母体名 azanide），仅支持单锚点。"""
+    """N⁻ 收敛为单原子阴离子母体 azanide（仅单锚点）。"""
     mol = info["mol"]
     anchors = sorted({i for o in occurrences for i in o.parent_anchors})
     if len(anchors) != 1:
@@ -484,7 +479,7 @@ def _mononuclear_azanide(info: dict, skeleton: ParentSkeleton,
 
 def _heterane_parent(info: dict, skeleton: ParentSkeleton,
                      occurrences) -> tuple[ParentSkeleton, dict] | None:
-    """杂原子烃收敛为母体氢化物骨架（P-21）：单核用氢化物名，多核用均一链裸词干。"""
+    """杂原子烃收敛为母体氢化物骨架（P-21，多核用裸词干）。"""
     mol = info["mol"]
     anchors = tuple(sorted({i for o in occurrences for i in o.parent_anchors}))
     if not anchors:
@@ -512,7 +507,7 @@ def _heterane_parent(info: dict, skeleton: ParentSkeleton,
 
 
 def _radical_free_order(info: dict, occurrences) -> int:
-    """碳锚点的自由价键级（双键 *=C< 出 -ylidene，三键 *#C 出 -ylidyne）。"""
+    """碳锚点的自由价键级（-ylidene/-ylidyne 判据）。"""
     mol = info.get("mol")
     anchors = sorted({i for o in occurrences for i in o.parent_anchors})
     if mol is None or len(anchors) != 1:
@@ -535,12 +530,7 @@ def _chain_acyl_halide_fields(info: dict, occurrences, fields: dict) -> dict:
 
 
 def _is_hydrazide_far_n(atom, near_n_idx: int) -> bool:
-    """远端 N 是否为酰肼意义上的肼基 N（P-66.3.0：酸的 -OH 换成 -NH-NH2）。
-
-    须是简单胺型氮：中性、非环非芳、自身无重键（排除酰腙 -NH-N=CH- 与叠氮 -N=N+=N-）、
-    且除羰基侧 N 外只连 C/H（排除叠氮等杂原子链）。
-    另排除连在脒/胍中心碳上的（氨基胍）——该碳自带更优先的亚氨酰胺母体。
-    """
+    """远端 N 是否满足酰肼意义（简单胺型氮，P-66.3.0）。"""
     if atom.GetAtomicNum() != N or atom.GetFormalCharge() != 0:
         return False
     if atom.IsInRing() or atom.GetIsAromatic():
@@ -561,10 +551,7 @@ def _is_hydrazide_far_n(atom, near_n_idx: int) -> bool:
 
 
 def _hydrazide_ns(mol, center_idx: int) -> tuple[int, int] | None:
-    """酰肼骨架判定（P-66.3.0）：酰胺 N 上另连一个肼基 N 时返回 (近 N, 远 N)。
-
-    只认一条非环单键 N（amide SMARTS 的 N 判据）：羰基两侧皆非环 N（脲/硫脲）走保留名，不是酰肼。
-    """
+    """酰肼骨架判定：酰胺 N 另连肼基 N 时返回两 N。"""
     c = mol.GetAtomWithIdx(center_idx)
     sgl_n = [nb for nb in c.GetNeighbors()
              if nb.GetAtomicNum() == N and not nb.IsInRing() and nb.GetFormalCharge() == 0
@@ -579,7 +566,7 @@ def _hydrazide_ns(mol, center_idx: int) -> tuple[int, int] | None:
 
 
 def _amide_fields(info: dict, occurrences, fields: dict) -> dict:
-    """酰胺母体字段：=S/=N 定硫代/亚氨词尾（P-43 类 16/17）；C(=O)-NH-N 定酰肼尾（P-66.3.1.1）。"""
+    """酰胺母体字段：=S/=N 定硫代/亚氨词尾，C(=O)-NH-N 定酰肼。"""
     mol = info.get("mol")
     if mol is None:
         return fields
@@ -613,9 +600,9 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         free_order = _radical_free_order(info, occurrences)
         if mono is not None:
             skeleton, extra = mono
-            if extra.get("heterane_z"):  # 非碳单核母体氢化物：转杂原子烃 kind，由 _heterane_names 出 -yl
+            if extra.get("heterane_z"):  # 非碳单核氢化物：转 heterane kind，出 -yl
                 kind = "heterane"
-        elif free_order > 1:  # 碳锚点自由价非单键（*=C< / *#C）：链引擎出 -ylidene/-ylidyne
+        elif free_order > 1:  # 碳锚点自由价非单键：链引擎出 -ylidene/-ylidyne
             extra = {"free_valence_order": free_order}
     if kind == "cation":
         mono = _mononuclear_cation(info, skeleton, occurrences)
@@ -648,8 +635,6 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         facts = replace(facts, multiplicity=1)
     return _parent_dict(kind, skeleton, occurrences, fields, facts, selection.occurrences)
 
-
-# ── 无主官能团（纯烃）表达：P-44.1 缺位按拓扑分配 kind ──
 
 def _chain_polys(info: dict, atom_set: set[int]) -> tuple[list[dict], list[dict]]:
     """骨架内的 C=C / C≡C 条目（端点都在 atom_set 中）。"""

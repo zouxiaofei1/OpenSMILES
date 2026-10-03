@@ -9,7 +9,6 @@ from namepredict.constants import (
     METAL_ION_EN, METAL_ION_ZH, MULT_EN, MULT_ZH,
 )
 
-# 多原子无机反离子（P-71.2）：片段规范 SMILES → (en, zh)；阳离子并入金属通道、阴离子并入卤离子通道。
 POLY_CATION = {"[NH4+]": ("azanium", "铵")}
 POLY_ANION = {
     "[OH-]": ("hydroxide", "氢氧化物"),
@@ -19,15 +18,11 @@ POLY_ANION = {
     "F[P-](F)(F)(F)(F)F": ("hexafluorophosphate", "六氟磷酸盐"),
 }
 
-# 卤离子名 → 氢卤酸加合物名（P-71.3）：中性有机碱 + X⁻ 成盐时按 HX 命名（吡啶盐酸盐）
 _HX_BY_HALIDE_EN = {HALIDE_EN[z]: (HALIDE_HX_EN[z], HALIDE_HX_ZH[z]) for z in HALIDE_EN}
 
 
 def _frag_role(mol: Mol) -> tuple[str, str, str] | None:
-    """单片段盐角色 → ("metal"|"halide"|"hx", en, zh)；非盐离子或有机片段返回 None。
-
-    金属/多原子阳离子与卤素/多原子阴离子取词表名（P-71.2），卤化氢取加合物名（P-71.3）。
-    """
+    """单片段盐角色 → (kind, en, zh)；非盐或有机片段返回 None。"""
     smi = Chem.MolToSmiles(mol)
     if smi in POLY_CATION:  # 多原子阳离子（NH4⁺ 等）
         en, zh = POLY_CATION[smi]
@@ -67,10 +62,7 @@ def _net_charge(frag: Mol) -> int:
 
 
 def pair_unique_ions(frags: tuple[Mol, ...]) -> tuple[Mol, Mol, int, int] | None:
-    """唯一可配对的有机阴阳离子 → (阳离子片段, 阴离子片段, n_阳, n_阴)；否则 None。
-
-    要求两侧物种各唯一且整体电荷守恒，供 P-77 二元盐名拼装。
-    """
+    """唯一可配对阴阳离子返回 (阳, 阴, n_阳, n_阴)，否则 None。"""
     cats = [f for f in frags if _net_charge(f) > 0]
     ans = [f for f in frags if _net_charge(f) < 0]
     if not cats or not ans:
@@ -117,7 +109,6 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
         if (len(anions) == 1 and anions[0][0] == HALIDE_EN[Cl]  # 仅单一 Cl⁻（参考数据里多卤/X≠Cl 一律写卤化物名）
                 and charge == 0 and hx_pair is not None
                 and not any(a.GetFormalCharge() for a in organic.GetAtoms())):
-            # 中性有机碱 + Cl⁻（无内盐）：按盐酸盐加合物命名，与 [Cl-]+HX 输入一致（P-71.3）
             hx_en = _mult_word(hx_pair[0], len(anions), MULT_EN)
             hx_zh = _mult_word(hx_pair[1], len(anions), MULT_ZH)
             if hx_en is None or hx_zh is None:

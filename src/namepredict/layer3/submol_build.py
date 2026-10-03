@@ -58,7 +58,7 @@ def _carry_alkene_stereo(em: Chem.RWMol, inv: dict[int, int], bonds,
         nb = em.GetBondBetweenAtoms(inv[ca], inv[cb])
         if nb is None:
             continue
-        bgn, end = nb.GetBeginAtomIdx(), nb.GetEndAtomIdx()  # RDKit SetStereoAtoms 要求两引用分别连在新键 begin/end 端；begin/end 由 AddBond 归一化（较小索引），E/Z 只取决于两引用是否同侧，故按 begin/end 换序传参。
+        bgn, end = nb.GetBeginAtomIdx(), nb.GetEndAtomIdx()  # SetStereoAtoms 要求两引用分连新键 begin/end 端
         first, second = (na, nbb) if bgn == inv[ca] else (nbb, na)
         if em.GetBondBetweenAtoms(bgn, first) is None or em.GetBondBetweenAtoms(end, second) is None:
             continue
@@ -88,7 +88,7 @@ def _external_bond_type(mol: Mol, attach_old: int, atoms: frozenset[int]):
 def _add_anchor(em: Chem.RWMol, attach_new: int,
                 bond_type: Chem.BondType = Chem.BondType.SINGLE) -> int:
     """在连接原子处添加 dummy 锚点，返回其索引。"""
-    d = em.AddAtom(Chem.Atom(0))  # 用 dummy 原子（`*`）标记连接原子；双键叶(=CH2)需用双键，键型由调用方给出。
+    d = em.AddAtom(Chem.Atom(0))  # 用 dummy 原子（`*`）标记连接原子；键型由调用方给出
     em.AddBond(attach_new, d, bond_type)
     return d
 
@@ -102,4 +102,4 @@ def build_anchor_submol(mol: Mol, atoms: frozenset[int], attach_old: int) -> Mol
     copied = _copy_bonds(em, mol, inv)
     d = _add_anchor(em, inv[attach_old], _external_bond_type(mol, attach_old, atoms))
     _carry_alkene_stereo(em, inv, copied, d)
-    return _sanitize(em)  # print(Chem.MolToSmiles(em))
+    return _sanitize(em)

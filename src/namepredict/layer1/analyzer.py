@@ -62,11 +62,7 @@ _OXO_KIND_S_ARM = {"halo": "sulfonyl_chloride", "n": "sulfonamide",   # S 带碳
 
 
 def _oxo_partition(mol: Mol, z_idx: int) -> dict[str, list[int]]:
-    """中心原子邻居按角色分桶：双键氧/羟基氧/阴离子氧/O-臂氧与臂根碳/碳/卤素/氮/硫。
-
-    o_arm 存 O-臂的氧原子（计数用），o_arm_root 存臂根碳（_arm_single_attach 用）——
-    两者个数不同，勿只看长度。
-    """
+    """中心原子邻居按角色分桶（氧/碳/卤/氮/硫）。"""
     part: dict[str, list[int]] = {k: [] for k in
                                   ("oxo", "oh", "om", "o_arm", "o_arm_root", "c", "hal", "n", "s")}
     for n in mol.GetAtomWithIdx(z_idx).GetNeighbors():
@@ -100,7 +96,7 @@ def _oxo_kind(mol: Mol, z_idx: int, part: dict | None = None) -> str | None:
     if z not in (5, 15, 16):
         return None
     r = {k: len(v) for k, v in (part or _oxo_partition(mol, z_idx)).items()}
-    if z == 5:  # 硼酸 B(OH)2：恰一个碳臂 + 彻底酸式的两个氧（P-68.2.1）；硼酸酯（O-臂）不在此列
+    if z == 5:  # 硼酸 B(OH)2：一碳臂 + 两酸式氧（P-68.2.1）
         return "boronic" if r["c"] == 1 and r["oh"] + r["om"] == 2 else None
     if z == 15:
         return _OXO_KIND_P.get((r["oxo"], r["c"] > 0))
@@ -147,12 +143,11 @@ def _oxoacid_entry(mol: Mol, core: tuple[int, ...]) -> dict | None:
             "surr_idx": list(om)}  # surr_idx 只收阴离子氧：L2 据此补 anion 标志
 
 
-# oxo_kind → P-41 类别键：磺酰胺属酰胺类 11，其余落 oxoacid 类 9
 _OXO_CLASS_BY_KIND = {"sulfonamide": "sulfonamide"}
 
 
 def _oxo_bridge_arms(mol: Mol, z_idx: int) -> int:
-    """中心 P/S 的 O-桥氧数（P-67.2 双核/多核磷酸与多硫酸的链内链节数；非 P/S 中心恒 0）。"""
+    """中心 P/S 的 O-桥氧数（P-67.2 链节数；非 P/S 中心恒 0）。"""
     z = mol.GetAtomWithIdx(z_idx)
     znum = z.GetAtomicNum()
     if znum not in (15, 16):
@@ -179,21 +174,18 @@ def oxoacid_entries(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> l
             by_z[e["oxo_z"]] = e
     entries = [by_z[k] for k in sorted(by_z)]
     arms = {e["oxo_z"]: _oxo_bridge_arms(mol, e["oxo_z"]) for e in entries}  # 桥臂数每条只算一次
-    # 缩合含氧酸（P-O-P / S-O-S）须链上留有全酸式末端（同一中心 ≥2 个酸式氧）才按功能母体识别（P-67.2.1）
     if not any(int(e["n_oh"]) + int(e["n_om"]) >= 2 for e in entries):
-        # 无全酸式末端时也不能整链退为取代基：至少留酸式氧最多的链节作母体（否则母体落到甲烷）
         top_acid = max((int(e["n_oh"]) + int(e["n_om"]) for e in entries), default=0)
         entries = [e for e in entries
                    if not arms[e["oxo_z"]]
                    or int(e["n_oh"]) + int(e["n_om"]) == top_acid]
-    # 链内中心让位于更少质子化的酸中心（P-41 酸根优先；否则抢走母体会把酸根写成前缀）
     top_om = max((int(e["n_om"]) for e in entries), default=0)
     return [e for e in entries
             if not (int(e["n_om"]) < top_om and arms[e["oxo_z"]])]
 
 
 def boronic_entries(mol: Mol) -> list[dict]:
-    """硼酸中心条目：SMARTS 表未登记 B，按元素直接扫描（B 无局部双键氧可匹配）。"""
+    """硼酸中心条目：SMARTS 表未登记 B，按元素直接扫描。"""
     out: list[dict] = []
     for a in mol.GetAtoms():
         if a.GetAtomicNum() != 5:
@@ -206,7 +198,7 @@ def boronic_entries(mol: Mol) -> list[dict]:
 
 
 def oxoacid_lists(mol: Mol, matches: list[tuple[int, ...]] | None = None) -> dict[str, list[dict]]:
-    """含氧酸条目按 P-41 类别键归位（同一检测器，类别由 oxo_kind 表决定）。"""
+    """含氧酸条目按 P-41 类别键归位（类别由 oxo_kind 表决定）。"""
     out: dict[str, list[dict]] = {}
     for e in oxoacid_entries(mol, matches) + boronic_entries(mol):
         out.setdefault(_OXO_CLASS_BY_KIND.get(e["oxo_kind"], "oxoacid"), []).append(e)
@@ -257,7 +249,7 @@ def _radical_entry(atom) -> dict:
 
 _SUPPRESSIBLE = frozenset({"acid", "ester", "acyl_halide", "amide", "nitrile", "aldehyde"})  # 可被更高优先级 FG 整体压制的组合 FG：组合羰基 + 腈
 _PRESENCE_SKIP = frozenset({"oxoacid", "sulfonamide"})  # 含氧酸不参与存在性判定（纳入会改写压制结果）
-_LEAF_DEMOTED = ("acid", "nitrile")  # 降级为"前缀叶"的组合 FG：整组碳排除出主链（P-61.1.3 carboxy/cyano）。其余组合 FG（酯/酰胺/醛/酰卤）降级为"氧代"——羰基碳留在链内，仅 O 作 oxo/formyl 前缀，由 L3 锚定叶识别。
+_LEAF_DEMOTED = ("acid", "nitrile")  # 降级为前缀叶的组合 FG：整组碳排除出主链（P-61.1.3）
 
 
 def _has_negative_atom(mol: Mol) -> bool:
@@ -266,8 +258,7 @@ def _has_negative_atom(mol: Mol) -> bool:
 
 
 def _drop_mixed_anion_os(parts: dict, mol: Mol | None) -> dict:
-    """醇/硫醇同族同时含中性羟基与氧/硫负离子时，保留负离子条目作 -olate/-thiolate
-    母体（P-66.1.1.4：酚盐/硫醇盐优于中性酚/硫醇），中性羟基/巯基另作羟基前缀。"""
+    """醇/硫醇同族含中性羟基与负离子时保留负离子条目。"""
     if mol is None:
         return parts
     out = dict(parts)
@@ -282,9 +273,7 @@ def _drop_mixed_anion_os(parts: dict, mol: Mol | None) -> dict:
 
 
 def _drop_mixed_anion_acids(parts: dict, mol: Mol | None) -> dict:
-    """羧酸同族同时含中性 -COOH 与羧酸根 -COO⁻ 时，仅保留羧酸根条目作 -oate 母体
-    （P-41 表 4.1 类 4：阴离子优先于中性酸；P-65.6.2.3.1 酸式盐法(1)），
-    中性羧基退作前缀（链内碳留主链作 hydroxy+oxo，环外作 carboxy）。"""
+    """羧酸同族含中性 -COOH 与羧酸根时仅保留羧酸根条目。"""
     if mol is None:
         return parts
     out = dict(parts)
@@ -322,7 +311,6 @@ def _arbitrate_parts(parts: dict, mol: Mol | None = None,
     return out, frozenset(demoted)
 
 
-# 局部环境 SMARTS 命中且无非局部判据的 FG 键；顺序沿用历史输出
 _LOCAL_ENTRY_FGS = ("acid", "alcohol", "ester", "amide", "ketone", "thione", "amine", "thiol",
                     "nitrile", "acyl_halide", "cation", "azanide", "heterane")
 
@@ -347,11 +335,9 @@ def _detect_parts(mol: Mol) -> dict:
     hits = match_local_fg(mol)
     acyl = [_fg_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("acyl", [])]  # 须先于 aldehyde/radical
     heads = frozenset(e["center_idx"] for e in acyl)
-    # 杂原子烃中心不再按自由基计：片段边界哑原子也会命中 radical，但该处杂原子自任母体（P-21）
     heteranes = frozenset(t[0] for t in hits.get("heterane", []))
     out = _mark_anion_os(_local_entries(mol, hits), mol)
     result = {**out,
-        # 杂原子烃：链最小长度不达标者（如仅 2 连硫族、带碳的 N-N）退回常规链/环命名
         "heterane": [e for e in out.get("heterane", []) if heterane_chain_ok(mol, e["center_idx"])],
         "radical": [_radical_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("radical", [])
                     if t[0] not in heads and t[0] not in heteranes],
@@ -384,7 +370,7 @@ def _collect_fgs(mol: Mol) -> dict:
             "fg_inventory": build_inventory(parts, mol, demoted, has_anion)}
 
 def analyze(mol: Mol) -> dict:
-    """分析分子并返回完整的官能团与结构信息 dict（碳信息 + 官能团 + 环事实）。"""
+    """分析分子并返回官能团与结构信息 dict（碳+官能团+环）。"""
     carbons = [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
     base = {"mol": mol, "carbon_ids": carbons, "n_carbons": len(carbons)}
     return {**base, **_collect_fgs(mol), **_ring_meta(mol),

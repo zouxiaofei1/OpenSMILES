@@ -1,8 +1,6 @@
-"""P-24 螺环母体名：von Baeyer 螺描述符 + 组分式螺环各组分名与连接位次。
+"""P-24 螺环母体名：螺描述符 + 组分式螺环各组分名与连接位次。
 
-单环组分出 spiro[..] 描述符 + 烷词干；组分式螺环按 P-24.5.1 拼
-`spiro[组分1-位次,位次′-组分2-…]`，多螺用 dispiro/trispiro。L5 不得 import L2，
-node 只按鸭子类型读 descriptor / components / links。
+单环组分出 spiro[..] + 烷词干；组分式螺环拼 spiro[组分-位次,位次′-组分-…]，多螺用 dispiro。
 """
 from __future__ import annotations
 
@@ -20,7 +18,7 @@ APOSTROPHE = "'"
 
 
 def spiro_multiplier(n_spiro: int) -> tuple[str, str] | None:
-    """螺原子数词头：1 用 spiro/螺，2 起用 dispiro/二螺 型计数词（不是 bispiro）。"""
+    """螺原子数词头：1 用 spiro/螺，2 起用 dispiro/二螺。"""
     if n_spiro == 1:
         return "spiro", "螺"
     en, zh = MULT_EN.get(n_spiro), MULT_ZH.get(n_spiro)
@@ -37,7 +35,7 @@ def spiro_descriptor_str(descriptor: tuple[int, ...], superscripts: tuple[int, .
 
 
 def spiro_parent_names(mol, node, chain: list[int]):
-    """螺环名 → ((完整英, 完整中), (裸词干英, 裸词干中))；不可组装返回 None。"""
+    """螺环名 → (完整名, 裸词干) 两形态；不可组装返回 None。"""
     if not chain or not node.descriptor:
         return None
     mult = spiro_multiplier(len(node.free_spiro_atoms))
@@ -53,8 +51,6 @@ def spiro_parent_names(mol, node, chain: list[int]):
     body_en, body_zh = f"{mult[0]}[{desc}]", f"{mult[1]}[{desc}]"
     return stem_forms(f"{a_en}{body_en}", f"{a_zh}{body_zh}", stem_en, stem_zh)
 
-
-# ── P-24.5~24.7 组分式螺环母体名 ────────────────────────
 
 def fbs_parent_name(mol, node) -> tuple[str, str] | None:
     """组分式螺环母体名 (en, zh)；不可组装返回 None。"""
@@ -112,7 +108,7 @@ def fbs_parent_name(mol, node) -> tuple[str, str] | None:
 
 
 def _cite_names(cite, names) -> tuple[str, str] | None:
-    """引用项的双语名：多项时为 bis(...)/tris(...) 倍增词组（P-24.7.1/24.7.2）。"""
+    """引用项的双语名：多项时为 bis(...)/tris(...) 词组。"""
     if len(cite) == 1:
         return names[cite[0]]
     en, zh = BIS_EN.get(len(cite)), BIS_ZH.get(len(cite))
@@ -133,7 +129,7 @@ def _locant(comp, atom) -> str | None:
 
 
 def _component_name(comp, num, kek) -> tuple[str, str] | None:
-    """组分全名：保留名/稠合名原样（含加氢前缀）；可接裸词干者按本组分环内不饱和补词尾。"""
+    """组分全名：保留名/稠合名原样；可接裸词干者按环内不饱和补词尾。"""
     if comp.bare_en is None:
         pre = getattr(comp, "hydro", None)
         if pre:  # 加氢前缀只进名、不进引用序（P-24.5.1 按裸基名字母序）
@@ -164,7 +160,7 @@ def _unsat_locants(comp, num, kek) -> tuple[list, list]:
 
 
 def _a_prefix(mol, comp, num) -> tuple[str, str] | None:
-    """组分杂原子的 'a' 前缀；P-24.5.2 要求挂在 spiro 之前，位次带本组分撇号。"""
+    """组分杂原子的 'a' 前缀（P-24.5.2：挂在 spiro 之前）。"""
     if comp.kind != "bridged_ring":
         return "", ""  # 保留名/稠合名已含杂原子，无需 'a' 前缀
     by_z: dict[int, list[int]] = {}

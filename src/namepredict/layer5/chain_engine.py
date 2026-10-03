@@ -44,7 +44,7 @@ def _fg_record(numbered: dict, kind: str) -> dict | None:
 
 
 def _fg_locs(numbered: dict, spec) -> tuple[dict | None, list | None]:
-    """FG 位次记录与位次；位次缺失或数量不符 spec.need 时 locs 为 None。"""
+    """FG 位次记录与位次；缺失或不符时 locs 为 None。"""
     rec = _fg_record(numbered, spec.fg)
     locs = rec["locants"] if rec else None
     if not locs or (spec.need is not None and len(locs) != spec.need):
@@ -100,7 +100,7 @@ def _bond_form(spec: "_Chain", b: str) -> str | None:
 
 
 def _unsat_seg(spec: "_Chain", b: str) -> tuple:
-    """段式烯/炔段：后缀首字母为辅音时保留末端 e（P-16.7.1(a)、P-59.1.9）。"""
+    """段式烯/炔段：后缀首字母为辅音时保留末端 e（P-16.7.1(a)）。"""
     explicit = spec.ene_seg if b == "ene" else spec.yne_seg
     if explicit is not None:
         return explicit
@@ -136,7 +136,6 @@ def _unsat_loc_omit(spec: "_Chain", b: str, form: str, single: bool, numbered: d
     return bool(numbered.get("omit_yne_locant")) and (spec.yne_loc_omit or form == "polyol")
 
 
-# ==== 链式词干引擎：数词干 + 后缀 + 位次 + 环 ====
 def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | None:
     """通用不饱和段引擎"""
     s, zs = _chain_stem_pair(spec, n)
@@ -176,7 +175,7 @@ def _chain_enyne(spec: "_Chain", n: int, numbered: dict) -> tuple[str, str] | No
         tail_en, tail_zh = _fg_yl_tail(spec, fg)  # 段式: FG/自由价位次与后缀尾段（C-1 省略下沉在 _fg_yl_tail）
     else:
         tail_en = tail_zh = ""
-    if spec.stem and s.endswith("ane"):  # 注入的完整母体名去 ane 后直接承接不饱和段（P-14.3.4.2）：azacyclododecane → azacyclododec-9-en / octadecane → octadeca-9,12-diene
+    if spec.stem and s.endswith("ane"):  # 注入的完整母体名去 ane 后直接承接不饱和段（P-14.3.4.2）
         s = s[:-3]
     a_en = "a" if any(g[3] >= 2 for g in segs) else ""
     parts_en: list[str] = []
@@ -200,7 +199,7 @@ class _Chain:
     zh_suf: str            # "醇" / "酮" / "烯" / "酸"
     coda: str = "an"       # 饱和词干后接 "an"; 部分 kind 用 ""/"ane"
     _: KW_ONLY
-    no_loc: str = "plain"  # "plain"=无位次输出普通名; "none"=返回 None (ketone)
+    no_loc: str = "plain"  # "plain"=无位次普通名; "none"=返回 None
     omit_rule: object = _NO_OMIT  # (n, loc, omit) -> bool  True=省略
     fg: str | None = None              # FG 类别名 (fg_locants 记录 kind)
     need: int | None = None            # FG 位次数要求 (need=1 单 FG; 多 FG 由数量生成)
@@ -260,17 +259,12 @@ def _chain_plain(spec: _Chain, s: str, zs: str, n: int) -> tuple[str, str]:
 
 
 def _hydrazide_plain(n: int) -> tuple[str, str] | None:
-    """酰肼 C1/C2 保留名（P-66.3.1.2.1）：formohydrazide / acetohydrazide。"""
+    """酰肼 C1/C2 保留名（P-66.3.1.2.1）。"""
     return {1: ("formohydrazide", "甲酰肼"), 2: ("acetohydrazide", "乙酰肼")}.get(n)
 
 
 def hydrazide_chain_spec(spec: "_Chain") -> "_Chain":
-    """酰胺 spec → 酰肼 spec（P-66.3.1.1）：-CO-NHNH2 取 hydrazide/酰肼 后缀。
-
-    无环母体用 'hydrazide'（P-66.3.1.1：pentanehydrazide，不是 pentanohydrazide），
-    故 coda 取 'ane' 而非默认 'an'；C1/C2 保留名经 variant 单取代槽注入，
-    n ≥ 3 时 plain_fn 返回 None 自动回落系统名（propanehydrazide）。
-    """
+    """酰胺 spec → 酰肼 spec（P-66.3.1.1）。"""
     return replace(spec, en_suf="hydrazide", zh_suf="酰肼", coda="ane",
                    ene_base=("enehydrazide", "烯酰肼"), yne_suf=("ynehydrazide", "炔酰肼"),
                    variant={None: {1: dict(plain_maps=None, plain_fn=_hydrazide_plain)}})
@@ -295,19 +289,19 @@ def _generated_mult_fields(spec: _Chain, mult: int) -> dict | None:
         plain_maps=None,
     )
     if spec.kind == "acid":
-        if spec.fg is not None and not spec.cyclic:  # 环外羧酸：后缀自带位次，不饱和段独立保留 e（P-65.1.1）：prop-1-ene-1,2,3-tricarboxylic acid
+        if spec.fg is not None and not spec.cyclic:  # 环外羧酸：后缀自带位次，不饱和段独立保留 e（P-65.1.1）
             fields.update(ene_base=None, yne_suf=None, unsat_polyol=True)
         else:  # 多酸烯基基座: 保留 e，中文 烯+数量酸
             fields["ene_base"] = (f"ene{en_m}oic acid", f"烯{zh_m}酸")
             fields["yne_suf"] = None
-    if spec.kind == "ester":  # 多酯烯基/炔基基座: enedioate/ynedioate（硫代酯按 thioate 词尾派生）
+    if spec.kind == "ester":  # 多酯烯基/炔基基座: enedioate/ynedioate
         fields["ene_base"] = (f"ene{en_m}{spec.en_suf}", f"烯{zh_m}{spec.zh_suf}")
         fields["yne_suf"] = (f"yne{en_m}{spec.en_suf}", f"炔{zh_m}{spec.zh_suf}")
     return fields
 
 
 def _free_valence_form(pair: tuple[str, str], order: int) -> tuple[str, str]:
-    """自由价键级对应的基名形态（P-31.2.3）：双键 -ylidene/亚基，三键 -ylidyne/次基。"""
+    """自由价键级对应的基名形态（P-31.2.3）：双键亚基、三键次基。"""
     en_tail, zh_lead = ("ylidyne", "次") if order == 3 else ("ylidene", "亚")
     en, zh = pair
     if en.endswith("yl"):
@@ -473,7 +467,7 @@ def _ac_hal_chain(hal_z: int) -> _Chain | None:
 
 _ACYL_HALIDE_BY_HAL = {z: _ac_hal_chain(z) for z in HALIDE_EN}  # 按卤素原子序数索引的酰卤链 spec（F/Cl/Br/I）。
 
-_OXO_TAIL = {  # P-66.1.1/P-67.1.3：oxo_kind × 中心酸式氢数 → 双语功能母体词尾
+_OXO_TAIL = {  # P-66.1.1/P-67.1.3：oxo_kind × 氢数 → 功能母体词尾
     ("phosphate", 3): ("phosphoric acid", "磷酸"),
     ("phosphate", 2): ("dihydrogen phosphate", "磷酸二氢"),
     ("phosphate", 1): ("hydrogen phosphate", "磷酸氢"),
@@ -531,7 +525,7 @@ _KIND_TABLE = {
                      fg="ketone", need=1, no_loc="none",
                      omit_rule=lambda n, loc, omit: n <= 2 and loc == 1,
                      ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,unsat_polyol=True),
-    "thione": _Chain(kind="thione", en_suf="thione", zh_suf="硫酮", coda="ane",  # P-64.6.1：酮的硫族类似物，母体保留 e（propane-2-thione）
+    "thione": _Chain(kind="thione", en_suf="thione", zh_suf="硫酮", coda="ane",  # P-64.6.1：酮的硫族类似物，母体保留 e
                      fg="thione", need=1, omit_rule=_NO_OMIT,
                      ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent, unsat_polyol=True),
     "alkane": _Chain(kind="alkane", en_suf="ane", zh_suf="烷", coda="",
@@ -579,7 +573,6 @@ _KIND_TABLE = {
                    ene_base=("enoyl", "烯酰基"),
                    yne_suf=("ynoyl", "炔酰基"),
                    ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,
-                   # 苯环外酰基头 → 保留名 benzoyl（P-65.1.7.2）。
                    variant={None: {1: dict(plain_maps=None, plain_fn=_retained_plain("acyl"))}}),
     "thiol": _Chain(kind="thiol", en_suf="thiol", zh_suf="硫醇", coda="ane",
                     fg="thiol", need=1, omit_rule=_omit_term_locant,

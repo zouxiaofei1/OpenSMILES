@@ -19,8 +19,6 @@ def _split_stereo_lead(name: str) -> tuple[str, str]:
     return name[: close + 2], name[close + 2 :]
 
 
-# --- E/Z 立体描述符 ------------------------
-
 _STEREO_TAG = {BondStereo.STEREOE: "(E)-", BondStereo.STEREOZ: "(Z)-"}  # RDKit 立体键枚举 → E/Z 前缀标记
 
 
@@ -90,7 +88,7 @@ def ez_for_parent(numbered: dict) -> str:
 
 
 def _parent_locants(parent: dict) -> dict[int, int | str]:
-    """母体原子索引 → 位次（整体编号标签优先，否则链序号；N-臂的氮位次记 "N"）。"""
+    """母体原子索引 → 位次（编号标签优先，否则链序号；N-臂记 "N"）。"""
     chain = parent.get("chain") or []
     facts = parent.get("numbering_scaffold") or {}
     out: dict[int, int | str] = {int(idx): _atom_locant(chain, idx, facts) for idx in chain}
@@ -105,13 +103,12 @@ def _parent_locants(parent: dict) -> dict[int, int | str]:
 
 
 def _exo_ez_parts(numbered: dict) -> list[tuple[int | str | None, str]]:
-    """母体外挂立体双键的 (位次, 字母)：仅一端在母体内，位次取母体侧（P-91.2）。"""
+    """母体外挂立体双键的 (位次, 字母)：位次取母体侧（P-91.2）。"""
     parent = numbered.get("parent") or {}
     mol, locants = parent.get("mol"), _parent_locants(parent)
     if mol is None or not locants:
         return []
     chain = parent.get("chain") or []
-    # 单碳母体（=CH- 型片段态 methylidene）且无其它取代基：位次号省略（P-14.3.4.2(a)）
     single_c = (len(chain) == 1 and mol.GetAtomWithIdx(int(chain[0])).GetAtomicNum() == 6)
     single_idx = int(chain[0]) if single_c else -1
     parts: list[tuple[int | str | None, str]] = []
@@ -147,8 +144,6 @@ def join_ez_prefix(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     return _apply_rs(en, zh, extra, numbered)
 
 
-# --- CIP R/S 立体描述符 --------------------
-
 def _cip_on_chain(mol: Mol, chain: list[int]) -> list[tuple[int, str]]:
     """返回母体链上手性中心的 (链序号, R/S) 列表。"""
     assign_cip(mol)
@@ -183,16 +178,11 @@ def _collapsed_parent(parent: dict) -> bool:
 
 
 def _rs_parts(numbered: dict) -> list[tuple[int | str, str]]:
-    """取母体手性中心的 (位次, R/S) 列表（P-92）。
-
-    不做 kind 门控：parent 的 kind 混用两套词汇表，含氧酸母体存的是
-    L1 的 oxo_kind（sulfonic/sulfonate/…），与 FG 类别枚举对不上。
-    """
+    """取母体手性中心的 (位次, R/S) 列表（P-92）。"""
     parent = numbered.get("parent") or {}
     mol, chain = parent.get("mol"), parent.get("chain") or []
     if mol is None or not chain:
         return []
-    # 碳/硫单原子母体省略位次号（同 as_substituent 约定）；磷碎片位次由外部骨架给出，不适用
     if len(chain) == 1 and mol.GetAtomWithIdx(int(chain[0])).GetAtomicNum() != 15:
         return [(None, code) for _, code in _cip_on_chain(mol, chain)]
     if _collapsed_parent(parent):

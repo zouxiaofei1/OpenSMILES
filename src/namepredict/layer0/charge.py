@@ -42,8 +42,7 @@ def _ring_system_of(mol, idx: int) -> set[int]:
 
 
 def _ring_bears_strong_acid(mol, ring_atoms: set[int]) -> bool:
-    """环系邻域（环原子及其 2 键内）是否有中性强酸基（-COOH/-SO3H/-PO(OH)2）；
-    有此酸时酚氧负离子保留作 -olate 母体（酸降为 carboxy/sulfo 前缀）。"""
+    """环系邻域(2 键内)有中性强酸基时酚氧负离子保留作 -olate 母体。"""
     near = set(ring_atoms)
     for _ in range(2):  # 环原子向外扩两键：直连芳环的酸、苄基酸（-CH2COOH）皆覆盖
         near |= {n.GetIdx() for i in list(near) for n in mol.GetAtomWithIdx(i).GetNeighbors()}

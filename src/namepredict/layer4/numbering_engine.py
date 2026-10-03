@@ -11,8 +11,6 @@ from namepredict.layer4.indicated_hydrogen import saturated_ring_atoms
 from namepredict.layer4.locant_calc import locant_key
 
 
-# ── 候选生成 ──────────────────────────
-
 def _numbered(chain: list[int]) -> dict[int, int]:
     """把链原子顺序映射为 {原子: 位次}。"""
     return {a: i + 1 for i, a in enumerate(chain)}
@@ -42,8 +40,6 @@ def _ring_cands(chain: list[int]) -> list[dict[int, int]]:
     return out
 
 
-# ── 位次集合键 ─────────────────────────
-
 def _locant_set(cand: dict[int, int], atoms: list[int]) -> tuple[int, ...] | None:
     """计算原子集合在候选编号下的排序位次元组。"""
     locs = sorted(cand[a] for a in atoms if a in cand)
@@ -51,7 +47,7 @@ def _locant_set(cand: dict[int, int], atoms: list[int]) -> tuple[int, ...] | Non
 
 
 def _fusion_side_index_cand(pos: dict[int, int], atoms: list[int], n: int) -> int:
-    """稠合键在编号序列中的侧序号(1 起，收尾侧 (n,1) 记 n)；非键记 n+1。"""
+    """稠合键在编号序列中的侧序号(1 起，收尾侧记 n)；非键记 n+1。"""
     locs = sorted(pos[a] for a in atoms if a in pos)
     if len(locs) != 2:
         return n + 1
@@ -114,8 +110,6 @@ def narrow_by_senior(cands: list, key_fn, heteros, by_z, *, skip_none: bool = Fa
     return cands
 
 
-# ── 桥环/螺环编号共享设施（P-23.3.2 / P-24.2.2 / P-14.4 通用段） ───
-
 def candidates(parent: dict, key: str) -> list:
     """L2 下传的并列候选；无对应节点返回空表。"""
     nodes = parent.get(f"{key}s")
@@ -156,7 +150,7 @@ def pick_equivalent(nodes: list, feat):
 
 
 def node_feature_key(mol, chain: list[int], parent: dict, substituents: list, extra):
-    """候选渲染特征工厂：描述符 + extra(node) + 杂原子/后缀/取代基位次。"""
+    """候选渲染特征工厂：描述符 + extra + 杂原子/后缀/取代基位次。"""
     def feat(node) -> tuple:
         het = tuple(sorted((mol.GetAtomWithIdx(a).GetAtomicNum(), node.numbering[a])
                            for a in chain if mol.GetAtomWithIdx(a).GetAtomicNum() != C)) \
@@ -166,9 +160,6 @@ def node_feature_key(mol, chain: list[int], parent: dict, substituents: list, ex
                             if s.get("attach_idx") in chain))
         return (node.descriptor, extra(node), het, suffix, subs)
     return feat
-
-
-# ── P-14.4(j)：CIP 平局破（R/M/r 优先） ───
 
 
 def assign_cip(mol) -> None:
@@ -223,8 +214,6 @@ def _rs_locant_key(codes: dict[int, str], chain: list[int], labels: list[str] | 
     return tuple(hi), tuple(lo)
 
 
-# ── 从 parent dict 提取 P-14.4 特征 ────
-
 def _principal_atoms(parent: dict) -> list[int]:
     """P-14.4(c)：principal 特征基团的附着原子。"""
     facts = parent.get("principal_expression_facts")
@@ -256,7 +245,7 @@ def _is_ring(parent: dict) -> bool:
 
 
 def _hydro_indicated_atoms(parent: dict, chain: list[int]) -> list[int]:
-    """加氢位与指示氢位（饱和环位）的并集：P-14.4(b)(d)(e)(i) 一起最小化。"""
+    """加氢位与指示氢位（饱和环位）并集：P-14.4(b)(d)(e)(i) 最小化。"""
     mol = parent.get("mol")
     if mol is None or not chain:
         return []
@@ -264,8 +253,6 @@ def _hydro_indicated_atoms(parent: dict, chain: list[int]) -> list[int]:
     sats = set(saturated_ring_atoms(mol, chain_set)) & chain_set
     if parent.get("hydro_atoms"):  # 有 hydro 前缀：加氢位与该位次集合一并最小化
         return sorted(sats | set(parent.get("hydro_atoms") or ()))
-    # 无 hydro 前缀、饱和度由斜体 nH 表达时，指示氢位同样取最低位次（P-14.4(b)/P-58.2.1）。
-    # 仅限保留杂环母体上可写碳位指示氢者：碳环 'diene' 名的氢位由多重键位次隐含，不参与。
     from namepredict.layer4.indicated_hydrogen import indicated_hydrogen_atoms
     from namepredict.layer4.numbering import _ind_h_carbon_scaffold_ok
     if parent.get("component_numbering"):  # 稠合组分仿母体：位次由稠合名整体定，不参与
@@ -279,7 +266,7 @@ def _hydro_indicated_atoms(parent: dict, chain: list[int]) -> list[int]:
 
 
 def _nh_sites(heteros: list[int], mol) -> list[int]:
-    """P-14.4(b)/P-31.2.2 指示氢位：环内 NH 及其 N-取代等价位；无 NH 则位次不定。"""
+    """P-14.4(b) 指示氢位：环内 NH 及 N-取代等价位。"""
     def _n(a):
         return mol.GetAtomWithIdx(a)
     n_atoms = [a for a in heteros if _n(a).GetAtomicNum() == 7]
@@ -287,10 +274,10 @@ def _nh_sites(heteros: list[int], mol) -> list[int]:
     if not has_h:
         return []
     subs = [a for a in n_atoms if _n(a).GetTotalNumHs() == 0 and _n(a).GetDegree() == 3]
-    return has_h + subs  # NH 与 N-取代位同为母体指示氢位：位次集并列，交由后续 (c)(f) 裁决
+    return has_h + subs  # NH 与 N-取代位同为指示氢位，位次集并列交由后续裁决
 
 def resolve_numbering(parent: dict, substituents: list, node_key: str, feature_fn, ladder_fn) -> list[int] | None:
-    """编号裁决公共外壳：候选 → 收窄阶梯 → 并列等价 → 写回节点并按位次升序返回。"""
+    """编号裁决公共外壳：候选→收窄阶梯→并列等价→按位次升序返回。"""
     nodes = candidates(parent, node_key)
     chain = list(parent.get("chain") or ())
     if not nodes or not chain:
@@ -306,7 +293,7 @@ def resolve_numbering(parent: dict, substituents: list, node_key: str, feature_f
 
 
 def _narrow_hetero_ring(cands: list[dict], mol, chain: list[int], float_hetero: bool) -> list[dict]:
-    """杂环编号 P-22.2.2.1.3/(b)：位次 1 给最先元素→杂原子集→元素序→指示氢 NH 位次最小化。"""
+    """杂环编号 P-22.2.2.1.3：位次 1 给最先元素→元素序→NH 最小化。"""
     heteros = hetero_atoms(mol, chain)
     zmap = by_z(mol, heteros)
     first = next((z for z in P145_SENIOR if z in zmap), None)  # (0) 引用序最先者得位次 '1'
@@ -382,7 +369,7 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
         return {a: (std.index(a) + 1, 0) for a in std}
 
     def _fixed_key(std: list[int]) -> tuple:
-        """候选链 P-14.4 位次键：先稠合侧字母(P-25.3.1.3)，再 (b)(c)(f)(g)。"""
+        """候选链 P-14.4 位次键：先稠合侧字母，再 (b)(c)(f)(g)。"""
         loc = _locant_key_of(std)
         return (_fusion_side_index_cand({a: std.index(a) + 1 for a in std}, fusion, len(std)),
                 tuple(sorted(loc[a] for a in ind_h_atoms if a in loc)),
@@ -426,7 +413,7 @@ def _fused_numbering(parent: dict, chain: list[int],
     idx_map = {orig: new for new, orig in enumerate(sssr)}
     fusion_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in (system.get("fusion_edges") or [])
                     if i in idx_map and j in idx_map]
-    orients = preferred_orientations(mol, rings, fusion_edges)  # print("riings",rings) / print(orients)
+    orients = preferred_orientations(mol, rings, fusion_edges)
     if not orients:
         return None
     chain_set = set(chain)  # 环外附着原子按优先级分层，逐层收窄镜像取向。
@@ -441,7 +428,7 @@ def _fused_numbering(parent: dict, chain: list[int],
     layers.append(INDICATED_H)  # P-25.3.3.1.2(f): 指示氢位次插在 (c) 之后。
     hydro_atoms = sorted(a for a in (parent.get("hydro_atoms") or ()) if a in chain_set)
     if hydro_atoms:
-        layers.append(hydro_atoms)  # P-14.4(e)(i): 加氢位次先于 (f) 可分离前缀；P-31.2.2 指示氢仍优先
+        layers.append(hydro_atoms)  # P-14.4(e)(i): 加氢位次先于 (f)；指示氢优先
     sub_atoms = sorted(s["attach_idx"] for s in (substituents or [])
                        if s.get("attach_idx") in chain_set)
     if sub_atoms:
@@ -457,8 +444,6 @@ def _fused_numbering(parent: dict, chain: list[int],
     }
     return fused_chain #外环原子顺序
 
-
-# ── 入口 ────────────────────────────
 
 def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = False) -> list[int] | None:
     """返回 P-14.4 定向后的原子顺序，不适用返回 None。"""
@@ -514,7 +499,7 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     if len(cands) > 1 and substituents:  # P-14.4(f) 平局：最低位次给字母序最前的取代基。
         cands = narrow(cands, lambda c: _stem_loc_pairs(_to_chain(c), substituents), skip_none=True)
     if len(cands) > 1:
-        codes = _chain_rs_codes(mol, chain)  # P-14.4(j) 立体平局：按 CIP 描述符定方向，低位次给 R/M/r。
+        codes = _chain_rs_codes(mol, chain)  # P-14.4(j) 立体平局：按 CIP 描述符定方向，低位次给 R/M/r
         if codes:
             cands = narrow(cands, lambda c: _rs_locant_key(codes, _to_chain(c)), skip_none=True)
     return _to_chain(cands[0])
@@ -535,10 +520,9 @@ def _component_labels(parent: dict, chain: list[int]) -> list[str]:
 
 def fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edges=None,
                               *, side_letter: bool = False):
-    """稠合组分自身编号 P-25.3.3；附加组分最小化稠合点，母体组分按稠合侧字母定向。"""
+    """稠合组分自身编号 P-25.3.3；母体组分按稠合侧字母定向。"""
     if not sub_rings:
         return None, None
-    # side_letter：母体组分走 P-25.3.1.3「稠合侧字母靠前」；附加组分仍最小化自身稠合位次。
     subs = [{"attach_idx": a, "fusion": side_letter} for a in (shared or ())] if shared else []
     chain0 = sorted(set().union(*sub_rings))
     from namepredict.layer2.ring_scaffold import _STANDARD_ORDERS
@@ -547,17 +531,17 @@ def fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edge
             ring = list(sub_rings[0])
             return ring, [str(i + 1) for i in range(len(ring))]
         parent = {"mol": mol, "scaffold_id": scaffold_id, "chain": chain0, "component_numbering": True}
-        res = orient_numbering(parent, subs, float_hetero=bool(shared))  # float_hetero: 对称杂环留两镜像，locant 1 由稠合原子定。
+        res = orient_numbering(parent, subs, float_hetero=bool(shared))  # float_hetero: 对称杂环留两镜像，1 号位由稠合原子定
         if not res:
             return None, None
         return res, _component_labels(parent, res)
-    from namepredict.layer4.fused_orientation import preferred_orientations  # 多环无固定编号: P-25.3.3 通用编号(fused_numbering)
+    from namepredict.layer4.fused_orientation import preferred_orientations  # 多环无固定编号: P-25.3.3 通用编号
     from namepredict.layer4.fused_numbering import number_fused_system
     orients = preferred_orientations(mol, sub_rings, sub_edges or [])
     if not orients:
         return None, None
     result = number_fused_system(mol, sub_rings, [o.coord_dict() for o in orients],
                                  [sorted(shared)] if shared else None)  # 稠合点作 sub_layers 逐层最小化位次(P-25.3.1.3)。
-    if result is None:  # print(result)
+    if result is None:
         return None, None
     return result[0], result[1]

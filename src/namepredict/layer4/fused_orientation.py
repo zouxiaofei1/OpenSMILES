@@ -153,7 +153,7 @@ def _layout(row: tuple[int, ...], rings, fusion_edges) -> tuple[dict | None, dic
             exit_pair = edge.get(frozenset((r, row[idx + 1]))) if idx < len(row) - 1 else None
             order = ring_cyclic(rings[r], pair[0], pair[1])
             tpl = None
-            if n % 2 == 1 and exit_pair is not None:  # P-25.3.2.3.2：奇环行内双侧融合 → 变形环模板，仅当可构造时才放行
+            if n % 2 == 1 and exit_pair is not None:  # P-25.3.2.3.2：奇环行内双侧融合→变形环模板
                 exit_idx = next(
                     (k for k in range(n) if frozenset((order[k], order[(k + 1) % n])) == frozenset(exit_pair)),
                     None,
@@ -330,7 +330,7 @@ def _quadrant_fractions(coords: dict, rings, row) -> tuple[tuple[float, float, f
 
 def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
     """全部优选取向平局候选(水平行环数→右上→左下→上方)，镜像一并返回。"""
-    rows = horizontal_rows(rings, fusion_edges)  # print(rows,rings,fusion_edges,"\n")
+    rows = horizontal_rows(rings, fusion_edges)
 
     if not rows:
         return []
@@ -340,7 +340,7 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
     for row in rows:
         if len(row) < max_len:
             continue
-        laid = _layout(row, rings, fusion_edges)  # print("coords:",coords)  # 与 flip 无关
+        laid = _layout(row, rings, fusion_edges)
         if laid is None:
             continue
         for flip in (False, True):
@@ -358,7 +358,7 @@ def preferred_orientations(mol, rings, fusion_edges) -> list[Orientation]:
                 bests = [orient]
             elif key == best_key:
                 bests.append(orient)
-    return bests  # print(bests)
+    return bests
 
 
 def preferred_orientation(mol, rings, fusion_edges) -> Orientation | None:

@@ -206,7 +206,7 @@ def decompose_fused_system(info, system) -> FusedNode | None:
         return None  # 螺连结的环组分不参与稠合拆解（P-24.1）：留给 P-24
     rings = list(sssr_rings(info["mol"]))
     atom_ids = tuple(system.get("atom_ids") or ())
-    if atom_ids:  # 整环系已是一个不可作稠合组分的保留母体（如金刚烷这类笼状桥烃）：稠合拆解无意义且会误判加氢
+    if atom_ids:  # 整环系为不可作稠合组分的保留母体（如金刚烷）：不拆
         sid = match_retained(info, atom_ids)
         if sid is not None and component_stem(sid) is None:
             return None

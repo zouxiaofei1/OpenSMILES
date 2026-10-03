@@ -8,16 +8,11 @@ from namepredict.constants import RETAINED_FUSION_ALIASES
 from namepredict.layer1.ring_systems import build_ring_systems, sssr_rings
 from namepredict.layer4.numbering_engine import fused_component_numbering
 
-# 组分名前导位次串（1,2,4- / 1,4- / 2-）：其后须接字母或汉字，1H- 之类指示氢不匹配
 _LEAD_LOCANT_RUN_RE = re.compile(r"^(\d+(?:,\d+)*[a-z]?)-(?=[^\d])")
 
 
 def _bracket_lead_locants(stem: str) -> str:
-    """组分名前导位次串加方括号。
-
-    P-25.3.1.3：描述组分结构特征的位次（杂原子位置等）保留在组分名中并置于方括号内，
-    如 imidazo[1,2-b][1,2,4]triazine、benzo[g]isoquinoline。
-    """
+    """组分名前导位次串加方括号（P-25.3.1.3）。"""
     m = _LEAD_LOCANT_RUN_RE.match(stem or "")
     return f"[{m.group(1)}]{stem[m.end():]}" if m else stem
 
@@ -129,12 +124,7 @@ def _collect_attached(mol, parent_node, rings, fusion_edges) -> tuple[str, str] 
 
 
 def _supported_fusion_tree(node) -> bool:
-    """本组装器只实现双组分稠合名（P-25.3.2）：一个母体 + 一个一级附加组分。
-
-    多组分稠合名另有程序：P-25.3.4.1.1 二级附加组分用位次数字（撇号+冒号分组）、
-    P-25.3.4.1.2 相同附加组分用 di/tri/bis/tris、P-25.3.4.1.3 多母体；
-    本组装器对每级都只发「数字-字母」式，故只在该范围内出稠合名，其余交回桥环路。
-    """
+    """只实现双组分稠合名（P-25.3.2）：一个母体 + 一个一级附加组分。"""
     return len(node.attached) == 1 and not node.attached[0].attached
 
 

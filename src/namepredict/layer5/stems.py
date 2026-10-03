@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from namepredict.constants import HS_NUMBER, MULT_EN, MULT_ZH, en_num_term, zh_numeral
 
-# --- C1–C10 保留 / 系统基干（字节兼容） ---
 _ALKANE_EN_BASE = {
     1: "methane", 2: "ethane", 3: "propane", 4: "butane", 5: "pentane",
     6: "hexane", 7: "heptane", 8: "octane", 9: "nonane", 10: "decane",
@@ -54,16 +53,12 @@ def alkane_zh(n: int) -> str | None:
 
 
 def stem_forms(body_en: str, body_zh: str, stem_en: str, stem_zh: str) -> tuple[tuple[str, str], tuple[str, str]]:
-    """(完整名, 裸词干) 两形态：裸词干 = 完整名去掉 en 尾 'ane' / zh 尾 '烷'。
-
-    FG 分支要带烷的完整名（后缀去 e 用），链式词干引擎要裸词干（自行拼 ane/烷 或 a…-triene）。
-    桥环、螺环与大环杂单环生成式共用此形态约定。
-    """
+    """(完整名, 裸词干) 两形态；裸词干 = 完整名去烷后缀。"""
     return ((f"{body_en}{stem_en}", f"{body_zh}{stem_zh}"),
             (f"{body_en}{stem_en[:-3]}", f"{body_zh}{stem_zh[:-1]}"))
 
 def acid_to_anion_en(en: str) -> str:
-    """酸/酚/硫醇转阴离子英文名（-oic acid→-oate；-ol→-olate；-thiol→-thiolate）。"""
+    """酸/酚/硫醇转阴离子英文名（-oic acid→-oate 等）。"""
     if en.endswith("oic acid"):
         return en[:-8] + "oate"
     if en.endswith("ic acid"):
@@ -110,10 +105,10 @@ def join_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
     if salt.get("metal"):
         pref = _metal_en_prefix(salt)
         suf = _metal_zh_suffix(salt)
-        n_org = int(salt.get("n_org") or 1)  # 有机阴离子份数：>1 用 bis 括起（calcium bis(...acetate)）
+        n_org = int(salt.get("n_org") or 1)  # 有机阴离子份数>1 用 bis 括起
         if n_org > 1 and pref and en.endswith("ate"):
             return f"{pref} {BIS_EN.get(n_org, '')}({en})", f"{BIS_ZH.get(n_org, '')}({zh}){suf or ''}"
-        if en.endswith("azanide"):  # P-72.2.2.2：氮负离子母体同样按金属盐前缀表达（sodium …azanide）
+        if en.endswith("azanide"):  # P-72.2.2.2：氮负离子母体按金属盐前缀表达
             return (f"{pref} {en}" if pref else en,
                     f"{salt.get('metal_zh')}盐{zh}" if suf else zh)
         return (
