@@ -24,6 +24,13 @@ def _mult_rows(items: list, key_fn, zh_fn, sort_key=None) -> list[list]:
     return rows
 
 
+def _sub_prime(s: dict, primes: dict[int, int] | None) -> int:
+    """取代基的撇号个数：显式 n_prime（酰肼两端定死）优先，否则按 N 引用序查表（P-14.5）。"""
+    if s.get("n_prime") is not None:
+        return int(s["n_prime"])
+    return (primes or {}).get(s.get("attach_idx"), 0)
+
+
 def _locant_str(subs: list, primes: dict[int, int] | None = None) -> str:
     """按位次排序拼接成逗号串；N-型取代基渲染为字母位次 N（带撇号）。"""
     tokens = []
@@ -32,7 +39,7 @@ def _locant_str(subs: list, primes: dict[int, int] | None = None) -> str:
             continue
         kind = s.get("kind") or ""
         if kind in N_PREFIX_KINDS:  # C/N 同名基混编时 N 侧仍须按引用序带 N′（P-14.5）
-            tokens.append("N" + "'" * ((primes or {}).get(s.get("attach_idx"), 0)))
+            tokens.append("N" + "'" * _sub_prime(s, primes))
         else:
             tokens.append(s["locant"])
     return ",".join(str(x) for x in locant_str_sort(tokens))
@@ -106,6 +113,10 @@ def _ring_fused_lead(stem: str) -> bool:
 
 def _stem_needs_paren(stem: str, subs: list, omit: bool, flat: bool = False) -> bool:
     """加括号：显式标记、前导位次词干、前导立体描述符，或多个 CF3（英文）。"""
+    if _STEREO_LEAD_ENCLOSE_RE.match(stem) and not flat:
+        # P-16.5.2.4 + P-16.5.4.1.3：前缀内已用圆括号（立体描述符）者整体须方括号围栏，
+        # 与母体位次是否省略无关
+        return True
     if any(s.get("paren") for s in subs):
         return (not _CATION_YL_TAIL_RE.search(stem)  # 单核阳离子基名单词整体（dimethylsulfonio），无需围栏
                 and not _flat_bridge_stem(stem))  # 简单前端与 R-imino 融合式（methylimino）无须围栏（P-66.4.1.2.1）
@@ -449,11 +460,23 @@ def _parts_for_stem(stem: str, subs: list, omit: bool, primes: dict[int, int] | 
     if subs and all((s.get("kind") or "") in N_PREFIX_KINDS for s in subs):  # 整组全为 N-型才走 N-计数前缀，混入 C-型时走数字通道
         need = (_stem_needs_paren(stem, subs, omit, flat)
                 or (len(subs) > 1 and _stem_has_locant(stem)))  # 复合取代基/带位次基的倍数组须整体加括号（P-16.5.1.1、P-16.3.2）
-        tokens = sorted(("N" + "'" * ((primes or {}).get(s.get("attach_idx"), 0))) for s in subs)  # 同 N 用 N,N-；跨不同 N 用 N,N'-
+        tokens = sorted(("N" + "'" * _sub_prime(s, primes)) for s in subs)  # 同 N 用 N,N-；跨不同 N 用 N,N'-
         return (_n_prefix("en", len(subs), stem, tokens, subs, need),
                 _n_prefix("zh", len(subs), zh_stem, tokens, subs, need))
     return (_prefix_one_en(stem, subs, omit, tail_sep, flat, primes),
             _prefix_one_zh(zh_stem, subs, omit, stem, tail_sep, flat, primes))
+
+
+def _hydrazide_primes(parent: dict) -> dict[int, int] | None:
+    """酰肼母体（P-66.3.3.1）的固定撇号映射：羰基侧 N → N，肼远端 N → N′。"""
+    hn = parent.get("hydrazide_n_idx")
+    if hn is None:
+        return None
+    out = {int(hn): 1}
+    near = parent.get("hydrazide_near_n_idx")
+    if near is not None:
+        out[int(near)] = 0
+    return out
 
 
 def _n_prime_map(groups: dict[str, list], stems: list[str]) -> dict[int, int]:
@@ -557,7 +580,8 @@ def _fence_o_side_arms(subs: list, kind: str | None, mol) -> None:
 
 def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
                   scaffold: str | None = None, has_ene: bool = False,
-                  mol=None, locant_kind: str | None = None) -> tuple[str, str]:
+                  mol=None, locant_kind: str | None = None,
+                  forced_primes: dict[int, int] | None = None) -> tuple[str, str]:
     """组合完整取代基前缀：滤 O 侧、判 omit、按词干分组拼接。"""
     _fence_o_side_arms(substituents, kind, mol)
     substituents = [s for s in substituents if not s.get("o_side")]  # ester 的 O 侧臂由 join_kind_name 消费
@@ -582,7 +606,10 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     arm_hyphen = bool(bare and bracket and _cation_arm_hyphen(groups))  # 阳离子臂名整体前置于阳离子名，复合臂间以连字符分段（P-73.1.1）
     sep = "-" if (arm_hyphen or not bracket) else ""
     sep_zh = "-" if not bracket else ""  # 中文无臂分段符，位次间的连字符仍保留
-    en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, _n_prime_map(groups, stems), sep, flat, arm_hyphen)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
+    primes = _n_prime_map(groups, stems)
+    if forced_primes:  # 酰肼（P-66.3.3.1）：羰基侧 N 恒为 N、肼远端 N 恒为 N′，不随字母序漂移
+        primes = {**primes, **forced_primes}
+    en_parts, zh_parts = _collect_parts(groups, stems, omit, bracket, primes, sep, flat, arm_hyphen)  # P-16.5.1.3.1/.3.2：单碳链多不同取代基 → 首平铺，余加括号
     return sep.join(en_parts), sep_zh.join(zh_parts)
 
 def _isotope_subs(parent: dict) -> list:
@@ -697,4 +724,5 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
     subs += _isotope_subs(parent)
     return _build_prefix(subs, n, kind,
                          parent.get("scaffold_id"), has_ene, parent.get("mol"),
-                         locant_kind=parent.get("locant_kind"))
+                         locant_kind=parent.get("locant_kind"),
+                         forced_primes=_hydrazide_primes(parent))

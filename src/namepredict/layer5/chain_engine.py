@@ -259,6 +259,23 @@ def _chain_plain(spec: _Chain, s: str, zs: str, n: int) -> tuple[str, str]:
     return pair if pair is not None else (f"{_elide_parent_e(s, spec.en_suf)}{spec.coda}{spec.en_suf}", f"{zs}{spec.zh_suf}")
 
 
+def _hydrazide_plain(n: int) -> tuple[str, str] | None:
+    """酰肼 C1/C2 保留名（P-66.3.1.2.1）：formohydrazide / acetohydrazide。"""
+    return {1: ("formohydrazide", "甲酰肼"), 2: ("acetohydrazide", "乙酰肼")}.get(n)
+
+
+def hydrazide_chain_spec(spec: "_Chain") -> "_Chain":
+    """酰胺 spec → 酰肼 spec（P-66.3.1.1）：-CO-NHNH2 取 hydrazide/酰肼 后缀。
+
+    无环母体用 'hydrazide'（P-66.3.1.1：pentanehydrazide，不是 pentanohydrazide），
+    故 coda 取 'ane' 而非默认 'an'；C1/C2 保留名经 variant 单取代槽注入，
+    n ≥ 3 时 plain_fn 返回 None 自动回落系统名（propanehydrazide）。
+    """
+    return replace(spec, en_suf="hydrazide", zh_suf="酰肼", coda="ane",
+                   ene_base=("enehydrazide", "烯酰肼"), yne_suf=("ynehydrazide", "炔酰肼"),
+                   variant={None: {1: dict(plain_maps=None, plain_fn=_hydrazide_plain)}})
+
+
 def _radical_plain(n: int) -> tuple[str, str] | None:
     """烷基型省略形态：自由价在 1 位时由词干拼 -yl/基（P-29.2）。"""
     s, zs = _en_stem(n), _chain_zh_base(n)
@@ -327,6 +344,8 @@ def _exo_ring_spec(spec: "_Chain", n: int, numbered: dict) -> "_Chain":
         suf = (("carbothioamide", "硫代甲酰胺"), ("carbothioamide", "硫代甲酰胺"))
     elif suf is not None and spec.kind == "amide" and parent.get("amide_z") == N:  # P-43 类 17：环外脒
         suf = (("carboximidamide", "亚氨酰胺"), ("carboximidamide", "亚氨酰胺"))
+    elif suf is not None and spec.kind == "amide" and parent.get("hydrazide_n_idx") is not None:
+        suf = (("carbohydrazide", "甲酰肼"), ("carbohydrazide", "甲酰肼"))  # P-66.3.1.1：环上 -CO-NHNH2 用 carbohydrazide
     facts = parent.get("principal_expression_facts")
     if suf is None or facts is None or facts.relation.value != "exocyclic":
         return spec

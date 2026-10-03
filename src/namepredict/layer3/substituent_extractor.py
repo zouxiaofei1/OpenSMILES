@@ -41,6 +41,15 @@ def _amidine_n_owned(mol, parent: dict | None) -> frozenset[int]:
     return frozenset(sgl_n)  # 亚胺氮属母体：其上的臂须从 N 外侧键起切
 
 
+def _hydrazide_n_owned(mol, parent: dict | None) -> frozenset[int]:
+    """酰肼母体（P-66.3.0）：远端 N 并入所有权边界，其臂须从 N 外侧键起切改记 N′。
+
+    近端 N 本属酰胺特征原子；两端都并入后，取代基各自挂在对应 N 上，L5 按 N/N′ 引用。
+    """
+    idx = (parent or {}).get("hydrazide_n_idx")
+    return frozenset({int(idx)}) if idx is not None else frozenset()
+
+
 def sub_from_named(named, mol, parent: dict | None = None) -> dict:
     """将命名结果封装为取代基字典。"""
     claim = named.claim
@@ -103,9 +112,26 @@ def extract_substituents(info: dict, parent: dict, *, cache: CommonNameCache | N
     side_z = 16 if parent.get("thio_side") else 8  # 硫代酯的酯侧臂元素为 S（P-65.6.3.3.7.1）
     chain = frozenset(parent.get("chain") or ())
     namer, out = SubstituentNamer(cache=cache, root_ctx=info.get("root_ctx")), []
-    cut_owned = frozenset(owned) | _amidine_n_owned(mol, parent)  # 胍 N 上的臂从 N 外侧键起切
+    cut_owned = (frozenset(owned) | _amidine_n_owned(mol, parent)  # 胍 N 上的臂从 N 外侧键起切
+                 | _hydrazide_n_owned(mol, parent))  # 酰肼远端 N 同理（P-66.3.0）
     for claim in iter_claims(mol, cut_owned):
         if not (o_side and mol.GetAtomWithIdx(claim.attach_parent).GetAtomicNum() == side_z):
             claim = _side_arm_claim(mol, claim, chain)  # 侧臂切在桥杂原子上会丢臂：并入桥原子改挂链上
         _append_named(mol, claim, namer, out, o_side=o_side, side_z=side_z, parent=parent)
-    return out
+    return _mark_hydrazide_primes(out, parent)
+
+
+def _mark_hydrazide_primes(subs: list[dict], parent: dict | None) -> list[dict]:
+    """酰肼（P-66.3.3.1）两端 N 的取代基定死撇号：羰基侧 N → N，远端 N → N′。
+
+    位次重挂（namer._remap_attach）会把 N-型取代基归到同一母体锚点，
+    L5 的字母序撇号表无法再区分两端 N，故在提取阶段就写死。
+    """
+    hn = (parent or {}).get("hydrazide_n_idx")
+    if hn is None:
+        return subs
+    hnear = (parent or {}).get("hydrazide_near_n_idx")
+    hi, lo = int(hn), (int(hnear) if hnear is not None else None)
+    return [{**s, "n_prime": 1} if s.get("attach_idx") == hi
+            else ({**s, "n_prime": 0} if s.get("attach_idx") == lo else s)
+            for s in subs]

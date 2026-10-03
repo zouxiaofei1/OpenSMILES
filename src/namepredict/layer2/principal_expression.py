@@ -5,7 +5,7 @@ from dataclasses import dataclass, replace
 from enum import Enum
 
 from namepredict.constants import (
-    CATION_FREE_STEMS, HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES,
+    C, CATION_FREE_STEMS, HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES,
     N, NITROGEN_STEM_BY_FREE_DOUBLE,
     O, OXO_CENTER_KINDS, PARENT_HYDRIDE_STEMS, PHOSPHORUS_STEM_BY_OXO, S,
     STANDARD_BONDING_NUMBERS, SULFUR_STEM_BY_OXO,
@@ -534,8 +534,52 @@ def _chain_acyl_halide_fields(info: dict, occurrences, fields: dict) -> dict:
     return {**fields, "hal_idx": hal, "hal_z": mol.GetAtomWithIdx(hal).GetAtomicNum()}
 
 
+def _is_hydrazide_far_n(atom, near_n_idx: int) -> bool:
+    """远端 N 是否为酰肼意义上的肼基 N（P-66.3.0：酸的 -OH 换成 -NH-NH2）。
+
+    须是简单胺型氮：中性、非环非芳、自身无重键（排除酰腙 -NH-N=CH- 与叠氮 -N=N+=N-）、
+    且除羰基侧 N 外只连 C/H（排除叠氮等杂原子链）。
+    另排除连在脒/胍中心碳上的（氨基胍）——该碳自带更优先的亚氨酰胺母体。
+    """
+    if atom.GetAtomicNum() != N or atom.GetFormalCharge() != 0:
+        return False
+    if atom.IsInRing() or atom.GetIsAromatic():
+        return False
+    for b in atom.GetBonds():
+        if b.GetBondTypeAsDouble() != 1.0:
+            return False
+        nb = b.GetOtherAtom(atom)
+        if nb.GetAtomicNum() == N and nb.GetIdx() != near_n_idx:
+            return False
+        if nb.GetAtomicNum() not in (C, 1, N):
+            return False
+        if nb.GetAtomicNum() == C and any(  # 脒/胍中心碳：双键 N 的碳
+                b2.GetBondTypeAsDouble() == 2.0 and b2.GetOtherAtom(nb).GetAtomicNum() == N
+                for b2 in nb.GetBonds()):
+            return False
+    return True
+
+
+def _hydrazide_ns(mol, center_idx: int) -> tuple[int, int] | None:
+    """酰肼骨架判定（P-66.3.0）：酰胺 N 上另连一个肼基 N 时返回 (近 N, 远 N)。
+
+    只认一条非环单键 N（amide SMARTS 的 N 判据）：羰基两侧皆非环 N（脲/硫脲）走保留名，不是酰肼。
+    """
+    c = mol.GetAtomWithIdx(center_idx)
+    sgl_n = [nb for nb in c.GetNeighbors()
+             if nb.GetAtomicNum() == N and not nb.IsInRing() and nb.GetFormalCharge() == 0
+             and mol.GetBondBetweenAtoms(c.GetIdx(), nb.GetIdx()).GetBondTypeAsDouble() == 1.0]
+    if len(sgl_n) != 1:
+        return None
+    n = sgl_n[0]
+    far = [x.GetIdx() for x in n.GetNeighbors()
+           if x.GetAtomicNum() == N and x.GetIdx() != c.GetIdx()
+           and _is_hydrazide_far_n(x, n.GetIdx())]
+    return (n.GetIdx(), far[0]) if len(far) == 1 else None
+
+
 def _amide_fields(info: dict, occurrences, fields: dict) -> dict:
-    """酰胺母体双键杂原子元素：=S/=N 时供 L5 切换 thioamide/imidamide 词尾（P-43 类 16/17）。"""
+    """酰胺母体字段：=S/=N 定硫代/亚氨词尾（P-43 类 16/17）；C(=O)-NH-N 定酰肼尾（P-66.3.1.1）。"""
     mol = info.get("mol")
     if mol is None:
         return fields
@@ -545,6 +589,10 @@ def _amide_fields(info: dict, occurrences, fields: dict) -> dict:
             b = mol.GetBondBetweenAtoms(c.GetIdx(), nb.GetIdx())
             if b.GetBondTypeAsDouble() == 2.0 and nb.GetAtomicNum() in (N, S):
                 return {**fields, "amide_z": nb.GetAtomicNum()}
+    for o in occurrences:
+        ns = _hydrazide_ns(mol, int(o.payload.get("center_idx")))
+        if ns is not None:
+            return {**fields, "hydrazide_n_idx": ns[1], "hydrazide_near_n_idx": ns[0]}
     return fields
 
 

@@ -257,12 +257,25 @@ def _is_ring(parent: dict) -> bool:
 
 def _hydro_indicated_atoms(parent: dict, chain: list[int]) -> list[int]:
     """加氢位与指示氢位（饱和环位）的并集：P-14.4(b)(d)(e)(i) 一起最小化。"""
-    if not parent.get("hydro_atoms"):  # 饱和度由 ene 词尾表达者（环烯/环炔）不参与
-        return []
     mol = parent.get("mol")
+    if mol is None or not chain:
+        return []
     chain_set = set(chain)
-    sats = set(saturated_ring_atoms(mol, chain_set)) & chain_set if mol is not None else set()
-    return sorted(sats | set(parent.get("hydro_atoms") or ()))
+    sats = set(saturated_ring_atoms(mol, chain_set)) & chain_set
+    if parent.get("hydro_atoms"):  # 有 hydro 前缀：加氢位与该位次集合一并最小化
+        return sorted(sats | set(parent.get("hydro_atoms") or ()))
+    # 无 hydro 前缀、饱和度由斜体 nH 表达时，指示氢位同样取最低位次（P-14.4(b)/P-58.2.1）。
+    # 仅限保留杂环母体上可写碳位指示氢者：碳环 'diene' 名的氢位由多重键位次隐含，不参与。
+    from namepredict.layer4.indicated_hydrogen import indicated_hydrogen_atoms
+    from namepredict.layer4.numbering import _ind_h_carbon_scaffold_ok
+    if parent.get("component_numbering"):  # 稠合组分仿母体：位次由稠合名整体定，不参与
+        return []
+    if not _ind_h_carbon_scaffold_ok(parent.get("scaffold_id")):
+        return []
+    ind = set(indicated_hydrogen_atoms(mol, chain, scaffold_id=parent.get("scaffold_id"))) & chain_set
+    if not ind or any(mol.GetAtomWithIdx(a).GetAtomicNum() != C for a in ind):
+        return []
+    return sorted(ind)
 
 
 def _nh_sites(heteros: list[int], mol) -> list[int]:
@@ -533,7 +546,7 @@ def fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edge
         if not scaffold_id:
             ring = list(sub_rings[0])
             return ring, [str(i + 1) for i in range(len(ring))]
-        parent = {"mol": mol, "scaffold_id": scaffold_id, "chain": chain0}
+        parent = {"mol": mol, "scaffold_id": scaffold_id, "chain": chain0, "component_numbering": True}
         res = orient_numbering(parent, subs, float_hetero=bool(shared))  # float_hetero: 对称杂环留两镜像，locant 1 由稠合原子定。
         if not res:
             return None, None

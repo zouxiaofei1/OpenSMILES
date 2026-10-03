@@ -122,13 +122,12 @@ def _forced_h_atom(mol, idx: int, ring: set[int]) -> bool:
     return True
 
 
-def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=frozenset(),
-                       scaffold_id: str | None = None) -> list[str]:
-    """返回指示氢位次列表：位次取 labels，缺失时用链序号（P-58.2.1）。"""
+def indicated_hydrogen_atoms(mol, chain, exclude=frozenset(), extra=frozenset(),
+                             scaffold_id: str | None = None) -> list[int]:
+    """指示氢所在环位原子表（P-58.2.1）：与 indicated_hydrogen 同判据，供编号 P-14.4(b) 用。"""
     chain = list(chain or ())
     if not chain:
         return []
-    facts = {"labels": labels}
     sats = set(saturated_ring_atoms(mol, set(chain), exclude)) | {
         i for i in extra if i in chain and i not in exclude}
     rdb = _ring_double_bonds(kekulized(mol) or mol, set(chain))
@@ -144,6 +143,17 @@ def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=froze
     sats = sorted(sats, key=chain.index)
     if len(sats) > 1 and all(mol.GetAtomWithIdx(i).GetAtomicNum() == 7 for i in sats):  # 互变异构冗余护栏：饱和位全为氮且多于一个时只留最低位次。
         sats = sats[:1]
+    return sats
+
+
+def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=frozenset(),
+                       scaffold_id: str | None = None) -> list[str]:
+    """返回指示氢位次列表：位次取 labels，缺失时用链序号（P-58.2.1）。"""
+    chain = list(chain or ())
+    if not chain:
+        return []
+    facts = {"labels": labels}
+    sats = indicated_hydrogen_atoms(mol, chain, exclude, extra, scaffold_id)
     out = []
     for atom in sats:
         out.append(str(atom_locant(chain, atom, facts)))

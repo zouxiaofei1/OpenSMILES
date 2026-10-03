@@ -62,7 +62,8 @@ def _oxido_arm(s: dict, mol) -> tuple[str, str] | None:
 
 
 def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None,
-                          zh_tail: str = "基", hyphen_join: bool = False) -> tuple[str, str] | None:
+                          zh_tail: str = "基", hyphen_join: bool = False,
+                          lam_present: bool = False) -> tuple[str, str] | None:
     """P 酰基前缀的取代基拼接（P-67.1.4.1.1.5，简单基平铺/括起）；杂原子烃母体共用。"""
 
     pairs: list[tuple[str, str]] = []
@@ -83,7 +84,8 @@ def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None
         if re.search(r"\d", en):  # 基名含位次（propan-2-yl）：同基倍增须括起 tri(propan-2-yl)
             en = f"({en})"
         return f"{m_en}{en}{stem_en}", f"{m_zh}{zh}{stem_zh}{zh_tail}"
-    compound = hyphen_join or any("(" in r[0] or "[" in r[0] for r in rows)  # 含自身带括号的复合组分：逐组分连字符 + 方括号围栏（P-16.5.2）
+    compound = (hyphen_join or (lam_present and len(rows) >= 3)
+                or any("(" in r[0] or "[" in r[0] for r in rows))  # λ 三基以上逐组分连字符；含括号组分走围栏（P-16.5.2）
     en_parts: list[str] = []
     zh_parts: list[str] = []
     for i, (en, zh, m, _) in enumerate(rows):
@@ -93,7 +95,8 @@ def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None
                 return None
             en, zh = f"{m_en}{en}", f"{m_zh}{zh}"
         if not compound:  # 简单组分：首基平铺、其余括起
-            en_parts.append(en if i == 0 else f"({en})")
+            sep = "-" if i and en[:1].isdigit() else ""  # 位次起首的括起组分前加连字符（P-16.3.2）
+            en_parts.append(en if i == 0 else f"{sep}({en})")
             zh_parts.append(zh if i == 0 else f"({zh})")
             continue
         en_need = "(" in en and (i > 0 or en.startswith("("))  # 首组分仅在前导括号（立体描述符）时才须围栏；后续组分带括号即围栏
@@ -105,6 +108,45 @@ def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None
         zh_parts.append(zh if i == 0 else ("-" if zh.startswith("[") else "") + zh)
     joiner = "-" if compound else ""
     return joiner.join(en_parts) + stem_en, "".join(zh_parts) + stem_zh + zh_tail
+
+
+_OXIDE_SUFFIX_WORD = {1: ("oxide", "氧化物"), 2: ("dioxide", "二氧化物"),
+                      3: ("trioxide", "三氧化物"), 4: ("tetraoxide", "四氧化物")}
+
+
+def _ring_oxide_suffix(numbered: dict) -> tuple[set[int], str, str] | None:
+    """环内 λ 杂原子的 =O 转成分离后缀 oxide/dioxide（P-64.4.2；P-66.1.5.2.1）。
+
+    仅当母体为无特征基团后缀的环（kind 不在 _KIND_TABLE）、且全部 =O 均挂在
+    环内 λ 杂原子上时成立；否则 =O 让位于更优先的特征基团，仍作 oxo 前缀。
+    返回 (待移出前缀的取代基 id 集, 英文后缀, 中文后缀)，不适用返回 None。
+    """
+    from namepredict.layer5.chain_engine import _KIND_TABLE
+    from namepredict.tools.lambda_notation import is_lambda_marked
+
+    parent = numbered.get("parent") or {}
+    mol, chain = parent.get("mol"), parent.get("chain") or []
+    if mol is None or not chain or parent.get("kind") in _KIND_TABLE:
+        return None
+    ring = set(chain)
+    subs = numbered.get("substituents") or []
+    all_oxo = [s for s in subs if (s.get("en") or "") == "oxo"]
+    if not all_oxo:
+        return None
+    locants: list[str] = []
+    for s in all_oxo:  # 每个 =O 必挂在同一环内的 λ 杂原子上
+        idx = s.get("attach_idx")
+        if idx not in ring or s.get("locant") is None:
+            return None
+        atom = mol.GetAtomWithIdx(int(idx))
+        if atom.GetAtomicNum() == 6 or not is_lambda_marked(atom):
+            return None
+        locants.append(str(s["locant"]))
+    word = _OXIDE_SUFFIX_WORD.get(len(all_oxo))
+    if word is None:
+        return None
+    loc = ",".join(sorted(locants, key=lambda x: (len(x), x)))  # 位次升序，与骨架名引用序一致
+    return ({id(s) for s in all_oxo}, f" {loc}-{word[0]}", f" {loc}-{word[1]}")
 
 
 def _azane_acyl_stereo_lead(en: str) -> bool:
@@ -403,10 +445,10 @@ def _heterane_names(numbered: dict) -> tuple[str, str] | None:
     else:  # 代基前缀与 λ、λ 与词干之间均以连字符分段：pentafluoro-lambda6-sulfane（P-21.1.2.1）
         tail_en = f"-{lam_en}-{stem_en}" if lam_en else stem_en
         tail_zh = f"-{lam_zh}-{stem_zh}" if lam_zh else stem_zh
-        # 片段（连哑原子）或带 λ 时逐组分连字符；母体态简单基平铺、余基括起
-        hyphen = bool(lam_en) or yl is not None
+        # 片段（连哑原子）逐组分连字符；带 λ 时简单基平铺、末基括起（P-68.4.3.1）
+        hyphen = yl is not None and not lam_en
         hit = _phosphoryl_sub_names(subs, tail_en, tail_zh, parent.get("mol"), zh_tail="",
-                                    hyphen_join=hyphen)
+                                    hyphen_join=hyphen, lam_present=bool(lam_en))
         if hit is None:
             return None
         free_en, free_zh = hit
@@ -841,7 +883,12 @@ def _urea_subs(numbered: dict, n_atoms: list[int], locants: tuple[str, str],
 def _carbamothioylamino_prefix(side_en: str, side_zh: str) -> tuple[str, str] | None:
     """N-侧胺名 → <R>carbamothioyl / <R>氨基硫代羰基（P-66.1.1.4 硫代氨基甲酸残基；尾「amino/氨基」由自由价渲染补出）。"""
     if not side_en.endswith("amino") or not side_zh.endswith("氨基"):
-        return None
+        # N-芳基侧以保留名 anilino 出现（P-66.1.1.4.2 与 carbamoyl 同形）：先按 carbamoyl 改写再换硫代词干
+        named = carbamoyl_prefix_name(side_en, side_zh, in_ring=False)
+        if named is None:
+            return None
+        return (named[0].replace("carbamoyl", "carbamothioyl"),
+                named[1].replace("氨基甲酰基", "氨基硫代羰基"))
     stem_en, stem_zh = side_en[: -len("amino")], side_zh[: -len("氨基")]
     if not stem_en or not stem_zh:
         return None
@@ -949,6 +996,9 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
                 entry = replace(entry, en_suf="thioamide", zh_suf="硫代酰胺", coda="ane", variant=None)
             elif z == N:
                 entry = replace(entry, en_suf="imidamide", zh_suf="亚氨酰胺", variant=None)
+        if kind == "amide" and parent.get("hydrazide_n_idx") is not None:  # P-66.3.1.1：-CO-NHNH2 取酰肼尾
+            from namepredict.layer5.chain_engine import hydrazide_chain_spec
+            entry = hydrazide_chain_spec(entry)
         sid = parent.get("scaffold_id")
         if kind == "alkane" and parent.get("fused_tree") and sid != "benzene":  # 未注册稠环无 FG：词干注入已完成，返回稠合 base 名
             return _parent_stem_names(numbered)
@@ -971,6 +1021,8 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
             sc_variant = _benzene_retained("benzenecarbothioamide", "苯硫代甲酰胺")
         elif sid == "benzene" and kind == "amide" and parent.get("amide_z") == N:
             sc_variant = _benzene_retained("benzenecarboximidamide", "苯甲脒")  # P-61.2 苯甲脒习用名
+        elif sid == "benzene" and kind == "amide" and parent.get("hydrazide_n_idx") is not None:
+            sc_variant = _benzene_retained("benzohydrazide", "苯甲酰肼")  # P-66.3.1.2.1 苯甲酰肼保留名
         else:
             sc_variant = _BENZENE_RETAINED[kind] if sid == "benzene" and kind in _BENZENE_RETAINED \
                 else (entry.variant or {}).get(sid)
@@ -1372,9 +1424,17 @@ def assemble(numbered: dict, *, time_ms: float = 0.0, source: str = "iupac") -> 
     names = join_ring_cation_suffix(numbered, names)
     names = join_isotope_descriptor(names, numbered)  # 核素描述符紧贴母体词干前（P-82.2.1）
 
-    joined = join_kind_name(kind, _prefix_for(numbered, kind, n), names, numbered)
+    oxo_move = _ring_oxide_suffix(numbered)  # 环内 λ 杂原子 =O → 分离 oxide 后缀
+    scan = numbered
+    if oxo_move is not None:
+        drop = oxo_move[0]
+        scan = {**numbered, "substituents": [s for s in (numbered.get("substituents") or [])
+                                            if id(s) not in drop]}
+    joined = join_kind_name(kind, _prefix_for(scan, kind, n), names, numbered)
     if joined is None:
         return _unsupported(n, kind)
+    if oxo_move is not None:
+        joined = (joined[0] + oxo_move[1], joined[1] + oxo_move[2])
     en, zh = _chalcogen_nitrile_alias(joined[0], joined[1], numbered)
     en, zh = join_anion_names(numbered, en, zh)
     en, zh = join_ez_prefix(numbered, en, zh)   # 母体外挂双键的 E/Z 先补，再由 R/S 归并排序

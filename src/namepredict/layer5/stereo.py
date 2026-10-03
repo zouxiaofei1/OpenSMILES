@@ -104,13 +104,17 @@ def _parent_locants(parent: dict) -> dict[int, int | str]:
     return out
 
 
-def _exo_ez_parts(numbered: dict) -> list[tuple[int | str, str]]:
+def _exo_ez_parts(numbered: dict) -> list[tuple[int | str | None, str]]:
     """母体外挂立体双键的 (位次, 字母)：仅一端在母体内，位次取母体侧（P-91.2）。"""
     parent = numbered.get("parent") or {}
     mol, locants = parent.get("mol"), _parent_locants(parent)
     if mol is None or not locants:
         return []
-    parts: list[tuple[int | str, str]] = []
+    chain = parent.get("chain") or []
+    # 单碳母体（=CH- 型片段态 methylidene）且无其它取代基：位次号省略（P-14.3.4.2(a)）
+    single_c = (len(chain) == 1 and mol.GetAtomWithIdx(int(chain[0])).GetAtomicNum() == 6)
+    single_idx = int(chain[0]) if single_c else -1
+    parts: list[tuple[int | str | None, str]] = []
     for bond in mol.GetBonds():
         tag = _STEREO_TAG.get(bond.GetStereo(), "")
         if not tag or bond.GetBondType() != BondType.DOUBLE:
@@ -120,6 +124,13 @@ def _exo_ez_parts(numbered: dict) -> list[tuple[int | str, str]]:
             continue  # 两端都在母体内：已由母体名承载
         idx = a if a in locants else b
         if idx in locants:
+            if idx == single_idx:
+                other = b if a == idx else a
+                extra = sum(1 for nb in mol.GetAtomWithIdx(idx).GetNeighbors()
+                            if nb.GetIdx() != other and nb.GetAtomicNum() > 1)
+                if extra == 0:
+                    parts.append((None, tag[1]))
+                    continue
             parts.append((locants[idx], tag[1]))
     return parts
 
