@@ -1039,6 +1039,41 @@ def _o_side_arms(numbered: dict) -> list[dict]:
     return [s for s in (numbered.get("substituents") or []) if s.get("o_side")]
 
 
+def _ester_arm_locant(numbered: dict, arm: dict):
+    """酯 O-侧臂的母体位次：O → 羰基碳 → 母体骨架原子 → 位次（P-16.6.2 杂原子位次）。"""
+    from namepredict.layer4.locant_calc import _atom_locant
+
+    par = numbered.get("parent") or {}
+    mol, chain = par.get("mol"), par.get("chain") or []
+    o = arm.get("attach_idx")
+    if mol is None or o is None or len(chain) < 2:  # 碳酸二酯母体只有羰基碳自身：无位次可写
+        return None
+    inside = set(chain)
+    for c in mol.GetAtomWithIdx(int(o)).GetNeighbors():  # 酯氧所连的羰基碳
+        if c.GetAtomicNum() != C:
+            continue
+        if not any(b.GetBondType() == BondType.DOUBLE and b.GetOtherAtom(c).GetAtomicNum() == O
+                   for b in c.GetBonds()):
+            continue
+        if c.GetIdx() in inside:  # 羧基碳本身在骨架内（二元酸链）：位次即该羰基碳
+            return _atom_locant(chain, c.GetIdx(), par.get("numbering_scaffold"))
+        for a in c.GetNeighbors():
+            if a.GetIdx() in inside:  # 羰基碳接回母体骨架的原子（环外羧基）
+                return _atom_locant(chain, a.GetIdx(), par.get("numbering_scaffold"))
+    return None
+
+
+def _located_ester_arms(arms: list[dict], numbered: dict | None) -> list | None:
+    """异名 O-侧臂的 (位次, 臂) 序列；任一臂无母体位次则 None（碳酸酯等无位次母体）。
+    引用顺序按 P-14.5 字母数字序（斜体前缀/位次/立体描述符不参与比较）。"""
+    if numbered is None or len(arms) < 2:
+        return None
+    locs = [_ester_arm_locant(numbered, s) for s in arms]
+    if any(loc is None for loc in locs):
+        return None
+    return sorted(zip(locs, arms), key=lambda t: alpha_order_key(t[1].get("en") or ""))
+
+
 def _join_o_side_arms(arms: list[dict], *, group: bool, arm_zh_fn) -> tuple[str, str] | None:
     """O-侧臂双语拼接"""
     if not arms:
@@ -1111,6 +1146,13 @@ def join_ester_name(pre_en: str, pre_zh: str, names: tuple[str, str], numbered=N
         arms_in = [{**a, "en": _fenced_arm_en(a.get("en") or "")} for a in arms_in]
     elif ((numbered or {}).get("parent") or {}).get("kind") == "acid":  # 碳酸单酯：复合臂按 P-16.5.1.3.1 括起
         arms_in = [{**a, "en": _carbonate_arm_en(a.get("en") or "")} for a in arms_in]
+    if not thio:  # 异名酯基带母体 O- 位次（P-16.6.2 杂原子位次 + P-14.5 字母数字序引用）
+        located = _located_ester_arms(arms_in, numbered)
+        if located is not None and len({(s.get("en") or "") for s in arms_in}) > 1:
+            alk_en = " ".join(f"{loc}-O-{_fenced_arm_en(s.get('en') or '')}" for loc, s in located)
+            alk_zh = "-".join(f"{loc}-O-{_fenced_arm_zh(s.get('zh') or '')}" for loc, s in located)
+            return (f"{alk_en} {join_parent_name(pre_en, en)}",
+                    f"{alk_zh}{join_parent_name(pre_zh, zh)}酯")
     arms = _join_o_side_arms(arms_in, group=False, arm_zh_fn=_fenced_arm_zh if thio else _zh_alkoxy_part)
     # print("_join_o_side_arms",arms,numbered)
     if arms is None:

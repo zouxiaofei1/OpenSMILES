@@ -267,9 +267,11 @@ def _name_mol(
     info["salt"] = salt  # 磷酸母体 producer 的盐门控与 salt_meta 来源
     result = _run_candidates(info, t0=t0, cache=run_cache)
     result = _apply_salt_suffix(result, salt)
-    if not salt:  # 多片段体系：配对阴阳离子成盐，其余组分按字母序拼接，绝不丢弃
+    # 多片段体系：配对阴阳离子成盐，其余组分按字母序拼接，绝不丢弃。
+    # 已配盐但有机部分组装失败时同样回落，否则整分子静默变空名。
+    if not salt or not result.success:
         joined = _name_components(mol, cache=run_cache)
-        if joined is not None:
+        if joined is not None and joined[0].strip():
             result = copy.copy(result)
             result.en, result.zh = joined
             result.success = True

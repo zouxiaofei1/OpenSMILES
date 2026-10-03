@@ -70,6 +70,25 @@ def _append_named(mol, claim, namer, out: list[dict], *, o_side: bool = False, s
     out.append(s)
 
 
+def _side_arm_claim(mol, claim, chain: frozenset[int]):
+    """把切在所有权内非链杂原子上的侧臂并回该杂原子、改挂到链上原子。"""
+    # 硫代酯的 S 臂按原样切在 S 上时 L4 无位次可给，整段臂
+    # 会被 _subs_for_numbering 丢弃，名称只剩母体（methyl propanedioate）。
+    # 并入 S 后臂名自带 sulfanyl，位次可定。
+    from dataclasses import replace
+
+    a = int(claim.attach_parent)
+    if a in chain:
+        return claim
+    atom = mol.GetAtomWithIdx(a)
+    if atom.GetAtomicNum() not in (8, 16) or atom.GetDegree() < 2:
+        return claim
+    linked = [n.GetIdx() for n in atom.GetNeighbors() if n.GetIdx() in chain]
+    if len(linked) != 1:
+        return claim
+    return replace(claim, attach_parent=linked[0], root=a, atoms=frozenset(set(claim.atoms) | {a}))
+
+
 def extract_substituents(info: dict, parent: dict, *, cache: CommonNameCache | None = None) -> list[dict]:
     """L3 入口：为所有权边界内的每个 claim 命名并封装为取代基。"""
     from namepredict.layer3.claimable_block import iter_claims
@@ -82,8 +101,11 @@ def extract_substituents(info: dict, parent: dict, *, cache: CommonNameCache | N
     # benzoate（苯 base + ester FG）靠 o_idx 字段识别 O-side；链状 ester 走 kind 表。
     o_side = parent.get("kind") in ESTER_O_SIDE_KINDS or parent.get("o_idx") is not None
     side_z = 16 if parent.get("thio_side") else 8  # 硫代酯的酯侧臂元素为 S（P-65.6.3.3.7.1）
+    chain = frozenset(parent.get("chain") or ())
     namer, out = SubstituentNamer(cache=cache, root_ctx=info.get("root_ctx")), []
     cut_owned = frozenset(owned) | _amidine_n_owned(mol, parent)  # 胍 N 上的臂从 N 外侧键起切
     for claim in iter_claims(mol, cut_owned):
+        if not (o_side and mol.GetAtomWithIdx(claim.attach_parent).GetAtomicNum() == side_z):
+            claim = _side_arm_claim(mol, claim, chain)  # 侧臂切在桥杂原子上会丢臂：并入桥原子改挂链上
         _append_named(mol, claim, namer, out, o_side=o_side, side_z=side_z, parent=parent)
     return out

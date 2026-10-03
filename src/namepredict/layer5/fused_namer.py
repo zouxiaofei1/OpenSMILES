@@ -32,18 +32,19 @@ def _component_prefix(node) -> tuple[str, str] | None:
     return (en, zh) if en else None
 
 
-def _component_numbering(mol, node, rings, fusion_edges, shared=None):
+def _component_numbering(mol, node, rings, fusion_edges, shared=None, *, side_letter=False):
     """组分自身编号：委托 L4 按 shared 原子取向（P-25.4）。"""
     rset = sorted(node.ring_indices)
     if not rset:
         return None, None
     sub_rings = [rings[i] for i in rset]
-    if shared is None:  
+    if shared is None:
         shared = node.attached[0].fusion_shared[0] if node.attached and node.attached[0].fusion_shared else None
     idx_map = {i: k for k, i in enumerate(rset)}
     sub_edges = [(idx_map[i], idx_map[j], sh) for i, j, sh in fusion_edges
                  if i in idx_map and j in idx_map]
-    return fused_component_numbering(mol, node.scaffold_id, sub_rings, shared, sub_edges)
+    return fused_component_numbering(mol, node.scaffold_id, sub_rings, shared, sub_edges,
+                                     side_letter=side_letter)
 
 
 def _inner_atoms(node, rings) -> set[int]:
@@ -61,10 +62,13 @@ def _fusion_letter(parent_chain, shared) -> str | None:
     if len(shared) != 2:
         return None
     ia, ib = parent_chain.index(shared[0]), parent_chain.index(shared[1])
-    i = min(ia, ib)
-    if (i + 1) % len(parent_chain) != max(ia, ib):
-        return None  # 共享边须为母体外周边
-    return chr(97 + i)
+    n = len(parent_chain)
+    i, j = min(ia, ib), max(ia, ib)
+    if (i + 1) % n == j:
+        return chr(97 + i)
+    if i == 0 and j == n - 1:  # P-25.3.1.3：收尾侧 (n,1) 记末位字母，勿判为畸变
+        return chr(97 + n - 1)
+    return None  # 共享边须为母体外周边
 
 
 def _fusion_numbers(child_chain, child_labels, parent_chain, shared) -> tuple | None:
@@ -80,7 +84,8 @@ def _fusion_numbers(child_chain, child_labels, parent_chain, shared) -> tuple | 
 def _fused_one(mol, parent_node, child_node, rings, fusion_edges) -> tuple[str, str] | None:
     """单级: 附加组分前缀 + 融合描述符(数字-字母)。"""
     shared = child_node.fusion_shared[0] if child_node.fusion_shared else None  # 双方编号同以稠合原子集作取代基（P-25.3.1.3）
-    parent_chain, _ = _component_numbering(mol, parent_node, rings, fusion_edges, shared)
+    parent_chain, _ = _component_numbering(mol, parent_node, rings, fusion_edges, shared,
+                                           side_letter=True)
     if parent_chain:  # 母体外周边界只需保留外侧原子：剔除出现在 ≥3 环的 perifused 中心
         inner = _inner_atoms(parent_node, rings)
         parent_chain = [a for a in parent_chain if a not in inner]
@@ -123,10 +128,20 @@ def _collect_attached(mol, parent_node, rings, fusion_edges) -> tuple[str, str] 
     return "".join(en_parts), "".join(zh_parts)
 
 
+def _supported_fusion_tree(node) -> bool:
+    """本组装器只实现双组分稠合名（P-25.3.2）：一个母体 + 一个一级附加组分。
+
+    多组分稠合名另有程序：P-25.3.4.1.1 二级附加组分用位次数字（撇号+冒号分组）、
+    P-25.3.4.1.2 相同附加组分用 di/tri/bis/tris、P-25.3.4.1.3 多母体；
+    本组装器对每级都只发「数字-字母」式，故只在该范围内出稠合名，其余交回桥环路。
+    """
+    return len(node.attached) == 1 and not node.attached[0].attached
+
+
 def fused_parent_names(mol, node) -> tuple[str, str] | None:
     """稠合名组装入口: node 为 FusedNode 根。"""
-    if not node.attached:
-        return None  # 单节点保留名走 _parent_stem_names
+    if not node.attached or not _supported_fusion_tree(node):
+        return None  # 单节点保留名走 _parent_stem_names；多组分超出双组分式能力
     root_en, root_zh = node.fused_stem or (None, None)
     if not root_en:
         return None

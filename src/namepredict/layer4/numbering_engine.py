@@ -50,6 +50,19 @@ def _locant_set(cand: dict[int, int], atoms: list[int]) -> tuple[int, ...] | Non
     return tuple(locs) if locs else None
 
 
+def _fusion_side_index_cand(pos: dict[int, int], atoms: list[int], n: int) -> int:
+    """稠合键在编号序列中的侧序号(1 起，收尾侧 (n,1) 记 n)；非键记 n+1。"""
+    locs = sorted(pos[a] for a in atoms if a in pos)
+    if len(locs) != 2:
+        return n + 1
+    a, b = locs
+    if b - a == 1:
+        return a
+    if a == 1 and b == n:
+        return n
+    return n + 1
+
+
 def _edge_locants(pos: dict[int, int], n: int, bonds) -> tuple[int, ...] | None:
     """在已建的编号顺序映射下，算一组键占据的边位次（seam 感知，每条键一个数）。"""
     if not bonds:
@@ -333,8 +346,11 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
     suffixes = [a for a in _principal_atoms(parent) if a in chain]  # P-14.4(c)：principal 特征基团与自由价附着原子得最低位次。
     if parent.get("radical_c_idx") in chain:  # 自由基主基团：自由价连接点与 principal 同属 (c) 后缀类。
         suffixes.append(parent["radical_c_idx"])
-    prefixes = [s["attach_idx"] for s in (substituents or []) if s.get("attach_idx") in chain]
-    if not suffixes and not prefixes:
+    fusion = [s["attach_idx"] for s in (substituents or [])   # 稠合侧作母体编号取向依据，不算作取代基
+              if s.get("fusion") and s.get("attach_idx") in chain]
+    prefixes = [s["attach_idx"] for s in (substituents or [])
+                if s.get("attach_idx") in chain and not s.get("fusion")]
+    if not suffixes and not prefixes and not fusion:
         return chains[0]
     labels = _STANDARD_LABELS.get(sid) or ()
     alpha_subs = [(alpha_order_key(s.get("en") or ""), s["attach_idx"])
@@ -353,9 +369,10 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
         return {a: (std.index(a) + 1, 0) for a in std}
 
     def _fixed_key(std: list[int]) -> tuple:
-        """候选链 P-14.4 位次键：(b) 指示氢、(c) 后缀、(f) 前缀、(g) 引用序。"""
+        """候选链 P-14.4 位次键：先稠合侧字母(P-25.3.1.3)，再 (b)(c)(f)(g)。"""
         loc = _locant_key_of(std)
-        return (tuple(sorted(loc[a] for a in ind_h_atoms if a in loc)),
+        return (_fusion_side_index_cand({a: std.index(a) + 1 for a in std}, fusion, len(std)),
+                tuple(sorted(loc[a] for a in ind_h_atoms if a in loc)),
                 tuple(sorted(loc[a] for a in suffixes if a in loc)),
                 tuple(sorted(loc[a] for a in prefixes if a in loc)),
                 tuple(sorted((k, loc[a]) for k, a in alpha_subs if a in loc)))
@@ -471,8 +488,14 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
     bonds, doubles = _unsat_bonds(parent)
     if bonds:
         cands = narrow(cands, lambda c: _bond_locant_pairs(c, bonds, doubles), skip_none=True)
-    subs = [s["attach_idx"] for s in substituents if s.get("attach_idx") in chain]
+    subs = [s["attach_idx"] for s in substituents
+            if s.get("attach_idx") in chain and not s.get("fusion")]
+    fusion = [s["attach_idx"] for s in substituents
+              if s.get("fusion") and s.get("attach_idx") in chain]
 
+    if fusion:  # P-25.3.1.3：母体组分编号须使稠合侧落在尽可能靠前的字母
+        cands = narrow(cands, lambda c: _fusion_side_index_cand(c, fusion, len(chain)),
+                       skip_none=True)
     if subs:
         cands = narrow(cands, lambda c: _locant_set(c, subs), skip_none=True)
     if len(cands) > 1 and substituents:  # P-14.4(f) 平局：最低位次给字母序最前的取代基。
@@ -497,11 +520,13 @@ def _component_labels(parent: dict, chain: list[int]) -> list[str]:
     return [str(i + 1) for i in range(len(chain))]
 
 
-def fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edges=None):
-    """稠合组分自身编号 P-25.4/P-25.3.3，稠合点作取代基最小化。"""
+def fused_component_numbering(mol, scaffold_id, sub_rings, shared=None, sub_edges=None,
+                              *, side_letter: bool = False):
+    """稠合组分自身编号 P-25.3.3；附加组分最小化稠合点，母体组分按稠合侧字母定向。"""
     if not sub_rings:
         return None, None
-    subs = [{"attach_idx": a} for a in (shared or ())] if shared else []
+    # side_letter：母体组分走 P-25.3.1.3「稠合侧字母靠前」；附加组分仍最小化自身稠合位次。
+    subs = [{"attach_idx": a, "fusion": side_letter} for a in (shared or ())] if shared else []
     chain0 = sorted(set().union(*sub_rings))
     from namepredict.layer2.ring_scaffold import _STANDARD_ORDERS
     if len(sub_rings) == 1 or (scaffold_id and scaffold_id in _STANDARD_ORDERS):

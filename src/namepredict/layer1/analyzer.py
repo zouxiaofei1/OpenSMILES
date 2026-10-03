@@ -281,10 +281,30 @@ def _drop_mixed_anion_os(parts: dict, mol: Mol | None) -> dict:
     return out
 
 
+def _drop_mixed_anion_acids(parts: dict, mol: Mol | None) -> dict:
+    """羧酸同族同时含中性 -COOH 与羧酸根 -COO⁻ 时，仅保留羧酸根条目作 -oate 母体
+    （P-41 表 4.1 类 4：阴离子优先于中性酸；P-65.6.2.3.1 酸式盐法(1)），
+    中性羧基退作前缀（链内碳留主链作 hydroxy+oxo，环外作 carboxy）。"""
+    if mol is None:
+        return parts
+    out = dict(parts)
+    for key in ("acid", "oxoacid"):
+        items = out.get(key) or []
+        if len(items) < 2:
+            continue
+        charged = [e for e in items
+                   if any(mol.GetAtomWithIdx(int(i)).GetFormalCharge() < 0
+                          for i in e.get("surr_idx") or ())]
+        if charged and len(charged) < len(items):
+            out[key] = charged
+    return out
+
+
 def _arbitrate_parts(parts: dict, mol: Mol | None = None,
                      has_anion: bool | None = None) -> tuple[dict, frozenset[str]]:
     """P-41 仲裁：更高优先级 FG 使组合 FG 退出，叶型标 demoted。"""
     parts = _drop_mixed_anion_os(parts, mol)
+    parts = _drop_mixed_anion_acids(parts, mol)
     p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
     present = {fg for fg in p41 if parts.get(fg) and fg not in _PRESENCE_SKIP}
     if has_anion is None:

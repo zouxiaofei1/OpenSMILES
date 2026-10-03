@@ -6,7 +6,7 @@ import re
 from namepredict.layer4.locant_calc import atom_locant, locant_str_sort
 from namepredict.tools.re import alpha_order_key
 from namepredict.constants import (
-    BIS_EN, BIS_EN_SET, BIS_ZH, BRIDGE_DIATOMIC_ZH, BRIDGE_SPLIT_SUFFIX_EN, BRIDGE_SPLIT_SUFFIX_ZH,
+    BIS_EN, BIS_EN_SET, BIS_ZH, SIMPLE_ALKOXY_NO_PAREN, BRIDGE_DIATOMIC_ZH, BRIDGE_SPLIT_SUFFIX_EN, BRIDGE_SPLIT_SUFFIX_ZH,
     CATION_YL_STEMS, DIATOMIC_BRIDGE_YL, HALO_Z, ISO_H_PROPS, ISO_NUCLIDE_PROP, MULT_EN, MULT_ZH,
     N_LOCANT_KINDS, N_PREFIX_KINDS, OXO_CENTER_KINDS,
 )
@@ -203,6 +203,7 @@ _STEREO_LEAD_ENCLOSE_RE = re.compile(r"\(\d+[RSEZ](?:,\d+[RSEZ])*\)-")
 
 _BRIDGE_SELF_FENCE = ("sulfanyl", "sulfinyl", "硫基", "亚磺酰基")  # 前端自带方括号时并入同一围栏的桥后缀（P-16.5.1.3）
 _FRONT_TAILS = ("yl", "ylidene", "sulfanyl", "amino")  # 可作桥前端的词尾：-yl/-ylidene 自由价基，或本身即复合桥前端（…amino）
+_FLAT_IMINO_SIMPLE = ("hydroxy",) + tuple(SIMPLE_ALKOXY_NO_PAREN)  # R-imino 融合式的简单含氧前端（hydroxy/methoxy/ethoxyimino，P-66.4.1.2.1）
 _MULT_WRAP_RE = re.compile(r"-\d+-yl$|oyloxy$")  # 须整体加括号的复合词干：位次链基与酰氧基
 
 
@@ -286,8 +287,9 @@ def _flat_bridge_stem(stem: str) -> bool:
     if not (stem or "").endswith(_IMINO_EN):
         return False
     base = stem[: -len(_IMINO_EN)]
-    return (base.endswith(_FRONT_TAILS) and not _stem_has_locant(base)
-            and not _front_needs_enclosure(base, _IMINO_EN))
+    if not (base.endswith(_FRONT_TAILS) or base in _FLAT_IMINO_SIMPLE):  # 前端须为简单取代基（烃基/桥前端/简单烷氧基）
+        return False
+    return not _stem_has_locant(base) and not _front_needs_enclosure(base, _IMINO_EN)
 
 
 def _split_bridge_suffix(stem: str) -> tuple[str, str] | None:

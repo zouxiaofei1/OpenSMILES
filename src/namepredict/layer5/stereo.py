@@ -90,10 +90,18 @@ def ez_for_parent(numbered: dict) -> str:
 
 
 def _parent_locants(parent: dict) -> dict[int, int | str]:
-    """母体原子索引 → 位次（整体编号标签优先，否则链序号）。"""
+    """母体原子索引 → 位次（整体编号标签优先，否则链序号；N-臂的氮位次记 "N"）。"""
     chain = parent.get("chain") or []
     facts = parent.get("numbering_scaffold") or {}
-    return {int(idx): _atom_locant(chain, idx, facts) for idx in chain}
+    out: dict[int, int | str] = {int(idx): _atom_locant(chain, idx, facts) for idx in chain}
+    mol = parent.get("mol")
+    if mol is None:
+        return out
+    for idx in parent.get("owned_atoms") or ():  # 酰胺/磺酰胺的 N-臂不在编号链上：外挂 C=N 的位次须记 N（P-91.2）
+        i = int(idx)
+        if i not in out and mol.GetAtomWithIdx(i).GetAtomicNum() == 7:
+            out[i] = "N"
+    return out
 
 
 def _exo_ez_parts(numbered: dict) -> list[tuple[int | str, str]]:
