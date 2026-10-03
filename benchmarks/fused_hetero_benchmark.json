@@ -9329,8 +9329,8 @@
   {
     "id": "chebi-2315",
     "smiles": "Cc1ccc(S(=O)(=O)O)cc1.N[C@@H]1CCN(c2nc3c(cc2F)c(=O)c(C(=O)O)cn3-c2ccc(F)cc2F)C1",
-    "english_name": "7-[(3R)-3-aminopyrrolidin-1-yl]-1-(2,4-difluorophenyl)-6-fluoro-4-oxo-1,8-naphthyridine-3-carboxylic acid 4-methylbenzenesulfonic acid",
-    "chinese_name": "7-[(3R)-3-氨基吡咯烷-1-基]-1-(2,4-二氟苯基)-6-氟-4-氧代-1,8-萘啶-3-羧酸 4-甲基苯磺酸",
+    "english_name": "7-[(3R)-3-aminopyrrolidin-1-yl]-1-(2,4-difluorophenyl)-6-fluoro-4-oxo-1,8-naphthyridine-3-carboxylic acid; 4-methylbenzenesulfonic acid",
+    "chinese_name": "7-[(3R)-3-氨基吡咯烷-1-基]-1-(2,4-二氟苯基)-6-氟-4-氧代-1,8-萘啶-3-羧酸; 4-甲基苯磺酸",
     "source": "chebi",
     "tier": 4,
     "features": [],

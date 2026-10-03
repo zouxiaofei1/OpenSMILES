@@ -10,7 +10,8 @@ from namepredict.constants import (
     C, H, N, O, OXO_CENTER_KINDS, S,
 )
 from namepredict.layer1.fg_registry import FG_SPECS
-from namepredict.layer1.fg_local_smarts import match_local_fg
+from namepredict.layer1.fg_local_smarts import heterane_chain_ok, match_local_fg
+from namepredict.tools.lambda_notation import nonstandard_bonding
 
 def _heavy(a) -> list:
     """非氢邻居索引。"""
@@ -286,7 +287,7 @@ def _arbitrate_parts(parts: dict, mol: Mol | None = None,
 
 # 局部环境 SMARTS 命中且无非局部判据的 FG 键；顺序沿用历史输出
 _LOCAL_ENTRY_FGS = ("acid", "alcohol", "ester", "amide", "ketone", "amine", "thiol",
-                    "nitrile", "acyl_halide", "cation")
+                    "nitrile", "acyl_halide", "cation", "heterane")
 
 
 def _local_entries(mol: Mol, hits: dict) -> dict:
@@ -300,9 +301,14 @@ def _detect_parts(mol: Mol) -> dict:
     hits = match_local_fg(mol)
     acyl = [_fg_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("acyl", [])]  # 须先于 aldehyde/radical
     heads = frozenset(e["center_idx"] for e in acyl)
+    # 杂原子烃中心不再按自由基计：片段边界哑原子也会命中 radical，但该处杂原子自任母体（P-21）
+    heteranes = frozenset(t[0] for t in hits.get("heterane", []))
     out = _local_entries(mol, hits)
     result = {**out,
-        "radical": [_radical_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("radical", []) if t[0] not in heads],
+        # 杂原子烃：链最小长度不达标者（如仅 2 连硫族、带碳的 N-N）退回常规链/环命名
+        "heterane": [e for e in out.get("heterane", []) if heterane_chain_ok(mol, e["center_idx"])],
+        "radical": [_radical_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("radical", [])
+                    if t[0] not in heads and t[0] not in heteranes],
         "acyl": acyl,
         "aldehyde": [e for e in (_fg_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get("aldehyde", [])) if e["center_idx"] not in heads],
         **oxoacid_lists(mol, hits.get("oxoacid", []))}
@@ -310,12 +316,16 @@ def _detect_parts(mol: Mol) -> dict:
 
 
 def _drop_claimed_cations(parts: dict) -> dict:
-    """已被其它 FG 检测器命中中心的原子不再作阳离子：只留未被 fg 检测器检测到的阳离子。"""
-    cations = parts.get("cation") or []
-    if not cations:
-        return parts
-    claimed = {e["center_idx"] for fg, entries in parts.items() if fg != "cation" for e in entries}
-    return {**parts, "cation": [e for e in cations if e["center_idx"] not in claimed]}
+    """已被其它 FG 检测器命中中心的原子不再作阳离子或杂原子烃中心。"""
+    _SINGLE_CENTER = ("cation", "heterane")  # 二者皆以中心原子自任母体，被别的 FG 认领即让位
+    out = dict(parts)
+    for key in _SINGLE_CENTER:
+        entries = out.get(key) or []
+        if not entries:
+            continue
+        claimed = {e["center_idx"] for fg, items in out.items() if fg not in _SINGLE_CENTER for e in items}
+        out[key] = [e for e in entries if e["center_idx"] not in claimed]
+    return out
 
 def _collect_fgs(mol: Mol) -> dict:
     """聚合官能团条目并构建带类型清单（FG 唯一出口）。"""
@@ -331,4 +341,5 @@ def analyze(mol: Mol) -> dict:
     """分析分子并返回完整的官能团与结构信息 dict（碳信息 + 官能团 + 环事实）。"""
     carbons = [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == C]
     base = {"mol": mol, "carbon_ids": carbons, "n_carbons": len(carbons)}
-    return {**base, **_collect_fgs(mol), **_ring_meta(mol)}
+    return {**base, **_collect_fgs(mol), **_ring_meta(mol),
+            "lambda_atoms": nonstandard_bonding(mol)}

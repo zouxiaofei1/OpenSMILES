@@ -6,7 +6,7 @@ import re
 from namepredict.layer4.locant_calc import atom_locant, locant_str_sort
 from namepredict.tools.re import alpha_order_key
 from namepredict.constants import (
-    BIS_EN, BIS_ZH, BRIDGE_DIATOMIC_ZH, BRIDGE_SPLIT_SUFFIX_EN, BRIDGE_SPLIT_SUFFIX_ZH,
+    BIS_EN, BIS_EN_SET, BIS_ZH, BRIDGE_DIATOMIC_ZH, BRIDGE_SPLIT_SUFFIX_EN, BRIDGE_SPLIT_SUFFIX_ZH,
     CATION_YL_STEMS, DIATOMIC_BRIDGE_YL, MULT_EN, MULT_ZH,
     N_LOCANT_KINDS, N_PREFIX_KINDS, OXO_CENTER_KINDS,
 )
@@ -282,7 +282,7 @@ def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
         mult = "bis" if stem[:1] in "aeiou" else "di"
     if len(subs) > 1 and stem in CATION_YL_STEMS:  # P-16.3.2：阳离子去氢前缀属复合前缀，倍数用 bis(...)：bis(azaniumyl)
         need, mult = True, BIS_EN.get(len(subs), mult)
-    if mult in BIS_EN.values():  # P-16.3.2：bis/tris 的操作数须整体围栏：bis(carboxymethyl)
+    if mult in BIS_EN_SET:  # P-16.3.2：bis/tris 的操作数须整体围栏：bis(carboxymethyl)
         need = True
     if need:
         sp = _split_bridge_suffix(stem)
@@ -582,6 +582,8 @@ def _prefix_for(numbered: dict, kind: str | None, n: int) -> tuple[str, str]:
         return "", ""
     if kind == "radical" and parent.get("radical_anchor_element"):  # 杂原子锚点自由基：烷基取代基已并入组装名（ethyloxy），不再加前缀。
         return "", ""
+    if kind == "heterane" and parent.get("heterane_z") and not parent.get("stem_bare_en"):
+        return "", ""  # 单核杂原子烃：臂名已并入组装名（pentafluoro-lambda6-sulfane）；多核链仍走常规前缀
     mol = parent.get("mol")
     subs = []  # 非同位素取代基保持原对象：_build_prefix 内就地标记（O 侧臂围栏）须回写 numbered
     for s in (numbered.get("substituents") or []):

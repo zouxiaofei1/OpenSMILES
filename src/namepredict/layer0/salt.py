@@ -48,14 +48,6 @@ def _frag_role(mol: Mol) -> tuple[str, str, str] | None:
     return None
 
 
-def _is_halide_ion(mol: Mol) -> bool:
-    """片段是否为单原子卤离子 X⁻。"""
-    if mol.GetNumAtoms() != 1:
-        return False
-    a = mol.GetAtomWithIdx(0)
-    return a.GetAtomicNum() in HALO_Z and a.GetFormalCharge() == -1
-
-
 def _mult_word(base: str | None, n: int, mult: dict) -> str | None:
     """按份数给基名加数量前缀（n=1 不加）；缺词表返回 None。"""
     if not base:
@@ -64,6 +56,29 @@ def _mult_word(base: str | None, n: int, mult: dict) -> str | None:
         return base
     m = mult.get(n)
     return f"{m}{base}" if m else None
+
+
+def _net_charge(frag: Mol) -> int:
+    """片段的净形式电荷。"""
+    return sum(a.GetFormalCharge() for a in frag.GetAtoms())
+
+
+def pair_unique_ions(frags: tuple[Mol, ...]) -> tuple[Mol, Mol, int, int] | None:
+    """唯一可配对的有机阴阳离子 → (阳离子片段, 阴离子片段, n_阳, n_阴)；否则 None。
+
+    要求两侧物种各唯一且整体电荷守恒，供 P-77 二元盐名拼装。
+    """
+    cats = [f for f in frags if _net_charge(f) > 0]
+    ans = [f for f in frags if _net_charge(f) < 0]
+    if not cats or not ans:
+        return None
+    if len({Chem.MolToSmiles(f, isomericSmiles=False) for f in cats}) != 1:
+        return None
+    if len({Chem.MolToSmiles(f, isomericSmiles=False) for f in ans}) != 1:
+        return None
+    if sum(_net_charge(f) for f in frags) != 0:
+        return None
+    return cats[0], ans[0], len(cats), len(ans)
 
 
 def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
@@ -92,13 +107,8 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
             return None
         meta = {"metal": metals[0][0], "metal_zh": metals[0][1],
                 "n_metal": len(metals), "n_org": n_org}
-    elif anions:  # 卤素/多原子阴离子 X⁻：有机物须为阳离子（P-71.2 有机阳离子 + 阴离子）
+    elif anions:  # 阴离子 X⁻：有机阳离子/中性有机碱/有机阴离子均可与之成盐（P-71.2）
         if hx or len(set(anions)) != 1:
-            return None
-        # 中性单有机片段 + 单一卤离子：按卤化物后缀命名（P-71.2/表 2.7 加成物式）
-        neutral_halide = (charge == 0 and n_org == 1 and len(anions) == 1
-                          and any(_is_halide_ion(f) for f in frags))
-        if charge <= 0 and not neutral_halide:
             return None
         en = _mult_word(anions[0][0], len(anions), MULT_EN)
         zh = _mult_word(anions[0][1], len(anions), MULT_ZH)

@@ -7,13 +7,14 @@ from enum import Enum
 from rdkit.Chem import Mol
 
 from namepredict.tools import memo
-from namepredict.constants import Al, As, B, Bi, C, Ga, Ge, In, N, O, P, Pb, S, Sb, Se, Si, Sn, Te, Tl
+from namepredict.constants import Al, As, B, Bi, C, Ga, Ge, H, In, N, O, P, PARENT_HYDRIDE_STEMS, Pb, Po, S, Sb, Se, Si, Sn, Te, Tl
 from namepredict.layer1.functional_group_inventory import (
     OXO_FG_CLASSES, FunctionalGroupClass, FunctionalGroupOccurrence, inventory_from_info,
 )
 from namepredict.layer2.chain_walk import _all_chains_through, _chain_through_two, _longest_chain
 from namepredict.layer1.ring_systems import sssr_rings
 from namepredict.layer4.numbering_engine import narrow
+from namepredict.tools.lambda_notation import is_nonstandard
 
 
 class SkeletonTopology(str, Enum):
@@ -122,6 +123,39 @@ def _cation_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
             for a in _anchors(occurrences)]
 
 
+def _heterane_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
+    """非碳母体氢化物骨架：单核取杂原子本身，多核走同元素链枚举（同碳链的 P-44.3 路径）。
+
+    链候选由 `_all_chains_through` / `_chain_through_two` 在同元素开链子图上枚举，
+    支链与取代基自然退给 L3 递归；P-44.3 再由杂原子数、链长择优。最小链长由 L1 的
+    链 SMARTS 分档保证（硫族/N 取代链 ≥3 连，纯母体氢化物 ≥2 连）。
+    """
+    mol = info["mol"]
+    anchors = _anchors(occurrences)
+    if not anchors:
+        return []
+    covered = {a: frozenset(o.id for o in occurrences if a in o.parent_anchors) for a in anchors}
+    by_z: dict[int, list[int]] = {}
+    for a in anchors:
+        by_z.setdefault(mol.GetAtomWithIdx(a).GetAtomicNum(), []).append(a)
+    out: list[ParentSkeleton] = []
+    for z, atoms in by_z.items():
+        zset = set(atoms)
+        if len(zset) == 1:  # 单原子只认非标准键数（P-14.1.3）：链模式的单端也会命中
+            if is_nonstandard(mol.GetAtomWithIdx(atoms[0])):
+                out.append(ParentSkeleton(SkeletonTopology.ACYCLIC, (atoms[0],), covered[atoms[0]]))
+            continue
+        banned = {a.GetIdx() for a in mol.GetAtoms()
+                  if a.GetAtomicNum() == z and a.GetIdx() not in zset}  # 不越出杂原子烃网络
+        chains = [c for a in atoms for c in _all_chains_through(mol, a, banned, z)]
+        chains += [_chain_through_two(mol, a, b, banned, z)
+                   for i, a in enumerate(atoms) for b in atoms[i + 1:]]
+        for chain in chains:
+            out.append(ParentSkeleton(SkeletonTopology.ACYCLIC, tuple(chain),
+                                      frozenset().union(*(covered[i] for i in chain))))
+    return out
+
+
 def _chain_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
     """枚举去重后的开链骨架候选。"""
     paths = _open_chains(info["mol"], _anchors(occurrences), _demoted_leaf_carbons(info))
@@ -131,6 +165,18 @@ def _chain_candidates(info: dict, occurrences) -> list[ParentSkeleton]:
 
 _SENIOR_ATOMS = (N, P, As, Sb, Bi, Si, Ge, Sn, Pb, B, Al, Ga, In, Tl, O, S, Se, Te, C)
 _SENIORITY = {z: i for i, z in enumerate(reversed(_SENIOR_ATOMS), 1)}  # 元素 → 优先序数（N 最高，C 最低）
+
+
+def skeleton_element(mol: Mol, skeleton: ParentSkeleton) -> int | None:
+    """骨架的单元素原子序数：骨架内（氢除外）全为同一元素时返回之，否则 None。"""
+    zs = {mol.GetAtomWithIdx(i).GetAtomicNum() for i in skeleton.atom_ids} - {H}
+    return next(iter(zs)) if len(zs) == 1 else None
+
+
+def is_noncarbon_skeleton(mol: Mol, skeleton: ParentSkeleton) -> bool:
+    """骨架是否非碳母体氢化物：不含碳且该元素在 P-21 表 2.1 有词干。"""
+    z = skeleton_element(mol, skeleton)
+    return z is not None and z != C and z in PARENT_HYDRIDE_STEMS
 
 
 def _senior_atom(mol: Mol, skeleton: ParentSkeleton) -> int:
@@ -237,4 +283,9 @@ def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroup
     if occurrences and all(o.group_class is FunctionalGroupClass.CATION for o in occurrences):
         # P-73.7(c)：多阳离子中心时取优先元素（N > P > … > O > S），比 P-44 拓扑规则更专
         return SkeletonSelection(tuple(keep_senior_atom(info["mol"], tuple(_cation_candidates(info, occurrences)))))
+    if occurrences and all(o.group_class is FunctionalGroupClass.HETERANE for o in occurrences):
+        # P-21：杂原子烃以杂原子自任母体（P-41 类 21–39 皆高于碳 40）。环候选一并枚举，
+        # 同级元素时由 P-44.2「环优先于链」裁决，避免把含杂原子的环拆成开链。
+        cands = _heterane_candidates(info, occurrences) + _ring_candidates(info, occurrences)
+        return SkeletonSelection(tuple(keep_senior_atom(info["mol"], tuple(cands))))
     return SkeletonSelection(tuple(_chain_candidates(info, occurrences) + _ring_candidates(info, occurrences)))

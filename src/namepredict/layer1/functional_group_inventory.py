@@ -24,6 +24,7 @@ class FunctionalGroupClass(str, Enum):
     ALCOHOL = "alcohol"
     THIOL = "thiol"
     AMINE = "amine"
+    HETERANE = "heterane"  # 非碳母体氢化物（P-21 / P-41 类 21–39）：杂原子自任母体，余者作取代基
     NONE = 'alkane'
 
 
@@ -91,7 +92,7 @@ def center_surr_atoms(payload: dict) -> frozenset[int]:
 
 
 def _cation_atoms(_mol, payload: dict) -> set[int]:
-    """阳离子：特征原子只有阳离子中心本身，周边碳全留给取代基侧。"""
+    """阳离子/杂原子烃：特征原子只有中心本身，周边原子全留给取代基侧。"""
     center = _idx(payload, "center_idx")
     return {center} if center is not None else set()
 
@@ -116,6 +117,7 @@ FG_ATOM_FNS = {  # 不走通用规则的例外类别
     "oxoacid": _oxoacid_atoms,
     "sulfonamide": _oxoacid_atoms,  # 含氧酸合一类的 P-41 酰胺分组，特征原子同一判据
     "cation": _cation_atoms,  # 单核母体阳离子作母体时只占一个原子（P-73.1.1）
+    "heterane": _cation_atoms,  # 杂原子烃母体同理只占杂原子（P-21）：周边臂一律退为取代基
     "nitrile": _nitrile_atoms,  # 腈的 R 侧连接原子不并入所有权（P-66.1.5）
 }
 

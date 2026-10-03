@@ -7,11 +7,12 @@ from rdkit.Chem import BondType
 from namepredict.constants import (
     ALKOXY_YLOXY_EN, ALKOXY_YLOXY_ZH, AMIDO_RETAINED, AZANE_PAREN_SUF, BIS_EN, BIS_ZH, BRIDGE_YL_SUFFIX,
     BRIDGE_ZH_YL_SUFFIX, C, ESTER_O_SIDE_KINDS, N, O, OXO_CENTER_KINDS, S,
-    BRIDGE_FUSION_YL, CATION_STEMS, MONONUCLEAR_BRIDGE, MONONUCLEAR_HYDRIDES,
+    BRIDGE_FUSION_YL, CATION_STEMS, HYDRIDE_YL_FORMS, MONONUCLEAR_BRIDGE, MONONUCLEAR_HYDRIDES,
     MONONUCLEAR_YL, MONONUCLEAR_ZERO_YL, MULT_EN,
     MULT_ZH, PHOSPHORYL_STEMS, ZH_DIGITS, zh_bridge_root,
 )
 from namepredict.tools.anchored_table import carbamoyl_prefix_name
+from namepredict.tools.lambda_notation import lambda_mark
 from namepredict.tools.re import SUB_LOCANT_RE, alpha_order_key
 from namepredict.layer5.chain_engine import (
     _ACYL_HALIDE_BY_HAL, _BENZENE_RETAINED, _KIND_TABLE, _benzene_retained, _chain_names,
@@ -60,8 +61,9 @@ def _oxido_arm(s: dict, mol) -> tuple[str, str] | None:
     return None
 
 
-def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None) -> tuple[str, str] | None:
-    """P 酰基前缀的取代基拼接（P-67.1.4.1.1.5，简单基平铺/括起）。"""
+def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None,
+                          zh_tail: str = "基", hyphen_join: bool = False) -> tuple[str, str] | None:
+    """P 酰基前缀的取代基拼接（P-67.1.4.1.1.5，简单基平铺/括起）；杂原子烃母体共用。"""
 
     pairs: list[tuple[str, str]] = []
     for s in subs:
@@ -78,8 +80,8 @@ def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None
         m_en, m_zh = MULT_EN.get(m), MULT_ZH.get(m)
         if not m_en or not m_zh:
             return None
-        return f"{m_en}{en}{stem_en}", f"{m_zh}{zh}{stem_zh}基"
-    compound = any("(" in r[0] or "[" in r[0] for r in rows)  # 含自身带括号的复合组分：逐组分连字符 + 方括号围栏（P-16.5.2）
+        return f"{m_en}{en}{stem_en}", f"{m_zh}{zh}{stem_zh}{zh_tail}"
+    compound = hyphen_join or any("(" in r[0] or "[" in r[0] for r in rows)  # 含自身带括号的复合组分：逐组分连字符 + 方括号围栏（P-16.5.2）
     en_parts: list[str] = []
     zh_parts: list[str] = []
     for i, (en, zh, m, _) in enumerate(rows):
@@ -100,7 +102,7 @@ def _phosphoryl_sub_names(subs: list[dict], stem_en: str, stem_zh: str, mol=None
         en_parts.append(en)
         zh_parts.append(zh if i == 0 else ("-" if zh.startswith("[") else "") + zh)
     joiner = "-" if compound else ""
-    return joiner.join(en_parts) + stem_en, "".join(zh_parts) + stem_zh + "基"
+    return joiner.join(en_parts) + stem_en, "".join(zh_parts) + stem_zh + zh_tail
 
 
 def _azane_acyl_stereo_lead(en: str) -> bool:
@@ -304,6 +306,79 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     zh_tail = groups[0][1] if groups[0][2] == 1 else MULT_ZH[groups[0][2]] + groups[0][1]
     return (en_tail + "".join(f"{MULT_EN[r[2]]}({r[0]})" if r[2] > 1 else f"({r[0]})" for r in groups[1:]) + zero[0],
             zh_tail + "".join(f"{MULT_ZH[r[2]]}({r[1]})" if r[2] > 1 else f"({r[1]})" for r in groups[1:]) + zero[1])
+
+
+def _heterane_yl_suffix(parent: dict) -> str | None:
+    """杂原子烃骨架连哑原子（片段）时返回取代基词尾：单键 'yl'、双键 'ylidene'，非片段 None。"""
+    mol, chain = parent.get("mol"), parent.get("chain") or ()
+    if mol is None or not chain:
+        return None
+    for n in mol.GetAtomWithIdx(chain[0]).GetNeighbors():
+        if n.GetAtomicNum() == 0:
+            b = mol.GetBondBetweenAtoms(chain[0], n.GetIdx())
+            return "ylidene" if b is not None and b.GetBondTypeAsDouble() == 2.0 else "yl"
+    return None
+
+
+def _heterane_to_yl(en: str, zh: str, suffix: str | None) -> tuple[str, str]:
+    """杂原子烃 free 母体名 → -yl / -ylidene 取代基名（P-21 表 2.1 / P-29），λ 段原样保留。"""
+    if not suffix:
+        return en, zh
+    for free_en, free_zh, yl_en, yl_zh, ylidene_en, ylidene_zh in HYDRIDE_YL_FORMS:
+        if not en.endswith(free_en) or not zh.endswith(free_zh):
+            continue
+        if suffix == "ylidene":
+            return en[: -len(free_en)] + ylidene_en, zh[: -len(free_zh)] + ylidene_zh
+        return en[: -len(free_en)] + yl_en, zh[: -len(free_zh)] + yl_zh
+    return en, zh
+
+
+def _heterane_chain_yl(numbered: dict, names: tuple[str, str]) -> tuple[str, str]:
+    """杂原子链片段（带哑原子）→ -yl 名（P-29.2）：disilane → disilanyl、pentasilane → pentasilan-2-yl。"""
+    parent = numbered.get("parent") or {}
+    mol, chain = parent.get("mol"), list(parent.get("chain") or ())
+    if mol is None or len(chain) < 2:
+        return names
+    pos = order = None
+    for i, idx in enumerate(chain):
+        for nb in mol.GetAtomWithIdx(idx).GetNeighbors():
+            if nb.GetAtomicNum() == 0:
+                b = mol.GetBondBetweenAtoms(idx, nb.GetIdx())
+                pos = i
+                order = 2.0 if b is not None and b.GetBondTypeAsDouble() == 2.0 else 1.0
+    if pos is None:  # 非片段（整分子）：保留 free 名
+        return names
+    tail_en, tail_zh = ("ylidene", "亚基") if order == 2.0 else ("yl", "基")
+    omit = len(chain) <= 3  # 二核/三核链的单点自由价省位次（P-14.3.4.2(d)）
+    loc = atom_locant(chain, chain[pos], parent.get("numbering_scaffold")) if not omit else None
+    mid_en = "" if loc is None else f"-{loc}-"
+    mid_zh = "" if loc is None else f"-{loc}-"
+    en = names[0][:-3] + "an" + mid_en + tail_en if names[0].endswith("ane") else names[0] + tail_en
+    zh = names[1] + mid_zh + tail_zh if names[1].endswith("烷") else names[1] + tail_zh
+    return en, zh
+
+
+def _heterane_names(numbered: dict) -> tuple[str, str] | None:
+    """非碳母体氢化物（P-21）：代基前缀 + λn + 氢化物词干（pentafluoro-lambda6-sulfane）。"""
+    parent = numbered.get("parent") or {}
+    stem_en, stem_zh = parent.get("stem_en"), parent.get("stem_zh")
+    if not stem_en or not stem_zh:
+        return None
+    lam = parent.get("lambda_n")  # 键数偏离标准值时带 λ（P-14.1.3），标准价不带
+    lam_en = lambda_mark(lam, en=True) if lam else ""
+    lam_zh = lambda_mark(lam) if lam else ""
+    subs = [s for s in (numbered.get("substituents") or []) if s.get("en") and s.get("zh")]
+    if not subs:  # 无取代基：裸母体氢化物（sulfane / λ4-sulfane）
+        free_en = f"{lam_en}-{stem_en}" if lam_en else stem_en
+        free_zh = f"{lam_zh}-{stem_zh}" if lam_zh else stem_zh
+    else:  # 代基前缀与 λ、λ 与词干之间均以连字符分段：pentafluoro-lambda6-sulfane（P-21.1.2.1）
+        tail_en = f"-{lam_en}-{stem_en}" if lam_en else stem_en
+        tail_zh = f"-{lam_zh}-{stem_zh}" if lam_zh else stem_zh
+        hit = _phosphoryl_sub_names(subs, tail_en, tail_zh, parent.get("mol"), zh_tail="", hyphen_join=True)
+        if hit is None:
+            return None
+        free_en, free_zh = hit
+    return _heterane_to_yl(free_en, free_zh, _heterane_yl_suffix(parent))
 
 
 _STEM_H_PREFIX_RE = re.compile(r"^(?:\d+[a-z]?H[-,])+")  # 词干自带指示氢前缀（1H- / 3H,4H- / 7H-…）
@@ -783,14 +858,19 @@ def _names_for(kind: str, n: int, numbered: dict) -> tuple[str, str] | None:
         return retained
     if kind == "radical" and parent.get("radical_anchor_element"):
         return _mononuclear_radical_names(numbered)
+    if kind == "heterane" and parent.get("heterane_z") and not parent.get("stem_bare_en"):
+        return _heterane_names(numbered)  # 单核杂原子烃；多核链由下方裸词干分支交链引擎
     entry = _KIND_TABLE.get(kind)
     if kind == "acyl_halide":
         entry = _ACYL_HALIDE_BY_HAL.get(parent.get("hal_z")) or entry
-    if parent.get("stem_bare_en") and kind in ("bridged", "alkane", *_SPIRO_KINDS):
+    if parent.get("stem_bare_en") and kind in ("bridged", "alkane", "heterane", *_SPIRO_KINDS):
         # 无主特征基团的环系（螺环/桥环 / >10 元杂单环）：须走链引擎才会渲染 ene/yne 位次
-        return _chain_names(replace(_KIND_TABLE["alkane"],
+        bare = _chain_names(replace(_KIND_TABLE["alkane"],
                                     stem=(parent["stem_bare_en"], parent["stem_bare_zh"]),
                                     coda=""), n, numbered)
+        if bare is not None and kind == "heterane":
+            return _heterane_chain_yl(numbered, bare)  # 链作取代基时转 -yl（disilane → disilanyl）
+        return bare
     if entry is not None:
         if kind == "ester" and parent.get("thio_side"):  # P-65.6.3.3.7.1 硫代羧酸 S-酯：thioate/硫酯词尾，无 C1/C2 保留名
             entry = replace(entry, coda="ane", en_suf="thioate", zh_suf="硫",

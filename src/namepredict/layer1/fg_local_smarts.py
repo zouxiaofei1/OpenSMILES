@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from rdkit import Chem
 
-from namepredict.constants import Br, Cl, F, I, N, O, P, S
+from namepredict.constants import B, Br, C, Cl, F, I, N, O, P, Po, S, Se, STANDARD_BONDING_NUMBERS, Te
 
 # 酸性氧：与单一碳相连的羟基氧，或羧酸盐阴离子氧
 _ACID_O = "[$([#8;H1]),$([#8;-1;X1;H0])]"
@@ -38,6 +38,75 @@ def _cation_local(z: int) -> str:
     """单核阳离子中心的局部模式：非环、半径 1 内无负形式电荷原子。"""
     # 负电荷邻居闸排除硝基/叠氮/N-氧化物/异氰/高氯酸根等"阳离子寄居在别的基团里"的结构
     return "[#%d;+1;!R;!$([#%d;+1]~[-1])]" % (z, z)
+
+
+# 非碳母体氢化物（P-21 / P-14.1）：中性杂原子且键数偏离标准值。标准价的自任母体情形
+# （如膦 P(III)、硫醚 S(II)）由 P-41 类 41 排在碳之后，不在此列，故只取 v > 标准值。
+_HETERANE_V = (3, 4, 5, 6, 7)  # 非标准键数上界；v 为 RDKit 总价（含氢），即 P-14.1.1 的键数
+_HETERANE_Z = tuple(z for z in STANDARD_BONDING_NUMBERS if z != C)
+
+
+HETERANE_CHAIN_Z = tuple(z for z in STANDARD_BONDING_NUMBERS if z not in (C, B))  # 硼烷按 P-21.2.2 排除
+
+
+def _oxo_guard(z: int) -> str:
+    """排除带 =O 的中心（归含氧酸通路）；非硫元素另排除 =S（归磷硫酰通路），硫自身的 S=S 属链不饱和。"""
+    bans = ("[#8]",) if z == 16 else ("[#8]", "[#16]")
+    return "".join(f";!$([#{z}]={b})" for b in bans)
+
+
+def _heterane_local(z: int, v: int) -> str:
+    """杂原子烃中心的局部模式：中性、键数为 v、不带 oxo/thioxo。"""
+    return f"[#{z};v{v};+0{_oxo_guard(z)}]"
+
+
+HETERANE_MIN_CHAIN = {N: 3, O: 3, S: 3, Se: 3, Te: 3, Po: 3}  # 取代链须 ≥3 连的元素：硫族 1–2 连续原子不作母体氢化物（P-68.4.0），N 参照 P-68.3.1.4.1 的 triazane 起
+HETERANE_CHAIN_MIN_DEFAULT = 2  # 其余元素（Si/Ge/Sn/Pb、P/As/Sb/Bi 等）：≥2 连即可带取代
+
+
+def _is_parent_hydride(mol, comp: set[int], z: int) -> bool:
+    """该同元素集合是否为「由氢饱和」的母体氢化物（除链内原子外只连氢，P-21.2.2）。"""
+    for i in comp:
+        for n in mol.GetAtomWithIdx(i).GetNeighbors():
+            if n.GetAtomicNum() not in (1, z):
+                return False
+    return True
+
+
+def heterane_chain_ok(mol, idx: int) -> bool:
+    """该原子能否作杂原子链中心：单原子认非标准键数；多原子按元素最小链长（P-21.2.2 / P-68.4.0）。
+
+    取代链须达元素最小链长（硫族与 N 为 3 连），纯母体氢化物只需 2 连。
+    """
+    from namepredict.tools.lambda_notation import is_nonstandard
+
+    if is_nonstandard(mol.GetAtomWithIdx(idx)):
+        return True  # 非标准键数即单核杂原子烃（P-14.1.3），不受链长度约束
+    z = mol.GetAtomWithIdx(idx).GetAtomicNum()
+    comp, stack = {idx}, [idx]
+    while stack:
+        for n in mol.GetAtomWithIdx(stack.pop()).GetNeighbors():
+            if n.GetAtomicNum() == z and n.GetFormalCharge() == 0 and n.GetIdx() not in comp:
+                comp.add(n.GetIdx())
+                stack.append(n.GetIdx())
+    if len(comp) == 1:
+        return False  # 标准键数的孤立杂原子不自任母体（硫醚/醚等归 P-41 类 41）
+    if _is_parent_hydride(mol, comp, z):
+        return True
+    return len(comp) >= HETERANE_MIN_CHAIN.get(z, HETERANE_CHAIN_MIN_DEFAULT)
+
+
+def _heterane_chain_local(z: int) -> tuple[str, ...]:
+    """杂原子链中心（P-21.2.2）：存在同元素链即命中；取代链的最小链长按元素分档。
+
+    写成单原子递归查询而非 `A~A`：对称双原子模式会被 GetSubstructMatches 的 uniquify 折叠成一条。
+    """
+    base = f"[#{z};+0;!R{_oxo_guard(z)}"  # !R：P-21.2.2 仅限无环链，环内杂原子走 Hantzsch-Widman/环系路径
+    nz = f"[#{z};+0]"  # 链上邻居也须中性：叠氮 N=[N+]=[N-] 一类带电链不是母体氢化物
+    pats = [f"{base};!$([#{z}]~[!#1;!#{z}]);$([#{z}]~{nz})]"]      # 纯母体氢化物：≥2 连
+    pats.append(f"{base};$([#{z}]~{nz}~{nz})]" if z in HETERANE_MIN_CHAIN
+                else f"{base};$([#{z}]~{nz})]")                     # 带取代/支链：≥3 连或 ≥2 连
+    return tuple(pats)
 
 
 FG_SMARTS: tuple[tuple[str, str], ...] = (
@@ -84,6 +153,11 @@ FG_SMARTS: tuple[tuple[str, str], ...] = (
     ("amine", "[#7;!R;!a;+0;H0;!$([#7](~[#6])(~[#6])(~[#6])~[#6])](~[#6])(~[#6])~[#6]"),
     # 单核母体阳离子（P-73.1.1）：每元素一条，中心即阳离子原子
     *[("cation", _cation_local(z)) for z in CATION_Z],
+    # 非碳母体氢化物（P-21）：每 (元素, 非标准键数) 一条，中心即杂原子
+    *[("heterane", _heterane_local(z, v)) for z in _HETERANE_Z for v in _HETERANE_V
+      if v > STANDARD_BONDING_NUMBERS[z]],
+    # 杂原子链母体（P-21.2.2）：每元素一条（或多条分档），命中即该原子属于一条均一杂原子链
+    *[("heterane", p) for z in HETERANE_CHAIN_Z for p in _heterane_chain_local(z)],
 )
 
 

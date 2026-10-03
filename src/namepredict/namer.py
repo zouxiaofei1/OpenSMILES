@@ -12,8 +12,9 @@ from namepredict.tools import memo
 from namepredict.tools.common_names import CommonNameCache
 from namepredict.constants import BIS_EN, BIS_ZH, N_PREFIX_KINDS, OXO_CENTER_KINDS
 from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer0.salt import dissociate_salt
+from namepredict.layer0.salt import _frag_role, dissociate_salt, pair_unique_ions
 from namepredict.layer1.analyzer import analyze
+from namepredict.tools.re import component_order_key
 from namepredict.layer2.parent_select import finalize_parent_ownership, select_parent
 from namepredict.layer3.substituent_extractor import extract_substituents
 from namepredict.layer4.locant_calc import prefix_locant_set, suffix_locant_set
@@ -177,42 +178,57 @@ def _apply_salt_suffix(result: NameResult, salt: dict) -> NameResult:
     return out
 
 
-def _join_fragment_names(mol, result: NameResult, *, cache) -> tuple[str, str] | None:
-    """非简单盐的多片段体系：母体片段名在前、其余独立片段名顺次后拼（P-71），防整段丢弃。"""
-    chain = set((result.meta or {}).get("parent_chain") or ())
-    if not result.success or not chain or not (result.en or "").strip():
-        return None
-    tuples = Chem.GetMolFrags(mol)
-    if len(tuples) < 2:
-        return None
-    pf = next((i for i, t in enumerate(tuples) if chain & set(t)), None)  # 母体所在片段
-    if pf is None:
-        return None
-    frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
-    names: list[tuple[str, str]] = [(result.en or "", result.zh or "")]  # 母体名居首，其余按片段顺序
-    for i, frag in enumerate(frags):
-        if i == pf:
-            continue
-        sub = _name_mol(frag, cache=cache)
-        if not sub.success or not (sub.en or "").strip() or not (sub.zh or "").strip():
-            return None
-        names.append((sub.en, sub.zh))
+COMPONENT_SEP = "; "  # 无法配对的剩余组分之间的连接符
+
+
+def _name_component(frag, *, cache) -> tuple[str, str]:
+    """单片段组分名：盐词表 → 独立命名 → 规范 SMILES 兜底（绝不丢弃）。"""
+    role = _frag_role(frag)
+    if role is not None:
+        return role[1], role[2]
+    sub = _name_mol(frag, cache=cache)
+    if sub.success and (sub.en or "").strip() and (sub.zh or "").strip():
+        return sub.en, sub.zh
+    smi = Chem.MolToSmiles(frag)
+    return smi, smi
+
+
+def _merge_repeats(names: list[tuple[str, str]]) -> tuple[list[str], list[str]]:
+    """重复组分加倍数围栏（P-16.3.2），返回 (en 词条, zh 词条)。"""
     counts = Counter(n_en for n_en, _ in names)
     seen: set[str] = set()
-    parts_en, parts_zh = [], []
+    out_en, out_zh = [], []
     for n_en, n_zh in names:
         if n_en in seen:
             continue
         seen.add(n_en)
         k = counts[n_en]
         b_en, b_zh = BIS_EN.get(k), BIS_ZH.get(k)
-        if k > 1 and b_en and b_zh:  # 重复片段整体围栏加倍数（P-16.3.2）
-            parts_en.append(f"{b_en}({n_en})")
-            parts_zh.append(f"{b_zh}({n_zh})")
+        if k > 1 and b_en and b_zh:
+            out_en.append(f"{b_en}({n_en})")
+            out_zh.append(f"{b_zh}({n_zh})")
             continue
-        parts_en.extend([n_en] * k)
-        parts_zh.extend([n_zh] * k)
-    return " ".join(parts_en), " ".join(parts_zh)
+        out_en.extend([n_en] * k)
+        out_zh.extend([n_zh] * k)
+    return out_en, out_zh
+
+
+def _name_components(mol, *, cache) -> tuple[str, str] | None:
+    """多片段组分名拼装：唯一配对阴阳离子走 P-77 二元名，其余按字母序以 '; ' 连接。"""
+    frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
+    if len(frags) < 2:
+        return None  # 单片段由常规管线命名（防递归）
+    pair = pair_unique_ions(frags)
+    if pair is not None:  # P-77.1.1 二元盐名：阳离子名 + 阴离子名
+        cat, an, n_cat, n_an = pair
+        c_en, c_zh = _name_component(cat, cache=cache)
+        a_en, a_zh = _name_component(an, cache=cache)
+        parts = _merge_repeats([(c_en, c_zh)] * n_cat + [(a_en, a_zh)] * n_an)
+        return " ".join(parts[0]), " ".join(parts[1])
+    names = [_name_component(f, cache=cache) for f in frags]
+    names.sort(key=lambda t: component_order_key(t[0]))  # 组分名字母序（忽略位次/括号/倍增前缀）
+    parts = _merge_repeats(names)
+    return COMPONENT_SEP.join(parts[0]), COMPONENT_SEP.join(parts[1])
 
 
 def _name_mol(
@@ -238,11 +254,12 @@ def _name_mol(
     info["salt"] = salt  # 磷酸母体 producer 的盐门控与 salt_meta 来源
     result = _run_candidates(info, t0=t0, cache=run_cache)
     result = _apply_salt_suffix(result, salt)
-    if not salt:  # 非简单盐的多片段：拼接各独立片段名，避免整段丢弃
-        joined = _join_fragment_names(mol, result, cache=run_cache)
+    if not salt:  # 多片段体系：配对阴阳离子成盐，其余组分按字母序拼接，绝不丢弃
+        joined = _name_components(mol, cache=run_cache)
         if joined is not None:
             result = copy.copy(result)
             result.en, result.zh = joined
+            result.success = True
     if salt and result.success:
         result.meta = {**(result.meta or {}), "salt": salt}
     return result

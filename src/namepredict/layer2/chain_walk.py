@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rdkit.Chem import Mol
 
-from namepredict.tools.chain import _carbon_neighbors, _longest_from
+from namepredict.tools.chain import _carbon_neighbors, _element_neighbors, _longest_from
 
 
 def _side_count(mol: Mol, chain: list[int]) -> int:
@@ -26,42 +26,48 @@ def _better(mol: Mol, cand: list[int], best: list[int]) -> bool:
     return _side_count(mol, cand) > _side_count(mol, best)
 
 
-def _seed_carbons(mol: Mol, banned: set[int] = frozenset()) -> list[int]:
-    """最长链种子降集：开链子图为多碳树时仅用开链叶，否则回退全碳。"""
-    carbons = [a.GetIdx() for a in mol.GetAtoms()
-               if a.GetAtomicNum() == 6 and a.GetIdx() not in banned]  # 全碳原子索引
-    if not carbons:
+def _seed_atoms(mol: Mol, z: int = 6, banned: set[int] = frozenset()) -> list[int]:
+    """最长链种子降集：开链子图为多原子树时仅用开链叶，否则回退全集。"""
+    atoms = [a.GetIdx() for a in mol.GetAtoms()
+             if a.GetAtomicNum() == z and a.GetIdx() not in banned]  # 全同元素原子索引
+    if not atoms:
         return []
     has_ring_root = False
     leaves: list[int] = []
-    for c in carbons:
+    for c in atoms:
         atom = mol.GetAtomWithIdx(c)
-        nbs = _carbon_neighbors(mol, c, banned)
+        nbs = _element_neighbors(mol, c, z, banned)
         if atom.IsInRing() or atom.GetIsAromatic():
             if nbs:
                 has_ring_root = True
         elif len(nbs) == 1:
             leaves.append(c)
-    return carbons if (has_ring_root or not leaves) else leaves
+    return atoms if (has_ring_root or not leaves) else leaves
 
 
-def _longest_chain(mol: Mol, banned: set[int] = frozenset()) -> list[int]:
-    """返回分子中最长碳链（降集种子等价加速）。"""
+def _seed_carbons(mol: Mol, banned: set[int] = frozenset()) -> list[int]:
+    """最长碳链的种子降集。"""
+    return _seed_atoms(mol, 6, banned)
+
+
+def _longest_chain(mol: Mol, banned: set[int] = frozenset(), z: int = 6) -> list[int]:
+    """返回分子中最长同元素链（降集种子等价加速）。"""
     best: list[int] = []
-    for c in _seed_carbons(mol, banned):
-        path = _longest_from(mol, c, banned=banned)
+    for c in _seed_atoms(mol, z, banned):
+        path = _longest_from(mol, c, banned=banned, z=z)
         if _better(mol, path, best):
             best = path
     return best
 
 
-def _component_leaves(mol: Mol, neighbor: int, forbid: int, banned: set[int] = frozenset()) -> tuple[dict, list[int], int]:
-    """DFS neighbor 开链碳组件（禁走 forbid），返回父表与最深叶。"""
+def _component_leaves(mol: Mol, neighbor: int, forbid: int, banned: set[int] = frozenset(),
+                      z: int = 6) -> tuple[dict, list[int], int]:
+    """DFS neighbor 开链同元素组件（禁走 forbid），返回父表与最深叶。"""
     parent: dict = {neighbor: forbid}
     order = [neighbor]
     dist = {neighbor: 1}
     for x in order:
-        for y in _carbon_neighbors(mol, x, banned):
+        for y in _element_neighbors(mol, x, z, banned):
             if y == forbid or y in parent:
                 continue
             parent[y] = x
@@ -69,7 +75,7 @@ def _component_leaves(mol: Mol, neighbor: int, forbid: int, banned: set[int] = f
             order.append(y)
     maxd, leaves = 0, []
     for x in order:
-        if any(y != forbid and parent.get(y) == x for y in _carbon_neighbors(mol, x, banned)):
+        if any(y != forbid and parent.get(y) == x for y in _element_neighbors(mol, x, z, banned)):
             continue
         d = dist[x]
         if d > maxd:
@@ -89,10 +95,11 @@ def _component_path(parent: dict, leaf: int, root: int) -> list[int]:
     return [root] + list(reversed(seg))
 
 
-def _all_chains_through(mol: Mol, c_idx: int, banned: set[int] = frozenset()) -> list[list[int]]:
+def _all_chains_through(mol: Mol, c_idx: int, banned: set[int] = frozenset(),
+                        z: int = 6) -> list[list[int]]:
     """返回 c_idx 的等长最长开链，平局臂全枚举（P-44.4/P-45.2）。"""
-    neighbors = _carbon_neighbors(mol, c_idx, banned)
-    comps = {n: _component_leaves(mol, n, c_idx, banned) for n in neighbors}
+    neighbors = _element_neighbors(mol, c_idx, z, banned)
+    comps = {n: _component_leaves(mol, n, c_idx, banned, z) for n in neighbors}
     if not comps:
         return [[c_idx]]
     chains: set[tuple[int, ...]] = set()
@@ -122,13 +129,14 @@ def _all_chains_through(mol: Mol, c_idx: int, banned: set[int] = frozenset()) ->
     return [list(c) for c in chains]
 
 
-def _chain_through_two(mol: Mol, a: int, b: int, banned: set[int] = frozenset()) -> list[int]:
+def _chain_through_two(mol: Mol, a: int, b: int, banned: set[int] = frozenset(),
+                       z: int = 6) -> list[int]:
     """返回同时穿过 c1、c2 的最长链。
 
-    开链碳子图是森林（_carbon_neighbors 排除成环与芳香碳），故 a→b 路径唯一，
+    开链同元素子图是森林（_element_neighbors 排除成环与芳香原子），故 a→b 路径唯一，
     直接复用 _component_leaves 的父表，无需另写一份 BFS 与路径重建。
     """
     if a == b:
         return [a]
-    parent, _, _ = _component_leaves(mol, a, -1, banned)
+    parent, _, _ = _component_leaves(mol, a, -1, banned, z)
     return _component_path(parent, b, a) if b in parent else [a]

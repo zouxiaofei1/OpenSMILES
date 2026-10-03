@@ -7,9 +7,11 @@ from enum import Enum
 from namepredict.constants import (
     CATION_FREE_STEMS, HALO_Z, MONONUCLEAR_BY_ELEMENT, MONONUCLEAR_HYDRIDES,
     N, NITROGEN_STEM_BY_FREE_DOUBLE,
-    O, OXO_CENTER_KINDS, PHOSPHORUS_STEM_BY_OXO, S, SULFUR_STEM_BY_OXO,
-    cation_parent_names,
+    O, OXO_CENTER_KINDS, PARENT_HYDRIDE_STEMS, PHOSPHORUS_STEM_BY_OXO, S,
+    STANDARD_BONDING_NUMBERS, SULFUR_STEM_BY_OXO,
+    cation_parent_names, hydride_chain_stem,
 )
+from namepredict.tools.lambda_notation import bonding_number
 from namepredict.layer1.analyzer import _alkoxy_c_of, _double_bonded_o_idxs
 from namepredict.layer1.functional_group_inventory import FunctionalGroupClass, OXO_FG_CLASSES
 from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, _anchors
@@ -280,6 +282,27 @@ def _chain_fields(selection, occurrences, mol) -> dict:
             **_expression_flags(selection, occurrences, mol)}
 
 
+def _hetero_chain_polys(mol, atom_set: set[int], known_d: list[dict], known_t: list[dict]):
+    """杂原子链内的多重键（两端都在链内，去掉 info 已收的 C=C/C≡C）。"""
+    kd = {frozenset((d["c1"], d["c2"])) for d in known_d}
+    kt = {frozenset((t["c1"], t["c2"])) for t in known_t}
+    dbs: list[dict] = []
+    tbs: list[dict] = []
+    for b in mol.GetBonds():
+        if b.GetIsAromatic():
+            continue
+        i, j = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
+        if i not in atom_set or j not in atom_set:
+            continue
+        order = b.GetBondTypeAsDouble()
+        key = frozenset((i, j))
+        if order == 2 and key not in kd:
+            dbs.append({"c1": i, "c2": j})
+        elif order == 3 and key not in kt:
+            tbs.append({"c1": i, "c2": j})
+    return dbs, tbs
+
+
 def _unsat_bond_fields(dbs: list[dict], tbs: list[dict]) -> dict:
     """不饱和度 → 双键/三键字段字典（单数单键、列表多键，烯/炔可共存）。"""
     fields = {}
@@ -300,6 +323,9 @@ def _chain_unsat_fields(info: dict, skeleton: ParentSkeleton, fields: dict) -> d
         return fields  # P-24.5+：不饱和在各组分名内，母体层不再出 ene/yne 位次
     atom_set = set(skeleton.atom_ids)
     dbs, tbs = _chain_polys(info, atom_set)
+    if fields.get("stem_bare_en"):  # 杂原子链（P-21.2.2）：重键在链内杂原子之间，不在 info 的 C=C/C≡C 表里
+        hd, ht = _hetero_chain_polys(info["mol"], atom_set, dbs, tbs)
+        dbs, tbs = dbs + hd, tbs + ht
     if fields.get("scaffold_id") in ("carbocycle", "bridged", "mono_spiro"):
         dbs = dbs + _kekule_ring_dbs(info, atom_set, dbs)
     implied = _implied_ring_atoms(fields, atom_set)
@@ -397,8 +423,16 @@ def _mononuclear_radical(info: dict, skeleton: ParentSkeleton,
     charged = atom.GetFormalCharge() == 1 and atom.GetAtomicNum() in CATION_FREE_STEMS
     stem_en = (CATION_FREE_STEMS.get(atom.GetAtomicNum()) if charged
                else MONONUCLEAR_BY_ELEMENT.get(atom.GetAtomicNum()))
-    if stem_en is None:
-        return None
+    if stem_en is None:  # 其余元素（Si/Ge/Sn/Pb、B 族、卤素…）：按杂原子烃处理（P-21.1），取名交 _heterane_names
+        z = atom.GetAtomicNum()
+        forms = PARENT_HYDRIDE_STEMS.get(z)
+        if forms is None:
+            return None
+        n = bonding_number(atom)
+        lam = n if n != STANDARD_BONDING_NUMBERS.get(z) else None
+        return replace(skeleton, atom_ids=(anchors[0],)), {
+            "heterane_z": z, "lambda_n": lam, "stem_en": forms[0], "stem_zh": forms[1],
+            "single_atom_skeleton": True}
     element = MONONUCLEAR_HYDRIDES[stem_en][0]
     if charged:  # 阳离子词干已由电荷定死（P-73.1.1），不再并入氧化态/自由价键级
         pass
@@ -431,6 +465,35 @@ def _mononuclear_cation(info: dict, skeleton: ParentSkeleton,
         stem_en = "oxo" + stem_en
     new = replace(skeleton, atom_ids=(anchors[0],))
     return new, {"stem_en": stem_en, "stem_zh": names[1], "single_atom_skeleton": True}
+
+
+def _heterane_parent(info: dict, skeleton: ParentSkeleton,
+                     occurrences) -> tuple[ParentSkeleton, dict] | None:
+    """杂原子烃收敛为母体氢化物骨架（P-21）：单核用氢化物名，多核用均一链裸词干。"""
+    mol = info["mol"]
+    anchors = tuple(sorted({i for o in occurrences for i in o.parent_anchors}))
+    if not anchors:
+        return None
+    atoms = tuple(skeleton.atom_ids)  # 用 L2 枚举出的链（支链不在内），勿用全部 anchor 覆盖
+    zs = {mol.GetAtomWithIdx(i).GetAtomicNum() for i in atoms}
+    if len(zs) != 1:
+        return None
+    z = next(iter(zs))
+    stems = PARENT_HYDRIDE_STEMS.get(z)
+    if stems is None:
+        return None
+    if len(atoms) == 1:  # 单核（P-21.1.2）：键数非标准时带 λ
+        n = bonding_number(mol.GetAtomWithIdx(atoms[0]))
+        lam = n if n != STANDARD_BONDING_NUMBERS.get(z) else None
+        return skeleton, {"heterane_z": z, "lambda_n": lam,
+                          "stem_en": stems[0], "stem_zh": stems[1], "single_atom_skeleton": True}
+    bare = hydride_chain_stem(z, len(atoms))  # 多核均一链（P-21.2.2）：裸词干交链引擎拼 ene/yne
+    if bare is None:
+        return None
+    lams = {i: v for i, v in ((i, bonding_number(mol.GetAtomWithIdx(i))) for i in atoms)
+            if v != STANDARD_BONDING_NUMBERS.get(z)}
+    return skeleton, {"heterane_z": z, "stem_bare_en": bare[0], "stem_bare_zh": bare[1],
+                      "lambda_atoms": lams, "single_atom_skeleton": False}
 
 
 def _radical_free_order(info: dict, occurrences) -> int:
@@ -487,6 +550,8 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         free_order = _radical_free_order(info, occurrences)
         if mono is not None:
             skeleton, extra = mono
+            if extra.get("heterane_z"):  # 非碳单核母体氢化物：转杂原子烃 kind，由 _heterane_names 出 -yl
+                kind = "heterane"
         elif free_order > 1:  # 碳锚点自由价非单键（*=C< / *#C）：链引擎出 -ylidene/-ylidyne
             extra = {"free_valence_order": free_order}
     if kind == "cation":
@@ -494,6 +559,11 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         if mono is None:
             return None
         skeleton, extra = mono
+    if kind == "heterane":
+        het = _heterane_parent(info, skeleton, occurrences)
+        if het is None:
+            return None
+        skeleton, extra = het
     fields = _chain_unsat_fields(info, skeleton, {**_chain_fields(selection, occurrences, info.get("mol")), **extra})
     if kind in ("ester", "acid"):  # 酸碳带 O-烃臂者即碳酸单酯，同样记 o_idx 供 L5 识别 O 侧臂
         fields = _chain_ester_fields(info, occurrences, fields)
@@ -505,8 +575,10 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         fields = _chain_oxoacid_fields(info, occurrences, fields)
         if fields is None:
             return None
-    return _parent_dict(kind, skeleton, occurrences, fields,
-                        _facts(selection, skeleton, occurrences, info.get("mol")), selection.occurrences)
+    facts = _facts(selection, skeleton, occurrences, info.get("mol"))
+    if extra.get("stem_bare_en"):  # 杂原子链：整条链是一个母体氢化物，非 n 个主基团
+        facts = replace(facts, multiplicity=1)
+    return _parent_dict(kind, skeleton, occurrences, fields, facts, selection.occurrences)
 
 
 # ── 无主官能团（纯烃）表达：P-44.1 缺位按拓扑分配 kind ──

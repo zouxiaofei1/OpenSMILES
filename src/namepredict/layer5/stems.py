@@ -1,4 +1,4 @@
-"""烷烃/官能团母体碳数词干表与生成器（C1–C99，P-14.2.1）。"""
+"""烷烃/官能团母体碳数词干表与生成器（C1–C9999，P-14.2.1）。"""
 
 from __future__ import annotations
 
@@ -118,5 +118,6 @@ def join_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
         return f"{en} {acid_en}", f"{zh}{salt.get('acid_salt_zh') or acid_en}"
     halide = salt.get("halide")
     if halide:
-        return f"{en} {halide}", f"{zh}{salt.get('halide_zh') or halide}"
+        hz = salt.get("halide_zh") or halide
+        return f"{en} {halide}", (zh[:-1] + hz if zh.endswith("酸根") else zh + hz)
     return en, zh

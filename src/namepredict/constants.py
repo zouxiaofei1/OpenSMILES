@@ -32,6 +32,8 @@ I  = 53
 Tl = 81
 Pb = 82
 Bi = 83
+Po = 84
+At = 85
 
 # ── 常用集合 ──────────────────────────
 HALO_Z = frozenset({F, Cl, Br, I})
@@ -71,7 +73,7 @@ HW_SAT_TAIL = {7: "epane", 8: "ocane", 9: "onane", 10: "ecane"}
 HW_ZH_RING = {3: "环丙", 4: "环丁", 5: "环戊", 6: "环己",  # 中文基干环前缀（表 3-4）
               7: "环庚", 8: "环辛", 9: "环壬", 10: "环癸"}
 
-_MULT_EN_10 = {1: "", 2: "di", 3: "tri", 4: "tetra", 5: "penta",  # 倍数前缀（P-14.2 Table 1.4；数量词与母链碳数同源，支持到 99）en 数量词（deca/undeca/…/icosa/henicosa…）同时供 layer5.stems 生成长链母链词干，故下沉到本层：en_num_term 是唯一来源，stems 取词干仅去其尾 'a'。
+_MULT_EN_10 = {1: "", 2: "di", 3: "tri", 4: "tetra", 5: "penta",  # 倍数前缀（P-14.2 Table 1.4；数量词与母链碳数同源，支持到 9999）en 数量词（deca/undeca/…/icosa/henicosa…）同时供 layer5.stems 生成长链母链词干，故下沉到本层：en_num_term 是唯一来源，stems 取词干仅去其尾 'a'。
                6: "hexa", 7: "hepta", 8: "octa", 9: "nona", 10: "deca"}
 _MULT_ZH_10 = {1: "", 2: "二", 3: "三", 4: "四", 5: "五",
                6: "六", 7: "七", 8: "八", 9: "九", 10: "十"}
@@ -80,42 +82,73 @@ _EN_UNIT = {1: "hen", 2: "do", 3: "tri", 4: "tetra", 5: "penta",
 _EN_DECADE = {1: "deca", 2: "icosa", 3: "triaconta", 4: "tetraconta",
               5: "pentaconta", 6: "hexaconta", 7: "heptaconta",
               8: "octaconta", 9: "nonaconta"}
+_EN_HECTO = {1: "hecta", 2: "dicta", 3: "tricta", 4: "tetracta",  # Table 1.4 百位（101 = hen+hecta，100 = hecta）
+             5: "pentacta", 6: "hexacta", 7: "heptacta", 8: "octacta", 9: "nonacta"}
+_EN_KILO = {1: "kilia", 2: "dilia", 3: "trilia", 4: "tetralia",  # Table 1.4 千位（1001 = hen+kilia，1000 = kilia）
+            5: "pentalia", 6: "hexalia", 7: "heptalia", 8: "octalia", 9: "nonalia"}
 ZH_DIGITS = "一二三四五六七八九"
 
 
 def en_num_term(n: int) -> str | None:
-    """英文数值词干（末带 'a'）：1–99 按个位+十位组合生成。"""
-    if n < 1 or n > 99:
+    """英文数值词干（末带 'a'）：1–9999 按个→十→百→千反序拼基本词（P-14.2.1.2）。"""
+    if n < 1 or n > 9999:
         return None
     if n <= 10:
         return _MULT_EN_10[n]
-    if n == 11:
-        return "undeca"
-    tens, ones = divmod(n, 10)
-    if tens == 1:  # 12–19：个位 + deca
-        return f"{_EN_UNIT[ones]}deca"
-    dec = _EN_DECADE[tens]
-    if ones == 0:
-        return dec
-    unit = _EN_UNIT[ones]
-    if tens == 2 and unit[-1] in "aeiou":  # 20s 前导 i 省略：docosa/tricosa…
-        dec = "cosa"
-    return f"{unit}{dec}"
+    ones, tens = n % 10, (n // 10) % 10
+    parts: list[str] = []
+    if n % 100 == 11:  # P-14.2.1.1.1：11 独用 undeca（111 → undecahecta）
+        parts.append("undeca")
+    else:
+        if ones:
+            parts.append(_EN_UNIT[ones])
+        if tens:
+            dec = _EN_DECADE[tens]
+            if tens == 2 and parts and parts[-1][-1] in "aeiou":  # P-14.2.1.2：icosa 在元音后省 i（22 → docosa）
+                dec = "cosa"
+            parts.append(dec)
+    hundreds, thousands = (n // 100) % 10, n // 1000
+    if hundreds:
+        parts.append(_EN_HECTO[hundreds])
+    if thousands:
+        parts.append(_EN_KILO[thousands])
+    return "".join(parts)
 
 
 def zh_numeral(n: int) -> str | None:
-    """中文数值词（倍数用，1 返空）：≤10 查表，11–99 按十一/二十二组合。"""
-    if n < 1 or n > 99:
+    """中文数值词（倍数用，1 返空）：≤10 查表，11–99 按十位组合，100+ 拼百/千。"""
+    if n < 1 or n > 9999:
         return None
     if n <= 10:
         return _MULT_ZH_10[n]
-    tens, ones = divmod(n, 10)
-    head = "十" if tens == 1 else f"{ZH_DIGITS[tens-1]}十"
-    return head if ones == 0 else f"{head}{ZH_DIGITS[ones-1]}"
+    if n < 100:
+        tens, ones = divmod(n, 10)
+        head = "十" if tens == 1 else f"{ZH_DIGITS[tens-1]}十"
+        return head if ones == 0 else f"{head}{ZH_DIGITS[ones-1]}"
+    thousands, rest = divmod(n, 1000)
+    hundreds, rest = divmod(rest, 100)
+    tens, ones = divmod(rest, 10)
+    parts: list[str] = []
+    if thousands:
+        parts.append(f"{ZH_DIGITS[thousands-1]}千")
+    if hundreds:
+        parts.append(f"{ZH_DIGITS[hundreds-1]}百")
+    elif thousands and (tens or ones):
+        parts.append("零")  # 高位与低位间的空位补「零」（1001 → 一千零一）
+    if tens:
+        parts.append(f"{ZH_DIGITS[tens-1]}十")
+    elif parts and parts[-1] != "零" and ones:
+        parts.append("零")
+    if ones:
+        parts.append(ZH_DIGITS[ones-1])
+    name = "".join(parts)
+    if n in (100, 1000) and name.startswith("一"):  # 表 3-2：整百/整千用「百烷/千烷」；复合数保留前导「一」（151 → 一百五十一）
+        return name[1:]
+    return name
 
 
-MULT_EN = {n: (en_num_term(n) or "") for n in range(1, 100)}
-MULT_ZH = {n: (zh_numeral(n) or "") for n in range(1, 100)}
+MULT_EN = {n: (en_num_term(n) or "") for n in range(1, 10000)}
+MULT_ZH = {n: (zh_numeral(n) or "") for n in range(1, 10000)}
 
 def zh_bridge_root(name: str) -> str:
     """桥后缀（氨基/氧基/硫基）前的中文烃基名去尾「基」。"""
@@ -146,6 +179,55 @@ HALIDE_ZH = {F: "氟化物", Cl: "氯化物", Br: "溴化物", I: "碘化物"}  
 HALIDE_HX_EN = {F: "hydrofluoride", Cl: "hydrochloride",   # 中性卤化氢加合物 HX（P-71.3）
                 Br: "hydrobromide", I: "hydroiodide"}
 HALIDE_HX_ZH = {F: "氢氟酸盐", Cl: "盐酸盐", Br: "氢溴酸盐", I: "氢碘酸盐"}
+
+# ── P-14.1 λ 约定 / P-21 母体氢化物 ────────────
+STANDARD_BONDING_NUMBERS = {  # 原子序数 → 标准键数（P-14.1.2 表 1.3）；键数偏离此值才用 λ 记号，标准价一律不标
+    B: 3, Al: 3, Ga: 3, In: 3, Tl: 3,
+    C: 4, Si: 4, Ge: 4, Sn: 4, Pb: 4,
+    N: 3, P: 3, As: 3, Sb: 3, Bi: 3,
+    O: 2, S: 2, Se: 2, Te: 2, Po: 2,
+    F: 1, Cl: 1, Br: 1, I: 1, At: 1,
+}
+PARENT_HYDRIDE_STEMS: dict[int, tuple[str, str]] = {  # 原子序数 → (en, zh) 母体氢化物词干（P-21 表 2.1）；碳不在此表，甲烷走既有碳链引擎
+    B:  ("borane", "硼烷"),       Al: ("alumane", "铝烷"),   Ga: ("gallane", "镓烷"),
+    In: ("indigane", "铟烷"),     Tl: ("thallane", "铊烷"),   # alane 禁用（与丙氨酸 alanine 冲突）、indane/aluminane 被烃环占用，均按 P-21.1.1 改用此名
+    Si: ("silane", "硅烷"),       Ge: ("germane", "锗烷"),    Sn: ("stannane", "锡烷"),  Pb: ("plumbane", "铅烷"),
+    N:  ("azane", "氮烷"),        P:  ("phosphane", "磷烷"),  As: ("arsane", "砷烷"),
+    Sb: ("stibane", "锑烷"),      Bi: ("bismuthane", "铋烷"),
+    O:  ("oxidane", "氧烷"),      S:  ("sulfane", "硫烷"),    Se: ("selane", "硒烷"),
+    Te: ("tellane", "碲烷"),      Po: ("polane", "钋烷"),
+    F:  ("fluorane", "氟烷"),     Cl: ("chlorane", "氯烷"),   Br: ("bromane", "溴烷"),
+    I:  ("iodane", "碘烷"),       At: ("astane", "砹烷"),
+}
+# 母体氢化物 → 去氢取代基形式（P-21 表 2.1 / P-29）：(free_en, free_zh, yl_en, yl_zh, ylidene_en, ylidene_zh)
+# 单键连母体取 -yl（sulfanyl），双键连母体取 -ylidene（sulfanylidene），λ 段原样保留
+HYDRIDE_YL_FORMS: tuple[tuple[str, str, str, str, str, str], ...] = (
+    ("borane", "硼烷", "boranyl", "硼基", "boranylidene", "硼亚基"),
+    ("alumane", "铝烷", "alumanyl", "铝基", "alumanylidene", "铝亚基"),
+    ("gallane", "镓烷", "gallanyl", "镓基", "gallanylidene", "镓亚基"),
+    ("indigane", "铟烷", "indiganyl", "铟基", "indiganylidene", "铟亚基"),
+    ("thallane", "铊烷", "thallanyl", "铊基", "thallanylidene", "铊亚基"),
+    ("silane", "硅烷", "silyl", "甲硅烷基", "silylidene", "亚甲硅基"),
+    ("germane", "锗烷", "germyl", "甲锗烷基", "germylidene", "亚甲锗烷基"),
+    ("stannane", "锡烷", "stannyl", "甲锡烷基", "stannylidene", "亚甲锡烷基"),
+    ("plumbane", "铅烷", "plumbyl", "甲铅烷基", "plumbylidene", "亚甲铅烷基"),
+    ("phosphane", "磷烷", "phosphanyl", "磷烷基", "phosphanylidene", "磷亚甲基"),
+    ("arsane", "砷烷", "arsanyl", "砷烷基", "arsanylidene", "砷亚甲基"),
+    ("stibane", "锑烷", "stibanyl", "锑烷基", "stibanylidene", "锑亚甲基"),
+    ("bismuthane", "铋烷", "bismuthanyl", "铋烷基", "bismuthanylidene", "铋亚甲基"),
+    ("oxidane", "氧烷", "oxidanyl", "氧基", "oxidanylidene", "氧亚基"),
+    ("sulfane", "硫烷", "sulfanyl", "硫代", "sulfanylidene", "硫亚基"),
+    ("selane", "硒烷", "selanyl", "硒代", "selanylidene", "硒亚基"),
+    ("tellane", "碲烷", "tellanyl", "碲代", "tellanylidene", "碲亚基"),
+    ("polane", "钋烷", "polanyl", "钋代", "polanylidene", "钋亚基"),
+    ("fluorane", "氟烷", "fluoranyl", "氟代", "fluoranylidene", "氟亚基"),
+    ("chlorane", "氯烷", "chloranyl", "氯代", "chloranylidene", "氯亚基"),
+    ("bromane", "溴烷", "bromanyl", "溴代", "bromanylidene", "溴亚基"),
+    ("iodane", "碘烷", "iodanyl", "碘氧基", "iodanylidene", "碘亚基"),
+    ("astane", "砹烷", "astanyl", "砹代", "astanylidene", "砹亚基"),
+)
+
+# 多核母体氢化物中文倍数表见文件末 HYDRIDE_MULT_ZH（依赖 HS_NUMBER，须在其后定义）
 
 # ── L2/L5 单核母体氢化物（P-15.4.1）────────────
 MONONUCLEAR_HYDRIDES: dict[str, tuple] = {
@@ -240,8 +322,10 @@ RS_HI = frozenset({"R", "M", "r"})   # 编号优先级高的 CIP 描述符（P-9
 RS_LO = frozenset({"S", "P", "s"})   # 与之成对、取较低位次的次位描述符
 
 # ── L5 组装词表 ──────────────────────
-BIS_EN = {2: "bis", 3: "tris", 4: "tetrakis"}  # P-16.3.2 复合前缀倍增（bis/tris，非 di/tri）
-BIS_ZH = {2: "双", 3: "三", 4: "四"}
+BIS_EN = {2: "bis", 3: "tris",  # P-16.3.2 复合前缀倍增（bis/tris，非 di/tri）；4+ 按 P-14.2.2 于基本词后加 kis（tetrakis…）
+          **{n: f"{en_num_term(n)}kis" for n in range(4, 10000)}}
+BIS_ZH = {2: "双", **{n: zh_numeral(n) for n in range(3, 10000)}}  # 与 BIS_EN 同域；2 用「双」（单双叁肆），3+ 用中文数字
+BIS_EN_SET = frozenset(BIS_EN.values())  # 供 `mult in …` 常数判据：万级 dict 的 .values() 线性扫描会拖慢管线
 BRIDGE_SUFFIX_EN = ("oxy", "sulfanyl", "amino")   # O/S/N 桥后缀（P-63.2.2.1）：平铺 [-yl]oxy 与合一 [-yloxy] 均属合法
 BRIDGE_SUFFIX_ZH = ("氧基", "硫基", "氨基")        # 与 BRIDGE_SUFFIX_EN 同序同位
 DIATOMIC_BRIDGE_YL = ("diazenyl", "disulfanyl")   # 双原子桥合一保留前缀：-N=N-R / -S-S-R 收成 R-diazenyl / R-disulfanyl
@@ -300,3 +384,14 @@ RETAINED_FUSION_ALIASES: dict[str, tuple[str, str]] = {  # 稠合组装名 → �
     "benzo[d]azepine":     ("3-benzazepine", "3-苯并氮杂卓"),    # N 占 3 位；稠合位次与亚甲基分布均与稠合名一一对应
 }
 HS_NUMBER = "甲乙丙丁戊己庚辛壬癸"
+# 多核母体氢化物中文倍数用「甲乙丙丁…」而非「二三…」（第3章 3.2.2：diazane=乙氮烷、trisulfane=丙硫烷、pentasilane=戊硅烷）
+HYDRIDE_MULT_ZH = {n: HS_NUMBER[n - 1] for n in range(1, 11)}
+
+
+def hydride_chain_stem(z: int, n: int) -> tuple[str, str] | None:
+    """n 核均一母体氢化物裸词干（倍数词 + 去尾词干），供链引擎拼 ene/yne（P-21.2.2）。"""
+    forms = PARENT_HYDRIDE_STEMS.get(z)
+    if forms is None or n < 2:
+        return None
+    mult_en, mult_zh = en_num_term(n), (HYDRIDE_MULT_ZH.get(n) or zh_numeral(n))
+    return (f"{mult_en}{forms[0][:-3]}", f"{mult_zh}{forms[1][:-1]}")

@@ -34,6 +34,9 @@ FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("alcohol", p41=17, path=(1,), anchors=("surr_idx",)),
     FgSpec("thiol", p41=17, path=(2,), anchors=("surr_idx",)),
     FgSpec("amine", p41=19, anchors=("surr_idx",)),
+    # 非碳母体氢化物（P-41 表 4.1 类 21–39）：杂原子自任母体、其余作取代基。类 21–39 整段
+    # 低于胺 19、高于碳 40，故单列一个等级即可；元素间次序由 L2 的 P-44.1.2 优先原子裁决。
+    FgSpec("heterane", p41=36, anchors=("center_idx",)),
 )
 
 

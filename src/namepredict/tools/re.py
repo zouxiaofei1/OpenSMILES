@@ -77,6 +77,40 @@ def alpha_order_key(stem: str) -> tuple:
     return (_nonitalic_letters(s), _lead_locants(stem))
 
 
+# 倍增前缀围栏（bis(...) 等）：多组分名排序时须先剥去再比首词。
+_MULT_PAREN_RE = re.compile(r"^(?:bis|tris|tetrakis)\(")
+_ANY_LETTER_RE = re.compile(r"[A-Za-z]")
+
+
+def _drop_balanced_group(s: str) -> str:
+    """去掉首个配平的圆/方括号组（含括号）；不以括号开头或无闭合时返回原串。"""
+    if s[:1] not in ("(", "["):
+        return s
+    depth = 0
+    for i, ch in enumerate(s):
+        if ch in "([":
+            depth += 1
+        elif ch in ")]":
+            depth -= 1
+            if depth == 0:
+                return s[i + 1 :]
+    return s
+
+
+def component_order_key(name: str) -> str:
+    """多组分名字母序键：忽略前导位次/立体描述符/括号组/倍增前缀，取首个字母起。
+
+    用于非盐多组分（加成物、混合物）按组分名字母序排列（P-77 多组分惯例）。
+    注意不能用 alkyl_alpha_key：它按取代基语义把方括号当斜体标记剥除，会毁掉括号结构。
+    """
+    s = _strip_lead_locant(_strip_lead_stereo(name))
+    s = _MULT_PAREN_RE.sub("", s)
+    while s[:1] in ("(", "["):
+        s = _drop_balanced_group(s).lstrip("-[]()")
+    m = _ANY_LETTER_RE.search(s)
+    return s[m.start() :].lower() if m else name.lower()
+
+
 # ── 名称文本规范化（判分口径） ──────────────────────
 _WS = re.compile(r"\s+")
 
@@ -86,19 +120,27 @@ def _unify_brackets(s: str) -> str:
     return s.replace("[", "(").replace("]", ")")
 
 
+_SUPERSCRIPT_DIGITS = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹", "0123456789")
+
+
+def _fold_superscript(s: str) -> str:
+    """上标数字折回普通数字：λ⁵ 与 λ5 同义（P-14.1.3 的印刷体与 ASCII 写法）。"""
+    return s.translate(_SUPERSCRIPT_DIGITS)
+
+
 def normalize_en(name: str) -> str:
-    """规范化英文名：小写、去重空白并统一连字符/逗号/括号。"""
+    """规范化英文名：小写、去重空白、折叠上标并统一连字符/逗号/括号。"""
     s = (name or "").strip().lower()
     s = s.replace("–", "-").replace("—", "-")
-    s = _unify_brackets(s)
+    s = _fold_superscript(_unify_brackets(s))
     s = _WS.sub(" ", s)
     s = s.replace(" ,", ",")
     return s
 
 
 def normalize_zh(name: str) -> str:
-    """规范化中文名：去首尾空白并统一括号种类（方/圆等价，仅括注外观不同不判分）。"""
-    return _unify_brackets((name or "").strip())
+    """规范化中文名：去首尾空白、折叠上标并统一括号种类（方/圆等价，仅括注外观不同不判分）。"""
+    return _fold_superscript(_unify_brackets((name or "").strip()))
 
 
 def nospace(name: str) -> str:

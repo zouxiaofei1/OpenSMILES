@@ -214,6 +214,8 @@ def omit_unsat(
     triple: bool = False,
 ) -> bool:
     """判定烯/炔位次是否省略（环单烯或短链）；triple 选择炔规则。"""
+    if kind == "heterane":  # 杂原子链（P-14.3.4.2(d)）：二核与三核的单一不饱和键省略位次（diazene / triazene / disilyne）
+        return n_carbons <= 3
     if kind == "alkane" and (parent or {}).get("scaffold_id") == "carbocycle":  # 纯烃环单烯位次隐含省略；环多烯保留位次。
         if not (parent or {}).get("double_bonds"):
             return True
