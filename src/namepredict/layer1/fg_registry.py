@@ -20,6 +20,8 @@ class FgSpec:
 FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("radical", p41=1, anchors=("center_idx",), parent_anchor_fields=("radical_c_idx")),
     FgSpec("acyl", p41=1, anchors=("center_idx",), parent_anchor_fields=("acyl_c_idx")),
+    # 氮负离子母体（P-72.2.2.2(2) 预选阴离子母体名 azanide）：阴离子类 4，高于酸 7/酰胺 11/酮 16
+    FgSpec("azanide", p41=4, anchors=("center_idx",)),
     # 单核母体阳离子（P-73.1.1）：P-41 表 4.1 类 6，高于酸类 7（铵 > 羧酸）
     FgSpec("cation", p41=6, anchors=("center_idx",)),
     FgSpec("acid", p41=7, path=(1,), anchors=("center_idx",)),
@@ -31,6 +33,8 @@ FG_SPECS: tuple[FgSpec, ...] = (  # 全部 L1 检测列表对应的 FG 类别
     FgSpec("nitrile", p41=14, anchors=("center_idx",), locant_source="attachment_exocyclic"),
     FgSpec("aldehyde", p41=15, anchors=("center_idx",), locant_source="attachment_exocyclic"),
     FgSpec("ketone", p41=16, anchors=("center_idx",)),
+    # 酮的硫族类似物（P-64.6）：C=S 与酮同类 16，P-43 路径 (1,) 使其让位于 C=O（C=O > C=S）
+    FgSpec("thione", p41=16, path=(1,), anchors=("center_idx",)),
     FgSpec("alcohol", p41=17, path=(1,), anchors=("surr_idx",)),
     FgSpec("thiol", p41=17, path=(2,), anchors=("surr_idx",)),
     FgSpec("amine", p41=19, anchors=("surr_idx",)),

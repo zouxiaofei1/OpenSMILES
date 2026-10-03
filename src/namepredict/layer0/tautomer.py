@@ -58,6 +58,35 @@ def _is_amidine_n(atom, carbon) -> bool:
     return bond is not None and bond.GetBondType() in (Chem.BondType.SINGLE, Chem.BondType.AROMATIC)
 
 
+def _is_hydroxyamino_n(atom, carbon) -> bool:
+    """判断 N 是否为酰胺肟的单键羟基氨基氮（连 -OH、带 1 个 H，其 H 可迁往亚胺氮）。"""
+    if atom.GetAtomicNum() != N or atom.GetFormalCharge() != 0:
+        return False
+    if atom.GetTotalNumHs() != 1 or atom.IsInRing():
+        return False
+    bond = carbon.GetOwningMol().GetBondBetweenAtoms(carbon.GetIdx(), atom.GetIdx())
+    if bond is None or bond.GetBondType() != Chem.BondType.SINGLE:
+        return False
+    return any(n.GetAtomicNum() in ENOL_X and n.GetTotalNumHs() >= 1
+               for n in atom.GetNeighbors() if n.GetIdx() != carbon.GetIdx())
+
+
+def _amidoxime_candidates(mol: Mol) -> list[tuple[int, int, tuple[int, ...]]]:
+    """列出 (中心碳, 亚胺氮, 羟基氨基氮) 三元组：非环酰胺肟 C(=N)-NH-OH。"""
+    cands: list[tuple[int, int, tuple[int, ...]]] = []
+    for c in mol.GetAtoms():
+        if c.GetAtomicNum() != C:
+            continue
+        het = [n for n in c.GetNeighbors() if n.GetAtomicNum() != C and n.GetAtomicNum() != 1]
+        if len(het) != 2 or any(n.GetAtomicNum() != N for n in het):  # 恰好两个氮、无其它杂原子
+            continue
+        exo = next((n for n in het if _is_imine_n(n, c)), None)
+        atom = next((n for n in het if _is_hydroxyamino_n(n, c)), None)
+        if exo is not None and atom is not None and exo.GetIdx() != atom.GetIdx():
+            cands.append((c.GetIdx(), exo.GetIdx(), (atom.GetIdx(),)))
+    return cands
+
+
 def _assign(cands: list[tuple[int, int, tuple[int, ...]]]) -> tuple[tuple[int, int, int], ...]:
     """按候选氮数由少到多贪心配对：一个氮只服务一个位点，重复加氢会价态超限整体回退。"""
     used: set[int] = set()
@@ -137,11 +166,13 @@ def normalize_amide_tautomer(mol: Mol) -> Mol:
     """把烯醇/烯硫醇式 C(-XH)=N 与环外亚胺式 C(=N-H)-N< 归一化为酮式/胺式。"""
     amide = _assign(_enol_candidates(mol))
     amidine = tuple(s for s in _assign(_amidine_candidates(mol)) if s[0] not in {a[0] for a in amide})
-    if not amide and not amidine:
+    # P-66.4.4：酰胺肟 C(=N)(N-OH) 归一为 C(=N-OH)-NH2（金标取羟基亚胺式）
+    amidoxime = tuple(s for s in _assign(_amidoxime_candidates(mol)) if s[0] not in {a[0] for a in amide})
+    if not amide and not amidine and not amidoxime:
         return mol
     rw = RWMol(mol)
     _normalize_amide(rw, amide)
-    _normalize_amidine(rw, amidine)
+    _normalize_amidine(rw, amidine + amidoxime)
     out = rw.GetMol()
     try:
         Chem.SanitizeMol(out)

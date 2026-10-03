@@ -28,7 +28,7 @@ class PrincipalParentSelection:
 
 def select_principal_parent_skeletons(info: dict) -> PrincipalParentSelection:
     """选出主官能团并枚举其骨架选择结果。"""
-    principal = select_principal_group(inventory_from_info(info))
+    principal = select_principal_group(inventory_from_info(info), mol=info.get("mol"))
     occurrences = principal.occurrences if principal else ()
     skeletons = select_principal_skeletons(info, occurrences)
     return PrincipalParentSelection(principal, skeletons)

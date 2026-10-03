@@ -24,6 +24,43 @@ def _acid_kind_of_oh(atom) -> str | None:
         return None
     return _acid_kind(atom)
 
+def _ring_system_of(mol, idx: int) -> set[int]:
+    """返回 idx 所在稠环系（共享原子的环并入）的全部环原子索引。"""
+    ri = mol.GetRingInfo()
+    out: set[int] = set()
+    for ring in ri.AtomRings():
+        if idx in ring:
+            out.update(ring)
+    changed = True
+    while changed:
+        changed = False
+        for ring in ri.AtomRings():
+            if out & set(ring) and not set(ring) <= out:
+                out.update(ring)
+                changed = True
+    return out
+
+
+def _ring_bears_strong_acid(mol, ring_atoms: set[int]) -> bool:
+    """环系邻域（环原子及其 2 键内）是否有中性强酸基（-COOH/-SO3H/-PO(OH)2）；
+    有此酸时酚氧负离子保留作 -olate 母体（酸降为 carboxy/sulfo 前缀）。"""
+    near = set(ring_atoms)
+    for _ in range(2):  # 环原子向外扩两键：直连芳环的酸、苄基酸（-CH2COOH）皆覆盖
+        near |= {n.GetIdx() for i in list(near) for n in mol.GetAtomWithIdx(i).GetNeighbors()}
+    for a in mol.GetAtoms():
+        if a.GetAtomicNum() != O or _acid_kind_of_oh(a) is None:
+            continue
+        if a.GetNeighbors()[0].GetIdx() in near:  # 酸中心（C/S/P）落在环系邻域内
+            return True
+    return False
+
+
+def _ring_has_nh(mol, ring_atoms: set[int]) -> bool:
+    """环系内是否有带 H 的环氮（内酰胺/亚胺醇互变优先取酮式）。"""
+    return any(a.GetAtomicNum() == N and a.GetTotalNumHs() > 0
+               for a in mol.GetAtoms() if a.GetIdx() in ring_atoms)
+
+
 def _is_weak_anion(atom) -> bool:
     """判定位点是否为去质子化的弱酸位（可接受质子）。"""
     if atom.GetFormalCharge() != -1 or atom.GetAtomicNum() not in ACCEPTOR_Z:
@@ -32,6 +69,13 @@ def _is_weak_anion(atom) -> bool:
         return False
     if atom.GetAtomicNum() == O and _acid_kind(atom) is not None:  # 已是强酸共轭碱（羧酸/磷酸/磺酸根），电荷位置合理
         return False
+    if atom.GetAtomicNum() == O:  # 芳环氧负离子且环系邻域带强酸：保留 O⁻ 作 -olate 母体（不搬质子）
+        mol = atom.GetOwningMol()
+        arom = [n for n in atom.GetNeighbors() if n.GetIsAromatic()]
+        if arom:
+            ring = _ring_system_of(mol, arom[0].GetIdx())
+            if _ring_bears_strong_acid(mol, ring) and not _ring_has_nh(mol, ring):
+                return False  # 环氮带 H 者按内酰胺/酮式互变优先搬质子（金标 4-oxo-1H 式）
     return True
 
 def _is_base_n(atom) -> bool:

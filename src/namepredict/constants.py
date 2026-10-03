@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 # ── 原子序数 ──────────────────────────
 H  = 1
 Li = 3
@@ -221,7 +223,7 @@ SIMPLE_MOLECULES: dict[str, tuple[str, str]] = {
 
 # ── L0 电荷归一 / 盐解离 ────────────────────
 DONOR_KIND = ("carboxyl", "phospho", "sulfo")  # 允许作为强酸供体的酸类：羧酸/磷酸/磺酸。磷酸供体在「酰胺 O⁻ 受体」场景下才有产出（见 preprocessor 的二次互变归一，gold 把 N=C([O-]) 写成酰胺、把 P-OH 写成 oxidophosphoryl）；磺酸供体在「净负离子的胺受体」场景下才有产出（sulfonatooxy 两性离子式）。
-ACCEPTOR_Z = frozenset({O, N})  # 弱受体允许的元素：O（酚氧/烯醇氧/酰胺氧）、N（去质子化氮）；保守可只留 {O}。
+ACCEPTOR_Z = frozenset({O})  # 弱受体允许的元素：只留 O（酚氧/烯醇氧/酰胺氧）；N⁻ 按 P-72.2.2.2 保留为 azanide 母体，不再当质子受体
 ACID_CENTERS = {          # 中心元素 → 酸类名；键序即供体搬运的酸强度序
     C: "carboxyl",        # C(=O)OH
     P: "phospho",         # P(=O)OH
@@ -438,7 +440,31 @@ RETAINED_FUSION_ALIASES: dict[str, tuple[str, str]] = {  # 稠合组装名 → �
     "benzo[b]anthracene":  ("tetracene",     "并四苯"),
     "benzo[c]thiophene":   ("2-benzothiophene", "2-苯并噻吩"),  # 异苯并噻吩：S 占 2 位（≠ benzo[b]thiophene 的 1- 异构）
     "benzo[d]azepine":     ("3-benzazepine", "3-苯并氮杂卓"),    # N 占 3 位；稠合位次与亚甲基分布均与稠合名一一对应
+    "cyclopenta[i]naphthalene": ("acenaphthylene", "苊"),        # 苊（表 2.7 保留名）：位次形态与稠合名 cyclopenta[i]naphthalene 完全一致，纯替换
 }
+# 保留名去氢前缀表（P-29.2）：保留名 → (zh 母体, yl_en, yl_zh)。
+# 注：IUPAC 首选是系统式 adamantan-2-yl，测试集一律用保留前缀 2-adamantyl（两者皆合法），故按测试集登记。
+RETAINED_DEHYDRO_YL: dict[str, tuple[str, str, str]] = {
+    "adamantane": ("金刚烷", "adamantyl", "金刚烷基"),
+}
+
+
+def retained_dehydro_yl(en: str, zh: str) -> tuple[str, str]:
+    """保留名 -yl 取代基改用保留去氢前缀（P-29.2）：adamantan-2-yl → 2-adamantyl。
+
+    位次一律提前；前缀与位次间保留连字符（5-hydroxyadamantan-2-yl → 5-hydroxy-2-adamantyl）。
+    """
+    for free_en, (free_zh, yl_en, yl_zh) in RETAINED_DEHYDRO_YL.items():
+        pre = re.escape(free_en[:-1])  # 去尾 e 的 -an- 连接形态（adamantane → adamantan-）
+        en = re.sub(
+            rf"([A-Za-z0-9)\]]?){pre}-(\d+)-yl",
+            lambda m: m.group(1) + ("" if m.group(1) in ("", "(", "[", "-") else "-") + f"{m.group(2)}-{yl_en}",
+            en)
+        zh = re.sub(
+            rf"([一-鿿]?){re.escape(free_zh)}-(\d+)-基",
+            lambda m: m.group(1) + ("" if m.group(1) in ("", "(", "[", "-") else "-") + f"{m.group(2)}-{yl_zh}",
+            zh)
+    return en, zh
 HS_NUMBER = "甲乙丙丁戊己庚辛壬癸"
 # 多核母体氢化物中文倍数用「甲乙丙丁…」而非「二三…」（第3章 3.2.2：diazane=乙氮烷、trisulfane=丙硫烷、pentasilane=戊硅烷）
 HYDRIDE_MULT_ZH = {n: HS_NUMBER[n - 1] for n in range(1, 11)}

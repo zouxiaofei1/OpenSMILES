@@ -288,6 +288,9 @@ def enumerate_principal_skeletons(info: dict, occurrences: tuple[FunctionalGroup
     if occurrences and all(o.group_class is FunctionalGroupClass.CATION for o in occurrences):
         # P-73.7(c)：多阳离子中心时取优先元素（N > P > … > O > S），比 P-44 拓扑规则更专
         return SkeletonSelection(tuple(keep_senior_atom(info["mol"], tuple(_cation_candidates(info, occurrences)))))
+    if occurrences and all(o.group_class is FunctionalGroupClass.AZANIDE for o in occurrences):
+        # P-72.2.2.2(2)：氮负离子自任母体，只以阴离子 N 本身作骨架候选（全部臂退为前缀）
+        return SkeletonSelection(tuple(_cation_candidates(info, occurrences)))
     if occurrences and all(o.group_class is FunctionalGroupClass.HETERANE for o in occurrences):
         # P-21：杂原子烃以杂原子自任母体（P-41 类 21–39 皆高于碳 40）。环候选一并枚举，
         # 同级元素时由 P-44.2「环优先于链」裁决，避免把含杂原子的环拆成开链。

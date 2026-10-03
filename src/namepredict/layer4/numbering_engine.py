@@ -329,7 +329,7 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
         return None
     if len(chains) == 1:
         return chains[0]
-    from namepredict.layer2.ring_scaffold import _STANDARD_LABELS
+    from namepredict.layer2.ring_scaffold import _STANDARD_LABELS, get_spec
     suffixes = [a for a in _principal_atoms(parent) if a in chain]  # P-14.4(c)：principal 特征基团与自由价附着原子得最低位次。
     if parent.get("radical_c_idx") in chain:  # 自由基主基团：自由价连接点与 principal 同属 (c) 后缀类。
         suffixes.append(parent["radical_c_idx"])
@@ -339,6 +339,12 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
     labels = _STANDARD_LABELS.get(sid) or ()
     alpha_subs = [(alpha_order_key(s.get("en") or ""), s["attach_idx"])
                   for s in (substituents or []) if s.get("attach_idx") in chain]
+    spec = get_spec(sid)
+    ring_set = set(chain)
+    fused_into = any(not set(r) <= ring_set          # 单环杂环被并进更大稠合系时编号由稠合名定
+                     for r in sssr_rings(mol) if set(r) & ring_set)
+    mono = spec is not None and spec.n_rings == 1 and not fused_into
+    ind_h_atoms = saturated_ring_atoms(mol, ring_set) if mono else []  # P-14.4(b)：指示氢先于 (c) 后缀
 
     def _locant_key_of(std: list[int]) -> dict:
         """链上各原子的位次键，按 standard_path 标签而非链位置。"""
@@ -347,9 +353,10 @@ def _fixed_numbering(parent: dict, chain: list[int], substituents: list | None =
         return {a: (std.index(a) + 1, 0) for a in std}
 
     def _fixed_key(std: list[int]) -> tuple:
-        """候选链 P-14.4 位次键：(c) 后缀、(f) 前缀、(g) 引用序。"""
+        """候选链 P-14.4 位次键：(b) 指示氢、(c) 后缀、(f) 前缀、(g) 引用序。"""
         loc = _locant_key_of(std)
-        return (tuple(sorted(loc[a] for a in suffixes if a in loc)),
+        return (tuple(sorted(loc[a] for a in ind_h_atoms if a in loc)),
+                tuple(sorted(loc[a] for a in suffixes if a in loc)),
                 tuple(sorted(loc[a] for a in prefixes if a in loc)),
                 tuple(sorted((k, loc[a]) for k, a in alpha_subs if a in loc)))
     return min(chains, key=_fixed_key)
@@ -454,10 +461,12 @@ def orient_numbering(parent: dict, substituents: list, *, float_hetero: bool = F
         cands = _ring_cands(chain) if is_ring else [  # 碳环/链：P-14.4(a) 固定 locant 1 锚定后退化
             _numbered(chain), _numbered(list(reversed(chain)))]  # 链：正反两个方向的编号候选
     principal = _principal_atoms(parent)
+    hydro = _hydro_indicated_atoms(parent, chain)
+    if hydro and is_ring:  # P-14.4(b)：单环加氢/指示氢位次先于 (c) 后缀
+        cands = narrow(cands, lambda c: _locant_set(c, hydro), skip_none=True)
     if principal:
         cands = narrow(cands, lambda c: _locant_set(c, principal), skip_none=True)
-    hydro = _hydro_indicated_atoms(parent, chain)
-    if hydro:  # P-14.4(b)(d)(e)(i)：加氢/指示氢位次先于多重键与取代基
+    if hydro and not is_ring:  # P-14.4(b)(d)(e)(i)：加氢/指示氢位次先于多重键与取代基
         cands = narrow(cands, lambda c: _locant_set(c, hydro), skip_none=True)
     bonds, doubles = _unsat_bonds(parent)
     if bonds:

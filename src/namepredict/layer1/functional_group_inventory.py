@@ -11,6 +11,7 @@ class FunctionalGroupClass(str, Enum):
     """官能团类别枚举（对应 fg_registry 的 p41 优先级体系）。"""
     RADICAL = "radical"
     ACYL = "acyl"
+    AZANIDE = "azanide"  # 氮负离子母体（P-72.2.2.2）：N⁻ 自任阴离子母体，余者作前缀
     CATION = "cation"
     ACID = "acid"
     OXOACID = "oxoacid"
@@ -21,6 +22,7 @@ class FunctionalGroupClass(str, Enum):
     NITRILE = "nitrile"
     ALDEHYDE = "aldehyde"
     KETONE = "ketone"
+    THIONE = "thione"  # 酮的硫族类似物 C=S（P-64.6.1）：同类 16，让位于 C=O
     ALCOHOL = "alcohol"
     THIOL = "thiol"
     AMINE = "amine"
@@ -114,6 +116,7 @@ def _nitrile_atoms(mol, payload: dict) -> set[int]:
 
 
 FG_ATOM_FNS = {  # 不走通用规则的例外类别
+    "azanide": _cation_atoms,  # 氮负离子母体只占 N⁻ 本身（P-72.2.2.2）：全部臂退为前缀
     "oxoacid": _oxoacid_atoms,
     "sulfonamide": _oxoacid_atoms,  # 含氧酸合一类的 P-41 酰胺分组，特征原子同一判据
     "cation": _cation_atoms,  # 单核母体阳离子作母体时只占一个原子（P-73.1.1）

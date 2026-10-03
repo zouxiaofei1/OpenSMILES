@@ -512,6 +512,9 @@ _KIND_TABLE = {
                      fg="ketone", need=1, no_loc="none",
                      omit_rule=lambda n, loc, omit: n <= 2 and loc == 1,
                      ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent,unsat_polyol=True),
+    "thione": _Chain(kind="thione", en_suf="thione", zh_suf="硫酮", coda="ane",  # P-64.6.1：酮的硫族类似物，母体保留 e（propane-2-thione）
+                     fg="thione", need=1, omit_rule=_NO_OMIT,
+                     ez_ene=ez_for_parent, ez_ene_multi=ez_for_parent, unsat_polyol=True),
     "alkane": _Chain(kind="alkane", en_suf="ane", zh_suf="烷", coda="",
                      omit_rule=lambda n, loc, omit: omit or n <= 3,
                      ene_base=("ene", "烯"), yne_suf=("yne", "炔"),

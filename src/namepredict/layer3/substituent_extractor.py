@@ -3,15 +3,42 @@ claim 枚举是本层唯一提取路径，未命名成功的 claim 静默跳过�
 """
 from __future__ import annotations
 
+from rdkit.Chem import BondType
+
 from namepredict.tools.common_names import CommonNameCache
 from namepredict.constants import (
-    CLAIM_KIND, ESTER_O_SIDE_KINDS, NAME_KIND, N_PREFIX_KINDS,
+    C, CLAIM_KIND, ESTER_O_SIDE_KINDS, N, NAME_KIND, N_PREFIX_KINDS,
 )
 
 
 def _claim_kind(slot_value: str) -> str:
     """将槽位值映射为取代基 kind。"""
     return CLAIM_KIND.get(slot_value, "side")
+
+
+def _amidine_n_owned(mol, parent: dict | None) -> frozenset[int]:
+    """脒/胍母体（单碳 C 带 =N 且另有单键 N）的单键氮并入所有权边界。"""
+    if parent is None:
+        return frozenset()
+    chain = list(parent.get("chain") or ())
+    if len(chain) != 1:
+        return frozenset()
+    atom = mol.GetAtomWithIdx(int(chain[0]))
+    if atom.GetAtomicNum() != C:
+        return frozenset()
+    sgl_n: list[int] = []
+    has_dbl_n = False
+    for nb in atom.GetNeighbors():
+        if nb.GetAtomicNum() != N:
+            continue
+        bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nb.GetIdx())
+        if bond.GetBondType() == BondType.DOUBLE:
+            has_dbl_n = True
+        elif bond.GetBondType() == BondType.SINGLE:
+            sgl_n.append(nb.GetIdx())
+    if not has_dbl_n or not sgl_n:  # 非脒/胍中心：不动边界
+        return frozenset()
+    return frozenset(sgl_n)  # 亚胺氮属母体：其上的臂须从 N 外侧键起切
 
 
 def sub_from_named(named, mol, parent: dict | None = None) -> dict:
@@ -56,6 +83,7 @@ def extract_substituents(info: dict, parent: dict, *, cache: CommonNameCache | N
     o_side = parent.get("kind") in ESTER_O_SIDE_KINDS or parent.get("o_idx") is not None
     side_z = 16 if parent.get("thio_side") else 8  # 硫代酯的酯侧臂元素为 S（P-65.6.3.3.7.1）
     namer, out = SubstituentNamer(cache=cache, root_ctx=info.get("root_ctx")), []
-    for claim in iter_claims(mol, owned):
+    cut_owned = frozenset(owned) | _amidine_n_owned(mol, parent)  # 胍 N 上的臂从 N 外侧键起切
+    for claim in iter_claims(mol, cut_owned):
         _append_named(mol, claim, namer, out, o_side=o_side, side_z=side_z, parent=parent)
     return out

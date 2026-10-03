@@ -166,11 +166,11 @@ def _table_hit(mol: Mol, atoms: frozenset[int], attach_old: int | None) -> str |
     return _ANCHOR_INDEX.get(key)
 
 
-def _attached_via_carbon(mol: Mol, atoms: frozenset[int], attach_old: int | None) -> bool:
-    """块连接原子的块外邻居是否为碳（经碳连母体）。"""
+def _attached_via_nitrogen(mol: Mol, atoms: frozenset[int], attach_old: int | None) -> bool:
+    """块连接原子的块外邻居是否为氮（经氮连母体，即胍的亚氨基桥）。"""
     if attach_old is None:
         return False
-    return any(nb.GetAtomicNum() == C and nb.GetIdx() not in atoms
+    return any(nb.GetAtomicNum() == N and nb.GetIdx() not in atoms
                for nb in mol.GetAtomWithIdx(attach_old).GetNeighbors())
 
 
@@ -248,17 +248,141 @@ def carbamoyl_prefix_name(en: str, zh: str, *, in_ring: bool) -> tuple[str, str]
     return None
 
 
+def _fence_arm(name: str) -> str:
+    """复合臂名围栏：名内已含任何括号改方括号，否则圆括号（P-16.5.1.3.1）。"""
+    return f"[{name}]" if any(ch in name for ch in "()[]") else f"({name})"
+
+
+def _amidine_arm(mol: Mol, root: int, atoms: frozenset[int], hub: frozenset[int]) -> tuple[str, str, bool] | None:
+    """把母体氮外侧键起的臂命名（返回 en, zh, 是否须围栏）；失败返回 None。"""
+    from namepredict.layer3.as_substituent import name_as_substituent
+    from namepredict.tools.block_cut import cut_block
+
+    arm = cut_block(mol, root, hub)
+    arm = frozenset(arm) & atoms if arm else arm
+    if not arm:
+        return None
+    return name_as_substituent(mol, root, arm)
+
+
+def _amidinium_cation_arm(mol: Mol, atoms: frozenset[int], attach_old: int) -> tuple[str, str] | None:
+    """root 为脒碳、块外双键连阳离子氮（azanium 母体）→ diaminomethylidene(<N 取代基>) 名。"""
+    at = mol.GetAtomWithIdx(attach_old)
+    if at.GetAtomicNum() != C:
+        return None
+    dbl_cation = None
+    sgl_ns: list[int] = []
+    for n in at.GetNeighbors():
+        bt = mol.GetBondBetweenAtoms(attach_old, n.GetIdx()).GetBondType()
+        if n.GetIdx() not in atoms:
+            if n.GetAtomicNum() == N and n.GetFormalCharge() == 1 and bt == BondType.DOUBLE:
+                dbl_cation = n.GetIdx()  # 阳离子亚胺氮即 azanium 母体，位于块外
+            continue
+        if n.GetAtomicNum() == N and bt == BondType.SINGLE:
+            sgl_ns.append(n.GetIdx())
+    if dbl_cation is None or not sgl_ns:
+        return None
+    if any(n.GetAtomicNum() != 1 and n.GetIdx() not in (dbl_cation, *sgl_ns)
+           for n in at.GetNeighbors()):
+        return None  # 脒碳还挂别的重原子：非本式
+    hub = frozenset((attach_old, dbl_cation, *sgl_ns))
+    roots = [n.GetIdx() for a in sgl_ns for n in mol.GetAtomWithIdx(a).GetNeighbors()
+             if n.GetAtomicNum() != 1 and n.GetIdx() in atoms and n.GetIdx() not in hub]
+    if not roots:
+        return "diaminomethylidene", "二氨基亚甲基"  # P-34：亚胺氮留在阳离子母体，块内为二氨基亚甲基
+    arms = [_amidine_arm(mol, r, atoms, hub) for r in roots]
+    if any(a is None for a in arms):
+        return None
+    en = ", ".join(sorted(a[0] for a in arms))
+    zh = "、".join(sorted(a[1] for a in arms))
+    return f"diaminomethylidene({en})", f"二氨基亚甲基({zh})"
+
+
+def _amidine_group(na: list[tuple[str, str, bool]], ni: list[tuple[str, str, bool]],
+                   suffix: str, conj: str, idx: int) -> str:
+    """氨基/亚氨基侧取代基名 → N/N' 位次前缀段 + 保留名（P-66.4.1.3.1）；idx 选 en/zh。"""
+    if not na and not ni:
+        return suffix
+    na_s = [a[idx] for a in na]
+    ni_s = [a[idx] for a in ni]
+    if len(na_s) == 1 and len(ni_s) == 1 and na_s[0] == ni_s[0] and na_s[0].isalpha():
+        return f"N,N'-{conj}{na_s[0]}{suffix}"  # 同名简单基：合并计数（N,N'-二甲基）
+    segs: list[str] = []
+    for tokens, arms in ((("N",) * len(na), na), (("N'",) * len(ni), ni)):
+        if arms:
+            segs.append(f"{','.join(tokens)}-{'-'.join(_fence_arm(a[idx]) if a[2] else a[idx] for a in arms)}")
+    return "-".join(segs) + suffix
+
+
+def _n_substituted_amidine(mol: Mol, atoms: frozenset[int], attach_old: int) -> tuple[str, str] | None:
+    """块为 N-取代脒（root 氮连 C(=N)N 且任一脒氮带取代基）时的 carbamimidoyl 式前缀名。"""
+    if attach_old is None or attach_old not in atoms:
+        return None
+    nb_atom = mol.GetAtomWithIdx(attach_old)
+    if nb_atom.GetAtomicNum() != N or nb_atom.GetFormalCharge() != 0 \
+            or nb_atom.GetIsAromatic() or nb_atom.IsInRing():
+        return None
+    c_idx = next((n.GetIdx() for n in nb_atom.GetNeighbors()
+                  if n.GetAtomicNum() == C and n.GetIdx() in atoms), None)
+    if c_idx is None:
+        return None
+    dbl_n = sgl_n = None
+    for n in mol.GetAtomWithIdx(c_idx).GetNeighbors():
+        if n.GetAtomicNum() != N or n.GetIdx() not in atoms or n.GetIdx() == attach_old:
+            continue  # attach_old 即桥氮，另两个氮才是脒的亚氨基/氨基
+        bt = mol.GetBondBetweenAtoms(c_idx, n.GetIdx()).GetBondType()
+        if bt == BondType.DOUBLE:
+            dbl_n = n.GetIdx()
+        elif bt == BondType.SINGLE:
+            sgl_n = n.GetIdx()
+    if dbl_n is None or sgl_n is None:
+        return None
+    if any(n.GetAtomicNum() != 1 and n.GetIdx() not in (attach_old, dbl_n, sgl_n)
+           for n in mol.GetAtomWithIdx(c_idx).GetNeighbors()):
+        return None  # 脒碳还挂别的重原子：非本式
+    hub = frozenset((attach_old, c_idx, dbl_n, sgl_n))
+    nb_arms = [n.GetIdx() for n in nb_atom.GetNeighbors()
+               if n.GetAtomicNum() != 1 and n.GetIdx() in atoms and n.GetIdx() not in hub]
+    na_arms = [n.GetIdx() for n in mol.GetAtomWithIdx(sgl_n).GetNeighbors()
+               if n.GetAtomicNum() != 1 and n.GetIdx() in atoms and n.GetIdx() not in hub]
+    ni_arms = [n.GetIdx() for n in mol.GetAtomWithIdx(dbl_n).GetNeighbors()
+               if n.GetAtomicNum() != 1 and n.GetIdx() in atoms and n.GetIdx() not in hub]
+    if not (nb_arms or na_arms or ni_arms):
+        return None  # 无取代：留给表内 diaminomethylidene / 递归路径
+    en_arms = [_amidine_arm(mol, a, atoms, hub) for a in (*nb_arms, *na_arms, *ni_arms)]
+    if any(n is None for n in en_arms):
+        return None
+    nb_en, na_en, ni_en = en_arms[:len(nb_arms)], \
+        en_arms[len(nb_arms):len(nb_arms) + len(na_arms)], en_arms[len(nb_arms) + len(na_arms):]
+    group_en = _amidine_group(na_en, ni_en, "carbamimidoyl", "di", 0)
+    group_zh = _amidine_group(na_en, ni_en, "氨基甲亚氨酰基", "二", 1)
+    nb_names = [_fence_arm(a[0]) if a[2] else a[0] for a in nb_en]
+    nb_zhens = [_fence_arm(a[1]) if a[2] else a[1] for a in nb_en]
+    en_parts = sorted([group_en, *nb_names], key=lambda s: s.lstrip("N,%-'"))
+    zh_parts = sorted([group_zh, *nb_zhens], key=lambda s: s.lstrip("N,%-'"))
+    if len(en_parts) == 1:
+        return _fence_arm(en_parts[0]) + "amino", _fence_arm(zh_parts[0]) + "氨基"
+    return (en_parts[0] + _fence_arm(en_parts[1]) + "amino",
+            zh_parts[0] + _fence_arm(zh_parts[1]) + "氨基")
+
+
 def anchored_lookup(
     mol: Mol, atoms: frozenset[int], attach_old: int | None = None,
 ) -> tuple[str, str, bool] | None:
     """查找取代基原子集，返回 (en, zh, paren)；无命中返回 None。"""
     reg_key = _table_hit(mol, atoms, attach_old)
     if reg_key is not None:
-        # P-34：-C(=NH)NH2 经碳连母体取 carbamimidoyl；经 N 连（胍亚氨基桥）仍用 diaminomethylidene
-        if reg_key == "diaminomethylidene" and _attached_via_carbon(mol, atoms, attach_old):
+        # P-34/P-66.4.1.3.1：-C(=NH)NH2 不经 N 连母体（C/S/O/P…）一律取 carbamimidoyl；经 N 连（胍亚氨基桥）仍用 diaminomethylidene
+        if reg_key == "diaminomethylidene" and not _attached_via_nitrogen(mol, atoms, attach_old):
             return "carbamimidoyl", "氨基甲亚氨酰基", False
         en, zh = _resolve_name(reg_key)
         return en, zh, _REGISTRY[reg_key].paren
     if attach_old is None:
         return None
+    amidine = _n_substituted_amidine(mol, atoms, attach_old)
+    if amidine is not None:
+        return amidine[0], amidine[1], True
+    amidinium = _amidinium_cation_arm(mol, atoms, attach_old)
+    if amidinium is not None:
+        return amidinium[0], amidinium[1], True
     return _alkoxycarbonyl(mol, atoms, attach_old)

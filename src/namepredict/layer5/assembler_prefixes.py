@@ -55,7 +55,7 @@ def _omit_sub_locants(n_carbons: int, substituents: list, kind: str | None = Non
         return True
     if kind == "radical":  # 自由基母体：连接点隐含 locant 1，单碳链省略位次
         return n_carbons == 1
-    if kind == "cation":  # 单核母体阳离子：取代基全挂在同一个原子上，位次恒可省（P-73.1.1）
+    if kind in ("cation", "azanide"):  # 单核母体阳/阴离子：取代基全挂在同一个原子上，位次恒可省（P-73.1.1 / P-72.2.2.2）
         return True
     if n_carbons <= 1:  # 单碳母体位次省略；N-/C- 型共存时 C 侧须带位次
         kinds = {(s.get("kind") or "") for s in substituents}
@@ -153,6 +153,27 @@ def _root_atom(sub: dict, mol) -> int | None:
         except (ValueError, TypeError):
             return None
     return None
+
+
+_STEREO_LEAD_ANY_RE = re.compile(r"^\((?:\d+)?[RSEZ](?:,(?:\d+)?[RSEZ])*\)-")  # 带/不带位次的立体描述符
+_ACYL_TAIL_RE = re.compile(r"(?:oyl|carbonyl)$")  # 酰基臂尾（P-16.5.1.4：自带母体氢化物名须围栏）
+
+
+def _arm_fence_needed(name: str) -> bool:
+    """臂名是否须整体围栏（P-16.5.2）：内含括号/方括号却无前导围栏；前导立体描述符或酰基尾须围栏。"""
+    if name[:1] == "[":
+        return False  # 已带前导方括号围栏
+    if name[:1] == "(":  # 前导圆括号自成围栏（(4-…苯基)磺酰基），仅立体描述符/酰基尾须再围栏
+        return bool(_STEREO_LEAD_ANY_RE.match(name) or _ACYL_TAIL_RE.search(name))
+    return "(" in name or "[" in name
+
+
+def _azanide_arm_bare(s: dict) -> bool:
+    """azanide 臂是否免二次围栏：须围栏的复合臂与带位次臂交给 _stem_needs_paren 定形。"""
+    en = s.get("en") or ""
+    if _arm_fence_needed(en):
+        return False
+    return not (en[:1].isdigit() and s.get("paren"))
 
 
 def _enclose(s: str) -> str:
@@ -451,7 +472,7 @@ def _arm_tail(name: str, n: int, bare: bool, mult: dict, bis: dict,
         if inline_mult:  # 同位素臂：倍数随词干入括号（dideuterio，非 di(deuterio)）
             return f"({mult.get(n, '')}{name})"
         return f"{mult.get(n, '')}({name})"
-    if name[:1].isdigit() or "(" in name or "[" in name:  # 带位次/围栏的复合臂：倍数前缀须整体成段
+    if name[:1].isdigit() or _arm_fence_needed(name):  # 带位次/须围栏的复合臂：倍数前缀须整体成段
         return f"{bis.get(n, '')}({name})" if n > 1 else _enclose(name)
     return f"{mult.get(n, '')}{name}" if n > 1 else name
 
@@ -543,8 +564,10 @@ def _build_prefix(substituents: list, n_carbons: int, kind: str | None = None,
     if mol is not None:  # 环基取代基名自带位次体系，标记后供 _stem_needs_paren 免围栏
         substituents = [{**s, "ring_yl": _sub_root_in_ring(s, mol)} for s in substituents]
     omit = _omit_sub_locants(n_carbons, substituents, locant_kind or kind, scaffold, has_ene)
-    bare = kind == "cation"  # 单核母体阳离子：臂名直接前置于阳离子名，无母体位次可混，不再二次围栏
-    if bare:
+    bare = kind in ("cation", "azanide")  # 单核母体阳/阴离子：臂名直接前置于母体名，无母体位次可混，不再二次围栏
+    if kind == "azanide":  # P-16.5.2：复合臂名围栏由 _stem_needs_paren/_arm_tail 按判据统一定形
+        substituents = [{**s, "bare": _azanide_arm_bare(s)} for s in substituents]
+    elif bare:
         substituents = [{**s, "bare": cation_arm_bare(s.get("en") or "")} for s in substituents]
     flat = kind in OXO_CENTER_KINDS  # 中心母体：臂名围栏改由环基判据决定，去多余位次围栏
     if flat:

@@ -227,6 +227,11 @@ def _fused_bridge_name(stem_en: str, a: dict) -> tuple[str, str] | None:
     return None
 
 
+def _n_arm_order_key(en: str) -> tuple:
+    """N-臂引用序（P-14.5）：前导围栏/立体描述符臂先行，其余按忽略位次的字母数字序。"""
+    return (0 if en[:1] in "([" else 1, alpha_order_key(en))
+
+
 def _thioxo_fused_stem(stem_en: str, stem_zh: str, subs: list[dict]) -> tuple[str, str, list[dict]]:
     """P 锚点无 =O 而恰有一个 =S 时并入词干：<取代基>phosphinothioyl（P-67.1.4.1.1.4）。"""
     if stem_en != "phosphanyl":
@@ -303,7 +308,7 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
                     f"{ring_zh}-N-{other['zh']}苯胺基" if ring_zh else f"N-{other['zh']}苯胺基")
         return (f"N-{other['en']}-{ring_en}anilino" if ring_en else f"N-{other['en']}anilino",
                 f"N-{other['zh']}-{ring_zh}苯胺基" if ring_zh else f"N-{other['zh']}苯胺基")
-    groups = _mult_rows(ordered, lambda s: s["en"], lambda s: s["zh"])  # 双不同 N-取代基：首基平铺、其余各基加括号（P-62.2.2.1）；同名基按数量词收拢（P-16.5.1.3.1）
+    groups = _mult_rows(ordered, lambda s: s["en"], lambda s: s["zh"], _n_arm_order_key)  # 双不同 N-取代基：首基平铺、其余各基加括号（P-62.2.2.1）；同名基按数量词收拢（P-16.5.1.3.1）
     en_tail = groups[0][0] if groups[0][2] == 1 else MULT_EN[groups[0][2]] + groups[0][0]
     zh_tail = groups[0][1] if groups[0][2] == 1 else MULT_ZH[groups[0][2]] + groups[0][1]
     return (en_tail + "".join(f"{MULT_EN[r[2]]}({r[0]})" if r[2] > 1 else f"({r[0]})" for r in groups[1:]) + zero[0],
@@ -462,6 +467,8 @@ def _dihydro_stem_kept(parent: dict, locants: str) -> list[str]:
         if atoms and any(b.GetBondType() != Chem.BondType.SINGLE
                          for b in mol.GetAtomWithIdx(atoms[0]).GetBonds()):
             continue  # 该位已是酮/烯碳，不能再算二氢（P-58.2.1）
+        if atoms and mol.GetAtomWithIdx(atoms[0]).GetTotalNumHs() == 0:
+            continue  # 该位已被取代基占满：无 H 可标，二氢/指示氢都不成立（P-58.2.1）
         keep.append(loc)
     return keep
 
@@ -1227,6 +1234,11 @@ def _cation_insert(en: str, stem: str, base: str) -> tuple[int, int] | None:
     return (pos - 1, 1) if en[pos - 1:pos] == "e" else (pos, 0)
 
 
+def _stem_core(stem: str) -> str:
+    """母体词干去指示氢前缀（7H-purine → purine），供在渲染名中定位词干。"""
+    return re.sub(r"^\d+[a-z]?H-", "", stem or "")
+
+
 def _zh_ring_cation(zh: str, stem_zh: str, suffix: str) -> str:
     """中文环阳离子：母体词干后插 -{位次}-正离子（中化会 6.7.2，不用“鎓”）。"""
     if not zh or not stem_zh or "鎓" in zh:
@@ -1262,6 +1274,7 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
     stem_en = parent.get("stem_en") or ""
     if not stem_en:
         return names
+    core_en = _stem_core(stem_en)  # 去指示氢前缀：渲染名的 H 前缀可能与 L4 词干不同（7H-purine → 3H-purin-…）
     labels = (parent.get("numbering_scaffold") or {}).get("labels")
     use_labels = bool(labels) and len(labels) == len(chain)
     # 环内多正电：各位次升序逗号连接（P-62.4.1 倍加词 di/tri）
@@ -1274,22 +1287,28 @@ def join_ring_cation_suffix(numbered: dict, names: tuple[str, str]) -> tuple[str
     multi = len(locs) > 1
     if stem_en.startswith("chrom") and stem_en.endswith("ene"):  # 色烯型氧鎓保留名：chromene → chromenylium
         base, ium, zh_suf = stem_en[:-1], f"{stem_en[:-3]}enylium", "鎓"
-    elif stem_en.endswith("e") and not multi:
-        base, ium, zh_suf = stem_en[:-1], f"{stem_en[:-1]}-{loc}-ium", f"-{loc}-鎓"
-    elif stem_en.endswith("e"):  # 多电荷：diium 前母体词尾 e 不省略
-        base, ium, zh_suf = stem_en, f"{stem_en}-{loc}-{en_mult}ium", f"-{loc}-{zh_mult}鎓"
+    elif core_en.endswith("e") and not multi:
+        base, ium, zh_suf = core_en[:-1], f"{core_en[:-1]}-{loc}-ium", f"-{loc}-鎓"
+    elif core_en.endswith("e"):  # 多电荷：diium 前母体词尾 e 不省略
+        base, ium, zh_suf = core_en, f"{core_en}-{loc}-{en_mult}ium", f"-{loc}-{zh_mult}鎓"
     elif not multi:
-        base, ium, zh_suf = stem_en, f"{stem_en}-{loc}-ium", f"-{loc}-鎓"
+        base, ium, zh_suf = core_en, f"{core_en}-{loc}-ium", f"-{loc}-鎓"
     else:
-        base, ium, zh_suf = stem_en, f"{stem_en}-{loc}-{en_mult}ium", f"-{loc}-{zh_mult}鎓"
+        base, ium, zh_suf = core_en, f"{core_en}-{loc}-{en_mult}ium", f"-{loc}-{zh_mult}鎓"
     zh = _zh_ring_cation(zh, parent.get("stem_zh") or "", zh_suf)
     if stem_en.startswith("chrom") and stem_en.endswith("ene"):  # 色烯型氧鎓保留名：chromene → chromenylium
         token = base + "e" if base + "e" in en else base
         return (en.replace(token, ium, 1), zh) if token in en else names
     if multi:  # 多电荷直接在母体词干后插入 -{位次}-diium
-        at = en.find(stem_en)
-        return (en[:at + len(stem_en)] + f"-{loc}-{en_mult}ium" + en[at + len(stem_en):], zh) if at >= 0 else names
-    hit = _cation_insert(en, stem_en, base) if stem_en in en else _cation_insert(en, base, base)
+        at = en.find(base)
+        if at >= 0:
+            return en[:at + len(base)] + f"-{loc}-{en_mult}ium" + en[at + len(base):], zh
+        if base.endswith("e"):  # 取代基名里词尾 e 已被 -yl 省略（piperazin-1-yl）：补回 e 再缀 -diium
+            at = en.find(base[:-1])
+            if at >= 0:
+                return en[:at] + base + f"-{loc}-{en_mult}ium" + en[at + len(base) - 1:], zh
+        return names
+    hit = _cation_insert(en, core_en, base) if core_en in en else _cation_insert(en, base, base)
     if hit is None:
         return names
     cut, drop = hit  # 其余在母体词干后插入 -{位次}-ium

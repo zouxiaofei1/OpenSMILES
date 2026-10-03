@@ -5,7 +5,7 @@ from rdkit import Chem
 from rdkit.Chem import Mol
 
 from namepredict.constants import (
-    HALIDE_EN, HALIDE_HX_EN, HALIDE_HX_ZH, HALIDE_ZH, HALO_Z,
+    Cl, HALIDE_EN, HALIDE_HX_EN, HALIDE_HX_ZH, HALIDE_ZH, HALO_Z,
     METAL_ION_EN, METAL_ION_ZH, MULT_EN, MULT_ZH,
 )
 
@@ -18,6 +18,9 @@ POLY_ANION = {
     "[N-]=[N+]=[N-]": ("azide", "叠氮化物"),
     "F[P-](F)(F)(F)(F)F": ("hexafluorophosphate", "六氟磷酸盐"),
 }
+
+# 卤离子名 → 氢卤酸加合物名（P-71.3）：中性有机碱 + X⁻ 成盐时按 HX 命名（吡啶盐酸盐）
+_HX_BY_HALIDE_EN = {HALIDE_EN[z]: (HALIDE_HX_EN[z], HALIDE_HX_ZH[z]) for z in HALIDE_EN}
 
 
 def _frag_role(mol: Mol) -> tuple[str, str, str] | None:
@@ -110,6 +113,16 @@ def _from_frags(frags: tuple[Mol, ...]) -> tuple[Mol, dict] | None:
     elif anions:  # 阴离子 X⁻：有机阳离子/中性有机碱/有机阴离子均可与之成盐（P-71.2）
         if hx or len(set(anions)) != 1:
             return None
+        hx_pair = _HX_BY_HALIDE_EN.get(anions[0][0])
+        if (len(anions) == 1 and anions[0][0] == HALIDE_EN[Cl]  # 仅单一 Cl⁻（参考数据里多卤/X≠Cl 一律写卤化物名）
+                and charge == 0 and hx_pair is not None
+                and not any(a.GetFormalCharge() for a in organic.GetAtoms())):
+            # 中性有机碱 + Cl⁻（无内盐）：按盐酸盐加合物命名，与 [Cl-]+HX 输入一致（P-71.3）
+            hx_en = _mult_word(hx_pair[0], len(anions), MULT_EN)
+            hx_zh = _mult_word(hx_pair[1], len(anions), MULT_ZH)
+            if hx_en is None or hx_zh is None:
+                return None
+            return organic, {"acid_salt": hx_en, "acid_salt_zh": hx_zh, "n_org": n_org}
         en = _mult_word(anions[0][0], len(anions), MULT_EN)
         zh = _mult_word(anions[0][1], len(anions), MULT_ZH)
         if en is None or zh is None:

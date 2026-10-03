@@ -63,11 +63,15 @@ def stem_forms(body_en: str, body_zh: str, stem_en: str, stem_zh: str) -> tuple[
             (f"{body_en}{stem_en[:-3]}", f"{body_zh}{stem_zh[:-1]}"))
 
 def acid_to_anion_en(en: str) -> str:
-    """酸转阴离子英文名（-oic/-ic acid → -oate/-ate）。"""
+    """酸/酚/硫醇转阴离子英文名（-oic acid→-oate；-ol→-olate；-thiol→-thiolate）。"""
     if en.endswith("oic acid"):
         return en[:-8] + "oate"
     if en.endswith("ic acid"):
         return en[:-7] + "ate"
+    if en.endswith("thiol"):  # 硫醇盐（P-66.1.1.4）
+        return en + "ate"
+    if en.endswith("ol"):  # 酚盐/醇盐（P-66.1.1.4）
+        return en + "ate"
     return en
 
 
@@ -109,9 +113,12 @@ def join_metal_salt_names(numbered: dict, en: str, zh: str) -> tuple[str, str]:
         n_org = int(salt.get("n_org") or 1)  # 有机阴离子份数：>1 用 bis 括起（calcium bis(...acetate)）
         if n_org > 1 and pref and en.endswith("ate"):
             return f"{pref} {BIS_EN.get(n_org, '')}({en})", f"{BIS_ZH.get(n_org, '')}({zh}){suf or ''}"
+        if en.endswith("azanide"):  # P-72.2.2.2：氮负离子母体同样按金属盐前缀表达（sodium …azanide）
+            return (f"{pref} {en}" if pref else en,
+                    f"{salt.get('metal_zh')}盐{zh}" if suf else zh)
         return (
             f"{pref} {en}" if pref and en.endswith("ate") else en,
-            zh[:-1] + suf if suf and zh.endswith("酸根") else zh,
+            zh[:-1] + suf if suf and zh.endswith("根") else zh,  # "…酸根/酚根"去尾缀金属名（P-71.2）
         )
     acid_en = salt.get("acid_salt")
     if acid_en:

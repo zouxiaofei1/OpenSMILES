@@ -58,11 +58,32 @@ class PrincipalGroupSelection:
 
 
 _CATION_ANION_GATED = 99  # 阴离子在场时阳离子让位（表 4.1 类 4 > 类 6）：置底即不再作母体
+_ANION_OS_P41 = 4  # 表 4.1 类 4 阴离子：氧/硫负离子作特征基团时高于酸（类 7）
+
+
+def _has_charged_acid(inventory: FunctionalGroupInventory, mol) -> bool:
+    """分子内是否有阴离子型酸（羧酸根/磺酸根/亚磺酸根等）：阴离子酸根仍是母体，
+    中性酸（-COOH/-SO3H）不阻断氧/硫负离子作母体（降为 carboxy/sulfo 前缀）。"""
+    if mol is None:
+        return False
+    for occ in inventory.occurrences(FG.ACID):  # 羧酸根：阴离子氧在 surr_idx 中
+        if any(mol.GetAtomWithIdx(int(i)).GetFormalCharge() < 0
+               for i in (occ.payload.get("surr_idx") or ())):
+            return True
+    for occ in inventory.occurrences(FG.OXOACID):  # 含氧酸根：n_om 即去质子臂数
+        if int(occ.payload.get("n_om") or 0) > 0:
+            return True
+    return False
 
 
 def _effective_priority(group_class: FG, spec: PrincipalFeatureSpec,
-                        inventory: FunctionalGroupInventory) -> PrincipalPriority:
+                        inventory: FunctionalGroupInventory, mol=None) -> PrincipalPriority:
     """候选类的实际 P-41 优先级：含氧酸为酸式时升到类 7（P-41 表 4.1）。"""
+    if group_class in (FG.ALCOHOL, FG.THIOL):
+        occurrences = inventory.occurrences(group_class)
+        if (occurrences and all(o.payload.get("anion_os") for o in occurrences)
+                and not _has_charged_acid(inventory, mol)):  # 酸根在场时仍由酸作母体（数据实测）
+            return PrincipalPriority(_ANION_OS_P41, spec.priority.p43_path)  # 酚盐/醇盐/硫醇盐
     if group_class is FG.CATION and inventory.has_anion:
         return PrincipalPriority(_CATION_ANION_GATED, spec.priority.p43_path)
     if group_class is not FG.OXOACID:
@@ -76,11 +97,12 @@ def _effective_priority(group_class: FG, spec: PrincipalFeatureSpec,
 def select_principal_group(
     inventory: FunctionalGroupInventory,
     registry: Mapping[FG, PrincipalFeatureSpec] = PRINCIPAL_REGISTRY,
+    mol=None,
 ) -> PrincipalGroupSelection | None:
     """按优先级选主官能团类并取全部 occurrence。"""
     classes = (entry.group_class for entry in inventory.entries if not entry.demoted)  # 降级叶（carboxy/cyano）不再作主基团候选
     eligible = (group_class for group_class in set(classes) if feature_spec(group_class, registry))
     selected = min(eligible, key=lambda group_class: _effective_priority(
-        group_class, feature_spec(group_class, registry), inventory), default=None)
+        group_class, feature_spec(group_class, registry), inventory, mol), default=None)
     occurrences = inventory.occurrences(selected) if selected else ()
     return PrincipalGroupSelection(selected, occurrences) if selected else PrincipalGroupSelection(FG.NONE, occurrences)

@@ -8,6 +8,7 @@ import re
 
 from namepredict.constants import (
     AMIDO_RETAINED_EN, DIATOMIC_BRIDGE_YL, SIMPLE_ALKOXY_NO_PAREN, SIMPLE_BRIDGE_YL_NO_PAREN,
+    retained_dehydro_yl,
 )
 from namepredict.tools.common_names import CommonNameCache
 from namepredict.layer3.submol_build import build_anchor_submol
@@ -46,6 +47,20 @@ def _fix_rs_with_real(root_mol, block_root_order: list[int], anchored, hit):
 
 
 _P_ACYL_STEM_TAIL = ("phosphoryl", "phosphanyl", "phosphinothioyl")  # P 酰基词干名尾（P-67.1.4.1.1）
+
+# N-取代脒自由名：氨基 N 上另挂取代基者取 carbamimidoyl(R)amino（P-66.4.1.3.1 优选前缀）
+_AMIDINE_N_AMINO_EN = re.compile(r"^diaminomethylidene\((.+)\)amino$")
+_AMIDINE_N_AMINO_ZH = re.compile(r"^二氨基亚甲基\((.+)\)氨基$")
+
+
+def _carbamimidoyl_prefix_fixup(en: str, zh: str) -> tuple[str, str]:
+    """N-取代脒的自由名 diaminomethylidene(R)amino 改写为 carbamimidoyl(R)amino。"""
+    m = _AMIDINE_N_AMINO_EN.match(en or "")
+    if m is None:
+        return en, zh
+    mz = _AMIDINE_N_AMINO_ZH.match(zh or "")
+    return (f"carbamimidoyl({m.group(1)})amino",
+            f"氨基甲亚氨酰基({mz.group(1)})氨基" if mz else zh)
 
 
 def _obridge_front_simple(mol, atoms, attach_old, *, cache, root_ctx):
@@ -109,7 +124,9 @@ def _radical_yl_from_sub(
     if need_paren and hit.en.endswith(("oxy", "sulfanyl")) and not hit.en.endswith(DIATOMIC_BRIDGE_YL):
         if  _obridge_front_simple(mol, atoms, attach_old, cache=cache, root_ctx=root_ctx):
             need_paren = False
-    return hit.en, hit.zh, need_paren
+    en, zh = retained_dehydro_yl(hit.en, hit.zh)  # 保留名取代基改保留去氢前缀（adamantan-2-yl → 2-adamantyl，P-29.2）
+    en, zh = _carbamimidoyl_prefix_fixup(en, zh)  # N-取代脒片段改 carbamimidoyl 形式（P-66.4.1.3.1）
+    return en, zh, need_paren
 
 
 def name_as_substituent(

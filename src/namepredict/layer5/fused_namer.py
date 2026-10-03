@@ -2,10 +2,24 @@
 (未注册稠环; 组分词干由 L2 打包, 编号走 L4)。"""
 from __future__ import annotations
 
+import re
 from collections import Counter
 from namepredict.constants import RETAINED_FUSION_ALIASES
 from namepredict.layer1.ring_systems import build_ring_systems, sssr_rings
 from namepredict.layer4.numbering_engine import fused_component_numbering
+
+# 组分名前导位次串（1,2,4- / 1,4- / 2-）：其后须接字母或汉字，1H- 之类指示氢不匹配
+_LEAD_LOCANT_RUN_RE = re.compile(r"^(\d+(?:,\d+)*[a-z]?)-(?=[^\d])")
+
+
+def _bracket_lead_locants(stem: str) -> str:
+    """组分名前导位次串加方括号。
+
+    P-25.3.1.3：描述组分结构特征的位次（杂原子位置等）保留在组分名中并置于方括号内，
+    如 imidazo[1,2-b][1,2,4]triazine、benzo[g]isoquinoline。
+    """
+    m = _LEAD_LOCANT_RUN_RE.match(stem or "")
+    return f"[{m.group(1)}]{stem[m.end():]}" if m else stem
 
 
 def _component_prefix(node) -> tuple[str, str] | None:
@@ -126,6 +140,8 @@ def fused_parent_names(mol, node) -> tuple[str, str] | None:
     parts = _collect_attached(mol, node, rings, fusion_edges)
     if parts is None:
         return None
-    core_en = parts[0] + root_en
-    alias = RETAINED_FUSION_ALIASES.get(core_en)
-    return alias if alias else (core_en, parts[1] + root_zh)
+    alias = RETAINED_FUSION_ALIASES.get(parts[0] + root_en)  # 保留名按未括形态匹配
+    if alias:
+        return alias
+    return (parts[0] + _bracket_lead_locants(root_en),
+            parts[1] + _bracket_lead_locants(root_zh))

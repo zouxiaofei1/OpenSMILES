@@ -265,9 +265,26 @@ def _has_negative_atom(mol: Mol) -> bool:
     return mol is not None and any(a.GetFormalCharge() < 0 for a in mol.GetAtoms())
 
 
+def _drop_mixed_anion_os(parts: dict, mol: Mol | None) -> dict:
+    """醇/硫醇同族同时含中性羟基与氧/硫负离子时，保留负离子条目作 -olate/-thiolate
+    母体（P-66.1.1.4：酚盐/硫醇盐优于中性酚/硫醇），中性羟基/巯基另作羟基前缀。"""
+    if mol is None:
+        return parts
+    out = dict(parts)
+    for key in ("alcohol", "thiol"):
+        items = out.get(key) or []
+        if len(items) < 2:
+            continue
+        charged = [e for e in items if mol.GetAtomWithIdx(e["center_idx"]).GetFormalCharge() < 0]
+        if charged and len(charged) < len(items):
+            out[key] = charged
+    return out
+
+
 def _arbitrate_parts(parts: dict, mol: Mol | None = None,
                      has_anion: bool | None = None) -> tuple[dict, frozenset[str]]:
     """P-41 仲裁：更高优先级 FG 使组合 FG 退出，叶型标 demoted。"""
+    parts = _drop_mixed_anion_os(parts, mol)
     p41 = {sp.fg: sp.p41 for sp in FG_SPECS if sp.p41}
     present = {fg for fg in p41 if parts.get(fg) and fg not in _PRESENCE_SKIP}
     if has_anion is None:
@@ -286,14 +303,23 @@ def _arbitrate_parts(parts: dict, mol: Mol | None = None,
 
 
 # 局部环境 SMARTS 命中且无非局部判据的 FG 键；顺序沿用历史输出
-_LOCAL_ENTRY_FGS = ("acid", "alcohol", "ester", "amide", "ketone", "amine", "thiol",
-                    "nitrile", "acyl_halide", "cation", "heterane")
+_LOCAL_ENTRY_FGS = ("acid", "alcohol", "ester", "amide", "ketone", "thione", "amine", "thiol",
+                    "nitrile", "acyl_halide", "cation", "azanide", "heterane")
 
 
 def _local_entries(mol: Mol, hits: dict) -> dict:
     """按局部环境命中结果组装各 FG 的条目列表（中心原子升序）。"""
     return {fg: [_fg_entry(mol.GetAtomWithIdx(t[0])) for t in hits.get(fg, [])]
             for fg in _LOCAL_ENTRY_FGS}
+
+
+def _mark_anion_os(parts: dict, mol: Mol) -> dict:
+    """给中心为 O⁻/S⁻ 的醇/硫醇条目打标记，供 L2 按 P-41 表 4.1 类 4 定级。"""
+    for fg in ("alcohol", "thiol"):
+        for e in parts.get(fg) or []:
+            if mol.GetAtomWithIdx(e["center_idx"]).GetFormalCharge() < 0:
+                e["anion_os"] = True
+    return parts
 
 
 def _detect_parts(mol: Mol) -> dict:
@@ -303,7 +329,7 @@ def _detect_parts(mol: Mol) -> dict:
     heads = frozenset(e["center_idx"] for e in acyl)
     # 杂原子烃中心不再按自由基计：片段边界哑原子也会命中 radical，但该处杂原子自任母体（P-21）
     heteranes = frozenset(t[0] for t in hits.get("heterane", []))
-    out = _local_entries(mol, hits)
+    out = _mark_anion_os(_local_entries(mol, hits), mol)
     result = {**out,
         # 杂原子烃：链最小长度不达标者（如仅 2 连硫族、带碳的 N-N）退回常规链/环命名
         "heterane": [e for e in out.get("heterane", []) if heterane_chain_ok(mol, e["center_idx"])],

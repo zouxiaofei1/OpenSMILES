@@ -84,13 +84,18 @@ def _chain_kind(group_class: FunctionalGroupClass, count: int, occurrences=()) -
 
 
 def _is_anion_occurrence(occurrence, mol) -> bool:
-    """occurrence 是否为阴离子：周边原子带负形式电荷。"""
+    """occurrence 是否为阴离子：周边原子（醇/硫醇另看中心 O⁻/S⁻）带负形式电荷。"""
     if mol is None:
         return False
-    return any(mol.GetAtomWithIdx(i).GetFormalCharge() < 0 for i in occurrence.payload.get("surr_idx") or ())
+    idxs = list(occurrence.payload.get("surr_idx") or ())
+    if occurrence.group_class in (FunctionalGroupClass.ALCOHOL, FunctionalGroupClass.THIOL):
+        idxs.append(occurrence.payload.get("center_idx"))  # 醇盐/硫醇盐的负电荷在中心杂原子本身
+    return any(i is not None and mol.GetAtomWithIdx(i).GetFormalCharge() < 0 for i in idxs)
 
 
-_ANION_FLAG_FGS = frozenset({FunctionalGroupClass.ACID, FunctionalGroupClass.OXOACID})  # 全阴离子时转 -ate 的类别
+# 全阴离子时转 -ate/-olate 的类别
+_ANION_FLAG_FGS = frozenset({FunctionalGroupClass.ACID, FunctionalGroupClass.OXOACID,
+                             FunctionalGroupClass.ALCOHOL, FunctionalGroupClass.THIOL})
 
 
 def _expression_flags(selection: PrincipalGroupSelection, occurrences, mol) -> dict:
@@ -463,6 +468,20 @@ def _mononuclear_cation(info: dict, skeleton: ParentSkeleton,
     return new, {"stem_en": stem_en, "stem_zh": names[1], "single_atom_skeleton": True}
 
 
+def _mononuclear_azanide(info: dict, skeleton: ParentSkeleton,
+                         occurrences) -> tuple[ParentSkeleton, dict] | None:
+    """N⁻ 收敛为单原子阴离子母体（P-72.2.2.2(2) 预选母体名 azanide），仅支持单锚点。"""
+    mol = info["mol"]
+    anchors = sorted({i for o in occurrences for i in o.parent_anchors})
+    if len(anchors) != 1:
+        return None
+    atom = mol.GetAtomWithIdx(anchors[0])
+    if atom.GetAtomicNum() != N or atom.GetFormalCharge() != -1:
+        return None
+    new = replace(skeleton, atom_ids=(anchors[0],))
+    return new, {"stem_en": "azanide", "stem_zh": "氮化物", "single_atom_skeleton": True}
+
+
 def _heterane_parent(info: dict, skeleton: ParentSkeleton,
                      occurrences) -> tuple[ParentSkeleton, dict] | None:
     """杂原子烃收敛为母体氢化物骨架（P-21）：单核用氢化物名，多核用均一链裸词干。"""
@@ -555,6 +574,11 @@ def express_chain_principal(info: dict, selection: PrincipalGroupSelection,
         if mono is None:
             return None
         skeleton, extra = mono
+    if kind == "azanide":
+        az = _mononuclear_azanide(info, skeleton, occurrences)
+        if az is None:
+            return None
+        skeleton, extra = az
     if kind == "heterane":
         het = _heterane_parent(info, skeleton, occurrences)
         if het is None:

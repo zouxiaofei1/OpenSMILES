@@ -88,8 +88,8 @@ def number(parent: dict, substituents: list) -> dict:
     labels = (packed.get("numbering_scaffold") or {}).get("labels")
     hydro = packed.get("hydro_atoms") or frozenset()
     fb = _fallback_hydro_atoms(packed)  # 未注册稠环推导
-    if not hydro or (len(fb) in HYDRO_MULT_N and set(hydro) < fb):
-        hydro = fb
+    if not hydro or (set(hydro) < fb and (len(fb) in HYDRO_MULT_N or len(fb) - 1 in HYDRO_MULT_N)):
+        hydro = fb  # 奇数个饱和位也可回退：随后 _odd_hydro_to_indicated 会把最低位次改由指示氢表达
     # print(hydro)
     hydro_all = hydro
     hydro = _lowest_extra_to_indicated(packed, labels, hydro)
