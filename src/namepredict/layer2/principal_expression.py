@@ -182,14 +182,11 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
                      fused_tree=None, bridged=(), spiro=()) -> dict:
     """解析并写入 scaffold 身份与表达能力字段（节点由调用方一次算好传入）。"""
 
-    from namepredict.layer2.ring_expression_policy import supports_ring_expression
-
     if scaffold is None:
         scaffold, fused_tree, bridged, spiro = _ring_scaffold_and_nodes(info, skeleton)
     fields: dict = {}
     # print(scaffold)
     if scaffold:
-        supported = supports_ring_expression(scaffold, facts) if facts else False
         match = None  # 保留 fused 模板匹配映射，供 L4 固定编号用
         from namepredict.layer2.ring_scaffold import _match_with_map, get_spec, hydrogenated_atoms
         from namepredict.layer2.hantzsch_widman import hydro_atoms as hw_hydro_atoms, is_hw_scaffold
@@ -199,8 +196,7 @@ def _scaffold_fields(info: dict, skeleton: ParentSkeleton, facts=None, scaffold=
             match = hit[1] if hit and hit[0] == scaffold.id else None
 
         fields = {"scaffold_id": scaffold.id, "scaffold_identity": scaffold,
-                  "scaffold_match": match,
-                  "typed_ring_expression_supported": supported}  # print({"scaffold_id": scaffold.id, "scaffold_identity": scaffold, "scaffold_match": match, "typed_ring_expression_supported": supported})
+                  "scaffold_match": match}  # print({"scaffold_id": scaffold.id, "scaffold_identity": scaffold, "scaffold_match": match})
         
         if match:  # 加氢原子集：编号完成后由 L4 换算为 hydro 前缀位次
             hydro = hydrogenated_atoms(info["mol"], scaffold.id, match)

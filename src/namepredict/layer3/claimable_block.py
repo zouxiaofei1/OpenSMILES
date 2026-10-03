@@ -50,10 +50,6 @@ def _owned_edges(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> list
             if n.GetAtomicNum() != 1 and n.GetIdx() in owned]
 
 
-def _attach_parents_of(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> set[int]:
-    """返回组分原子在所有权集合中的连接点集合。"""
-    return {n for n, _ in _owned_edges(mol, atoms, owned)}
-
 def claim_block(
     mol: Mol,
     *,
@@ -67,17 +63,10 @@ def claim_block(
         return None
 
     atoms = cut_block(mol, root, owned_atoms)
-    if not atoms or len(_attach_parents_of(mol, atoms, owned_atoms)) != 1:
+    if not atoms or len({n for n, _ in _owned_edges(mol, atoms, owned_atoms)}) != 1:
         return None
     return ClaimedBlock(slot=slot, attach_parent=attach_parent, root=root, atoms=atoms)
 
-
-def _canonical_edge(
-    mol: Mol, atoms: frozenset[int], owned: frozenset[int]
-) -> tuple[int, int] | None:
-    """所属与该组分之间最小（attach_parent, root）边。"""
-    edges = _owned_edges(mol, atoms, owned)
-    return min(edges) if edges else None
 
 def _has_dbl_o_edge(mol: Mol, atoms: frozenset[int], owned: frozenset[int]) -> bool:
     """外部组分是否有双键连 owned 重原子的氧（主 FG 成分不 claim）。"""

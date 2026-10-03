@@ -378,20 +378,17 @@ def ring_scaffold_expression_contract___typed(smiles, group):
 def test_generic_carbocycle_resolves_independently_of_alcohol_expression():
     parent = ring_scaffold_expression_contract___typed("OC1CCCCC1", "alcohol")
     assert parent["scaffold_identity"].naming_class == "carbocycle"
-    assert parent["typed_ring_expression_supported"] is True
 
 
 def test_benzene_resolves_to_stable_scaffold_identity():
     parent = ring_scaffold_expression_contract___typed("Oc1ccccc1", "alcohol")
     assert parent["scaffold_id"] == "benzene"
     assert parent["scaffold_identity"].naming_class == "mono_carbo"
-    assert parent["typed_ring_expression_supported"] is True
 
 
-def test_naphthalenol_uses_naph_family_expression_policy():
+def test_naphthalenol_resolves_to_naphthalene_scaffold():
     parent = ring_scaffold_expression_contract___typed("Oc1cccc2ccccc12", "alcohol")
     assert parent["scaffold_id"] == "naphthalene"
-    assert parent["typed_ring_expression_supported"] is True
 
 
 # ==========================================================================
