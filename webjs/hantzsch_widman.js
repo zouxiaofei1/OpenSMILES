@@ -5,6 +5,7 @@
 
 const { C, N, MULT_EN, MULT_ZH, P145_SENIOR, zhNumeral } = require("./constants");
 const { kekulized, sssrRings } = require("./layer1_rings");
+const { bondingNumber, isLambdaMarked, lambdaMark } = require("./lambda_notation");
 
 const HW_ID = "hw_mono";  // 生成式 HW 杂单环骨架 id：不登记进模板表，靠生成器产出词干
 const HW_CLASS = "heterocycle";  // 其 naming_class（与 monohetero 分列）
@@ -140,6 +141,29 @@ function locantString(byZ) {
   return locs.join(",");
 }
 
+function locantStringLambda(byZ, lambdaAt, en) {
+  // 带 λ 的位次串（P-22.2.7.1：λn 紧跟杂原子位次之后，如 1λ6,3λ5）
+  const marks = lambdaAt || {}, out = [];
+  for (const locs of byZ.values()) {
+    for (const loc of locs) {
+      out.push(Object.prototype.hasOwnProperty.call(marks, loc) ? `${loc}${lambdaMark(marks[loc], { en })}` : String(loc));
+    }
+  }
+  return out.join(",");
+}
+
+// 环内 λ 适用元素：硫族/氮氧的高价由 dioxo/oxide 前缀表达，不复标 λ
+const HW_RING_LAMBDA_Z = new Set([15, 33, 51, 83, 5, 53, 14, 32, 50, 82]);
+
+function ringLambdaAtoms(ordered, mol) {
+  // 已编号环序 → {1 起位次: 键数}，仅收键数偏离标准值的环内杂原子（P-14.1.3）
+  const out = {};
+  ordered.forEach((idx, i) => {
+    if (HW_RING_LAMBDA_Z.has(mol.g.atoms[idx].z) && isLambdaMarked(mol, idx)) out[i + 1] = bondingNumber(mol, idx);
+  });
+  return out;
+}
+
 function heteroTerms(n, zs, byZ, en) {
   // 元素前缀项（含倍数词）；中文在含氮五/六元环里把 N 折入唑/嗪基干，故中文跳过 N
   const hasN = zs.indexOf(N) >= 0;
@@ -164,8 +188,9 @@ function zhFoldedN(n, zs, byZ, zhBase) {
   return count ? MULT_ZH[count] + zhBase : zhBase;
 }
 
-function hwNameFromCycle(zs, nDb) {
+function hwNameFromCycle(zs, nDb, lambdaAt) {
   // 已编号环序元素表 + 环内双键数 → [英文名, 中文名, 英文位次前缀]；第 i 个原子位次为 i+1
+  // lambdaAt 为 {1 起位次: 键数}，命中者在位次后带 λn（P-22.2.7.1）
   if (!(zs.length >= 3 && zs.length <= 10)) return null;
   const byZ = locantMap(zs);
   if (!byZ.size) return null;
@@ -173,10 +198,12 @@ function hwNameFromCycle(zs, nDb) {
   let zhBase = zhStem(zs.length, zs, nDb);
   if (stem === null || zhBase === null) return null;
   zhBase = zhFoldedN(zs.length, zs, byZ, zhBase);
-  const locs = omitLocants(zs.length, zs) ? "" : `${locantString(byZ)}-`;
-  const en = `${locs}${elideA(heteroTerms(zs.length, zs, byZ, true).concat([stem]))}`;
-  const zh = `${locs}${heteroTerms(zs.length, zs, byZ, false).join("")}${zhBase}`;
-  return [en, zh, locs];
+  let locsEn, locsZh;
+  if (omitLocants(zs.length, zs)) { locsEn = ""; locsZh = ""; }
+  else { locsEn = `${locantStringLambda(byZ, lambdaAt, true)}-`; locsZh = `${locantStringLambda(byZ, lambdaAt, false)}-`; }
+  const en = `${locsEn}${elideA(heteroTerms(zs.length, zs, byZ, true).concat([stem]))}`;
+  const zh = `${locsZh}${heteroTerms(zs.length, zs, byZ, false).join("")}${zhBase}`;
+  return [en, zh, locsEn];
 }
 
 // ── 位次省略（P-22.2.2.1.7）─────────────
@@ -441,7 +468,7 @@ function parentNames(sid, mol, chain) {
   if (ordered === null) return null;
   const zs = ordered.map((a) => mol.g.atoms[a].z);
   if (!inScope(zs)) return null;
-  const names = hwNameFromCycle(zs, ringDoubleBonds(mol, ordered));
+  const names = hwNameFromCycle(zs, ringDoubleBonds(mol, ordered), ringLambdaAtoms(ordered, mol));
   return names ? [names[0], names[1]] : null;
 }
 
@@ -458,6 +485,7 @@ function identity(info, skeleton) {
 module.exports = {
   HW_ID, HW_CLASS, HW_COMPONENT_PREFIX,
   ringHeteros, sixGroup, unsatStem, satStem, zhStem, elideA, locantMap, locantString,
+  locantStringLambda, ringLambdaAtoms,
   hwNameFromCycle, omitLocants, isHwScaffold, inScope, isolatedRing, ringDoubleBonds,
   ringNumbering, ringOrder, mancudeHydrogens, hydroAtoms, componentKey, componentNames,
   parentNames, identity, _parse_key: parseKey, _mancude_db: mancudeDb,
