@@ -142,7 +142,9 @@ def _root_atom(sub: dict, mol) -> int | None:
 
 
 def _enclose(s: str) -> str:
-    """给名称加围栏：已含圆括号时改用方括号（嵌套规则），否则加圆括号。"""
+    """给名称加围栏：已带完整方括号者不二次围栏；含圆括号改用方括号（P-16.5.2）。"""
+    if s[:1] == "[" and s[-1:] == "]":
+        return s  # 已是完整方括号围栏名（L3 定形）：再括一层成 [[…]] 无先例
     return f"[{s}]" if "(" in s else f"({s})"
 
 
@@ -211,8 +213,10 @@ def _front_needs_enclosure(base: str, suf: str) -> bool:
         return True
     if base.endswith(("sulfonyl", "sulfinyl")):  # 磺酰基前端围栏由 L3 定形，此处不拆。
         return False
-    if _BENZYL_TAIL_RE.search(base):  # 苄基型前端（…yl]methylsulfanyl）：桥后缀直接缀在甲基上，不拆。
-        return False
+    if _BENZYL_TAIL_RE.search(base) and "-" not in _strip_nested_fence(base):
+        return False  # 苄基型前端（…yl)methylsulfanyl）：桥后缀直接缀在甲基上，不拆。
+    if _BENZYL_TAIL_RE.search(base):  # 甲基带两个取代基者须围栏（P-16.5.1.2）
+        return True
     if base.endswith("ylidene") and "[" not in base:  # 简单 (X)亚基前端与桥融合（…methylideneamino）
         return False
     if suf == "oxy" and base.endswith("carbonyl"):  # P-63.2.2.1：酰基前端与氧桥融合（…carbonyloxy）
@@ -270,7 +274,7 @@ def _bridge_body(base: str, suf: str, merge: bool = False) -> str:
 def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
                    flat: bool = False, primes: dict[int, int] | None = None) -> str:
     """拼单个英文前缀：数量 + 词干（可省略位次时省略 locant）。"""
-    mult = _mult_of("en", stem, subs, len(subs))
+    mult = _mult_of("en", stem, subs, len(subs), omit)
     need = (_stem_needs_paren(stem, subs, omit, flat)
             and not _is_bare(subs) and not _sbridge_flat_stem(stem))
     if mult and mult == MULT_EN.get(len(subs), "") and _MULT_WRAP_RE.search(stem):  # P-16.3.2：复合取代基的倍数前缀须加括号
@@ -278,6 +282,8 @@ def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
         mult = "bis" if stem[:1] in "aeiou" else "di"
     if len(subs) > 1 and stem in CATION_YL_STEMS:  # P-16.3.2：阳离子去氢前缀属复合前缀，倍数用 bis(...)：bis(azaniumyl)
         need, mult = True, BIS_EN.get(len(subs), mult)
+    if mult in BIS_EN.values():  # P-16.3.2：bis/tris 的操作数须整体围栏：bis(carboxymethyl)
+        need = True
     if need:
         sp = _split_bridge_suffix(stem)
         if sp is not None:  # O/S/N 桥平铺式：桥后缀留括号外（P-63.2.2.1.1）。
@@ -291,12 +297,12 @@ def _prefix_one_en(stem: str, subs: list, omit: bool, tail_sep: bool = False,
 _COMPLEX_MULT_LANG = {"en": ("carboxy", BIS_EN, MULT_EN), "zh": ("羧", BIS_ZH, MULT_ZH)}
 
 
-def _mult_of(lang: str, stem: str, subs: list, n: int) -> str:
-    """数量前缀（P-16.3.2）：复合组分用 bis/tris。"""
+def _mult_of(lang: str, stem: str, subs: list, n: int, omit: bool = False) -> str:
+    """数量前缀（P-16.3.2）：位次已省（全挂同一原子）的复合组分用 bis/tris。"""
     sentinel, bis, mult = _COMPLEX_MULT_LANG[lang]
-    if sentinel in stem or any(s.get("paren") for s in subs):
-        return bis.get(n, "")
-    return mult.get(n, "")
+    if any(s.get("paren") for s in subs) or (omit and sentinel in stem):
+        return bis.get(n, "")  # 无位次可依凭：复合组分须 bis/tris 免歧义（bis(carboxymethyl)）
+    return mult.get(n, "")  # 带位次的复数前缀按 di/tri（3,4-dicarboxybutanoyl）
 
 
 def _split_bridge_suffix_zh(zh_stem: str, en_stem: str) -> tuple[str, str] | None:
@@ -329,7 +335,7 @@ def _prefix_one_zh(zh_stem: str, subs: list, omit: bool,
                    en_stem: str = "", tail_sep: bool = False, flat: bool = False,
                    primes: dict[int, int] | None = None) -> str:
     """拼单个中文前缀：数量 + 词干（CF3 特例：简单氟代甲基不加括号）。"""
-    mult = _mult_of("zh", zh_stem, subs, len(subs))
+    mult = _mult_of("zh", zh_stem, subs, len(subs), omit)
     en = subs[0].get("en") or ""
     omit_ring_yl = omit and any(s.get("ring_yl") for s in subs)  # 母体位次已省时环基词干免围栏，与英文侧同判（P-16.5.1.2）
     need = (any(s.get("paren") for s in subs)
@@ -389,7 +395,8 @@ def _parts_for_stem(stem: str, subs: list, omit: bool, primes: dict[int, int] | 
     """按词干生成中英文前缀（N- 类取代基加 N- 前缀并强制省略位次）。"""
     zh_stem = subs[0].get("zh") or ""
     if subs and all((s.get("kind") or "") in N_PREFIX_KINDS for s in subs):  # 整组全为 N-型才走 N-计数前缀，混入 C-型时走数字通道
-        need = any(s.get("paren") for s in subs) or bool(stem and stem[0].isdigit())  # 复合取代基须整体加括号
+        need = (any(s.get("paren") for s in subs) or bool(stem and stem[0].isdigit())
+                or bool(_STEREO_LEAD_ENCLOSE_RE.match(stem)))  # 复合取代基、前导立体描述符须整体加括号（P-16.5.1.1）
         s_en = _wrap_stem(stem, need)
         s_zh = _wrap_stem(zh_stem, need)
         tokens = sorted(("N" + "'" * ((primes or {}).get(s.get("attach_idx"), 0))) for s in subs)  # 同 N 用 N,N-；跨不同 N 用 N,N'-

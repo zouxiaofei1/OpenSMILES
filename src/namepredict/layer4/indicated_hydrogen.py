@@ -102,6 +102,26 @@ def is_hw(scaffold_id: str | None) -> bool:
     return is_hw_scaffold(scaffold_id)
 
 
+def _forced_h_atom(mol, idx: int, ring: set[int]) -> bool:
+    """环位氢是否由价态强制（环邻位都成不了环内双键，如 1,3-二氧戊环的 C2）。"""
+    from namepredict.layer2.hantzsch_widman import effective_valence
+    atom = mol.GetAtomWithIdx(idx)
+    nbs = [b.GetOtherAtomIdx(idx) for b in atom.GetBonds() if b.GetOtherAtomIdx(idx) in ring]
+    if not nbs:
+        return False
+    for nb in nbs:
+        na = mol.GetAtomWithIdx(nb)
+        cap = effective_valence(na)
+        if cap is None:
+            return False
+        outer = sum(b.GetBondTypeAsDouble() for b in na.GetBonds()
+                    if b.GetOtherAtomIdx(nb) not in ring
+                    and mol.GetAtomWithIdx(b.GetOtherAtomIdx(nb)).GetAtomicNum() != 1)
+        if outer + 3 <= cap:  # 该邻位还能再承受一个 π 键：本位的 H 不是强制的
+            return False
+    return True
+
+
 def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=frozenset(),
                        scaffold_id: str | None = None) -> list[str]:
     """返回指示氢位次列表：位次取 labels，缺失时用链序号（P-58.2.1）。"""
@@ -119,6 +139,8 @@ def indicated_hydrogen(mol, chain, labels=None, exclude=frozenset(), extra=froze
     elif not extra and _is_monocycle(mol, chain) and rdb == 1 \
             and not _is_retained_scaffold(scaffold_id) and not is_hw(scaffold_id):
         sats = set()  # 单环仅一个环内双键（环己烯/环戊烯）：氢位无歧义；HW 名按 mancude 词干读，须标指示氢
+    if is_hw(scaffold_id) and not extra:  # 生成式 HW 环：H 由价态强制者不作指示氢（P-58.2.1）
+        sats = {i for i in sats if not _forced_h_atom(mol, i, set(chain))}
     sats = sorted(sats, key=chain.index)
     if len(sats) > 1 and all(mol.GetAtomWithIdx(i).GetAtomicNum() == 7 for i in sats):  # 互变异构冗余护栏：饱和位全为氮且多于一个时只留最低位次。
         sats = sats[:1]

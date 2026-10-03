@@ -5,7 +5,7 @@ import re
 from rdkit import Chem
 from rdkit.Chem import BondType
 from namepredict.constants import (
-    ALKOXY_YLOXY_EN, ALKOXY_YLOXY_ZH, AMIDO_RETAINED, AZANE_PAREN_SUF, BIS_EN, BRIDGE_YL_SUFFIX,
+    ALKOXY_YLOXY_EN, ALKOXY_YLOXY_ZH, AMIDO_RETAINED, AZANE_PAREN_SUF, BIS_EN, BIS_ZH, BRIDGE_YL_SUFFIX,
     BRIDGE_ZH_YL_SUFFIX, C, ESTER_O_SIDE_KINDS, N, O, OXO_CENTER_KINDS, S,
     BRIDGE_FUSION_YL, CATION_STEMS, MONONUCLEAR_BRIDGE, MONONUCLEAR_HYDRIDES,
     MONONUCLEAR_YL, MONONUCLEAR_ZERO_YL, MULT_EN,
@@ -283,8 +283,12 @@ def _mononuclear_radical_names(numbered: dict) -> tuple[str, str] | None:
     if len({s["en"] for s in ordered}) == 1:
         base = ordered[0]
         base_zh = base["zh"] if cation else zh_bridge_root(base["zh"])  # 阳离子前缀保留烃基尾「基」（甲基铵基）
-        return (f"{MULT_EN[len(ordered)]}{base['en']}{zero[0]}",
-                f"{MULT_ZH[len(ordered)]}{base_zh}{zero[1]}")
+        m_en, m_zh = MULT_EN[len(ordered)], MULT_ZH[len(ordered)]
+        base_en = base["en"]
+        if "carboxy" in base_en:  # P-16.3.2：复合取代基（carboxymethyl）须改用 bis(…)，操作数围栏
+            m_en, m_zh = BIS_EN.get(len(ordered), m_en), BIS_ZH.get(len(ordered), m_zh)
+            base_en, base_zh = f"({base_en})", f"({base_zh})"
+        return (f"{m_en}{base_en}{zero[0]}", f"{m_zh}{base_zh}{zero[1]}")
     aryl = [s for s in ordered if s["en"].endswith("phenyl") and s["zh"].endswith("苯基")]
     if len(aryl) == 1 and not cation:  # P-62.2.1.1：N-芳基-N-某基胺取 anilino（阳离子无此保留名）
         ring = aryl[0]

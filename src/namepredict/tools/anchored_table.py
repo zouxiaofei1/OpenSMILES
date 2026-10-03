@@ -209,6 +209,7 @@ def _alkoxycarbonyl(mol: Mol, atoms: frozenset[int], attach_old: int) -> tuple[s
 
 
 _RING_YL_EN_RE = re.compile(r"^(.+?)-(\d+[a-z]?)-yl$")  # 环胺 N-侧基名（pyrrolidin-1-yl）
+_FREE_VALENCE_YL_RE = re.compile(r"-\d+[a-z]?-yl$")  # 带位次的自由价词尾（…pentan-2-yl / …triazin-2-yl）
 _AMINO_EN, _AMINO_ZH = "amino", "氨基"
 _ANILINO_EN, _ANILINO_ZH = "anilino", "苯胺基"
 _PHENYL_EN, _PHENYL_ZH = "phenyl", "苯基"
@@ -230,10 +231,13 @@ def carbamoyl_prefix_name(en: str, zh: str, *, in_ring: bool) -> tuple[str, str]
         stem_en, stem_zh = en[: -len(_AMINO_EN)], zh[: -len(_AMINO_ZH)]
         fenced = stem_en.startswith("(") and stem_en.endswith(")")
         if "(" in stem_en and not fenced:
-            # 复合 N-取代基自带内层括号：整体加方括号围栏再接 carbamoyl（P-16.5.1.1/P-16.5.2）
-            stem_en, stem_zh = f"[{stem_en}]", f"[{stem_zh}]"
-        elif len(SUB_LOCANT_RE.findall(stem_en)) >= 2 and not fenced:  # 复合环名前导多位次段：括起消歧（P-16.5.1.3.1）
-            stem_en, stem_zh = f"({stem_en})", f"({stem_zh})"
+            if stem_en.endswith(")"):  # 取代胺名（methyl(propyl)）：围栏须连 carbamoyl 一并括起（P-16.5.1.1）
+                return f"[{stem_en}carbamoyl]", f"[{stem_zh}氨基甲酰基]"
+            if _FREE_VALENCE_YL_RE.search(stem_en):  # 自由价词尾（…pentan-2-yl）：围栏止于词尾（P-16.5.1.2）
+                return f"[{stem_en}]carbamoyl", f"[{stem_zh}]氨基甲酰基"
+            return stem_en + "carbamoyl", stem_zh + "氨基甲酰基"  # 前导位次隔开的取代基括号无需围栏
+        if len(SUB_LOCANT_RE.findall(stem_en)) >= 2 and not fenced:  # 复合环名前导多位次段：括起消歧（P-16.5.1.3.1）
+            return f"({stem_en})carbamoyl", f"({stem_zh})氨基甲酰基"
         return stem_en + "carbamoyl", stem_zh + "氨基甲酰基"
     if en.endswith(_ANILINO_EN):  # N-芳基用 anilino 保留名，须换回「芳基」再接 carbamoyl
         aryl_en = en[: -len(_ANILINO_EN)] + _PHENYL_EN

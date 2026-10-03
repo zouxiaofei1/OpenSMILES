@@ -13,8 +13,7 @@ def _fallback_hydro_atoms(parent: dict) -> frozenset:
     chain = list(parent.get("chain") or ())
     if mol is None or not chain or parent.get("fused_tree") is None:
         return frozenset()
-    out = frozenset(i for i in saturated_ring_atoms(mol, set(chain))
-                    if not mol.GetAtomWithIdx(i).GetIsAromatic())
+    out = frozenset(saturated_ring_atoms(mol, set(chain)))  # 芳香稠环上的 NH 位也是加氢位（P-31.2.2）
     carbons = frozenset(a for a in out if mol.GetAtomWithIdx(a).GetAtomicNum() == C)
     return carbons if len(carbons) != len(out) and len(carbons) in HYDRO_MULT_N else out
 

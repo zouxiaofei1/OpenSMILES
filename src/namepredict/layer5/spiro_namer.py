@@ -133,8 +133,11 @@ def _locant(comp, atom) -> str | None:
 
 
 def _component_name(comp, num, kek) -> tuple[str, str] | None:
-    """组分全名：保留名/稠合名原样；可接裸词干者按本组分环内不饱和补词尾。"""
+    """组分全名：保留名/稠合名原样（含加氢前缀）；可接裸词干者按本组分环内不饱和补词尾。"""
     if comp.bare_en is None:
+        pre = getattr(comp, "hydro", None)
+        if pre:  # 加氢前缀只进名、不进引用序（P-24.5.1 按裸基名字母序）
+            return (f"{pre[0]}{comp.base_en}", f"{pre[1]}{comp.base_zh}")
         return (comp.base_en, comp.base_zh)
     ene, yne = _unsat_locants(comp, num, kek)
     if not ene and not yne:

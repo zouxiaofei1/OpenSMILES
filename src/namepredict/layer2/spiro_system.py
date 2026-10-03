@@ -219,6 +219,7 @@ class FbsComponent:
     node: object | None  # BridgedNode / FusedNode / None
     numberings: tuple[FbsNumbering, ...]
     order_extra: tuple = ()  # P-24.5.3 平局键（斜体稠合字母 / von Baeyer 描述符）
+    hydro: tuple[str, str] | None = None  # (en, zh) 加氢前缀；引用序仍按裸基名算
 
 
 @dataclass(frozen=True)
@@ -383,6 +384,25 @@ def _retained_base(mol, sid: str, chain) -> tuple:
     return packed.get("stem_en"), packed.get("stem_zh")
 
 
+def _component_hydro_prefix(mol, sid, atoms, nums, spiros) -> tuple[str, str] | None:
+    """保留名组分的加氢前缀：环内饱和位（螺原子除外）按本组分编号取位次。"""
+    from namepredict.constants import HYDRO_MULT_N, MULT_EN, MULT_ZH
+    from namepredict.layer2.ring_scaffold import _HAS_MULTI_BOND
+    from namepredict.layer4.indicated_hydrogen import saturated_ring_atoms
+    from namepredict.layer4.locant_calc import locant_key
+    if not nums or not atoms or not _HAS_MULTI_BOND.get(sid or ""):
+        return None  # 骨架母体本身已饱和（哌啶/咪唑烷）：位次由基名隐含
+    sats = [a for a in saturated_ring_atoms(mol, set(atoms)) if a not in set(spiros)]
+    if len(sats) not in HYDRO_MULT_N:
+        return None
+    locs = [nums[0].locants.get(a) for a in sats]
+    if any(l is None for l in locs):
+        return None
+    loc = ",".join(sorted((str(l) for l in locs), key=locant_key))
+    n = len(sats)
+    return f"{loc}-{MULT_EN[n]}hydro", f"{loc}-{MULT_ZH[n]}氢"
+
+
 def _cyclo_base(bare: bool):
     """单环烃组分基名生成器：全名 / 裸词干（可接 a-ene）。"""
     def make(n_ring: int):
@@ -405,7 +425,7 @@ def _build_component(mol, info, system, comp: list[int], free, k: int) -> FbsCom
     sub_edges = sub["fusion_edges"]
     spiros = tuple(sorted(a for a in atoms if a in free))
     sid = match_retained(info, atoms)
-    bare_en = bare_zh = None
+    bare_en = bare_zh = hydro = None
     if sid is not None:  # 保留名组分：杂原子与不饱和已含在名内
         from namepredict.layer2.ring_scaffold import _match_with_map
         hit = _match_with_map(info, atoms)
@@ -414,6 +434,8 @@ def _build_component(mol, info, system, comp: list[int], free, k: int) -> FbsCom
         kind = "mono_ring" if len(comp) == 1 else "fused_ring"
         nums = _retained_numberings(mol, sid, matches, sub_rings, spiros, sub_edges)
         base_en, base_zh = _retained_base(mol, sid, nums[0].chain if nums else ())
+        # 组分内多氢的饱和位补加氢前缀；排序仍按裸基名（P-24.5.1）
+        hydro = _component_hydro_prefix(mol, sid, atoms, nums, spiros)
         extra = () if kind == "mono_ring" else tuple("".join(_BRACKET.findall(base_en or "")))
         node = None
     elif len(comp) == 1:  # 未注册单环：碳环出 cyclo 基名，杂环本版不支持
@@ -439,7 +461,7 @@ def _build_component(mol, info, system, comp: list[int], free, k: int) -> FbsCom
     if not nums or base_en is None or base_zh is None:
         return None
     return FbsComponent(k, kind, atoms, tuple(sorted(comp)), spiros, base_en, base_zh,
-                        bare_en, bare_zh, sid, node, tuple(nums), extra)
+                        bare_en, bare_zh, sid, node, tuple(nums), extra, hydro)
 
 
 # ── 引用序（P-24.5.3 / P-24.6 / P-24.7.2） ──────────────

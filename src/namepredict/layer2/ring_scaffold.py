@@ -102,6 +102,7 @@ _TEMPLATES: dict[str, dict] = {  # 保留母体 SMILES 模板注册表（唯一�
     "dioxolane":   {"smiles": "C1COCO1",  "stem_en": "1,3-dioxolane", "stem_zh": "1,3-二氧戊环", "naming_class": "monohetero", "locant_prefix": "1,3-"},  # 双氧/三氧饱和环（缩醛/缩酮、溶剂类骨架）
     "dioxane":     {"smiles": "C1COCCO1", "stem_en": "1,4-dioxane",   "stem_zh": "1,4-二氧六环", "naming_class": "monohetero", "locant_prefix": "1,4-"},
     "trioxane":    {"smiles": "C1OCOCO1", "stem_en": "1,3,5-trioxane", "stem_zh": "1,3,5-三氧六环", "naming_class": "monohetero", "locant_prefix": "1,3,5-"},
+    "dithiole":    {"smiles": "S1SC=CC1", "stem_en": "dithiole", "stem_zh": "二硫杂环戊二烯", "naming_class": "monohetero", "fused": False},  # 1,2-二硫杂环戊二烯 mancude 母体；须先于 dithiolane 登记
     "dithiolane12": {"smiles": "C1CSSC1", "stem_en": "dithiolane", "stem_zh": "二硫杂环戊烷", "naming_class": "monohetero", "fused": False},  # 1,2-二硫戊环（P-22.2.2 HW 名；金标不写 1,2- 位次）
     "imidazolidine":{"smiles": "C1NCCN1", "stem_en": "imidazolidine",  "stem_zh": "咪唑烷", "naming_class": "monohetero"},
     "pyrazolidine": {"smiles": "C1CNNC1", "stem_en": "pyrazolidine", "stem_zh": "吡唑烷", "naming_class": "monohetero"},  # 表 2.3 保留名：饱和吡唑环须用它而非氢化 pyrazole
@@ -352,8 +353,7 @@ def hydrogenated_atoms(mol: Mol, scaffold_id: str, match) -> frozenset[int]:
                 b.GetBondType() != Chem.BondType.SINGLE and b.GetOtherAtomIdx(mi) not in ring_atoms
                 for b in atom.GetBonds()):
             suffix.add(mi)
-    carbons = frozenset(a for a in out if mol.GetAtomWithIdx(a).GetAtomicNum() == 6)  # 环杂原子新增的 H 由指示氢承载，不计入 hydro
-    hydro = carbons if len(carbons) != len(out) and len(carbons) in HYDRO_MULT_N else frozenset(out)
+    hydro = frozenset(out)  # 环杂原子新增的 H 与碳位同为「加氢位」，一并进 hydro 前缀（P-31.2.2）
     if len(hydro) not in HYDRO_MULT_N and suffix:  # 计数仍为奇数时，改由指示氢承载一个位（P-58.2.1）
         for mi in sorted(hydro):
             if any(mol.GetBondBetweenAtoms(mi, s) is not None for s in suffix):
@@ -497,7 +497,20 @@ def _match_with_map(info: dict, atom_ids, *, mancude_only: bool = False) -> tupl
     if hit is not None:
         return hit
     mol_h = memo.by_mol("hydrogenated", _hydrogenated, mol)  # 精确匹配失败后按完全氢化骨架再比对（P-25.3.4）
-    return _scan(mol_h, _Q_H) if mol_h is not None else None
+    if mol_h is None:
+        return None
+    inhit = _scan(mol_h, _Q_H)
+    if inhit is None:
+        return None
+    # 孤立单环在匹配原子集内仍有非单键：按饱和保留名命名会整段丢掉不饱和度，改走生成式 HW
+    from namepredict.layer2.hantzsch_widman import isolated_ring
+    sid = inhit[0]
+    if not _HAS_MULTI_BOND[sid] and isolated_ring(mol, atoms) and any(
+            b.GetBondType() != Chem.BondType.SINGLE
+            and b.GetBeginAtomIdx() in atoms and b.GetEndAtomIdx() in atoms
+            for b in mol.GetBonds()):
+        return None
+    return inhit
 
 
 def locant_prefix(spec_id: str | None) -> tuple[str, str, bool]:
