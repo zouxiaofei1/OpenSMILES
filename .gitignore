@@ -17,6 +17,7 @@ tools/ketcher-shell/node_modules/
 tools/ketcher-shell/dist/
 benchmarks/.last_run.json
 benchmarks/.last_stereo.json
+benchmarks/.opsin_last_run.json
 agent_loop/memory/sessions/
 agent_loop/prompts/.cycle_current.md
 agent_loop/memory/STATE.json
