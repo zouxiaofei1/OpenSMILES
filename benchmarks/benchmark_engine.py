@@ -44,7 +44,7 @@ from benchmarks.benchmark import (  # noqa: E402
     _tally,
     score_record,
 )
-from namepredict.tools.re import normalize_en, normalize_zh  # noqa: E402
+from opensmiles.tools.re import normalize_en, normalize_zh  # noqa: E402
 
 # ── loose（约定不敏感）归一 ─────────────────────────────────────
 # 目的：gold 是按现役 src 引擎的书写约定 curated 的（位次必带、取代基与母体是否加连字符、
@@ -122,8 +122,8 @@ def _load_legacy_package(dirname: str, alias: str) -> Any:
 def _install_v2_shim() -> None:
     """v2 内部 cache/common_names.py `from namepredict.core.capitalization import ...`。
 
-    旧版顶层 namepredict(带 core 子包)已不存在; 现役 src/namepredict 无 core。把
-    namepredict.core.capitalization shim 挂到已加载的 namepredict 包上, 函数指向
+    旧版顶层 opensmiles(带 core 子包)已不存在; 现役 src/opensmiles 无 core。把
+    namepredict.core.capitalization shim 挂到已加载的 opensmiles 包上, 函数指向
     v2 自带实现, 使 v2 与现役 src 能在同进程共存。
     """
     import types
@@ -134,11 +134,11 @@ def _install_v2_shim() -> None:
         from importlib import import_module as _imp
 
         cap_mod = _imp(f"{pkg.__name__}.core.capitalization")
-    np = sys.modules.get("namepredict")
+    np = sys.modules.get("opensmiles")
     if np is None:  # 未加载现役 src: 建一个空壳父包承载 shim
-        np = types.ModuleType("namepredict")
+        np = types.ModuleType("opensmiles")
         np.__path__ = []
-        sys.modules["namepredict"] = np
+        sys.modules["opensmiles"] = np
     core = sys.modules.get("namepredict.core")
     if core is None:
         core = types.ModuleType("namepredict.core")
@@ -187,7 +187,7 @@ def _make_engine(engine: str) -> _Engine:
         namer = pkg.SMILESNNamerV2()
         return _Engine(namer, style="dict", cache=namer._cache)
     # engine == "src": active src namer (already on sys.path via _SRC)
-    from namepredict.namer import SMILESNNamer
+    from opensmiles.namer import SMILESNNamer
 
     namer = SMILESNNamer()
     return _Engine(namer, style="attr", cache=namer.cache)
@@ -353,7 +353,7 @@ def run_engine_benchmark(
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Score an arbitrary naming engine on the gold benchmark")
     p.add_argument("--engine", choices=["v2", "v3", "src"], default="v3",
-                   help="v2/v3 = tools/namepredict-v{2,3}; src = active src namer (default: v3)")
+                   help="v2/v3 = tools/opensmiles-v{2,3}; src = active src namer (default: v3)")
     p.add_argument("--data", type=Path, default=Path("benchmarks/merged_benchmark.json"))
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--workers", type=int, default=None)

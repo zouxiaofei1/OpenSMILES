@@ -61,7 +61,7 @@ def heavy_atoms(smiles: str) -> int:
 
 def _normalized(name: str, lang: str) -> str:
     """按 benchmark 判分口径归一: EN 小写/统一连字符, ZH 统一括号种类。"""
-    from namepredict.tools.re import normalize_en, normalize_zh
+    from opensmiles.tools.re import normalize_en, normalize_zh
 
     s = name or ""
     return normalize_zh(s) if lang == "zh" else normalize_en(s)

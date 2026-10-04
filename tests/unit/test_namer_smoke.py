@@ -4,8 +4,8 @@ test_namer_smoke.py:
 """
 from __future__ import annotations
 
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 # ==========================================================================
 # 合并自 test_namer_smoke.py

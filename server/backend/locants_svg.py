@@ -21,8 +21,8 @@ def _orientation_coords(mol, chain: list[int]) -> dict[int, tuple[float, float]]
     仅对全芳香多环系统应用(与 L4 编号 _fused_numbering 的护栏一致), 否则
     None 表示退回 rdkit 默认 2D 布局。坐标已缩放到 rdkit 键长尺度。
     """
-    from namepredict.layer1.ring_systems import build_ring_systems
-    from namepredict.layer4.fused_orientation import preferred_orientation
+    from opensmiles.layer1.ring_systems import build_ring_systems
+    from opensmiles.layer4.fused_orientation import preferred_orientation
 
     try:
         chain_set = set(chain)
@@ -99,14 +99,14 @@ def build_locants_svg(smiles: str, orient: bool = True) -> dict[str, Any] | None
     """SMILES → 带 L4 编号的结构图 SVG;任何失败返回 None。
 
     orient=True 时稠环按优选取向水平行摆放;False 退回 rdkit 默认布局。
-    namepredict 在函数内导入(且置于 try 外): src/ 坏掉时报 500 而非静默返回 None。
+    opensmiles 在函数内导入(且置于 try 外): src/ 坏掉时报 500 而非静默返回 None。
     """
-    from namepredict.layer0.preprocessor import preprocess
-    from namepredict.layer1.analyzer import analyze
-    from namepredict.layer2.parent_ownership import finalize_parent_ownership
-    from namepredict.layer2.parent_selector import select_parent
-    from namepredict.layer3.substituent_extractor import extract_substituents
-    from namepredict.layer4.numbering import number
+    from opensmiles.layer0.preprocessor import preprocess
+    from opensmiles.layer1.analyzer import analyze
+    from opensmiles.layer2.parent_ownership import finalize_parent_ownership
+    from opensmiles.layer2.parent_selector import select_parent
+    from opensmiles.layer3.substituent_extractor import extract_substituents
+    from opensmiles.layer4.numbering import number
 
     try:
         mol = preprocess(smiles)

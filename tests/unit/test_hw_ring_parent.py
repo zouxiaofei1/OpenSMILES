@@ -5,8 +5,8 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 # (smiles, 期望英文, 期望中文)
 RING_CASES = [

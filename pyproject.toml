@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "namepredict"
+name = "opensmiles"
 version = "0.1.0"
 description = "Rule-based SMILES to bilingual IUPAC namer"
 readme = "README.md"

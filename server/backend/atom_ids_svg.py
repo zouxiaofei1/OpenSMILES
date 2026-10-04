@@ -61,9 +61,9 @@ def _draw_with_ids(mol) -> str:
 def build_atom_ids_svg(smiles: str) -> dict[str, Any] | None:
     """SMILES → 标注原子/环索引的结构图 SVG;任何失败返回 None。
 
-    namepredict 在函数内导入(且置于 try 外): src/ 坏掉时报 500 而非静默返回 None。
+    opensmiles 在函数内导入(且置于 try 外): src/ 坏掉时报 500 而非静默返回 None。
     """
-    from namepredict.layer0.preprocessor import preprocess
+    from opensmiles.layer0.preprocessor import preprocess
 
     try:
         mol = preprocess(smiles)

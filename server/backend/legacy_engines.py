@@ -3,7 +3,7 @@
 目录名带连字符(namepredict-v2/-v3)不能直接 import, 用 importlib spec 以别名注册进
 sys.modules, 使包内相对导入按别名包名正常解析。v2 内部依赖旧版顶层
 namepredict.core.capitalization(现役 src 无 core 子包), 用 shim 挂到已加载的
-namepredict 包上指向 v2 自带实现, 使 v2 与 src 能同进程共存。命名结果规整成与 src
+opensmiles 包上指向 v2 自带实现, 使 v2 与 src 能同进程共存。命名结果规整成与 src
 NameResult 同构的 dict(en/zh/success/source/time_ms/meta), 供 routes_name 统一再
 追加 engine / gold 字段。
 """
@@ -29,21 +29,21 @@ _lock = threading.Lock()
 
 
 def _install_v2_shim(alias: str) -> None:
-    """把 namepredict.core.capitalization shim 挂到顶层 namepredict 包。
+    """把 namepredict.core.capitalization shim 挂到顶层 opensmiles 包。
 
     v2 的 cache/common_names.py 里 `from namepredict.core.capitalization import
-    capitalize_chemical_name` 依赖旧版结构。现役 src/namepredict 已无 core 子包;
-    此处把函数指向 v2 自带实现, 避免改 v2 源码。real namepredict 若已导入(srv 启动时
+    capitalize_chemical_name` 依赖旧版结构。现役 src/opensmiles 已无 core 子包;
+    此处把函数指向 v2 自带实现, 避免改 v2 源码。real opensmiles 若已导入(srv 启动时
     即导入), 挂在其上即可共存; 否则建空壳父包承载。
     """
     cap_mod = sys.modules.get(f"{alias}.core.capitalization")
     if cap_mod is None:
         cap_mod = importlib.import_module(f"{alias}.core.capitalization")
-    np = sys.modules.get("namepredict")
+    np = sys.modules.get("opensmiles")
     if np is None:
-        np = types.ModuleType("namepredict")
+        np = types.ModuleType("opensmiles")
         np.__path__ = []
-        sys.modules["namepredict"] = np
+        sys.modules["opensmiles"] = np
     core = sys.modules.get("namepredict.core")
     if core is None:
         core = types.ModuleType("namepredict.core")

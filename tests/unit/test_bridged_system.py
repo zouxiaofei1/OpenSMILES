@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.bridged_system import decompose_bridged_system
-from namepredict.layer2.parent_select import select_parent
+from opensmiles.layer0.preprocessor import preprocess
+from opensmiles.layer1.analyzer import analyze
+from opensmiles.layer2.bridged_system import decompose_bridged_system
+from opensmiles.layer2.parent_select import select_parent
 
 
 def _nodes(smiles: str) -> list:

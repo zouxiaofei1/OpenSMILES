@@ -4,10 +4,10 @@ test_coverage_ledger.py: Coverage ledger: heavy-atom gap/overlap over ownership 
 """
 from __future__ import annotations
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
-from namepredict.layer3.coverage import build_coverage_ledger
-from namepredict.layer3.substituent_namer import SubstituentName
+from opensmiles.layer0.preprocessor import preprocess
+from opensmiles.layer3.claimable_block import ClaimedBlock, SideSlot
+from opensmiles.layer3.coverage import build_coverage_ledger
+from opensmiles.layer3.substituent_namer import SubstituentName
 
 # ==========================================================================
 # 合并自 test_coverage_ledger.py

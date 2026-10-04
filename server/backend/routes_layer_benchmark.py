@@ -189,8 +189,8 @@ def _llm_truth_state(layer: int) -> dict[str, Any]:
 # ── real Layer0 ──────────────────────────────────────────────────
 
 def _real_l0(smiles: str) -> dict[str, Any]:
-    from namepredict.layer0.preprocessor import preprocess
-    from namepredict.layer0.salt import dissociate_salt
+    from opensmiles.layer0.preprocessor import preprocess
+    from opensmiles.layer0.salt import dissociate_salt
 
     mol = preprocess(smiles)
     if mol is None:
@@ -267,8 +267,8 @@ _FG_KEY = {
 
 
 def _real_l1(smiles: str) -> dict[str, Any]:
-    from namepredict.layer0.preprocessor import preprocess
-    from namepredict.layer1.analyzer import analyze
+    from opensmiles.layer0.preprocessor import preprocess
+    from opensmiles.layer1.analyzer import analyze
 
     mol = preprocess(smiles)
     if mol is None:

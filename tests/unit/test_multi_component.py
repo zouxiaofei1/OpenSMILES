@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 # 能唯一配对的有机阴阳离子 → P-77.1.1 二元盐名（阳离子名 + 阴离子名，空格）
 ion_pair__CASES = [

@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 # ==========================================================================
 # 合并自 test_phosphate.py
@@ -114,9 +114,9 @@ def test_condensed_phosphate_parent(smiles: str, en: str, zh: str | None) -> Non
 
 @pytest.mark.parametrize("smiles", phosphate__EXCLUDED)
 def test_phosphate_detector_excludes(smiles: str) -> None:
-    from namepredict.layer0.preprocessor import preprocess
-    from namepredict.layer0.salt import dissociate_salt
-    from namepredict.layer1.analyzer import oxoacid_entries
+    from opensmiles.layer0.preprocessor import preprocess
+    from opensmiles.layer0.salt import dissociate_salt
+    from opensmiles.layer1.analyzer import oxoacid_entries
 
     mol = preprocess(smiles)
     organic, _salt = dissociate_salt(mol)

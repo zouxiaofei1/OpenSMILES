@@ -1,6 +1,6 @@
 ---
 name: dead-code-sweep
-description: 清理 namepredict 死代码。先让用户二选一：①常规 AST 引用图分析（秒级，抓「没人调用」）②变异扫描法（慢，逐个函数注入 return None 跑 benchmark，抓「调用但没效果」）。触发词：/dead-code-sweep、扫死代码、删无用函数、死代码清理。
+description: 清理 opensmiles 死代码。先让用户二选一：①常规 AST 引用图分析（秒级，抓「没人调用」）②变异扫描法（慢，逐个函数注入 return None 跑 benchmark，抓「调用但没效果」）。触发词：/dead-code-sweep、扫死代码、删无用函数、死代码清理。
 ---
 
 # 死代码清扫

@@ -34,7 +34,7 @@ CPython 的 pyc 头只存源文件 **mtime（秒）+ size**。而同一文件的
   `tools/re.py`（新版在 `constants.py`），评测脚手架顶层 import 它们。为跑通要加垫片，
   但注入 `return None` 会让 `None == None` 恒成立 → **分数虚高到 100%**。
   这 3 个必须写进 `sweep.json` 的 `shims` 从候选里剔除。
-- **预导入检查要放在脚手架 import 之前**。`benchmarks.benchmark` 顶层就 `import namepredict`，
+- **预导入检查要放在脚手架 import 之前**。`benchmarks.benchmark` 顶层就 `import opensmiles`，
   若把「试导入」放在它后面，导入期崩溃会逃逸成 `runner_crash` 而不是 `import_error`。
 - **导入期必需 ≠ 死**。例：`fg_registry.srs_fgs` 的结果在 `stereo.py` 模块级参与
   `_RS_KINDS = _fg_reg.srs_fgs() | frozenset(...)`，注入后直接 TypeError。

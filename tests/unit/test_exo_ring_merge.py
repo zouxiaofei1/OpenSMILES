@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 # 新增：环内炔键此前被整段丢弃（旧 worker 只读 ene_locants）
 EXO_RING_UNSAT = [

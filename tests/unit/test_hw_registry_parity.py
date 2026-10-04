@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer2.ring_scaffold import _TEMPLATES
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.layer2.ring_scaffold import _TEMPLATES
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 # (sid, 模板 SMILES, 期望英文, 期望中文)
 TAKEOVER = [

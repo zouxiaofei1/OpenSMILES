@@ -132,18 +132,18 @@ def _subst_serializable(subst: list[dict]) -> list[dict]:
 
 @router.post("/debug")
 def debug_smiles(body: DebugBody) -> dict[str, Any]:
-    # namepredict 在请求内导入: src/ 编译失败时 app 仍能启动并返回 500 详情
-    from namepredict.layer0.preprocessor import preprocess
-    from namepredict.layer1.analyzer import analyze
-    from namepredict.layer2.candidates import _collect_candidates
-    from namepredict.layer2.parent_ownership import finalize_parent_ownership
-    from namepredict.layer2.parent_selector import _finalize_ranked, _reorder_p45_2
-    from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot
-    from namepredict.layer3.coverage import build_coverage_ledger
-    from namepredict.layer3.substituent_extractor import extract_substituents
-    from namepredict.layer3.substituent_namer import SubstituentName
-    from namepredict.layer4.numbering import number
-    from namepredict.layer5.assembler import assemble
+    # opensmiles 在请求内导入: src/ 编译失败时 app 仍能启动并返回 500 详情
+    from opensmiles.layer0.preprocessor import preprocess
+    from opensmiles.layer1.analyzer import analyze
+    from opensmiles.layer2.candidates import _collect_candidates
+    from opensmiles.layer2.parent_ownership import finalize_parent_ownership
+    from opensmiles.layer2.parent_selector import _finalize_ranked, _reorder_p45_2
+    from opensmiles.layer3.claimable_block import ClaimedBlock, SideSlot
+    from opensmiles.layer3.coverage import build_coverage_ledger
+    from opensmiles.layer3.substituent_extractor import extract_substituents
+    from opensmiles.layer3.substituent_namer import SubstituentName
+    from opensmiles.layer4.numbering import number
+    from opensmiles.layer5.assembler import assemble
 
     t0 = time.perf_counter()
 

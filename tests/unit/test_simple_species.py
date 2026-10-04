@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 # 单元素分子：单质气体与臭氧（N₂/F₂/Cl₂/Br₂/I₂ 由 L2 杂原子链命名，见下）
 element__CASES = [

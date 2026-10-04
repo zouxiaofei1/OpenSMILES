@@ -22,30 +22,30 @@ from __future__ import annotations
 import ast
 import pytest
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer1.fg_registry import FG_SPECS
-from namepredict.layer1.functional_group_inventory import (
+from opensmiles.layer0.preprocessor import preprocess
+from opensmiles.layer1.analyzer import analyze
+from opensmiles.layer1.fg_registry import FG_SPECS
+from opensmiles.layer1.functional_group_inventory import (
     FunctionalGroupClass as FG,
     FunctionalGroupInventory,
     inventory_from_info,
 )
-from namepredict.layer2.parent_select import _collect_candidates
-from namepredict.layer2.parent_select import finalize_parent_ownership
-from namepredict.layer2.principal_expression import (
+from opensmiles.layer2.parent_select import _collect_candidates
+from opensmiles.layer2.parent_select import finalize_parent_ownership
+from opensmiles.layer2.principal_expression import (
     PrincipalExpressionFacts,
     PrincipalRelation,
 )
-from namepredict.layer2.parent_select import select_parent
-from namepredict.layer2.ring_scaffold import all_specs
-from namepredict.layer3.claimable_block import ClaimedBlock, SideSlot, claim_block, iter_claims
-from namepredict.layer3.coverage import build_coverage_ledger
-from namepredict.layer3.substituent_extractor import extract_substituents
-from namepredict.layer3.substituent_namer import SubstituentName, SubstituentNamer
-from namepredict.layer4.locant_calc import _fg_locants
-from namepredict.layer4.numbering import number
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.layer2.parent_select import select_parent
+from opensmiles.layer2.ring_scaffold import all_specs
+from opensmiles.layer3.claimable_block import ClaimedBlock, SideSlot, claim_block, iter_claims
+from opensmiles.layer3.coverage import build_coverage_ledger
+from opensmiles.layer3.substituent_extractor import extract_substituents
+from opensmiles.layer3.substituent_namer import SubstituentName, SubstituentNamer
+from opensmiles.layer4.locant_calc import _fg_locants
+from opensmiles.layer4.numbering import number
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 from pathlib import Path
 from rdkit import Chem
 
@@ -60,7 +60,7 @@ from rdkit import Chem
 # parent_selector keeps FG try + select_parent; helpers live in parent_core.
 # ==========================================================================
 l2_parent_core_contract___ROOT = Path(__file__).resolve().parents[2]
-l2_parent_core_contract___L2 = l2_parent_core_contract___ROOT / "src" / "namepredict" / "layer2"
+l2_parent_core_contract___L2 = l2_parent_core_contract___ROOT / "src" / "opensmiles" / "layer2"
 
 # Helpers that must be sourced from parent_core, not parent_selector.
 l2_parent_core_contract___HELPERS = frozenset({
@@ -84,7 +84,7 @@ def l2_parent_core_contract___parent_selector_helper_hits(path: Path) -> list[st
     for node in ast.walk(tree):
         if not isinstance(node, ast.ImportFrom) or not node.module:
             continue
-        if node.module != "namepredict.layer2.parent_select":
+        if node.module != "opensmiles.layer2.parent_select":
             continue
         for alias in node.names:
             if alias.name in l2_parent_core_contract___HELPERS:
@@ -155,7 +155,7 @@ def test_info_carries_inventory_and_no_flat_fg_lists() -> None:
 
 def test_unsaturation_stays_out_of_fg_channel() -> None:
     """双键/三键在 info 顶层，但不进 _detect_parts。"""
-    from namepredict.layer1.analyzer import _detect_parts
+    from opensmiles.layer1.analyzer import _detect_parts
 
     smiles = "C=CC#C"
     info = analyze(Chem.MolFromSmiles(smiles))
@@ -174,7 +174,7 @@ def test_demoted_leaf_survives_in_inventory_not_in_flat_lists() -> None:
 
 def test_inventory_missing_is_explicit_failure() -> None:
     """缺 fg_inventory 即上游违约：显式报错，不静默退化成空清单。"""
-    from namepredict.layer1.functional_group_inventory import inventory_from_info
+    from opensmiles.layer1.functional_group_inventory import inventory_from_info
 
     with pytest.raises(KeyError, match="fg_inventory"):
         inventory_from_info({"mol": Chem.MolFromSmiles("CC")})
@@ -187,8 +187,8 @@ def test_inventory_missing_is_explicit_failure() -> None:
 #
 # Architecture contract for Layer 2 side topology facts consumed by Layer 3.
 # ==========================================================================
-l2_l3_side_facts_contract__LAYER3 = Path(__file__).parents[2] / "src" / "namepredict" / "layer3"
-l2_l3_side_facts_contract__TOOLS = Path(__file__).parents[2] / "src" / "namepredict" / "tools"
+l2_l3_side_facts_contract__LAYER3 = Path(__file__).parents[2] / "src" / "opensmiles" / "layer3"
+l2_l3_side_facts_contract__TOOLS = Path(__file__).parents[2] / "src" / "opensmiles" / "tools"
 # Side-topology facts merged into tools 碳拓扑原语 chain.py。
 l2_l3_side_facts_contract__TOOLS_FACTS = l2_l3_side_facts_contract__TOOLS / "chain.py"
 l2_l3_side_facts_contract__LEAF_PROTOCOL = l2_l3_side_facts_contract__LAYER3 / "leaves" / "protocol.py"
@@ -198,7 +198,7 @@ def l2_l3_side_facts_contract___private_layer2_imports(path: Path) -> list[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
     found: list[str] = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("namepredict.layer2"):
+        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("opensmiles.layer2"):
             found.extend(alias.name for alias in node.names if alias.name.startswith("_"))
     return found
 
@@ -210,16 +210,16 @@ def l2_l3_side_facts_contract___all_functions(path: Path) -> list[ast.FunctionDe
 
 def l2_l3_side_facts_contract___tools_modules(tree: ast.AST) -> list[str]:
     direct = [alias.name for node in ast.walk(tree) if isinstance(node, ast.Import)
-              for alias in node.names if alias.name.startswith("namepredict.tools")]
+              for alias in node.names if alias.name.startswith("opensmiles.tools")]
     froms = [(node.module or "") for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)
-             and (node.module or "").startswith("namepredict.tools")]
+             and (node.module or "").startswith("opensmiles.tools")]
     return [*direct, *froms]
 
 
 def test_tools_import_scan_covers_both_ast_forms() -> None:
-    tree = ast.parse("import namepredict.tools.aryl_sub\nfrom namepredict.tools import side_alkyl")
+    tree = ast.parse("import opensmiles.tools.aryl_sub\nfrom opensmiles.tools import side_alkyl")
     assert l2_l3_side_facts_contract___tools_modules(tree) == [
-        "namepredict.tools.aryl_sub", "namepredict.tools",
+        "opensmiles.tools.aryl_sub", "opensmiles.tools",
     ]
 
 
@@ -319,7 +319,7 @@ def test_side_fact_dataclasses_expose_only_topology_fields() -> None:
 # L5 only reads side['en']/side['zh'] (and existing kind/mode fields).
 # ==========================================================================
 l5_no_layer2_private___ROOT = Path(__file__).resolve().parents[2]
-l5_no_layer2_private___L5 = l5_no_layer2_private___ROOT / "src" / "namepredict" / "layer5"
+l5_no_layer2_private___L5 = l5_no_layer2_private___ROOT / "src" / "opensmiles" / "layer5"
 
 # L5 special-FG name modules that previously walked via L2 private APIs.
 
@@ -329,14 +329,14 @@ def l5_no_layer2_private___layer2_import_hits(path: Path) -> list[str]:
     hits: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
-            if node.module == "namepredict.layer2" or node.module.startswith(
-                "namepredict.layer2."
+            if node.module == "opensmiles.layer2" or node.module.startswith(
+                "opensmiles.layer2."
             ):
                 hits.append(f"from {node.module} (L{node.lineno})")
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == "namepredict.layer2" or alias.name.startswith(
-                    "namepredict.layer2."
+                if alias.name == "opensmiles.layer2" or alias.name.startswith(
+                    "opensmiles.layer2."
                 ):
                     hits.append(f"import {alias.name} (L{node.lineno})")
     return hits
@@ -792,7 +792,7 @@ def test_methoxybutane_has_ether_or_alkoxy_claim_path():
     o_idxs = {a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 8}
     covered = set(owned) | {i for c in claims for i in c.atoms}
     assert o_idxs <= covered
-    from namepredict.layer3.substituent_namer import SubstituentNamer
+    from opensmiles.layer3.substituent_namer import SubstituentNamer
 
     named = [SubstituentNamer().name(mol, c) for c in claims]
     assert any(n is not None and n.en == "methoxy" for n in named) or parent.get("kind") == "ether"
@@ -983,7 +983,7 @@ def l4_locant_calc___dict_keys(tree: ast.AST) -> set:
 
 def test_locant_calc_reads_no_flat_anchor_fields():
     """位次原子唯一来源是 principal_expression_facts：locant_calc 不得按键读扁平锚点字段，也不得持有 per-class 函数表。"""
-    path = Path(__file__).parents[2] / "src" / "namepredict" / "layer4" / "locant_calc.py"
+    path = Path(__file__).parents[2] / "src" / "opensmiles" / "layer4" / "locant_calc.py"
     tree = ast.parse(path.read_text(encoding="utf-8"))
     assert not (l4_locant_calc___dict_keys(tree) & l4_locant_calc___BANNED_FIELDS)
     assigned = {target.id for node in tree.body if isinstance(node, ast.Assign)

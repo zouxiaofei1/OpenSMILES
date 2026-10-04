@@ -16,7 +16,7 @@ Progress/ordering contract with the server — keep these stable:
 Usage:
   python -m benchmarks.benchmark_preview_parallel --data <source.json> --cache <out.json>
       [--sig]          wrap output as {"_data_sig": "...", "rows": [...]} (history caches)
-      [--src <dir>]    import namepredict from <dir> instead of ROOT/src (history worktree)
+      [--src <dir>]    import opensmiles from <dir> instead of ROOT/src (history worktree)
       [--workers N]    pool size; 0 = cpu_count - 1
 """
 
@@ -60,7 +60,7 @@ def _init_worker() -> None:
         RDLogger.DisableLog("rdApp.*")
     except Exception:
         pass
-    from namepredict.namer import SMILESNNamer
+    from opensmiles.namer import SMILESNNamer
 
     _WORKER_NAMER = SMILESNNamer()
 
@@ -78,7 +78,7 @@ def _score(pe: str, pz: str, row: dict[str, Any]) -> dict[str, Any]:
     显式 eval_en/eval_zh 标记优先; eval_zh=False 的行不考核中文(ok 只取决于
     英文)。无 eval 字段的源 (chebi20_test_1k.json 等) 回退旧行为: gold 非空即考核。
     """
-    from namepredict.tools.re import nospace, normalize_en, normalize_zh
+    from opensmiles.tools.re import nospace, normalize_en, normalize_zh
 
     ge = str(row.get("english_name") or "")
     gz = str(row.get("chinese_name") or "")
@@ -156,7 +156,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--sig", action="store_true",
                    help="Wrap output as {\"_data_sig\": ..., \"rows\": [...]} (history caches)")
     p.add_argument("--src", type=Path, default=None,
-                   help="Import namepredict from this dir (default: ROOT/src)")
+                   help="Import opensmiles from this dir (default: ROOT/src)")
     p.add_argument("--workers", type=int, default=0,
                    help=f"Process pool size (default: cpu_count-1 = {_default_workers()})")
     return p
@@ -168,7 +168,7 @@ def _main(argv: list[str] | None = None) -> int:
     cache: Path = args.cache
     src = args.src if args.src is not None else ROOT / "src"
 
-    # Must precede any namepredict import *and* any pool spawn: worker children
+    # Must precede any opensmiles import *and* any pool spawn: worker children
     # inherit this sys.path (spawn), so imports there resolve to the same source.
     src_str = str(src)
     if src_str not in sys.path:

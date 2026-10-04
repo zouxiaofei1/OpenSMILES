@@ -13,14 +13,14 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.ring_systems import build_ring_systems
-from namepredict.layer2.ring_scaffold import FUSED56_LABELS, NAPH_LABELS
-from namepredict.layer4.fused_numbering import fused_atoms, number_fused_system
-from namepredict.layer4.fused_orientation import Orientation, preferred_orientation, preferred_orientations
-from namepredict.layer4.locant_calc import locant_key, locant_str_sort
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.layer0.preprocessor import preprocess
+from opensmiles.layer1.ring_systems import build_ring_systems
+from opensmiles.layer2.ring_scaffold import FUSED56_LABELS, NAPH_LABELS
+from opensmiles.layer4.fused_numbering import fused_atoms, number_fused_system
+from opensmiles.layer4.fused_orientation import Orientation, preferred_orientation, preferred_orientations
+from opensmiles.layer4.locant_calc import locant_key, locant_str_sort
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 # ==========================================================================
 # 合并自 test_fused_numbering.py

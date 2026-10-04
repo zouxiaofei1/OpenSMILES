@@ -46,7 +46,7 @@ def _rel(p: Path) -> str:
 
 
 def collect() -> list[dict]:
-    """列出全部函数。key 形如 `src/namepredict/layer1/analyzer.py::ClassName.method`。"""
+    """列出全部函数。key 形如 `src/opensmiles/layer1/analyzer.py::ClassName.method`。"""
     seen_keys: dict[str, int] = {}
     out: list[dict] = []
     for p in sorted(PKG_DIR.rglob("*.py")):

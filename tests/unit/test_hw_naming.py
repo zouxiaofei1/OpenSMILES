@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.constants import (
+from opensmiles.constants import (
     As, B, C, N, O, P, S, Se, Si,
 )
-from namepredict.layer2.hantzsch_widman import hw_name_from_cycle, omit_locants
+from opensmiles.layer2.hantzsch_widman import hw_name_from_cycle, omit_locants
 
 # (环序元素表, 环内双键数, 期望英文名, 期望中文名)
 CASES = [

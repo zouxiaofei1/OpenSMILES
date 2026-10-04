@@ -14,9 +14,9 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer5.assembler_prefixes import _front_needs_enclosure, _split_bridge_suffix
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import alkyl_alpha_key, normalize_en, normalize_zh
+from opensmiles.layer5.assembler_prefixes import _front_needs_enclosure, _split_bridge_suffix
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import alkyl_alpha_key, normalize_en, normalize_zh
 
 # ==========================================================================
 # 合并自 test_mult_prefix.py

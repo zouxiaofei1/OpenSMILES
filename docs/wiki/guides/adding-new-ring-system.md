@@ -1,6 +1,6 @@
 # 指南：新增环系 (Adding a Ring System)
 
-适用范围：`src/namepredict` 命名引擎；保留母体以 `layer2/ring_scaffold.py` 的 `_TEMPLATES` 为唯一注册表，未注册杂单环由 `layer2/hantzsch_widman.py` 生成，符号名与源码一致。
+适用范围：`src/opensmiles` 命名引擎；保留母体以 `layer2/ring_scaffold.py` 的 `_TEMPLATES` 为唯一注册表，未注册杂单环由 `layer2/hantzsch_widman.py` 生成，符号名与源码一致。
 
 本指南以**含硫饱和六元杂环（thiane 类）**为主线，走完「识别 → 注册 → 固定编号 → 命名 → 与 FG 组合」五步。
 

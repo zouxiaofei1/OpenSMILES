@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.parent_select import select_parent
-from namepredict.layer4.numbering_engine import _fused_numbering, orient_numbering
+from opensmiles.layer0.preprocessor import preprocess
+from opensmiles.layer1.analyzer import analyze
+from opensmiles.layer2.parent_select import select_parent
+from opensmiles.layer4.numbering_engine import _fused_numbering, orient_numbering
 
 # 每条 = (SMILES, 期望的杂原子符号→位次)。均为并列候选的实际分歧点。
 HETERO_CASES = [

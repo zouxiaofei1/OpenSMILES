@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer1.analyzer import analyze
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.layer1.analyzer import analyze
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 from rdkit import Chem
 
 # ==========================================================================

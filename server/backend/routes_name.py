@@ -167,7 +167,7 @@ PUG_IUPAC_URL = (
     "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/inchikey/{ik}"
     "/property/IUPACName/JSON"
 )
-PUG_USER_AGENT = "ChemAgentNamer/0.1 (local IUPAC-name lookup)"
+PUG_USER_AGENT = "OpenSMILESNamer/0.1 (local IUPAC-name lookup)"
 
 # 以 InChIKey 缓存稳定结果(命中/未收录); 网络异常不缓存。上限防无限增长。
 _pc_cache: OrderedDict[str, dict[str, Any]] = OrderedDict()

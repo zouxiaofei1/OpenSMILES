@@ -8,13 +8,13 @@ from __future__ import annotations
 import pytest
 from rdkit import Chem
 
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer1.ring_systems import build_ring_systems
-from namepredict.layer2.parent_select import select_parent
-from namepredict.layer2.spiro_system import FbsComponent, citation_order, component_indices
-from namepredict.layer5.spiro_namer import spiro_descriptor_str, spiro_multiplier
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.layer1.analyzer import analyze
+from opensmiles.layer1.ring_systems import build_ring_systems
+from opensmiles.layer2.parent_select import select_parent
+from opensmiles.layer2.spiro_system import FbsComponent, citation_order, component_indices
+from opensmiles.layer5.spiro_namer import spiro_descriptor_str, spiro_multiplier
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 # 每条 = (SMILES, 期望英文名, 期望中文名)。金标旁证见 benchmarks/spiro_benchmark.json。
 CASES = [

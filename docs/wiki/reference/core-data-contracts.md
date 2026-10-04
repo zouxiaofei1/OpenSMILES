@@ -1,6 +1,6 @@
 # 核心数据合约 (Core Data Contracts)
 
-> NamePredict 六层命名流水线跨层数据结构的字段规格；字段名与语义以 `src/namepredict` 源码为唯一依据。
+> OpenSMILES 六层命名流水线跨层数据结构的字段规格；字段名与语义以 `src/opensmiles` 源码为唯一依据。
 
 ## 端到端数据流图
 

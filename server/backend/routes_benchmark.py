@@ -389,18 +389,18 @@ def _hist_benchmark_refresh(full: str, force: bool, data_file: str) -> dict[str,
         wt = history_store.ensure_worktree(full)  # refs+1; released in finish_job
     except RuntimeError as exc:
         return {"ok": False, "error": str(exc)}
-    if not (wt / "src" / "namepredict").is_dir():
+    if not (wt / "src" / "opensmiles").is_dir():
         # The package is an editable install pointing at the main repo, so an
         # import would silently fall back to current code — reject instead.
         history_store.release_worktree(full)
-        return {"ok": False, "error": f"该 commit 无 namepredict 源码（{full[:7]}），无法运行历史 benchmark"}
+        return {"ok": False, "error": f"该 commit 无 opensmiles 源码（{full[:7]}），无法运行历史 benchmark"}
 
     kind = _hist_kind(data_file)
     cache_path = history_store.cache_path(full, kind)
     history_store.cache_dir(full).mkdir(parents=True, exist_ok=True)
 
     # Parallel generator subprocess (benchmarks.benchmark_preview_parallel):
-    # same module as the live preview, but imports namepredict from the commit's
+    # same module as the live preview, but imports opensmiles from the commit's
     # worktree (--src) and wraps cache rows with the data signature (--sig).
     cmd = [
         sys.executable, "-m", "benchmarks.benchmark_preview_parallel",

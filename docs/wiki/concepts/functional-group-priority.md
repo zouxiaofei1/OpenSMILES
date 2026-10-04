@@ -1,6 +1,6 @@
 # 官能团优先级体系 (Functional Group Priority)
 
-本文说明 NamePredict 中官能团优先级的声明处、跨层流转路径与仲裁规则。优先级数据以 `src/namepredict/layer1/fg_registry.py` 为唯一事实来源，L2 与 L5 只消费、不重新登记。
+本文说明 OpenSMILES 中官能团优先级的声明处、跨层流转路径与仲裁规则。优先级数据以 `src/opensmiles/layer1/fg_registry.py` 为唯一事实来源，L2 与 L5 只消费、不重新登记。
 
 ## 优先级从哪来
 
@@ -155,12 +155,12 @@ P-45.2 排序在 `parent_select._reorder_p45_2`。它对候选列表做稳定排
 
 ## 相关文件
 
-- `src/namepredict/layer1/fg_registry.py`：`FgSpec`、`FG_SPECS`、`oxoacid_is_acid`、`OXO_ACID_P41`、`OXO_ACID_KINDS`、`OXO_ACID_KIND_BY_H`
-- `src/namepredict/layer1/functional_group_inventory.py`：`FunctionalGroupClass`、`FunctionalGroupOccurrence`、`FunctionalGroupInventory`、`OXO_FG_CLASSES`、`FG_ATOM_FNS`、`_FG_KEYS`、`_ANCHOR_KEYS`
-- `src/namepredict/layer1/analyzer.py`：`_arbitrate_parts`、`_SUPPRESSIBLE`、`_PRESENCE_SKIP`、`_LEAF_DEMOTED`、`_OXO_CLASS_BY_KIND`、`_oxo_bridge_arms`、`_has_negative_atom`、`_drop_mixed_anion_os`、`_drop_mixed_anion_acids`、`_mark_anion_os`、`_OXO_KIND_P`、`_OXO_KIND_S_ARM`、`boronic_entries`
-- `src/namepredict/layer2/principal.py`：`PrincipalPriority`、`PRINCIPAL_REGISTRY`、`_effective_priority`、`_has_charged_acid`、`_ANION_OS_P41`、`_CATION_ANION_GATED`、`select_principal_group`
-- `src/namepredict/layer2/parent_skeleton.py`：`select_principal_skeletons`、`keep_p44_1_2`、`keep_p44_2`、`keep_p44_3`、`keep_p44_4_unsaturation`
-- `src/namepredict/layer2/parent_select.py`：`_p45_2_prefix_count`、`_condensed_rank`、`_reorder_p45_2`、`_reorder_oxo_ester_side`、`_oxo_ester_side_score`、`select_parent`
-- `src/namepredict/layer5/chain_engine.py`：`_KIND_TABLE`、`_OXO_TAIL`、`_oxoacid_tail`
+- `src/opensmiles/layer1/fg_registry.py`：`FgSpec`、`FG_SPECS`、`oxoacid_is_acid`、`OXO_ACID_P41`、`OXO_ACID_KINDS`、`OXO_ACID_KIND_BY_H`
+- `src/opensmiles/layer1/functional_group_inventory.py`：`FunctionalGroupClass`、`FunctionalGroupOccurrence`、`FunctionalGroupInventory`、`OXO_FG_CLASSES`、`FG_ATOM_FNS`、`_FG_KEYS`、`_ANCHOR_KEYS`
+- `src/opensmiles/layer1/analyzer.py`：`_arbitrate_parts`、`_SUPPRESSIBLE`、`_PRESENCE_SKIP`、`_LEAF_DEMOTED`、`_OXO_CLASS_BY_KIND`、`_oxo_bridge_arms`、`_has_negative_atom`、`_drop_mixed_anion_os`、`_drop_mixed_anion_acids`、`_mark_anion_os`、`_OXO_KIND_P`、`_OXO_KIND_S_ARM`、`boronic_entries`
+- `src/opensmiles/layer2/principal.py`：`PrincipalPriority`、`PRINCIPAL_REGISTRY`、`_effective_priority`、`_has_charged_acid`、`_ANION_OS_P41`、`_CATION_ANION_GATED`、`select_principal_group`
+- `src/opensmiles/layer2/parent_skeleton.py`：`select_principal_skeletons`、`keep_p44_1_2`、`keep_p44_2`、`keep_p44_3`、`keep_p44_4_unsaturation`
+- `src/opensmiles/layer2/parent_select.py`：`_p45_2_prefix_count`、`_condensed_rank`、`_reorder_p45_2`、`_reorder_oxo_ester_side`、`_oxo_ester_side_score`、`select_parent`
+- `src/opensmiles/layer5/chain_engine.py`：`_KIND_TABLE`、`_OXO_TAIL`、`_oxoacid_tail`
 
 相关页面：[[architecture/layer1-analyzer]]、[[architecture/layer2-parent-selector]]、[[concepts/atom-ownership]]、[[reference/core-data-contracts]]、[[guides/adding-new-functional-group]]。

@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 chcp 65001 >nul
 
-REM ChemAgent Console — restart http://127.0.0.1:8666/  (auto-restarts on src/server changes)
+REM OpenSMILES Console — restart http://127.0.0.1:8666/  (auto-restarts on src/server changes)
 cd /d "%~dp0"
 
 echo [restart-console] Stopping any process listening on port 8666...

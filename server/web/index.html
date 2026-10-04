@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ChemAgent Namer</title>
+  <title>OpenSMILES Namer</title>
   <!-- 启动帧关键样式：消除无样式首帧(FOUC)，防止 logo 放大撑满/白屏闪烁。
        特异度低且位于 app.css 之前，样式表加载后会被正常覆盖，无副作用。 -->
   <style id="critical">
@@ -27,13 +27,13 @@
     <!-- Top Bar -->
     <header class="topbar" role="banner">
       <div class="topbar-left">
-        <div class="logo" aria-label="ChemAgent">
+        <div class="logo" aria-label="OpenSMILES">
           <svg class="icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2" />
             <path d="M8.5 2h7" />
             <path d="M7 16h10" />
           </svg>
-          <span class="logo-text">ChemAgent Namer</span>
+          <span class="logo-text">OpenSMILES Namer</span>
         </div>
         <nav class="topbar-nav" role="navigation" aria-label="页面">
           <button class="tab" data-page="namer" aria-current="page">Namer</button>
@@ -106,7 +106,7 @@
               <div class="namer-engine-seg" role="group" aria-label="命名引擎">
                 <span class="namer-engine-caption">引擎</span>
                 <button type="button" class="namer-engine-btn active" data-engine="src"
-                        title="现役 src/namepredict">src</button>
+                        title="现役 src/opensmiles">src</button>
                 <button type="button" class="namer-engine-btn" data-engine="v2"
                         title="tools/namepredict-v2">v2</button>
                 <button type="button" class="namer-engine-btn" data-engine="v3"

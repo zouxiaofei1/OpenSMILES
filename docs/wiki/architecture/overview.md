@@ -1,10 +1,10 @@
 # 架构总览 (Architecture Overview)
 
-> **源码规模:** src/namepredict 共 63 个 `.py` / 13,343 行（含各层 `__init__.py`）
+> **源码规模:** src/opensmiles 共 63 个 `.py` / 13,343 行（含各层 `__init__.py`）
 
 ## 项目定位
 
-NamePredict 是规则驱动的 SMILES → IUPAC 双语命名引擎：输入 SMILES 字符串，输出 `{en, zh}` 双语系统名，封装为 `types.NameResult`（`en` / `zh` / `success` / `source` / `time_ms` / `meta`）。判据取自 IUPAC 建议（P-14 编号与 λ 约定、P-21 杂原子母体氢化物、P-22.2.2 Hantzsch-Widman、P-23 桥环、P-24 螺环、P-25 稠环、P-41 主基团、P-44 母体选择、P-45 排序、P-6x 各类官能团、P-67 磷化合物、P-71 盐、P-72 阴离子、P-73 阳离子、P-77 多组分等），原则是表驱动优先、代码驱动兜底：能落表的判据（SMARTS、词干、优先级、词尾、保留名、锚定键、元素族）一律进表，代码只做分派与拼接。对外入口为 `namer.SMILESNNamer.name`。
+OpenSMILES 是规则驱动的 SMILES → IUPAC 双语命名引擎：输入 SMILES 字符串，输出 `{en, zh}` 双语系统名，封装为 `types.NameResult`（`en` / `zh` / `success` / `source` / `time_ms` / `meta`）。判据取自 IUPAC 建议（P-14 编号与 λ 约定、P-21 杂原子母体氢化物、P-22.2.2 Hantzsch-Widman、P-23 桥环、P-24 螺环、P-25 稠环、P-41 主基团、P-44 母体选择、P-45 排序、P-6x 各类官能团、P-67 磷化合物、P-71 盐、P-72 阴离子、P-73 阳离子、P-77 多组分等），原则是表驱动优先、代码驱动兜底：能落表的判据（SMARTS、词干、优先级、词尾、保留名、锚定键、元素族）一律进表，代码只做分派与拼接。对外入口为 `namer.SMILESNNamer.name`。
 
 ## 六层流水线
 
@@ -74,7 +74,7 @@ SMILES
 ## 文件组织
 
 ```
-src/namepredict/
+src/opensmiles/
 ├── __init__.py  包装入口：安装 rdkit 迭代器加速
 ├── namer.py  顶层协调器：缓存 + L0–L5 编排 + 多片段组分名
 ├── constants.py  跨层常量：原子序数、盐/阳离子词表、倍数前缀、简单分子表、同位素与保留名别名
@@ -149,7 +149,7 @@ src/namepredict/
 
 ## 其他工件
 
-- `webjs/` — 同一命名引擎的 JavaScript 移植（`src/namepredict` 的逐模块对应版本）。`webjs/pack.mjs` 把各模块重新打包为单文件 `index.min.html`（页面内联载荷 = base85(brotli(JSON))）供浏览器端直接试用。
+- `webjs/` — 同一命名引擎的 JavaScript 移植（`src/opensmiles` 的逐模块对应版本）。`webjs/pack.mjs` 把各模块重新打包为单文件 `index.min.html`（页面内联载荷 = base85(brotli(JSON))）供浏览器端直接试用。
 - `server/` — 本地 Web 服务：后端 `server/backend/`（命名、位次 SVG、基准测试路由）与前端 `server/web/`（命名 / Debug / 基准测试三个视图）。
 - `benchmarks/` — 基准数据与运行脚本；`tests/` — 单元与契约测试。
 

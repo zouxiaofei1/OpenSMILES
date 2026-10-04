@@ -25,7 +25,7 @@ from server.backend.routes_code_analysis import router as code_analysis_router
 from server.backend.routes_call_graph import router as call_graph_router
 from server.backend.routes_history import router as history_router
 
-app = FastAPI(title="ChemAgent Namer", version="0.1.0")
+app = FastAPI(title="OpenSMILES Namer", version="0.1.0")
 app.include_router(name_router)
 app.include_router(benchmark_router)
 app.include_router(debug_router)
@@ -44,9 +44,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _error_location(exc: BaseException) -> str:
-    """取异常里最靠 namepredict 的那一帧, 返回 "src/namepredict/...:行号"(取不到则空串)。"""
+    """取异常里最靠 opensmiles 的那一帧, 返回 "src/opensmiles/...:行号"(取不到则空串)。"""
     frames = traceback.extract_tb(exc.__traceback__)
-    where = next((f for f in reversed(frames) if "namepredict" in f.filename), None)
+    where = next((f for f in reversed(frames) if "opensmiles" in f.filename), None)
     where = where or (frames[-1] if frames else None)
     if where is None:
         return ""
@@ -57,12 +57,12 @@ def _error_location(exc: BaseException) -> str:
 
 
 def src_error() -> str | None:
-    """返回 namepredict 的导入失败原因(含出错文件行号); 能正常导入时返回 None。"""
+    """返回 opensmiles 的导入失败原因(含出错文件行号); 能正常导入时返回 None。"""
     if _SRC_CHECK.get("ok"):
         return None
     try:
         importlib.invalidate_caches()
-        importlib.import_module("namepredict.namer")
+        importlib.import_module("opensmiles.namer")
     except Exception as exc:
         where = _error_location(exc)
         return f"{type(exc).__name__}: {exc}" + (f"  ({where})" if where else "")
@@ -82,11 +82,11 @@ def health() -> dict[str, str]:
 async def import_error_handler(request: Request, exc: ImportError) -> JSONResponse:
     """src/ 编译失败只影响本请求: 回 500 + 出错文件行号, 而不是裸 traceback。"""
     where = _error_location(exc)
-    logging.getLogger("chemagent").error("import error on %s: %s", request.url.path, exc)
+    logging.getLogger("opensmiles").error("import error on %s: %s", request.url.path, exc)
     return JSONResponse(
         status_code=500,
         content={
-            "detail": f"导入 namepredict 失败, src/ 可能编译不过: {type(exc).__name__}: {exc}"
+            "detail": f"导入 opensmiles 失败, src/ 可能编译不过: {type(exc).__name__}: {exc}"
                       + (f"  ({where})" if where else ""),
             "error": f"{type(exc).__name__}: {exc}",
             "where": where,

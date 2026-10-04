@@ -14,27 +14,27 @@ from __future__ import annotations
 import hashlib
 import time
 
-import namepredict.namer as namer_module
+import opensmiles.namer as namer_module
 import pytest
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2 import kind_registry
-from namepredict.layer2.parent_select import _collect_candidates
-from namepredict.layer2.kind_registry import pack_parent_stem
-from namepredict.layer2.parent_select import select_parent
-from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, keep_p44_2, keep_p44_4_unsaturation
-from namepredict.layer2.principal_expression import (
+from opensmiles.layer0.preprocessor import preprocess
+from opensmiles.layer1.analyzer import analyze
+from opensmiles.layer2 import kind_registry
+from opensmiles.layer2.parent_select import _collect_candidates
+from opensmiles.layer2.kind_registry import pack_parent_stem
+from opensmiles.layer2.parent_select import select_parent
+from opensmiles.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology, keep_p44_2, keep_p44_4_unsaturation
+from opensmiles.layer2.principal_expression import (
     PrincipalExpressionFacts,
     PrincipalRelation,
     express_chain_principal,
 )
-from namepredict.layer1.functional_group_inventory import FunctionalGroupClass
-from namepredict.layer2.parent_select import rule_driven_parent_candidates, select_principal_parent_skeletons
-from namepredict.layer4.locant_calc import prefix_locant_set, suffix_locant_set
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
-from namepredict.types import NameResult
+from opensmiles.layer1.functional_group_inventory import FunctionalGroupClass
+from opensmiles.layer2.parent_select import rule_driven_parent_candidates, select_principal_parent_skeletons
+from opensmiles.layer4.locant_calc import prefix_locant_set, suffix_locant_set
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
+from opensmiles.types import NameResult
 from rdkit import Chem
 
 # ==========================================================================

@@ -8,13 +8,13 @@ from __future__ import annotations
 
 import math
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology
-from namepredict.layer2.ring_scaffold import match_retained, resolve_ring_scaffold
-from namepredict.layer4.fused_numbering import _boundary_walk
-from namepredict.layer4.ring_geometry import RING_TEMPLATES, clip_polygon, overlap_area, polygon_area, regular_polygon, ring_cyclic, ring_shape_template
-from namepredict.namer import SMILESNNamer
+from opensmiles.layer0.preprocessor import preprocess
+from opensmiles.layer1.analyzer import analyze
+from opensmiles.layer2.parent_skeleton import ParentSkeleton, SkeletonTopology
+from opensmiles.layer2.ring_scaffold import match_retained, resolve_ring_scaffold
+from opensmiles.layer4.fused_numbering import _boundary_walk
+from opensmiles.layer4.ring_geometry import RING_TEMPLATES, clip_polygon, overlap_area, polygon_area, regular_polygon, ring_cyclic, ring_shape_template
+from opensmiles.namer import SMILESNNamer
 
 # ==========================================================================
 # 合并自 test_ring_systems.py

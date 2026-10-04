@@ -10,13 +10,13 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG, inventory_from_info
-from namepredict.layer2.parent_select import _collect_candidates
-from namepredict.layer2.principal_expression import PrincipalRelation, express_chain_principal
-from namepredict.layer2.parent_select import select_principal_parent_skeletons
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.layer1.analyzer import analyze
+from opensmiles.layer1.functional_group_inventory import FunctionalGroupClass as FG, inventory_from_info
+from opensmiles.layer2.parent_select import _collect_candidates
+from opensmiles.layer2.principal_expression import PrincipalRelation, express_chain_principal
+from opensmiles.layer2.parent_select import select_principal_parent_skeletons
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 from rdkit import Chem
 
 # ==========================================================================

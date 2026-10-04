@@ -149,7 +149,7 @@ FgSpec("sulfonamide", p41=11, path=(1,), anchors=("center_idx",))
 | 酰胺族按双键杂原子换词尾 | `parent["amide_z"]` 记 `=O`/`=S`/`=N` 的杂原子序数（`principal_expression` 写入）；L5 据它把 `amide` 词尾换成 `thioamide` / 硫代酰胺 或 `imidamide` / 亚氨酰胺，环外经 `_exo_ring_spec` 出 `carbothioamide` / `carboximidamide` |
 | 环外主基系统名 | `constants.EXO_RING_SUF` 加 `group_class → (单, 复)`；由 `_exo_ring_spec` 改写词尾/词干/位次 |
 | 单碳母体带两个杂原子 / 官能团碳直连 N 的词尾 | `assembler._c1_retained`（`urea` / `thiourea` / `guanidine` / `carbonate`）与 `_c1_amino`（`carbamate` / `carbamic acid` / `carbamoyl`）；`locant_kind` 记保留名，`subs_consumed` 表示取代基已并入母体名 |
-| 作取代基前缀时的保留名 | `src/namepredict/tools/anchored_table._REGISTRY` 加 `RetainedSubstituent`（如 `sulfo` / `sulfonato` / `borono` / `trimethylsilyl` / `selanyl` / `thiocyanato` / `diazonio`），`anchored` 用带 `*` 的 canonical SMILES；`formyl` 的中文名为「甲酰基」。`-C(=O)-N(R)(R')` 不走注册表，由 `carbamoyl_prefix_name` 收成 `<N-取代基>carbamoyl` 或环胺的 `<母体>-<位次>-carbonyl`（P-65.2.1.5） |
+| 作取代基前缀时的保留名 | `src/opensmiles/tools/anchored_table._REGISTRY` 加 `RetainedSubstituent`（如 `sulfo` / `sulfonato` / `borono` / `trimethylsilyl` / `selanyl` / `thiocyanato` / `diazonio`），`anchored` 用带 `*` 的 canonical SMILES；`formyl` 的中文名为「甲酰基」。`-C(=O)-N(R)(R')` 不走注册表，由 `carbamoyl_prefix_name` 收成 `<N-取代基>carbamoyl` 或环胺的 `<母体>-<位次>-carbonyl`（P-65.2.1.5） |
 
 - 保留名母体的位次口径：`constants.N_LOCANT_KINDS` 的 kind 让 `assembler_prefixes._omit_sub_locants` 判「位次不可省」（`1,3-二甲基脲`）；`locant_kind == "carbamic_acid"` 反之（`dimethylcarbamic acid`）。
 
@@ -189,7 +189,7 @@ FgSpec("sulfonamide", p41=11, path=(1,), anchors=("center_idx",))
 | `carbamoyl_prefix_name` | `tools/anchored_table.py` | 手动（仅 `-C(=O)-N(R)(R')`） |
 | `_FG_LOCANTS` | `layer4/locant_calc.py` | 派生 |
 | `_FG_GROUP` | `layer4/locant_calc.py` | 手动（仅位次省略特例） |
-| `_REGISTRY` | `src/namepredict/tools/anchored_table.py` | 手动（仅作取代基前缀时） |
+| `_REGISTRY` | `src/opensmiles/tools/anchored_table.py` | 手动（仅作取代基前缀时） |
 
 ## 常见陷阱
 

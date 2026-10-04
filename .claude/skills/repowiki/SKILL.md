@@ -4,7 +4,7 @@ description: Repo Wiki — 为 chem 项目自动生成结构化文档，支持�
 
 # Repo Wiki Skill
 
-为 `namepredict`（SMILES → IUPAC 双语命名引擎）生成并维护结构化代码文档。
+为 `opensmiles`（SMILES → IUPAC 双语命名引擎）生成并维护结构化代码文档。
 
 ## 文档结构（仅约束 architecture）
 

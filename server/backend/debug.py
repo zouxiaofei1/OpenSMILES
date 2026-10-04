@@ -22,7 +22,7 @@ for _p in (_ROOT, os.path.join(_ROOT, "src")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from namepredict.namer import SMILESNNamer  # noqa: E402
+from opensmiles.namer import SMILESNNamer  # noqa: E402
 
 # 批量模式: 数据集仍整个跑完(某条 print 可能只在很靠后的分子上触发), 这里的上限
 # 只截"展示"——几千个分子全打出来没人看得完, 超过上限的照跑但输出丢掉。

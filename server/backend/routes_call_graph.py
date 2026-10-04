@@ -90,12 +90,12 @@ def _hist_commit(commit: str | None) -> str | None:
         raise HTTPException(status_code=400, detail=f"invalid commit: {commit}")
 
 def _src_signature() -> str:
-    """sha256 over (relpath, size, mtime_ns) of all src/namepredict/**/*.py.
+    """sha256 over (relpath, size, mtime_ns) of all src/opensmiles/**/*.py.
 
     File list is cached; when the list is unchanged the hash is reused.
     """
     global _SRC_SIG_CACHE
-    base = ROOT / "src" / "namepredict"
+    base = ROOT / "src" / "opensmiles"
     files: list[tuple[str, int, int]] = []
     for f in sorted(base.rglob("*.py")):
         try:
@@ -191,7 +191,7 @@ def _run_profile_subprocess(
     the global _PROGRESS dict that /call-graph/progress reports to the UI.
 
     With a commit: the sampler runs against that commit's worktree src (via
-    NAMEPREDICT_SRC_ROOT), the worktree is ref-counted (released in finish_job),
+    OPENSMILES_SRC_ROOT), the worktree is ref-counted (released in finish_job),
     and the timeout is relaxed to 300s (historical sampling is slower).
     """
     cmd = [sys.executable, str(_PROFILE_SAMPLER), "--n", str(n), "--module", module]
@@ -204,14 +204,14 @@ def _run_profile_subprocess(
             wt = history_store.ensure_worktree(commit)  # refs+1; released in finish_job
         except RuntimeError as exc:
             return {"ok": False, "error": f"worktree: {exc}"}
-        if not (wt / "src" / "namepredict").is_dir():
+        if not (wt / "src" / "opensmiles").is_dir():
             # The package is an editable install pointing at the main repo, so an
             # import would silently fall back to current code — reject instead.
             history_store.release_worktree(commit)
-            return {"ok": False, "error": f"该 commit 无 namepredict 源码（{commit[:7]}），无法采样历史调用链"}
+            return {"ok": False, "error": f"该 commit 无 opensmiles 源码（{commit[:7]}），无法采样历史调用链"}
         cmd += ["--data", str(DATA)]
         env = dict(os.environ)
-        env["NAMEPREDICT_SRC_ROOT"] = str(wt / "src")
+        env["OPENSMILES_SRC_ROOT"] = str(wt / "src")
         timeout = 300
     lines: list[str] = []
     try:
@@ -486,7 +486,7 @@ def call_graph_svg(
     n: int = Query(200, ge=1, le=100000),
     floor_pct: float = Query(1.0, ge=0, le=100),
     refresh: bool = False,
-    module: str = "namepredict",
+    module: str = "opensmiles",
     aggregate_external: bool = False,
     layer: int | None = Query(None, ge=-1, le=6),
     commit: str | None = Query(None),
@@ -573,7 +573,7 @@ def call_graph(
     n: int = Query(200, ge=1, le=100000),
     floor_pct: float = Query(0.1, ge=0, le=100),
     refresh: bool = False,
-    module: str = "namepredict",
+    module: str = "opensmiles",
     aggregate_external: bool = False,
     commit: str | None = Query(None),
 ) -> dict[str, Any]:

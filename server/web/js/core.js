@@ -1,4 +1,4 @@
-/* ChemAgent Namer — shared core: API endpoints, global state, DOM/HTTP helpers.
+/* OpenSMILES Namer — shared core: API endpoints, global state, DOM/HTTP helpers.
    All feature modules import from here; nothing in core imports back. */
 export const API = {
   health: "/health",
@@ -125,7 +125,7 @@ export async function checkBackendHealth() {
     const j = await res.json();
     if (j.src === "broken") {
       kind = "is-degraded";
-      msg = "src/ 编译失败，命名接口不可用：" + (j.src_error || "导入 namepredict 出错");
+      msg = "src/ 编译失败，命名接口不可用：" + (j.src_error || "导入 opensmiles 出错");
     }
   } catch (_) {
     kind = "is-down";

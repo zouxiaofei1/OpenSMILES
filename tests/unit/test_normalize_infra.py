@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.tools.common_names import CommonNameCache
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
-from namepredict.types import NameResult
+from opensmiles.tools.common_names import CommonNameCache
+from opensmiles.layer0.preprocessor import preprocess
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
+from opensmiles.types import NameResult
 from rdkit import Chem
 
 # ==========================================================================

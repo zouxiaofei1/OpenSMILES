@@ -15,8 +15,8 @@ if _src_str not in sys.path:
     sys.path.insert(0, _src_str)
 
 from benchmarks.preview_metrics import similarity
-from namepredict.tools.re import nospace, normalize_en, normalize_zh
-from namepredict.namer import SMILESNNamer
+from opensmiles.tools.re import nospace, normalize_en, normalize_zh
+from opensmiles.namer import SMILESNNamer
 
 _MISSING_DATA_HINT = (
     "Generate with: python tools/merge_datasets.py "

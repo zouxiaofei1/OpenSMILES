@@ -1,4 +1,4 @@
-/* ChemAgent Console — Ketcher bridge for Namer */
+/* OpenSMILES Console — Ketcher bridge for Namer */
 (function (global) {
   "use strict";
 

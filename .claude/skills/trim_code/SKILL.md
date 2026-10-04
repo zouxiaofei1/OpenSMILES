@@ -1,6 +1,6 @@
 ---
 name: trim_code
-description: namepredict 代码瘦身总纲。把 src/ 行数降下来的四路历史手法（整文件退役 / 函数级删除 / 结构收敛 / 移动合并）+ 不可协商的删除门禁 + 反面案例。函数级扫描转 dead-code-sweep。触发词：/trim_code、瘦身、减行数、清理代码、收缩代码、删模块。
+description: opensmiles 代码瘦身总纲。把 src/ 行数降下来的四路历史手法（整文件退役 / 函数级删除 / 结构收敛 / 移动合并）+ 不可协商的删除门禁 + 反面案例。函数级扫描转 dead-code-sweep。触发词：/trim_code、瘦身、减行数、清理代码、收缩代码、删模块。
 ---
 
 # 代码瘦身（trim_code）
@@ -57,7 +57,7 @@ description: namepredict 代码瘦身总纲。把 src/ 行数降下来的四路�
 3. 模块有专属测试（`test_<module>.py`）就一起删。
 
 硬坑：
-- **grep 必须用全模块路径**（`namepredict.layer2.urea`）。basename 会被跨层
+- **grep 必须用全模块路径**（`opensmiles.layer2.urea`）。basename 会被跨层
   同名误报——`layer1/urea.py`、`layer2/urea.py`、`layer5/urea_names.py` 同名。
 - **删文件与改 import 若拆成两次提交，中间提交 import-broken**。历史犯过 4 次，
   最长断链 37 分钟（b823cc7 删文件留 10 处悬空 import，d30f689 才修）。
@@ -122,7 +122,7 @@ description: namepredict 代码瘦身总纲。把 src/ 行数降下来的四路�
 git log --all --date=short --format='%h|%ad|%s' --shortstat | grep -iE 'remove|delete|删'
 # 单笔粒度：先看 D/M 分型，再看内容
 git show --name-status <sha>
-git show <sha> -- src/namepredict/layer2/xxx.py
+git show <sha> -- src/opensmiles/layer2/xxx.py
 # 是否有配套脚本 / 报告落库
 git show --stat <sha> | grep -viE 'src/|tests/'
 # 反复检测（文件级：ADD 计数 >1 即复活）

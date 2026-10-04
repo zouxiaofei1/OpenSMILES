@@ -11,14 +11,14 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer2.parent_select import finalize_parent_ownership
-from namepredict.layer2.parent_select import select_parent
-from namepredict.layer3.substituent_extractor import extract_substituents
-from namepredict.layer4.numbering_engine import orient_numbering
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import alkyl_alpha_key, normalize_en, normalize_zh
+from opensmiles.layer0.preprocessor import preprocess
+from opensmiles.layer1.analyzer import analyze
+from opensmiles.layer2.parent_select import finalize_parent_ownership
+from opensmiles.layer2.parent_select import select_parent
+from opensmiles.layer3.substituent_extractor import extract_substituents
+from opensmiles.layer4.numbering_engine import orient_numbering
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import alkyl_alpha_key, normalize_en, normalize_zh
 from rdkit import Chem
 
 # ==========================================================================

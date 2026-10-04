@@ -1,11 +1,11 @@
-# NamePredict Wiki
+# OpenSMILES Wiki
 
-> **源码规模:** `src/namepredict` 共 63 个 `.py` / 13,343 行（含各层 `__init__.py`、`tools/`、`constants.py`、`namer.py`，排除 `__pycache__`）
+> **源码规模:** `src/opensmiles` 共 63 个 `.py` / 13,343 行（含各层 `__init__.py`、`tools/`、`constants.py`、`namer.py`，排除 `__pycache__`）
 > **文档页面:** architecture 7 篇 + concepts 3 篇 + guides 2 篇 + reference 1 篇
 
 ## 项目概述
 
-**NamePredict** 是规则驱动的 SMILES → IUPAC 双语命名引擎：输入 SMILES 字符串，输出中英双语系统名，封装为 `types.NameResult`（`en` / `zh` / `success` / `source` / `time_ms` / `meta`）。对外入口为 `namer.SMILESNNamer.name`。
+**OpenSMILES** 是规则驱动的 SMILES → IUPAC 双语命名引擎：输入 SMILES 字符串，输出中英双语系统名，封装为 `types.NameResult`（`en` / `zh` / `success` / `source` / `time_ms` / `meta`）。对外入口为 `namer.SMILESNNamer.name`。
 
 判据取自 IUPAC 建议（P-14 编号与 λ 约定、P-21 杂原子母体氢化物、P-22.2.2 Hantzsch-Widman、P-23 桥环、P-24 螺环、P-25 稠环、P-41 主基团、P-44 母体选择、P-45 排序、P-6x 各类官能团等）。设计原则是**表驱动优先、代码驱动兜底**：能落表的判据（SMARTS、词干、优先级、词尾、保留名、元素族）一律进表，代码只负责分派与拼接。
 

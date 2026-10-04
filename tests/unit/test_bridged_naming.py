@@ -6,10 +6,10 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer5.bridged_namer import descriptor_str, ring_count_prefix
-from namepredict.layer5.skeleton_replacement import skeleton_replacement_prefix
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.layer5.bridged_namer import descriptor_str, ring_count_prefix
+from opensmiles.layer5.skeleton_replacement import skeleton_replacement_prefix
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 # 每条 = (SMILES, 期望英文名, 期望中文名)。金标旁证见 benchmarks/merged_benchmark.json。
 CASES = [

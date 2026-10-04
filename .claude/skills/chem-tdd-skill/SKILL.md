@@ -5,7 +5,7 @@ description: SMILES→IUPAC 编写的 TDD 流程
 
 # chem-tdd-skill
 
-本 skill 包含  Agent 编写 `namepredict` 代码时 TDD的规则实现。
+本 skill 包含  Agent 编写 `opensmiles` 代码时 TDD的规则实现。
 
 ## 目标
 
@@ -62,10 +62,10 @@ python -m benchmarks.benchmark --data benchmarks/merged_benchmark.json
 
 | 可写 | 只读 |
 |------|------|
-| `src/namepredict/`（namer 入口、layer0–5、cache） | `benchmarks/*.json` 金标与合并集 |
+| `src/opensmiles/`（namer 入口、layer0–5、cache） | `benchmarks/*.json` 金标与合并集 |
 | `tests/unit/` | `benchmarks/benchmark.py` |
 
 
 ## 其他
 红→绿证据：同一批新增/修改的测试，实现前失败、实现后通过。不得删除/弱化断言来换绿。
-生产代码仅可写：`src/namepredict/` 入口、`layer0`–`layer5`、受限 `cache`；测试写 `tests/unit/`。  
+生产代码仅可写：`src/opensmiles/` 入口、`layer0`–`layer5`、受限 `cache`；测试写 `tests/unit/`。  

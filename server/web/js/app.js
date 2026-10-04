@@ -1,4 +1,4 @@
-/* ChemAgent Namer — entry point: page switching + control wiring.
+/* OpenSMILES Namer — entry point: page switching + control wiring.
    Feature modules live in sibling files (namer/benchmark/...); this file only
    imports them and ties the global layout together. */
 import { state, checkBackendHealth } from "./core.js";

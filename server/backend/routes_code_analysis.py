@@ -22,7 +22,7 @@ from server.backend import history_store
 router = APIRouter(prefix="/api/v1", tags=["code-analysis"])
 
 ROOT = Path(__file__).resolve().parents[2]
-LAYER_DIR = ROOT / "src" / "namepredict"
+LAYER_DIR = ROOT / "src" / "opensmiles"
 # (gid, dirname, label, recursive) — tools is the shared layer-agnostic package;
 # the empty dirname is the package root itself (__init__/constants/namer/types),
 # counted non-recursively so it does not swallow the layer dirs below it.
@@ -92,7 +92,7 @@ def _stat_group(gid: int, dirname: str, label: str, recursive: bool) -> dict[str
     # 文件按代码行数降序（供前端展开明细）
     files.sort(key=lambda f: f["code"], reverse=True)
     return {
-        "layer": gid, "label": label, "path": f"src/namepredict/{dirname}".rstrip("/"),
+        "layer": gid, "label": label, "path": f"src/opensmiles/{dirname}".rstrip("/"),
         "files": files, **counts,
     }
 
@@ -117,10 +117,10 @@ def _code_analysis_history(commit: str) -> dict[str, Any]:
     if cache and cache.get("_data_sig") == history_store.data_sig():
         return cache["payload"]
 
-    names = history_store.list_tree(commit, "src/namepredict")
+    names = history_store.list_tree(commit, "src/opensmiles")
     layers: list[dict[str, Any]] = []
     for gid, dirname, label, recursive in GROUPS:
-        prefix = f"src/namepredict/{dirname}/" if dirname else "src/namepredict/"
+        prefix = f"src/opensmiles/{dirname}/" if dirname else "src/opensmiles/"
         counts = {"file_count": 0, "code": 0, "comment": 0, "blank": 0}
         files: list[dict[str, Any]] = []
         for p in names:
@@ -141,7 +141,7 @@ def _code_analysis_history(commit: str) -> dict[str, Any]:
         counts["lines"] = counts["code"] + counts["comment"] + counts["blank"]
         files.sort(key=lambda f: f["code"], reverse=True)
         layers.append({
-            "layer": gid, "label": label, "path": f"src/namepredict/{dirname}".rstrip("/"),
+            "layer": gid, "label": label, "path": f"src/opensmiles/{dirname}".rstrip("/"),
             "files": files, **counts,
         })
 

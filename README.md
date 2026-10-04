@@ -1,4 +1,4 @@
-# NamePredict
+# OpenSMILES
 
 基于规则的 SMILES → 双语 IUPAC 命名引擎。
 
@@ -21,4 +21,4 @@ python -m benchmarks.benchmark_parallel --data benchmarks/merged_benchmark.json 
 
 ## License
 
-MIT
+本项目采用 MIT 许可证，详见 [LICENSE](LICENSE)。

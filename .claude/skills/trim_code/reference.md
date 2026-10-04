@@ -154,6 +154,6 @@ test_ring_engine×2、test_registry::test_retained_prefix_whole_molecule、
 test_stereo_rs::test_non_stereo_leading_parens_unaffected。
 
 ## 其它遗留项
-`src/namepredict.egg-info/SOURCES.txt` 仍引用已删文件（`parent_candidate.py`、
+`src/opensmiles.egg-info/SOURCES.txt` 仍引用已删文件（`parent_candidate.py`、
 `ring_expression_policy.py`、`ring_parent.py`、`scoring.py`、`tools/free_to_yl.py`）
 ——删除未同步打包元数据，重装包时会暴露。

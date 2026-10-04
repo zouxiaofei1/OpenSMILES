@@ -17,10 +17,10 @@ CFG: dict = json.loads(_CFG_PATH.read_text(encoding="utf-8")) if _CFG_PATH.is_fi
 
 REPO = Path(CFG.get("repo") or ROOT).resolve()          # 主仓库根（扫下游引用用）
 SRC = ROOT / CFG.get("src", "src")                      # sys.path 里放的那个目录
-PKG = CFG.get("pkg", "namepredict")                     # 被扫描的包名
-IMPORT_ROOT = f"{SRC.name}.{PKG}"                       # 形如 src.namepredict，用于相对路径
-ENTRY = CFG.get("entry", "namepredict.namer")           # 预导入入口（破坏它 = 导入期必需）
-FACTORY = CFG.get("factory", "namepredict.namer:SMILESNNamer")
+PKG = CFG.get("pkg", "opensmiles")                     # 被扫描的包名
+IMPORT_ROOT = f"{SRC.name}.{PKG}"                       # 形如 src.opensmiles，用于相对路径
+ENTRY = CFG.get("entry", "opensmiles.namer")           # 预导入入口（破坏它 = 导入期必需）
+FACTORY = CFG.get("factory", "opensmiles.namer:SMILESNNamer")
 BENCH_MODULE = CFG.get("bench_module", "benchmarks.benchmark")
 BENCH_DATA = ROOT / CFG.get("bench_data", "benchmarks/merged_benchmark.json")
 BENCH_CMD: list[str] = CFG.get(

@@ -6,11 +6,11 @@ from __future__ import annotations
 
 from rdkit import Chem
 
-from namepredict.tools.lambda_notation import (
+from opensmiles.tools.lambda_notation import (
     bonding_number, delta_mark, is_nonstandard, lambda_mark,
     locant_lambda_str, nonstandard_bonding, put_lambda,
 )
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 
 def _mol(smiles):

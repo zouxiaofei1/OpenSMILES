@@ -62,7 +62,7 @@ def _init_worker() -> None:
         RDLogger.DisableLog("rdApp.*")
     except Exception:
         pass
-    from namepredict.namer import SMILESNNamer
+    from opensmiles.namer import SMILESNNamer
 
     _WORKER_NAMER = SMILESNNamer()
 

@@ -5,7 +5,7 @@
 
 用法:
   python setup_tree.py                    # 目标 tmp/deadcode
-  python setup_tree.py --dest tmp/x --src src --pkg namepredict
+  python setup_tree.py --dest tmp/x --src src --pkg opensmiles
   python setup_tree.py --from-archive src.7z    # 从 7z 快照建树
 """
 
@@ -70,7 +70,7 @@ def main() -> int:
     ap.add_argument("--repo", default=".", help="主仓库根")
     ap.add_argument("--dest", default="tmp/deadcode", help="工作树位置（须在 .gitignore 覆盖范围内）")
     ap.add_argument("--src", default="src")
-    ap.add_argument("--pkg", default="namepredict")
+    ap.add_argument("--pkg", default="opensmiles")
     ap.add_argument("--from-archive", default=None, help="改为从该 7z 快照取 src（解压到工作树）")
     args = ap.parse_args()
 

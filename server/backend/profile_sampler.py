@@ -27,9 +27,9 @@ from pathlib import Path
 import pstats
 
 ROOT = Path(__file__).resolve().parents[2]
-# NAMEPREDICT_SRC_ROOT lets the history feature sample a past commit's code from
+# OPENSMILES_SRC_ROOT lets the history feature sample a past commit's code from
 # its worktree without running that commit's own (possibly missing) sampler.
-_SRC_ROOT = Path(os.environ.get("NAMEPREDICT_SRC_ROOT") or (ROOT / "src"))
+_SRC_ROOT = Path(os.environ.get("OPENSMILES_SRC_ROOT") or (ROOT / "src"))
 sys.path.insert(0, str(_SRC_ROOT))
 
 _WORKER_NAMER = None
@@ -40,7 +40,7 @@ def _init_worker() -> None:
     from rdkit import RDLogger
 
     RDLogger.logger().setLevel(RDLogger.ERROR)
-    from namepredict.namer import SMILESNNamer
+    from opensmiles.namer import SMILESNNamer
 
     _WORKER_NAMER = SMILESNNamer()
 
@@ -245,7 +245,7 @@ def _build_graph(
 def main() -> None:
     ap = argparse.ArgumentParser(description="Multi-process cProfile sampler")
     ap.add_argument("--n", type=int, required=True)
-    ap.add_argument("--module", default="namepredict")
+    ap.add_argument("--module", default="opensmiles")
     ap.add_argument("--agg", action="store_true")
     ap.add_argument("--data", default=str(ROOT / "benchmarks" / "merged_benchmark.json"))
     ap.add_argument("--workers", type=int, default=0)

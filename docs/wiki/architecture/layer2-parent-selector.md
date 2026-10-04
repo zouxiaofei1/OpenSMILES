@@ -1,6 +1,6 @@
 # Layer2: 母体选择 (Parent Selection)
 
-> **源文件:** `src/namepredict/layer2/` 12 个 `.py`（含 `__init__.py`），约 3795 行 | **对外接口:** `parent_select.select_parent(info) -> list[dict]`、`parent_select.finalize_parent_ownership(parent, mol) -> dict`、`parent_select.rule_driven_parent_candidates(info) -> list[dict]`、`parent_select.select_principal_parent_skeletons(info) -> PrincipalParentSelection`
+> **源文件:** `src/opensmiles/layer2/` 12 个 `.py`（含 `__init__.py`），约 3795 行 | **对外接口:** `parent_select.select_parent(info) -> list[dict]`、`parent_select.finalize_parent_ownership(parent, mol) -> dict`、`parent_select.rule_driven_parent_candidates(info) -> list[dict]`、`parent_select.select_principal_parent_skeletons(info) -> PrincipalParentSelection`
 
 ---
 
@@ -390,6 +390,6 @@ select_parent(info)
 
 `layer2` 的对外符号集中在 `parent_select`：`select_parent` 是唯一选母体入口，`finalize_parent_ownership` 供 `namer` 在候选补齐后固化所有权，`rule_driven_parent_candidates` 与 `select_principal_parent_skeletons` 可单独调用做骨架枚举。`ring_scaffold` 的模板表与 `_Q`/`_hydrogenated`、`standard_chain`、`extra_indicated_atoms`/`extra_hydrogenated_atoms`、`get_spec`、`component_stem`、`match_retained` 被 L4/L5 编号、指示氢与稠合组装模块直接引用；`spiro_system.SPIRO_SCAFFOLDS` 与 `hantzsch_widman` 的 `is_hw_scaffold`/`effective_valence`/`HW_RING_LAMBDA_Z` 是 L4 直接 import 的 L2 常量。扩展新环骨架的流程见 [[guides/adding-new-ring-system]]，跨层数据契约见 [[reference/core-data-contracts]]。
 
-> **源:** `src/namepredict/layer2/parent_select.py`、`principal.py`、`parent_skeleton.py`、`principal_expression.py`、`ring_scaffold.py`、`kind_registry.py`、`hantzsch_widman.py`、`fused_system.py`、`bridged_system.py`、`spiro_system.py`、`chain_walk.py`
+> **源:** `src/opensmiles/layer2/parent_select.py`、`principal.py`、`parent_skeleton.py`、`principal_expression.py`、`ring_scaffold.py`、`kind_registry.py`、`hantzsch_widman.py`、`fused_system.py`、`bridged_system.py`、`spiro_system.py`、`chain_walk.py`
 
 相关页面：[[architecture/layer1-analyzer]]、[[architecture/layer3-substituents]]、[[architecture/layer4-numbering]]、[[architecture/layer5-name-assembly]]、[[concepts/atom-ownership]]、[[concepts/functional-group-priority]]、[[reference/core-data-contracts]]、[[guides/adding-new-ring-system]]。

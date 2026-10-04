@@ -11,15 +11,15 @@ from __future__ import annotations
 
 import pytest
 
-from namepredict.layer0.preprocessor import preprocess
-from namepredict.layer1.analyzer import analyze
-from namepredict.layer1.functional_group_inventory import FunctionalGroupClass as FG, FunctionalGroupInventory, FunctionalGroupOccurrence
-from namepredict.layer2 import kind_registry as kr
-from namepredict.layer2.parent_select import select_parent
-from namepredict.layer2.principal import PRINCIPAL_REGISTRY, PrincipalExpression, PrincipalFeatureSpec, PrincipalPriority, select_principal_group
-from namepredict.layer2.ring_scaffold import all_specs, get_spec, match_retained
-from namepredict.namer import SMILESNNamer
-from namepredict.tools.re import normalize_en, normalize_zh
+from opensmiles.layer0.preprocessor import preprocess
+from opensmiles.layer1.analyzer import analyze
+from opensmiles.layer1.functional_group_inventory import FunctionalGroupClass as FG, FunctionalGroupInventory, FunctionalGroupOccurrence
+from opensmiles.layer2 import kind_registry as kr
+from opensmiles.layer2.parent_select import select_parent
+from opensmiles.layer2.principal import PRINCIPAL_REGISTRY, PrincipalExpression, PrincipalFeatureSpec, PrincipalPriority, select_principal_group
+from opensmiles.layer2.ring_scaffold import all_specs, get_spec, match_retained
+from opensmiles.namer import SMILESNNamer
+from opensmiles.tools.re import normalize_en, normalize_zh
 
 # ==========================================================================
 # 合并自 test_kind_registry.py
@@ -87,7 +87,7 @@ def test_select_parent_preloads_registry_stem() -> None:
 
 
 def test_select_parent_preserves_existing_stem(monkeypatch: pytest.MonkeyPatch) -> None:
-    from namepredict.layer2 import parent_select
+    from opensmiles.layer2 import parent_select
 
     parent = {"kind": "phenol", "stem_en": "custom", "stem_zh": "自定义",
               "principal_group_count": 1, "mol": object()}
