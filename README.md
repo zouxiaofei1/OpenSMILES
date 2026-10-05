@@ -33,8 +33,56 @@ MIT 许可证，详见 [LICENSE](LICENSE)。
 
 ## 命名示例
 
-SMILES | EN | ZH | explanation |
-BrC1=C(C=C(C=C1)C(C)(C)C)[N+](=O)[O-] | 1-bromo-4-tert-butyl-2-nitrobenzene | 1-溴-4-叔丁基-2-硝基苯 | 简单化合物 |
-C1SC21CC2 | 1-thiaspiro[2.2]pentane | 1-硫杂螺[2.2]戊烷 | |
-CN1C=NC2=C1C(=O)N(C(=O)N2C)C | 1,3,7-trimethylpurine-2,6-dione | 1,3,7-三甲基嘌呤-2,6-二酮 | 咖啡因
-CC1=C2[C@@]([C@]([C@H]([C@@H]3[C@]4([C@H](OC4)C[C@@H]([C@]3(C(=O)[C@@H]2OC(=O)C)C)O)OC(=O)C)OC(=O)c5ccccc5)(C[C@@H]1OC(=O)[C@H](O)[C@@H](NC(=O)c6ccccc6)c7ccccc7)O)(C)C | [(1S,2S,3R,4S,7R,9S,10S,12R,15S)-4,12-diacetyloxy-15-[(2R,3S)-3-benzamido-2-hydroxy-3-phenylpropanoyl]oxy-1,9-dihydroxy-10,14,17,17-tetramethyl-11-oxo-6-oxatetracyclo[11.3.1.03,10.04,7]heptadec-13-en-2-yl] benzoate | 苯甲酸(1S,2S,3R,4S,7R,9S,10S,12R,15S)-[4,12-二乙酰氧基-15-[(2R,3S)-3-苯甲酰胺基-2-羟基-3-苯基丙酰氧基]-1,9-二羟基-10,14,17,17-四甲基-11-氧代-6-氧杂四环[11.3.1.03,10.04,7]十七-13-烯-2-基]酯 | 紫杉醇(和Pubchem结果相同) |
+### 1-溴-4-叔丁基-2-硝基苯
+
+<img src="docs/readme/img/01-bromo-tert-butyl-nitrobenzene.png" width="240" alt="1-bromo-4-tert-butyl-2-nitrobenzene">
+
+| | |
+|---|---|
+| **SMILES** | `BrC1=C(C=C(C=C1)C(C)(C)C)[N+](=O)[O-]` |
+| **英文名** | 1-bromo-4-tert-butyl-2-nitrobenzene |
+| **中文名** | 1-溴-4-叔丁基-2-硝基苯 |
+
+
+---
+
+### 1-硫杂螺[2.2]戊烷
+
+<img src="docs/readme/img/02-thiaspiro-pentane.png" width="240" alt="1-thiaspiro[2.2]pentane">
+
+| | |
+|---|---|
+| **SMILES** | `C1SC21CC2` |
+| **英文名** | 1-thiaspiro[2.2]pentane |
+| **中文名** | 1-硫杂螺[2.2]戊烷 |
+
+
+---
+
+### 咖啡因
+
+<img src="docs/readme/img/03-caffeine.png" width="240" alt="1,3,7-trimethylpurine-2,6-dione">
+
+| | |
+|---|---|
+| **SMILES** | `CN1C=NC2=C1C(=O)N(C(=O)N2C)C` |
+| **英文名** | 1,3,7-trimethylpurine-2,6-dione |
+| **中文名** | 1,3,7-三甲基嘌呤-2,6-二酮 |
+
+
+---
+
+### 紫杉醇（与 PubChem 结果相同！）
+
+<img src="docs/readme/img/04-taxol.png" width="440" alt="taxol">
+
+| | |
+|---|---|
+| **SMILES** | `CC1=C2[C@@]([C@]([C@H]([C@@H]3[C@]4([C@H](OC4)C[C@@H]([C@]3(C(=O)[C@@H]2OC(=O)C)C)O)OC(=O)C)OC(=O)c5ccccc5)(C[C@@H]1OC(=O)[C@H](O)[C@@H](NC(=O)c6ccccc6)c7ccccc7)O)(C)C` |
+| **英文名** | [(1S,2S,3R,4S,7R,9S,10S,12R,15S)-4,12-diacetyloxy-15-[(2R,3S)-3-benzamido-2-hydroxy-3-phenylpropanoyl]oxy-1,9-dihydroxy-10,14,17,17-tetramethyl-11-oxo-6-oxatetracyclo[11.3.1.03,10.04,7]heptadec-13-en-2-yl] benzoate |
+| **中文名** | 苯甲酸(1S,2S,3R,4S,7R,9S,10S,12R,15S)-[4,12-二乙酰氧基-15-[(2R,3S)-3-苯甲酰胺基-2-羟基-3-苯基丙酰氧基]-1,9-二羟基-10,14,17,17-四甲基-11-氧代-6-氧杂四环[11.3.1.03,10.04,7]十七-13-烯-2-基]酯 |
+
+
+
+---
+
