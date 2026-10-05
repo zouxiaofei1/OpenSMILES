@@ -1,5 +1,0 @@
-# Windows batch files must keep CRLF on checkout.
-# cmd.exe mis-parses LF-only .bat files: it drops the first 1-2 characters of
-# several lines, so `setlocal` runs as `tlocal`, `chcp 65001` as `cp 65001`.
-*.bat text eol=crlf
-*.cmd text eol=crlf

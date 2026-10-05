@@ -10,8 +10,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "server\backend\stop-port.ps
 
 timeout /t 1 /nobreak >nul
 
-if not exist ".venv\Scripts\uvicorn.exe" (
-  echo [restart-console] ERROR: .venv\Scripts\uvicorn.exe not found.
+if not exist ".venv\Scripts\python.exe" (
+  echo [restart-console] ERROR: .venv\Scripts\python.exe not found.
   echo   Run: python -m venv .venv ^&^& .venv\Scripts\pip install -e ".[dev]"
   pause
   exit /b 1

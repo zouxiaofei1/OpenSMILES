@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -28,8 +29,11 @@ ROOT = Path(__file__).resolve().parents[2]
 # no matter what is or is not listening.  Check the current reservations with
 # `netsh interface ipv4 show excludedportrange protocol=tcp` before moving this.
 PORT = 8666
+# 用 python -m uvicorn 而非 .venv\Scripts\uvicorn.exe: 该 launcher 把 venv 的
+# 绝对路径写死在文件头部, venv 目录一旦被移动, 启动即报
+# "Unable to create process using ...". sys.executable 永远指向当前解释器。
 UVICORN = [
-    str(ROOT / ".venv" / "Scripts" / "uvicorn.exe"),
+    sys.executable, "-m", "uvicorn",
     "server.backend.app:app",
     "--host", "127.0.0.1",
     "--port", str(PORT),
